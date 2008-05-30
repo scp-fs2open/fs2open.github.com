@@ -5205,7 +5205,7 @@ int sexp_num_ships_in_wing(int n)
 //Gets the 'real' speed of an object, taking into account docking
 int sexp_get_real_speed(object *obj)
 {
-	return fl2i(dock_calc_docked_fspeed(obj));
+	return fl2i(dock_calc_docked_speed(obj));
 }
 
 //Gets the current speed of the specified object
@@ -21598,7 +21598,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tReturns true N seconds after the listed ships depart, if those ships depart within the "
 		"radius of the given jump node.  The delay value is given in seconds.\r\n\r\n"
 		"Takes 3 or more arguments...r\n"
-		"\t1:\tDelay in seconds after the last ship listed departe before this expression can return true.\r\n"
+		"\t1:\tDelay in seconds after the last ship listed departed before this expression can return true.\r\n"
 		"\t2:\tName of a jump node\r\n"
 		"\t3+:\tList of ships to check for departure within radius of the jump node." },
 
@@ -21606,7 +21606,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tReturns true N seconds after all the listed ships or wings have been destroyed or have "
 		"departed.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tDelay in seconda after the last ship/wing is destroyed or departerd this expression can return true.\r\n"
+		"\t1:\tDelay in seconds after the last ship/wing is destroyed or departed before this expression can return true.\r\n"
 		"\t2+:\tName of a ship or wing" },
 
 	// description added by Goober5000
