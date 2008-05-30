@@ -115,7 +115,6 @@
  * Revision 1.1  2004/08/02 22:42:45  phreak
  * orb radar rendering style
  *
-
  *
  * $NoKeywords: $
  *
@@ -210,17 +209,23 @@ void radar_init_orb()
 	}
 
 	memset(orb_ring_xy, 0, sizeof(orb_ring_xy));
+	memset(orb_ring_xz, 0, sizeof(orb_ring_xz));
 	memset(orb_ring_yz, 0, sizeof(orb_ring_yz));
-	memset(orb_ring_xz, 0, sizeof(orb_ring_yz));
 	
-	for (i=0; i < 25; i++)
-	{
-		s=(float)sin(float(i*PI)/12.0);
-		c=(float)cos(float(i*PI)/12.0);
+    for (i=0; i < 25; i++)
+    {
+        s=(float)sin(float(i*PI)/12.0);
+        c=(float)cos(float(i*PI)/12.0);
 
-		orb_ring_xy[i].xyz.x=orb_ring_yz[i].xyz.y=orb_ring_xz[i].xyz.x=c;
-		orb_ring_xy[i].xyz.y=orb_ring_yz[i].xyz.z=orb_ring_xz[i].xyz.z=s;
-	}
+        orb_ring_xy[i].xyz.x = c;
+        orb_ring_xy[i].xyz.y = s;
+
+        orb_ring_yz[i].xyz.y = c;
+        orb_ring_yz[i].xyz.z = s;
+
+        orb_ring_xz[i].xyz.x = c;
+        orb_ring_xz[i].xyz.z = s;
+    }
 
 	Blip_mutate_id	= 1;
 
