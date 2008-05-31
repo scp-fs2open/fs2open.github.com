@@ -1624,6 +1624,7 @@
 #include "parse/scripting.h"
 #include "object/objcollide.h"
 #include "object/waypoint.h"
+#include "object/objectsnd.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -1810,6 +1811,7 @@ sexp_oper Operators[] = {
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,			2,	2,			},
 	{ "good-secondary-time",		OP_GOOD_SECONDARY_TIME,			4, 4,			},
 	{ "change-iff",					OP_CHANGE_IFF,					2,	INT_MAX,	},
+	{ "change-iff-color",			OP_CHANGE_IFF_COLOR,			6,	INT_MAX,	},
 	{ "change-ai-class",			OP_CHANGE_AI_CLASS,				2,	INT_MAX,	},
 	{ "protect-ship",				OP_PROTECT_SHIP,				1, INT_MAX,	},
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
@@ -1886,6 +1888,8 @@ sexp_oper Operators[] = {
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
 	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
 	{ "ship-turret-target-order",			OP_SHIP_TURRET_TARGET_ORDER,		1, 1+NUM_TURRET_ORDER_TYPES},	//WMC
+	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE, 2, INT_MAX	},
+	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,	2, INT_MAX	},
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
@@ -8270,6 +8274,103 @@ void sexp_change_iff(int n)
 	}
 }
 
+void sexp_ingame_ship_change_iff_color(ship *shipp, int observer_team, int observed_team, int alternate_iff_color)
+{
+	Assert(shipp != NULL);
+
+	shipp->ship_iff_color[observer_team][observed_team] = alternate_iff_color;
+
+	// Like the rest of the change_iff_color functions copied with minor alterations from earlier change_iff functions.
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (shipp->objnum >= 0))
+		send_change_iff_color_packet(Objects[shipp->objnum].net_signature, observer_team, observed_team, alternate_iff_color);
+}
+
+void sexp_parse_ship_change_iff_color(p_object *parse_obj, int observer_team, int observed_team, int alternate_iff_color)
+{
+	Assert(parse_obj);
+
+	parse_obj->alt_iff_color[observer_team][observed_team] = alternate_iff_color;
+}
+
+ // Wanderer
+void sexp_change_iff_color(int n)
+{
+	int observer_team, observed_team, alternate_iff_color;
+	int i;
+	int rgb[3];
+
+	// First node
+	if(n == -1){
+		Warning(LOCATION, "Detected missing observer team parameter in sexp-change_iff_color");
+		return;
+	}
+	observer_team = iff_lookup(CTEXT(n));
+
+	// Second node
+	n = CDR(n);
+	if(n == -1){
+		Warning(LOCATION, "Detected missing observed team parameter in sexp-change_iff_color");
+		return;
+	}
+	observed_team = iff_lookup(CTEXT(n));
+
+	// Three following nodes
+	for (i=0;i<3;i++)
+	{
+		n = CDR(n);
+		if(n == -1){
+			Warning(LOCATION, "Detected incomplete color parameter list in sexp-change_iff_color");
+			return;
+		}
+		rgb[i] = eval_num(n);
+	}
+	alternate_iff_color = iff_init_color(rgb[0],rgb[1],rgb[2]);
+
+	// Rest of the nodes
+	n = CDR(n);
+	for ( ; n != -1; n = CDR(n) )
+	{
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+		switch (oswpt.type)
+		{
+			// change ingame ship
+			case OSWPT_TYPE_SHIP:
+			{
+				sexp_ingame_ship_change_iff_color(oswpt.shipp, observer_team, observed_team, alternate_iff_color);
+
+				break;
+			}
+
+			// change ship yet to arrive
+			case OSWPT_TYPE_PARSE_OBJECT:
+			{
+				sexp_parse_ship_change_iff_color(oswpt.p_objp, observer_team, observed_team, alternate_iff_color);
+
+				break;
+			}
+
+			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+			case OSWPT_TYPE_WING:
+			{
+				// current ships
+				for (int i = 0; i < oswpt.wingp->current_count; i++)
+					sexp_ingame_ship_change_iff_color(&Ships[oswpt.wingp->ship_index[i]], observer_team, observed_team, alternate_iff_color);
+
+				// ships yet to arrive
+				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+				{
+					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+						sexp_parse_ship_change_iff_color(p_objp, observer_team, observed_team, alternate_iff_color);
+				}
+
+				break;
+			}
+		}
+	}
+}
+
 // Goober5000
 int sexp_is_ship_class(int n)
 {
@@ -13589,6 +13690,67 @@ void sexp_ship_turret_target_order(int node)
 	}
 }
 
+void sexp_turret_subsystem_targeting_disable(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+
+	// get the ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	node = CDR(node);
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// flag the turret
+		turret->system_info->flags |= MSS_FLAG_NO_SS_TARGETING;
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_subsystem_targeting_enable(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+
+	// get the ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	node = CDR(node);
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// remove the flag from the turret
+		turret->system_info->flags &= ~(MSS_FLAG_NO_SS_TARGETING);
+
+		// next
+		node = CDR(node);
+	}
+}
 
 // Goober5000
 void sexp_set_subsys_rotation_lock(int node, int locked)
@@ -13616,8 +13778,14 @@ void sexp_set_subsys_rotation_lock(int node, int locked)
 			return;
 
 		// set rotate or not, depending on flag
-		if (locked)
+		if (locked) {
 			rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
+			if (rotate->system_info->subsys_snd_flags & SSF_ROTATE)
+			{
+				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
+				rotate->system_info->subsys_snd_flags &= ~SSF_ROTATE;
+			}
+		}
 		else
 			rotate->system_info->flags |= MSS_FLAG_ROTATES;
 
@@ -16725,6 +16893,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_ship_turret_target_order(node);
 				break;
 
+			case OP_TURRET_SUBSYS_TARGET_DISABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_subsystem_targeting_disable(node);
+				break;
+
+			case OP_TURRET_SUBSYS_TARGET_ENABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_subsystem_targeting_enable(node);
+				break;
+
 			case OP_ADD_REMOVE_ESCORT:
 				sexp_val = SEXP_TRUE;
 				sexp_add_remove_escort(node);
@@ -17127,6 +17305,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_script_eval(node, OPR_NULL);
 				break;
 
+			case OP_CHANGE_IFF_COLOR:
+				sexp_change_iff_color(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -17503,6 +17686,8 @@ int query_operator_return_type(int op)
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
+		case OP_TURRET_SUBSYS_TARGET_DISABLE:
+		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
@@ -17622,6 +17807,7 @@ int query_operator_return_type(int op)
 		case OP_RESET_ORDERS:
 		case OP_SET_PERSONA:
 		case OP_CHANGE_SUBSYSTEM_NAME:
+		case OP_CHANGE_IFF_COLOR:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -18554,6 +18740,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TURRET_LOCK:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+		case OP_TURRET_SUBSYS_TARGET_DISABLE:
+		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			if(argnum == 0){
 				return OPF_SHIP;
 			} else {
@@ -18946,6 +19134,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
 			return OPF_STRING;
+		case OP_CHANGE_IFF_COLOR:
+			if ((argnum == 0) || (argnum == 1))
+				return OPF_IFF;
+			else if ((argnum >= 2) && (argnum <=4))
+				return OPF_POSITIVE;
+			else return OPF_SHIP_WING;
 
 		default:
 			Int3();
@@ -19917,6 +20111,7 @@ int get_subcategory(int sexp_id)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_ALLOW_TREASON: 
+		case OP_CHANGE_IFF_COLOR:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
@@ -19985,6 +20180,8 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
+		case OP_TURRET_SUBSYS_TARGET_DISABLE:
+		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_RED_ALERT:
@@ -20732,6 +20929,17 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the specified ship(s) or wing(s) to the specified team.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tTeam to change to (\"friendly\", \"hostile\" or \"unknown\").\r\n"
+		"\tRest:\tName of ship or wing to change team status of." },
+
+	// Wanderer
+	{ OP_CHANGE_IFF_COLOR, "Change IFF Color (Action operator)\r\n"
+		"\tSets the specified ship(s) or wing(s) apparent color.\r\n"
+		"Takes 6 or more arguments...\r\n"
+		"\t1:\tName of the team from which target is observed from.\r\n"
+		"\t2:\tName of the team of the observed target to receive the alternate color.\r\n"
+		"\t3:\tRed color (value from 0 to 255).\r\n"
+		"\t4:\tGreen color (value from 0 to 255).\r\n"
+		"\t5:\tBlue color (value from 0 to 255).\r\n"
 		"\tRest:\tName of ship or wing to change team status of." },
 
 	// Goober5000
@@ -21781,6 +21989,16 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets targeting order of all turrets on a given ship\r\n"
 		"\t1: Ship turrets are on\r\n"
 		"\trest: Target order type (Bombs,ships,asteroids)"},
+
+	{ OP_TURRET_SUBSYS_TARGET_DISABLE, "turret-subsys-target-disable\r\n"
+		"\tPrevents turrets from targeting only the subsystems when targeting large targets\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\trest: List of turrets that are affected\r\n"},
+
+	{ OP_TURRET_SUBSYS_TARGET_ENABLE, "turret-subsys-target-enable\r\n"
+		"\tSets turret to target the subsystems when targeting large targets\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\trest: List of turrets that are affected\r\n"},
 
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"

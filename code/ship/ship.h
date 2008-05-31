@@ -1180,7 +1180,8 @@ typedef	struct ship_subsys {
 	int		turret_animation_done_time;
 
 	// swarm (rapid fire) info
-	int		turret_swarm_info_index;	
+	int		turret_swarm_info_index[MAX_TFP];	
+	int		turret_swarm_num;	
 
 	// awacs info
 	float		awacs_intensity;
@@ -1564,12 +1565,16 @@ typedef struct ship {
 
 	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
 	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
-/*
+	
+	/*
 	flash_ball	*debris_flare;
 	int n_debris_flare;
 	float flare_life;
 	int flare_bm;
 	*/
+
+	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1672,6 +1677,10 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
+#define AIM_FLAG_AUTOAIM				(1 << 0)	// has autoaim
+#define AIM_FLAG_AUTO_CONVERGENCE		(1 << 1)	// has automatic convergence
+#define AIM_FLAG_STD_CONVERGENCE		(1 << 2)	// has standard - ie. non-automatic - convergence
+
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
 	float		min_rad;
@@ -1692,6 +1701,7 @@ typedef struct thruster_particles {
 #define STI_SHIP_SCANNABLE				(1<<0)
 #define STI_SHIP_WARP_PUSHES			(1<<1)
 #define STI_SHIP_WARP_PUSHABLE			(1<<2)
+#define STI_TURRET_TGT_SHIP_TGT			(1<<3)
 
 #define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
 
@@ -1962,7 +1972,6 @@ typedef struct ship_info {
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
 	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
 
-	bool has_autoaim;
 	float autoaim_fov;
 
 	bool topdown_offset_def;
@@ -1970,6 +1979,17 @@ typedef struct ship_info {
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+
+	int ship_iff_info[MAX_IFFS][MAX_IFFS];
+
+	int radar_image_2d_idx;
+	int radar_image_size;
+	float radar_projection_size_mult;
+
+	int aiming_flags;
+	float minimum_convergence_distance;
+	float convergence_distance;
+	vec3d convergence_offset;
 } ship_info;
 
 extern int Num_wings;

@@ -874,7 +874,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	ai_info	*aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
 	sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 
-	if ((sip->flags & SIF_SMALL_SHIP) && (aip->target_objnum != -1)) {
+	if ((Ship_types[sip->class_type].ship_bools & STI_TURRET_TGT_SHIP_TGT) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
@@ -1013,7 +1013,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		//Figure out what point on the ship we want to point the gun at, and store the global location
 		//in enemy_point.
 		vec3d	enemy_point;
-		if (ss->targeted_subsys != NULL) {
+		if ((ss->targeted_subsys != NULL) && !(ss->system_info->flags & MSS_FLAG_NO_SS_TARGETING)) {
 			if (ss->turret_enemy_objnum != -1) {
 				vm_vec_unrotate(&enemy_point, &ss->targeted_subsys->system_info->pnt, &Objects[ss->turret_enemy_objnum].orient);
 				vm_vec_add2(&enemy_point, &Objects[ss->turret_enemy_objnum].pos);
@@ -1314,9 +1314,22 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	weapon_info *wip;
 	weapon *wp;
 	object *objp;
+	bool last_shot_in_salvo = true;
+
+	if (turret->system_info->flags & MSS_FLAG_TURRET_SALVO)
+	{
+		if ((turret->turret_next_fire_pos + 1) == (turret->system_info->turret_num_firing_points))
+		{
+			last_shot_in_salvo = true;
+		}
+		else
+		{
+			last_shot_in_salvo = false;
+		}
+	}
 
 	//WMC - Limit firing to firestamp
-	if(!timestamp_elapsed(get_turret_weapon_next_fire_stamp(&turret->weapons, weapon_num)))
+	if((!timestamp_elapsed(get_turret_weapon_next_fire_stamp(&turret->weapons, weapon_num))) && last_shot_in_salvo)
 		return false;
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
@@ -1329,7 +1342,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		turret->turret_last_fire_direction = *turret_fvec;
 
 		// set next fire timestamp for the turret
-		turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
+		if (last_shot_in_salvo)
+			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
 		// if this weapon is a beam weapon, handle it specially
 		if (wip->wi_flags & WIF_BEAM) {
@@ -1359,7 +1373,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// don't fire swam, but set up swarm info instead
 		else if (wip->wi_flags & WIF_SWARM) {
-			turret_swarm_set_up_info(parent_objnum, turret, wip);
+			turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
 
 			return true;
 		}
@@ -1430,7 +1444,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 	}
 	//Not useful -WMC
-	else if (!(The_mission.ai_profile->flags & AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY))
+	else if (!(The_mission.ai_profile->flags & AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY) && last_shot_in_salvo)
 	{
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
@@ -1450,6 +1464,10 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	if (Objects[tsi->parent_objnum].type != OBJ_SHIP) {
 		return;
 	}
+	
+	//	if fixed fp make sure to use constant fp
+	if (tsi->turret->system_info->flags & MSS_FLAG_TURRET_FIXED_FP)
+		tsi->turret->turret_next_fire_pos = tsi->weapon_num;
 
 	//	change firing point
 	ship_get_global_turret_gun_info(&Objects[tsi->parent_objnum], tsi->turret, &turret_pos, &turret_fvec, 1, NULL);
@@ -1518,6 +1536,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	vec3d	predicted_enemy_pos = vmd_zero_vector;
 	object	*objp;
 	//ai_info	*aip;
+
+	// Reset the points to target value
+	tp->points_to_target = -1.0f;
+	tp->base_rotation_rate_pct = 0.0f;
+	tp->gun_rotation_rate_pct = 0.0f;
 
 	if (!Ai_firing_enabled) {
 		return;
@@ -1608,6 +1631,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	int use_angles = aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
 
+	if ((tp->flags & MSS_FLAG_FIRE_ON_TARGET) && (tp->points_to_target >= 0.0f))
+	{
+		// value probably needs tweaking... could perhaps be made into table option?
+		if (tp->points_to_target > 0.010f)
+			return;
+	}
+
 	if ( !timestamp_elapsed(ss->turret_next_fire_stamp) ) {
 		return;
 	}
@@ -1662,7 +1692,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		}
 
 		//If this is a spawning type weapon, shoot it!
-		if ( wip->wi_flags & WIF_SPAWN )
+		//If 'smart spawn' just use it like normal weapons
+		if ( (wip->wi_flags & WIF_SPAWN) && !(wip->wi_flags2 & WIF2_SMART_SPAWN) )
 		{
 			if (( num_ships_nearby >= 3 ) || ((num_ships_nearby >= 2) && (frand() < 0.1f))) {
 				turret_fire_weapon(i, ss, parent_objnum, &gpos, &ss->turret_last_fire_direction);
@@ -1773,7 +1804,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		if (ss->turret_enemy_objnum != -1) {
 			float	dot = 1.0f;
 			lep = &Objects[ss->turret_enemy_objnum];
-			if ( lep->type == OBJ_SHIP ) {
+			if (( lep->type == OBJ_SHIP ) && !(ss->system_info->flags & MSS_FLAG_NO_SS_TARGETING)) {
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, lep, &dot);				
 			}
 			ss->turret_next_enemy_check_stamp = timestamp((int) (MAX(dot, 0.5f)*2000.0f) + 1000);
@@ -1832,19 +1863,54 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	if (dot > tp->turret_fov ) {
 		// We're ready to fire... now get down to specifics, like where is the
 		// actual gun point and normal, not just the one for whole turret.
-		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
-		ss->turret_next_fire_pos++;
 
-		// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
-		vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
-		dist_to_enemy = vm_vec_normalize(&v2e);
-		dot = vm_vec_dot(&v2e, &gvec);
-
-		for(i = 0; i < num_valid; i++)
+		// Do salvo thing separately - to prevent messing up things
+		int number_of_firings;
+		if (tp->flags & MSS_FLAG_TURRET_SALVO)
 		{
-			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
-			tv2e = v2e;
+			number_of_firings = tp->turret_num_firing_points;
+			ss->turret_next_fire_pos = 0;
+		}
+		else
+		{
+			number_of_firings = num_valid;
+		}
 
+		for(i = 0; i < number_of_firings; i++)
+		{
+			if (tp->flags & MSS_FLAG_TURRET_FIXED_FP)
+			{
+				int ffp_pos = 0;
+				int ffp_bank;
+				
+				ffp_bank = valid_weapons[i];
+
+				if (ffp_bank < MAX_SHIP_PRIMARY_BANKS)
+				{
+					ffp_pos = ffp_bank;
+				}
+				else
+				{
+					ffp_pos = ffp_bank - MAX_SHIP_PRIMARY_BANKS + ss->weapons.num_primary_banks;
+				}
+
+				ss->turret_next_fire_pos = ffp_pos;
+			}
+
+			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+							
+			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
+			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
+			dist_to_enemy = vm_vec_normalize(&v2e);
+			dot = vm_vec_dot(&v2e, &gvec);
+
+			if (tp->flags & MSS_FLAG_TURRET_SALVO)
+				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[0]);
+			else
+				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
+
+			tv2e = v2e;
+	
 			// make sure to reset this for current weapon
 			ok_to_fire = false;
 
@@ -1900,12 +1966,10 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					ok_to_fire = true;
 				}
 			}
-
 			if ( ok_to_fire && (tp->flags & MSS_FLAG_TURRET_HULL_CHECK) ) {
 				int model_num = Ship_info[shipp->ship_info_index].model_num;
 				mc_info hull_check;
 				vec3d end;
-
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
 				hull_check.model_num = model_num;
@@ -1926,8 +1990,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				Num_turrets_fired++;
 				
 				//Pass along which gun we are using
-				turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+				if (tp->flags & MSS_FLAG_TURRET_SALVO)
+					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+				else
+					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 			}
+
+			ss->turret_next_fire_pos++;
 		}
 
 		if(!something_was_ok_to_fire)

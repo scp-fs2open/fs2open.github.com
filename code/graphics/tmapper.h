@@ -222,7 +222,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 // Add any entries that don't work for software under here:
 // Make sure to disable them at top of grx_tmapper
 #define TMAP_FLAG_ALPHA				(1<<8)	// Has an alpha component
-#define TMAP_FLAG_NONDARKENING		(1<<9)	// RGB=255,255,255 doesn't darken
+#define TMAP_FLAG_NONDARKENING		(1<<16)	// RGB=255,255,255 doesn't darken
 
 // Interface specific stuff (for separate filtering, sizing, etc.), replaces old TMAP_FLAG_BITMAP_SECTION 
 #define TMAP_FLAG_INTERFACE			(1<<10)
@@ -237,6 +237,9 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 //tristrips, for trails mostly, might find other uses eventualy
 #define TMAP_FLAG_TRISTRIP			(1<<14)
 #define TMAP_FLAG_TRILIST			(1<<15)
+
+// use greyscale texture
+#define TMAP_FLAG_BW_TEXTURE		(1<<9)
 
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2

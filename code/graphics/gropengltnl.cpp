@@ -1196,13 +1196,15 @@ void gr_opengl_end_2d_matrix()
 	GL_htl_2d_matrix_depth = 0;
 }
 
+static bool GL_scale_matrix_set = false;
+
 void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 {
-	if (Cmdline_nohtl)
-		return;
-
-	Assert(GL_htl_projection_matrix_set);
-	Assert(GL_htl_view_matrix_set);
+   if (GL_scale_matrix_set) 
+   {
+      Int3();
+      return;
+   }
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -1214,11 +1216,11 @@ void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 
 void gr_opengl_pop_scale_matrix()
 {
-	if (Cmdline_nohtl)
-		return;
-
-	Assert(GL_htl_projection_matrix_set);
-	Assert(GL_htl_view_matrix_set);
+   if (GL_scale_matrix_set) 
+   {
+      Int3();
+      return;
+   }
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();

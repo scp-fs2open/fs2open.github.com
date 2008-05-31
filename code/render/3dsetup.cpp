@@ -258,7 +258,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 //Uncomment this to figure out who called g3_start_frame without calling g3_end_frame.
 
-//	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
+	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
 
  	Assert( G3_count == 0 );
 	G3_count++;

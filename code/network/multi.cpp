@@ -1183,6 +1183,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_change_iff_packet(data, header_info);
 			break;
 
+		case CHANGE_IFF_COLOR:
+			process_change_iff_color_packet(data, header_info);
+			break;
+
 		case CHANGE_AI_CLASS:
 			process_change_ai_class_packet(data, header_info);
 			break;

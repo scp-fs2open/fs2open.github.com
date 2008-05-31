@@ -43,6 +43,8 @@
 #include "globalincs/globals.h"
 #include "graphics/2d.h"
 
+struct object;
+
 
 
 // Goober5000 - new IFF color system
@@ -94,6 +96,8 @@ extern iff_info Iff_info[MAX_IFFS];
 
 extern int Iff_traitor;
 
+// radar blip stuff
+extern int radar_iff_color[5][2][4];
 
 // load the iff table
 extern void iff_init();
@@ -103,8 +107,10 @@ extern int iff_lookup(char *iff_name);
 
 // color stuff
 extern int iff_get_alpha_value(bool is_bright);
+extern int iff_init_color(int r, int g, int b);
 extern color *iff_get_color(int color_index, int is_bright);
 extern color *iff_get_color_by_team(int team, int seen_from_team, int is_bright);
+extern color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp);
 
 // attack stuff
 // NB: As far as the differences between I attack him and he attacks me, think of a hidden traitor on your own team.
@@ -116,6 +122,5 @@ extern int iff_x_attacks_y(int team_x, int team_y);
 // mask stuff
 extern int iff_get_mask(int team);
 extern int iff_matches_mask(int team, int mask);
-
 
 #endif

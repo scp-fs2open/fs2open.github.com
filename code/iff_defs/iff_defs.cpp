@@ -73,6 +73,10 @@ iff_info Iff_info[MAX_IFFS];
 
 int Iff_traitor;
 
+int radar_iff_color[5][2][4];
+int iff_bright_delta;
+int *iff_color_brightness = &iff_bright_delta;
+
 // global only to file
 color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
 
@@ -80,8 +84,6 @@ color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regul
 // borrowed from ship.cpp, ship_iff_init_colors
 int iff_get_alpha_value(bool is_bright)
 {
-	int iff_bright_delta = 4;
-
 	if (is_bright == false)
 		return (HUD_COLOR_ALPHA_MAX - iff_bright_delta) * 16;
 	else 
@@ -173,14 +175,6 @@ void iff_init()
 		read_file_text_from_array(defaults_get_file("iff_defs.tbl"));
 
 	reset_parse();	
-	
-
-	// before parsing, set up the predefined colors
-	// NOTE: THESE MUST OCCUR IN THE ORDER DEFINED IN IFF_DEFS.H!!
-	iff_init_color(0xff, 0xff, 0xff);	// IFF_COLOR_SELECTION
-	iff_init_color(0x7f, 0x7f, 0x7f);	// IFF_COLOR_MESSAGE
-	iff_init_color(0xff, 0xff, 0x00);	// IFF_COLOR_TAGGED
-
 
 	// parse the table --------------------------------------------------------
 
@@ -189,6 +183,162 @@ void iff_init()
 	// get the traitor
 	required_string("$Traitor IFF:");
 	stuff_string(traitor_name, F_NAME, NAME_LENGTH);
+	
+	// before parsing any further... Wanderer
+	// before parsing, set up the predefined colors
+	// NOTE: THESE MUST OCCUR IN THE ORDER DEFINED IN IFF_DEFS.H!!
+	// iff_init_color(0xff, 0xff, 0xff);	// IFF_COLOR_SELECTION
+	// iff_init_color(0x7f, 0x7f, 0x7f);	// IFF_COLOR_MESSAGE
+	// iff_init_color(0xff, 0xff, 0x00);	// IFF_COLOR_TAGGED
+
+	int rgb[3];
+
+	// check if alternate colours are wanted to be used for these
+	// Marks various stuff... like asteroids
+	if ((optional_string("$Selection Color:")) || (optional_string("$Selection Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		iff_init_color(rgb[0], rgb[1], rgb[2]);
+	}
+	else
+		iff_init_color(0xff, 0xff, 0xff);
+
+	// Marks the ship currently saying something
+	if ((optional_string("$Message Color:")) || (optional_string("$Message Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		iff_init_color(rgb[0], rgb[1], rgb[2]);
+	}
+	else
+		iff_init_color(0x7f, 0x7f, 0x7f);
+
+	// Marks the tagged ships
+	if ((optional_string("$Tagged Color:")) || (optional_string("$Tagged Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		iff_init_color(rgb[0], rgb[1], rgb[2]);
+	}
+	else
+		iff_init_color(0xff, 0xff, 0x00);
+
+
+	// init radar blips colour table
+	int i,j,k,a_bright,a_dim;
+	bool alternate_blip_color;
+	for (i=0;i<5;i++)
+	{
+		for (j=0;j<2;j++)
+		{
+			for (k=0;k<3;k++)
+			{
+				radar_iff_color[i][j][k] = -1;
+			}
+		}
+	}
+	
+	// if the bright/dim scaling is wanted to be changed
+	if (optional_string("$Dimmed IFF brightness:"))
+	{
+		int dim_iff_brightness;
+		stuff_int(&dim_iff_brightness);
+		Assert(dim_iff_brightness >= 0 && dim_iff_brightness <= HUD_COLOR_ALPHA_MAX);
+		*iff_color_brightness = dim_iff_brightness;
+	}
+	else
+		*iff_color_brightness = 4;
+
+	// alternate = use same method as with ship blips
+	// retail = use 1/2 intensities
+	if (optional_string("$Use Alternate Blip Coloring:"))
+	{
+		stuff_boolean(&alternate_blip_color);
+	}
+
+	// Parse blip colours, their order is hardcoded.
+	if ((optional_string("$Missile Blip Color:")) || (optional_string("$Missile Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[0][1][i] = rgb[i];
+			radar_iff_color[0][0][i] = rgb[i]/2;
+		}
+	}		
+
+	if ((optional_string("$Navbuoy Blip Color:")) || (optional_string("$Navbuoy Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[1][1][i] = rgb[i];
+			radar_iff_color[1][0][i] = rgb[i]/2;
+		}
+	}
+
+	if ((optional_string("$Warping Blip Color:")) || (optional_string("$Warping Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[2][1][i] = rgb[i];
+			radar_iff_color[2][0][i] = rgb[i]/2;
+		}
+	}
+
+	if ((optional_string("$Node Blip Color:")) || (optional_string("$Node Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[3][1][i] = rgb[i];
+			radar_iff_color[3][0][i] = rgb[i]/2;
+		}
+	}
+
+	if ((optional_string("$Tagged Blip Color:")) || (optional_string("$Tagged Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[4][1][i] = rgb[i];
+			radar_iff_color[4][0][i] = rgb[i]/2;
+		}
+	}
+
+	if (alternate_blip_color == true)
+	{
+		a_bright = iff_get_alpha_value(true);
+		a_dim = iff_get_alpha_value(false);
+		for (i=0;i<5;i++)
+		{
+			if (radar_iff_color[i][0][0] >= 0)
+			{
+				for (j=0;j<3;j++)
+				{
+					radar_iff_color[i][0][j] = radar_iff_color[i][1][j];
+				}
+
+				radar_iff_color[i][1][3] = a_bright;
+				radar_iff_color[i][0][3] = a_dim;
+			}
+		}
+	}
+	else
+	{
+		for (i=0;i<5;i++)
+		{
+			if (radar_iff_color[i][0][0] >= 0)
+			{
+				radar_iff_color[i][0][3] = 255;
+				radar_iff_color[i][1][3] = 255;
+			}
+		}
+	}
 
 	// begin reading data
 	Num_iffs = 0;
@@ -507,6 +657,50 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 
 	// assume an observed color is defined; if not, use normal color
 	int color_index = Iff_info[seen_from_team].observed_color_index[team];
+	if (color_index < 0)
+		color_index = Iff_info[team].color_index;
+
+
+	return &Iff_colors[color_index][is_bright];
+}
+
+// get the color index, taking objective vs. subjective into account
+// this one for the function calls that include some - any - of object
+color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp)
+{
+	Assert(team >= 0 && team < Num_iffs);
+	Assert(seen_from_team < Num_iffs);
+	Assert(is_bright == 0 || is_bright == 1);
+
+	int alt_color_index = -1;
+
+
+	// is this guy being seen by anyone?
+	if (seen_from_team < 0)
+		return &Iff_colors[Iff_info[team].color_index][is_bright];
+
+	int color_index = Iff_info[seen_from_team].observed_color_index[team];
+
+	// switch incase some sort of parent iff color inheritance for example for bombs is wanted...
+	switch(objp->type)
+	{
+		case OBJ_SHIP:
+			if (Ships[objp->instance].ship_iff_color[seen_from_team][team] >= 0)
+			{
+				alt_color_index = Ships[objp->instance].ship_iff_color[seen_from_team][team];
+			}
+			else
+			{
+				alt_color_index = Ship_info[Ships[objp->instance].ship_info_index].ship_iff_info[seen_from_team][team];
+			}
+			break;
+		default:
+			break;
+	}
+
+	// temporary solution.... 
+	if (alt_color_index >= 0)
+		color_index = alt_color_index;
 	if (color_index < 0)
 		color_index = Iff_info[team].color_index;
 

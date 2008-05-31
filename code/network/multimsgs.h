@@ -717,6 +717,10 @@ void process_reinforcement_avail( ubyte *data, header *hinfo );
 void send_change_iff_packet(ushort net_signature, int new_team);
 void process_change_iff_packet( ubyte *data, header *hinfo );
 
+// change iff color stuff
+void send_change_iff_color_packet(ushort net_signature, int observer_team, int observed_team, int alternate_iff_color);
+void process_change_iff_color_packet( ubyte *data, header *hinfo );
+
 // change ai class stuff
 void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class);
 void process_change_ai_class_packet( ubyte *data, header *hinfo );

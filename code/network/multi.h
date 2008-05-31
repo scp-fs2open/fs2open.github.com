@@ -599,6 +599,7 @@ extern int Om_tracker_flag;
 												// for both ships and subsystems
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
+#define CHANGE_IFF_COLOR			0xF2		// Wanderer - change iff color
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

@@ -1656,6 +1656,10 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else if (!stricmp(NOX("training"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TRAINING;
+		else if (!stricmp(NOX("smart spawn"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SMART_SPAWN;
+		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -1694,6 +1698,16 @@ void parse_wi_flags(weapon_info *weaponp)
 	if ((weaponp->wi_flags2 & WIF2_SMALL_ONLY) && (weaponp->wi_flags & WIF_HUGE))
 	{
 		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
+	}
+
+	if (!(weaponp->wi_flags & WIF_SPAWN) && (weaponp->wi_flags2 & WIF2_SMART_SPAWN))
+	{
+		Warning(LOCATION,"\"smart spawn\" flag used without \"spawn\" flag in %s\n",weaponp->name);
+	}
+
+	if ((weaponp->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (!(weaponp->wi_flags & WIF_CHILD)))
+	{
+		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
 	}
 
 }
@@ -1846,6 +1860,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->swarm_count = -1;
 	// *Default is 150  -Et1
 	wip->SwarmWait = SWARM_MISSILE_DELAY;
+	wip->swarm_burst = false;
 	
 	wip->launch_snd = -1;
 	wip->impact_snd = -1;
@@ -2489,6 +2504,9 @@ int parse_weapon(int subtype, bool replace)
 			wip->SwarmWait = int( SwarmWait * 1000 );
 		}
 	}
+
+	if((wip->wi_flags & WIF_SWARM) && optional_string( "+No Swarming Movement:" ))
+		stuff_boolean(&wip->swarm_burst);
 
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
@@ -5226,7 +5244,7 @@ void weapon_process_post(object * obj, float frame_time)
 */		
 		// If this is a swarm type missile, 
 //		if ( wip->wi_flags & WIF_SWARM ) 
-		if ( wp->swarm_index >= 0 ) {
+		if (( wp->swarm_index >= 0 ) && (wip->swarm_burst == false)) {
 			swarm_update_direction(obj, frame_time);
 		}
 
@@ -5782,7 +5800,7 @@ void spawn_child_weapons(object *objp)
 	int	parent_num;
 	ushort starting_sig;
 	weapon	*wp;
-	weapon_info	*wip;
+	weapon_info	*wip, *child_wip;
 
 	Assert(objp->type == OBJ_WEAPON);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
@@ -5817,6 +5835,7 @@ void spawn_child_weapons(object *objp)
 		    matrix	orient;
 
             child_id = wip->spawn_info[i].spawn_type;
+			child_wip = &Weapon_info[child_id];
 
 		    // for multiplayer, use the static randvec functions based on the network signatures to provide
 		    // the randomness so that it is the same on all machines.
@@ -5829,6 +5848,12 @@ void spawn_child_weapons(object *objp)
 
 		    vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
 		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+
+			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
+			if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
+			{
+				weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+			}
 
     		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
 		    if (weapon_objnum != -1) {

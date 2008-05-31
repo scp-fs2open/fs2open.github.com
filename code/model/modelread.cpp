@@ -4568,12 +4568,46 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	//------------	
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
+	float base_delta, gun_delta;
 
-	vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
-	vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
+	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
+
+	if (turret->turret_base_rotation_snd != -1)	
+	{
+		if (step_size > 0)
+		{
+			base_delta = (float) (fabs(base_delta)) / step_size;
+			if (base_delta > 1.0f)
+				base_delta = 1.0f;
+			turret->base_rotation_rate_pct = base_delta;
+		} else {
+		turret->base_rotation_rate_pct = 0.0f;
+		}
+	}
+
+	if (turret->turret_gun_rotation_snd != -1)
+	{
+		if (step_size > 0)
+		{
+			gun_delta = (float) (fabs(gun_delta)) / step_size;
+			if (gun_delta > 1.0f)
+				gun_delta = 1.0f;
+			turret->gun_rotation_rate_pct = gun_delta;
+		} else {
+		turret->gun_rotation_rate_pct = 0.0f;
+		}
+	}
 
 //	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
 //	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
+
+	if (turret->flags & MSS_FLAG_FIRE_ON_TARGET)
+	{
+		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
+		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
+		turret->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
+	}
 
 	return 1;
 

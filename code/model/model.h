@@ -766,6 +766,16 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
 #define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
 #define MSS_FLAG_TURRET_HULL_CHECK	(1 << 12)		// makes the turret check to see if it's going to shoot through it's own hull before fireing - Bobboau
+#define MSS_FLAG_TURRET_FIXED_FP	(1 << 13)		// forces turret (when defined with multiple weapons) to prevent the firepoints from alternating
+#define MSS_FLAG_TURRET_SALVO		(1 << 14)		// forces turret to fire salvos (all guns simultaneously) - independent targeting
+#define MSS_FLAG_FIRE_ON_TARGET		(1 << 15)		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
+#define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
+
+
+#define SSF_ALIVE					(1 << 0)		// subsystem has active alive sound
+#define SSF_DEAD					(1 << 1)		// subsystem has active dead sound
+#define SSF_ROTATE					(1 << 2)		// subsystem has active rotation sound
+#define SSF_TURRET_ROTATION			(1 << 3)		// rotation sound to be scaled like turrets do
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -812,7 +822,10 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_rotation_snd;				// Sound to make when the turret moves
+	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
+	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
 
 	//Sound stuff
 	int		alive_snd;		//Sound to make while the subsystem is not-dead
@@ -843,6 +856,11 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
+	float points_to_target;
+	float base_rotation_rate_pct;
+	float gun_rotation_rate_pct;
+
+	int subsys_snd_flags;
 } model_subsystem;
 
 typedef struct model_special {

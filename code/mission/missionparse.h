@@ -581,6 +581,7 @@
 #include <setjmp.h>
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
+#include "iff_defs/iff_defs.h"
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
@@ -898,6 +899,8 @@ typedef struct p_object {
 	// Goober5000
 	int num_texture_replacements;
 	texture_replace replacement_textures[MAX_MODEL_TEXTURES];	// replacement textures - Goober5000
+
+	int alt_iff_color[MAX_IFFS][MAX_IFFS];
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
@@ -1079,4 +1082,8 @@ void swap_parse_object(p_object *p_obj, int ship_class);
 subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name);
 
 #endif
+
+
+
+
 

@@ -172,6 +172,8 @@ extern int Radar_static_looping;					// id for looping radar static sound
 
 extern hud_frames Radar_gauge;
 
+extern int radar_iff_color[5][2][4];
+
 vec3d orb_ring_yz[25];
 vec3d orb_ring_xy[25];
 vec3d orb_ring_xz[25];
@@ -204,7 +206,16 @@ void radar_init_orb()
 
 	for (i=0; i<MAX_RADAR_COLORS; i++ )	{
 		for (j=0; j<MAX_RADAR_LEVELS; j++ )	{
-			gr_init_alphacolor( &Radar_colors[i][j], Radar_color_rgb[i][j].r, Radar_color_rgb[i][j].g, Radar_color_rgb[i][j].b, 255 );
+			{
+				if (radar_iff_color[i][j][0] >= 0)
+				{
+					gr_init_alphacolor( &Radar_colors[i][j], radar_iff_color[i][j][0], radar_iff_color[i][j][1], radar_iff_color[i][j][2], radar_iff_color[i][j][3] );
+				}
+				else
+				{
+					gr_init_alphacolor( &Radar_colors[i][j], Radar_color_rgb[i][j].r, Radar_color_rgb[i][j].g, Radar_color_rgb[i][j].b, 255 );
+				}
+			}
 		}
 	}
 
@@ -260,7 +271,7 @@ void radar_stuff_blip_info_orb(object *objp, int is_bright, color **blip_color, 
 			}
 			else
 			{
-				*blip_color = iff_get_color_by_team(shipp->team, Player_ship->team, is_bright);
+				*blip_color = iff_get_color_by_team_and_object(shipp->team, Player_ship->team, is_bright, objp);
 				*blip_type = BLIP_TYPE_NORMAL_SHIP;
 			}
 
@@ -438,6 +449,8 @@ void radar_plot_object_orb( object *objp )
 //	b->x = xpos;
 //	b->y = ypos;
 	b->position = pos;
+	b->radar_image_2d = -1;
+	b->radar_projection_size = 1.0f;
 
 	// see if blip should be drawn distorted
 	if (objp->type == OBJ_SHIP)
@@ -449,6 +462,14 @@ void radar_plot_object_orb( object *objp )
 		// determine if its AWACS distorted
 		if (awacs_level < 1.0f)
 			b->flags |= BLIP_DRAW_DISTORTED;
+
+		ship_info Iff_ship_info = Ship_info[Ships[objp->instance].ship_info_index];
+
+		if (Iff_ship_info.radar_image_2d_idx >= 0)
+		{
+			b->radar_image_2d = Iff_ship_info.radar_image_2d_idx;
+			b->radar_projection_size = Iff_ship_info.radar_projection_size_mult;
+		}
 	}				
 
 	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
@@ -583,7 +604,10 @@ void radar_blip_draw_distorted_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	radar_orb_draw_contact(&out,b->rad);
+	if (b->radar_image_2d < 0)
+		radar_orb_draw_contact(&out,b->rad);
+	else
+		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -622,7 +646,10 @@ void radar_blip_draw_flicker_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	radar_orb_draw_contact(&out,b->rad);
+	if (b->radar_image_2d < 0)
+		radar_orb_draw_contact(&out,b->rad);
+	else
+		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 }
 
 // Draw all the active radar blips
@@ -671,7 +698,10 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			radar_orb_draw_contact(&b->position,b->rad);
+			if (b->radar_image_2d < 0)
+				radar_orb_draw_contact(&b->position,b->rad);
+			else
+				radar_orb_draw_image(&b->position, b->rad, b->radar_image_2d, b->radar_projection_size);
 		}
 	}
 }
@@ -895,4 +925,43 @@ void radar_blit_gauge_orb()
 void radar_page_in_orb()
 {
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
+}
+
+void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
+{
+	vertex verts[2];
+	vec3d p;
+
+	p=*pnt;
+	vm_vec_normalize(&p);
+
+	g3_rotate_vertex(&verts[0], &p);
+	g3_project_vertex(&verts[0]);
+
+	g3_rotate_vertex(&verts[1], pnt);
+	g3_project_vertex(&verts[1]);
+
+	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+
+	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
+
+	// might need checks unless the targeted blip is always wanted to be larger
+	float radius = (float) Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
+	
+	if (sizef < radius)	
+		sizef = radius;
+
+	//Make so no evil things happen
+	Assert(mult > 0.0f);
+	
+	//modify size according to value from tables
+	sizef *= mult;
+
+	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE;
+	g3_draw_bitmap(&verts[1], 0, sizef/35.0f, tmap_flags, 1.0f);
+
+	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+	{
+		g3_draw_bitmap(&verts[1], 0, sizef/35.0f, tmap_flags, 1.0f);
+	}
 }
