@@ -172,6 +172,8 @@ extern int Radar_static_looping;					// id for looping radar static sound
 
 extern hud_frames Radar_gauge;
 
+extern int Cmdline_nohtl;
+
 vec3d orb_ring_yz[25];
 vec3d orb_ring_xy[25];
 vec3d orb_ring_xz[25];
@@ -556,6 +558,30 @@ void radar_orb_draw_contact(vec3d *pnt, int rad)
 
 }
 
+void radar_orb_draw_contact_htl(vec3d *pnt, int rad)
+{
+	vec3d p;
+
+	p=*pnt;
+
+	vm_vec_normalize(&p);
+
+    float size = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
+	if (size < i2fl(rad))	size = i2fl(rad);
+ 
+	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+	{
+		g3_draw_htl_sphere(pnt,size/100.0f);
+	}
+	else
+	{
+		g3_draw_htl_sphere(pnt,size/300.0f);
+	}
+
+	g3_draw_htl_line(&p,pnt);
+
+}
+
 void radar_draw_circle_orb( int x, int y, int rad )
 {
 	Int3();
@@ -583,7 +609,14 @@ void radar_blip_draw_distorted_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	radar_orb_draw_contact(&out,b->rad);
+    if (Cmdline_nohtl)
+    {
+	    radar_orb_draw_contact(&out,b->rad);
+    }
+    else
+    {
+        radar_orb_draw_contact_htl(&out,b->rad);
+    }
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -622,7 +655,14 @@ void radar_blip_draw_flicker_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	radar_orb_draw_contact(&out,b->rad);
+	if (Cmdline_nohtl)
+    {
+	    radar_orb_draw_contact(&out,b->rad);
+    }
+    else
+    {
+        radar_orb_draw_contact_htl(&out,b->rad);
+    }
 }
 
 // Draw all the active radar blips
@@ -671,8 +711,15 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			radar_orb_draw_contact(&b->position,b->rad);
-		}
+            if (Cmdline_nohtl)
+            {
+                radar_orb_draw_contact(&b->position,b->rad);
+            }
+            else
+            {
+                radar_orb_draw_contact_htl(&b->position,b->rad);
+            }
+        }
 	}
 }
 
@@ -749,6 +796,21 @@ void radar_orb_setup_view()
 	View_zoom=old_zoom;
 }
 
+void radar_orb_setup_view_htl()
+{
+    int w,h;
+	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
+    
+    HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0],
+                 Current_radar_global->Radar_coords[gr_screen.res][1],
+                 w, h);
+
+    gr_set_proj_matrix( .65 * PI_2, float(w)/float(h), 0.001, 5.0);
+	gr_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix );
+
+    gr_zbuffer_set(0);
+}
+
 void radar_orb_done_drawing()
 {
 	g3_done_instance(false);
@@ -756,6 +818,16 @@ void radar_orb_done_drawing()
 	g3_start_frame(0);
 	hud_save_restore_camera_data(0);
 	HUD_reset_clip();
+}
+
+void radar_orb_done_drawing_htl()
+{
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	g3_start_frame(0);
+	hud_save_restore_camera_data(0);
+	HUD_reset_clip();
+    gr_zbuffer_set(1);
 }
 
 void radar_orb_draw_outlines()
@@ -808,6 +880,32 @@ void radar_orb_draw_outlines()
 	g3_done_instance(false);
 }
 
+void radar_orb_draw_outlines_htl()
+{
+	int i;
+
+	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, true);
+	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, true);
+
+	gr_set_color(255,255,255);
+	g3_draw_htl_sphere(&vmd_zero_vector, .05f);
+
+	for (i=1; i < 25; i++)
+	{
+		gr_set_color(192,96,32);
+		g3_draw_htl_line(&orb_ring_xy[i-1],&orb_ring_xy[i]);
+
+        gr_set_color(48,160,96);
+		g3_draw_htl_line(&orb_ring_xz[i-1],&orb_ring_xz[i]);
+
+		gr_set_color(112,16,192);
+		g3_draw_htl_line(&orb_ring_yz[i-1],&orb_ring_yz[i]);
+	}
+
+	g3_done_instance(true);
+    g3_done_instance(true);
+}
+
 void radar_frame_render_orb(float frametime)
 {
 	float	sensors_str;
@@ -847,8 +945,17 @@ void radar_frame_render_orb(float frametime)
 	radar_blit_gauge();
 	radar_draw_range();
 
-	radar_orb_setup_view();
-	radar_orb_draw_outlines();
+    if (Cmdline_nohtl)
+    {
+        radar_orb_setup_view();
+        radar_orb_draw_outlines();
+    }
+    else
+    {
+        radar_orb_setup_view_htl();
+        radar_orb_draw_outlines_htl();
+    }
+	
 
 	if ( timestamp_elapsed(Radar_static_next) ) {
 		Radar_static_playing ^= 1;
@@ -880,7 +987,14 @@ void radar_frame_render_orb(float frametime)
 		}
 	}
 	
-	radar_orb_done_drawing();
+    if (Cmdline_nohtl)
+    {
+	    radar_orb_done_drawing();
+    }
+    else
+    {
+        radar_orb_done_drawing_htl();
+    }
 }
 
 void radar_blit_gauge_orb()
