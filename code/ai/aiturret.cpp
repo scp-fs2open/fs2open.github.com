@@ -1830,18 +1830,20 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	vec3d tv2e;	//so flak can get their jitter without screwing up other guns
 
 	if (dot > tp->turret_fov ) {
-		// We're ready to fire... now get down to specifics, like where is the
-		// actual gun point and normal, not just the one for whole turret.
-		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
-		ss->turret_next_fire_pos++;
-
-		// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
-		vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
-		dist_to_enemy = vm_vec_normalize(&v2e);
-		dot = vm_vec_dot(&v2e, &gvec);
 
 		for(i = 0; i < num_valid; i++)
 		{
+			// We're ready to fire... now get down to specifics, like where is the
+			// actual gun point and normal, not just the one for whole turret.
+			// moved here as if there are two weapons with indentical fire stamps
+			// they would have shared the fire point.
+			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+
+			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
+			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
+			dist_to_enemy = vm_vec_normalize(&v2e);
+			dot = vm_vec_dot(&v2e, &gvec);
+
 			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
 			tv2e = v2e;
 
@@ -1928,6 +1930,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				//Pass along which gun we are using
 				turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 			}
+			// moved this here so we increment the fire pos only after we have fired and not during it
+			ss->turret_next_fire_pos++;
 		}
 
 		if(!something_was_ok_to_fire)
