@@ -687,6 +687,7 @@ typedef struct beam {
 
 	int Beam_muzzle_stamp;
 	vec3d local_pnt;
+	int firingpoint;
 } beam;
 
 beam Beams[MAX_BEAMS];				// all beams
@@ -1007,6 +1008,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->bank = fire_info->bank;
 	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
+	new_item->firingpoint = fire_info->turret->turret_next_fire_pos;
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_secion_frame[i] = 0.0f;
@@ -1532,6 +1534,12 @@ void beam_move_all_pre()
 		b->f_collision_count = 0;
 
 		if ( !physics_paused ) {
+			// make sure to check that firingpoint is still properly set
+			int temp = b->subsys->turret_next_fire_pos;
+
+			if (b->fighter_beam == false)
+				b->subsys->turret_next_fire_pos = b->firingpoint;
+
 			// move the beam
 			switch (b->type)
 			{
@@ -1564,6 +1572,7 @@ void beam_move_all_pre()
 				default :
 					Int3();
 			}
+			b->subsys->turret_next_fire_pos = temp;
 		}
 
 		// next
@@ -2549,8 +2558,15 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	beam_weapon_info *bwi;
 	int skill_level;
 
+	int temp = b->subsys->turret_next_fire_pos;
+
+	if (b->fighter_beam == false)
+		b->subsys->turret_next_fire_pos = b->firingpoint;
+
 	// where the shot is originating from (b->last_start gets filled in)
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, b->fighter_beam);
+
+	b->subsys->turret_next_fire_pos = temp;
 
 	// get a model # to work with
 	model_num = beam_get_model(b->target);	
@@ -2656,6 +2672,11 @@ void beam_aim(beam *b)
 		}	
 	}
 
+	int temp_int = b->subsys->turret_next_fire_pos;
+
+	if (b->fighter_beam == false)
+		b->subsys->turret_next_fire_pos = b->firingpoint;
+
 	// setup our initial shot point and aim direction
 	switch(b->type){
 	case BEAM_TYPE_A:	
@@ -2729,6 +2750,8 @@ void beam_aim(beam *b)
 	default:
 		Int3();
 	}		
+
+	b->subsys->turret_next_fire_pos = temp_int;
 
 	// recalculate object pairs
 	OBJ_RECALC_PAIRS((&Objects[b->objnum]));
