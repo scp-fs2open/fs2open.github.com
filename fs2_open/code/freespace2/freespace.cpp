@@ -4615,9 +4615,9 @@ void game_set_view_clip(float frametime)
 		//Figure out where the bars should be
 		int yborder;
 		if(Cutscene_bar_flags & CUB_CUTSCENE)
-			yborder = fl2i(Cutscene_bars_progress*(gr_screen.max_h/8));
+			yborder = fl2i(Cutscene_bars_progress*(gr_screen.max_h/6));
 		else
-			yborder = gr_screen.max_h/6 - fl2i(Cutscene_bars_progress*(gr_screen.max_h/8));
+			yborder = gr_screen.max_h/6 - fl2i(Cutscene_bars_progress*(gr_screen.max_h/6));
 
 		//Set teh clipping
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
@@ -4626,7 +4626,7 @@ void game_set_view_clip(float frametime)
 	{
 		int yborder = gr_screen.max_h/6;
 
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );	
 	}
 	else {
 		// Set the clip region for normal view
