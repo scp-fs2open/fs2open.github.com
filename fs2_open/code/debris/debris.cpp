@@ -859,6 +859,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->time_started = Missiontime;
 	db->species = Ship_info[shipp->ship_info_index].species;
 	db->next_distance_check = (myrand() % 2000) + 4*DEBRIS_DISTANCE_CHECK_TIME;
+	db->parent_alt_name = shipp->alt_type_index;
 
 	for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 		db->arc_timestamp[i] = timestamp(-1);
