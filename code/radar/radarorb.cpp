@@ -174,9 +174,11 @@ extern hud_frames Radar_gauge;
 
 extern int Cmdline_nohtl;
 
-vec3d orb_ring_yz[25];
-vec3d orb_ring_xy[25];
-vec3d orb_ring_xz[25];
+static const int NUM_ORB_RING_SLICES = 16;
+
+vec3d orb_ring_yz[NUM_ORB_RING_SLICES];
+vec3d orb_ring_xy[NUM_ORB_RING_SLICES];
+vec3d orb_ring_xz[NUM_ORB_RING_SLICES];
 vec3d vec_extents[]=
 {
 	{ { { 1.0f, 0.0f, 0.0f } } },
@@ -186,6 +188,10 @@ vec3d vec_extents[]=
 	{ { { 0.0f, -1.0f, 0.0f } } },
 	{ { { 0.0f, 0.0f, -1.0f } } }
 };
+
+color Orb_color_orange;
+color Orb_color_teal;
+color Orb_color_purple;
 
 //special view matrix to get the orb rotating the correct war
 static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 0.0f,0.0f,-1.0f } } } } } };
@@ -214,10 +220,10 @@ void radar_init_orb()
 	memset(orb_ring_xz, 0, sizeof(orb_ring_xz));
 	memset(orb_ring_yz, 0, sizeof(orb_ring_yz));
 	
-    for (i=0; i < 25; i++)
+    for (i=0; i < NUM_ORB_RING_SLICES; i++)
     {
-        s=(float)sin(float(i*PI)/12.0);
-        c=(float)cos(float(i*PI)/12.0);
+        s=(float)sin(float(i*PI2)/NUM_ORB_RING_SLICES);
+        c=(float)cos(float(i*PI2)/NUM_ORB_RING_SLICES);
 
         orb_ring_xy[i].xyz.x = c;
         orb_ring_xy[i].xyz.y = s;
@@ -228,6 +234,10 @@ void radar_init_orb()
         orb_ring_xz[i].xyz.x = c;
         orb_ring_xz[i].xyz.z = s;
     }
+
+    gr_init_alphacolor(&Orb_color_orange, 192, 96, 32,  192);
+    gr_init_alphacolor(&Orb_color_teal,   48, 160, 96,  192);
+    gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, 192);
 
 	Blip_mutate_id	= 1;
 
@@ -805,7 +815,7 @@ void radar_orb_setup_view_htl()
                  Current_radar_global->Radar_coords[gr_screen.res][1],
                  w, h);
 
-    gr_set_proj_matrix( .65 * PI_2, float(w)/float(h), 0.001, 5.0);
+    gr_set_proj_matrix( .625 * PI_2, float(w)/float(h), 0.001, 5.0);
 	gr_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix );
 
     gr_zbuffer_set(0);
@@ -824,7 +834,6 @@ void radar_orb_done_drawing_htl()
 {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
-	g3_start_frame(0);
 	hud_save_restore_camera_data(0);
 	HUD_reset_clip();
     gr_zbuffer_set(1);
@@ -835,9 +844,9 @@ void radar_orb_draw_outlines()
 	int i;
 	vertex center;
 //	vertex extents[6];
-	vertex proj_orb_lines_xy[25];
-	vertex proj_orb_lines_xz[25];
-	vertex proj_orb_lines_yz[25];
+	vertex proj_orb_lines_xy[NUM_ORB_RING_SLICES];
+	vertex proj_orb_lines_xz[NUM_ORB_RING_SLICES];
+	vertex proj_orb_lines_yz[NUM_ORB_RING_SLICES];
 
 	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
 
@@ -856,7 +865,7 @@ void radar_orb_draw_outlines()
 	g3_project_vertex(&proj_orb_lines_yz[0]);
 	g3_project_vertex(&proj_orb_lines_xz[0]);
 
-	for (i=1; i < 25; i++)
+	for (i=1; i < NUM_ORB_RING_SLICES; i++)
 	{
 		g3_rotate_vertex(&proj_orb_lines_xy[i], &orb_ring_xy[i]);
 		g3_rotate_vertex(&proj_orb_lines_yz[i], &orb_ring_yz[i]);
@@ -880,9 +889,27 @@ void radar_orb_draw_outlines()
 	g3_done_instance(false);
 }
 
+int radar_orb_calc_alpha(vec3d* pt)
+{
+    Assert(pt);
+    Assert(Player_obj);
+
+    vec3d new_pt;
+    vec3d fvec = {0.0f, 1.0f, 0.0f};
+
+    vm_vec_unrotate(&new_pt, pt, &Player_obj->orient);
+    vm_vec_normalize(&new_pt);
+
+    float dot = vm_vec_dotprod(&fvec, &new_pt);
+    float angle = fabs(acos(dot));
+    int alpha = int(angle*192.0f/PI);
+    
+    return alpha;
+}
+
 void radar_orb_draw_outlines_htl()
 {
-	int i;
+	int i, last = NUM_ORB_RING_SLICES - 1;
 
 	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, true);
 	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, true);
@@ -890,17 +917,26 @@ void radar_orb_draw_outlines_htl()
 	gr_set_color(255,255,255);
 	g3_draw_htl_sphere(&vmd_zero_vector, .05f);
 
-	for (i=1; i < 25; i++)
+    gr_set_line_width(2.0f);
+
+	for (i = 0; i < NUM_ORB_RING_SLICES; i++)
 	{
-		gr_set_color(192,96,32);
-		g3_draw_htl_line(&orb_ring_xy[i-1],&orb_ring_xy[i]);
+        gr_init_alphacolor(&Orb_color_orange, 192, 96, 32, radar_orb_calc_alpha(&orb_ring_xy[last]));
+		gr_set_color_fast(&Orb_color_orange);
+		g3_draw_htl_line(&orb_ring_xy[last],&orb_ring_xy[i]);
 
-        gr_set_color(48,160,96);
-		g3_draw_htl_line(&orb_ring_xz[i-1],&orb_ring_xz[i]);
+        gr_init_alphacolor(&Orb_color_teal, 48, 160, 96, radar_orb_calc_alpha(&orb_ring_xz[last]));
+        gr_set_color_fast(&Orb_color_teal);
+		g3_draw_htl_line(&orb_ring_xz[last],&orb_ring_xz[i]);
 
-		gr_set_color(112,16,192);
-		g3_draw_htl_line(&orb_ring_yz[i-1],&orb_ring_yz[i]);
+        gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, radar_orb_calc_alpha(&orb_ring_yz[last]));
+		gr_set_color_fast(&Orb_color_purple);
+		g3_draw_htl_line(&orb_ring_yz[last],&orb_ring_yz[i]);
+
+        last = i;
 	}
+
+    gr_set_line_width(1.0f);
 
 	g3_done_instance(true);
     g3_done_instance(true);

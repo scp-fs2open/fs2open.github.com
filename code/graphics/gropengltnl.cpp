@@ -1316,19 +1316,33 @@ void gr_opengl_set_state_block(int handle)
 	glCallList(handle);
 }
 
+void gr_opengl_set_line_width(float width)
+{
+    glLineWidth(width);
+}
 
 void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 {
-	if (Cmdline_nohtl)
-		return;
+    if (Cmdline_nohtl)
+        return;
 
-	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
-	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, zbuffer_state);
-	glBegin(GL_LINES);
-		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-		glVertex3fv(start->a1d);
-		glVertex3fv(end->a1d);
-	glEnd();
+    gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
+    opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, zbuffer_state);
+
+    glBegin(GL_LINES);
+        if (gr_screen.current_color.is_alphacolor)
+        {
+            glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green,
+                       gr_screen.current_color.blue, gr_screen.current_color.alpha);
+        }
+        else
+        {
+            glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+        }
+
+        glVertex3fv(start->a1d);
+        glVertex3fv(end->a1d);
+    glEnd();
 }
 
 void gr_opengl_draw_htl_sphere(float rad)
