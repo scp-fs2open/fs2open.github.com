@@ -424,6 +424,10 @@ void gr_stub_set_state_block(int handle)
 }
 
 
+void gr_stub_set_line_width(float width)
+{
+}
+
 void gr_stub_draw_htl_line(vec3d *start, vec3d* end)
 {
 }
@@ -791,6 +795,7 @@ void gr_stub_init()
 
 	gr_screen.gf_draw_line_list		= gr_stub_draw_line_list;
 
+    gr_screen.gf_set_line_width     = gr_stub_set_line_width;
 	gr_screen.gf_draw_htl_line		= gr_stub_draw_htl_line;
 	gr_screen.gf_draw_htl_sphere	= gr_stub_draw_htl_sphere;
 }

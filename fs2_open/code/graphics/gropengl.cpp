@@ -4701,6 +4701,7 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_draw_line_list		= gr_opengl_draw_line_list;
 
+    gr_screen.gf_set_line_width     = gr_opengl_set_line_width;
 	gr_screen.gf_draw_htl_line		= gr_opengl_draw_htl_line;
 	gr_screen.gf_draw_htl_sphere	= gr_opengl_draw_htl_sphere;
 
