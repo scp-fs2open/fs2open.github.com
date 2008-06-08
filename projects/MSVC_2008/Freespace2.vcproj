@@ -132,6 +132,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="0"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -160,13 +161,18 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				InlineFunctionExpansion="1"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="false"
+				FloatingPointModel="2"
 				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
@@ -175,7 +181,7 @@
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="2"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -202,6 +208,7 @@
 				GenerateMapFile="true"
 				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
+				LinkTimeCodeGeneration="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="1"
@@ -346,11 +353,11 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\phrases.cfg"
+			RelativePath="..\..\code\sound\phrases.cfg"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
+			RelativePath="..\..\code\freespace2\phrases.cfg"
 			>
 		</File>
 	</Files>
