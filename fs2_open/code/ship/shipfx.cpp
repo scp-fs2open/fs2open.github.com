@@ -2285,15 +2285,25 @@ void shipfx_emit_spark( int n, int sn )
 	//(B)	implement some hackish workaround with the new warpeffect system just for this
 	//		utterly minor and trivial optimization/graphical thing
 	//(C)	Contact me if (A) is REALLY necessary
-	/*
-	if ( shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) {
-		vec3d tmp;
-		vm_vec_sub( &tmp, &outpnt, &shipp->warp_effect_pos );
-		if ( vm_vec_dot( &tmp, &shipp->warp_effect_fvec ) < 0.0f )	{
-			// if in front of warp plane, don't create.
-			create_spark = 0;
-		}
-	}*/
+    //
+    // phreak: Mantis 1676 - Re-enable warpout clipping.
+	
+	if ((shipp->flags & (SF_ARRIVING|SF_DEPART_WARP)) && (shipp->warpout_effect))
+    {
+        vec3d warp_pnt, tmp;
+        matrix warp_orient;
+
+        shipp->warpout_effect->getWarpPosition(&warp_pnt);
+        shipp->warpout_effect->getWarpOrientation(&warp_orient);
+
+        vm_vec_sub( &tmp, &outpnt, &warp_pnt );
+        
+        if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
+        {
+            // if in front of warp plane, don't create.
+            create_spark = 0;
+        }
+	}
 
 	if ( create_spark )	{
 
@@ -4159,6 +4169,16 @@ int WarpEffect::getWarpPosition(vec3d *output)
 	*output = objp->pos;
 	return 1;
 }
+
+int WarpEffect::getWarpOrientation(matrix* output)
+{
+	if(!this->isValid())
+		return 0;
+
+	*output = objp->orient;
+	return 1;
+}
+
 //********************-----CLASS: WE_Default-----********************//
 WE_Default::WE_Default(object *n_objp, int n_direction)
 	:WarpEffect(n_objp, n_direction)
@@ -4437,6 +4457,16 @@ int WE_Default::getWarpPosition(vec3d *output)
 
 	*output = pos;
 	return 1;
+}
+
+int WE_Default::getWarpOrientation(matrix* output)
+{
+    if (!this->isValid())
+    {
+        return 0;
+    }
+
+    vm_vector_2_matrix(output, &fvec, NULL, NULL);
 }
 
 //********************-----CLASS: WE_BTRL-----********************//
@@ -4752,6 +4782,16 @@ int WE_Homeworld::getWarpPosition(vec3d *output)
 
 	*output = pos;
 	return 1;
+}
+
+int WE_Homeworld::getWarpOrientation(matrix* output)
+{
+    if (!this->isValid())
+    {
+        return 0;
+    }
+
+    vm_vector_2_matrix(output, &fvec, NULL, NULL);
 }
 
 //********************-----CLASS: WE_Hyperspace----********************//
