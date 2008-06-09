@@ -583,10 +583,10 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	target_obj = &Objects[turret->turret_enemy_objnum];
 
 	// valid swarm weapon
-	Assert((wip->wi_flags & WIF_SWARM) && (wip->swarm_count > 0));
-	if(!(wip->wi_flags & WIF_SWARM) || (wip->swarm_count <= 0)){
+	Assert(((wip->wi_flags & WIF_SWARM) && (wip->swarm_count > 0)) || ((wip->wi_flags & WIF_CORKSCREW) && (wip->cs_num_fired > 0)));
+
+	if(!((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) || ((wip->wi_flags & WIF_SWARM) && (wip->swarm_count <= 0)) || ((wip->wi_flags & WIF_CORKSCREW) && (wip->cs_num_fired <= 0)))
 		return;
-	}
 
 	// get turret_swarm_info
 	tsi_index = turret_swarm_create();
@@ -620,7 +620,10 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
     */
 	// initialize tsi
 	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
-	tsi->num_to_launch = wip->swarm_count;
+	if (wip->wi_flags & WIF_SWARM)
+		tsi->num_to_launch = wip->swarm_count;
+	else
+		tsi->num_to_launch = wip->cs_num_fired;
 	tsi->parent_objnum = parent_objnum;
 	tsi->parent_sig    = parent_obj->signature;
 	tsi->target_objnum = turret->turret_enemy_objnum;

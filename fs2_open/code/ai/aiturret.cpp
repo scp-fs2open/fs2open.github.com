@@ -1358,7 +1358,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			return true;
 		}
 		// don't fire swam, but set up swarm info instead
-		else if (wip->wi_flags & WIF_SWARM) {
+		else if ((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) {
 			turret_swarm_set_up_info(parent_objnum, turret, wip);
 
 			return true;
@@ -1456,7 +1456,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	tsi->turret->turret_next_fire_pos++;
 
 	//check if this really is a swarm. If not, how the hell did it get here?
-	Assert(Weapon_info[tsi->weapon_class].wi_flags & WIF_SWARM);
+	Assert((Weapon_info[tsi->weapon_class].wi_flags & WIF_SWARM) || (Weapon_info[tsi->weapon_class].wi_flags & WIF_CORKSCREW));
 
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
