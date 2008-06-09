@@ -331,6 +331,7 @@ public:
 
 	//For VM_WARP_CHASE
 	virtual int getWarpPosition(vec3d *output);
+    virtual int getWarpOrientation(matrix *output);
 };
 
 //********************-----CLASS: WE_Default-----********************//
@@ -365,6 +366,7 @@ public:
 	int warpShipRender();
 
 	int getWarpPosition(vec3d *output);
+    int getWarpOrientation(matrix *output);
 };
 
 //********************-----CLASS: WE_BTRL-----********************//
@@ -439,6 +441,7 @@ public:
 	virtual int warpShipRender();
 
 	int getWarpPosition(vec3d *output);
+    int getWarpOrientation(matrix *output);
 };
 
 //********************-----CLASS: WE_Hyperspace----********************//
