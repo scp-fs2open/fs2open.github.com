@@ -4467,6 +4467,7 @@ int WE_Default::getWarpOrientation(matrix* output)
     }
 
     vm_vector_2_matrix(output, &fvec, NULL, NULL);
+    return 1;
 }
 
 //********************-----CLASS: WE_BTRL-----********************//
@@ -4792,6 +4793,7 @@ int WE_Homeworld::getWarpOrientation(matrix* output)
     }
 
     vm_vector_2_matrix(output, &fvec, NULL, NULL);
+    return 1;
 }
 
 //********************-----CLASS: WE_Hyperspace----********************//
