@@ -288,6 +288,7 @@
 #include "network/multimsgs.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
+#include "ship/shipfx.h"
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
@@ -532,6 +533,25 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	//nprintf(("AI", "Frame %i, Hit tri = %i\n", Framecount, mc.shield_hit_tri));
 	ship_model_stop(ship_objp);
+
+    // check if the hit point is beyond the clip plane when warping out.
+    if ((shipp->flags & SF_DEPART_WARP) &&
+        (shipp->warpout_effect) &&
+        (valid_hit_occurred))
+    {
+        vec3d warp_pnt, hit_direction;
+        matrix warp_orient;
+
+        shipp->warpout_effect->getWarpPosition(&warp_pnt);
+        shipp->warpout_effect->getWarpOrientation(&warp_orient);
+
+        vm_vec_sub(&hit_direction, &mc.hit_point_world, &warp_pnt);
+
+        if (vm_vec_dot(&hit_direction, &warp_orient.vec.fvec) < 0.0f)
+        {
+             valid_hit_occurred = false;
+        }
+    }
 
 	// deal with predictive collisions.  Find their actual hit time and see if they occured in current frame
 	if (next_hit && valid_hit_occurred) {
