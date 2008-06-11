@@ -488,7 +488,7 @@ extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d
 //	If truly_random flag set (haha), then generate a pretty random number.  Otherwise, generate a static rand which
 //	tends to not change from frame to frame.
 //	Try four times and choose nearest point to increase chance of getting a good point.
-void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal)
+void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, model_subsystem *tp)
 {
 	float		nearest_dist;
 	vec3d	result_point, best_point;
@@ -542,9 +542,19 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 				vm_vec_add2(&result_point, &objp->pos);
 
 				dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
-				dot = vm_vec_dot(&v2p, attacker_objp_fvec);
+				bool in_fov = false;
+				if (tp == NULL) {
+					dot = vm_vec_dot(&v2p, attacker_objp_fvec);
+					if (dot > fov)
+						in_fov = true;
+				} else {
+					if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
+						in_fov = turret_adv_fov_test(tp, attacker_objp_fvec, &v2p);
+					else
+						in_fov = turret_std_fov_test(tp, attacker_objp_fvec, &v2p);
+				}
 
-				if (dot > fov) {
+				if (in_fov) {
 					if (dist < nearest_dist) {
 						best_index = index;
 						nearest_dist = dist;
@@ -616,7 +626,7 @@ void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos
 	} else {
 		vec3d	local_attack_point;
 		ssp->turret_pick_big_attack_point_timestamp = timestamp(2000 + (int) (frand()*500.0f));
-		ai_bpap(objp, gpos, gvec, attack_point, &local_attack_point, fov, weapon_travel_dist, NULL);
+		ai_bpap(objp, gpos, gvec, attack_point, &local_attack_point, fov, weapon_travel_dist, NULL, ssp->system_info);
 		ssp->turret_big_attack_point = local_attack_point;
 	}
 }
@@ -669,7 +679,7 @@ void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack
 
 	// checks valid line to target
 	vec3d surface_normal;
-	ai_bpap(objp, &attacker_objp->pos, &attacker_objp->orient.vec.fvec, attack_point, &local_attack_point, fov, 99999.9f, &surface_normal);
+	ai_bpap(objp, &attacker_objp->pos, &attacker_objp->orient.vec.fvec, attack_point, &local_attack_point, fov, 99999.9f, &surface_normal, NULL);
 
 	switch (attacker_objp->type) {
 	case OBJ_SHIP: {

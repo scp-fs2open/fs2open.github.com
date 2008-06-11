@@ -770,6 +770,8 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TURRET_SALVO		(1 << 14)		// forces turret to fire salvos (all guns simultaneously) - independent targeting
 #define MSS_FLAG_FIRE_ON_TARGET		(1 << 15)		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 #define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
+#define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
+#define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
 
 
 #define SSF_ALIVE					(1 << 0)		// subsystem has active alive sound
@@ -818,6 +820,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
+	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
+	float	turret_y_fov;						//  turret's base's fov
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
@@ -861,6 +865,9 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float gun_rotation_rate_pct;
 
 	int subsys_snd_flags;
+
+	int      rotation_timestamp;
+	matrix   world_to_turret_matrix;
 } model_subsystem;
 
 typedef struct model_special {
@@ -1409,7 +1416,7 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst);
+extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.

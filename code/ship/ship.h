@@ -2379,6 +2379,11 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 //	dist = distance from turret to center point of object
 int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist);
 
+// functions for testing fov.. returns true if fov test is passed.
+bool turret_std_fov_test(model_subsystem *tp, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_adv_fov_test(model_subsystem *tp, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+
+
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);
 

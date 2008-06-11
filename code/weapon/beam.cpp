@@ -3613,10 +3613,16 @@ int beam_ok_to_fire(beam *b)
 	// if the beam will be firing out of its FOV, power it down
 	vec3d aim_dir, temp;
 	vec3d turret_dir, turret_pos;
+	bool in_fov;
 	vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
-	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
+	if (b->subsys->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
+		in_fov = turret_adv_fov_test(b->subsys->system_info, &turret_dir, &aim_dir);
+	else
+		in_fov = turret_std_fov_test(b->subsys->system_info, &turret_dir, &aim_dir);
+
+	if(in_fov == false){
 		mprintf(("BEAM : powering beam down because of FOV condition!\n"));
 		return 0;
 	}
