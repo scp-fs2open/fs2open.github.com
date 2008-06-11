@@ -2086,7 +2086,6 @@ void ship_select_do(float frametime)
 				Ss_icons[Selected_ss_class].ss_anim_instance = anim_play(&aps);
 			}
 		}
-		gr_reset_clip();
 	}
 
 	ship_select_render(frametime);
