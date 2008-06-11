@@ -3615,8 +3615,11 @@ void weapon_select_do(float frametime)
 			weapon_ani_coords[1],
 			gr_screen.res == 0 ? 202 : 332,
 			gr_screen.res == 0 ? 185 : 304,
-			&WeapSelectScreenWeapRot);
-		gr_reset_clip();
+			&WeapSelectScreenWeapRot,
+			NULL,
+			.65f,
+			REVOLUTION_RATE,
+			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 	}
 
 	if ( !Background_playing ) {		
