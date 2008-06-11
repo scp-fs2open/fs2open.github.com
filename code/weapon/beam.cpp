@@ -1572,9 +1572,7 @@ void beam_move_all_pre()
 				default :
 					Int3();
 			}
-
 			b->subsys->turret_next_fire_pos = temp;
-
 		}
 
 		// next
@@ -2678,7 +2676,7 @@ void beam_aim(beam *b)
 
 	if (b->fighter_beam == false)
 		b->subsys->turret_next_fire_pos = b->firingpoint;
-	
+
 	// setup our initial shot point and aim direction
 	switch(b->type){
 	case BEAM_TYPE_A:	

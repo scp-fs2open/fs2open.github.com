@@ -1372,7 +1372,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			return true;
 		}
 		// don't fire swam, but set up swarm info instead
-		else if (wip->wi_flags & WIF_SWARM) {
+		else if ((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) {
 			turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
 
 			return true;
@@ -1474,7 +1474,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	tsi->turret->turret_next_fire_pos++;
 
 	//check if this really is a swarm. If not, how the hell did it get here?
-	Assert(Weapon_info[tsi->weapon_class].wi_flags & WIF_SWARM);
+	Assert((Weapon_info[tsi->weapon_class].wi_flags & WIF_SWARM) || (Weapon_info[tsi->weapon_class].wi_flags & WIF_CORKSCREW));
 
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
@@ -1909,6 +1909,19 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			else
 				wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
 
+			// We're ready to fire... now get down to specifics, like where is the
+			// actual gun point and normal, not just the one for whole turret.
+			// moved here as if there are two weapons with indentical fire stamps
+			// they would have shared the fire point.
+			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+
+			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
+			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
+			dist_to_enemy = vm_vec_normalize(&v2e);
+			dot = vm_vec_dot(&v2e, &gvec);
+
+			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
+
 			tv2e = v2e;
 	
 			// make sure to reset this for current weapon
@@ -1995,7 +2008,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				else
 					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 			}
-
+			// moved this here so we increment the fire pos only after we have fired and not during it
 			ss->turret_next_fire_pos++;
 		}
 

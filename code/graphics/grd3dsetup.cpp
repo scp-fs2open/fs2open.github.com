@@ -931,6 +931,7 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_end_clip_plane   = gr_d3d_end_clip;
 		gr_screen.gf_setup_background_fog	= gr_d3d_setup_background_fog;
 		gr_screen.gf_draw_line_list			= gr_d3d_draw_line_list;
+        gr_screen.gf_set_line_width = gr_d3d_set_line_width;
 		gr_screen.gf_draw_htl_line = gr_d3d_draw_htl_line;
 		gr_screen.gf_draw_htl_sphere = gr_d3d_draw_htl_sphere;
 //		gr_screen.gf_set_environment_mapping = d3d_render_to_env;

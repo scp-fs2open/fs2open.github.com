@@ -1126,6 +1126,7 @@ typedef struct screen {
 
 	void (*gf_draw_line_list)(colored_vector*lines, int num);
 
+    void (*gf_set_line_width)(float width);
 	void (*gf_draw_htl_line)(vec3d *start, vec3d* end);
 	void (*gf_draw_htl_sphere)(float rad);
 
@@ -1438,6 +1439,7 @@ __inline void gr_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibu
 
 #define gr_draw_line_list GR_CALL	(*gr_screen.gf_draw_line_list)
 
+#define gr_set_line_width GR_CALL(*gr_screen.gf_set_line_width)
 #define gr_draw_htl_line GR_CALL(*gr_screen.gf_draw_htl_line)
 #define gr_draw_htl_sphere GR_CALL(*gr_screen.gf_draw_htl_sphere)
 

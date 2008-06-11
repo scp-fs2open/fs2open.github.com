@@ -1714,7 +1714,11 @@ void hud_render_target_debris(object *target_objp)
 
 	// print out ship class that debris came from
 	char printable_ship_class[NAME_LENGTH];
-	strcpy(printable_ship_class, Ship_info[debrisp->ship_info_index].name);
+	if (debrisp->parent_alt_name >= 0)
+		mission_parse_lookup_alt_index(debrisp->parent_alt_name, printable_ship_class);
+	else
+		strcpy(printable_ship_class, Ship_info[debrisp->ship_info_index].name);
+
 	end_string_at_first_hash_symbol(printable_ship_class);
 
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, printable_ship_class);	
