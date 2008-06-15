@@ -4281,7 +4281,7 @@ int WE_Default::warpStart()
 	fvec = Objects[warp_objnum].orient.vec.fvec;
 	if (portal_objp != NULL)
 	{
-		if (vm_vec_dotprod(&fvec, &objp->orient.vec.fvec) < 0)
+		if (vm_vec_dotprod(&fvec, &objp->orient.vec.fvec) > 0)
 		{
 			vm_vec_negate(&fvec);
 		}
