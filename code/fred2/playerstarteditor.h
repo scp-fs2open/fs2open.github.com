@@ -115,9 +115,15 @@ public:
 	CSpinButtonCtrl	m_spin1;
 	CCheckListBox		m_ship_list;
 	CCheckListBox		m_weapon_list;	
+	CCheckListBox		m_ship_variable_list;
+	CCheckListBox		m_weapon_variable_list;	
 	int					m_delay;	
 	int					m_weapon_pool;
 	int					m_ship_pool;
+	CComboBox			m_ship_quantity_variable;
+	CComboBox			m_weapon_quantity_variable;
+	CStatic				m_ships_used_in_wings;
+	CStatic				m_weapons_used_in_wings;
 	//}}AFX_DATA
 
 
@@ -142,6 +148,10 @@ protected:
 	afx_msg void OnUpdateWeaponPool();
 	void OnCancel();	
 	void OnOK();
+	afx_msg void OnSelchangeShipVariablesList();
+	afx_msg void OnSelchangeWeaponVariablesList();
+	afx_msg void OnSelchangeShipVariablesCombo();
+	afx_msg void OnSelchangeWeaponVariablesCombo();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -151,13 +161,33 @@ private:
 
 	// team we're currently working with
 	int selected_team;
+	int previous_team;		 // The last team we worked with
+
+	bool autobalance; 
 
 	// ship pool info
-	int ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int static_ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];	// Holds the number of ships of a class that was set by the team loadout
+	int dynamic_ship_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];	 
+	int static_ship_variable_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int dynamic_ship_variable_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];
 
 	// weapon pool info
-	int weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+	int static_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];	
+	int dynamic_weapon_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];	 
+	int static_weapon_variable_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+	int dynamic_weapon_variable_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];
+
+	// ship and weapon usage pools
+	int ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
 	// regenerate all controls
 	void reset_controls();
+	int GetSelectedShipListIndex();
+	int GetSelectedShipVariableListIndex();
+	int GetSelectedWeaponListIndex();
+	int GetSelectedWeaponVariableListIndex();
+
+	void UpdateQuantityVariable(CComboBox *variable_list, int pool_value);
+
 };

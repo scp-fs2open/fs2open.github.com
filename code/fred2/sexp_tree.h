@@ -180,6 +180,7 @@ public:
 	int get_tree_name_to_sexp_variable_index(const char *tree_name);
 	int get_modify_variable_type(int parent);
 	int get_variable_count(const char *var_name);
+	int get_loadout_variable_count(int var_index);
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);

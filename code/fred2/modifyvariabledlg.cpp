@@ -83,12 +83,9 @@ void CModifyVariableDlg::OnDeleteVariable()
 		MessageBox("Can not delete variable.  Name has been changed.");
 		return;
 	}
-
-	int num_counts = m_p_sexp_tree->get_variable_count(Sexp_variables[get_sexp_var_index()].variable_name);
-	if (num_counts > 0) {
-		char buffer[256];
-		sprintf(buffer, "Can not delete variable.  Used in %d location(s).", num_counts);
-		MessageBox(buffer);
+	
+	char message[128] = "Can not delete variable.";
+	if (!IsChangeSafe(message))	{
 		return;
 	}
 
@@ -103,19 +100,39 @@ void CModifyVariableDlg::OnDeleteVariable()
 	}
 }
 
+// Karajorma - Checks whether it is safe to delete or modify this string
+bool CModifyVariableDlg::IsChangeSafe(char *message)
+{
+	// Can't as there are SEXPs using it. 
+	int num_counts = m_p_sexp_tree->get_variable_count(Sexp_variables[get_sexp_var_index()].variable_name);
+	if (num_counts > 0) {
+		char buffer[256];
+		sprintf(buffer, "%s Used in %d SEXP(s).", message, num_counts);
+		MessageBox(buffer);
+		return false;
+	}
+	
+	// Can't as it is used in the team loadout
+	num_counts = m_p_sexp_tree->get_loadout_variable_count(get_sexp_var_index());
+	if (num_counts > 0) {
+		char buffer[256];
+		sprintf(buffer, "%s Used in %d location(s) in loadout.", message, num_counts);
+		MessageBox(buffer);
+		return false;
+	}
+
+	return true;
+}
+
 // Set type to string
 void CModifyVariableDlg::OnTypeString() 
 {
 	// check if type actually modified
 	if (m_type_number == true) {
 
-		// Don't allow type change if in use.
-		int num_counts = m_p_sexp_tree->get_variable_count(Sexp_variables[get_sexp_var_index()].variable_name);
-		if (num_counts > 0) {
-			char buffer[256];
-			sprintf(buffer, "Can not modify variable type.  Used in %d location(s).", num_counts);
-			MessageBox(buffer);
-
+		// Don't allow type change if in use.		
+		char message[128] = "Can not modify variable type.";
+		if (!IsChangeSafe(message))	{
 			m_type_number = true;
 			m_modified_type = false;
 			set_variable_type();
@@ -138,14 +155,10 @@ void CModifyVariableDlg::OnTypeNumber()
 {
 	// check if type actually modified
 	if (m_type_number == false) {
-
-		// Don't allow type change if in use.
-		int num_counts = m_p_sexp_tree->get_variable_count(Sexp_variables[get_sexp_var_index()].variable_name);
-		if (num_counts > 0) {
-			char buffer[256];
-			sprintf(buffer, "Can not modify variable type.  Used in %d location(s).", num_counts);
-			MessageBox(buffer);
-
+		
+		// Don't allow type change if in use.			
+		char message[128] = "Can not modify variable type.";
+		if (!IsChangeSafe(message))	{
 			m_type_number = false;
 			m_modified_type = false;
 			set_variable_type();
