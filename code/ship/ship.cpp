@@ -9600,9 +9600,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
 
-	//WMC - set warp effects
-	ship_set_warp_effects(objp, sip);
-
+	if (!Fred_running) {
+		//WMC - set warp effects
+		ship_set_warp_effects(objp, sip);
+	}
 
 	// set the correct hull strength
 	if (Fred_running) {
