@@ -37,6 +37,8 @@
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 
+#include <limits.h>
+
 
 float shield_get_strength(object *objp)
 {

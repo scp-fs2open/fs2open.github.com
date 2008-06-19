@@ -61,6 +61,7 @@
 
 #include <string>
 #include <vector>
+#include <limits.h>
 
 
 #define FS2NETD_DEFAULT_PORT			"12009"

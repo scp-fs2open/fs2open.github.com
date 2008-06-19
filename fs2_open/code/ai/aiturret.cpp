@@ -178,6 +178,9 @@
 #include "iff_defs/iff_defs.h"
 #include "weapon/muzzleflash.h"
 
+#include <limits.h>
+
+
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
 // to target is greater than this, the turret fires.  The smaller

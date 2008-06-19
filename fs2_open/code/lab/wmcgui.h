@@ -54,6 +54,7 @@
 
 #include <string>
 #include <vector>
+#include <limits.h>
 
 //*****************************Low-level abstraction*******************************
 //Lame attempt to keep things from being exceedingly difficult when switching to ferrium
