@@ -1053,6 +1053,7 @@
 #include "globalincs/linklist.h"
 #include "weapon/shockwave.h"
 
+#include <limits.h>
 
 
 float model_radius = 0;
