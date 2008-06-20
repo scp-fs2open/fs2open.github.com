@@ -292,4 +292,46 @@ extern int ai_query_goal_valid( int ship, int ai_goal );
 extern void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate = 1 );
 extern void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int immediate = 1 );
 
+// AI Goal Table Wrapper
+struct aigoal_call_table
+{
+	char*  (*Ai_goal_text) (int goal);
+	void   (*ai_maybe_add_form_goal) (wing *wingp);
+	void   (*ai_post_process_mission) ();
+	int    (*ai_query_goal_valid) (int ship, int ai_goal);
+	void   (*ai_remove_ship_goal) (ai_info *aip, int index);
+	void   (*ai_clear_ship_goals) (ai_info *aip);
+	void   (*ai_clear_wing_goals) (int wingnum);
+	void   (*ai_mission_wing_goal_complete) (int wingnum, ai_goal *remove_goalp);
+	void   (*ai_mission_goal_complete) (ai_info *aip);
+	int    (*ai_get_subsystem_type) (char *subsystem);
+	void   (*ai_goal_purge_invalid_goals) (ai_goal *aigp, ai_goal *goal_list);
+	void   (*ai_goal_purge_all_invalid_goals) (ai_goal *aigp);
+	int    (*ai_goal_find_dockpoint) (int shipnum, int dock_type);
+	void   (*ai_goal_fixup_dockpoints) (ai_info *aip, ai_goal *aigp);
+	void   (*ai_add_goal_sub_player) (int type, int mode, int submode, char *shipname, ai_goal *aigp);
+	int    (*ai_goal_find_empty_slot) (ai_goal *goals, int active_goal);
+	void   (*ai_add_ship_goal_player) (int type, int mode, int submode, char *shipname, ai_info *aip);
+	void   (*ai_add_wing_goal_player) (int type, int mode, int submode, char *shipname, int wingnum);
+	void   (*ai_add_goal_sub_sexp) (int sexp, int type, ai_goal *aigp, char *actor_name);
+	void   (*ai_add_ship_goal_sexp) (int sexp, int type, ai_info *aip);
+	void   (*ai_add_wing_goal_sexp) (int sexp, int type, int wingnum);
+	void   (*ai_add_goal_ship_internal) (ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate);
+	void   (*ai_add_goal_wing_internal) (wing *wingp, int goal_type, char *name, int immediate);
+	void   (*ai_copy_mission_wing_goal) (ai_goal *aigp, ai_info *aip);
+	int    (*ai_mission_goal_achievable) (int objnum, ai_goal *aigp);
+	int    (*ai_goal_priority_compare) (const void *a, const void *b);
+	void   (*prioritize_goals) (int objnum, ai_info *aip);
+	void   (*validate_mission_goals) (int objnum, ai_info *aip);
+	void   (*ai_process_mission_orders) (int objnum, ai_info *aip);
+	void   (*ai_update_goal_references) (ai_goal *goals, int type, char *old_name, char *new_name);
+	int    (*query_referenced_in_ai_goals) (ai_goal *goals, int type, char *name);
+	char*  (*ai_add_dock_name) (char *str);
+};
+
+// Set new pointer to override ai_goal* function calls
+// possibly copying the old function calls first
+
+extern struct aigoal_call_table *aigoal_table;
+
 #endif

@@ -102,6 +102,41 @@ void	ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp);
 void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov=1.0f);
 void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float weapon_travel_dist, float fov=1.0f);
 
+// AI Big Table Wrapper
+
+#include "ship/ship.h"
+
+struct aibig_call_table 
+{
+	void   (*ai_big_evade_ship) ();
+	void   (*ai_big_chase_attack) (ai_info *aip, ship_info *sip, vec3d *enemy_pos, float dist_to_enemy, int modelnum);
+	void   (*ai_big_avoid_ship) ();
+	int    (*ai_big_maybe_follow_subsys_path) (int do_dot_check=1);
+	void   (*ai_bpap) (object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal);
+	void   (*ai_big_pick_attack_point_turret) (object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist);
+	void   (*ai_big_pick_attack_point) (object *objp, object *attacker_objp, vec3d *attack_point, float fov);
+	void   (*ai_big_subsys_path_cleanup) (ai_info *aip);
+	int    (*ai_big_maybe_start_strafe) (ai_info *aip, ship_info *sip);
+	void   (*ai_big_chase_ct) ();
+	void   (*ai_big_maybe_fire_weapons) (float dist_to_enemy, float dot_to_enemy, vec3d *firing_pos, vec3d *enemy_pos, vec3d *enemy_vel);
+	void   (*ai_big_switch_to_chase_mode) (ai_info *aip);
+	int    (*ai_big_strafe_maybe_retreat) (float dist, vec3d *target_pos);
+	void   (*ai_big_chase) ();
+	void   (*ai_big_ship) (object *objp);
+	void   (*ai_big_attack_get_data) (vec3d *enemy_pos, float *dist_to_enemy, float *dot_to_enemy);
+	void   (*ai_big_strafe_attack) ();
+	void   (*ai_big_strafe_avoid) ();
+	void   (*ai_big_strafe_retreat1) ();
+	void   (*ai_big_strafe_retreat2) ();
+	void   (*ai_big_strafe_position) ();
+	void   (*ai_big_strafe) ();
+	int    (*ai_big_maybe_enter_strafe_mode) (object *pl_objp, int weapon_objnum, int consider_target_only);
+	void   (*ai_big_strafe_maybe_attack_turret) (object *ship_objp, object *weapon_objp);
+};
+
+// Set new pointer to override ai_big* function calls
+// possibly copying the old function calls first
+
+extern struct aibig_call_table *aibig_table;
 
 #endif
-

@@ -233,6 +233,71 @@ typedef struct eval_enemy_obj_struct {
 	int			nearest_objnum;
 }	eval_enemy_obj_struct;
 
+// FF 17-06-07
+// AI Turret Table Wrapper
+
+extern struct aiturret_call_table AITurretDefaultTable;
+
+struct aiturret_call_table *aiturret_table = &AITurretDefaultTable;
+
+int    turret_select_best_weapon (ship_subsys *turret, object *target) 
+{
+	return aiturret_table->turret_select_best_weapon(turret, target);
+}
+
+int    valid_turret_enemy (object *objp, object *turret_parent) 
+{
+	return aiturret_table->valid_turret_enemy(objp, turret_parent);
+}
+
+void   evaluate_obj_as_target (object *objp, eval_enemy_obj_struct *eeo) 
+{
+	aiturret_table->evaluate_obj_as_target(objp, eeo);
+}
+
+int    get_nearest_turret_objnum (int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_only_flag, bool small_only_flag, bool tagged_only_flag, bool beam_flag) 
+{
+	return aiturret_table->get_nearest_turret_objnum(turret_parent_objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_only_flag, small_only_flag, tagged_only_flag, beam_flag);
+}
+
+int    find_turret_enemy (ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d *tvec, int current_enemy, float fov) 
+{
+	return aiturret_table->find_turret_enemy(turret_subsys, objnum, tpos, tvec, current_enemy, fov);
+}
+
+int    turret_should_pick_new_target (ship_subsys *turret) 
+{
+	return aiturret_table->turret_should_pick_new_target(turret);
+}
+
+void   turret_set_next_fire_timestamp (int weapon_num, weapon_info *wip, ship_subsys *turret, ai_info *aip) 
+{
+	aiturret_table->turret_set_next_fire_timestamp(weapon_num, wip, turret, aip);
+}
+
+int    turret_should_fire_aspect (ship_subsys *turret, float dot, weapon_info *wip) 
+{
+	return aiturret_table->turret_should_fire_aspect(turret, dot, wip);
+}
+
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f)
+{
+	return aiturret_table->turret_fire_weapon(weapon_num, turret, parent_objnum, turret_pos, turret_fvec, predicted_pos, flak_range_override);
+}
+
+void   turret_swarm_fire_from_turret (turret_swarm_info *tsi) 
+{
+	aiturret_table->turret_swarm_fire_from_turret(tsi);
+}
+
+void   ai_fire_from_turret (ship *shipp, ship_subsys *ss, int parent_objnum) 
+{
+	aiturret_table->ai_fire_from_turret(shipp, ss, parent_objnum);
+}
+
+
+// AI Turret default implementation
+
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
 int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist)
@@ -274,7 +339,7 @@ int bomb_headed_towards_ship(object *bomb_objp, object *ship_objp)
 //Note that all non-negative return values are expressed in
 //what I like to call "widx"s.
 //Returns -1 if unable to find a weapon for the target at all.
-int turret_select_best_weapon(ship_subsys *turret, object *target)
+int aiturret_turret_select_best_weapon(ship_subsys *turret, object *target)
 {
 	//TODO: Fill this out with extraodinary gun-picking algorithms
 	if(turret->weapons.num_primary_banks > 0)
@@ -441,7 +506,7 @@ float longest_turret_weapon_range(ship_weapon *swp)
 // input:	objp				=>	object that turret is considering as an enemy
 //				turret_parent	=>	object index for ship that turret sits on
 //				turret			=>	turret pointer
-int valid_turret_enemy(object *objp, object *turret_parent)
+int aiturret_valid_turret_enemy(object *objp, object *turret_parent)
 {
 	if ( objp == turret_parent ) {
 		return 0;
@@ -505,7 +570,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 }
 
 extern int Player_attacking_enabled;
-void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
+void aiturret_evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 {
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
 	ship		*shipp;
@@ -716,7 +781,7 @@ int is_target_beam_valid(ship_weapon *swp, object *objp)
 //				tpos						=> position of turret (world coords)
 //				tvec						=> forward vector of turret (world coords)
 //				current_enemy			=>	objnum of current turret target
-int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_only_flag, bool small_only_flag, bool tagged_only_flag, bool beam_flag)
+int aiturret_get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_only_flag, bool small_only_flag, bool tagged_only_flag, bool beam_flag)
 {
 	//float					weapon_travel_dist;
 	int					weapon_system_ok;
@@ -857,7 +922,7 @@ DCF_BOOL(use_parent_target, Use_parent_target)
 //				tpos				=> position of turret (world coords)
 //				tvec				=> forward vector of turret (world coords)
 //				current_enemy	=>	objnum of current turret target
-int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d *tvec, int current_enemy, float fov)
+int aiturret_find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d *tvec, int current_enemy, float fov)
 {
 	int					enemy_team_mask, enemy_objnum;
 	model_subsystem	*tp;
@@ -1201,7 +1266,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 }
 
 // return !0 if the specified target should scan for a new target, otherwise return 0
-int turret_should_pick_new_target(ship_subsys *turret)
+int aiturret_turret_should_pick_new_target(ship_subsys *turret)
 {
 //	int target_type;
 
@@ -1224,7 +1289,7 @@ int turret_should_pick_new_target(ship_subsys *turret)
 }
 
 // Set the next fire timestamp for a turret, based on weapon type and ai class
-void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsys *turret, ai_info *aip)
+void aiturret_turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsys *turret, ai_info *aip)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = wip->fire_wait * 1000.0f;
@@ -1280,7 +1345,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 }
 
 // Decide  if a turret should launch an aspect seeking missile
-int turret_should_fire_aspect(ship_subsys *turret, float dot, weapon_info *wip)
+int aiturret_turret_should_fire_aspect(ship_subsys *turret, float dot, weapon_info *wip)
 {
 	if ( (dot > AICODE_TURRET_DUMBFIRE_ANGLE) && (turret->turret_time_enemy_in_range >= MIN(wip->min_lock_time,AICODE_TURRET_MAX_TIME_IN_RANGE)) ) {
 		return 1;
@@ -1304,7 +1369,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 }
 
 // Fire a weapon from a turret
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f)
+bool aiturret_turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f)
 {
 	matrix	turret_orient;
 	int weapon_objnum;
@@ -1439,8 +1504,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	return true;
 }
 
-//void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys)
-void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
+//void aiturret_turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys)
+void aiturret_turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 {
 	int weapon_objnum;
 	matrix turret_orient;
@@ -1504,7 +1569,7 @@ int Num_find_turret_enemy = 0;
 int Num_turrets_fired = 0;
 //	Given a turret tp and its parent parent_objnum, fire from the turret at its enemy.
 extern int Nebula_sec_range;
-void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
+void aiturret_ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 {
 	float		weapon_firing_range;
 
@@ -1975,3 +2040,17 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		ss->turret_time_enemy_in_range = 0.0f;
 	}
 }
+
+struct aiturret_call_table AITurretDefaultTable = {
+	aiturret_turret_select_best_weapon,
+	aiturret_valid_turret_enemy,
+	aiturret_evaluate_obj_as_target,
+	aiturret_get_nearest_turret_objnum,
+	aiturret_find_turret_enemy,
+	aiturret_turret_should_pick_new_target,
+	aiturret_turret_set_next_fire_timestamp,
+	aiturret_turret_should_fire_aspect,
+	aiturret_turret_fire_weapon,
+	aiturret_turret_swarm_fire_from_turret,
+	aiturret_ai_fire_from_turret
+};

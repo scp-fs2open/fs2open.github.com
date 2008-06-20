@@ -772,11 +772,178 @@ ai_goal_list Ai_goal_names[] =
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 
+// FF 04-06-07
+// AI Goal Table Wrapper
+
+extern struct aigoal_call_table AIGoalDefaultTable;
+
+struct aigoal_call_table *aigoal_table = &AIGoalDefaultTable;
+
+char*  Ai_goal_text (int goal) 
+{
+	return aigoal_table->Ai_goal_text(goal); 
+}
+
+void   ai_maybe_add_form_goal (wing *wingp) 
+{
+	aigoal_table->ai_maybe_add_form_goal(wingp); 
+}
+
+void   ai_post_process_mission () 
+{
+	aigoal_table->ai_post_process_mission(); 
+}
+
+int    ai_query_goal_valid (int ship, int ai_goal) 
+{
+	return aigoal_table->ai_query_goal_valid(ship, ai_goal); 
+}
+
+void   ai_remove_ship_goal (ai_info *aip, int index) 
+{
+	aigoal_table->ai_remove_ship_goal(aip, index); 
+}
+
+void   ai_clear_ship_goals (ai_info *aip) 
+{
+	aigoal_table->ai_clear_ship_goals(aip); 
+}
+
+void   ai_clear_wing_goals (int wingnum) 
+{
+	aigoal_table->ai_clear_wing_goals(wingnum); 
+}
+
+void   ai_mission_wing_goal_complete (int wingnum, ai_goal *remove_goalp) 
+{
+	aigoal_table->ai_mission_wing_goal_complete(wingnum, remove_goalp); 
+}
+
+void   ai_mission_goal_complete (ai_info *aip) 
+{
+	aigoal_table->ai_mission_goal_complete(aip); 
+}
+
+int    ai_get_subsystem_type (char *subsystem) 
+{
+	return aigoal_table->ai_get_subsystem_type(subsystem); 
+}
+
+void   ai_goal_purge_invalid_goals (ai_goal *aigp, ai_goal *goal_list) 
+{
+	aigoal_table->ai_goal_purge_invalid_goals(aigp, goal_list); 
+}
+
+void   ai_goal_purge_all_invalid_goals (ai_goal *aigp) 
+{
+	aigoal_table->ai_goal_purge_all_invalid_goals(aigp); 
+}
+
+int    ai_goal_find_dockpoint (int shipnum, int dock_type) 
+{
+	return aigoal_table->ai_goal_find_dockpoint(shipnum, dock_type); 
+}
+
+void   ai_goal_fixup_dockpoints (ai_info *aip, ai_goal *aigp) 
+{
+	aigoal_table->ai_goal_fixup_dockpoints(aip, aigp); 
+}
+
+void   ai_add_goal_sub_player (int type, int mode, int submode, char *shipname, ai_goal *aigp) 
+{
+	aigoal_table->ai_add_goal_sub_player(type, mode, submode, shipname, aigp); 
+}
+
+int    ai_goal_find_empty_slot (ai_goal *goals, int active_goal) 
+{
+	return aigoal_table->ai_goal_find_empty_slot(goals, active_goal); 
+}
+
+void   ai_add_ship_goal_player (int type, int mode, int submode, char *shipname, ai_info *aip) 
+{
+	aigoal_table->ai_add_ship_goal_player(type, mode, submode, shipname, aip); 
+}
+
+void   ai_add_wing_goal_player (int type, int mode, int submode, char *shipname, int wingnum) 
+{
+	aigoal_table->ai_add_wing_goal_player(type, mode, submode, shipname, wingnum); 
+}
+
+void   ai_add_goal_sub_sexp (int sexp, int type, ai_goal *aigp, char *actor_name) 
+{
+	aigoal_table->ai_add_goal_sub_sexp(sexp, type, aigp, actor_name); 
+}
+
+void   ai_add_ship_goal_sexp (int sexp, int type, ai_info *aip) 
+{
+	aigoal_table->ai_add_ship_goal_sexp(sexp, type, aip); 
+}
+
+void   ai_add_wing_goal_sexp (int sexp, int type, int wingnum) 
+{
+	aigoal_table->ai_add_wing_goal_sexp(sexp, type, wingnum); 
+}
+
+void   ai_add_goal_ship_internal (ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate) 
+{
+	aigoal_table->ai_add_goal_ship_internal(aip, goal_type, name, docker_point, dockee_point, immediate); 
+}
+
+void   ai_add_goal_wing_internal (wing *wingp, int goal_type, char *name, int immediate) 
+{
+	aigoal_table->ai_add_goal_wing_internal(wingp, goal_type, name, immediate); 
+}
+
+void   ai_copy_mission_wing_goal (ai_goal *aigp, ai_info *aip) 
+{
+	aigoal_table->ai_copy_mission_wing_goal(aigp, aip); 
+}
+
+int    ai_mission_goal_achievable (int objnum, ai_goal *aigp) 
+{
+	return aigoal_table->ai_mission_goal_achievable(objnum, aigp); 
+}
+
+int    ai_goal_priority_compare (const void *a, const void *b) 
+{
+	return aigoal_table->ai_goal_priority_compare(a, b); 
+}
+
+void   prioritize_goals (int objnum, ai_info *aip) 
+{
+	aigoal_table->prioritize_goals(objnum, aip); 
+}
+
+void   validate_mission_goals (int objnum, ai_info *aip) 
+{
+	aigoal_table->validate_mission_goals(objnum, aip); 
+}
+
+void   ai_process_mission_orders (int objnum, ai_info *aip) 
+{
+	aigoal_table->ai_process_mission_orders(objnum, aip); 
+}
+
+void   ai_update_goal_references (ai_goal *goals, int type, char *old_name, char *new_name) 
+{
+	aigoal_table->ai_update_goal_references(goals, type, old_name, new_name); 
+}
+
+int    query_referenced_in_ai_goals (ai_goal *goals, int type, char *name) 
+{
+	return aigoal_table->query_referenced_in_ai_goals(goals, type, name); 
+}
+
+char*  ai_add_dock_name (char *str) 
+{
+	return aigoal_table->ai_add_dock_name(str); 
+}
+
 // AL 11-17-97: A text description of the AI goals.  This is used for printing out on the
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
 // JAS: Converted to a function in order to externalize the strings
-char *Ai_goal_text(int goal)
+char *aigoal_Ai_goal_text(int goal)
 {
 	switch(goal)	{
 	case 1:
@@ -815,7 +982,7 @@ char *Ai_goal_text(int goal)
 
 // function to maybe add the form on my wing goal for a player's starting wing.  Called when a player wing arrives.
 // Goober5000 - made more generic
-void ai_maybe_add_form_goal( wing *wingp )
+void aigoal_ai_maybe_add_form_goal( wing *wingp )
 {
 	int j;
 	char *wing_leader;
@@ -853,7 +1020,7 @@ void ai_maybe_add_form_goal( wing *wingp )
 	}
 }
 
-void ai_post_process_mission()
+void aigoal_ai_post_process_mission()
 {
 	object *objp;
 
@@ -907,7 +1074,7 @@ void ai_post_process_mission()
 }
 
 // function which determines is a goal is valid for a particular type of ship
-int ai_query_goal_valid( int ship, int ai_goal )
+int aigoal_ai_query_goal_valid( int ship, int ai_goal )
 {
 	int accepted;
 
@@ -930,7 +1097,7 @@ int ai_query_goal_valid( int ship, int ai_goal )
 }
 
 // remove an ai goal from it's list.  Uses the active_goal member as the goal to remove
-void ai_remove_ship_goal( ai_info *aip, int index )
+void aigoal_ai_remove_ship_goal( ai_info *aip, int index )
 {
 	// only need to set the ai_mode for the particular goal to AI_GOAL_NONE
 	// reset ai mode to default behavior.  Might get changed next time through
@@ -950,7 +1117,7 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 	//ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );
 }
 
-void ai_clear_ship_goals( ai_info *aip )
+void aigoal_ai_clear_ship_goals( ai_info *aip )
 {
 	int i;
 
@@ -969,7 +1136,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 }
 
-void ai_clear_wing_goals( int wingnum )
+void aigoal_ai_clear_wing_goals( int wingnum )
 {
 	int i;
 	wing *wingp = &Wings[wingnum];
@@ -999,7 +1166,7 @@ void ai_clear_wing_goals( int wingnum )
 // structure of the goal to be removed.  This process is slightly tricky since some member of the wing
 // might be pursuing a different goal.  We will have to compare based on mode, submode, priority,
 // and name.. This routine is only currently called from waypoint code!!!
-void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
+void aigoal_ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 {
 	int mode, submode, priority, i;
 	char *name;
@@ -1059,7 +1226,7 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 // routine which is called with an ai object complete it's goal.  Do some action
 // based on the goal what was just completed
 
-void ai_mission_goal_complete( ai_info *aip )
+void aigoal_ai_mission_goal_complete( ai_info *aip )
 {
 	// if the active goal is dynamic or none, just return.  (AI_GOAL_NONE is probably an error, but
 	// I don't think that this is a problem)
@@ -1071,7 +1238,7 @@ void ai_mission_goal_complete( ai_info *aip )
 
 }
 
-int ai_get_subsystem_type( char *subsystem )
+int aigoal_ai_get_subsystem_type( char *subsystem )
 {
 	if ( strstr(subsystem, "engine") ) {
 		return SUBSYSTEM_ENGINE;
@@ -1107,7 +1274,7 @@ int ai_get_subsystem_type( char *subsystem )
 // which are destroy, etc, should get removed.  goal list is the list of goals to purge.  It is
 // always MAX_AI_GOALS in length.  This function will only get called when the goal which causes
 // purging becomes valid.
-void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
+void aigoal_ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
 {
 	int i;
 	ai_goal *purge_goal;
@@ -1173,7 +1340,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
 }
 
 // function to purge the goals of *all* ships in the game based on the incoming goal structure
-void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
+void aigoal_ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 {
 	int i;
 	ship_obj *sop;
@@ -1196,7 +1363,7 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 }
 
 // Goober5000
-int ai_goal_find_dockpoint(int shipnum, int dock_type)
+int aigoal_ai_goal_find_dockpoint(int shipnum, int dock_type)
 {
 	int dock_index = -1;
 	int loop_count = 0;
@@ -1247,7 +1414,7 @@ int ai_goal_find_dockpoint(int shipnum, int dock_type)
 // passed are the pointer to goal we are working with.  aip if the ai_info pointer
 // of the ship with the order.  aigp is a pointer to the goal (of aip) of which we are
 // fixing up the docking points
-void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
+void aigoal_ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 {
 	int shipnum, docker_index, dockee_index;
 
@@ -1318,7 +1485,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, int mode, int submode, char *shipname, ai_goal *aigp )
+void aigoal_ai_add_goal_sub_player(int type, int mode, int submode, char *shipname, ai_goal *aigp )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -1359,7 +1526,7 @@ void ai_add_goal_sub_player(int type, int mode, int submode, char *shipname, ai_
 // friendlies want to rearm at the same time.  The support ship forgets what it's doing and flies
 // off to repair somebody while still docked.  I reproduced this with retail, so it's not a bug in
 // my new docking code. :)
-int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
+int aigoal_ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 {
 	int gindex, oldest_index;
 
@@ -1389,7 +1556,7 @@ int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip )
+void aigoal_ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip )
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -1415,7 +1582,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum )
+void aigoal_ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum )
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -1439,7 +1606,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 
 
 // common routine to add a sexpression mission goal to the appropriate goal structure.
-void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
+void aigoal_ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 {
 	int node, dummy, op;
 	char *text;
@@ -1630,7 +1797,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 
 // adds an ai goal for an individual ship
 // type determines who has issues this ship a goal (i.e. the player/mission event/etc)
-void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
+void aigoal_ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 {
 	int gindex;
 
@@ -1639,7 +1806,7 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 }
 
 // code to add ai goals to wings.
-void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
+void aigoal_ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 {
 	int i;
 	wing *wingp = &Wings[wingnum];
@@ -1673,7 +1840,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 // this name can be a shipname or a wingname)
 // docker_point and dockee_point are used for the AI_GOAL_DOCK command to tell two ships where to dock
 // immediate means to process this order right away
-void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate )
+void aigoal_ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate )
 {
 	int gindex;
 	ai_goal *aigp;
@@ -1753,7 +1920,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 // across waves of the wing so we merely need to add the goal to each ship in the wing.  Certain
 // goal are simply not valid for wings (like dock, undock).  Immediate parameter gets passed to add_ship_goal
 // to say whether or not we should process this goal right away
-void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int immediate )
+void aigoal_ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int immediate )
 {
 	int i;
 
@@ -1769,7 +1936,7 @@ void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int imme
 }
 
 // this function copies goals from a wing to an ai_info * from a ship.
-void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
+void aigoal_ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 {
 	int j;
 
@@ -1790,7 +1957,7 @@ void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 // function to determine if an ai goal is achieveable or not.  Will return
 // one of the AI_GOAL_* values.  Also determines is a goal was successful.
 
-int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
+int aigoal_ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 {
 	int status;
 	char *ai_shipname;
@@ -2269,7 +2436,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 //	Compare function for sorting ai_goals based on priority.
 //	Return values set to sort array in _decreasing_ order.
-int ai_goal_priority_compare(const void *a, const void *b)
+int aigoal_ai_goal_priority_compare(const void *a, const void *b)
 {
 	ai_goal	*ga, *gb;
 
@@ -2318,7 +2485,7 @@ int ai_goal_priority_compare(const void *a, const void *b)
 //	Then sort on time for goals of equivalent priority.
 //	objnum	The object number to act upon.  Redundant with *aip.
 //	*aip		The AI info to act upon.  Goals are stored at aip->goals
-void prioritize_goals(int objnum, ai_info *aip)
+void aigoal_prioritize_goals(int objnum, ai_info *aip)
 {
 	//	First sort based on priority field.
 	insertion_sort(aip->goals, MAX_AI_GOALS, sizeof(ai_goal), ai_goal_priority_compare);
@@ -2328,7 +2495,7 @@ void prioritize_goals(int objnum, ai_info *aip)
 //	Remove obsolete goals.
 //	objnum	Object of interest.  Redundant with *aip.
 //	*aip		contains goals at aip->goals.
-void validate_mission_goals(int objnum, ai_info *aip)
+void aigoal_validate_mission_goals(int objnum, ai_info *aip)
 {
 	int	i;
 	
@@ -2403,7 +2570,7 @@ extern char *Mode_text[MAX_AI_BEHAVIORS];
 // code to process ai "orders".  Orders include those determined from the mission file and those
 // given by the player to a ship that is under his control.  This function gets called for every
 // AI object every N seconds through the ai loop.
-void ai_process_mission_orders( int objnum, ai_info *aip )
+void aigoal_ai_process_mission_orders( int objnum, ai_info *aip )
 {
 	object	*objp = &Objects[objnum];
 	object	*other_obj;
@@ -2724,7 +2891,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 }
 
-void ai_update_goal_references(ai_goal *goals, int type, char *old_name, char *new_name)
+void aigoal_ai_update_goal_references(ai_goal *goals, int type, char *old_name, char *new_name)
 {
 	int i, mode, flag, dummy;
 
@@ -2791,7 +2958,7 @@ void ai_update_goal_references(ai_goal *goals, int type, char *old_name, char *n
 	}
 }
 
-int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name)
+int aigoal_query_referenced_in_ai_goals(ai_goal *goals, int type, char *name)
 {
 	int i, mode, flag;
 
@@ -2856,7 +3023,7 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name)
 	return 0;
 }
 
-char *ai_add_dock_name(char *str)
+char *aigoal_ai_add_dock_name(char *str)
 {
 	char *ptr;
 	int i;
@@ -2871,3 +3038,39 @@ char *ai_add_dock_name(char *str)
 	strcpy(ptr, str);
 	return ptr;
 }
+
+
+struct aigoal_call_table AIGoalDefaultTable = {
+	aigoal_Ai_goal_text,
+	aigoal_ai_maybe_add_form_goal,
+	aigoal_ai_post_process_mission,
+	aigoal_ai_query_goal_valid,
+	aigoal_ai_remove_ship_goal,
+	aigoal_ai_clear_ship_goals,
+	aigoal_ai_clear_wing_goals,
+	aigoal_ai_mission_wing_goal_complete,
+	aigoal_ai_mission_goal_complete,
+	aigoal_ai_get_subsystem_type,
+	aigoal_ai_goal_purge_invalid_goals,
+	aigoal_ai_goal_purge_all_invalid_goals,
+	aigoal_ai_goal_find_dockpoint,
+	aigoal_ai_goal_fixup_dockpoints,
+	aigoal_ai_add_goal_sub_player,
+	aigoal_ai_goal_find_empty_slot,
+	aigoal_ai_add_ship_goal_player,
+	aigoal_ai_add_wing_goal_player,
+	aigoal_ai_add_goal_sub_sexp,
+	aigoal_ai_add_ship_goal_sexp,
+	aigoal_ai_add_wing_goal_sexp,
+	aigoal_ai_add_goal_ship_internal,
+	aigoal_ai_add_goal_wing_internal,
+	aigoal_ai_copy_mission_wing_goal,
+	aigoal_ai_mission_goal_achievable,
+	aigoal_ai_goal_priority_compare,
+	aigoal_prioritize_goals,
+	aigoal_validate_mission_goals,
+	aigoal_ai_process_mission_orders,
+	aigoal_ai_update_goal_references,
+	aigoal_query_referenced_in_ai_goals,
+	aigoal_ai_add_dock_name	
+};

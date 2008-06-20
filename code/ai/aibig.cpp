@@ -482,13 +482,143 @@ extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *mo
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
 extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collide_pos, vec3d *collision_normal);
 
+// FF 14-06-07
+// AI Big Table Wrapper
+
+extern struct aibig_call_table AIBigDefaultTable;
+
+struct aibig_call_table *aibig_table = &AIBigDefaultTable;
+
+void   ai_big_evade_ship () 
+{
+	aibig_table->ai_big_evade_ship();
+}
+
+void   ai_big_chase_attack (ai_info *aip, ship_info *sip, vec3d *enemy_pos, float dist_to_enemy, int modelnum) 
+{
+	aibig_table->ai_big_chase_attack(aip, sip, enemy_pos, dist_to_enemy, modelnum);
+}
+
+void   ai_big_avoid_ship () 
+{
+	aibig_table->ai_big_avoid_ship();
+}
+
+int    ai_big_maybe_follow_subsys_path (int do_dot_check) 
+{
+	return aibig_table->ai_big_maybe_follow_subsys_path(do_dot_check);
+}
+
+void   ai_bpap (object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal) 
+{
+	aibig_table->ai_bpap(objp, attacker_objp_pos, attacker_objp_fvec, attack_point, local_attack_point, fov, weapon_travel_dist, surface_normal);
+}
+
+void   ai_big_pick_attack_point_turret (object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist) 
+{
+	aibig_table->ai_big_pick_attack_point_turret(objp, ssp, gpos, gvec, attack_point, fov, weapon_travel_dist);
+}
+
+void   ai_big_pick_attack_point (object *objp, object *attacker_objp, vec3d *attack_point, float fov) 
+{
+	aibig_table->ai_big_pick_attack_point(objp, attacker_objp, attack_point, fov);
+}
+
+void   ai_big_subsys_path_cleanup (ai_info *aip) 
+{
+	aibig_table->ai_big_subsys_path_cleanup(aip);
+}
+
+int    ai_big_maybe_start_strafe (ai_info *aip, ship_info *sip) 
+{
+	return aibig_table->ai_big_maybe_start_strafe(aip, sip);
+}
+
+void   ai_big_chase_ct () 
+{
+	aibig_table->ai_big_chase_ct();
+}
+
+void   ai_big_maybe_fire_weapons (float dist_to_enemy, float dot_to_enemy, vec3d *firing_pos, vec3d *enemy_pos, vec3d *enemy_vel) 
+{
+	aibig_table->ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy, firing_pos, enemy_pos, enemy_vel);
+}
+
+void   ai_big_switch_to_chase_mode (ai_info *aip) 
+{
+	aibig_table->ai_big_switch_to_chase_mode(aip);
+}
+
+int    ai_big_strafe_maybe_retreat (float dist, vec3d *target_pos) 
+{
+	return aibig_table->ai_big_strafe_maybe_retreat(dist, target_pos);
+}
+
+void   ai_big_chase () 
+{
+	aibig_table->ai_big_chase();
+}
+
+void   ai_big_ship (object *objp) 
+{
+	aibig_table->ai_big_ship(objp);
+}
+
+void   ai_big_attack_get_data (vec3d *enemy_pos, float *dist_to_enemy, float *dot_to_enemy) 
+{
+	aibig_table->ai_big_attack_get_data(enemy_pos, dist_to_enemy, dot_to_enemy);
+}
+
+void   ai_big_strafe_attack () 
+{
+	aibig_table->ai_big_strafe_attack();
+}
+
+void   ai_big_strafe_avoid () 
+{
+	aibig_table->ai_big_strafe_avoid();
+}
+
+void   ai_big_strafe_retreat1 () 
+{
+	aibig_table->ai_big_strafe_retreat1();
+}
+
+void   ai_big_strafe_retreat2 () 
+{
+	aibig_table->ai_big_strafe_retreat2();
+}
+
+void   ai_big_strafe_position () 
+{
+	aibig_table->ai_big_strafe_position();
+}
+
+void   ai_big_strafe () 
+{
+	aibig_table->ai_big_strafe();
+}
+
+int    ai_big_maybe_enter_strafe_mode (object *pl_objp, int weapon_objnum, int consider_target_only) 
+{
+	return aibig_table->ai_big_maybe_enter_strafe_mode(pl_objp, weapon_objnum, consider_target_only);
+}
+
+void   ai_big_strafe_maybe_attack_turret (object *ship_objp, object *weapon_objp) 
+{
+	aibig_table->ai_big_strafe_maybe_attack_turret(ship_objp, weapon_objp);
+}
+
+
+
+// AI Big Default implementation
 
 //	Called by ai_big_pick_attack_point.
 //	Generates a random attack point.
 //	If truly_random flag set (haha), then generate a pretty random number.  Otherwise, generate a static rand which
 //	tends to not change from frame to frame.
 //	Try four times and choose nearest point to increase chance of getting a good point.
-void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal)
+void aibig_ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal)
 {
 	float		nearest_dist;
 	vec3d	result_point, best_point;
@@ -607,7 +737,7 @@ done_1:
 //
 //	Note: Default value for fov is 1.0f  1.0f means don't use fov parameter.
 //	If fov != 1.0f, try up to four times to find a point that's in the field of view.
-void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist)
+void aibig_ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, vec3d *attack_point, float fov, float weapon_travel_dist)
 {
 	if (!timestamp_elapsed(ssp->turret_pick_big_attack_point_timestamp)) {
 		vec3d	result_point;
@@ -627,7 +757,7 @@ void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos
 //	Note: Default value for fov is 1.0f  1.0f means don't use fov parameter.
 //	If fov != 1.0f, try up to four times to find a point that's in the field of view.
 //	Note, attacker_objp can be a ship or a weapon.
-void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov)
+void aibig_ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack_point, float fov)
 {
 	Assert(objp->instance > -1);
 	Assert(objp->type == OBJ_SHIP);
@@ -696,7 +826,7 @@ void ai_big_pick_attack_point(object *objp, object *attacker_objp, vec3d *attack
 }
 
 // Handler for SM_EVADE submode ( called from ai_big_chase() )
-void ai_big_evade_ship()
+void aibig_ai_big_evade_ship()
 {
 	vec3d	player_pos, enemy_pos;
 	float		dist;
@@ -744,13 +874,13 @@ void ai_big_evade_ship()
 }
 
 // Handler for SM_AVOID submode ( called from ai_big_chase() )
-void ai_big_avoid_ship()
+void aibig_ai_big_avoid_ship()
 {
 	ai_big_evade_ship();
 }
 
 // reset path following information
-void ai_big_subsys_path_cleanup(ai_info *aip)
+void aibig_ai_big_subsys_path_cleanup(ai_info *aip)
 {
 	if ( aip->ai_flags & AIF_ON_SUBSYS_PATH ) {
 		aip->ai_flags &= ~AIF_ON_SUBSYS_PATH;
@@ -765,7 +895,7 @@ void ai_big_subsys_path_cleanup(ai_info *aip)
 // input:	do_dot_check	=>	default value 0, flag to indicate whether check should be done to ensure
 //										subsystem is within certain field of view.  We don't want to check fov when
 //										strafing, since ship is weaving to avoid turret fire
-int ai_big_maybe_follow_subsys_path(int do_dot_check)
+int aibig_ai_big_maybe_follow_subsys_path(int do_dot_check)
 {
 	ai_info	*aip;
 	float		dot = 1.0f, min_dot;
@@ -899,7 +1029,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 //				0	=> ship should not change ai mode, no fighter/bomber threats are near
 //
 // NOTE: uses SCAN_FIGHTERS_INTERVAL and ENTER_STRAFE_THREAT_DIST_SQUARED which are defined in AiBig.h
-int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
+int aibig_ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 {
 	// if moving slowly (or stopped), and SIF_SMALL_SHIP, then enter STRAFE mode if enemy fighter/bombers
 	// are near
@@ -934,7 +1064,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 }
 
 //	ATTACK submode handler for chase mode.
-void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float dist_to_enemy, int modelnum)
+void aibig_ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float dist_to_enemy, int modelnum)
 {
 	int		start_bank;
 	float		dot_to_enemy, time_to_hit;
@@ -1051,7 +1181,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 }
 
 // Handler for submode SM_CONTINUOUS_TURN
-void ai_big_chase_ct()
+void aibig_ai_big_chase_ct()
 {
 	ai_chase_ct();
 }
@@ -1068,7 +1198,7 @@ extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
 // dist_to_enemy	=>		distance (in m) to attack point on current target
 // dot_to_enemy	=>		dot product between fvec of Pl_objp and vector from Pl_objp to attack point
 //
-void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *firing_pos, vec3d *enemy_pos, vec3d *enemy_vel)
+void aibig_ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *firing_pos, vec3d *enemy_pos, vec3d *enemy_vel)
 {
 	ai_info		*aip;
 	ship_weapon	*swp;
@@ -1173,7 +1303,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 }
 
 // switch ai ship into chase mode
-void ai_big_switch_to_chase_mode(ai_info *aip)
+void aibig_ai_big_switch_to_chase_mode(ai_info *aip)
 {
 	aip->previous_mode = aip->mode;
 	aip->mode = AIM_CHASE;
@@ -1184,7 +1314,7 @@ void ai_big_switch_to_chase_mode(ai_info *aip)
 extern int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos);
 
 // Make object Pl_objp chase object En_objp, which is a big ship, not a small ship.
-void ai_big_chase()
+void aibig_ai_big_chase()
 {
 	float			dist_to_enemy, dot_to_enemy;
 	vec3d		player_pos, enemy_pos, vec_to_enemy;
@@ -1474,7 +1604,7 @@ void ai_big_chase()
 		aip->time_enemy_in_range *= (1.0f - flFrametime);
 }
 
-void ai_big_ship(object *objp)
+void aibig_ai_big_ship(object *objp)
 {
 	// do nothing
 }
@@ -1485,7 +1615,7 @@ void ai_big_ship(object *objp)
 // dist	=>		distance from Pl_objp front to attack point
 // dot	=>		dot of Pl_objp fvec and vector to attack point
 //	fire_pos =>	world pos from which firing
-void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_to_enemy)
+void aibig_ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_to_enemy)
 {
 	vec3d		player_pos, vec_to_enemy, predicted_enemy_pos;	
 	ship			*shipp = &Ships[Pl_objp->instance];	
@@ -1544,7 +1674,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 
 // check to see if Pl_objp has gotten too close to attacking point.. if so, break off by entering
 // AIS_STRAFE_RETREAT
-int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
+int aibig_ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
 {
 	ai_info	*aip;
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -1601,7 +1731,7 @@ int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
 }
 
 // attack directly to the turret and fire weapons 
-void ai_big_strafe_attack()
+void aibig_ai_big_strafe_attack()
 {
 	ai_info	*aip;
 	vec3d	target_pos;
@@ -1704,7 +1834,7 @@ void ai_big_strafe_attack()
 }
 
 // pick a new attack point when entering this state, and keep using it
-void ai_big_strafe_avoid()
+void aibig_ai_big_strafe_avoid()
 {
 	ai_info	*aip;
 	vec3d	target_pos;
@@ -1730,7 +1860,7 @@ void ai_big_strafe_avoid()
 }
 
 // move towards aip->goal_point in an evasive manner
-void ai_big_strafe_retreat1()
+void aibig_ai_big_strafe_retreat1()
 {
 	float dist;
 	ai_info	*aip;
@@ -1776,7 +1906,7 @@ void ai_big_strafe_retreat1()
 	accelerate_ship(aip, 1.0f);
 }
 
-void ai_big_strafe_retreat2()
+void aibig_ai_big_strafe_retreat2()
 {
 	float dist;
 	ai_info	*aip;
@@ -1815,7 +1945,7 @@ void ai_big_strafe_retreat2()
 }
 
 // reposition self to begin another strafing run
-void ai_big_strafe_position()
+void aibig_ai_big_strafe_position()
 {
 	ai_info	*aip;
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -1833,7 +1963,7 @@ void ai_big_strafe_position()
 // #define	AIS_STRAFE_RETREAT1	204	// fly away from attack point (on an avoid vector)
 // #define	AIS_STRAFE_POSITION	205	// re-position to resume strafing attack
 //
-void ai_big_strafe()
+void aibig_ai_big_strafe()
 {
 	ai_info	*aip;
 
@@ -1883,7 +2013,7 @@ void ai_big_strafe()
 //
 // Check if weapon_objnum was fired by Pl_objp's target, and whether Pl_objp's target is a big ship, if
 // so, enter AIM_STRAFE
-int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consider_target_only)
+int aibig_ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consider_target_only)
 {
 	ai_info		*aip;
 	ship_info	*sip;
@@ -1957,7 +2087,7 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 // Consider attacking a turret, if a turret actually fired the weapon
 // input:	ship_objp	=>	ship that will attack the turret
 //				weapon_objp	=>	
-void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
+void aibig_ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 {
 	ai_info	*aip;
 	object	*parent_objp;
@@ -2006,3 +2136,30 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// attack the turret
 	set_targeted_subsys(aip, Weapons[weapon_objp->instance].turret_subsys, OBJ_INDEX(parent_objp));
 }
+
+struct aibig_call_table AIBigDefaultTable = {
+	aibig_ai_big_evade_ship,
+	aibig_ai_big_chase_attack,
+	aibig_ai_big_avoid_ship,
+	aibig_ai_big_maybe_follow_subsys_path,
+	aibig_ai_bpap,
+	aibig_ai_big_pick_attack_point_turret,
+	aibig_ai_big_pick_attack_point,
+	aibig_ai_big_subsys_path_cleanup,
+	aibig_ai_big_maybe_start_strafe,
+	aibig_ai_big_chase_ct,
+	aibig_ai_big_maybe_fire_weapons,
+	aibig_ai_big_switch_to_chase_mode,
+	aibig_ai_big_strafe_maybe_retreat,
+	aibig_ai_big_chase,
+	aibig_ai_big_ship,
+	aibig_ai_big_attack_get_data,
+	aibig_ai_big_strafe_attack,
+	aibig_ai_big_strafe_avoid,
+	aibig_ai_big_strafe_retreat1,
+	aibig_ai_big_strafe_retreat2,
+	aibig_ai_big_strafe_position,
+	aibig_ai_big_strafe,
+	aibig_ai_big_maybe_enter_strafe_mode,
+	aibig_ai_big_strafe_maybe_attack_turret
+};
