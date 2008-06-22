@@ -1856,6 +1856,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"nav-needslink\"");
 			if (Ships[i].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN)
 				fout(" \"use-alt-name-as-callsign\"");
+			if (Ships[i].flags2 & SF2_HIDE_SHIP_NAME)
+				fout(" \"hide-ship-name\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

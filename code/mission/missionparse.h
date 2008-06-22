@@ -638,7 +638,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_CURRENTLY_UNUSED_1			(1<<8)
 #define MISSION_FLAG_CURRENTLY_UNUSED_2			(1<<9)
 #define MISSION_FLAG_NO_BRIEFING				(1<<10)	// no briefing, jump right into mission - Goober5000
-#define MISSION_FLAG_NO_DEBRIEFING				(1<<11)	// no debriefing, just like red-alert - Goober5000
+#define MISSION_FLAG_TOGGLE_DEBRIEFING			(1<<11)	// Turn on debriefing for dogfight. Off for everything else - Goober5000
 #define MISSION_FLAG_CURRENTLY_UNUSED_3			(1<<12)
 #define MISSION_FLAG_ALLOW_DOCK_TREES			(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
 #define MISSION_FLAG_2D_MISSION					(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
@@ -945,7 +945,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	13
+#define MAX_PARSE_OBJECT_FLAGS_2	14
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -960,6 +960,7 @@ typedef struct p_object {
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
 #define P2_SF2_NAV_NEEDSLINK				(1<<11)
 #define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<12)
+#define P2_SF2_HIDE_SHIP_NAME				(1<<13)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

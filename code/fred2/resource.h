@@ -1082,6 +1082,7 @@
 #define IDC_SKYBOX_MODEL                1592
 #define IDC_ALT_AS_CALLSIGN             1593
 #define IDC_DEACTIVATE_AUTOPILOT        1594
+#define IDC_HIDE_SHIP_NAME              1594
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775

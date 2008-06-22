@@ -1488,6 +1488,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"always-death-scream",
 	"nav-needslink",
 	"use-alt-name-as-callsign",
+	"hide-ship-name",
 };
 
 
@@ -3432,6 +3433,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags2 & P2_SF2_USE_ALT_NAME_AS_CALLSIGN)
 		shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
+	
+	if (parse_flags2 & P2_SF2_HIDE_SHIP_NAME)
+		shipp->flags2 |= SF2_HIDE_SHIP_NAME;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
