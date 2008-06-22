@@ -563,9 +563,9 @@ void CMissionNotesDlg::OnOK()
 
 	// set debriefing
 	if ( m_no_debriefing ) {
-		The_mission.flags |= MISSION_FLAG_NO_DEBRIEFING;
+		The_mission.flags |= MISSION_FLAG_TOGGLE_DEBRIEFING;
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_NO_DEBRIEFING;
+		The_mission.flags &= ~MISSION_FLAG_TOGGLE_DEBRIEFING;
 	}
 
 	// set autopilot cinematics
@@ -673,7 +673,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_beam_free_all_by_default = (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT) ? 1 : 0;
 	m_player_start_using_ai = (The_mission.flags & MISSION_FLAG_PLAYER_START_AI) ? 1 : 0;
 	m_no_briefing = (The_mission.flags & MISSION_FLAG_NO_BRIEFING) ? 1 : 0;
-	m_no_debriefing = (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING) ? 1 : 0;
+	m_no_debriefing = (The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING) ? 1 : 0;
 	m_autpilot_cinematics = (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) ? 1 : 0;
 	m_2d_mission = (The_mission.flags & MISSION_FLAG_2D_MISSION) ? 1 : 0;
 	m_no_autpilot =  (The_mission.flags & MISSION_FLAG_DEACTIVATE_AP) ? 1 : 0;
