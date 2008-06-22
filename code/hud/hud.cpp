@@ -3538,6 +3538,10 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	vertex	v0;
 	vec3d	p0;
 
+	*x = 0;
+	*y = 0;
+	return;
+
 	float x_nose;
 	float y_nose;
 	
