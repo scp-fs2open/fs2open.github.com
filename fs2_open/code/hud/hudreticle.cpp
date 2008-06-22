@@ -574,7 +574,7 @@ void hud_render_throttle_background(int y_end)
 	bm_get_info( Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1,&w,&h);	
 
 	if ( y_end > y ) {
-		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1, x, y, w, y_end-y+1, 0, 0);		
+		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1, x + HUD_nose_x, y + HUD_nose_y, w, y_end-y+1, 0, 0);		
 	}
 }
 
@@ -591,7 +591,7 @@ void hud_render_throttle_foreground(int y_end)
 	bm_get_info( Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1,&w,&h);
 
 	if ( y_end < (y + h - 1) ) {		
-		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+2, x+ HUD_nose_x, y_end+ HUD_nose_y, w, h-(y_end-y), 0, y_end-y);		
+		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+2, x + HUD_nose_x, y_end + HUD_nose_y, w, h-(y_end-y), 0, y_end-y);		
 	}
 }
 
@@ -776,7 +776,7 @@ void hud_show_reticle_weapons()
 	}
 	
 	if ( gauge_index != -1 ) {
-		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][1]);		
+		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][1] + HUD_nose_y);
 	}
 
 	int num_banks = swp->num_secondary_banks;
@@ -815,7 +815,7 @@ void hud_show_reticle_weapons()
 			frame_offset = swp->current_secondary_bank+1;
 		}
 
-		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][1]);		
+		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][1] + HUD_nose_y);
 	}
 }
 
@@ -859,7 +859,7 @@ void hud_show_lock_threat()
 			} else {
 				bright = 0;
 			}
-			// GR_AABITMAP(Reticle_gauges[RETICLE_LAUNCH_LABEL].first_frame+frame_offset%2, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LAUNCH_LABEL][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LAUNCH_LABEL][1]);
+			// GR_AABITMAP(Reticle_gauges[RETICLE_LAUNCH_LABEL].first_frame+frame_offset%2, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LAUNCH_LABEL][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LAUNCH_LABEL][1] + HUD_nose_y);
 
 			// use hud text flash gauge code
 			hud_show_text_flash_icon(XSTR("Launch", 1507), Reticle_launch_coords[gr_screen.res][1], bright);
@@ -911,7 +911,7 @@ void hud_show_top_arc()
 	// hud_set_default_color();
 	if ( hud_gauge_active(HUD_THREAT_GAUGE) ) {	
 		// draw top arc
-		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][1]);		
+		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][1] + HUD_nose_y);
 
 		// draw dumbfire threat
 		hud_show_dumbfire_threat();
@@ -935,7 +935,7 @@ void hud_show_right_arc()
 		// draw the weapons indicators in the holes along the right arc
 		if ( hud_gauge_active(HUD_WEAPON_LINKING_GAUGE) ) {		
 			// draw right arc with holes in it
-			GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1]);		
+			GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1] + HUD_nose_y);		
 
 //			the following line was removed by Jasen to get rid of "undeclared identifier"
 //			hehe - DB
@@ -943,7 +943,7 @@ void hud_show_right_arc()
 			hud_show_reticle_weapons();
 		} else {		
 			// draw right arc without any holes
-			GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1]);
+			GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1] + HUD_nose_y);
 		}
 	}
 }
