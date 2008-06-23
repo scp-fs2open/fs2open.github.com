@@ -282,8 +282,8 @@
 
 
 // what percent of points of total damage to a ship a player has to have done to get an assist (or a kill) when it is killed
-#define ASSIST_PERCENTAGE				(0.15f)
-#define KILL_PERCENTAGE					(0.30f)
+float Kill_percentage;
+float Assist_percentage;
 
 // these tables are overwritten with the values from rank.tbl
 rank_stuff Ranks[NUM_RANKS];
@@ -465,6 +465,10 @@ void scoring_level_init( scoring_struct *scp )
 	for(i=0; i<MAX_PLAYERS; i++){
 		scp->m_dogfight_kills[i] = 0;
 	}
+	
+	Kill_percentage = The_mission.ai_profile->kill_percentage_scale[Game_skill_level];
+	Assist_percentage = The_mission.ai_profile->assist_percentage_scale[Game_skill_level];
+
 }
 
 void scoring_eval_rank( scoring_struct *sc )
@@ -883,7 +887,7 @@ void scoring_eval_kill(object *ship_obj)
 	}
 
 	// only evaluate if the max damage % is high enough to record a kill and it was done by a valid object
-	if((max_damage_pct >= KILL_PERCENTAGE) && (dead_ship->damage_ship_id[max_damage_index] >= 0)){
+	if((max_damage_pct >= Kill_percentage) && (dead_ship->damage_ship_id[max_damage_index] >= 0)){
 		// set killer_sig for this ship to the signature of the guy who gets credit for the kill
 		killer_sig = dead_ship->damage_ship_id[max_damage_index];
 
@@ -1062,7 +1066,7 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 	// evaluate each damage slot to see if it did enough to give the assis
 	for(idx=0;idx<MAX_DAMAGE_SLOTS;idx++){
 		// if this slot did enough damage to get an assist
-		if((sp->damage_ship[idx]/sp->total_damage_received) >= ASSIST_PERCENTAGE){
+		if((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage){
 			// get the player which did this damage (if any)
 			plr = NULL;
 			
@@ -1086,7 +1090,6 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 				plr->stats.m_assists++;
 
 				nprintf(("Network","-==============GAVE PLAYER %s AN ASSIST=====================-\n",plr->callsign));
-				break;
 			}
 		}
 	}
