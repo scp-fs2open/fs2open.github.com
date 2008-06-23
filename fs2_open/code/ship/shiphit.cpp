@@ -2722,10 +2722,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 					{
 						int bobjn = beam_get_parent(other_obj);
 
-						// Goober5000 - only count beams fired by fighters or bombers
+						// Goober5000 - only count beams fired by fighters or bombers unless the ai profile says different
 						if (bobjn >= 0)
 						{
-							if ( !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
+							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
+								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
 								bobjn = -1;
 							}
 						}
