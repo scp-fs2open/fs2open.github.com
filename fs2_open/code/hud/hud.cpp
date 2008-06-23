@@ -3546,7 +3546,7 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	*x = 0;
 	*y = 0;
 	
-	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 1000.0f);
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 10000.0f);
 	g3_rotate_vertex(&v0, &p0);
 
 	if (v0.codes == 0) {
