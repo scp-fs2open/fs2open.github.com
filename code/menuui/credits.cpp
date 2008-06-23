@@ -332,7 +332,7 @@ char *fs2_open_credit_text =
 	"Jon \"Sesquipedalian\" Stovell\n"
 	"Matt \"Sticks\" Nischan\n"
 	"Mike \"penguin\" Harris\n"
-	"Nick \"PhReAk\" Iannetta\n"
+	"Nick \"phreak\" Iannetta\n"
 	"Thomas \"RandomTiger\" Whittaker\n"
 	"Taylor Richards\n"
 	"Will \"##Unknown Player##\" Rousnel\n"
