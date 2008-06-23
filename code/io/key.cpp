@@ -169,6 +169,7 @@
 #include "math/fix.h"
 #include "io/timer.h"
 #include "localization/localize.h"
+#include "parse/scripting.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -874,6 +875,9 @@ void key_mark( uint code, int state, uint latency )
 			key_data.TimeKeyHeldDown[scancode] = 0;
 		else
 			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
+
+		Current_key_down = scancode;
+		Script_system.RunCondition(CHA_KEYRELEASED);
 	} else {
 		// Key going down
 		keyd_last_pressed = scancode;
@@ -891,6 +895,9 @@ void key_mark( uint code, int state, uint latency )
 //				Int3();
 
 
+			//WMC - For scripting
+			Current_key_down = scancode;
+			Script_system.RunCondition(CHA_KEYPRESSED);
 		} else if (!keyd_repeat) {
 			// Don't buffer repeating key if repeat mode is off
 			scancode = 0xAA;		
