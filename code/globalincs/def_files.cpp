@@ -845,6 +845,9 @@ $disable weapon damage scaling: NO										\n\
 ;; if set, will add the weapon velocity to the firing ship's velocity	\n\
 $use additive weapon velocity: NO										\n\
 																		\n\
+;; if set, beam damage is counted when calculating kills and assists 	\n\
+$include beams for kills and assists: NO								\n\
+																		\n\
 																		\n\
 #End																	\n\
 ";
