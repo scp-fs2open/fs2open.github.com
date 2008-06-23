@@ -197,6 +197,7 @@
 
 #include "io/mouse.h"
 #include "graphics/2d.h"
+#include "parse/scripting.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -382,6 +383,16 @@ void mouse_mark_button( uint flags, int set)
 	}
 
 	LEAVE_CRITICAL_SECTION( mouse_lock );	
+
+	//WMC - On Mouse Pressed and On Mouse Released hooks
+	if(set == 1)
+	{
+		Script_system.RunCondition(CHA_MOUSEPRESSED);
+	}
+	else if(set == 0)
+	{
+		Script_system.RunCondition(CHA_MOUSERELEASED);
+	}
 }
 
 void mouse_flush()
@@ -596,6 +607,12 @@ void mouse_eval_deltas()
 	}
 
 	LEAVE_CRITICAL_SECTION( mouse_lock );
+
+	//WMC - For On Mouse Moved trigger
+	if(Mouse_dx != 0 || Mouse_dy != 0)
+	{
+		Script_system.RunCondition(CHA_MOUSEMOVED);
+	}
 }
 
 #ifdef USE_DIRECTINPUT

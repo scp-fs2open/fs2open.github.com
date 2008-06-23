@@ -47,6 +47,11 @@ flag_def_list Script_actions[] =
 	{"On Game Init",			CHA_GAMEINIT,		0},
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
 	{"On Frame",				CHA_ONFRAME,		0},
+	{"On Key Pressed",			CHA_KEYPRESSED,		0},
+	{"On Key Released",			CHA_KEYRELEASED,	0},
+	{"On Mouse Moved",			CHA_MOUSEMOVED,		0},
+	{"On Mouse Pressed",		CHA_MOUSEPRESSED,	0},
+	{"On Mouse Released",		CHA_MOUSERELEASED,	0},
 	{"On Mission Start",		CHA_MISSIONSTART,	0},
 	{"On HUD Draw",				CHA_HUDDRAW,		0},
 	{"On Ship Collision",		CHA_COLLIDESHIP,	0},
@@ -282,7 +287,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 					if(Current_key_down == 0)
 						return false;
 					//WMC - could be more efficient, but whatever.
-					if(Current_key_down == translate_key_to_index(scp->data.name))
+					if(stricmp(textify_scancode(Current_key_down), scp->data.name))
 						return false;
 					break;
 				}
