@@ -119,6 +119,10 @@ typedef struct ai_profile_t {
 	int max_turret_ownage_target[NUM_SKILL_LEVELS];
 	int max_turret_ownage_player[NUM_SKILL_LEVELS];
 
+	// percentage of damage caused required for a kill/assist
+	float kill_percentage_scale[NUM_SKILL_LEVELS];
+	float assist_percentage_scale[NUM_SKILL_LEVELS];
+
 } ai_profile_t;
 
 
