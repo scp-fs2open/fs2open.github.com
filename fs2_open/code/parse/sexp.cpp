@@ -12152,13 +12152,13 @@ int sexp_primary_ammo_pct(int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_PRIMARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SHIP_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SHIP_PRIMARY_BANKS)
+	if(check >= shipp->weapons.num_primary_banks)
 	{
 		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
 		{
@@ -12221,13 +12221,13 @@ int sexp_secondary_ammo_pct(int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_SECONDARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SHIP_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SHIP_SECONDARY_BANKS){
+	if(check >= shipp->weapons.num_secondary_banks){
 		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++){
 			ret_sum[idx] = (int)(((float)shipp->weapons.secondary_bank_ammo[idx] / (float)shipp->weapons.secondary_bank_start_ammo[idx]) * 100.0f);
 		}
@@ -12271,13 +12271,13 @@ int sexp_get_primary_ammo(int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_PRIMARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SHIP_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SHIP_PRIMARY_BANKS)
+	if(check >= shipp->weapons.num_primary_banks)
 	{
 		for(int bank=0; bank<shipp->weapons.num_primary_banks; bank++)
 		{
@@ -12428,14 +12428,13 @@ int sexp_get_secondary_ammo (int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_SECONDARY_BANKS == cumulative sum of all banks). Does this ship 
-	// even have bank with that number? 
-	if((check != MAX_SHIP_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// Are we looking at the number of secondaries in all banks? 
-	if(check == MAX_SHIP_SECONDARY_BANKS)
+	if(check > shipp->weapons.num_secondary_banks)
 	{
 		for(int bank=0; bank<shipp->weapons.num_secondary_banks; bank++)
 		{
@@ -21875,25 +21874,25 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_AMMO_PCT, "primary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified ballistic primary bank (0 to 100).  Non-ballistic primary banks return as 100%.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1 and 2 are legal banks. 3 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2 and 3 are legal banks. 4 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2, 3 are legal banks. 4 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
 		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
