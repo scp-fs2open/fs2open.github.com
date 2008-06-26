@@ -4540,7 +4540,9 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		}
 		// fake autocenter if we are a missile and don't already have autocen info
 		else if (Interp_flags & MR_IS_MISSILE) {
-			auto_back.xyz.z = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.z - pm->submodel[pm->detail[Interp_detail_level]].min.xyz.z) / 2.0f );
+            auto_back.xyz.x = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.x + pm->submodel[pm->detail[Interp_detail_level]].min.xyz.x) / 2.0f );
+            auto_back.xyz.y = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.y + pm->submodel[pm->detail[Interp_detail_level]].min.xyz.y) / 2.0f );
+			auto_back.xyz.z = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.z + pm->submodel[pm->detail[Interp_detail_level]].min.xyz.z) / 2.0f );
 			set_autocen = true;
 		}
 
