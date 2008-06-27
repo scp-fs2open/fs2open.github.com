@@ -641,11 +641,11 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\phrases.cfg"
+			RelativePath="..\..\code\sound\phrases.cfg"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
+			RelativePath="..\..\code\freespace2\phrases.cfg"
 			>
 		</File>
 	</Files>

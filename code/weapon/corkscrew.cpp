@@ -110,6 +110,14 @@ void cscrew_maybe_fire_missile(int shipnum)
 		sp->next_corkscrew_fire = timestamp(Weapon_info[weapon_info_index].cs_delay);
 		ship_fire_secondary( &Objects[sp->objnum], 1 );
 		sp->num_corkscrew_to_fire--;
+
+        for (int i = 0; i < swp->num_secondary_banks; i++)
+        {
+            if (i != swp->current_secondary_bank && ship_is_secondary_linked_with(sp, i, 0))
+            {
+                sp->num_corkscrew_to_fire--;
+            }
+        }
 	}
 }
 

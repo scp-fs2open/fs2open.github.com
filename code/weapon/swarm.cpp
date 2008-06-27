@@ -259,6 +259,14 @@ void swarm_maybe_fire_missile(int shipnum)
 
 		ship_fire_secondary( &Objects[sp->objnum], 1 );
 		sp->num_swarm_missiles_to_fire--;
+
+        for (int i = 0; i < swp->num_secondary_banks; i++)
+        {
+            if (i != swp->current_secondary_bank && ship_is_secondary_linked_with(sp, i, 0))
+            {
+                sp->num_swarm_missiles_to_fire--;
+            }
+        }
 	}
 }
 

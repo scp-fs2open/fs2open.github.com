@@ -10978,6 +10978,60 @@ int ship_select_next_valid_secondary_bank(ship_weapon *swp)
 	return cycled;
 }
 
+int ship_is_secondary_linked_with(ship* shipp, int other_secondary_bank, int ignore_ammo)
+{
+    ship_weapon* swp = &shipp->weapons;
+
+    //this could be bad if we don't check for this
+    if (other_secondary_bank < 0)
+        return 0;
+
+    //this could also be bad
+    if (other_secondary_bank >= swp->num_secondary_banks)
+        return 0;
+
+    //if the ship doesn't have the linked secondary flag set, bail
+    if (!(shipp->flags2 & SF2_SECONDARY_LINKED))
+        return 0;
+
+    //if the weapon types are different, return the two weapons can't be linked
+    if (swp->secondary_bank_weapons[swp->current_secondary_bank] != swp->secondary_bank_weapons[other_secondary_bank])
+        return 0;
+
+    //if either of the banks has no ammo, the two weapons can't be linked
+    if (swp->secondary_bank_ammo[swp->current_secondary_bank] == 0 && !ignore_ammo)
+        return 0;
+
+    if (swp->secondary_bank_ammo[other_secondary_bank] == 0 && !ignore_ammo)
+        return 0;
+
+    //TODO:
+    //if the currently selected secondary weapon has the "no link" flag, bail.
+
+    //looks goods
+    return 1;
+}
+
+int ship_can_link_secondaries(ship* shipp)
+{
+    ship_weapon* swp;
+    int bank;
+
+    Assert(shipp);
+
+    swp = &shipp->weapons;
+
+    for (bank = 0; bank < swp->num_secondary_banks; bank++)
+    {
+        if (bank == swp->current_secondary_bank)
+            continue;
+
+        if (swp->secondary_bank_weapons[bank] == swp->secondary_bank_weapons[swp->current_secondary_bank])
+            return 1;
+    }
+
+    return 0;
+}
 
 extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index);
 
@@ -11050,274 +11104,276 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	num_fired = 0;		// tracks how many missiles actually fired
 
-	bank = swp->current_secondary_bank;
-	if ( bank < 0 ) {
-		return 0;
-	}
+    for (bank = 0; bank < swp->num_secondary_banks; bank++)
+    {
+	    if (bank != swp->current_secondary_bank && !ship_is_secondary_linked_with(shipp, bank, 1))
+		    continue;
 
-	if (swp->secondary_animation_position[bank] == MA_POS_SET) {
-		if ( timestamp_elapsed(swp->secondary_animation_done_time[bank]) )
-			swp->secondary_animation_position[bank] = MA_POS_READY;
-		else
-			return 0;
-	}
+	    if ( bank < 0 ) {
+		    return 0;
+	    }
 
-	weapon = swp->secondary_bank_weapons[bank];
-	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
-	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
-		return 0;
-	}
-	wip = &Weapon_info[weapon];
+	    if (swp->secondary_animation_position[bank] == MA_POS_SET) {
+		    if ( timestamp_elapsed(swp->secondary_animation_done_time[bank]) )
+			    swp->secondary_animation_position[bank] = MA_POS_READY;
+		    else
+			    return 0;
+	    }
 
-	have_timeout = 0;			// used to help tell whether or not we have a timeout
+	    weapon = swp->secondary_bank_weapons[bank];
+	    Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
+	    if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
+		    return 0;
+	    }
+	    wip = &Weapon_info[weapon];
 
-	if ( MULTIPLAYER_MASTER ) {
-		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
-		starting_bank_count = swp->secondary_bank_ammo[bank];
-	}
+	    have_timeout = 0;			// used to help tell whether or not we have a timeout
 
-	if (ship_fire_secondary_detonate(obj, swp)) {
-		// in multiplayer, master sends a secondary fired packet with starting signature of -1 -- indicates
-		// to client code to set the detonate timer to 0.
-		if ( MULTIPLAYER_MASTER ) {
-			// MWA -- 4/6/98  Assert invalid since the bank count could have gone to 0.
-			//Assert(starting_bank_count != 0);
-			send_secondary_fired_packet( shipp, 0, starting_bank_count, 1, allow_swarm );
-		}
-	
-		//	For all banks, if ok to fire a weapon, make it wait a bit.
-		//	Solves problem of fire button likely being down next frame and
-		//	firing weapon despite fire causing detonation of existing weapon.
-		if (swp->current_secondary_bank >= 0) {
-			if (timestamp_elapsed(swp->next_secondary_fire_stamp[bank])){
-				swp->next_secondary_fire_stamp[bank] = timestamp(MAX((int) flFrametime*3000, 250));
-			}
-		}
-		return 0;
-	}
+	    if ( MULTIPLAYER_MASTER ) {
+		    starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
+		    starting_bank_count = swp->secondary_bank_ammo[bank];
+	    }
 
-	if ( swp->current_secondary_bank < 0 ){
-		return 0;
-	}
+	    if (ship_fire_secondary_detonate(obj, swp)) {
+		    // in multiplayer, master sends a secondary fired packet with starting signature of -1 -- indicates
+		    // to client code to set the detonate timer to 0.
+		    if ( MULTIPLAYER_MASTER ) {
+			    // MWA -- 4/6/98  Assert invalid since the bank count could have gone to 0.
+			    //Assert(starting_bank_count != 0);
+			    send_secondary_fired_packet( shipp, 0, starting_bank_count, 1, allow_swarm );
+		    }
+    	
+		    //	For all banks, if ok to fire a weapon, make it wait a bit.
+		    //	Solves problem of fire button likely being down next frame and
+		    //	firing weapon despite fire causing detonation of existing weapon.
+		    if (swp->current_secondary_bank >= 0) {
+			    if (timestamp_elapsed(swp->next_secondary_fire_stamp[bank])){
+				    swp->next_secondary_fire_stamp[bank] = timestamp(MAX((int) flFrametime*3000, 250));
+			    }
+		    }
+		    return 0;
+	    }
 
-	if ( !timestamp_elapsed(swp->next_secondary_fire_stamp[bank]) && !allow_swarm) {
-		if (timestamp_until(swp->next_secondary_fire_stamp[bank]) > 60000){
-			swp->next_secondary_fire_stamp[bank] = timestamp(1000);
-		}
-		have_timeout = 1;
-		goto done_secondary;
-	}
+	    if ( swp->current_secondary_bank < 0 ){
+		    return 0;
+	    }
 
-	// Ensure if this is a "require-lock" missile, that a lock actually exists
-	if ( wip->wi_flags & WIF_NO_DUMBFIRE ) {
-		if ( aip->current_target_is_locked <= 0 ) {
-			if ( obj == Player_obj ) {			
-				if ( !Weapon_energy_cheat ) {
-					float max_dist;
+	    if ( !timestamp_elapsed(swp->next_secondary_fire_stamp[bank]) && !allow_swarm) {
+		    if (timestamp_until(swp->next_secondary_fire_stamp[bank]) > 60000){
+			    swp->next_secondary_fire_stamp[bank] = timestamp(1000);
+		    }
+		    have_timeout = 1;
+		    goto done_secondary;
+	    }
 
-					max_dist = wip->lifetime * wip->max_speed;
-					if (wip->wi_flags2 & WIF2_LOCAL_SSM){
-						max_dist= wip->lssm_lock_range;
-					}
+	    // Ensure if this is a "require-lock" missile, that a lock actually exists
+	    if ( wip->wi_flags & WIF_NO_DUMBFIRE ) {
+		    if ( aip->current_target_is_locked <= 0 ) {
+			    if ( obj == Player_obj ) {			
+				    if ( !Weapon_energy_cheat ) {
+					    float max_dist;
 
-					if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too far from target to acquire lock", 487));
-					} else {
-						char missile_name[NAME_LENGTH];
-						strcpy(missile_name, wip->name);
-						end_string_at_first_hash_symbol(missile_name);
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
-					}
+					    max_dist = wip->lifetime * wip->max_speed;
+					    if (wip->wi_flags2 & WIF2_LOCAL_SSM){
+						    max_dist= wip->lssm_lock_range;
+					    }
 
-					snd_play( &Snds[SND_OUT_OF_MISSLES] );
-					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
-					return 0;
-				}
-			} else {
-				// multiplayer clients should always fire the weapon here, so return only if not
-				// a multiplayer client.
-				if ( !MULTIPLAYER_CLIENT ) {
-					return 0;
-				}
-			}
-		}
-	}
+					    if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
+						    HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too far from target to acquire lock", 487));
+					    } else {
+						    char missile_name[NAME_LENGTH];
+						    strcpy(missile_name, wip->name);
+						    end_string_at_first_hash_symbol(missile_name);
+						    HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
+					    }
 
-	if (wip->wi_flags2 & WIF2_TAGGED_ONLY)
-	{
-		if (!ship_is_tagged(&Objects[aip->target_objnum]))
-		{
-			if (obj==Player_obj)
-			{
-				if ( !Weapon_energy_cheat )
-				{
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->name);
-					snd_play( &Snds[SND_OUT_OF_MISSLES] );
-					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
-					return 0;
-				}
-			}
-			else
-			{
-				if ( !MULTIPLAYER_CLIENT )
-				{
-					return 0;
-				}
-			}
-		}
-	}
+					    snd_play( &Snds[SND_OUT_OF_MISSLES] );
+					    swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
+					    return 0;
+				    }
+			    } else {
+				    // multiplayer clients should always fire the weapon here, so return only if not
+				    // a multiplayer client.
+				    if ( !MULTIPLAYER_CLIENT ) {
+					    return 0;
+				    }
+			    }
+		    }
+	    }
+
+	    if (wip->wi_flags2 & WIF2_TAGGED_ONLY)
+	    {
+		    if (!ship_is_tagged(&Objects[aip->target_objnum]))
+		    {
+			    if (obj==Player_obj)
+			    {
+				    if ( !Weapon_energy_cheat )
+				    {
+					    HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->name);
+					    snd_play( &Snds[SND_OUT_OF_MISSLES] );
+					    swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
+					    return 0;
+				    }
+			    }
+			    else
+			    {
+				    if ( !MULTIPLAYER_CLIENT )
+				    {
+					    return 0;
+				    }
+			    }
+		    }
+	    }
+
+	    // if trying to fire a swarm missile, make sure being called from right place
+	    if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
+		    Assert(wip->swarm_count > 0);
+		    if(wip->swarm_count <= 0){
+			    shipp->num_swarm_missiles_to_fire += SWARM_DEFAULT_NUM_MISSILES_FIRED;
+		    } else {
+			    shipp->num_swarm_missiles_to_fire += wip->swarm_count;
+		    }
+		    continue;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
+	    }
+
+	    // if trying to fire a corkscrew missile, make sure being called from right place	
+	    if ( (wip->wi_flags & WIF_CORKSCREW) && !allow_swarm ) {
+		    //phreak 11-9-02 
+		    //changed this from 4 to custom number defined in tables
+		    shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);		
+		    continue;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
+	    }	
+
+	    swp->next_secondary_fire_stamp[bank] = timestamp((int)(Weapon_info[weapon].fire_wait * 1000.0f));	// They can fire 5 times a second
+
+	    // Here is where we check if weapons subsystem is capable of firing the weapon.
+	    // do only in single plyaer or if I am the server of a multiplayer game
+	    if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
+		    if ( ship_weapon_maybe_fail(shipp) ) {
+			    if ( obj == Player_obj ) 
+				    if ( ship_maybe_play_secondary_fail_sound(wip) ) {
+					    char missile_name[NAME_LENGTH];
+					    strcpy(missile_name, Weapon_info[weapon].name);
+					    end_string_at_first_hash_symbol(missile_name);
+					    HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
+				    }
+			    goto done_secondary;
+		    }
+	    }
+
+	    pm = model_get( sip->model_num );
+	    if ( pm->n_missiles > 0 ) {
+		    int check_ammo;		// used to tell if we should check ammo counts or not
+		    int num_slots;
+
+		    if ( bank > pm->n_missiles ) {
+			    nprintf(("WARNING","WARNING ==> Tried to fire bank %d, but ship has only %d banks\n", bank+1, pm->n_missiles));
+			    return 0;		// we can make a quick out here!!!
+		    }
+
+		    num_slots = pm->missile_banks[bank].num_slots;
+
+		    // determine if there is enough ammo left to fire weapons on this bank.  As with primary
+		    // weapons, we might or might not check ammo counts depending on game mode, who is firing,
+		    // and if I am a client in multiplayer
+		    check_ammo = 1;
+
+		    if ( MULTIPLAYER_CLIENT && (obj != Player_obj) ){
+			    check_ammo = 0;
+		    }
+
+		    if ( check_ammo && ( swp->secondary_bank_ammo[bank] <= 0) ) {
+			    if ( shipp->objnum == OBJ_INDEX(Player_obj) ) {
+				    if ( ship_maybe_play_secondary_fail_sound(wip) ) {
+    //					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "No %s missiles left in bank", Weapon_info[swp->secondary_bank_weapons[bank]].name);
+				    }
+			    }
+			    else {
+				    // TODO:  AI switch secondary weapon / re-arm?
+			    }
+			    goto done_secondary;
+		    }
+
+		    int start_slot, end_slot;
+
+		    if ( shipp->flags & SF_SECONDARY_DUAL_FIRE ) {
+			    start_slot = swp->secondary_next_slot[bank];
+			    // AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
+			    if ( check_ammo && (swp->secondary_bank_ammo[bank] < 2) ) {
+				    end_slot = start_slot;
+			    } else {
+				    end_slot = start_slot+1;
+			    }
+		    } else {
+			    start_slot = swp->secondary_next_slot[bank];
+			    end_slot = start_slot;
+		    }
+
+		    int pnt_index=start_slot;
+		    for ( j = start_slot; j <= end_slot; j++ ) {
+			    int	weapon_num;
+
+			    swp->secondary_next_slot[bank]++;
+			    if ( swp->secondary_next_slot[bank] > (num_slots-1) ){
+				    swp->secondary_next_slot[bank] = 0;
+			    }
+
+			    if ( pnt_index >= num_slots ){
+				    pnt_index = 0;
+			    }
+			    shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
+			    pnt = pm->missile_banks[bank].pnt[pnt_index++];
+			    vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
+			    vm_vec_add(&firing_pos, &missile_point, &obj->pos);
+
+			    if ( Game_mode & GM_MULTIPLAYER ) {
+				    Assert( Weapon_info[weapon].subtype == WP_MISSILE );
+			    }
+
+			    matrix firing_orient;
+			    if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
+			    {
+				    firing_orient = obj->orient;
+			    }
+			    else
+			    {
+				    vec3d firing_vec;
+				    vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
+				    vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+			    }
+
+			    // create the weapon -- for multiplayer, the net_signature is assigned inside
+			    // of weapon_create
+			    weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			    weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 
 
+			    // create the muzzle flash effect
+			    if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+				    // show the flash only if in not cockpit view, or if "show ship" flag is set
+				    shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+			    }
+    /*
+			    if ( weapon_num != -1 )
+				    Demo_fire_secondary_requests++;	// testing for demo
+    */
+			    num_fired++;
+			    swp->last_fired_weapon_index = weapon_num;
+			    swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
+			    if (weapon_num != -1) {
+				    swp->last_fired_weapon_signature = Objects[weapon_num].signature;
+			    }
 
-
-	// if trying to fire a swarm missile, make sure being called from right place
-	if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
-		Assert(wip->swarm_count > 0);
-		if(wip->swarm_count <= 0){
-			shipp->num_swarm_missiles_to_fire += SWARM_DEFAULT_NUM_MISSILES_FIRED;
-		} else {
-			shipp->num_swarm_missiles_to_fire += wip->swarm_count;
-		}
-		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
-	}
-
-	// if trying to fire a corkscrew missile, make sure being called from right place	
-	if ( (wip->wi_flags & WIF_CORKSCREW) && !allow_swarm ) {
-		//phreak 11-9-02 
-		//changed this from 4 to custom number defined in tables
-		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);		
-		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
-	}	
-
-	swp->next_secondary_fire_stamp[bank] = timestamp((int)(Weapon_info[weapon].fire_wait * 1000.0f));	// They can fire 5 times a second
-
-	// Here is where we check if weapons subsystem is capable of firing the weapon.
-	// do only in single plyaer or if I am the server of a multiplayer game
-	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
-		if ( ship_weapon_maybe_fail(shipp) ) {
-			if ( obj == Player_obj ) 
-				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
-					char missile_name[NAME_LENGTH];
-					strcpy(missile_name, Weapon_info[weapon].name);
-					end_string_at_first_hash_symbol(missile_name);
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
-				}
-			goto done_secondary;
-		}
-	}
-
-	pm = model_get( sip->model_num );
-	if ( pm->n_missiles > 0 ) {
-		int check_ammo;		// used to tell if we should check ammo counts or not
-		int num_slots;
-
-		if ( bank > pm->n_missiles ) {
-			nprintf(("WARNING","WARNING ==> Tried to fire bank %d, but ship has only %d banks\n", bank+1, pm->n_missiles));
-			return 0;		// we can make a quick out here!!!
-		}
-
-		num_slots = pm->missile_banks[bank].num_slots;
-
-		// determine if there is enough ammo left to fire weapons on this bank.  As with primary
-		// weapons, we might or might not check ammo counts depending on game mode, who is firing,
-		// and if I am a client in multiplayer
-		check_ammo = 1;
-
-		if ( MULTIPLAYER_CLIENT && (obj != Player_obj) ){
-			check_ammo = 0;
-		}
-
-		if ( check_ammo && ( swp->secondary_bank_ammo[bank] <= 0) ) {
-			if ( shipp->objnum == OBJ_INDEX(Player_obj) ) {
-				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
-//					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "No %s missiles left in bank", Weapon_info[swp->secondary_bank_weapons[bank]].name);
-				}
-			}
-			else {
-				// TODO:  AI switch secondary weapon / re-arm?
-			}
-			goto done_secondary;
-		}
-
-		int start_slot, end_slot;
-
-		if ( shipp->flags & SF_SECONDARY_DUAL_FIRE ) {
-			start_slot = swp->secondary_next_slot[bank];
-			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
-			if ( check_ammo && (swp->secondary_bank_ammo[bank] < 2) ) {
-				end_slot = start_slot;
-			} else {
-				end_slot = start_slot+1;
-			}
-		} else {
-			start_slot = swp->secondary_next_slot[bank];
-			end_slot = start_slot;
-		}
-
-		int pnt_index=start_slot;
-		for ( j = start_slot; j <= end_slot; j++ ) {
-			int	weapon_num;
-
-			swp->secondary_next_slot[bank]++;
-			if ( swp->secondary_next_slot[bank] > (num_slots-1) ){
-				swp->secondary_next_slot[bank] = 0;
-			}
-
-			if ( pnt_index >= num_slots ){
-				pnt_index = 0;
-			}
-			shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
-			pnt = pm->missile_banks[bank].pnt[pnt_index++];
-			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
-			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
-
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				Assert( Weapon_info[weapon].subtype == WP_MISSILE );
-			}
-
-			matrix firing_orient;
-			if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
-			{
-				firing_orient = obj->orient;
-			}
-			else
-			{
-				vec3d firing_vec;
-				vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
-				vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-			}
-
-			// create the weapon -- for multiplayer, the net_signature is assigned inside
-			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
-			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
-
-
-			// create the muzzle flash effect
-			if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
-				// show the flash only if in not cockpit view, or if "show ship" flag is set
-				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
-			}
-/*
-			if ( weapon_num != -1 )
-				Demo_fire_secondary_requests++;	// testing for demo
-*/
-			num_fired++;
-			swp->last_fired_weapon_index = weapon_num;
-			swp->detonate_weapon_time = timestamp(500);		//	Can detonate 1/2 second later.
-			if (weapon_num != -1) {
-				swp->last_fired_weapon_signature = Objects[weapon_num].signature;
-			}
-
-			// subtract the number of missiles fired
-			if ( Weapon_energy_cheat == 0 ){
-			//	else
-			//	{
-					swp->secondary_bank_ammo[bank]--;
-			//	}
-			}
-		}
-	}
+			    // subtract the number of missiles fired
+			    if ( Weapon_energy_cheat == 0 ){
+			    //	else
+			    //	{
+					    swp->secondary_bank_ammo[bank]--;
+			    //	}
+			    }
+		    }
+	    }
+    }
 
 	if ( obj == Player_obj ) {
 		if ( Weapon_info[weapon].launch_snd != -1 ) {
@@ -11378,7 +11434,7 @@ done_secondary:
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
 	// missiles to a new bank
-	if (swp->secondary_bank_ammo[bank] <= 0) {
+    if (swp->secondary_bank_ammo[swp->current_secondary_bank] <= 0) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
 
@@ -11405,7 +11461,7 @@ done_secondary:
 	//then it would have no firedelay. and then add 250 ms of delay. in effect, this way there is no penalty if there is any firedelay remaning in
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
-	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) ) {
+	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[swp->current_secondary_bank] <= 0) ) {
 		//int fire_wait = (int)(Weapon_info[weapon].fire_wait * 1000.0f);	//DTP commented out, mistake, takes our current firewait time for our current weapon, it should have been our next valid weapon, but the weapon_info contains no Var for NEXT valid bank
 		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we cant call weapon_info on next fire_wait
 			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = MAX(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp

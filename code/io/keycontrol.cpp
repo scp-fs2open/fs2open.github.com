@@ -2430,17 +2430,35 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 			}
 					
-			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE ) {		
-				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+            if (!(Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE))
+            {
+				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+                Ships[objp->instance].flags2 &= ~SF2_SECONDARY_LINKED;
+
 				if(at_self) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( &Snds[SND_SECONDARY_CYCLE] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
-			} else {
-				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+			}
+            else if (ship_can_link_secondaries(&Ships[objp->instance]) &&
+                    (!(Ships[objp->instance].flags2 & SF2_SECONDARY_LINKED)))
+            {
+                Ships[objp->instance].flags2 |= SF2_SECONDARY_LINKED;
+
+                if(at_self) {
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to salvo fire mode", -1));
+					snd_play( &Snds[SND_SECONDARY_CYCLE] );
+					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+				}
+            }
+            else
+            {
+				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+                Ships[objp->instance].flags2 &= ~SF2_SECONDARY_LINKED;
+
 				if(at_self) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( &Snds[SND_SECONDARY_CYCLE] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}

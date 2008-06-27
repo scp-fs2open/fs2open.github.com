@@ -1281,6 +1281,7 @@ typedef struct ship_subsys_info {
 #define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 #define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<15)		// Karajorma - When sending messages from this ship use the alt name instead of name
 #define SF2_HIDE_SHIP_NAME					(1<<16)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
+#define SF2_SECONDARY_LINKED                (1<<17)     // phreak - Salvo fire secondaries.
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
@@ -2447,6 +2448,8 @@ extern int ship_fighterbays_all_destroyed(ship *shipp);
 extern int ship_subsys_takes_damage(ship_subsys *ss);
 
 //phreak
+extern int ship_is_secondary_linked_with(ship* shipp, int other_secondary_bank, int ignore_ammo);
+extern int ship_can_link_secondaries(ship* shipp);
 extern int ship_fire_tertiary(object *objp);
 
 // Goober5000 - handles submodel rotation, incorporating conditions such as gun barrels when firing

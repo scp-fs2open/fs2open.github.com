@@ -5811,10 +5811,10 @@ void hud_show_weapons()
 		end_string_at_first_hash_symbol(weapon_name);
 		
 		if ( sw->current_secondary_bank == i ) {
-			emp_hud_printf(Weapon_sunlinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);			
+			emp_hud_printf(Weapon_sunlinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);
 
 			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
-				emp_hud_printf(Weapon_slinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);				
+				emp_hud_printf(Weapon_slinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);
 			}
 
 			if(wip->hud_image_index != -1)
@@ -5829,11 +5829,25 @@ void hud_show_weapons()
 			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					emp_hud_printf(Weapon_secondary_reload_x[gr_screen.res], name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));					
+					emp_hud_printf(Weapon_secondary_reload_x[gr_screen.res], name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
 				}
 			}
-		} else {
-			emp_hud_string(Weapon_secondary_name_x[gr_screen.res], name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);			
+		}
+        else if (ship_is_secondary_linked_with(Player_ship, i, 1))
+        {
+            emp_hud_printf(Weapon_sunlinked_x[gr_screen.res], name_y, EG_NULL, "%c", Lcl_special_chars + 2);
+            emp_hud_string(Weapon_secondary_name_x[gr_screen.res], name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
+
+            if ( (sw->secondary_bank_ammo[i] > 0) && (i >= 0) ) {
+				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[i]);
+				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
+					emp_hud_printf(Weapon_secondary_reload_x[gr_screen.res], name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+				}
+			}
+        }
+        else 
+        {
+			emp_hud_string(Weapon_secondary_name_x[gr_screen.res], name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
 		int ammo=sw->secondary_bank_ammo[i];
