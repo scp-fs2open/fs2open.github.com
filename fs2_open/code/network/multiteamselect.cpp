@@ -1176,7 +1176,7 @@ void multi_ts_assign_players_all()
 	
 	if(Game_mode & GM_STANDALONE_SERVER){
 		Player_obj = NULL;
-		Net_player->m_player->objnum = -1;
+		//Net_player->m_player->objnum = -1;
 	}
 
 	// check to make sure all players were assigned correctly
@@ -1198,7 +1198,7 @@ void multi_ts_create_wings()
 	int idx,s_idx;
 	
 	// the standalone never went through this screen so he should never call this function!
-	// the standalone and all other clients will have this equivalent function performed whey they recieve
+	// the standalone and all other clients will have this equivalent function performed whey they receive
 	// the post_sync_data_packet!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	Assert(!(Game_mode & GM_STANDALONE_SERVER));	
 	
