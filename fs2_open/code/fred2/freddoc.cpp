@@ -1206,7 +1206,7 @@ void CFREDDoc::OnFileImportFSM()
 			*ch = '\0';
 
 		// estimate the mission path for FS1
-		if ((ch = stristr(fs1_mission_path, "FreeSpace2")) >= 0)
+		if ((ch = stristr(fs1_mission_path, "FreeSpace2")) != NULL)
 		{
 			strcpy(ch, "FreeSpace\\Data\\Missions");
 		}
