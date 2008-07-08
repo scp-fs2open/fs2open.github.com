@@ -4474,14 +4474,14 @@ int WE_Default::getWarpOrientation(matrix* output)
 WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	:WarpEffect(n_objp, n_direction)
 {
+	//Set radius
+	anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, 1);
+
 	int total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
 	stage = 0;
 	stage_duration[0] = 0;
 	stage_duration[1] = sip->warpin_time;
 	stage_duration[2] = total_time - sip->warpin_time;
-
-	//Set radius
-	anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, 1);
 
 	batcher.allocate(1);
 	radius_full = 0.0f;
@@ -4562,7 +4562,12 @@ int WE_BTRL::warpShipRender()
 		return 0;
 
 	//Figure out which frame we're on
-	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)anim_nframes);
+	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)(anim_nframes) + 0.5);
+
+	if ( frame > (anim_nframes-1) ) {
+		//frame = (anim_nframes-1);
+		return 1;
+	}
 
 	//Set the correct frame
 	gr_set_bitmap(anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
