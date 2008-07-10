@@ -276,7 +276,8 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 // special extensions (only special functions are supported at the moment)
 ogl_function GL_EXT_Special[NUM_OGL_EXT_SPECIAL] = {
 	{ "wglSwapIntervalEXT", 0 },
-	{ "glXSwapIntervalSGI", 0 }
+	{ "glXSwapIntervalSGI", 0 },
+    { "glClampColorARB", 0 }
 };
 
 

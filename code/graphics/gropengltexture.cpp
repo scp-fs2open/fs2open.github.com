@@ -402,7 +402,7 @@ void opengl_set_additive_tex_env()
 	if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE) ) {
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_ADD);
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, Cmdline_glow_factor);
 	} else {
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
 	}

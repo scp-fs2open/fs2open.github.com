@@ -231,7 +231,13 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_SPC_WGL_SWAP_INTERVAL		0
 #define OGL_SPC_GLX_SWAP_INTERVAL		1
 
-#define NUM_OGL_EXT_SPECIAL				2
+// glClampColorARB is provided as a part of GL_ARB_color_buffer_float, this is all
+// fine and dandy with NVIDIA cards, but ATI cards use the vendor-specific
+// GL_ATI_pixel_buffer_float instead, but the ATI cards to provide the entry point
+// for ClampColorARB. ARGH!!!1
+#define OGL_SPC_CLAMP_COLOR             2
+
+#define NUM_OGL_EXT_SPECIAL				3
 
 
 #define Is_Extension_Enabled(x)		GL_Extensions[x].enabled
@@ -335,5 +341,6 @@ void opengl_print_extensions();
 // special extensions
 #define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )
 #define vglXSwapIntervalSGI			GLEXT_SPC_CALL( OGL_SPC_GLX_SWAP_INTERVAL, PFNGLXSWAPINTERVALSGIPROC )
+#define vglClampColorARB            GLEXT_SPC_CALL( OGL_SPC_CLAMP_COLOR, PFNGLCLAMPCOLORARBPROC )
 
 #endif // _GROPENGLEXT_H

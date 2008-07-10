@@ -395,10 +395,12 @@ void ai_profiles_init()
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
 
-	// set default if specified
+    // set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
 	if (temp >= 0)
 		Default_ai_profile = temp;
+
+    Ai_profiles[Default_ai_profile].flags |= AIPF_SMART_SECONDARY_WEAPON_SELECTION;
 
 	Ai_profiles_initted = 1;
 }

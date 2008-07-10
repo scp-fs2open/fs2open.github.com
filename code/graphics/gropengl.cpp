@@ -4854,6 +4854,10 @@ void gr_opengl_init(int reinit)
 
 	glDisable(GL_LIGHTING); // just making sure of it
 
+    vglClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
+    vglClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
+    vglClampColorARB(GL_CLAMP_READ_COLOR_ARB, GL_FALSE);
+
 	mprintf(( "  Max texture units: %i\n", GL_supported_texture_units ));
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));

@@ -6516,7 +6516,12 @@ void set_primary_weapon_linkage(object *objp)
 		if ( ship_get_SIF(&Ships[Objects[aip->target_objnum].instance]) & SIF_BIG_SHIP) {
 			if ( aip->targeted_subsys == NULL ) {
 				shipp->flags |= SF_PRIMARY_LINKED;
-				shipp->flags |= SF_SECONDARY_DUAL_FIRE;
+
+                if (!(The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION))
+                {
+                    // if not using smart secondary weapons selection, then link the secondaries here.
+				    shipp->flags |= SF_SECONDARY_DUAL_FIRE;
+                }
 				return;
 			}
 		}
@@ -6851,6 +6856,12 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
 
+    //if attacking a big ship dual/salvo fire secondaries.
+    if ((WIF_HUGE & (priority1 | priority2)) && (The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION))
+    {
+        Ships[objp->instance].flags  |= SF_SECONDARY_DUAL_FIRE;
+        Ships[objp->instance].flags2 |= SF2_SECONDARY_LINKED;
+    }
 
 	ship_secondary_changed(&Ships[objp->instance]);	// AL: let multiplayer know if secondary bank has changed
 	// nprintf(("AI", "Ship %s selected weapon %s\n", Ships[objp->instance].ship_name, Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name));
@@ -8567,6 +8578,9 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 	int			is_big_ship, priority1, priority2;
 	ship_weapon	*swp;
 	ship_info	*esip;
+    ship* shipp;
+
+    Assert(objp->type == OBJ_SHIP);
 
 	if ( en_objp->type == OBJ_SHIP ) {
 		esip = &Ship_info[Ships[en_objp->instance].ship_info_index];
@@ -8574,7 +8588,8 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		esip = NULL;
 	}
 
-	swp = &Ships[objp->instance].weapons;
+    shipp = &Ships[objp->instance];
+	swp = &shipp->weapons;
 
 	// AL 3-5-98: do a quick out if the ship has no secondaries
 	if ( swp->num_secondary_banks <= 0 ) {
@@ -8584,6 +8599,10 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 
 	int preferred_secondary = has_preferred_secondary(objp, en_objp, swp);
 
+    // clear the dual fire and salvo fire secondary flags.
+    shipp->flags  &= ~(SF_SECONDARY_DUAL_FIRE);
+    shipp->flags2 &= ~(SF2_SECONDARY_LINKED);
+
 	if (preferred_secondary != -1) {
 		if (swp->current_secondary_bank != preferred_secondary) {
 			aip->current_target_is_locked = 0;
@@ -8592,6 +8611,13 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		}
 		//nprintf(("AI", "Favored secondary = %s\n", Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name));
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
+
+        if (The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION)
+        {
+            // if smart secondary is enabled, dual fire and salvo fire secondaries.
+            shipp->flags |= SF_SECONDARY_DUAL_FIRE;
+            shipp->flags2 |= SF2_SECONDARY_LINKED;
+        }
 	} else {
 		aip->ai_flags &= ~AIF_UNLOAD_SECONDARIES;
 		if (aip->targeted_subsys) {

@@ -1131,10 +1131,12 @@ cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondeb
 cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm glow_factor_arg("-glow_factor", NULL); // Multiplier factor for glowmaps.
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
+float Cmdline_glow_factor = 1.0f;
 int Cmdline_2d_poof = 0;
 int Cmdline_alpha_env = 0;
 int Cmdline_ambient_factor = 128;
@@ -2198,6 +2200,16 @@ bool SetCmdlineParams()
 		if ( Cmdline_ogl_spec > 128.0f )
 			Cmdline_ogl_spec = 128.0f;
 	}
+
+    if ( glow_factor_arg.found() )
+    {
+        Cmdline_glow_factor = glow_factor_arg.get_float();
+
+        if (Cmdline_glow_factor < 0.0f)
+        {
+            Cmdline_glow_factor = 0.0f;
+        }
+    }
 
 	if ( rearm_timer_arg.found() )
 		Cmdline_rearm_timer = 1;
