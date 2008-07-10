@@ -168,6 +168,7 @@
 
 #include <iostream>
 #include <vector>
+#include <limits.h>
 
 #define MAX_TIMEOUT		10
 #define MIN_TIMEOUT		5

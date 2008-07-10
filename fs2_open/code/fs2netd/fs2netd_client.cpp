@@ -647,12 +647,14 @@ void fs2netd_server_send_heartbeat(bool force)
 	GameServerPort = Netgame.server_addr.port;
 
 	// we only need to send the chat channel update once per game server that is created
-	if (NextHeartBeat == -1) {
-		// sleep a little bit first to make sure that the server had time to register
-		Sleep(50);
+	// only send the chat channel update every other HB
+	static bool send_chat_update = true;
 
+	if (send_chat_update) {
 		fs2netd_update_chat_channel();
 	}
+
+	send_chat_update = !send_chat_update;
 
 	// set timeout for every 2 minutes
 	NextHeartBeat = timer_get_fixed_seconds() + (120 * F1_0);
@@ -679,7 +681,10 @@ void fs2netd_server_disconnect()
 	FS2NetD_SendServerDisconnect(GameServerPort);
 
 	GameServerPort = 0;
-	NextHeartBeat = -1;
+
+	// set the next HB for about 2 seconds from now, to prevent a HB from being
+	// sent *after* we have actually closed the host game
+	NextHeartBeat = timer_get_fixed_seconds() + (2 * F1_0);
 
 	ml_printf("FS2NetD sent game_server disconnect");
 }
