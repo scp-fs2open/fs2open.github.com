@@ -4175,7 +4175,8 @@ void weapon_render(object *obj)
 			model_clear_instance(wip->model_num);
 
 			if ( (wip->wi_flags & WIF_THRUSTER) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
-				float	ft;
+				float ft;
+				mst_info mst;
 
 				//	Add noise to thruster geometry.
 				//ft = obj->phys_info.forward_thrust;					
@@ -4184,12 +4185,16 @@ void weapon_render(object *obj)
 				if (ft > 1.0f)
 					ft = 1.0f;
 
-				vec3d temp;
-				temp.xyz.x = ft;
-				temp.xyz.y = ft;
-				temp.xyz.z = ft;
+				mst.length.xyz.x = ft;
+				mst.length.xyz.y = ft;
+				mst.length.xyz.z = ft;
 
-				model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
+				mst.primary_bitmap = wp->thruster_bitmap;
+				mst.primary_glow_bitmap = wp->thruster_glow_bitmap;
+				mst.glow_noise = wp->thruster_glow_noise;
+
+				model_set_thrust(wip->model_num, &mst);
+
 				render_flags |= MR_SHOW_THRUSTERS;
 			}
 
