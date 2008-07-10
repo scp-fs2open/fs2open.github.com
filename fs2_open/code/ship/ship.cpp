@@ -6837,59 +6837,37 @@ void ship_render(object * obj)
 				}
 			}
 
-			if ( ((shipp->thruster_bitmap >= 0) || (shipp->thruster_glow_bitmap >= 0)) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) )
-			{
-				vec3d ft;
+			if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+				mst_info mst;
+
+				mst.length.xyz.z = obj->phys_info.forward_thrust;
+				mst.length.xyz.x = obj->phys_info.side_thrust;
+				mst.length.xyz.y = obj->phys_info.vert_thrust;
 
 				//	Add noise to thruster geometry.
-				
-				/*
-				float ft;
+				mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
+				mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
+				mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
 
-				ft = obj->phys_info.forward_thrust;
-				ft *= (1.0f + frand()/5.0f - 1.0f/10.0f);
-				if (ft > 1.0f)
-					ft = 1.0f;
-				*/
+				CLAMP(mst.length.xyz.z, -1.0f, 1.0f);
+				CLAMP(mst.length.xyz.y, -1.0f, 1.0f);
+				CLAMP(mst.length.xyz.x, -1.0f, 1.0f);
 
-				ft.xyz.z = obj->phys_info.forward_thrust;
-				ft.xyz.x = obj->phys_info.side_thrust;
-				ft.xyz.y = obj->phys_info.vert_thrust;
-				ft.xyz.z *= (1.0f + frand()/5.0f - 1.0f/10.0f);
-				ft.xyz.y *= (1.0f + frand()/5.0f - 1.0f/10.0f);
-				ft.xyz.x *= (1.0f + frand()/5.0f - 1.0f/10.0f);
-				if (ft.xyz.z > 1.0f)
-					ft.xyz.z = 1.0f;
-				if (ft.xyz.x > 1.0f)
-					ft.xyz.x = 1.0f;
-				if (ft.xyz.y > 1.0f)
-					ft.xyz.y = 1.0f;
-				if (ft.xyz.z < -1.0f)
-					ft.xyz.z = -1.0f;
-				if (ft.xyz.x < -1.0f)
-					ft.xyz.x = -1.0f;
-				if (ft.xyz.y < -1.0f)
-					ft.xyz.y = -1.0f;
+				mst.primary_bitmap = shipp->thruster_bitmap;
+				mst.primary_glow_bitmap = shipp->thruster_glow_bitmap;
+				mst.secondary_glow_bitmap = shipp->thruster_secondary_glow_bitmap;
+				mst.tertiary_glow_bitmap = shipp->thruster_tertiary_glow_bitmap;
 
-				//model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
+				mst.glow_noise = shipp->thruster_glow_noise;
+				mst.rotvel = &Objects[shipp->objnum].phys_info.rotvel;
 
-				// Bobboau's extra thruster stuff
-				{
-					bool use_AB = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
+				mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
+				mst.secondary_glow_rad_factor = sip->thruster02_glow_rad_factor;
+				mst.tertiary_glow_rad_factor = sip->thruster03_glow_rad_factor;
+				mst.glow_length_factor = sip->thruster02_glow_len_factor;
 
-					bobboau_extra_mst_info mst;
-
-					mst.secondary_glow_bitmap = shipp->thruster_secondary_glow_bitmap;
-					mst.tertiary_glow_bitmap = shipp->thruster_tertiary_glow_bitmap;
-					mst.rovel = &Objects[shipp->objnum].phys_info.rotvel;
-
-					mst.trf1 = sip->thruster01_glow_rad_factor;
-					mst.trf2 = sip->thruster02_glow_rad_factor;
-					mst.trf3 = sip->thruster03_glow_rad_factor;
-					mst.tlf = sip->thruster02_glow_len_factor;
-
-					model_set_thrust(sip->model_num, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, use_AB, &mst);
-				}
+				model_set_thrust(sip->model_num, &mst);
 
 				render_flags |= MR_SHOW_THRUSTERS;
 			}
@@ -8251,29 +8229,25 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	ship_info	*sinfo = &Ship_info[shipp->ship_info_index];
 	species_info *species = &Species_info[sinfo->species];
 
-	if (!Thrust_anim_inited)
+	if ( !Thrust_anim_inited ) {
 		ship_init_thrusters();
+	}
 
-	if (objp->phys_info.flags & PF_AFTERBURNER_ON)
-	{
+	if (objp->phys_info.flags & PF_AFTERBURNER_ON) {
 		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
 
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
-	}
-	else if (objp->phys_info.flags & PF_BOOSTER_ON)
-	{
+	} else if (objp->phys_info.flags & PF_BOOSTER_ON) {
 		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
 
 		rate = 2.5f;		// go at 2.5x faster when boosters on
-	}
-	else
-	{
+	} else {
 		flame_anim = &species->thruster_info.flames.normal;			// select normal flame
 		glow_anim = &sinfo->thruster_glow_info.normal;				// select normal glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.normal.bitmap_id;
@@ -8285,27 +8259,27 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
 	}
 
-//	rate = 0.1f;
-
 	Assert( frametime > 0.0f );
+
+	// add primary thruster effects ...
 
 	if (flame_anim->first_frame >= 0) {
 		shipp->thruster_frame += frametime * rate;
 
 		// Sanity checks
-		if ( shipp->thruster_frame < 0.0f )	shipp->thruster_frame = 0.0f;
-		if ( shipp->thruster_frame > 100.0f ) shipp->thruster_frame = 0.0f;
+		if (shipp->thruster_frame < 0.0f) {
+			shipp->thruster_frame = 0.0f;
+		} else if (shipp->thruster_frame > 100.0f) {
+			shipp->thruster_frame = 0.0f;
+		}
 
-		while ( shipp->thruster_frame > flame_anim->total_time )	{
+		while (shipp->thruster_frame > flame_anim->total_time) {
 			shipp->thruster_frame -= flame_anim->total_time;
 		}
-		framenum = fl2i( (shipp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
-		if ( framenum < 0 ) framenum = 0;
-		if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
 
-//		if ( anim_index == 0 )
-//			mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
-	
+		framenum = fl2i( (shipp->thruster_frame * flame_anim->num_frames) / flame_anim->total_time );
+		CLAMP(framenum, 0, (flame_anim->num_frames - 1));
+
 		// Get the bitmap for this frame
 		shipp->thruster_bitmap = flame_anim->first_frame + framenum;
 
@@ -8315,25 +8289,24 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		shipp->thruster_bitmap = -1;
 	}
 
-	// Do it for glow bitmaps
-
+	// primary glows ...
 	if (glow_anim->first_frame >= 0) {
 		shipp->thruster_glow_frame += frametime * rate;
 
 		// Sanity checks
-		if ( shipp->thruster_glow_frame < 0.0f )	shipp->thruster_glow_frame = 0.0f;
-		if ( shipp->thruster_glow_frame > 100.0f ) shipp->thruster_glow_frame = 0.0f;
+		if (shipp->thruster_glow_frame < 0.0f) {
+			shipp->thruster_glow_frame = 0.0f;
+		} else if (shipp->thruster_glow_frame > 100.0f) {
+			shipp->thruster_glow_frame = 0.0f;
+		}
 
-		while ( shipp->thruster_glow_frame > glow_anim->total_time )	{
+		while (shipp->thruster_glow_frame > glow_anim->total_time) {
 			shipp->thruster_glow_frame -= glow_anim->total_time;
 		}
-		framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
-		if ( framenum < 0 ) framenum = 0;
-		if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
-//		if ( anim_index == 0 )
-//			mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
-	
+		framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
+		CLAMP(framenum, 0, (glow_anim->num_frames - 1));
+
 		// Get the bitmap for this frame
 		shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
 		shipp->thruster_glow_noise = Noise[framenum];
@@ -8343,7 +8316,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		shipp->thruster_glow_noise = 1.0f;
 	}
 
-	// HACK add Bobboau's thruster stuff
+	// add extra thruster effects
 	shipp->thruster_secondary_glow_bitmap = secondary_glow_bitmap;
 	shipp->thruster_tertiary_glow_bitmap = tertiary_glow_bitmap;
 }
@@ -8377,9 +8350,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	Assert( frametime > 0.0f );
 
-	if ((flame_anim->first_frame >= 0) &&
-        (flame_anim->total_time > 0.0f))
-    {
+	if (flame_anim->first_frame >= 0) {
 		weaponp->thruster_frame += frametime * rate;
 
 		// Sanity checks
@@ -8407,9 +8378,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	// Do it for glow bitmaps
 
-	if ((glow_anim->first_frame >= 0) &&
-        (glow_anim->total_time > 0.0f))
-    {
+	if (glow_anim->first_frame >= 0) {
 		weaponp->thruster_glow_frame += frametime * rate;
 
 		// Sanity checks
@@ -9220,6 +9189,62 @@ void show_ship_subsys_count()
 	}
 }
 
+void ship_init_afterburners(ship *shipp)
+{
+	if (shipp->ship_info_index < 0) {
+		Int3();
+		return;
+	}
+
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	Assert( sip->model_num >= 0 );
+	polymodel *pm = model_get(sip->model_num);
+	Assert( pm != NULL );
+
+	if ( !(sip->flags & SIF_AFTERBURNER) ) {
+		return;
+	}
+
+	if (sip->afterburner_trail.bitmap_id < 0) {
+		return;
+	}
+
+	for (int i = 0; i < pm->n_thrusters; i++) {
+		thruster_bank *bank = &pm->thrusters[i];
+
+		for (int j = 0; j < bank->num_points; j++) {
+			// this means you've reached the max # of AB trails for a ship
+			if (shipp->ab_count >= MAX_SHIP_CONTRAILS) {
+				Int3();
+				break;
+			}
+
+			trail_info *ci = &shipp->ab_info[shipp->ab_count];
+
+			if (bank->points[j].norm.xyz.z > -0.5f) {
+				continue; // only make ab trails for thrusters that are pointing backwards
+			}
+
+			ci->pt = bank->points[j].pnt; //offset
+
+			ci->w_start = bank->points[j].radius * sip->afterburner_trail_width_factor;	// width * table loaded width factor
+			ci->w_end = 0.05f; //end width
+
+			ci->a_start = 1.0f * sip->afterburner_trail_alpha_factor; // start alpha  * table loaded alpha factor
+			ci->a_end = 0.0f; //end alpha
+
+			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
+			ci->stamp = 60;	//spew time???	
+
+			ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
+
+			nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", shipp->ab_count, shipp->ship_name));
+
+			shipp->ab_count++;
+		}
+	}
+}
+
 //	Returns object index of ship.
 //	-1 means failed.
 int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
@@ -9404,45 +9429,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
-	//first try at ABtrails -Bobboau	
+	// first try at ABtrails -Bobboau	
 	shipp->ab_count = 0;
-	if (sip->flags & SIF_AFTERBURNER)
-	{
-		for (i = 0; i < pm->n_thrusters; i++)
-		{
-			thruster_bank *bank = &pm->thrusters[i];
-
-			for (j = 0; j < bank->num_points; j++)
-			{
-				// this means you've reached the max # of AB trails for a ship
-				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
-	
-				trail_info *ci = &shipp->ab_info[shipp->ab_count];
-			//	ci = &sip->ct_info[sip->ct_count++];
-
-				if (bank->points[j].norm.xyz.z > -0.5)
-					continue;// only make ab trails for thrusters that are pointing backwards
-
-				ci->pt = bank->points[j].pnt;//offset
-				ci->w_start = bank->points[j].radius * sip->afterburner_trail_width_factor;	// width * table loaded width factor
-	
-				ci->w_end = 0.05f;//end width
-	
-				ci->a_start = 1.0f * sip->afterburner_trail_alpha_factor;	// start alpha  * table loaded alpha factor
-	
-				ci->a_end = 0.0f;//end alpha
-	
-				ci->max_life = sip->afterburner_trail_life;	// table loaded max life
-	
-				ci->stamp = 60;	//spew time???	
-
-				ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
-				nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", shipp->ab_count, shipp->ship_name));
-				shipp->ab_count++;
-				Assert(MAX_SHIP_CONTRAILS > shipp->ab_count);
-			}
-		}
-	}//end AB trails -Bobboau
+	ship_init_afterburners(shipp);
 
 	// call the contrail system
 	ct_ship_create(shipp);
@@ -15293,6 +15282,8 @@ void ship_page_in()
 		if (sip->model_num >= 0) {
 			nprintf(( "Paging", "Paging in textures for ship '%s'\n", Ships[i].ship_name ));
 			model_page_in_textures(sip->model_num, Ships[i].ship_info_index);
+			// need to make sure and do this again, after we are sure that all of the textures are ready
+			ship_init_afterburners( &Ships[i] );
 		}
 
 		// don't need this one anymore, it's already been accounted for
@@ -15454,28 +15445,16 @@ void ship_page_in()
 	if (!Thrust_anim_inited)
 		ship_init_thrusters();
 
-	generic_anim *ta;
 	thrust_info *thruster;
-	for ( i = 0; i < (int)Species_info.size(); i++ ) {
+	for (i = 0; i < (int)Species_info.size(); i++) {
 		thruster = &Species_info[i].thruster_info;
 
-		ta = &thruster->flames.normal;
-		for ( j = 0; j<ta->num_frames; j++ )	{
-			bm_page_in_texture( ta->first_frame + j );
-		}
+		bm_page_in_texture( thruster->flames.normal.first_frame, thruster->flames.normal.num_frames );
+		bm_page_in_texture( thruster->flames.afterburn.first_frame, thruster->flames.afterburn.num_frames );
 
-		ta = &thruster->flames.afterburn;
-		for ( j = 0; j<ta->num_frames; j++ )	{
-			bm_page_in_texture( ta->first_frame + j );
-		}
-
-		ta = &thruster->glow.normal;
 		// glows are really not anims
-		bm_page_in_texture( ta->first_frame );
-
-		ta = &thruster->glow.afterburn;
-		// glows are really not anims
-		bm_page_in_texture( ta->first_frame );
+		bm_page_in_texture( thruster->glow.normal.first_frame );
+		bm_page_in_texture( thruster->glow.afterburn.first_frame );
 	}
 
 	// page in insignia bitmaps

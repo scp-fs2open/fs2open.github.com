@@ -2116,91 +2116,84 @@ void subspace_render()
 
 	matrix tmp;
 	angles angs = { 0.0f, 0.0f, 0.0f };
+	mst_info mst;
+
 	angs.b = subspace_offset_v * PI2;
-	
+
 	vm_angles_2_matrix(&tmp,&angs);
-	
+
+	mst.length.xyz.x = 1.0f;
+	mst.length.xyz.y = 1.0f;
+	mst.length.xyz.z = 1.0f;
+	mst.primary_bitmap = -1;
+	mst.primary_glow_bitmap = Subspace_glow_bitmap;
+	mst.glow_noise = Noise[framenum];
+
 	int saved_gr_zbuffering = 	gr_zbuffer_get();
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-/*	if ( !D3D_enabled && !OGL_enabled )	{
+	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT; // | MR_ALWAYS_REDRAW;
 
-		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW;
+	Interp_subspace = 1;
+	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
+	Interp_subspace_offset_v = 0.0f;
 
-		Interp_subspace = 1;	
-		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
-		Interp_subspace_offset_v = 0.0f;
+	model_set_thrust( Subspace_model_inner, &mst );
 
-		vec3d temp;
-		temp.xyz.x = 1.0f;
-		temp.xyz.y = 1.0f;
-		temp.xyz.z = 1.0f;
-		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
-		render_flags |= MR_SHOW_THRUSTERS;
-		model_set_alpha(1.0f);	
+	render_flags |= MR_SHOW_THRUSTERS;
+	model_set_alpha(1.0f);	
 
-		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
-		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
-		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
+	if (!Cmdline_nohtl)
+		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	} else {
-*/
-		int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT; // | MR_ALWAYS_REDRAW;
+	model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
-		Interp_subspace = 1;
-		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
-		Interp_subspace_offset_v = 0.0f;
-
-		vec3d temp;
-		temp.xyz.x = 1.0f;
-		temp.xyz.y = 1.0f;
-		temp.xyz.z = 1.0f;
-
-		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
-
-		render_flags |= MR_SHOW_THRUSTERS;
-		model_set_alpha(1.0f);	
-
-		if (!Cmdline_nohtl)
-			gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
-
-		model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
-
-		if (!Cmdline_nohtl)
-			gr_set_texture_panning(0, 0, false);
+	if (!Cmdline_nohtl)
+		gr_set_texture_panning(0, 0, false);
 		
-		Interp_subspace = 1;	
-		Interp_subspace_offset_u = 1.0f - subspace_offset_u_inner;
-		Interp_subspace_offset_v = 0.0f;	
+	Interp_subspace = 1;	
+	Interp_subspace_offset_u = 1.0f - subspace_offset_u_inner;
+	Interp_subspace_offset_v = 0.0f;	
 
-		angs.b = -subspace_offset_v * PI2;
+	angs.b = -subspace_offset_v * PI2;
 
-		vm_angles_2_matrix(&tmp,&angs);
+	vm_angles_2_matrix(&tmp,&angs);
 
-		model_set_outline_color(255,255,255);
+	model_set_outline_color(255,255,255);
 
-//		vec3d temp;
-		temp.xyz.x = 1.0f;
-		temp.xyz.y = 1.0f;
-		temp.xyz.z = 1.0f;
+	model_set_thrust( Subspace_model_inner, &mst );
 
-		model_set_thrust( Subspace_model_inner, &temp, -1, Subspace_glow_bitmap, Noise[framenum] );
-		render_flags |= MR_SHOW_THRUSTERS;
+	render_flags |= MR_SHOW_THRUSTERS;
+	model_set_alpha(1.0f);	
 
-		model_set_alpha(1.0f);	
+	if (!Cmdline_nohtl)
+		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-		if (!Cmdline_nohtl)
-			gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
+	model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
-		model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
-
-		if (!Cmdline_nohtl)
-			gr_set_texture_panning(0, 0, false);
-//	}
+	if (!Cmdline_nohtl)
+		gr_set_texture_panning(0, 0, false);
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
+/*
+	// add some directional lighting from the ends of subspace
+	if ( !Rendering_to_env ) {
+		int i, j;
+		thruster_bank *bank;
+
+		polymodel *pm = model_get(Subspace_model_inner);
+		Assert( pm != NULL );
+
+		for (i = 0; i < pm->n_thrusters; i++) {
+			bank = &pm->thrusters[i];
+
+			for (j = 0; j < bank->num_points; j++) {
+				light_add_directional(&bank->points[j].pnt, 0.65f, 1.0f, 1.0f, 1.0f, 0.7f, 0.7f, 0.7f, true);
+			}
+		}
+	}*/
 }
 
 

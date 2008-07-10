@@ -1153,7 +1153,7 @@ static float Interp_thrust_glow_rad_factor = 1.0f;
 static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
 static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
 static float Interp_thrust_glow_len_factor = 1.0f;
-static vec3d controle_rotval = ZERO_VECTOR;
+static vec3d Interp_thrust_rotvel = ZERO_VECTOR;
 
 // Bobboau's warp stuff
 static float Interp_warp_scale_x = 1.0f;
@@ -1483,7 +1483,7 @@ void interp_clear_instance()
 
 		Interp_thrust_glow_len_factor = 1.0f;
 
-		vm_vec_zero(&controle_rotval);
+		vm_vec_zero(&Interp_thrust_rotvel);
 	}
 
 	Interp_box_scale = 1.0f;
@@ -1492,22 +1492,38 @@ void interp_clear_instance()
 }
 
 // Scales the engines thrusters by this much
-void model_set_thrust( int model_num, vec3d *length, int bitmap, int glow_bitmap, float glow_noise, bool afterburner, bobboau_extra_mst_info *mst)
+void model_set_thrust(int model_num, mst_info *mst)
 {
-	Interp_afterburner = afterburner;
-
-	Interp_thrust_scale = length->xyz.z;
-	Interp_thrust_scale_x = length->xyz.x;
-	Interp_thrust_scale_y = length->xyz.y;
-	Interp_thrust_bitmap = bitmap;
-	Interp_thrust_glow_bitmap = glow_bitmap;
-	Interp_thrust_glow_noise = glow_noise;
-
-	if ( Interp_thrust_scale < 0.1f ) {
-		Interp_thrust_scale = 0.1f;
-	} else if ( Interp_thrust_scale > 1.0f ) {
-		Interp_thrust_scale = 1.0f;
+	if (mst == NULL) {
+		Int3();
+		return;
 	}
+
+	Interp_thrust_scale = mst->length.xyz.z;
+	Interp_thrust_scale_x = mst->length.xyz.x;
+	Interp_thrust_scale_y = mst->length.xyz.y;
+
+	CLAMP(Interp_thrust_scale, 0.1f, 1.0f);
+
+	Interp_thrust_bitmap = mst->primary_bitmap;
+	Interp_thrust_glow_bitmap = mst->primary_glow_bitmap;
+	Interp_secondary_thrust_glow_bitmap = mst->secondary_glow_bitmap;
+	Interp_tertiary_thrust_glow_bitmap = mst->tertiary_glow_bitmap;
+
+	Interp_thrust_glow_noise = mst->glow_noise;
+	Interp_afterburner = mst->use_ab;
+
+	if (mst->rotvel != NULL) {
+		Interp_thrust_rotvel = *(mst->rotvel);
+	} else {
+		vm_vec_zero(&Interp_thrust_rotvel);
+	}
+
+	Interp_thrust_glow_rad_factor = mst->glow_rad_factor;
+	Interp_secondary_thrust_glow_rad_factor = mst->secondary_glow_rad_factor;
+	Interp_tertiary_thrust_glow_rad_factor = mst->tertiary_glow_rad_factor;
+	Interp_thrust_glow_len_factor = mst->glow_length_factor;
+
 	//this isn't used
 /*
 	polymodel * pm = model_get( model_num );
@@ -1522,37 +1538,6 @@ void model_set_thrust( int model_num, vec3d *length, int bitmap, int glow_bitmap
 		}
 	}
 	*/
-
-	// Bobboau's stuff
-	if (mst != NULL)
-	{
-		Interp_secondary_thrust_glow_bitmap = mst->secondary_glow_bitmap;
-		Interp_tertiary_thrust_glow_bitmap = mst->tertiary_glow_bitmap;
-
-		Interp_thrust_glow_rad_factor = mst->trf1;
-		Interp_secondary_thrust_glow_rad_factor = mst->trf2;
-		Interp_tertiary_thrust_glow_rad_factor = mst->trf3;
-		Interp_thrust_glow_len_factor = mst->tlf;
-
-		if(mst->rovel != NULL)
-			controle_rotval = *(mst->rovel);
-		else
-			vm_vec_zero(&controle_rotval);
-	}
-	else
-	{
-		Interp_thrust_glow_rad_factor = 1.0f;
-
-		Interp_secondary_thrust_glow_bitmap = -1;
-		Interp_secondary_thrust_glow_rad_factor = 1.0f;
-
-		Interp_tertiary_thrust_glow_bitmap = -1;
-		Interp_tertiary_thrust_glow_rad_factor = 1.0f;
-
-		Interp_thrust_glow_len_factor = 1.0f;
-
-		vm_vec_zero(&controle_rotval);
-	}
 }
 
 extern int Cmdline_cell;
@@ -4045,7 +4030,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	int n_q = 0;
 	vec3d norm, norm2, fvec, pnt, npnt;
 	thruster_bank *bank = NULL;
-	vertex p;	
+	vertex p;
+	bool do_render = false;
 
 	if ( pm == NULL ) {
 		Int3();
@@ -4053,9 +4039,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	}
 
 	if ( !(Interp_flags & MR_SHOW_THRUSTERS) /*|| !(Detail.engine_glows)*/ )
-		return;
-
-	if ( Interp_thrust_glow_bitmap < 0 )
 		return;
 
 
@@ -4066,28 +4049,45 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		n_q += bank->num_points;
 	}
 
-	primary_thruster_batcher.allocate(n_q);
-
-	// Bobboau's thruster stuff
-	{
-		if (Interp_secondary_thrust_glow_bitmap >= 0)
-			secondary_thruster_batcher.allocate(n_q);
-
-		if (Interp_tertiary_thrust_glow_bitmap >= 0)
-			tertiary_thruster_batcher.allocate(n_q);
-
-		// this is used for the secondary thruster glows 
-		// it only needs to be calculated once so I'm doing it here -Bobboau
-		/* norm = bank->norm[j] */;
-		norm.xyz.z = -1.0f;
-		norm.xyz.x = 1.0f;
-		norm.xyz.y = -1.0f;
-
-		norm.xyz.x *= controle_rotval.xyz.y/2;
-		norm.xyz.y *= controle_rotval.xyz.x/2;
-
-		vm_vec_normalize(&norm);
+	if (n_q <= 0) {
+		return;
 	}
+
+	if (Interp_thrust_glow_bitmap >= 0) {
+		primary_thruster_batcher.allocate(n_q);
+		do_render = true;
+	}
+
+	if (Interp_secondary_thrust_glow_bitmap >= 0) {
+		secondary_thruster_batcher.allocate(n_q);
+		do_render = true;
+	}
+
+	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
+		tertiary_thruster_batcher.allocate(n_q);
+		do_render = true;
+	}
+
+	if (do_render == false) {
+		return;
+	}
+
+	// this is used for the secondary thruster glows 
+	// it only needs to be calculated once so I'm doing it here -Bobboau
+	/* norm = bank->norm[j] */;
+	norm.xyz.z = -1.0f;
+	norm.xyz.x = 1.0f;
+	norm.xyz.y = -1.0f;
+
+	norm.xyz.x *= Interp_thrust_rotvel.xyz.y/2;
+	norm.xyz.y *= Interp_thrust_rotvel.xyz.x/2;
+
+	vm_vec_normalize(&norm);
+
+
+	// we need to disable fogging
+	if (The_mission.flags & MISSION_FLAG_FULLNEB)
+		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	for (i = 0; i < pm->n_thrusters; i++ ) {
 		bank = &pm->thrusters[i];
@@ -4113,7 +4113,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			#define MIN_SCALE 3.4f
 			#define MAX_SCALE 4.7f
 			float scale = MIN_SCALE;
-						
 
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
@@ -4154,17 +4153,14 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				vm_vec_add2(&npnt, pos);
 
 				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
-	
-				d *= fog_int;
-
-				if (d > 1.0f)
-					d = 1.0f;
 
 				if (fog_int > 1.0f)
 					fog_int = 1.0f;
 
-				// also need to disable fogging
-				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				d *= fog_int;
+
+				if (d > 1.0f)
+					d = 1.0f;
 			}
 
 
@@ -4177,7 +4173,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				g3_transfer_vertex( &p, &gpt->pnt );
 			}
 
-			if ( d > 0.0f) {
+			if ( (Interp_thrust_glow_bitmap >= 0) && (d > 0.0f) ) {
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
 
 				primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
@@ -4252,19 +4248,17 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 						tp = &sip->normal_thruster_particles[k];
 
 					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+
 					vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 					vm_vec_add2(&npnt, pos);
 
 					pe.pos = npnt;				// Where the particles emit from
 					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
-	
-					vec3d nn = orient->vec.fvec;
-					vm_vec_negate(&nn);
-				//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
-
-					pe.normal = nn;	// What normal the particle emit around
 					pe.min_vel = v * 0.75f;
 					pe.max_vel =  v * 1.25f;
+	
+					pe.normal = orient->vec.fvec;	// What normal the particle emit around
+					vm_vec_negate(&pe.normal);
 
 					pe.num_low = tp->n_low;								// Lowest number of particles to create
 					pe.num_high = tp->n_high;							// Highest number of particles to create
@@ -4883,8 +4877,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( !is_outlines_only && !is_outlines_only_htl )
 		model_render_thrusters( pm, objnum, shipp, orient, pos );
 
-
-	vm_vec_zero(&controle_rotval);
 
 	cull = gr_set_cull(0);
 

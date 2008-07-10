@@ -1630,20 +1630,31 @@ int model_which_octant_distant(vec3d *pnt, int model_num,matrix *model_orient, v
 // data.  Or NULL if the pnt isn't in the octant.
 int model_which_octant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
 
-typedef struct bobboau_extra_mst_info {
+typedef struct mst_info {
+	int primary_bitmap;
+	int primary_glow_bitmap;
 	int secondary_glow_bitmap;
 	int tertiary_glow_bitmap;
-	vec3d *rovel;
 
-	float trf1;
-	float trf2;
-	float trf3;
-	float tlf;
-} bobboau_extra_mst_info;
+	bool use_ab;
+	float glow_noise;
+	const vec3d *rotvel;
+	vec3d length;
+
+	float glow_rad_factor;
+	float secondary_glow_rad_factor;
+	float tertiary_glow_rad_factor;
+	float glow_length_factor;
+
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
+					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f)
+				{}
+} mst_info;
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, bobboau_extra_mst_info *mst = NULL);
+void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 
 //=========================================================
 // model caching
