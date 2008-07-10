@@ -6827,7 +6827,7 @@ void texture_info::clear()
 {
 	texture = original_texture = -1;
 	num_frames = 0;
-	total_time = 0.0f;
+	total_time = 1.0f;
 }
 int texture_info::GetNumFrames()
 {
@@ -6866,7 +6866,7 @@ void texture_info::PageOut(bool release)
 			bm_release(texture);
 			texture = -1;
 			num_frames = 0;
-			total_time = 0.0f;
+			total_time = 1.0f;
 		} else {
 			bm_unload(texture);
 		}
@@ -6888,7 +6888,7 @@ int texture_info::SetTexture(int n_tex)
 	if(n_tex == -1)
 	{
 		num_frames = 0;
-		total_time = 0.0f;
+		total_time = 1.0f;
 	}
 	else
 	{
@@ -6897,14 +6897,8 @@ int texture_info::SetTexture(int n_tex)
 		this->num_frames = 1;
 
 		bm_get_info(texture, NULL, NULL, NULL, &this->num_frames, &fps);
-		if(fps <= 0)
-		{
-			this->total_time = 0.0f;
-		}
-		else
-		{
-			this->total_time = (float)num_frames / (float) fps;
-		}
+
+		this->total_time = (num_frames / ((fps > 0) ? (float)fps : 1.0f));
 	}
 
 	return texture;
