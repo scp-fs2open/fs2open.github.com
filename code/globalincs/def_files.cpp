@@ -781,8 +781,15 @@ $Max Turret Target Ownage: 3, 4, 7, 12, 19								\n\
 																		\n\
 ;; maximum number of turrets on one ship allowed to be attacking the	\n\
 ;; player at a given time												\n\
-$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n\
+$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n""\
 																		\n\
+;; the minimum percentage of the total assessed damage a player		 	\n\
+;; must inflict in order to be awarded a kill							\n\
+$Percentage Required For Kill Scale: 0.30, 0.30, 0.30, 0.30, 0.30		\n\
+																		\n\
+;; the minimum percentage of the total assessed damage a player		 	\n\
+;; must inflict in order to be awarded an assist						\n\
+$Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
@@ -841,6 +848,9 @@ $disable weapon damage scaling: NO										\n\
 																		\n\
 ;; if set, will add the weapon velocity to the firing ship's velocity	\n\
 $use additive weapon velocity: NO										\n\
+																		\n\
+;; if set, beam damage is counted when calculating kills and assists 	\n\
+$include beams for kills and assists: NO								\n\
 																		\n\
 																		\n\
 #End																	\n\

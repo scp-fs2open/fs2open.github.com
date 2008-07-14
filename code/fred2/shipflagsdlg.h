@@ -59,6 +59,7 @@ public:
 	CButton m_nav_carry;
 	CButton m_nav_needslink;
 	CButton m_alt_as_callsign;
+	CButton m_hide_ship_name;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -109,6 +110,7 @@ protected:
 	afx_msg void OnNavCarry();
 	afx_msg void OnNavNeedslink();
 	afx_msg void OnAltAsCallsign();
+	afx_msg void OnHideShipName();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

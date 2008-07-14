@@ -178,6 +178,9 @@
 #include "iff_defs/iff_defs.h"
 #include "weapon/muzzleflash.h"
 
+#include <limits.h>
+
+
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
 // to target is greater than this, the turret fires.  The smaller
@@ -1889,8 +1892,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	vec3d tv2e;	//so flak can get their jitter without screwing up other guns
 
 	if (in_fov ) {
-		// We're ready to fire... now get down to specifics, like where is the
-		// actual gun point and normal, not just the one for whole turret.
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;

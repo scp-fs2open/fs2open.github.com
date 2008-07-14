@@ -55,6 +55,11 @@ struct image_desc
 #define CHA_GAMEINIT		11
 #define CHA_MISSIONSTART	12
 #define CHA_MISSIONEND		13
+#define CHA_MOUSEMOVED		14
+#define CHA_MOUSEPRESSED	15
+#define CHA_MOUSERELEASED	16
+#define CHA_KEYPRESSED		17
+#define CHA_KEYRELEASED		18
 
 
 struct script_condition

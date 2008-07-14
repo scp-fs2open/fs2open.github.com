@@ -976,8 +976,8 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,111,123,10
     CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,326,121,72,10
-    CONTROL         "No Debriefing",IDC_NO_DEBRIEFING,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,326,131,72,10
+    CONTROL         "Toggle Debriefing (On/Off)",IDC_NO_DEBRIEFING,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,326,131,102,10
     CONTROL         "Use Autopilot Cinematics",IDC_USE_AUTOPILOT_CINEMATICS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,141,123,10
     CONTROL         "Deactivate Hardcoded Autopilot",
@@ -2237,11 +2237,13 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,7,229,65,14
     PUSHBUTTON      "Cancel",IDCANCEL,214,229,65,14
     CONTROL         "AutoNav Carry Status",IDC_NAV_CARRY,"Button",BS_3STATE | 
-                    WS_TABSTOP,165,114,97,10
+                    WS_TABSTOP,166,114,97,10
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",
-                    BS_3STATE | WS_TABSTOP,165,125,97,10
+                    BS_3STATE | WS_TABSTOP,166,124,97,10
     CONTROL         "Use Alt Name In Messages",IDC_ALT_AS_CALLSIGN,"Button",
-                    BS_3STATE | WS_TABSTOP,165,138,99,8
+                    BS_3STATE | WS_TABSTOP,166,134,99,10
+    CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | 
+                    WS_TABSTOP,166,144,99,10
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102

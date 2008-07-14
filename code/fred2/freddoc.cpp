@@ -1206,7 +1206,7 @@ void CFREDDoc::OnFileImportFSM()
 			*ch = '\0';
 
 		// estimate the mission path for FS1
-		if ((ch = stristr(fs1_mission_path, "FreeSpace2")) >= 0)
+		if ((ch = stristr(fs1_mission_path, "FreeSpace2")) != NULL)
 		{
 			strcpy(ch, "FreeSpace\\Data\\Missions");
 		}
@@ -1362,7 +1362,7 @@ void CFREDDoc::OnFileImportWeapons()
 
 	// set initial path
 	strcpy(temp, Fred_exe_dir);
-	if ((ch = stristr(temp, "FreeSpace2")) >= 0)
+	if ((ch = stristr(temp, "FreeSpace2")) != NULL)
 	{
 		strcpy(ch, "FreeSpace\\Data\\Tables");
 		dlg.m_ofn.lpstrInitialDir = temp;

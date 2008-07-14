@@ -1923,6 +1923,10 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize)
 {
+	//WMC - Can't draw a non-model
+	if(model_id < 0)
+		return;
+
 	angles rot_angles, view_angles;
 	matrix model_orient;
 
@@ -1955,7 +1959,6 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		polymodel *pm = model_get(model_id);
 		vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
 		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
-		flags |= MR_IS_MISSILE;
 	}
 
 	if (!Cmdline_nohtl) {
@@ -1982,6 +1985,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	}
 
 	g3_end_frame();
+	gr_reset_clip();
 }
 
 // NEWSTUFF END

@@ -196,8 +196,8 @@ color Orb_color_orange;
 color Orb_color_teal;
 color Orb_color_purple;
 
-//special view matrix to get the orb rotating the correct war
-static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 0.0f,0.0f,-1.0f } } } } } };
+//special view matrix to get the orb rotating the correct way
+static matrix view_perturb = { { { { { { 0.0f, 0.0f, -1.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 1.0f,0.0f,0.0f } } } } } };
 static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
 
 // forward declarations
@@ -929,7 +929,7 @@ int radar_orb_calc_alpha(vec3d* pt)
     Assert(Player_obj);
 
     vec3d new_pt;
-    vec3d fvec = {0.0f, 1.0f, 0.0f};
+    vec3d fvec = {1.0f, 0.0f, 0.0f};
 
     vm_vec_unrotate(&new_pt, pt, &Player_obj->orient);
     vm_vec_normalize(&new_pt);
@@ -1083,17 +1083,10 @@ void radar_page_in_orb()
 
 void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 {
-	vertex verts[2];
-	vec3d p;
+	vertex vert;
 
-	p=*pnt;
-	vm_vec_normalize(&p);
-
-	g3_rotate_vertex(&verts[0], &p);
-	g3_project_vertex(&verts[0]);
-
-	g3_rotate_vertex(&verts[1], pnt);
-	g3_project_vertex(&verts[1]);
+	g3_rotate_vertex(&vert, pnt);
+	g3_project_vertex(&vert);
 
 	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
 
@@ -1112,10 +1105,10 @@ void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 	sizef *= mult;
 
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE;
-	g3_draw_bitmap(&verts[1], 0, sizef/35.0f, tmap_flags, 1.0f);
+	g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
 
 	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
 	{
-		g3_draw_bitmap(&verts[1], 0, sizef/35.0f, tmap_flags, 1.0f);
+		g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
 	}
 }

@@ -2558,12 +2558,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	beam_weapon_info *bwi;
 	int skill_level;
 
-	// where the shot is originating from (b->last_start gets filled in)
 	int temp = b->subsys->turret_next_fire_pos;
 
 	if (b->fighter_beam == false)
 		b->subsys->turret_next_fire_pos = b->firingpoint;
 
+	// where the shot is originating from (b->last_start gets filled in)
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, b->fighter_beam);
 
 	b->subsys->turret_next_fire_pos = temp;

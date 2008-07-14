@@ -3540,8 +3540,13 @@ void HUD_get_nose_coordinates(int *x, int *y)
 
 	float x_nose;
 	float y_nose;
+	float x_center = gr_screen.clip_center_x;
+	float y_center = gr_screen.clip_center_y;
+
+	*x = 0;
+	*y = 0;
 	
-	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 100.0f);
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 10000.0f);
 	g3_rotate_vertex(&v0, &p0);
 
 	if (v0.codes == 0) {
@@ -3567,9 +3572,11 @@ void HUD_get_nose_coordinates(int *x, int *y)
 		return;
 	}
 
-	*x = fl2i(x_nose - gr_screen.clip_center_x);
-	*y = fl2i(y_nose - gr_screen.clip_center_y);
+	gr_unsize_screen_posf(&x_nose, &y_nose);
+	gr_unsize_screen_posf(&x_center, &y_center);
 
+	*x = fl2i(x_nose - x_center);
+	*y = fl2i(y_nose - y_center);
 	return;
 }
 
