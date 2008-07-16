@@ -42,6 +42,7 @@
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
+#include "graphics/gropenglstate.h"
 
 #include "globalincs/pstypes.h"
 #include "cutscene/mvelib.h"
@@ -529,7 +530,7 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 			gl_screenYH = g_screenY + g_height;
 			gl_screenXW = g_screenX + g_width;
 
-			if (GL_texture_target == GL_TEXTURE_RECTANGLE_ARB) {
+			if (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) {
 				gl_screenU = (GLfloat)g_width;
 				gl_screenV = (GLfloat)g_height;
 			} else {
@@ -620,9 +621,7 @@ void mve_video_display()
 	}
 
 	if (gr_screen.mode == GR_OPENGL) {
-		glBindTexture(GL_texture_target, GLtex);
-
-		glTexSubImage2D(GL_texture_target, 0, 0, 0, g_width, g_height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelbuf);
+		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_width, g_height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelbuf);
 
 		glBegin(GL_QUADS);
 			glTexCoord2f(0, 0);
@@ -709,25 +708,22 @@ int mve_video_init(ubyte *data)
 			return 0;
 		}
 
-		// disable everything but what we need
-		opengl_switch_arb(-1, 0);
-		opengl_switch_arb(0, 1);
-
 		gr_set_lighting(false, false);
-	
-		glBindTexture(GL_texture_target, GLtex);
-	
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthFunc(GL_ALWAYS);
-		glDepthMask(GL_FALSE);
-		glDisable(GL_DEPTH_TEST);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		GL_state.Texture.DisableAll();
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_texture_target);
+		GL_state.Texture.Enable(GLtex);
+
+		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+
+		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
+		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-		glTexImage2D(GL_texture_target, 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
 
 		// set our color so that we can make sure that it's correct
 		glColor3f(1.0f, 1.0f, 1.0f);
@@ -836,12 +832,10 @@ void mve_shutdown()
 			glPopMatrix();
 		}
 
-		glBindTexture(GL_texture_target, 0);
+		GL_state.Texture.Disable();
+		GL_state.Texture.Delete(GLtex);
 		glDeleteTextures(1, &GLtex);
 		GLtex = 0;
-
-		opengl_switch_arb(-1, 0);
-		opengl_set_texture_target();
 	}
 
 	if (pixelbuf != NULL) {

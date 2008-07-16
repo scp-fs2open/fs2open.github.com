@@ -2342,16 +2342,23 @@ void inc_mission_time()
 	fix thistime;
 
 	thistime = timer_get_fixed_seconds();
-	if (!lasttime)
+	if ( !lasttime ) {
 		Frametime = F1_0 / 30;
-	else
+	} else {
 		Frametime = thistime - lasttime;
+	}
 
-	if (Frametime > MAX_FRAMETIME)
+	if (Frametime > MAX_FRAMETIME) {
 		Frametime = MAX_FRAMETIME;
+	} else if (Frametime < MIN_FRAMETIME) {
+		if ( !Cmdline_NoFPSCap ) {
+			thistime = MIN_FRAMETIME - Frametime;
+			Sleep( DWORD(f2fl(thistime) * 1000.0f) );
+			thistime = timer_get_fixed_seconds();
+		}
 
-	if (Frametime < MIN_FRAMETIME)
 		Frametime = MIN_FRAMETIME;
+	}
 
 	Missiontime += Frametime;
 	lasttime = thistime;

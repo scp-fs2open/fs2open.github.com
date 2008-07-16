@@ -2073,7 +2073,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				}
 
 				SPECMAP = -1;
-				BUMPMAP = -1;
+				NORMMAP = -1;
+				HEIGHTMAP = -1;
 			} else {
 
 				int vertnum = verts[i].vertnum;
@@ -2081,7 +2082,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-					if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && !Cmdline_nospec )
+					if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && Cmdline_spec )
 						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 				} else {					
@@ -2089,7 +2090,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
 
 						light_apply_rgb( &Interp_lighting->lights[norm].r, &Interp_lighting->lights[norm].g, &Interp_lighting->lights[norm].b, Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-						if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && !Cmdline_nospec )
+						if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && Cmdline_spec )
 							light_apply_specular( &Interp_lighting->lights[norm].spec_r, &Interp_lighting->lights[norm].spec_g, &Interp_lighting->lights[norm].spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
@@ -2149,7 +2150,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			// all textured polys go through here
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
-				if ( Interp_subspace /*&& (D3D_enabled || OGL_enabled)*/ ) {										
+				if (Interp_subspace) {										
 					gr_set_bitmap( pm->maps[tmap_num].base_map.GetTexture(), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
@@ -2179,9 +2180,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						{
 							// likewise, etc.
 							SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
-#ifdef BUMPMAPPING
-							BUMPMAP = model_interp_get_texture(&pm->maps[tmap_num].bump_map, base_frametime);
-#endif
+							NORMMAP = model_interp_get_texture(&pm->maps[tmap_num].norm_map, base_frametime);
+							HEIGHTMAP = model_interp_get_texture(&pm->maps[tmap_num].height_map, base_frametime);
 						}
 					}
 
@@ -2220,7 +2220,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 #endif
 	GLOWMAP = -1;
 	SPECMAP = -1;
-	BUMPMAP = -1;
+	NORMMAP = -1;
+	HEIGHTMAP = -1;
 
 	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET) )	{
 	
@@ -5432,7 +5433,8 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 		tmap->base_map.PageIn();
 		tmap->glow_map.PageIn();
 		tmap->spec_map.PageIn();
-	//	bm_page_in_texture(tmap->norm_map.texture);
+		tmap->norm_map.PageIn();
+		tmap->height_map.PageIn();
 	}
 
 	for (i = 0; i < pm->n_glow_point_banks; i++) {
@@ -5470,7 +5472,8 @@ void model_page_out_textures(int model_num, bool release)
 		tmap->base_map.PageOut(release);
 		tmap->glow_map.PageOut(release);
 		tmap->spec_map.PageOut(release);
-	//	model_page_out_texture_info(&tmap->norm_map, release);
+		tmap->norm_map.PageOut(release);
+		tmap->height_map.PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
@@ -5969,7 +5972,12 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		memcpy( (model_list.vert) + model_list.n_verts, polygon_list[i].vert, sizeof(vertex) * polygon_list[i].n_verts );
 		memcpy( (model_list.norm) + model_list.n_verts, polygon_list[i].norm, sizeof(vec3d) * polygon_list[i].n_verts );
 
+		if (Cmdline_normal) {
+			memcpy( (model_list.tsb) + model_list.n_verts, polygon_list[i].tsb, sizeof(tsb_t) * polygon_list[i].n_verts );
+		}
+
 		model_list.n_verts += polygon_list[i].n_verts;
+		model_list.n_prim += polygon_list[i].n_prim;
 	}
 
 	// check if we need to use a larger index buffer or not
@@ -5979,9 +5987,12 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 	extern IBX ibuffer_info;
 
 	// if we have an IBX read file then use it, otherwise generate buffers and save them to file
-	if ( ibuffer_info.read != NULL ) {
+	if (ibuffer_info.read != NULL) {
+		bool ibx_is_short = false;
+		bool tsb_is_short = false;
 		int ibx_verts = 0;
 		int ibx_size = 0;
+		int tsb_size = 0;
 
 		ibx_verts = cfread_int( ibuffer_info.read );
 		ibuffer_info.size -= sizeof(int); // subtract
@@ -5990,14 +6001,28 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		ibx_size += ibx_verts * sizeof(float) * 8; // first set of data (here)
 
 		// second set of data (next "for" statement)
-		if (ibx_verts > USHRT_MAX)
+		if (ibx_verts > USHRT_MAX) {
 			ibx_size += ibx_verts * sizeof(uint);
-		else
+		} else {
 			ibx_size += ibx_verts * sizeof(ushort);
+		}
+
+		if (ibx_size > ibuffer_info.size) {
+			ibx_is_short = true;
+		}
+
+		if (ibuffer_info.tsb_read != NULL) {
+			tsb_size += ibx_verts * sizeof(float) * 4;
+
+			if (tsb_size > ibuffer_info.tsb_size) {
+				tsb_is_short = true;
+			}
+		}
+
 
 		// safety check for this section
 		// ibuffer_info.size should be greater than or equal to ibx_size at this point
-		if ( ibx_size > ibuffer_info.size ) {
+		if ( ibx_is_short || tsb_is_short ) {
 			// AAAAAHH! not enough stored data - Abort, Retry, Fail?
 			Warning(LOCATION, "IBX: Safety Check Failure!  The file doesn't contain enough data, deleting '%s'\n", ibuffer_info.name);
 
@@ -6005,6 +6030,13 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 			ibuffer_info.read = NULL;
 			ibuffer_info.size = 0;
 			cf_delete( ibuffer_info.name, CF_TYPE_CACHE );
+
+			if (ibuffer_info.tsb_read != NULL) {
+				cfclose( ibuffer_info.tsb_read );
+				ibuffer_info.tsb_read = NULL;
+				ibuffer_info.tsb_size = 0;
+				cf_delete( ibuffer_info.tsb_name, CF_TYPE_CACHE );
+			}
 
 			// force generate
 			model_list.make_index_buffer();
@@ -6022,6 +6054,16 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 			}
 
 			model_list.n_verts = ibx_verts;
+
+			if (ibuffer_info.tsb_read != NULL) {
+				for (i = 0; i < ibx_verts; i++) {
+					model_list.tsb[i].tangent.xyz.x = cfread_float( ibuffer_info.tsb_read );
+					model_list.tsb[i].tangent.xyz.y = cfread_float( ibuffer_info.tsb_read );
+					model_list.tsb[i].tangent.xyz.z = cfread_float( ibuffer_info.tsb_read );
+					model_list.tsb[i].scaler = cfread_float( ibuffer_info.tsb_read );
+				}
+			}
+
 		}
 
 		// subtract this block of data from the total size for next check
@@ -6036,7 +6078,7 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		// no read file so we'll have to generate
 		model_list.make_index_buffer();
 
-		if ( ibuffer_info.write != NULL ) {
+		if (ibuffer_info.write != NULL) {
 			cfwrite_int( model_list.n_verts, ibuffer_info.write );
 
 			for (i = 0; i < model_list.n_verts; i++) {
@@ -6049,10 +6091,27 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 				cfwrite_float( model_list.norm[i].xyz.y, ibuffer_info.write );
 				cfwrite_float( model_list.norm[i].xyz.z, ibuffer_info.write );
 			}
+
+			if (ibuffer_info.tsb_write != NULL) {
+				for (i = 0; i < model_list.n_verts; i++) {
+					cfwrite_float( model_list.tsb[i].tangent.xyz.x, ibuffer_info.tsb_write );
+					cfwrite_float( model_list.tsb[i].tangent.xyz.y, ibuffer_info.tsb_write );
+					cfwrite_float( model_list.tsb[i].tangent.xyz.z, ibuffer_info.tsb_write );
+					cfwrite_float( model_list.tsb[i].scaler, ibuffer_info.tsb_write );
+				}
+			}
+
 		}
 	}
 
-	model->indexed_vertex_buffer = gr_make_buffer(&model_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
+	int vertex_flags = (VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
+
+	if (model_list.tsb != NULL) {
+		Assert( Cmdline_normal );
+		vertex_flags |= VERTEX_FLAG_TANGENT;
+	}
+
+	model->indexed_vertex_buffer = gr_make_buffer(&model_list, vertex_flags);
 
 	if (model->indexed_vertex_buffer == -1)
 		Error(LOCATION, "Could not generate model->indexed_vertex_buffer");
@@ -6321,9 +6380,8 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 			if ( (Detail.lighting > 2)  && (Interp_detail_level < 2) ) {
 				// likewise, etc.
 				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
-#ifdef BUMPMAPPING
-				BUMPMAP = model_interp_get_texture(&pm->maps[tmap_num].bump_map, base_frametime);
-#endif
+				NORMMAP = model_interp_get_texture(&pm->maps[tmap_num].norm_map, base_frametime);
+				HEIGHTMAP = model_interp_get_texture(&pm->maps[tmap_num].height_map, base_frametime);
 			}
 		}
 
@@ -6377,7 +6435,8 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 
 		GLOWMAP = -1;
 		SPECMAP = -1;
-		BUMPMAP = -1;
+		NORMMAP = -1;
+		HEIGHTMAP = -1;
 
 		// reset culling
 		gr_set_cull(cull);

@@ -797,19 +797,26 @@ typedef struct color {
 } color;
 
 
+typedef struct tsb_t {
+	vec3d tangent;
+	float scaler;
+} tsb_t;
+
 // this should be basicly just like it is in the VB
 // a list of triangles and their associated normals
 struct poly_list {
-	poly_list(): n_prim(0), n_verts(0), vert(NULL), norm(NULL), currently_allocated(0) {}
+	poly_list(): n_prim(0), n_verts(0), vert(NULL), norm(NULL), tsb(NULL), currently_allocated(0) {}
 	~poly_list();
 	poly_list& operator = (poly_list&);
 
 	void allocate(int size);
 	void make_index_buffer();
+	void calculate_tangent();
 	int n_prim;
 	int n_verts;
 	vertex *vert;
 	vec3d *norm;
+	tsb_t *tsb;
 
 private:
 	int currently_allocated;
@@ -865,6 +872,8 @@ typedef struct screen {
 	int offset_x_unscaled, offset_y_unscaled;	// Offsets into the screen, in 1024x768 or 640x480 dimensions
 	int	clip_width, clip_height;
 	int clip_width_unscaled, clip_height_unscaled;	// Height and width of clip aread, in 1024x768 or 640x480 dimensions
+	// center of clip area
+	float	clip_center_x, clip_center_y;
 
 	float fog_near, fog_far;
 
@@ -874,8 +883,6 @@ typedef struct screen {
 	int		clip_left, clip_right, clip_top, clip_bottom;
 	// same as above except in 1024x768 or 640x480 dimensions
 	int		clip_left_unscaled, clip_right_unscaled, clip_top_unscaled, clip_bottom_unscaled;
-	// center of clip area
-	float	clip_center_x, clip_center_y;
 
 	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
 	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
@@ -889,12 +896,11 @@ typedef struct screen {
 //	void		*offscreen_buffer;				// NEVER ACCESS!  This+rowsize*y = screen offset
 //	void		*offscreen_buffer_base;			// Pointer to lowest address of offscreen buffer
 
-	int custom_size;
+	bool custom_size;
 	int		rendering_to_texture;		//wich texture we are rendering to, -1 if the back buffer
 	int		rendering_to_face;			//wich face of the texture we are rendering to, -1 if the back buffer
 
-	int static_environment_map;
-	int dynamic_environment_map;
+	int envmap_render_target;
 
 	bool recording_state_block;
 	int current_state_block;
@@ -905,7 +911,6 @@ typedef struct screen {
 
 	//switch onscreen, offscreen
 	void (*gf_flip)();
-	void (*gf_flip_window)(uint _hdc, int x, int y, int w, int h );
 
 	// Sets the current palette
 	void (*gf_set_palette)(ubyte * new_pal, int restrict_alphacolor);
@@ -932,9 +937,6 @@ typedef struct screen {
 	//void (*gf_set_color_fast)( color * dst );
 
 	//void (*gf_set_font)(int fontnum);
-
-	// Sets the current bitmap
-	void (*gf_set_bitmap)( int bitmap_num, int alphablend, int bitbltmode, float alpha);
 
 	// Call this to create a shader.   
 	// This function takes a while, so don't call it once a frame!
@@ -1045,20 +1047,14 @@ typedef struct screen {
 	// set fog attributes
 	void (*gf_fog_set)(int fog_mode, int r, int g, int b, float fog_near, float fog_far);	
 
-	// get the current pixel color in the framebuffer 
-	void (*gf_get_pixel)(int x, int y, int *r, int *g, int *b);
-
 	// poly culling
 	int (*gf_set_cull)(int cull);
 
 	// cross fade
 	void (*gf_cross_fade)(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);
 
-	// filtering
-	void (*gf_filter_set)(int filter);
-
 	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
-	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int force, int stage);	
+	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage);	
 
 	// preload a bitmap into texture memory
 	int (*gf_preload)(int bitmap_num, int is_aabitmap);
@@ -1126,9 +1122,10 @@ typedef struct screen {
 
 	void (*gf_draw_line_list)(colored_vector*lines, int num);
 
-    void (*gf_set_line_width)(float width);
-	void (*gf_draw_htl_line)(vec3d *start, vec3d* end);
-	void (*gf_draw_htl_sphere)(float rad);
+	void (*gf_set_line_width)(float width);
+
+	void (*gf_line_htl)(vec3d *start, vec3d* end);
+	void (*gf_sphere_htl)(float rad);
 
 //	void (*gf_set_environment_mapping)(int i);
 
@@ -1139,12 +1136,6 @@ typedef struct screen {
 */
 } screen;
 
-// cpu types
-//extern int Gr_amd3d;
-//extern int Gr_katmai;
-//extern int Gr_cpu;	
-//extern int Gr_mmx;
-
 // handy macro
 #define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
 
@@ -1153,6 +1144,7 @@ typedef struct screen {
 // Call this at application startup
 
 // # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
+#define GR_DEFAULT				(-1)		// set to use default settings
 #define GR_STUB					(100)		
 #define GR_DIRECT3D				(102)		// Use Direct3d hardware renderer
 #define GR_OPENGL				(104)		// Use OpenGl hardware renderer
@@ -1162,7 +1154,8 @@ typedef struct screen {
 #define GR_640							0		// 640 x 480
 #define GR_1024						1		// 1024 x 768
 
-extern bool gr_init(int res, int mode, int depth = 16, int fred_x = -1, int fred_y = -1 );
+extern bool gr_init(int d_mode = GR_DEFAULT, int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
+extern void gr_screen_resize(int width, int height);
 
 // Call this when your app ends.
 extern void gr_close();
@@ -1220,9 +1213,6 @@ extern int Web_cursor_bitmap;
 // Called by OS when application gets/looses focus
 extern void gr_activate(int active);
 
-// Sets up resolution
-void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
-
 #define GR_CALL(x)			(*x)
 
 // These macros make the function indirection look like the
@@ -1232,7 +1222,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip();
-#define gr_flip_window		GR_CALL(gr_screen.gf_flip_window)
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 __inline void gr_set_clip(int x, int y, int w, int h, bool resize=true)
@@ -1254,10 +1243,7 @@ __inline void gr_set_clip(int x, int y, int w, int h, bool resize=true)
 //#define gr_set_color_fast	GR_CALL(gr_screen.gf_set_color_fast)
 
 //#define gr_set_bitmap			GR_CALL(gr_screen.gf_set_bitmap)
-__inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, int bitbltmode=GR_BITBLT_MODE_NORMAL, float alpha=1.0f )
-{
-	(*gr_screen.gf_set_bitmap)(bitmap_num, alphablend, bitbltmode, alpha);
-}
+void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitbltmode = GR_BITBLT_MODE_NORMAL, float alpha = 1.0f);
 
 //#define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
 //#define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
@@ -1338,9 +1324,6 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 
 #define gr_set_gamma			GR_CALL(gr_screen.gf_set_gamma)
 
-#define gr_lock				GR_CALL(gr_screen.gf_lock)
-#define gr_unlock				GR_CALL(gr_screen.gf_unlock)
-
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
 //#define gr_fog_set			GR_CALL(gr_screen.gf_fog_set)
@@ -1353,12 +1336,10 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 
 #define gr_cross_fade		GR_CALL(gr_screen.gf_cross_fade)
 
-#define gr_filter_set		GR_CALL(gr_screen.gf_filter_set)
-
 //#define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
-__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int stage = 0)
+__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage = 0)
 {
-	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, force, stage);
+	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, stage);
 }
 
 #define gr_preload			GR_CALL(gr_screen.gf_preload)
@@ -1390,64 +1371,65 @@ __inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
-#define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
+#define gr_make_buffer					GR_CALL(*gr_screen.gf_make_buffer)            
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
 __inline void gr_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer = NULL, int flags = TMAP_FLAG_TEXTURED)
 {
 	(*gr_screen.gf_render_buffer)(start, n_prim, sbuffer, ibuffer, flags);
 }
 
-#define gr_set_buffer				 GR_CALL(*gr_screen.gf_set_buffer)      
+#define gr_set_buffer					GR_CALL(*gr_screen.gf_set_buffer)      
       
-#define gr_make_flat_buffer					 GR_CALL(*gr_screen.gf_make_flat_buffer)            
-#define gr_make_line_buffer					 GR_CALL(*gr_screen.gf_make_line_buffer)            
+#define gr_make_flat_buffer				GR_CALL(*gr_screen.gf_make_flat_buffer)            
+#define gr_make_line_buffer				GR_CALL(*gr_screen.gf_make_line_buffer)            
 
-#define gr_set_proj_matrix				 GR_CALL(*gr_screen.gf_set_proj_matrix)            
-#define gr_end_proj_matrix				 GR_CALL(*gr_screen.gf_end_proj_matrix)            
-#define gr_set_view_matrix				 GR_CALL(*gr_screen.gf_set_view_matrix)            
-#define gr_end_view_matrix				 GR_CALL(*gr_screen.gf_end_view_matrix)            
-#define gr_push_scale_matrix			 GR_CALL(*gr_screen.gf_push_scale_matrix)            
-#define gr_pop_scale_matrix				 GR_CALL(*gr_screen.gf_pop_scale_matrix)            
-#define gr_start_instance_matrix		 GR_CALL(*gr_screen.gf_start_instance_matrix)            
-#define gr_start_angles_instance_matrix	 GR_CALL(*gr_screen.gf_start_angles_instance_matrix)            
-#define gr_end_instance_matrix			 GR_CALL(*gr_screen.gf_end_instance_matrix)            
+#define gr_set_proj_matrix					GR_CALL(*gr_screen.gf_set_proj_matrix)            
+#define gr_end_proj_matrix					GR_CALL(*gr_screen.gf_end_proj_matrix)            
+#define gr_set_view_matrix					GR_CALL(*gr_screen.gf_set_view_matrix)            
+#define gr_end_view_matrix					GR_CALL(*gr_screen.gf_end_view_matrix)            
+#define gr_push_scale_matrix				GR_CALL(*gr_screen.gf_push_scale_matrix)            
+#define gr_pop_scale_matrix					GR_CALL(*gr_screen.gf_pop_scale_matrix)            
+#define gr_start_instance_matrix			GR_CALL(*gr_screen.gf_start_instance_matrix)            
+#define gr_start_angles_instance_matrix		GR_CALL(*gr_screen.gf_start_angles_instance_matrix)            
+#define gr_end_instance_matrix				GR_CALL(*gr_screen.gf_end_instance_matrix)            
 
-#define	gr_make_light GR_CALL			(*gr_screen.gf_make_light)
-#define	gr_modify_light GR_CALL			(*gr_screen.gf_modify_light)
-#define	gr_destroy_light GR_CALL		(*gr_screen.gf_destroy_light)
-#define	gr_set_light GR_CALL			(*gr_screen.gf_set_light)
-#define gr_reset_lighting GR_CALL		(*gr_screen.gf_reset_lighting)
+#define	gr_make_light					GR_CALL(*gr_screen.gf_make_light)
+#define	gr_modify_light					GR_CALL(*gr_screen.gf_modify_light)
+#define	gr_destroy_light				GR_CALL(*gr_screen.gf_destroy_light)
+#define	gr_set_light					GR_CALL(*gr_screen.gf_set_light)
+#define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
 #define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
 
-#define	gr_set_lighting GR_CALL			(*gr_screen.gf_lighting)
-#define	gr_center_alpha GR_CALL			(*gr_screen.gf_center_alpha)
+#define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
+#define	gr_center_alpha					GR_CALL(*gr_screen.gf_center_alpha)
 
-#define	gr_start_clip GR_CALL			(*gr_screen.gf_start_clip_plane)
-#define	gr_end_clip GR_CALL				(*gr_screen.gf_end_clip_plane)
+#define	gr_start_clip					GR_CALL(*gr_screen.gf_start_clip_plane)
+#define	gr_end_clip						GR_CALL(*gr_screen.gf_end_clip_plane)
 
-#define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
-#define	gr_set_fill_mode GR_CALL		(*gr_screen.gf_set_fill_mode)
-#define	gr_set_texture_panning GR_CALL	(*gr_screen.gf_set_texture_panning)
+#define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
+#define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
+#define	gr_set_texture_panning			GR_CALL(*gr_screen.gf_set_texture_panning)
 
-#define	gr_start_state_block GR_CALL	(*gr_screen.gf_start_state_block)
-#define	gr_end_state_block GR_CALL		(*gr_screen.gf_end_state_block)
-#define	gr_set_state_block GR_CALL		(*gr_screen.gf_set_state_block)
+#define	gr_start_state_block			GR_CAL(*gr_screen.gf_start_state_block)
+#define	gr_end_state_block				GR_CALL(*gr_screen.gf_end_state_block)
+#define	gr_set_state_block				GR_CALL(*gr_screen.gf_set_state_block)
 
-//#define	gr_set_environment_mapping GR_CALL	(*gr_screen.gf_set_environment_mapping)
+//#define	gr_set_environment_mapping	GR_CALL(*gr_screen.gf_set_environment_mapping)
 
-#define gr_setup_background_fog GR_CALL	(*gr_screen.gf_setup_background_fog)
+#define gr_setup_background_fog			GR_CALL(*gr_screen.gf_setup_background_fog)
 
-#define gr_draw_line_list GR_CALL	(*gr_screen.gf_draw_line_list)
+#define gr_draw_line_list				GR_CALL(*gr_screen.gf_draw_line_list)
 
-#define gr_set_line_width GR_CALL(*gr_screen.gf_set_line_width)
-#define gr_draw_htl_line GR_CALL(*gr_screen.gf_draw_htl_line)
-#define gr_draw_htl_sphere GR_CALL(*gr_screen.gf_draw_htl_sphere)
+#define gr_set_line_width				GR_CALL(*gr_screen.gf_set_line_width)
+
+#define gr_line_htl						GR_CALL(*gr_screen.gf_line_htl)
+#define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
 
 /*
-#define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)
-#define	gr_draw_sprites GR_CALL			(*gr_screen.gf_draw_sprites)
-#define	gr_end sprites GR_CALL			(*gr_screen.gf_end_sprites)
-#define	gr_display_sprites GR_CALL		(*gr_screen.gf_display_sprites)
+#define	gr_begin_sprites				GR_CALL(*gr_screen.gf_begin_sprites)
+#define	gr_draw_sprites					GR_CALL(*gr_screen.gf_draw_sprites)
+#define	gr_end sprites					GR_CALL(*gr_screen.gf_end_sprites)
+#define	gr_display_sprites				GR_CALL(*gr_screen.gf_display_sprites)
 */
 
 // color functions
@@ -1471,16 +1453,15 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 // Moreover, it is _really_ intended for use with 45 degree angles. 
 void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize=true);
 
-#define VERTEX_FLAG_POSITION	 (1<<0)	
-#define VERTEX_FLAG_RHW			 (1<<1)	//incompatable with the next normal
-#define VERTEX_FLAG_NORMAL		 (1<<2)	
-#define VERTEX_FLAG_DIFUSE		 (1<<3)	
-#define VERTEX_FLAG_SPECULAR	 (1<<4)	
-#define VERTEX_FLAG_UV1			 (1<<5)	//how many UV coords, only use one of these
-#define VERTEX_FLAG_UV2			 (1<<6)	
-#define VERTEX_FLAG_UV3			 (1<<7)	
-#define VERTEX_FLAG_UV4			 (1<<8)	
-
-void poly_tsb_calc(vertex *v0, vertex *v1, vertex *v2, vec3d *o_norm, vec3d *o_stan, vec3d *o_ttan);
+#define VERTEX_FLAG_POSITION	(1<<0)	
+#define VERTEX_FLAG_RHW			(1<<1)	//incompatable with the next normal
+#define VERTEX_FLAG_NORMAL		(1<<2)	
+#define VERTEX_FLAG_DIFUSE		(1<<3)	
+#define VERTEX_FLAG_SPECULAR	(1<<4)	
+#define VERTEX_FLAG_UV1			(1<<5)	//how many UV coords, only use one of these
+#define VERTEX_FLAG_UV2			(1<<6)	
+#define VERTEX_FLAG_UV3			(1<<7)	
+#define VERTEX_FLAG_UV4			(1<<8)
+#define VERTEX_FLAG_TANGENT		(1<<9)
 
 #endif

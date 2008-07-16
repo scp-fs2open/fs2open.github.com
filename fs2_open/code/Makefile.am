@@ -306,10 +306,16 @@ FS2_SOURCES =	\
 	graphics/gropengl.h	\
 	graphics/gropenglbmpman.cpp	\
 	graphics/gropenglbmpman.h	\
+	graphics/gropengldraw.cpp	\
+	graphics/gropengldraw.h	\
 	graphics/gropenglextension.cpp	\
 	graphics/gropenglextension.h	\
 	graphics/gropengllight.cpp	\
 	graphics/gropengllight.h	\
+	graphics/gropenglshader.cpp	\
+	graphics/gropenglshader.h	\
+	graphics/gropenglstate.cpp	\
+	graphics/gropenglstate.h	\
 	graphics/gropengltexture.cpp	\
 	graphics/gropengltexture.h	\
 	graphics/gropengltnl.cpp	\

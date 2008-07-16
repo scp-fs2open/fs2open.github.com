@@ -1444,7 +1444,7 @@ void neb2_render_player()
 #else */
 				if (!Cmdline_nohtl) gr_set_lighting(false, false);
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-		 	  	if(Cmdline_nohtl || Cmdline_2d_poof)
+		 	  	if(Cmdline_nohtl)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 //#endif

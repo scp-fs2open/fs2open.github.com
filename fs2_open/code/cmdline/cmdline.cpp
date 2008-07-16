@@ -990,9 +990,9 @@ Flag exe_params[] =
 	{ "-env",				"Enable environment maps",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-mipmap",			"Enable mipmapping",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
-	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-2d_poof", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-missile_lighting",	"Apply Lighting to Missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
+	{ "-normal",			"Enable normal maps",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -1035,8 +1035,8 @@ Flag exe_params[] =
 	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx",	},
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
+	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 
-	{ "-alpha_env",			"Use specular alpha for env mapping",		true,	0,					EASY_DEFAULT_MEM,	"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-alpha_env", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 
@@ -1057,6 +1057,7 @@ Flag exe_params[] =
 	{ "-output_scripting",	"Outputs scripting to scripting.html",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_scripting", },
 	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 	{ "-debug_window",		"Display debug window",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
+	{ "-verify_vps",		"Spew VP crcs to vp_crcs.txt",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 #ifdef SCP_UNIX
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 #endif
@@ -1118,36 +1119,36 @@ cmdline_parm ogl_spec_arg("-ogl_spec", NULL);		// Cmdline_ogl_spec
 cmdline_parm spec_static_arg("-spec_static", NULL);
 cmdline_parm spec_point_arg("-spec_point", NULL);
 cmdline_parm spec_tube_arg("-spec_tube", NULL);
-cmdline_parm poof_2d_arg("-2d_poof", NULL);			// Cmdline_2d_poof
-cmdline_parm alpha_env("-alpha_env", NULL);			// Cmdline_alpha_env
 cmdline_parm ambient_factor_arg("-ambient_factor", NULL);	// Cmdline_ambient_factor
 cmdline_parm cell_arg("-cell", NULL);				// Cmdline_cell
 cmdline_parm decals("-decals", NULL);				// Cmdline_decals
 cmdline_parm env("-env", NULL);						// Cmdline_env
 cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
 cmdline_parm missile_lighting_arg("-missile_lighting", NULL);	// Cmdline_missile_lighting
-cmdline_parm glow_arg("-glow", NULL); 				// Cmdline_noglow  -- use Bobs glow code
+cmdline_parm glow_arg("-glow", NULL); 				// Cmdline_glow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
 cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
-cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
+cmdline_parm spec_arg("-spec", NULL);				// Cmdline_spec  -- use specular highlighting -Sticks
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm normal_arg("-normal", NULL);				// Cmdline_normal  -- enable normal mapping
+cmdline_parm height_arg("-height", NULL);			// Cmdline_height  -- enable support for parallax mapping
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
-int Cmdline_2d_poof = 0;
-int Cmdline_alpha_env = 0;
 int Cmdline_ambient_factor = 128;
 int Cmdline_cell = 0;
 int Cmdline_decals = 0;
 int Cmdline_env = 0;
 int Cmdline_mipmap = 0;
 int Cmdline_missile_lighting = 0;
-int Cmdline_noglow = 1;
+int Cmdline_glow = 0;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
-int Cmdline_nospec = 1;
+int Cmdline_spec = 0;
 int Cmdline_no_emissive = 0;
+int Cmdline_normal = 0;
+int Cmdline_height = 0;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1219,7 +1220,6 @@ int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys", NULL);	// Cmdline_d3d_lesstmem
-//cmdline_parm fred2_htl_arg("-fredhtl", NULL);		// Cmdline_FRED2_htl
 cmdline_parm loadallweapons_arg("-loadallweps", NULL);	// Cmdline_load_all_weapons
 cmdline_parm htl_arg("-nohtl", NULL);				// Cmdline_nohtl  -- don't use HT&L
 cmdline_parm noibx_arg("-noibx", NULL);				// Cmdline_noibx
@@ -1228,10 +1228,9 @@ cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
-cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps
+cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
 
 int Cmdline_d3d_lesstmem = 0;
-//int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
 int Cmdline_noibx = 0;
@@ -1240,7 +1239,7 @@ int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_safeloading = 0;
 int Cmdline_no_fbo = 0;
-int Cmdline_verify_vps = 0;
+int Cmdline_noglsl = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -1257,6 +1256,7 @@ cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_sa
 cmdline_parm debug_window_arg("-debug_window", NULL);	// Cmdline_debug_window
 cmdline_parm window_arg("-window", NULL);				// Cmdline_window
 cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
+cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -1274,6 +1274,7 @@ int Cmdline_save_render_targets = 0;
 int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
 char *Cmdline_res = 0;
+int Cmdline_verify_vps = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
@@ -1719,11 +1720,6 @@ bool SetCmdlineParams()
 		Cmdline_load_all_weapons = 1;
 	}
 
-	if(poof_2d_arg.found())
-	{
-		Cmdline_2d_poof = 1;
-	}
-
 	if(voice_recognition_arg.found())
 	{
 		Cmdline_voice_recognition = 1;
@@ -2028,7 +2024,7 @@ bool SetCmdlineParams()
 
 	if ( spec_arg.found() )
 	{
-		Cmdline_nospec = 0;
+		Cmdline_spec = 1;
 	}
 
 	if ( htl_arg.found() ) 
@@ -2053,11 +2049,24 @@ bool SetCmdlineParams()
 	}
 #endif
 
+	if ( normal_arg.found() ) {
+		Cmdline_normal = 1;
+
+		// height maps are only used if normal maps are
+		if ( height_arg.found() ) {
+			Cmdline_height = 1;
+		}
+	}
+
+	if ( noglsl_arg.found() ) {
+		Cmdline_noglsl = 1;
+	}
+
 	if ( img2dds_arg.found() )
 		Cmdline_img2dds = 1;
 
 	if ( glow_arg.found() )
-		Cmdline_noglow = 0;
+		Cmdline_glow = 1;
 
 	if ( query_speech_arg.found() )
 		Cmdline_query_speech = 1;
@@ -2141,10 +2150,6 @@ bool SetCmdlineParams()
 	if ( snd_preload_arg.found() )
 	{
 		Cmdline_snd_preload = 1;
-	}
-
-	if ( alpha_env.found() ) {
-		Cmdline_alpha_env = 1;
 	}
 
 	if ( env.found() ) {

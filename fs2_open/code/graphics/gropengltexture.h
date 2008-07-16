@@ -151,65 +151,49 @@
 #include "graphics/gropengl.h"
 
 
-//turns on/off GL_TEXTUREx_ARB
-void opengl_switch_arb(int unit, int state);
-
 typedef struct tcache_slot_opengl {
-	GLuint	texture_id;
-	GLenum	texture_target;
-	float	u_scale, v_scale;
+	GLuint texture_id;
+	GLenum texture_target;
+	float u_scale, v_scale;
 	int	bitmap_handle;
 	int	size;
-	int	time_created;
-	ushort	w,h;
+	ushort w, h;
 	ubyte bpp;
 	ubyte mipmap_levels;
 } tcache_slot_opengl;
 
-extern int GL_texture_sections;
-extern int GL_texture_ram;
-extern int GL_frame_count;
 extern int GL_min_texture_width;
 extern GLint GL_max_texture_width;
 extern int GL_min_texture_height;
 extern GLint GL_max_texture_height;
-extern int GL_square_textures;
-extern int GL_textures_in;
-extern int GL_textures_in_frame;
-extern int GL_last_bitmap_id;
-extern int GL_last_detail;
-extern int GL_last_bitmap_type;
-extern int GL_last_section_x;
-extern int GL_last_section_y;
 extern GLint GL_supported_texture_units;
-extern int GL_should_preload;
-extern ubyte GL_xlat[256];
 extern int GL_mipmap_filter;
 extern GLenum GL_texture_target;
 extern GLenum GL_texture_face;
 extern GLfloat GL_anisotropy;
+extern bool GL_rendering_to_framebuffer;
 
+void opengl_switch_arb(int unit, int state);
 void opengl_tcache_init();
 void opengl_free_texture_slot(int n);
 void opengl_tcache_flush();
-void opengl_tcache_cleanup();
+void opengl_tcache_shutdown();
 void opengl_tcache_frame();
-int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int stage = 0);
 void opengl_set_additive_tex_env();
 void opengl_set_modulate_tex_env();
-void gr_opengl_set_tex_env_scale(float scale);
-int gr_opengl_preload(int bitmap_num, int is_aabitmap);
-void gr_opengl_preload_init();
+void opengl_preload_init();
 GLfloat opengl_get_max_anisotropy();
-void opengl_set_anisotropy(GLfloat aniso_value = GL_anisotropy);
-void gr_opengl_set_texture_panning(float u, float v, bool enable);
-void gr_opengl_set_texture_addressing(int mode);
+//void opengl_set_anisotropy(GLfloat aniso_value = GL_anisotropy);
 void opengl_kill_render_target(int slot);
 int opengl_make_render_target(int handle, int slot, int *w, int *h, ubyte *bpp, int *mm_lvl, int flags);
 int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
 int opengl_export_image(int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data = NULL);
-
 void opengl_set_texture_target(GLenum target = GL_TEXTURE_2D);
 void opengl_set_texture_face(GLenum face = GL_TEXTURE_2D);
+
+int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int stage = 0);
+int gr_opengl_preload(int bitmap_num, int is_aabitmap);
+void gr_opengl_set_texture_panning(float u, float v, bool enable);
+void gr_opengl_set_texture_addressing(int mode);
 
 #endif	//_GROPENGLTEXTURE_H

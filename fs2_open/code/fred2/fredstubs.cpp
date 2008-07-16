@@ -505,7 +505,7 @@ char **Builtin_mission_names;
 char *Game_current_mission_filename;
 CFILE *Working_demo;
 struct beam_info;
-bool cube_map_drawen=false;
+bool Env_cubemap_drawn = false;
 int Multi_ping_timestamp = -1;
 int Sun_drew = 0;
 int Networking_disabled = 0;

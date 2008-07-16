@@ -883,12 +883,6 @@ int Gr_cursor_size = 32;	// default w/h
 
 int Gr_inited = 0;
 
-// cpu types
-int Gr_cpu = 0;	
-int Gr_amd3d = 0;
-int Gr_katmai = 0;
-int Gr_mmx = 0;
-
 uint Gr_signature = 0;
 
 float Gr_gamma = 1.8f;
@@ -921,8 +915,9 @@ static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
  */
 bool gr_resize_screen_pos(int *x, int *y)
 {
-	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
 		return false;
+	}
 
 	float xy_tmp = 0.0f;
 
@@ -947,8 +942,9 @@ bool gr_resize_screen_pos(int *x, int *y)
  */
 bool gr_unsize_screen_pos(int *x, int *y)
 {
-	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
 		return false;
+	}
 
 	float xy_tmp = 0.0f;
 
@@ -975,8 +971,9 @@ bool gr_unsize_screen_pos(int *x, int *y)
  */
 bool gr_resize_screen_posf(float *x, float *y)
 {
-	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
 		return false;
+	}
 
 	if ( x && (*x != 0) )
 		(*x) *= Gr_resize_X;
@@ -995,8 +992,9 @@ bool gr_resize_screen_posf(float *x, float *y)
  */
 bool gr_unsize_screen_posf(float *x, float *y)
 {
-	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
 		return false;
+	}
 
 	if ( x && (*x != 0) )
 		(*x) *= Gr_unsize_X;
@@ -1009,24 +1007,27 @@ bool gr_unsize_screen_posf(float *x, float *y)
 
 void gr_close()
 {
-	if ( !Gr_inited )	return;
+	if ( !Gr_inited ) {
+		return;
+	}
 
 	palette_flush();
 
-	switch( gr_screen.mode )	{
+	switch (gr_screen.mode) {
 #ifndef NO_DIRECT3D
-	case GR_DIRECT3D:		
-		gr_d3d_cleanup();
-		break;
+		case GR_DIRECT3D:		
+			gr_d3d_cleanup();
+			break;
 #endif
-	case GR_OPENGL:
-		gr_opengl_cleanup();
-		break;
-
-	case GR_STUB:break;
-
-	default:
-		Int3();		// Invalid graphics mode
+		case GR_OPENGL:
+			gr_opengl_cleanup();
+			break;
+	
+		case GR_STUB:
+			break;
+	
+		default:
+			Int3();		// Invalid graphics mode
 	}
 
 	gr_font_close();
@@ -1037,7 +1038,6 @@ void gr_close()
 //XSTR:OFF
 DCF(gr,"Changes graphics mode")
 {
-#ifndef HARDWARE_ONLY
 	int mode = gr_screen.mode;
 
 	if ( Dc_command )	{
@@ -1086,7 +1086,6 @@ DCF(gr,"Changes graphics mode")
 			Int3();		// Invalid graphics mode
 		}
 	}
-#endif
 }
 //XSTR:ON
 
@@ -1162,237 +1161,88 @@ void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
 	gr_set_palette_internal( name, palette, restrict_font_to_128 );
 }
 
-
-//void gr_test();
-
-#define CPUID _asm _emit 0fh _asm _emit 0a2h
-
-// -----------------------------------------------------------------------
-// Returns cpu type.
-void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
+void gr_screen_resize(int width, int height)
 {
-	// Set defaults
-	*cpu = 0;
-	*mmx = 0;
-	*amd3d = 0;
-	*katmai = 0;
-
-#if defined( _WIN32 ) && defined( _MSC_VER )
-	DWORD RegEDX;
-	DWORD RegEAX;
-
-	char cpu_vender[16];
-	memset( cpu_vender, 0, sizeof(cpu_vender) );
-
-  _asm {
-
-		// Check for prescence of 
-		push	eax
-		push	ebx
-		push	ecx
-		push	edx
-
-		pushfd			// get extended flags
-		pop	eax
-		mov	ebx, eax		// save current flags
-		xor	eax, 200000h	// toggle bit 21
-		push	eax			// push new flags on stack
-		popfd					// flags updated now in flags
-		pushfd			// get extended flags
-		pop	eax		// store extended flags in eax
-		xor	eax, ebx	// if bit 21 r/w then eax <> 0
-		je		no_cpuid		
-
-		mov	eax, 0		// setup CPUID to return vender id
-      CPUID           // code bytes = 0fh,  0a2h
-		mov	DWORD PTR cpu_vender[0], ebx
-		mov	DWORD PTR cpu_vender[4], edx
-		mov	DWORD PTR cpu_vender[8], ecx
-		
-      mov eax, 1      // setup CPUID to return features
-
-      CPUID           // code bytes = 0fh,  0a2h
-
-		mov RegEAX, eax	// family, etc returned in eax
-      mov RegEDX, edx	// features returned in edx
-		jmp	done_checking_cpuid
-
-
-no_cpuid:
-		mov RegEAX, 4<<8	// family, etc returned in eax
-      mov RegEDX, 0		// features returned in edx
-
-done_checking_cpuid:								
-		pop	edx
-		pop	ecx
-		pop	ebx
-		pop	eax
-
-	}
-	
-
-
-	//RegEAX	.  Bits 11:8 is family
-	*cpu = (RegEAX >>8) & 0xF;
-
-	if ( *cpu < 5 )	{
-		*cpu = 4;								// processor does not support CPUID
-		*mmx = 0;
+	// this should only be called from FRED!!
+	if ( !Fred_running ) {
+		Int3();
+		return;
 	}
 
-	//RegEAX	.  Bits 11:8 is family
-	*cpu = (RegEAX >>8) & 0xF;
+	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = width;
+	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = height;
 
-	// Check for MMX
-	BOOL retval = TRUE;
-   if (RegEDX & 0x800000)               // bit 23 is set for MMX technology
-   {
+	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
+	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
 
-           __try { _asm emms }          // try executing an MMX instruction "emms"
+	gr_screen.clip_left = gr_screen.clip_left_unscaled = 0;
+	gr_screen.clip_top = gr_screen.clip_top_unscaled = 0;
+	gr_screen.clip_right = gr_screen.clip_right_unscaled = gr_screen.max_w - 1;
+	gr_screen.clip_bottom = gr_screen.clip_bottom_unscaled = gr_screen.max_h - 1;
+	gr_screen.clip_width = gr_screen.clip_width_unscaled = gr_screen.max_w;
+	gr_screen.clip_height = gr_screen.clip_height_unscaled = gr_screen.max_h;
+	gr_screen.clip_aspect = i2fl(gr_screen.clip_width) / i2fl(gr_screen.clip_height);
 
-           __except(EXCEPTION_EXECUTE_HANDLER) { retval = FALSE; }
-
-   } else {
-		retval = FALSE;
+	if (gr_screen.custom_size) {
+		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
-	if ( retval )	{
-		*mmx = 1;			// processor supports CPUID but does not support MMX technology
+
+	if (gr_screen.mode == GR_OPENGL) {
+		extern void opengl_setup_viewport();
+		opengl_setup_viewport();
 	}
-
-	// Check for Katmai
-   if (RegEDX & (1<<25) )               // bit 25 is set for Katmai technology
-   {
-		*katmai = 1;
-   }
-
-	// Check for Amd 3dnow
-	/*
-	if ( !stricmp( cpu_vender, NOX("AuthenticAMD")) )	{
-
-		_asm {
-			mov eax, 0x80000000      // setup CPUID to return extended number of functions
-
-			CPUID           // code bytes = 0fh,  0a2h
-
-			mov RegEAX, eax	// highest extended function value
-		}
-
-		if ( RegEAX > 0x80000000 )	{
-
-			_asm {
-				mov eax, 0x80000001      // setup CPUID to return extended flags
-
-				CPUID           // code bytes = 0fh,  0a2h
-
-				mov RegEAX, eax	// family, etc returned in eax
-				mov RegEDX, edx	// flags in edx
-			}
-
-			if (RegEDX & 0x80000000)               // bit 31 is set for AMD-3D technology
-			{
-				// try executing some 3Dnow instructions
-				__try { 
-
-					float x = (float)1.25;            
-					float y = (float)1.25;            
-					float z;                      
-
-					_asm {
-						movd		mm1, x
-						movd		mm2, y                  
-						PFMUL(AMD_M1, AMD_M2);               
-						movd		z, mm1
-						femms
-						emms
-					}
-
-					int should_be_156 = int(z*100);
-
-					if ( should_be_156 == 156 )	{
-						*amd3d = 1;
-					}
-
-				}          
-
-				__except(EXCEPTION_EXECUTE_HANDLER) { }
-			}
-
-		}		
-	}
-	*/
-#else
-
-#if defined( __x86_64__ )
-
-	// FIXME: I'm not sure exactly what would be the base for all models
-	*cpu = 10;
-
-	// 64-bit x86 CPUs have all of these
-	*mmx = 1;
-	*amd3d = 1;
-	*katmai = 1;
-
-#elif ( SDL_VERSION_ATLEAST(1, 2, 7) )
-#ifndef __APPLE__
-	// can't get CPU family yet
-
-	if ( SDL_HasMMX() )
-		*mmx = 1;
-
-	if ( SDL_Has3DNow() )
-		*amd3d = 1;
-
-	if ( SDL_HasSSE() )
-		*katmai = 1;
-#endif // __APPLE__
-#else
-	
-	STUB_FUNCTION;
-
-#endif // Non-Win32 CPU detection
-
-#endif
 }
 
-
-
-// --------------------------------------------------------------------------
-
-// RT Created because D3D8 resolution is chosen in the D3D init function not from the launcher
-// Everything but D3D calls this before device initialisation
-void gr_init_res(int res, int mode, int max_w, int max_h)
+static bool gr_init_sub(int mode, int width, int height, int depth)
 {
-	if (Fred_running ) {		   
-		gr_screen.custom_size = -1;
-	} else if (max_w == 640 && max_h == 480) {
-		gr_screen.custom_size = -1;
-		res = GR_640;
-	} else if(max_w == 1024 && max_h == 768) {
-		gr_screen.custom_size = -1;
-   
-		// Hi res vp is not present, use 640x480 art in 1024x768!
-		if(res != GR_1024)
-			gr_screen.custom_size = res;
+	int res = GR_1024;
+	bool rc = false;
+
+	memset( &gr_screen, 0, sizeof(screen) );
+
+	if ( ((width == 640) && (height == 480)) || ((width == 1024) && (height == 768)) ) {
+		gr_screen.custom_size = false;
 	} else {
-		// Will fall back to 640x480 if sparky hi res isnt there
-		gr_screen.custom_size = res;
+		gr_screen.custom_size = true;
 	}
 
-	Gr_resize_X = (float)max_w / ((res == GR_1024) ? 1024.0f : 640.0f);
-	Gr_resize_Y = (float)max_h / ((res == GR_1024) ?  768.0f : 480.0f);
+	if ( (width >= 1024) && (height >= 768) ) {
+		res = GR_1024;
+	} else {
+		res = GR_640;
+	}
 
-	Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)max_w;
-	Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)max_h;
+	if (Fred_running) {
+		gr_screen.custom_size = false;
+		res = GR_640;
+		mode = GR_OPENGL;
+	}
+
+	Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
+	Gr_resize_Y = (float)height	/ ((res == GR_1024) ?  768.0f : 480.0f);
+
+	Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
+	Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
 
 
 	gr_screen.signature = Gr_signature++;
+	gr_screen.bits_per_pixel = depth;
+	gr_screen.bytes_per_pixel= depth / 8;
+	gr_screen.rendering_to_texture = -1;
+	gr_screen.recording_state_block = false;
+	gr_screen.envmap_render_target = -1;
 	gr_screen.mode = mode;
-	gr_screen.res = res;	
-	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = max_w;
-	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = max_h;
+	gr_screen.res = res;
 	gr_screen.aspect = 1.0f;			// Normal PC screen
+
+	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = width;
+	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = height;
+
 	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
 	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
+
 	gr_screen.clip_left = gr_screen.clip_left_unscaled = 0;
 	gr_screen.clip_top = gr_screen.clip_top_unscaled = 0;
 	gr_screen.clip_right = gr_screen.clip_right_unscaled = gr_screen.max_w - 1;
@@ -1403,101 +1253,184 @@ void gr_init_res(int res, int mode, int max_w, int max_h)
 	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) * 0.5f;
 	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) * 0.5f;
 
-	if (gr_screen.custom_size >= 0) {
+	if (gr_screen.custom_size) {
 		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
-}
-//int big_ole_honkin_hack_test = -1;
-bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
-{
 
-	int first_time = 0;
-
-	gr_detect_cpu(&Gr_cpu, &Gr_mmx, &Gr_amd3d, &Gr_katmai );
-
-	mprintf(( "GR_CPU: Family %d, MMX=%s\n", Gr_cpu, (Gr_mmx?"Yes":"No") ));
-	
-	if ( !Gr_inited )	
-		atexit(gr_close);
-
-	// If already inited, shutdown the previous graphics
-	if ( Gr_inited )	{
-		switch( gr_screen.mode )	{
-#ifndef NO_DIRECT3D
-		case GR_DIRECT3D:
-			gr_d3d_cleanup();
-			break;
-#endif  // !NO_DIRECT3D
-
-		case GR_OPENGL:
-			gr_opengl_cleanup();
-			break;
-		
-		case GR_STUB: break;
-
-		default:
-			Int3();		// Invalid graphics mode
-		}
-	} else {
-		first_time = 1;
+#ifdef WIN32
+	// FRED doesn't need this
+	if ( !Fred_running && !Is_standalone ) {
+		// for Windows, we need to do this just before the *_init() calls
+		extern void win32_create_window(int width, int height);
+		win32_create_window( width, height );
 	}
+#endif
 
-	D3D_enabled = 0;
-	OGL_enabled = 0;
-	Gr_inited = 1;
-
-	// Moved memset to out here so its not all scrubbed when D3D8 needs to call it again to revise 
-	// the mode selection through its own launcher
-	memset( &gr_screen, 0, sizeof(screen) );
-	gr_init_res(res, mode, custom_x, custom_y);
-	gr_screen.bits_per_pixel = depth;
-	gr_screen.bytes_per_pixel= depth / 8;
-	gr_screen.rendering_to_texture = -1;
-	gr_screen.recording_state_block = false;
-
-	switch( mode )	{
+	switch (mode) {
 #ifndef NO_DIRECT3D
 		case GR_DIRECT3D:
-			Gr_inited = 0;
-			Gr_inited = gr_d3d_init();
+			rc = gr_d3d_init();
 			break;
 #endif  // ifdef WIN32
 
 		case GR_OPENGL:
-			gr_opengl_init();
+			rc = gr_opengl_init();
 			break;
 
 		case GR_STUB: 
-			gr_stub_init();
+			rc = gr_stub_init();
 			break;
 
 		default:
 			Int3();		// Invalid graphics mode
 	}
 
-	if(Gr_inited == false) {
+	if ( !rc ) {
 		return false;
 	}
 
-//  	memmove( Gr_current_palette, Gr_original_palette, 768 );
-//  	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
+	return true;
+}
+
+bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
+{
+	int width = 1024, height = 768, depth = 16, mode = GR_OPENGL;
+	char *ptr = NULL;
+
+
+	if ( !Gr_inited ) {
+		atexit(gr_close);
+	}
+
+	// If already inited, shutdown the previous graphics
+	if (Gr_inited) {
+		switch (gr_screen.mode) {
+#ifndef NO_DIRECT3D
+			case GR_DIRECT3D:
+				gr_d3d_cleanup();
+				break;
+#endif  // !NO_DIRECT3D
+	
+			case GR_OPENGL:
+				gr_opengl_cleanup();
+				break;
+			
+			case GR_STUB:
+				break;
+	
+			default:
+				Int3();		// Invalid graphics mode
+		}
+	}
+
+	// We cannot continue without this, quit, but try to help the user out first
+	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
+
+	// if we don't have a config string then construct one, using OpenGL 1024x768 16-bit as the default
+	if (ptr == NULL) {
+		char Default_video_settings[] = "OGL -(1024x768)x16 bit";
+		ptr = &Default_video_settings[0];
+	}
+
+	Assert( ptr != NULL );
+
+	// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+	//       If the format of that string changes you'll have to change this too!!!
+	if ( sscanf(ptr+5, "(%dx%d)x%d ", &width, &height, &depth) != 3 ) {
+		Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+	}
+
+	if (Cmdline_res != NULL) {
+		int tmp_width = 0;
+		int tmp_height = 0;
+
+		if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
+			width = tmp_width;
+			height = tmp_height;
+		}
+	}
+
+	if (d_mode == GR_DEFAULT) {
+		// OpenGL should be default
+		mode = GR_OPENGL;
+
+#ifndef NO_DIRECT3D
+		// see if we would actaully rather have a D3D mode
+		if ( !strncmp(ptr, NOX("D3D8"), 4) ) {
+			mode = GR_DIRECT3D;
+		}
+#endif
+	} else {
+		mode = d_mode;
+	}
+
+	// see if we passed good values, and use those instead of the config settings
+	if ( (d_width != GR_DEFAULT) && (d_height != GR_DEFAULT) ) {
+		width = d_width;
+		height = d_height;
+	}
+
+	if (d_depth != GR_DEFAULT) {
+		depth = d_depth;
+	}
+
+	// check for hi-res interface files so that we can verify our width/height is correct
+	bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
+
+	// if we don't have it then fall back to 640x480 mode instead
+	if ( !has_sparky_hi ) {
+		if ( (width == 1024) && (height == 768) ) {
+			width = 640;
+			height = 480;
+		} else {
+			width = 800;
+			height = 600;
+		}
+	}
+
+	// if we are in standalone mode then just use special defaults
+	if (Is_standalone) {
+		mode = GR_STUB;
+		width = 640;
+		height = 480;
+		depth = 16;
+	}
+
+	// now try to actually init everything...
+	if ( gr_init_sub(mode, width, height, depth) == false ) {
+		return false;
+	}
+
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
 
 	bm_init();
-	if ( Gr_cursor == -1 ){
+
+	if (Gr_cursor < 0) {
+		int w, h;
+
 		Gr_cursor = bm_load( "cursor" );
+
+		if (Gr_cursor >= 0) {
+			// get cursor size, so that we can be sure to account for the full thing
+			// in later cursor hiding code
+			bm_get_info(Gr_cursor, &w, &h);
+			Gr_cursor_size = MAX(w, h);
+
+			if (Gr_cursor_size <= 0) {
+				Int3();
+				Gr_cursor_size = 32;
+			}
+		}
 	}
 
 	// load the web pointer cursor bitmap
-	if (Web_cursor_bitmap < 0)
-	{
+	if (Web_cursor_bitmap < 0) {
 		int nframes;						// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
-		{
+		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
 				"\t2) You've somehow corrupted your FreeSpace 2 installation;\n"
@@ -1507,25 +1440,15 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	}
 
 	mprintf(("GRAPHICS: Initializing default colors...\n"));
-	gr_set_color(0,0,0);
 
+	gr_set_color(0,0,0);
 	gr_set_clear_color(0, 0, 0);
 
-	// Call some initialization functions
 	gr_set_shader(NULL);
 
-	// NOTE: Don't clear the render target faces at the start, only when they are actually updated in freespace.cpp.
+	os_set_title(Osreg_title);
 
-	if (Cmdline_env) {
-		// get a render target for static environment maps
-		gr_screen.static_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_STATIC|BMP_FLAG_CUBEMAP);
-
-		// get the dynamic environment map
-		gr_screen.dynamic_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_DYNAMIC|BMP_FLAG_CUBEMAP);
-	} else {
-		gr_screen.static_environment_map = gr_screen.dynamic_environment_map = -1;
-	}
-
+	Gr_inited = 1;
 
 	return true;
 }
@@ -1748,8 +1671,9 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 	int _w, _h;
 	float x, y, w, h;
 
-	if (gr_screen.mode == GR_STUB)
+	if (gr_screen.mode == GR_STUB) {
 		return;
+	}
 
 	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
 
@@ -1757,9 +1681,9 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 	y = i2fl(_y);
 	w = i2fl(_w);
 	h = i2fl(_h);
-	
+
 	// I will tidy this up later - RT
-	if (allow_scaling || gr_screen.rendering_to_texture != -1) {
+	if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
 		gr_resize_screen_posf(&x, &y);
 		gr_resize_screen_posf(&w, &h);
 	}
@@ -1771,49 +1695,39 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 // NEW new bitmap functions -Bobboau
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 {
-	for(int i = 0; i<n_bm; i++){
-
-		bitmap_2d_list* l = &list[i];
+	for (int i = 0; i < n_bm; i++) {
+		bitmap_2d_list *l = &list[i];
 
 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-		// I will tidy this up later - RT
-		//I doubt it, seeing as you've been gone for nearly half a year :)
-		if(allow_scaling || gr_screen.rendering_to_texture != -1)
-		{
+
+		if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);
 		}
 	}
-	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
 
-	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
+	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
 }
 
 // _->NEW<-_ NEW new bitmap functions -Bobboau
 //takes a list of rectangles that have assosiated rectangles in a texture
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 {
-	for(int i = 0; i<n_bm; i++){
+	for(int i = 0; i < n_bm; i++) {
+		bitmap_2d_list *l = &list[i].screen_rect;
 
-		bitmap_2d_list* l = &list[i].screen_rect;
+		// if no valid hight or width values were given get some from the bitmap
+		if ( (l->w <= 0) || (l->h <= 0) ) {
+			bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
+		}
 
-		//if no valid hight or width values were given get some from the bitmap
-		if(l->w <= 0 || l->h <= 0)
-		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-		// I will tidy this up later - RT
-		//I doubt it, seeing as you've been gone for nearly half a year :)
-
-		//resize for diferent screen resolutions if needed.
-		if(allow_scaling || gr_screen.rendering_to_texture != -1)
-		{
+		if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);
 		}
-
 	}
-	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, TMAP_FLAG_INTERFACE);
 
-	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
+	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, TMAP_FLAG_INTERFACE);
 }
 
 
@@ -2014,34 +1928,48 @@ inline bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2)
 		(v1->v == v2->v) &&
 		(n1->xyz.x == n2->xyz.x) &&
 		(n1->xyz.y == n2->xyz.y) &&
-		(n1->xyz.z == n2->xyz.z) 
+		(n1->xyz.z == n2->xyz.z)
 	);
 }
 
 //finds the first occorence of a vertex within a poly list
 int find_first_index(poly_list *plist, int idx)
 {
-	vec3d norm = plist->norm[idx];
-	vertex vert = plist->vert[idx];
-	int i, missed = 0;
+	vec3d *p_norm = &plist->norm[0];
+	vertex *p_vert = &plist->vert[0];
+	vec3d *norm = &plist->norm[idx];
+	vertex *vert = &plist->vert[idx];
+	int i;
 
-	for (i = 0; i < plist->n_verts; i++) {
-		if ( same_vert(&plist->vert[i+missed], &vert, &plist->norm[i+missed], &norm) ) {
+	// we should always equal ourselves, so just use that as the stopping point
+	for (i = 0; i < idx; i++) {
+		if ( same_vert(p_vert, vert, p_norm, norm) ) {
 			return i;
 		}
+
+		p_norm++;
+		p_vert++;
 	}
 
-	return -1;
+	return idx;
 }
-//index_buffer[j] = find_first_index_vb(&list[i], j, &model_list);
 
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
 int find_first_index_vb(poly_list *plist, int idx, poly_list *v)
 {
-	for (int i = 0; i < v->n_verts; i++) {
-		if ( same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx]) ) {
+	vec3d *p_norm = &plist->norm[idx];
+	vertex *p_vert = &plist->vert[idx];
+	vec3d *norm = &v->norm[0];
+	vertex *vert = &v->vert[0];
+	int i;
+
+	for (i = 0; i < v->n_verts; i++) {
+		if ( same_vert(vert, p_vert, norm, p_norm) ) {
 			return i;
 		}
+
+		vert++;
+		norm++;
 	}
 
 	return -1;
@@ -2064,12 +1992,23 @@ void poly_list::allocate(int _verts)
 		norm = NULL;
 	}
 
+	if (tsb != NULL) {
+		vm_free(tsb);
+		tsb = NULL;
+	}
+
 	if (_verts) {
 		vert = (vertex*)vm_malloc(sizeof(vertex) * _verts);
-		norm = (vec3d*)vm_malloc(sizeof(vec3d)* _verts);
+		norm = (vec3d*)vm_malloc(sizeof(vec3d) * _verts);
+
+		if (Cmdline_normal) {
+			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
+		}
+
 	}
 
 	n_verts = 0;
+	n_prim = 0;
 	currently_allocated = _verts;
 }
 
@@ -2084,6 +2023,100 @@ poly_list::~poly_list()
 		vm_free(norm);
 		norm = NULL;
 	}
+
+	if (tsb != NULL) {
+		vm_free(tsb);
+		tsb = NULL;
+	}
+}
+
+void poly_list::calculate_tangent()
+{
+	vertex *v0, *v1, *v2;
+	vec3d *t0, *t1, *t2;
+	vec3d side0, side1;
+	vec3d vt0, vt1;
+	float deltaU0, deltaV0, deltaU1, deltaV1;
+	vec3d tangent, binormal, cross;
+	float magg, scale;
+
+
+	Assert( !(n_verts % 3) );
+
+	for (int i = 0; i < n_verts; i += 3) {
+		// vertex (reading)
+		v0 = &vert[i];
+		v1 = &vert[i+1];
+		v2 = &vert[i+2];
+		// tangents (writing)
+		t0 = &tsb[i].tangent;
+		t1 = &tsb[i+1].tangent;
+		t2 = &tsb[i+2].tangent;
+
+
+		deltaU0 = v1->u - v0->u;
+		deltaV0 = v1->v - v0->v;
+
+		deltaU1 = v2->u - v0->u;
+		deltaV1 = v2->v - v0->v;
+
+		// quick short circuit for NULL case
+		float n = (deltaU0 * deltaV1) - (deltaU1 * deltaV0);
+
+		if (n == 0.0f) {
+			// hit NULL, so just set identity
+			tangent  = vmd_x_vector;
+			binormal = vmd_y_vector;
+		} else {
+			float blah = 1.0f / n;
+
+			side0.xyz.x = v1->x - v0->x;
+			side0.xyz.y = v1->y - v0->y;
+			side0.xyz.z = v1->z - v0->z;
+
+			side1.xyz.x = v2->x - v0->x;
+			side1.xyz.y = v2->y - v0->y;
+			side1.xyz.z = v2->z - v0->z;
+
+			// tangent
+			vm_vec_copy_scale(&vt0, &side0, deltaV1);
+			vm_vec_copy_scale(&vt1, &side1, deltaV0);
+			vm_vec_sub(&tangent, &vt0, &vt1);
+			vm_vec_scale(&tangent, blah);
+
+			// binormal
+			vm_vec_copy_scale(&vt0, &side0, deltaU1);
+			vm_vec_copy_scale(&vt1, &side1, deltaU0);
+			vm_vec_sub(&binormal, &vt0, &vt1);
+			vm_vec_scale(&binormal, blah);
+		}
+
+		// orthogonalize tangent (for all 3 verts)
+		magg = vm_vec_dot(&norm[i], &tangent);
+		vm_vec_scale_sub(t0, &tangent, &norm[i], magg);
+		vm_vec_normalize_safe(t0);
+
+		magg = vm_vec_dot(&norm[i+1], &tangent);
+		vm_vec_scale_sub(t1, &tangent, &norm[i+1], magg);
+		vm_vec_normalize_safe(t1);
+
+		magg = vm_vec_dot(&norm[i+2], &tangent);
+		vm_vec_scale_sub(t2, &tangent, &norm[i+2], magg);
+		vm_vec_normalize_safe(t2);
+
+		// compute handedness (for all 3 verts)
+		vm_vec_crossprod(&cross, &norm[i], &tangent);
+		scale = vm_vec_dot(&cross, &binormal);
+		tsb[i].scaler = (scale < 0.0f) ? -1.0f : 1.0f;
+
+		vm_vec_crossprod(&cross, &norm[i+1], &tangent);
+		scale = vm_vec_dot(&cross, &binormal);
+		tsb[i+1].scaler = (scale < 0.0f) ? -1.0f : 1.0f;
+
+		vm_vec_crossprod(&cross, &norm[i+2], &tangent);
+		scale = vm_vec_dot(&cross, &binormal);
+		tsb[i+2].scaler = (scale < 0.0f) ? -1.0f : 1.0f;
+	}
 }
 
 poly_list poly_list_index_buffer_internal_list;
@@ -2094,7 +2127,11 @@ void poly_list::make_index_buffer()
 	int j, z = 0;
 	ubyte *nverts_good = NULL;
 
-	// using vm_malloc() heare rather than 'new' so we get the extra out-of-memory check
+	if (Cmdline_normal) {
+		calculate_tangent();
+	}
+
+	// using vm_malloc() here rather than 'new' so we get the extra out-of-memory check
 	nverts_good = (ubyte *) vm_malloc(n_verts);
 
 	Assert( nverts_good != NULL );
@@ -2111,20 +2148,28 @@ void poly_list::make_index_buffer()
 	poly_list_index_buffer_internal_list.allocate(nverts);
 
 	for (j = 0; j < n_verts; j++) {
-		if ( !nverts_good[j] )
+		if ( !nverts_good[j] ) {
 			continue;
+		}
 
 		poly_list_index_buffer_internal_list.vert[z] = vert[j];
 		poly_list_index_buffer_internal_list.norm[z] = norm[j];
+
+		if (Cmdline_normal) {
+			poly_list_index_buffer_internal_list.tsb[z] = tsb[j];
+		}
+
 		poly_list_index_buffer_internal_list.n_verts++;
-		Assert( find_first_index(&poly_list_index_buffer_internal_list, z) == z );
+
+	//	Assert( find_first_index(&poly_list_index_buffer_internal_list, z) == z );
 		z++;
 	}
 
 	Assert(nverts == poly_list_index_buffer_internal_list.n_verts);
 
-	if (nverts_good != NULL)
+	if (nverts_good != NULL) {
 		vm_free(nverts_good);
+	}
 
 	(*this) = poly_list_index_buffer_internal_list;
 }
@@ -2136,6 +2181,10 @@ poly_list& poly_list::operator = (poly_list &other_list)
 	memcpy(norm, other_list.norm, sizeof(vec3d) * other_list.n_verts);
 	memcpy(vert, other_list.vert, sizeof(vertex) * other_list.n_verts);
 
+	if (Cmdline_normal) {
+		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
+	}
+
 	n_verts = other_list.n_verts;
 	n_prim = other_list.n_prim;
 
@@ -2144,16 +2193,16 @@ poly_list& poly_list::operator = (poly_list &other_list)
 
 void gr_rect(int x, int y, int w, int h, bool resize)
 {
-	if(gr_screen.mode == GR_STUB)
+	if (gr_screen.mode == GR_STUB) {
 		return;
+	}
 
-	if(resize)
-	{
+	if (resize) {
 		gr_resize_screen_pos(&x, &y);
 		gr_resize_screen_pos(&w, &h);
 	}
 
-	g3_draw_2d_rect(x,y,w,h,
+	g3_draw_2d_rect(x, y, w, h,
 		gr_screen.current_color.red,
 		gr_screen.current_color.green,
 		gr_screen.current_color.blue,
@@ -2164,8 +2213,9 @@ void gr_shade(int x, int y, int w, int h, bool resize)
 {
 	int r, g, b, a;
 
-	if (gr_screen.mode == GR_STUB)
+	if (gr_screen.mode == GR_STUB) {
 		return;
+	}
 
 	if (resize) {
 		gr_resize_screen_pos(&x, &y);
@@ -2178,6 +2228,14 @@ void gr_shade(int x, int y, int w, int h, bool resize)
 	a = (int)gr_screen.current_shader.c;
 
 	g3_draw_2d_rect(x, y, w, h, r, g, b, a);
+}
+
+void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)
+{
+	gr_screen.current_alpha = alpha;
+	gr_screen.current_alphablend_mode = alphablend_mode;
+	gr_screen.current_bitblt_mode = bitblt_mode;
+	gr_screen.current_bitmap = bitmap_num;
 }
 
 #ifdef USE_PYTHON
@@ -2204,48 +2262,4 @@ void gr_flip()
 	Script_system.EndFrame();
 
 	gr_screen.gf_flip();
-}
-
-//WMC - bump mapping thing
-void poly_tsb_calc(vertex *v0, vertex *v1, vertex *v2, vec3d *o_norm, vec3d *o_stan, vec3d *o_ttan)
-{
-	vec3d side0, side1;
-	vec3d vt0, vt1;	//temp vecs
-	float ft0, ft1;	//temp floats
-
-	side0.xyz.x = v0->x - v1->x;
-	side0.xyz.y = v0->y - v1->y;
-	side0.xyz.z = v0->z - v1->z;
-
-	side1.xyz.x = v2->x - v1->x;
-	side1.xyz.y = v2->y - v1->y;
-	side1.xyz.z = v2->z - v1->z;
-
-	//Normal
-	vm_vec_crossprod(o_norm, &side1, &side0);
-	vm_vec_normalize(o_norm);
-
-	//sTangent
-	ft0 = v0->v - v1->v;
-	ft1 = v2->v - v1->v;
-	vm_vec_copy_scale(&vt0, &side0, ft1);
-	vm_vec_copy_scale(&vt1, &side1, ft0);
-	vm_vec_sub(o_stan, &vt0, &vt1);
-	vm_vec_normalize(o_stan);
-
-	//tTangent
-	ft0 = v0->u - v1->u;
-	ft1 = v2->u - v1->u;
-	vm_vec_copy_scale(&vt0, &side0, ft1);
-	vm_vec_copy_scale(&vt1, &side1, ft0);
-	vm_vec_sub(o_ttan, &vt0, &vt1);
-	vm_vec_normalize(o_ttan);
-	
-	//Maybe reverse
-	vm_vec_crossprod(&vt0, o_stan, o_ttan);
-	if(vm_vec_dotprod(&vt0, o_norm) < 0.0f)
-	{
-		vm_vec_scale(o_stan, -1.0f);
-		vm_vec_scale(o_ttan, -1.0f);
-	}
 }

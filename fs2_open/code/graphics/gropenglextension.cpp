@@ -119,6 +119,9 @@
 #include "globalincs/pstypes.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropenglextension.h"
+#include "graphics/gropengltexture.h"
+#include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
 
 #include "osapi/outwnd.h"
 
@@ -132,7 +135,7 @@ char *OGL_extension_string = NULL;
 //   - number of extensions to check for 
 //   - extension name(s)  (max is 3 variants)
 //   - number of functions that extension needs/wants
-//   - function names that extension needs (max is 15)
+//   - function names that extension needs (max is 20)
 
 // OpenGL extensions that we will want to use
 ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
@@ -193,9 +196,9 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 		"glMapBufferARB", "glUnmapBufferARB" } },
 
 	// allows pixel data to use buffer objects
-	{ false, false, 2, { "GL_ARB_pixel_buffer_object", "GL_EXT_pixel_buffer_object" }, 6, {
+	{ false, false, 2, { "GL_ARB_pixel_buffer_object", "GL_EXT_pixel_buffer_object" }, 7, {
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
-		"glMapBufferARB", "glUnmapBufferARB" } },
+		"glBufferSubDataARB", "glMapBufferARB", "glUnmapBufferARB" } },
 
 	// Mac-only extension that allows use of system copy of texture to avoid an additional API copy
 //	{ false, 0, 1, { "GL_APPLE_client_storage" }, 0, { NULL } },
@@ -225,7 +228,28 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_EXT_texture_lod_bias" }, 0, { NULL } },
 
 	// point sprites (for particles)
-	{ false, false, 2, { "GL_ARB_point_sprite", "NV_point_sprite" }, 0, { NULL } }
+	{ false, false, 2, { "GL_ARB_point_sprite", "NV_point_sprite" }, 0, { NULL } },
+
+	// OpenGL Shading Language support. If this is present, then GL_ARB_shader_objects, GL_ARB_fragment_shader
+	// and GL_ARB_vertex_shader should also be available.
+	{ false, false, 1, { "GL_ARB_shading_language_100" }, 0, { NULL } },
+
+	// shader objects and program object management
+	{ false, false, 1, { "GL_ARB_shader_objects" }, 17, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
+		"glCompileShaderARB", "glGetObjectParameterivARB", "glGetInfoLogARB", "glCreateProgramObjectARB",
+		"glAttachObjectARB", "glLinkProgramARB", "glUseProgramObjectARB", "glValidateProgramARB", "glGetUniformLocationARB",
+		"glGetUniformivARB", "glUniform1fARB", "glUniform3fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
+
+	// programmable vertex level processing
+	// some of functions are provided by GL_ARB_vertex_program
+	{ false, false, 1, { "GL_ARB_vertex_shader" }, 4, { "glEnableVertexAttribArrayARB", "glDisableVertexAttribArrayARB",
+		"glGetAttribLocationARB", "glVertexAttribPointerARB" } },
+
+	// programmable fragment level processing
+	{ false, false, 1, { "GL_ARB_fragment_shader" }, 0, { NULL } },
+
+	// shader version 3.0 detection extensions (if either of these extensions exist then we should have a SM3.0 compatible card)
+	{ false, false, 2, { "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } }
 };
 
 // ogl_funcion is:
@@ -254,6 +278,7 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glDeleteBuffersARB", 0 },
 	{ "glGenBuffersARB", 0 },
 	{ "glBufferDataARB", 0 },
+	{ "glBufferSubDataARB", 0 },
 	{ "glMapBufferARB", 0 },
 	{ "glUnmapBufferARB", 0 },
 	{ "glIsRenderbufferEXT", 0 },
@@ -270,7 +295,30 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glFramebufferTexture2DEXT", 0 },
 	{ "glFramebufferRenderbufferEXT", 0 },
 	{ "glGetFramebufferAttachmentParameterivEXT", 0 },
-	{ "glGenerateMipmapEXT", 0 }
+	{ "glGenerateMipmapEXT", 0 },
+	{ "glDeleteObjectARB", 0 },
+	{ "glCreateShaderObjectARB", 0 },
+	{ "glShaderSourceARB", 0 },
+	{ "glCompileShaderARB", 0 },
+	{ "glGetObjectParameterivARB", 0 },
+	{ "glGetInfoLogARB", 0 },
+	{ "glCreateProgramObjectARB", 0 },
+	{ "glAttachObjectARB", 0 },
+	{ "glLinkProgramARB", 0 },
+	{ "glUseProgramObjectARB", 0 },
+	{ "glValidateProgramARB", 0 },
+	{ "glEnableVertexAttribArrayARB", 0 },
+	{ "glDisableVertexAttribArrayARB", 0 },
+	{ "glGetAttribLocationARB", 0 },
+	{ "glVertexAttribPointerARB", 0 },
+	{ "glGetUniformLocationARB", 0 },
+	{ "glGetUniformivARB", 0 },
+	{ "glUniform1fARB", 0 },
+	{ "glUniform3fARB", 0 },
+	{ "glUniform3fvARB", 0 },
+	{ "glUniform4fvARB", 0 },
+	{ "glUniform1iARB", 0 },
+	{ "glUniformMatrix4fvARB", 0 }
 };
 
 // special extensions (only special functions are supported at the moment)
@@ -401,4 +449,72 @@ Next:
 	mprintf(( "\n" ));
 
 	return num_found;
+}
+
+
+extern int OGL_fogmode;
+
+void opengl_extensions_init()
+{
+	opengl_get_extensions();
+
+	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
+	Use_compressed_textures = Is_Extension_Enabled(OGL_EXT_TEXTURE_COMPRESSION_S3TC);
+	Texture_compression_available = Is_Extension_Enabled(OGL_ARB_TEXTURE_COMPRESSION);
+
+	//allow VBOs to be used
+	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) ) {
+		Use_VBOs = 1;
+	}
+
+//	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
+//		Use_PBOs = 1;
+//	}
+
+	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
+			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) && Is_Extension_Enabled(OGL_SM30) )
+	{
+		Use_GLSL = 1;
+	}
+
+	// setup the best fog function found
+	if ( !Fred_running ) {
+		if ( Is_Extension_Enabled(OGL_EXT_FOG_COORD) ) {
+			OGL_fogmode = 2;
+		} else {
+			OGL_fogmode = 1;
+		}
+	}
+
+	// if we can't do cubemaps then turn off Cmdline_env
+	if ( !(Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) && Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE)) ) {
+		Cmdline_env = 0;
+	}
+
+	// can't have this stuff without GLSL support
+	if ( !Use_GLSL ) {
+		Cmdline_normal = 0;
+		Cmdline_height = 0;
+	}
+
+	if (Use_GLSL) {
+		GLint max_texture_units;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
+
+		// we need enough texture slots for this stuff to work
+
+		if (max_texture_units < 4) {
+			Int3();
+			Use_GLSL = 0;
+		}
+
+		if (max_texture_units < 5) {
+			Cmdline_normal = 0;
+			Cmdline_height = 0;
+		}
+
+		if (max_texture_units < 6) {
+			Cmdline_height = 0;
+		}
+	}
 }
