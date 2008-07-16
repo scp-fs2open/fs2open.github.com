@@ -4165,6 +4165,7 @@ int get_sexp(char *token)
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
+				Dynamic_environment = true;
 				break;
 
 			case OP_WARP_EFFECT:
@@ -4184,6 +4185,7 @@ int get_sexp(char *token)
 				// model is argument #1
 				n = CDR(start);
 				do_preload_for_arguments(sexp_set_skybox_model_preload, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
@@ -4195,11 +4197,13 @@ int get_sexp(char *token)
 			case OP_ADD_SUN_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 		}
 	}

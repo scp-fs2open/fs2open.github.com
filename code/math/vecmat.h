@@ -401,6 +401,7 @@ void vm_vec_copy_scale(vec3d *dest,vec3d *src,float s);
 void vm_vec_scale_add(vec3d *dest,vec3d *src1,vec3d *src2,float k);
 #endif
 
+void vm_vec_scale_sub(vec3d *dest,vec3d *src1,vec3d *src2,float k);
 
 //scales a vector and adds it to another
 //dest += k * src

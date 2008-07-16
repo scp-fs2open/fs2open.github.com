@@ -290,11 +290,14 @@ int Interface_last_tick = -1;			// last timer tick on flip
 char Processing_filename[MAX_PATH_LEN];
 #endif
 
-// If true, then we are using Direct3D hardware.  This is used for game type stuff
-// that changes when you're using hardware.
-int D3D_enabled = 0;
-// for OGL
-int OGL_enabled = 0;		
+// override states to skip rendering of certain elements, but without disabling them completely
+bool Basemap_override = false;
+bool Envmap_override = false;
+bool Specmap_override = false;
+bool Normalmap_override = false;
+bool Heightmap_override = false;
+bool Glowpoint_override = false;
+bool GLSL_override = false;
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 

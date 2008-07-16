@@ -1561,7 +1561,6 @@ bool gr_d3d_init()
 	d3d_setup_color();
 
 	// Tell FreeSpace code that we're using Direct3D.
-	D3D_enabled    = 1;
 	GlobalD3DVars::D3D_inited = true;
 	
 	d3d_generate_state_blocks();

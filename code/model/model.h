@@ -882,11 +882,17 @@ struct buffer_data {
 
 // IBX stuff
 typedef struct IBX {
-	CFILE *read;	// reads, if a IBX file already exists
-	CFILE *write;	// writes, if new file created
-	int size;		// file size used to make sure an IBX contains enough data for the whole model
-	int version;	// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
+	CFILE *read;		// reads, if an IBX file already exists
+	CFILE *write;		// writes, if new file created
+	int size;			// file size used to make sure an IBX contains enough data for the whole model
+	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
+
+	// tangent space data
+	CFILE *tsb_read;	// reads tangent space data (TSB), if it already exists
+	CFILE *tsb_write;	// writes tangent space data, for new file
+	int tsb_size;
+	char tsb_name[MAX_FILENAME_LEN];	// filename of the tsb (tangent space model data)
 } IBX;
 
 
@@ -1168,9 +1174,8 @@ typedef struct texture_map {
 	texture_info base_map;		// the standard base map
 	texture_info glow_map;		// optional glow map
 	texture_info spec_map;		// optional specular map
-#ifdef BUMPMAPPING
-	texture_info bump_map;		// optional bump map
-#endif
+	texture_info norm_map;		// optional normal map
+	texture_info height_map;	// optional height map (for parallax mapping)
 
 	bool is_ambient;
 	bool is_transparent;

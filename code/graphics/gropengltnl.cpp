@@ -322,6 +322,7 @@
 #endif
 
 #include "globalincs/pstypes.h"
+#include "globalincs/def_files.h"
 
 #include "graphics/2d.h"
 #include "lighting/lighting.h"
@@ -331,25 +332,35 @@
 #include "graphics/gropengltexture.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropengltnl.h"
+#include "graphics/gropengldraw.h"
+#include "graphics/gropenglshader.h"
+#include "graphics/gropenglstate.h"
 
 #include "math/vecmat.h"
 #include "render/3d.h"
+#include "cmdline/cmdline.h"
 
-#include "debugconsole/timerbar.h"
 
 #include <vector>
 
 
-extern int VBO_ENABLED;
 extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
-extern int BUMPMAP;
+extern int NORMMAP;
+extern int HEIGHTMAP;
 extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
 extern int Interp_cloakmap_alpha;
 extern float Interp_light;
+
+extern bool Basemap_override;
+extern bool Envmap_override;
+extern bool Specmap_override;
+extern bool Normalmap_override;
+extern bool Heightmap_override;
+extern bool GLSL_override;
 
 static int GL_modelview_matrix_depth = 1;
 static int GL_htl_projection_matrix_set = 0;
@@ -366,10 +377,8 @@ GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
 
-struct opengl_vertex_buffer
-{
+struct opengl_vertex_buffer {
 	uint stride;		// the current stride
-	GLenum format;		// the format passed to glInterleavedArrays()
 	uint n_prim;
 	uint n_verts;
 	float *array_list;	// interleaved array
@@ -385,33 +394,36 @@ static std::vector<opengl_vertex_buffer> GL_vertex_buffers;
 static opengl_vertex_buffer *g_vbp = NULL;
 static int GL_vertex_buffers_in_use = 0;
 
+
 GLuint opengl_create_vbo(uint size, GLfloat *data)
 {
-	if (!data)
+	if (data == NULL) {
 		return 0;
+	}
 
-	if (!*data)
+	if (size == 0) {
 		return 0;
+	}
 
-	if (size == 0)
-		return 0;
-
-
-	// Kazan: A) This makes that if (buffer_name) work correctly (false = 0, true = anything not 0)
-	//				if glGenBuffersARB() doesn't initialized it for some reason
-	//        B) It shuts up MSVC about may be used without been initialized
 	GLuint buffer_name = 0;
 
+	// clear any existing errors
+	glGetError();
+
 	vglGenBuffersARB(1, &buffer_name);
-	
+
 	// make sure we have one
 	if (buffer_name) {
 		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
-		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB );
+		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB);
 
 		// just in case
-		if ( opengl_check_for_errors() )
+		if ( opengl_check_for_errors() ) {
+			vglDeleteBuffersARB(1, &buffer_name);
 			return 0;
+		}
+
+		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 
 	return buffer_name;
@@ -419,35 +431,49 @@ GLuint opengl_create_vbo(uint size, GLfloat *data)
 
 int gr_opengl_make_buffer(poly_list *list, uint flags)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return -1;
+	}
 
 	int i;
 	uint arsize = 0, list_size = 0;
-	bool make_vbo = false;
 	opengl_vertex_buffer vbuffer;
 
 	// clear out any old errors before we continue with this
 	opengl_check_for_errors();
 
-	// don't create vbo for small stuff, performance gain
-	// FIXME: This little speed increase appears to cause problems with some cards/drivers.
-	//        Disabling it until I can find a solution that works better.
-	if (VBO_ENABLED /*&& (list->n_verts >= 250)*/)
-		make_vbo = true;
+	if ( !(flags & VERTEX_FLAG_POSITION) ) {
+		Int3();
+		return -1;
+	}
 
-	// setup using flags
-	if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_NORMAL) && (flags & VERTEX_FLAG_POSITION) ) {
-		vbuffer.stride = (8 * sizeof(float));
-		vbuffer.format = GL_T2F_N3F_V3F;
-	} else if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_POSITION) ) {
-		vbuffer.stride = (5 * sizeof(float));
-		vbuffer.format = GL_T2F_V3F;
-	} else if ( (flags & VERTEX_FLAG_POSITION) ) {
-		vbuffer.stride = (3 * sizeof(float));
-		vbuffer.format = GL_V3F;
-	} else {
-		Assert( 0 );
+	Assert( sizeof(float) == sizeof(GLfloat) );
+
+	vbuffer.stride = 0;
+
+	// setup using flags...
+
+	// verts
+	Verify( list->vert != NULL );
+	vbuffer.stride += (3 * sizeof(GLfloat));
+
+	// normals
+	if (flags & VERTEX_FLAG_NORMAL) {
+		Verify( list->norm != NULL );
+		vbuffer.stride += (3 * sizeof(GLfloat));
+	}
+
+	// uv coords
+	if (flags & VERTEX_FLAG_UV1) {
+		vbuffer.stride += (2 * sizeof(GLfloat));
+	}
+
+	// tangent space data for normal maps (shaders only)
+	if (flags & VERTEX_FLAG_TANGENT) {
+		Verify( list->tsb != NULL );
+		Assert( Cmdline_normal );
+
+		vbuffer.stride += (4 * sizeof(GLfloat));
 	}
 
 	// total size of data
@@ -457,20 +483,20 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	vbuffer.array_list = (float*)vm_malloc(list_size);
 
 	// return invalid if we don't have the memory
-	if (vbuffer.array_list == NULL)
+	if (vbuffer.array_list == NULL) {
 		return -1;
-		
+	}
+
 	memset( vbuffer.array_list, 0, list_size );
 
 	// generate the array
 	for (i = 0; i < list->n_verts; i++) {
 		vertex *vl = &list->vert[i];
-		vec3d *nl = &list->norm[i];
 
 		// don't try to generate more data than what's available
 		Assert( ((arsize * sizeof(float)) + vbuffer.stride) <= list_size );
 
-		// NOTE: TEX->NORM->VERT, This array order *must* be preserved!!
+		// NOTE: UV->NORM->TSB->VERT, This array order *must* be preserved!!
 
 		// tex coords
 		if (flags & VERTEX_FLAG_UV1) {
@@ -480,17 +506,25 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 
 		// normals
 		if (flags & VERTEX_FLAG_NORMAL) {
+			vec3d *nl = &list->norm[i];
 			vbuffer.array_list[arsize++] = nl->xyz.x;
 			vbuffer.array_list[arsize++] = nl->xyz.y;
 			vbuffer.array_list[arsize++] = nl->xyz.z;
 		}
 
-		// verts
-		if (flags & VERTEX_FLAG_POSITION) {
-			vbuffer.array_list[arsize++] = vl->x;
-			vbuffer.array_list[arsize++] = vl->y;
-			vbuffer.array_list[arsize++] = vl->z;
+		// tangent space data
+		if (flags & VERTEX_FLAG_TANGENT) {
+			tsb_t *tsb = &list->tsb[i];
+			vbuffer.array_list[arsize++] = tsb->tangent.xyz.x;
+			vbuffer.array_list[arsize++] = tsb->tangent.xyz.y;
+			vbuffer.array_list[arsize++] = tsb->tangent.xyz.z;
+			vbuffer.array_list[arsize++] = tsb->scaler;
 		}
+
+		// verts
+		vbuffer.array_list[arsize++] = vl->x;
+		vbuffer.array_list[arsize++] = vl->y;
+		vbuffer.array_list[arsize++] = vl->z;
 	}
 
 	vbuffer.flags = flags;
@@ -499,8 +533,8 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	vbuffer.n_verts = list->n_verts;
 
 	// maybe load it into a vertex buffer object
-	if (make_vbo) {
-		vbuffer.vbo = opengl_create_vbo( list_size, vbuffer.array_list );
+	if (Use_VBOs) {
+		vbuffer.vbo = opengl_create_vbo(list_size, vbuffer.array_list);
 
 		if (vbuffer.vbo) {
 			// figure up the size so we can know how much VBO data is in card memory
@@ -512,6 +546,11 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		}
 	}
 
+	// allocate additional blocks if we need them to prevent memory fragmentation, 500 at a time
+	if ( GL_vertex_buffers.size() >= GL_vertex_buffers.capacity() ) {
+		GL_vertex_buffers.reserve( GL_vertex_buffers.size() + 500 );
+	}
+
 	GL_vertex_buffers.push_back( vbuffer );
 	GL_vertex_buffers_in_use++;
 
@@ -520,29 +559,38 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 
 void gr_opengl_set_buffer(int idx)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
 	g_vbp = NULL;
 
-	if ( (idx < 0) || (idx >= (int)GL_vertex_buffers.size()) )
+	if (idx < 0) {
 		return;
+	}
+
+	Assert( idx < (int)GL_vertex_buffers.size() );
 
 	g_vbp = &GL_vertex_buffers[idx];
 }
 
 void gr_opengl_destroy_buffer(int idx)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
-	if ( (idx < 0) || (idx >= (int)GL_vertex_buffers.size()) )
+	if (idx < 0) {
 		return;
+	}
+
+	Assert( idx < (int)GL_vertex_buffers.size() );
 
 	opengl_vertex_buffer *vbp = &GL_vertex_buffers[idx];
 
-	if (vbp->array_list)
+	if (vbp->array_list) {
 		vm_free(vbp->array_list);
+	}
 
 	if (vbp->vbo) {
 		vglDeleteBuffersARB(1, &vbp->vbo);
@@ -554,152 +602,364 @@ void gr_opengl_destroy_buffer(int idx)
 	// we try to take advantage of the fact that there shouldn't be a lot of buffer
 	// deletions/additions going on all of the time, so a model_unload_all() and/or
 	// game_level_close() should pretty much keep everything cleared out on a
-	// pretty much regular basis
-	if (--GL_vertex_buffers_in_use <= 0)
+	// regular basis
+	if (--GL_vertex_buffers_in_use <= 0) {
 		GL_vertex_buffers.clear();
+	}
 
 	g_vbp = NULL;
 }
 
+void opengl_destroy_all_buffers()
+{
+	for (uint i = 0; i < GL_vertex_buffers.size(); i++) {
+		gr_opengl_destroy_buffer(i);
+	}
+
+	GL_vertex_buffers.clear();
+	GL_vertex_buffers_in_use = 0;
+}
+
+void opengl_tnl_init()
+{
+	GL_vertex_buffers.reserve(1000);
+}
+
+void opengl_tnl_shutdown()
+{
+	opengl_destroy_all_buffers();
+}
+
+static void opengl_init_arrays(opengl_vertex_buffer *vbp)
+{
+	GLint offset = 0;
+	GLubyte *ptr = NULL;
+
+	if (vbp->vbo) {
+		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+	} else {
+		ptr = (GLubyte*)vbp->array_list;
+	}
+
+	if (vbp->flags & VERTEX_FLAG_UV1) {
+		vglClientActiveTextureARB(GL_TEXTURE0_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, vbp->stride, ptr + offset);
+		offset += (2 * sizeof(GLfloat));
+	}
+
+	if (vbp->flags & VERTEX_FLAG_NORMAL) {
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glNormalPointer(GL_FLOAT, vbp->stride, ptr + offset);
+		offset += (3 * sizeof(GLfloat));
+	}
+
+	if (vbp->flags & VERTEX_FLAG_TANGENT) {
+		// we treat this as texture coords for ease of use
+		// NOTE: this is forced on tex unit 1!!!
+		vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(4, GL_FLOAT, vbp->stride, ptr + offset);
+		offset += (4 * sizeof(GLfloat));
+	}
+
+	Assert( vbp->flags & VERTEX_FLAG_POSITION );
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, vbp->stride, ptr + offset);
+	offset += (3 * sizeof(GLfloat));
+}
+
 #define DO_RENDER() {	\
-	if ( (ibuffer != NULL) || (sbuffer != NULL) ) {	\
-		if (ibuffer) {	\
-			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
-		} else {	\
-			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
-		}	\
+	if (sbuffer) {	\
+		vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
+	} else if (ibuffer) {	\
+		vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
 	} else {	\
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);	\
 	}	\
 }
 
+int GL_last_shader_flags = -1;
+int GL_last_shader_index = -1;
 
+static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags);
 
-//#define DRAW_DEBUG_LINES
-extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
-
-//start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
 {
-	if (Cmdline_nohtl)
-		return;
-
-	Assert(GL_htl_projection_matrix_set);
-	Assert(GL_htl_view_matrix_set);
-
-	TIMERBAR_PUSH(2);
-
-	float u_scale,v_scale;
+	float u_scale, v_scale;
 	int render_pass = 0;
-	int i, r, g, b, a, tmap_type;
-	bool use_spec = false;
+	int shader_flags = 0;
+	int sdr_index = -1;
+	int r, g, b, a, tmap_type;
 
 	int end = ((n_prim * 3) - 1);
-	int count = (end - start + 1); //(n_prim * 3);
-
-	int textured = (flags & TMAP_FLAG_TEXTURED);
+	int count = (end - start + 1);
 
 	opengl_vertex_buffer *vbp = g_vbp;
-	Assert( g_vbp );
+	Assert( vbp );
 
+	int textured = ((flags & TMAP_FLAG_TEXTURED) && (vbp->flags & VERTEX_FLAG_UV1));
 
-	// disable all arbs before we start
-	opengl_switch_arb(-1, 0);
+	// init lights
+	opengl_change_active_lights(0);
+	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f) );
+	gr_opengl_set_center_alpha(GL_center_alpha);
 
-	if ( glIsEnabled(GL_CULL_FACE) )
-		glFrontFace(GL_CW);
-
-	opengl_setup_render_states(r, g, b, a, tmap_type, (textured) ? TMAP_FLAG_TEXTURED : 0);
+	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
+	// setup shader flags for the things that we want/need
+	if (lighting_is_enabled) {
+		shader_flags |= SDR_FLAG_LIGHT;
+	}
 
-// -------- Begin 1st PASS ------------------------------------------------------- //
-	// basic setup of all data and first texture
-	vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
-	if (vbp->vbo) {
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
-		glInterleavedArrays(vbp->format, 0, (void*)NULL);
-	} else {
-		glInterleavedArrays(vbp->format, 0, vbp->array_list);
+	if ( GL_state.Fog() ) {
+		shader_flags |= SDR_FLAG_FOG;
 	}
 
 	if (textured) {
-		// base texture
-		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, render_pass);
+		if ( !Basemap_override ) {
+			shader_flags |= SDR_FLAG_DIFFUSE_MAP;
+		}
 
-		// increment texture count for this pass
+		if (GLOWMAP > 0) {
+			shader_flags |= SDR_FLAG_GLOW_MAP;
+		}
+	
+		if (lighting_is_enabled) {
+			if ( (SPECMAP > 0) && !Specmap_override ) {
+				shader_flags |= SDR_FLAG_SPEC_MAP;
+		
+				if ( (ENVMAP > 0) && !Envmap_override ) {
+					shader_flags |= SDR_FLAG_ENV_MAP;
+				}
+			}
+		
+			if ( (NORMMAP > 0) && GL_state.Light(0) && !Normalmap_override ) {
+				shader_flags |= SDR_FLAG_NORMAL_MAP;
+		
+				if ( (HEIGHTMAP > 0) && !Heightmap_override ) {
+					shader_flags |= SDR_FLAG_HEIGHT_MAP;
+				}
+			}
+		}
+	}
+
+	if (shader_flags == GL_last_shader_flags) {
+		sdr_index = GL_last_shader_index;
+	} else {
+		sdr_index = opengl_shader_get_index(shader_flags);
+
+		if (sdr_index < 0) {
+			opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
+			return;
+		}
+
+		GL_last_shader_flags = shader_flags;
+		GL_last_shader_index = sdr_index;
+	}
+
+	Assert( sdr_index >= 0 );
+
+	opengl_shader_set_current( &GL_shader[sdr_index] );
+
+	render_pass = 0;
+
+	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	// basic setup of all data
+	opengl_init_arrays(vbp);
+
+	int n_lights = MIN(Num_active_gl_lights, GL_max_lights) - 1;
+	vglUniform1iARB( opengl_shader_get_uniform("n_lights"), n_lights );
+
+	// base texture
+	if (shader_flags & SDR_FLAG_DIFFUSE_MAP) {
+		vglUniform1iARB( opengl_shader_get_uniform("sBasemap"), render_pass );
+
+		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
+	
+		render_pass++; // bump!
+	}
+
+	if (shader_flags & SDR_FLAG_GLOW_MAP) {
+		vglUniform1iARB( opengl_shader_get_uniform("sGlowmap"), render_pass );
+
+		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+		render_pass++; // bump!
+	}
+
+	if (shader_flags & SDR_FLAG_SPEC_MAP) {
+		vglUniform1iARB( opengl_shader_get_uniform("sSpecmap"), render_pass );
+
+		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+		render_pass++;
+
+		if (shader_flags & SDR_FLAG_ENV_MAP) {
+			// 0 == env with non-alpha specmap, 1 == env with alpha specmap
+			int alpha_spec = bm_has_alpha_channel(SPECMAP);
+
+			vglUniform1iARB( opengl_shader_get_uniform("alpha_spec"), alpha_spec );
+			vglUniformMatrix4fvARB( opengl_shader_get_uniform("envMatrix"), 1, GL_FALSE, &GL_env_texture_matrix[0] );
+			vglUniform1iARB( opengl_shader_get_uniform("sEnvmap"), render_pass );
+	
+			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
+	
+			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
+	
+			render_pass++;
+		}
+	}
+
+	if (shader_flags & SDR_FLAG_NORMAL_MAP) {
+		vglUniform1iARB( opengl_shader_get_uniform("sNormalmap"), render_pass );
+
+		gr_opengl_tcache_set(NORMMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
 		render_pass++; // bump!
 
-		if ( (Interp_multitex_cloakmap > 0) && (vbp->flags & VERTEX_FLAG_UV1) ) {
-			SPECMAP = -1;	// don't add a spec map if we are cloaked
-			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
+		if (shader_flags & SDR_FLAG_HEIGHT_MAP) {
+			vglUniform1iARB( opengl_shader_get_uniform("sHeightmap"), render_pass );
 
+			gr_opengl_tcache_set(HEIGHTMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+			render_pass++;
+		}
+	}
+
+	// DRAW IT!!
+	DO_RENDER();
+
+/*
+	if (Num_active_gl_lights > 4) {
+		opengl_change_active_lights(0, 4);
+
+		int n_lights = MIN(Num_active_gl_lights, GL_max_lights) - 5;
+		vglUniform1iARB( opengl_shader_get_uniform("n_lights"), n_lights );
+
+		opengl_default_light_settings(0, 0, 0);
+
+		opengl_shader_set_current( &GL_shader[2] );
+
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
+
+		GL_state.DepthMask(GL_FALSE);
+		GL_state.DepthFunc(GL_LEQUAL);
+
+		DO_RENDER();
+	}
+*/
+
+	// make sure everthing gets turned back off
+	opengl_shader_set_current();
+	GL_state.Texture.SetShaderMode(GL_FALSE);
+	GL_state.Texture.DisableAll();
+	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	vglClientActiveTextureARB(GL_TEXTURE0_ARB);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+}
+
+static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+{
+	float u_scale, v_scale;
+	int render_pass = 0;
+	int r, g, b, a, tmap_type;
+
+	bool rendered_env = false;
+	bool using_glow = false;
+	bool using_spec = false;
+	bool using_env = false;
+
+	int end = ((n_prim * 3) - 1);
+	int count = (end - start + 1);
+
+	opengl_vertex_buffer *vbp = g_vbp;
+	Assert( vbp );
+
+	int textured = ((flags & TMAP_FLAG_TEXTURED) && (vbp->flags & VERTEX_FLAG_UV1));
+
+	if (textured ) {
+		if ( Cmdline_glow && (GLOWMAP > 0) ) {
+			using_glow = true;
+		}
+
+		if (lighting_is_enabled) {
+			GL_state.Normalize(GL_TRUE);
+
+			if ( !GL_state.Fog() && (SPECMAP > 0) && !Specmap_override ) {
+				using_spec = true;
+
+				if ( (ENVMAP > 0) && !Envmap_override ) {
+					using_env = true;
+				}
+			}
+		}
+	}
+
+	render_pass = 0;
+
+	// init lights
+	opengl_change_active_lights(0);
+	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f), (using_spec) ? 0 : 1 );
+	gr_opengl_set_center_alpha(GL_center_alpha);
+
+	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
+	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+
+	// basic setup of all data
+	opengl_init_arrays(vbp);
+
+// -------- Begin 1st PASS (base texture, glow) ---------------------------------- //
+	if (textured) {
+		render_pass = 0;
+
+		// base texture
+		if ( !Basemap_override ) {
 			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			if (vbp->vbo) {
-				vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 			} else {
 				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 			}
 
-			gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, 0, render_pass);
+			gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 
+			// increment texture count for this pass
 			render_pass++; // bump!
 		}
 
 		// glowmaps!
-		if ( (GLOWMAP > -1) && !Cmdline_noglow && (vbp->flags & VERTEX_FLAG_UV1) ) {
+		if (using_glow) {
 			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			if (vbp->vbo) {
-				vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 			} else {
 				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 			}
 
 			// set glowmap on relevant ARB
-			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, 0, render_pass);
+			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
-			opengl_switch_arb(render_pass, 1);
 			opengl_set_additive_tex_env();
 
 			render_pass++; // bump!
 		}
-
-		// determine if we are going to use a specmap (for later checking)
-		if ( (SPECMAP > -1) && !Cmdline_nospec && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (vbp->flags & VERTEX_FLAG_UV1) ) {
-			use_spec = true;
-		}
 	}
-
-	if (lighting_is_enabled)
-		glEnable(GL_NORMALIZE);
-
-	opengl_pre_render_init_lights();
-	opengl_change_active_lights(0);
-
-	// only change lights if we have a specmap, don't render the specmap when fog is enabled
-	if ( use_spec ) {
-		opengl_default_light_settings(!GL_center_alpha, (Interp_light > 0.25f), 0); // don't render with spec lighting here
-	} else {
-		// reset to defaults
-		opengl_default_light_settings(!GL_center_alpha, (Interp_light > 0.25f));
-	}
-
-	gr_opengl_set_center_alpha(GL_center_alpha);
-
-	// NOTE: the unlock call is at the end of all drawing ...
-	vglLockArraysEXT( 0, vbp->n_verts);
 
 	// DRAW IT!!
 	DO_RENDER();
+// -------- End 2nd PASS --------------------------------------------------------- //
 
-// -------- End 1st PASS --------------------------------------------------------- //
 
-// -------- Begin lighting pass (conditional but should happen before spec pass) - //
-	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (Num_active_gl_lights > GL_max_lights) ) {
+// -------- Begin 2nd pass (additional lighting) --------------------------------- //
+/*	if ( (textured) && (lighting_is_enabled) && !(GL_state.Fog()) && (Num_active_gl_lights > GL_max_lights) ) {
 		// the lighting code needs to do this better, may need some adjustment later since I'm only trying
 		// to avoid rendering 7+ extra passes for lights which probably won't affect current object, but as
 		// a performance hack I guess this will have to do for now...
@@ -711,34 +971,38 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 		int max_passes = (2 - Interp_detail_level);
 
 		if (max_passes > 0) {
-			opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-
-			for (i = 1; i < render_pass; i++) {
-				opengl_switch_arb(i, 0);
-			}
-
 			int max_lights = (Num_active_gl_lights - 1) / GL_max_lights;
-			for (i = 1; (i < max_lights) && (i < max_passes); i++) {
-				opengl_change_active_lights(i);
 
-				// DRAW IT!!
-				DO_RENDER();
+			if (max_lights > 0) {
+				int i;
+
+				opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+
+				for (i = 1; i < render_pass; i++) {
+					opengl_switch_arb(i, 0);
+				}
+
+				for (i = 1; (i < max_lights) && (i < max_passes); i++) {
+					opengl_change_active_lights(i);
+
+					// DRAW IT!!
+					DO_RENDER();
+				}
+
+				// reset the active lights to the first set to render the spec related passes with
+				// for performance and quality reasons they don't get special lighting passes
+				opengl_change_active_lights(0);
 			}
-
-			// reset the active lights to the first set to render the spec related passes with
-			// for performance and quality reasons they don't get special lighting passes
-			opengl_change_active_lights(0);
 		}
-	}
-// -------- End lighting PASS ---------------------------------------------------- //
+	}*/
+// -------- End 2nd PASS --------------------------------------------------------- //
 
-// -------- Begin 2nd PASS (env) ------------------------------------------------- //
-	if ( use_spec && Cmdline_env && (ENVMAP >= 0) && Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE) ) {
+
+// -------- Begin 3rd PASS (environment map) ------------------------------------- //
+	if (using_env) {
 		// turn all previously used arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
-		for (i = 0; i < render_pass; i++) {
-			opengl_switch_arb(i, 0);
-		}
+		GL_state.Texture.DisableAll();
 
 		render_pass = 0;
 
@@ -746,25 +1010,33 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		if (vbp->vbo) {
-			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
 
 		// set specmap on relevant ARB
-		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, 0, render_pass);
+		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
-		opengl_switch_arb(render_pass, 1);
+		GL_state.DepthMask(GL_TRUE);
+		GL_state.DepthFunc(GL_LEQUAL);
 
 		// as a crazy and sometimes useless hack, avoid using alpha when specmap has none
-		if ( Cmdline_alpha_env && bm_has_alpha_channel(SPECMAP) ) {
-			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+		if ( bm_has_alpha_channel(SPECMAP) ) {
+			GL_state.Texture.SetEnvCombineMode(GL_COMBINE_RGB, GL_MODULATE);
 			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
 			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_ALPHA );
-			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
+			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			GL_state.Texture.SetRGBScale(1.0f);
+			GL_state.Texture.SetAlphaScale(1.0f);
 		} else {
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+			GL_state.Texture.SetEnvCombineMode(GL_COMBINE_RGB, GL_MODULATE);
+			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
+			GL_state.Texture.SetRGBScale(1.0f);
 		}
 
 		render_pass++; // bump!
@@ -773,40 +1045,34 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		if (vbp->vbo) {
-			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
 
-		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, 0, 0, render_pass);
+		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
 
-		opengl_set_texture_target(GL_TEXTURE_CUBE_MAP);
+		GL_state.Texture.SetEnvCombineMode(GL_COMBINE_RGB, GL_MODULATE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
 
-		opengl_switch_arb(render_pass, 1);
+		GL_state.Texture.SetRGBScale(2.0f);
 
-		opengl_set_modulate_tex_env();
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0f);
+		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
+		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+		GL_state.Texture.SetWrapR(GL_CLAMP_TO_EDGE);
 
-		opengl_set_state( GL_current_tex_src, ALPHA_BLEND_ADDITIVE, GL_current_ztype);
+		GL_state.Texture.SetTexgenModeS(GL_REFLECTION_MAP);
+		GL_state.Texture.SetTexgenModeT(GL_REFLECTION_MAP);
+		GL_state.Texture.SetTexgenModeR(GL_REFLECTION_MAP);
 
-		glDepthMask(GL_FALSE);
-		glDepthFunc(GL_EQUAL);
-
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
-
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_R);
+		GL_state.Texture.TexgenS(GL_TRUE);
+		GL_state.Texture.TexgenT(GL_TRUE);
+		GL_state.Texture.TexgenR(GL_TRUE);
 
 		// set the matrix for the texture mode
 		if (GL_env_texture_matrix_set) {
@@ -819,16 +1085,20 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 
 		render_pass++; // bump!
 
+		GLfloat ambient_save[4];
+		glGetMaterialfv( GL_FRONT, GL_AMBIENT, ambient_save );
+
+		GLfloat ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
+		glMaterialfv( GL_FRONT, GL_AMBIENT, ambient );
+
 		// DRAW IT!!
 		DO_RENDER();
 
 		// disable and reset everything we changed
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_R);
-		glDisable(GL_TEXTURE_CUBE_MAP);
+		GL_state.Texture.SetRGBScale(1.0f);
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+		// reset original ambient light value
+		glMaterialfv( GL_FRONT, GL_AMBIENT, ambient_save );
 
 		// pop off the texture matrix we used for the envmap
 		if (GL_env_texture_matrix_set) {
@@ -837,87 +1107,115 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 			glMatrixMode(GL_MODELVIEW);
 		}
 
+		GL_state.Texture.TexgenS(GL_FALSE);
+		GL_state.Texture.TexgenT(GL_FALSE);
+		GL_state.Texture.TexgenR(GL_FALSE);
+
 		opengl_set_texture_target();
 
-		if (Cmdline_alpha_env) {
-			opengl_switch_arb(0, 1);  // assumes that the spec map was TEX0
-			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
-			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-		} else {
-			opengl_switch_arb(0, 1);
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
-		}
-	}
-// -------- End 2nd PASS --------------------------------------------------------- //
+		GL_state.Texture.SetActiveUnit(0);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
 
-// -------- Begin 3rd (specular) PASS -------------------------------------------- //
-	if ( use_spec ) {
+		rendered_env = true;
+	}
+// -------- End 3rd PASS --------------------------------------------------------- //
+
+
+// -------- Begin 4th PASS (specular/shine map) ---------------------------------- //
+	if (using_spec) {
 		// turn all previously used arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
-		for (i = 0; i < render_pass; i++) {
-			opengl_switch_arb(i, 0);
-		}
+		GL_state.Texture.DisableAll();
+		vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		render_pass = 0;
 
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		if (vbp->vbo) {
-			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
 
-		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
+		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+		// render with spec lighting only
+		opengl_default_light_settings(0, 0, 1);
+
+		GL_state.Texture.SetEnvCombineMode(GL_COMBINE_RGB, GL_MODULATE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
+
+		GL_state.Texture.SetRGBScale( (rendered_env) ? 2.0f : 4.0f );
+
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
+
+		GL_state.DepthMask(GL_TRUE);
+		GL_state.DepthFunc(GL_LEQUAL);
 
 		// DRAW IT!!
 		DO_RENDER();
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+		opengl_default_light_settings();
 
-		opengl_reset_spec_mapping();
+		GL_state.Texture.SetRGBScale(1.0f);
 	}
-// -------- End 3rd PASS --------------------------------------------------------- //
+// -------- End 4th PASS --------------------------------------------------------- //
 
+	// make sure everthing gets turned back off
+	GL_state.Texture.DisableAll();
+	GL_state.Normalize(GL_FALSE);
+	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	vglClientActiveTextureARB(GL_TEXTURE0_ARB);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+}
 
-	// unlock the arrays
-	vglUnlockArraysEXT();
+// start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
+void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+{
+	Assert( GL_htl_projection_matrix_set );
+	Assert( GL_htl_view_matrix_set );
 
-	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
-	opengl_switch_arb(-1, 0);
-	glDisable(GL_NORMALIZE);
+	GL_CHECK_FOR_ERRORS("start of render_buffer()");
 
+	if ( GL_state.CullFace() ) {
+		GL_state.FrontFaceValue(GL_CW);
+	}
 
-#if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
-	glBegin(GL_LINES);
-		glColor3ub(255,0,0);
-		glVertex3d(0,0,0);
-		glVertex3d(20,0,0);
+	if ( Use_GLSL && !GLSL_override ) {
+		opengl_render_pipeline_program(start, n_prim, sbuffer, ibuffer, flags);
+	} else {
+		opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
+	}
 
-		glColor3ub(0,255,0);
-		glVertex3d(0,0,0);
-		glVertex3d(0,20,0);
-
-		glColor3ub(0,0,255);
-		glVertex3d(0,0,0);
-		glVertex3d(0,0,20);
-	glEnd();
-#endif
-
-	TIMERBAR_POP();
+	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
-	Assert(GL_htl_projection_matrix_set);
-	Assert(GL_htl_view_matrix_set);
+	Assert( GL_htl_projection_matrix_set );
+	Assert( GL_htl_view_matrix_set );
 
-	if (!offset)
+	if (offset == NULL) {
 		offset = &vmd_zero_vector;
-	if (!rotation)
+	}
+
+	if (rotation == NULL) {
 		rotation = &vmd_identity_matrix;	
+	}
+
+	GL_CHECK_FOR_ERRORS("start of start_instance_matrix()");
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -928,6 +1226,8 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 
 	glTranslatef( offset->xyz.x, offset->xyz.y, offset->xyz.z );
 	glRotatef( fl_degrees(ang), axis.xyz.x, axis.xyz.y, axis.xyz.z );
+
+	GL_CHECK_FOR_ERRORS("end of start_instance_matrix()");
 
 	GL_modelview_matrix_depth++;
 }
@@ -963,8 +1263,11 @@ void gr_opengl_end_instance_matrix()
 // the projection matrix; fov, aspect ratio, near, far
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
+
+	GL_CHECK_FOR_ERRORS("start of set_projection_matrix()()");
 
 	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 
@@ -973,28 +1276,41 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 
 	GLdouble clip_width, clip_height;
 
-	clip_height = tan( (double)fov / 2.0 ) * z_near;
+	clip_height = tan( (double)fov * 0.5 ) * z_near;
 	clip_width = clip_height * (GLdouble)aspect;
 
 	glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
 
 	glMatrixMode(GL_MODELVIEW);
 
+	GL_CHECK_FOR_ERRORS("end of set_projection_matrix()()");
+
 	GL_htl_projection_matrix_set = 1;
 }
 
 void gr_opengl_end_projection_matrix()
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
+
+	GL_CHECK_FOR_ERRORS("start of end_projection_matrix()");
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+
+	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
+	if (GL_rendering_to_framebuffer) {
+		glOrtho(0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
+	} else {
+		glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+	}
 
 	glMatrixMode(GL_MODELVIEW);
+
+	GL_CHECK_FOR_ERRORS("end of end_projection_matrix()");
 
 	GL_htl_projection_matrix_set = 0;
 }
@@ -1015,6 +1331,8 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_modelview_matrix_depth == 1);
+
+	GL_CHECK_FOR_ERRORS("start of set_view_matrix()");
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -1086,7 +1404,7 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 	glScalef(1.0f, 1.0f, -1.0f);
 
 
-	if ( Cmdline_env ) {
+	if (Cmdline_env) {
 		GL_env_texture_matrix_set = true;
 
 		// if our view setup is the same as previous call then we can skip this
@@ -1114,6 +1432,8 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 		}
 	}
 
+	GL_CHECK_FOR_ERRORS("end of set_view_matrix()");
+
 	GL_modelview_matrix_depth = 2;
 	GL_htl_view_matrix_set = 1;
 }
@@ -1138,15 +1458,19 @@ void gr_opengl_end_view_matrix()
 // TODO: this probably needs to accept values
 void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
 	// don't bother with this if we aren't even going to need it
-	if (!GL_htl_projection_matrix_set)
+	if ( !GL_htl_projection_matrix_set ) {
 		return;
+	}
 
 	Assert( GL_htl_2d_matrix_set == 0 );
 	Assert( GL_htl_2d_matrix_depth == 0 );
+
+	glPushAttrib(GL_TRANSFORM_BIT);
 
 	// the viewport needs to be the full screen size since glOrtho() is relative to it
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
@@ -1155,8 +1479,12 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 	glPushMatrix();
 	glLoadIdentity();
 
-	// the top and bottom positions are reversed on purpose
-	glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, -1, 1 );
+	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
+	if (GL_rendering_to_framebuffer) {
+		glOrtho( 0, gr_screen.max_w, 0, gr_screen.max_h, -1, 1 );
+	} else {
+		glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, -1, 1 );
+	}
 
 	glMatrixMode( GL_MODELVIEW );
 	glPushMatrix();
@@ -1191,6 +1519,8 @@ void gr_opengl_end_2d_matrix()
 	glPopMatrix();
 	glMatrixMode( GL_MODELVIEW );
 	glPopMatrix();
+
+	glPopAttrib();
 
 	GL_htl_2d_matrix_set = 0;
 	GL_htl_2d_matrix_depth = 0;
@@ -1228,16 +1558,18 @@ void gr_opengl_pop_scale_matrix()
 
 void gr_opengl_end_clip_plane()
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
-	glDisable(GL_CLIP_PLANE0);
+	GL_state.ClipPlane(0, GL_FALSE);
 }
 
 void gr_opengl_start_clip_plane()
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
 	GLdouble clip_equation[4];
 
@@ -1250,23 +1582,24 @@ void gr_opengl_start_clip_plane()
 						+ (GLdouble)(G3_user_clip_normal.xyz.z * G3_user_clip_point.xyz.z);
 	clip_equation[3] *= -1.0;
 
+
 	glClipPlane(GL_CLIP_PLANE0, clip_equation);
-	glEnable(GL_CLIP_PLANE0);
+	GL_state.ClipPlane(0, GL_TRUE);
 }
 
 //************************************State blocks************************************
 
 //this is an array of reference counts for state block IDs
-static GLuint *state_blocks = NULL;
-static uint n_state_blocks = 0;
-static GLuint current_state_block;
+//static GLuint *state_blocks = NULL;
+//static uint n_state_blocks = 0;
+//static GLuint current_state_block;
 
 //this is used for places in the array that a state block ID no longer exists
-#define EMPTY_STATE_BOX_REF_COUNT	0xffffffff
+//#define EMPTY_STATE_BOX_REF_COUNT	0xffffffff
 
 int opengl_get_new_state_block_internal()
 {
-	uint i;
+/*	uint i;
 
 	if (state_blocks == NULL) {
 		state_blocks = (GLuint*)vm_malloc(sizeof(GLuint));
@@ -1286,19 +1619,20 @@ int opengl_get_new_state_block_internal()
 
 	n_state_blocks++;
 
-	return n_state_blocks-1;
+	return n_state_blocks-1;*/
+	return -1;
 }
 
 void gr_opengl_start_state_block()
 {
-	gr_screen.recording_state_block = true;
+/*	gr_screen.recording_state_block = true;
 	current_state_block = opengl_get_new_state_block_internal();
-	glNewList(current_state_block, GL_COMPILE);
+	glNewList(current_state_block, GL_COMPILE);*/
 }
 
 int gr_opengl_end_state_block()
 {
-	//sanity check
+/*	//sanity check
 	if(!gr_screen.recording_state_block)
 		return -1;
 
@@ -1307,76 +1641,12 @@ int gr_opengl_end_state_block()
 	glEndList();
 
 	//now return
-	return current_state_block;
+	return current_state_block;*/
+	return -1;
 }
 
 void gr_opengl_set_state_block(int handle)
 {
-	if(handle < 0) return;
-	glCallList(handle);
-}
-
-void gr_opengl_set_line_width(float width)
-{
-    glLineWidth(width);
-}
-
-void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
-{
-    if (Cmdline_nohtl)
-        return;
-
-    gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
-    opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, zbuffer_state);
-
-    glBegin(GL_LINES);
-        if (gr_screen.current_color.is_alphacolor)
-        {
-            glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green,
-                       gr_screen.current_color.blue, gr_screen.current_color.alpha);
-        }
-        else
-        {
-            glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-        }
-
-        glVertex3fv(start->a1d);
-        glVertex3fv(end->a1d);
-    glEnd();
-}
-
-void gr_opengl_draw_htl_sphere(float rad)
-{
-	if (Cmdline_nohtl)
-		return;
-
-	GLUquadricObj *quad = NULL;
-
-	// FIXME: before this is used in anything other than FRED2 we need to make this creation/deletion 
-	// stuff global so that it's not so slow (it can be reused for multiple quadratic objects)
-	quad = gluNewQuadric();
-
-	Assert(quad != NULL);
-
-	if (quad == NULL)
-		return;
-
-	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
-	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-
-	// FIXME: opengl_check_for_errors() needs to be modified to work with this at
-	// some point but for now I just don't care so it does nothing
-	gluQuadricCallback( quad, GLU_ERROR, NULL );
-
-	// FIXME: maybe support fill/wireframe with a future flag?
-	gluQuadricDrawStyle( quad, GLU_FILL );
-
-	// assuming unlit spheres, otherwise use GLU_SMOOTH so that it looks better
-	gluQuadricNormals( quad, GLU_NONE );
-
-	// we could set the slices/stacks at some point in the future but just use 16 now since it looks ok
-	gluSphere( quad, (GLdouble)rad, 16, 16 );
-
-	// FIXME: I just heard this scream "Globalize Me!!".  It was really scary.  I even cried.
-	gluDeleteQuadric( quad );
+/*	if(handle < 0) return;
+	glCallList(handle);*/
 }

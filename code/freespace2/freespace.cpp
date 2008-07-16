@@ -1904,7 +1904,7 @@ void fs2netd_spew_table_checksums(char *outfile);
 
 extern bool frame_rate_display;
 
-bool cube_map_drawen = false;
+bool Env_cubemap_drawn = false;
 
 void game_reset_view_clip();
 void game_reset_shade_frame();
@@ -2857,7 +2857,7 @@ void game_level_init(int seed)
 	// campaign wasn't ended
 	Campaign_ended_in_mission = 0;
 
-	cube_map_drawen = false;
+	Env_cubemap_drawn = false;
 
 	load_gl_init = time(NULL) - load_gl_init;
 
@@ -3227,6 +3227,9 @@ void game_post_level_init()
 {
 	// Stuff which gets called after mission is loaded.  Because player isn't created until
 	// after mission loads, some things must get initted after the level loads
+
+	extern void game_environment_map_gen();
+	game_environment_map_gen();
 
 	model_level_post_init();
 
@@ -3685,8 +3688,8 @@ void game_init()
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
-		Cmdline_nospec = 1;
-		Cmdline_noglow = 1;
+		Cmdline_spec = 0;
+		Cmdline_glow = 0;
 		Cmdline_env = 0;
 		Cmdline_3dwarp = 0;
 
@@ -3789,92 +3792,27 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
-	// check for hi res pack file 
-	int has_sparky_hi = cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY);
-
-
-	if (!Is_standalone) {
-		int width = 640, height = 480, cdepth = 16, res = GR_640, mode = GR_OPENGL;
-		char Device_init_error[512];
-		bool is_640x480 = true; // default to 640x480 res
-
-
-		// We cannot continue without this, quit, but try to help the user out first
-		ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
-
-		// if we don't have a config string then construct one, using OpenGL 640x480 16-bit as the default
-		if (ptr == NULL) {
-			char Default_video_settings[] = "OGL -(640x480)x16 bit";
-			ptr = &Default_video_settings[0];
-		}
-
-		if(Cmdline_res != NULL) {
-			char Cmdline_video_settings[128];
-			sprintf(Cmdline_video_settings, "OGL -(%s)x16 bit", Cmdline_res);
-			ptr = &Cmdline_video_settings[0];
-		}
-
-		Assert( ptr != NULL );
-
-		// OpenGL should be default
-		mode = GR_OPENGL;
-
-#ifndef NO_DIRECT3D
-		if ( !strncmp(ptr, NOX("D3D8"), 4) )
-			mode = GR_DIRECT3D;
-#endif
-
-		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-		//       If the format of that string changes you'll have to change this too!!!
-		if ( sscanf(ptr+5, "(%dx%d)x%d ", &width, &height, &cdepth) != 3 ) {
-			strcpy(Device_init_error, "Can't understand 'VideocardFs2open' registry entry!");
-			goto VidInitError;
-		}
-
-		// if we are less than 1024x768 res then stay at low-res, otherwise bump it
-		is_640x480 = ( (width < 1024) && (height < 768) );
-	
-		res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
-
-#ifdef WIN32
-		// for Windows, we need to do this just before the gr_init() call
-		extern void win32_create_window(int width, int height);
-		win32_create_window( width, height );
-#endif
-
-		gr_init(res, mode, cdepth, width, height);
-
-VidInitError:
-		extern int Gr_inited;
-		if (!Gr_inited) {
+	if ( gr_init() == false ) {
 #ifdef _WIN32
-			ClipCursor(NULL);
-			ShowCursor(TRUE);
-			ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
-			MessageBox( NULL, Device_init_error, "Error intializing graphics", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-			run_launcher();
+		ClipCursor(NULL);
+		ShowCursor(TRUE);
+		ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
+		MessageBox( NULL, "Error intializing graphics!", "Error", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
+		run_launcher();
 #elif defined(SCP_UNIX)
-			fprintf(stderr, "Error initializing graphics: %s\n\n", Device_init_error);
-			
-			// the default entry should have been created already if it didn't exist, so if we're here then
-			// the current value is invalid and we need to replace it
-			os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
-			
-			// courtesy
-			fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
-			fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
-#endif
-			exit(1);
-			return;
-		}
-	}
-	// we are standalone (ie, server mode)
-	else {
-		gr_init(GR_640, GR_STUB, 16, 640, 480);
-	}
+		fprintf(stderr, "Error initializing graphics!");
 
-	// this has to be set after gr_init() is done on *nix
-	os_set_title(Osreg_title);
+		// the default entry should have been created already if it didn't exist, so if we're here then
+		// the current value is invalid and we need to replace it
+		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x16 bit"));
+
+		// courtesy
+		fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
+		fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
+#endif
+		exit(1);
+		return;
+	}
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
@@ -5149,7 +5087,7 @@ vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 extern float View_zoom;
 inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
 {
-	bm_set_render_target( (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map, i);
+	bm_set_render_target(gr_screen.envmap_render_target, i);
 
 	gr_clear();
 
@@ -5180,14 +5118,14 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 
 	// prefer the mission specified envmap over the static-generated envmap, but
 	// the dynamic envmap should always get preference if in a subspace mission
-	if ( !Game_subspace_effect && strlen(The_mission.envmap_name) ) {
+	if ( !Dynamic_environment && strlen(The_mission.envmap_name) ) {
 		ENVMAP = bm_load(The_mission.envmap_name);
 
 		if (ENVMAP >= 0)
 			return;
 	}
 
-	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
+	if (gr_screen.envmap_render_target < 0) {
 		if (ENVMAP >= 0)
 			return;
 
@@ -5203,7 +5141,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 		return;
 	}
 
-	ENVMAP = (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
+	ENVMAP = gr_screen.envmap_render_target;
 
 /*
 	Envmap matrix setup -- left-handed
@@ -5270,6 +5208,37 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	// we're done, so now reset
 	bm_set_render_target(-1);
 	g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
+}
+
+// setup the render target ready for this mission's environment map
+void game_environment_map_gen()
+{
+	const int size = 512;
+	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP);
+
+	if ( !Cmdline_env ) {
+		return;
+	}
+
+	if (gr_screen.envmap_render_target >= 0) {
+		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
+			Int3();
+		}
+
+		gr_screen.envmap_render_target = -1;
+	}
+
+	if ( Dynamic_environment || (The_mission.flags & MISSION_FLAG_SUBSPACE) ) {
+		Dynamic_environment = true;
+		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
+		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	}
+	// bail if we are going to be static, and have an envmap specified already
+	else if ( strlen(The_mission.envmap_name) ) {
+		return;
+	}
+
+	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
 }
 
 int Scripting_didnt_draw_hud = 1;
@@ -5595,9 +5564,12 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	}
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	if ( Cmdline_env && (!cube_map_drawen || Game_subspace_effect) ) {
+	if ( Cmdline_env && !Env_cubemap_drawn ) {
 		setup_environment_mapping(eye_pos, eye_orient);
-		cube_map_drawen = true;
+
+		if ( !Dynamic_environment ) {
+			Env_cubemap_drawn = true;
+		}
 	}
 
 #ifndef DYN_CLIP_DIST
