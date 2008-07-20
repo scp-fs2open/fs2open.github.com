@@ -136,8 +136,6 @@ void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);
 
-void gr_opengl_set_line_width(float width);
-void gr_opengl_draw_htl_line(vec3d *start, vec3d *end);
-void gr_opengl_draw_htl_sphere(float rad);
+void opengl_tnl_shutdown();
 
 #endif //_GROPENGLTNL_H

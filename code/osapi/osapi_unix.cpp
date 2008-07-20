@@ -228,9 +228,13 @@ void os_set_title( char *title )
 	SDL_WM_SetCaption( szWinTitle, NULL );
 }
 
+extern void gr_opengl_shutdown();
+
 // call at program end
 void os_cleanup()
 {
+	gr_opengl_shutdown();
+
 #ifndef NDEBUG
 	outwnd_close();
 #endif

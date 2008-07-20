@@ -2857,15 +2857,23 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 
 void g3_draw_htl_line(vec3d *start, vec3d *end)
 {
-	if (Cmdline_nohtl) return;
-	gr_draw_htl_line(start,end);
+	if (Cmdline_nohtl) {
+		return;
+	}
+
+	gr_line_htl(start,end);
 }
 
 void g3_draw_htl_sphere(vec3d* position, float radius)
 {
-	if (Cmdline_nohtl) return;
+	if (Cmdline_nohtl) {
+		return;
+	}
+
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
-	gr_draw_htl_sphere(radius);
+
+	gr_sphere_htl(radius);
+
 	g3_done_instance(true);
 }
 

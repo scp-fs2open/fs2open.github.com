@@ -237,6 +237,8 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 //tristrips, for trails mostly, might find other uses eventualy
 #define TMAP_FLAG_TRISTRIP			(1<<14)
 #define TMAP_FLAG_TRILIST			(1<<15)
+#define TMAP_FLAG_QUADLIST			(1<<16)
+#define TMAP_FLAG_QUADSTRIP			(1<<17)
 
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2

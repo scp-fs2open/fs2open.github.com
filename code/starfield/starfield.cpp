@@ -743,6 +743,8 @@ int Nmodel_bitmap = -1;						// model texture
 int Num_debris_normal = 0;
 int Num_debris_nebula = 0;
 
+bool Dynamic_environment = false;
+
 
 void stars_release_debris_vclips(debris_vclip *vclips)
 {
@@ -1446,6 +1448,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 			sb->preload = 0;
 		}
 	}
+
+	Dynamic_environment = false;
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not

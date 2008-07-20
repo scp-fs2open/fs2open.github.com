@@ -1828,17 +1828,8 @@ void CFREDView::OnSize(UINT nType, int cx, int cy)
 {
 	CView::OnSize(nType, cx, cy);
 	
-	if(cy > 0)
-	{
-		gr_init_res(GR_640,GR_OPENGL, cx,cy);
-
-		glViewport(0, 0, cx, cy);  	 
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, gr_screen.max_w, gr_screen.max_h,0, 0.0, 1.0);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		
+	if (cy > 0) {
+		gr_screen_resize(cx, cy);
 		RedrawWindow();
 	}
 }

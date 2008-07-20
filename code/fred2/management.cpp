@@ -907,7 +907,7 @@ bool fred_init()
  	Cmdline_window = 1;
 	DBUGFILE_OUTPUT_0("About to gr_init");
 
-	gr_init(GR_640, GR_OPENGL, 32, 640, 480);
+	gr_init(GR_OPENGL, 640, 480, 32);
 
 	Mouse_hidden = 1;
 
