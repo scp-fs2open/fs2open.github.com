@@ -1398,10 +1398,8 @@ void neb2_render_player()
 					continue;
 				}
 
-				vertex p_;
 				// rotate and project the vertex into viewspace
 				g3_rotate_vertex(&p, &Neb2_cubes[idx1][idx2][idx3].pt);
-				if(!Cmdline_nohtl) g3_transfer_vertex(&p_, &Neb2_cubes[idx1][idx2][idx3].pt);
 
 				ptemp = p;
 				g3_project_vertex(&ptemp);
@@ -1444,9 +1442,7 @@ void neb2_render_player()
 #else */
 				if (!Cmdline_nohtl) gr_set_lighting(false, false);
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-		 	  	if(Cmdline_nohtl)
-	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 //#endif
 			}
 		}
