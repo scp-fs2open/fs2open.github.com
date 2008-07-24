@@ -8517,12 +8517,15 @@ void multi_sync_pre_init()
 
 	Netgame.game_state = NETGAME_STATE_MISSION_SYNC;
 
-	// if we're in teamplay mode, always force skill level to be medium
+	/* 	if we're in teamplay mode, always force skill level to be medium
+	Karajorma - disabling cause it's just plain idiotic! if people want to play on insane let them
+
 	if((Netgame.type_flags & NG_TYPE_TEAM) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){
 		Netgame.options.skill_level = NUM_SKILL_LEVELS / 2;
 		Game_skill_level = NUM_SKILL_LEVELS / 2;
 		multi_options_update_netgame();
 	}
+	*/
 
 	// notify everyone of when we get here
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
