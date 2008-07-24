@@ -278,9 +278,12 @@
 #include "network/multi_team.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_pmsg.h"
+#include "ai/ai_profiles.h"
 
-
-
+/*
+// uncomment to get extra debug messages when a player scores
+#define SCORING_DEBUG
+*/
 // what percent of points of total damage to a ship a player has to have done to get an assist (or a kill) when it is killed
 float Kill_percentage;
 float Assist_percentage;
@@ -805,6 +808,9 @@ void scoring_eval_kill(object *ship_obj)
 	net_player *net_plr = NULL;
 	ship *dead_ship;				// the ship which was killed
 	net_player *dead_plr = NULL;
+	float scoring_scale_by_damage = 1;	// percentage to scale the killer's score by if we score based on the amount of damage caused
+	int kill_score, assist_score; 
+
 
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
@@ -891,6 +897,11 @@ void scoring_eval_kill(object *ship_obj)
 		// set killer_sig for this ship to the signature of the guy who gets credit for the kill
 		killer_sig = dead_ship->damage_ship_id[max_damage_index];
 
+		// set the scale value if we only award 100% score for 100% damage
+		if (The_mission.ai_profile->flags & AIPF_KILL_SCORING_SCALES_WITH_DAMAGE) {
+			scoring_scale_by_damage = max_damage_pct;
+		}
+
 		// null this out for now
 		plr = NULL;
 		net_plr = NULL;
@@ -934,12 +945,14 @@ void scoring_eval_kill(object *ship_obj)
 
 			// if he killed a guy on his own team increment his bonehead kills
 			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
-				plr->stats.m_bonehead_kills++;
-				plr->stats.m_score -= (int)(dead_ship->score * scoring_get_scale_factor());
+				if (!(The_mission.flags & MISSION_FLAG_NO_TRAITOR)) {
+					plr->stats.m_bonehead_kills++;
+					kill_score = -(int)(dead_ship->score * scoring_get_scale_factor());
+					plr->stats.m_score += kill_score;
 
-				// squad war
-				if(net_plr != NULL){
-					multi_team_maybe_add_score(-(int)(dead_ship->score * scoring_get_scale_factor()), net_plr->p_info.team);
+					if(net_plr != NULL ) {
+						multi_team_maybe_add_score(-(dead_ship->score), net_plr->p_info.team);
+					}
 				}
 			} 
 			// otherwise increment his valid kill count and score
@@ -950,31 +963,41 @@ void scoring_eval_kill(object *ship_obj)
 				} else {
 					plr->stats.m_okKills[si_index]++;		
 					plr->stats.m_kill_count_ok++;
-					plr->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor());
+					kill_score = (int)(dead_ship->score * scoring_get_scale_factor() * scoring_scale_by_damage);
+					plr->stats.m_score += kill_score;  					
 					hud_gauge_popup_start(HUD_KILLS_GAUGE);
+
+#ifdef SCORING_DEBUG
+					char kill_score_text[1024] = "";
+					sprintf(kill_score_text, "SCORING : %s killed a ship worth %d points and gets %d pts for the kill", plr->callsign, dead_ship->score, kill_score);	
+					if (MULTIPLAYER_MASTER) {
+						send_game_chat_packet(Net_player, kill_score_text, MULTI_MSG_ALL);
+					}
+					HUD_printf(kill_score_text);
+					mprintf((kill_score_text));
+#endif
 
 					// multiplayer
 					if(net_plr != NULL){
-						multi_team_maybe_add_score((int)(dead_ship->score * scoring_get_scale_factor()), net_plr->p_info.team);
+						multi_team_maybe_add_score(dead_ship->score , net_plr->p_info.team);
 
-						// award teammates 50% of score value for big ship kills
+						// award teammates % of score value for big ship kills
 						// not in dogfight tho
+						// and not if there is no assist threshold (as otherwise assists could get higher scores than kills)
 						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
 							for (idx=0; idx<MAX_PLAYERS; idx++) {
 								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
-									Net_players[idx].m_player->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f);
-/*
-#if !defined(RELEASE_REAL)
+									assist_score = (int)(dead_ship->score * scoring_get_scale_factor() * The_mission.ai_profile->assist_award_percentage_scale[Game_skill_level]);
+									Net_players[idx].m_player->stats.m_score += assist_score;
+
+#ifdef SCORING_DEBUG
 									// DEBUG CODE TO TEST NEW SCORING
 									char score_text[1024] = "";
-									sprintf(score_text, "You get %d pts for the helping kill the big ship", (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f));							
-									if (Net_players[idx].player != Net_player->player) {			// check if its me
-										send_game_chat_packet(Net_player, score_text, MULTI_MSG_TARGET, &Net_players[idx], NULL, 2);								
-									} else {
-										HUD_printf(score_text);
-									}
+									sprintf(score_text, "SCORING : All team mates get %d pts for helping kill the capship", assist_score);
+									send_game_chat_packet(Net_player, score_text, MULTI_MSG_ALL);
+									HUD_printf(score_text);
+									mprintf((score_text));
 #endif
-*/
 								}
 							}
 						}
@@ -1022,18 +1045,17 @@ void scoring_eval_kill(object *ship_obj)
 	dead_ship->damage_ship_id[0] = killer_sig;
 	dead_ship->damage_ship[0] = max_damage_pct;
 
-/*
-	// debug code
-#if !defined(RELEASE_REAL)
+#ifdef SCORING_DEBUG
+
 	if (Game_mode & GM_MULTIPLAYER) {
 		char buf[256];
-		sprintf(Scoring_debug_text, "%s killed.\nDamage by ship:\n\n", Ship_info[dead_ship->ship_info_index].name);
+		sprintf(Scoring_debug_text, "SCORING : %s killed.\nDamage by ship:\n\n", Ship_info[dead_ship->ship_info_index].name);
 
 		// show damage done by player
 		for (int i=0; i<MAX_DAMAGE_SLOTS; i++) {
 			int net_player_num = multi_find_player_by_signature(dead_ship->damage_ship_id[i]);
 			if (net_player_num != -1) {
-				plr = Net_players[net_player_num].player;
+				plr = Net_players[net_player_num].m_player;
 				sprintf(buf, "%s: %f", plr->callsign, dead_ship->damage_ship[i]);
 
 				if (dead_ship->damage_ship_id[i] == killer_sig ) {
@@ -1044,11 +1066,11 @@ void scoring_eval_kill(object *ship_obj)
 
 				strcat(Scoring_debug_text, buf);	
 			}
-
 		}
+		mprintf ((Scoring_debug_text)); 
 	}
 #endif
-*/
+
 }
 
 // kill_id is the object signature of the guy who got the credit for the kill (may be -1, if no one got it)
@@ -1057,6 +1079,10 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 {
 	int idx;
 	player *plr;
+	float scoring_scale_by_damage = 1;	// percentage to scale the score by if we score based on the amount of damage caused
+	int assist_score; 
+	int net_player_num;
+
 
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
@@ -1066,13 +1092,13 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 	// evaluate each damage slot to see if it did enough to give the assis
 	for(idx=0;idx<MAX_DAMAGE_SLOTS;idx++){
 		// if this slot did enough damage to get an assist
-		if((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage){
+		if(((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage) || (The_mission.ai_profile->flags & AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE)){
 			// get the player which did this damage (if any)
 			plr = NULL;
 			
 			// multiplayer
 			if(Game_mode & GM_MULTIPLAYER){
-				int net_player_num = multi_find_player_by_signature(sp->damage_ship_id[idx]);
+				net_player_num = multi_find_player_by_signature(sp->damage_ship_id[idx]);
 				if(net_player_num != -1){
 					plr = Net_players[net_player_num].m_player;
 				}
@@ -1087,9 +1113,35 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 			// if we found a player, give him the assist if he attacks it
 			if ((plr != NULL) && (iff_x_attacks_y(Ships[Objects[plr->objnum].instance].team, sp->team)) && (killer_sig != Objects[plr->objnum].signature))
 			{
-				plr->stats.m_assists++;
+				// player has to equal the threshold to get an assist
+				if ((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage) {
+					plr->stats.m_assists++;	
+					nprintf(("Network","-==============GAVE PLAYER %s AN ASSIST=====================-\n",plr->callsign));
+				}
+				
+				// maybe award assist points based on damage
+				if (The_mission.ai_profile->flags & AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE) {
+					scoring_scale_by_damage = (sp->damage_ship[idx]/sp->total_damage_received);
+					assist_score = (int)(sp->score * scoring_get_scale_factor() * scoring_scale_by_damage);
+					plr->stats.m_score += assist_score;
+				}
+				// otherwise give the points based on the percentage in the mission file
+				else {
+					assist_score = (int)(sp->score * sp->assist_score_pct * scoring_get_scale_factor() );
+					plr->stats.m_score += assist_score;
+				}
 
-				nprintf(("Network","-==============GAVE PLAYER %s AN ASSIST=====================-\n",plr->callsign));
+#ifdef SCORING_DEBUG
+
+				// DEBUG CODE TO TEST NEW SCORING
+				char score_text[1024] = "";
+				sprintf(score_text, "SCORING : %s gets %d pts for getting an assist", plr->callsign, assist_score);							
+				if (MULTIPLAYER_MASTER) {		
+					send_game_chat_packet(Net_player, score_text, MULTI_MSG_ALL);								
+				} 
+				HUD_printf(score_text);
+				mprintf ((score_text));
+#endif
 			}
 		}
 	}

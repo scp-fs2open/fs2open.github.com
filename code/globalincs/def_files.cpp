@@ -787,6 +787,10 @@ $Percentage Required For Kill Scale: 0.30, 0.30, 0.30, 0.30, 0.30		\n\
 ;; must inflict in order to be awarded an assist						\n\
 $Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 																		\n\
+;; in TvT and Coop missions all teammates will be granted this 		 	\n\
+;; percentage of the capships score when someone scores a kill			\n\
+$Percentage Awarded For Capship Assist: 0.5, 0.5, 0.5, 0.5, 0.5			\n\
+																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
 																		\n\
@@ -835,7 +839,7 @@ $navigation subsystem governs warpout capability: NO					\n\
 ;; (like in FS1)														\n\
 $ignore lower bound for minimum speed of docked ship: NO				\n\
 																		\n\
-;; if set, will remove the increased delay when weapons are linked		\n\
+;; if set, will remove the increased delay when weapons are linked		\n""\
 $disable linked fire penalty: NO										\n\
 																		\n\
 ;; if set, will not scale weapon damage according to capital/supercap	\n\
@@ -847,6 +851,18 @@ $use additive weapon velocity: NO										\n\
 																		\n\
 ;; if set, beam damage is counted when calculating kills and assists 	\n\
 $include beams for kills and assists: NO								\n\
+																		\n\
+;; if set, kills gain score based on the percentage damage the killer	\n\
+;; inflicted on the dead ship											\n\
+$score kills based on damage caused: NO									\n\
+																		\n\
+;; if set, kills gain score based on the percentage damage the player	\n\
+;; gaining the assist inflicted on the dead ship						\n\
+$score assists based on damage caused: NO								\n\
+																		\n\
+;; if set, players (rather than just their team) can gain score from 	\n\
+;; events in multiplayer												\n\
+$allow event and goal scoring in multiplayer: NO						\n\
 																		\n\
 																		\n\
 #End																	\n\

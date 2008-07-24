@@ -2921,6 +2921,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->wingnum = p_objp->wingnum;
 	shipp->hotkey = p_objp->hotkey;
 	shipp->score = p_objp->score;
+	shipp->assist_score_pct = p_objp->assist_score_pct;
 	shipp->persona_index = p_objp->persona_index;
 
 	// reset texture animations
@@ -3838,6 +3839,20 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	
 	if (table_score) {
 		p_objp->score = Ship_info[p_objp->ship_class].score;
+	}
+
+	if (optional_string("+Assist Score Percentage:")) {
+		stuff_float(&p_objp->assist_score_pct);
+		// value must be a percentage
+		if (p_objp->assist_score_pct < 0) {
+			p_objp->assist_score_pct = 0;
+		} 
+		else if (p_objp->assist_score_pct > 1) {
+			p_objp->assist_score_pct = 1;
+		}
+	}
+	else {
+		p_objp->assist_score_pct = 0;
 	}
 
 	// parse the persona index if present
@@ -7868,6 +7883,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;
 	pobj->score = 0;
+	pobj->assist_score_pct = 0;
 
 	pobj->dock_list = NULL;
 	pobj->created_object = NULL;

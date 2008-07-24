@@ -1036,7 +1036,7 @@ STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION |
 EXSTYLE WS_EX_NOPARENTNOTIFY | WS_EX_CLIENTEDGE | WS_EX_CONTEXTHELP
 CAPTION "Edit Ship"
 MENU IDR_SHIP_EDIT_MENU
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Sans Serif"
 BEGIN
     PUSHBUTTON      "Prev",IDC_PREV,264,7,24,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Next",IDC_NEXT,290,7,24,14,0,WS_EX_STATICEDGE
@@ -1053,15 +1053,15 @@ BEGIN
                     WS_TABSTOP
     PUSHBUTTON      "Texture Replacement",IDC_TEXTURES,47,95,93,14,0,
                     WS_EX_STATICEDGE
-    COMBOBOX        IDC_HOTKEY,180,21,68,122,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_HOTKEY,189,24,68,122,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
-    COMBOBOX        IDC_SHIP_PERSONA,180,37,68,129,CBS_DROPDOWNLIST | 
+    COMBOBOX        IDC_SHIP_PERSONA,189,40,68,129,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_SCORE,180,52,68,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_SCORE,189,55,68,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Player Ship",IDC_PLAYER_SHIP,"Button",BS_3STATE | 
-                    WS_TABSTOP,180,71,51,10
-    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,180,83,69,14,
-                    0,WS_EX_STATICEDGE
+                    WS_TABSTOP,189,88,51,10
+    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,187,100,69,
+                    14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Misc",IDC_FLAGS,47,118,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Initial Status",IDC_INITIAL_STATUS,101,118,50,14,0,
                     WS_EX_STATICEDGE
@@ -1122,7 +1122,7 @@ BEGIN
     LTEXT           "Ship Name",IDC_STATIC,7,10,36,8
     LTEXT           "Ship Class",IDC_STATIC,9,24,34,8
     LTEXT           "Cargo",IDC_STATIC,23,66,20,8
-    RTEXT           "Wing:",IDC_STATIC,156,10,20,8
+    RTEXT           "Wing:",IDC_STATIC,165,13,20,8
     LTEXT           "Team",IDC_STATIC,24,52,19,8
     LTEXT           "Location",IDC_STATIC,15,150,28,8
     LTEXT           "Cue:",IDC_STATIC,15,233,16,8
@@ -1133,18 +1133,20 @@ BEGIN
     LTEXT           "AI Class",IDC_STATIC,17,38,26,8
     LTEXT           "Delay",IDC_STATIC,15,198,19,8
     LTEXT           "Delay",IDC_STATIC,172,198,19,8
-    LTEXT           "Static",IDC_WING,180,10,67,8
-    LTEXT           "Hotkey",IDC_STATIC,152,23,24,8
-    LTEXT           "Score",IDC_STATIC,156,55,20,8
+    LTEXT           "Static",IDC_WING,189,13,67,8
+    LTEXT           "Hotkey",IDC_STATIC,161,26,24,8
+    LTEXT           "Kill Score",IDC_STATIC,155,58,30,8
     LTEXT           "Target",IDC_STATIC,15,166,22,8
     LTEXT           "Distance",IDC_STATIC,15,182,29,8
     LTEXT           "Target",IDC_STATIC,172,166,22,8
-    LTEXT           "Persona",IDC_STATIC,149,39,27,8
+    LTEXT           "Persona",IDC_STATIC,158,42,27,8
     LTEXT           "Alt Name",IDC_STATIC,14,80,30,8
     PUSHBUTTON      "Restrict Arrival Paths",IDC_RESTRICT_ARRIVAL,15,213,134,
                     14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Restrict Departure Paths",IDC_RESTRICT_DEPARTURE,171,
                     213,134,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_ASSIST_SCORE,189,72,68,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Assist %",IDC_STATIC,158,75,27,8
 END
 
 IDD_WEAPON_EDITOR DIALOG DISCARDABLE  0, 0, 445, 79
