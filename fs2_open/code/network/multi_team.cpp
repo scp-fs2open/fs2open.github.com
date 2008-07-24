@@ -194,6 +194,7 @@
 #include "object/object.h"
 #include "ship/ship.h"
 #include "iff_defs/iff_defs.h"
+#include "stats/scoring.h"
 
 #ifndef NDEBUG
 #include "playerman/player.h"
@@ -293,7 +294,7 @@ void multi_team_maybe_add_score(int points, int team)
 	}
 
 	// add team score
-	Multi_team_score[team] += points;
+	Multi_team_score[team] += (int)(points * scoring_get_scale_factor());
 	nprintf(("Network", "TVT : adding %d points to team %d (total == %d)\n", points, team, Multi_team_score[team]));
 }
 

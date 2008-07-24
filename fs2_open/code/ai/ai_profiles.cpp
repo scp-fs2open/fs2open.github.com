@@ -322,6 +322,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Percentage Required For Assist Scale:"))
 				parse_float_list(profile->assist_percentage_scale, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Percentage Awarded For Capship Assist:"))
+				parse_float_list(profile->assist_award_percentage_scale, NUM_SKILL_LEVELS);
+
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
@@ -353,6 +356,12 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$use newtonian dampening:", AIPF_USE_NEWTONIAN_DAMPENING);
 
 			set_flag(profile, "$include beams for kills and assists:", AIPF_INCLUDE_BEAMS_IN_STAT_CALCS);
+
+			set_flag(profile, "$score kills based on damage caused:", AIPF_KILL_SCORING_SCALES_WITH_DAMAGE);
+
+			set_flag(profile, "$score assists based on damage caused:", AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE);
+
+			set_flag(profile, "$allow event and goal scoring in multiplayer:", AIPF_ALLOW_MULTI_EVENT_SCORING);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

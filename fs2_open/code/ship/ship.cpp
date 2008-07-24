@@ -5773,6 +5773,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->cargo1 = 0;
 	shipp->hotkey = -1;
 	shipp->score = 0;
+	shipp->assist_score_pct = 0;
 	shipp->escort_priority = 0;
 	shipp->special_exp_index = -1;
 	shipp->special_hitpoint_index = -1;

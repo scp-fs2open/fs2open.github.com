@@ -873,6 +873,7 @@ typedef struct p_object {
 	int	ai_class;
 	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score;
+	float assist_score_pct;					// percentage of the score which players who gain an assist will get when this ship is killed
 	int	orders_accepted;					// which orders this ship will accept from the player
 	p_dock_instance	*dock_list;				// Goober5000 - parse objects this parse object is docked to
 	object *created_object;					// Goober5000
