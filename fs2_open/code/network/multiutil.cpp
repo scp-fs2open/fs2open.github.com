@@ -969,9 +969,10 @@ int multi_find_player_by_parse_object( p_object *p_objp )
 	return -1;
 }
 
-int multi_find_player_by_ship_name(char *ship_name)
+int multi_find_player_by_ship_name(char *ship_name, bool inc_respawning)
 {
 	int idx;
+	p_object *p_objp;
 
 	// bogus
 	if(ship_name == NULL){
@@ -985,6 +986,14 @@ int multi_find_player_by_ship_name(char *ship_name)
 		}
 	}
 
+	if (inc_respawning) {
+		p_objp = mission_parse_get_arrival_ship(ship_name);
+		idx = multi_find_player_by_parse_object(p_objp);
+		
+		if((idx >= 0) && (idx < MAX_PLAYERS)){
+			return idx;
+		}
+	}
 	// didn't find the player
 	return -1;
 }
