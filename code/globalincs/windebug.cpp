@@ -1037,6 +1037,11 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	DumpCallsStack( dumpBuffer ) ;  
 	dump_text_to_clipboard(dumpBuffer.buffer);
 
+	// this stuff migt be really useful for solving bug reports and user errors! We should output it! 
+	mprintf(("ASSERTION: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum ));
+	mprintf((dumpBuffer.buffer));
+	
+
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
 
