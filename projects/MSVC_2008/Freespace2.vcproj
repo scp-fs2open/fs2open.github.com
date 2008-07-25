@@ -477,7 +477,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\FreeSpace.cpp"
+			RelativePath="..\..\code\freespace2\freespace.cpp"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -521,11 +521,11 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\FreeSpace.h"
+			RelativePath="..\..\code\freespace2\freespace.h"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\FreeSpace.rc"
+			RelativePath="..\..\code\freespace2\freespace.rc"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -565,7 +565,7 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\FreespaceResource.h"
+			RelativePath="..\..\code\freespace2\freespaceresource.h"
 			>
 		</File>
 		<File
@@ -593,7 +593,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\LevelPaging.cpp"
+			RelativePath="..\..\code\freespace2\levelpaging.cpp"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -637,15 +637,15 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\LevelPaging.h"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
+			RelativePath="..\..\code\freespace2\levelpaging.h"
 			>
 		</File>
 		<File
 			RelativePath="..\..\code\freespace2\phrases.cfg"
+			>
+		</File>
+		<File
+			RelativePath="..\..\code\sound\phrases.cfg"
 			>
 		</File>
 	</Files>
