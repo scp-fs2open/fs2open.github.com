@@ -695,11 +695,23 @@ SOURCE=..\..\code\graphics\gropenglbmpman.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\graphics\gropengldraw.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\graphics\gropenglextension.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglshader.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglstate.h
 # End Source File
 # Begin Source File
 
@@ -723,11 +735,23 @@ SOURCE=..\..\code\graphics\gropenglbmpman.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\graphics\gropengldraw.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\graphics\gropenglextension.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglshader.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglstate.cpp
 # End Source File
 # Begin Source File
 

@@ -1813,11 +1813,23 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\code\graphics\gropengldraw.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\code\graphics\gropenglextension.h"
 						>
 					</File>
 					<File
 						RelativePath="..\..\code\graphics\gropengllight.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\gropenglshader.h"
+						>
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\gropenglstate.h"
 						>
 					</File>
 					<File
@@ -1921,6 +1933,10 @@
 						</FileConfiguration>
 					</File>
 					<File
+						RelativePath="..\..\code\graphics\gropengldraw.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\..\code\graphics\gropenglextension.cpp"
 						>
 						<FileConfiguration
@@ -2007,6 +2023,14 @@
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\gropenglshader.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\gropenglstate.cpp"
+						>
 					</File>
 					<File
 						RelativePath="..\..\code\graphics\gropengltexture.cpp"

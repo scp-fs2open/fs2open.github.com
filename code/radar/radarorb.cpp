@@ -1084,9 +1084,12 @@ void radar_page_in_orb()
 void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 {
 	vertex vert;
+	int tmap_flags = 0;
 
-	g3_rotate_vertex(&vert, pnt);
-	g3_project_vertex(&vert);
+	if (Cmdline_nohtl) {
+		g3_rotate_vertex(&vert, pnt);
+		g3_project_vertex(&vert);
+	}
 
 	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
 
@@ -1104,11 +1107,21 @@ void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 	//modify size according to value from tables
 	sizef *= mult;
 
-	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE;
-	g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
+	if (Cmdline_nohtl) {
+		tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE;
 
-	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
-	{
 		g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
+		if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+		{
+			g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
+		}
+	} else {
+		tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
+
+		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, sizef/35.0f, tmap_flags);
+		if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+		{
+			g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, sizef/35.0f, tmap_flags);
+		}
 	}
 }

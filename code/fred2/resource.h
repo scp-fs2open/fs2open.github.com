@@ -769,6 +769,7 @@
 #define IDC_LOADING_SCREEN1024          1344
 #define IDC_ABBREV_CAMPAIGN             1344
 #define IDC_TVT_WING_NAME_1             1344
+#define IDC_ASSIST_SCORE                1344
 #define IDC_EDIT4                       1345
 #define IDC_AMMO4                       1345
 #define IDC_VOICE                       1345
@@ -1370,7 +1371,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        316
+#define _APS_NEXT_RESOURCE_VALUE        317
 #define _APS_NEXT_COMMAND_VALUE         33091
 #define _APS_NEXT_CONTROL_VALUE         1595
 #define _APS_NEXT_SYMED_VALUE           105

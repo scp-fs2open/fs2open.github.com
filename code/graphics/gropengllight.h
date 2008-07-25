@@ -113,26 +113,25 @@ struct opengl_light
 struct light_data;
 
 //Variables
-extern opengl_light *opengl_lights;
-extern bool *currently_enabled_lights;
 extern bool lighting_is_enabled;
 extern GLint GL_max_lights;
 extern int Num_active_gl_lights;
 extern int GL_center_alpha;
 
 //Functions
-void FSLight2GLLight(light *FSLight, opengl_light *GLLight);
 int	gr_opengl_make_light(light *fs_light, int idx, int priority);		//unused -- stub function
 void gr_opengl_modify_light(light *fs_light, int idx, int priority);	//unused -- stub function
 void gr_opengl_destroy_light(int idx);									//unused -- stub function
 void gr_opengl_set_light(light *fs_light);
 void gr_opengl_reset_lighting();
 void gr_opengl_set_lighting(bool set, bool state);
-void opengl_pre_render_init_lights();
-void opengl_change_active_lights(int);
-void opengl_init_light();
 void gr_opengl_center_alpha(int type);
 void gr_opengl_set_center_alpha(int type);
 void gr_opengl_set_ambient_light(int red, int green, int blue);
+
+void opengl_change_active_lights(int pos, int d_offset = 0);
+void opengl_light_init();
+void opengl_light_shutdown();
+void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 #endif //_GROPENGLLIGHT_H

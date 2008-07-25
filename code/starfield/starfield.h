@@ -234,6 +234,8 @@ extern int Num_backgrounds;
 extern int Cur_background;
 extern background_t Backgrounds[MAX_BACKGROUNDS];
 
+extern bool Dynamic_environment;
+
 void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();
 bool stars_background_empty();

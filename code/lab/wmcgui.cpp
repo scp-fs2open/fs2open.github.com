@@ -695,7 +695,7 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		int status = OwnerSystem->GetStatus();
 
 		//Pass the status on
-		GUIObject* cgp = (GUIObject*)GET_LAST(&Guiobjects);
+		cgp = (GUIObject*)GET_LAST(&Guiobjects);
 		cgp->Status |= (status & GST_KEYBOARD_STATUS);
 		for(; cgp != END_OF_LIST(&Guiobjects); cgp = cgp_prev)
 		{
@@ -735,11 +735,15 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	//Draw now. This prevents problems from an object deleting itself or moving around in the list
-	for(cgp = (GUIObject*)GET_LAST(&Guiobjects); cgp != END_OF_LIST(&Guiobjects); cgp = (GUIObject*)GET_PREV(cgp))
-	{
-		if(!doevents)
+	cgp = (GUIObject*)GET_FIRST(&Guiobjects);
+
+	while (cgp != END_OF_LIST(&Guiobjects)) {
+		if ( !doevents )
 			cgp->Status = 0;
+
 		cgp->OnDraw(frametime);
+
+		cgp = (GUIObject*)GET_NEXT(cgp);
 	}
 
 	// reset zbuffer to saved value
@@ -756,6 +760,8 @@ GUISystem::GUISystem()
 {
 	GraspedGuiobject=ActiveObject=NULL;
 	Status=LastStatus=0;
+
+	MouseX = MouseY = 0;
 
 	//Fill out Guiobjects with some handy info
 	//On 2nd thought, don't. This is hackish.
@@ -778,6 +784,7 @@ GUISystem::GUISystem()
 	}*/
 	ClassInfoParsed = false;
 }
+
 GUISystem::~GUISystem()
 {
 	GUIScreen* csp = (GUIScreen*)GET_FIRST(&Screens);
@@ -956,12 +963,14 @@ void GUISystem::DestroyClassInfo()
 GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width, int y_height, int in_style)
 {
 	//General stuff
-	next = prev = this;
 	LastStatus = Status = 0;
 	OwnerSystem = NULL;
 	OwnerScreen = NULL;
 	Parent = NULL;
 	CloseFunction = NULL;
+
+	list_init(this);
+	list_init(&Children);
 
 	//These would make no sense
 	//x_coord and y_coord of < 0 mean to let the parent handle placement.
@@ -991,23 +1000,33 @@ GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width,
 
 GUIObject::~GUIObject()
 {
-	if(CloseFunction != NULL)
+	if (CloseFunction != NULL)
 		CloseFunction(this);
-	//Set these properly
+
+	DeleteChildren();
+
+	// Set these properly
 	next->prev = prev;
 	prev->next = next;
-	DeleteChildren();
 }
 
 void GUIObject::DeleteChildren(GUIObject* exception)
 {
+	if ( EMPTY(&Children) )
+		return;
+
 	GUIObject* cgp = (GUIObject*)GET_FIRST(&Children);
-	GUIObject* cgp_next;
-	for(; cgp != END_OF_LIST(&Children); cgp = cgp_next)
+	GUIObject* cgp_temp;
+
+	while (cgp != END_OF_LIST(&Children))
 	{
-		cgp_next = (GUIObject*)GET_NEXT(cgp);
-		delete cgp;
+		cgp_temp = cgp;
+		cgp = (GUIObject*)GET_NEXT(cgp);
+
+		delete cgp_temp;
 	}
+
+	list_init(&Children);
 }
 
 GUIObject* GUIObject::AddChildInternal(GUIObject *cgp)
@@ -1056,7 +1075,7 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	cgp->OwnerSystem = OwnerSystem;
 	cgp->OwnerScreen = OwnerScreen;
 
-	//Update coordinates (Should be relative x/y and width/height) to absolute coordinates
+	// Update coordinates (Should be relative x/y and width/height) to absolute coordinates
 	cgp->Coords[0] += ChildCoords[0];
 	cgp->Coords[1] += ChildCoords[1];
 	cgp->Coords[2] += ChildCoords[0];
@@ -1099,7 +1118,9 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 	int rval = OF_TRUE;
 
 	GUIObject *cgp_prev;	//Elements will move themselves to the end of the list if they become active
-	for(GUIObject *cgp = (GUIObject*)GET_LAST(&Children); cgp != END_OF_LIST(&Children); cgp = cgp_prev)
+	GUIObject *cgp = (GUIObject*)GET_LAST(&Children);
+
+	for ( ; (cgp != NULL) && (cgp != END_OF_LIST(&Children)); cgp = cgp_prev)
 	{
 		cgp_prev = (GUIObject*)GET_PREV(cgp);
 		cgp->LastStatus = cgp->Status;
@@ -1438,23 +1459,26 @@ int Window::DoRefreshSize()
 	//Find caption coordinates
 	if(!(Style & WS_NOTITLEBAR))
 	{
-		int close_w,close_h,hide_w,hide_h;
+		int close_w = 0,close_h = 0;
+		int hide_w = 0, hide_h = 0;
 
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE)))
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE))) {
 			IMG_INFO(GetCIEImageHandle(WCI_CLOSE), &close_w, &close_h);
-		else
+		} else {
 			gr_get_string_size(&close_w, &close_h, "X");
+		}
 
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE)))
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE))) {
 			IMG_INFO(GetCIEImageHandle(WCI_HIDE), &hide_w, &hide_h);
-		else
+		} else {
 			gr_get_string_size(&hide_w, &hide_h, "-");
+		}
 		
 		int caption_min_size;
 		if(Caption.size() > 0)
 		{
 			gr_get_string_size(&w, &h, (char *)Caption.c_str());
-			caption_min_size = w + close_w + hide_w;
+			caption_min_size = w + close_w + hide_w + 5;
 		}
 		else
 		{
@@ -1482,7 +1506,7 @@ int Window::DoRefreshSize()
 			else
 			{
 				h += 5;
-				CaptionCoords[0] = Coords[0] +(((Coords[2]-Coords[0]) - w) / 2);
+				CaptionCoords[0] = Coords[0] + (((Coords[2]-Coords[0]) - w - (close_w + hide_w)) / 2);
 				CaptionCoords[1] = Coords[1] + BorderSizes[1];
 			}
 			CaptionCoords[2] = CaptionCoords[0] + w;
@@ -1603,7 +1627,7 @@ int Window::DoMouseUp(float frametime)
 		else
 		{
 			UnhiddenHeight = Coords[3];
-			Coords[3] = Coords[1] + BorderSizes[1] + BorderSizes[3];
+			Coords[3] = Coords[1] + (CaptionCoords[3] - CaptionCoords[1]) + BorderSizes[1] + BorderSizes[3];
 			Style |= GS_HIDDEN;
 		}
 
@@ -1641,6 +1665,12 @@ void Window::DoMove(int dx, int dy)
 	CaptionCoords[2] += dx;
 	CaptionCoords[3] += dy;
 
+	// change the hidden height too if needed
+	if (Style & GS_HIDDEN)
+	{
+		UnhiddenHeight += dy;
+	}
+
 	//Handle moving the border around
 	uint i;
 	for(i = 0; i < 8; i++)
@@ -1662,11 +1692,24 @@ void draw_open_rect(int x1, int y1, int x2, int y2, bool resize = false)
 	gr_line(x1, y2, x1, y1, resize);
 }
 
+extern void gr_opengl_shade(int x, int y, int w, int h, bool resize);
+
 void Window::DoDraw(float frametime)
 {
-	gr_set_color_fast(&Color_text_normal);
 	int w, h;
-	
+
+	// if the window has no title bar, and no content, then don't draw any of it
+	if ( (Style & WS_NOTITLEBAR) && !HasChildren() )
+	{
+		return;
+	}
+
+	// shade the background of the window so that it's just slightly transparent
+	gr_set_shader(&WindowShade);
+	gr_opengl_shade(Coords[0], Coords[1], Coords[2], Coords[3], false);
+
+	gr_set_color_fast(&Color_text_normal);
+
 	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
 	{
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL));
@@ -1798,6 +1841,21 @@ void Window::DoDraw(float frametime)
 	}
 }
 
+void Window::ClearContent()
+{
+	if ( !HasChildren() )
+		return;
+
+	LinkedList *cgp = GET_FIRST(&Children);
+	LinkedList *cgp_next;
+
+	while ( cgp && (cgp != END_OF_LIST(&Children)) ) {
+		cgp_next = GET_NEXT(cgp);
+		delete cgp;
+		cgp = cgp_next;
+	}
+}
+
 Window::Window(std::string in_caption, int x_coord, int y_coord, int x_width, int y_width, int in_style)
 :GUIObject(in_caption, x_coord,y_coord,x_width,y_width,in_style)
 {
@@ -1808,6 +1866,9 @@ Window::Window(std::string in_caption, int x_coord, int y_coord, int x_width, in
 
 	//Set the type
 	Type = GT_WINDOW;
+
+	// create a shader for the window
+	gr_create_shader(&WindowShade, 0, 0, 0, 200);
 }
 
 //*****************************Button*******************************
@@ -1925,12 +1986,14 @@ TreeItem::TreeItem()
 :LinkedList()
 {
 	Function = NULL;
-	Data=0;
-	ShowThis=true;
-	ShowChildren=false;
-	DeleteData=true;
+	Data = 0;
+	ShowThis = true;
+	ShowChildren = false;
+	DeleteData = true;
+	Parent = NULL;
 	memset(Coords, 0, sizeof(Coords));
 }
+
 void TreeItem::ClearAllItems()
 {
 	LinkedList* cgp = GET_FIRST(&Children);
@@ -1941,6 +2004,7 @@ void TreeItem::ClearAllItems()
 		delete cgp;
 	}
 }
+
 TreeItem::~TreeItem()
 {
 	ClearAllItems();
@@ -2036,12 +2100,12 @@ int Tree::DoRefreshSize()
 			}
 		}
 	}
-
+/*
 	if(!(Style & GS_NOAUTORESIZEX))
 	{
 		Coords[2] = Coords[0] + DrawData[1];
 	}
-
+*/
 	return OF_TRUE;
 }
 
@@ -2050,6 +2114,9 @@ Tree::Tree(std::string in_name, int x_coord, int y_coord, void* in_associatedite
 {
 
 	AssociatedItem = in_associateditem;
+
+	SelectedItem = NULL;
+	HighlightedItem = NULL;
 
 	//Set the type
 	Type = GT_MENU;
@@ -2181,18 +2248,28 @@ TreeItem* Tree::AddItem(TreeItem *parent, std::string in_name, int in_data, bool
 	ni->Data = in_data;
 	ni->DeleteData = in_delete_data;
 	ni->Function = in_function;
-	if(parent != NULL)
+
+	if (parent != NULL)
 		list_append(&parent->Children, ni);
 	else
 		list_append(&Items, ni);
 
 	OnRefreshSize();
+
 	return ni;
 }
 
 void Tree::ClearItems()
 {
 	Items.ClearAllItems();
+
+	LinkedList* cgp = GET_FIRST(&Items);
+	LinkedList* cgp_next;
+	for(; cgp != END_OF_LIST(&Items); cgp = cgp_next)
+	{
+		cgp_next = GET_NEXT(cgp);
+		delete cgp;
+	}
 }
 
 //*****************************Text*******************************
@@ -2643,6 +2720,7 @@ Checkbox::Checkbox(std::string in_label, int x_coord, int y_coord, void (*in_fun
 	IsChecked = false;
 	HighlightStatus = 0;
 	FlagPtr = NULL;
+	BoolFlagPtr = NULL;
 
 	//Set the type
 	Type = GT_CHECKBOX;
@@ -2694,8 +2772,13 @@ void Checkbox::DoDraw(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 
 	draw_open_rect(CheckCoords[0], CheckCoords[1], CheckCoords[2], CheckCoords[3], false);
-	if((IsChecked && FlagPtr == NULL) || (FlagPtr!= NULL && ((*FlagPtr) & Flag)))
+
+	if ( (IsChecked && ((FlagPtr == NULL) && (BoolFlagPtr == NULL)))
+		|| ((FlagPtr != NULL) && ((*FlagPtr) & Flag))
+		|| ((BoolFlagPtr != NULL) && (*BoolFlagPtr)) )
+	{
 		gr_string(CheckCoords[0], CheckCoords[1], "X", false);
+	}
 
 	gr_set_color_fast(&Color_text_normal);
 	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], (char *)Label.c_str(), false);
@@ -2703,11 +2786,14 @@ void Checkbox::DoDraw(float frametime)
 
 int Checkbox::DoMouseOver(float frametime)
 {
-	if(OwnerSystem->GetMouseX() >= CheckCoords[0]
-	&& OwnerSystem->GetMouseX() <= CheckCoords[2]
-	&& OwnerSystem->GetMouseY() >= CheckCoords[1]
-	&& OwnerSystem->GetMouseY() <= CheckCoords[3])
+	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
+		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
+		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) )
+	{
 		HighlightStatus = 1;
+	}
+
 	return OF_TRUE;
 }
 
@@ -2715,41 +2801,42 @@ int Checkbox::DoMouseDown(float frametime)
 {
 	OwnerSystem->SetActiveObject(this);
 
-	if(OwnerSystem->GetMouseX() >= CheckCoords[0]
-	&& OwnerSystem->GetMouseX() <= CheckCoords[2]
-	&& OwnerSystem->GetMouseY() >= CheckCoords[1]
-	&& OwnerSystem->GetMouseY() <= CheckCoords[3])
+	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
+		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
+		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) )
+	{
 		HighlightStatus = 2;
+	}
+
 	return OF_TRUE;
 }
 
 int Checkbox::DoMouseUp(float frametime)
 {
-	if(OwnerSystem->GetMouseX() >= CheckCoords[0]
-	&& OwnerSystem->GetMouseX() <= CheckCoords[2]
-	&& OwnerSystem->GetMouseY() >= CheckCoords[1]
-	&& OwnerSystem->GetMouseY() <= CheckCoords[3])
+	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
+		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
+		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) )
 	{
 		HighlightStatus = 1;
-		if(function != NULL)
-		{
+
+		if (function != NULL) {
 			function(this);
 		}
-		if(FlagPtr != NULL)
-		{
-			if(!(*FlagPtr & Flag))
-			{
+
+		if (FlagPtr != NULL) {
+			if ( !(*FlagPtr & Flag) ) {
 				*FlagPtr |= Flag;
 				IsChecked = true;
-			}
-			else
-			{
+			} else {
 				*FlagPtr &= ~Flag;
 				IsChecked = false;
 			}
-		}
-		else
-		{
+		} else if (BoolFlagPtr != NULL) {
+			*BoolFlagPtr = !(*BoolFlagPtr);
+			IsChecked = *BoolFlagPtr;
+		} else {
 			IsChecked = !IsChecked;
 		}
 	}

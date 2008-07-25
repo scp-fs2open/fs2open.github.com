@@ -84,8 +84,8 @@ struct LinkedList
 public:
 	struct LinkedList *next, *prev;
 
-	LinkedList(){next=this;prev=this;}
-	virtual ~LinkedList(){prev->next=next;next->prev=prev;}
+	LinkedList(){ next = this;  prev = this; }
+	virtual ~LinkedList(){ prev->next = next;  next->prev = prev; }
 };
 
 //*****************************ClassInfoEntry*******************************
@@ -281,7 +281,6 @@ private:
 	LinkedList Children;
 
 	int GetOIECoords(int *x1, int *y1, int *x2, int *y2);
-	void DeleteChildren(GUIObject* exception = NULL);
 	GUIObject *AddChildInternal(GUIObject* cgp);
 protected:
 	//ON FUNCTIONS
@@ -324,6 +323,7 @@ public:
 	//CHILD FUNCTIONS
 	//Used for managing children. :)
 	GUIObject *AddChild(GUIObject* cgp);
+	void DeleteChildren(GUIObject* exception = NULL);
 
 	//SET FUNCTIONS
 	void SetPosition(int x, int y);
@@ -421,8 +421,8 @@ public:
 #define W_BORDERWIDTH			1
 #define W_BORDERHEIGHT			1
 
-#define WS_NOTITLEBAR		(1<<31)
-#define WS_NONMOVEABLE		(1<<30)
+#define WS_NOTITLEBAR		(1<<31)		// doesn't have a title bar (ie, no title or min/close buttons)
+#define WS_NONMOVEABLE		(1<<30)		// can't be moved around
 
 #define WCI_CAPTION				0
 #define WCI_CAPTION_TEXT		1
@@ -457,6 +457,8 @@ class Window : public GUIObject
 	bitmap_rect_list BorderRectLists[8];
 	bitmap_rect_list CaptionRectList;
 
+	shader WindowShade;
+
 protected:
 	void DoDraw(float frametime);
 	void DoMove(int dx, int dy);
@@ -465,9 +467,12 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
+	bool HasChildren(){return NOT_EMPTY(&Children);}
+
 public:
 	Window(std::string in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
 	void SetCaption(std::string in_caption){Caption = in_caption;}
+	void ClearContent();
 };
 
 //*****************************Button*******************************
@@ -655,6 +660,8 @@ class Checkbox : public GUIObject
 	int* FlagPtr;
 	int Flag;
 
+	bool *BoolFlagPtr;
+
 	int CheckCoords[4];
 	bool IsChecked;	//Is it checked?
 	int HighlightStatus;
@@ -667,15 +674,37 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
+
 public:
 	Checkbox(std::string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
 
-	bool GetChecked(){return IsChecked;}
+	bool GetChecked() {
+		return IsChecked;
+	}
 
-	void SetLabel(std::string in_label){Label = in_label;}
-	void SetChecked(bool in_ischecked){IsChecked = in_ischecked;}
-	void SetFlag(int* in_flag_ptr, int in_flag){FlagPtr = in_flag_ptr;Flag = in_flag;if(FlagPtr != NULL && (*FlagPtr & Flag))IsChecked=true;}
-	void SetFlag(uint* in_flag_ptr, int in_flag){SetFlag((int*)in_flag_ptr, in_flag);}
+	void SetLabel(std::string in_label) {
+		Label = in_label;
+	}
+
+	void SetChecked(bool in_ischecked) {
+		IsChecked = in_ischecked;
+	}
+
+	void SetFlag(int* in_flag_ptr, int in_flag) {
+		FlagPtr = in_flag_ptr;
+		Flag = in_flag;
+
+		if ( (FlagPtr != NULL) && (*FlagPtr & Flag) )
+			IsChecked = true;
+	}
+
+	void SetFlag(uint* in_flag_ptr, int in_flag) {
+		SetFlag((int*)in_flag_ptr, in_flag);
+	}
+
+	void SetBool(bool *in_bool_ptr) {
+		BoolFlagPtr = in_bool_ptr;
+	}
 };
 
 //*****************************ImageAnim*******************************

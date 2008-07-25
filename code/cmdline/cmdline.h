@@ -650,18 +650,18 @@ extern float Cmdline_ogl_spec;
 extern float static_light_factor;
 extern float static_point_factor;
 extern float static_tube_factor;
-extern int Cmdline_2d_poof;
-extern int Cmdline_alpha_env;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_cell;
 extern int Cmdline_decals;
 extern int Cmdline_env;
 extern int Cmdline_mipmap;
 extern int Cmdline_missile_lighting;
-extern int Cmdline_noglow;
+extern int Cmdline_glow;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
-extern int Cmdline_nospec;
+extern int Cmdline_spec;
+extern int Cmdline_normal;
+extern int Cmdline_height;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
@@ -702,7 +702,6 @@ extern int Cmdline_objupd;
 
 // Troubleshooting
 extern int Cmdline_d3d_lesstmem;
-extern int Cmdline_FRED2_htl;
 extern int Cmdline_load_all_weapons;
 extern int Cmdline_nohtl;
 extern int Cmdline_noibx;
@@ -711,7 +710,7 @@ extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
 extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
-extern int Cmdline_verify_vps;
+extern int Cmdline_noglsl;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
@@ -725,6 +724,7 @@ extern int Cmdline_show_stats;
 extern int Cmdline_timerbar;
 extern int Cmdline_save_render_targets;
 extern int Cmdline_debug_window;
+extern int Cmdline_verify_vps;
 #ifdef SCP_UNIX
 extern int Cmdline_no_grab;
 #endif

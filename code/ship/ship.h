@@ -1311,6 +1311,7 @@ typedef struct ship {
 	int	hotkey;
 	int	escort_priority;
 	int	score;
+	float assist_score_pct;
 	int	respawn_priority;
 	
 	// BEGIN PACK ubytes and chars

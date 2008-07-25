@@ -1059,7 +1059,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 	float rval = 0, gval = 0, bval = 0;
 	int idx;
 
-	if ( Cmdline_nospec ) {
+	if ( !Cmdline_spec ) {
 		*param_r = 0;
 		*param_g = 0;
 		*param_b = 0;
