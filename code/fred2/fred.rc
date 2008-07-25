@@ -979,8 +979,8 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,111,123,10
     CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,326,121,72,10
-    CONTROL         "No Debriefing",IDC_NO_DEBRIEFING,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,326,131,72,10
+    CONTROL         "Toggle Debriefing (On/Off)",IDC_NO_DEBRIEFING,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,326,131,102,10
     CONTROL         "Use Autopilot Cinematics",IDC_USE_AUTOPILOT_CINEMATICS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,141,123,10
     CONTROL         "Deactivate Hardcoded Autopilot",
@@ -1039,7 +1039,7 @@ STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION |
 EXSTYLE WS_EX_NOPARENTNOTIFY | WS_EX_CLIENTEDGE | WS_EX_CONTEXTHELP
 CAPTION "Edit Ship"
 MENU IDR_SHIP_EDIT_MENU
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Sans Serif"
 BEGIN
     PUSHBUTTON      "Prev",IDC_PREV,264,7,24,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Next",IDC_NEXT,290,7,24,14,0,WS_EX_STATICEDGE
@@ -1054,23 +1054,23 @@ BEGIN
                     CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_SHIP_ALT,47,79,94,125,CBS_DROPDOWN | WS_VSCROLL | 
                     WS_TABSTOP
-    PUSHBUTTON      "Texture Replacement",IDC_TEXTURES,47,95,93,14,0,
+    PUSHBUTTON      "Texture Replacement",IDC_TEXTURES,19,100,83,14,0,
                     WS_EX_STATICEDGE
-    COMBOBOX        IDC_HOTKEY,180,21,68,122,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_HOTKEY,189,24,68,122,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
-    COMBOBOX        IDC_SHIP_PERSONA,180,37,68,129,CBS_DROPDOWNLIST | 
+    COMBOBOX        IDC_SHIP_PERSONA,189,40,68,129,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_SCORE,180,52,68,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_SCORE,189,55,68,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Player Ship",IDC_PLAYER_SHIP,"Button",BS_3STATE | 
-                    WS_TABSTOP,180,71,51,10
-    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,180,83,69,14,
-                    0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Misc",IDC_FLAGS,47,118,50,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Initial Status",IDC_INITIAL_STATUS,101,118,50,14,0,
+                    WS_TABSTOP,189,88,51,10
+    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,189,100,69,
+                    14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Misc",IDC_FLAGS,19,118,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Initial Status",IDC_INITIAL_STATUS,82,118,50,14,0,
                     WS_EX_STATICEDGE
-    PUSHBUTTON      "Initial Orders",IDC_GOALS,156,118,50,14,0,
+    PUSHBUTTON      "Initial Orders",IDC_GOALS,145,118,50,14,0,
                     WS_EX_STATICEDGE
-    PUSHBUTTON      "TBL Info",IDC_SHIP_TBL,210,118,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "TBL Info",IDC_SHIP_TBL,208,118,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Delete",IDC_DELETE_SHIP,264,23,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Reset",IDC_SHIP_RESET,264,39,50,14,BS_CENTER | 
                     BS_MULTILINE,WS_EX_STATICEDGE
@@ -1125,7 +1125,7 @@ BEGIN
     LTEXT           "Ship Name",IDC_STATIC,7,10,36,8
     LTEXT           "Ship Class",IDC_STATIC,9,24,34,8
     LTEXT           "Cargo",IDC_STATIC,23,66,20,8
-    RTEXT           "Wing:",IDC_STATIC,156,10,20,8
+    RTEXT           "Wing:",IDC_STATIC,165,13,20,8
     LTEXT           "Team",IDC_STATIC,24,52,19,8
     LTEXT           "Location",IDC_STATIC,15,150,28,8
     LTEXT           "Cue:",IDC_STATIC,15,233,16,8
@@ -1136,19 +1136,21 @@ BEGIN
     LTEXT           "AI Class",IDC_STATIC,17,38,26,8
     LTEXT           "Delay",IDC_STATIC,15,198,19,8
     LTEXT           "Delay",IDC_STATIC,172,198,19,8
-    LTEXT           "Static",IDC_WING,180,10,67,8
-    LTEXT           "Hotkey",IDC_STATIC,152,23,24,8
-    LTEXT           "Score",IDC_STATIC,156,55,20,8
+    LTEXT           "Static",IDC_WING,189,13,67,8
+    LTEXT           "Hotkey",IDC_STATIC,161,26,24,8
+    LTEXT           "Kill Score",IDC_STATIC,155,58,30,8
     LTEXT           "Target",IDC_STATIC,15,166,22,8
     LTEXT           "Distance",IDC_STATIC,15,182,29,8
     LTEXT           "Target",IDC_STATIC,172,166,22,8
-    LTEXT           "Persona",IDC_STATIC,149,39,27,8
+    LTEXT           "Persona",IDC_STATIC,158,42,27,8
     LTEXT           "Alt Name",IDC_STATIC,14,80,30,8
     PUSHBUTTON      "Restrict Arrival Paths",IDC_RESTRICT_ARRIVAL,15,213,134,
                     14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Restrict Departure Paths",IDC_RESTRICT_DEPARTURE,171,
                     213,134,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Alt Ship Class",IDC_ALT_SHIP_CLASS,180,100,69,14,0,
+    EDITTEXT        IDC_ASSIST_SCORE,189,72,68,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Assist %",IDC_STATIC,158,75,27,8
+    PUSHBUTTON      "Alt Ship Class",IDC_ALT_SHIP_CLASS,111,100,69,14,0,
                     WS_EX_STATICEDGE
 END
 
@@ -2262,9 +2264,11 @@ BEGIN
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",
                     BS_3STATE | WS_TABSTOP,161,124,97,10
     CONTROL         "Use Alt Name In Messages",IDC_ALT_AS_CALLSIGN,"Button",
-                    BS_3STATE | WS_TABSTOP,161,135,99,8
+                    BS_3STATE | WS_TABSTOP,166,134,99,10
+    CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | 
+                    WS_TABSTOP,166,144,99,10
     CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",
-                    BS_3STATE | WS_TABSTOP,161,145,104,10
+                    BS_3STATE | WS_TABSTOP,161,155,104,10
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102

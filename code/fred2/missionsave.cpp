@@ -1926,6 +1926,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"nav-needslink\"");
 			if (Ships[i].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN)
 				fout(" \"use-alt-name-as-callsign\"");
+			if (Ships[i].flags2 & SF2_HIDE_SHIP_NAME)
+				fout(" \"hide-ship-name\"");
 			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
 				fout(" \"set-class-dynamically\"");
 			fout(" )");
@@ -2066,10 +2068,8 @@ int CFred_mission_save::save_objects()
 			if ( optional_string_fred("+Use Table Score:") ) {
 				parse_comments();
 			} else {
-				fso_comment_push(";;FSO 3.6.10;;");
-				fout_version("\n+Use Table Score:");
-				fso_comment_pop();
-			}
+				fout("\n+Use Table Score:");
+			}		
 		}
 
 		if (optional_string_fred("+Score:", "$Name:"))
@@ -2078,7 +2078,18 @@ int CFred_mission_save::save_objects()
 			fout("\n+Score:");
 
 		fout(" %d", Ships[i].score);
-		
+	
+		/*
+		if (Format_fs2_open && Ships[i].assist_score_pct != 0) {
+			if ( optional_string_fred("+Assist Score Percentage:") ) {
+				parse_comments();
+			} else {
+				fout("\n+Assist Score Percentage:");
+			}
+			
+			fout(" %f", Ships[i].assist_score_pct);
+		}
+		*/
 
 		// deal with the persona for this ship as well.
 		if ( Ships[i].persona_index != -1 ) {

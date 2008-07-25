@@ -1229,6 +1229,8 @@ void hud_render_target_ship_info(object *target_objp)
 //	Backslash - Instead of rely on command line, let's use a flag in Iff_defs.tbl
 	if ( (Iff_info[target_shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (target_shipp->wingnum != -1) ) {
 		strcpy( outstr, "");
+	} else if (target_shipp->flags2 & SF2_HIDE_SHIP_NAME) {
+		strcpy( outstr, "");		
 	} else {
 		strcpy( outstr, target_shipp->ship_name );
 		end_string_at_first_hash_symbol(outstr);

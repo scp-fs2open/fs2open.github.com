@@ -1119,7 +1119,39 @@ void ML_render_objectives_key()
 	}
 }
 
-	
+//  maybe distribute the event/goal score between the players on that team
+void multi_player_maybe_add_score (int score, int team)
+{
+	int players_in_team = 0; 
+	int idx; 
+
+	// if i'm not the server of a multiplayer game, bail here
+	if(!MULTIPLAYER_MASTER){
+		return;
+	}
+
+	if (!(The_mission.ai_profile->flags & AIPF_ALLOW_MULTI_EVENT_SCORING)) {
+		return;
+	}				
+
+	// first count the number of players in this team
+	for (idx=0; idx<MAX_PLAYERS; idx++) {
+		if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == team)) {
+			players_in_team++;
+		}
+	}
+
+	if (!players_in_team) {
+		return;
+	}
+
+	for (idx=0; idx<MAX_PLAYERS; idx++) {
+		if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == team)) {
+			Net_players[idx].m_player->stats.m_score += (int)(score * scoring_get_scale_factor() / players_in_team );
+		}
+	}
+}
+
 // temporary hook for temporarily displaying objective completion/failure
 // extern void message_training_add_simple( char *text );
 
@@ -1162,8 +1194,8 @@ void mission_goal_status_change( int goal_num, int new_status)
 		}	
 		
 		if(Game_mode & GM_MULTIPLAYER){
-			// squad war
-			multi_team_maybe_add_score((int)(Mission_goals[goal_num].score * scoring_get_scale_factor()), Mission_goals[goal_num].team);	
+			multi_team_maybe_add_score(Mission_goals[goal_num].score, Mission_goals[goal_num].team);	
+			multi_player_maybe_add_score(Mission_goals[goal_num].score, Mission_goals[goal_num].team);
 		} else {
 			// deal with the score
 			Player->stats.m_score += (int)(Mission_goals[goal_num].score * scoring_get_scale_factor());			
@@ -1326,8 +1358,9 @@ void mission_process_event( int event )
 			Mission_events[event].formula = -1;
 
 			if(Game_mode & GM_MULTIPLAYER){
-				// squad war
-				multi_team_maybe_add_score((int)(Mission_events[event].score * scoring_get_scale_factor()), Mission_events[event].team);
+				// multiplayer missions (scoring is scaled in the multi_team_maybe_add_score() function)
+				multi_team_maybe_add_score(Mission_events[event].score, Mission_events[event].team);
+				multi_player_maybe_add_score(Mission_events[event].score, Mission_events[event].team);
 			} else {
 				// deal with the player's score
 				Player->stats.m_score += (int)(Mission_events[event].score * scoring_get_scale_factor());			

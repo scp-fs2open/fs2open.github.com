@@ -199,6 +199,7 @@
 #include "graphics/gropengl.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengllight.h"
+#include "graphics/gropenglstate.h"
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
@@ -208,7 +209,6 @@
 
 // Variables
 opengl_light *opengl_lights = NULL;
-bool *currently_enabled_lights = NULL;
 bool lighting_is_enabled = true;
 int Num_active_gl_lights = 0;
 int GL_center_alpha = 0;
@@ -255,58 +255,62 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	GLLight->SpotDir.y = 0.0f;
 	GLLight->SpotDir.z = -1.0f;
 	// spot exponent
-	GLLight->SpotExp = Cmdline_ogl_spec / 2.0f;
+	GLLight->SpotExp = Cmdline_ogl_spec * 0.5f;
 	// spot cutoff
 	GLLight->SpotCutOff = 180.0f; // special value, light in all directions
 	// defaults to disable attenuation
 	GLLight->ConstantAtten = 1.0f;
 	GLLight->LinearAtten = 0.0f;
 	GLLight->QuadraticAtten = 0.0f;
+	// position
+	GLLight->Position.x = FSLight->vec.xyz.x;
+	GLLight->Position.y = FSLight->vec.xyz.y;
+	GLLight->Position.z = FSLight->vec.xyz.z; // flipped axis for FS2
+	GLLight->Position.w = 1.0f;	
 
 
-	//If the light is a directional light
-	if (FSLight->type == LT_DIRECTIONAL) {
-		GLLight->Position.x = -FSLight->vec.xyz.x;
-		GLLight->Position.y = -FSLight->vec.xyz.y;
-		GLLight->Position.z = -FSLight->vec.xyz.z;
-		GLLight->Position.w = 0.0f; // Directional lights in OpenGL have w set to 0 and the direction vector in the position field
+	switch (FSLight->type) {
+		case LT_POINT: {
+			// this crap still needs work...
+			GLLight->ConstantAtten = 0.0f;
+			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
-		GLLight->Specular.r *= static_light_factor;
-		GLLight->Specular.g *= static_light_factor;
-		GLLight->Specular.b *= static_light_factor;
-	}
-
-	//If the light is a point or tube type
-	if ( (FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE) ) {
-		// this crap still needs work...
-		GLLight->ConstantAtten = 0.0f;
-		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb));
-
-		if (FSLight->type == LT_POINT) {
 			GLLight->Specular.r *= static_point_factor;
 			GLLight->Specular.g *= static_point_factor;
 			GLLight->Specular.b *= static_point_factor;
-			GLLight->Ambient.r = (GLLight->Diffuse.r / 2.0f);
-			GLLight->Ambient.g = (GLLight->Diffuse.r / 2.0f);
-			GLLight->Ambient.b = (GLLight->Diffuse.r / 2.0f);
-			GLLight->LinearAtten *= 1.25f;
-		} else {
+
+			break;
+		}
+
+		case LT_TUBE: {
 			GLLight->Specular.r *= static_tube_factor;
 			GLLight->Specular.g *= static_tube_factor;
-			GLLight->Specular.b *= static_tube_factor;
-		}
+			GLLight->Specular.b *= static_tube_factor;	
 
-		GLLight->Position.x = FSLight->vec.xyz.x;
-		GLLight->Position.y = FSLight->vec.xyz.y;
-		GLLight->Position.z = FSLight->vec.xyz.z; // flipped axis for FS2
-		GLLight->Position.w = 1.0f;		
-
-		if (FSLight->type == LT_TUBE) {
-			GLLight->SpotDir.x = FSLight->vec2.xyz.x;
-			GLLight->SpotDir.y = FSLight->vec2.xyz.y;
-			GLLight->SpotDir.z = FSLight->vec2.xyz.z;
+			GLLight->SpotDir.x = FSLight->vec2.xyz.x * 1.5f;
+			GLLight->SpotDir.y = FSLight->vec2.xyz.y * 1.5f;
+			GLLight->SpotDir.z = FSLight->vec2.xyz.z * 1.5f;
 			GLLight->SpotCutOff = 90.0f;
+
+			break;
 		}
+
+		case LT_DIRECTIONAL: {
+			GLLight->Position.x = -FSLight->vec.xyz.x;
+			GLLight->Position.y = -FSLight->vec.xyz.y;
+			GLLight->Position.z = -FSLight->vec.xyz.z;
+			GLLight->Position.w = 0.0f; // Directional lights in OpenGL have w set to 0
+
+			GLLight->Specular.r *= static_light_factor;
+			GLLight->Specular.g *= static_light_factor;
+			GLLight->Specular.b *= static_light_factor;
+
+			break;
+		}
+
+		default:
+			Int3();
+			break;
 	}
 }
 
@@ -376,16 +380,8 @@ int opengl_sort_active_lights(const void *a, const void *b)
 	return 0;
 }
 
-// finds the first unoccupied light
 void opengl_pre_render_init_lights()
 {
-	for (int i = 0; i < GL_max_lights; i++) {
-		if (currently_enabled_lights[i]) {
-			glDisable(GL_LIGHT0+i);
-			currently_enabled_lights[i] = false;
-		}
-	}
-
 	// sort the lights to try and get the most visible lights on the first pass
 	qsort(opengl_lights, Num_active_gl_lights, sizeof(opengl_light), opengl_sort_active_lights);
 }
@@ -398,13 +394,17 @@ static matrix last_view_orient;
 
 static bool use_last_view = false;
 
-void opengl_change_active_lights(int pos)
+void opengl_change_active_lights(int pos, int d_offset)
 {
-	if ( !lighting_is_enabled )
-		return;
+	int i, offset;
 
-	int i;
-	int offset = pos * GL_max_lights;
+	if ( !lighting_is_enabled ) {
+		return;
+	}
+
+	Assert( d_offset < GL_max_lights );
+
+	offset = (pos * GL_max_lights) + d_offset;
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -475,20 +475,20 @@ void opengl_change_active_lights(int pos)
 
 
 	for (i = 0; i < GL_max_lights; i++) {
-		if (currently_enabled_lights[i]) {
-			glDisable(GL_LIGHT0+i);
-			currently_enabled_lights[i] = false;
+		if ( (offset + i) >= Num_active_gl_lights ) {
+			break;
 		}
-
-		if ( (offset + i) >= Num_active_gl_lights )
-			continue;
 
 		if (opengl_lights[offset+i].occupied) {
 			opengl_set_light(i, &opengl_lights[offset+i]);
 
-			glEnable(GL_LIGHT0+i);
-			currently_enabled_lights[i] = true;
+			GL_state.Light(i, GL_TRUE);
 		}
+	}
+
+	// make sure that we turn off any lights that we aren't using right now
+	for ( ; i < GL_max_lights; i++) {
+		GL_state.Light(i, GL_FALSE);
 	}
 
 	glPopMatrix();
@@ -514,6 +514,9 @@ void gr_opengl_set_light(light *fs_light)
 
 	if (Num_active_gl_lights >= MAX_LIGHTS)
 		return;
+
+//if (fs_light->type == LT_POINT)
+//	return;
 
 	// init the light
 	FSLight2GLLight(fs_light, &opengl_lights[Num_active_gl_lights]);
@@ -633,7 +636,15 @@ void opengl_calculate_ambient_factor()
 	GL_light_ambient[3] = 1.0f;
 }
 
-void opengl_init_light()
+void opengl_light_shutdown()
+{
+	if (opengl_lights != NULL) {
+		vm_free(opengl_lights);
+		opengl_lights = NULL;
+	}
+}
+
+void opengl_light_init()
 {
 	opengl_calculate_ambient_factor();
 
@@ -649,21 +660,17 @@ void opengl_init_light()
 	// allocate memory for enabled lights
 	Verify(GL_max_lights > 0);
 
-	if ( currently_enabled_lights == NULL )
-		currently_enabled_lights = (bool *) vm_malloc_q(GL_max_lights * sizeof(bool));
-
 	if ( opengl_lights == NULL )
 		opengl_lights = (opengl_light *) vm_malloc_q(MAX_LIGHTS * sizeof(opengl_light));
 
-	if ( (currently_enabled_lights == NULL) || (opengl_lights == NULL) )
+	if (opengl_lights == NULL)
 		Error( LOCATION, "Unable to allocate memory for lights!\n");
 
-	memset( currently_enabled_lights, 0, GL_max_lights * sizeof(bool) );
 	memset( opengl_lights, 0, MAX_LIGHTS * sizeof(opengl_light) );
 }
 
 extern int Cmdline_no_emissive;
-void opengl_default_light_settings(int ambient = 1, int emission = 1, int specular = 1)
+void opengl_default_light_settings(int ambient, int emission, int specular)
 {
 	if (!lighting_is_enabled)
 		return;
@@ -695,8 +702,9 @@ void opengl_default_light_settings(int ambient = 1, int emission = 1, int specul
 
 void gr_opengl_set_lighting(bool set, bool state)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
+	}
 
 	lighting_is_enabled = set;
 
@@ -710,17 +718,10 @@ void gr_opengl_set_lighting(bool set, bool state)
 	}
 
 	for (int i = 0; i < GL_max_lights; i++) {
-		if (currently_enabled_lights[i])
-			glDisable(GL_LIGHT0+i);
+		GL_state.Light(i, GL_FALSE);
 	}
 
-	memset( currently_enabled_lights, 0, GL_max_lights * sizeof(bool) );
-
-	if (state) {
-		glEnable(GL_LIGHTING);
-	} else {
-		glDisable(GL_LIGHTING);
-	}
+	GL_state.Lighting( (state) ? GL_TRUE : GL_FALSE );
 }
 
 void gr_opengl_set_ambient_light(int red, int green, int blue)

@@ -850,6 +850,8 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 //	Backslash - Instead of rely on command line, let's use a flag in Iff_defs.tbl
 				if ( (Iff_info[Ships[t_objp->instance].team].flags & IFFF_WING_NAME_HIDDEN) && (Ships[t_objp->instance].wingnum != -1) ) {
 					tinfo_name = &empty;
+				} else if (Ships[t_objp->instance].flags2 & SF2_HIDE_SHIP_NAME ) {
+					tinfo_name = &empty;
 				} else {
 					strcpy(temp, Ships[t_objp->instance].ship_name);
 					end_string_at_first_hash_symbol(temp);

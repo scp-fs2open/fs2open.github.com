@@ -978,6 +978,16 @@ typedef struct network_buffer {
 #define NG_TYPE_TEAM								( NG_TYPE_TVT | NG_TYPE_SW )
 #define NG_TYPE_DOGFIGHT						(1<<3)		// plain old dogfight mode
 
+// some quick macros for the above
+#define MULTI_COOP						((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_COOP))
+#define MULTI_TEAM						((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+#define MULTI_DOGFIGHT					((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))
+
+// and some to handle everything but
+#define MULTI_NOT_COOP					((Game_mode & GM_MULTIPLAYER) && !(Netgame.type_flags & NG_TYPE_COOP))
+#define MULTI_NOT_TEAM					((Game_mode & GM_MULTIPLAYER) && !(Netgame.type_flags & NG_TYPE_TEAM))
+#define MULTI_NOT_DOGFIGHT				((Game_mode & GM_MULTIPLAYER) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT))
+
 // state defines for netgame states
 #define NETGAME_STATE_FORMING					1				// players are joining, host is selecting missions, etc
 #define NETGAME_STATE_BRIEFING				2				// players are reading the mission briefing

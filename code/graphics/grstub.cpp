@@ -66,17 +66,7 @@ int gr_stub_save_screen()
 	return 1;
 }
 
-int gr_stub_supports_res_ingame(int res)
-{
-	return 1;
-}
-
-int gr_stub_supports_res_interface(int res)
-{
-	return 1;
-}
-
-int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int tex_unit = 0)
+int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int tex_unit = 0)
 {
 	return 0;
 }
@@ -187,10 +177,6 @@ void gr_stub_fade_out(int instantaneous)
 {
 }
 
-void gr_stub_filter_set(int filter)
-{
-}
-
 void gr_stub_flash_alpha(int r, int g, int b, int a)
 {
 }
@@ -203,19 +189,11 @@ void gr_stub_flip()
 {
 }
 
-void gr_stub_flip_window(uint _hdc, int x, int y, int w, int h )
-{
-}
-
 void gr_stub_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
 {
 }
 
 void gr_stub_free_screen(int id)
-{
-}
-
-void gr_stub_get_pixel(int x, int y, int *r, int *g, int *b)
 {
 }
 
@@ -293,10 +271,6 @@ void gr_stub_scaler(vertex *va, vertex *vb )
 }
 
 void gr_stub_set_additive_tex_env()
-{
-}
-
-void gr_stub_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha )
 {
 }
 
@@ -381,10 +355,6 @@ void gr_stub_translate_texture_matrix(int unit, vec3d *shift)
 {
 }
 
-void gr_stub_unlock()
-{
-}
-
 void gr_stub_zbias_stub(int bias)
 {
 }
@@ -422,7 +392,6 @@ int gr_stub_end_state_block()
 void gr_stub_set_state_block(int handle)
 {
 }
-
 
 void gr_stub_set_line_width(float width)
 {
@@ -640,7 +609,7 @@ void gr_stub_bm_page_in_start()
 }
 
 
-void gr_stub_init() 
+bool gr_stub_init() 
 {
 	if (gr_screen.res != GR_640) {
 		gr_screen.res = GR_640;
@@ -668,11 +637,9 @@ void gr_stub_init()
 
 	// function pointers...
 	gr_screen.gf_flip				= gr_stub_flip;
-	gr_screen.gf_flip_window		= gr_stub_flip_window;
 	gr_screen.gf_set_clip			= gr_stub_set_clip;
 	gr_screen.gf_reset_clip			= gr_stub_reset_clip;
 	
-	gr_screen.gf_set_bitmap			= gr_stub_set_bitmap;
 	gr_screen.gf_clear				= gr_stub_clear;
 //	gr_screen.gf_bitmap				= gr_stub_bitmap;
 	gr_screen.gf_bitmap_ex			= gr_stub_bitmap_ex;
@@ -714,10 +681,7 @@ void gr_stub_init()
 	gr_screen.gf_dump_frame			= gr_stub_dump_frame;
 	
 	gr_screen.gf_set_gamma			= gr_stub_set_gamma;
-	
-	gr_screen.gf_lock				= gr_stub_lock;
-	gr_screen.gf_unlock				= gr_stub_unlock;
-	
+
 	gr_screen.gf_fog_set			= gr_stub_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
@@ -733,13 +697,9 @@ void gr_stub_init()
 	gr_screen.gf_bm_make_render_target	= gr_stub_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_stub_bm_set_render_target;
 
-	gr_screen.gf_get_pixel			= gr_stub_get_pixel;
-
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
 
 	gr_screen.gf_cross_fade			= gr_stub_cross_fade;
-
-	gr_screen.gf_filter_set			= gr_stub_filter_set;
 
 	gr_screen.gf_tcache_set			= gr_stub_tcache_set;
 
@@ -795,7 +755,10 @@ void gr_stub_init()
 
 	gr_screen.gf_draw_line_list		= gr_stub_draw_line_list;
 
-    gr_screen.gf_set_line_width     = gr_stub_set_line_width;
-	gr_screen.gf_draw_htl_line		= gr_stub_draw_htl_line;
-	gr_screen.gf_draw_htl_sphere	= gr_stub_draw_htl_sphere;
+	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
+
+	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
+	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
+
+	return true;
 }

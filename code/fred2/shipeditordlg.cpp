@@ -520,6 +520,9 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 
 		GetDlgItem(IDC_SCORE)->GetWindowText(str);
 		m_score.init(atoi(str));
+
+		GetDlgItem(IDC_ASSIST_SCORE)->GetWindowText(str);
+		m_assist_score.init(atoi(str));
 	}
 }
 
@@ -634,6 +637,7 @@ BOOL CShipEditorDlg::Create()
 	}
 
 	m_score.setup(IDC_SCORE, this);
+	m_assist_score.setup(IDC_ASSIST_SCORE, this);
 	m_arrival_dist.setup(IDC_ARRIVAL_DISTANCE, this);
 	m_arrival_delay.setup(IDC_ARRIVAL_DELAY, this);
 	m_departure_delay.setup(IDC_DEPARTURE_DELAY, this);
@@ -908,6 +912,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 							m_cargo1 = Cargo_names[cargo];
 							m_hotkey = Ships[i].hotkey + 1;
 							m_score.init(Ships[i].score);
+							m_assist_score.init((int)(Ships[i].assist_score_pct*100));
 
 							m_persona = Ships[i].persona_index + 1;
 
@@ -941,6 +946,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 							}
 
 							m_score.set(Ships[i].score);
+							m_assist_score.set((int)(Ships[i].assist_score_pct*100));
 
 							if (Ships[i].hotkey != m_hotkey - 1){
 								m_hotkey = -1;
@@ -1045,6 +1051,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		m_cargo1 = _T("");
 		m_hotkey = 0;
 		m_score.blank();  // cause control to be blank
+		m_assist_score.blank(); 
 		m_arrival_location = -1;
 		m_departure_location = -1;
 		m_arrival_delay.blank();
@@ -1129,6 +1136,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	}	
 
 	m_score.display();
+	m_assist_score.display();
 	m_arrival_dist.display();
 	m_arrival_delay.display();
 	m_departure_delay.display();
@@ -1254,6 +1262,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	GetDlgItem(IDC_DELETE_SHIP)->EnableWindow(enable);
 	GetDlgItem(IDC_SHIP_RESET)->EnableWindow(enable);
 	GetDlgItem(IDC_SCORE)->EnableWindow(enable);
+	GetDlgItem(IDC_ASSIST_SCORE)->EnableWindow(enable);
 
 //#ifndef NDEBUG
 	GetDlgItem(IDC_SHIP_TBL)->EnableWindow(m_ship_class >= 0);
@@ -1522,6 +1531,20 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 
 	m_score.save(&Ships[ship].score);
+	int temp_assist;
+	m_assist_score.save(&temp_assist); 
+	Ships[ship].assist_score_pct = ((float)temp_assist)/100;
+	// value must be a percentage
+	if (Ships[ship].assist_score_pct < 0) {
+		Ships[ship].assist_score_pct = 0;
+		MessageBox("Assist Percentage too low. Set to 0. No score will be granted for an assist");
+	} 
+	else if (Ships[ship].assist_score_pct > 1) {
+		Ships[ship].assist_score_pct = 1;
+		MessageBox("Assist Percentage too high. Set to 1. Assists well score as many points as a kill");
+	
+	}
+
 	if (m_arrival_location != -1)
 		MODIFY(Ships[ship].arrival_location, m_arrival_location);
 	if (m_departure_location != -1)

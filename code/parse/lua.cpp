@@ -744,7 +744,7 @@ ADE_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 47; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 48; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -884,6 +884,9 @@ static flag_def_list Enumerations[] = {
 
 	#define	LE_SHIELD_BACK					19
 	{		"SHIELD_BACK",					LE_SHIELD_BACK,					0},
+
+	#define	LE_MISSION_REPEAT				47
+	{		"MISSION_REPEAT",				LE_MISSION_REPEAT,				0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -8666,6 +8669,74 @@ ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string",
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Game_current_mission_filename);
+}
+
+ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing = true]", "Starts the defined mission", "boolean", "True, or false if the function fails")
+{
+	bool b = true;
+	char s[MAX_FILENAME_LEN];
+	char *str = s;
+
+	if(lua_isstring(L, 1))
+	{
+		if (!ade_get_args(L, "s|b", &str, &b))
+			return ade_set_args(L, "b", false);
+
+	} else {
+		enum_h *e = NULL;
+
+		if (!ade_get_args(L, "o|b", l_Enum.GetPtr(&e), &b))
+			return ade_set_args(L, "b", false);
+
+		if (e->index == LE_MISSION_REPEAT) {
+			if (Num_recent_missions > 0)  {
+				strncpy( s, Recent_missions[0], MAX_FILENAME_LEN );
+			} else {
+				return ade_set_args(L, "b", false);
+			}
+		} else {
+			return ade_set_args(L, "b", false);
+		}
+	}
+
+	// no filename... bail
+	if (str == NULL)
+		return ade_set_args(L, "b", false);
+
+	// if mission name has extension... it needs to be removed...
+	char *file_ext;
+
+	file_ext = strrchr(str, '.');
+	if (file_ext)
+		*file_ext = 0;
+
+	// game is in MP mode... or if the file does not exist... bail
+	if ((Game_mode & GM_MULTIPLAYER) || (cf_exists_full(str, CF_TYPE_MISSIONS) != 0))
+		return ade_set_args(L, "b", false);
+
+	// mission is already running...
+	if (Game_mode & GM_IN_MISSION) {
+		// TO DO... All the things needed if this function is called in any state of the game while mission is running.
+		//    most likely all require 'stricmp(str, Game_current_mission_filename)' to make sure missions arent mixed
+		//    but after that it might be possible to imprement method for jumping directly into already running 
+		//    missions.
+		return ade_set_args(L, "b", false);
+	// if mission is not running
+	} else {
+		// due safety checks of the game_start_mission() function allow only main menu for now.
+		if (gameseq_get_state(gameseq_get_depth()) == GS_STATE_MAIN_MENU) {
+			strncpy( Game_current_mission_filename, str, MAX_FILENAME_LEN );
+			if (b == true) {
+				// start mission - go via briefing screen
+				gameseq_post_event(GS_EVENT_START_GAME);
+			} else {
+				// start mission - enter the game directly
+				gameseq_post_event(GS_EVENT_START_GAME_QUICK);
+			}
+			return ade_set_args(L, "b", true);
+		}
+	}
+	return ade_set_args(L, "b", false);
 }
 
 ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds), or 0 if game is not in a mission")

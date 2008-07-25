@@ -843,7 +843,6 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	// if we're a standalone server in multiplayer, just fill in some bogus values since we don't have a pilot file
 	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
-		memset(Player, 0, sizeof(player));
 		Player->insignia_texture = -1;
 		strcpy(Player->callsign, NOX("Standalone"));
 		strcpy(Player->short_callsign, NOX("Standalone"));

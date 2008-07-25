@@ -1165,6 +1165,10 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltnl.h"
 #include "graphics/gropenglbmpman.h"
+#include "graphics/gropengldraw.h"
+#include "graphics/gropenglshader.h"
+#include "graphics/gropenglstate.h"
+
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -1192,24 +1196,25 @@ typedef int ( * PFNGLXSWAPINTERVALSGIPROC) (int interval);
 #endif
 
 
-static int GL_initted = 0;
+bool GL_initted = 0;
 
 //0==no fog
 //1==linear
 //2==fog coord EXT
 //3==NV Radial
-static int OGL_fogmode=0;
+int OGL_fogmode = 0;
 
 #ifdef _WIN32
 static HDC GL_device_context = NULL;
-static HGLRC rend_context = NULL;
-static PIXELFORMATDESCRIPTOR pfd;
+static HGLRC GL_render_context = NULL;
+static PIXELFORMATDESCRIPTOR GL_pfd;
 #endif
 
 static ushort *GL_original_gamma_ramp = NULL;
 
-int VBO_ENABLED = 0;
+int Use_VBOs = 0;
 int Use_PBOs = 0;
+int Use_GLSL = 0;
 
 static int GL_dump_frames = 0;
 static ubyte *GL_dump_buffer = NULL;
@@ -1221,7 +1226,6 @@ static int GL_dump_frame_size = 0;
 static ubyte *GL_saved_screen = NULL;
 static ubyte *GL_saved_mouse_data = NULL;
 static int GL_saved_screen_id = -1;
-static int GL_mouse_saved_size = 32; // width and height, so they're equal
 static GLuint GL_cursor_pbo = 0;
 static GLuint GL_screen_pbo = 0;
 
@@ -1231,47 +1235,14 @@ static int GL_mouse_saved_y1 = 0;
 static int GL_mouse_saved_x2 = 0;
 static int GL_mouse_saved_y2 = 0;
 
-static int ogl_maybe_pop_arb1 = 0;
-
-void (*opengl_set_tex_src)(gr_texture_source ts);
-
-gr_texture_source	GL_current_tex_src = TEXTURE_SOURCE_NONE;
-gr_alpha_blend		GL_current_alpha_blend = ALPHA_BLEND_NONE;
-gr_zbuffer_type		GL_current_ztype = ZBUFFER_TYPE_NONE;
-
 void opengl_save_mouse_area(int x, int y, int w, int h);
-
-extern vec3d G3_user_clip_normal;
-extern vec3d G3_user_clip_point;
-
-// some globals
-extern matrix View_matrix;
-extern vec3d View_position;
-
-extern matrix Eye_matrix;
-extern vec3d Eye_position;
-
-extern vec3d Object_position;
-extern matrix Object_matrix;
-
-extern float Canv_w2;			// Canvas_width / 2
-extern float Canv_h2;			// Canvas_height / 2
-extern float View_zoom;
-
-extern vec3d *Interp_pos;
-extern vec3d Interp_offset;
-extern matrix *Interp_orient;
 
 extern char *Osreg_title;
 
-extern int SPECMAP;
-
 extern GLfloat GL_anisotropy;
 
-extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
-extern void opengl_tcache_frame();
-extern void opengl_tcache_flush();
-extern void opengl_tcache_cleanup();
+extern float FreeSpace_gamma;
+void gr_opengl_set_gamma(float gamma);
 
 extern float FreeSpace_gamma;
 void gr_opengl_set_gamma(float gamma);
@@ -1483,162 +1454,6 @@ void gr_opengl_activate(int active)
 	}
 }
 
-/*void opengl_set_tex_state_combine(gr_texture_source ts)
-{
-	if (ts == GL_current_tex_src)
-		return;
-
-	switch (ts) {
-		case TEXTURE_SOURCE_NONE:
-			opengl_switch_arb(-1, 0);
-			gr_opengl_tcache_set(-1, -1, NULL, NULL );
-			break;
-
-		case TEXTURE_SOURCE_DECAL:
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
-			break;
-
-		case TEXTURE_SOURCE_NO_FILTERING:
-			opengl_switch_arb(0, 1);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
-			break;
-
-		default:
-			return;
-	}
-
-	GL_current_tex_src = ts;
-}*/
-
-void opengl_set_tex_state_no_combine(gr_texture_source ts)
-{
-	if (ts == GL_current_tex_src)
-		return;
-
-	switch (ts)
-	{
-		case TEXTURE_SOURCE_NONE:
-			opengl_switch_arb(-1, 0);
-			gr_opengl_tcache_set(-1, -1, NULL, NULL );
-			break;
-
-		case TEXTURE_SOURCE_DECAL:
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			break;
-
-		case TEXTURE_SOURCE_NO_FILTERING:
-			opengl_switch_arb(0, 1);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			break;
-
-		default:
-			return;
-	}
-
-	GL_current_tex_src = ts;
-}
-
-void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
-{
-
-	opengl_set_tex_src(ts);
-
-	if (ab != GL_current_alpha_blend) {
-		switch (ab)
-		{
-			case ALPHA_BLEND_NONE:
-				glBlendFunc(GL_ONE, GL_ZERO);
-				break;
-
-			case ALPHA_BLEND_ADDITIVE:
-				glBlendFunc(GL_ONE, GL_ONE);
-				break;
-
-			case ALPHA_BLEND_ALPHA_ADDITIVE:
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-				break;
-
-			case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				break;
-
-			case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
-				glBlendFunc(/*GL_SRC_COLOR*/GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-				break;
-	
-			default:
-				break;
-		}
-
-		GL_current_alpha_blend = ab;
-
-		if (GL_current_alpha_blend == ALPHA_BLEND_NONE) {
-			glDisable(GL_BLEND);
-		} else {
-			glEnable(GL_BLEND);
-		}
-
-	/*	if (GL_current_alpha_blend <= ALPHA_BLEND_ADDITIVE) {
-			glDisable(GL_ALPHA_TEST);
-		} else {
-			glEnable(GL_ALPHA_TEST);
-		}*/
-	}
-
-	if (zt != GL_current_ztype) {
-		switch (zt)
-		{
-			case ZBUFFER_TYPE_NONE:
-				glDepthFunc(GL_ALWAYS);
-				glDepthMask(GL_FALSE);
-				break;
-
-			case ZBUFFER_TYPE_READ:
-				glDepthFunc(GL_LESS);
-				glDepthMask(GL_FALSE);
-				break;
-
-			case ZBUFFER_TYPE_WRITE:
-				glDepthFunc(GL_ALWAYS);
-				glDepthMask(GL_TRUE);
-				break;
-
-			case ZBUFFER_TYPE_FULL:
-				glDepthFunc(GL_LESS);
-				glDepthMask(GL_TRUE);
-				break;
-
-			default:
-				break;
-		}
-
-		GL_current_ztype = zt;
-
-		if (GL_current_ztype == ZBUFFER_TYPE_NONE) {
-			glDisable(GL_DEPTH_TEST);
-		} else {
-			glEnable(GL_DEPTH_TEST);
-		}
-	}
-}
-
-void gr_opengl_pixel(int x, int y, bool resize)
-{
-	gr_line(x,y,x,y,resize);
-}
-
 void gr_opengl_clear()
 {
 	glClearColor(gr_screen.current_clear_color.red / 255.0f, 
@@ -1650,7 +1465,7 @@ void gr_opengl_clear()
 
 void gr_opengl_flip()
 {
-	if (!GL_initted)
+	if ( !GL_initted )
 		return;
 
 	gr_reset_clip();
@@ -1665,9 +1480,9 @@ void gr_opengl_flip()
 		gr_reset_clip();
 		mouse_get_pos( &mx, &my );
 
-		opengl_save_mouse_area(mx, my, GL_mouse_saved_size, GL_mouse_saved_size);
+	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
 
-		if ( Gr_cursor != -1 ) {
+		if (Gr_cursor != -1) {
 			gr_set_bitmap(Gr_cursor);
 			gr_bitmap( mx, my, false);
 		}
@@ -1693,38 +1508,45 @@ void gr_opengl_flip()
 #endif
 }
 
-void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
-{
-	// Not used.
-}
-
 void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 {
 	// check for sanity of parameters
-	if (x < 0)
+	if (x < 0) {
 		x = 0;
-	if (y < 0)
-		y = 0;
+	}
 
-	int to_resize = (resize || gr_screen.rendering_to_texture != -1);
+	if (y < 0) {
+		y = 0;
+	}
+
+	int to_resize = (resize && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
 
 	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
 	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
 
-	if (x >= max_w)
+	if (x >= max_w) {
 		x = max_w - 1;
-	if (y >= max_h)
-		y = max_h - 1;
+	}
 
-	if (x + w > max_w)
+	if (y >= max_h) {
+		y = max_h - 1;
+	}
+
+	if (x + w > max_w) {
 		w = max_w - x;
-	if (y + h > max_h)
+	}
+
+	if (y + h > max_h) {
 		h = max_h - y;
+	}
 	
-	if (w > max_w)
+	if (w > max_w) {
 		w = max_w;
-	if (h > max_h)
+	}
+
+	if (h > max_h) {
 		h = max_h;
+	}
 
 	gr_screen.offset_x_unscaled = x;
 	gr_screen.offset_y_unscaled = y;
@@ -1754,17 +1576,16 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 	gr_screen.clip_height = h;
 
 	gr_screen.clip_aspect = i2fl(w) / i2fl(h);
-
 	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) * 0.5f;
 	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) * 0.5f;
 
 	// just return early if we aren't actually going to need the scissor test
 	if ( (x == 0) && (y == 0) && (w == max_w) && (h == max_h) ) {
-		glDisable(GL_SCISSOR_TEST);
+		GL_state.ScissorTest(GL_FALSE);
 		return;
 	}
-	
-	glEnable(GL_SCISSOR_TEST);
+
+	GL_state.ScissorTest(GL_TRUE);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
 }
 
@@ -1779,1245 +1600,16 @@ void gr_opengl_reset_clip()
 	gr_screen.clip_width = gr_screen.clip_width_unscaled = gr_screen.max_w;
 	gr_screen.clip_height = gr_screen.clip_height_unscaled = gr_screen.max_h;
 
-	if (gr_screen.custom_size >= 0) {
+	if (gr_screen.custom_size) {
 		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
 
 	gr_screen.clip_aspect = i2fl(gr_screen.clip_width) / i2fl(gr_screen.clip_height);
-
 	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) * 0.5f;
 	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) * 0.5f;
 
-	glDisable(GL_SCISSOR_TEST);
-}
-
-void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha )
-{
-	gr_screen.current_alpha = alpha;
-	gr_screen.current_alphablend_mode = alphablend_mode;
-	gr_screen.current_bitblt_mode = bitblt_mode;
-	gr_screen.current_bitmap = bitmap_num;
-}
-
-void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
-{
-	if ( w < 1 ) return;
-	if ( h < 1 ) return;
-
-	if ( !gr_screen.current_color.is_alphacolor )
-		return;
-
-	float u_scale, v_scale;
-
-	if ( !gr_opengl_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
-		// Couldn't set texture
-		mprintf(( "WARNING: Error setting aabitmap texture!\n" ));
-		return;
-	}
-
-	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	float u0, u1, v0, v1;
-	float x1, x2, y1, y2;
-	int bw, bh, do_resize;
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
-
-	u0 = u_scale * (i2fl(sx) / i2fl(bw));
-	v0 = v_scale * (i2fl(sy) / i2fl(bh));
-
-	u1 = u_scale * (i2fl(sx+w) / i2fl(bw));
-	v1 = v_scale * (i2fl(sy+h) / i2fl(bh));
-
-	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
-	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
-	x2 = x1 + i2fl(w);
-	y2 = y1 + i2fl(h);
-
-	if ( do_resize ) {
-		gr_resize_screen_posf( &x1, &y1 );
-		gr_resize_screen_posf( &x2, &y2 );
-	}
-
-	Assert( gr_screen.current_color.is_alphacolor );
-	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-	if (mirror) {
-		float temp = u0;
-		u0 = u1;
-		u1 = temp;
-	}
-
-	glBegin (GL_QUADS);
-		glTexCoord2f (u0, v1);
-		glVertex2f (x1, y2);
-
-		glTexCoord2f (u1, v1);
-		glVertex2f (x2, y2);
-
-		glTexCoord2f (u1, v0);
-		glVertex2f (x2, y1);
-
-		glTexCoord2f (u0, v0);
-		glVertex2f (x1, y1);
-	glEnd ();
-}
-
-void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
-{
-	int reclip;
-	#ifndef NDEBUG
-	int count = 0;
-	#endif
-
-	int dx1=x, dx2=x+w-1;
-	int dy1=y, dy2=y+h-1;
-
-	int bw, bh, do_resize;
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-
-	do {
-		reclip = 0;
-		#ifndef NDEBUG
-			if ( count > 1 ) Int3();
-			count++;
-		#endif
-	
-		if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
-		if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
-		if ( dx1 < clip_left ) { sx += clip_left-dx1; dx1 = clip_left; }
-		if ( dy1 < clip_top ) { sy += clip_top-dy1; dy1 = clip_top; }
-		if ( dx2 > clip_right ) { dx2 = clip_right; }
-		if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
-
-
-		if ( sx < 0 ) {
-			dx1 -= sx;
-			sx = 0;
-			reclip = 1;
-		}
-
-		if ( sy < 0 ) {
-			dy1 -= sy;
-			sy = 0;
-			reclip = 1;
-		}
-
-		w = dx2-dx1+1;
-		h = dy2-dy1+1;
-
-		if ( sx + w > bw ) {
-			w = bw - sx;
-			dx2 = dx1 + w - 1;
-		}
-
-		if ( sy + h > bh ) {
-			h = bh - sy;
-			dy2 = dy1 + h - 1;
-		}
-
-		if ( w < 1 ) return;		// clipped away!
-		if ( h < 1 ) return;		// clipped away!
-
-	} while (reclip);
-
-	// Make sure clipping algorithm works
-	#ifndef NDEBUG
-		Assert( w > 0 );
-		Assert( h > 0 );
-		Assert( w == (dx2-dx1+1) );
-		Assert( h == (dy2-dy1+1) );
-		Assert( sx >= 0 );
-		Assert( sy >= 0 );
-		Assert( sx+w <= bw );
-		Assert( sy+h <= bh );
-		Assert( dx2 >= dx1 );
-		Assert( dy2 >= dy1 );
-		Assert( (dx1 >= clip_left ) && (dx1 <= clip_right) );
-		Assert( (dx2 >= clip_left ) && (dx2 <= clip_right) );
-		Assert( (dy1 >= clip_top ) && (dy1 <= clip_bottom) );
-		Assert( (dy2 >= clip_top ) && (dy2 <= clip_bottom) );
-	#endif
-
-	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	opengl_aabitmap_ex_internal(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
-}
-
-void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
-{
-	int w, h, do_resize;
-
-	bm_get_info( gr_screen.current_bitmap, &w, &h, NULL );
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	int dx1=x, dx2=x+w-1;
-	int dy1=y, dy2=y+h-1;
-	int sx=0, sy=0;
-
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-
-	if ( (dx1 > clip_right) || (dx2 < clip_left) )
-		return;
-
-	if ( (dy1 > clip_bottom) || (dy2 < clip_top) )
-		return;
-
-	if ( dx1 < clip_left ) {
-		sx = clip_left-dx1;
-		dx1 = clip_left;
-	}
-
-	if ( dy1 < clip_top ) {
-		sy = clip_top-dy1;
-		dy1 = clip_top;
-	}
-
-	if ( dx2 > clip_right )
-		dx2 = clip_right;
-
-	if ( dy2 > clip_bottom )
-		dy2 = clip_bottom;
-
-	if ( sx < 0 )
-		return;
-
-	if ( sy < 0 )
-		return;
-
-	if ( sx >= w )
-		return;
-
-	if ( sy >= h )
-		return;
-
-	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_opengl_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
-}
-
-
-void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
-{
-	TIMERBAR_PUSH(4);
-
-	int width, spacing, letter;
-	int x, y, do_resize;
-	float bw, bh;
-	float u0, u1, v0, v1;
-	int x1, x2, y1, y2;
-	float u_scale, v_scale;
-
-	if ( !Current_font || (*s == 0) )	{
-		return;
-	}
-
-	gr_set_bitmap(Current_font->bitmap_id);
-
-	if ( !gr_opengl_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
-		return;
-	}
-
-	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	int ibw, ibh;
-	bm_get_info( gr_screen.current_bitmap, &ibw, &ibh );
-
-	bw = i2fl(ibw);
-	bh = i2fl(ibh);
-	
-	// set color!
-	if ( gr_screen.current_color.is_alphacolor )	{
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	} else {
-		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	}
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-
-	x = sx;
-	y = sy;
-
-	if (sx==0x8000) {			//centered
-		x = get_centered_x(s);
-	} else {
-		x = sx;
-	}
-
-	spacing = 0;
-
-	// start rendering...
-	glBegin(GL_QUADS);
-
-	// pick out letter coords, draw it, goto next letter and do the same
-	while (*s)	{
-		x += spacing;
-
-		while (*s == '\n' )	{
-			s++;
-			y += Current_font->h;
-			if (sx == 0x8000) {	// centered
-				x = get_centered_x(s);
-			} else {
-				x = sx;
-			}
-		}
-
-		if (*s == 0 ) break;
-
-		letter = get_char_width(s[0],s[1],&width,&spacing);
-		s++;
-
-		//not in font, draw as space
-		if (letter < 0) {
-			continue;
-		}
-
-		int xd, yd, xc, yc;
-		int wc, hc;
-
-		// Check if this character is totally clipped
-		if ( x + width < clip_left ) continue;
-		if ( y + Current_font->h < clip_top ) continue;
-		if ( x > clip_right ) continue;
-		if ( y > clip_bottom ) continue;
-
-		xd = yd = 0;
-		if ( x < clip_left ) xd = clip_left - x;
-		if ( y < clip_top ) yd = clip_top - y;
-		xc = x+xd;
-		yc = y+yd;
-
-		wc = width - xd; hc = Current_font->h - yd;
-		if ( xc + wc > clip_right ) wc = clip_right - xc;
-		if ( yc + hc > clip_bottom ) hc = clip_bottom - yc;
-
-		if ( wc < 1 ) continue;
-		if ( hc < 1 ) continue;
-
-		int u = Current_font->bm_u[letter];
-		int v = Current_font->bm_v[letter];
-
-		x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-		y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-		x2 = x1 + wc;
-		y2 = y1 + hc;
-
-		if ( do_resize ) {
-			gr_resize_screen_pos( &x1, &y1 );
-			gr_resize_screen_pos( &x2, &y2 );
-		}
-
-		u0 = u_scale * (i2fl(u+xd) / bw);
-		v0 = v_scale * (i2fl(v+yd) / bh);
-
-		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
-		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
-
-		glTexCoord2f (u0, v1);
-		glVertex2i (x1, y2);
-
-		glTexCoord2f (u1, v1);
-		glVertex2i (x2, y2);
-
-		glTexCoord2f (u1, v0);
-		glVertex2i (x2, y1);
-
-		glTexCoord2f (u0, v0);
-		glVertex2i (x1, y1);
-	}
-
-	// done!
-	glEnd();
-
-	TIMERBAR_POP();
-}
-
-void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
-{
-	int do_resize, clipped = 0, swapped = 0;
-	float sx1, sy1;
-	float sx2, sy2;
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-	int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-
-
-	INT_CLIPLINE(x1, y1, x2, y2, clip_left, clip_top, clip_right, clip_bottom, return, clipped=1, swapped=1);
-
-	sx1 = i2fl(x1 + offset_x);
-	sy1 = i2fl(y1 + offset_y);
-	sx2 = i2fl(x2 + offset_x);
-	sy2 = i2fl(y2 + offset_y);
-
-
-	if (do_resize) {
-		gr_resize_screen_posf(&sx1, &sy1);
-		gr_resize_screen_posf(&sx2, &sy2);
-	}
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	if ( x1 == x2 && y1 == y2 ) {
-		gr_opengl_set_2d_matrix();
-
-		glBegin (GL_POINTS);
-			glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-			glVertex3f (sx1, sy1, -0.99f);
-		glEnd ();
-
-		gr_opengl_end_2d_matrix();
-
-		return;
-	}
-
-	if ( x1 == x2 ) {
-		if ( sy1 < sy2 )    {
-			sy2 += 0.5f;
-		} else {
-			sy1 += 0.5f;
-		}
-	} else if ( y1 == y2 )  {
-		if ( sx1 < sx2 )    {
-			sx2 += 0.5f;
-		} else {
-			sx1 += 0.5f;
-		}
-	}
-
-	gr_opengl_set_2d_matrix();
-
-	glBegin (GL_LINES);
-		glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-		glVertex3f (sx2, sy2, -0.99f);
-		glVertex3f (sx1, sy1, -0.99f);
-	glEnd ();
-
-	gr_opengl_end_2d_matrix();
-}
-
-void gr_opengl_aaline(vertex *v1, vertex *v2)
-{
-#ifdef FRED_OGL_COMMENT_OUT_FOR_NOW
-	if(Fred_running && !Cmdline_nohtl)
-	{
-		glBegin (GL_LINES);
-			glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-			glVertex3f (v1->x, v1->y, v1->z);
-			glVertex3f (v2->x, v2->y, v2->z);
-		glEnd ();
-
-		return;
-	}
-#endif
-
-// -- AA OpenGL lines.  Looks good but they are kinda slow so this is disabled until an option is implemented - taylor
-//	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-//	glEnable( GL_LINE_SMOOTH );
-//	glHint( GL_LINE_SMOOTH_HINT, GL_FASTEST );
-//	glLineWidth( 1.0 );
-
-	int clipped = 0, swapped = 0;
-	float x1 = v1->sx;
-	float y1 = v1->sy;
-	float x2 = v2->sx;
-	float y2 = v2->sy;
-	float sx1, sy1;
-	float sx2, sy2;
-
-
-	FL_CLIPLINE(x1, y1, x2, y2, (float)gr_screen.clip_left, (float)gr_screen.clip_top, (float)gr_screen.clip_right, (float)gr_screen.clip_bottom, return, clipped=1, swapped=1);
-
-	sx1 = x1 + (float)gr_screen.offset_x;
-	sy1 = y1 + (float)gr_screen.offset_y;
-	sx2 = x2 + (float)gr_screen.offset_x;
-	sy2 = y2 + (float)gr_screen.offset_y;
-
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	if ( (x1 == x2) && (y1 == y2) ) {
-		gr_opengl_set_2d_matrix();
-
-		glBegin (GL_POINTS);
-			glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-			glVertex3f(sx1, sy1, -0.99f);
-		glEnd ();
-
-		gr_opengl_end_2d_matrix();
-
-		return;
-	}
-
-	if ( x1 == x2 ) {
-		if ( sy1 < sy2 )    {
-			sy2 += 0.5f;
-		} else {
-			sy1 += 0.5f;
-		}
-	} else if ( y1 == y2 )  {
-		if ( sx1 < sx2 )    {
-			sx2 += 0.5f;
-		} else {
-			sx1 += 0.5f;
-		}
-	}
-
-	gr_opengl_set_2d_matrix();
-
-	glBegin (GL_LINES);
-		glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-		glVertex3f (sx2, sy2, -0.99f);
-		glVertex3f (sx1, sy1, -0.99f);
-	glEnd ();
-
-	gr_opengl_end_2d_matrix();
-
-//	glDisable( GL_LINE_SMOOTH );
-}
-
-void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize)
-{
-	int clipped = 0, swapped=0;
-
-	if ( !gr_screen.current_color.is_alphacolor )   {
-		gr_line( x1, y1, x2, y2, resize );
-		return;
-	}
-
-	if (resize || gr_screen.rendering_to_texture != -1) {
-		gr_resize_screen_pos( &x1, &y1 );
-		gr_resize_screen_pos( &x2, &y2 );
-	}
-
-	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	int aa = swapped ? 0 : gr_screen.current_color.alpha;
-	int ba = swapped ? gr_screen.current_color.alpha : 0;
-	
-	float sx1, sy1, sx2, sy2;
-	
-	sx1 = i2fl(x1 + gr_screen.offset_x);
-	sy1 = i2fl(y1 + gr_screen.offset_y);
-	sx2 = i2fl(x2 + gr_screen.offset_x);
-	sy2 = i2fl(y2 + gr_screen.offset_y);
-
-	if ( x1 == x2 ) {
-		if ( sy1 < sy2 ) {
-			sy2 += 0.5f;
-		} else {
-			sy1 += 0.5f;
-		}
-	} else if ( y1 == y2 ) {
-		if ( sx1 < sx2 ) {
-			sx2 += 0.5f;
-		} else {
-			sx1 += 0.5f;
-		}
-	}
-
-	glBegin (GL_LINES);
-		glColor4ub((ubyte)gr_screen.current_color.red, (ubyte)gr_screen.current_color.green, (ubyte)gr_screen.current_color.blue, (ubyte)ba);
-		glVertex2f(sx2, sy2);
-
-		glColor4ub((ubyte)gr_screen.current_color.red, (ubyte)gr_screen.current_color.green, (ubyte)gr_screen.current_color.blue, (ubyte)aa);
-		glVertex2f(sx1, sy1);
-	glEnd ();	
-}
-
-void gr_opengl_circle( int xc, int yc, int d, bool resize )
-{
-	int p,x, y, r;
-
-	if (resize || gr_screen.rendering_to_texture != -1)
-		gr_resize_screen_pos(&xc, &yc);
-
-	r = d/2;
-	p=3-d;
-	x=0;
-	y=r;
-
-	// Big clip
-	if ( (xc+r) < gr_screen.clip_left ) return;
-	if ( (xc-r) > gr_screen.clip_right ) return;
-	if ( (yc+r) < gr_screen.clip_top ) return;
-	if ( (yc-r) > gr_screen.clip_bottom ) return;
-
-	while(x<y)	{
-		// Draw the first octant
-		gr_opengl_line( xc-y, yc-x, xc+y, yc-x, false );
-		gr_opengl_line( xc-y, yc+x, xc+y, yc+x, false );
-                                
-		if (p<0) 
-			p=p+(x<<2)+6;
-		else	{
-			// Draw the second octant
-			gr_opengl_line( xc-x, yc-y, xc+x, yc-y, false );
-			gr_opengl_line( xc-x, yc+y, xc+x, yc+y, false );
-                                                
-			p=p+((x-y)<<2)+10;
-			y--;
-		}
-		x++;
-	}
-	if(x==y) {
-		gr_opengl_line( xc-x, yc-y, xc+x, yc-y, false );
-		gr_opengl_line( xc-x, yc+y, xc+x, yc+y, false );
-	}
-	return;
-}
-
-void gr_opengl_curve( int xc, int yc, int r, int direction)
-{
-	int a,b,p;
-	gr_resize_screen_pos(&xc, &yc);
-
-	p=3-(2*r);
-	a=0;
-	b=r;
-
-	// Big clip
-	if ( (xc+r) < gr_screen.clip_left ) return;
-	if ( (yc+r) < gr_screen.clip_top ) return;
-
-	switch(direction)
-	{
-		case 0:
-			yc += r;
-			xc += r;
-			while(a<b)
-			{
-				// Draw the first octant
-				gr_opengl_line(xc - b + 1, yc-a, xc - b, yc-a, false);
-
-				if (p<0) 
-					p=p+(a<<2)+6;
-				else	{
-					// Draw the second octant
-					gr_opengl_line(xc-a+1,yc-b,xc-a,yc-b, false);
-					p=p+((a-b)<<2)+10;
-					b--;
-				}
-				a++;
-			}
-			break;
-		case 1:
-			yc += r;
-			while(a<b)
-			{
-				// Draw the first octant
-				gr_opengl_line(xc + b - 1, yc-a, xc + b, yc-a, false);
-
-				if (p<0) 
-					p=p+(a<<2)+6;
-				else	{
-					// Draw the second octant
-					gr_opengl_line(xc+a-1,yc-b,xc+a,yc-b, false);
-					p=p+((a-b)<<2)+10;
-					b--;
-				}
-				a++;
-			}
-			break;
-		case 2:
-			xc += r;
-			while(a<b)
-			{
-				// Draw the first octant
-				gr_opengl_line(xc - b + 1, yc+a, xc - b, yc+a, false);
-
-				if (p<0) 
-					p=p+(a<<2)+6;
-				else	{
-					// Draw the second octant
-					gr_opengl_line(xc-a+1,yc+b,xc-a,yc+b, false);
-					p=p+((a-b)<<2)+10;
-					b--;
-				}
-				a++;
-			}
-			break;
-		case 3:
-			while(a<b)
-			{
-				// Draw the first octant
-				gr_opengl_line(xc + b - 1, yc+a, xc + b, yc+a, false);
-
-				if (p<0) 
-					p=p+(a<<2)+6;
-				else	{
-					// Draw the second octant
-					gr_opengl_line(xc+a-1,yc+b,xc+a,yc+b, false);
-					p=p+((a-b)<<2)+10;
-					b--;
-				}
-				a++;
-			}
-			break;
-	}
-}
-
-void gr_opengl_stuff_fog_coord(vertex *v)
-{
-	float d;
-	vec3d pos;		// position of the vertex in question
-	vec3d final;
-
-	vm_vec_add(&pos, Interp_pos, &Interp_offset);
-	vm_vec_add2(&pos, &v->real_pos);
-	vm_vec_rotate(&final, &pos, Interp_orient);
-
-	d = vm_vec_dist_squared(&pos, &Eye_position);
-
-	vglFogCoordfEXT(d);
-}
-
-/*void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
-{
-	GLfloat color[3] = { 0.0f, 0.0f, 0.0f };
-
-	// check for easy out first
-	if ( (fr == 0) && (fg == 0) && (fb == 0) ) {
-		vglSecondaryColor3fvEXT(color);
-		return;
-	}
-
-	float d, d_over_far;
-	vec3d pos;			// position of the vertex in question
-
-	vm_vec_add(&pos, Interp_pos, &Interp_offset);
-	vm_vec_add2(&pos, &v->real_pos);
-
-	d = vm_vec_dist_squared(&pos, &Eye_position);
-	
-	d_over_far = d / (gr_screen.fog_far * gr_screen.fog_far);
-
-	if ( d_over_far <= (gr_screen.fog_near * gr_screen.fog_near) ) {
-		vglSecondaryColor3fvEXT(color);
-		return;
-	}
-
-	if ( (fr == 255) && (fg == 255) && (fb == 255) ) {
-		color[0] = color[1] = color[2] = 1.0f;
-	} else {
-		color[0] = (GLfloat)fr / 255.0f;
-		color[1] = (GLfloat)fg / 255.0f;
-		color[2] = (GLfloat)fb / 255.0f;
-	}
-
-	if (d_over_far >= 1.0f) {
-		// another easy out
-		vglSecondaryColor3fvEXT(color);
-		return;
-	}
-
-	color[0] *= d_over_far;
-	color[1] *= d_over_far;
-	color[2] *= d_over_far;
-
-	vglSecondaryColor3fvEXT(color);
-}*/
-
-void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary = 0)
-{
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-	float sx, sy, sz, sw, tu, tv, rhw;
-	int i, a;
-	vertex *va;
-
-	if (flags & TMAP_FLAG_TRISTRIP)
-		gl_mode = GL_TRIANGLE_STRIP;
-	else if (flags & TMAP_FLAG_TRILIST)
-		gl_mode = GL_TRIANGLES;
-
-
-	glBegin(gl_mode);
-
-	for (i = nv-1; i >= 0; i--) {
-		va = verts[i];
-
-		sw = 1.0f;
-
-		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
-			sz = float(1.0 - 1.0 / (1.0 + va->z / 32768.0 ));
-
-			//if ( sz > 0.98f ) {
-		//		sz = 0.98f;
-		//	}
-		} else {
-			sz = 0.99f;
-		}
-
-		if ( flags & TMAP_FLAG_CORRECT ) {
-			rhw = va->sw;
-		} else {
-			rhw = 1.0f;
-		}
-		
-		if (flags & TMAP_FLAG_ALPHA) {
-			a = verts[i]->a;
-		} else {
-			a = alpha;
-		}
-
-		if (flags & TMAP_FLAG_NEBULA ) {
-			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
-			r = gr_palette[pal*3+0];
-			g = gr_palette[pal*3+1];
-			b = gr_palette[pal*3+2];
-		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) ) {
-			r = verts[i]->b;
-			g = verts[i]->b;
-			b = verts[i]->b;
-		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) ) {
-			// Make 0.75 be 256.0f
-			r = verts[i]->r;
-			g = verts[i]->g;
-			b = verts[i]->b;
-		} else {
-			// use constant RGB values...
-		}
-
-		if (!override_primary) {
-			glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
-		} else {
-			glColor3ub( va->spec_r, va->spec_g, va->spec_b );		
-		}
-
-		if ( (gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2) ) {
-			// this is for GL_EXT_FOG_COORD 
-			gr_opengl_stuff_fog_coord(va);
-		}
-
-		sx = va->sx + (float)gr_screen.offset_x;
-		sy = va->sy + (float)gr_screen.offset_y;
-
-		if (rhw != 1.0f) {
-			sx /= rhw;
-			sy /= rhw;
-			sz /= rhw;
-			sw /= rhw;
-		}
-
-		if ( flags & TMAP_FLAG_TEXTURED ) {
-			tu = va->u * u_scale;
-			tv = va->v * v_scale;
-
-			// use opengl hardware multitexturing
-			vglMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
-			vglMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
-			
-			if (GL_supported_texture_units > 2)
-				vglMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);	
-		}
-
-		glVertex4f(sx, sy, -sz, sw);
-	}
-
-	glEnd();
-}
-
-void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage )
-{
-	if ( !gr_opengl_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, 0, stage) )
-		return;
-
-	// render with spec lighting only
-	opengl_default_light_settings(0, 0, 1);
-
-	opengl_set_modulate_tex_env();
-
-	opengl_set_state( GL_current_tex_src, ALPHA_BLEND_ADDITIVE, GL_current_ztype);
-
-	glDepthMask(GL_FALSE);
-	glDepthFunc(GL_EQUAL);
-}
-
-void opengl_reset_spec_mapping()
-{
-	// reset lights to default values
-	opengl_default_light_settings();
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE );
-}
-
-void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler)
-{
-	gr_texture_source texture_source = (gr_texture_source)-1;
-	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
-	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
-	
-	if ( gr_zbuffering ) {
-		if ( is_scaler || (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) ) {
-			zbuffer_type = ZBUFFER_TYPE_READ;
-		} else {
-			zbuffer_type = ZBUFFER_TYPE_FULL;
-		}
-	} else {
-		zbuffer_type = ZBUFFER_TYPE_NONE;
-	}
-
-	tmap_type = TCACHE_TYPE_NORMAL;
-
-	if ( flags & TMAP_FLAG_TEXTURED ) {
-		r = g = b = 255;
-	} else {
-		r = gr_screen.current_color.red;
-		g = gr_screen.current_color.green;
-		b = gr_screen.current_color.blue;
-	}
-
-	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
-		if ( (gr_screen.current_bitmap >= 0) && bm_has_alpha_channel(gr_screen.current_bitmap) ) {
-			tmap_type = TCACHE_TYPE_XPARENT;
-
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			if ( factor >= 1.0f ) {
-				alpha = 255;
-			} else {
-				alpha = fl2i(gr_screen.current_alpha*255.0f);
-			}
-		} else {
-			tmap_type = TCACHE_TYPE_NORMAL;
-			alpha_blend = ALPHA_BLEND_ADDITIVE;	// ALPHA_BLEND_ALPHA_ADDITIVE;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			alpha = 255;
-
-			if ( factor < 1.0f ) {
-				r = fl2i(r * gr_screen.current_alpha);
-				g = fl2i(g * gr_screen.current_alpha);
-				b = fl2i(b * gr_screen.current_alpha);
-			}
-		}
-	} else {
-		alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		alpha = fl2i(gr_screen.current_alpha * 255.0f);
-	}
-
-	
-	if ( flags & TMAP_FLAG_TEXTURED ) {
-		// use nonfiltered textures for interface graphics
-		if (flags & TMAP_FLAG_INTERFACE) {
-			tmap_type = TCACHE_TYPE_INTERFACE;
-			texture_source = TEXTURE_SOURCE_NO_FILTERING;
-		} else {
-			texture_source = TEXTURE_SOURCE_DECAL;
-		}
-	} else {
-		texture_source = TEXTURE_SOURCE_NONE;
-	}
-
-	opengl_set_state( texture_source, alpha_blend, zbuffer_type );
-}
-
-void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler = 0 )
-{
-	int i, stage = 0;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	bool use_spec = false;
-	int alpha,tmap_type, r, g, b;
-
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags, is_scaler);
-
-	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, stage) ) {
-			return;
-		}
-		stage++; // bump!
-
-		// glowmap
-		if ( (GLOWMAP > -1) && !Cmdline_noglow ) {
-			if ( !gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, 0, stage) ) {
-				return;
-			}
-			opengl_set_additive_tex_env();
-			stage++; // bump
-		}
-
-		if ( (lighting_is_enabled) && (SPECMAP > -1) && !Cmdline_nospec ) {
-			use_spec = true;
-			opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
-		} else {
-			// reset to defaults
-			opengl_default_light_settings();
-		}
-	}
-	
-	
-	if ( (flags & TMAP_FLAG_PIXEL_FOG) && (Neb2_render_mode != NEB2_RENDER_NONE) && (Neb2_render_mode != NEB2_RENDER_HTL) ) {
-		int r, g, b;
-		int ra, ga, ba;
-		ra = ga = ba = 0;
-	
-		for (i = nv-1; i >= 0; i--) {
-			vertex *va = verts[i];
-			float sx, sy;
-                
-			if (gr_screen.offset_x || gr_screen.offset_y) {
-				sx = ((va->sx * 16.0f) + ((float)gr_screen.offset_x * 16.0f)) / 16.0f;
-				sy = ((va->sy * 16.0f) + ((float)gr_screen.offset_y * 16.0f)) / 16.0f;
-			} else {
-				sx = va->sx;
-				sy = va->sy;
-			}
-
-			neb2_get_pixel((int)sx, (int)sy, &r, &g, &b);
-
-			ra += r;
-			ga += g;
-			ba += b;
-		}
-		
-		ra /= nv;
-		ga /= nv;
-		ba /= nv;
-
-		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
-	}
-
-	gr_opengl_set_2d_matrix();
-
-	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
-
-	if (ogl_maybe_pop_arb1) {
-		gr_pop_texture_matrix(1);
-		ogl_maybe_pop_arb1 = 0;
-	}
-
-	if ( use_spec ) {
-		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
-		opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha, 1);
-		opengl_reset_spec_mapping();
-	}
-
-	gr_opengl_end_2d_matrix();
-}
-
-//ok we're making some assumptions for now.  mainly it must not be multitextured, lit or fogged.
-void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
-{
-	int i, alpha, tmap_type, r, g, b;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-	vertex *va;
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
-
-	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0) ) {
-			return;
-		}
-	}
-
-	int cull = gr_set_cull(0);
-
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	if ( !(flags & (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD)) )
-		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-
-	if (flags & TMAP_FLAG_TRILIST)
-		gl_mode = GL_TRIANGLES;
-	else if (flags & TMAP_FLAG_TRISTRIP)
-		gl_mode = GL_TRIANGLE_STRIP;
-
-
-	glBegin(gl_mode);
-
-	for (i=0; i < nv; i++) {
-		va = verts[i];
-
-		if ( flags & (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD) )
-			glColor4ub(va->r, va->g, va->b, (ubyte)alpha);
-
-		glTexCoord2f(va->u, va->v);
-		glVertex3f(va->x, va->y, va->z);
-	}
-
-	glEnd();
-
-	gr_set_cull(cull);
-}
-
-void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
-{
-	if ((!Cmdline_nohtl) && (flags & TMAP_HTL_3D_UNLIT))
-		opengl_tmapper_internal3d( nverts, verts, flags );
-	else
-		opengl_tmapper_internal( nverts, verts, flags );
-
-}
-
-#define FIND_SCALED_NUM(x,x0,x1,y0,y1) (((((x)-(x0))*((y1)-(y0)))/((x1)-(x0)))+(y0))
-
-void gr_opengl_scaler(vertex *va, vertex *vb )
-{
-	float x0, y0, x1, y1;
-	float u0, v0, u1, v1;
-	float clipped_x0, clipped_y0, clipped_x1, clipped_y1;
-	float clipped_u0, clipped_v0, clipped_u1, clipped_v1;
-	float xmin, xmax, ymin, ymax;
-	int dx0, dy0, dx1, dy1;
-
-	//============= CLIP IT =====================
-
-	x0 = va->sx; y0 = va->sy;
-	x1 = vb->sx; y1 = vb->sy;
-
-	xmin = i2fl(gr_screen.clip_left); ymin = i2fl(gr_screen.clip_top);
-	xmax = i2fl(gr_screen.clip_right); ymax = i2fl(gr_screen.clip_bottom);
-
-	u0 = va->u; v0 = va->v;
-	u1 = vb->u; v1 = vb->v;
-
-	// Check for obviously offscreen bitmaps...
-	if ( (y1<=y0) || (x1<=x0) ) return;
-	if ( (x1<xmin ) || (x0>xmax) ) return;
-	if ( (y1<ymin ) || (y0>ymax) ) return;
-
-	clipped_u0 = u0; clipped_v0 = v0;
-	clipped_u1 = u1; clipped_v1 = v1;
-
-	clipped_x0 = x0; clipped_y0 = y0;
-	clipped_x1 = x1; clipped_y1 = y1;
-
-	// Clip the left, moving u0 right as necessary
-	if ( x0 < xmin ) 	{
-		clipped_u0 = FIND_SCALED_NUM(xmin,x0,x1,u0,u1);
-		clipped_x0 = xmin;
-	}
-
-	// Clip the right, moving u1 left as necessary
-	if ( x1 > xmax )	{
-		clipped_u1 = FIND_SCALED_NUM(xmax,x0,x1,u0,u1);
-		clipped_x1 = xmax;
-	}
-
-	// Clip the top, moving v0 down as necessary
-	if ( y0 < ymin ) 	{
-		clipped_v0 = FIND_SCALED_NUM(ymin,y0,y1,v0,v1);
-		clipped_y0 = ymin;
-	}
-
-	// Clip the bottom, moving v1 up as necessary
-	if ( y1 > ymax ) 	{
-		clipped_v1 = FIND_SCALED_NUM(ymax,y0,y1,v0,v1);
-		clipped_y1 = ymax;
-	}
-	
-	dx0 = fl2i(clipped_x0); dx1 = fl2i(clipped_x1);
-	dy0 = fl2i(clipped_y0); dy1 = fl2i(clipped_y1);
-
-	if (dx1<=dx0) return;
-	if (dy1<=dy0) return;
-
-	//============= DRAW IT =====================
-
-	vertex v[4];
-	vertex *vl[4];
-
-	vl[0] = &v[0];	
-	v->sx = clipped_x0;
-	v->sy = clipped_y0;
-	v->sw = va->sw;
-	v->z = va->z;
-	v->u = clipped_u0;
-	v->v = clipped_v0;
-	v->spec_r=0;
-	v->spec_g=0;
-	v->spec_b=0;
-
-	vl[1] = &v[1];	
-	v[1].sx = clipped_x1;
-	v[1].sy = clipped_y0;
-	v[1].sw = va->sw;
-	v[1].z = va->z;
-	v[1].u = clipped_u1;
-	v[1].v = clipped_v0;
-	v[1].spec_r=0;
-	v[1].spec_g=0;
-	v[1].spec_b=0;
-
-	vl[2] = &v[2];	
-	v[2].sx = clipped_x1;
-	v[2].sy = clipped_y1;
-	v[2].sw = va->sw;
-	v[2].z = va->z;
-	v[2].u = clipped_u1;
-	v[2].v = clipped_v1;
-	v[2].spec_r=0;
-	v[2].spec_g=0;
-	v[2].spec_b=0;
-
-	vl[3] = &v[3];	
-	v[3].sx = clipped_x0;
-	v[3].sy = clipped_y1;
-	v[3].sw = va->sw;
-	v[3].z = va->z;
-	v[3].u = clipped_u0;
-	v[3].v = clipped_v1;
-	v[3].spec_r=0;
-	v[3].spec_g=0;
-	v[3].spec_b=0;
-
-	opengl_tmapper_internal( 4, vl, TMAP_FLAG_TEXTURED, 1 );
+	GL_state.ScissorTest(GL_FALSE);
 }
 
 void gr_opengl_set_palette(ubyte *new_palette, int is_alphacolor)
@@ -3055,10 +1647,11 @@ void gr_opengl_print_screen(char *filename)
 //	glReadBuffer(GL_FRONT);
 
 	// now for the data
-	if ( Use_PBOs ) {
+	if (Use_PBOs) {
+		Assert( !pbo );
 		vglGenBuffersARB(1, &pbo);
 
-		if (!pbo) {
+		if ( !pbo ) {
 			if (fout != NULL)
 				fclose(fout);
 
@@ -3077,8 +1670,9 @@ void gr_opengl_print_screen(char *filename)
 		pixels = (GLubyte*) vm_malloc_q(gr_screen.max_w * gr_screen.max_h * 4);
 
 		if (pixels == NULL) {
-			if (fout != NULL)
+			if (fout != NULL) {
 				fclose(fout);
+			}
 
 			return;
 		}
@@ -3114,7 +1708,7 @@ void gr_opengl_print_screen(char *filename)
 #endif
 	}
 
-	if ( pbo ) {
+	if (pbo) {
 		vglUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		pixels = NULL;
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
@@ -3124,67 +1718,58 @@ void gr_opengl_print_screen(char *filename)
 	// done!
 	fclose(fout);
 
-	if (pixels != NULL)
+	if (pixels != NULL) {
 		vm_free(pixels);
-}
-
-int gr_opengl_supports_res_ingame(int res)
-{
-	STUB_FUNCTION;
-	
-	return 1;
-}
-
-int gr_opengl_supports_res_interface(int res)
-{
-	STUB_FUNCTION;
-	
-	return 1;
+	}
 }
 
 void gr_opengl_cleanup(int minimize)
 {	
-	if ( !GL_initted )
+	if ( !GL_initted ) {
 		return;
+	}
 
-	if (!Fred_running) {
+	if ( !Fred_running ) {
 		gr_reset_clip();
+		gr_clear();
+		gr_flip();
 		gr_clear();
 		gr_flip();
 		gr_clear();
 	}
 
-	GL_initted = 0;
+	GL_initted = false;
 
 	opengl_tcache_flush();
 
 #ifdef _WIN32
-	HWND wnd=(HWND)os_get_window();
+	HWND wnd = (HWND)os_get_window();
 
 	DBUGFILE_OUTPUT_0("");
-	if (rend_context)
-	{
-		if (!wglMakeCurrent(NULL, NULL))
-		{
+
+	if (GL_render_context) {
+		if ( !wglMakeCurrent(NULL, NULL) ) {
 			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "SHUTDOWN ERROR", "error", MB_OK);
 		}
-		if (!wglDeleteContext(rend_context))
-		{
+
+		if ( !wglDeleteContext(GL_render_context) ) {
 			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "Unable to delete rendering context", "error", MB_OK);
 		}
-		rend_context=NULL;
+
+		GL_render_context = NULL;
 	}
 #endif
 
 	DBUGFILE_OUTPUT_0("opengl_minimize");
 	opengl_minimize();
-	if (minimize)
-	{
+
+	if (minimize) {
 #ifdef _WIN32
-		if (!Cmdline_window)
+		if ( !Cmdline_window ) {
 			ChangeDisplaySettings(NULL, 0);
+		}
 #endif
 	}
 }
@@ -3198,33 +1783,35 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	Assert((b >= 0) && (b < 256));
 	
 	if (fog_mode == GR_FOGMODE_NONE) {
-		if (gr_screen.current_fog_mode != fog_mode) {
-			glDisable(GL_FOG);
+		if ( GL_state.Fog() ) {
+			GL_state.Fog(GL_FALSE);
 		}
+
 		gr_screen.current_fog_mode = fog_mode;
 		
 		return;
 	}
 	
   	if (gr_screen.current_fog_mode != fog_mode) {
-	  	if (OGL_fogmode==3) {
+	  	if (OGL_fogmode == 3) {
 			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
+			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
 		}
 		// Um.. this is not the correct way to fog in software, probably doesnt matter though
-		else if (OGL_fogmode==2 && Cmdline_nohtl)
-		{
+		else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
 			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
-			fog_near*=fog_near;		//its faster this way
-			fog_far*=fog_far;		
+			fog_near *= fog_near;		// it's faster this way
+			fog_far *= fog_far;		
+		} else {
+			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
 		}
 
-		glEnable(GL_FOG); 
+		GL_state.Fog(GL_TRUE); 
 		glFogf(GL_FOG_MODE, GL_LINEAR);
 		glFogf(GL_FOG_START, fog_near);
 		glFogf(GL_FOG_END, fog_far);
-		gr_screen.current_fog_mode = fog_mode;
-		
 
+		gr_screen.current_fog_mode = fog_mode;
 	}
 	
 	if ( (gr_screen.current_fog_color.red != r) ||
@@ -3245,140 +1832,31 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 
 }
 
-void gr_opengl_get_pixel(int x, int y, int *r, int *g, int *b)
-{
-	// Not used.
-}
-
-static int CullEnabled = 0;
 int gr_opengl_set_cull(int cull)
 {
-	int last_state = CullEnabled;
+	GLboolean enabled = GL_FALSE;
 
 	if (cull) {
-		glEnable (GL_CULL_FACE);
-		glFrontFace (GL_CCW);
-		glCullFace (GL_BACK);
-		CullEnabled = 1;
+		enabled = GL_state.CullFace(GL_TRUE);
+		GL_state.FrontFaceValue(GL_CCW);
+		GL_state.CullFaceValue(GL_BACK);
 	} else {
-		glDisable (GL_CULL_FACE);
-		CullEnabled = 0;
+		enabled = GL_state.CullFace(GL_FALSE);
 	}
 
-	return last_state;
-}
-
-void gr_opengl_filter_set(int filter)
-{
-}
-
-// cross fade
-void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
-{
-   	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct );
-	gr_bitmap(x1, y1);
-
-  	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct );
-	gr_bitmap(x2, y2);
+	return (enabled) ? 1 : 0;
 }
 
 void gr_opengl_set_clear_color(int r, int g, int b)
 {
-	gr_init_color (&gr_screen.current_clear_color, r, g, b);
-}
-
-void gr_opengl_shade(int x, int y, int w, int h, bool resize)
-{
-	if (resize) {
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
-	}
-
-	int x1 = (gr_screen.offset_x + x);
-	int y1 = (gr_screen.offset_y + y);
-	int x2 = (gr_screen.offset_x + w);
-	int y2 = (gr_screen.offset_y + h);
-
-	if ( (x1 >= gr_screen.max_w) || (y1 >= gr_screen.max_h) )
-		return;
-
-	CLAMP(x2, x1+1, gr_screen.max_w);
-	CLAMP(y2, y1+1, gr_screen.max_h);
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	gr_opengl_set_2d_matrix();
-
-	glColor4ub( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
-				(GLubyte)gr_screen.current_shader.b, (GLubyte)gr_screen.current_shader.c );
-
-	glBegin(GL_QUADS);
-		glVertex2i(x1, y2);
-		glVertex2i(x2, y2);
-		glVertex2i(x2, y1);
-		glVertex2i(x1, y1);
-	glEnd();
-
-	gr_opengl_end_2d_matrix();
-}
-
-void gr_opengl_flash(int r, int g, int b)
-{
-	if ( !(r || g || b) )
-		return;
-
-	CLAMP(r, 0, 255);
-	CLAMP(g, 0, 255);
-	CLAMP(b, 0, 255);
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
-
-	int x1 = (gr_screen.clip_left+gr_screen.offset_x);
-	int y1 = (gr_screen.clip_top+gr_screen.offset_y);
-	int x2 = (gr_screen.clip_right+gr_screen.offset_x);
-	int y2 = (gr_screen.clip_bottom+gr_screen.offset_y);
-
-	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
-
-	glBegin(GL_QUADS);
-		glVertex2i(x1, y2);
-		glVertex2i(x2, y2);
-		glVertex2i(x2, y1);
-		glVertex2i(x1, y1);
-	glEnd();
-}
-
-void gr_opengl_flash_alpha(int r, int g, int b, int a)
-{
-	if ( !(r || g || b || a) )
-		return;
-
-	CLAMP(r, 0, 255);
-	CLAMP(g, 0, 255);
-	CLAMP(b, 0, 255);
-	CLAMP(a, 0, 255);
-
-	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-	int x1 = (gr_screen.clip_left+gr_screen.offset_x);
-	int y1 = (gr_screen.clip_top+gr_screen.offset_y);
-	int x2 = (gr_screen.clip_right+gr_screen.offset_x);
-	int y2 = (gr_screen.clip_bottom+gr_screen.offset_y);
-
-	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
-
-	glBegin(GL_QUADS);
-		glVertex2i(x1, y2);
-		glVertex2i(x2, y2);
-		glVertex2i(x2, y1);
-		glVertex2i(x1, y1);
-	glEnd();
+	gr_init_color(&gr_screen.current_clear_color, r, g, b);
 }
 
 int gr_opengl_zbuffer_get()
 {
-	if ( !gr_global_zbuffering )
+	if ( !gr_global_zbuffering ) {
 		return GR_ZBUFF_NONE;
+	}
 
 	return gr_zbuffering_mode;
 }
@@ -3389,12 +1867,12 @@ int gr_opengl_zbuffer_set(int mode)
 
 	gr_zbuffering_mode = mode;
 
-	if (gr_zbuffering_mode == GR_ZBUFF_NONE ) {
+	if (gr_zbuffering_mode == GR_ZBUFF_NONE) {
 		gr_zbuffering = 0;
-		glDisable(GL_DEPTH_TEST);
+		GL_state.DepthTest(GL_FALSE);
 	} else {
 		gr_zbuffering = 1;
-		glEnable(GL_DEPTH_TEST);
+		GL_state.DepthTest(GL_TRUE);
 	}
 
 	return tmp;
@@ -3407,14 +1885,17 @@ void gr_opengl_zbuffer_clear(int mode)
 		gr_zbuffering_mode = GR_ZBUFF_FULL;
 		gr_global_zbuffering = 1;
 
-		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
-		glEnable(GL_DEPTH_TEST);
+		GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
+
 		glClear(GL_DEPTH_BUFFER_BIT);
 	} else {
 		gr_zbuffering = 0;
 		gr_zbuffering_mode = GR_ZBUFF_NONE;
 		gr_global_zbuffering = 0;
-		glDisable(GL_DEPTH_TEST);
+
+		GL_state.DepthTest(GL_FALSE);
 	}
 }
 
@@ -3487,7 +1968,7 @@ void gr_opengl_set_gamma(float gamma)
 
 		if (gamma_ramp == NULL) {
 			Int3();
-			goto Done;
+			return;
 		}
 
 		memset( gamma_ramp, 0, 3 * 256 * sizeof(ushort) );
@@ -3503,22 +1984,6 @@ void gr_opengl_set_gamma(float gamma)
 
 		vm_free(gamma_ramp);
 	}
-
-
-Done:
-	// Flush any existing textures
-//	opengl_tcache_flush();
-	return;
-}
-
-void gr_opengl_fade_in(int instantaneous)
-{
-	// Empty - DDOI
-}
-
-void gr_opengl_fade_out(int instantaneous)
-{
-	// Empty - DDOI
 }
 
 void gr_opengl_get_region(int front, int w, int h, ubyte *data)
@@ -3530,7 +1995,9 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 		glReadBuffer(GL_BACK);
 //	}
 
-	opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 	
 	if (gr_screen.bits_per_pixel == 16) {
 		glReadPixels(0, gr_screen.max_h-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
@@ -3541,21 +2008,20 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 
 }
 
-
-#define MAX_MOUSE_SAVE_SIZE (32*32)
-
 void opengl_save_mouse_area(int x, int y, int w, int h)
 {
 	int cursor_size;
 
+	GL_CHECK_FOR_ERRORS("start of save_mouse_area()");
+
 	// lazy - taylor
-	cursor_size = (GL_mouse_saved_size * GL_mouse_saved_size);
+	cursor_size = (Gr_cursor_size * Gr_cursor_size);
 
 	// no reason to be bigger than the cursor, should never be smaller
-	if (w != GL_mouse_saved_size)
-		w = GL_mouse_saved_size;
-	if (h != GL_mouse_saved_size)
-		h = GL_mouse_saved_size;
+	if (w != Gr_cursor_size)
+		w = Gr_cursor_size;
+	if (h != Gr_cursor_size)
+		h = Gr_cursor_size;
 
 	GL_mouse_saved_x1 = x;
 	GL_mouse_saved_y1 = y;
@@ -3567,9 +2033,9 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 	CLAMP(GL_mouse_saved_y1, gr_screen.clip_top, gr_screen.clip_bottom );
 	CLAMP(GL_mouse_saved_y2, gr_screen.clip_top, gr_screen.clip_bottom );
 
-	Assert( (w * h) <= MAX_MOUSE_SAVE_SIZE );
-
-	opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
 	if ( Use_PBOs ) {
 		// since this is used a lot, and is pretty small in size, we just create it once and leave it until exit
@@ -3595,21 +2061,15 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, GL_saved_mouse_data);
 	}
 
-	GL_mouse_saved = 1;
-}
+	GL_CHECK_FOR_ERRORS("end of save_mouse_area()");
 
-void opengl_free_mouse_area()
-{
-	if (GL_saved_mouse_data != NULL) {
-		vm_free(GL_saved_mouse_data);
-		GL_saved_mouse_data = NULL;
-	}
+	GL_mouse_saved = 1;
 }
 
 int gr_opengl_save_screen()
 {
 	int i;
-	ubyte *sptr, *dptr;
+	ubyte *sptr = NULL, *dptr = NULL;
 	ubyte *opengl_screen_tmp = NULL;
 	int width_times_pixel, mouse_times_pixel;
 
@@ -3627,10 +2087,12 @@ int gr_opengl_save_screen()
  		return -1;
 	}
 
-	glDisable(GL_DEPTH_TEST);
+	GLboolean save_state = GL_state.DepthTest(GL_FALSE);
 	glReadBuffer(GL_FRONT_LEFT);
 
 	if ( Use_PBOs ) {
+		GLubyte *pixels = NULL;
+
 		vglGenBuffersARB(1, &GL_screen_pbo);
 
 		if (!GL_screen_pbo) {
@@ -3647,10 +2109,10 @@ int gr_opengl_save_screen()
 
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-		GLubyte *pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+		pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (GL_mouse_saved_size * 4);
+		mouse_times_pixel = (Gr_cursor_size * 4);
 
 		sptr = (ubyte *)pixels;
 		dptr = (ubyte *)&GL_saved_screen[gr_screen.max_w * gr_screen.max_h * 4];
@@ -3667,12 +2129,12 @@ int gr_opengl_save_screen()
 		if (GL_mouse_saved && GL_cursor_pbo) {
 			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
 
-			GLubyte *pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+			pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
 			sptr = (ubyte *)pixels;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < GL_mouse_saved_size; i++) {
+			for (i = 0; i < Gr_cursor_size; i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;
@@ -3696,6 +2158,7 @@ int gr_opengl_save_screen()
 			}
 
 			mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
+			GL_state.DepthTest(save_state);
 	 		return -1;
 	 	}
 
@@ -3705,7 +2168,7 @@ int gr_opengl_save_screen()
 		dptr = (ubyte *)GL_saved_screen;
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (GL_mouse_saved_size * 4);
+		mouse_times_pixel = (Gr_cursor_size * 4);
 
 		for (i = 0; i < gr_screen.max_h; i++) {
 			sptr -= width_times_pixel;
@@ -3719,7 +2182,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)GL_saved_mouse_data;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < GL_mouse_saved_size; i++) {
+			for (i = 0; i < Gr_cursor_size; i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;
@@ -3728,6 +2191,8 @@ int gr_opengl_save_screen()
 
 		GL_saved_screen_id = bm_create(32, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 	}
+
+	GL_state.DepthTest(save_state);
 
 	return GL_saved_screen_id;
 }
@@ -3857,20 +2322,6 @@ void gr_opengl_dump_frame()
 	}
 }
 
-uint gr_opengl_lock()
-{
-	return 1;
-}
-
-void gr_opengl_unlock()
-{
-}
-
-// RT Not sure if we should use opengl_zbias, untested so use stub for now
-void gr_opengl_zbias_stub(int bias)
-{
-}
-
 //fill mode, solid/wire frame
 void gr_opengl_set_fill_mode(int mode)
 {
@@ -3888,205 +2339,15 @@ void gr_opengl_set_fill_mode(int mode)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-
-void opengl_zbias(int bias)
+void gr_opengl_zbias(int bias)
 {
 	if (bias) {
-		glEnable(GL_POLYGON_OFFSET_FILL);
+		GL_state.PolygonOffsetFill(GL_TRUE);
 		glPolygonOffset(0.0, -i2fl(bias));
 	} else {
-		glDisable(GL_POLYGON_OFFSET_FILL);
+		GL_state.PolygonOffsetFill(GL_FALSE);
 	}
 }
-
-void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize)
-{
-	if ( (w < 1) || (h < 1) )
-		return;
-
-	float u_scale, v_scale;
-	float u0, u1, v0, v1;
-	float x1, x2, y1, y2;
-	int bw, bh, do_resize;
-
-	if ( !gr_opengl_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_INTERFACE, &u_scale, &v_scale ) )	{
-		// Couldn't set texture
-		return;
-	}
-
-	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
-
-	u0 = u_scale*i2fl(sx)/i2fl(bw);
-	v0 = v_scale*i2fl(sy)/i2fl(bh);
-
-	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
-	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
-
-	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
-	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
-	x2 = x1 + i2fl(w);
-	y2 = y1 + i2fl(h);
-
-	if ( do_resize ) {
-		gr_resize_screen_posf( &x1, &y1 );
-		gr_resize_screen_posf( &x2, &y2 );
-	}
-
-	glColor4f( 1.0f, 1.0f, 1.0f, gr_screen.current_alpha );
-
-	glBegin(GL_QUADS);
-		glTexCoord2f(u0, v1);
-		glVertex2f(x1, y2);
-
-		glTexCoord2f(u1, v1);
-		glVertex2f(x2, y2);
-
-		glTexCoord2f(u1, v0);
-		glVertex2f(x2, y1);
-
-		glTexCoord2f(u0, v0);
-		glVertex2f(x1, y1);
-	glEnd ();
-}
-
-
-//these are penguins bitmap functions
-void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
-{
-	int reclip;
-	#ifndef NDEBUG
-	int count = 0;
-	#endif
-
-	int dx1=x, dx2=x+w-1;
-	int dy1=y, dy2=y+h-1;
-
-	int bw, bh, do_resize;
-
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-
-	do {
-		reclip = 0;
-		#ifndef NDEBUG
-			if ( count > 1 ) Int3();
-			count++;
-		#endif
-	
-		if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
-		if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
-		if ( dx1 < clip_left ) { sx += clip_left-dx1; dx1 = clip_left; }
-		if ( dy1 < clip_top ) { sy += clip_top-dx1; dy1 = clip_top; }
-		if ( dx2 > clip_right ) { dx2 = clip_right; }
-		if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
-
-		if ( sx < 0 ) {
-			dx1 -= sx;
-			sx = 0;
-			reclip = 1;
-		}
-
-		if ( sy < 0 ) {
-			dy1 -= sy;
-			sy = 0;
-			reclip = 1;
-		}
-
-		w = dx2-dx1+1;
-		h = dy2-dy1+1;
-
-		if ( sx + w > bw ) {
-			w = bw - sx;
-			dx2 = dx1 + w - 1;
-		}
-
-		if ( sy + h > bh ) {
-			h = bh - sy;
-			dy2 = dy1 + h - 1;
-		}
-
-		if ( w < 1 ) return;		// clipped away!
-		if ( h < 1 ) return;		// clipped away!
-
-	} while (reclip);
-
-	// Make sure clipping algorithm works
-	#ifndef NDEBUG
-		Assert( w > 0 );
-		Assert( h > 0 );
-		Assert( w == (dx2-dx1+1) );
-		Assert( h == (dy2-dy1+1) );
-		Assert( sx >= 0 );
-		Assert( sy >= 0 );
-		Assert( sx+w <= bw );
-		Assert( sy+h <= bh );
-		Assert( dx2 >= dx1 );
-		Assert( dy2 >= dy1 );
-		Assert( (dx1 >= clip_left ) && (dx1 <= clip_right) );
-		Assert( (dx2 >= clip_left ) && (dx2 <= clip_right) );
-		Assert( (dy1 >= clip_top ) && (dy1 <= clip_bottom) );
-		Assert( (dy2 >= clip_top ) && (dy2 <= clip_bottom) );
-	#endif
-
-	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	opengl_bitmap_ex_internal(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
-}
-
-/*void gr_opengl_bitmap(int x, int y, bool resize)
-{
-	int w, h, do_resize;
-
-	bm_get_info( gr_screen.current_bitmap, &w, &h, NULL );
-
-	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
-
-	int dx1=x, dx2=x+w-1;
-	int dy1=y, dy2=y+h-1;
-	int sx=0, sy=0;
-
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-
-	if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
-	if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
-	if ( dx1 < clip_left ) { sx = clip_left-dx1; dx1 = clip_left; }
-	if ( dy1 < clip_top ) { sy = clip_top-dy1; dy1 = clip_top; }
-	if ( dx2 > clip_right )	{ dx2 = clip_right; }
-	if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
-
-	if ( sx < 0 ) return;
-	if ( sy < 0 ) return;
-	if ( sx >= w ) return;
-	if ( sy >= h ) return;
-
-	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_opengl_bitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
-}*/
 
 void gr_opengl_push_texture_matrix(int unit)
 {
@@ -4140,52 +2401,16 @@ void gr_opengl_translate_texture_matrix(int unit, vec3d *shift)
 //	tex_shift=vmd_zero_vector;
 }
 
-void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
-{
-	static float pre_set_colours[MAX_NUM_TIMERBARS][3] = {
-		{ 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.0f, 1.0f },
-		{ 0.0f, 0.0f, 1.0f },
-		{ 0.2f, 1.0f, 0.8f }, 
-		{ 1.0f, 0.0f, 8.0f }, 
-		{ 1.0f, 0.0f, 1.0f },
-		{ 1.0f, 0.2f, 0.2f },
-		{ 1.0f, 1.0f, 1.0f }
-	};
-
-	static float max_fw = (float) gr_screen.max_w; 
-	static float max_fh = (float) gr_screen.max_h; 
-
-	x *= max_fw;
-	y *= max_fh;
-	w *= max_fw;
-	h *= max_fh;
-
-	y += 5;
-
-	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
-
-	glColor3fv(pre_set_colours[colour]);
-
-	glBegin(GL_QUADS);
-		glVertex2f(x,y);
-		glVertex2f(x,y+h);
-		glVertex2f(x+w,y+h);
-		glVertex2f(x+w,y);
-	glEnd();
-}
-
 void gr_opengl_setup_background_fog(bool set)
 {
-	if (Cmdline_nohtl)
+	if (Cmdline_nohtl) {
 		return;
-
+	}
 }
 
-void gr_opengl_draw_line_list(colored_vector *lines, int num)
+void gr_opengl_set_line_width(float width)
 {
-	if (Cmdline_nohtl)
-		return;
+	glLineWidth(width);
 }
 
 // Returns the human readable error string if there is an error or NULL if not
@@ -4195,35 +2420,39 @@ const char *opengl_error_string()
 
 	error = glGetError();
 
-	if ( error != GL_NO_ERROR )
+	if ( error != GL_NO_ERROR ) {
 		return (const char *)gluErrorString(error);
+	}
 
 	return NULL;
 }
 
-int opengl_check_for_errors()
+int opengl_check_for_errors(char *err_at)
 {
 	const char *error_str = NULL;
 	int num_errors = 0;
 
-	do {
-		error_str = opengl_error_string();
+	error_str = opengl_error_string();
 
-		if (error_str) {
+	if (error_str) {
+		if (err_at != NULL) {
+			nprintf(("OpenGL", "OpenGL Error from %s: %s\n", err_at, error_str));
+		} else {
 			nprintf(("OpenGL", "OpenGL Error: %s\n", error_str));
-			num_errors++;
 		}
-	} while ((error_str != NULL) && !Fred_running);
+
+		num_errors++;
+	}
 
 	return num_errors;
 }
 
 void opengl_set_vsync(int status)
 {
-	Assert( (status == 0) || (status == 1) );
-
-	if ( (status < 0) || (status > 1) )
+	if ( (status < 0) || (status > 1) ) {
+		Int3();
 		return;
+	}
 
 #if defined(__APPLE__)
 	CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, (long*)&status);
@@ -4235,82 +2464,100 @@ void opengl_set_vsync(int status)
 	vglXSwapIntervalSGI(status);
 #endif
 
-	opengl_check_for_errors();
+	GL_CHECK_FOR_ERRORS("end of set_vsync()");
+}
+
+void opengl_setup_viewport()
+{
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
+	if (GL_rendering_to_framebuffer) {
+		glOrtho(0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
+	} else {
+		glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+	}
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 }
 
 // NOTE: This should only ever be called through os_cleanup(), or when switching video APIs
 void gr_opengl_shutdown()
 {
+	if (GL_cursor_pbo) {
+		vglDeleteBuffersARB(1, &GL_cursor_pbo);
+		GL_cursor_pbo = 0;
+	}
+
+	if (GL_saved_mouse_data != NULL) {
+		vm_free(GL_saved_mouse_data);
+		GL_saved_mouse_data = NULL;
+	}
+
+	opengl_tcache_shutdown();
+	opengl_light_shutdown();
+	opengl_tnl_shutdown();
+	opengl_shader_shutdown();
+
+	GL_initted = false;
+
 #ifdef _WIN32
 	// restore original gamma settings
-	if (GL_original_gamma_ramp != NULL)
+	if (GL_original_gamma_ramp != NULL) {
 		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
+	}
 
 	// swap out our window mode and un-jail the cursor
 	ShowWindow((HWND)os_get_window(), SW_HIDE);
 	ClipCursor(NULL);
 	ChangeDisplaySettings( NULL, 0 );
 #else
-	if (GL_original_gamma_ramp != NULL)
+	if (GL_original_gamma_ramp != NULL) {
 		SDL_SetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+	}
 #endif
 
 	if (GL_original_gamma_ramp != NULL) {
 		vm_free(GL_original_gamma_ramp);
 		GL_original_gamma_ramp = NULL;
 	}
+
+#ifdef _WIN32
+	wglMakeCurrent(NULL, NULL);
+
+	if (GL_render_context) {
+		wglDeleteContext(GL_render_context);
+		GL_render_context = NULL;
+	}
+
+	GL_device_context = NULL;
+#endif
 }
 
 // NOTE: This should only ever be called through atexit()!!!
 void opengl_close()
 {
-//	if (!GL_initted)
+//	if ( !GL_initted )
 //		return;
-
-	if (currently_enabled_lights != NULL) {
-		vm_free(currently_enabled_lights);
-		currently_enabled_lights = NULL;
-	}
-
-	if (opengl_lights != NULL) {
-		vm_free(opengl_lights);
-		opengl_lights = NULL;
-	}
-
-	if (GL_cursor_pbo) {
-		vglDeleteBuffersARB(1, &GL_cursor_pbo);
-	}
-
-	opengl_free_mouse_area();
-
-	opengl_tcache_cleanup();
-
-#ifdef _WIN32
-	wglMakeCurrent(NULL, NULL);
-
-	if (rend_context) {
-		wglDeleteContext(rend_context);
-		rend_context=NULL;
-	}
-#endif
-
-	GL_initted = 0;
 }
 
 int opengl_init_display_device()
 {
 	int bpp = gr_screen.bits_per_pixel;
 
-	Assert( (bpp == 16) || (bpp == 32) );
-
-	if ( (bpp != 16) && (bpp != 32) )
+	if ( (bpp != 16) && (bpp != 32) ) {
+		Int3();
 		return 1;
+	}
 
 
 	// screen format
-	switch ( bpp ) {
-		case 16:
-		{
+	switch (bpp) {
+		case 16: {
 			Gr_red.bits = 5;
 			Gr_red.shift = 11;
 			Gr_red.scale = 8;
@@ -4329,8 +2576,7 @@ int opengl_init_display_device()
 			break;
 		}
 
-		case 32:
-		{
+		case 32: {
 			Gr_red.bits = 8;
 			Gr_red.shift = 16;
 			Gr_red.scale = 1;
@@ -4412,6 +2658,7 @@ int opengl_init_display_device()
 		}
 	}
 
+
 	// now init the display device
 #ifdef _WIN32
 	int PixelFormat;
@@ -4420,35 +2667,36 @@ int opengl_init_display_device()
 
 	mprintf(("  Initializing WGL...\n"));
 
-	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+	memset(&GL_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
 	memset(&pfd_test, 0, sizeof(PIXELFORMATDESCRIPTOR));
-	
-	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	pfd.nVersion = 1;
-	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cColorBits = (ubyte)bpp;
-	pfd.cRedBits = (ubyte)Gr_red.bits;
-	pfd.cGreenBits = (ubyte)Gr_green.bits;
-	pfd.cBlueBits = (ubyte)Gr_blue.bits;
-	pfd.cAlphaBits = (bpp == 32) ? (ubyte)Gr_alpha.bits : 0;
-	pfd.cDepthBits = (bpp == 32) ? 24 : 16;
+
+	GL_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	GL_pfd.nVersion = 1;
+	GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	GL_pfd.iPixelType = PFD_TYPE_RGBA;
+	GL_pfd.cColorBits = (ubyte)bpp;
+	GL_pfd.cRedBits = (ubyte)Gr_red.bits;
+	GL_pfd.cGreenBits = (ubyte)Gr_green.bits;
+	GL_pfd.cBlueBits = (ubyte)Gr_blue.bits;
+	GL_pfd.cAlphaBits = (bpp == 32) ? (ubyte)Gr_alpha.bits : 0;
+	GL_pfd.cDepthBits = (bpp == 32) ? 24 : 16;
 
 
 	wnd = (HWND)os_get_window();
 
 	Assert( wnd != NULL );
 
-	GL_device_context = GetDC(wnd);
+	extern uint os_get_dc();
+	GL_device_context = (HDC)os_get_dc();
 
-	if (!GL_device_context) {
-		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
+	if ( !GL_device_context ) {
+		MessageBox(wnd, "Unable to get device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	PixelFormat = ChoosePixelFormat(GL_device_context, &pfd);
+	PixelFormat = ChoosePixelFormat(GL_device_context, &GL_pfd);
 
-	if (!PixelFormat) {
+	if ( !PixelFormat ) {
 		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
 		return 1;
 	} else {
@@ -4459,11 +2707,11 @@ int opengl_init_display_device()
 			Assert( bpp == 32 );
 
 			// if we failed at 32-bit then we are probably a 16-bit desktop, so try and init a 16-bit visual instead
-			pfd.cAlphaBits = 0;
-			pfd.cDepthBits = 16;
+			GL_pfd.cAlphaBits = 0;
+			GL_pfd.cDepthBits = 16;
 			// NOTE: the bit values for colors should get updated automatically by ChoosePixelFormat()
 
-			PixelFormat = ChoosePixelFormat(GL_device_context, &pfd);
+			PixelFormat = ChoosePixelFormat(GL_device_context, &GL_pfd);
 
 			if (!PixelFormat) {
 				MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
@@ -4480,41 +2728,40 @@ int opengl_init_display_device()
 		}
 	}
 
-	if (!SetPixelFormat(GL_device_context, PixelFormat, &pfd)) {
+	if ( !SetPixelFormat(GL_device_context, PixelFormat, &GL_pfd) ) {
 		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	rend_context = wglCreateContext(GL_device_context);
-
-	if (!rend_context) {
+	if ( !(GL_render_context = wglCreateContext(GL_device_context)) ) {
 		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	if (!wglMakeCurrent(GL_device_context, rend_context)) {
+	if ( !wglMakeCurrent(GL_device_context, GL_render_context) ) {
 		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, pfd.cDepthBits, (pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
+	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, GL_pfd.cColorBits, (GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
 
 	// now report back as to what we ended up getting
 	int r = 0, g = 0, b = 0, depth = 0, db = 1;
 
-	DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+	DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &GL_pfd);
 
-	r = pfd.cRedBits;
-	g = pfd.cGreenBits;
-	b = pfd.cBlueBits;
-	depth = pfd.cDepthBits;
-	db = ((pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
+	r = GL_pfd.cRedBits;
+	g = GL_pfd.cGreenBits;
+	b = GL_pfd.cBlueBits;
+	depth = GL_pfd.cColorBits;
+	db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
 
 	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
 
 	// get the default gamma ramp so that we can restore it on close
-	if (GL_original_gamma_ramp != NULL)
+	if (GL_original_gamma_ramp != NULL) {
 		GetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
+	}
 
 #else
 
@@ -4559,8 +2806,9 @@ int opengl_init_display_device()
 	/* might as well put this here */
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
-	if (GL_original_gamma_ramp != NULL)
+	if (GL_original_gamma_ramp != NULL) {
 		SDL_GetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+	}
 #endif
 
 	return 0;
@@ -4574,11 +2822,9 @@ void opengl_setup_function_pointers()
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 
 	gr_screen.gf_flip				= gr_opengl_flip;
-	gr_screen.gf_flip_window		= gr_opengl_flip_window;
 	gr_screen.gf_set_clip			= gr_opengl_set_clip;
 	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
 	
-	gr_screen.gf_set_bitmap			= gr_opengl_set_bitmap;
 	gr_screen.gf_clear				= gr_opengl_clear;
 //	gr_screen.gf_bitmap				= gr_opengl_bitmap;
 	gr_screen.gf_bitmap_ex			= gr_opengl_bitmap_ex;
@@ -4620,10 +2866,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_dump_frame			= gr_opengl_dump_frame;
 	
 	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
-	
-	gr_screen.gf_lock				= gr_opengl_lock;
-	gr_screen.gf_unlock				= gr_opengl_unlock;
-	
+
 	gr_screen.gf_fog_set			= gr_opengl_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
@@ -4639,13 +2882,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_bm_make_render_target	= gr_opengl_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
 
-	gr_screen.gf_get_pixel			= gr_opengl_get_pixel;
-
 	gr_screen.gf_set_cull			= gr_opengl_set_cull;
 
 	gr_screen.gf_cross_fade			= gr_opengl_cross_fade;
-
-	gr_screen.gf_filter_set			= gr_opengl_filter_set;
 
 	gr_screen.gf_tcache_set			= gr_opengl_tcache_set;
 
@@ -4658,7 +2897,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_translate_texture_matrix	= gr_opengl_translate_texture_matrix;
 
 	gr_screen.gf_set_texture_addressing	= gr_opengl_set_texture_addressing;
-	gr_screen.gf_zbias					= gr_opengl_zbias_stub;
+	gr_screen.gf_zbias					= gr_opengl_zbias;
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
@@ -4701,9 +2940,10 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_draw_line_list		= gr_opengl_draw_line_list;
 
-    gr_screen.gf_set_line_width     = gr_opengl_set_line_width;
-	gr_screen.gf_draw_htl_line		= gr_opengl_draw_htl_line;
-	gr_screen.gf_draw_htl_sphere	= gr_opengl_draw_htl_sphere;
+	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
+
+	gr_screen.gf_line_htl			= gr_opengl_line_htl;
+	gr_screen.gf_sphere_htl			= gr_opengl_sphere_htl;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -4711,18 +2951,17 @@ void opengl_setup_function_pointers()
 }
 
 
-void gr_opengl_init(int reinit)
+bool gr_opengl_init()
 {
 	char *ver;
 	int major = 0, minor = 0;
 
-	if ( !GL_initted ) {
+	if ( !GL_initted )
 		atexit(opengl_close);
-	}
 
-	if ( GL_initted )	{
+	if (GL_initted) {
 		gr_opengl_cleanup();
-		GL_initted = 0;
+		GL_initted = false;
 	}
 
 	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n", gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel ));
@@ -4739,59 +2978,68 @@ void gr_opengl_init(int reinit)
 		Error(LOCATION, "Current GL Version of %i.%i is less than the required version of %i.%i.\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
 	}
 
-	GL_initted = 1;
-	// set global too
-	OGL_enabled = 1;
+	GL_initted = true;
 
 	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
 	opengl_setup_function_pointers();
 
-	if (!reinit) {
-		mprintf(( "  OpenGL Vendor     : %s\n", glGetString( GL_VENDOR ) ));
-		mprintf(( "  OpenGL Renderer   : %s\n", glGetString( GL_RENDERER ) ));
-		mprintf(( "  OpenGL Version    : %s\n", ver ));
-		mprintf(( "\n" ));
+	mprintf(( "  OpenGL Vendor     : %s\n", glGetString(GL_VENDOR) ));
+	mprintf(( "  OpenGL Renderer   : %s\n", glGetString(GL_RENDERER) ));
+	mprintf(( "  OpenGL Version    : %s\n", ver ));
+	mprintf(( "\n" ));
 
-		// initialize the extensions and make sure we aren't missing something that we need
-		opengl_get_extensions();
+	// initialize the extensions and make sure we aren't missing something that we need
+	opengl_extensions_init();
 
-		// ready the texture system
-		opengl_tcache_init();
+	// setup the lighting stuff that will get used later
+	opengl_light_init();
+	
+	// init state system (must come AFTER light is set up)
+	GL_state.init();
 
-		if (Cmdline_window) {
-			opengl_go_windowed();
-		} else {
-			opengl_go_fullscreen();
-		}
+	// ready the texture system
+	opengl_tcache_init();
+
+	extern void opengl_tnl_init();
+	opengl_tnl_init();
+
+	// setup default shaders, and shader related items
+	opengl_shader_init();
+
+	if (Cmdline_window) {
+		opengl_go_windowed();
+	} else {
+		opengl_go_fullscreen();
 	}
 
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );
 
-	opengl_switch_arb(-1, 0);
+	GLint max_texture_units = GL_supported_texture_units;
+
+	if (Use_GLSL) {
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
+	}
+
+	GL_state.Texture.init(max_texture_units);
+
 	opengl_set_texture_target();
-	opengl_switch_arb(0, 1);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable();
+	GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
+	GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+	GL_state.Texture.SetWrapR(GL_CLAMP_TO_EDGE);
 
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+	opengl_setup_viewport();
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glClear(GL_STENCIL_BUFFER_BIT);
 
 	glShadeModel(GL_SMOOTH);
 
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glHint(GL_FOG_HINT, GL_NICEST);
-
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_BLEND);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glDepthRange(0.0, 1.0);
 
@@ -4814,47 +3062,11 @@ void gr_opengl_init(int reinit)
 	gr_opengl_clear();
 	Mouse_hidden--;
 
-	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
-	Use_compressed_textures = Is_Extension_Enabled(OGL_EXT_TEXTURE_COMPRESSION_S3TC);
-	Texture_compression_available = Is_Extension_Enabled(OGL_ARB_TEXTURE_COMPRESSION);
 
-	//allow VBOs to be used
-	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) )
-		VBO_ENABLED = 1;
-
-	//if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) )
-	//	Use_PBOs = 1;
-
-	// setup the best fog function found
-	// start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
-	/*if ( Is_Extension_Enabled(GL_NV_RADIAL_FOG) && !Fred_running ) {
-		OGL_fogmode = 3;
-	} else*/ if ( Is_Extension_Enabled(OGL_EXT_FOG_COORD) && !Fred_running ) {
-		OGL_fogmode = 2;
-	} else if ( !Fred_running ) {
-		OGL_fogmode = 1;
-	}
-
-	// if we can't do cubemaps then turn off Cmdline_env
-	if ( Cmdline_env && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) )
-		Cmdline_env = 0;
-
-	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
 
-//	if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE) ) {
-//		opengl_set_tex_src = opengl_set_tex_state_combine;
-//	} else {
-		opengl_set_tex_src = opengl_set_tex_state_no_combine;
-//	}
-
-	// setup the lighting stuff that will get used later
-	opengl_init_light();
-
-	glDisable(GL_LIGHTING); // just making sure of it
-
-	mprintf(( "  Max texture units: %i\n", GL_supported_texture_units ));
+	mprintf(( "  Max texture units: %i (%i)\n", GL_supported_texture_units, max_texture_units ));
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
@@ -4862,12 +3074,19 @@ void gr_opengl_init(int reinit)
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
+	if (Use_GLSL) {
+		mprintf(( "  Using GLSL for model rendering.\n" ));
+		mprintf(( "  Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
+	}
+
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);
 
 	mprintf(("... OpenGL init is complete!\n"));
+
+	return true;
 }
 
 DCF(ogl_minimize, "Minimizes opengl")
@@ -4880,8 +3099,9 @@ DCF(ogl_minimize, "Minimizes opengl")
 	if (Dc_command) {
 		dc_get_arg(ARG_TRUE);
 
-		if ( Dc_arg_type & ARG_TRUE )
+		if ( Dc_arg_type & ARG_TRUE ) {
 			opengl_minimize();
+		}
 	}
 
 	if (Dc_help)
@@ -4901,25 +3121,26 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 	}
 
 	if ( Dc_command ) {
-		dc_get_arg(ARG_FLOAT | ARG_NONE);
+		dc_get_arg(ARG_INT | ARG_NONE);
 
 		if ( Dc_arg_type & ARG_NONE ) {
-			GL_anisotropy = 0.0f;
-			opengl_set_anisotropy();
+			GL_anisotropy = 1.0f;
+		//	opengl_set_anisotropy();
 			dc_printf("Anisotropic filter value reset to default level.\n");
 		}
 
-		if ( Dc_arg_type & ARG_FLOAT ) {
-			opengl_set_anisotropy(Dc_arg_float);
+		if ( Dc_arg_type & ARG_INT ) {
+			GL_anisotropy = (GLfloat)Dc_arg_float;
+		//	opengl_set_anisotropy( (float)Dc_arg_float );
 		}
 	}
 
 	if ( Dc_status ) {
-		dc_printf("Current anisotropic filter value is %f\n", GL_anisotropy);
+		dc_printf("Current anisotropic filter value is %i\n", (int)GL_anisotropy);
 	}
 
 	if (Dc_help) {
 		dc_printf("Sets OpenGL anisotropic filtering level.\n");
-		dc_printf("Valid values are 1.0 to %f.\n", (float)opengl_get_max_anisotropy());
+		dc_printf("Valid values are 1 to %i, or 0 to turn off.\n", (int)opengl_get_max_anisotropy());
 	}
 }

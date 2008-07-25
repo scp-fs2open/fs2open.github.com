@@ -73,6 +73,10 @@
 #define AIPF_DISABLE_WEAPON_DAMAGE_SCALING							(1 << 12)
 #define AIPF_USE_ADDITIVE_WEAPON_VELOCITY							(1 << 13)
 #define AIPF_USE_NEWTONIAN_DAMPENING								(1 << 14)
+#define AIPF_INCLUDE_BEAMS_IN_STAT_CALCS							(1 << 15)
+#define AIPF_KILL_SCORING_SCALES_WITH_DAMAGE						(1 << 16)
+#define AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE						(1 << 17)
+#define AIPF_ALLOW_MULTI_EVENT_SCORING								(1 << 18)
 
 
 #define MAX_AI_PROFILES	5
@@ -118,6 +122,13 @@ typedef struct ai_profile_t {
 	//	Maximum turrets of one ship allowed to shoot the same target
 	int max_turret_ownage_target[NUM_SKILL_LEVELS];
 	int max_turret_ownage_player[NUM_SKILL_LEVELS];
+
+	// percentage of damage caused required for a kill/assist
+	float kill_percentage_scale[NUM_SKILL_LEVELS];
+	float assist_percentage_scale[NUM_SKILL_LEVELS];
+
+	// percentage of the capships score given to other team mates on a kill
+	float assist_award_percentage_scale[NUM_SKILL_LEVELS];
 
 } ai_profile_t;
 

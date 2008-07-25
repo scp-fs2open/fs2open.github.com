@@ -1922,6 +1922,8 @@ sexp_oper Operators[] = {
 	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
 	{ "tech-add-intel",				OP_TECH_ADD_INTEL,				1, INT_MAX	},	// Goober5000
 	{ "tech-reset-to-default",		OP_TECH_RESET_TO_DEFAULT,		0, 0 },	// Goober5000
+	{ "change-player-score",		OP_CHANGE_PLAYER_SCORE,			2, INT_MAX },	// Karajorma
+	{ "change-team-score",			OP_CHANGE_TEAM_SCORE,			2, 2 },			// Karajorma
 
 	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
 	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
@@ -4166,6 +4168,7 @@ int get_sexp(char *token)
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
+				Dynamic_environment = true;
 				break;
 
 			case OP_WARP_EFFECT:
@@ -4185,6 +4188,7 @@ int get_sexp(char *token)
 				// model is argument #1
 				n = CDR(start);
 				do_preload_for_arguments(sexp_set_skybox_model_preload, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
@@ -4196,11 +4200,13 @@ int get_sexp(char *token)
 			case OP_ADD_SUN_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 		}
 	}
@@ -9216,10 +9222,10 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		source = MESSAGE_SOURCE_WINGMAN;
 	} else {
 		// Message from a apecific ship
-		// bail if not high priority, otherwise reroute to command
 		source = MESSAGE_SOURCE_SHIP;
 		ship_index = ship_name_lookup(who_from);
 		if ( ship_index == -1 ) {
+			// bail if not high priority, otherwise reroute to command
 			if ( ipriority != MESSAGE_PRIORITY_HIGH )
 				return;
 			source = MESSAGE_SOURCE_COMMAND;
@@ -10395,6 +10401,70 @@ void sexp_grant_medal(int n)
 	}
 }
 
+void sexp_change_player_score(int node)
+{
+	int sindex;	
+	int score;
+	int plr_index;
+
+	score = eval_num(node); 
+	node = CDR(node);
+
+	if(!(Game_mode & GM_MULTIPLAYER)){
+		sindex = ship_name_lookup(CTEXT(node));
+
+		if (Player_ship != &Ships[sindex]) {
+			Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
+			return; 	
+		}
+		Player->stats.m_score += score; 
+		if (Player->stats.m_score < 0) {
+			Player->stats.m_score = 0; 
+		}
+	}
+	else {
+		while (node >= 0) {
+			plr_index = multi_find_player_by_ship_name(CTEXT(node), true);
+			if (plr_index >= 0) {
+				Net_player[plr_index].m_player->stats.m_score += score;
+				
+				if (Net_player[plr_index].m_player->stats.m_score < 0) {
+					Net_player[plr_index].m_player->stats.m_score = 0;
+				}
+			}			
+
+			node = CDR(node);
+		}
+	}
+}
+
+void sexp_change_team_score(int node)
+{
+	int i, score, team;
+
+	// since we only have a team score in TvT
+	if ( !(MULTI_TEAM) ) {
+		return;
+	}
+
+	score = eval_num(node); 
+	team = eval_num(CDR(node)); 
+
+	if (team == 0) {
+		for (i = 0; i < MAX_TVT_TEAMS; i++) {
+			Multi_team_score[i] += score;  
+		}
+	}
+	else if (team > 0 && team <= MAX_TVT_TEAMS) {
+		Multi_team_score[team - 1] += score;  
+	}
+	else {
+		Warning(LOCATION, "Invalid team number. Team %d does not exist", team);
+	}
+}
+
+
+
 void sexp_tech_add_ship(int node)
 {
 	int i;
@@ -11432,12 +11502,6 @@ void sexp_ships_guardian( int n, int guardian )
 				else
 					p_objp->flags &= ~P_SF_GUARDIAN;
 			}
-	#ifndef NDEBUG
-			else
-			{
-				Int3();	// get allender -- could be a potential problem here
-			}
-	#endif
 		}
 	}
 }
@@ -12240,13 +12304,13 @@ int sexp_primary_ammo_pct(int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_PRIMARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SHIP_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SHIP_PRIMARY_BANKS)
+	if(check >= shipp->weapons.num_primary_banks)
 	{
 		for(idx=0; idx<shipp->weapons.num_primary_banks; idx++)
 		{
@@ -12309,13 +12373,13 @@ int sexp_secondary_ammo_pct(int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_SECONDARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SHIP_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SHIP_SECONDARY_BANKS){
+	if(check >= shipp->weapons.num_secondary_banks){
 		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++){
 			ret_sum[idx] = (int)(((float)shipp->weapons.secondary_bank_ammo[idx] / (float)shipp->weapons.secondary_bank_start_ammo[idx]) * 100.0f);
 		}
@@ -12359,13 +12423,13 @@ int sexp_get_primary_ammo(int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_PRIMARY_BANKS == cumulative sum of all banks)
-	if((check != MAX_SHIP_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// cumulative sum?
-	if(check == MAX_SHIP_PRIMARY_BANKS)
+	if(check >= shipp->weapons.num_primary_banks)
 	{
 		for(int bank=0; bank<shipp->weapons.num_primary_banks; bank++)
 		{
@@ -12516,14 +12580,13 @@ int sexp_get_secondary_ammo (int node)
 	// bank to check
 	check = eval_num(CDR(node));
 
-	// bogus check? (MAX_SHIP_SECONDARY_BANKS == cumulative sum of all banks). Does this ship 
-	// even have bank with that number? 
-	if((check != MAX_SHIP_SECONDARY_BANKS) && (check > shipp->weapons.num_secondary_banks)){
+	// bogus check?
+	if(check < 0){
 		return 0;
 	}
 
 	// Are we looking at the number of secondaries in all banks? 
-	if(check == MAX_SHIP_SECONDARY_BANKS)
+	if(check > shipp->weapons.num_secondary_banks)
 	{
 		for(int bank=0; bank<shipp->weapons.num_secondary_banks; bank++)
 		{
@@ -16594,6 +16657,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CHANGE_PLAYER_SCORE:
+				sexp_change_player_score(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CHANGE_TEAM_SCORE:
+				sexp_change_team_score(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 				// in the case of a red_alert mission, simply call the red alert function to close
 				// the current campaign's mission and move forward to the next mission
 			case OP_RED_ALERT:
@@ -17555,6 +17628,8 @@ int query_operator_return_type(int op)
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_CHANGE_PLAYER_SCORE:
+		case OP_CHANGE_TEAM_SCORE:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -18523,6 +18598,15 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_TECH_RESET_TO_DEFAULT:
 			return OPF_NONE;
+
+		case OP_CHANGE_PLAYER_SCORE:
+			if (argnum == 0)
+				return OPF_NUMBER;
+			else 
+				return OPF_SHIP;
+
+		case OP_CHANGE_TEAM_SCORE:
+			return OPF_NUMBER;
 
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
@@ -20132,6 +20216,8 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_CHANGE_PLAYER_SCORE:
+		case OP_CHANGE_TEAM_SCORE:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
@@ -21493,6 +21579,18 @@ sexp_help_struct Sexp_help[] = {
 		"from previous campaigns.\r\n\r\n"
 		"Takes no arguments." },
 
+	{ OP_CHANGE_PLAYER_SCORE, "Change Player Score (Action operator)\r\n"
+		"\tThis operator allows direct alteration of the player's score for this mission.\r\n\r\n"
+		"Takes 2 or more arguments." 
+		"\t1:\tAmount to alter the player's score by.\r\n"
+		"\tRest:\tName of ship the player is flying."},
+
+	{ OP_CHANGE_TEAM_SCORE, "Change Team Score (Action operator)\r\n"
+		"\tThis operator allows direct alteration of the team's score for a TvT mission (Does nothing otherwise).\r\n\r\n"
+		"Takes 2 arguments." 
+		"\t1:\tAmount to alter the team's score by.\r\n"
+		"\t2:\tThe team to alter the score for. (0 will add the score to all teams!)"},
+
 	{ OP_AI_EVADE_SHIP, "Ai-evade ship (Ship goal)\r\n"
 		"\tCauses the specified ship to go into evade mode and run away like the weak "
 		"sally-boy it is.\r\n\r\n"
@@ -22014,25 +22112,25 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_AMMO_PCT, "primary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified ballistic primary bank (0 to 100).  Non-ballistic primary banks return as 100%.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1 and 2 are legal banks. 3 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2 and 3 are legal banks. 4 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2, 3 are legal banks. 4 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
 
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
 		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"

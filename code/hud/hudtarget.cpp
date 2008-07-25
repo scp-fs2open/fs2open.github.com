@@ -2701,7 +2701,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	// player being targeted, so we will want closest distance from player
 	targeting_player = (esct->attacked_objnum == OBJ_INDEX(Player_obj));
 
-	// filter on team, except in multiplayer
+	// filter on team
 	if ( !iff_matches_mask(esct->shipp->team, esct->team_mask) ) {
 		return;
 	}

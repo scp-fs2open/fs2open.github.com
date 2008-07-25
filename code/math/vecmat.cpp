@@ -630,6 +630,15 @@ void vm_vec_scale_add(vec3d *dest,vec3d *src1,vec3d *src2,float k)
 }
 #endif
 
+//scales a vector, subtracts it to another, and stores in a 3rd vector
+//dest = src1 - k * src2
+void vm_vec_scale_sub(vec3d *dest, vec3d *src1, vec3d *src2, float k)
+{
+	dest->xyz.x = src1->xyz.x - src2->xyz.x*k;
+	dest->xyz.y = src1->xyz.y - src2->xyz.y*k;
+	dest->xyz.z = src1->xyz.z - src2->xyz.z*k;
+}
+
 //scales a vector and adds it to another
 //dest += k * src
 #ifndef _INLINE_VECMAT

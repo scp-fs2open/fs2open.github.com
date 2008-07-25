@@ -127,6 +127,7 @@
 #define _GROPENGLEXT_H
 
 #include "globalincs/pstypes.h"
+#include "graphics/gropengl.h"
 
 //EXTENSIONS!!!!
 //be sure to check for this at startup and handle not finding it gracefully
@@ -144,7 +145,7 @@ typedef struct ogl_extension {
 	int num_extensions;
 	const char *extension_name[3];
 	int num_functions;
-	const char *function_names[15];
+	const char *function_names[20];
 } ogl_extension;
 
 typedef struct ogl_function {
@@ -182,8 +183,13 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_ARB_TEXTURE_CUBE_MAP			17
 #define OGL_EXT_TEXTURE_LOD_BIAS			18
 #define OGL_ARB_POINT_SPRITE				19
+#define OGL_ARB_SHADING_LANGUAGE_100		20
+#define OGL_ARB_SHADER_OBJECTS				21
+#define OGL_ARB_VERTEX_SHADER				22
+#define OGL_ARB_FRAGMENT_SHADER				23
+#define OGL_SM30							24
 
-#define NUM_OGL_EXTENSIONS					20
+#define NUM_OGL_EXTENSIONS					25
 
 
 // Functions
@@ -206,25 +212,49 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_DELETE_BUFFERS					12
 #define OGL_GEN_BUFFERS						13
 #define OGL_BUFFER_DATA						14
-#define OGL_MAP_BUFFER						15
-#define OGL_UNMAP_BUFFER					16
-#define OGL_IS_RENDERBUFFER					17
-#define OGL_BIND_RENDERBUFFER				18
-#define OGL_DELETE_RENDERBUFFERS			19
-#define OGL_GEN_RENDERBUFFERS				20
-#define OGL_RENDERBUFFER_STORAGE			21
-#define OGL_GET_RENDERBUFFER_PARAMETER_IV	22
-#define OGL_IS_FRAMEBUFFER					23
-#define OGL_BIND_FRAMEBUFFER				24
-#define OGL_DELETE_FRAMEBUFFERS				25
-#define OGL_GEN_FRAMEBUFFERS				26
-#define OGL_CHECK_FRAMEBUFFER_STATUS		27
-#define OGL_FRAMEBUFFER_TEXTURE_2D			28
-#define OGL_FRAMEBUFFER_RENDERBUFFER		29
-#define OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV		30
-#define OGL_GENERATE_MIPMAP					31
+#define OGL_BUFFER_SUB_DATA					15
+#define OGL_MAP_BUFFER						16
+#define OGL_UNMAP_BUFFER					17
+#define OGL_IS_RENDERBUFFER					18
+#define OGL_BIND_RENDERBUFFER				19
+#define OGL_DELETE_RENDERBUFFERS			20
+#define OGL_GEN_RENDERBUFFERS				21
+#define OGL_RENDERBUFFER_STORAGE			22
+#define OGL_GET_RENDERBUFFER_PARAMETER_IV	23
+#define OGL_IS_FRAMEBUFFER					24
+#define OGL_BIND_FRAMEBUFFER				25
+#define OGL_DELETE_FRAMEBUFFERS				26
+#define OGL_GEN_FRAMEBUFFERS				27
+#define OGL_CHECK_FRAMEBUFFER_STATUS		28
+#define OGL_FRAMEBUFFER_TEXTURE_2D			29
+#define OGL_FRAMEBUFFER_RENDERBUFFER		30
+#define OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV		31
+#define OGL_GENERATE_MIPMAP					32
+#define OGL_DELETE_OBJECT					33
+#define OGL_CREATE_SHADER_OBJECT			34
+#define OGL_SHADER_SOURCE					35
+#define OGL_COMPILE_SHADER					36
+#define OGL_GET_OBJECT_PARAMETERIV			37
+#define OGL_GET_INFO_LOG					38
+#define OGL_CREATE_PROGRAM_OBJECT			39
+#define OGL_ATTACH_OBJECT					40
+#define OGL_LINK_PROGRAM					41
+#define OGL_USE_PROGRAM_OBJECT				42
+#define OGL_VALIDATE_PROGRAM				43
+#define OGL_ENABLE_VERTEX_ATTRIB_ARRAY		44
+#define OGL_DISABLE_VERTEX_ATTRIB_ARRAY		45
+#define OGL_GET_ATTRIB_LOCATION				46
+#define OGL_VERTEX_ATTRIB_POINTER			47
+#define OGL_GET_UNIFORM_LOCATION			48
+#define OGL_GET_UNIFORMIV					49
+#define OGL_UNIFORM1F						50
+#define OGL_UNIFORM3F						51
+#define OGL_UNIFORM3FV						52
+#define OGL_UNIFORM4FV						53
+#define OGL_UNIFORM1I						54
+#define OGL_UNIFORM_MATRIX4FV				55
 
-#define NUM_OGL_FUNCTIONS					32
+#define NUM_OGL_FUNCTIONS					56
 
 
 // special extensions/functions (OS specific, non-GL stuff)
@@ -236,62 +266,86 @@ extern ogl_function GL_EXT_Special[];
 
 #define Is_Extension_Enabled(x)		GL_Extensions[x].enabled
 
-int opengl_get_extensions();
-void opengl_print_extensions();
+void opengl_extensions_init();
 
 
-#define GLEXT_CALL(i,x) if (GL_Functions[i].function_ptr)\
+#define GLEXT_CALL(i, x) if (GL_Functions[i].function_ptr) \
 							((x)GL_Functions[i].function_ptr)
 
 // the same as GLEXT_CALL() except that it can be used with a cast or in an if statement
 // this doesn't do NULL ptr checking so you have to be careful with it!
-#define GLEXT_CALL2(i,x) ((x)GL_Functions[i].function_ptr)
+#define GLEXT_CALL2(i, x) ((x)GL_Functions[i].function_ptr)
 
-#define GLEXT_SPC_CALL(i,x) if (GL_EXT_Special[i].function_ptr)	\
+#define GLEXT_SPC_CALL(i, x) if (GL_EXT_Special[i].function_ptr) \
 							((x)GL_EXT_Special[i].function_ptr)
 
 
 #ifdef __APPLE__
-// OS X doesn't have the PFN* names so we have to use the real OSX functions, so until
-// we move to true runtime loading this will have to suffice...
-#define vglFogCoordfEXT					glFogCoordfEXT
-#define vglFogCoordPointerEXT			glFogCoordPointerEXT
-#define vglMultiTexCoord2fARB			glMultiTexCoord2fARB
-#define vglActiveTextureARB				glActiveTextureARB	
-#define vglClientActiveTextureARB		glClientActiveTextureARB
-#define vglCompressedTexImage2D			glCompressedTexImage2D
-#define vglCompressedTexSubImage2D		glCompressedTexSubImage2D
-#define vglGetCompressedTexImageARB		glGetCompressedTexImageARB
-//#define vglSecondaryColor3fvEXT		glSecondaryColor3fvEXT
-//#define vglSecondaryColor3ubvEXT		glSecondaryColor3ubvEXT
-#define vglLockArraysEXT				glLockArraysEXT
-#define vglUnlockArraysEXT				glUnlockArraysEXT
-//#define vglLoadTransposeMatrixfARB	glLoadTransposeMatrixfARB
-//#define vglMultTransposeMatrixfARB	glMultTransposeMatrixfARB
-#define vglDrawRangeElements			glDrawRangeElements
-#define vglBindBufferARB				glBindBufferARB
-#define vglDeleteBuffersARB				glDeleteBuffersARB
-#define vglGenBuffersARB				glGenBuffersARB
-#define vglBufferDataARB				glBufferDataARB
-#define vglMapBufferARB					glMapBufferARB
-#define vglUnmapBufferARB				glUnmapBufferARB
-#define vglIsRenderbufferEXT			glIsRenderbufferEXT
-#define vglBindRenderbufferEXT			glBindRenderbufferEXT
-#define vglDeleteRenderbuffersEXT		glDeleteRenderbuffersEXT
-#define vglGenRenderbuffersEXT			glGenRenderbuffersEXT
-#define vglRenderbufferStorageEXT		glRenderbufferStorageEXT
-#define vglGetRenderbufferParameterivEXT	glGetRenderbufferParameterivEXT
-#define vglIsFramebufferEXT				glIsFramebufferEXT
-#define vglBindFramebufferEXT			glBindFramebufferEXT
-#define vglDeleteFramebuffersEXT		glDeleteFramebuffersEXT
-#define vglGenFramebuffersEXT			glGenFramebuffersEXT
-#define vglCheckFramebufferStatusEXT	glCheckFramebufferStatusEXT
-#define vglFramebufferTexture2DEXT		glFramebufferTexture2DEXT
-#define vglFramebufferRenderbufferEXT	glFramebufferRenderbufferEXT
-#define vglGetFramebufferAttachmentParameterivEXT	glGetFramebufferAttachmentParameterivEXT
-#define vglGenerateMipmapEXT			glGenerateMipmapEXT
+// special one, since it's a core feature
+typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
 
-#else
+// OS X doesn't have the PFN* names so we have to use the real OSX function ptrs
+#define PFNGLFOGCOORDFEXTPROC					glFogCoordfEXTProcPtr
+#define PFNGLFOGCOORDPOINTEREXTPROC				glFogCoordPointerEXTProcPtr
+#define PFNGLMULTITEXCOORD2FARBPROC				glMultiTexCoord2fARBProcPtr
+#define PFNGLACTIVETEXTUREARBPROC				glActiveTextureARBProcPtr
+#define PFNGLCLIENTACTIVETEXTUREARBPROC			glClientActiveTextureARBProcPtr
+#define PFNGLCOMPRESSEDTEXIMAGE2DPROC			glCompressedTexImage2DARBProcPtr
+#define PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC		glCompressedTexSubImage2DARBProcPtr
+#define PFNGLGETCOMPRESSEDTEXIMAGEARBPROC		glGetCompressedTexImageARBProcPtr
+//#define PFNGLSECONDARYCOLOR3FVEXTPROC			glSecondaryColor3fvEXTProcPtr
+//#define PFNGLSECONDARYCOLOR3UBVEXTPROC		glSecondaryColor3ubvEXTProcPtr
+#define PFNGLLOCKARRAYSEXTPROC					glLockArraysEXTProcPtr
+#define PFNGLUNLOCKARRAYSEXTPROC				glUnlockArraysEXTProcPtr
+//#define PFNGLLOADTRANSPOSEMATRIXFARBPROC		glLoadTransposeMatrixfARBProcPtr
+//#define PFNGLMULTTRANSPOSEMATRIXFARBPROC		glMultTransposeMatrixfARBProcPtr
+#define PFNGLDRAWRANGEELEMENTSPROC				glDrawRangeElementsProcPtr
+#define PFNGLBINDBUFFERARBPROC					glBindBufferARBProcPtr
+#define PFNGLDELETEBUFFERSARBPROC				glDeleteBuffersARBProcPtr
+#define PFNGLGENBUFFERSARBPROC					glGenBuffersARBProcPtr
+#define PFNGLBUFFERDATAARBPROC					glBufferDataARBProcPtr
+#define PFNGLBUFFERSUBDATAARBPROC				glBufferSubDataARBProcPtr
+#define PFNGLMAPBUFFERARBPROC					glMapBufferARBProcPtr
+#define PFNGLUNMAPBUFFERARBPROC					glUnmapBufferARBProcPtr
+#define PFNGLISRENDERBUFFEREXTPROC				glIsRenderbufferEXTProcPtr
+#define PFNGLBINDRENDERBUFFEREXTPROC			glBindRenderbufferEXTProcPtr
+#define PFNGLDELETERENDERBUFFERSEXTPROC			glDeleteRenderbuffersEXTProcPtr
+#define PFNGLGENRENDERBUFFERSEXTPROC			glGenRenderbuffersEXTProcPtr
+#define PFNGLRENDERBUFFERSTORAGEEXTPROC			glRenderbufferStorageEXTProcPtr
+#define PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC	glGetRenderbufferParameterivEXTProcPtr
+#define PFNGLISFRAMEBUFFEREXTPROC				glIsFramebufferEXTProcPtr
+#define PFNGLBINDFRAMEBUFFEREXTPROC				glBindFramebufferEXTProcPtr
+#define PFNGLDELETEFRAMEBUFFERSEXTPROC			glDeleteFramebuffersEXTProcPtr
+#define PFNGLGENFRAMEBUFFERSEXTPROC				glGenFramebuffersEXTProcPtr
+#define PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC		glCheckFramebufferStatusEXTProcPtr
+#define PFNGLFRAMEBUFFERTEXTURE2DEXTPROC		glFramebufferTexture2DEXTProcPtr
+#define PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC		glFramebufferRenderbufferEXTProcPtr
+#define PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC	glGetFramebufferAttachmentParameterivEXTProcPtr
+#define PFNGLGENERATEMIPMAPEXTPROC				glGenerateMipmapEXTProcPtr
+#define PFNGLDELETEOBJECTARBPROC				glDeleteObjectARBProcPtr
+#define PFNGLCREATESHADEROBJECTARBPROC			glCreateShaderObjectARBProcPtr
+#define PFNGLSHADERSOURCEARBPROC				glShaderSourceARBProcPtr
+#define PFNGLCOMPILESHADERARBPROC				glCompileShaderARBProcPtr
+#define PFNGLGETOBJECTPARAMETERIVARBPROC		glGetObjectParameterivARBProcPtr
+#define PFNGLGETINFOLOGARBPROC					glGetInfoLogARBProcPtr
+#define PFNGLCREATEPROGRAMOBJECTARBPROC			glCreateProgramObjectARBProcPtr
+#define PFNGLATTACHOBJECTARBPROC				glAttachObjectARBProcPtr
+#define PFNGLLINKPROGRAMARBPROC					glLinkProgramARBProcPtr
+#define PFNGLUSEPROGRAMOBJECTARBPROC			glUseProgramObjectARBProcPtr
+#define PFNGLVALIDATEPROGRAMARBPROC				glValidateProgramARBProcPtr
+#define PFNGLENABLEVERTEXATTRIBARRAYARBPROC		glEnableVertexAttribArrayARBProcPtr
+#define PFNGLDISABLEVERTEXATTRIBARRAYARBPROC	glDisableVertexAttribArrayARBProcPtr
+#define PFNGLGETATTRIBLOCATIONARBPROC			glGetAttribLocationARBProcPtr
+#define PFNGLVERTEXATTRIBPOINTERARBPROC			glVertexAttribPointerARBProcPtr
+#define PFNGLGETUNIFORMLOCATIONARBPROC			glGetUniformLocationARBProcPtr
+#define PFNGLGETUNIFORMIVARBPROC				glGetUniformivARBProcPtr
+#define PFNGLUNIFORM1FARBPROC					glUniform1fARBProcPtr
+#define PFNGLUNIFORM3FARBPROC					glUniform3fARBProcPtr
+#define PFNGLUNIFORM3FVARBPROC					glUniform3fvARBProcPtr
+#define PFNGLUNIFORM4FVARBPROC					glUnifrom4fvARBProcPtr
+#define PFNGLUNIFORM1IARBPROC					glUniform1iARBProcPtr
+#define PFNGLUNIFORMMATRIX4FVARBPROC			glUniformMatrix4fvARBProcPtr
+#endif	// __APPLE__
 
 #define vglFogCoordfEXT					GLEXT_CALL( OGL_FOG_COORDF, PFNGLFOGCOORDFEXTPROC )
 #define vglFogCoordPointerEXT			GLEXT_CALL( OGL_FOG_COORD_POINTER, PFNGLFOGCOORDPOINTEREXTPROC )
@@ -312,6 +366,7 @@ void opengl_print_extensions();
 #define vglDeleteBuffersARB				GLEXT_CALL( OGL_DELETE_BUFFERS, PFNGLDELETEBUFFERSARBPROC )
 #define vglGenBuffersARB				GLEXT_CALL( OGL_GEN_BUFFERS, PFNGLGENBUFFERSARBPROC )
 #define vglBufferDataARB				GLEXT_CALL( OGL_BUFFER_DATA, PFNGLBUFFERDATAARBPROC )
+#define vglBufferSubDataARB				GLEXT_CALL( OGL_BUFFER_SUB_DATA, PFNGLBUFFERSUBDATAARBPROC )
 #define vglMapBufferARB					GLEXT_CALL2( OGL_MAP_BUFFER, PFNGLMAPBUFFERARBPROC )
 #define vglUnmapBufferARB				GLEXT_CALL( OGL_UNMAP_BUFFER, PFNGLUNMAPBUFFERARBPROC )
 #define vglIsRenderbufferEXT			GLEXT_CALL2( OGL_IS_RENDERBUFFER, PFNGLISRENDERBUFFEREXTPROC )
@@ -329,8 +384,30 @@ void opengl_print_extensions();
 #define vglFramebufferRenderbufferEXT	GLEXT_CALL( OGL_FRAMEBUFFER_RENDERBUFFER, PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC )
 #define vglGetFramebufferAttachmentParameterivEXT	GLEXT_CALL( OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV, PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC )
 #define vglGenerateMipmapEXT			GLEXT_CALL( OGL_GENERATE_MIPMAP, PFNGLGENERATEMIPMAPEXTPROC )
+#define vglDeleteObjectARB				GLEXT_CALL( OGL_DELETE_OBJECT, PFNGLDELETEOBJECTARBPROC )
+#define vglCreateShaderObjectARB		GLEXT_CALL2( OGL_CREATE_SHADER_OBJECT, PFNGLCREATESHADEROBJECTARBPROC )
+#define vglShaderSourceARB				GLEXT_CALL( OGL_SHADER_SOURCE, PFNGLSHADERSOURCEARBPROC )
+#define vglCompileShaderARB				GLEXT_CALL( OGL_COMPILE_SHADER, PFNGLCOMPILESHADERARBPROC )
+#define vglGetObjectParameterivARB		GLEXT_CALL( OGL_GET_OBJECT_PARAMETERIV, PFNGLGETOBJECTPARAMETERIVARBPROC )
+#define vglGetInfoLogARB				GLEXT_CALL( OGL_GET_INFO_LOG, PFNGLGETINFOLOGARBPROC )
+#define vglCreateProgramObjectARB		GLEXT_CALL2( OGL_CREATE_PROGRAM_OBJECT, PFNGLCREATEPROGRAMOBJECTARBPROC )
+#define vglAttachObjectARB				GLEXT_CALL( OGL_ATTACH_OBJECT, PFNGLATTACHOBJECTARBPROC )
+#define vglLinkProgramARB				GLEXT_CALL( OGL_LINK_PROGRAM, PFNGLLINKPROGRAMARBPROC )
+#define vglUseProgramObjectARB			GLEXT_CALL( OGL_USE_PROGRAM_OBJECT, PFNGLUSEPROGRAMOBJECTARBPROC )
+#define vglValidateProgramARB			GLEXT_CALL( OGL_VALIDATE_PROGRAM, PFNGLVALIDATEPROGRAMARBPROC )
+#define vglEnableVertexAttribArrayARB	GLEXT_CALL( OGL_ENABLE_VERTEX_ATTRIB_ARRAY, PFNGLENABLEVERTEXATTRIBARRAYARBPROC )
+#define vglDisableVertexAttribArrayARB	GLEXT_CALL( OGL_DISABLE_VERTEX_ATTRIB_ARRAY, PFNGLDISABLEVERTEXATTRIBARRAYARBPROC )
+#define vglGetAttribLocationARB			GLEXT_CALL2( OGL_GET_ATTRIB_LOCATION, PFNGLGETATTRIBLOCATIONARBPROC )
+#define vglVertexAttribPointerARB		GLEXT_CALL( OGL_VERTEX_ATTRIB_POINTER, PFNGLVERTEXATTRIBPOINTERARBPROC )
+#define vglGetUniformLocationARB		GLEXT_CALL2( OGL_GET_UNIFORM_LOCATION, PFNGLGETUNIFORMLOCATIONARBPROC )
+#define vglGetUniformivARB				GLEXT_CALL( OGL_GET_UNIFORMIV, PFNGLGETUNIFORMIVARBPROC )
+#define vglUniform1fARB					GLEXT_CALL( OGL_UNIFORM1F, PFNGLUNIFORM1FARBPROC )
+#define vglUniform3fARB					GLEXT_CALL( OGL_UNIFORM3F, PFNGLUNIFORM3FARBPROC )
+#define vglUniform3fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM3FVARBPROC )
+#define vglUniform4fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM4FVARBPROC )
+#define vglUniform1iARB					GLEXT_CALL( OGL_UNIFORM1I, PFNGLUNIFORM1IARBPROC )
+#define vglUniformMatrix4fvARB			GLEXT_CALL( OGL_UNIFORM_MATRIX4FV, PFNGLUNIFORMMATRIX4FVARBPROC )
 
-#endif	// __APPLE__
 
 // special extensions
 #define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )

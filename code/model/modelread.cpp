@@ -2011,9 +2011,15 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		// clear struct and prepare for IBX usage
 		memset( &ibuffer_info, 0, sizeof(IBX) );
 
+		// get name for tangent space file
+		strcpy( ibuffer_info.tsb_name, filename );
+		char *pb = strchr( ibuffer_info.tsb_name, '.' );
+		if ( pb ) *pb = 0;
+		strcat( ibuffer_info.tsb_name, NOX(".tsb") );
+
 		// use the same filename as the POF but with an .ibx extension
 		strcpy( ibuffer_info.name, filename );
-		char *pb = strchr( ibuffer_info.name, '.' );
+		pb = strchr( ibuffer_info.name, '.' );
 		if ( pb ) *pb = 0;
 		strcat( ibuffer_info.name, NOX(".ibx") );
 
@@ -2025,8 +2031,23 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			ibuffer_info.read = NULL;
 		}
 
-		if ( ibuffer_info.read != NULL ) {
+		if ( Cmdline_normal && (ibuffer_info.read != NULL) ) {
+			ibuffer_info.tsb_read = cfopen( ibuffer_info.tsb_name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+			if ( (ibuffer_info.tsb_read == NULL) || !cfilelength(ibuffer_info.tsb_read) ) {
+				if (ibuffer_info.tsb_read != NULL)
+					cfclose( ibuffer_info.tsb_read);
+
+				ibuffer_info.tsb_read = NULL;
+
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+			}
+		}
+
+		if (ibuffer_info.read != NULL) {
 			bool ibx_valid = false;
+			bool tsb_valid = true;	// the TSB is assumed valid by default
 
 			// grab a checksum of the IBX, for debugging purposes
 			uint ibx_checksum = 0;
@@ -2053,30 +2074,64 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					break;
 			}
 
-			if ( !ibx_valid ) {
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-				ibuffer_info.size = 0;
-			} else {
+			if (ibx_valid) {
 				// file is valid so grab the checksum out of the .ibx and verify it matches the POF
 				uint ibx_sum = cfread_uint( ibuffer_info.read );
 				ibuffer_info.size -= sizeof(uint); // subtract
 
-				if ( ibx_sum != pof_checksum ) {
+				if (ibx_sum != pof_checksum) {
 					// bah, it's invalid for this POF
-					// reset and a write file will be used instead
-					cfclose( ibuffer_info.read );
-					ibuffer_info.read = NULL;
-					ibuffer_info.size = 0;
-				} else {
-					mprintf(("IBX: Found a good IBX to read for '%s'.\n", filename));
-					mprintf(("IBX-DEBUG => POF checksum: %10u, IBX checksum: %10u -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
+					ibx_valid = false;
+
+					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
 				}
+
+				if (ibuffer_info.tsb_read != NULL) {
+					// get the file size that we use to safety check with.
+					// be sure to subtract from this when we read something out
+					ibuffer_info.tsb_size = cfilelength( ibuffer_info.tsb_read );
+
+					// check file id
+					int tsb = cfread_int( ibuffer_info.tsb_read );
+					ibuffer_info.tsb_size -= sizeof(int);
+
+					// "BST2" - ("2TSB" in file)
+					if (tsb != 0x42535432)
+						tsb_valid = false;
+
+					// if it's valid then check for the correct IBX checksum
+					if (tsb_valid) {
+						uint tsb_sum = cfread_uint( ibuffer_info.tsb_read );
+						ibuffer_info.tsb_size -= sizeof(uint);
+
+						if (tsb_sum != ibx_checksum)
+							tsb_valid = false;
+					}
+
+					if ( !tsb_valid )
+						mprintf(("IBX:  Warning!  Found invalid TSB file: '%s'\n", ibuffer_info.tsb_name));
+				}
+			}
+
+
+			if ( !ibx_valid || !tsb_valid ) {
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+				ibuffer_info.size = 0;
+
+				if (ibuffer_info.tsb_read != NULL) {
+					cfclose( ibuffer_info.tsb_read);
+					ibuffer_info.tsb_read = NULL;
+					ibuffer_info.tsb_size = 0;
+				}
+			} else {
+				mprintf(("IBX: Found a good %s to read for '%s'.\n", (ibuffer_info.tsb_read != NULL) ? "IBX/TSB" : "IBX", filename));
+				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
 			}
 		}
 
 		// if the read file is absent or invalid then write out the new info
-		if ( ibuffer_info.read == NULL ) {
+		if (ibuffer_info.read == NULL) {
 			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
 
 			if (ibuffer_info.write != NULL) {
@@ -2087,6 +2142,22 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				// POF checksum
 				cfwrite_uint( pof_checksum, ibuffer_info.write );
+
+
+				// tangent space data
+				if (Cmdline_normal) {
+					ibuffer_info.tsb_write = cfopen( ibuffer_info.tsb_name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+					if (ibuffer_info.tsb_write != NULL) {
+						mprintf(("IBX: Starting a new TSB for '%s'.\n", filename));
+
+						// file id
+						cfwrite_int( 0x42535432, ibuffer_info.tsb_write );	// "BST2" - ("2TSB" in file)
+
+						// POF checksum (NOTE: This gets replaced by the IBX checksum after it's been created!)
+						cfwrite_uint( pof_checksum, ibuffer_info.tsb_write );
+					}
+				}
 			}
 		}
 	} // End IBX code
@@ -3213,11 +3284,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	cfclose(fp);
 
 	// these must be reset to NULL for the tests to work correctly later
-	if ( ibuffer_info.read != NULL ) {
+	if (ibuffer_info.read != NULL)
 		cfclose( ibuffer_info.read );
-	}
 
-	if ( ibuffer_info.write != NULL ) {
+	if (ibuffer_info.tsb_read != NULL)
+		cfclose( ibuffer_info.tsb_read );
+
+	if (ibuffer_info.write != NULL) {
 		// if we switched to v2 at any point during IBX creation, make sure to update the header
 		if (ibuffer_info.version == 2) {
 			cfseek( ibuffer_info.write, 0, CF_SEEK_SET );
@@ -3225,6 +3298,24 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		}
 
 		cfclose( ibuffer_info.write );
+	}
+
+	if (ibuffer_info.tsb_write != NULL) {
+		// update TSB with IBX checksum, for data sanity reasons
+		CFILE *cfp = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+		Assert( cfp );
+
+		uint ibx_checksum = 0;
+		cfseek(cfp, 0, SEEK_SET);
+		cf_chksum_long(cfp, &ibx_checksum);
+		cfseek(cfp, 0, SEEK_SET);
+
+		cfseek( ibuffer_info.tsb_write, sizeof(int), CF_SEEK_SET );
+		// write new checksum
+		cfwrite_int( ibx_checksum, ibuffer_info.tsb_write );
+
+		cfclose( cfp );
+		cfclose( ibuffer_info.tsb_write );
 	}
 
 	memset( &ibuffer_info, 0, sizeof(IBX) );
@@ -3243,10 +3334,8 @@ void model_init_texture_map(texture_map *tmap)
 	tmap->base_map.clear();
 	tmap->glow_map.clear();
 	tmap->spec_map.clear();
-
-#ifdef BUMPMAPPING
-	tmap->bump_map.clear();
-#endif
+	tmap->norm_map.clear();
+	tmap->height_map.clear();
 }
 
 //Goober
@@ -3312,7 +3401,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// glow maps ---------------------------------------------------------------
-	if (Cmdline_noglow || (tmap->base_map.GetTexture() < 0))
+	if (!Cmdline_glow || (tmap->base_map.GetTexture() < 0))
 	{
 		tmap->glow_map.clear();
 	}
@@ -3352,7 +3441,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// specular maps -----------------------------------------------------------
-	if (Cmdline_nospec || (tmap->base_map.GetTexture() < 0))
+	if (!Cmdline_spec || (tmap->base_map.GetTexture() < 0))
 	{
 		tmap->spec_map.clear();
 	}
@@ -3389,28 +3478,29 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	//tmap->spec_map.original_texture = tmap->spec_map.texture;
 	// -------------------------------------------------------------------------
 
-#ifdef BUMPMAPPING
 	// bump maps ---------------------------------------------------------------
-	if (true || (tmap->base_map.texture < 0))
-	{
-		tmap->bump_map.texture = -1;
-	}
-	else
-	{
+	if ( !Cmdline_normal || (tmap->base_map.GetTexture() < 0) ) {
+		tmap->norm_map.clear();
+		tmap->height_map.clear();
+	} else {
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-bump", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+		strncat(tmp_name, "-normal", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
 		strlwr(tmp_name);
 
-		tmap->bump_map.texture = bm_load(tmp_name);
-		if (tmap->bump_map.texture < 0)
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
+		tmap->norm_map.LoadTexture(tmp_name, pm->filename);
+
+		// try to get a height map too
+		if ( Cmdline_height && (tmap->norm_map.GetTexture() > 0) ) {
+			memset(tmp_name, 0, MAX_FILENAME_LEN);
+			strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+			strncat(tmp_name, "-height", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+			strlwr(tmp_name);
+
+			tmap->height_map.LoadTexture(tmp_name, pm->filename);
 		}
 	}
-	tmap->bump_map.original_texture = tmap->bump_map.texture;
 	// -------------------------------------------------------------------------
-#endif
 }
 
 //returns the number of this model
@@ -4818,9 +4908,8 @@ void model_clear_instance(int model_num)
 		pm->maps[i].base_map.ResetTexture();
 		pm->maps[i].glow_map.ResetTexture();
 		pm->maps[i].spec_map.ResetTexture();
-#ifdef BUMPMAPPING
-		pm->maps[i].bump_map.ResetTexture();;
-#endif
+		pm->maps[i].norm_map.ResetTexture();
+		pm->maps[i].height_map.ResetTexture();
 	}
 	
 	for (i=0; i<pm->n_models; i++ )	{

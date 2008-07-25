@@ -1488,6 +1488,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"always-death-scream",
 	"nav-needslink",
 	"use-alt-name-as-callsign",
+	"hide-ship-name",
 	"set-class-dynamically",
 };
 
@@ -2938,6 +2939,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->wingnum = p_objp->wingnum;
 	shipp->hotkey = p_objp->hotkey;
 	shipp->score = p_objp->score;
+	shipp->assist_score_pct = p_objp->assist_score_pct;
 	shipp->persona_index = p_objp->persona_index;
 
 	// reset texture animations
@@ -3457,6 +3459,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags2 & P2_SF2_USE_ALT_NAME_AS_CALLSIGN)
 		shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
+	
+	if (parse_flags2 & P2_SF2_HIDE_SHIP_NAME)
+		shipp->flags2 |= SF2_HIDE_SHIP_NAME;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
@@ -3909,6 +3914,20 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		p_objp->score = Ship_info[p_objp->ship_class].score;
 	}
 
+	if (optional_string("+Assist Score Percentage:")) {
+		stuff_float(&p_objp->assist_score_pct);
+		// value must be a percentage
+		if (p_objp->assist_score_pct < 0) {
+			p_objp->assist_score_pct = 0;
+		} 
+		else if (p_objp->assist_score_pct > 1) {
+			p_objp->assist_score_pct = 1;
+		}
+	}
+	else {
+		p_objp->assist_score_pct = 0;
+	}
+
 	// parse the persona index if present
 	p_objp->persona_index = -1;
 	if (optional_string("+Persona Index:"))
@@ -3996,6 +4015,30 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	return 1;
 }
 
+void mission_parse_handle_late_arrivals(p_object *p_objp)
+{
+	ship_info *sip = NULL;
+	polymodel *pm = NULL;
+	model_subsystem *subsystems = NULL;
+
+	// only for objects which show up after the start of a mission
+	if (p_objp->created_object != NULL)
+		return;
+
+	Assert( p_objp->ship_class >= 0 );
+
+	sip = &Ship_info[p_objp->ship_class];
+
+	if (sip->n_subsystems > 0) {
+		subsystems = &sip->subsystems[0];
+	}
+
+	// we need the model to process the texture set, so go ahead and load it now
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, subsystems);
+
+	pm = model_get(sip->model_num);
+}
+
 // Goober5000 - I split this because 1) it's clearer; and 2) initially multiple docked ships would have been
 // insanely difficult otherwise
 //
@@ -4030,6 +4073,9 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 		// add to arrival list
 		list_append(&Ship_arrival_list, pobjp);
+
+		// we need to deal with replacement textures now, so that texture page-in will work properly
+		mission_parse_handle_late_arrivals(pobjp);
 	}
 	// ingame joiners bail here.
 	else if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
@@ -8074,6 +8120,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;
 	pobj->score = 0;
+	pobj->assist_score_pct = 0;
 
 	pobj->dock_list = NULL;
 	pobj->created_object = NULL;

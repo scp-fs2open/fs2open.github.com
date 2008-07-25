@@ -238,6 +238,7 @@ public:
 	BOOL	m_update_departure;
 	numeric_edit_control	m_destroy_value;
 	numeric_edit_control	m_score;
+	numeric_edit_control	m_assist_score;
 	numeric_edit_control	m_arrival_dist;
 	numeric_edit_control m_kdamage;
 	int		m_arrival_target;

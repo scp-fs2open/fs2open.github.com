@@ -969,9 +969,10 @@ int multi_find_player_by_parse_object( p_object *p_objp )
 	return -1;
 }
 
-int multi_find_player_by_ship_name(char *ship_name)
+int multi_find_player_by_ship_name(char *ship_name, bool inc_respawning)
 {
 	int idx;
+	p_object *p_objp;
 
 	// bogus
 	if(ship_name == NULL){
@@ -985,6 +986,14 @@ int multi_find_player_by_ship_name(char *ship_name)
 		}
 	}
 
+	if (inc_respawning) {
+		p_objp = mission_parse_get_arrival_ship(ship_name);
+		idx = multi_find_player_by_parse_object(p_objp);
+		
+		if((idx >= 0) && (idx < MAX_PLAYERS)){
+			return idx;
+		}
+	}
 	// didn't find the player
 	return -1;
 }
@@ -4520,8 +4529,8 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 // Karajorma - sends the player to the correct debrief for this game type
 // Currently supports the dogfight kill matrix and normal debriefing stages but if new types are created they should be added here
 void send_debrief_event() {	
-	// we have a special debriefing screen for multiplayer furballs
-	if((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_DOGFIGHT){
+	// we have a special debriefing screen multiplayer furballs use by default
+	if((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_DOGFIGHT && !(The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING)) {
 		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
 	}
 	// do the normal debriefing for all other situations

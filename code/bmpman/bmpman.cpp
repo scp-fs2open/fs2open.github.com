@@ -957,7 +957,8 @@ extern int Cmdline_cache_bitmaps;
 int GLOWMAP = -1;
 int SPECMAP = -1;
 int ENVMAP = -1;
-int BUMPMAP = -1;
+int NORMMAP = -1;
+int HEIGHTMAP = -1;
 
 bitmap_entry bm_bitmaps[MAX_BITMAPS];
 
@@ -3033,9 +3034,6 @@ void bm_page_in_stop()
 					if ( !gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2)) )	{
 						mprintf(( "Out of VRAM.  Done preloading.\n" ));
 						bm_preloading = 0;
-					} else {
-						// it's loaded into API memory now so dump the system version of the data
-						bm_free_data_fast(i);
 					}
 				} else {
 					bm_lock( bm_bitmaps[i].handle, (bm_bitmaps[i].used_flags == BMP_AABITMAP) ? 8 : 16, bm_bitmaps[i].used_flags );
@@ -3302,6 +3300,7 @@ int bm_is_compressed(int num)
 
 	switch (type) {
 		case BM_TYPE_NONE:
+		case BM_TYPE_DDS:
 			return 0;
 
 		case BM_TYPE_DXT1:
@@ -3568,7 +3567,11 @@ int bm_is_render_target(int bitmap_id)
 
 	Assert(bitmap_id == bm_bitmaps[n].handle);
 
-	return ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) );
+	if ( !((bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
+		return 0;
+	}
+
+	return bm_bitmaps[n].type;
 }
 
 int bm_set_render_target(int handle, int face)
@@ -3604,6 +3607,11 @@ int bm_set_render_target(int handle, int face)
 		gr_screen.rendering_to_texture = n;
 
 		gr_reset_clip();
+
+		if (gr_screen.mode == GR_OPENGL) {
+			extern void opengl_setup_viewport();
+			opengl_setup_viewport();
+		}
 
 		return 1;
 	}

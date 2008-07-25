@@ -193,8 +193,8 @@ color Orb_color_orange;
 color Orb_color_teal;
 color Orb_color_purple;
 
-//special view matrix to get the orb rotating the correct war
-static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 0.0f,0.0f,-1.0f } } } } } };
+//special view matrix to get the orb rotating the correct way
+static matrix view_perturb = { { { { { { 0.0f, 0.0f, -1.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 1.0f,0.0f,0.0f } } } } } };
 static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
 
 // forward declarations
@@ -895,7 +895,7 @@ int radar_orb_calc_alpha(vec3d* pt)
     Assert(Player_obj);
 
     vec3d new_pt;
-    vec3d fvec = {0.0f, 1.0f, 0.0f};
+    vec3d fvec = {1.0f, 0.0f, 0.0f};
 
     vm_vec_unrotate(&new_pt, pt, &Player_obj->orient);
     vm_vec_normalize(&new_pt);

@@ -218,6 +218,7 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 
 	if (type == BM_TYPE_DDS) {
 		int dds_error = dds_read_header( filename, img_cfp, w, h, bpp, &dds_ct, mm_lvl, size );
+
 		if (dds_error != DDS_ERROR_NONE) {
 			mprintf(("DDS ERROR: Couldn't open '%s' -- %s\n", filename, dds_error_string(dds_error)));
 			return -1;
@@ -302,7 +303,7 @@ void gr_opengl_bm_init(int n)
 // specific instructions for setting up the start of a page-in session
 void gr_opengl_bm_page_in_start()
 {
-	gr_opengl_preload_init();
+	opengl_preload_init();
 }
 
 extern void bm_clean_slot(int n);
@@ -645,8 +646,9 @@ void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo ) {
 		return;
+	}
 
 	bitmap_entry *be = &bm_bitmaps[n];
 	bitmap *bmp = &be->bm;
@@ -667,11 +669,13 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo ) {
 		return 0;
+	}
 
-	if ( (flags & BMP_FLAG_CUBEMAP) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) )
+	if ( (flags & BMP_FLAG_CUBEMAP) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) ) {
 		return 0;
+	}
 
 	if ( (flags & BMP_FLAG_CUBEMAP) && (*width != *height) ) {
 		MIN(*width, *height) = MAX(*width, *height);
@@ -679,16 +683,18 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 
 	Assert( is_power_of_two(*width, *height) );
 
-	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) )
+	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) ) {
 		return 1;
+	}
 
 	return 0;
 }
 
 int gr_opengl_bm_set_render_target(int n, int face)
 {
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo ) {
 		return 0;
+	}
 
 	if (n == -1) {
 		opengl_set_render_target(-1);
@@ -699,8 +705,9 @@ int gr_opengl_bm_set_render_target(int n, int face)
 
 	int is_static = (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC);
 
-	if ( opengl_set_render_target(n, face, is_static) )
+	if ( opengl_set_render_target(n, face, is_static) ) {
 		return 1;
+	}
 
 	return 0;
 }

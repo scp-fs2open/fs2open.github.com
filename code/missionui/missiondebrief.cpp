@@ -1961,7 +1961,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 		}
 
 		// Goober5000
-		if ( play_commit_sound && !(The_mission.flags & MISSION_FLAG_NO_DEBRIEFING)) {
+		if ( play_commit_sound && !(The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING)) {
 			gamesnd_play_iface(SND_COMMIT_PRESSED);
 		}
 
@@ -2939,7 +2939,7 @@ void debrief_do_frame(float frametime)
 	Assert(Debrief_inited);	
 
 	// Goober5000 - accept immediately if skipping debriefing
-	if (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING)
+	if (The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING)
 	{
 		// make sure that we can actually advance - we don't want an endless loop!!!
 		if ( !((/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE)) )
