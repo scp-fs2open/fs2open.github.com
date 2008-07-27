@@ -1942,15 +1942,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// actual gun point and normal, not just the one for whole turret.
 			// moved here as if there are two weapons with indentical fire stamps
 			// they would have shared the fire point.
-			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
-
-			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
-			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
-			dist_to_enemy = vm_vec_normalize(&v2e);
-			dot = vm_vec_dot(&v2e, &gvec);
-
-			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
-
 			tv2e = v2e;
 	
 			// make sure to reset this for current weapon
