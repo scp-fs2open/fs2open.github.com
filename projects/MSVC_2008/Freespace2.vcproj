@@ -432,6 +432,8 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				EnableUAC="false"
+				UACUIAccess="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -641,11 +643,11 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\phrases.cfg"
+			RelativePath="..\..\code\sound\phrases.cfg"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
+			RelativePath="..\..\code\freespace2\phrases.cfg"
 			>
 		</File>
 	</Files>
