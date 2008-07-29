@@ -237,6 +237,34 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\ai\aimodular.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\aimodular.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\ai\AiBig.cpp"
 				>
 				<FileConfiguration

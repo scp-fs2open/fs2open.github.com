@@ -218,6 +218,12 @@
 				RelativePath="..\..\code\ai\ai_profiles.h">
 			</File>
 			<File
+				RelativePath="..\..\code\ai\aimodular.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\aimodular.h">
+			</File>
+			<File
 				RelativePath="..\..\code\ai\AiBig.cpp">
 				<FileConfiguration
 					Name="Release|Win32">
