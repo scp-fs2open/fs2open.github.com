@@ -10,6 +10,10 @@
 #ifndef _AIINTERNAL_H
 #define _AIINTERNAL_H
 
+#include "weapon/weapon.h"
+#include "weapon/swarm.h"
+#include "object/objectdock.h"
+
 typedef struct eval_nearest_objnum {
 	int	objnum;
 	object *trial_objp;
@@ -63,6 +67,8 @@ struct aiturret_call_table
 // possibly copying the old function calls first
 
 extern struct aiturret_call_table *aiturret_table;
+
+extern struct aiturret_call_table AITurretDefaultTable;
 
 // AI Code Table Wrapper
 struct aicode_call_table
@@ -274,5 +280,7 @@ struct aicode_call_table
 // possibly copying the old function calls first
 
 extern struct aicode_call_table *aicode_table;
+
+extern struct aicode_call_table AICodeDefaultTable;
 
 #endif

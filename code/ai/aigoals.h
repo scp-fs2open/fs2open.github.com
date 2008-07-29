@@ -334,4 +334,6 @@ struct aigoal_call_table
 
 extern struct aigoal_call_table *aigoal_table;
 
+extern struct aigoal_call_table AIGoalDefaultTable;
+
 #endif

@@ -139,4 +139,6 @@ struct aibig_call_table
 
 extern struct aibig_call_table *aibig_table;
 
+extern struct aibig_call_table AIBigDefaultTable;
+
 #endif
