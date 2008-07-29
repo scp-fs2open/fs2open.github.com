@@ -1198,6 +1198,7 @@
 //#include "network/multi_team.h"
 #include "network/multi.h"
 #include "ai/ai_profiles.h"
+#include "ai/aimodular.h"
 
 #include "autopilot/autopilot.h"
 #include <map>
@@ -1342,8 +1343,6 @@ int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
 // FF 23-08-07
 // AI Code Table Wrapper
-
-extern struct aicode_call_table AICodeDefaultTable;
 
 struct aicode_call_table *aicode_table = &AICodeDefaultTable;
 
@@ -2810,6 +2809,9 @@ void aicode_ai_level_init()
 	ai_init_secondary_info();
 
 	Ai_last_arrive_path=0;
+
+	// Possibly init the new AI system
+	ai_module_init();
 }
 
 // BEGIN STEALTH

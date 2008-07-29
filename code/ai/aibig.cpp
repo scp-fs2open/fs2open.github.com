@@ -485,8 +485,6 @@ extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d
 // FF 14-06-07
 // AI Big Table Wrapper
 
-extern struct aibig_call_table AIBigDefaultTable;
-
 struct aibig_call_table *aibig_table = &AIBigDefaultTable;
 
 void   ai_big_evade_ship () 

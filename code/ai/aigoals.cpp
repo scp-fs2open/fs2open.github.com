@@ -775,8 +775,6 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 // FF 04-06-07
 // AI Goal Table Wrapper
 
-extern struct aigoal_call_table AIGoalDefaultTable;
-
 struct aigoal_call_table *aigoal_table = &AIGoalDefaultTable;
 
 char*  Ai_goal_text (int goal) 

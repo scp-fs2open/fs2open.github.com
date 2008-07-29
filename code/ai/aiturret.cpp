@@ -236,8 +236,6 @@ typedef struct eval_enemy_obj_struct {
 // FF 17-06-07
 // AI Turret Table Wrapper
 
-extern struct aiturret_call_table AITurretDefaultTable;
-
 struct aiturret_call_table *aiturret_table = &AITurretDefaultTable;
 
 int    turret_select_best_weapon (ship_subsys *turret, object *target) 
