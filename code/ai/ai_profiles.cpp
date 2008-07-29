@@ -235,6 +235,10 @@ void parse_ai_profiles_tbl(char *filename)
 		// fill in any and all settings; they're all optional and can be in any order
 		while (!check_for_string("$Profile Name:") && !check_for_string("#End"))
 		{
+			strcpy(profile->ai_module, "retail");
+			if (optional_string("$AI Module:"))
+				stuff_string(profile->ai_module, F_NAME, NAME_LENGTH);
+			
 			if (optional_string("$Player Afterburner Recharge Scale:"))
 				parse_float_list(profile->afterburner_recharge_scale, NUM_SKILL_LEVELS);
 

@@ -80,6 +80,8 @@
 typedef struct ai_profile_t {
 
 	char profile_name[NAME_LENGTH];
+	
+	char ai_module[NAME_LENGTH];
 
 	int flags;
 
