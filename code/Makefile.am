@@ -211,6 +211,8 @@ FS2_SOURCES =	\
 	ai/aiturret.cpp	\
 	ai/ai_profiles.cpp	\
 	ai/ai_profiles.h	\
+	ai/aimodular.h	\
+	ai/aimodular.cpp	\
 	anim/animplay.cpp	\
 	anim/animplay.h	\
 	anim/packunpack.cpp	\
@@ -822,6 +824,8 @@ fs2_open_r_SOURCES =	\
 
 fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
 fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
+fs2_open_d_LDFLAGS = -rdynamic
+fs2_open_r_LDFLAGS = -rdynamic
 
 ##
 ## End MAIN binary
