@@ -306,6 +306,8 @@ bool Messagebox_active = false;
 
 #ifdef SHOW_CALL_STACK
 
+static bool Dump_to_log = true; 
+
 class DumpBuffer
   {
   public :
@@ -473,8 +475,12 @@ void PE_Debug :: DumpLineNumber( DumpBuffer& dumpBuffer, DWORD relativeAddress )
       }
     line++ ;
     }
-  if( lineNum != none )
+  if( lineNum != none ) {
     dumpBuffer.Printf( "  line %d\r\n", lineNum ) ;
+	if (Dump_to_log) {
+		mprintf(( "  line %d\r\n", lineNum )) ;
+	}
+  }	
 //  else
 //  dumpBuffer.Printf( "  line <unknown>\r\n" ) ;
   }
@@ -725,8 +731,14 @@ void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
 		char tmp_name[1024];
 		unmangle(tmp_name, GetSymbolName( fnSymbol ) );
 		dumpBuffer.Printf( "    %s()", tmp_name ) ;
+		if (Dump_to_log) {
+			mprintf(("    %s()", tmp_name )) ;
+		}
 	} else {
 		dumpBuffer.Printf( "    <unknown>" ) ;
+		if (Dump_to_log) {		
+			mprintf(("    <unknown>" )) ;
+		}
 	}
 }
 
@@ -888,6 +900,9 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 				//dumpBuffer.Printf( "Call stack is unavailable, because there is\r\nno COFF debugging info in this module.\r\n" ) ;
 				//JAS dumpBuffer.Printf( "  no debug information\r\n" ) ;
 				dumpBuffer.Printf( "    %s %08x()\r\n", pretty_module, caller ) ;
+				if (Dump_to_log) {
+					mprintf(("    %s %08x()\r\n", pretty_module, caller )) ;
+				}
 				return 0;
 			}
 		} catch( ... )	{
@@ -896,6 +911,9 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
       }
 	} else	{
 		dumpBuffer.Printf( "    %s %08x()\r\n", pretty_module, caller ) ;
+		if (Dump_to_log) {
+			mprintf(( "    %s %08x()\r\n", pretty_module, caller )) ;
+		}
 		//JAS dumpBuffer.Printf( "  module not accessible\r\n" ) ;
 		//JAS dumpBuffer.Printf( "    address: %8X\r\n", caller ) ;
 		return 0;
@@ -1030,17 +1048,15 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
 
-#ifdef SHOW_CALL_STACK
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	mprintf(("ASSERTION: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum ));
+
+#ifdef SHOW_CALL_STACK	
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText1 );
 	dumpBuffer.Printf( "\r\n" );
 	DumpCallsStack( dumpBuffer ) ;  
 	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// this stuff migt be really useful for solving bug reports and user errors! We should output it! 
-	mprintf(("ASSERTION: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum ));
-	mprintf((dumpBuffer.buffer));
-	
 
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
@@ -1181,6 +1197,7 @@ void _cdecl Error( char * filename, int line, const char * format, ... )
 
 	filename = strrchr(filename, '\\')+1;
 	sprintf(AssertText2, "Error: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
+	mprintf(("ERROR: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line));
 
 	Messagebox_active = true;
 
@@ -1274,6 +1291,9 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	gr_activate(0);
 
 #ifdef SHOW_CALL_STACK
+	//we don't want to dump the call stack for every single warning
+	Dump_to_log = false; 
+
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText2 );
 	dumpBuffer.Printf( "\r\n" );
@@ -1284,6 +1304,9 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
 	result = MessageBox((HWND)os_get_window(), dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
+
+	Dump_to_log = true; 
+
 #else
 	strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 	result = MessageBox((HWND)os_get_window(), AssertText2, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
