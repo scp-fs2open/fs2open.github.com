@@ -1543,6 +1543,11 @@ void sexp_tree::right_clicked(int mode)
 
 							for (int idx=0; idx<max_sexp_vars; idx++) {
 								if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
+									// skip block variables
+									if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
+										continue; 
+									}
+
 									UINT flag = MF_STRING | MF_GRAYED;
 									// maybe gray flag MF_GRAYED
 
@@ -2399,8 +2404,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				Int3();	// unknown type
 			}
 
-		} else {
-	
+		} else {	
 			// verify type in tree is same as type in Sexp_variables array
 			if (type & SEXPT_NUMBER) {
 				Assert(Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER);
