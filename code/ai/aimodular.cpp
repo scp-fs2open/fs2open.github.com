@@ -51,15 +51,12 @@ int ai_module_dlopen_process(char* func_name)
 	ai_module_dlclose();
 	
 	handle = dlopen(NULL, RTLD_NOW);
-	fprintf(stderr, "handle = %p\n", handle);
 
 	if (handle == NULL)
 		return -1;
 	
 	ai_module_init_func=(ai_module_init_function)dlsym(handle, func_name);
 	
-	fprintf(stderr, "ai_func = %p from %s\n", ai_module_init_func, func_name);
-
 #ifdef _WIN32
 	// Under WIN32 GetModuleHandle is not 
 	// incrementing the reference counter
@@ -105,14 +102,12 @@ int ai_module_dlopen(char* dllname)
 	snprintf(init_func_name, PATH_MAX, "%s_ai_module_init", dllname);
 	
 	handle = dlopen(buf, RTLD_NOW);
-	fprintf(stderr, "handle = %p\n", handle);
 
 	if (handle == NULL)
 		return ai_module_dlopen_process(init_func_name);
 
 	ai_module_init_func=(ai_module_init_function)dlsym(handle, init_func_name);
 
-	fprintf(stderr, "ai_func = %p from %s\n", ai_module_init_func, init_func_name);
 	if (ai_module_init_func == NULL)
 		return ai_module_dlopen_process(init_func_name);
 
