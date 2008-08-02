@@ -4872,7 +4872,7 @@ void parse_wing(mission *pm)
 	// 7/13/98 -- MWA
 	// error checking against the player ship wings (i.e. starting & tvt) to be sure that wave count doesn't exceed one for
 	// these wings.
-	if ( Game_mode & GM_MULTIPLAYER ) {
+	if ( MULTI_NOT_TEAM ) {
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
 			if ( !stricmp(Starting_wing_names[i], wingp->name) ) {
 				if ( wingp->num_waves > 1 ) {
@@ -4884,6 +4884,8 @@ void parse_wing(mission *pm)
 				}
 			}
 		}
+	}
+	else if (MULTI_TEAM) {
 		for (i = 0; i < MAX_TVT_WINGS; i++ ) {
 			if ( !stricmp(TVT_wing_names[i], wingp->name) ) {
 				if ( wingp->num_waves > 1 ) {
