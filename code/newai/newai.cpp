@@ -66,10 +66,10 @@ void newai_aicode_init_ship_info()
 }
 
 extern "C" {
-	void ai_module_init();
+	void newai_ai_module_init();
 }
 
-void ai_module_init()
+void newai_ai_module_init()
 {
 	
 	fprintf(stderr, "ai_module_init() called\n");

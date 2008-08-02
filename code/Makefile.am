@@ -213,6 +213,7 @@ FS2_SOURCES =	\
 	ai/ai_profiles.h	\
 	ai/aimodular.h	\
 	ai/aimodular.cpp	\
+	newai/newai.cpp \
 	anim/animplay.cpp	\
 	anim/animplay.h	\
 	anim/packunpack.cpp	\
