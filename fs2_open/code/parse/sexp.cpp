@@ -19572,8 +19572,8 @@ char *CTEXT(int n)
 			sexp_variable_index = get_index_sexp_variable_name(variable_name);
 		}
 
-		// if we have a variable, return the variable value, else return the regular argument
-		if (sexp_variable_index != -1)
+		// if we have a non-block variable, return the variable value, else return the regular argument
+		if ((sexp_variable_index != -1) && !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_BLOCK))
 			return Sexp_variables[sexp_variable_index].text;
 		else
 			return Sexp_current_replacement_argument;
