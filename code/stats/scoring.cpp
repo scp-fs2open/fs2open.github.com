@@ -1042,6 +1042,7 @@ int scoring_eval_kill(object *ship_obj)
 	dead_ship->damage_ship_id[0] = killer_sig;
 	dead_ship->damage_ship[0] = max_damage_pct;
 	*/
+
 #ifdef SCORING_DEBUG
 
 	if (Game_mode & GM_MULTIPLAYER) {

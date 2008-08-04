@@ -1543,6 +1543,11 @@ void sexp_tree::right_clicked(int mode)
 
 							for (int idx=0; idx<max_sexp_vars; idx++) {
 								if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
+									// skip block variables
+									if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
+										continue; 
+									}
+
 									UINT flag = MF_STRING | MF_GRAYED;
 									// maybe gray flag MF_GRAYED
 

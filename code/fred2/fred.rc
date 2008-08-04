@@ -2264,9 +2264,9 @@ BEGIN
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",
                     BS_3STATE | WS_TABSTOP,161,124,97,10
     CONTROL         "Use Alt Name In Messages",IDC_ALT_AS_CALLSIGN,"Button",
-                    BS_3STATE | WS_TABSTOP,166,134,99,10
+                    BS_3STATE | WS_TABSTOP,161,134,99,10
     CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | 
-                    WS_TABSTOP,166,144,99,10
+                    WS_TABSTOP,161,144,99,10
     CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",
                     BS_3STATE | WS_TABSTOP,161,155,104,10
 END
