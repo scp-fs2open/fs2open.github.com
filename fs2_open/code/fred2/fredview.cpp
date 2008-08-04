@@ -4319,6 +4319,27 @@ void CFREDView::OnRunFreeSpace()
 	si.cbReserved2 = 0;
 	si.lpReserved2 = NULL;
 
+	// get the filename of the app and replace FRED2_Open with FS2_Open
+	std::string processed_name(AfxGetApp()->m_pszExeName); 
+	std::string::size_type fred_index = processed_name.find("fred2_open", 0); 
+	// capitalisation! 
+	if (fred_index == std::string::npos) {
+		fred_index = processed_name.find("Fred2_Open", 0); 
+	}
+
+	if (fred_index != std::string::npos) {
+		// delete the fred2_open and add FS2_Open in its place
+		processed_name.erase(fred_index, 10);
+		processed_name.insert(fred_index, "FS2_Open");
+		processed_name.append(".exe");
+
+		//try to start FS2_open
+		r = CreateProcess(processed_name.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		if (r) {
+			return;
+		}
+	}
+
 	r = CreateProcess("start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
 
 	if (!r) {
