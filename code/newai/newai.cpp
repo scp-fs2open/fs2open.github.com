@@ -20,7 +20,7 @@ void    newai_aicode_ai_ship_hit (object *objp_ship, object *hit_objp, vec3d *hi
 		ship *shipp_hitter = &Ships[objp_hitter->instance];
 		ship *shipp_hit = &Ships[objp_hit->instance];
 						
-		fprintf(stderr, "Ship %s hit %s\n", shipp_hitter->ship_name, shipp_hit->ship_name);
+		fprintf(stderr, "Ship %s friendly hit %s\n", shipp_hitter->ship_name, shipp_hit->ship_name);
 
 	}
 
@@ -71,8 +71,12 @@ extern "C" {
 
 void newai_ai_module_init()
 {
-	
+
+#ifdef PACKAGE_NAME
 	fprintf(stderr, "ai_module_init() called\n");
+#else
+	fprintf(stderr, "ai_module_init() modular called\n");
+#endif
         
 	// First make a copy
         memcpy(&AICodeNewAITable, &AICodeDefaultTable, sizeof(AICodeNewAITable));
