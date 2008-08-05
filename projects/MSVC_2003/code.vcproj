@@ -283,6 +283,9 @@
 			<File
 				RelativePath="..\..\code\ai\AiTurret.cpp">
 			</File>
+			<File
+				RelativePath="..\..\code\ai\newai\newai.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Anim"
