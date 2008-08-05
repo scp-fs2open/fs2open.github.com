@@ -11017,11 +11017,13 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			hud_support_view_abort();
 
 			// send appropriate message to player here
-			if ( how == REPAIR_INFO_KILLED ){
-				message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
-			} else {
-				if ( repair_objp ){
-					message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+			if (MULTIPLAYER_MASTER) {
+				if ( how == REPAIR_INFO_KILLED ){
+					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+				} else {
+					if ( repair_objp ){
+						message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+					}
 				}
 			}
 		}
@@ -11040,8 +11042,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			Assert( repair_objp );
 			
 			hud_support_view_stop();			
-
-			message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, -1);
+			
+			if (MULTIPLAYER_MASTER) {
+				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, -1);
+			}
 		}
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
 		break;
