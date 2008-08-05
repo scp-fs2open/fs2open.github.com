@@ -3244,7 +3244,7 @@ void process_ship_create_packet( ubyte *data, header *hinfo )
 		Arriving_support_ship->net_signature = signature;
 		objnum = parse_create_object( Arriving_support_ship );
 		Assert( objnum != -1 );
-		if(objnum < 0){
+		if(objnum >= 0){
 			mission_parse_support_arrived( objnum );
 		}
 	}
