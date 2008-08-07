@@ -4562,7 +4562,7 @@ int WE_BTRL::warpShipRender()
 		return 0;
 
 	//Figure out which frame we're on
-	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)(anim_nframes) + 0.5);
+	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)(anim_nframes-1) + 0.5);
 
 	if ( frame > (anim_nframes-1) ) {
 		//frame = (anim_nframes-1);
