@@ -3971,8 +3971,9 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 
 	PACKET_SET_SIZE();
 
-	// filter out builtin ones in TvT
-	if((builtin_type >= 0) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL) && (Net_player->p_info.team != multi_team_filter)){
+	// filter out some builtin ones in TvT
+	if((builtin_type >= 0) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL) && (Net_player->p_info.team != multi_team_filter)) {
+		mprintf(("Builtin message of type %d filtered out in process_mission_message_packet()\n", id));
 		return;
 	}
 

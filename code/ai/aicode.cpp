@@ -10923,7 +10923,13 @@ void ai_guard()
 void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, int how )
 {
 	ai_info *aip, *repair_aip;
-	int		stamp = -1;
+	int	stamp = -1;
+
+	int p_index;
+	int p_team;
+
+	p_index = -1;
+	p_team = -1;
 
 	// repaired_objp should not be null, but repair_objp will be null when a support ship is just warping in
 	Assert(repaired_objp != NULL);
@@ -10931,12 +10937,9 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	Assert( repaired_objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[repaired_objp->instance].ai_index];
 
-	// multiplayer
-	int p_index;
-	p_index = -1;
-
 	if(Game_mode & GM_MULTIPLAYER){
-		p_index = multi_find_player_by_object(repaired_objp);		
+		p_index = multi_find_player_by_object(repaired_objp);
+		p_team = Net_players[p_index].p_info.team;
 	} else {		
 		if(repaired_objp == Player_obj){
 			p_index = Player_num;
@@ -11016,13 +11019,13 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		if ( p_index >= 0 ) {
 			hud_support_view_abort();
 
-			// send appropriate message to player here
+			// send appropriate messages here
 			if (MULTIPLAYER_MASTER) {
 				if ( how == REPAIR_INFO_KILLED ){
-					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
 				} else {
 					if ( repair_objp ){
-						message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+						message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
 					}
 				}
 			}
@@ -11044,7 +11047,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			hud_support_view_stop();			
 			
 			if (MULTIPLAYER_MASTER) {
-				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, -1);
+				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, p_team);
 			}
 		}
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
