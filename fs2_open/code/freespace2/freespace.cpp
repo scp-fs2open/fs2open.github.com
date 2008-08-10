@@ -6709,6 +6709,13 @@ void game_set_frametime(int state)
 
 	Frametime = fixmul(Frametime, Game_time_compression);
 
+    if (Frametime <= 0)
+    {
+        // If the Frametime is zero or below due to Game_time_compression, set
+        // the Frametime to 1 (1/65536 of a second).
+        Frametime = 1;
+    }
+
 	Last_time = thistime;
 	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));
 
