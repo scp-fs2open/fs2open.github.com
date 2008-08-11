@@ -4872,21 +4872,14 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	If a weapon has missed its target, detonate it.
 		//	This solves the problem of a weapon circling the center of a subsystem that has been blown away.
 		//	Problem: It does not do impact damage, just proximity damage.
-		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) && (old_dot < 0.0f)) {
-			int kill_missile = TRUE;
-			if (wp->homing_object) {
-				if (wp->homing_object->type == OBJ_SHIP) {
-					ship *shipp = &Ships[wp->homing_object->instance];
-					if (shipp->flags2 & SF2_DONT_COLLIDE_INVIS) {
-						kill_missile = FALSE;
-					}
-				}
-			}
-			
-			if (kill_missile && (wp->lifeleft > 0.01f)) {
-				wp->lifeleft = 0.01f;
-			}
-		}
+		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
+            (old_dot < wip->fov) &&
+            (wp->lifeleft > 0.01f) &&
+            (wp->homing_object) &&
+            (wp->homing_object->type == OBJ_SHIP))
+        {
+            wp->lifeleft = 0.01f;
+        }
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
 		//	is what's causing Harbingers to miss the super destroyer. -- MK, 4/15/98
