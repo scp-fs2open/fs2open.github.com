@@ -977,6 +977,12 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 	// get complete escort list
 	hud_create_complete_escort_list(complete_escorts, &num_complete_escorts);
 
+    // ensure the complete escort list is not full already
+    if (num_complete_escorts == MAX_COMPLETE_ESCORT_LIST)
+    {
+        return;
+    }
+
 	// check if ship is already on complete escort list
 	found = 0;
 	for (idx=0; idx<num_complete_escorts; idx++) {
