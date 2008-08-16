@@ -9542,7 +9542,8 @@ void sexp_set_subsystem_strength(int n)
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	ship *shipp;
 	ship_subsys *ss, *ss_start;
-	bool generic, do_loop = true;
+	bool generic_subsys; 
+	bool do_loop = true;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
@@ -9596,12 +9597,12 @@ void sexp_set_subsystem_strength(int n)
 	}
 
 	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic = is_generic_subsys(subsystem);
+	generic_subsys = is_generic_subsys(subsystem);
 	subsys_type = ai_get_subsystem_type(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (generic) {
+		if (generic_subsys) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
