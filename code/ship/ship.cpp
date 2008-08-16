@@ -2812,7 +2812,7 @@ void init_ship_entry(ship_info *sip)
 	int i,j;
 	
 	sip->name[0] = '\0';
-	sprintf(sip->short_name, "AShipClass");
+	sprintf(sip->short_name, "ShipClass%d", (sip - Ship_info));
 	sip->species = 0;
 	sip->class_type = -1;
 	
@@ -3177,7 +3177,7 @@ int parse_ship_template()
 		
 		init_ship_entry(sip);
 		strcpy(sip->name, buf);
-		//Use another template for this template. This allows for template heirarchies. - Turey
+		//Use another template for this template. This allows for template hierarchies. - Turey
 		if( optional_string("+Use Template:") ) {
 			char template_name[SHIP_MULTITEXT_LENGTH];
 			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -3471,7 +3471,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_vector(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
-	sip->max_speed = vm_vec_mag(&sip->max_vel);
+	sip->max_speed = sip->max_vel.xyz.z;
 
 	if(optional_string("$Rotation Time:"))
 	{
@@ -9625,6 +9625,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
 
+	// make sure that shields are enabled if they need to be
+	if (sp->ship_max_shield_strength > 0.0f) {
+		objp->flags &= ~OF_NO_SHIELDS;
+	}
 
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
@@ -9644,8 +9648,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
 
 	sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
-
-	sp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
