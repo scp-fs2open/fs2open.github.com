@@ -3048,7 +3048,10 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 // player pain
 void ship_hit_pain(float damage)
 {
-	game_flash( damage/15.0f, -damage/30.0f, -damage/30.0f );
+    if (!(Player_obj->flags & OF_INVULNERABLE))
+    {
+    	game_flash( damage/15.0f, -damage/30.0f, -damage/30.0f );
+    }
 
 	// kill any active popups when you get hit.
 	if ( Game_mode & GM_MULTIPLAYER ){
