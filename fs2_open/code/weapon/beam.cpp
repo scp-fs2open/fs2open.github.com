@@ -3406,9 +3406,12 @@ void beam_handle_collisions(beam *b)
 		}
 
 		// if the damage timestamp has expired or is not set yet, apply damage
-		if((r_coll[r_coll_count].c_stamp == -1) || timestamp_elapsed(r_coll[r_coll_count].c_stamp)){
-			do_damage = 1;
-			r_coll[r_coll_count].c_stamp = timestamp(BEAM_DAMAGE_TIME);
+		if((r_coll[r_coll_count].c_stamp == -1) || timestamp_elapsed(r_coll[r_coll_count].c_stamp))
+        {
+            float time_compression = f2fl(Game_time_compression);
+            float delay_time = i2fl(BEAM_DAMAGE_TIME) / time_compression;
+            do_damage = 1;
+            r_coll[r_coll_count].c_stamp = timestamp(fl2i(delay_time));
 		}
 
 		// if no damage - don't even indicate it has been hit
