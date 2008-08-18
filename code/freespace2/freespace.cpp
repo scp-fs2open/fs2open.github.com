@@ -2712,6 +2712,16 @@ void game_level_close()
 
 		audiostream_unpause_all();
 		Game_paused = 0;
+
+		if (gr_screen.envmap_render_target >= 0) {
+			if ( bm_release(gr_screen.envmap_render_target, 1) ) {
+				gr_screen.envmap_render_target = -1;
+			}
+		}
+
+		gr_set_ambient_light(120, 120, 120);
+
+		ENVMAP = Default_env_map;
 	}
 	else
 	{
@@ -3692,6 +3702,7 @@ void game_init()
 		Cmdline_glow = 0;
 		Cmdline_env = 0;
 		Cmdline_3dwarp = 0;
+		Cmdline_normal = 0;
 
 		// now init the standalone server code
 		std_init_standalone();
