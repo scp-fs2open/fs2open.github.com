@@ -6980,42 +6980,33 @@ void ship_render(object * obj)
 				}
 
 		//secondary weapons
-		
+		        int num_secondaries_rendered = 0;
+                vec3d secondary_weapon_pos;
+                w_bank* bank;
+
 				for (i = 0; i < swp->num_secondary_banks; i++) {
 					if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
 						continue;
 
-					w_bank *bank = &model_get(sip->model_num)->missile_banks[i];
-					for(k = 0; k < bank->num_slots; k++) {
-						vec3d secondary_weapon_pos = bank->pnt[k];
-					//	vm_vec_add(&secondary_weapon_pos, &obj->pos, &bank->pnt[k]);
-		
-					//	if(shipp->secondary_point_reload_pct[i][k] != 1.0)
-					//		vm_vec_scale_add2(&secondary_weapon_pos, &obj->orient.vec.fvec, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].model_num)->rad);
-						if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
-							continue;
-		
-						vec3d dir = ZERO_VECTOR;
-						dir.xyz.z = 1.0;
-		
-						bool clipping = false;
-		
-					/*	extern int G3_user_clip;
-		
-						if(!G3_user_clip){
-							vec3d clip_pnt;
-							vm_vec_rotate(&clip_pnt, &bank->pnt[k], &obj->orient);
-							vm_vec_add2(&clip_pnt, &obj->pos);
-							g3_start_user_clip_plane(&clip_pnt,&obj->orient.vec.fvec);
-							clipping = true;
-						}
-					*/
+					bank = &(model_get(sip->model_num))->missile_banks[i];
+					
+					num_secondaries_rendered = 0;
+					
+					for(k = 0; k < bank->num_slots; k++)
+                    {
+						secondary_weapon_pos = bank->pnt[k];
 
-						vm_vec_scale_add2(&secondary_weapon_pos, &dir, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+                        if (num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i])
+                            break;
+
+						if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
+                            continue;
+						
+						num_secondaries_rendered++;
+		
+						vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
 						model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
-						if(clipping)
-							g3_stop_user_clip_plane();
 					}
 				}
 				g3_done_instance(true);
