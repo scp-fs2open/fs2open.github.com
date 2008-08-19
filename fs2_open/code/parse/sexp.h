@@ -1659,11 +1659,14 @@ class arg_item
 	public:
 		char *text;
 		arg_item *next;
+		int nesting_level;
 
 		arg_item() : text(NULL), next(NULL) {}
 		void add_data(char *str);
 		void expunge();
 		int empty();
+		arg_item *get_next();
+		void clear_nesting_level(); 
 };
 
 
