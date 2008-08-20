@@ -2179,10 +2179,8 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
 
-std::vector<char*> Sexp_replacement_arguments;
-int Sexp_current_argument_nesting_level;
-
 // Goober5000
+char *Sexp_current_replacement_argument;
 arg_item Sexp_applicable_argument_list;
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
@@ -2199,23 +2197,11 @@ void arg_item::add_data(char *str)
 	// create item
 	item = new arg_item;
 	item->text = str;
-	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
 	ptr = this->next;
 	this->next = item;
 	item->next = ptr;
-}
-
-arg_item* arg_item::get_next()
-{
-	if (this->next != NULL) {
-		if (this->next->nesting_level >= Sexp_current_argument_nesting_level) {
-			return this->next; 
-		}
-	}
-
-	return NULL;
 }
 
 void arg_item::expunge()
@@ -2224,19 +2210,6 @@ void arg_item::expunge()
 
 	// contiually delete first item of list
 	while (this->next != NULL)
-	{
-		ptr = this->next->next;
-		delete this->next;
-		this->next = ptr;
-	}
-}
-
-void arg_item::clear_nesting_level()
-{
-	arg_item *ptr;
-
-	// contiually delete first item of list
-	while (this->nesting_level >= Sexp_current_argument_nesting_level)
 	{
 		ptr = this->next->next;
 		delete this->next;
@@ -2307,9 +2280,8 @@ static void sexp_nodes_close()
 void init_sexp()
 {
 	// Goober5000
-	Sexp_replacement_arguments.clear();
+	Sexp_current_replacement_argument = NULL;
 	Sexp_applicable_argument_list.expunge();
-	Sexp_current_argument_nesting_level = 0;
 
 	static bool done_sexp_atexit = false;
 	if (!done_sexp_atexit)
@@ -7688,18 +7660,18 @@ void do_action_for_each_special_argument( int cur_node )
 	arg_item *ptr;
 
 	// loop through all the supplied arguments
-	ptr = Sexp_applicable_argument_list.get_next();
+	ptr = Sexp_applicable_argument_list.next;
 	while (ptr != NULL)
 	{
 		// acquire argument to be used
-		Sexp_replacement_arguments.push_back(ptr->text);
+		Sexp_current_replacement_argument = ptr->text;
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		// (since these are all actions, they don't return any meaningful values)
 		eval_sexp(cur_node);
 
 		// continue along argument list
-		ptr = ptr->get_next();
+		ptr = ptr->next;
 	}
 }
 
@@ -7751,7 +7723,6 @@ int eval_when(int n, int use_arguments)
 		cond = CADR(n);
 		actions = CDDR(n);
 
-		Sexp_current_argument_nesting_level++;
 		// evaluate for custom arguments
 		val = eval_sexp(arg_handler, cond);
 	}
@@ -7790,12 +7761,9 @@ int eval_when(int n, int use_arguments)
 		}
 	}
 
-	if (use_arguments) {
-		// clean up any special sexp stuff
-		Sexp_replacement_arguments.pop_back();
-		Sexp_applicable_argument_list.clear_nesting_level();
-		Sexp_current_argument_nesting_level--;
-	}
+	// clean up any special sexp stuff
+	Sexp_current_replacement_argument = NULL;
+	Sexp_applicable_argument_list.expunge();
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
@@ -7852,7 +7820,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 	Assert(n != -1 && condition_node != -1);
 
 	// ensure special argument list is empty
-	Sexp_applicable_argument_list.clear_nesting_level();
+	Sexp_applicable_argument_list.expunge();
 
 	// loop through all arguments
 	num_true = 0;
@@ -7865,7 +7833,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 			flush_sexp_tree(condition_node);
 
 			// evaluate conditional for current argument
-			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
+			Sexp_current_replacement_argument = Sexp_nodes[n].text;
 			val = eval_sexp(condition_node);
 
 			// true?
@@ -7874,14 +7842,14 @@ int test_argument_list_for_condition(int n, int condition_node)
 				num_true++;
 				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 			}
-
-			// clear argument, but not list, as we'll need it later
-			Sexp_replacement_arguments.pop_back();
 		}
 
 		// continue along argument list
 		n = CDR(n);
 	}
+
+	// clear argument, but not list, as we'll need it later
+	Sexp_current_replacement_argument = NULL;
 
 	// return number of arguments for which conditional was true
 	return num_true;
@@ -7980,7 +7948,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		num_valid_args = query_sexp_args_count(arg_handler_node, true);
 		if (num_valid_args == 0)
 		{
-			Sexp_replacement_arguments.pop_back();
+			Sexp_current_replacement_argument = NULL;
 			return SEXP_FALSE;
 		}
 
@@ -8015,11 +7983,11 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// flush stuff
-		Sexp_applicable_argument_list.clear_nesting_level();
+		Sexp_applicable_argument_list.expunge();
 		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
+		Sexp_current_replacement_argument = Sexp_nodes[n].text;
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -8030,7 +7998,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	}
 
 	// clear argument, but not list, as we'll need it later
-	Sexp_replacement_arguments.pop_back();
+	Sexp_current_replacement_argument = NULL;
 
 	// true if our selected argument is true
 	return val;
@@ -8061,11 +8029,11 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// flush stuff
-		Sexp_applicable_argument_list.clear_nesting_level();
+		Sexp_applicable_argument_list.expunge();
 		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
+		Sexp_current_replacement_argument = Sexp_nodes[n].text;
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -8075,7 +8043,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		}
 
 		// clear argument, but not list, as we'll need it later
-		Sexp_replacement_arguments.pop_back();
+		Sexp_current_replacement_argument = NULL;
 	}
 
 	// return the value of the conditional
@@ -8085,19 +8053,22 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 // Goober5000
 void sexp_invalidate_argument(int n)
 {
-	int conditional, arg_handler, arg_n;
+	int parent, grandparent, arg_handler, arg_n;
 
-	conditional = n; 
-	do {
-		// find the conditional sexp
-		conditional = find_parent_operator(conditional);
-		if (conditional == -1)
-			return;
-	}
-	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
+	// find the conditional sexp
+	parent = find_parent_operator(n);
+	if (parent == -1)
+		return;
+	grandparent = find_parent_operator(parent);
+	if (grandparent == -1)
+		return;
 
-	// get the first op of the parent, which should be a *_of operator
-	arg_handler = CADR(conditional);
+	// make sure it's a supported operator
+	if (!is_blank_argument_op(get_operator_const(CTEXT(grandparent))))
+		return;
+
+	// get the first op of the grandparent, which should be a *_of operator
+	arg_handler = CADR(grandparent);
 	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
 		return;
 
@@ -9551,8 +9522,7 @@ void sexp_set_subsystem_strength(int n)
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	ship *shipp;
 	ship_subsys *ss, *ss_start;
-	bool generic_subsys; 
-	bool do_loop = true;
+	bool generic, do_loop = true;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
@@ -9606,12 +9576,12 @@ void sexp_set_subsystem_strength(int n)
 	}
 
 	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic_subsys = is_generic_subsys(subsystem);
+	generic = is_generic_subsys(subsystem);
 	subsys_type = ai_get_subsystem_type(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (generic_subsys) {
+		if (generic) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
@@ -19547,9 +19517,8 @@ int extract_sexp_variable_index(int node)
 // wrapper around Sexp_node[xx].text for normal and variable
 char *CTEXT(int n)
 {
-	int sexp_variable_index =1;
+	int sexp_variable_index;
 	char variable_name[TOKEN_LENGTH];
-	char *current_argument; 
 
 	if ( n < 0 ) {
 		Int3();
@@ -19568,28 +19537,26 @@ char *CTEXT(int n)
 		else
 		{
 			// make sure we have an argument to replace it with
-			Assert(!Sexp_replacement_arguments.empty());
-			if (Sexp_replacement_arguments.empty())
+			Assert(Sexp_current_replacement_argument != NULL);
+			if (Sexp_current_replacement_argument == NULL)
 				return Sexp_nodes[n].text;
 		}
 
 		// if the replacement argument is a variable name, get the variable index
-		sexp_variable_index = get_index_sexp_variable_name(Sexp_replacement_arguments.back());
-
-		current_argument = Sexp_replacement_arguments.back();
+		sexp_variable_index = get_index_sexp_variable_name(Sexp_current_replacement_argument);
 
 		// if the replacement argument is a formatted variable name, get the variable index
-		if (current_argument[0] == SEXP_VARIABLE_CHAR)
+		if (Sexp_current_replacement_argument[0] == SEXP_VARIABLE_CHAR)
 		{
-			get_unformatted_sexp_variable_name(variable_name, current_argument);
+			get_unformatted_sexp_variable_name(variable_name, Sexp_current_replacement_argument);
 			sexp_variable_index = get_index_sexp_variable_name(variable_name);
 		}
 
-		// if we have a non-block variable, return the variable value, else return the regular argument
-		if ((sexp_variable_index != -1) && !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_BLOCK))
+		// if we have a variable, return the variable value, else return the regular argument
+		if (sexp_variable_index != -1)
 			return Sexp_variables[sexp_variable_index].text;
 		else
-			return Sexp_replacement_arguments.back();
+			return Sexp_current_replacement_argument;
 	}
 
 	// Goober5000 - if not special argument, proceed as normal
