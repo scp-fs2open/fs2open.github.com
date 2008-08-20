@@ -2712,6 +2712,16 @@ void game_level_close()
 
 		audiostream_unpause_all();
 		Game_paused = 0;
+
+		if (gr_screen.envmap_render_target >= 0) {
+			if ( bm_release(gr_screen.envmap_render_target, 1) ) {
+				gr_screen.envmap_render_target = -1;
+			}
+		}
+
+		gr_set_ambient_light(120, 120, 120);
+
+		ENVMAP = Default_env_map;
 	}
 	else
 	{
@@ -3692,6 +3702,7 @@ void game_init()
 		Cmdline_glow = 0;
 		Cmdline_env = 0;
 		Cmdline_3dwarp = 0;
+		Cmdline_normal = 0;
 
 		// now init the standalone server code
 		std_init_standalone();
@@ -6708,6 +6719,13 @@ void game_set_frametime(int state)
 	}
 
 	Frametime = fixmul(Frametime, Game_time_compression);
+
+    if (Frametime <= 0)
+    {
+        // If the Frametime is zero or below due to Game_time_compression, set
+        // the Frametime to 1 (1/65536 of a second).
+        Frametime = 1;
+    }
 
 	Last_time = thistime;
 	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));

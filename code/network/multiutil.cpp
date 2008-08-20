@@ -2035,8 +2035,17 @@ void multi_create_standalone_object()
 
 int multi_message_should_broadcast(int type)
 {
-	return (type == MESSAGE_ARRIVE_ENEMY) || (type == MESSAGE_BETA_ARRIVED) || 
-		    (type == MESSAGE_GAMMA_ARRIVED) || (type == MESSAGE_HELP) || (type == MESSAGE_REINFORCEMENTS) ? 1 : 0;
+	switch (type) {
+		case MESSAGE_ARRIVE_ENEMY:
+		case MESSAGE_BETA_ARRIVED:
+		case MESSAGE_GAMMA_ARRIVED:
+		case MESSAGE_HELP:
+		case MESSAGE_REINFORCEMENTS:
+		case MESSAGE_SUPPORT_KILLED:
+			return 1; 
+		default:
+			return 0;
+	}
 }
 
 // active game list handling functions
