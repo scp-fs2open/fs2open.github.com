@@ -8015,27 +8015,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	int n = -1 ;
 	
 	Assert(arg_handler_node != -1 && condition_node != -1);
-	
-	/*
-	// Disabled due to problems with query_sexp_args_count (n, true). Those problems should be fixed now
-	// but the newer code is more heavily tested and should be safer so I'm sticking with that for now.
 
-	// get the number of valid arguments	
-	n = CDR(arg_handler_node);
-	int num_valid_args = query_sexp_args_count(arg_handler_node, true);
-	
-	if (num_valid_args == 0)
-	{
-		Sexp_current_replacement_argument = NULL;
-		return SEXP_FALSE;
-	}
-
-	// find the first valid argument. we know that there must be one thanks to the check above
-	while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
-	{
-		n = CDR(n);
-	}*/
-	
 	// get the first argument
 	n = CDR(arg_handler_node);
 	Assert (n != -1);

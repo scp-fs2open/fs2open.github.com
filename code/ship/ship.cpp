@@ -2817,7 +2817,7 @@ void init_ship_entry(ship_info *sip)
 	int i,j;
 	
 	sip->name[0] = '\0';
-	sprintf(sip->short_name, "AShipClass");
+	sprintf(sip->short_name, "ShipClass%d", (sip - Ship_info));
 	sip->species = 0;
 	sip->class_type = -1;
 	
@@ -3197,7 +3197,7 @@ int parse_ship_template()
 		
 		init_ship_entry(sip);
 		strcpy(sip->name, buf);
-		//Use another template for this template. This allows for template heirarchies. - Turey
+		//Use another template for this template. This allows for template hierarchies. - Turey
 		if( optional_string("+Use Template:") ) {
 			char template_name[SHIP_MULTITEXT_LENGTH];
 			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -3491,7 +3491,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_vector(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
-	sip->max_speed = vm_vec_mag(&sip->max_vel);
+	sip->max_speed = sip->max_vel.xyz.z;
 
 	if(optional_string("$Rotation Time:"))
 	{
@@ -7203,42 +7203,33 @@ void ship_render(object * obj)
 				}
 
 		//secondary weapons
-		
+		        int num_secondaries_rendered = 0;
+                vec3d secondary_weapon_pos;
+                w_bank* bank;
+
 				for (i = 0; i < swp->num_secondary_banks; i++) {
 					if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
 						continue;
 
-					w_bank *bank = &model_get(sip->model_num)->missile_banks[i];
-					for(k = 0; k < bank->num_slots; k++) {
-						vec3d secondary_weapon_pos = bank->pnt[k];
-					//	vm_vec_add(&secondary_weapon_pos, &obj->pos, &bank->pnt[k]);
-		
-					//	if(shipp->secondary_point_reload_pct[i][k] != 1.0)
-					//		vm_vec_scale_add2(&secondary_weapon_pos, &obj->orient.vec.fvec, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].model_num)->rad);
-						if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
-							continue;
-		
-						vec3d dir = ZERO_VECTOR;
-						dir.xyz.z = 1.0;
-		
-						bool clipping = false;
-		
-					/*	extern int G3_user_clip;
-		
-						if(!G3_user_clip){
-							vec3d clip_pnt;
-							vm_vec_rotate(&clip_pnt, &bank->pnt[k], &obj->orient);
-							vm_vec_add2(&clip_pnt, &obj->pos);
-							g3_start_user_clip_plane(&clip_pnt,&obj->orient.vec.fvec);
-							clipping = true;
-						}
-					*/
+					bank = &(model_get(sip->model_num))->missile_banks[i];
+					
+					num_secondaries_rendered = 0;
+					
+					for(k = 0; k < bank->num_slots; k++)
+                    {
+						secondary_weapon_pos = bank->pnt[k];
 
-						vm_vec_scale_add2(&secondary_weapon_pos, &dir, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+                        if (num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i])
+                            break;
+
+						if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
+                            continue;
+						
+						num_secondaries_rendered++;
+		
+						vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
 						model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
-						if(clipping)
-							g3_stop_user_clip_plane();
 					}
 				}
 				g3_done_instance(true);
@@ -9848,6 +9839,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
 
+	// make sure that shields are enabled if they need to be
+	if (sp->ship_max_shield_strength > 0.0f) {
+		objp->flags &= ~OF_NO_SHIELDS;
+	}
 
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
@@ -9867,8 +9862,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
 
 	sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
-
-	sp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);

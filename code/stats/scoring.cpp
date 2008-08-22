@@ -810,6 +810,7 @@ void scoring_eval_kill(object *ship_obj)
 	net_player *dead_plr = NULL;
 	float scoring_scale_by_damage = 1;	// percentage to scale the killer's score by if we score based on the amount of damage caused
 	int kill_score, assist_score; 
+	bool is_enemy_player = false;		// true if the player just killed an enemy player ship
 
 
 	// multiplayer clients bail here
@@ -835,6 +836,7 @@ void scoring_eval_kill(object *ship_obj)
 			Net_players[net_player_num].m_player->stats.m_player_deaths++;
 			nprintf(("Network","Setting player %s deaths to %d\n",Net_players[net_player_num].m_player->callsign,Net_players[net_player_num].m_player->stats.m_player_deaths));
 			dead_plr = &Net_players[net_player_num];
+			is_enemy_player = true;
 		}
 	} else {
 		if(ship_obj == Player_obj){
@@ -963,7 +965,16 @@ void scoring_eval_kill(object *ship_obj)
 				} else {
 					plr->stats.m_okKills[si_index]++;		
 					plr->stats.m_kill_count_ok++;
-					kill_score = (int)(dead_ship->score * scoring_get_scale_factor() * scoring_scale_by_damage);
+
+					// only computer controlled enemies should scale with difficulty
+					if (is_enemy_player) {
+						kill_score = (int)(dead_ship->score * scoring_scale_by_damage);
+					}
+					else {
+						kill_score = (int)(dead_ship->score * scoring_get_scale_factor() * scoring_scale_by_damage);
+					}
+
+
 					plr->stats.m_score += kill_score;  					
 					hud_gauge_popup_start(HUD_KILLS_GAUGE);
 
@@ -1039,7 +1050,7 @@ void scoring_eval_kill(object *ship_obj)
 		
 	// pass in the guy who got the credit for the kill (if any), so that he doesn't also
 	// get credit for an assist
-	scoring_eval_assists(dead_ship,killer_sig);	
+	scoring_eval_assists(dead_ship,killer_sig, is_enemy_player);	
 
 	// bash damage_ship_id[0] with the signature of the guy who is getting credit for the kill
 	dead_ship->damage_ship_id[0] = killer_sig;
@@ -1075,13 +1086,14 @@ void scoring_eval_kill(object *ship_obj)
 
 // kill_id is the object signature of the guy who got the credit for the kill (may be -1, if no one got it)
 // this is to ensure that you don't also get an assist if you get the kill.
-void scoring_eval_assists(ship *sp,int killer_sig)
+void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 {
 	int idx;
 	player *plr;
 	float scoring_scale_by_damage = 1;	// percentage to scale the score by if we score based on the amount of damage caused
 	int assist_score; 
 	int net_player_num;
+	float scoring_scale_factor;
 
 
 	// multiplayer clients bail here
@@ -1119,15 +1131,25 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 					nprintf(("Network","-==============GAVE PLAYER %s AN ASSIST=====================-\n",plr->callsign));
 				}
 				
+				// Don't scale in TvT and dogfight
+				if (is_enemy_player) {
+					Assert(Game_mode & GM_MULTIPLAYER); 
+					scoring_scale_factor = 1.0f;
+				}
+				else {
+					scoring_scale_factor = scoring_get_scale_factor();
+				}
+
+
 				// maybe award assist points based on damage
 				if (The_mission.ai_profile->flags & AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE) {
 					scoring_scale_by_damage = (sp->damage_ship[idx]/sp->total_damage_received);
-					assist_score = (int)(sp->score * scoring_get_scale_factor() * scoring_scale_by_damage);
+					assist_score = (int)(sp->score * scoring_scale_factor * scoring_scale_by_damage);
 					plr->stats.m_score += assist_score;
 				}
 				// otherwise give the points based on the percentage in the mission file
 				else {
-					assist_score = (int)(sp->score * sp->assist_score_pct * scoring_get_scale_factor() );
+					assist_score = (int)(sp->score * sp->assist_score_pct * scoring_scale_factor );
 					plr->stats.m_score += assist_score;
 				}
 

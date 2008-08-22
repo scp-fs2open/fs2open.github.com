@@ -613,6 +613,11 @@ void change_window_active_state()
 #endif
 
 			disableWindowsKey();
+
+            if (!Cmdline_window)
+            {
+                SetWindowPos(hwndApp, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
 		} else {
 			joy_unacquire_ff();
 
@@ -627,6 +632,11 @@ void change_window_active_state()
 #endif
 
 			enableWindowsKey();
+
+            if (!Cmdline_window)
+            {
+                SetWindowPos(hwndApp, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
 		}
 
 		gr_activate(fAppActive);

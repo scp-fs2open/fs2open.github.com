@@ -1188,38 +1188,43 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 	object *robjp;
 	object *tobj;
 	int multi_player_num;
+	int multi_player_team; 
 
 	// this is essentially a check for multiplayer server/client mode
 	// in multiplayer mode, the server may have to issue this command when received from a client
 	if(objp == NULL) {
 		tobj = Player_obj;
 		multi_player_num = -1;
+		multi_player_team = -1;
 	} else {
 		tobj = objp;
 		multi_player_num = multi_find_player_by_object(objp);
 		Assert(multi_player_num != -1);
+		if (multi_player_num != -1) {
+			multi_player_team = Net_players[multi_player_num].p_info.team;
+		}
 	}
 
 	// see if player is already scheduled on arriving support ship.  If so, issues appripriate
 	// message and bail
 	if ( is_support_allowed(tobj) ) {
 		if ( mission_is_repair_scheduled( tobj ) ) {
-			message_send_builtin_to_player( MESSAGE_REARM_ON_WAY, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, -1 );
+			message_send_builtin_to_player( MESSAGE_REARM_ON_WAY, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 		} else {
 			robjnum = hud_support_find_closest(OBJ_INDEX(tobj));
 			if ( robjnum != -1 ) {
-				message_send_builtin_to_player( MESSAGE_REARM_ON_WAY, &Ships[Objects[robjnum].instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, -1 );
+				message_send_builtin_to_player( MESSAGE_REARM_ON_WAY, &Ships[Objects[robjnum].instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 			} else {
 				// request a rearm.  Next function returns -1 if ship is warping in, objnum of repair ship otherwise
 				robjnum = ai_issue_rearm_request( tobj );
 				if ( robjnum != -1) {
 					robjp = &Objects[robjnum];
-					message_send_builtin_to_player( MESSAGE_ON_WAY, &Ships[robjp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, -1 );
+					message_send_builtin_to_player( MESSAGE_ON_WAY, &Ships[robjp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 
 				} else {
 					// if we are in this part of the if statment, a support ship has been warped in to
 					// service us.  Issue appropriate message
-					message_send_builtin_to_player( MESSAGE_REARM_WARP, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, -1 );
+					message_send_builtin_to_player( MESSAGE_REARM_WARP, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, multi_player_team );
 				}
 
 				mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REARM, Ships[tobj->instance].ship_name, NULL);
@@ -1547,6 +1552,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	int message;
 	int target_team, ship_team;				// team id's for the ship getting message and any target the player has
 	ship *ordering_shipp;
+
+	int message_team_filter = -1;
 	
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
 	// just a safety net.
@@ -1568,6 +1575,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 	if ( player_num != -1 ){
 		ainfo = &Ai_info[Ships[Objects[Net_players[player_num].m_player->objnum].instance].ai_index];
+		message_team_filter = Net_players[player_num].p_info.team; 
 	}
 
 	Assert( ainfo->shipnum != -1 );
@@ -1793,7 +1801,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	// this is the _response_
 	if ( send_message && (!(Ships[shipnum].flags2 & SF2_NO_BUILTIN_MESSAGES)))
 	{
-		message_send_builtin_to_player( message, &Ships[shipnum], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, -1 );	
+		message_send_builtin_to_player( message, &Ships[shipnum], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, message_team_filter );	
 	}
 	
 	return send_message;
@@ -1814,6 +1822,8 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	int target_team, wing_team;				// team for the wing and the player's target
 	ship *ordering_shipp;
 
+	int message_team_filter = -1;
+
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
 	// just a safety net.
 	if ( (Game_mode & GM_MULTIPLAYER) && (player_num != -1) ) {
@@ -1832,8 +1842,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	ai_submode = -1234567;
 	ainfo = Player_ai;
 
-	if ( player_num != -1 )
+	if ( player_num != -1 ) {
 		ainfo = &Ai_info[Ships[Objects[Net_players[player_num].m_player->objnum].instance].ai_index];
+		message_team_filter = Net_players[player_num].p_info.team; 
+	}
 
 	Assert( ainfo->shipnum != -1 );
 	ordering_shipp = &Ships[ainfo->shipnum];
@@ -2011,7 +2023,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		// menu, but the get_random_ship* functions won't return dying ships.
 		// Karajorma - No valid ships will be found if all the remaining ships have been silence either. 
 		if ( ship_num != -1 ) {
-			message_send_builtin_to_player( message, &Ships[ship_num], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, -1 );
+			message_send_builtin_to_player( message, &Ships[ship_num], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, message_team_filter );
 			message_sent = 1;
 		}
 	}

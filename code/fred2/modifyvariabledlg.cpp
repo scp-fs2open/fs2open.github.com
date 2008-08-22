@@ -277,7 +277,7 @@ BOOL CModifyVariableDlg::OnInitDialog()
 
 	// initialize list -- Box is set to *not* sort
 	for (i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
+		if ((Sexp_variables[i].type & SEXP_VARIABLE_SET) && !(Sexp_variables[i].type & SEXP_VARIABLE_BLOCK)){
 			box_index = cbox->AddString(Sexp_variables[i].variable_name);
 			
 			// check no error
