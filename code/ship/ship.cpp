@@ -4627,6 +4627,8 @@ strcpy(parse_error_text, temp_error);
 				sp->armor_type_idx = -1;
 				sp->path_num = -1;
 				sp->turret_max_fov = 1.0f;
+
+				sp->turret_reset_delay = 2000;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -4734,6 +4736,9 @@ strcpy(parse_error_text, temp_error);
 				sp->turret_y_fov = (float)cos(angle);
 				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
 			}
+
+			if (optional_string("$Turret Reset Delay:"))
+				stuff_int(&sp->turret_reset_delay);
 
 			if (optional_string("$Flags:")) {
 				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);

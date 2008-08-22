@@ -868,6 +868,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	int      rotation_timestamp;
 	matrix   world_to_turret_matrix;
+
+	int		turret_reset_delay;
 } model_subsystem;
 
 typedef struct model_special {

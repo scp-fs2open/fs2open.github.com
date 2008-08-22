@@ -641,18 +641,18 @@ void radar_blip_draw_distorted_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	if (b->radar_image_2d < 0) {
-		if (Cmdline_nohtl)
-		{
-			radar_orb_draw_contact(&out,b->rad);
-		}
-		else
-		{
-			radar_orb_draw_contact_htl(&out,b->rad);
-		}
+	if (Cmdline_nohtl)
+	{
+		radar_orb_draw_contact(&out,b->rad);
+	}
+	else if (b->radar_image_2d < 0)
+	{
+		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 	}
 	else
-		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
+	{
+		radar_orb_draw_contact_htl(&out,b->rad);
+	}
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -691,18 +691,18 @@ void radar_blip_draw_flicker_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	if (b->radar_image_2d < 0) {
-		if (Cmdline_nohtl)
-		{
-			radar_orb_draw_contact(&out,b->rad);
-		}
-		else
-		{
-			radar_orb_draw_contact_htl(&out,b->rad);
-		}
+	if (Cmdline_nohtl)
+	{
+		radar_orb_draw_contact(&out,b->rad);
+	}
+	else if (b->radar_image_2d < 0) 
+	{
+		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 	}
 	else
-		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
+	{
+		radar_orb_draw_contact_htl(&out,b->rad);
+	}
 }
 
 // Draw all the active radar blips
@@ -751,18 +751,18 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			if (b->radar_image_2d < 0) {
-				if (Cmdline_nohtl)
-				{
-					radar_orb_draw_contact(&b->position,b->rad);
-				}
-				else
-				{
-					radar_orb_draw_contact_htl(&b->position,b->rad);
-				}
+			if (Cmdline_nohtl)
+			{
+				radar_orb_draw_contact(&b->position,b->rad);
+			}
+			else if (b->radar_image_2d < 0) 
+			{
+				radar_orb_draw_image(&b->position, b->rad, b->radar_image_2d, b->radar_projection_size);
 			}
 			else
-				radar_orb_draw_image(&b->position, b->rad, b->radar_image_2d, b->radar_projection_size);
+			{
+				radar_orb_draw_contact_htl(&b->position,b->rad);
+			}
 		}
 	}
 }
@@ -1083,13 +1083,21 @@ void radar_page_in_orb()
 
 void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 {
-	vertex vert;
 	int tmap_flags = 0;
+	int h, w;
+	float aspect_mp;
 
-	if (Cmdline_nohtl) {
-		g3_rotate_vertex(&vert, pnt);
-		g3_project_vertex(&vert);
-	}
+	// need to get bitmap info
+	bm_get_info(idx, &w, &h);
+
+	Assert(w > 0);
+
+	// get multiplier 
+	if (h == w) {
+		aspect_mp = 1.0f;
+	} else {
+		aspect_mp = (((float) h) / ((float) w));
+ 	}
 
 	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
 
@@ -1107,21 +1115,11 @@ void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 	//modify size according to value from tables
 	sizef *= mult;
 
-	if (Cmdline_nohtl) {
-		tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE;
+	tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
 
-		g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
-		if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
-		{
-			g3_draw_bitmap(&vert, 0, sizef/35.0f, tmap_flags, 1.0f);
-		}
-	} else {
-		tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
-
-		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, sizef/35.0f, tmap_flags);
-		if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
-		{
-			g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, sizef/35.0f, tmap_flags);
-		}
+	g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+	{
+		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
 	}
 }

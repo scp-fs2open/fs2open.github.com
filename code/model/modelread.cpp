@@ -4697,7 +4697,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	if (reset == true)
 		step_size /= 3.0f;
 	else
-		turret->rotation_timestamp = timestamp(2000);
+		turret->rotation_timestamp = timestamp(turret->turret_reset_delay);
 
 	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
 	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
