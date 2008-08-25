@@ -645,7 +645,7 @@ void radar_blip_draw_distorted_orb(blip *b)
 	{
 		radar_orb_draw_contact(&out,b->rad);
 	}
-	else if (b->radar_image_2d < 0)
+	else if (b->radar_image_2d >= 0)
 	{
 		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 	}
@@ -695,7 +695,7 @@ void radar_blip_draw_flicker_orb(blip *b)
 	{
 		radar_orb_draw_contact(&out,b->rad);
 	}
-	else if (b->radar_image_2d < 0) 
+	else if (b->radar_image_2d >= 0) 
 	{
 		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 	}
@@ -755,7 +755,7 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 			{
 				radar_orb_draw_contact(&b->position,b->rad);
 			}
-			else if (b->radar_image_2d < 0) 
+			else if (b->radar_image_2d >= 0) 
 			{
 				radar_orb_draw_image(&b->position, b->rad, b->radar_image_2d, b->radar_projection_size);
 			}
