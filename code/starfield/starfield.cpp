@@ -2597,7 +2597,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && ( Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
+	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
 		stars_draw_stars();
 	}
 
@@ -2909,7 +2909,7 @@ void stars_draw_background()
 	if (Nmodel_num < 0)
 		return;
 
-	if (Nmodel_bitmap > -1) {
+	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(Nmodel_bitmap);
 		flags |= MR_FORCE_TEXTURE;
 	}
@@ -2919,7 +2919,7 @@ void stars_draw_background()
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 
-	if (Nmodel_bitmap > -1)
+	if (Nmodel_bitmap >= 0)
 		model_set_forced_texture(-1);
 }
 
@@ -2936,7 +2936,7 @@ void stars_set_background_model(char *model_name, char *texture_name)
 		Nmodel_num = -1;
 	}
 
-	if ( (model_name == NULL) || (strlen(model_name) < 1) )
+	if ( (model_name == NULL) || (*model_name == '\0') )
 		return;
 
 	Nmodel_num = model_load(model_name, 0, NULL, 0);
