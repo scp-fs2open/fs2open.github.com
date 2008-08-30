@@ -327,7 +327,11 @@ void g3_set_view(camera *cam)
 	vec3d pos;
 	matrix ori;
 	cam->get_info(&pos, &ori);
-	g3_set_view_matrix(&pos, &ori, cam->get_fov());
+
+	if(Sexp_fov <= 0.0f)
+		g3_set_view_matrix(&pos, &ori, cam->get_fov());
+	else
+		g3_set_view_matrix(&pos, &ori, Sexp_fov);
 }
 
 //set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()

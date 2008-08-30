@@ -5272,7 +5272,7 @@ camid game_render_frame_setup()
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
 	static int last_Viewer_objnum = -1;
-	static float last_FOV = main_cam->get_fov();
+	static float last_FOV = Sexp_fov;
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
@@ -5300,7 +5300,7 @@ camid game_render_frame_setup()
 			((last_Viewer_mode & VM_FREECAMERA) && !(Viewer_mode & VM_FREECAMERA)) ||
 			(!(last_Viewer_mode & VM_TOPDOWN) && (Viewer_mode & VM_TOPDOWN)) ||
 			((last_Viewer_mode & VM_TOPDOWN) && !(Viewer_mode & VM_TOPDOWN)) ||
-			(last_FOV != main_cam->get_fov()) ||
+			(last_FOV != Sexp_fov) ||
 			((Viewer_mode & VM_OTHER_SHIP) && (last_Viewer_objnum != Player_ai->target_objnum)) 		// other ship mode, but targets changes
 			) {
 
@@ -5310,7 +5310,7 @@ camid game_render_frame_setup()
 
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
-		|| (last_FOV != main_cam->get_fov())
+		|| (last_FOV != Sexp_fov)
 		|| (Viewer_mode & VM_FREECAMERA))	{
 		//mprintf(( "************** Camera cut! ************\n" ));
 		last_Viewer_mode = Viewer_mode;
@@ -5580,10 +5580,19 @@ void game_render_frame( camid cid )
 		vec3d eye_pos;
 		matrix eye_orient;
 
+		//Get current camera info
 		cam->get_info(&eye_pos, &eye_orient);
+
+		//Handle jitter if not cutscene camera
 		eye_no_jitter = eye_orient;
-		apply_view_shake(&eye_orient);
-		g3_set_view_matrix(&eye_pos, &eye_orient, cam->get_fov());
+		if( !(Viewer_mode & VM_FREECAMERA) )
+			apply_view_shake(&eye_orient);
+
+		//Maybe override FOV from SEXP
+		if(Sexp_fov <= 0.0f)
+			g3_set_view_matrix(&eye_pos, &eye_orient, cam->get_fov());
+		else
+			g3_set_view_matrix(&eye_pos, &eye_orient, Sexp_fov);
 	}
 	else
 	{

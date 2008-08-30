@@ -156,6 +156,7 @@ public:
 //Some global stuff
 extern std::vector<subtitle> Subtitles;
 extern float VIEWER_ZOOM_DEFAULT;
+extern float Sexp_fov;
 
 //Helpful functions
 void cam_init();

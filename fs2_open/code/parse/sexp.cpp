@@ -15563,7 +15563,13 @@ void sexp_set_fov(int n)
 	if(cam == NULL)
 		return;
 
-	cam->set_fov(eval_num(n) * (PI/180.0f));
+	//Cap FOV to something reasonable.
+	float new_fov = (float)eval_num(n);
+	new_fov = MIN(new_fov, 360.0f);
+	new_fov = MAX(new_fov, 0.0f);
+
+	Sexp_fov = (new_fov * (PI/180.0f));
+	//cam->set_fov(eval_num(n) * (PI/180.0f));
 }
 
 void sexp_reset_fov()
@@ -15572,7 +15578,8 @@ void sexp_reset_fov()
 	if(cam == NULL)
 		return;
 
-	cam->set_fov(VIEWER_ZOOM_DEFAULT);
+	Sexp_fov = 0.0;
+	//cam->set_fov(VIEWER_ZOOM_DEFAULT);
 }
 
 void sexp_reset_camera(int node)
@@ -22732,7 +22739,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
-		"\tSets the field of view  "
+		"\tSets the field of view - overrides all camera settings  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
 	},
