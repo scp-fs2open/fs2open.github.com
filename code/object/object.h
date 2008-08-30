@@ -546,9 +546,21 @@ typedef struct object {
 		class jump_node *jnp;		// WMC - Direct pointer to the object. Used only for jump nodes as of now
 	};
 
+	//camid core_camera;				//WMC - Core camera for the object
+	//camid topdown_camera;			//WMC - Top down camera
+
 	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
 	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
 } object;
+
+struct object_h {
+	object *objp;
+	int sig;
+
+	bool IsValid(){return (this != NULL && objp != NULL && objp->signature == sig);}
+	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
+	object_h(){objp=NULL;sig=-1;}
+};
 
 // object backup struct used by Fred.
 typedef struct object_orient_pos {
@@ -691,6 +703,6 @@ void obj_move_one_docked_object(object *objp, object *parent_objp);
 void object_set_gliding(object *objp, bool enable=true);
 bool object_get_gliding(object *objp);
 int obj_get_by_signature(int sig);
-
+int object_get_model(object *objp);
 
 #endif
