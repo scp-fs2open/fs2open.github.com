@@ -1052,6 +1052,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "weapon/shockwave.h"
+#include "parse/parselo.h"	//strextcmp
 
 #include <limits.h>
 
@@ -1168,7 +1169,8 @@ static int Interp_objnum = -1;
 static int Interp_insignia_bitmap = -1;
 
 // replacement - Goober5000
-static int *Interp_replacement_textures = NULL;
+// updated - WMC
+static int *Interp_new_replacement_textures = NULL;
 
 // if != -1, use this bitmap when rendering with a forced texture
 static int Interp_forced_bitmap = -1;
@@ -1944,6 +1946,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	// Goober5000
 	int tmap_num = w(p+40);
+	texture_map *tmap = &pm->maps[tmap_num];
+	texture_info *tbase = &tmap->textures[TM_BASE_TYPE];
+	texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
+	int rt_begin_index = tmap_num*TM_NUM_TYPES;
 	//mprintf(("model_interp_tmappoly tmap_num: %d\n", tmap_num));
 	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
@@ -1959,7 +1965,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int is_invisible = 0;
 
 	if (Interp_warp_bitmap < 0) {
-		if ( (!Interp_thrust_scale_subobj) && (pm->maps[tmap_num].base_map.GetTexture() < 0) ) {
+		if ( (!Interp_thrust_scale_subobj) && (tbase->GetTexture() < 0) ) {
 			// Don't draw invisible polygons.
 			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
 				return;
@@ -2055,7 +2061,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//		}
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
-			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->maps[tmap_num].is_ambient))	{	//gets the ambient glow to work
+			if ( (Interp_flags & MR_NO_LIGHTING) || (tmap->is_ambient))	{	//gets the ambient glow to work
 				Interp_list[i]->r = 191;
 				Interp_list[i]->g = 191;
 				Interp_list[i]->b = 191;
@@ -2151,7 +2157,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
 				if (Interp_subspace) {										
-					gr_set_bitmap( pm->maps[tmap_num].base_map.GetTexture(), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
+					gr_set_bitmap( tbase->GetTexture(), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
 				else {					
@@ -2160,28 +2166,64 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					// if we're rendering a nebula background pof, maybe select a custom texture
 					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
 						texture = Interp_forced_bitmap;
-					}else if((Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0)){
-						texture = Interp_replacement_textures[tmap_num];
+					}else if((Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0)){
+						texture_info tt = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+						texture = model_interp_get_texture(&tt, base_frametime);
 					} else {
 						// pick the texture, animating it if necessary
-						texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
+						texture = model_interp_get_texture(tbase, base_frametime);
 						
 						// doing glow maps?
-						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.GetTexture() >= 0) ) {
+						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (tglow->GetTexture() >= 0) ) {
 							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.GetNumFrames() > 1) ) {
-								GLOWMAP = pm->maps[tmap_num].glow_map.GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.GetNumFrames());
+							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
+								GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetNumFrames());
 							} else {
-								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
+								GLOWMAP = model_interp_get_texture(tglow, base_frametime);
 							}
 						}
 
 						if((Detail.lighting > 2)  && (Interp_detail_level < 2))
 						{
 							// likewise, etc.
-							SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
-							NORMMAP = model_interp_get_texture(&pm->maps[tmap_num].norm_map, base_frametime);
-							HEIGHTMAP = model_interp_get_texture(&pm->maps[tmap_num].height_map, base_frametime);
+							SPECMAP = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+							NORMMAP = model_interp_get_texture(&tmap->textures[TM_NORMAL_TYPE], base_frametime);
+							HEIGHTMAP = model_interp_get_texture(&tmap->textures[TM_HEIGHT_TYPE], base_frametime);
+						}
+					}
+
+					//*****
+					//WMC - now do other replacements
+					if(Interp_new_replacement_textures != NULL)
+					{
+						texture_info tinfo;
+						for(int tmn = TM_BASE_TYPE+1; tmn < TM_NUM_TYPES; tmn++)
+						{
+							int tex = Interp_new_replacement_textures[rt_begin_index + tmn];
+							if(tex < 0)
+								continue;
+
+							tinfo = texture_info(tex);
+
+							//Figure out actual texture to use
+							tex = model_interp_get_texture(&tinfo, base_frametime);
+							switch(tmn)
+							{
+								case TM_GLOW_TYPE:
+									GLOWMAP = tex;
+									break;
+								case TM_SPECULAR_TYPE:
+									SPECMAP = tex;
+									break;
+								case TM_NORMAL_TYPE:
+									NORMMAP = tex;
+									break;
+								case TM_HEIGHT_TYPE:
+									HEIGHTMAP = tex;
+									break;
+								default:
+									break;
+							}
 						}
 					}
 
@@ -2189,7 +2231,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if(Interp_flags & MR_ALL_XPARENT){
 						gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 					} else {
-						if(pm->maps[tmap_num].is_transparent) {	//trying to get transperent textures-Bobboau
+						if(tmap->is_transparent) {	//trying to get transperent textures-Bobboau
 							gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 						}else{
 							gr_set_bitmap( texture );
@@ -5293,7 +5335,7 @@ void model_set_insignia_bitmap(int bmap)
 
 void model_set_replacement_textures(int *replacement_textures)
 {
-	Interp_replacement_textures = replacement_textures;	//replacement_textures;
+	Interp_new_replacement_textures = replacement_textures;	//replacement_textures;
 }
 
 // set the forces bitmap
@@ -5321,8 +5363,10 @@ int model_find_texture(int model_num, int bitmap)
 	}
 
 	// find the texture
-	for(idx=0; idx<pm->n_textures; idx++){
-		if(pm->maps[idx].base_map.GetTexture() == bitmap){
+	for(idx=0; idx<pm->n_textures; idx++)
+	{
+		if(pm->maps[idx].FindTexture(bitmap) > -1)
+		{
 			return 1;
 		}
 	}
@@ -5428,13 +5472,7 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 		return;
 
 	for (idx = 0; idx < pm->n_textures; idx++) {
-		texture_map *tmap = &pm->maps[idx];
-
-		tmap->base_map.PageIn();
-		tmap->glow_map.PageIn();
-		tmap->spec_map.PageIn();
-		tmap->norm_map.PageIn();
-		tmap->height_map.PageIn();
+		pm->maps[idx].PageIn();
 	}
 
 	for (i = 0; i < pm->n_glow_point_banks; i++) {
@@ -5467,13 +5505,7 @@ void model_page_out_textures(int model_num, bool release)
 
 
 	for (i = 0; i < pm->n_textures; i++) {
-		texture_map *tmap = &pm->maps[i];
-
-		tmap->base_map.PageOut(release);
-		tmap->glow_map.PageOut(release);
-		tmap->spec_map.PageOut(release);
-		tmap->norm_map.PageOut(release);
-		tmap->height_map.PageOut(release);
+		pm->maps[i].PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
@@ -6350,6 +6382,10 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 	for (uint i = 0; i < buffer_size; i++) {
 		int texture = -1;
 		int tmap_num = model->buffer[i].texture;
+		texture_map *tmap = &pm->maps[tmap_num];
+		texture_info *tbase = &tmap->textures[TM_BASE_TYPE];
+		texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
+		int rt_begin_index = tmap_num*TM_NUM_TYPES;
 
 		if ( (Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0) ) {
 			texture = Interp_forced_bitmap;
@@ -6357,33 +6393,69 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		else if (Interp_warp_bitmap > -1) {
 			texture = Interp_warp_bitmap;
 		}
-		else if ( (Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0) ) {
-			texture = Interp_replacement_textures[tmap_num];
+		else if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+			texture = Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE];
 		}
 		else if ( Interp_thrust_scale_subobj && !no_texturing ) {
 			texture = Interp_thrust_bitmap;
 		}
 		else if (!no_texturing) {
 			// pick the texture, animating it if necessary
-			texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
+			texture = model_interp_get_texture(tbase, base_frametime);
 
 			// doing glow maps?
-			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.GetTexture() >= 0) ) {
+			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (tglow->GetTexture() >= 0) ) {
 				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.GetNumFrames() > 1) ) {
-					GLOWMAP = pm->maps[tmap_num].glow_map.GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.GetNumFrames());
+				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
+					GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetNumFrames());
 				} else {
-					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
+					GLOWMAP = model_interp_get_texture(tglow, base_frametime);
 				}
 			}
 
 			if ( (Detail.lighting > 2)  && (Interp_detail_level < 2) ) {
 				// likewise, etc.
-				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
-				NORMMAP = model_interp_get_texture(&pm->maps[tmap_num].norm_map, base_frametime);
-				HEIGHTMAP = model_interp_get_texture(&pm->maps[tmap_num].height_map, base_frametime);
+				SPECMAP = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+				NORMMAP = model_interp_get_texture(&tmap->textures[TM_NORMAL_TYPE], base_frametime);
+				HEIGHTMAP = model_interp_get_texture(&tmap->textures[TM_HEIGHT_TYPE], base_frametime);
 			}
 		}
+
+		//*****
+		//WMC - now do other replacements
+		if(Interp_new_replacement_textures != NULL)
+		{
+			texture_info tinfo;
+			for(int tmn = TM_BASE_TYPE+1; tmn < TM_NUM_TYPES; tmn++)
+			{
+				int tex = Interp_new_replacement_textures[rt_begin_index + tmn];
+				if(tex < 0)
+					continue;
+
+				tinfo = texture_info(tex);
+
+				//Figure out actual texture to use
+				tex = model_interp_get_texture(&tinfo, base_frametime);
+				switch(tmn)
+				{
+					case TM_GLOW_TYPE:
+						GLOWMAP = tex;
+						break;
+					case TM_SPECULAR_TYPE:
+						SPECMAP = tex;
+						break;
+					case TM_NORMAL_TYPE:
+						NORMMAP = tex;
+						break;
+					case TM_HEIGHT_TYPE:
+						HEIGHTMAP = tex;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+
 
 		if ( (texture == -1) && !no_texturing )
 			continue;
@@ -6406,7 +6478,7 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 			gr_zbuffer_set(GR_ZBUFF_READ);
 		}
 		// trying to get transperent textures-Bobboau
-		else if (pm->maps[tmap_num].is_transparent) {
+		else if (tmap->is_transparent) {
 			// for special shockwave/warpmap usage
 			if (Interp_warp_alpha != -1.0f)
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_warp_alpha );
@@ -6882,6 +6954,17 @@ texture_info::texture_info()
 {
 	clear();
 }
+texture_info::texture_info(int bm_handle)
+{
+	if(!bm_is_valid(bm_handle))
+	{
+		clear();
+		return;
+	}
+
+	this->original_texture = bm_handle;
+	this->ResetTexture();
+}
 void texture_info::clear()
 {
 	texture = original_texture = -1;
@@ -6961,4 +7044,51 @@ int texture_info::SetTexture(int n_tex)
 	}
 
 	return texture;
+}
+
+//********************-----CLASS: texture_map-----********************//
+int texture_map::FindTexture(int bm_handle)
+{
+	if(!bm_is_valid(bm_handle))
+		return -1;
+
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+	{
+		if (this->textures[i].GetTexture() == bm_handle)
+			return i;
+	}
+	return -1;
+}
+int texture_map::FindTexture(char *fname)
+{
+	if(fname == NULL || !strlen(fname))
+		return -1;
+
+	char buf[NAME_LENGTH];
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+	{
+		bm_get_filename(this->textures[i].GetTexture(), buf);
+		if (!strextcmp(buf, fname)) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void texture_map::PageIn()
+{
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+		this->textures[i].PageIn();
+}
+
+void texture_map::PageOut(bool release)
+{
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+		this->textures[i].PageOut(release);
+}
+
+void texture_map::Reset()
+{
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+		this->textures[i].ResetTexture();
 }

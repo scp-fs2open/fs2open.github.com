@@ -2809,8 +2809,6 @@ int parse_create_object_sub(p_object *p_objp)
 	ship_weapon *wp;
 
 	// texture replacements
-	char texture_file[MAX_FILENAME_LEN];
-	char *p;
 	polymodel *pm;
 
 	MONITOR_INC(NumShipArrivals, 1);
@@ -2930,10 +2928,10 @@ int parse_create_object_sub(p_object *p_objp)
 	// handle the replacement textures
 	if (p_objp->num_texture_replacements > 0)
 	{
-		shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-		for (i = 0; i < MAX_MODEL_TEXTURES; i++)
-			shipp->replacement_textures[i] = -1;
+		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+			shipp->ship_replacement_textures[i] = -1;
 	}
 
 	// now fill them in
@@ -2944,24 +2942,11 @@ int parse_create_object_sub(p_object *p_objp)
 		// look for textures
 		for (j = 0; j < pm->n_textures; j++)
 		{
-			// get texture file name
-			bm_get_filename(pm->maps[j].base_map.GetTexture(), texture_file);
+			texture_map *tmap = &pm->maps[j];
 
-			// get rid of file extension
-			p = strchr(texture_file, '.');
-			if (p)
-			{
-				mprintf(("ignoring extension on file '%s'\n", texture_file));
-				*p = 0;
-			}
-
-			// now compare the extension-less texture file names
-			if (!stricmp(texture_file, p_objp->replacement_textures[i].old_texture))
-			{
-				// replace it
-				shipp->replacement_textures[j] = p_objp->replacement_textures[i].new_texture_id;
-				break;
-			}
+			int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+			if(tnum > -1)
+				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
 		}
 	}
 
@@ -3866,7 +3851,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	{
 		char *p;
 
-		while ((p_objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
+		while ((p_objp->num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
 		{
 			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
@@ -3887,7 +3872,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			}
 
 			// load the texture
-			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
 
 			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
 			{
