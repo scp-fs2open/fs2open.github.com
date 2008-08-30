@@ -318,7 +318,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 	if (Warp_glow_bitmap >= 0) {
 		float r = radius;
-		bool render_it = (Cmdline_warp_flash == 1);
+		bool render_it = true;
 
 		#define OUT_PERCENT1 0.80f
 		#define OUT_PERCENT2 0.90f
@@ -326,12 +326,15 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		#define IN_PERCENT1 0.10f
 		#define IN_PERCENT2 0.20f
 
-		if ( (life_percent >= IN_PERCENT1) && (life_percent < IN_PERCENT2) ) {
-			r *= (life_percent - IN_PERCENT1) / (IN_PERCENT2 - IN_PERCENT1);
-			render_it = true;
-		} else if ( (life_percent >= OUT_PERCENT1) && (life_percent < OUT_PERCENT2) ) {
-			r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2 - OUT_PERCENT1);
-			render_it = true;
+		if (Cmdline_warp_flash)
+		{
+			if ( (life_percent >= IN_PERCENT1) && (life_percent < IN_PERCENT2) ) {
+				r *= (life_percent - IN_PERCENT1) / (IN_PERCENT2 - IN_PERCENT1);
+				//render_it = true;
+			} else if ( (life_percent >= OUT_PERCENT1) && (life_percent < OUT_PERCENT2) ) {
+				r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2 - OUT_PERCENT1);
+				//render_it = true;
+			}
 		}
 
 		if (render_it) {
@@ -423,7 +426,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		gr_set_cull(cull);
 	}
 
-	if (Warp_ball_bitmap > -1) {
+	if (Warp_ball_bitmap > -1 && Cmdline_warp_flash == 1) {
 		flash_ball warp_ball(20, .1f,.25f, &vmd_z_vector, &vmd_zero_vector, 4.0f, 0.5f);
 		float adg = (2.0f * life_percent) - 1.0f;
 		float pct = (powf(adg, 4.0f) - powf(adg, 128.0f)) * 4.0f;
