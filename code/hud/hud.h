@@ -487,6 +487,7 @@ void	hud_subspace_notify_abort();
 // render multiplayer text message currently being entered if any
 void hud_maybe_render_multi_text();
 
+int hud_get_draw();
 void hud_toggle_draw();
 int	hud_disabled();
 int hud_support_find_closest( int objnum );

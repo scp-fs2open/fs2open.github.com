@@ -1272,6 +1272,12 @@ void hud_set_draw(int draw)
 	HUD_draw = draw;
 }
 
+//WMC
+int hud_get_draw()
+{
+	return HUD_draw;
+}
+
 // Goober5000
 void hud_disable_except_messages(int disable)
 {
@@ -2265,7 +2271,7 @@ void hud_show_damage_popup()
 					screen_integrity = 1;
 				}
 			}
-			hud_subsys_list[num].name = psub->name;
+			hud_subsys_list[num].name = ship_subsys_get_name(pss);
 			hud_subsys_list[num].str  = screen_integrity;
 			hud_subsys_list[num].type = psub->type;
 			num++;
