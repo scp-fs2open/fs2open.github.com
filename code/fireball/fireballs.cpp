@@ -542,7 +542,9 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 
 	sound_index = SND_WARP_IN;
 
-	if((ship_class >= 0) && (ship_class < Num_ship_classes)){
+	if(fb->warp_open_sound_index > -1) {
+		sound_index = fb->warp_open_sound_index;
+	} else if((ship_class >= 0) && (ship_class < Num_ship_classes)){
 		if ( Ship_info[ship_class].flags & SIF_HUGE_SHIP ) {
 			sound_index = SND_CAPITAL_WARP_IN;
 			fb->flags |= FBF_WARP_CAPITAL_SIZE;
@@ -550,10 +552,6 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 			range_multiplier = 6.0f;
 			fb->flags |= FBF_WARP_CRUISER_SIZE;
 		}
-	}
-	else
-	{
-		sound_index = fb->warp_open_sound_index;
 	}
 
 	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, range_multiplier); // play warp sound effect
@@ -570,10 +568,10 @@ void fireball_play_warphole_close_sound(fireball *fb)
 
 	sound_index = SND_WARP_OUT;
 
-	if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
-		sound_index = SND_CAPITAL_WARP_OUT;
-	} else if ( fb->flags & FBF_WARP_VIA_SEXP ) {
+	if ( fb->warp_close_sound_index > -1 ) {
 		sound_index = fb->warp_close_sound_index;
+	} else if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
+		sound_index = SND_CAPITAL_WARP_OUT;
 	} else {
 		// AL 27-3-98: Decided that warphole closing is only required for capital ship sized warp effects.
 		return;
@@ -1192,14 +1190,13 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 	}
 
 	// start the frame
-	extern float Viewer_zoom;
 	extern int G3_count;
 
 	if(!G3_count){
 		g3_start_frame(1);
 		must_stop = 1;
 	}
-	g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
+	g3_set_view_matrix(&Eye_position, &Eye_matrix, Eye_fov);
 
 	// get extents of the rotated bitmap
 	g3_rotate_vertex(&v, pos);
