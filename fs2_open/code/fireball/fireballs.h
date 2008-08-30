@@ -289,7 +289,7 @@ void fireball_process_post(object * obj, float frame_time);
 // reversed is for warp_in/out effects
 // Velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=0, int warp_close_sound=0); 
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=-1, int warp_close_sound=-1); 
 void fireball_render_plane(int plane);
 void fireball_close();
 void fireball_level_close();
