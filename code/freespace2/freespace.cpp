@@ -1927,25 +1927,15 @@ typedef struct big_expl_flash {
 #define DEFAULT_SKILL_LEVEL	1
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
-float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
-float Viewer_zoom = VIEWER_ZOOM_DEFAULT;
-
 #define EXE_FNAME			("fs2.exe")
 
 #define LAUNCHER_FNAME	("Launcher.exe")
 
 // JAS: Code for warphole camera.
 // Needs to be cleaned up.
-vec3d Camera_pos = ZERO_VECTOR;
-vec3d Camera_velocity = ZERO_VECTOR;
-vec3d Camera_desired_velocity = ZERO_VECTOR;
-matrix Camera_orient = IDENTITY_MATRIX;
-float Camera_damping = 1.0f;
-float Camera_time = 0.0f;
 float Warpout_time = 0.0f;
 int Warpout_forced = 0;		// Set if this is a forced warpout that cannot be cancelled.
 int Warpout_sound = -1;
-void camera_move();
 int Use_joy_mouse = 0;
 int Use_palette_flash = 1;
 #ifndef NDEBUG
@@ -2706,7 +2696,7 @@ void game_level_close()
 		beam_level_close();
 		mflash_level_close();
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
-		cameras_close();
+		cam_close();
 		subtitles_close();
 		trail_level_close();
 
@@ -2845,7 +2835,7 @@ void game_level_init(int seed)
 	mflash_level_init();
 	ssm_level_init();	
 	supernova_level_init();
-	cameras_init();
+	cam_init();
 	subtitles_init();
 
 
@@ -4355,10 +4345,18 @@ void game_show_framerate()
 #endif
 }
 
-void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
+void game_show_eye_pos(camid cid)
 {
-	if ( !Cmdline_show_pos && HUD_draw )
+	if ( !Cmdline_show_pos )
 		return;
+
+	if(!cid.isValid())
+		return;
+
+	camera *cam = cid.getCamera();
+	vec3d cam_pos = vmd_zero_vector;
+	matrix cam_orient = vmd_identity_matrix;
+	cam->get_info(&cam_pos, &cam_orient);
 
 	//Do stuff
 	int font_height = 2*gr_get_font_height();
@@ -4367,11 +4365,11 @@ void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 	gr_set_color_fast(&HUD_color_debug);
 
 	//Position
-	gr_printf(20, 100 - font_height, "X:%f Y:%f Z:%f", eye_pos->xyz.x, eye_pos->xyz.y, eye_pos->xyz.z);
+	gr_printf(20, 100 - font_height, "X:%f Y:%f Z:%f", cam_pos.xyz.x, cam_pos.xyz.y, cam_pos.xyz.z);
 	font_height -= font_height/2;
 
 	//Orientation
-	vm_extract_angles_matrix(&rot_angles, eye_orient);
+	vm_extract_angles_matrix(&rot_angles, &cam_orient);
 	rot_angles.p *= (180/PI);
 	rot_angles.b *= (180/PI);
 	rot_angles.h *= (180/PI);
@@ -4547,35 +4545,6 @@ void game_set_view_clip(float frametime)
 		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 		// J.S. I've changed my ways!! See the new "no constants" code!!!
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
-	}
-	else if((Cutscene_bar_flags & CUB_GRADUAL) && Cutscene_bars_progress < 1.0f)
-	{
-		//Determine how far along we are
-		Assert(Cutscene_delta_time > 0.0f);
-
-		Cutscene_bars_progress += frametime / Cutscene_delta_time;
-		if(Cutscene_bars_progress >= 1.0f)
-		{
-			//Reset this stuff
-			Cutscene_delta_time = 1.0f;
-			Cutscene_bars_progress = 1.0f;
-		}
-
-		//Figure out where the bars should be
-		int yborder;
-		if(Cutscene_bar_flags & CUB_CUTSCENE)
-			yborder = fl2i(Cutscene_bars_progress*(gr_screen.max_h/6));
-		else
-			yborder = gr_screen.max_h/6 - fl2i(Cutscene_bars_progress*(gr_screen.max_h/6));
-
-		//Set teh clipping
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
-	}
-	else if(Cutscene_bar_flags & CUB_CUTSCENE)
-	{
-		int yborder = gr_screen.max_h/6;
-
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );	
 	}
 	else {
 		// Set the clip region for normal view
@@ -4864,23 +4833,28 @@ void do_timing_test(float frame_time)
 }
 //#endif
 
-DCF(dcf_fov, "Change the field of view")
+DCF(dcf_fov, "Change the field of view of the main camera")
 {
-	if ( Dc_command )	{
+	camera *cam = Main_camera.getCamera();
+	if ( Dc_command )
+	{
+		if(cam == NULL)
+			return;
+
 		dc_get_arg(ARG_FLOAT|ARG_NONE);
 		if ( Dc_arg_type & ARG_NONE )	{
-			Viewer_zoom = VIEWER_ZOOM_DEFAULT;
+			cam->set_fov(VIEWER_ZOOM_DEFAULT);
 			dc_printf( "Zoom factor reset\n" );
 		}
 		if ( Dc_arg_type & ARG_FLOAT )	{
 			if (Dc_arg_float < 0.25f) {
-				Viewer_zoom = 0.25f;
+				cam->set_fov(0.25f);
 				dc_printf("Zoom factor pinned at 0.25.\n");
 			} else if (Dc_arg_float > 1.25f) {
-				Viewer_zoom = 1.25f;
+				cam->set_fov(1.25f);
 				dc_printf("Zoom factor pinned at 1.25.\n");
 			} else {
-				Viewer_zoom = Dc_arg_float;
+				cam->set_fov(Dc_arg_float);
 			}
 		}
 	}
@@ -4888,8 +4862,13 @@ DCF(dcf_fov, "Change the field of view")
 	if ( Dc_help )	
 		dc_printf( "Usage: fov [factor]\nFactor is the zoom factor btwn .25 and 1.25\nNo parameter resets it to default.\n" );
 
-	if ( Dc_status )				
-		dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)", Viewer_zoom);
+	if ( Dc_status )
+	{
+		if(cam == NULL)
+			dc_printf("Camera unavailable.");
+		else
+			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)", cam->get_fov());
+	}
 }
 
 
@@ -5090,8 +5069,6 @@ void apply_view_shake(matrix *eye_orient)
 	*eye_orient = tm2;
 }
 
-extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code to proper place and extern in header file
-
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 
@@ -5117,7 +5094,7 @@ inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 	gr_end_proj_matrix();
 }
 
-void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
+void setup_environment_mapping(camid cid)
 {
 	matrix new_orient = IDENTITY_MATRIX;
 	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
@@ -5126,6 +5103,13 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 
 	if (Cmdline_nohtl)
 		return;
+
+	if(!cid.isValid())
+		return;
+
+	vec3d cam_pos;
+	matrix cam_orient;
+	cid.getCamera()->get_info(&cam_pos, &cam_orient);
 
 	// prefer the mission specified envmap over the static-generated envmap, but
 	// the dynamic envmap should always get preference if in a subspace mission
@@ -5173,7 +5157,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	new_orient.vec.fvec.xyz.x =  1.0f;
 	new_orient.vec.uvec.xyz.y =  1.0f;
 	new_orient.vec.rvec.xyz.z = -1.0f;
-	render_environment(i, eye_pos, &new_orient, new_zoom);
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
 
 	// face 2 (nx / left)
@@ -5181,7 +5165,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	new_orient.vec.fvec.xyz.x = -1.0f;
 	new_orient.vec.uvec.xyz.y =  1.0f;
 	new_orient.vec.rvec.xyz.z =  1.0f;
-	render_environment(i, eye_pos, &new_orient, new_zoom);
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
 
 	// face 3 (py / up)
@@ -5189,7 +5173,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
 	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
 	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, eye_pos, &new_orient, new_zoom);
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
 
 	// face 4 (ny / down)
@@ -5197,7 +5181,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
 	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
 	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, eye_pos, &new_orient, new_zoom);
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
 
 	// face 5 (pz / forward)
@@ -5205,7 +5189,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	new_orient.vec.fvec.xyz.z =  1.0f;
 	new_orient.vec.uvec.xyz.y =  1.0f;
 	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, eye_pos, &new_orient, new_zoom);
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
 	i++; // bump!
 
 	// face 6 (nz / back)
@@ -5213,12 +5197,12 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	new_orient.vec.fvec.xyz.z = -1.0f;
 	new_orient.vec.uvec.xyz.y =  1.0f;
 	new_orient.vec.rvec.xyz.x = -1.0f;
-	render_environment(i, eye_pos, &new_orient, new_zoom);
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
 
 
 	// we're done, so now reset
 	bm_set_render_target(-1);
-	g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
+	g3_set_view_matrix( &cam_pos, &cam_orient, old_zoom );
 }
 
 // setup the render target ready for this mission's environment map
@@ -5254,15 +5238,41 @@ void game_environment_map_gen()
 
 int Scripting_didnt_draw_hud = 1;
 
-//	Set eye_pos and eye_orient based on view mode.
-void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
+camid chase_get_camera()
 {
-	vec3d	eye_dir;
+	static camid chase_camera;
+	if(!chase_camera.isValid())
+	{
+		chase_camera = cam_create("Chase camera");
+	}
+
+	return chase_camera;
+}
+
+extern vec3d Dead_camera_pos;
+
+//	Set eye_pos and eye_orient based on view mode.
+camid game_render_frame_setup()
+{
+	if(!Main_camera.isValid())
+	{
+		Main_camera = cam_create("Main camera");
+	}
+	camera *main_cam = Main_camera.getCamera();
+	if(main_cam == NULL)
+	{
+		Error(LOCATION, "Unable to generate main camera");
+		return camid();
+	}
+
+	vec3d	eye_pos;
+	matrix	eye_orient = vmd_identity_matrix;
+	vec3d	tmp_dir;
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
 	static int last_Viewer_objnum = -1;
-	static float last_Viewer_zoom = Viewer_zoom;
+	static float last_FOV = main_cam->get_fov();
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
@@ -5290,7 +5300,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 			((last_Viewer_mode & VM_FREECAMERA) && !(Viewer_mode & VM_FREECAMERA)) ||
 			(!(last_Viewer_mode & VM_TOPDOWN) && (Viewer_mode & VM_TOPDOWN)) ||
 			((last_Viewer_mode & VM_TOPDOWN) && !(Viewer_mode & VM_TOPDOWN)) ||
-			(last_Viewer_zoom != Viewer_zoom) ||
+			(last_FOV != main_cam->get_fov()) ||
 			((Viewer_mode & VM_OTHER_SHIP) && (last_Viewer_objnum != Player_ai->target_objnum)) 		// other ship mode, but targets changes
 			) {
 
@@ -5298,11 +5308,14 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		neb2_eye_changed();
 	}		
 
-	if ( (last_Viewer_mode != Viewer_mode) || (last_Game_mode != Game_mode) || (last_Viewer_zoom != Viewer_zoom))	{
+	if ( (last_Viewer_mode != Viewer_mode)
+		|| (last_Game_mode != Game_mode)
+		|| (last_FOV != main_cam->get_fov())
+		|| (Viewer_mode & VM_FREECAMERA))	{
 		//mprintf(( "************** Camera cut! ************\n" ));
 		last_Viewer_mode = Viewer_mode;
 		last_Game_mode = Game_mode;
-		last_Viewer_zoom = Viewer_zoom;
+		last_FOV = main_cam->get_fov();
 
 		// Camera moved.  Tell stars & debris to not do blurring.
 		stars_camera_cut();		
@@ -5330,7 +5343,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 				last_Viewer_objnum = Player_ai->target_objnum;
 
 				if ( Viewer_obj->type == OBJ_SHIP ) {
-					ship_get_eye( eye_pos, eye_orient, Viewer_obj );
+					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 					view_from_player = 0;
 				}
 			} else {
@@ -5345,9 +5358,10 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 			if ( view_from_player ) {
 				//	View target from player ship.
 				Viewer_obj = NULL;
-				*eye_pos = Player_obj->pos;
-				vm_vec_normalized_dir(&eye_dir, &Objects[Player_ai->target_objnum].pos, eye_pos);
-				vm_vector_2_matrix(eye_orient, &eye_dir, NULL, NULL);
+				eye_pos = Player_obj->pos;
+				vm_vec_normalized_dir(&tmp_dir, &Objects[Player_ai->target_objnum].pos, &eye_pos);
+				vm_vector_2_matrix(&eye_orient, &tmp_dir, NULL, NULL);
+				//rtn_cid = ship_get_followtarget_eye( Player_obj );
 			}
 		} else {
 			dist = vm_vec_normalized_dir(&vec_to_deader, &Player_obj->pos, &Dead_camera_pos);
@@ -5375,11 +5389,11 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 				vm_vec_scale_add2(&Dead_camera_pos, &Original_vec_to_deader, MIN(25.0f, vm_vec_mag_quick(&Dead_player_last_vel)) * flFrametime);
 			}
 
-			*eye_pos = Dead_camera_pos;
+			eye_pos = Dead_camera_pos;
 
-			vm_vec_normalized_dir(&eye_dir, &Player_obj->pos, eye_pos);
+			vm_vec_normalized_dir(&tmp_dir, &Player_obj->pos, &eye_pos);
 
-			vm_vector_2_matrix(eye_orient, &eye_dir, NULL, NULL);
+			vm_vector_2_matrix(&eye_orient, &tmp_dir, NULL, NULL);
 			Viewer_obj = NULL;
 		}
 	} 
@@ -5393,7 +5407,8 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		Viewer_mode |= VM_DEAD_VIEW;
 
 		// set eye pos and orient
-		supernova_set_view(eye_pos, eye_orient);
+		//rtn_cid = supernova_set_view();
+		supernova_get_eye(&eye_pos, &eye_orient);
 	} else {	
 		//	If already blown up, these other modes can override.
 		if (!(Game_mode & (GM_DEAD | GM_DEAD_BLEW_UP))) {
@@ -5416,23 +5431,22 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = NULL;
-				*eye_pos = *Current_camera->get_position();
-				*eye_orient = *Current_camera->get_orientation();
+				return cam_get_current();
 			} else if (Viewer_mode & VM_EXTERNAL) {
 				matrix	tm, tm2;
 
 				vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 				vm_matrix_x_matrix(&tm, &Viewer_obj->orient, &tm2);
 
-				vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &tm.vec.fvec, 2.0f * Viewer_obj->radius + Viewer_external_info.distance);
+				vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &tm.vec.fvec, 2.0f * Viewer_obj->radius + Viewer_external_info.distance);
 
-				vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
-				vm_vec_normalize(&eye_dir);
-				vm_vector_2_matrix(eye_orient, &eye_dir, &Viewer_obj->orient.vec.uvec, NULL);
+				vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
+				vm_vec_normalize(&tmp_dir);
+				vm_vector_2_matrix(&eye_orient, &tmp_dir, &Viewer_obj->orient.vec.uvec, NULL);
 				Viewer_obj = NULL;
 
 				//	Modify the orientation based on head orientation.
-				compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 
 			} else if ( Viewer_mode & VM_CHASE ) {
 				vec3d	move_dir;
@@ -5454,21 +5468,21 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 					vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec,1000.0f);
 					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
-					vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &move_dir, -2.25f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.vec.uvec, .625f * Viewer_obj->radius);
-					vm_vec_sub(&eye_dir, &aim_pt, eye_pos);
-					vm_vec_normalize(&eye_dir);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -2.25f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, .625f * Viewer_obj->radius);
+					vm_vec_sub(&tmp_dir, &aim_pt, &eye_pos);
+					vm_vec_normalize(&tmp_dir);
 				}
 				else
 				{
-					vm_vec_scale_add(eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
-					vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
-					vm_vec_normalize(&eye_dir);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
+					vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
+					vm_vec_normalize(&tmp_dir);
 				}
 					
 				// JAS: I added the following code because if you slew up using
-				// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
+				// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
 				// equal, which causes a zero-length vector in the vm_vector_2_matrix
 				// call because the up and the forward vector are the same.   I fixed
 				// it by adding in a fraction of the right vector all the time to the
@@ -5476,21 +5490,21 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 				vec3d tmp_up = Viewer_obj->orient.vec.uvec;
 				vm_vec_scale_add2( &tmp_up, &Viewer_obj->orient.vec.rvec, 0.00001f );
 
-				vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
+				vm_vector_2_matrix(&eye_orient, &tmp_dir, &tmp_up, NULL);
 				Viewer_obj = NULL;
 
 				//	Modify the orientation based on head orientation.
-				compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 			} else if ( Viewer_mode & VM_WARP_CHASE ) {
-					*eye_pos = Camera_pos;
+					Warp_camera.get_info(&eye_pos, NULL);
 
 					ship * shipp = &Ships[Player_obj->instance];
 
 					vec3d warp_pos = Player_obj->pos;
 					shipp->warpout_effect->getWarpPosition(&warp_pos);
-					vm_vec_sub(&eye_dir, &warp_pos, eye_pos);
-					vm_vec_normalize(&eye_dir);
-					vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
+					vm_vec_sub(&tmp_dir, &warp_pos, &eye_pos);
+					vm_vec_normalize(&tmp_dir);
+					vm_vector_2_matrix(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, NULL);
 					Viewer_obj = NULL;
 			} else if (Viewer_mode & VM_TOPDOWN) {
 					angles rot_angles = { PI_2, 0.0f, 0.0f };
@@ -5498,29 +5512,29 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 					if(Viewer_obj->type == OBJ_SHIP) {
 						ship_info *sip = &Ship_info[Ships[Viewer_obj->instance].ship_info_index];
 						if(sip->topdown_offset_def) {
-							eye_pos->xyz.x = Viewer_obj->pos.xyz.x + sip->topdown_offset.xyz.x;
-							eye_pos->xyz.x = Viewer_obj->pos.xyz.y + sip->topdown_offset.xyz.y;
-							eye_pos->xyz.x = Viewer_obj->pos.xyz.z + sip->topdown_offset.xyz.z;
+							eye_pos.xyz.x = Viewer_obj->pos.xyz.x + sip->topdown_offset.xyz.x;
+							eye_pos.xyz.y = Viewer_obj->pos.xyz.y + sip->topdown_offset.xyz.y;
+							eye_pos.xyz.z = Viewer_obj->pos.xyz.z + sip->topdown_offset.xyz.z;
 							position_override = true;
 						}
 					}
 					if(!position_override) {
-						eye_pos->xyz.x = Viewer_obj->pos.xyz.x;
-						eye_pos->xyz.y = Viewer_obj->pos.xyz.y + Viewer_obj->radius * 25.0f;
-						eye_pos->xyz.z = Viewer_obj->pos.xyz.z;
+						eye_pos.xyz.x = Viewer_obj->pos.xyz.x;
+						eye_pos.xyz.y = Viewer_obj->pos.xyz.y + Viewer_obj->radius * 25.0f;
+						eye_pos.xyz.z = Viewer_obj->pos.xyz.z;
 					}
-					vm_angles_2_matrix(eye_orient, &rot_angles);
+					vm_angles_2_matrix(&eye_orient, &rot_angles);
 					Viewer_obj = NULL;
 			} else {
 				// get an eye position based upon the correct type of object
 				switch(Viewer_obj->type){
 				case OBJ_SHIP:
 					// make a call to get the eye point for the player object
-					ship_get_eye( eye_pos, eye_orient, Viewer_obj );
+					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 					break;
 				case OBJ_OBSERVER:
 					// make a call to get the eye point for the player object
-					observer_get_eye( eye_pos, eye_orient, Viewer_obj );				
+					observer_get_eye( &eye_pos, &eye_orient, Viewer_obj );					
 					break;
 				default :
 					Int3();
@@ -5533,13 +5547,18 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		}
 	}
 
+	main_cam->set_position(&eye_pos);
+	main_cam->set_rotation(&eye_orient);
+
 	// setup neb2 rendering
-	neb2_render_setup(eye_pos, eye_orient);
+	neb2_render_setup(Main_camera);
 
 	if(!Time_compression_locked)
 		game_set_view_clip(flFrametime);
 	else
 		game_set_view_clip(flRealframetime);
+
+	return Main_camera;
 }
 
 #ifndef NDEBUG
@@ -5550,21 +5569,29 @@ int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect )
 
 // Does everything needed to render a frame
-void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
+void game_render_frame( camid cid )
 {
-	int dont_offset;
-	matrix eye_no_jitter;
-
-	// HUD_set_offsets needs the viewing matrix without the jitter to correctly
-	// offset the HUD bitmaps for the afterburner/EMP effect.
-	eye_no_jitter = *eye_orient;
-	apply_view_shake(eye_orient);
-
 	g3_start_frame(game_zbuffer);
-	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
+
+	camera *cam = cid.getCamera();
+	matrix eye_no_jitter = vmd_identity_matrix;
+	if(cam != NULL)
+	{
+		vec3d eye_pos;
+		matrix eye_orient;
+
+		cam->get_info(&eye_pos, &eye_orient);
+		eye_no_jitter = eye_orient;
+		apply_view_shake(&eye_orient);
+		g3_set_view_matrix(&eye_pos, &eye_orient, cam->get_fov());
+	}
+	else
+	{
+		g3_set_view_matrix(&vmd_zero_vector, &vmd_identity_matrix, VIEWER_ZOOM_DEFAULT);
+	}
 
 	// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
-	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
+	int dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
 	HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
 
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
@@ -5576,7 +5603,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
 	if ( Cmdline_env && !Env_cubemap_drawn ) {
-		setup_environment_mapping(eye_pos, eye_orient);
+		setup_environment_mapping(cid);
 
 		if ( !Dynamic_environment ) {
 			Env_cubemap_drawn = true;
@@ -5845,16 +5872,16 @@ void game_simulation_frame()
 	//Do camera stuff
 	//This is for the warpout cam
 	if ( Player->control_mode != PCM_NORMAL )
-		camera_move();
+		Warp_camera.do_frame(flFrametime);
 
 	//Do ingame cutscenes stuff
 	if(!Time_compression_locked)
 	{
-		cameras_do_frame(flFrametime);
+		cam_do_frame(flFrametime);
 	}
 	else
 	{
-		cameras_do_frame(flRealframetime);
+		cam_do_frame(flRealframetime);
 	}
 
 	// blow ships up in multiplayer dogfight
@@ -6145,10 +6172,13 @@ void game_render_hud_2d()
 }
 
 // Draw the 3D-dependant HUD gauges
-void game_render_hud_3d(vec3d *eye_pos, matrix *eye_orient)
+void game_render_hud_3d(camid cid)
 {
+	if(!cid.isValid())
+		return;
+
 	g3_start_frame(0);		// 0 = turn zbuffering off
-	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
+	g3_set_view( cid.getCamera() );
 
 	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_active() < 3)/* && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) )*/ ) {
 		HUD_render_3d(flFrametime);
@@ -6177,69 +6207,98 @@ void game_shade_frame(float frametime)
 		return;
 	}
 
-	if (Fade_type == FI_NONE) {
-		goto Done;
-	}
-
-	if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
-		return;
-	}
-
-	alpha = Viewer_shader.c;
-
-	// Fade in or out if necessary
-	if (Fade_type == FI_FADEOUT) {
-		alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
-	} else if (Fade_type == FI_FADEIN) {
-		alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
-	}
-
-	// Limit and set fade type if done
-	if (alpha < 0) {
-		alpha = 0;
-
-		if (Fade_type == FI_FADEIN) {
-			Fade_type = FI_NONE;
+	if (Fade_type != FI_NONE)
+	{
+		if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
+			return;
 		}
-	}
 
-	if (alpha > 255) {
-		alpha = 255;
+		alpha = Viewer_shader.c;
 
+		// Fade in or out if necessary
 		if (Fade_type == FI_FADEOUT) {
-			Fade_type = FI_NONE;
+			alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
+		} else if (Fade_type == FI_FADEIN) {
+			alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
 		}
+
+		// Limit and set fade type if done
+		if (alpha < 0) {
+			alpha = 0;
+
+			if (Fade_type == FI_FADEIN) {
+				Fade_type = FI_NONE;
+			}
+		}
+
+		if (alpha > 255) {
+			alpha = 255;
+
+			if (Fade_type == FI_FADEOUT) {
+				Fade_type = FI_NONE;
+			}
+		}
+
+		Viewer_shader.c = (ubyte)alpha;
 	}
 
-	Viewer_shader.c = (ubyte)alpha;
-
-Done:
 	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
+}
+
+const static int CUTSCENE_BAR_DIVISOR = 8;
+void bars_do_frame(float frametime)
+{
+	if((Cutscene_bar_flags & CUB_GRADUAL) && Cutscene_bars_progress < 1.0f)
+	{
+		//Determine how far along we are
+		Assert(Cutscene_delta_time > 0.0f);
+
+		Cutscene_bars_progress += frametime / Cutscene_delta_time;
+		if(Cutscene_bars_progress >= 1.0f)
+		{
+			//Reset this stuff
+			Cutscene_delta_time = 1.0f;
+			Cutscene_bars_progress = 1.0f;
+		}
+
+		//Figure out where the bars should be
+		int yborder;
+		if(Cutscene_bar_flags & CUB_CUTSCENE)
+			yborder = fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
+		else
+			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
+
+		//Set rectangles
+		gr_set_color(0,0,0);
+		gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		//Set teh clipping
+		//gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+	}
+	else if(Cutscene_bar_flags & CUB_CUTSCENE)
+	{
+		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
+
+		gr_set_color(0,0,0);
+		gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		//gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );	
+	}
 }
 
 //WMC - This does stuff like fading in and out and subtitles. Special FX?
 //Basically stuff you need rendered after everything else (including HUD)
 void game_render_post_frame()
 {
-	if(!Time_compression_locked)
+	float frametime = flFrametime;
+	if(Time_compression_locked)
 	{
-		subtitles_do_frame(flFrametime);
+		frametime = flRealframetime;
 	}
-	else
-	{
-		subtitles_do_frame(flRealframetime);
-	}
-	
-	if(!Time_compression_locked)
-	{
-		game_set_view_clip(flFrametime);
-		game_shade_frame(flFrametime);
-	}
-	else
-	{
-		game_set_view_clip(flRealframetime);
-		game_shade_frame(flRealframetime);
-	}
+
+	subtitles_do_frame(frametime);
+	bars_do_frame(frametime);
+	game_shade_frame(frametime);
 }
 
 #ifndef NDEBUG
@@ -6258,8 +6317,8 @@ void game_frame(int paused)
 	fix clear_time1=0, clear_time2=0;
 #endif
 	int actually_playing;
-	vec3d eye_pos;
-	matrix eye_orient;
+	//vec3d eye_pos;
+	//matrix eye_orient;
 
 #ifndef NDEBUG
 	if (Framerate_delay) {
@@ -6369,14 +6428,13 @@ void game_frame(int paused)
 
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
-			game_render_frame_setup(&eye_pos, &eye_orient);
+			camid cid = game_render_frame_setup();
 
-			game_render_frame( &eye_pos, &eye_orient );
+			game_render_frame( cid );
 
 			// save the eye position and orientation
 			if ( Game_mode & GM_MULTIPLAYER ) {
-				Net_player->s_info.eye_pos = eye_pos;
-				Net_player->s_info.eye_orient = eye_orient;
+				cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
 			}
 
 			Scripting_didnt_draw_hud = 1;
@@ -6426,9 +6484,7 @@ void game_frame(int paused)
 			gr_reset_clip();
 			game_get_framerate();
 			game_show_framerate();
-#ifndef NDEBUG
-			game_show_eye_pos(&eye_pos, &eye_orient);
-#endif
+			game_show_eye_pos(cid);
 
 			game_show_time_left();
 
@@ -6451,7 +6507,7 @@ void game_frame(int paused)
 				}
 
 				// Draw 3D HUD gauges			
-				game_render_hud_3d(&eye_pos, &eye_orient);
+				game_render_hud_3d(cid);
 			}
 
 			Script_system.SetHookObject("Self", Viewer_obj);
@@ -7114,78 +7170,6 @@ void os_close()
 	gameseq_post_event(GS_EVENT_QUIT_GAME);
 }
 
-
-void camera_set_position( vec3d *pos )
-{
-	Camera_pos = *pos;
-}
-
-void camera_set_orient( matrix *orient )
-{
-	Camera_orient = *orient;
-}
-
-void camera_set_velocity( vec3d *vel, int instantaneous )
-{
-	Camera_desired_velocity.xyz.x = 0.0f;
-	Camera_desired_velocity.xyz.y = 0.0f;
-	Camera_desired_velocity.xyz.z = 0.0f;
-
-	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.vec.rvec, vel->xyz.x );
-	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.vec.uvec, vel->xyz.y );
-	vm_vec_scale_add2( &Camera_desired_velocity, &Camera_orient.vec.fvec, vel->xyz.z );
-
-	if ( instantaneous )	{
-		Camera_velocity = Camera_desired_velocity;
-	}
-
-}
-
-//
-void camera_move()
-{
-	vec3d new_vel, delta_pos;
-
-	apply_physics( Camera_damping, Camera_desired_velocity.xyz.x, Camera_velocity.xyz.x, flFrametime, &new_vel.xyz.x, &delta_pos.xyz.x );
-	apply_physics( Camera_damping, Camera_desired_velocity.xyz.y, Camera_velocity.xyz.y, flFrametime, &new_vel.xyz.y, &delta_pos.xyz.y );
-	apply_physics( Camera_damping, Camera_desired_velocity.xyz.z, Camera_velocity.xyz.z, flFrametime, &new_vel.xyz.z, &delta_pos.xyz.z );
-
-	Camera_velocity = new_vel;
-
-//	mprintf(( "Camera velocity = %.1f,%.1f, %.1f\n", Camera_velocity.xyz.x, Camera_velocity.xyz.y, Camera_velocity.xyz.z ));
-
-	vm_vec_add2( &Camera_pos, &delta_pos );
-
-	float ot = Camera_time+0.0f;
-
-	Camera_time += flFrametime;
-
-	if ( (ot < 0.667f) && ( Camera_time >= 0.667f ) )	{
-		vec3d tmp;
-		
-		tmp.xyz.z = 4.739f;		// always go this fast forward.
-
-		// pick x and y velocities so they are always on a 
-		// circle with a 25 m radius.
-
-		float tmp_angle = frand()*PI2;
-	
-		tmp.xyz.x = 22.0f * (float)sin(tmp_angle);
-		tmp.xyz.y = -22.0f * (float)cos(tmp_angle);
-
-		//mprintf(( "Angle = %.1f, vx=%.1f, vy=%.1f\n", tmp_angle, tmp.xyz.x, tmp.xyz.y ));
-
-		//mprintf(( "Changing velocity!\n" ));
-		camera_set_velocity( &tmp, 0 );
-	}
-
-	if ( (ot < 3.0f ) && ( Camera_time >= 3.0f ) )	{
-		vec3d tmp = ZERO_VECTOR;
-		camera_set_velocity( &tmp, 0 );
-	}
-	
-}
-
 void end_demo_campaign_do()
 {
 #if defined(FS2_DEMO)
@@ -7525,19 +7509,7 @@ void game_process_event( int current_state, int event )
 				Player->saved_viewer_mode = Viewer_mode;
 				Viewer_mode |= VM_WARP_CHASE;
 				
-				vec3d tmp = Player_obj->pos;
-				matrix tmp_m;
-				ship_get_eye( &tmp, &tmp_m, Player_obj );
-				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.rvec, 0.0f );
-				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.uvec, 0.952f );
-				vm_vec_scale_add2( &tmp, &Player_obj->orient.vec.fvec, -1.782f );
-				Camera_time = 0.0f;
-				camera_set_position( &tmp );
-				camera_set_orient( &Player_obj->orient );
-				vec3d tmp_vel = { { { 0.0f, 5.1919f, 14.7f } } };
-
-				//mprintf(( "Rad = %.1f\n", Player_obj->radius ));
-				camera_set_velocity( &tmp_vel, 1);
+				Warp_camera = warp_camera(Player_obj);
 			}
 			break;
 
@@ -7660,7 +7632,8 @@ void game_leave_state( int old_state, int new_state )
 	}
 	*/
 
-	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
+	if(Script_system.IsConditionOverride(CHA_ONSTATEEND)) {
+		Script_system.RunCondition(CHA_ONSTATEEND);
 		return;
 	}
 
@@ -8022,7 +7995,13 @@ void game_leave_state( int old_state, int new_state )
 			lab_close();
 			break;
 	}
+
+	//WMC - Now run scripting stuff
+	Script_system.RunCondition(CHA_ONSTATEEND);
 }
+
+// variable used for automatic netgame starting/joining
+int Main_hall_netgame_started = 0;
 
 // Called when a state is being entered.
 // The current state is set to the state we're entering at
@@ -8039,7 +8018,8 @@ void game_enter_state( int old_state, int new_state )
 		return;
 	}
 	*/
-	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
+	if(Script_system.IsConditionOverride(CHA_ONSTATESTART)) {
+		Script_system.RunCondition(CHA_ONSTATESTART);
 		return;
 	}
 
@@ -8052,12 +8032,40 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			set_time_compression(1.0f);
+
+			// remove any multiplayer flags from the game mode
+			Game_mode &= ~(GM_MULTIPLAYER);
 	
 			// determine which ship this guy is currently based on
 #if defined(PRESS_TOUR_BUILD) || defined(PD_BUILD)
 			mht_init();
 #else
 			main_hall_init(Player->main_hall);
+			// set the game_mode based on the type of player
+			Assert( Player != NULL );
+
+			if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
+				Game_mode = GM_MULTIPLAYER;
+			} else {
+				Game_mode = GM_NORMAL;
+			}
+
+			//if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
+			//	Main_hall_netgame_started = 1;
+			//	main_hall_do_multi_ready();
+			//} DTP commented out to keep original source
+			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl dont get thrown into Multiplayer with a Singleplayer Pilot.
+				Main_hall_netgame_started = 1;
+				main_hall_do_multi_ready();
+			}
+
+			if(Cmdline_start_mission) {
+				strcpy(Game_current_mission_filename, Cmdline_start_mission);
+				mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
+ 				gameseq_post_event(GS_EVENT_START_GAME);
+				// This stops the mission from loading again when you go back to the hall
+				Cmdline_start_mission = NULL;
+			}
 #endif
 			break;
 
@@ -8481,6 +8489,9 @@ void mouse_force_pos(int x, int y);
 			lab_init();
 			break;
 	} // end switch
+
+	//WMC - now do user scripting stuff
+	Script_system.RunCondition(CHA_ONSTATESTART);
 }
 
 // do stuff that may need to be done regardless of state
@@ -9860,21 +9871,25 @@ void Time_model( int modelnum )
 	for (i=0; i<pm->n_textures; i++ )	{
 		char filename[1024];
 		ubyte pal[768];
+		texture_map *tmap = &pm->maps[i];
 
-		int bmp_num = pm->maps[i].base_map.GetOriginalTexture();
-		if ( bmp_num > -1 )	{
-			bm_get_palette(bmp_num, pal, filename );		
-			int w,h;
-			bm_get_info( bmp_num,&w, &h );
+		for(int j = 0; j < TM_NUM_TYPES; j++)
+		{
+			int bmp_num = tmap->textures[j].GetOriginalTexture();
+			if ( bmp_num > -1 )	{
+				bm_get_palette(bmp_num, pal, filename );		
+				int w,h;
+				bm_get_info( bmp_num,&w, &h );
 
 
-			if ( (w > 512) || (h > 512) )	{
-				fprintf( Texture_fp, "%s\t%s\t%d\t%d\n", pof_file, filename, w, h );
-				Tmap_num_too_big++;
-				model_needs_splitting++;
+				if ( (w > 512) || (h > 512) )	{
+					fprintf( Texture_fp, "%s\t%s\t%d\t%d\n", pof_file, filename, w, h );
+					Tmap_num_too_big++;
+					model_needs_splitting++;
+				}
+			} else {
+				//fprintf( Texture_fp, "\tTexture %d is bogus\n", i );
 			}
-		} else {
-			//fprintf( Texture_fp, "\tTexture %d is bogus\n", i );
 		}
 	}
 
@@ -9916,7 +9931,9 @@ void Time_model( int modelnum )
 
 		g3_start_frame(1);
 
-		g3_set_view_matrix( &eye_pos, &eye_orient, Viewer_zoom );	
+		//WMC - I think I can set this to VIEWER_ZOOM_DEFAULT.
+		//If it's not appropriate, use cam_get_current()
+		g3_set_view_matrix( &eye_pos, &eye_orient, VIEWER_ZOOM_DEFAULT );	
 
 		model_clear_instance( modelnum );
 		model_set_detail_level(0);		// use highest detail level
