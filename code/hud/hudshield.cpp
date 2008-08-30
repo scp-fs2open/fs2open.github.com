@@ -587,8 +587,8 @@ void hud_shield_show(object *objp)
 		sy = current_hud->Target_shield_coords[1];
 	}
 
-	sx += fl2i(HUD_offset_x);
-	sy += fl2i(HUD_offset_y);
+	//sx += fl2i(HUD_offset_x);
+	//sy += fl2i(HUD_offset_y);
 
 	// draw the ship first
 	if ( objp == Player_obj ) {
@@ -636,7 +636,7 @@ void hud_shield_show(object *objp)
 		ship_model_start(objp);
 		//if(!digitus_improbus)
 		{
-			model_render( sip->model_num, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
+			model_render( sip->model_num, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->ship_replacement_textures);
 		}
 		/*else
 		{

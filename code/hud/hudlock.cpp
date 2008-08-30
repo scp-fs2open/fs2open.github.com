@@ -532,6 +532,9 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 		sx = fl2i(lock_point.sx); 
 		sy = fl2i(lock_point.sy);
 		gr_unsize_screen_pos(&sx, &sy);
+		//WMC - shake this
+		sx += HUD_nose_x;
+		sy += HUD_nose_y;
 		// show the rotating triangles if target is locked
 		hud_draw_lock_triangles(sx, sy, frametime);
 	} else {
