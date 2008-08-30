@@ -677,6 +677,12 @@ void draw_bounding_brackets_subobject()
 				y2 = subobj_y + (Min_subtarget_box_height[gr_screen.res]>>1);
 			}
 
+			//WMC - shake
+			x1 += HUD_nose_x;
+			x2 += HUD_nose_x;
+			y1 += HUD_nose_y;
+			y2 += HUD_nose_y;
+
 			// determine if subsystem is on far or near side of the ship
 			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
 
@@ -756,6 +762,12 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 	// *** everything below is taken care of with this unsize ***
 	gr_unsize_screen_pos(&x1, &y1);
 	gr_unsize_screen_pos(&x2, &y2);
+
+	//WMC - Fix the shake bug
+	x1 += HUD_nose_x;
+	x2 += HUD_nose_x;
+	y1 += HUD_nose_y;
+	y2 += HUD_nose_y;
 
 	width = x2-x1;
 	Assert(width>=0);
