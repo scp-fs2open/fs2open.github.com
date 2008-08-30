@@ -881,6 +881,7 @@
  * $NoKeywords: $
  */
 
+#include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
@@ -928,9 +929,6 @@ public:
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
 
-
-extern float VIEWER_ZOOM_DEFAULT;
-extern float Viewer_zoom;
 extern int Show_framerate;	// from freespace.cpp
 
 
@@ -1972,7 +1970,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( fov_arg.found() ) {
-		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+		VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
 	}
 
 	if( clip_dist_arg.found() ) {
