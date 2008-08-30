@@ -60,6 +60,8 @@ struct image_desc
 #define CHA_MOUSERELEASED	16
 #define CHA_KEYPRESSED		17
 #define CHA_KEYRELEASED		18
+#define CHA_ONSTATESTART	19
+#define CHA_ONSTATEEND		20
 
 
 struct script_condition

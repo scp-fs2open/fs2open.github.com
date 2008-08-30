@@ -32,6 +32,7 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
+#include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "weapon/weapon.h"
 
@@ -1948,6 +1949,23 @@ ADE_VIRTVAR(AfterburnerVelocityMax, l_Physics, "vector", "Afterburner max veloci
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->afterburner_max_vel));
 }
 
+ADE_VIRTVAR(BankingConstant, l_Physics, "number", "Banking constant", "number", "Banking constant, or 0 if handle is invalid")
+{
+	physics_info_h *pih;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		pih->pi->delta_bank_const = f;
+	}
+
+	return ade_set_args(L, "f", pih->pi->delta_bank_const);
+}
+
 ADE_VIRTVAR(ForwardAccelerationTime, l_Physics, "number", "Forward acceleration time", "number", "Forward acceleration time, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
@@ -3158,10 +3176,10 @@ ADE_VIRTVAR(BaseMap, l_TextureMap, "texture", "Base texture", "texture", "Base t
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	if(ADE_SETTING_VAR && new_tex > -1) {
-		tmap->base_map.SetTexture(new_tex);
+		tmap->textures[TM_BASE_TYPE].SetTexture(new_tex);
 	}
 
-	return ade_set_args(L, "o", l_Texture.Set(tmap->base_map.GetTexture()));
+	return ade_set_args(L, "o", l_Texture.Set(tmap->textures[TM_BASE_TYPE].GetTexture()));
 }
 
 ADE_VIRTVAR(GlowMap, l_TextureMap, "texture", "Glow texture", "texture", "Glow texture, or invalid texture handle if material handle is invalid")
@@ -3176,10 +3194,10 @@ ADE_VIRTVAR(GlowMap, l_TextureMap, "texture", "Glow texture", "texture", "Glow t
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	if(ADE_SETTING_VAR && new_tex > -1) {
-		tmap->glow_map.SetTexture(new_tex);
+		tmap->textures[TM_GLOW_TYPE].SetTexture(new_tex);
 	}
 
-	return ade_set_args(L, "o", l_Texture.Set(tmap->glow_map.GetTexture()));
+	return ade_set_args(L, "o", l_Texture.Set(tmap->textures[TM_GLOW_TYPE].GetTexture()));
 }
 
 ADE_VIRTVAR(SpecularMap, l_TextureMap, "texture", "Specular texture", "texture", "Texture handle, or invalid texture handle if material handle is invalid")
@@ -3194,10 +3212,10 @@ ADE_VIRTVAR(SpecularMap, l_TextureMap, "texture", "Specular texture", "texture",
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	if(ADE_SETTING_VAR && new_tex > -1) {
-		tmap->spec_map.SetTexture(new_tex);
+		tmap->textures[TM_SPECULAR_TYPE].SetTexture(new_tex);
 	}
 
-	return ade_set_args(L, "o", l_Texture.Set(tmap->spec_map.GetTexture()));
+	return ade_set_args(L, "o", l_Texture.Set(tmap->textures[TM_SPECULAR_TYPE].GetTexture()));
 }
 
 //**********HANDLE: directives
@@ -3599,7 +3617,6 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 	if (!mth->IsValid() || s == NULL || pm == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
-	char fname[MAX_FILENAME_LEN];
 	texture_info *tinfo = NULL;
 	texture_map *tmap = NULL;
 
@@ -3612,18 +3629,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 			return ade_set_error(L, "o", l_Texture.Set(-1));
 
 		tmap = &pm->maps[idx / TM_NUM_TYPES];
-		switch(idx % TM_NUM_TYPES)
-		{
-			case 0:
-				tinfo = &tmap->base_map;
-				break;
-			case 1:
-				tinfo = &tmap->glow_map;
-				break;
-			case 2:
-				tinfo = &tmap->spec_map;
-				break;
-		}
+		tinfo = &tmap->textures[idx % TM_NUM_TYPES];
 	}
 
 	if(tinfo == NULL)
@@ -3632,24 +3638,9 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 		{
 			tmap = &pm->maps[i];
 
-			//Base
-			bm_get_filename(tmap->base_map.GetTexture(), fname);
-			if (!strextcmp(fname, s)) {
-				tinfo = &tmap->base_map;
-				break;
-			}
-			//Glow
-			bm_get_filename(tmap->glow_map.GetTexture(), fname);
-			if (!strextcmp(fname, s)) {
-				tinfo = &tmap->glow_map;
-				break;
-			}
-			//Spec
-			bm_get_filename(tmap->spec_map.GetTexture(), fname);
-			if (!strextcmp(fname, s)) {
-				tinfo = &tmap->spec_map;
-				break;
-			}
+			int tnum = tmap->FindTexture(s);
+			if(tnum > -1)
+				tinfo = &tmap->textures[tnum];
 		}
 	}
 
@@ -3886,74 +3877,6 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-}
-
-//**********HANDLE: Camera
-ade_obj<int> l_Camera("camera", "Camera handle");
-
-ADE_FUNC(isValid, l_Camera, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Camera.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= (int)Cameras.size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, number Acceleration Time]",
-		"Sets camera position and velocity data."
-		"Position is the final position for the camera. If not specified, the camera will simply stop at its current position."
-		"Translation time is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."
-		"Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving.",
-		"boolean",
-		"True if successful, false or nil otherwise")
-{
-	int idx=-1;
-	vec3d *pos=NULL;
-	float time=0.0f;
-	float acc_time=0.0f;
-	if(!ade_get_args(L, "o|off", l_Camera.Get(&idx), l_Vector.GetPtr(&pos), &time, &acc_time))
-		return ADE_RETURN_NIL;
-	
-	if(idx < 0 || (uint)idx > Cameras.size())
-		return ADE_RETURN_NIL;
-
-	Cameras[idx].set_position(pos, time, acc_time);
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotation Time, number Acceleration Time]",
-		"Sets camera orientation and velocity data."
-		"<br>Orientation is the final orientation for the camera, after it has finished moving. If not specified, the camera will simply stop at its current orientation."
-		"<br>Rotation time is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
-		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving.",
-		"boolean",
-		"True if successful, false or nil otherwise")
-{
-	int idx=-1;
-	matrix_h *mh=NULL;
-	float time=0.0f;
-	float acc_time=0.0f;
-	if(!ade_get_args(L, "o|off", l_Camera.Get(&idx), l_Matrix.GetPtr(&mh), &time, &acc_time))
-		return ADE_RETURN_NIL;
-	
-	if(idx < 0 || (uint)idx > Cameras.size())
-		return ADE_RETURN_NIL;
-
-	if(mh != NULL)
-	{
-		Cameras[idx].set_rotation(mh->GetMatrix(), time, acc_time);
-	}
-	else
-	{
-		Cameras[idx].set_rotation();
-	}
-
-	return ADE_RETURN_TRUE;
 }
 
 //**********HANDLE: Debris
@@ -4935,7 +4858,7 @@ struct ship_subsys_h : public object_h
 {
 	ship_subsys *ss;	//Pointer to subsystem, or NULL for the hull
 
-	bool IsValid(){return object_h::IsValid() && ss != NULL;}
+	bool IsValid(){return object_h::IsValid() && objp->type == OBJ_SHIP && ss != NULL;}
 	ship_subsys_h() : object_h() {
 		ss = NULL;
 	}
@@ -5025,7 +4948,7 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_2.angs)));
 }
 
-ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid")
+ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")
 {
 	ship_subsys_h *sso;
 	float f = -1.0f;
@@ -5035,8 +4958,17 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 	if(!sso->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	if(ADE_SETTING_VAR && f >= 0.0f)
-		sso->ss->current_hits = f;
+	if(ADE_SETTING_VAR)
+	{
+		//Only go down to 0 hits
+		sso->ss->current_hits = MAX(0.0f, f);
+
+		ship *shipp = &Ships[sso->objp->instance];
+		if (f <= -1.0f && sso->ss->current_hits <= 0.0f) {
+			do_subobj_destroyed_stuff(shipp, sso->ss, NULL);
+		}
+		ship_recalc_subsys_strength(shipp);
+	}
 
 	return ade_set_args(L, "f", sso->ss->current_hits);
 }
@@ -5051,8 +4983,12 @@ ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "num
 	if(!sso->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	if(ADE_SETTING_VAR && f >= 0.0f)
-		sso->ss->max_hits = f;
+	if(ADE_SETTING_VAR)
+	{
+		sso->ss->max_hits = MIN(0.0f, f);
+
+		ship_recalc_subsys_strength(&Ships[sso->objp->instance]);
+	}
 
 	return ade_set_args(L, "f", sso->ss->max_hits);
 }
@@ -5278,7 +5214,7 @@ ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "N
 	if(pm == NULL)
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", pm->n_textures);
+	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
 }
 
 ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
@@ -5294,54 +5230,63 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 
 	ship *shipp = &Ships[oh->objp->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-	int idx = -1;
+	int final_index = -1;
 	int i;
 
 	char fname[MAX_FILENAME_LEN];
-	for (i = 0; i < pm->n_textures; i++)
+	if (shipp->ship_replacement_textures != NULL)
 	{
-		if (shipp->replacement_textures != NULL)
+		for(i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
 		{
-			bm_get_filename(shipp->replacement_textures[i], fname);
+			bm_get_filename(shipp->ship_replacement_textures[i], fname);
 
 			if(!strextcmp(fname, s)) {
-				idx = i;
+				final_index = i;
 				break;
 			}
 		}
+	}
 
-		bm_get_filename(pm->maps[i].base_map.GetTexture(), fname);
-
-		if (!strextcmp(fname, s)) {
-			idx = i;
-			break;
+	if(final_index < 0)
+	{
+		for (i = 0; i < pm->n_textures; i++)
+		{
+			int tm_num = pm->maps[i].FindTexture(fname);
+			if(tm_num > -1)
+			{
+				final_index = i*TM_NUM_TYPES+tm_num;
+				break;
+			}
 		}
 	}
 
-	if (idx < 0)
+	if (final_index < 0)
 	{
-		idx = atoi(s) - 1;	//Lua->FS2
+		final_index = atoi(s) - 1;	//Lua->FS2
 
-		if (idx < 0 || idx >= pm->n_textures)
+		if (final_index < 0 || final_index >= MAX_REPLACEMENT_TEXTURES)
 			return ade_set_error(L, "o", l_Texture.Set(-1));
   	}
 
 	//LuaError(L, "%d: %d", lua_type(L,lua_upvalueindex(2)), lua_toboolean(L,lua_upvalueindex(2)));
-	if (ADE_SETTING_VAR && tdx >= 0) {
-		if (shipp->replacement_textures == NULL) {
-			shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+	if (ADE_SETTING_VAR) {
+		if (shipp->ship_replacement_textures == NULL) {
+			shipp->ship_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-			for (i = 0; i < MAX_MODEL_TEXTURES; i++)
-				shipp->replacement_textures[i] = -1;
+			for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+				shipp->ship_replacement_textures[i] = -1;
 		}
 
-		shipp->replacement_textures[idx] = tdx;
+		if(bm_is_valid(tdx))
+			shipp->ship_replacement_textures[final_index] = tdx;
+		else
+			shipp->ship_replacement_textures[final_index] = -1;
 	}
 
-	if (shipp->replacement_textures != NULL && shipp->replacement_textures[idx] >= 0)
-		return ade_set_args(L, "o", l_Texture.Set(shipp->replacement_textures[idx]));
+	if (shipp->ship_replacement_textures != NULL && shipp->ship_replacement_textures[final_index] >= 0)
+		return ade_set_args(L, "o", l_Texture.Set(shipp->ship_replacement_textures[final_index]));
 	else
-		return ade_set_args(L, "o", l_Texture.Set(pm->maps[idx].base_map.GetTexture()));
+		return ade_set_args(L, "o", l_Texture.Set(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture()));
 }
 
 ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -5741,12 +5686,12 @@ ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptexture
 		ship *src = &Ships[sh->objp->instance];
 		ship *dest = &Ships[dh->objp->instance];
 		
-		if (src->replacement_textures != NULL)
+		if (src->ship_replacement_textures != NULL)
 		{
-			if (dest->replacement_textures == NULL)
-				dest->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+			if (dest->ship_replacement_textures == NULL)
+				dest->ship_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-			memcpy(dest->replacement_textures, src->replacement_textures, MAX_MODEL_TEXTURES * sizeof(int));
+			memcpy(dest->ship_replacement_textures, src->ship_replacement_textures, MAX_REPLACEMENT_TEXTURES * sizeof(int));
 		}
 	}
 
@@ -6464,6 +6409,296 @@ ADE_FUNC(getSquadronImage, l_Player, NULL, "Squad image (string)", "Gets current
 	return ade_set_args(L, "s", Players[idx].squad_filename);
 }*/
 
+//**********HANDLE: Camera
+ade_obj<camid> l_Camera("camera", "Camera handle");
+
+ADE_FUNC(__tostring, l_Camera, NULL, "Camera name", "string", "Camera name, or an empty string if handle is invalid")
+{
+	camid cid;
+	if(!ade_get_args(L, "o", l_Camera.Get(&cid)))
+		return ade_set_error(L, "s", "");
+
+	if(!cid.isValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", cid.getCamera()->get_name());
+}
+
+ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	camid cid;
+	if(!ade_get_args(L, "o", l_Camera.Get(&cid)))
+		return ADE_RETURN_NIL;
+
+	if(!cid.isValid())
+		return ADE_RETURN_FALSE;
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name")
+{
+	camid cid;
+	char *s = NULL;
+	if(!ade_get_args(L, "o|s", l_Camera.Get(&cid), &s))
+		return ade_set_error(L, "s", "");
+
+	if(!cid.isValid())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR && s != NULL) {
+		cid.getCamera()->set_name(s);
+	}
+
+	return ade_set_args(L, "s", cid.getCamera()->get_name());
+}
+
+ADE_VIRTVAR(FOV, l_Camera, "number", "New camera FOV (in radians)", "number", "Camera FOV (in radians)")
+{
+	camid cid;
+	float f = VIEWER_ZOOM_DEFAULT;
+	if(!ade_get_args(L, "o|f", l_Camera.Get(&cid), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!cid.isValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		cid.getCamera()->set_fov(f);
+	}
+
+	return ade_set_args(L, "f", cid.getCamera()->get_fov());
+}
+
+ADE_VIRTVAR(Orientation, l_Camera, "orientation", "New camera orientation", "orientation", "Camera orientation")
+{
+	camid cid;
+	matrix_h *mh = NULL;
+	if(!ade_get_args(L, "o|o", l_Camera.Get(&cid), l_Matrix.GetPtr(&mh)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!cid.isValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR && mh != NULL) {
+		cid.getCamera()->set_rotation(mh->GetMatrix());
+	}
+
+	matrix mtx;
+	cid.getCamera()->get_info(NULL, &mtx);
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&mtx)));
+}
+
+ADE_VIRTVAR(Position, l_Camera, "vector", "New camera position", "vector", "Camera position")
+{
+	camid cid;
+	vec3d *pos = NULL;
+	if(!ade_get_args(L, "o|o", l_Camera.Get(&cid), l_Vector.GetPtr(&pos)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!cid.isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(ADE_SETTING_VAR) {
+		cid.getCamera()->set_position(pos);
+	}
+
+	vec3d v = vmd_zero_vector;
+	cid.getCamera()->get_info(&v, NULL);
+	return ade_set_args(L, "o", l_Vector.Set(v));
+}
+
+ADE_VIRTVAR(Self, l_Camera, "object", "New mount object", "object", "Camera object")
+{
+	camid cid;
+	object_h *oh = NULL;
+	if(!ade_get_args(L, "o|o", l_Camera.Get(&cid), l_Object.GetPtr(&oh)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!cid.isValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR && oh->IsValid()) {
+		cid.getCamera()->set_object_host(oh->objp);
+	}
+
+	return ade_set_args(L, "o", l_Object.Set(object_h(cid.getCamera()->get_object_host())));
+}
+
+ADE_VIRTVAR(SelfSubsystem, l_Camera, "subsystem", "New mount object subsystem", "subsystem", "Subsystem that the camera is mounted on")
+{
+	camid cid;
+	ship_subsys_h *sso = NULL;
+	if(!ade_get_args(L, "o|o", l_Camera.Get(&cid), l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!cid.isValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR && sso->IsValid()) {
+		cid.getCamera()->set_object_host(sso->objp, sso->ss->system_info->subobj_num);
+	}
+
+	object *objp = cid.getCamera()->get_object_host();
+	if(objp == NULL || objp->type != OBJ_SHIP)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	int submodel = cid.getCamera()->get_object_host_submodel();
+	if(submodel < 0)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	ship *shipp = &Ships[objp->instance];
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+	if(pm == NULL)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	bsp_info *sm = &pm->submodel[submodel];
+
+	ship_subsys *ss = ship_get_subsys(shipp, sm->name);
+	
+	if(ss == NULL)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objp, ss)));
+}
+
+ADE_VIRTVAR(Target, l_Camera, "object", "New target object", "object", "Camera target object")
+{
+	camid cid;
+	object_h *oh = NULL;
+	if(!ade_get_args(L, "o|o", l_Camera.Get(&cid), l_Object.GetPtr(&oh)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!cid.isValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR && oh->IsValid()) {
+		cid.getCamera()->set_object_target(oh->objp);
+	}
+
+	return ade_set_args(L, "o", l_Object.Set(object_h(cid.getCamera()->get_object_target())));
+}
+
+ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "subsystem", "Subsystem that the camera is pointed at")
+{
+	camid cid;
+	ship_subsys_h *sso = NULL;
+	if(!ade_get_args(L, "o|o", l_Camera.Get(&cid), l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!cid.isValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR && sso->IsValid()) {
+		cid.getCamera()->set_object_target(sso->objp, sso->ss->system_info->subobj_num);
+	}
+
+	object *objp = cid.getCamera()->get_object_target();
+	if(objp == NULL || objp->type != OBJ_SHIP)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	int submodel = cid.getCamera()->get_object_target_submodel();
+	if(submodel < 0)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	ship *shipp = &Ships[objp->instance];
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+	if(pm == NULL)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	bsp_info *sm = &pm->submodel[submodel];
+
+	ship_subsys *ss = ship_get_subsys(shipp, sm->name);
+	
+	if(ss == NULL)
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objp, ss)));
+}
+
+ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time]",
+		 "Sets camera FOV"
+		 "<br>FOV is the final field of view, in radians, of the camera."
+		 "<br>Zoom Time is the total time to take zooming in or out."
+		 "<br>Acceleration Time is the total time it should take the camera to get up to full zoom speed."
+		 "<br>Deceleration Time is the total time it should take the camera to slow down from full zoom speed.",
+		 "boolean", "true if successful, false or nil otherwise")
+{
+	camid cid;
+	float n_fov = VIEWER_ZOOM_DEFAULT;
+	float time=0.0f;
+	float acc_time=0.0f;
+	float dec_time=0.0f;
+	if(!ade_get_args(L, "o|offf", l_Camera.Get(&cid), &n_fov, &time, &acc_time, &dec_time))
+		return ADE_RETURN_NIL;
+	
+	if(!cid.isValid())
+		return ADE_RETURN_NIL;
+
+	cid.getCamera()->set_fov(n_fov, time, acc_time, dec_time);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotation Time, number Acceleration Time, number Deceleration time]",
+		"Sets camera orientation and velocity data."
+		"<br>Orientation is the final orientation for the camera, after it has finished moving. If not specified, the camera will simply stop at its current orientation."
+		"<br>Rotation time is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
+		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving."
+		"<br>Deceleration time is how long it should take the camera to slow down. If not specified, the camera will instantly stop moving.",
+		"boolean", "true if successful, false or nil otherwise")
+{
+	camid cid;
+	matrix_h *mh=NULL;
+	float time=0.0f;
+	float acc_time=0.0f;
+	float dec_time=0.0f;
+	if(!ade_get_args(L, "o|offf", l_Camera.Get(&cid), l_Matrix.GetPtr(&mh), &time, &acc_time, &dec_time))
+		return ADE_RETURN_NIL;
+	
+	if(!cid.isValid())
+		return ADE_RETURN_NIL;
+
+	camera *cam = cid.getCamera();
+
+	if(mh != NULL)
+	{
+		cam->set_rotation(mh->GetMatrix(), time, acc_time, dec_time);
+	}
+	else
+	{
+		cam->set_rotation();
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, number Acceleration Time, number Deceleration Time]",
+		"Sets camera position and velocity data."
+		"<br>Position is the final position for the camera. If not specified, the camera will simply stop at its current position."
+		"<br>Translation time is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."
+		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving."
+		"<br>Deceleration time is how long it should take the camera to slow down. If not specified, the camera will instantly stop moving.",
+		"boolean", "true if successful, false or nil otherwise")
+{
+	camid cid;
+	vec3d *pos=NULL;
+	float time=0.0f;
+	float acc_time=0.0f;
+	float dec_time=0.0f;
+	if(!ade_get_args(L, "o|offf", l_Camera.Get(&cid), l_Vector.GetPtr(&pos), &time, &acc_time, &dec_time))
+		return ADE_RETURN_NIL;
+	
+	if(!cid.isValid())
+		return ADE_RETURN_NIL;
+
+	cid.getCamera()->set_position(pos, time, acc_time, dec_time);
+
+	return ADE_RETURN_TRUE;
+}
+
 //**********HANDLE: SoundEntry
 struct sound_entry_h
 {
@@ -6662,6 +6897,35 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound filename", "True if sound was playe
 	return ade_set_args(L, "b", idx > -1);
 }
 */
+/*
+class track_h
+{
+private:
+	int tdx;
+public:
+	track_h(){tdx=-1;}
+	track_h(int n_track){tdx=n_track;}
+
+	bool IsValid(){return (this != NULL && tdx > -1 && tdx < MAX_AUDIO_STREAMS);}
+
+	int Get(){return tdx;}
+};
+
+ade_obj<track_h> l_Track("track", "Music track");
+*/
+ADE_FUNC(playMusic, l_Audio, "string Filename", "Plays a music file using FS2Open's builtin music system", NULL, NULL)
+{
+	char *s;
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "b", false);
+
+	int ah = audiostream_open(s, ASF_MENUMUSIC);
+	if(ah < 0)
+		return ade_set_error(L, "b", false);
+
+	audiostream_play(ah);
+	return ADE_RETURN_NIL;
+}
 
 //**********LIBRARY: Base
 ade_lib l_Base("Base", NULL, "ba", "Base FreeSpace 2 functions");
@@ -7221,35 +7485,36 @@ ADE_FUNC(setCursorHidden, l_Mouse, "True to hide mouse, false to show it", "Show
 //**********LIBRARY: Graphics
 ade_lib l_Graphics("Graphics", NULL, "gr", "Graphics Library");
 
-//****SUBLIBRARY: Mission/Cameras
+//****SUBLIBRARY: Graphics/Cameras
 ade_lib l_Graphics_Cameras("Cameras", &l_Graphics, NULL, "Cameras");
 
-ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Indexes cameras", "camera", "Camera handle, or invalid camera handle if index was invalid")
+ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
 {
 	char *s = NULL;
 	if(!ade_get_args(L, "*s", &s))
-		return ade_set_error(L, "o", l_Camera.Set(-1));
+		return ade_set_error(L, "o", l_Camera.Set(camid()));
 
-	int cn = cameras_lookup(s);
-	if(cn < 0)
+	camid cid = cam_lookup(s);
+	if(!cid.isValid())
 	{
-		cn = atoi(s);
-		if(cn < 1 || cn > (int)Cameras.size())
-			return ade_set_error(L, "o", l_Camera.Set(-1));
-
-		//Lua-->FS2
-		cn--;
+		int cn = atoi(s);
+		if(cn > 0)
+		{
+			//Lua-->FS2
+			cn--;
+			cid = cam_get_camera(cn);
+		}
 	}
 
-	return ade_set_args(L, "o", l_Camera.Set(cn));
+	return ade_set_args(L, "o", l_Camera.Set(cid));
 }
 
-ADE_FUNC(__len, l_Graphics_Cameras, NULL, "Current number of cameras", "camera", "Number of cameras")
+ADE_FUNC(__len, l_Graphics_Cameras, NULL, "Gets number of cameras", "number", "Number of cameras")
 {
-	return ade_set_args(L, "i", (int)Cameras.size());
+	return ade_set_args(L, "i", (int)cam_get_num());
 }
 
-//****SUBLIBRARY: Mission/Fonts
+//****SUBLIBRARY: Graphics/Fonts
 ade_lib l_Graphics_Fonts("Fonts", &l_Graphics, NULL, "Font library");
 
 ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Number of loaded fonts")
@@ -7426,29 +7691,18 @@ ADE_FUNC(createCamera, l_Graphics,
 		 "Camera handle, or invalid camera handle if camera couldn't be created")
 {
 	char *s = NULL;
-	vec3d *v = NULL;
+	vec3d *v = &vmd_zero_vector;
 	matrix_h *mh = NULL;
 	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
-		return ade_set_error(L, "o", l_Camera.Set(-1));
+		return ADE_RETURN_NIL;
 
-	int idx;
-
-	//Add camera
-	Cameras.push_back(camera(s));
-
-	//Get idx
-	idx = Cameras.size() - 1;
-
-	//Set pos/orient
-	if(v != NULL)
-		Cameras[idx].set_position(v);
+	matrix *mtx = &vmd_identity_matrix;
 	if(mh != NULL)
-	{
-		Cameras[idx].set_rotation(mh->GetMatrix());
-	}
+		mtx = mh->GetMatrix();
+	camid cid = cam_create(s, v, mtx);
 
 	//Set position
-	return ade_set_args(L, "o", l_Camera.Set(idx));
+	return ade_set_args(L, "o", l_Camera.Set(cid));
 }
 
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")
@@ -7515,20 +7769,19 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	return ade_set_args(L, "b", i ? true : false);
 }
 
-ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or resets camera if none specified", "boolean", "True if camera was set, false or nil otherwise")
+ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
 {
-	int idx = -1;
-	if(!ade_get_args(L, "|o", l_Camera.Get(&idx)))
+	camid cid;
+	if(!ade_get_args(L, "|o", l_Camera.Get(&cid)))
 	{
-		Viewer_mode &= ~VM_FREECAMERA;
-		return ADE_RETURN_TRUE;
+		cam_reset_camera();
+		return ADE_RETURN_NIL;
 	}
 
-	if(idx < 1 || (uint)idx > Cameras.size())
-		return ade_set_error(L, "b", false);
+	if(!cid.isValid())
+		return ADE_RETURN_NIL;
 
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = &Cameras[idx];
+	cam_set_camera(cid);
 
 	return ADE_RETURN_TRUE;
 }
@@ -8764,7 +9017,7 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 
 	//NOW do the loading stuff
 	game_stop_time();
-	get_mission_info(s, &The_mission);
+	get_mission_info(s, &The_mission, false);
 	game_level_init();
 
 	if(mission_load(s) == -1)
@@ -8799,10 +9052,8 @@ ADE_FUNC(simulateFrame, l_Mission, NULL, "Simulates mission frame", NULL, NULL)
 
 ADE_FUNC(renderFrame, l_Mission, NULL, "Renders mission frame, but does not move anything", NULL, NULL)
 {
-	vec3d eye_pos;
-	matrix eye_orient;
-	game_render_frame_setup(&eye_pos, &eye_orient);
-	game_render_frame( &eye_pos, &eye_orient );
+	camid cid = game_render_frame_setup();
+	game_render_frame( cid );
 	game_render_post_frame();
 
 	return ADE_RETURN_TRUE;
@@ -8974,6 +9225,34 @@ ADE_FUNC(__len, l_Tables_WeaponClasses, NULL, "Number of weapon classes", "numbe
 //*************************Testing stuff*************************
 //This section is for stuff that's considered experimental.
 ade_lib l_Testing("Testing", NULL, "ts", "Experimental or testing stuff");
+
+ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
+{
+	static bool initialized = false;
+	static avd_movement avd;
+
+	if(!initialized)
+	{
+		avd.setAVD(10.0f, 3.0f, 1.0f, 1.0f, 0.0f);
+		initialized = true;
+	}
+	for(int i = 0; i < 3000; i++)
+	{
+		float Pc, Vc;
+		avd.get((float)i/1000.0f, &Pc, &Vc);
+		gr_set_color(0, 255, 0);
+		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Pc*10.0f), false);
+		gr_set_color(255, 0, 0);
+		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Vc*10.0f), false);
+
+		avd.get(&Pc, &Vc);
+		gr_set_color(255, 255, 255);
+		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Pc*10.0f), false);
+		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Vc*10.0f), false);
+	}
+
+	return ADE_RETURN_NIL;
+}
 
 ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
 		 "Creates a particle. Use PARTICLE_* enumerations for type."
@@ -9610,9 +9889,12 @@ int ade_set_args(lua_State *L, char *fmt, ...)
 				lua_pushnumber(L, va_arg(vl, int));
 				break;
 			case 's':
-				//WMC - Isn't working with HookVar for some strange reason
-				lua_pushstring(L, va_arg(vl, char*));
-				break;
+				{
+					//WMC - Isn't working with HookVar for some strange reason
+					char *s = va_arg(vl, char*);
+					lua_pushstring(L, s);
+					break;
+				}
 			/*
 			case 'u':
 			case 'v':

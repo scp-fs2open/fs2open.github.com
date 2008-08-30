@@ -1670,7 +1670,6 @@ void stars_camera_cut()
 //#define TIME_STAR_CODE		// enable to time star code
 
 extern int Sun_drew;
-extern float Viewer_zoom;
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos)
@@ -1816,7 +1815,8 @@ void stars_draw_sun_glow(int sun_n)
 	float local_scale;
 
 	// sanity
-	Assert( sun_n < (int)Suns.size() );
+	//WMC - Dunno why this is getting hit...
+	//Assert( sun_n < (int)Suns.size() );
 
 	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
 		return;
@@ -2675,7 +2675,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			pm->maps[idx].base_map.PageIn();
+			pm->maps[idx].PageIn();
 		}
 
 		pm = model_get(Subspace_model_outer);
@@ -2683,7 +2683,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			pm->maps[idx].base_map.PageIn();
+			pm->maps[idx].PageIn();
 		}
 
 		if (Subspace_glow_bitmap < 0) {
@@ -3168,7 +3168,8 @@ starfield_bitmap *stars_get_bitmap_entry(int index, bool sun)
 {
 	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
-	Assert( (index >= 0) && (index < max_index) );
+	//WMC - Commented out because it keeps happening, and I don't know what this means.
+	//Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return NULL;

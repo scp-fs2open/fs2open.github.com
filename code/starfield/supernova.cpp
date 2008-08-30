@@ -116,10 +116,6 @@ static int Supernova_popup = 0;
 static float Supernova_fade_to_white = 0.0f;
 static int Supernova_particle_stamp = -1;
 
-// supernova camera pos
-vec3d Supernova_camera_pos;
-matrix Supernova_camera_orient;
-
 int Supernova_status = SUPERNOVA_NONE;
 
 // --------------------------------------------------------------------------------------------------------------------------
@@ -374,11 +370,38 @@ DCF(sn_cam_dist, "")
 	dc_get_arg(ARG_FLOAT);
 	sn_cam_distance = Dc_arg_float;
 }
-void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
+/*
+camid supernova_get_camera()
 {
+	static camid supernova_camera;
+	if(!supernova_camera.isValid())
+	{
+		supernova_camera = cam_create("Supernova camera");
+	}
+
+	return supernova_camera;
+}
+*/
+void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
+{
+	// supernova camera pos
+	vec3d Supernova_camera_pos;
+	static matrix Supernova_camera_orient;
+	/*
+	static camid supernova_camera;
+	if(!supernova_camera.isValid())
+	{
+		supernova_camera = cam_create("Supernova camera");
+	}
+
+	if(!supernova_camera.isValid())
+		return supernova_camera;
+
+	camera *cam = supernova_camera.getCamera();
+	*/
+
 	vec3d at;
 	vec3d sun_temp, sun;
-	vec3d move;
 	vec3d view;
 	
 	// set the controls for the heart of the sun	
@@ -388,16 +411,19 @@ void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 	vm_vec_normalize(&sun);
 
 	// always set the camera pos
+	vec3d move;
 	matrix whee;
 	vm_vector_2_matrix(&whee, &move, NULL, NULL);
 	vm_vec_scale_add(&Supernova_camera_pos, &Player_obj->pos, &whee.vec.rvec, sn_cam_distance);
 	vm_vec_scale_add2(&Supernova_camera_pos, &whee.vec.uvec, 30.0f);
+	//cam->set_position(&Supernova_camera_pos);
 	*eye_pos = Supernova_camera_pos;
 
 	// if we're no longer moving the camera
 	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)){
 		// *eye_pos = Supernova_camera_pos;
-		*eye_orient = Supernova_camera_orient;		
+		//cam->set_rotation(&Supernova_camera_orient);
+		*eye_orient = Supernova_camera_orient;
 	} 
 	// otherwise move it
 	else {
@@ -411,10 +437,12 @@ void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 		float pct = ((SUPERNOVA_CUT_TIME - Supernova_time) / SUPERNOVA_CAMERA_MOVE_TIME);
 		vm_vec_scale_add2(&at, &move, sn_distance * pct);	
 
-		*eye_pos = Supernova_camera_pos;
-		vm_vec_sub(&view, &at, eye_pos);
+		vm_vec_sub(&view, &at, &Supernova_camera_pos);
 		vm_vec_normalize(&view);
 		vm_vector_2_matrix(&Supernova_camera_orient, &view, NULL, NULL);
+		//cam->set_rotation(&Supernova_camera_orient);
 		*eye_orient = Supernova_camera_orient;
 	}
+
+	//return supernova_camera;
 }

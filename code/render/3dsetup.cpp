@@ -208,6 +208,7 @@ vec3d		Light_base;			// Used to rotate world points into current local coordinat
 
 matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
+float		Eye_fov;			// What the viewer's FOV is
 
 float			View_zoom;			// The zoom factor
 float			Proj_fov;			// The fov (for HTL projection matrix)
@@ -321,6 +322,14 @@ void g3_end_frame_func(char *filename, int lineno)
 
 void scale_matrix(void);
 
+void g3_set_view(camera *cam)
+{
+	vec3d pos;
+	matrix ori;
+	cam->get_info(&pos, &ori);
+	g3_set_view_matrix(&pos, &ori, cam->get_fov());
+}
+
 //set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
 void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 {
@@ -336,6 +345,7 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 
 	Eye_matrix = View_matrix;
 	Eye_position = *view_pos;
+	Eye_fov = zoom;
 
 	scale_matrix();
 

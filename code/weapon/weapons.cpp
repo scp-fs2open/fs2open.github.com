@@ -1310,14 +1310,13 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 	int behind = 0;
 
 	// start the frame
-	extern float Viewer_zoom;
 	extern int G3_count;
 
 	if(!G3_count){
 		g3_start_frame(1);
 		must_stop = 1;
 	}
-	g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
+	g3_set_view_matrix(&Eye_position, &Eye_matrix, Eye_fov);
 
 	// get extents of the rotated bitmap
 	g3_rotate_vertex(&v, pos);
@@ -6557,7 +6556,7 @@ void weapons_page_in()
 				}
 		
 				for (j = 0; j < pm->n_textures; j++)
-					pm->maps[j].base_map.PageIn();
+					pm->maps[j].PageIn();
 
 				break;
 			}
