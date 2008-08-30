@@ -264,6 +264,8 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime);
 
 void shipfx_large_blowup_render(ship *shipp);
 
+void shipfx_debris_limit_speed(struct debris *db, ship *shipp);
+
 // sound manager fore big ship sub explosions sounds
 void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle);
 
@@ -327,7 +329,7 @@ public:
 	virtual int warpFrame(float frametime);
 	virtual int warpShipClip();
 	virtual int warpShipRender();
-	int warpEnd();
+	virtual int warpEnd();
 
 	//For VM_WARP_CHASE
 	virtual int getWarpPosition(vec3d *output);
@@ -357,6 +359,9 @@ private:
 	vec3d	pos;
 	vec3d	fvec;
 	float	radius;
+
+	//Object info
+	float back_len;
 public:
 	WE_Default(object *n_objp, int n_direction);
 
@@ -403,7 +408,7 @@ public:
 };
 
 //********************-----CLASS: WE_Homeworld-----********************//
-#define WE_HOMEWORLD_NUM_STAGES			5
+#define WE_HOMEWORLD_NUM_STAGES			6
 class WE_Homeworld : public WarpEffect
 {
 private:
@@ -416,21 +421,27 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[WE_HOMEWORLD_NUM_STAGES+1];
+	int stage_duration[WE_HOMEWORLD_NUM_STAGES];
 
 	//anim
 	int anim;
 	int anim_nframes;
 	int anim_fps;
 
+	//sound
+	int snd;
+	float snd_range_factor;
+	struct game_snd *snd_gs;
+
 	//sweeper polygon and clip effect
 	vec3d	pos;
 	vec3d	fvec;
-	float	radius_full;
 	float	width;
 	float	width_full;
 	float	height;
 	float	height_full;
+	float	z_offset_min;
+	float	z_offset_max;
 public:
 	WE_Homeworld(object *n_objp, int n_direction);
 	virtual ~WE_Homeworld();
@@ -439,6 +450,7 @@ public:
 	virtual int warpFrame(float frametime);
 	virtual int warpShipClip();
 	virtual int warpShipRender();
+	virtual int warpEnd();
 
 	int getWarpPosition(vec3d *output);
     int getWarpOrientation(matrix *output);
