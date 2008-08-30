@@ -8027,7 +8027,7 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 	net_player *ignore = NULL;
 
 	// sanity checking for now
-	Assert ( banks_fired <= 3 );
+	Assert ( banks_fired < (2^MAX_SHIP_PRIMARY_BANKS) );
 
 	// get an object pointer for this ship.
 	objnum = shipp->objnum;
