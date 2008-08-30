@@ -12,6 +12,7 @@
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
+float Sexp_fov = 0.0f;
 warp_camera Warp_camera;
 
 //*************************OTHER STUFF*************************
@@ -363,7 +364,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		return;
 
 	//POSITION
-	//if(!(flags & CAM_STATIONARY_POS))
+	if(!(flags & CAM_STATIONARY_POS) || object_host.IsValid())
 	{
 		c_pos = vmd_zero_vector;
 
@@ -479,12 +480,11 @@ void camera::get_info(vec3d *position, matrix *orientation)
 			vm_rotate_matrix_by_angles(&c_ori, &a);
 			*/
 			//vm_angles_2_matrix(&c_ori, &a);
-
-			//Do custom orientation stuff, if needed
-			if(func_custom_orientation != NULL)
-			{
-				func_custom_orientation(this, &c_ori);
-			}
+		}
+		//Do custom orientation stuff, if needed
+		if(func_custom_orientation != NULL)
+		{
+			func_custom_orientation(this, &c_ori);
 		}
 		*orientation = c_ori;
 	}
@@ -874,7 +874,8 @@ bool camid::isValid()
 //*************************camera functions*************************
 void cam_init()
 {
-	//Nothing now
+	//Rest FOV override
+	Sexp_fov = 0.0;
 }
 
 void cam_close()
