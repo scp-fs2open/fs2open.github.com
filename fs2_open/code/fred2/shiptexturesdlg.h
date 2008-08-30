@@ -54,8 +54,8 @@ protected:
 
 private:
 	int num_model_textures;
-	char old_texture_name[MAX_MODEL_TEXTURES][MAX_FILENAME_LEN];
-	char new_texture_name[MAX_MODEL_TEXTURES][MAX_FILENAME_LEN];
+	char old_texture_name[MAX_REPLACEMENT_TEXTURES][MAX_FILENAME_LEN];
+	char new_texture_name[MAX_REPLACEMENT_TEXTURES][MAX_FILENAME_LEN];
 	int query_modified();
 	void sort_textures(int test = SORT_OLD);
 	void swap_strings(char *str1, char *str2);

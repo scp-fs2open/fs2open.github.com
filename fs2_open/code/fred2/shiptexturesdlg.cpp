@@ -119,8 +119,13 @@ void CShipTexturesDlg::OnOK()
 		// overwrite old stuff
 		k = 0;
 		write_index = 0;
-		while (k<(MAX_SHIPS * MAX_MODEL_TEXTURES))
+		while (k<(MAX_SHIPS * MAX_REPLACEMENT_TEXTURES))
 		{
+			//WMC - This loop will go on for a REALLY LONG TIME
+			//I don't think we need to copy empty entries.
+			if(!strlen(Fred_texture_replacements[k].ship_name))
+				break;
+
 			if (stricmp(Fred_texture_replacements[k].ship_name, Ships[self_ship].ship_name))
 			{
 				// move up, but when copying, src and dest can't be the same
@@ -167,7 +172,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 
 	// empty old and new fields
 	texture_count = 0;
-	for (i=0; i<MAX_MODEL_TEXTURES; i++)
+	for (i=0; i<MAX_REPLACEMENT_TEXTURES; i++)
 	{
 		*old_texture_name[i] = 0;
 		*new_texture_name[i] = 0;
@@ -180,49 +185,52 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	// look for textures to populate the combo box
 	for (i=0; i<pm->n_textures; i++)
 	{
-		// get texture file name
-		bm_get_filename(pm->maps[i].base_map.GetOriginalTexture(), texture_file);
-
-		// skip blank textures
-		if (!strlen(texture_file))
-			continue;
-
-		// get rid of file extension
-		p = strchr( texture_file, '.' );
-		if ( p )
+		for(j = 0; j < TM_NUM_TYPES; j++)
 		{
-			mprintf(( "ignoring extension on file '%s'\n", texture_file ));
-			*p = 0;
-		}
+			// get texture file name
+			bm_get_filename(pm->maps[i].textures[j].GetOriginalTexture(), texture_file);
 
-		// check for duplicate textures in list
-		duplicate = -1;
-		for (j=0; j<texture_count; j++)
-		{
-			if (!stricmp(old_texture_name[j], texture_file))
+			// skip blank textures
+			if (!strlen(texture_file))
+				continue;
+
+			// get rid of file extension
+			p = strchr( texture_file, '.' );
+			if ( p )
 			{
-				duplicate = j;
-				break;
+				//mprintf(( "ignoring extension on file '%s'\n", texture_file ));
+				*p = 0;
 			}
+
+			// check for duplicate textures in list
+			duplicate = -1;
+			for (int k=0; k<texture_count; k++)
+			{
+				if (!stricmp(old_texture_name[k], texture_file))
+				{
+					duplicate = k;
+					break;
+				}
+			}
+
+			if (duplicate >= 0)
+				continue;
+
+			// make old texture lowercase
+			strlwr(texture_file);
+
+			// now add it to the box
+			z = box->AddString(texture_file);
+
+			// and add it to the field as well
+			strcpy(old_texture_name[texture_count], texture_file);
+
+			// increment
+			texture_count++;
+
+			// sort
+			sort_textures();
 		}
-
-		if (duplicate >= 0)
-			continue;
-
-		// make old texture lowercase
-		strlwr(texture_file);
-
-		// now add it to the box
-		z = box->AddString(texture_file);
-
-		// and add it to the field as well
-		strcpy(old_texture_name[texture_count], texture_file);
-
-		// increment
-		texture_count++;
-
-		// sort
-		sort_textures();
 	}
 
 	// now look for new textures
