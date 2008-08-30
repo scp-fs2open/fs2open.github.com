@@ -985,7 +985,7 @@ struct object;
 class WarpEffect;
 
 //	Part of the player died system.
-extern vec3d	Dead_camera_pos, Original_vec_to_deader;
+extern vec3d	Original_vec_to_deader;
 
 //	States for player death sequence, stuffed in Player_died_state.
 #define	PDS_NONE		1
@@ -1518,12 +1518,15 @@ typedef struct ship {
 	int primitive_sensor_range;
 	
 	// Goober5000 - revised nameplate implementation
-	int *replacement_textures;
+	int *ship_replacement_textures;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
 	// that had this same functionality
 	int current_viewpoint;
+
+	//WMC - this one
+	//camid ship_camera;
 
 	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
@@ -1820,6 +1823,7 @@ typedef struct ship_info {
 	float		density;								// density of the ship in g/cm^3 (water  = 1)
 	float		damp;									// drag
 	float		rotdamp;								// rotational drag
+	float		delta_bank_const;
 	vec3d	max_vel;								//	max velocity of the ship in the linear directions -- read from ships.tbl
 	vec3d	afterburner_max_vel;				//	max velocity of the ship in the linear directions when afterburners are engaged -- read from ships.tbl
 	vec3d	max_rotvel;							// maximum rotational velocity
@@ -1832,16 +1836,22 @@ typedef struct ship_info {
 	float		slide_accel;
 	float		slide_decel;
 
-	float		warpin_speed;
-	float		warpout_speed;
-	int			warpin_time;	//in ms
-	int			warpout_time;	//in ms
-	float		warpin_radius;
-	float		warpout_radius;
-	int			warpin_type;
-	int			warpout_type;
 	char		warpin_anim[MAX_FILENAME_LEN];
+	float		warpin_radius;
+	int			warpin_snd_start;
+	int			warpin_snd_end;
+	float		warpin_speed;
+	int			warpin_time;	//in ms
+	int			warpin_type;
+
 	char		warpout_anim[MAX_FILENAME_LEN];
+	float		warpout_radius;
+	int			warpout_snd_start;
+	int			warpout_snd_end;
+	float		warpout_speed;
+	int			warpout_time;	//in ms
+	int			warpout_type;
+
 	float		warpout_player_speed;
 
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
@@ -1862,6 +1872,12 @@ typedef struct ship_info {
 	int dspew_max_particles;						//Temp field until someone works on particles -C
 
 	//Debris stuff
+	float			debris_min_lifetime;
+	float			debris_max_lifetime;
+	float			debris_min_speed;
+	float			debris_max_speed;
+	float			debris_min_rotspeed;
+	float			debris_max_rotspeed;
 	int				debris_damage_type_idx;
 
 	// subsystem information
@@ -2222,7 +2238,11 @@ extern void ship_model_stop(object *objp);
 extern int ship_find_num_crewpoints(object *objp);
 extern int ship_find_num_turrets(object *objp);
 
+extern void compute_slew_matrix(matrix *orient, angles *a);
+//extern camid ship_set_eye( object *obj, int eye_index);
+extern void ship_set_eye(object *obj, int eye_index);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true );		// returns in eye the correct viewing position for the given object
+//extern camid ship_get_followtarget_eye(object *obj);
 extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass = 0);
 extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
