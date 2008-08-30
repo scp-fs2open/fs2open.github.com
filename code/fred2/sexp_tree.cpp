@@ -3126,6 +3126,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SHIP_WING_POINT_OR_NONE:
 			str = SEXP_NONE_STRING;
 			break;
 
@@ -3269,6 +3270,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SKYBOX_MODEL_NAME:
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SHIP_WING_POINT_OR_NONE:
 		case OPF_SUBSYS_OR_GENERIC:
 		case OPF_BACKGROUND_BITMAP:
 		case OPF_SUN_BITMAP:
@@ -4774,6 +4776,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_wing_point();
 			break;
 
+		case OPF_SHIP_WING_POINT_OR_NONE:
+			list = get_listing_opf_ship_wing_point_or_none();
+			break;
+
 		case OPF_SHIP_TYPE:
 			list = get_listing_opf_ship_type();
 			break;
@@ -5668,6 +5674,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
 	head.add_list(get_listing_opf_point());
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point_or_none()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+	head.add_list(get_listing_opf_ship_wing_point());
+
 	return head.next;
 }
 

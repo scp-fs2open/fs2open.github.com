@@ -209,6 +209,7 @@ public:
 	sexp_list_item *get_listing_opf_waypoint_path();
 	sexp_list_item *get_listing_opf_ship_point();
 	sexp_list_item *get_listing_opf_ship_wing_point();
+	sexp_list_item *get_listing_opf_ship_wing_point_or_none();
 	sexp_list_item *get_listing_opf_mission_name();
 	sexp_list_item *get_listing_opf_goal_name(int parent_node);
 	sexp_list_item *get_listing_opf_ship_wing();
