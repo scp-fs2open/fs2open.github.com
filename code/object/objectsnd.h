@@ -112,7 +112,8 @@ void	obj_snd_delete_type(int objnum, int sndnum = -1, struct ship_subsys *ss = N
 
 void	obj_snd_delete_all();
 void	obj_snd_stop_all();
-int	obj_snd_is_playing(int index);
-int	obj_snd_return_instance(int index);
+int	obj_snd_is_playing(int objnum, int index);
+int	obj_snd_return_instance(int objnum, int index);
+int obj_snd_update_offset(int objnum, int index, vec3d *new_offset);
 
 #endif
