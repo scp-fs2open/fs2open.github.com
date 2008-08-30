@@ -2561,7 +2561,8 @@ void commit_pressed()
 			}
 		}
 	}
-	else {
+	else if(Player_obj != NULL)
+	{
 
 		if ( Selected_ss_class == -1 ) {
 			player_ship_info_index = Team_data[Common_team].default_ship;
