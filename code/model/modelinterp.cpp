@@ -4691,7 +4691,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}	
 
 	// start rendering glow points -Bobboau
-	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl ) {
+	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
 		for (i = 0; i < pm->n_glow_point_banks; i++ ) {
 			glow_point_bank *bank = &pm->glow_point_banks[i];
 			int j;
