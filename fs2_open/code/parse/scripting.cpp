@@ -46,12 +46,14 @@ flag_def_list Script_actions[] =
 {
 	{"On Game Init",			CHA_GAMEINIT,		0},
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
+	{"On State Start",			CHA_ONSTATESTART,	0},
 	{"On Frame",				CHA_ONFRAME,		0},
 	{"On Key Pressed",			CHA_KEYPRESSED,		0},
 	{"On Key Released",			CHA_KEYRELEASED,	0},
 	{"On Mouse Moved",			CHA_MOUSEMOVED,		0},
 	{"On Mouse Pressed",		CHA_MOUSEPRESSED,	0},
 	{"On Mouse Released",		CHA_MOUSERELEASED,	0},
+	{"On State End",			CHA_ONSTATEEND,		0},
 	{"On Mission Start",		CHA_MISSIONSTART,	0},
 	{"On HUD Draw",				CHA_HUDDRAW,		0},
 	{"On Ship Collision",		CHA_COLLIDESHIP,	0},
@@ -502,9 +504,16 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			//_anything_ larger as a stack object, this will not work.
 			//You'll get memory corruption
 			if(data == NULL)
+			{
 				lua_pushvalue(LuaState, data_ldx);
+			}
 			else
-				ade_set_args(LuaState, fmt, *(ade_odata*)data);
+			{
+				if(format == 's')
+					ade_set_args(LuaState, fmt, data);
+				else
+					ade_set_args(LuaState, fmt, *(ade_odata*)data);
+			}
 			//--------------------
 			//WMC - This was a separate function
 			//lua_set_arg(LuaState, format, data);

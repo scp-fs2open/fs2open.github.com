@@ -2038,13 +2038,17 @@ sexp_oper Operators[] = {
 	{ "unset-cutscene-bars",		OP_CUTSCENES_UNSET_CUTSCENE_BARS,		0, 1, },
 	{ "fade-in",					OP_CUTSCENES_FADE_IN,					0, 1, },
 	{ "fade-out",					OP_CUTSCENES_FADE_OUT,					0, 2, },
-	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 5, },
-	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 5, },
-	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 3, },
-	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 5, },
+	{ "set-camera",					OP_CUTSCENES_SET_CAMERA,				0, 1, },
+	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 6, },
+	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 4, },
+	{ "set-camera-fov",				OP_CUTSCENES_SET_CAMERA_FOV,			1, 5, },
+	{ "set-camera-host",			OP_CUTSCENES_SET_CAMERA_HOST,			1, 2, },
+	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 6, },
+	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 6, },
+	{ "set-camera-target",			OP_CUTSCENES_SET_CAMERA_TARGET,			1, 2, },
 	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
-	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 0, },
+	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
 	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
@@ -3011,8 +3015,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			case OPF_SHIP_WING:
 			case OPF_SHIP_WING_POINT:
+			case OPF_SHIP_WING_POINT_OR_NONE:
 				if ( type2 != SEXP_ATOM_STRING ){
 					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				// none is okay for _or_none
+				if (type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
+				{
+					break;
 				}
 
 				if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0)) {
@@ -5038,6 +5049,11 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	oswpt->wingp = NULL;
 	oswpt->team = -1;
 
+	if(!stricmp(object_name, SEXP_NONE_STRING))
+	{
+		oswpt->type = OSWPT_TYPE_NONE;
+		return;
+	}
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if (mission_log_get_time(LOG_SHIP_DEPARTED, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL))
@@ -15226,33 +15242,92 @@ void sexp_fade_out(int n)
 }
 
 
+camera* sexp_get_set_camera(bool reset = false)
+{
+	static camid sexp_camera;
+	if(!reset)
+	{
+		if(Viewer_mode & VM_FREECAMERA)
+		{
+			camera *cam = cam_get_current().getCamera();
+			if(cam != NULL)
+				return cam;
+		}
+	}
+	if(!sexp_camera.isValid())
+	{
+		sexp_camera = cam_create("SEXP camera");
+	}
+
+	cam_set_camera(sexp_camera);
+
+	return sexp_camera.getCamera();
+}
+
+void sexp_set_camera(int node)
+{
+	if(node == -1)
+	{
+		sexp_get_set_camera(true);
+		return;
+	}
+
+	char *cam_name = CTEXT(node);
+	camid cid = cam_lookup(cam_name);
+	if(!cid.isValid())
+	{
+		cid = cam_create(cam_name);
+	}
+	cam_set_camera(cid);
+}
+
 void sexp_set_camera_position(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
 
 	vec3d camera_vec;
-	//float camera_time = 0.0f;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
+	float camera_dec_time = 0.0f;
 
 	camera_vec.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
 	camera_vec.xyz.y = i2fl(eval_num(n));
 	n = CDR(n);
 	camera_vec.xyz.z = i2fl(eval_num(n));
+	n = CDR(n);
 
-	Free_camera->set_position(&camera_vec);
+	if(n != -1)
+	{
+		camera_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+		{
+			camera_dec_time = camera_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				camera_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
+	}
+
+	cam->set_position(&camera_vec, camera_time, camera_acc_time, camera_dec_time);
 }
 
 void sexp_set_camera_rotation(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
 
 	angles rot_angles;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
 
 	//Angles are in degrees
 	rot_angles.p = eval_num(n) * (PI/180.0f);
@@ -15266,22 +15341,29 @@ void sexp_set_camera_rotation(int n)
 		rot_time = eval_num(n) / 1000.0f;
 		n = CDR(n);
 		if(n != -1)
-			rot_acc_time = eval_num(n) / 1000.0f;
+		{
+			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				rot_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
 	}
 
-	Free_camera->set_rotation(&rot_angles, rot_time, rot_acc_time);
+	cam->set_rotation(&rot_angles, rot_time, rot_acc_time, rot_dec_time);
 }
 
 void sexp_set_camera_facing(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
 
 	vec3d location;
-	matrix cam_orient;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
 
 	location.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
@@ -15294,21 +15376,17 @@ void sexp_set_camera_facing(int n)
 		rot_time = eval_num(n) / 1000.0f;
 		n = CDR(n);
 		if(n != -1)
-			rot_acc_time = eval_num(n) / 1000.0f;
+		{
+			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				rot_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
 	}
 
-	//Calc to matrix
-	vec3d destvec;
-	vm_vec_sub(&destvec, &location, Free_camera->get_position());
-
-	if (IS_VEC_NULL(&destvec))
-	{
-		Warning(LOCATION, "Camera tried to point to self");
-		return;
-	}
-
-	vm_vector_2_matrix(&cam_orient, &destvec, NULL, NULL);
-	Free_camera->set_rotation(&cam_orient, rot_time, rot_acc_time);
+	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
 }
 
 void sexp_set_camera_facing_object(int n)
@@ -15316,6 +15394,7 @@ void sexp_set_camera_facing_object(int n)
 	char *object_name = CTEXT(n);
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
 
 	//Now get the rotation time values
 	n = CDR(n);
@@ -15324,7 +15403,14 @@ void sexp_set_camera_facing_object(int n)
 		rot_time = eval_num(n) / 1000.0f;
 		n = CDR(n);
 		if(n != -1)
-			rot_acc_time = eval_num(n) / 1000.0f;
+		{
+			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				rot_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
 	}
 
 	object_ship_wing_point_team oswpt;
@@ -15343,34 +15429,163 @@ void sexp_set_camera_facing_object(int n)
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			Viewer_mode |= VM_FREECAMERA;
-			Current_camera = Free_camera;
-			Free_camera->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time);
+			camera *cam = sexp_get_set_camera();
+			if(cam == NULL)
+				return;
+			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time, rot_dec_time);
 			return;
 		}
 	}
 }
 
-extern float Viewer_zoom, VIEWER_ZOOM_DEFAULT;
+extern float VIEWER_ZOOM_DEFAULT;
+void sexp_set_camera_fov(int n)
+{
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+
+	float camera_fov = VIEWER_ZOOM_DEFAULT;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
+	float camera_dec_time = 0.0f;
+
+	camera_fov = i2fl(eval_num(n)) * (PI/180.0f);
+	n = CDR(n);
+
+	if(n != -1)
+	{
+		camera_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+		{
+			camera_dec_time = camera_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				camera_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
+	}
+
+	cam->set_fov(camera_fov, camera_time, camera_acc_time, camera_dec_time);
+}
+
+//Internal helper function for set-target and set-host
+object *sexp_camera_get_objsub(int node, int *o_submodel)
+{
+	//Get arguments
+	int n = node;
+	char *obj_name = NULL;
+	char *sub_name = NULL;
+	
+	obj_name = CTEXT(n);
+	n = CDR(n);
+	if(n != -1)
+		sub_name = CTEXT(n);
+	
+	//Important variables
+	object *objp = NULL;
+	int submodel = -1;
+	
+	//*****Process obj_name
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, obj_name);
+	
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			objp = oswpt.objp;
+			break;
+
+		default:
+			objp = NULL;
+	}
+
+	//*****Process submodel
+	if(objp != NULL && sub_name != NULL && oswpt.type == OSWPT_TYPE_SHIP)
+	{
+		if(stricmp(sub_name, SEXP_NONE_STRING))
+		{
+			ship_subsys *ss = ship_get_subsys(&Ships[objp->instance], sub_name);
+			if (ss != NULL)
+			{
+				submodel = ss->system_info->subobj_num;
+			}
+		}
+	}
+	
+	if(o_submodel != NULL)
+		*o_submodel = submodel;
+	
+	return objp;
+}
+
+void sexp_set_camera_host(int node)
+{
+	//Try to get current camera
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+	
+	//*****Get variables
+	int submodel = -1;
+	object *objp = sexp_camera_get_objsub(node, &submodel);
+	
+	//*****Set
+	cam->set_object_host(objp, submodel);
+}
+
+void sexp_set_camera_target(int node)
+{
+	//Try to get current camera
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+	
+	//*****Get variables
+	int submodel = -1;
+	object *objp = sexp_camera_get_objsub(node, &submodel);
+	
+	//*****Set
+	cam->set_object_target(objp, submodel);
+}
+
 void sexp_set_fov(int n)
 {
-	Viewer_zoom = eval_num(n) * (PI/180.0f);
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return;
+
+	cam->set_fov(eval_num(n) * (PI/180.0f));
 }
 
 void sexp_reset_fov()
 {
-	Viewer_zoom = VIEWER_ZOOM_DEFAULT;
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return;
 
-	if(Viewer_zoom > PI2)
-		Viewer_zoom = PI2;
-	if(Viewer_zoom < 0)
-		Viewer_zoom = 0;
+	cam->set_fov(VIEWER_ZOOM_DEFAULT);
 }
 
-void sexp_reset_camera()
+void sexp_reset_camera(int node)
 {
-	Viewer_mode &= ~VM_FREECAMERA;
-	hud_set_draw(1);
+	camera *cam = cam_get_current().getCamera();
+	if(cam != NULL)
+	{
+		if(is_sexp_true(node))
+		{
+			cam->reset();
+		}
+	}
+	cam_reset_camera();
 }
 
 void sexp_show_subtitle(int node)
@@ -17101,9 +17316,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_fade_out(node);
 				break;
-			case OP_CUTSCENES_SET_CAMERA_POSITION:
+			case OP_CUTSCENES_SET_CAMERA:
 				sexp_val = SEXP_TRUE;
-				sexp_set_camera_position(node);
+				sexp_set_camera(node);
 				break;
 			case OP_CUTSCENES_SET_CAMERA_FACING:
 				sexp_val = SEXP_TRUE;
@@ -17113,9 +17328,25 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_set_camera_facing_object(node);
 				break;
+			case OP_CUTSCENES_SET_CAMERA_FOV:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_fov(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_HOST:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_host(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_POSITION:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_position(node);
+				break;
 			case OP_CUTSCENES_SET_CAMERA_ROTATION:
 				sexp_val = SEXP_TRUE;
 				sexp_set_camera_rotation(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_target(node);
 				break;
 			case OP_CUTSCENES_SET_FOV:
 				sexp_val = SEXP_TRUE;
@@ -17127,7 +17358,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 			case OP_CUTSCENES_RESET_CAMERA:
 				sexp_val = SEXP_TRUE;
-				sexp_reset_camera();
+				sexp_reset_camera(node);
 				break;
 			case OP_CUTSCENES_SHOW_SUBTITLE:
 				sexp_val = SEXP_TRUE;
@@ -17635,10 +17866,14 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 		case OP_CUTSCENES_FADE_IN:
 		case OP_CUTSCENES_FADE_OUT:
-		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_FACING:
 		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
@@ -18918,6 +19153,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CUTSCENES_SET_FOV:
 			return OPF_NUMBER;
+
+		case OP_CUTSCENES_SET_CAMERA:
+			return OPF_STRING;
 		
 		case OP_CUTSCENES_SET_CAMERA_POSITION:
 		case OP_CUTSCENES_SET_CAMERA_FACING:
@@ -18933,8 +19171,20 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
-		case OP_CUTSCENES_RESET_FOV:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+			return OPF_POSITIVE;
+		
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
+			if(argnum < 1)
+				return OPF_SHIP_WING_POINT_OR_NONE;
+			else
+				return OPF_SUBSYSTEM_OR_NONE;
+
 		case OP_CUTSCENES_RESET_CAMERA:
+			return OPF_BOOL;
+
+		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 			return OPF_NONE;
 
@@ -20141,10 +20391,14 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 		case OP_CUTSCENES_FADE_IN:
 		case OP_CUTSCENES_FADE_OUT:
-		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_FACING:
 		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
@@ -22397,40 +22651,84 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
 	},
 
-	{ OP_CUTSCENES_SET_CAMERA_POSITION, "set-camera-position\r\n"
-		"\tSets the camera position to a spot in mission space  "
-		"Takes 3 arguments...\r\n"
-		"\t1:\tX position\r\n"
-		"\t2:\tY position\r\n"
-		"\t3:\tZ position\r\n"
-	},
-
-	{ OP_CUTSCENES_SET_CAMERA_ROTATION, "set-camera-rotation\r\n"
-		"\tSets the camera rotation  "
-		"Takes 3 to 5 arguments...\r\n"
-		"\t1:\tPitch (degrees)\r\n"
-		"\t2:\tBank (degrees)\r\n"
-		"\t3:\tHeading (degrees)\r\n"
-		"\t4:\tTotal turn time\r\n"
-		"\t5:\tTime to spend accelerating/decelerating\r\n"
+	{ OP_CUTSCENES_SET_CAMERA, "set-camera\r\n"
+		"\tSets SEXP camera, or another specified cutscene camera  "
+		"Takes 0 to 1 arguments...\r\n"
+		"\t(optional)\r\n"
+		"\t1:\tCamera name (created if nonexistent)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FACING, "set-camera-facing\r\n"
 		"\tMakes the camera face the given point  "
-		"Takes 3 to 5 arguments...\r\n"
+		"Takes 3 to 6 arguments...\r\n"
 		"\t1:\tX position to face\r\n"
 		"\t2:\tY position to face\r\n"
 		"\t3:\tZ position to face\r\n"
-		"\t4:\tTotal turn time\r\n"
-		"\t5:\tTime to spend accelerating/decelerating\r\n"
+		"\t(optional)\r\n"
+		"\t4:\tTotal turn time (milliseconds)\r\n"
+		"\t5:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t6:\tTime to spend decelerating (milliseconds)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FACING_OBJECT, "set-camera-facing-object\r\n"
 		"\tMakes the camera face the given object  "
-		"Takes 1 to 3 arguments...\r\n"
+		"Takes 1 to 4 arguments...\r\n"
 		"\t1:\tObject to face\r\n"
-		"\t2:\tTotal turn time\r\n"
-		"\t3:\tTime to spend accelerating/decelerating\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tTotal turn time (milliseconds)\r\n"
+		"\t3:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t4:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_FOV, "set-camera-fov\r\n"
+		"\tSets the camera field of view  "
+		"Takes 1 to 4 arguments...\r\n"
+		"\t1:\tNew FOV (degrees)\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tTotal zoom time (milliseconds)\r\n"
+		"\t3:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t4:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+	
+	{ OP_CUTSCENES_SET_CAMERA_HOST, "set-camera-host\r\n"
+		"\tSets the object and subystem camera should view from. Camera position is offset from the host. "
+		"Camera orientation is also offset from host, unless a valid camera target is set."
+		"Takes 1 to 2 arguments...\r\n"
+		"\t1:\tShip to mount camera on\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tSubystem to mount camera on\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_POSITION, "set-camera-position\r\n"
+		"\tSets the camera position to a spot in mission space  "
+		"Takes 3 to 6 arguments...\r\n"
+		"\t1:\tX position\r\n"
+		"\t2:\tY position\r\n"
+		"\t3:\tZ position\r\n"
+		"\t(optional)\r\n"
+		"\t4:\tTotal turn time (milliseconds)\r\n"
+		"\t5:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t6:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_ROTATION, "set-camera-rotation\r\n"
+		"\tSets the camera rotation  "
+		"Takes 3 to 6 arguments...\r\n"
+		"\t1:\tPitch (degrees)\r\n"
+		"\t2:\tBank (degrees)\r\n"
+		"\t3:\tHeading (degrees)\r\n"
+		"\t(optional)\r\n"
+		"\t4:\tTotal turn time (milliseconds)\r\n"
+		"\t5:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t6:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_TARGET, "set-camera-target\r\n"
+		"\tSets the object and subystem camera should track. Camera orientation is offset from the target  "
+		"Takes 1 to 2 arguments...\r\n"
+		"\t1:\tShip to track\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tSubystem to track\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
@@ -22444,7 +22742,10 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_RESET_CAMERA, "reset-camera\r\n"
-		"\tResets the camera position and rotation  "
+		"\tReleases cutscene camera control  "
+		"Takes 1 optional argument...\r\n"
+		"\t(optional)\r\n"
+		"\t1:\tReset camera data (Position, facing, FOV...) (default: false)"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE, "show-subtitle\r\n"

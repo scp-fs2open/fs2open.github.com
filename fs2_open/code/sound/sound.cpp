@@ -1120,12 +1120,12 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 }
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos)
+void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
 {
 	float vol, pan;
 	
 	// get new volume and pan vals
-	snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan);
+	snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
 
 	// set volume
 	snd_set_volume(soundnum, vol);
@@ -1153,7 +1153,7 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos)
 //	NOTE: the volume is not scaled by the Master_sound_volume, since this always occurs
 //			when snd_play() or snd_play_looping() is called
 //
-int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius)
+int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius, float range_factor)
 {
 	vec3d	vector_to_sound;
 	float		distance, max_volume;
@@ -1178,15 +1178,18 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
 
+	float min_range = fl2i( (gs->min) * range_factor);
+	float max_range = fl2i( (gs->max) * range_factor + 0.5f);
+
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, pos, &View_position );
 	distance -= radius;
 
 	max_volume = gs->default_volume;
-	if ( distance <= gs->min ) {
+	if ( distance <= min_range ) {
 		*vol = max_volume;
 	}
 	else {
-		*vol = max_volume - (distance - gs->min) * max_volume / (gs->max - gs->min);
+		*vol = max_volume - (distance - min_range) * max_volume / (max_range - min_range);
 	}
 
 	if ( *vol > 1.0f )

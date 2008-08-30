@@ -945,6 +945,7 @@ struct ship_subsys;
 #define OPF_SUBSYSTEM_OR_NONE	60		// Goober5000 - an "optional" subsystem argument
 #define OPF_PERSONA				61		// Karajorma - name of a persona
 #define OPF_SUBSYS_OR_GENERIC	62		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
+#define OPF_SHIP_WING_POINT_OR_NONE	63	// WMC - Ship, wing, point or none
 
 
 // Operand return types
@@ -1355,6 +1356,10 @@ struct ship_subsys;
 #define OP_SET_PERSONA						(0x00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_CHANGE_PLAYER_SCORE				(0x00b7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_CHANGE_TEAM_SCORE				(0x00b8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_CUTSCENES_SET_CAMERA_FOV			(0x00b9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
+#define OP_CUTSCENES_SET_CAMERA				(0x00ba | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
+#define OP_CUTSCENES_SET_CAMERA_HOST		(0x00bb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
+#define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 
 
 /* made obsolete by Goober5000

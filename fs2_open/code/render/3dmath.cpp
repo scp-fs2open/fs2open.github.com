@@ -127,6 +127,7 @@
  */
 
 #include "graphics/2d.h"
+#include "hud/hud.h" //For HUD_offset_*
 #include "render/3dinternal.h"
 
 

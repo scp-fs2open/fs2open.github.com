@@ -321,7 +321,7 @@ int snd_play_raw( int soundnum, float pan, float vol_scale=1.0f, int priority = 
 int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius=0.0f, vec3d *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vec3d *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 );
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(int soudnnum, game_snd *gs, vec3d *new_pos);
+void snd_update_3d_pos(int soudnnum, game_snd *gs, vec3d *new_pos, float radius = 0.0f, float range_factor = 1.0f);
 
 // Use these for looping sounds.
 // Returns the handle of the sound. -1 if failed.
@@ -357,7 +357,7 @@ void	snd_chg_loop_status(int snd_handle, int loop);
 int snd_get_duration(int snd_id);
 
 // get a 3D vol and pan for a particular sound
-int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f);
+int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f, float range_factor=1.0f);
 
 int	snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	snd_close();

@@ -471,14 +471,16 @@ void save_filter_info(void)
 
 void outwnd_printf2(char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4];
+	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
 	va_list args;
 
 	if (format == NULL)
 		return;
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	//WMC - Switched from vsprintf to _vsnprintf to prevent overflow of tmp
+	//Try vsnprintf under Linux or OS X if this breaks compilation there.
+	_vsnprintf(tmp, sizeof(tmp)-1,format, args);
 	va_end(args);
 
 	outwnd_print("General", tmp);
@@ -575,14 +577,16 @@ void mono_print( char * text, int len )
 
 void outwnd_printf(char *id, char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4];
+	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
 	va_list args;
 
 	if ( (id == NULL) || (format == NULL) )
 		return;
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	//WMC - Switched from vsprintf to _vsnprintf to prevent overflow of tmp
+	//Try vsnprintf under Linux or OS X if this breaks compilation there.
+	_vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	outwnd_print(id, tmp);
