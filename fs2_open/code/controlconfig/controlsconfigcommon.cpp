@@ -887,8 +887,10 @@ char *textify_scancode(int code)
 	if (code < 0)
 		return "None";
 
+	int keycode = code & KEY_MASK;
+
 	*text = 0;
-	if (code & KEY_ALTED) {
+	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		if(Lcl_gr){		
 			strcat(text, "Alt-");
 		} else if(Lcl_fr){		
@@ -898,7 +900,7 @@ char *textify_scancode(int code)
 		}		
 	}
 
-	if (code & KEY_SHIFTED) {		
+	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {		
 		if(Lcl_gr){
 			strcat(text, "Shift-");
 		} else if(Lcl_fr){		
@@ -908,7 +910,7 @@ char *textify_scancode(int code)
 		}
 	}
 
-	strcat(text, Scan_code_text[code & KEY_MASK]);
+	strcat(text, Scan_code_text[keycode]);
 	return text;
 }
 //XSTR:ON
