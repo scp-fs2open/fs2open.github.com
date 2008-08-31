@@ -4920,9 +4920,9 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	aip->targeted_subsys = targeted_subsys;
 
 	if ( type == SQUAD_MSG_SHIP ) {
-		hud_squadmsg_send_ship_command(index, command, 1, player_num);
+		hud_squadmsg_send_ship_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
 	} else if ( type == SQUAD_MSG_WING ) {
-		hud_squadmsg_send_wing_command(index, command, 1, player_num);
+		hud_squadmsg_send_wing_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
 	} else if ( type == SQUAD_MSG_ALL ) {
 		hud_squadmsg_send_to_all_fighters( command, player_num );
 	}

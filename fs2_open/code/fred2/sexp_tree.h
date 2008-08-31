@@ -213,6 +213,7 @@ public:
 	sexp_list_item *get_listing_opf_mission_name();
 	sexp_list_item *get_listing_opf_goal_name(int parent_node);
 	sexp_list_item *get_listing_opf_ship_wing();
+	sexp_list_item *get_listing_opf_order_recipient();
 	sexp_list_item *get_listing_opf_ship_type();
 	sexp_list_item *get_listing_opf_keypress();
 	sexp_list_item *get_listing_opf_event_name(int parent_node);
