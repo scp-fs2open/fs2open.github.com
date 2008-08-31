@@ -946,6 +946,7 @@ struct ship_subsys;
 #define OPF_PERSONA				61		// Karajorma - name of a persona
 #define OPF_SUBSYS_OR_GENERIC	62		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
 #define OPF_SHIP_WING_POINT_OR_NONE	63	// WMC - Ship, wing, point or none
+#define OPF_ORDER_RECIPIENT		64		// Karajorma - since orders can go to All Fighters as well as a ship or wing
 
 
 // Operand return types
@@ -1455,6 +1456,7 @@ struct ship_subsys;
 #define OP_KEY_RESET_MULTIPLE				(0x0012 | OP_CATEGORY_TRAINING)	// Goober5000
 #define OP_STRING_TO_INT					(0x0013 | OP_CATEGORY_TRAINING) // Karajorma
 #define OP_RESET_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
+#define OP_QUERY_ORDERS						(0x0015 | OP_CATEGORY_TRAINING) // Karajorma
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"

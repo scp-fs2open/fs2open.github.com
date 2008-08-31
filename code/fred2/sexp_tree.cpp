@@ -3124,6 +3124,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<name of ship here>";
 			break;
 
+		case OPF_ORDER_RECIPIENT:
+			str = "<all fighters>";
+			break;
+
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
 		case OPF_SHIP_WING_POINT_OR_NONE:
@@ -3284,6 +3288,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
+		case OPF_ORDER_RECIPIENT:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP)
@@ -4780,6 +4785,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_wing_point_or_none();
 			break;
 
+		case OPF_ORDER_RECIPIENT:
+			list = get_listing_opf_order_recipient();
+			break;
+
 		case OPF_SHIP_TYPE:
 			list = get_listing_opf_ship_type();
 			break;
@@ -5262,6 +5271,15 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			child = tree_nodes[child].next;
 			break;
 
+		// this sexp checks the subsystem of the *fourth entry* on the list
+		case OP_QUERY_ORDERS:
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			break;
+
 		// this sexp checks the subsystem of the *ninth entry* on the list
 		case OP_WEAPON_CREATE:
 			// iterate to the next field eight times
@@ -5738,6 +5756,17 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 sexp_list_item *sexp_tree::get_listing_opf_ship_wing()
 {
 	sexp_list_item head;
+
+	head.add_list(get_listing_opf_ship());
+	head.add_list(get_listing_opf_wing());
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_order_recipient()
+{
+	sexp_list_item head;
+
+	head.add_data("<all fighters>");
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());

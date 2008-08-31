@@ -2019,6 +2019,7 @@ sexp_oper Operators[] = {
 	{ "facing",						OP_FACING,						2, 2,			},
 	{ "facing-waypoint",			OP_FACING2,						2, 2,			},
 	{ "order",						OP_ORDER,						2, 3,			},
+	{ "query-orders",				OP_QUERY_ORDERS,				3, 6,			}, // Karajorma
 	{ "reset-orders",				OP_RESET_ORDERS,				0, 0,			}, // Karajorma
 	{ "waypoint-missed",			OP_WAYPOINT_MISSED,			0, 0,			},
 	{ "waypoint-twice",			OP_WAYPOINT_TWICE,			0, 0,			},
@@ -3016,8 +3017,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SHIP_WING:
 			case OPF_SHIP_WING_POINT:
 			case OPF_SHIP_WING_POINT_OR_NONE:
+			case OPF_ORDER_RECIPIENT:
 				if ( type2 != SEXP_ATOM_STRING ){
 					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (type == OPF_ORDER_RECIPIENT) {
+					if (!strcmp ("<all fighters>", CTEXT(node))) {
+						break;
+					}
 				}
 
 				// none is okay for _or_none
@@ -3093,6 +3101,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						} else {
 							ship_index = CDR(CDR(CDR(op_node)));
 						}
+						break;
+
+					case OP_QUERY_ORDERS:
+						ship_index = CDR(CDR(CDR(CDR(op_node))));
 						break;
 	
 					default :
@@ -12016,24 +12028,62 @@ int sexp_facing2(int node)
 	return SEXP_FALSE;
 }
 
-// implemented by Goober5000
 int sexp_order(int n)
 {
-	char *ship_or_wing = CTEXT(n);
+	char *order_to = CTEXT(n);
 	char *order = CTEXT(CDR(n));
 	char *target = NULL;
+	char *order_from = NULL;
+	char *special = NULL;
+	int timestamp = 0;
 
-	if (CDR(CDR(n)) != -1)
-		target = CTEXT(CDR(CDR(n)));
+	//target
+	n = CDDR(n); 
+	if (n != -1)
+		target = CTEXT(n);
+	
+	return hud_query_order_issued(order_to, order, target);
+}
 
-	return hud_query_order_issued(ship_or_wing, order, target);
+int sexp_query_orders (int n)
+{
+	char *order_to = CTEXT(n);
+	char *order = CTEXT(CDR(n));
+	char *target = NULL;
+	char *order_from = NULL;
+	char *special = NULL;
+	int timestamp = 0;
+
+	// delay
+	n = CDDR(n); 
+	if (n != -1) {
+		timestamp = eval_sexp(n); 
+		n = CDR(n); 
+	}
+	
+	//target
+	if (n != -1) {
+		target = CTEXT(n);
+		n = CDR(n); 
+	}
+
+	// player order comes from
+	if (n != -1) {
+		order_from = CTEXT(n);
+		n = CDR(n); 
+	}
+
+	// optional special argument
+	if (n != -1)
+		special = CTEXT(n);
+
+	return hud_query_order_issued(order_to, order, target, timestamp, order_from, special);
 }
 
 // Karajorma
 void sexp_reset_orders (int n)
 {
-	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
-	squadmsg_history_index = 0; 
+	Squadmsg_history.clear();
 }
 
 int sexp_waypoint_missed()
@@ -16859,6 +16909,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_order(node);
 				break;
 
+			case OP_QUERY_ORDERS:
+				sexp_val = sexp_query_orders(node);
+				break;
+
 			// Karajorma
 			case OP_RESET_ORDERS:
 				sexp_reset_orders(node);
@@ -17604,6 +17658,7 @@ int query_operator_return_type(int op)
 		case OP_FACING:
 		case OP_FACING2:
 		case OP_ORDER:
+		case OP_QUERY_ORDERS:
 		case OP_WAYPOINT_MISSED:
 		case OP_WAYPOINT_TWICE:
 		case OP_PATH_FLOWN:
@@ -18173,6 +18228,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_AI_ORDER;
 			else
 				return OPF_SHIP_WING;	// arg 0 or 2
+
+		case OP_QUERY_ORDERS:
+			if (argnum == 0)
+				return OPF_ORDER_RECIPIENT;
+			if (argnum == 1)
+				return OPF_AI_ORDER;
+			if (argnum == 2)
+				return OPF_POSITIVE;
+			if (argnum == 5)
+				return OPF_SUBSYSTEM;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_IS_DESTROYED_DELAY:
 		case OP_HAS_ARRIVED_DELAY:
@@ -21502,13 +21569,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of waypoint path whose first point is withing forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
 
-	// fixed by Goober5000
+	// fixed by Goober5000 and then deprecated by Karajorma
 	{ OP_ORDER, "Order (Boolean training operator)\r\n"
+		"\tDeprecated - Use Query-Orders in any new mission.\r\n\r\n"
 		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of ship or wing to check if given order to.\r\n"
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tName of the target of the order (optional)." },
+
+	{ OP_QUERY_ORDERS, "Query-Orders (Boolean training operator)\r\n"
+		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tName of ship or wing to check if given order to.\r\n"
+		"\t2:\tName of order to check if player has given.\r\n"
+		"\t3:\tMaximum length of time since order was given. Use 0 for any time in the mission.\r\n"
+		"\t4:\tName of the target of the order (optional).\r\n"
+		"\t2:\tName of player ship giving the order(optional).\r\n"
+		"\t3:\tName of the subsystem for Destroy Subsystem orders.(optional)" },
 
 	// Karajorma
 	{ OP_RESET_ORDERS, "Reset-Orders (Action training operator)\r\n"

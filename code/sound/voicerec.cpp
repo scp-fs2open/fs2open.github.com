@@ -297,12 +297,12 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 					else if(Squad_msg_mode == SM_MODE_SHIP_COMMAND)
 					{
 					//	nprintf(("warning", "VOICER msg ship %d\n", Msg_instance));
-						hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, 1 );
+						hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, true, 1 );
 					}
 					else if(Squad_msg_mode == SM_MODE_WING_COMMAND)
 					{
 					//	nprintf(("warning", "VOICER msg wing %d\n", Msg_instance));
-						hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, 1 );
+						hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, true 1 );
 					}
 					else if(Squad_msg_mode == SM_MODE_REINFORCEMENTS )
 					{

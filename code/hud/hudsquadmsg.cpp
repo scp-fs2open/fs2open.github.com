@@ -548,7 +548,7 @@ void hud_init_comm_orders()
 		{ XSTR("Form on my wing", 305),		FORMATION_ITEM },
 		{ XSTR("Cover me", 306),			COVER_ME_ITEM },
 		{ XSTR("Engage enemy", 307),		ENGAGE_ENEMY_ITEM },
-			{ XSTR("Capture my target", 308),	CAPTURE_TARGET_ITEM },
+		{ XSTR("Capture my target", 308),	CAPTURE_TARGET_ITEM },
 		{ XSTR("Rearm me", 309),			REARM_REPAIR_ME_ITEM },
 		{ XSTR("Abort rearm", 310),			ABORT_REARM_REPAIR_ITEM },
 		// all ships
@@ -588,8 +588,7 @@ char *comm_order_get_text(int item)
 	return NULL;
 }
 
-int squadmsg_history_index = 0;
-squadmsg_history Squadmsg_history[SQUADMSG_HISTORY_MAX];
+std::vector<squadmsg_history> Squadmsg_history; 
 
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
@@ -630,7 +629,8 @@ static int Mbox_item_coord[GR_NUM_RESOLUTIONS][2] = {
 };
 
 // forward declarations
-void hud_add_issued_order(char *name, int order, char *target);
+void hud_add_issued_order(char *name, int order);
+void hud_update_last_order(char *target, int order_source, int special_index);
 int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = NULL );
 int hud_squadmsg_ship_order_valid( int shipnum, int order );
 
@@ -1408,7 +1408,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 {
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
-	int i, send_message;//, do_ship = 0;
+	int i, send_message, special_index = -1;
 	object *objp;
 
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
@@ -1478,8 +1478,14 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 
 		// send the command to the wing
 		if ( Wings[i].current_count > 0 ) {
-			if ( hud_squadmsg_send_wing_command(i, command, send_message, player_num) ) {
-				send_message = 0;
+			if (send_message) {
+				hud_add_issued_order("All Fighters", command);
+				if ( hud_squadmsg_send_wing_command(i, command, send_message, SQUADMSG_HISTORY_UPDATE, player_num) ) {
+					send_message = 0;
+				}
+			}
+			else {
+				hud_squadmsg_send_wing_command(i, command, send_message, SQUADMSG_HISTORY_NO_UPDATE, player_num);
 			}
 		}
 	}
@@ -1506,8 +1512,14 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 		if ( !(command & shipp->orders_accepted) )
 			continue;
 
-		if ( hud_squadmsg_send_ship_command(objp->instance, command, send_message, player_num) ) {
-			send_message = 0;
+		if (send_message) {
+			hud_add_issued_order("All Fighters", command);
+			if ( hud_squadmsg_send_ship_command(objp->instance, command, send_message, SQUADMSG_HISTORY_UPDATE, player_num) ) {
+				send_message = 0;
+			}
+		}
+		else {
+			hud_squadmsg_send_ship_command(objp->instance, command, send_message, SQUADMSG_HISTORY_NO_UPDATE, player_num);
 		}
 	}
 
@@ -1544,7 +1556,7 @@ int hud_squadmsg_enemies_present()
 //
 // if local and addr are non-null, it means the function is being called by the (multiplayer) server in response to 
 // a PLAYER_COMMAND_PACKET
-int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int player_num )
+int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int update_history, int player_num )
 {
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
@@ -1553,6 +1565,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	int target_team, ship_team;				// team id's for the ship getting message and any target the player has
 	ship *ordering_shipp;
 
+	int special_index = -1;
 	int message_team_filter = -1;
 	
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
@@ -1665,6 +1678,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 			ai_submode = ship_get_subsys_index( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
+			special_index = ai_submode; 
 			message = MESSAGE_ATTACK_TARGET;
 			break;
 
@@ -1744,6 +1758,9 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			} else {
 				hud_squadmsg_repair_rearm(0);				// note we return right away.  repair/rearm code handles messaging, etc
 			}
+			// add the order to the squad message history
+			hud_add_issued_order(Ships[shipnum].ship_name, command);
+			hud_update_last_order(ordering_shipp->ship_name, player_num, special_index); 
 			return 0;
 		
 		case ABORT_REARM_REPAIR_ITEM:
@@ -1752,6 +1769,9 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			} else {
 				hud_squadmsg_repair_rearm_abort(0);		// note we return right away.  repair/rearm code handles messaging, etc
 			}
+			// add the order to the squad message history
+			hud_add_issued_order(Ships[shipnum].ship_name, command);
+			hud_update_last_order(ordering_shipp->ship_name, player_num, special_index); 
 			return 0;
 		
 		case STAY_NEAR_ME_ITEM:
@@ -1784,8 +1804,13 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		if ( ai_mode != AI_GOAL_NONE ) {
 			Assert(ai_submode != -1234567);
 			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index] );
-			if( player_num == -1 )
-				hud_add_issued_order(Ships[shipnum].ship_name, command, target_shipname);
+			if( update_history == SQUADMSG_HISTORY_ADD_ENTRY ) {
+				hud_add_issued_order(Ships[shipnum].ship_name, command);
+				hud_update_last_order(target_shipname, player_num, special_index); 
+			}
+			else if (update_history == SQUADMSG_HISTORY_UPDATE) {
+				hud_update_last_order(target_shipname, player_num, special_index);
+			}
 		}
 	}
 
@@ -1813,7 +1838,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 // a PLAYER_COMMAND_PACKET
 //
 // returns whether or not a message was sent
-int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int player_num )
+int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int update_history, int player_num )
 {
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
@@ -1822,6 +1847,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	int target_team, wing_team;				// team for the wing and the player's target
 	ship *ordering_shipp;
 
+	int special_index = -1;
 	int message_team_filter = -1;
 
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
@@ -1924,6 +1950,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 			ai_submode = ship_get_subsys_index( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
+			special_index = ai_submode; 
 			message = MESSAGE_ATTACK_TARGET;
 			break;
 
@@ -1993,6 +2020,14 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		if ( ai_mode != AI_GOAL_NONE ) {
 			Assert(ai_submode != -1234567);
 			ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum );
+
+			if( update_history == SQUADMSG_HISTORY_ADD_ENTRY ) {				
+				hud_add_issued_order(Wings[wingnum].name, command);
+				hud_update_last_order(target_shipname, player_num, special_index);
+			}
+			else if (update_history == SQUADMSG_HISTORY_UPDATE) {
+				hud_update_last_order(target_shipname, player_num, special_index);
+			}
 		}
 	}
 
@@ -2217,7 +2252,7 @@ void hud_squadmsg_ship_select()
 			// we must convert the Msg_shortcut_command value to a value that the message
 			// system normally uses to select a command.  Since the menu 
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1 );
+			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
 			hud_squadmsg_toggle();
 		}
 	}
@@ -2242,7 +2277,7 @@ void hud_squadmsg_wing_select()
 			hud_squadmsg_do_mode( SM_MODE_WING_COMMAND );				// and move to a new mode
 		} else {
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_wing_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1 );
+			hud_squadmsg_send_wing_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
 			hud_squadmsg_toggle();
 		}
 	}
@@ -2490,7 +2525,7 @@ void hud_squadmsg_ship_command()
 		if ((Msg_instance == MESSAGE_ALL_FIGHTERS)/* || (MsgItems[k].instance == IGNORE_TARGET_ITEM)*/)
 			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance);
 		else
-			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, 1);
+			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, 1, SQUADMSG_HISTORY_ADD_ENTRY);
 
 		hud_squadmsg_toggle();
 	}
@@ -2616,8 +2651,7 @@ void hud_init_squadmsg( void )
 	}
 
 	Msg_eat_key_timestamp = timestamp(0);
-	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
-	squadmsg_history_index = 0; 
+	Squadmsg_history.clear();
 }
 
 // external entry point into code which changes the messaging mode based on the
@@ -2734,7 +2768,7 @@ int hud_squadmsg_hotkey_select( int k )
 		if ( !(Ships[objp->instance].orders_accepted & Msg_shortcut_command) )
 			continue;
 
-		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message );
+		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message, SQUADMSG_HISTORY_ADD_ENTRY );
 		send_message  = 0;
 	}
 
@@ -2875,49 +2909,106 @@ int hud_squadmsg_do_frame( )
 		return 0;
 }
 
-void hud_add_issued_order(char *name, int order, char *target)
-{
-	Squadmsg_history[squadmsg_history_index].ship = get_parse_name_index(name);
-	Squadmsg_history[squadmsg_history_index].order = order;
-	if (target)
-		Squadmsg_history[squadmsg_history_index].target = get_parse_name_index(target);
-	else
-		Squadmsg_history[squadmsg_history_index].target = -1;
+void hud_add_issued_order(char *name, int order)
+{  
+	squadmsg_history *latest_order = new squadmsg_history(); 
 
-	squadmsg_history_index++;
-	if (squadmsg_history_index >= SQUADMSG_HISTORY_MAX)
-		squadmsg_history_index = 0;
+	if (!strcmp(name, "All Fighters")) {
+		latest_order->order_to  = -1; 
+	}
+	else {
+		latest_order->order_to = get_parse_name_index(name);
+	}
+	latest_order->order = order;
+	latest_order->order_time = Missiontime;
+	
+	//stick it in history
+	Squadmsg_history.push_back(*latest_order); 
 }
 
-int hud_query_order_issued(char *name, char *order, char *target)
+void hud_update_last_order(char *target, int order_source, int special_index)
 {
-	int i, o=-1, ship, t;
+	squadmsg_history *latest_order = &Squadmsg_history.back(); 
+	if (target) {
+		latest_order->target = get_parse_name_index(target);
+	}
+	if (MULTIPLAYER_MASTER && order_source != -1) {
+		latest_order->order_from = Objects[Net_players[order_source].m_player->objnum].instance;
+	}
+	else if (order_source == -1) {
+		latest_order->order_from = Player_obj->instance; 
+	}
 
-	ship = get_parse_name_index(name);
-	t = -1;
-	if (target)
-		t = get_parse_name_index(target);
+	latest_order->special_index = special_index;
+}
 
+int hud_query_order_issued(char *to, char *order_name, char *target_name, int timestamp, char *from, char *special_argument)
+{
+	int i, order = -1, ship_or_wing = -1, target = -1, source = -1; 
+	
+	// if the desired order was not sent to all fighters 
+	if (strcmp(to, "<all fighters>")) {
+		ship_or_wing = get_parse_name_index(to);
+	}
+
+	// get the target ship
+	if (target_name != NULL) {
+		target = get_parse_name_index(target_name); 
+	}
+
+	if (MULTIPLAYER_MASTER && (from != NULL)) {
+		source =  ship_name_lookup(from, 1); 
+	}
+
+	
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
-		if (!stricmp(order, Comm_orders[i].name))
-			o = Comm_orders[i].item;
+		if (!stricmp(order_name, Comm_orders[i].name))
+			order = Comm_orders[i].item;
 
 	// Goober5000 - if not found, check compatibility
-	if (o == -1)
+	if (order == -1)
 	{
-		if (!stricmp(order, "Attack my target"))
+		if (!stricmp(order_name, "Attack my target"))
 		{
 			i = 0;	// it maps to option 0, "Destroy my target"
-			o = Comm_orders[i].item;
+			order = Comm_orders[i].item;
 		}
 	}
 
-	Assert(o != -1);
-	for (i = 0; i < SQUADMSG_HISTORY_MAX; i++)
-		if (Squadmsg_history[i].order == o)
-			if (ship == Squadmsg_history[i].ship)
-				if (Squadmsg_history[i].target == t)
-					return 1;
+	Assert(order != -1);
+	for (i = 0; i < (int)Squadmsg_history.size(); i++) {
+		if (Squadmsg_history[i].order == order) {
+			if (ship_or_wing == Squadmsg_history[i].order_to) {
+				if (target == -1 || Squadmsg_history[i].target == target) {
+					if ((!timestamp) || (Squadmsg_history[i].order_time + i2f(timestamp) >= Missiontime) ) {	
+						// In multiplayer games we may wish to check who sent the order
+						if (MULTIPLAYER_MASTER) {
+							if ((source != -1) && (Squadmsg_history[i].order_from != source)) {
+								continue;
+							}
+						}
+						
+						// some orders will have additional arguments
+						if (order & DISABLE_SUBSYSTEM_ITEM) {
+							if (special_argument == NULL) {
+								continue;
+							}
+							
+							int target_ship = ship_name_lookup(target_name);
+							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument, 1); 
+							// if the order is for s different subsystem
+							if (Squadmsg_history[i].special_index != subsys_index) {
+								continue;
+							}
+						}
+
+						// if we make it this far then the orders match
+						return 1;
+					}
+				}
+			}
+		}
+	}
 
 	return 0;
 }
