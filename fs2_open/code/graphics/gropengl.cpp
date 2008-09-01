@@ -1251,6 +1251,8 @@ static int GL_fullscreen = 0;
 static int GL_windowed = 0;
 static int GL_minimized = 0;
 
+static GLenum GL_read_format = GL_BGRA;
+
 
 void opengl_go_fullscreen()
 {
@@ -1662,7 +1664,7 @@ void gr_opengl_print_screen(char *filename)
 		vglBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
 		glReadBuffer(GL_FRONT);
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
 		pixels = (GLubyte*) vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
@@ -1677,7 +1679,7 @@ void gr_opengl_print_screen(char *filename)
 			return;
 		}
 
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
 		glFlush();
 	}
 
@@ -2047,7 +2049,7 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
 		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 	} else {
 		// this should really only have to be malloc'd once
@@ -2058,7 +2060,7 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 			return;
 
 		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, GL_saved_mouse_data);
+		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, GL_saved_mouse_data);
 	}
 
 	GL_CHECK_FOR_ERRORS("end of save_mouse_area()");
@@ -2107,7 +2109,7 @@ int gr_opengl_save_screen()
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_screen_pbo);
 		vglBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, gr_screen.max_w * gr_screen.max_h * 4, NULL, GL_STATIC_READ);
 
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
@@ -2162,7 +2164,7 @@ int gr_opengl_save_screen()
 	 		return -1;
 	 	}
 
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, opengl_screen_tmp);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, opengl_screen_tmp);
 
 		sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w * gr_screen.max_h * 4];
 		dptr = (ubyte *)GL_saved_screen;
@@ -3085,6 +3087,9 @@ bool gr_opengl_init()
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);
 
 	mprintf(("... OpenGL init is complete!\n"));
+
+    if (Cmdline_ati_color_swap)
+        GL_read_format = GL_RGBA;
 
 	return true;
 }
