@@ -1969,6 +1969,13 @@ int Networking_disabled = 0;
 // for the model page in system
 extern void model_page_in_start();
 
+const uint KILOBYTE = 1024;
+const uint MEGABYTE = KILOBYTE * KILOBYTE;
+
+uint64 Mem_starttime_phys;
+uint64 Mem_starttime_pagefile;
+uint64 Mem_starttime_virtual;
+
 int	Show_cpu = 0;
 int	Show_target_debug_info = 0;
 int	Show_target_weapons = 0;
@@ -2288,7 +2295,7 @@ char Game_CDROM_dir[MAX_PATH_LEN];
 int init_cdrom();
 
 // How much RAM is on this machine. Set in WinMain
-uint FreeSpace_total_ram = 0;
+uint64 FreeSpace_total_ram = 0;
 
 // game flash stuff
 float Game_flash_red = 0.0f;
@@ -3898,7 +3905,7 @@ void game_init()
 	// If less than 48MB of RAM, use low memory model.
 	if (
 #ifdef _WIN32
-		(FreeSpace_total_ram < 48*1024*1024) ||
+		(FreeSpace_total_ram < 48*MEGABYTE) ||
 #endif
 		Use_low_mem )	{
 		mprintf(( "Using normal memory settings...\n" ));
@@ -4048,11 +4055,6 @@ MONITOR(NumVerts)
 MONITOR(BmpUsed)
 MONITOR(BmpNew)
 
-
-uint Mem_starttime_phys;
-uint Mem_starttime_pagefile;
-uint Mem_starttime_virtual;
-
 void game_get_framerate()
 {	
 	if (frame_int == -1) {
@@ -4153,30 +4155,24 @@ void game_show_framerate()
 		}
 #endif
 
-		MEMORYSTATUS mem_stats;
-		GlobalMemoryStatus(&mem_stats);
+		MEMORYSTATUSEX mem_stats;
+        mem_stats.dwLength = sizeof(MEMORYSTATUSEX);
+		GlobalMemoryStatusEx(&mem_stats);
 
-		// on win2k+, it should be == -1 if >4gig (indicates wrap around)
-		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) )
-			sprintf(mem_buffer, "Using Physical: *** (>4G)");
-		else
-			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
+        sprintf(mem_buffer,"Using Physical: %llu Meg",(Mem_starttime_phys - mem_stats.ullAvailPhys)/MEGABYTE);
 
 		gr_string( 20, 120, mem_buffer);
-		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
+        sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.ullAvailPageFile)/MEGABYTE);
 		gr_string( 20, 130, mem_buffer);
-		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
+        sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.ullAvailVirtual)/MEGABYTE);
 		gr_string( 20, 140, mem_buffer);
 
-		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
-			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
-		else
-			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
+        sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.ullAvailPhys/MEGABYTE, mem_stats.ullTotalPhys/MEGABYTE);
 
 		gr_string( 20, 160, mem_buffer);
-		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
+		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.ullAvailPageFile/MEGABYTE, mem_stats.ullTotalPageFile/MEGABYTE);
 		gr_string( 20, 170, mem_buffer);
-		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
+		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.ullAvailVirtual/MEGABYTE, mem_stats.ullTotalVirtual/MEGABYTE);
 		gr_string( 20, 180, mem_buffer);
 	}
 #endif
@@ -8844,17 +8840,17 @@ void game_do_state(int state)
 
 #ifdef _WIN32
 // return 0 if there is enough RAM to run FreeSpace, otherwise return -1
-int game_do_ram_check(uint ram_in_bytes)
+int game_do_ram_check(uint64 ram_in_bytes)
 {
-	if ( ram_in_bytes < 30*1024*1024 )	{
+	if ( ram_in_bytes < 30*MEGABYTE )	{
 		int allowed_to_run = 1;
-		if ( ram_in_bytes < 25*1024*1024 ) {
+		if ( ram_in_bytes < 25*MEGABYTE ) {
 			allowed_to_run = 0;
 		}
 
 		char tmp[1024];
 		uint FreeSpace_total_ram_MB;
-		FreeSpace_total_ram_MB = (uint)(ram_in_bytes/(1024*1024));
+		FreeSpace_total_ram_MB = (uint)(ram_in_bytes/MEGABYTE);
 
 		if ( allowed_to_run ) {
 
@@ -9061,30 +9057,30 @@ int game_main(char *cmdline)
 
 #ifdef _WIN32
 	// Find out how much RAM is on this machine
-	MEMORYSTATUS ms;
+	MEMORYSTATUSEX ms;
 	ms.dwLength = sizeof(MEMORYSTATUS);
-	GlobalMemoryStatus(&ms);
-	FreeSpace_total_ram = ms.dwTotalPhys;
+	GlobalMemoryStatusEx(&ms);
+    FreeSpace_total_ram = ms.ullTotalPhys;
 
-	Mem_starttime_phys      = ms.dwAvailPhys;
-	Mem_starttime_pagefile  = ms.dwAvailPageFile;
-	Mem_starttime_virtual   = ms.dwAvailVirtual;
+	Mem_starttime_phys      = ms.ullAvailPhys;
+	Mem_starttime_pagefile  = ms.ullAvailPageFile;
+	Mem_starttime_virtual   = ms.ullAvailVirtual;
 
 	if ( game_do_ram_check(FreeSpace_total_ram) == -1 ) {
 		return 1;
 	}
 
-	if ( ms.dwTotalVirtual < 1024 )	{
+	if ( ms.ullTotalVirtual < KILOBYTE )	{
 		MessageBox( NULL, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197), MB_OK );
 		return 1;
 	}
 
-	if (!vm_init(24*1024*1024)) {
+	if (!vm_init(24*MEGABYTE)) {
 		MessageBox( NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK );
 		return 1;
 	}
 		
-	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
+    char *tmp_mem = (char *) vm_malloc(16 * MEGABYTE);
 	if (!tmp_mem) {
 		MessageBox(NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
 		return 1;
