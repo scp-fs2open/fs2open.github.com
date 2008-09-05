@@ -5581,8 +5581,10 @@ void game_render_frame( camid cid )
 
 		//Handle jitter if not cutscene camera
 		eye_no_jitter = eye_orient;
-		if( !(Viewer_mode & VM_FREECAMERA) )
+		if( !(Viewer_mode & VM_FREECAMERA) ) {
 			apply_view_shake(&eye_orient);
+			cam->set_rotation(&eye_orient);
+		}
 
 		//Maybe override FOV from SEXP
 		if(Sexp_fov <= 0.0f)
