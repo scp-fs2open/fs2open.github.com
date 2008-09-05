@@ -1383,10 +1383,6 @@ int bm_load( char *real_filename )
 	if ( !bm_inited )
 		bm_init();
 
-	// nice little trick for keeping standalone memory usage way low - always return a bogus bitmap 
-	if (Game_mode & GM_STANDALONE_SERVER)
-		strcpy(filename,"test128");
-
 	// if no file was passed then get out now
 	if ( (real_filename == NULL) || (strlen(real_filename) <= 0) )
 		return -1;
@@ -1399,6 +1395,13 @@ int bm_load( char *real_filename )
 		mprintf(( "Someone passed an extension to bm_load for file '%s'\n", real_filename ));
 		//Int3();
 		*p = 0;
+	}
+
+	// If we are standalone server keep replacing the 'right_bracket' (right side help bracket) as the filename
+	// should keep the game happy while loading only single pcx file which the needs to be present in any case
+	if (Is_standalone) {
+		char standalone_filename[MAX_FILENAME_LEN] = "right_bracket";
+		strcpy(filename,standalone_filename);
 	}
 
 	// safety catch for strcat...
@@ -1683,6 +1686,13 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		mprintf(( "Someone passed an extension to bm_load_animation for file '%s'\n", real_filename ));
 		//Int3();
 		*p = 0;
+	}
+
+	// If we are standalone server keep replacing the 'cursorweb' (mouse cursor) as the filename
+	// should keep the game happy while loading only single ani file which the needs to be present in any case
+	if (Is_standalone) {
+		char standalone_filename[MAX_FILENAME_LEN] = "cursorweb";
+		strcpy(filename,standalone_filename);
 	}
 
 	// safety catch for strcat...
