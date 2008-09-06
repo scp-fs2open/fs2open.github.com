@@ -5251,7 +5251,7 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 	{
 		for (i = 0; i < pm->n_textures; i++)
 		{
-			int tm_num = pm->maps[i].FindTexture(fname);
+			int tm_num = pm->maps[i].FindTexture(s);
 			if(tm_num > -1)
 			{
 				final_index = i*TM_NUM_TYPES+tm_num;

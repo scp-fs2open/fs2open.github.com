@@ -4689,10 +4689,6 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 
 				gr_unsize_screen_posf(&sx, &sy);
 
-				//WMC - Shake them
-				sx += HUD_nose_x;
-				sy += HUD_nose_y;
-
 				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
 			}
 		}

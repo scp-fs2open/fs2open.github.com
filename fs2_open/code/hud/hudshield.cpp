@@ -587,8 +587,8 @@ void hud_shield_show(object *objp)
 		sy = current_hud->Target_shield_coords[1];
 	}
 
-	//sx += fl2i(HUD_offset_x);
-	//sy += fl2i(HUD_offset_y);
+	sx += fl2i(HUD_offset_x);
+	sy += fl2i(HUD_offset_y);
 
 	// draw the ship first
 	if ( objp == Player_obj ) {
