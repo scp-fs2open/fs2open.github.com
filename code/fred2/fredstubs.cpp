@@ -651,11 +651,9 @@ int game_cd_changed(void) {return 0;}
 
 int Interface_framerate;
 void game_set_view_clip(){}
-float Viewer_zoom;
 
 int Warpout_forced = 0;
 float Warpout_time;
-vec3d Camera_pos;
 vec3d Dead_player_last_vel;
 int game_start_mission(){return 0;}
 int Game_weapons_tbl_valid;
@@ -716,8 +714,8 @@ fix game_get_overall_frametime() { return 0; }
 //WMC
 void game_level_init(int seed){}
 void game_post_level_init(){}
-void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient){}
-void game_render_frame(vec3d *eye_pos, matrix *eye_orient){}
+camid game_render_frame_setup(){return camid();}
+void game_render_frame(camid cid){}
 void game_simulation_frame(){}
 void game_update_missiontime(){}
 void game_render_post_frame(){}

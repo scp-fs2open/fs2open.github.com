@@ -2806,6 +2806,7 @@ int warptype_match(char *p)
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
 #define SHIP_MULTITEXT_LENGTH 4096
+#define DEFAULT_DELTA_BANK_CONST	0.5f
 
 
 //Writes default info to a ship entry
@@ -2841,6 +2842,7 @@ void init_ship_entry(ship_info *sip)
 	sip->density = 1.0f;
 	sip->damp = 0.0f;
 	sip->rotdamp = 0.0f;
+	sip->delta_bank_const = DEFAULT_DELTA_BANK_CONST;
 	vm_vec_zero(&sip->max_vel);
 	sip->max_speed = 0.0f;
 	vm_vec_zero(&sip->rotation_time);
@@ -2861,6 +2863,10 @@ void init_ship_entry(ship_info *sip)
 	sip->convergence_distance = 100.0f;
 	vm_vec_zero(&sip->convergence_offset);
 
+	sip->warpin_snd_start = -1;
+	sip->warpout_snd_start = -1;
+	sip->warpin_snd_end = -1;
+	sip->warpout_snd_end = -1;
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
 	sip->warpin_radius = 0.0f;
@@ -2885,6 +2891,12 @@ void init_ship_entry(ship_info *sip)
 	strcpy(sip->shockwave_name,"");*/
 
 	sip->collision_damage_type_idx = -1;
+	sip->debris_min_lifetime = -1.0f;
+	sip->debris_max_lifetime = -1.0f;
+	sip->debris_min_speed = -1.0f;
+	sip->debris_max_speed = -1.0f;
+	sip->debris_min_rotspeed = -1.0f;
+	sip->debris_max_rotspeed = -1.0f;
 	sip->debris_damage_type_idx = -1;
 	
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
@@ -3359,7 +3371,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		char *p;
 
-		while ((PLACEHOLDER_num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
+		while ((PLACEHOLDER_num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
 		{
 			stuff_string(PLACEHOLDER_old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
@@ -3469,10 +3481,53 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Debris:"))
 	{
+		if(optional_string("+Min Lifetime:"))	{
+			stuff_float(&sip->debris_min_lifetime);
+			if(sip->debris_min_lifetime < 0.0f)
+				Warning(LOCATION, "Debris min lifetime on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Max Lifetime:"))	{
+			stuff_float(&sip->debris_max_lifetime);
+			if(sip->debris_max_lifetime < 0.0f)
+				Warning(LOCATION, "Debris max lifetime on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Min Speed:"))	{
+			stuff_float(&sip->debris_min_speed);
+			if(sip->debris_min_speed < 0.0f)
+				Warning(LOCATION, "Debris min speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Max Speed:"))	{
+			stuff_float(&sip->debris_max_speed);
+			if(sip->debris_max_speed < 0.0f)
+				Warning(LOCATION, "Debris max speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Min Rotation speed:"))	{
+			stuff_float(&sip->debris_min_rotspeed);
+			if(sip->debris_min_rotspeed < 0.0f)
+				Warning(LOCATION, "Debris min speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Max Rotation speed:"))	{
+			stuff_float(&sip->debris_max_rotspeed);
+			if(sip->debris_max_rotspeed < 0.0f)
+				Warning(LOCATION, "Debris max speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
 		if(optional_string("+Damage Type:")) {
 			stuff_string(buf, F_NAME, NAME_LENGTH);
 			sip->debris_damage_type_idx = damage_type_add(buf);
 		}
+	}
+	//WMC - sanity checking
+	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
+		Warning(LOCATION, "Debris min speed (%f) on %s '%s' is greater than debris max speed (%f), and will be set to debris max speed.", sip->debris_min_speed, info_type_name, sip->name, sip->debris_max_speed);
+		sip->debris_min_speed = sip->debris_max_speed;
+	}
+	if(sip->debris_min_rotspeed > sip->debris_max_rotspeed && sip->debris_max_rotspeed >= 0.0f) {
+		Warning(LOCATION, "Debris min rotation speed (%f) on %s '%s' is greater than debris max rotation speed (%f), and will be set to debris max rotation speed.", sip->debris_min_rotspeed, info_type_name, sip->name, sip->debris_max_rotspeed);
+		sip->debris_min_rotspeed = sip->debris_max_rotspeed;
+	}
+	if(sip->debris_min_lifetime > sip->debris_max_lifetime && sip->debris_max_lifetime >= 0.0f) {
+		Warning(LOCATION, "Debris min lifetime (%f) on %s '%s' is greater than debris max lifetime (%f), and will be set to debris max lifetime.", sip->debris_min_lifetime, info_type_name, sip->name, sip->debris_max_lifetime);
+		sip->debris_min_lifetime = sip->debris_max_lifetime;
 	}
 
 	if(optional_string("$Density:"))
@@ -3486,6 +3541,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	if(optional_string("$Rotdamp:"))
 		stuff_float( &(sip->rotdamp) );
 	diag_printf ("Ship rotdamp -- %7.3f\n", sip->rotdamp);
+
+	if(optional_string("$Banking Constant:"))
+		stuff_float( &(sip->delta_bank_const) );
+	diag_printf ("%s '%s' delta_bank_const -- %7.3f\n", info_type_name, sip->name, sip->delta_bank_const);
 
 	if(optional_string("$Max Velocity:"))
 		stuff_vector(&sip->max_vel);
@@ -3542,6 +3601,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		sip->aiming_flags |= AIM_FLAG_AUTOAIM;
 		sip->autoaim_fov = (float)fov_temp * PI / 180.0f;
+		
+		if(optional_string("+Converging Autoaim"))
+			sip->aiming_flags |= AIM_FLAG_AUTOAIM_CONVERGENCE;
+
+		if(optional_string("+Minimum Distance:"))
+			stuff_float(&sip->minimum_convergence_distance);
 	}
 
 	if(optional_string("$Convergence:"))
@@ -3573,6 +3638,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			sip->warpin_type = WT_DEFAULT;
 		}
 	}
+
+	parse_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
+	parse_sound("$Warpin End Sound:", &sip->warpin_snd_start, sip->name);
 
 	if(optional_string("$Warpin speed:"))
 	{
@@ -3618,6 +3686,9 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			sip->warpout_type = WT_DEFAULT;
 		}
 	}
+
+	parse_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
+	parse_sound("$Warpout End Sound:", &sip->warpout_snd_start, sip->name);
 
 	if(optional_string("$Warpout speed:"))
 	{
@@ -5756,6 +5827,7 @@ void physics_ship_init(object *objp)
 
 	pi->center_of_mass = pm->center_of_mass;
 	pi->side_slip_time_const = sinfo->damp;
+	pi->delta_bank_const = sinfo->delta_bank_const;
 	pi->rotdamp = sinfo->rotdamp;
 	pi->max_vel = sinfo->max_vel;
 	pi->afterburner_max_vel = sinfo->afterburner_max_vel;
@@ -5872,6 +5944,64 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpout_effect = new WarpEffect();
 	}
 }
+
+//WMC - Camera rough draft stuff
+/*
+void ship_cam_chase_custom_position(camera *cam, vec3d *c_pos)
+{
+	Assert(cam == NULL);
+	if(cam == NULL)
+		return;
+
+	object *objp = cam->get_object_host();
+	vec3d	move_dir;
+
+	if ( objp->phys_info.speed < 0.1 )
+		move_dir = objp->orient.vec.fvec;
+	else {
+		move_dir = objp->phys_info.vel;
+		vm_vec_normalize(&move_dir);
+	}
+
+	//create a better 3rd person view if this is the player ship
+	if (objp==Player_obj)
+	{
+		vm_vec_scale_add(eye_pos, &objp->pos, &move_dir, -2.25f * objp->radius - Viewer_chase_info.distance);
+		vm_vec_scale_add2(eye_pos, &objp->orient.vec.uvec, .625f * objp->radius);
+
+		//get a point 1000m forward of ship
+		vec3d aim_pt;
+		vm_vec_copy_scale(&aim_pt,&objp->orient.vec.fvec,1000.0f);
+		vm_vec_add2(&aim_pt,&objp->pos);
+		//Calculate orient
+		vm_vec_sub(&eye_dir, &aim_pt, eye_pos);
+		vm_vec_normalize(&eye_dir);
+	}
+	else
+	{
+		vm_vec_scale_add(eye_pos, &objp->pos, &move_dir, -3.0f * objp->radius - Viewer_chase_info.distance);
+		vm_vec_scale_add2(eye_pos, &objp->orient.vec.uvec, 0.75f * objp->radius);
+
+		//Calculate orient
+		vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
+		vm_vec_normalize(&eye_dir);
+	}
+		
+	// JAS: I added the following code because if you slew up using
+	// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
+	// equal, which causes a zero-length vector in the vm_vector_2_matrix
+	// call because the up and the forward vector are the same.   I fixed
+	// it by adding in a fraction of the right vector all the time to the
+	// up vector.
+	vec3d tmp_up = objp->orient.vec.uvec;
+	vm_vec_scale_add2( &tmp_up, &objp->orient.vec.rvec, 0.00001f );
+
+	vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
+
+	//	Modify the orientation based on head orientation.
+	compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+}
+*/
 
 void ship_set(int ship_index, int objnum, int ship_type)
 {
@@ -6152,13 +6282,18 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->special_warp_objnum = -1;
 
-	shipp->current_viewpoint = 0;
+	polymodel *pm = model_get(sip->model_num);
+
+	if(pm != NULL && pm->n_view_positions > 0)
+		ship_set_eye(objp, 0);
+	else
+		ship_set_eye(objp, -1);
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
 	shipp->awacs_warning_flag = AWACS_WARN_NONE;
 
 	// Goober5000 - revised texture replacement
-	shipp->replacement_textures = NULL;
+	shipp->ship_replacement_textures = NULL;
 
 	shipp->glow_point_bank_active.clear();
 
@@ -7247,12 +7382,12 @@ void ship_render(object * obj)
  				float fog_val = neb2_get_fog_intensity(obj);
 				if(fog_val >= 0.6f){
 					model_set_detail_level(2);
-					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
 				} else {
-					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
 				}
 			} else {
-				model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+				model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
 			}
 
 	//		decal_render_all(obj);
@@ -7396,7 +7531,6 @@ void ship_render(object * obj)
 	*/
 }
 
-extern float Viewer_zoom;
 void ship_render_cockpit(object *objp)
 {
 	if(objp->type != OBJ_SHIP || objp->instance < 0)
@@ -7546,9 +7680,9 @@ void ship_delete( object * obj )
 		shipp->shield_integrity = NULL;
 	}
 
-	if (shipp->replacement_textures != NULL) {
-		vm_free(shipp->replacement_textures);
-		shipp->replacement_textures = NULL;
+	if (shipp->ship_replacement_textures != NULL) {
+		vm_free(shipp->ship_replacement_textures);
+		shipp->ship_replacement_textures = NULL;
 	}
 
 	// glow point banks
@@ -9350,6 +9484,8 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 // Ensure create time for ship is unqiue
 void ship_make_create_time_unique(ship *shipp)
 {
+	static int last_smctu_initial_time = -1;
+	static int last_smctu_final_time = -1;
 	int		sanity_counter = 0, collision;
 	ship		*compare_shipp;
 	ship_obj	*so;
@@ -9358,11 +9494,6 @@ void ship_make_create_time_unique(ship *shipp)
 	new_create_time = shipp->create_time;
 
 	while (1) {
-
-		if ( sanity_counter++ > 50 ) {
-			Int3();
-			break;
-		}
 
 		collision = 0;
 
@@ -9373,15 +9504,33 @@ void ship_make_create_time_unique(ship *shipp)
 				continue;
 			}
 
-			if ( compare_shipp->create_time == new_create_time ) {
-				new_create_time++;
+			if ( compare_shipp->create_time == new_create_time )
+			{
+				if(sanity_counter == 0 && last_smctu_initial_time == shipp->create_time)
+				{
+					//WMC: If we're creating a whole bunch of ships at once, we can
+					//shortcut this process by looking at the last call to this function
+					//This fixes a bug when more than 50 ships are created at once.
+					new_create_time = last_smctu_final_time + 1;
+				}
+				else
+				{
+					new_create_time++;
+				}
 				collision = 1;
 				break;
 			}
 		}
 
 		if ( !collision ) {
+			last_smctu_initial_time = shipp->create_time;
+			last_smctu_final_time = new_create_time;
 			shipp->create_time = new_create_time;
+			break;
+		}
+
+		if ( sanity_counter++ > MAX_SHIPS ) {
+			Int3();
 			break;
 		}
 	}
@@ -10785,6 +10934,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
 								time_to_target = 0.0f;
 
+								// optional setting to prevent convergence from working at close range
+								if (sip->minimum_convergence_distance > dist_to_target)
+									dist_to_target = sip->minimum_convergence_distance;
+
 								if (winfo_p->max_speed != 0)
 								{
 									time_to_target = dist_to_target / winfo_p->max_speed;
@@ -10792,7 +10945,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 								vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
 								polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
-								vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
+								
+								// setting to autoaim to converge on to the target.
+								if (sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE)
+									vm_vec_sub(&firing_vec, &predicted_target_pos, &firing_pos);
+								else
+									vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
 
 								// Deactivate autoaiming if the target leaves the autoaim-FOV cone
 								player_forward_vec = obj->orient.vec.fvec;
@@ -12434,6 +12592,75 @@ int ship_find_num_turrets(object *objp)
 	return n;
 }
 
+//WMC
+void ship_set_eye( object *obj, int eye_index)
+{
+	if(obj->type != OBJ_SHIP)
+		return;
+
+	ship *shipp = &Ships[obj->instance];
+
+	if(eye_index < 0)
+	{
+		shipp->current_viewpoint = -1;
+		return;
+	}
+
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	if(sip->model_num < 0)
+		return;
+
+	polymodel *pm = model_get(sip->model_num);
+
+	if(pm == NULL || eye_index > pm->n_view_positions)
+		return;
+
+	shipp->current_viewpoint = eye_index;
+}
+/*
+camid ship_set_eye( object *obj, int eye_index)
+{
+	if(obj->type != OBJ_SHIP)
+		return camid();
+
+	ship *shipp = &Ships[obj->instance];
+
+	vec3d *pos = &vmd_zero_vector;
+	vec3d *norm = &vmd_zero_vector;
+	int subobject = -1;
+	if(eye_index > 0)
+	{
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
+		if(sip->model_num < 0)
+			return camid();
+
+		polymodel *pm = model_get(sip->model_num);
+
+		if(pm == NULL || eye_index > pm->n_view_positions)
+			return camid();
+
+		eye *ep = &pm->view_positions[eye_index];
+		pos = &ep->pnt;
+		norm = &ep->norm;
+		subobject = ep->parent;
+	}
+
+	if(shipp->ship_camera.isValid())
+	{
+		camera *cam = shipp->ship_camera.getCamera();
+		cam->set_position(pos);
+		cam->set_rotation_facing(norm);
+		cam->set_object_host(obj, subobject);
+	}
+	else
+	{
+		shipp->ship_camera = cam_create(shipp->ship_name, pos, norm, obj, subobject);
+	}
+
+	return shipp->ship_camera;
+}
+*/
+
 // calculates the eye position for this ship in the global reference frame.  Uses the
 // view_positions array in the model.  The 0th element is the normal viewing position.
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
@@ -12441,20 +12668,24 @@ int ship_find_num_turrets(object *objp)
 // eyes have no defined up vector)
 void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew )
 {
-	polymodel *pm = model_get(Ship_info[Ships[obj->instance].ship_info_index].model_num);
-	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
-	// vec3d vec;
+	//return Ships[obj->instance].ship_camera;
+
+	ship *shipp = &Ships[obj->instance];
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
 	// check to be sure that we have a view eye to look at.....spit out nasty debug message
-	if ( pm->n_view_positions == 0 ) {
+	if ( shipp->current_viewpoint < 0 || pm->n_view_positions == 0 || shipp->current_viewpoint > pm->n_view_positions) {
 //		nprintf (("Warning", "No eye position found for model %s.  Find artist to get fixed.\n", pm->filename ));
 		*eye_pos = obj->pos;
 		*eye_orient = obj->orient;
 		return;
 	}
 
+	//return shipp->viewpoints[shipp->current_viewpoint];
+
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
+	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
 	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, &obj->pos );
 	// if ( shipp->current_eye_index == 0 ) {
 		//vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
@@ -13293,9 +13524,9 @@ void ship_close()
 			shipp->shield_integrity = NULL;
 		}
 
-		if (shipp->replacement_textures != NULL) {
-			vm_free(shipp->replacement_textures);
-			shipp->replacement_textures = NULL;
+		if (shipp->ship_replacement_textures != NULL) {
+			vm_free(shipp->ship_replacement_textures);
+			shipp->ship_replacement_textures = NULL;
 		}
 	}
 
@@ -15783,14 +16014,14 @@ void ship_page_in()
 		if (Ships[i].objnum >= 0)
 		{
 			// do we have any textures?
-			if (Ships[i].replacement_textures)
+			if (Ships[i].ship_replacement_textures != NULL)
 			{
 				// page in replacement textures
-				for (j=0; j<MAX_MODEL_TEXTURES; j++)
+				for (j=0; j<MAX_REPLACEMENT_TEXTURES; j++)
 				{
-					if (Ships[i].replacement_textures[j] != -1)
+					if (Ships[i].ship_replacement_textures[j] > -1)
 					{
-						bm_page_in_texture( Ships[i].replacement_textures[j] );
+						bm_page_in_texture( Ships[i].ship_replacement_textures[j] );
 					}
 				}
 			}

@@ -815,6 +815,12 @@ typedef struct texture_replace {
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
+
+	texture_replace()
+	{
+		memset(this, '\0', sizeof(this));
+		new_texture_id = -1;
+	}
 } texture_replace;
 
 extern texture_replace *Fred_texture_replacements;
@@ -899,7 +905,7 @@ typedef struct p_object {
 
 	// Goober5000
 	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_MODEL_TEXTURES];	// replacement textures - Goober5000
+	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
 
 	int alt_iff_color[MAX_IFFS][MAX_IFFS];
 } p_object;

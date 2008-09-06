@@ -311,7 +311,6 @@ int	Update_window = 1;
 HCURSOR h_cursor_move, h_cursor_rotate;
 
 // Goober5000 - needed to restore compatibility with the changes in fs2_open
-float VIEWER_ZOOM_DEFAULT = 0.75f;
 int Show_cpu = 0;
 
 CWnd *Prev_window;

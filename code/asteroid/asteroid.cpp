@@ -2454,7 +2454,7 @@ void asteroid_page_in()
 
 				// Page in textures
 				for (j=0; j<asip->modelp[k]->n_textures; j++ )	{
-					asip->modelp[k]->maps[j].base_map.PageIn();			
+					asip->modelp[k]->maps[j].PageIn();			
 				}
 
 			}

@@ -1105,5 +1105,5 @@ void cmd_brief_do_frame(float frametime)
 
 int mission_has_cmd_brief()
 {
-	return (Cur_cmd_brief->num_stages > 0);
+	return (Cur_cmd_brief != NULL && Cur_cmd_brief->num_stages > 0);
 }

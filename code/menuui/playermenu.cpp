@@ -887,6 +887,13 @@ void player_select_close()
 	stop_parse();
 
 	Player_select_screen_active = 0;
+
+	//WMC - Set appropriate game mode
+	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
+		Game_mode = GM_MULTIPLAYER;
+	} else {
+		Game_mode = GM_NORMAL;
+	}
 }
 
 void player_select_set_input_mode(int n)

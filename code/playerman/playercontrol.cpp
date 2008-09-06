@@ -2573,32 +2573,37 @@ void player_display_packlock_view()
 
 // get the player's eye position and orient
 // NOTE : this is mostly just copied from game_render_frame_setup()
+extern vec3d Dead_camera_pos;
 extern vec3d Dead_player_last_vel;
-extern vec3d Camera_pos;
-extern void compute_slew_matrix(matrix *orient, angles *a);
+
 #define	MIN_DIST_TO_DEAD_CAMERA			50.0f
-void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
+camid player_get_cam()
 {
+	static camid player_camera;
+	if(!player_camera.isValid())
+	{
+		player_camera = cam_create("Player camera");
+	}
+
 	object *viewer_obj = NULL;
-	vec3d eye_dir;
+	vec3d eye_pos = vmd_zero_vector;
+	matrix eye_orient = vmd_identity_matrix;
+	vec3d tmp_dir;
 
 	// if the player object is NULL, return
 	if(Player_obj == NULL){
-		return;
+		return camid();
 	}
 
 	// standalone servers can bail here
 	if(Game_mode & GM_STANDALONE_SERVER){
-		return;
+		return camid();
 	}
 
 	// if we're not in-mission, don't do this
 	if(!(Game_mode & GM_IN_MISSION)){
-		return;
+		return camid();
 	}
-
-	Assert(eye_pos != NULL);
-	Assert(eye_orient != NULL);
 
 	if (Game_mode & GM_DEAD) {
 		vec3d	vec_to_deader, view_pos;
@@ -2610,7 +2615,7 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 				//	View from target.
 				viewer_obj = &Objects[Player_ai->target_objnum];
 				if ( viewer_obj->type == OBJ_SHIP ) {
-					ship_get_eye( eye_pos, eye_orient, viewer_obj );
+					ship_get_eye( &eye_pos, &eye_orient, viewer_obj );
 					view_from_player = 0;
 				}
 			}
@@ -2618,9 +2623,11 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 			if ( view_from_player ) {
 				//	View target from player ship.
 				viewer_obj = NULL;
-				*eye_pos = Player_obj->pos;
-				vm_vec_normalized_dir(&eye_dir, &Objects[Player_ai->target_objnum].pos, eye_pos);
-				vm_vector_2_matrix(eye_orient, &eye_dir, NULL, NULL);
+				//rtn_cid = ship_get_followtarget_eye( Player_obj );
+				eye_pos = Player_obj->pos;
+
+				vm_vec_normalized_dir(&tmp_dir, &Objects[Player_ai->target_objnum].pos, &eye_pos);
+				vm_vector_2_matrix(&eye_orient, &tmp_dir, NULL, NULL);
 			}
 		} else {
 			dist = vm_vec_normalized_dir(&vec_to_deader, &Player_obj->pos, &Dead_camera_pos);
@@ -2643,11 +2650,11 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 				view_pos = Player_obj->pos;				
 			}
 
-			*eye_pos = Dead_camera_pos;
+			eye_pos = Dead_camera_pos;
 
-			vm_vec_normalized_dir(&eye_dir, &Player_obj->pos, eye_pos);
+			vm_vec_normalized_dir(&tmp_dir, &Player_obj->pos, &eye_pos);
 
-			vm_vector_2_matrix(eye_orient, &eye_dir, NULL, NULL);
+			vm_vector_2_matrix(&eye_orient, &tmp_dir, NULL, NULL);
 			viewer_obj = NULL;
 		}
 	} 
@@ -2664,8 +2671,7 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		}
 		if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = NULL;
-				*eye_pos = *Current_camera->get_position();
-				*eye_orient = *Current_camera->get_orientation();
+				return cam_get_current();
 		} else if (Viewer_mode & VM_EXTERNAL) {
 			Assert(viewer_obj != NULL);
 			matrix	tm, tm2;
@@ -2673,15 +2679,15 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 			vm_matrix_x_matrix(&tm, &viewer_obj->orient, &tm2);
 
-			vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
+			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
 
-			vm_vec_sub(&eye_dir, &viewer_obj->pos, eye_pos);
-			vm_vec_normalize(&eye_dir);
-			vm_vector_2_matrix(eye_orient, &eye_dir, &viewer_obj->orient.vec.uvec, NULL);
-			viewer_obj = NULL;
+			vm_vec_sub(&tmp_dir, &viewer_obj->pos, &eye_pos);
+			vm_vec_normalize(&tmp_dir);
+			vm_vector_2_matrix(&eye_orient, &tmp_dir, &viewer_obj->orient.vec.uvec, NULL);
+ 			viewer_obj = NULL;
 
 			//	Modify the orientation based on head orientation.
-			compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+			compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 		} else if ( Viewer_mode & VM_CHASE ) {
 			vec3d	move_dir;
 
@@ -2692,10 +2698,10 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 				vm_vec_normalize_safe(&move_dir);
 			}
 
-			vm_vec_scale_add(eye_pos, &viewer_obj->pos, &move_dir, -3.0f * viewer_obj->radius - Viewer_chase_info.distance);
-			vm_vec_scale_add2(eye_pos, &viewer_obj->orient.vec.uvec, 0.75f * viewer_obj->radius);
-			vm_vec_sub(&eye_dir, &viewer_obj->pos, eye_pos);
-			vm_vec_normalize(&eye_dir);
+			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &move_dir, -3.0f * viewer_obj->radius - Viewer_chase_info.distance);
+			vm_vec_scale_add2(&eye_pos, &viewer_obj->orient.vec.uvec, 0.75f * viewer_obj->radius);
+			vm_vec_sub(&tmp_dir, &viewer_obj->pos, &eye_pos);
+			vm_vec_normalize(&tmp_dir);
 
 			// JAS: I added the following code because if you slew up using
 			// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
@@ -2706,37 +2712,43 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 			vec3d tmp_up = viewer_obj->orient.vec.uvec;
 			vm_vec_scale_add2( &tmp_up, &viewer_obj->orient.vec.rvec, 0.00001f );
 
-			vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
+			vm_vector_2_matrix(&eye_orient, &tmp_dir, &tmp_up, NULL);
 			viewer_obj = NULL;
 
 			//	Modify the orientation based on head orientation.
-			compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+			compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 		} else if ( Viewer_mode & VM_WARP_CHASE ) {
-			*eye_pos = Camera_pos;
+			Warp_camera.get_info(&eye_pos, NULL);
 
 			ship * shipp = &Ships[Player_obj->instance];
 
 
 			vec3d warp_pos = Player_obj->pos;
 			shipp->warpout_effect->getWarpPosition(&warp_pos);
-			vm_vec_sub(&eye_dir, &warp_pos, eye_pos);
-			vm_vec_normalize(&eye_dir);
-			vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
+			vm_vec_sub(&tmp_dir, &warp_pos, &eye_pos);
+			vm_vec_normalize(&tmp_dir);
+			vm_vector_2_matrix(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, NULL);
 			viewer_obj = NULL;
 		} else {
 			// get an eye position based upon the correct type of object
-			switch(viewer_obj->type){
-			case OBJ_SHIP:
-				// make a call to get the eye point for the player object
-				ship_get_eye( eye_pos, eye_orient, viewer_obj );
-				break;
-			case OBJ_OBSERVER:
-				// make a call to get the eye point for the player object
-				observer_get_eye( eye_pos, eye_orient, viewer_obj );				
-				break;
-			default :
-				Int3();
+			switch(viewer_obj->type)
+			{
+				case OBJ_SHIP:
+					// make a call to get the eye point for the player object
+					ship_get_eye( &eye_pos, &eye_orient, viewer_obj );
+					break;
+				case OBJ_OBSERVER:
+					// make a call to get the eye point for the player object
+					observer_get_eye( &eye_pos, &eye_orient, viewer_obj );				
+					break;
+				default :
+					Int3();
 			}			
 		}
 	}
+
+	player_camera.getCamera()->set_position(&eye_pos);
+	player_camera.getCamera()->set_rotation(&eye_orient);
+
+	return player_camera;
 }
