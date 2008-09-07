@@ -10917,7 +10917,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							{
 								// Fire weapon in target direction
 								vec3d target_position, target_velocity_vec, predicted_target_pos;
-								vec3d firing_vec, last_delta_vec, player_forward_vec;
+								vec3d firing_vec, last_delta_vec, player_forward_vec, plr_to_target_vec;
 								float dist_to_target, time_to_target, angle_to_target;
 
 								// If a subsystem is targeted, fire in that direction instead
@@ -10934,10 +10934,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
 								time_to_target = 0.0f;
 
-								// optional setting to prevent convergence from working at close range
-								if (sip->minimum_convergence_distance > dist_to_target)
-									dist_to_target = sip->minimum_convergence_distance;
-
 								if (winfo_p->max_speed != 0)
 								{
 									time_to_target = dist_to_target / winfo_p->max_speed;
@@ -10945,7 +10941,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 								vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
 								polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
-								
+								vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
+
+								// minimum convergence distance
+								if (sip->minimum_convergence_distance > dist_to_target) {
+									float dist_mult;
+									dist_mult = sip->minimum_convergence_distance / dist_to_target;
+									vm_vec_scale_add(&predicted_target_pos, &obj->pos, &plr_to_target_vec, dist_mult);
+								}
+
 								// setting to autoaim to converge on to the target.
 								if (sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE)
 									vm_vec_sub(&firing_vec, &predicted_target_pos, &firing_pos);
@@ -10954,7 +10958,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 								// Deactivate autoaiming if the target leaves the autoaim-FOV cone
 								player_forward_vec = obj->orient.vec.fvec;
-								angle_to_target = vm_vec_delta_ang(&player_forward_vec, &firing_vec, NULL);
+								angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
 
 								if (angle_to_target < sip->autoaim_fov)
 								{
