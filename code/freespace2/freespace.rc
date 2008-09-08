@@ -376,6 +376,7 @@ IDB_GOAL_FAIL           BITMAP  DISCARDABLE     "goal_fail.bmp"
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_APP_ICON            ICON    DISCARDABLE     "app_icon.ico"
+IDI_APP_ICON_GLOW       ICON    DISCARDABLE     "app_icon_glow.ico"
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -409,4 +410,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 // SRGRAMMAR
 //
 
+#ifdef FS2_VOICER
 IDR_CMD_CFG             SRGRAMMAR DISCARDABLE   "..\..\code\sound\phrases.cfg"
+#endif
