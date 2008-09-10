@@ -955,14 +955,18 @@ void obj_snd_do_frame()
 //
 int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, ship_subsys *associated_sub)
 {
-	obj_snd	*snd;
-	object	*objp;
-	int idx, sound_index;
+	if(objnum < 0 || objnum > MAX_OBJECTS)
+		return -1;
 
-	objp = &Objects[objnum];
+	if(sndnum < 0)
+		return -1;
 
 	if ( Obj_snd_enabled == FALSE )
 		return -1;
+
+	obj_snd	*snd = NULL;
+	object	*objp = &Objects[objnum];
+	int idx, sound_index;
 
 	// try and find a valid objsound index
 	sound_index = -1;
@@ -1019,6 +1023,11 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, ship_subsys *as
 //
 void obj_snd_delete(int objnum, int index)
 {
+	if(objnum < 0 || objnum >= MAX_OBJECTS)
+		return;
+	if(index < 0 || index >= MAX_OBJECT_SOUNDS)
+		return;
+
 	//Sanity checking
 	Assert(objnum > -1 && objnum < MAX_OBJECTS);
 	Assert(index > -1 && index < MAX_OBJECT_SOUNDS);
@@ -1053,7 +1062,9 @@ void	obj_snd_delete_type(int objnum, int sndnum, ship_subsys *ss)
 	obj_snd	*osp;
 	int idx;
 
-	Assert(objnum >= 0 && objnum < MAX_OBJECTS);
+	if(objnum < 0 || objnum >= MAX_OBJECTS)
+		return;
+
 	objp = &Objects[objnum];
 
 	//Go through the list and get sounds that match criteria
@@ -1125,17 +1136,9 @@ void obj_snd_level_close()
 //
 // Determines if a given object-linked sound is currently playing
 //
-int obj_snd_is_playing(int index)
+int obj_snd_is_playing(int object, int index)
 {
-	obj_snd *osp;
-
-	if ( index == -1 )
-		return 0;
-
-	Assert( index >= 0 && index < MAX_OBJ_SNDS );
-
-	osp = &Objsnds[index];
-	if ( osp->instance == -1 ) 
+	if ( obj_snd_return_instance(object, index) < 0 ) 
 		return 0;
 
 	return 1;
@@ -1146,12 +1149,36 @@ int obj_snd_is_playing(int index)
 //
 // Returns the sound instance for a given object-linked sound
 //
-int obj_snd_return_instance(int index)
+int obj_snd_return_instance(int objnum, int index)
 {
-	if ( index == -1 )
+	if ( objnum < 0 || objnum >= MAX_OBJECTS)
 		return -1;
 
-	Assert( index >= 0 && index < MAX_OBJ_SNDS );
+	if ( index < 0 || index >= MAX_OBJ_SNDS )
+		return -1;
 
-	return Objsnds[index].instance;
+	object *objp = &Objects[objnum];
+	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
+
+	return osp->instance;
+}
+
+// ---------------------------------------------------------------------------------------
+// obj_snd_update_offset()
+//
+// Updates offset of the given object sound
+//
+int obj_snd_update_offset(int objnum, int index, vec3d *new_offset)
+{
+	if ( objnum < 0 || objnum >= MAX_OBJECTS)
+		return 0;
+
+	if ( index < 0 || index >= MAX_OBJ_SNDS )
+		return 0;
+
+	object *objp = &Objects[objnum];
+	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
+	osp->offset = *new_offset;
+
+	return 1;
 }

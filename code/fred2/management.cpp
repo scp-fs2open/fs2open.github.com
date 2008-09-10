@@ -804,7 +804,7 @@ void parse_medal_tbl()
 void fred_close()
 {
 	if (Fred_texture_replacements != NULL) {
-		vm_free(Fred_texture_replacements);
+		delete[] Fred_texture_replacements;
 		Fred_texture_replacements = NULL;
 	}
 }
@@ -927,7 +927,8 @@ bool fred_init()
 	species_init();		// Kazan
 
 	// for fred specific replacement texture stuff
-	Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_MODEL_TEXTURES );
+	//Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_REPLACEMENT_TEXTURES );
+	Fred_texture_replacements = new texture_replace[MAX_SHIPS*MAX_REPLACEMENT_TEXTURES];
 	atexit(fred_close);
 
 	// Goober5000

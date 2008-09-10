@@ -718,9 +718,6 @@ int Main_hall_bitmap;
 // background bitmap mask handle
 int Main_hall_mask;
 
-// variable used for automatic netgame starting/joining
-int Main_hall_netgame_started = 0;
-
 // bitmap struct for th background mask bitmap
 bitmap *Main_hall_mask_bitmap;
 
@@ -1094,9 +1091,6 @@ void main_hall_init(int main_hall_num)
 		nprintf(("General","WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap));
 	}	
 
-	// remove any multiplayer flags from the game mode
-	Game_mode &= ~(GM_MULTIPLAYER);
-
 	// set the interface palette 
 #ifndef HARDWARE_ONLY
 	palette_use_bm_palette(Main_hall_bitmap);	
@@ -1220,32 +1214,6 @@ void main_hall_init(int main_hall_num)
 
 	// determine if we have a right click
 	Main_hall_right_click = mouse_down(MOUSE_RIGHT_BUTTON);
-
-	// set the game_mode based on the type of player
-	Assert( Player != NULL );
-
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
-		Game_mode = GM_MULTIPLAYER;
-	} else {
-		Game_mode = GM_NORMAL;
-	}
-
-	//if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
-	//	Main_hall_netgame_started = 1;
-	//	main_hall_do_multi_ready();
-	//} DTP commented out to keep original source
-	if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl dont get thrown into Multiplayer with a Singleplayer Pilot.
-		Main_hall_netgame_started = 1;
-		main_hall_do_multi_ready();
-	}
-
-	if(Cmdline_start_mission) {
-		strcpy(Game_current_mission_filename, Cmdline_start_mission);
-		mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
- 		gameseq_post_event(GS_EVENT_START_GAME);
-		// This stops the mission from loading again when you go back to the hall
-		Cmdline_start_mission = NULL;
-	}
 }
 
 void main_hall_exit_game()

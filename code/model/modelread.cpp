@@ -3331,11 +3331,10 @@ void model_init_texture_map(texture_map *tmap)
 
 	memset(tmap, 0, sizeof(texture_map));
 
-	tmap->base_map.clear();
-	tmap->glow_map.clear();
-	tmap->spec_map.clear();
-	tmap->norm_map.clear();
-	tmap->height_map.clear();
+	for(int i = 0; i < TM_NUM_TYPES; i++)
+	{
+		tmap->textures[i].clear();
+	}
 }
 
 //Goober
@@ -3351,12 +3350,17 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	texture_map *tmap = &pm->maps[i];
 	model_init_texture_map(tmap);
 
+	//WMC - IMPORTANT!!
+	//The Fred_running checks are there so that FRED will see those textures and put them in the
+	//texture replacement box.
+
 	// base maps ---------------------------------------------------------------
+	texture_info *tbase = &tmap->textures[TM_BASE_TYPE];
 	if (strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
 	{
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
-		tmap->base_map.clear();
+		tbase->clear();
 	}
 	else
 	{
@@ -3369,41 +3373,17 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			tmap->is_ambient = true;
 		}
 
-		tmap->base_map.LoadTexture(tmp_name, pm->filename);
-		if(tmap->base_map.GetTexture() < 0)
+		tbase->LoadTexture(tmp_name, pm->filename);
+		if(tbase->GetTexture() < 0)
 			Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
-		// try to load an ANI
-		/*
-		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.num_frames, &fps, 1, CF_TYPE_MAPS);
-		if (tmap->base_map.texture >= 0)
-		{
-			tmap->base_map.total_time = (float) i2fl(tmap->base_map.num_frames) / ((fps > 0) ? fps : 1);
-		}
-		else
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->base_map.num_frames = 1;
-
-			// try to load a non-ANI
-			tmap->base_map.texture = bm_load(tmp_name);
-			if (tmap->base_map.texture < 0)
-			{
-				tmap->base_map.num_frames = 0;
-				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
-				nprintf(("Maps", " or %s.pcx.", tmp_name));
-			}
-
-			nprintf(("Maps", "\n"));
-		}
-		*/
 	}
-	//tmap->base_map.original_texture = tmap->base_map.texture;
 	// -------------------------------------------------------------------------
 
 	// glow maps ---------------------------------------------------------------
-	if (!Cmdline_glow || (tmap->base_map.GetTexture() < 0))
+	texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
+	if ( (!Cmdline_glow && !Fred_running) || (tbase->GetTexture() < 0))
 	{
-		tmap->glow_map.clear();
+		tglow->clear();
 	}
 	else
 	{
@@ -3412,38 +3392,15 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		tmap->glow_map.LoadTexture(tmp_name, pm->filename);
-		// try to load an ANI
-		/*
-		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.num_frames, &fps, 1, CF_TYPE_MAPS);
-		if (tmap->glow_map.texture >= 0)
-		{
-			tmap->glow_map.total_time = (float) i2fl(tmap->glow_map.num_frames) / ((fps > 0) ? fps : 1);
-		}
-		else
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->glow_map.num_frames = 1;
-
-			// try to load a non-ANI
-			tmap->glow_map.texture = bm_load(tmp_name);
-			if (tmap->glow_map.texture < 0)
-			{
-				tmap->glow_map.num_frames = 0;
-				nprintf(("Maps", " or %s.pcx.", tmp_name));
-			}
-
-			nprintf(("Maps", "\n"));
-		}
-		*/
+		tglow->LoadTexture(tmp_name, pm->filename);
 	}
-	//tmap->glow_map.original_texture = tmap->glow_map.texture;
 	// -------------------------------------------------------------------------
 
 	// specular maps -----------------------------------------------------------
-	if (!Cmdline_spec || (tmap->base_map.GetTexture() < 0))
+	texture_info *tspec = &tmap->textures[TM_SPECULAR_TYPE];
+	if ( (!Cmdline_spec && !Fred_running) || (tbase->GetTexture() < 0))
 	{
-		tmap->spec_map.clear();
+		tspec->clear();
 	}
 	else
 	{
@@ -3452,52 +3409,33 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		tmap->spec_map.LoadTexture(tmp_name, pm->filename);
-		// try to load an ANI
-		/*tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.num_frames, &fps, 1, CF_TYPE_MAPS);
-		if (tmap->spec_map.texture >= 0)
-		{
-			tmap->spec_map.total_time = (float) i2fl(tmap->spec_map.num_frames) / ((fps > 0) ? fps : 1);
-		}
-		else
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->spec_map.num_frames = 1;
-
-			// try to load a non-ANI
-			tmap->spec_map.texture = bm_load(tmp_name);
-			if (tmap->spec_map.texture < 0)
-			{
-				tmap->spec_map.num_frames = 0;
-				nprintf(("Maps", " or %s.pcx.", tmp_name));
-			}
-
-			nprintf(("Maps", "\n"));
-		}*/
+		tspec->LoadTexture(tmp_name, pm->filename);
 	}
 	//tmap->spec_map.original_texture = tmap->spec_map.texture;
 	// -------------------------------------------------------------------------
 
 	// bump maps ---------------------------------------------------------------
-	if ( !Cmdline_normal || (tmap->base_map.GetTexture() < 0) ) {
-		tmap->norm_map.clear();
-		tmap->height_map.clear();
+	texture_info *tnorm = &tmap->textures[TM_NORMAL_TYPE];
+	texture_info *theight = &tmap->textures[TM_HEIGHT_TYPE];
+	if ( (!Cmdline_normal && !Fred_running) || (tbase->GetTexture() < 0) ) {
+		tnorm->clear();
+		theight->clear();
 	} else {
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-normal", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
 		strlwr(tmp_name);
 
-		tmap->norm_map.LoadTexture(tmp_name, pm->filename);
+		tnorm->LoadTexture(tmp_name, pm->filename);
 
 		// try to get a height map too
-		if ( Cmdline_height && (tmap->norm_map.GetTexture() > 0) ) {
+		if ( Cmdline_height && (tnorm->GetTexture() > 0) ) {
 			memset(tmp_name, 0, MAX_FILENAME_LEN);
 			strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 			strncat(tmp_name, "-height", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
 			strlwr(tmp_name);
 
-			tmap->height_map.LoadTexture(tmp_name, pm->filename);
+			theight->LoadTexture(tmp_name, pm->filename);
 		}
 	}
 	// -------------------------------------------------------------------------
@@ -3860,6 +3798,7 @@ void model_set_bay_path_nums(polymodel *pm)
 
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
+	bool too_many_paths = false;
 	for (i = 0; i < pm->n_paths; i++)
 	{
 		if (!strnicmp(pm->paths[i].name, NOX("$bay"), 4))
@@ -3871,13 +3810,26 @@ void model_set_bay_path_nums(polymodel *pm)
 			temp[2] = 0;
 			bay_num = atoi(temp);
 
-			Assert(bay_num >= 1 && bay_num <= MAX_SHIP_BAY_PATHS);
 			if (bay_num < 1 || bay_num > MAX_SHIP_BAY_PATHS)
+			{
+				if(bay_num > MAX_SHIP_BAY_PATHS)
+				{
+					too_many_paths = true;
+				}
+				if(bay_num < 1)
+				{
+					Warning(LOCATION, "Model '%s' bay path '%s' index '%d' has an invalid bay number of %d", pm->filename, pm->paths[i].name, i, bay_num);
+				}
 				continue;
+			}
 
 			pm->ship_bay->path_indexes[bay_num - 1] = i;
 			pm->ship_bay->num_paths++;
 		}
+	}
+	if(too_many_paths)
+	{
+		Warning(LOCATION, "Model '%s' has too many bay paths - max is %d", pm->filename, MAX_SHIP_BAY_PATHS);
 	}
 }
 
@@ -4905,11 +4857,7 @@ void model_clear_instance(int model_num)
 	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
-		pm->maps[i].base_map.ResetTexture();
-		pm->maps[i].glow_map.ResetTexture();
-		pm->maps[i].spec_map.ResetTexture();
-		pm->maps[i].norm_map.ResetTexture();
-		pm->maps[i].height_map.ResetTexture();
+		pm->maps[i].Reset();
 	}
 	
 	for (i=0; i<pm->n_models; i++ )	{

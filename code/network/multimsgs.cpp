@@ -4920,9 +4920,9 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	aip->targeted_subsys = targeted_subsys;
 
 	if ( type == SQUAD_MSG_SHIP ) {
-		hud_squadmsg_send_ship_command(index, command, 1, player_num);
+		hud_squadmsg_send_ship_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
 	} else if ( type == SQUAD_MSG_WING ) {
-		hud_squadmsg_send_wing_command(index, command, 1, player_num);
+		hud_squadmsg_send_wing_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
 	} else if ( type == SQUAD_MSG_ALL ) {
 		hud_squadmsg_send_to_all_fighters( command, player_num );
 	}
@@ -5434,7 +5434,6 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 			int docker_index = aigp->docker.index;
 			int dockee_index = aigp->dockee.index;
 
-			ai_do_objects_docked_stuff( repair_objp, docker_index, repaired_objp, dockee_index );
 			Ai_info[Ships[repair_objp->instance].ai_index].mode = AIM_DOCK;
 		}
 
@@ -8025,9 +8024,6 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 	object *objp;	
 	int np_index;
 	net_player *ignore = NULL;
-
-	// sanity checking for now
-	Assert ( banks_fired <= 3 );
 
 	// get an object pointer for this ship.
 	objnum = shipp->objnum;

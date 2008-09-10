@@ -1263,7 +1263,7 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 
 	//Depth checking
 	int level = 1;
-	while(*pos++ != EOF_CHAR)
+	while(*pos != EOF_CHAR)
 	{
 		if(!strnicmp(pos, startstr, slen))
 		{
@@ -1278,6 +1278,8 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 		{
 			break;
 		}
+
+		pos++;
 	}
 
 	//Check that we left the file

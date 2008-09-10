@@ -196,6 +196,7 @@
 #define _HUD_SQUADMSG
 
 #include "network/multi.h"
+#include <vector>
 
 #define SM_MODE_TYPE_SELECT			1		//am I going to message a ship or a wing
 #define SM_MODE_SHIP_SELECT			2		//choosing actual ship
@@ -277,6 +278,20 @@ extern comm_order Comm_orders[];
 #define TARGET_MESSAGES	(ENEMY_TARGET_MESSAGES | FRIENDLY_TARGET_MESSAGES)
 
 
+
+typedef struct squadmsg_history {
+	int order_to;			// ship/wing that received the order
+	int order;				// order that the ship/wing received (see defines above)
+	int target;				// target of the order
+	int order_from;			// ship that sent the order
+	int special_index;		// any extra data the order might need (subsystem names for instance)
+	fix order_time;			// when this order was sent (or received by the server in multiplayer)
+	squadmsg_history(): order_to(-1), order(-1), target(-1), order_from(-1), special_index(-1), order_time(0) {};
+} squadmsg_history;
+
+extern std::vector<squadmsg_history> Squadmsg_history; 
+
+/*
 #define SQUADMSG_HISTORY_MAX 160
 
 typedef struct squadmsg_history {
@@ -287,8 +302,10 @@ typedef struct squadmsg_history {
 	squadmsg_history(): ship(-1), order(-1), target(-1) {};
 } squadmsg_history;
 
+
 extern int squadmsg_history_index;
 extern squadmsg_history Squadmsg_history[SQUADMSG_HISTORY_MAX];
+*/
 
 extern int Multi_squad_msg_local;
 extern int Multi_squad_msg_targ; 
@@ -300,15 +317,20 @@ extern void hud_squadmsg_shortcut( int command );	// use of a shortcut key
 extern int hud_squadmsg_hotkey_select( int k );	// a hotkey was hit -- maybe send a message to those ship(s)
 extern void hud_squadmsg_save_keys( int do_scroll = 0 );					// saves into local area keys which need to be saved/restored when in messaging mode
 extern int hud_squadmsg_do_frame();
-extern int hud_query_order_issued(char *name, char *order, char *target);
+extern int hud_query_order_issued(char *to, char *order_name, char *target = NULL, int timestamp = 0, char *from = NULL, char *special_index = NULL);
 extern int hud_squadmsg_read_key( int k );			// called from high level keyboard code
 
 extern void hud_squadmsg_repair_rearm( int toggle_state, object *obj = NULL );
 extern void hud_squadmsg_repair_rearm_abort( int toggle_state, object *obj = NULL );
 extern void hud_squadmsg_rearm_shortcut();
 
-extern int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int player_num = -1 );
-extern int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int player_num = -1 );
+
+#define SQUADMSG_HISTORY_NO_UPDATE		0
+#define SQUADMSG_HISTORY_UPDATE			1
+#define SQUADMSG_HISTORY_ADD_ENTRY		2
+
+extern int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int update_history = SQUADMSG_HISTORY_ADD_ENTRY, int player_num = -1 );
+extern int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int update_history = SQUADMSG_HISTORY_ADD_ENTRY, int player_num = -1 );
 extern void hud_squadmsg_send_to_all_fighters( int command, int player_num = -1 );
 extern void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num = -1);
 

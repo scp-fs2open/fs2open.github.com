@@ -1156,30 +1156,50 @@ private:
 	float total_time;		// in seconds
 public:
 	texture_info();
+	texture_info(int bm_handle);
 	void clear();
+
 	int GetNumFrames();
 	int GetOriginalTexture();
 	int GetTexture();
 	float GetTotalTime();
+
 	int LoadTexture(char *filename, char *dbg_name);
+
 	void PageIn();
 	void PageOut(bool release);
+
 	int ResetTexture();
 	int SetTexture(int n_tex);
 };
 
-#define TM_NUM_TYPES		3		//WMC - This is used for scripting; search for it and update accordingly
+#define TM_BASE_TYPE		0		// the standard base map
+#define TM_GLOW_TYPE		1		// optional glow map
+#define TM_SPECULAR_TYPE	2		// optional specular map
+#define TM_NORMAL_TYPE		3		// optional normal map
+#define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
+#define TM_NUM_TYPES		5		//WMC - Number of texture_info objects in texture_map
+									//Used by scripting - if you change this, do a search
+									//to update switch() statement in lua.cpp
 // taylor
-typedef struct texture_map {
-	texture_info base_map;		// the standard base map
-	texture_info glow_map;		// optional glow map
-	texture_info spec_map;		// optional specular map
-	texture_info norm_map;		// optional normal map
-	texture_info height_map;	// optional height map (for parallax mapping)
+//WMC - OOPified
+class texture_map {
+public:
+	texture_info textures[TM_NUM_TYPES];
 
 	bool is_ambient;
 	bool is_transparent;
-} texture_map;
+public:
+	int FindTexture(int bm_handle);
+	int FindTexture(char *name);
+
+	void PageIn();
+	void PageOut(bool release);
+
+	void Reset();
+};
+
+#define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
 //used to describe a polygon model
 typedef struct polymodel {

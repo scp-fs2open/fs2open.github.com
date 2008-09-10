@@ -173,6 +173,7 @@ typedef struct debris {
 	int		team;					// Team of the ship where the debris came from
 	int		objnum;				// What object this is linked to
 	float		lifeleft;			// When 0 or less object dies
+	int		must_survive_until;	//WMC - timestamp of earliest point that it can be murthered.
 	int		model_num;			// What model this uses
 	int		submodel_num;		// What submodel this uses
 	int		next_fireball;		// When to start a fireball

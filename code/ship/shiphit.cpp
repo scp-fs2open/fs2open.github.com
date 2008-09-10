@@ -762,6 +762,18 @@ typedef struct spark_pair {
 vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
+//WMC - Camera rough draft stuff
+/*
+camid dead_get_camera()
+{
+	static camid dead_camera;
+	if(!dead_camera.isValid())
+		dead_camera = cam_create("Dead camera");
+
+	return dead_camera;
+}
+*/
+
 bool is_subsys_destroyed(ship *shipp, int submodel)
 {
 	ship_subsys *subsys;

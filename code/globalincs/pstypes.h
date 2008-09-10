@@ -504,7 +504,9 @@ typedef unsigned int ptr_u;
 #endif // 64-bit
 
 typedef __int64 longlong;
+typedef __int64 int64;
 typedef unsigned __int64 ulonglong;
+typedef unsigned __int64 uint64;
 typedef unsigned char ubyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
@@ -1092,5 +1094,19 @@ typedef struct script_hook
 	bool IsValid(){return (h_index > -1);}
 }script_hook;
 
+class camid
+{
+private:
+	int sig;
+	uint idx;
+public:
+	camid();
+	camid(int n_idx, int n_sig);
+
+	class camera *getCamera();
+	uint getIndex();
+	int getSignature();
+	bool isValid();
+};
 
 #endif		// PS_TYPES_H
