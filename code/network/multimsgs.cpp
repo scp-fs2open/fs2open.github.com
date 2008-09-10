@@ -5434,7 +5434,6 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 			int docker_index = aigp->docker.index;
 			int dockee_index = aigp->dockee.index;
 
-			ai_do_objects_docked_stuff( repair_objp, docker_index, repaired_objp, dockee_index );
 			Ai_info[Ships[repair_objp->instance].ai_index].mode = AIM_DOCK;
 		}
 
@@ -8025,9 +8024,6 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 	object *objp;	
 	int np_index;
 	net_player *ignore = NULL;
-
-	// sanity checking for now
-	Assert ( banks_fired < (2^MAX_SHIP_PRIMARY_BANKS) );
 
 	// get an object pointer for this ship.
 	objnum = shipp->objnum;
