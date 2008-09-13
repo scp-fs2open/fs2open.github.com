@@ -285,6 +285,15 @@ void afterburners_start(object *objp)
 	Assert( objp->type == OBJ_SHIP);
 	Assert( objp->instance >= 0 && objp->instance < MAX_SHIPS );
 
+	shipp = &Ships[objp->instance];
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
+	sip = &Ship_info[shipp->ship_info_index];
+	
+	// bail if afterburners are locked
+	if (shipp->flags2 & SF2_AFTERBURNER_LOCKED)	{
+		return;
+	}
+
 	if ( (objp->flags & OF_PLAYER_SHIP) && (objp == Player_obj) ) {
 		unsigned int now;
 		now = timer_get_milliseconds();
@@ -305,11 +314,7 @@ void afterburners_start(object *objp)
 
 	//boosters take precedence
 	if (objp->phys_info.flags & PF_BOOSTER_ON)
-		return;
-
-	shipp = &Ships[objp->instance];
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
-	sip = &Ship_info[shipp->ship_info_index];
+		return;	
 	
 	if ( !(sip->flags & SIF_AFTERBURNER) )	{
 		return;

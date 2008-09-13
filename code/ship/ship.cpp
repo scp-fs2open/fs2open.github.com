@@ -16306,8 +16306,10 @@ float ship_get_max_speed(ship *shipp)
 	// normal max speed
 	max_speed = MAX(max_speed, sip->max_vel.xyz.z);
 
-	// afterburn
-	max_speed = MAX(max_speed, sip->afterburner_max_vel.xyz.z);
+	// afterburn if not locked
+	if (!(shipp->flags2 & SF2_AFTERBURNER_LOCKED)) {
+		max_speed = MAX(max_speed, sip->afterburner_max_vel.xyz.z);
+	}
 
 	return max_speed;
 }

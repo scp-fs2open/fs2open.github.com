@@ -1846,6 +1846,8 @@ sexp_oper Operators[] = {
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "change-subsystem-name",		OP_CHANGE_SUBSYSTEM_NAME,		3, INT_MAX },		// Karajorma
+	{ "lock-afterburner",			OP_LOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
+	{ "unlock-afterburner",			OP_UNLOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -12780,6 +12782,44 @@ void sexp_set_weapon (int node, bool primary)
 		}
 	}
 }
+
+// KeldorKatarn - Locks or unlocks the afterburner on the requested ship
+void sexp_deal_with_afterburner_lock (int node, bool lock)
+{
+	ship *shipp;
+	int ship_index;
+
+	Assert (node != -1);
+
+	do {
+		// Check that a ship has been supplied
+		ship_index = ship_name_lookup(CTEXT(node));
+		if (ship_index < 0)	{
+			node = CDR (node);
+			continue ;
+		}
+
+		// Check that it's valid
+		if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS))	{
+			node = CDR (node);
+			continue ;
+		}
+		shipp = &Ships[ship_index];
+
+		// Set the flag
+		if (lock){
+			shipp->flags2 |= SF2_AFTERBURNER_LOCKED;
+			Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+		}
+		else {
+			 shipp->flags2 &= ~SF2_AFTERBURNER_LOCKED;
+		}
+
+		// Go to the next ship.
+		node = CDR (node);
+	} while (node != -1);
+}
+
 // Karajorma - Locks or unlocks the primary or secondary banks on the requested ship
 void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 {
@@ -17280,6 +17320,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// KeldorKatarn
+			case OP_LOCK_AFTERBURNER:
+			case OP_UNLOCK_AFTERBURNER:
+				sexp_deal_with_afterburner_lock(node, op_num == OP_LOCK_AFTERBURNER);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -18001,6 +18048,8 @@ int query_operator_return_type(int op)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_LOCK_AFTERBURNER:
+		case OP_UNLOCK_AFTERBURNER:
 		case OP_RESET_ORDERS:
 		case OP_SET_PERSONA:
 		case OP_CHANGE_SUBSYSTEM_NAME:
@@ -19110,6 +19159,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		// KeldorKatarn		
+		case OP_LOCK_AFTERBURNER:
+		case OP_UNLOCK_AFTERBURNER:
 			return OPF_SHIP;
 
 		case OP_CHANGE_SUBSYSTEM_NAME:
@@ -20365,6 +20417,8 @@ int get_subcategory(int sexp_id)
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
 		case OP_CHANGE_SUBSYSTEM_NAME:
+		case OP_LOCK_AFTERBURNER:	// KeldorKatarn
+		case OP_UNLOCK_AFTERBURNER:	// KeldorKatarn
 
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -22631,6 +22685,20 @@ sexp_help_struct Sexp_help[] = {
 	// Karajorma
 	{ OP_UNLOCK_SECONDARY_WEAPON, "unlock-secondary-weapon\r\n"
 		"\tUnlocks the secondary banks for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+	
+	// KeldorKatarn
+	{ OP_LOCK_AFTERBURNER, "lock-afterburner\r\n"
+		"\tLocks the afterburners on the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+
+	// KeldorKatarn
+	{ OP_UNLOCK_AFTERBURNER, "unlock-afterburner\r\n"
+		"\tUnlocks the afterburners on the specified ship(s)\r\n"
 		"\tTakes 1 or more arguments\r\n"
 		"\t(all): Name(s) of ship(s) to lock"
 	},
