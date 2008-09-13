@@ -1281,6 +1281,7 @@ typedef struct ship_subsys_info {
 #define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 #define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<15)		// Karajorma - When sending messages from this ship use the alt name instead of name
 #define SF2_HIDE_SHIP_NAME					(1<<16)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
+#define SF2_AFTERBURNER_LOCKED				(1<<17)		// KeldorKatarn - This ship can't use its afterburners
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
