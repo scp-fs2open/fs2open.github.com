@@ -4348,10 +4348,17 @@ void detonate_nearby_missiles(object *killer_objp)
 //	Find an object for weapon #num (object *weapon_objp) to home on due to heat.
 void find_homing_object(object *weapon_objp, int num)
 {
-	object		*objp, *old_homing_objp;
-	weapon_info	*wip;
-	weapon		*wp;
-	float			best_dist;
+	object      *objp, *old_homing_objp;
+	weapon_info *wip;
+	weapon      *wp;
+    ship        *sp;
+    ship_info   *sip;
+	float       best_dist;
+    int         homing_object_team;
+    float       dist;
+    float       dot;
+    vec3d       vec_to_object;
+    ship_subsys *target_engines;
 
 	wp = &Weapons[num];
 
@@ -4381,24 +4388,40 @@ void find_homing_object(object *weapon_objp, int num)
 			if((objp->flags & OF_PROTECTED) && (wp->weapon_flags & WF_SPAWNED))
 				continue;
 
-			int homing_object_team = obj_team(objp);
+			homing_object_team = obj_team(objp);
 			if (iff_x_attacks_y(wp->team, homing_object_team))
 			{
-				float		dist;
-				float		dot;
-				vec3d	vec_to_object;
+				if ( objp->type == OBJ_SHIP )
+                {
+                    sp  = &Ships[objp->instance];
+                    sip = &Ship_info[sp->ship_info_index];
 
-				if ( objp->type == OBJ_SHIP ) {
+                    //if the homing weapon is a huge weapon and the ship that is being
+                    //looked at is not huge, then don't home
+                    if ((wip->wi_flags & WIF_HUGE) &&
+                        (sip->flags & (SIF_SMALL_SHIP | SIF_NOT_FLYABLE | SIF_HARMLESS)))
+                    {
+                        continue;
+                    }
+
 					// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
-					if ( Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS ) {
+					if ( sp->flags & SF_HIDDEN_FROM_SENSORS ) {
 						continue;
 					}
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( Ships[objp->instance].flags2 & SF2_STEALTH ) {
+					if ( sp->flags2 & SF2_STEALTH ) {
 						continue;
 					}
+
+                    if (wip->wi_flags & WIF_HOMING_JAVELIN)
+                    {
+                        target_engines = ship_get_closest_subsys_in_sight(sp, SUBSYSTEM_ENGINE, &weapon_objp->pos);
+
+                        if (!target_engines)
+                            continue;
+                    }
 
 					//	MK, 9/4/99.
 					//	If this is a player object, make sure there aren't already too many homers.
@@ -4410,11 +4433,14 @@ void find_homing_object(object *weapon_objp, int num)
 							continue;
 					}
 				}
-
-				//don't look for local ssms that are gone for the time being
-				if (objp->type == OBJ_WEAPON)
+                else if (objp->type == OBJ_WEAPON)
 				{
-					if (Weapons[objp->instance].lssm_stage==3)
+                    //don't attempt to home on weapons if the weapon is a huge weapon or is a javelin homing weapon.
+                    if (wip->wi_flags & (WIF_HUGE | WIF_HOMING_JAVELIN))
+                        continue;
+                    
+                    //don't look for local ssms that are gone for the time being
+					if (Weapons[objp->instance].lssm_stage == 3)
 						continue;
 				}
 
@@ -4425,14 +4451,6 @@ void find_homing_object(object *weapon_objp, int num)
 				}
 
 				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
-
-				ship_subsys *target_engines = NULL;
-				if (wip->wi_flags & WIF_HOMING_JAVELIN && objp->type == OBJ_SHIP) {
-					ship *target_ship = &Ships[ship_get_by_signature(objp->signature)];
-					target_engines = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &objp->pos);
-					if (target_engines == NULL)
-						continue;
-				}
 
 				if (dot > wip->fov) {
 					if (dist < best_dist) {
@@ -4447,9 +4465,6 @@ void find_homing_object(object *weapon_objp, int num)
 			}
 		}
 	}
-
-//	if (wp->homing_object->type == OBJ_CMEASURE)
-//		nprintf(("AI", "Frame %i: Weapon #%i homing on cmeasure #%i\n", Framecount, num, objp-Objects));
 
 	if (wp->homing_object == Player_obj)
 		weapon_maybe_play_warning(wp);
@@ -4622,9 +4637,11 @@ void weapon_home(object *obj, int num, float frame_time)
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < wip->free_flight_time )) {
 		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing
 		//	and we don't have a target (else we wouldn't be inside the IF), find a new target.
-		if (wip->wi_flags & WIF_HOMING_HEAT)
-			if ( f2fl(Missiontime - wp->creation_time) > 0.5f )
-				find_homing_object(obj, num);
+        if ((wip->wi_flags & WIF_HOMING_HEAT) &&
+            (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time))
+        {
+            find_homing_object(obj, num);
+        }
 
 		if (obj->phys_info.speed > max_speed) {
 			obj->phys_info.speed -= frame_time * 4;
