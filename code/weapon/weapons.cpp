@@ -4358,7 +4358,7 @@ void find_homing_object(object *weapon_objp, int num)
     float       dist;
     float       dot;
     vec3d       vec_to_object;
-    ship_subsys *target_engines;
+    ship_subsys *target_engines = NULL;
 
 	wp = &Weapons[num];
 
