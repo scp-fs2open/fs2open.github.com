@@ -504,9 +504,7 @@ typedef unsigned int ptr_u;
 #endif // 64-bit
 
 typedef __int64 longlong;
-typedef __int64 int64;
 typedef unsigned __int64 ulonglong;
-typedef unsigned __int64 uint64;
 typedef unsigned char ubyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
