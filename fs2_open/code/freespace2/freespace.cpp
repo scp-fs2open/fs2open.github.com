@@ -5250,6 +5250,8 @@ extern vec3d Dead_camera_pos;
 //	Set eye_pos and eye_orient based on view mode.
 camid game_render_frame_setup()
 {
+    bool fov_changed;
+
 	if(!Main_camera.isValid())
 	{
 		Main_camera = cam_create("Main camera");
@@ -5269,6 +5271,8 @@ camid game_render_frame_setup()
 	static int last_Game_mode = 0;
 	static int last_Viewer_objnum = -1;
 	static float last_FOV = Sexp_fov;
+
+    fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
@@ -5296,7 +5300,7 @@ camid game_render_frame_setup()
 			((last_Viewer_mode & VM_FREECAMERA) && !(Viewer_mode & VM_FREECAMERA)) ||
 			(!(last_Viewer_mode & VM_TOPDOWN) && (Viewer_mode & VM_TOPDOWN)) ||
 			((last_Viewer_mode & VM_TOPDOWN) && !(Viewer_mode & VM_TOPDOWN)) ||
-			(last_FOV != Sexp_fov) ||
+			(fov_changed) ||
 			((Viewer_mode & VM_OTHER_SHIP) && (last_Viewer_objnum != Player_ai->target_objnum)) 		// other ship mode, but targets changes
 			) {
 
@@ -5306,7 +5310,7 @@ camid game_render_frame_setup()
 
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
-		|| (last_FOV != Sexp_fov)
+		|| (fov_changed)
 		|| (Viewer_mode & VM_FREECAMERA))	{
 		//mprintf(( "************** Camera cut! ************\n" ));
 		last_Viewer_mode = Viewer_mode;
