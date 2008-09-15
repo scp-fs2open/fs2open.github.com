@@ -565,7 +565,7 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "parse/scripting.h"
-
+#include "asteroid/asteroid.h"
 
 
 
@@ -2000,7 +2000,40 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		if (model_collide(&mc))	{
 			return 1;
 		}
-	}	
+	}
+
+    // check asteroids
+    asteroid *ast = Asteroids;
+
+    if (Asteroid_field.num_initial_asteroids <= 0 )
+    {
+        return 0;
+    }
+
+    for (i = 0 ; i < MAX_ASTEROIDS; i++, ast++)
+    {
+        if (!(ast->flags & AF_USED))
+        {
+            continue;
+        }
+
+        objp = &Objects[ast->objnum];
+
+        vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+
+		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
+		mc.submodel_num = -1;
+		model_clear_instance( mc.model_num );
+		mc.orient = &objp->orient;					// The object's orient
+		mc.pos = &objp->pos;							// The object's position
+		mc.p0 = &rp0;				// Point 1 of ray to check
+		mc.p1 = &rp1;					// Point 2 of ray to check
+		mc.flags = MC_CHECK_MODEL;
+
+		if (model_collide(&mc))	{
+			return 1;
+		}
+    }
 
 	// not in shadow
 	return 0;
