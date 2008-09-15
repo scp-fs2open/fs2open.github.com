@@ -3598,7 +3598,16 @@ void weapon_select_do(float frametime)
 
 				anim_release_render_instance(icon->wl_anim_instance);
 				anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
-				aps.start_at = WEAPON_ANIM_LOOP_FRAME-1;
+
+                if (icon->wl_anim->num_keys > 1)
+                {
+                    aps.start_at = icon->wl_anim->keys[1].frame_num - 1;
+                }
+                else
+                {
+                    aps.start_at = WEAPON_ANIM_LOOP_FRAME - 1;
+                }
+
 				aps.screen_id = ON_WEAPON_SELECT;
 				aps.framerate_independent = 1;
 				aps.skip_frames = 0;
