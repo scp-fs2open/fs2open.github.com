@@ -2073,13 +2073,30 @@ void ship_select_do(float frametime)
 	{
 		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim != NULL) )
 		{
-			if ( Ss_icons[Selected_ss_class].ss_anim_instance->frame_num == Ss_icons[Selected_ss_class].ss_anim_instance->stop_at ) { 
-				nprintf(("anim", "Frame number = %d, Stop at %d\n", Ss_icons[Selected_ss_class].ss_anim_instance->frame_num, Ss_icons[Selected_ss_class].ss_anim_instance->stop_at));
+            ss_icon_info* ssi = &Ss_icons[Selected_ss_class];
+
+			if ( ssi->ss_anim_instance->frame_num == ssi->ss_anim_instance->stop_at ) { 
+				nprintf(("anim", "Frame number = %d, Stop at %d\n", ssi->ss_anim_instance->frame_num, ssi->ss_anim_instance->stop_at));
 				anim_play_struct aps;
-				anim_release_render_instance(Ss_icons[Selected_ss_class].ss_anim_instance);
-				anim_play_init(&aps, Ss_icons[Selected_ss_class].ss_anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
-				aps.start_at = SHIP_ANIM_LOOP_FRAME;
-//				aps.start_at = 0;
+				anim_release_render_instance(ssi->ss_anim_instance);
+				anim_play_init(&aps, ssi->ss_anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
+				
+                if (ssi->ss_anim->num_keys > 1)
+                {
+                    if (ssi->ss_anim->keys[1].frame_num > ssi->ss_anim->keys[0].frame_num)
+                    {
+                        aps.start_at = ssi->ss_anim->keys[1].frame_num - 1;
+                    }
+                    else
+                    {
+                        aps.start_at = ssi->ss_anim->keys[0].frame_num - 1;
+                    }
+                }
+                else
+                {
+                    aps.start_at = SHIP_ANIM_LOOP_FRAME;
+                }
+
 				aps.screen_id = ON_SHIP_SELECT;
 				aps.framerate_independent = 1;
 				aps.skip_frames = 0;
