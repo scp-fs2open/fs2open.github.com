@@ -3601,7 +3601,14 @@ void weapon_select_do(float frametime)
 
                 if (icon->wl_anim->num_keys > 1)
                 {
-                    aps.start_at = icon->wl_anim->keys[1].frame_num - 1;
+                    if (icon->wl_anim->keys[1].frame_num > icon->wl_anim->keys[0].frame_num)
+                    {
+                        aps.start_at = icon->wl_anim->keys[1].frame_num - 1;
+                    }
+                    else
+                    {
+                        aps.start_at = icon->wl_anim->keys[0].frame_num - 1;
+                    }
                 }
                 else
                 {
