@@ -5655,9 +5655,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->hull_strength = 0.0f;
 	}
 
-	if ( wip->subtype == WP_MISSILE ) {
+	if ( wip->render_type == WRT_POF ) {
 		objp->radius = model_get_radius(wip->model_num);
-	} else if ( wip->subtype == WP_LASER ) {
+	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
 	}
 
