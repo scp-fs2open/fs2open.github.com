@@ -567,7 +567,16 @@ void gr_opengl_line_htl(vec3d *start, vec3d *end)
 
 	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+
+    if (gr_screen.current_color.is_alphacolor)
+    {
+        GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+    }
+    else
+    {
+	    GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+    }
+
 	GL_state.SetZbufferType(zbuffer_state);
 
 	glBegin(GL_LINES);
