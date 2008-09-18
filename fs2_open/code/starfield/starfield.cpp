@@ -1859,7 +1859,7 @@ void stars_draw_sun_glow(int sun_n)
 	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
 
-	if ( bm->flare && !(sun_vex.codes & CC_OFF) ) //if sun isn't off-screen, and is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
+	if ( bm->flare ) //if the sun is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
 		stars_draw_lens_flare(&sun_vex, sun_n);
 }
 
