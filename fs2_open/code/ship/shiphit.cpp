@@ -1198,19 +1198,23 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	}
 
 	int dmg_type_idx = -1;
-	if(other_obj->type == OBJ_SHOCKWAVE) {
-		dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-	} else if(other_obj->type == OBJ_WEAPON) {
-		dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-	} else if(other_obj->type == OBJ_BEAM) {
-		dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
-	} else if(other_obj->type == OBJ_ASTEROID) {
-		dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
-	} else if(other_obj->type == OBJ_DEBRIS) {
-		dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
-	} else if(other_obj->type == OBJ_SHIP) {
-		dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
-	}
+
+    if (other_obj)
+    {
+        if(other_obj->type == OBJ_SHOCKWAVE) {
+            dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+        } else if(other_obj->type == OBJ_WEAPON) {
+            dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+        } else if(other_obj->type == OBJ_BEAM) {
+            dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+        } else if(other_obj->type == OBJ_ASTEROID) {
+            dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+        } else if(other_obj->type == OBJ_DEBRIS) {
+            dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+        } else if(other_obj->type == OBJ_SHIP) {
+            dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
+        }
+    }
 
 	//This function is screwy
 	if(count)
