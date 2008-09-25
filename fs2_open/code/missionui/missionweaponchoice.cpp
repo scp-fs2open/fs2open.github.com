@@ -1965,7 +1965,7 @@ void wl_load_icons(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
-	if(!Cmdline_ship_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
+	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
 	{
 		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
 
@@ -2008,7 +2008,7 @@ void wl_load_anim(int weapon_class)
 	icon = &Wl_icons[weapon_class];
 	Assert( icon->wl_anim == NULL );
 	
-	if(!Cmdline_ship_choice_3d || wip->render_type == WRT_LASER)
+	if(!Cmdline_weapon_choice_3d || wip->render_type == WRT_LASER)
 	{
 		// 1024x768 SUPPORT
 		// If we are in 1024x768, we first want to append "2_" in front of the filename
