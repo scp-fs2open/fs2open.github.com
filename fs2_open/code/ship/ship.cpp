@@ -9677,6 +9677,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship			*sp;
 	object		*objp;
 	float hull_pct, shield_pct;
+	physics_info ph_inf;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
@@ -9703,6 +9704,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		} else {
 			shield_pct = 0.0f;
 		}
+
+		// physics
+		ph_inf = objp->phys_info;
 	}
 	// set to 100% otherwise
 	else
@@ -9770,7 +9774,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
 
-
 	// subsys stuff done only after hull stuff is set
 
 	// if the subsystem list is not currently empty, then we need to clear it out first.
@@ -9788,6 +9791,27 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
 	ets_init_ship(&Objects[sp->objnum]);
+
+	// Reset physics to previous values
+	if (by_sexp) {
+		Objects[sp->objnum].phys_info.desired_rotvel = ph_inf.desired_rotvel;
+		Objects[sp->objnum].phys_info.desired_vel = ph_inf.desired_vel;
+		Objects[sp->objnum].phys_info.forward_thrust = ph_inf.forward_thrust;
+		Objects[sp->objnum].phys_info.fspeed = ph_inf.fspeed;
+		Objects[sp->objnum].phys_info.heading = ph_inf.heading;
+		Objects[sp->objnum].phys_info.last_rotmat = ph_inf.last_rotmat;
+		Objects[sp->objnum].phys_info.prev_fvec = ph_inf.prev_fvec;
+		Objects[sp->objnum].phys_info.prev_ramp_vel = ph_inf.prev_ramp_vel;
+		Objects[sp->objnum].phys_info.reduced_damp_decay = ph_inf.reduced_damp_decay;
+		Objects[sp->objnum].phys_info.rotvel = ph_inf.rotvel;
+		Objects[sp->objnum].phys_info.shockwave_decay = ph_inf.shockwave_decay;
+		Objects[sp->objnum].phys_info.shockwave_shake_amp = ph_inf.shockwave_shake_amp;
+		Objects[sp->objnum].phys_info.side_thrust = ph_inf.side_thrust;
+		Objects[sp->objnum].phys_info.speed = ph_inf.speed;
+		Objects[sp->objnum].phys_info.vel = ph_inf.vel;
+		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
+	}
+
 	// mwa removed the next line in favor of simply setting the ai_class in AI_info.  ai_object_init
 	// was trashing mode in ai_info when it was valid due to goals.
 	//ai_object_init(&Objects[sp->objnum], sp->ai_index);
