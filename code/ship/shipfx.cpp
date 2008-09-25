@@ -4433,7 +4433,10 @@ int WE_Default::warpStart()
 	fvec = Objects[warp_objnum].orient.vec.fvec;
 	if (portal_objp != NULL)
 	{
-		if (vm_vec_dotprod(&fvec, &objp->orient.vec.fvec) > 0)
+        float dot = vm_vec_dotprod(&fvec, &objp->orient.vec.fvec);
+
+		if ((dot < 0) && (direction == WD_WARP_IN) ||
+            ((dot > 0) && (direction == WD_WARP_OUT)))
 		{
 			vm_vec_negate(&fvec);
 		}
@@ -4518,7 +4521,7 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) && vm_dist_to_plane(&objp->pos, &fvec, &pos) > back_len)
+		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) && (vm_dist_to_plane(&objp->pos, &fvec, &pos) > back_len))
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();
