@@ -1303,6 +1303,10 @@ int    Current_file_length   = 0;
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 int Mission_alt_type_count = 0;
 
+// callsigns
+char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
+int Mission_callsign_count = 0;
+
 #define SHIP_WARP_TIME 5.0f		// how many seconds it takes for ship to warp in
 
 // the ship arrival list will contain a list of ships that are yet to arrive.  This
@@ -1487,7 +1491,6 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-death-scream",
 	"always-death-scream",
 	"nav-needslink",
-	"use-alt-name-as-callsign",
 	"hide-ship-name",
 };
 
@@ -1901,19 +1904,32 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 void parse_player_info(mission *pm)
 {
-	char alt[NAME_LENGTH];
+	char temp[NAME_LENGTH];
 	Assert(pm != NULL);
 
-// alternate type names begin here	
+	// alternate type names begin here	
 	mission_parse_reset_alt();
 	if(optional_string("#Alternate Types:")){		
 		// read them all in
 		while(!optional_string("#end")){
 			required_string("$Alt:");
-			stuff_string(alt, F_NAME, NAME_LENGTH);
+			stuff_string(temp, F_NAME, NAME_LENGTH);
 
 			// maybe store it
-			mission_parse_add_alt(alt);			
+			mission_parse_add_alt(temp);			
+		}
+	}
+	
+	// callsigns begin here	
+	mission_parse_reset_callsign();
+	if(optional_string("#Callsigns:")){		
+		// read them all in
+		while(!optional_string("#end")){
+			required_string("$Callsign:");
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+
+			// maybe store it
+			mission_parse_add_callsign(temp);			
 		}
 	}
 	
@@ -2887,8 +2903,9 @@ int parse_create_object_sub(p_object *p_objp)
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
 
-	// alternate type name
+	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
+	shipp->callsign_index = p_objp->callsign_index;
 
 	aip->ai_class = p_objp->ai_class;
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
@@ -3417,9 +3434,6 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags2 & P2_SF2_NAV_NEEDSLINK)
 		shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
 	
-	if (parse_flags2 & P2_SF2_USE_ALT_NAME_AS_CALLSIGN)
-		shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
-	
 	if (parse_flags2 & P2_SF2_HIDE_SHIP_NAME)
 		shipp->flags2 |= SF2_HIDE_SHIP_NAME;
 }
@@ -3474,7 +3488,23 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		if(p_objp->alt_type_index < 0)
 			mprintf(("Error looking up alternate ship type name!\n"));
 		else
-			mprintf(("Using alternate ship type name : %s\n", name));
+			mprintf(("Using alternate ship type name: %s\n", name));
+	}
+
+	// optional callsign
+	p_objp->callsign_index = -1;
+	if(optional_string("$Callsign:"))
+	{
+		// alternate callsign
+		stuff_string(name, F_NAME, NAME_LENGTH);
+
+		// try and find the callsign
+		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
+		Assert(p_objp->callsign_index >= 0);
+		if(p_objp->callsign_index < 0)
+			mprintf(("Error looking up callsign!\n"));
+		else
+			mprintf(("Using callsign: %s\n", name));
 	}
 
 	// static alias stuff - stupid, but it seems to be necessary
@@ -7881,6 +7911,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->wing_status_wing_pos = -1;
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
+	pobj->callsign_index = -1;
 	pobj->num_texture_replacements = 0;
 }
 
@@ -7973,7 +8004,7 @@ void mission_parse_lookup_alt_index(int index, char *out)
 	if(out == NULL){
 		return;
 	}
-	if((index < 0) || (index > Mission_alt_type_count)){
+	if((index < 0) || (index >= Mission_alt_type_count)){
 		if (mission_parse_lookup_alt_index_warn) {
 			Warning(LOCATION, "Ship with invalid alt_name.  Get a programmer");
 			mission_parse_lookup_alt_index_warn = 0;
@@ -8007,6 +8038,70 @@ int mission_parse_add_alt(char *name)
 void mission_parse_reset_alt()
 {
 	Mission_alt_type_count = 0;
+}
+
+// callsign stuff
+int mission_parse_lookup_callsign(char *name)
+{
+	int idx;
+
+	// sanity
+	if(name == NULL){
+		return -1;
+	}
+
+	// lookup
+	for(idx=0; idx<Mission_callsign_count; idx++){
+		if(!strcmp(Mission_callsigns[idx], name)){
+			return idx;
+		}
+	}
+
+	// could not find
+	return -1;
+}
+
+static int mission_parse_lookup_callsign_index_warn = 1;
+void mission_parse_lookup_callsign_index(int index, char *out)
+{
+	// sanity
+	if(out == NULL){
+		return;
+	}
+	if((index < 0) || (index >= Mission_callsign_count)){
+		if (mission_parse_lookup_callsign_index_warn) {
+			Warning(LOCATION, "Ship with invalid callsign.  Get a programmer");
+			mission_parse_lookup_callsign_index_warn = 0;
+		}
+		return;
+	}
+
+	// stuff it
+	strcpy(out, Mission_callsigns[index]);
+}
+
+int mission_parse_add_callsign(char *name)
+{
+	// sanity
+	if(name == NULL){
+		return -1;
+	}
+
+	// maybe add
+	if(Mission_callsign_count < MAX_CALLSIGNS){
+		// stuff the name
+		strncpy(Mission_callsigns[Mission_callsign_count++], name, NAME_LENGTH);
+
+		// done
+		return Mission_callsign_count - 1;
+	}
+
+	return -1;
+}
+
+void mission_parse_reset_callsign()
+{
+	Mission_callsign_count = 0;
 }
 
 int is_training_mission()

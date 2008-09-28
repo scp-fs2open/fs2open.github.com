@@ -1215,46 +1215,13 @@ void hud_render_target_ship_info(object *target_objp)
 	ship			*target_shipp;
 	ship_info	*target_sip;
 	int			w, h, screen_integrity = 1;
-	char			ship_name[NAME_LENGTH+1], ship_class[NAME_LENGTH+1], alt_name[NAME_LENGTH+2], ship_name_with_callsign[NAME_LENGTH*2 + 5];
-	char			*outstr;
+	char			outstr[NAME_LENGTH], outstr_ship[NAME_LENGTH * 2 + 5];
 	float			ship_integrity, shield_strength;
 
 	Assert(target_objp);	// Goober5000
 	Assert(target_objp->type == OBJ_SHIP);
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
-
-	// --- prepare text ---
-
-	// get names
-	strcpy(ship_name, target_shipp->ship_name);
-	strcpy(ship_class, Ship_info[target_shipp->ship_info_index].name);
-	if (target_shipp->alt_type_index >= 0) {
-		mission_parse_lookup_alt_index(target_shipp->alt_type_index, alt_name);
-	} else {
-		strcpy(alt_name, "");
-	}
-
-	// handle hash symbols
-	end_string_at_first_hash_symbol(ship_name);
-	end_string_at_first_hash_symbol(ship_class);
-	end_string_at_first_hash_symbol(alt_name);
-
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name(ship_name);
-		lcl_translate_targetbox_name(ship_class);
-		lcl_translate_targetbox_name(alt_name);
-	}
-
-	// figure out if we do a callsign thing
-	if ((target_shipp->flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) && (*alt_name)) {
-		sprintf(ship_name_with_callsign, "%s (%s)", ship_name, alt_name);
-	} else {
-		strcpy(ship_name_with_callsign, "");
-	}
-
-	// --- done preparing ---
 
 	// set up colors
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {
@@ -1268,25 +1235,10 @@ void hud_render_target_ship_info(object *target_objp)
 		}
 	}
 
-	// print ship name
-	if ( (Iff_info[target_shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (target_shipp->wingnum != -1) ) {
-		outstr = "";
-	} else if (target_shipp->flags2 & SF2_HIDE_SHIP_NAME) {
-		outstr = "";
-	} else if (*ship_name_with_callsign) {
-		outstr = ship_name_with_callsign;
-	} else {
-		outstr = ship_name;
-	}
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr);	
-
-	// print ship class
-	if (*alt_name && !*ship_name_with_callsign) {
-		outstr = alt_name;
-	} else {
-		outstr = ship_class;
-	}
-	emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, outstr);
+	// print lines
+	hud_stuff_target_lines(target_shipp, outstr_ship, outstr);
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr_ship);	
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, outstr);
 
 	// ----------
 
@@ -1305,7 +1257,7 @@ void hud_render_target_ship_info(object *target_objp)
 		}
 	}
 	// Print out right-justified integrity
-	sprintf(outstr,XSTR( "%d%%", 341), screen_integrity);
+	sprintf(outstr, XSTR( "%d%%", 341), screen_integrity);
 	gr_get_string_size(&w,&h,outstr);
 
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {

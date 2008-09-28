@@ -1987,9 +1987,9 @@ void message_queue_process()
 	
 	strncpy (who_from, q->who_from, NAME_LENGTH);
 
-	// if this is a ship do we use name or alt name?
-	if ( Message_shipnum != -1 && (Ships[Message_shipnum].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) ) {
-		mission_parse_lookup_alt_index(Ships[Message_shipnum].alt_type_index, who_from); 
+	// if this is a ship do we use name or callsign?
+	if ( Message_shipnum >= 0 && Ships[Message_shipnum].callsign_index >= 0 ) {
+		mission_parse_lookup_callsign_index(Ships[Message_shipnum].callsign_index, who_from); 
 	}
 
 	end_string_at_first_hash_symbol(who_from);

@@ -421,10 +421,10 @@ void VoiceActingManager::OnGenerateScript()
 			strcpy(sender, get_message_sender(message->name));
 			int shipnum = ship_name_lookup(sender);
 
-			// we may have to use the alt name
-			if ((shipnum >= 0) && (Ships[shipnum].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) && (*Fred_alt_names[shipnum]))
+			// we may have to use the callsign
+			if ((shipnum >= 0) && (*Fred_callsigns[shipnum]))
 			{
-				entry.Replace("$sender", Fred_alt_names[shipnum]);
+				entry.Replace("$sender", Fred_callsigns[shipnum]);
 			}
 			// use the regular sender text
 			else

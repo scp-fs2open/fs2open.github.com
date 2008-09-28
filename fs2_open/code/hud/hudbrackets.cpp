@@ -837,47 +837,25 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		object* t_objp = &Objects[target_objnum];
 		char* tinfo_name = NULL;
 		char* tinfo_class = NULL;
-		char temp[NAME_LENGTH];
-		char buffer[NAME_LENGTH];
+		char temp_name[NAME_LENGTH * 2 + 5];
+		char temp_class[NAME_LENGTH];
 		char empty='\0';
 
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-//				if ( Cmdline_wcsaga &&
-//					(Ships[t_objp->instance].wingnum >= 0) && 
-//					(iff_x_attacks_y(Player_ship->team, Ships[t_objp->instance].team)) )
-//	Backslash - Instead of rely on command line, let's use a flag in Iff_defs.tbl
-				if ( (Iff_info[Ships[t_objp->instance].team].flags & IFFF_WING_NAME_HIDDEN) && (Ships[t_objp->instance].wingnum != -1) ) {
-					tinfo_name = &empty;
-				} else if (Ships[t_objp->instance].flags2 & SF2_HIDE_SHIP_NAME ) {
-					tinfo_name = &empty;
-				} else {
-					strcpy(temp, Ships[t_objp->instance].ship_name);
-					end_string_at_first_hash_symbol(temp);
-					tinfo_name = temp;
-				}
-				
-				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
-				
-				// if this ship has an alternate type name
-				if(Ships[t_objp->instance].alt_type_index >= 0){
-					mission_parse_lookup_alt_index(Ships[t_objp->instance].alt_type_index, buffer);
-				} else {
-					strcpy(buffer, Ship_info[Ships[t_objp->instance].ship_info_index].name);	
-				}
-				end_string_at_first_hash_symbol(buffer);
-				tinfo_class = buffer;
-
+				hud_stuff_target_lines(&Ships[t_objp->instance], temp_name, temp_class);
+				tinfo_name = temp_name;
+				tinfo_class = temp_class;
 				break;
 
 			case OBJ_DEBRIS:
 				tinfo_name = XSTR( "Debris", 348);
 				break;
 			case OBJ_WEAPON:
-				strcpy(buffer, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
-				end_string_at_first_hash_symbol(buffer);
-				tinfo_name = buffer;
+				strcpy(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
+				end_string_at_first_hash_symbol(temp_name);
+				tinfo_name = temp_name;
 				break;
 			case OBJ_ASTEROID:
 				switch(Asteroids[t_objp->instance].asteroid_type)

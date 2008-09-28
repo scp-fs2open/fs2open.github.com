@@ -5962,6 +5962,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
 	shipp->alt_type_index = -1;
+	shipp->callsign_index = -1;
 
 	shipp->lightning_stamp = -1;
 
