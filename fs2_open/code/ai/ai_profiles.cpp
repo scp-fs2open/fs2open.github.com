@@ -333,6 +333,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT);
 
+			set_flag(profile, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT);
+
 			set_flag(profile, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE);
 			
 			set_flag(profile, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS);

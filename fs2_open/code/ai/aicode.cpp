@@ -6033,7 +6033,12 @@ void evade_ship()
 		float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 		if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 			afterburners_start(Pl_objp);
-			aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+			
+			if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+				aip->afterburner_stop_time = Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4;
+			} else {				
+				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+			}
 		}
 	}
 
@@ -7584,8 +7589,30 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 					if (sip->afterburner_fuel_capacity > 0.0f) {
 						percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
-							afterburners_start(Pl_objp);
-							aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+							afterburners_start(Pl_objp);							
+							if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+								float max_ab_vel;
+								float time_to_exhaust_25pct_fuel;
+								float time_to_fly_75pct_of_distance;
+								float ab_time;
+
+								// Max afterburner speed - make sure we don't devide by 0 later
+								max_ab_vel = sip->afterburner_max_vel.xyz.z > 0.0f ? sip->afterburner_max_vel.xyz.z : sip->max_vel.xyz.z;
+								max_ab_vel = max_ab_vel > 0.0f ? max_ab_vel : 0.0001f;
+
+								// Time to exhaust 25% of the remaining fuel
+								time_to_exhaust_25pct_fuel = shipp->afterburner_fuel * 0.25f / sip->afterburner_burn_rate;
+
+								// Time to fly 75% of the distance to the target
+								time_to_fly_75pct_of_distance = dist_to_enemy * 0.75f / max_ab_vel;
+
+								// Get minimum
+								ab_time = min(time_to_exhaust_25pct_fuel, time_to_fly_75pct_of_distance);								
+								
+								aip->afterburner_stop_time = Missiontime + F1_0 * ab_time;
+							} else {				
+								aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+							}
 						}
 					}
 				}
