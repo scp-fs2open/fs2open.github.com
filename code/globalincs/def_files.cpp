@@ -791,6 +791,7 @@ $Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 ;; percentage of the capships score when someone scores a kill			\n\
 $Percentage Awarded For Capship Assist: 0.5, 0.5, 0.5, 0.5, 0.5			\n\
 																		\n\
+																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
 																		\n\
@@ -806,10 +807,15 @@ $smart primary weapon selection: NO										\n\
 ;; proper use of bomber+ missiles)										\n\
 $smart secondary weapon selection: NO									\n\
 																		\n\
-;; if set, enables smart shield management (previously was				\n\
-;; -smart_shields on the command line)									\n\
+;; if set, shields will devote all their charging energy to the weakest	\n\
+;; quadrant(s) and not waste energy on fully-charged quadrants			\n\
+;; (previously was -smart_shields on the command line)					\n\
 $smart shield management: NO											\n\
 																		\n""\
+;; if set, the AI will properly use brief pulses of afterburner power	\n\
+;; instead of afterburning until fuel is exhausted						\n\
+$smart afterburner management: NO										\n\
+																		\n\
 ;; if set, allows an AI ship to switch to rapid fire for dumbfire		\n\
 ;; missiles																\n\
 $allow rapid secondary dumbfire: NO										\n\
@@ -835,11 +841,11 @@ $shockwaves damage small ship subsystems: NO							\n\
 ;; navigation subsystem is damaged or destroyed							\n\
 $navigation subsystem governs warpout capability: NO					\n\
 																		\n\
-;; if set, will not use a minimum speed limit for docked ships			\n\
+;; if set, will not use a minimum speed limit for docked ships			\n""\
 ;; (like in FS1)														\n\
 $ignore lower bound for minimum speed of docked ship: NO				\n\
 																		\n\
-;; if set, will remove the increased delay when weapons are linked		\n""\
+;; if set, will remove the increased delay when weapons are linked		\n\
 $disable linked fire penalty: NO										\n\
 																		\n\
 ;; if set, will not scale weapon damage according to capital/supercap	\n\
