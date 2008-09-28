@@ -2242,7 +2242,7 @@ BEGIN
                     WS_TABSTOP,166,114,97,10
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",
                     BS_3STATE | WS_TABSTOP,166,124,97,10
-    CONTROL         "Use Alt Name In Messages",IDC_ALT_AS_CALLSIGN,"Button",
+    CONTROL         "Use Alt Name As Callsign",IDC_ALT_AS_CALLSIGN,"Button",
                     BS_3STATE | WS_TABSTOP,166,134,99,10
     CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | 
                     WS_TABSTOP,166,144,99,10

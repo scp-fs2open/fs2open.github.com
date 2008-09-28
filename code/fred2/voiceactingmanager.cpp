@@ -405,14 +405,38 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("\r\n", "\n");
 
 			MMessage *message = &Messages[i + Num_builtin_messages];
+
+			// replace file name
 			entry.Replace("$filename", message->wave_info.name);
+
+			// determine and replace persona
 			entry.Replace("$message", message->message);
 			if (message->persona_index >= 0)
 				entry.Replace("$persona", Personas[message->persona_index].name);
 			else
 				entry.Replace("$persona", "<none>");
-			entry.Replace("$sender", get_message_sender(message->name));
-	
+
+			// determine sender
+			char sender[NAME_LENGTH+1];
+			strcpy(sender, get_message_sender(message->name));
+			int shipnum = ship_name_lookup(sender);
+
+			// we may have to use the alt name
+			if ((shipnum >= 0) && (Ships[shipnum].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) && (Fred_alt_names[shipnum][0] != '\0'))
+			{
+				entry.Replace("$sender", Fred_alt_names[shipnum]);
+			}
+			// use the regular sender text
+			else
+			{
+				// skip past the first # when truncating a name,
+				// in case of something like #Command or #Alpha 1
+				end_string_at_first_hash_symbol(&sender[1]);
+
+				// replace sender
+				entry.Replace("$sender", sender);
+			}
+
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
 	}
