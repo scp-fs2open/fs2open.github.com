@@ -120,6 +120,10 @@ typedef struct ai_profile_t {
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
 	float ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS];
 
+	//	Multiplicative secondary delay factors for increasing skill levels.
+	float ship_fire_secondary_delay_scale_hostile[NUM_SKILL_LEVELS];
+	float ship_fire_secondary_delay_scale_friendly[NUM_SKILL_LEVELS];
+
 	//	Maximum turrets of one ship allowed to shoot the same target
 	int max_turret_ownage_target[NUM_SKILL_LEVELS];
 	int max_turret_ownage_player[NUM_SKILL_LEVELS];

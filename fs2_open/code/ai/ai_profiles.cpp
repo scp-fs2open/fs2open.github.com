@@ -301,6 +301,12 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Hostile AI Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Friendly AI Secondary Fire Delay Scale:"))
+				parse_float_list(profile->ship_fire_secondary_delay_scale_friendly, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
+				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
+
 			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 

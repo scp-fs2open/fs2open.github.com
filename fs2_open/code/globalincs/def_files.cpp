@@ -762,6 +762,12 @@ $Friendly AI Fire Delay Scale: 2, 1.4, 1.25, 1.1, 1						\n\
 ;; factor applied to 'fire wait' for hostile ships						\n\
 $Hostile AI Fire Delay Scale: 4, 2.5, 1.75, 1.25, 1						\n\
 																		\n\
+;; factor applied to 'fire wait' for secondaries of friendly ships		\n\
+$Friendly AI Secondary Fire Delay Scale: 0.4, 0.6, 0.8, 1.0, 1.2		\n\
+																		\n\
+;; factor applied to 'fire wait' for secondaries of hostile ships		\n\
+$Hostile AI Secondary Fire Delay Scale: 1.4, 1.2, 1.0, 0.8, 0.6			\n\
+																		\n\
 ;; factor applied to time it takes for enemy ships to turn				\n\
 $AI Turn Time Scale: 3, 2.2, 1.6, 1.3, 1								\n\
 																		\n\

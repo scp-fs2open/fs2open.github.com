@@ -8668,10 +8668,9 @@ float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip)
 {
 	float t = swip->fire_wait;		//	Base delay for this weapon.
 	if (shipp->team == Player_ship->team) {
-		//	On player's team, _lower_ skill level = faster firing
-		t = t * (Game_skill_level+2) / (NUM_SKILL_LEVELS);
-	} else {		//	Not on player's team, higher skill level = faster firing
-		t = t * (NUM_SKILL_LEVELS - Game_skill_level+2) / (NUM_SKILL_LEVELS);
+		t *= The_mission.ai_profile->ship_fire_secondary_delay_scale_friendly[Game_skill_level];
+	} else {
+		t *= The_mission.ai_profile->ship_fire_secondary_delay_scale_hostile[Game_skill_level];
 	}
 
 	t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
