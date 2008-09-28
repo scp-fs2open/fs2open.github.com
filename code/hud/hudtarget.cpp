@@ -6726,3 +6726,52 @@ void hudtarget_page_in()
 		}
 	}
 }
+
+void hud_stuff_target_lines(ship *shipp, char *ship_name_text, char *ship_class_text)
+{
+	char ship_name[NAME_LENGTH+1], ship_class[NAME_LENGTH+1], alt_name[NAME_LENGTH+1], callsign[NAME_LENGTH+1];
+
+	// get names
+	strcpy(ship_name, shipp->ship_name);
+	strcpy(ship_class, Ship_info[shipp->ship_info_index].name);
+	if (shipp->alt_type_index >= 0) {
+		mission_parse_lookup_alt_index(shipp->alt_type_index, alt_name);
+	} else {
+		strcpy(alt_name, "");
+	}
+	if (shipp->callsign_index >= 0) {
+		mission_parse_lookup_callsign_index(shipp->callsign_index, callsign);
+	} else {
+		strcpy(callsign, "");
+	}
+
+	// handle hash symbols
+	end_string_at_first_hash_symbol(ship_name);
+	end_string_at_first_hash_symbol(ship_class);
+
+	// handle translation
+	if (Lcl_gr) {
+		lcl_translate_targetbox_name(ship_name);
+		lcl_translate_targetbox_name(ship_class);
+		lcl_translate_targetbox_name(alt_name);
+		lcl_translate_targetbox_name(callsign);
+	}
+
+	// print ship name
+	if ( (Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1) ) {
+		*ship_name_text = 0;
+	} else if (shipp->flags2 & SF2_HIDE_SHIP_NAME) {
+		*ship_name_text = 0;
+	} else if (*callsign) {
+		sprintf(ship_name_text, "%s (%s)", ship_name, callsign);
+	} else {
+		strcpy(ship_name_text, ship_name);
+	}
+	
+	// print ship class
+	if (*alt_name) {
+		strcpy(ship_class_text, alt_name);
+	} else {
+		strcpy(ship_class_text, ship_class);
+	}
+}

@@ -1301,11 +1301,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 		SetWindowText("Edit Ship");
 	}
 
-	// setup alternate name stuff	
+	// setup alternate name and callsign stuff
 	if(player_ship >= 0){				
 		ship_alt_name_init(player_ship);
+		ship_callsign_init(player_ship);
 	} else {				
 		ship_alt_name_init(single_ship);
+		ship_callsign_init(single_ship);
 	}
 
 	modified = 0;
@@ -1497,6 +1499,7 @@ int CShipEditorDlg::update_ship(int ship)
 	// THIS DIALOG IS THE SOME OF THE WORST CODE I HAVE EVER SEEN IN MY ENTIRE LIFE. 
 	// IT TOOK A RIDICULOUSLY LONG AMOUNT OF TIME TO ADD 2 FUNCTIONS. OMG
 	ship_alt_name_close(ship);
+	ship_callsign_close(ship);
 
 	if ((Ships[ship].ship_info_index != m_ship_class) && (m_ship_class != -1)) {
 		change_ship_type(ship, m_ship_class);
@@ -2344,7 +2347,6 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	if(cstr == CString("<none>")){
 		// zero the entry
 		strcpy(Fred_alt_names[base_ship], "");
-
 		return;
 	}	
 	p = cstr.GetBuffer(0);
@@ -2356,20 +2358,102 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	// otherwise see if it already exists
 	if(mission_parse_lookup_alt(str) >= 0){
 		strcpy(Fred_alt_names[base_ship], str);
-
 		return;
 	}
 
 	// otherwise try and add it
 	if(mission_parse_add_alt(str) >= 0){
 		strcpy(Fred_alt_names[base_ship], str);
-
 		return;
 	}
 
 	// bad - couldn't add
 	strcpy(Fred_alt_names[base_ship], "");
 	MessageBox("Couldn't add new alternate type name. Already using too many!");
+}
+
+// callsign stuff
+void CShipEditorDlg::ship_callsign_init(int base_ship)
+{
+	int idx;
+	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CALLSIGN);
+	if(ptr == NULL){
+		Int3();
+		return;
+	}
+
+	// multi-edit. bah	
+	if(multi_edit){		
+		GetDlgItem(IDC_SHIP_CALLSIGN)->EnableWindow(FALSE);
+		return;
+	} 
+	GetDlgItem(IDC_SHIP_CALLSIGN)->EnableWindow(TRUE);	
+
+	// reset the combobox and add all relevant strings
+	ptr->ResetContent();
+	ptr->AddString("<none>");
+	for(idx=0; idx<Mission_callsign_count; idx++){
+		ptr->AddString(Mission_callsigns[idx]);
+	}
+
+	// "none"
+	if(base_ship < 0){
+		ptr->SetCurSel(0);
+	}
+
+	// otherwise look his stuff up
+	if(strlen(Fred_callsigns[base_ship])){
+		ptr->SelectString(0, Fred_callsigns[base_ship]);
+	} else {
+		ptr->SetCurSel(0);
+	}
+}
+
+void CShipEditorDlg::ship_callsign_close(int base_ship)
+{
+	CString cstr;
+	char str[NAME_LENGTH+2] = "";
+	char *p;	
+	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CALLSIGN);
+
+	if(multi_edit){
+		return;
+	}
+	
+	if(ptr == NULL){
+		Int3();
+		return;
+	}
+
+	// see if we have something besides "none" selected
+	ptr->GetWindowText(cstr);
+	if(cstr == CString("<none>")){
+		// zero the entry
+		strcpy(Fred_callsigns[base_ship], "");
+		return;
+	}	
+	p = cstr.GetBuffer(0);
+	if(p == NULL){
+		return;
+	}
+	strcpy(str, p);
+
+	// otherwise see if it already exists
+	if(mission_parse_lookup_callsign(str) >= 0){
+		strcpy(Fred_callsigns[base_ship], str);
+		return;
+	}
+
+	// otherwise try and add it
+	if(mission_parse_add_callsign(str) >= 0){
+		strcpy(Fred_callsigns[base_ship], str);
+
+		return;
+	}
+
+	// bad - couldn't add
+	strcpy(Fred_callsigns[base_ship], "");
+	MessageBox("Couldn't add new callsign. Already using too many!");
 }
 
 void CShipEditorDlg::OnTextures() 

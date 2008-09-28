@@ -808,15 +808,22 @@ int CFREDDoc::load_mission(char *pathname, int flags)
   	palette_load_table(name);
 #endif
 
-	// go through all ships and translate their alternate name indices	
+	// go through all ships and translate their callsign and alternate name indices	
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		// if this is a ship, check it, and mark its possible alternate name down in the auxiliary array
-		if(((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0) && (Ships[objp->instance].alt_type_index >= 0)){
-			mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
+		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0)) {
+			if (Ships[objp->instance].alt_type_index >= 0) {
+				mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
 
-			// also zero it
-			Ships[objp->instance].alt_type_index = -1;
+				// also zero it
+				Ships[objp->instance].alt_type_index = -1;
+			} else if (Ships[objp->instance].callsign_index >= 0) {
+				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index, Fred_callsigns[objp->instance]);
+
+				// also zero it
+				Ships[objp->instance].callsign_index = -1;
+			}
 		}
 
 		objp = GET_NEXT(objp);
