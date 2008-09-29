@@ -1215,7 +1215,7 @@ void hud_render_target_ship_info(object *target_objp)
 	ship			*target_shipp;
 	ship_info	*target_sip;
 	int			w, h, screen_integrity = 1;
-	char			outstr[NAME_LENGTH], outstr_ship[NAME_LENGTH * 2 + 5];
+	char			outstr[NAME_LENGTH * 2 + 5];
 	float			ship_integrity, shield_strength;
 
 	Assert(target_objp);	// Goober5000
@@ -1236,8 +1236,9 @@ void hud_render_target_ship_info(object *target_objp)
 	}
 
 	// print lines
-	hud_stuff_target_lines(target_shipp, outstr_ship, outstr);
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr_ship);	
+	hud_stuff_ship_name(target_shipp, outstr);
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr);	
+	hud_stuff_ship_class(target_shipp, outstr);
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, outstr);
 
 	// ----------
