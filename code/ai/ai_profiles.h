@@ -77,6 +77,7 @@
 #define AIPF_KILL_SCORING_SCALES_WITH_DAMAGE						(1 << 16)
 #define AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE						(1 << 17)
 #define AIPF_ALLOW_MULTI_EVENT_SCORING								(1 << 18)
+#define AIPF_SMART_AFTERBURNER_MANAGEMENT							(1 << 19)
 
 
 #define MAX_AI_PROFILES	5
@@ -118,6 +119,10 @@ typedef struct ai_profile_t {
 	//	Multiplicative delay factors for increasing skill levels.
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
 	float ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS];
+
+	//	Multiplicative secondary delay factors for increasing skill levels.
+	float ship_fire_secondary_delay_scale_hostile[NUM_SKILL_LEVELS];
+	float ship_fire_secondary_delay_scale_friendly[NUM_SKILL_LEVELS];
 
 	//	Maximum turrets of one ship allowed to shoot the same target
 	int max_turret_ownage_target[NUM_SKILL_LEVELS];

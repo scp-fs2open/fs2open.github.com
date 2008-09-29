@@ -1361,9 +1361,12 @@ struct ship_subsys;
 #define OP_CUTSCENES_SET_CAMERA				(0x00ba | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 #define OP_CUTSCENES_SET_CAMERA_HOST		(0x00bb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 #define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
-#define OP_CHANGE_IFF_COLOR					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
-#define OP_TURRET_SUBSYS_TARGET_DISABLE		(0x00be | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
-#define OP_TURRET_SUBSYS_TARGET_ENABLE		(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
+#define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
+
+#define OP_CHANGE_IFF_COLOR					(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_TURRET_SUBSYS_TARGET_DISABLE		(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_TURRET_SUBSYS_TARGET_ENABLE		(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1469,9 +1472,9 @@ struct ship_subsys;
 #define SEXP_NONE_STRING			"<none>"
 
 // macros for accessing sexpression atoms
-#define CAR(n)		(Sexp_nodes[n].first)
-#define CDR(n)		(Sexp_nodes[n].rest)
-#define CADR(n)	(Sexp_nodes[Sexp_nodes[n].rest].first)
+#define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)
+#define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
+#define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
 char *CTEXT(int n);
 

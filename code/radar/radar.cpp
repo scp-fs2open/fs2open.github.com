@@ -686,10 +686,7 @@ void radar_blip_draw_distorted_std(blip *b)
 		ydiff = (int)((float)ydiff * scale);
 	}
 
-	if (b->radar_image_2d == -1)
-		radar_draw_circle_std(b->x+xdiff, b->y+ydiff, b->rad);
-	else
-		radar_draw_image_std(b->x+xdiff, b->y+ydiff, b->rad, b->radar_image_2d, b->radar_image_size); 
+	radar_draw_circle_std(b->x+xdiff, b->y+ydiff, b->rad);
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -717,10 +714,7 @@ void radar_blip_draw_flicker_std(blip *b)
 		ydiff = -2 + rand()%4;
 	}
 
-	if (b->radar_image_2d == -1)
-		radar_draw_circle_std(b->x+xdiff, b->y+ydiff, b->rad);
-	else
-		radar_draw_image_std(b->x+xdiff, b->y+ydiff, b->rad, b->radar_image_2d, b->radar_image_size);
+	radar_draw_circle_std(b->x+xdiff, b->y+ydiff, b->rad);
 }
 
 // Draw all the active radar blips

@@ -197,7 +197,10 @@ color Orb_color_teal;
 color Orb_color_purple;
 
 //special view matrix to get the orb rotating the correct way
-static matrix view_perturb = { { { { { { 0.0f, 0.0f, -1.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 1.0f,0.0f,0.0f } } } } } };
+static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
+                                   { { { 0.0f, -1.0f, 0.0f } } },
+                                   { { { 0.0f, 0.0f, -1.0f } } } } } };
+
 static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
 
 // forward declarations
@@ -645,10 +648,6 @@ void radar_blip_draw_distorted_orb(blip *b)
 	{
 		radar_orb_draw_contact(&out,b->rad);
 	}
-	else if (b->radar_image_2d >= 0)
-	{
-		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
-	}
 	else
 	{
 		radar_orb_draw_contact_htl(&out,b->rad);
@@ -694,10 +693,6 @@ void radar_blip_draw_flicker_orb(blip *b)
 	if (Cmdline_nohtl)
 	{
 		radar_orb_draw_contact(&out,b->rad);
-	}
-	else if (b->radar_image_2d >= 0) 
-	{
-		radar_orb_draw_image(&out, b->rad, b->radar_image_2d, b->radar_projection_size);
 	}
 	else
 	{
@@ -849,7 +844,7 @@ void radar_orb_setup_view_htl()
                  Current_radar_global->Radar_coords[gr_screen.res][1],
                  w, h);
 
-    gr_set_proj_matrix( .625 * PI_2, float(w)/float(h), 0.001, 5.0);
+    gr_set_proj_matrix( .625f * PI_2, float(w)/float(h), 0.001f, 5.0f);
 	gr_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix );
 
     gr_zbuffer_set(0);
@@ -883,7 +878,6 @@ void radar_orb_draw_outlines()
 	vertex proj_orb_lines_yz[NUM_ORB_RING_SLICES];
 
 	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
-
 	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, false);
 
 	g3_rotate_vertex(&center, &vmd_zero_vector);
@@ -929,7 +923,7 @@ int radar_orb_calc_alpha(vec3d* pt)
     Assert(Player_obj);
 
     vec3d new_pt;
-    vec3d fvec = {1.0f, 0.0f, 0.0f};
+    vec3d fvec = {0.0f, 0.0f, 1.0f};
 
     vm_vec_unrotate(&new_pt, pt, &Player_obj->orient);
     vm_vec_normalize(&new_pt);
@@ -948,7 +942,7 @@ void radar_orb_draw_outlines_htl()
 	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, true);
 	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, true);
 
-	gr_set_color(255,255,255);
+	gr_set_color(255, 255, 255);
 	g3_draw_htl_sphere(&vmd_zero_vector, .05f);
 
     gr_set_line_width(2.0f);

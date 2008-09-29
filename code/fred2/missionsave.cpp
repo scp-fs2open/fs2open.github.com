@@ -1461,6 +1461,19 @@ int CFred_mission_save::save_players()
 		fout_version("\n#end\n");
 	}
 
+	// write out callsign list
+	if(Mission_callsign_count > 0){
+		fout_version("\n\n#Callsigns:\n");
+
+		// write them all out
+		for(i=0; i<Mission_callsign_count; i++){
+			fout_version("$Callsign: %s\n", Mission_callsigns[i]);
+		}
+
+		// end
+		fout_version("\n#end\n");
+	}
+
 	required_string_fred("#Players");
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Player_starts);
@@ -1575,6 +1588,11 @@ int CFred_mission_save::save_objects()
 		// optional alternate type name
 		if(strlen(Fred_alt_names[i])){
 			fout_version("\n$Alt: %s\n", Fred_alt_names[i]);
+		}
+
+		// optional callsign
+		if(strlen(Fred_callsigns[i])){
+			fout_version("\n$Callsign: %s\n", Fred_callsigns[i]);
 		}
 
 		required_string_fred("$Team:");
@@ -1854,8 +1872,6 @@ int CFred_mission_save::save_objects()
 				fout(" \"always-death-scream\"");
 			if (Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
 				fout(" \"nav-needslink\"");
-			if (Ships[i].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN)
-				fout(" \"use-alt-name-as-callsign\"");
 			if (Ships[i].flags2 & SF2_HIDE_SHIP_NAME)
 				fout(" \"hide-ship-name\"");
 			fout(" )");

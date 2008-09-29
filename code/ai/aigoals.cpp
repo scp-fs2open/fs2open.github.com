@@ -1837,28 +1837,16 @@ void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 {
 	int j;
 
-	//1: Find empty spot
 	for ( j = 0; j < MAX_AI_GOALS; j++ ) {
-		if ( aip->goals[j].ai_mode == AI_GOAL_NONE )
+		if ( aip->goals[j].ai_mode == AI_GOAL_NONE ) {
+			aip->goals[j] = *aigp;
 			break;
-	}
-	
-	//WMC - Fix assert when somebody assigns too many goals to a ship
-	//2: Find lower priority goal
-	if( j >= MAX_AI_GOALS )
-	{
-		for(j = 0; j < MAX_AI_GOALS; j++) {
-			if(aip->goals[j].priority < aigp->priority)
-				break;
 		}
 	}
 
-	//3: Everything is same priority or above. Use the last slot.
-	if(j >= MAX_AI_GOALS)
-	{
-		j = MAX_AI_GOALS-1;
+	if (j >= MAX_AI_GOALS) {
+		mprintf(("Unable to assign wing goal to ship %s; the ship goals are already filled to capacity", Ships[aip->shipnum].ship_name));
 	}
-	aip->goals[j] = *aigp;
 }
 
 

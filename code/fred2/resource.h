@@ -633,6 +633,7 @@
 #define IDC_OBJECT3                     1246
 #define IDC_MISSILE1                    1246
 #define IDC_MESSAGE_TEAM                1246
+#define IDC_SHIP_CALLSIGN               1246
 #define IDC_COMBO6                      1247
 #define IDC_BEHAVIOR3                   1247
 #define IDC_MISSILE2                    1247
