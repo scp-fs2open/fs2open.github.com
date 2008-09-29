@@ -844,7 +844,8 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				hud_stuff_target_lines(&Ships[t_objp->instance], temp_name, temp_class);
+				hud_stuff_ship_name(&Ships[t_objp->instance], temp_name);
+				hud_stuff_ship_class(&Ships[t_objp->instance], temp_class);
 				tinfo_name = temp_name;
 				tinfo_class = temp_class;
 				break;
