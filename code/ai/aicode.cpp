@@ -7607,7 +7607,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 								time_to_fly_75pct_of_distance = dist_to_enemy * 0.75f / max_ab_vel;
 
 								// Get minimum
-								ab_time = min(time_to_exhaust_25pct_fuel, time_to_fly_75pct_of_distance);								
+								ab_time = MIN(time_to_exhaust_25pct_fuel, time_to_fly_75pct_of_distance);								
 								
 								aip->afterburner_stop_time = Missiontime + F1_0 * ab_time;
 							} else {				
