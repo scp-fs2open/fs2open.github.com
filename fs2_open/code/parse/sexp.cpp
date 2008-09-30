@@ -7772,7 +7772,7 @@ int special_argument_appears_in_sexp_list(int node)
 // eval_when evaluates the when conditional
 int eval_when(int n, int use_arguments)
 {
-	int arg_handler, cond, val, actions, exp;
+	int arg_handler, cond, val, actions, exp, op_num;
 
 	Assert( n >= 0 );
 
@@ -7806,16 +7806,30 @@ int eval_when(int n, int use_arguments)
 			exp = CAR(actions);
 			if (exp != -1)
 			{
-				// if we're using the special argument in this action
-				if (special_argument_appears_in_sexp_tree(exp))
-				{
-					do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
-				}
-				// if not, just evaluate it once as-is
-				else
-				{
-					// Goober5000 - possible bug? (see when val is used below)
-					/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+				
+				op_num = get_operator_const(CTEXT(exp));
+				switch (op_num) {
+					// if the op is a conditional then we just evaluate it
+					case OP_WHEN:
+					case OP_WHEN_ARGUMENT:
+					case OP_EVERY_TIME:
+					case OP_EVERY_TIME_ARGUMENT:
+						eval_sexp(exp);
+						break;
+
+					// otherwise we need to check if arguments are used
+					default: 
+						// if we're using the special argument in this action
+						if (special_argument_appears_in_sexp_tree(exp))
+						{
+							do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
+						}
+						// if not, just evaluate it once as-is
+						else
+						{
+							// Goober5000 - possible bug? (see when val is used below)
+							/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+						}
 				}
 			}
 			actions = CDR(actions);
