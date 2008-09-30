@@ -742,12 +742,12 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 #define	MAX_GOAL_TYPE_NAMES	3
 
 // alternate ship type names
-#define MAX_ALT_TYPE_NAMES				25
+#define MAX_ALT_TYPE_NAMES				100
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
 // callsign
-#define MAX_CALLSIGNS					25
+#define MAX_CALLSIGNS					100
 extern char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
 extern int Mission_callsign_count;
 

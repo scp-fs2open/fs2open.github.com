@@ -7,6 +7,7 @@
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionmessage.h"
+#include "hud/hudtarget.h"
 #include "parse/sexp.h"
 #include <math.h>
 
@@ -425,6 +426,12 @@ void VoiceActingManager::OnGenerateScript()
 			if ((shipnum >= 0) && (*Fred_callsigns[shipnum]))
 			{
 				entry.Replace("$sender", Fred_callsigns[shipnum]);
+			}
+			// account for hidden ship names
+			else if ((shipnum >= 0) && (Ships[shipnum].flags2 & SF2_HIDE_SHIP_NAME))
+			{
+				hud_stuff_ship_class(&Ships[shipnum], sender);
+				entry.Replace("$sender", sender);
 			}
 			// use the regular sender text
 			else
