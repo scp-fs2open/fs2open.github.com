@@ -6553,12 +6553,21 @@ void set_primary_weapon_linkage(object *objp)
 			return;
 	}
 
-	// regular lasers
-	if (shipp->weapon_energy > The_mission.ai_profile->link_energy_levels_always[Game_skill_level]) {
+	// get energy level
+	float energy;
+	if (The_mission.ai_profile->flags & AIPF_FIX_LINKED_PRIMARY_BUG) {
+		energy = shipp->weapon_energy / sip->max_weapon_reserve * 100.0f;
+	} else {
+		energy = shipp->weapon_energy;
+	}
+
+	// make linking decision based on weapon energy
+	if (energy > The_mission.ai_profile->link_energy_levels_always[Game_skill_level]) {
 		shipp->flags |= SF_PRIMARY_LINKED;
-	} else if (shipp->weapon_energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
-		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
+	} else if (energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
+		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f) {
 			shipp->flags |= SF_PRIMARY_LINKED;
+		}
 	}
 
 	// also check ballistics - Goober5000

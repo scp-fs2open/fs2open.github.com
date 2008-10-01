@@ -876,6 +876,11 @@ $score assists based on damage caused: NO								\n\
 ;; events in multiplayer												\n\
 $allow event and goal scoring in multiplayer: NO						\n\
 																		\n\
+;; if set, the AI will properly link primaries according to				\n\
+;; specified percentages of energy levels instead of retail behavior	\n\
+;; where it mistakenly linked according to absolute energy levels		\n\
+$fix linked primary weapon decision bug: NO								\n\
+																		\n\
 																		\n\
 #End																	\n\
 ";
