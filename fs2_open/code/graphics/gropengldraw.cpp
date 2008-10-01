@@ -1310,8 +1310,8 @@ void gr_opengl_flash(int r, int g, int b)
 
 	int x1 = (gr_screen.clip_left + gr_screen.offset_x);
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
-	int x2 = (gr_screen.clip_right + gr_screen.offset_x);
-	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y);
+	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
+	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
 
 	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
 
@@ -1340,8 +1340,8 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 
 	int x1 = (gr_screen.clip_left + gr_screen.offset_x);
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
-	int x2 = (gr_screen.clip_right + gr_screen.offset_x);
-	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y);
+	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
+	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
 
 	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
 
