@@ -1846,6 +1846,8 @@ sexp_oper Operators[] = {
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "change-subsystem-name",		OP_CHANGE_SUBSYSTEM_NAME,		3, INT_MAX },		// Karajorma
+	{ "lock-afterburner",			OP_LOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
+	{ "unlock-afterburner",			OP_UNLOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -1921,6 +1923,8 @@ sexp_oper Operators[] = {
 	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
 	{ "tech-add-intel",				OP_TECH_ADD_INTEL,				1, INT_MAX	},	// Goober5000
 	{ "tech-reset-to-default",		OP_TECH_RESET_TO_DEFAULT,		0, 0 },	// Goober5000
+	{ "change-player-score",		OP_CHANGE_PLAYER_SCORE,			2, INT_MAX },	// Karajorma
+	{ "change-team-score",			OP_CHANGE_TEAM_SCORE,			2, 2 },			// Karajorma
 
 	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
 	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
@@ -2017,6 +2021,7 @@ sexp_oper Operators[] = {
 	{ "facing",						OP_FACING,						2, 2,			},
 	{ "facing-waypoint",			OP_FACING2,						2, 2,			},
 	{ "order",						OP_ORDER,						2, 3,			},
+	{ "query-orders",				OP_QUERY_ORDERS,				3, 6,			}, // Karajorma
 	{ "reset-orders",				OP_RESET_ORDERS,				0, 0,			}, // Karajorma
 	{ "waypoint-missed",			OP_WAYPOINT_MISSED,			0, 0,			},
 	{ "waypoint-twice",			OP_WAYPOINT_TWICE,			0, 0,			},
@@ -2036,13 +2041,17 @@ sexp_oper Operators[] = {
 	{ "unset-cutscene-bars",		OP_CUTSCENES_UNSET_CUTSCENE_BARS,		0, 1, },
 	{ "fade-in",					OP_CUTSCENES_FADE_IN,					0, 1, },
 	{ "fade-out",					OP_CUTSCENES_FADE_OUT,					0, 2, },
-	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 5, },
-	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 5, },
-	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 3, },
-	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 5, },
+	{ "set-camera",					OP_CUTSCENES_SET_CAMERA,				0, 1, },
+	{ "set-camera-facing",			OP_CUTSCENES_SET_CAMERA_FACING,			3, 6, },
+	{ "set-camera-facing-object",	OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	1, 4, },
+	{ "set-camera-fov",				OP_CUTSCENES_SET_CAMERA_FOV,			1, 5, },
+	{ "set-camera-host",			OP_CUTSCENES_SET_CAMERA_HOST,			1, 2, },
+	{ "set-camera-position",		OP_CUTSCENES_SET_CAMERA_POSITION,		3, 6, },
+	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 6, },
+	{ "set-camera-target",			OP_CUTSCENES_SET_CAMERA_TARGET,			1, 2, },
 	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
-	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 0, },
+	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
 	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
@@ -2177,8 +2186,10 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
 
+std::vector<char*> Sexp_replacement_arguments;
+int Sexp_current_argument_nesting_level;
+
 // Goober5000
-char *Sexp_current_replacement_argument;
 arg_item Sexp_applicable_argument_list;
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
@@ -2195,11 +2206,23 @@ void arg_item::add_data(char *str)
 	// create item
 	item = new arg_item;
 	item->text = str;
+	item->nesting_level = Sexp_current_argument_nesting_level;
 
 	// prepend item to existing list
 	ptr = this->next;
 	this->next = item;
 	item->next = ptr;
+}
+
+arg_item* arg_item::get_next()
+{
+	if (this->next != NULL) {
+		if (this->next->nesting_level >= Sexp_current_argument_nesting_level) {
+			return this->next; 
+		}
+	}
+
+	return NULL;
 }
 
 void arg_item::expunge()
@@ -2208,6 +2231,19 @@ void arg_item::expunge()
 
 	// contiually delete first item of list
 	while (this->next != NULL)
+	{
+		ptr = this->next->next;
+		delete this->next;
+		this->next = ptr;
+	}
+}
+
+void arg_item::clear_nesting_level()
+{
+	arg_item *ptr;
+
+	// contiually delete first item of list
+	while (this->next != NULL && this->next->nesting_level >= Sexp_current_argument_nesting_level )
 	{
 		ptr = this->next->next;
 		delete this->next;
@@ -2278,8 +2314,9 @@ static void sexp_nodes_close()
 void init_sexp()
 {
 	// Goober5000
-	Sexp_current_replacement_argument = NULL;
+	Sexp_replacement_arguments.clear();
 	Sexp_applicable_argument_list.expunge();
+	Sexp_current_argument_nesting_level = 0;
 
 	static bool done_sexp_atexit = false;
 	if (!done_sexp_atexit)
@@ -3009,8 +3046,22 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			case OPF_SHIP_WING:
 			case OPF_SHIP_WING_POINT:
+			case OPF_SHIP_WING_POINT_OR_NONE:
+			case OPF_ORDER_RECIPIENT:
 				if ( type2 != SEXP_ATOM_STRING ){
 					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (type == OPF_ORDER_RECIPIENT) {
+					if (!strcmp ("<all fighters>", CTEXT(node))) {
+						break;
+					}
+				}
+
+				// none is okay for _or_none
+				if (type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
+				{
+					break;
 				}
 
 				if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0)) {
@@ -3080,6 +3131,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						} else {
 							ship_index = CDR(CDR(CDR(op_node)));
 						}
+						break;
+	
+					case OP_QUERY_ORDERS:
+						ship_index = CDR(CDR(CDR(CDR(op_node))));
 						break;
 	
 					default :
@@ -5036,6 +5091,11 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	oswpt->wingp = NULL;
 	oswpt->team = -1;
 
+	if(!stricmp(object_name, SEXP_NONE_STRING))
+	{
+		oswpt->type = OSWPT_TYPE_NONE;
+		return;
+	}
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if (mission_log_get_time(LOG_SHIP_DEPARTED, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL))
@@ -7658,18 +7718,20 @@ void do_action_for_each_special_argument( int cur_node )
 	arg_item *ptr;
 
 	// loop through all the supplied arguments
-	ptr = Sexp_applicable_argument_list.next;
+	ptr = Sexp_applicable_argument_list.get_next();
 	while (ptr != NULL)
 	{
 		// acquire argument to be used
-		Sexp_current_replacement_argument = ptr->text;
+		Sexp_replacement_arguments.push_back(ptr->text);
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		// (since these are all actions, they don't return any meaningful values)
 		eval_sexp(cur_node);
 
+		// remove the argument 
+		Sexp_replacement_arguments.pop_back(); 
 		// continue along argument list
-		ptr = ptr->next;
+		ptr = ptr->get_next();
 	}
 }
 
@@ -7710,7 +7772,7 @@ int special_argument_appears_in_sexp_list(int node)
 // eval_when evaluates the when conditional
 int eval_when(int n, int use_arguments)
 {
-	int arg_handler, cond, val, actions, exp;
+	int arg_handler, cond, val, actions, exp, op_num;
 
 	Assert( n >= 0 );
 
@@ -7721,6 +7783,7 @@ int eval_when(int n, int use_arguments)
 		cond = CADR(n);
 		actions = CDDR(n);
 
+		Sexp_current_argument_nesting_level++;
 		// evaluate for custom arguments
 		val = eval_sexp(arg_handler, cond);
 	}
@@ -7743,6 +7806,19 @@ int eval_when(int n, int use_arguments)
 			exp = CAR(actions);
 			if (exp != -1)
 			{
+				
+				op_num = get_operator_const(CTEXT(exp));
+				switch (op_num) {
+					// if the op is a conditional then we just evaluate it
+					case OP_WHEN:
+					case OP_WHEN_ARGUMENT:
+					case OP_EVERY_TIME:
+					case OP_EVERY_TIME_ARGUMENT:
+						eval_sexp(exp);
+						break;
+
+					// otherwise we need to check if arguments are used
+					default: 
 				// if we're using the special argument in this action
 				if (special_argument_appears_in_sexp_tree(exp))
 				{
@@ -7755,13 +7831,16 @@ int eval_when(int n, int use_arguments)
 					/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
 				}
 			}
+			}
 			actions = CDR(actions);
 		}
 	}
 
+	if (use_arguments) {
 	// clean up any special sexp stuff
-	Sexp_current_replacement_argument = NULL;
-	Sexp_applicable_argument_list.expunge();
+		Sexp_applicable_argument_list.clear_nesting_level();
+		Sexp_current_argument_nesting_level--;
+	}
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
@@ -7818,7 +7897,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 	Assert(n != -1 && condition_node != -1);
 
 	// ensure special argument list is empty
-	Sexp_applicable_argument_list.expunge();
+	Sexp_applicable_argument_list.clear_nesting_level();
 
 	// loop through all arguments
 	num_true = 0;
@@ -7831,7 +7910,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 			flush_sexp_tree(condition_node);
 
 			// evaluate conditional for current argument
-			Sexp_current_replacement_argument = Sexp_nodes[n].text;
+			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 			val = eval_sexp(condition_node);
 
 			// true?
@@ -7840,14 +7919,14 @@ int test_argument_list_for_condition(int n, int condition_node)
 				num_true++;
 				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 			}
+
+			// clear argument, but not list, as we'll need it later
+			Sexp_replacement_arguments.pop_back();
 		}
 
 		// continue along argument list
 		n = CDR(n);
 	}
-
-	// clear argument, but not list, as we'll need it later
-	Sexp_current_replacement_argument = NULL;
 
 	// return number of arguments for which conditional was true
 	return num_true;
@@ -7946,7 +8025,6 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		num_valid_args = query_sexp_args_count(arg_handler_node, true);
 		if (num_valid_args == 0)
 		{
-			Sexp_current_replacement_argument = NULL;
 			return SEXP_FALSE;
 		}
 
@@ -7981,11 +8059,11 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// flush stuff
-		Sexp_applicable_argument_list.expunge();
+		Sexp_applicable_argument_list.clear_nesting_level();
 		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
-		Sexp_current_replacement_argument = Sexp_nodes[n].text;
+		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -7993,10 +8071,10 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 		}
-	}
 
 	// clear argument, but not list, as we'll need it later
-	Sexp_current_replacement_argument = NULL;
+		Sexp_replacement_arguments.pop_back();
+	}
 
 	// true if our selected argument is true
 	return val;
@@ -8009,26 +8087,6 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	int n = -1 ;
 	
 	Assert(arg_handler_node != -1 && condition_node != -1);
-	
-	/*
-	// Disabled due to problems with query_sexp_args_count (n, true). Those problems should be fixed now
-	// but the newer code is more heavily tested and should be safer so I'm sticking with that for now.
-
-	// get the number of valid arguments	
-	n = CDR(arg_handler_node);
-	int num_valid_args = query_sexp_args_count(arg_handler_node, true);
-	
-	if (num_valid_args == 0)
-	{
-		Sexp_current_replacement_argument = NULL;
-		return SEXP_FALSE;
-	}
-
-	// find the first valid argument. we know that there must be one thanks to the check above
-	while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
-	{
-		n = CDR(n);
-	}*/
 	
 	// get the first argument
 	n = CDR(arg_handler_node);
@@ -8047,11 +8105,11 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// flush stuff
-		Sexp_applicable_argument_list.expunge();
+		Sexp_applicable_argument_list.clear_nesting_level();
 		flush_sexp_tree(condition_node);
 
 		// evaluate conditional for current argument
-		Sexp_current_replacement_argument = Sexp_nodes[n].text;
+		Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -8061,7 +8119,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		}
 
 		// clear argument, but not list, as we'll need it later
-		Sexp_current_replacement_argument = NULL;
+		Sexp_replacement_arguments.pop_back();
 	}
 
 	// return the value of the conditional
@@ -8071,22 +8129,19 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 // Goober5000
 void sexp_invalidate_argument(int n)
 {
-	int parent, grandparent, arg_handler, arg_n;
+	int conditional, arg_handler, arg_n;
 
+	conditional = n; 
+	do {
 	// find the conditional sexp
-	parent = find_parent_operator(n);
-	if (parent == -1)
+		conditional = find_parent_operator(conditional);
+		if (conditional == -1)
 		return;
-	grandparent = find_parent_operator(parent);
-	if (grandparent == -1)
-		return;
+	}
+	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
 
-	// make sure it's a supported operator
-	if (!is_blank_argument_op(get_operator_const(CTEXT(grandparent))))
-		return;
-
-	// get the first op of the grandparent, which should be a *_of operator
-	arg_handler = CADR(grandparent);
+	// get the first op of the parent, which should be a *_of operator
+	arg_handler = CADR(conditional);
 	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
 		return;
 
@@ -9132,10 +9187,10 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		source = MESSAGE_SOURCE_WINGMAN;
 	} else {
 		// Message from a apecific ship
-		// bail if not high priority, otherwise reroute to command
 		source = MESSAGE_SOURCE_SHIP;
 		ship_index = ship_name_lookup(who_from);
 		if ( ship_index == -1 ) {
+			// bail if not high priority, otherwise reroute to command
 			if ( ipriority != MESSAGE_PRIORITY_HIGH )
 				return;
 			source = MESSAGE_SOURCE_COMMAND;
@@ -9540,7 +9595,8 @@ void sexp_set_subsystem_strength(int n)
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	ship *shipp;
 	ship_subsys *ss, *ss_start;
-	bool generic, do_loop = true;
+	bool generic_subsys; 
+	bool do_loop = true;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
@@ -9594,12 +9650,12 @@ void sexp_set_subsystem_strength(int n)
 	}
 
 	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic = is_generic_subsys(subsystem);
+	generic_subsys = is_generic_subsys(subsystem);
 	subsys_type = ai_get_subsystem_type(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (generic) {
+		if (generic_subsys) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
@@ -10310,6 +10366,70 @@ void sexp_grant_medal(int n)
 		}
 	}
 }
+
+void sexp_change_player_score(int node)
+{
+	int sindex;	
+	int score;
+	int plr_index;
+
+	score = eval_num(node); 
+	node = CDR(node);
+
+	if(!(Game_mode & GM_MULTIPLAYER)){
+		sindex = ship_name_lookup(CTEXT(node));
+
+		if (Player_ship != &Ships[sindex]) {
+			Warning(LOCATION, "Can not award points to '%s'. Ship is not a player!", CTEXT(node));
+			return; 	
+		}
+		Player->stats.m_score += score; 
+		if (Player->stats.m_score < 0) {
+			Player->stats.m_score = 0; 
+		}
+	}
+	else {
+		while (node >= 0) {
+			plr_index = multi_find_player_by_ship_name(CTEXT(node), true);
+			if (plr_index >= 0) {
+				Net_player[plr_index].m_player->stats.m_score += score;
+				
+				if (Net_player[plr_index].m_player->stats.m_score < 0) {
+					Net_player[plr_index].m_player->stats.m_score = 0;
+				}
+			}			
+
+			node = CDR(node);
+		}
+	}
+}
+
+void sexp_change_team_score(int node)
+{
+	int i, score, team;
+
+	// since we only have a team score in TvT
+	if ( !(MULTI_TEAM) ) {
+		return;
+	}
+
+	score = eval_num(node); 
+	team = eval_num(CDR(node)); 
+
+	if (team == 0) {
+		for (i = 0; i < MAX_TVT_TEAMS; i++) {
+			Multi_team_score[i] += score;  
+		}
+	}
+	else if (team > 0 && team <= MAX_TVT_TEAMS) {
+		Multi_team_score[team - 1] += score;  
+	}
+	else {
+		Warning(LOCATION, "Invalid team number. Team %d does not exist", team);
+	}
+}
+
+
 
 void sexp_tech_add_ship(int node)
 {
@@ -11348,12 +11468,6 @@ void sexp_ships_guardian( int n, int guardian )
 				else
 					p_objp->flags &= ~P_SF_GUARDIAN;
 			}
-	#ifndef NDEBUG
-			else
-			{
-				Int3();	// get allender -- could be a potential problem here
-			}
-	#endif
 		}
 	}
 }
@@ -11960,24 +12074,62 @@ int sexp_facing2(int node)
 	return SEXP_FALSE;
 }
 
-// implemented by Goober5000
 int sexp_order(int n)
 {
-	char *ship_or_wing = CTEXT(n);
+	char *order_to = CTEXT(n);
 	char *order = CTEXT(CDR(n));
 	char *target = NULL;
+	char *order_from = NULL;
+	char *special = NULL;
+	int timestamp = 0;
 
-	if (CDR(CDR(n)) != -1)
-		target = CTEXT(CDR(CDR(n)));
+	//target
+	n = CDDR(n); 
+	if (n != -1)
+		target = CTEXT(n);
+	
+	return hud_query_order_issued(order_to, order, target);
+}
 
-	return hud_query_order_issued(ship_or_wing, order, target);
+int sexp_query_orders (int n)
+{
+	char *order_to = CTEXT(n);
+	char *order = CTEXT(CDR(n));
+	char *target = NULL;
+	char *order_from = NULL;
+	char *special = NULL;
+	int timestamp = 0;
+
+	// delay
+	n = CDDR(n); 
+	if (n != -1) {
+		timestamp = eval_sexp(n); 
+		n = CDR(n); 
+	}
+	
+	//target
+	if (n != -1) {
+		target = CTEXT(n);
+		n = CDR(n); 
+	}
+
+	// player order comes from
+	if (n != -1) {
+		order_from = CTEXT(n);
+		n = CDR(n); 
+	}
+
+	// optional special argument
+	if (n != -1)
+		special = CTEXT(n);
+
+	return hud_query_order_issued(order_to, order, target, timestamp, order_from, special);
 }
 
 // Karajorma
 void sexp_reset_orders (int n)
 {
-	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
-	squadmsg_history_index = 0; 
+	Squadmsg_history.clear();
 }
 
 int sexp_waypoint_missed()
@@ -12644,6 +12796,44 @@ void sexp_set_weapon (int node, bool primary)
 		}
 	}
 }
+
+// KeldorKatarn - Locks or unlocks the afterburner on the requested ship
+void sexp_deal_with_afterburner_lock (int node, bool lock)
+{
+	ship *shipp;
+	int ship_index;
+
+	Assert (node != -1);
+
+	do {
+		// Check that a ship has been supplied
+		ship_index = ship_name_lookup(CTEXT(node));
+		if (ship_index < 0)	{
+			node = CDR (node);
+			continue ;
+		}
+
+		// Check that it's valid
+		if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS))	{
+			node = CDR (node);
+			continue ;
+		}
+		shipp = &Ships[ship_index];
+
+		// Set the flag
+		if (lock){
+			shipp->flags2 |= SF2_AFTERBURNER_LOCKED;
+			Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+		}
+		else {
+			 shipp->flags2 &= ~SF2_AFTERBURNER_LOCKED;
+		}
+
+		// Go to the next ship.
+		node = CDR (node);
+	} while (node != -1);
+}
+
 // Karajorma - Locks or unlocks the primary or secondary banks on the requested ship
 void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 {
@@ -15186,33 +15376,92 @@ void sexp_fade_out(int n)
 }
 
 
+camera* sexp_get_set_camera(bool reset = false)
+{
+	static camid sexp_camera;
+	if(!reset)
+	{
+		if(Viewer_mode & VM_FREECAMERA)
+		{
+			camera *cam = cam_get_current().getCamera();
+			if(cam != NULL)
+				return cam;
+		}
+	}
+	if(!sexp_camera.isValid())
+	{
+		sexp_camera = cam_create("SEXP camera");
+	}
+
+	cam_set_camera(sexp_camera);
+
+	return sexp_camera.getCamera();
+}
+
+void sexp_set_camera(int node)
+{
+	if(node == -1)
+	{
+		sexp_get_set_camera(true);
+		return;
+	}
+
+	char *cam_name = CTEXT(node);
+	camid cid = cam_lookup(cam_name);
+	if(!cid.isValid())
+	{
+		cid = cam_create(cam_name);
+	}
+	cam_set_camera(cid);
+}
+
 void sexp_set_camera_position(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
 
 	vec3d camera_vec;
-	//float camera_time = 0.0f;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
+	float camera_dec_time = 0.0f;
 
 	camera_vec.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
 	camera_vec.xyz.y = i2fl(eval_num(n));
 	n = CDR(n);
 	camera_vec.xyz.z = i2fl(eval_num(n));
+	n = CDR(n);
 
-	Free_camera->set_position(&camera_vec);
+	if(n != -1)
+	{
+		camera_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+		{
+			camera_dec_time = camera_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				camera_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
+	}
+
+	cam->set_position(&camera_vec, camera_time, camera_acc_time, camera_dec_time);
 }
 
 void sexp_set_camera_rotation(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
 
 	angles rot_angles;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
 
 	//Angles are in degrees
 	rot_angles.p = eval_num(n) * (PI/180.0f);
@@ -15226,22 +15475,29 @@ void sexp_set_camera_rotation(int n)
 		rot_time = eval_num(n) / 1000.0f;
 		n = CDR(n);
 		if(n != -1)
-			rot_acc_time = eval_num(n) / 1000.0f;
+		{
+			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				rot_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
 	}
 
-	Free_camera->set_rotation(&rot_angles, rot_time, rot_acc_time);
+	cam->set_rotation(&rot_angles, rot_time, rot_acc_time, rot_dec_time);
 }
 
 void sexp_set_camera_facing(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
 
 	vec3d location;
-	matrix cam_orient;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
 
 	location.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
@@ -15254,21 +15510,17 @@ void sexp_set_camera_facing(int n)
 		rot_time = eval_num(n) / 1000.0f;
 		n = CDR(n);
 		if(n != -1)
-			rot_acc_time = eval_num(n) / 1000.0f;
+		{
+			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				rot_dec_time = eval_num(n) / 1000.0f;
+			}
+	}
 	}
 
-	//Calc to matrix
-	vec3d destvec;
-	vm_vec_sub(&destvec, &location, Free_camera->get_position());
-
-	if (IS_VEC_NULL(&destvec))
-	{
-		Warning(LOCATION, "Camera tried to point to self");
-		return;
-	}
-
-	vm_vector_2_matrix(&cam_orient, &destvec, NULL, NULL);
-	Free_camera->set_rotation(&cam_orient, rot_time, rot_acc_time);
+	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
 }
 
 void sexp_set_camera_facing_object(int n)
@@ -15276,6 +15528,7 @@ void sexp_set_camera_facing_object(int n)
 	char *object_name = CTEXT(n);
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
+	float rot_dec_time = 0.0f;
 
 	//Now get the rotation time values
 	n = CDR(n);
@@ -15284,7 +15537,14 @@ void sexp_set_camera_facing_object(int n)
 		rot_time = eval_num(n) / 1000.0f;
 		n = CDR(n);
 		if(n != -1)
-			rot_acc_time = eval_num(n) / 1000.0f;
+		{
+			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				rot_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
 	}
 
 	object_ship_wing_point_team oswpt;
@@ -15303,34 +15563,170 @@ void sexp_set_camera_facing_object(int n)
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			Viewer_mode |= VM_FREECAMERA;
-			Current_camera = Free_camera;
-			Free_camera->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time);
+			camera *cam = sexp_get_set_camera();
+			if(cam == NULL)
+			return;
+			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time, rot_dec_time);
 			return;
 		}
 	}
 }
 
-extern float Viewer_zoom, VIEWER_ZOOM_DEFAULT;
+extern float VIEWER_ZOOM_DEFAULT;
+void sexp_set_camera_fov(int n)
+{
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+
+	float camera_fov = VIEWER_ZOOM_DEFAULT;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
+	float camera_dec_time = 0.0f;
+
+	camera_fov = i2fl(eval_num(n)) * (PI/180.0f);
+	n = CDR(n);
+
+	if(n != -1)
+	{
+		camera_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+		{
+			camera_dec_time = camera_acc_time = eval_num(n) / 1000.0f;
+			n = CDR(n);
+			if(n != -1)
+			{
+				camera_dec_time = eval_num(n) / 1000.0f;
+			}
+		}
+	}
+
+	cam->set_fov(camera_fov, camera_time, camera_acc_time, camera_dec_time);
+}
+
+//Internal helper function for set-target and set-host
+object *sexp_camera_get_objsub(int node, int *o_submodel)
+{
+	//Get arguments
+	int n = node;
+	char *obj_name = NULL;
+	char *sub_name = NULL;
+	
+	obj_name = CTEXT(n);
+	n = CDR(n);
+	if(n != -1)
+		sub_name = CTEXT(n);
+	
+	//Important variables
+	object *objp = NULL;
+	int submodel = -1;
+	
+	//*****Process obj_name
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, obj_name);
+	
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			objp = oswpt.objp;
+			break;
+
+		default:
+			objp = NULL;
+	}
+
+	//*****Process submodel
+	if(objp != NULL && sub_name != NULL && oswpt.type == OSWPT_TYPE_SHIP)
+	{
+		if(stricmp(sub_name, SEXP_NONE_STRING))
+		{
+			ship_subsys *ss = ship_get_subsys(&Ships[objp->instance], sub_name);
+			if (ss != NULL)
+			{
+				submodel = ss->system_info->subobj_num;
+			}
+		}
+	}
+	
+	if(o_submodel != NULL)
+		*o_submodel = submodel;
+	
+	return objp;
+}
+
+void sexp_set_camera_host(int node)
+{
+	//Try to get current camera
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+	
+	//*****Get variables
+	int submodel = -1;
+	object *objp = sexp_camera_get_objsub(node, &submodel);
+	
+	//*****Set
+	cam->set_object_host(objp, submodel);
+}
+
+void sexp_set_camera_target(int node)
+{
+	//Try to get current camera
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
+	
+	//*****Get variables
+	int submodel = -1;
+	object *objp = sexp_camera_get_objsub(node, &submodel);
+	
+	//*****Set
+	cam->set_object_target(objp, submodel);
+}
+
 void sexp_set_fov(int n)
 {
-	Viewer_zoom = eval_num(n) * (PI/180.0f);
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return;
+
+	//Cap FOV to something reasonable.
+	float new_fov = (float)eval_num(n);
+	new_fov = MIN(new_fov, 360.0f);
+	new_fov = MAX(new_fov, 0.0f);
+
+	Sexp_fov = (new_fov * (PI/180.0f));
+	//cam->set_fov(eval_num(n) * (PI/180.0f));
 }
 
 void sexp_reset_fov()
 {
-	Viewer_zoom = VIEWER_ZOOM_DEFAULT;
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return;
 
-	if(Viewer_zoom > PI2)
-		Viewer_zoom = PI2;
-	if(Viewer_zoom < 0)
-		Viewer_zoom = 0;
+	Sexp_fov = 0.0;
+	//cam->set_fov(VIEWER_ZOOM_DEFAULT);
 }
 
-void sexp_reset_camera()
+void sexp_reset_camera(int node)
 {
-	Viewer_mode &= ~VM_FREECAMERA;
-	hud_set_draw(1);
+	camera *cam = cam_get_current().getCamera();
+	if(cam != NULL)
+	{
+		if(is_sexp_true(node))
+		{
+			cam->reset();
+		}
+	}
+	cam_reset_camera();
 }
 
 void sexp_show_subtitle(int node)
@@ -16505,6 +16901,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CHANGE_PLAYER_SCORE:
+				sexp_change_player_score(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CHANGE_TEAM_SCORE:
+				sexp_change_team_score(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 				// in the case of a red_alert mission, simply call the red alert function to close
 				// the current campaign's mission and move forward to the next mission
 			case OP_RED_ALERT:
@@ -16585,6 +16991,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_ORDER:
 				sexp_val = sexp_order(node);
+				break;
+
+			case OP_QUERY_ORDERS:
+				sexp_val = sexp_query_orders(node);
 				break;
 
 			// Karajorma
@@ -16924,6 +17334,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// KeldorKatarn
+			case OP_LOCK_AFTERBURNER:
+			case OP_UNLOCK_AFTERBURNER:
+				sexp_deal_with_afterburner_lock(node, op_num == OP_LOCK_AFTERBURNER);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -17051,9 +17468,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_fade_out(node);
 				break;
-			case OP_CUTSCENES_SET_CAMERA_POSITION:
+			case OP_CUTSCENES_SET_CAMERA:
 				sexp_val = SEXP_TRUE;
-				sexp_set_camera_position(node);
+				sexp_set_camera(node);
 				break;
 			case OP_CUTSCENES_SET_CAMERA_FACING:
 				sexp_val = SEXP_TRUE;
@@ -17063,9 +17480,25 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_set_camera_facing_object(node);
 				break;
+			case OP_CUTSCENES_SET_CAMERA_FOV:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_fov(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_HOST:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_host(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_POSITION:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_position(node);
+				break;
 			case OP_CUTSCENES_SET_CAMERA_ROTATION:
 				sexp_val = SEXP_TRUE;
 				sexp_set_camera_rotation(node);
+				break;
+			case OP_CUTSCENES_SET_CAMERA_TARGET:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_target(node);
 				break;
 			case OP_CUTSCENES_SET_FOV:
 				sexp_val = SEXP_TRUE;
@@ -17077,7 +17510,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 			case OP_CUTSCENES_RESET_CAMERA:
 				sexp_val = SEXP_TRUE;
-				sexp_reset_camera();
+				sexp_reset_camera(node);
 				break;
 			case OP_CUTSCENES_SHOW_SUBTITLE:
 				sexp_val = SEXP_TRUE;
@@ -17316,6 +17749,7 @@ int query_operator_return_type(int op)
 		case OP_FACING:
 		case OP_FACING2:
 		case OP_ORDER:
+		case OP_QUERY_ORDERS:
 		case OP_WAYPOINT_MISSED:
 		case OP_WAYPOINT_TWICE:
 		case OP_PATH_FLOWN:
@@ -17465,6 +17899,8 @@ int query_operator_return_type(int op)
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_CHANGE_PLAYER_SCORE:
+		case OP_CHANGE_TEAM_SCORE:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -17583,10 +18019,14 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 		case OP_CUTSCENES_FADE_IN:
 		case OP_CUTSCENES_FADE_OUT:
-		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_FACING:
 		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
@@ -17622,6 +18062,8 @@ int query_operator_return_type(int op)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_LOCK_AFTERBURNER:
+		case OP_UNLOCK_AFTERBURNER:
 		case OP_RESET_ORDERS:
 		case OP_SET_PERSONA:
 		case OP_CHANGE_SUBSYSTEM_NAME:
@@ -17879,6 +18321,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_AI_ORDER;
 			else
 				return OPF_SHIP_WING;	// arg 0 or 2
+
+		case OP_QUERY_ORDERS:
+			if (argnum == 0)
+				return OPF_ORDER_RECIPIENT;
+			if (argnum == 1)
+				return OPF_AI_ORDER;
+			if (argnum == 2)
+				return OPF_POSITIVE;
+			if (argnum == 5)
+				return OPF_SUBSYSTEM;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_IS_DESTROYED_DELAY:
 		case OP_HAS_ARRIVED_DELAY:
@@ -18433,6 +18887,15 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TECH_RESET_TO_DEFAULT:
 			return OPF_NONE;
 
+		case OP_CHANGE_PLAYER_SCORE:
+			if (argnum == 0)
+				return OPF_NUMBER;
+			else 
+				return OPF_SHIP;
+
+		case OP_CHANGE_TEAM_SCORE:
+			return OPF_NUMBER;
+
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
 			return OPF_SHIP;
@@ -18710,6 +19173,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		// KeldorKatarn		
+		case OP_LOCK_AFTERBURNER:
+		case OP_UNLOCK_AFTERBURNER:
 			return OPF_SHIP;
 
 		case OP_CHANGE_SUBSYSTEM_NAME:
@@ -18858,6 +19324,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CUTSCENES_SET_FOV:
 			return OPF_NUMBER;
 		
+		case OP_CUTSCENES_SET_CAMERA:
+			return OPF_STRING;
+		
 		case OP_CUTSCENES_SET_CAMERA_POSITION:
 		case OP_CUTSCENES_SET_CAMERA_FACING:
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
@@ -18872,8 +19341,20 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
-		case OP_CUTSCENES_RESET_FOV:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+			return OPF_POSITIVE;
+		
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
+			if(argnum < 1)
+				return OPF_SHIP_WING_POINT_OR_NONE;
+			else
+				return OPF_SUBSYSTEM_OR_NONE;
+
 		case OP_CUTSCENES_RESET_CAMERA:
+			return OPF_BOOL;
+
+		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 			return OPF_NONE;
 
@@ -19456,8 +19937,9 @@ int extract_sexp_variable_index(int node)
 // wrapper around Sexp_node[xx].text for normal and variable
 char *CTEXT(int n)
 {
-	int sexp_variable_index;
+	int sexp_variable_index = -1;
 	char variable_name[TOKEN_LENGTH];
+	char *current_argument; 
 
 	if ( n < 0 ) {
 		Int3();
@@ -19476,26 +19958,28 @@ char *CTEXT(int n)
 		else
 		{
 			// make sure we have an argument to replace it with
-			Assert(Sexp_current_replacement_argument != NULL);
-			if (Sexp_current_replacement_argument == NULL)
+			Assert(!(Sexp_replacement_arguments.empty()));
+			if (Sexp_replacement_arguments.empty())
 				return Sexp_nodes[n].text;
 		}
 
 		// if the replacement argument is a variable name, get the variable index
-		sexp_variable_index = get_index_sexp_variable_name(Sexp_current_replacement_argument);
+		sexp_variable_index = get_index_sexp_variable_name(Sexp_replacement_arguments.back());
+
+		current_argument = Sexp_replacement_arguments.back();
 
 		// if the replacement argument is a formatted variable name, get the variable index
-		if (Sexp_current_replacement_argument[0] == SEXP_VARIABLE_CHAR)
+		if (current_argument[0] == SEXP_VARIABLE_CHAR)
 		{
-			get_unformatted_sexp_variable_name(variable_name, Sexp_current_replacement_argument);
+			get_unformatted_sexp_variable_name(variable_name, current_argument);
 			sexp_variable_index = get_index_sexp_variable_name(variable_name);
 		}
 
-		// if we have a variable, return the variable value, else return the regular argument
-		if (sexp_variable_index != -1)
+		// if we have a non-block variable, return the variable value, else return the regular argument
+		if ((sexp_variable_index != -1) && !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_BLOCK))
 			return Sexp_variables[sexp_variable_index].text;
 		else
-			return Sexp_current_replacement_argument;
+			return Sexp_replacement_arguments.back();
 	}
 
 	// Goober5000 - if not special argument, proceed as normal
@@ -19947,6 +20431,8 @@ int get_subcategory(int sexp_id)
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
 		case OP_CHANGE_SUBSYSTEM_NAME:
+		case OP_LOCK_AFTERBURNER:	// KeldorKatarn
+		case OP_UNLOCK_AFTERBURNER:	// KeldorKatarn
 
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -20002,6 +20488,8 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_CHANGE_PLAYER_SCORE:
+		case OP_CHANGE_TEAM_SCORE:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
@@ -20078,10 +20566,14 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 		case OP_CUTSCENES_FADE_IN:
 		case OP_CUTSCENES_FADE_OUT:
-		case OP_CUTSCENES_SET_CAMERA_POSITION:
+		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_FACING:
 		case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
+		case OP_CUTSCENES_SET_CAMERA_FOV:
+		case OP_CUTSCENES_SET_CAMERA_HOST:
+		case OP_CUTSCENES_SET_CAMERA_POSITION:
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
+		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
@@ -21178,13 +21670,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of waypoint path whose first point is withing forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
 
-	// fixed by Goober5000
+	// fixed by Goober5000 and then deprecated by Karajorma
 	{ OP_ORDER, "Order (Boolean training operator)\r\n"
+		"\tDeprecated - Use Query-Orders in any new mission.\r\n\r\n"
 		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of ship or wing to check if given order to.\r\n"
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tName of the target of the order (optional)." },
+
+	{ OP_QUERY_ORDERS, "Query-Orders (Boolean training operator)\r\n"
+		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tName of ship or wing to check if given order to.\r\n"
+		"\t2:\tName of order to check if player has given.\r\n"
+		"\t3:\tMaximum length of time since order was given. Use 0 for any time in the mission.\r\n"
+		"\t4:\tName of the target of the order (optional).\r\n"
+		"\t2:\tName of player ship giving the order(optional).\r\n"
+		"\t3:\tName of the subsystem for Destroy Subsystem orders.(optional)" },
 
 	// Karajorma
 	{ OP_RESET_ORDERS, "Reset-Orders (Action training operator)\r\n"
@@ -21356,6 +21859,18 @@ sexp_help_struct Sexp_help[] = {
 		"useful for starting new campaigns, so that the player will not see tech entries carried over "
 		"from previous campaigns.\r\n\r\n"
 		"Takes no arguments." },
+
+	{ OP_CHANGE_PLAYER_SCORE, "Change Player Score (Action operator)\r\n"
+		"\tThis operator allows direct alteration of the player's score for this mission.\r\n\r\n"
+		"Takes 2 or more arguments." 
+		"\t1:\tAmount to alter the player's score by.\r\n"
+		"\tRest:\tName of ship the player is flying."},
+
+	{ OP_CHANGE_TEAM_SCORE, "Change Team Score (Action operator)\r\n"
+		"\tThis operator allows direct alteration of the team's score for a TvT mission (Does nothing otherwise).\r\n\r\n"
+		"Takes 2 arguments." 
+		"\t1:\tAmount to alter the team's score by.\r\n"
+		"\t2:\tThe team to alter the score for. (0 will add the score to all teams!)"},
 
 	{ OP_AI_EVADE_SHIP, "Ai-evade ship (Ship goal)\r\n"
 		"\tCauses the specified ship to go into evade mode and run away like the weak "
@@ -22188,6 +22703,20 @@ sexp_help_struct Sexp_help[] = {
 		"\t(all): Name(s) of ship(s) to lock"
 	},
 
+	// KeldorKatarn
+	{ OP_LOCK_AFTERBURNER, "lock-afterburner\r\n"
+		"\tLocks the afterburners on the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+
+	// KeldorKatarn
+	{ OP_UNLOCK_AFTERBURNER, "unlock-afterburner\r\n"
+		"\tUnlocks the afterburners on the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+
 	// Karajorma
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"
 		"\tChanges the name of the specified subsystem on the specified ship\r\n"
@@ -22322,44 +22851,88 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
 	},
 
-	{ OP_CUTSCENES_SET_CAMERA_POSITION, "set-camera-position\r\n"
-		"\tSets the camera position to a spot in mission space  "
-		"Takes 3 arguments...\r\n"
-		"\t1:\tX position\r\n"
-		"\t2:\tY position\r\n"
-		"\t3:\tZ position\r\n"
-	},
-
-	{ OP_CUTSCENES_SET_CAMERA_ROTATION, "set-camera-rotation\r\n"
-		"\tSets the camera rotation  "
-		"Takes 3 to 5 arguments...\r\n"
-		"\t1:\tPitch (degrees)\r\n"
-		"\t2:\tBank (degrees)\r\n"
-		"\t3:\tHeading (degrees)\r\n"
-		"\t4:\tTotal turn time\r\n"
-		"\t5:\tTime to spend accelerating/decelerating\r\n"
+	{ OP_CUTSCENES_SET_CAMERA, "set-camera\r\n"
+		"\tSets SEXP camera, or another specified cutscene camera  "
+		"Takes 0 to 1 arguments...\r\n"
+		"\t(optional)\r\n"
+		"\t1:\tCamera name (created if nonexistent)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FACING, "set-camera-facing\r\n"
 		"\tMakes the camera face the given point  "
-		"Takes 3 to 5 arguments...\r\n"
+		"Takes 3 to 6 arguments...\r\n"
 		"\t1:\tX position to face\r\n"
 		"\t2:\tY position to face\r\n"
 		"\t3:\tZ position to face\r\n"
-		"\t4:\tTotal turn time\r\n"
-		"\t5:\tTime to spend accelerating/decelerating\r\n"
+		"\t(optional)\r\n"
+		"\t4:\tTotal turn time (milliseconds)\r\n"
+		"\t5:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t6:\tTime to spend decelerating (milliseconds)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FACING_OBJECT, "set-camera-facing-object\r\n"
 		"\tMakes the camera face the given object  "
-		"Takes 1 to 3 arguments...\r\n"
+		"Takes 1 to 4 arguments...\r\n"
 		"\t1:\tObject to face\r\n"
-		"\t2:\tTotal turn time\r\n"
-		"\t3:\tTime to spend accelerating/decelerating\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tTotal turn time (milliseconds)\r\n"
+		"\t3:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t4:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_FOV, "set-camera-fov\r\n"
+		"\tSets the camera field of view  "
+		"Takes 1 to 4 arguments...\r\n"
+		"\t1:\tNew FOV (degrees)\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tTotal zoom time (milliseconds)\r\n"
+		"\t3:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t4:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+	
+	{ OP_CUTSCENES_SET_CAMERA_HOST, "set-camera-host\r\n"
+		"\tSets the object and subystem camera should view from. Camera position is offset from the host. "
+		"Camera orientation is also offset from host, unless a valid camera target is set."
+		"Takes 1 to 2 arguments...\r\n"
+		"\t1:\tShip to mount camera on\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tSubystem to mount camera on\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_POSITION, "set-camera-position\r\n"
+		"\tSets the camera position to a spot in mission space  "
+		"Takes 3 to 6 arguments...\r\n"
+		"\t1:\tX position\r\n"
+		"\t2:\tY position\r\n"
+		"\t3:\tZ position\r\n"
+		"\t(optional)\r\n"
+		"\t4:\tTotal turn time (milliseconds)\r\n"
+		"\t5:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t6:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_ROTATION, "set-camera-rotation\r\n"
+		"\tSets the camera rotation  "
+		"Takes 3 to 6 arguments...\r\n"
+		"\t1:\tPitch (degrees)\r\n"
+		"\t2:\tBank (degrees)\r\n"
+		"\t3:\tHeading (degrees)\r\n"
+		"\t(optional)\r\n"
+		"\t4:\tTotal turn time (milliseconds)\r\n"
+		"\t5:\tTime to spend accelerating/decelerating (milliseconds)\r\n"
+		"\t6:\tTime to spend decelerating (milliseconds)\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_TARGET, "set-camera-target\r\n"
+		"\tSets the object and subystem camera should track. Camera orientation is offset from the target  "
+		"Takes 1 to 2 arguments...\r\n"
+		"\t1:\tShip to track\r\n"
+		"\t(optional)\r\n"
+		"\t2:\tSubystem to track\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
-		"\tSets the field of view  "
+		"\tSets the field of view - overrides all camera settings  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
 	},
@@ -22369,7 +22942,10 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_RESET_CAMERA, "reset-camera\r\n"
-		"\tResets the camera position and rotation  "
+		"\tReleases cutscene camera control  "
+		"Takes 1 optional argument...\r\n"
+		"\t(optional)\r\n"
+		"\t1:\tReset camera data (Position, facing, FOV...) (default: false)"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE, "show-subtitle\r\n"

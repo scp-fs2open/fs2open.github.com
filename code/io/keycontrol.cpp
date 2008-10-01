@@ -1114,7 +1114,6 @@ extern int Framerate_delay;
 
 extern void snd_stop_any_sound();
 
-extern float Viewer_zoom;
 extern vec3d Eye_position;
 extern matrix Eye_matrix;
 extern void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom);
@@ -1798,18 +1797,28 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_ALTED + KEY_EQUAL:
 		case KEY_DEBUGGED1 + KEY_ALTED + KEY_EQUAL:
 			{
-			Viewer_zoom += 0.1f;
-			g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "viewer zoom raised to %0.2f" , Viewer_zoom);
+			camera *cam = Main_camera.getCamera();
+			if(cam == NULL)
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Couldn't get camera FOV");
+				break;
+			}
+			cam->set_fov(cam->get_fov() + 0.1f);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , cam->get_fov());
 			}
 			break;
 
 		case KEY_DEBUGGED + KEY_ALTED + KEY_MINUS:
 		case KEY_DEBUGGED1 + KEY_ALTED + KEY_MINUS:
 			{
-			Viewer_zoom -= 0.1f;
-			g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "viewer zoom lowered to %0.2f" , Viewer_zoom);
+			camera *cam = Main_camera.getCamera();
+			if(cam == NULL)
+			{
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Couldn't get camera FOV");
+				break;
+			}
+			cam->set_fov(cam->get_fov() - 0.1f);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , cam->get_fov());
 			}
 			break;
 		case KEY_DEBUGGED + KEY_Z:

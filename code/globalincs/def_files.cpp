@@ -762,6 +762,12 @@ $Friendly AI Fire Delay Scale: 2, 1.4, 1.25, 1.1, 1						\n\
 ;; factor applied to 'fire wait' for hostile ships						\n\
 $Hostile AI Fire Delay Scale: 4, 2.5, 1.75, 1.25, 1						\n\
 																		\n\
+;; factor applied to 'fire wait' for secondaries of friendly ships		\n\
+$Friendly AI Secondary Fire Delay Scale: 0.4, 0.6, 0.8, 1.0, 1.2		\n\
+																		\n\
+;; factor applied to 'fire wait' for secondaries of hostile ships		\n\
+$Hostile AI Secondary Fire Delay Scale: 1.4, 1.2, 1.0, 0.8, 0.6			\n\
+																		\n\
 ;; factor applied to time it takes for enemy ships to turn				\n\
 $AI Turn Time Scale: 3, 2.2, 1.6, 1.3, 1								\n\
 																		\n\
@@ -787,6 +793,11 @@ $Percentage Required For Kill Scale: 0.30, 0.30, 0.30, 0.30, 0.30		\n\
 ;; must inflict in order to be awarded an assist						\n\
 $Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 																		\n\
+;; in TvT and Coop missions all teammates will be granted this 		 	\n\
+;; percentage of the capships score when someone scores a kill			\n\
+$Percentage Awarded For Capship Assist: 0.5, 0.5, 0.5, 0.5, 0.5			\n\
+																		\n\
+																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
 																		\n\
@@ -802,10 +813,15 @@ $smart primary weapon selection: NO										\n\
 ;; proper use of bomber+ missiles)										\n\
 $smart secondary weapon selection: NO									\n\
 																		\n\
-;; if set, enables smart shield management (previously was				\n\
-;; -smart_shields on the command line)									\n\
+;; if set, shields will devote all their charging energy to the weakest	\n\
+;; quadrant(s) and not waste energy on fully-charged quadrants			\n\
+;; (previously was -smart_shields on the command line)					\n\
 $smart shield management: NO											\n\
 																		\n""\
+;; if set, the AI will properly use brief pulses of afterburner power	\n\
+;; instead of afterburning until fuel is exhausted						\n\
+$smart afterburner management: NO										\n\
+																		\n\
 ;; if set, allows an AI ship to switch to rapid fire for dumbfire		\n\
 ;; missiles																\n\
 $allow rapid secondary dumbfire: NO										\n\
@@ -831,7 +847,7 @@ $shockwaves damage small ship subsystems: NO							\n\
 ;; navigation subsystem is damaged or destroyed							\n\
 $navigation subsystem governs warpout capability: NO					\n\
 																		\n\
-;; if set, will not use a minimum speed limit for docked ships			\n\
+;; if set, will not use a minimum speed limit for docked ships			\n""\
 ;; (like in FS1)														\n\
 $ignore lower bound for minimum speed of docked ship: NO				\n\
 																		\n\
@@ -847,6 +863,23 @@ $use additive weapon velocity: NO										\n\
 																		\n\
 ;; if set, beam damage is counted when calculating kills and assists 	\n\
 $include beams for kills and assists: NO								\n\
+																		\n\
+;; if set, kills gain score based on the percentage damage the killer	\n\
+;; inflicted on the dead ship											\n\
+$score kills based on damage caused: NO									\n\
+																		\n\
+;; if set, kills gain score based on the percentage damage the player	\n\
+;; gaining the assist inflicted on the dead ship						\n\
+$score assists based on damage caused: NO								\n\
+																		\n\
+;; if set, players (rather than just their team) can gain score from 	\n\
+;; events in multiplayer												\n\
+$allow event and goal scoring in multiplayer: NO						\n\
+																		\n\
+;; if set, the AI will properly link primaries according to				\n\
+;; specified percentages of energy levels instead of retail behavior	\n\
+;; where it mistakenly linked according to absolute energy levels		\n\
+$fix linked primary weapon decision bug: NO								\n\
 																		\n\
 																		\n\
 #End																	\n\

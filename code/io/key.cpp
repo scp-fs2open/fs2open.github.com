@@ -164,7 +164,9 @@
 #include "SDL.h"
 #endif
 
+#include "controlconfig/controlsconfig.h" //For textify scancode
 #include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 #include "io/key.h"
 #include "math/fix.h"
 #include "io/timer.h"
@@ -877,7 +879,17 @@ void key_mark( uint code, int state, uint latency )
 			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
 
 		Current_key_down = scancode;
+		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+			Current_key_down |= KEY_SHIFTED;
+
+		if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+			Current_key_down |= KEY_ALTED;
+
+		if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+			Current_key_down |= KEY_CTRLED;
+		Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
 		Script_system.RunCondition(CHA_KEYRELEASED);
+		Script_system.RemHookVar("Key");
 	} else {
 		// Key going down
 		keyd_last_pressed = scancode;
@@ -897,7 +909,17 @@ void key_mark( uint code, int state, uint latency )
 
 			//WMC - For scripting
 			Current_key_down = scancode;
+			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+				Current_key_down |= KEY_SHIFTED;
+
+			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+				Current_key_down |= KEY_ALTED;
+
+			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+				Current_key_down |= KEY_CTRLED;
+			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
 			Script_system.RunCondition(CHA_KEYPRESSED);
+			Script_system.RemHookVar("Key");
 		} else if (!keyd_repeat) {
 			// Don't buffer repeating key if repeat mode is off
 			scancode = 0xAA;		

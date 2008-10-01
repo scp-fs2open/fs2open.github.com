@@ -6033,8 +6033,13 @@ void evade_ship()
 		float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 		if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 			afterburners_start(Pl_objp);
+			
+			if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+				aip->afterburner_stop_time = Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4;
+			} else {				
 			aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
 		}
+	}
 	}
 
 	vm_vec_sub(&vec_from_enemy, &player_pos, &enemy_pos);
@@ -6553,12 +6558,21 @@ void set_primary_weapon_linkage(object *objp)
 			return;
 	}
 
-	// regular lasers
-	if (shipp->weapon_energy > The_mission.ai_profile->link_energy_levels_always[Game_skill_level]) {
+	// get energy level
+	float energy;
+	if (The_mission.ai_profile->flags & AIPF_FIX_LINKED_PRIMARY_BUG) {
+		energy = shipp->weapon_energy / sip->max_weapon_reserve * 100.0f;
+	} else {
+		energy = shipp->weapon_energy;
+	}
+
+	// make linking decision based on weapon energy
+	if (energy > The_mission.ai_profile->link_energy_levels_always[Game_skill_level]) {
 		shipp->flags |= SF_PRIMARY_LINKED;
-	} else if (shipp->weapon_energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
-		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
+	} else if (energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
+		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f) {
 			shipp->flags |= SF_PRIMARY_LINKED;
+	}
 	}
 
 	// also check ballistics - Goober5000
@@ -7596,11 +7610,33 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 						percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 							afterburners_start(Pl_objp);
+							if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+								float max_ab_vel;
+								float time_to_exhaust_25pct_fuel;
+								float time_to_fly_75pct_of_distance;
+								float ab_time;
+
+								// Max afterburner speed - make sure we don't devide by 0 later
+								max_ab_vel = sip->afterburner_max_vel.xyz.z > 0.0f ? sip->afterburner_max_vel.xyz.z : sip->max_vel.xyz.z;
+								max_ab_vel = max_ab_vel > 0.0f ? max_ab_vel : 0.0001f;
+
+								// Time to exhaust 25% of the remaining fuel
+								time_to_exhaust_25pct_fuel = shipp->afterburner_fuel * 0.25f / sip->afterburner_burn_rate;
+
+								// Time to fly 75% of the distance to the target
+								time_to_fly_75pct_of_distance = dist_to_enemy * 0.75f / max_ab_vel;
+
+								// Get minimum
+								ab_time = MIN(time_to_exhaust_25pct_fuel, time_to_fly_75pct_of_distance);								
+								
+								aip->afterburner_stop_time = Missiontime + F1_0 * ab_time;
+							} else {				
 							aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
 						}
 					}
 				}
 			}
+		}
 		}
 
 		accelerate_ship(aip, 1.0f);
@@ -8667,10 +8703,9 @@ float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip)
 {
 	float t = swip->fire_wait;		//	Base delay for this weapon.
 	if (shipp->team == Player_ship->team) {
-		//	On player's team, _lower_ skill level = faster firing
-		t = t * (Game_skill_level+2) / (NUM_SKILL_LEVELS);
-	} else {		//	Not on player's team, higher skill level = faster firing
-		t = t * (NUM_SKILL_LEVELS - Game_skill_level+2) / (NUM_SKILL_LEVELS);
+		t *= The_mission.ai_profile->ship_fire_secondary_delay_scale_friendly[Game_skill_level];
+	} else {
+		t *= The_mission.ai_profile->ship_fire_secondary_delay_scale_hostile[Game_skill_level];
 	}
 
 	t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
@@ -10951,18 +10986,21 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	ai_info *aip, *repair_aip;
 	int		stamp = -1;
 
+	int p_index;
+	int p_team;
+
+	p_index = -1;
+	p_team = -1;
+
 	// repaired_objp should not be null, but repair_objp will be null when a support ship is just warping in
 	Assert(repaired_objp != NULL);
 
 	Assert( repaired_objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[repaired_objp->instance].ai_index];
 
-	// multiplayer
-	int p_index;
-	p_index = -1;
-
 	if(Game_mode & GM_MULTIPLAYER){
 		p_index = multi_find_player_by_object(repaired_objp);		
+		p_team = Net_players[p_index].p_info.team;
 	} else {		
 		if(repaired_objp == Player_obj){
 			p_index = Player_num;
@@ -11042,12 +11080,14 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		if ( p_index >= 0 ) {
 			hud_support_view_abort();
 
-			// send appropriate message to player here
+			// send appropriate messages here
+			if (MULTIPLAYER_MASTER) {
 			if ( how == REPAIR_INFO_KILLED ){
-				message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
 			} else {
 				if ( repair_objp ){
-					message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, -1 );
+						message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
+					}
 				}
 			}
 		}
@@ -11067,7 +11107,9 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			
 			hud_support_view_stop();			
 
-			message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, -1);
+			if (MULTIPLAYER_MASTER) {
+				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, p_team);
+			}
 		}
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
 		break;

@@ -301,6 +301,12 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Hostile AI Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Friendly AI Secondary Fire Delay Scale:"))
+				parse_float_list(profile->ship_fire_secondary_delay_scale_friendly, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
+				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
+
 			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
@@ -322,6 +328,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Percentage Required For Assist Scale:"))
 				parse_float_list(profile->assist_percentage_scale, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Percentage Awarded For Capship Assist:"))
+				parse_float_list(profile->assist_award_percentage_scale, NUM_SKILL_LEVELS);
+
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
@@ -329,6 +338,8 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$smart secondary weapon selection:", AIPF_SMART_SECONDARY_WEAPON_SELECTION);
 
 			set_flag(profile, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT);
+
+			set_flag(profile, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT);
 
 			set_flag(profile, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE);
 			
@@ -353,6 +364,14 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$use newtonian dampening:", AIPF_USE_NEWTONIAN_DAMPENING);
 
 			set_flag(profile, "$include beams for kills and assists:", AIPF_INCLUDE_BEAMS_IN_STAT_CALCS);
+
+			set_flag(profile, "$score kills based on damage caused:", AIPF_KILL_SCORING_SCALES_WITH_DAMAGE);
+
+			set_flag(profile, "$score assists based on damage caused:", AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE);
+
+			set_flag(profile, "$allow event and goal scoring in multiplayer:", AIPF_ALLOW_MULTI_EVENT_SCORING);
+
+			set_flag(profile, "$fix linked primary weapon decision bug:", AIPF_FIX_LINKED_PRIMARY_BUG);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

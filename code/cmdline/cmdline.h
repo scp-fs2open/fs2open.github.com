@@ -680,6 +680,7 @@ extern int Cmdline_targetinfo;
 // Gameplay related
 extern int Cmdline_3dwarp;
 extern int Cmdline_ship_choice_3d;
+extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_warp_flash;
 extern int Cmdline_autopilot_interruptable;
 
@@ -712,6 +713,7 @@ extern int Cmdline_novbo;
 extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
 extern int Cmdline_noglsl;
+extern int Cmdline_ati_color_swap;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;

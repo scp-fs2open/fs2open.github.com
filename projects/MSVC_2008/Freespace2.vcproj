@@ -86,10 +86,11 @@
 				UseLibraryDependencyInputs="false"
 				AdditionalDependencies="code.lib liblua_d.lib libjpeg_d.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
-				OutputFile="$(OutDir)\fs2_open_3_6_9d.exe"
+				OutputFile="$(OutDir)\fs2_open_3_6_10d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -198,10 +199,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="$(OutDir)\fs2_open_3_6_9r.exe"
+				OutputFile="$(OutDir)\fs2_open_3_6_10r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -313,10 +315,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="$(OutDir)\fs2_open_3_6_9r_sse.exe"
+				OutputFile="$(OutDir)\fs2_open_3_6_10r_sse.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -428,10 +431,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="$(OutDir)\fs2_open_3_6_9r_sse2.exe"
+				OutputFile="$(OutDir)\fs2_open_3_6_10r_sse2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				EnableUAC="false"
+				UACUIAccess="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -474,6 +479,10 @@
 	<Files>
 		<File
 			RelativePath="..\..\code\freespace2\app_icon.ico"
+			>
+		</File>
+		<File
+			RelativePath="..\..\code\freespace2\app_icon_glow.ico"
 			>
 		</File>
 		<File
@@ -638,14 +647,6 @@
 		</File>
 		<File
 			RelativePath="..\..\code\freespace2\levelpaging.h"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\freespace2\phrases.cfg"
 			>
 		</File>
 	</Files>

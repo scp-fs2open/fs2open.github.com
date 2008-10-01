@@ -563,7 +563,7 @@ float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha);
 
 // do a pre-render of the background nebula
-void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient);
+void neb2_pre_render(camid cid);
 
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye);
@@ -800,7 +800,7 @@ void neb2_level_close()
 }
 
 // call before beginning all rendering
-void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
+void neb2_render_setup(camid cid)
 {
 	// standalone servers can bail here
 	if (Game_mode & GM_STANDALONE_SERVER)
@@ -834,7 +834,7 @@ void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 
 
 	// pre-render the real background nebula
-	neb2_pre_render(eye_pos, eye_orient);		
+	neb2_pre_render(cid);
 }
 
 // level paging code
@@ -1398,10 +1398,8 @@ void neb2_render_player()
 					continue;
 				}
 
-				vertex p_;
 				// rotate and project the vertex into viewspace
 				g3_rotate_vertex(&p, &Neb2_cubes[idx1][idx2][idx3].pt);
-				if(!Cmdline_nohtl) g3_transfer_vertex(&p_, &Neb2_cubes[idx1][idx2][idx3].pt);
 
 				ptemp = p;
 				g3_project_vertex(&ptemp);
@@ -1444,9 +1442,7 @@ void neb2_render_player()
 #else */
 				if (!Cmdline_nohtl) gr_set_lighting(false, false);
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-		 	  	if(Cmdline_nohtl)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 //#endif
 			}
 		}
@@ -1584,7 +1580,6 @@ float neb2_get_fog_intensity(vec3d *pos)
 ubyte tpixels[ESIZE * ESIZE * 4];		// for 32 bits
 int last_esize = -1;
 int this_esize = ESIZE;
-extern float Viewer_zoom;
 float ex_scale, ey_scale;
 int tbmap = -1;
 // UnknownPlayer : Contained herein, the origins of the nebula rendering bug!
@@ -1594,7 +1589,7 @@ int tbmap = -1;
 // It doesn't use much, but it APPEARS to be fairly useless unless someone wants
 // to enlighten me.
 //
-void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
+void neb2_pre_render(camid cid)
 {
 	// if the mission is not a fullneb mission, skip
 	if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
@@ -1609,7 +1604,7 @@ void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 	gr_screen.clip_width = this_esize;
 	gr_screen.clip_height = this_esize;
 	g3_start_frame(1);							// Turn on zbuffering
-	g3_set_view_matrix(eye_pos, eye_orient, Viewer_zoom);
+	g3_set_view(cid.getCamera());
 	gr_set_clip(0, 0, this_esize, this_esize);		
 
 	// render the background properly

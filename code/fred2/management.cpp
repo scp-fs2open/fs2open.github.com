@@ -609,6 +609,7 @@ char Fred_exe_dir[512] = "";
 char Fred_base_dir[512] = "";
 
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 
 // object numbers for ships in a wing.
 int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
@@ -804,7 +805,7 @@ void parse_medal_tbl()
 void fred_close()
 {
 	if (Fred_texture_replacements != NULL) {
-		vm_free(Fred_texture_replacements);
+		delete[] Fred_texture_replacements;
 		Fred_texture_replacements = NULL;
 	}
 }
@@ -927,7 +928,8 @@ bool fred_init()
 	species_init();		// Kazan
 
 	// for fred specific replacement texture stuff
-	Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_MODEL_TEXTURES );
+	//Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_REPLACEMENT_TEXTURES );
+	Fred_texture_replacements = new texture_replace[MAX_SHIPS*MAX_REPLACEMENT_TEXTURES];
 	atexit(fred_close);
 
 	// Goober5000
@@ -1500,9 +1502,10 @@ void clear_mission()
 	Player_starts = 0;
 	Num_teams = 1;
 
-	// reset alternate name stuff
+	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
 		strcpy(Fred_alt_names[i], "");
+		strcpy(Fred_callsigns[i], "");
 	}
 
 	// set up the default ship types for all teams.  For now, this is the same class

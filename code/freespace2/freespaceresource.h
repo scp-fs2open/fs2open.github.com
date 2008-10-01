@@ -16,6 +16,7 @@
 #define IDB_GOAL_NONE                   121
 #define IDB_GOAL_FAIL                   122
 #define IDI_APP_ICON                    124
+#define IDI_APP_ICON_GLOW               125
 #define IDD_GEN                         127
 #define IDD_RT_VSELECT                  128
 #define IDD_DIALOG1                     129

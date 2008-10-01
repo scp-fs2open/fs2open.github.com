@@ -324,8 +324,9 @@ extern int Fred_font;
 extern ai_goal_list Ai_goal_list[];
 extern int Ai_goal_list_size;
 
-// alternate ship name stuff
+// alternate ship name and callsign stuff
 extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 
 extern int	wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 

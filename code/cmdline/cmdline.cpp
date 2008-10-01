@@ -881,6 +881,7 @@
  * $NoKeywords: $
  */
 
+#include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
@@ -928,9 +929,6 @@ public:
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
 
-
-extern float VIEWER_ZOOM_DEFAULT;
-extern float Viewer_zoom;
 extern int Show_framerate;	// from freespace.cpp
 
 
@@ -1005,6 +1003,7 @@ Flag exe_params[] =
 	{ "-ballistic_gauge",	"Enable the analog ballistic ammo gauge",	true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ballistic_gauge", },
 
 	{ "-ship_choice_3d",	"Use models for ship selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
+    { "-weapon_choice_3d",	"Use models for weapon selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-weapon_choice_3d", },
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
@@ -1036,6 +1035,7 @@ Flag exe_params[] =
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+    { "-ati_swap",          "Fix Color issues on some ATI cards",       true,   0,                  EASY_DEFAULT,       "Troubleshoot", "http://scp.indiegames.us/mantis/view.php?id=1669", },
 
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
@@ -1179,11 +1179,13 @@ int Cmdline_targetinfo = 0;
 // Gameplay related
 cmdline_parm use_3dwarp("-3dwarp", NULL);			// Cmdline_3dwarp
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice_3d
+cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL);	// Cmdline_weapon_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL);	// Cmdline_warp_flash
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
+int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 
@@ -1231,6 +1233,7 @@ cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
+cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_load_all_weapons = 0;
@@ -1242,6 +1245,7 @@ int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_safeloading = 0;
 int Cmdline_no_fbo = 0;
 int Cmdline_noglsl = 0;
+int Cmdline_ati_color_swap = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -1974,7 +1978,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( fov_arg.found() ) {
-		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+		VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
 	}
 
 	if( clip_dist_arg.found() ) {
@@ -2075,6 +2079,9 @@ bool SetCmdlineParams()
 
 	if ( ship_choice_3d_arg.found() )
 		Cmdline_ship_choice_3d = 1;
+
+    if ( weapon_choice_3d_arg.found() )
+        Cmdline_weapon_choice_3d = 1;
 
 	if ( show_mem_usage_arg.found() )
 		Cmdline_show_mem_usage = 1;
@@ -2230,6 +2237,11 @@ bool SetCmdlineParams()
 
 	if ( verify_vps_arg.found() )
 		Cmdline_verify_vps = 1;
+
+    if ( atiswap_arg.found() )
+    {
+        Cmdline_ati_color_swap = 1;
+    }
 
 	return true; 
 }

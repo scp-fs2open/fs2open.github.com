@@ -945,6 +945,8 @@ struct ship_subsys;
 #define OPF_SUBSYSTEM_OR_NONE	60		// Goober5000 - an "optional" subsystem argument
 #define OPF_PERSONA				61		// Karajorma - name of a persona
 #define OPF_SUBSYS_OR_GENERIC	62		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
+#define OPF_SHIP_WING_POINT_OR_NONE	63	// WMC - Ship, wing, point or none
+#define OPF_ORDER_RECIPIENT		64		// Karajorma - since orders can go to All Fighters as well as a ship or wing
 
 
 // Operand return types
@@ -1353,6 +1355,14 @@ struct ship_subsys;
 #define OP_SHIP_COPY_DAMAGE					(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CHANGE_SUBSYSTEM_NAME			(0x00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_SET_PERSONA						(0x00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_CHANGE_PLAYER_SCORE				(0x00b7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_CHANGE_TEAM_SCORE				(0x00b8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_CUTSCENES_SET_CAMERA_FOV			(0x00b9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
+#define OP_CUTSCENES_SET_CAMERA				(0x00ba | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
+#define OP_CUTSCENES_SET_CAMERA_HOST		(0x00bb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
+#define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
+#define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
+#define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 
 
 /* made obsolete by Goober5000
@@ -1448,6 +1458,7 @@ struct ship_subsys;
 #define OP_KEY_RESET_MULTIPLE				(0x0012 | OP_CATEGORY_TRAINING)	// Goober5000
 #define OP_STRING_TO_INT					(0x0013 | OP_CATEGORY_TRAINING) // Karajorma
 #define OP_RESET_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
+#define OP_QUERY_ORDERS						(0x0015 | OP_CATEGORY_TRAINING) // Karajorma
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
@@ -1458,9 +1469,9 @@ struct ship_subsys;
 #define SEXP_NONE_STRING			"<none>"
 
 // macros for accessing sexpression atoms
-#define CAR(n)		(Sexp_nodes[n].first)
-#define CDR(n)		(Sexp_nodes[n].rest)
-#define CADR(n)	(Sexp_nodes[Sexp_nodes[n].rest].first)
+#define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)
+#define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
+#define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
 char *CTEXT(int n);
 
@@ -1657,11 +1668,14 @@ class arg_item
 	public:
 		char *text;
 		arg_item *next;
+		int nesting_level;
 
 		arg_item() : text(NULL), next(NULL) {}
 		void add_data(char *str);
 		void expunge();
 		int empty();
+		arg_item *get_next();
+		void clear_nesting_level(); 
 };
 
 

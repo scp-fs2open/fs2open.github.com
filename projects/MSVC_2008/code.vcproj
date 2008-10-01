@@ -3772,6 +3772,38 @@
 			</File>
 		</Filter>
 		<Filter
+			Name="Render"
+			>
+			<File
+				RelativePath="..\..\code\render\3d.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\render\3dclipper.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\render\3ddraw.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\render\3dinternal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\render\3dlaser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\render\3dmath.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\render\3dsetup.cpp"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="Ship"
 			>
 			<File
@@ -5464,38 +5496,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\iff_defs\iff_defs.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Render"
-			>
-			<File
-				RelativePath="..\..\code\render\3d.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\render\3dclipper.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\render\3ddraw.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\render\3dinternal.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\render\3dlaser.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\render\3dmath.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\render\3dsetup.cpp"
 				>
 			</File>
 		</Filter>

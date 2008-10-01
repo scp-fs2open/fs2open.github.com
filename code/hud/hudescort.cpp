@@ -211,6 +211,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "iff_defs/iff_defs.h"
+#include "parse/parselo.h"
 
 
 int Show_escort_view;
@@ -836,6 +837,7 @@ void hud_escort_show_icon(int x, int y, int index)
 	// print out ship name
 	strcpy(buf, sp->ship_name);
 	gr_force_fit_string(buf, 255, 100);	
+    end_string_at_first_hash_symbol(buf);
 	
 	emp_hud_string( x + current_hud->Escort_name[0], y + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
 
@@ -974,6 +976,12 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 
 	// get complete escort list
 	hud_create_complete_escort_list(complete_escorts, &num_complete_escorts);
+
+    // ensure the complete escort list is not full already
+    if (num_complete_escorts == MAX_COMPLETE_ESCORT_LIST)
+    {
+        return;
+    }
 
 	// check if ship is already on complete escort list
 	found = 0;

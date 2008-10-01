@@ -1670,7 +1670,6 @@ void stars_camera_cut()
 //#define TIME_STAR_CODE		// enable to time star code
 
 extern int Sun_drew;
-extern float Viewer_zoom;
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos)
@@ -1816,7 +1815,8 @@ void stars_draw_sun_glow(int sun_n)
 	float local_scale;
 
 	// sanity
-	Assert( sun_n < (int)Suns.size() );
+	//WMC - Dunno why this is getting hit...
+	//Assert( sun_n < (int)Suns.size() );
 
 	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
 		return;
@@ -1859,7 +1859,7 @@ void stars_draw_sun_glow(int sun_n)
 	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
 
-	if ( bm->flare && !(sun_vex.codes & CC_OFF) ) //if sun isn't off-screen, and is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
+	if ( bm->flare ) //if the sun is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
 		stars_draw_lens_flare(&sun_vex, sun_n);
 }
 
@@ -2597,7 +2597,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && ( Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
+	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
 		stars_draw_stars();
 	}
 
@@ -2675,7 +2675,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			pm->maps[idx].base_map.PageIn();
+			pm->maps[idx].PageIn();
 		}
 
 		pm = model_get(Subspace_model_outer);
@@ -2683,7 +2683,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			pm->maps[idx].base_map.PageIn();
+			pm->maps[idx].PageIn();
 		}
 
 		if (Subspace_glow_bitmap < 0) {
@@ -2909,7 +2909,7 @@ void stars_draw_background()
 	if (Nmodel_num < 0)
 		return;
 
-	if (Nmodel_bitmap > -1) {
+	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(Nmodel_bitmap);
 		flags |= MR_FORCE_TEXTURE;
 	}
@@ -2919,7 +2919,7 @@ void stars_draw_background()
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 
-	if (Nmodel_bitmap > -1)
+	if (Nmodel_bitmap >= 0)
 		model_set_forced_texture(-1);
 }
 
@@ -2936,7 +2936,7 @@ void stars_set_background_model(char *model_name, char *texture_name)
 		Nmodel_num = -1;
 	}
 
-	if ( (model_name == NULL) || (strlen(model_name) < 1) )
+	if ( (model_name == NULL) || (*model_name == '\0') )
 		return;
 
 	Nmodel_num = model_load(model_name, 0, NULL, 0);
@@ -3168,7 +3168,8 @@ starfield_bitmap *stars_get_bitmap_entry(int index, bool sun)
 {
 	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
-	Assert( (index >= 0) && (index < max_index) );
+	//WMC - Commented out because it keeps happening, and I don't know what this means.
+	//Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return NULL;

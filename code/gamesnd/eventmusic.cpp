@@ -1178,7 +1178,10 @@ int event_music_friendly_arrival()
 		return 0;
 
 	// Goober5000 - to avoid array out-of-bounds
-	Assert(Current_pattern >= 0 && Current_pattern < MAX_PATTERNS);
+	//Assert(Current_pattern >= 0 && Current_pattern < MAX_PATTERNS);
+
+	if(Current_pattern < 0 || Current_pattern > MAX_PATTERNS)
+		return 0;
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
 		return 0;	// don't squash a pending pattern

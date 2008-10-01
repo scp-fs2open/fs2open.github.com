@@ -613,6 +613,11 @@ void change_window_active_state()
 #endif
 
 			disableWindowsKey();
+
+            if (!Cmdline_window)
+            {
+                SetWindowPos(hwndApp, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
 		} else {
 			joy_unacquire_ff();
 
@@ -627,6 +632,11 @@ void change_window_active_state()
 #endif
 
 			enableWindowsKey();
+
+            if (!Cmdline_window)
+            {
+                SetWindowPos(hwndApp, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
 		}
 
 		gr_activate(fAppActive);
@@ -685,6 +695,9 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 	case WM_TIMER:
 		break;
+
+    case WM_SYSCHAR:
+        break;
 
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:	{		

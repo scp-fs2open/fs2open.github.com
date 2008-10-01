@@ -402,10 +402,10 @@ float atan2_safe(float y, float x)
 	float ang;
 
 	// special case, x == 0
-	if ( x == 0 ) {
-		if ( y == 0 ) 
+	if ( x == 0.0f ) {
+		if ( y == 0.0f ) 
 			ang = 0.0f;
-		else if ( y > 0 )
+		else if ( y > 0.0f )
 			ang = PI_2;
 		else
 			ang = -PI_2;
@@ -414,7 +414,7 @@ float atan2_safe(float y, float x)
 	}
 	
 	ang = (float)atan(y/x);
-	if ( x < 0 ){
+	if ( x < 0.0f ){
 		ang += PI;
 	}
 

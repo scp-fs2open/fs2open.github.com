@@ -971,7 +971,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	//	To change direction of bank, negate the whole expression.
 	//	To increase magnitude of banking, decrease denominator.
 	//	Adam: The following statement is all the math for banking while turning.
-	delta_bank = - (ci->heading * pi->max_rotvel.xyz.y)/2.0f;
+	delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
 #else
 	delta_bank = 0.0f;
 #endif
@@ -1522,4 +1522,155 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 		pi->reduced_damp_decay = timestamp( reduced_damp_decay_time );
 	}
 
+}
+
+//*************************CLASS: avd_movement*************************
+avd_movement::avd_movement()
+{
+	clear();
+}
+
+void avd_movement::clear()
+{
+	memset(this, 0, sizeof(avd_movement));
+}
+
+void avd_movement::get(float Time, float *Position, float *Velocity)
+{
+	this->update(Time);
+
+	if(Position != NULL)
+		*Position = Pc;
+	if(Velocity != NULL)
+		*Velocity = Vc;
+}
+
+void avd_movement::get(float *Position, float *Velocity)
+{
+	float time = (float)(timestamp() - TSi)/1000.0f;
+	this->get(time, Position, Velocity);
+}
+
+void avd_movement::set(float position)
+{
+	this->clear();
+	Pi = Pf = Pc = position;
+}
+
+void avd_movement::setAVD(float final_position, float total_movement_time, float starting_accleration_time, float ending_acceleration_time, float final_velocity)
+{
+	//Make sure Pc et al are up-to-date
+	this->update();
+
+	Pf = final_position;
+	Tf = total_movement_time;
+	Tai = starting_accleration_time;
+	Taf = ending_acceleration_time;
+	Vf = final_velocity;
+
+	if(Tai+Taf >= Tf)
+	{
+		Tai = Tf;
+		Taf = 0.0f;
+	}
+
+	if(Tf <= 0.0f)
+	{
+		Pc = Pi = Pf;
+		Vc = Vi = Vf;
+		return;
+	}
+
+	Pi = Pc;
+	Vi = Vc;
+	TSi = timestamp();
+	
+	Vm = (Pf-Pi-0.5f*(Vi*Tai)-0.5f*(Vf*Taf)) / (Tf - 0.5f*Tai - 0.5f*Taf);
+	Ai = (Vm-Vi)/Tai;
+	Af = (Vf-Vm)/Taf;
+}
+
+void avd_movement::setVD(float total_movement_time, float ending_acceleration_time, float final_velocity)
+{
+	//Make sure Pc et al are up-to-date
+	this->update();
+
+	Tf = total_movement_time;
+	Tai = 0.0f;
+	Taf = ending_acceleration_time;
+	Vf = final_velocity;
+
+	Pi = Pc;
+	Vm = Vi = Vc;
+
+	TSi = timestamp();
+	Ai = 0.0f;
+	Af = (Vf-Vm)/Taf;
+	Pf = Pi + Pf*(Tf - Taf) + Vm*Taf + 0.5f*Af*(Taf*Taf);
+}
+
+void avd_movement::update()
+{
+	float time = (float)(timestamp() - TSi)/1000.0f;
+	this->update(time);
+}
+
+void avd_movement::update(float Time)
+{
+	if(Tf <= 0.0f)
+	{
+		//This avd_movement is just serving as static storage
+		Pc = Pi;
+		Vc = Vi;
+	}
+	else if(Time >= Tf)
+	{
+		//Movement has ended, but the thing may still have a constant velocity
+		Pc = Pf + Vf*(Time-Tf);
+		Vc = Vf;
+	}
+	else
+	{
+		//Movement is in-progress and we must calculate where the thing is now.
+		float t = Time;
+		float Tc = 0.0f;
+
+		if(t >= 0.0f)
+		{
+			Pc = Pi;
+			Vc = Vi;
+		}
+		
+		if(t >= 0.0f && Tai > 0.0f)
+		{
+			if(t < Tai)
+				Tc = t;
+			else
+				Tc = Tai;
+			Pc = Pc + Vi*Tc + 0.5f*Ai*(Tc*Tc);
+			Vc = Vc + Ai*Tc;
+		}
+		
+		if(t >= Tai && (Tai+Taf) < Tf)
+		{
+			if(t < (Tf-Taf))
+				Tc = (t-Tai);
+			else
+				Tc = (Tf-Tai-Taf);
+
+			Pc = Pc + Vm*Tc;
+			Vc = Vc;
+		}
+		
+		if(t >= (Tf-Taf) && Taf > 0.0f)
+		{
+			if(t < Tf)
+				Tc = t-(Tf-Taf);
+			else
+				Tc = Taf;
+
+			Pc = Pc + Vm*Tc + 0.5f*Af*(Tc*Tc);
+			Vc = Vc + Af*Tc;
+		}
+	}
 }

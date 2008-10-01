@@ -1310,14 +1310,13 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 	int behind = 0;
 
 	// start the frame
-	extern float Viewer_zoom;
 	extern int G3_count;
 
 	if(!G3_count){
 		g3_start_frame(1);
 		must_stop = 1;
 	}
-	g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
+	g3_set_view_matrix(&Eye_position, &Eye_matrix, Eye_fov);
 
 	// get extents of the rotated bitmap
 	g3_rotate_vertex(&v, pos);
@@ -4352,7 +4351,14 @@ void find_homing_object(object *weapon_objp, int num)
 	object		*objp, *old_homing_objp;
 	weapon_info	*wip;
 	weapon		*wp;
+    ship        *sp;
+    ship_info   *sip;
 	float			best_dist;
+    int         homing_object_team;
+    float       dist;
+    float       dot;
+    vec3d       vec_to_object;
+    ship_subsys *target_engines = NULL;
 
 	wp = &Weapons[num];
 
@@ -4382,22 +4388,38 @@ void find_homing_object(object *weapon_objp, int num)
 			if((objp->flags & OF_PROTECTED) && (wp->weapon_flags & WF_SPAWNED))
 				continue;
 
-			int homing_object_team = obj_team(objp);
+			homing_object_team = obj_team(objp);
 			if (iff_x_attacks_y(wp->team, homing_object_team))
 			{
-				float		dist;
-				float		dot;
-				vec3d	vec_to_object;
+				if ( objp->type == OBJ_SHIP )
+                {
+                    sp  = &Ships[objp->instance];
+                    sip = &Ship_info[sp->ship_info_index];
 
-				if ( objp->type == OBJ_SHIP ) {
+                    //if the homing weapon is a huge weapon and the ship that is being
+                    //looked at is not huge, then don't home
+                    if ((wip->wi_flags & WIF_HUGE) &&
+                        (sip->flags & (SIF_SMALL_SHIP | SIF_NOT_FLYABLE | SIF_HARMLESS)))
+                    {
+                        continue;
+                    }
+
 					// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
-					if ( Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS ) {
+					if ( sp->flags & SF_HIDDEN_FROM_SENSORS ) {
 						continue;
 					}
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( Ships[objp->instance].flags2 & SF2_STEALTH ) {
+					if ( sp->flags2 & SF2_STEALTH ) {
+						continue;
+					}
+
+                    if (wip->wi_flags & WIF_HOMING_JAVELIN)
+                    {
+                        target_engines = ship_get_closest_subsys_in_sight(sp, SUBSYSTEM_ENGINE, &weapon_objp->pos);
+
+                        if (!target_engines)
 						continue;
 					}
 
@@ -4411,10 +4433,13 @@ void find_homing_object(object *weapon_objp, int num)
 							continue;
 					}
 				}
+                else if (objp->type == OBJ_WEAPON)
+				{
+                    //don't attempt to home on weapons if the weapon is a huge weapon or is a javelin homing weapon.
+                    if (wip->wi_flags & (WIF_HUGE | WIF_HOMING_JAVELIN))
+                        continue;
 
 				//don't look for local ssms that are gone for the time being
-				if (objp->type == OBJ_WEAPON)
-				{
 					if (Weapons[objp->instance].lssm_stage==3)
 						continue;
 				}
@@ -4426,14 +4451,6 @@ void find_homing_object(object *weapon_objp, int num)
 				}
 
 				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
-
-				ship_subsys *target_engines = NULL;
-				if (wip->wi_flags & WIF_HOMING_JAVELIN && objp->type == OBJ_SHIP) {
-					ship *target_ship = &Ships[ship_get_by_signature(objp->signature)];
-					target_engines = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &objp->pos);
-					if (target_engines == NULL)
-						continue;
-				}
 
 				if (dot > wip->fov) {
 					if (dist < best_dist) {
@@ -4448,9 +4465,6 @@ void find_homing_object(object *weapon_objp, int num)
 			}
 		}
 	}
-
-//	if (wp->homing_object->type == OBJ_CMEASURE)
-//		nprintf(("AI", "Frame %i: Weapon #%i homing on cmeasure #%i\n", Framecount, num, objp-Objects));
 
 	if (wp->homing_object == Player_obj)
 		weapon_maybe_play_warning(wp);
@@ -4623,9 +4637,11 @@ void weapon_home(object *obj, int num, float frame_time)
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < wip->free_flight_time )) {
 		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing
 		//	and we don't have a target (else we wouldn't be inside the IF), find a new target.
-		if (wip->wi_flags & WIF_HOMING_HEAT)
-			if ( f2fl(Missiontime - wp->creation_time) > 0.5f )
+        if ((wip->wi_flags & WIF_HOMING_HEAT) &&
+            (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time))
+        {
 				find_homing_object(obj, num);
+        }
 
 		if (obj->phys_info.speed > max_speed) {
 			obj->phys_info.speed -= frame_time * 4;
@@ -4872,21 +4888,14 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	If a weapon has missed its target, detonate it.
 		//	This solves the problem of a weapon circling the center of a subsystem that has been blown away.
 		//	Problem: It does not do impact damage, just proximity damage.
-		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) && (old_dot < 0.0f)) {
-			int kill_missile = TRUE;
-			if (wp->homing_object) {
-				if (wp->homing_object->type == OBJ_SHIP) {
-					ship *shipp = &Ships[wp->homing_object->instance];
-					if (shipp->flags2 & SF2_DONT_COLLIDE_INVIS) {
-						kill_missile = FALSE;
-					}
-				}
-			}
-			
-			if (kill_missile && (wp->lifeleft > 0.01f)) {
+		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
+            (old_dot < wip->fov) &&
+            (wp->lifeleft > 0.01f) &&
+            (wp->homing_object) &&
+            (wp->homing_object->type == OBJ_SHIP))
+        {
 				wp->lifeleft = 0.01f;
 			}
-		}
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
 		//	is what's causing Harbingers to miss the super destroyer. -- MK, 4/15/98
@@ -5646,9 +5655,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->hull_strength = 0.0f;
 	}
 
-	if ( wip->subtype == WP_MISSILE ) {
+	if ( wip->render_type == WRT_POF ) {
 		objp->radius = model_get_radius(wip->model_num);
-	} else if ( wip->subtype == WP_LASER ) {
+	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
 	}
 
@@ -6564,7 +6573,7 @@ void weapons_page_in()
 				}
 		
 				for (j = 0; j < pm->n_textures; j++)
-					pm->maps[j].base_map.PageIn();
+					pm->maps[j].PageIn();
 
 				break;
 			}

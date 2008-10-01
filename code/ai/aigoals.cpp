@@ -1838,11 +1838,15 @@ void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 	int j;
 
 	for ( j = 0; j < MAX_AI_GOALS; j++ ) {
-		if ( aip->goals[j].ai_mode == AI_GOAL_NONE )
+		if ( aip->goals[j].ai_mode == AI_GOAL_NONE ) {
+			aip->goals[j] = *aigp;
 			break;
+		}
 	}
-	Assert ( j < MAX_AI_GOALS );
-	aip->goals[j] = *aigp;
+
+	if (j >= MAX_AI_GOALS) {
+		mprintf(("Unable to assign wing goal to ship %s; the ship goals are already filled to capacity", Ships[aip->shipnum].ship_name));
+	}
 }
 
 

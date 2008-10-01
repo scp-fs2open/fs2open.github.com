@@ -519,6 +519,9 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 
 		GetDlgItem(IDC_SCORE)->GetWindowText(str);
 		m_score.init(atoi(str));
+
+		GetDlgItem(IDC_ASSIST_SCORE)->GetWindowText(str);
+		m_assist_score.init(atoi(str));
 	}
 }
 
@@ -632,6 +635,7 @@ BOOL CShipEditorDlg::Create()
 	}
 
 	m_score.setup(IDC_SCORE, this);
+	m_assist_score.setup(IDC_ASSIST_SCORE, this);
 	m_arrival_dist.setup(IDC_ARRIVAL_DISTANCE, this);
 	m_arrival_delay.setup(IDC_ARRIVAL_DELAY, this);
 	m_departure_delay.setup(IDC_DEPARTURE_DELAY, this);
@@ -906,6 +910,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 							m_cargo1 = Cargo_names[cargo];
 							m_hotkey = Ships[i].hotkey + 1;
 							m_score.init(Ships[i].score);
+							m_assist_score.init((int)(Ships[i].assist_score_pct*100));
 
 							m_persona = Ships[i].persona_index + 1;
 
@@ -939,6 +944,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 							}
 
 							m_score.set(Ships[i].score);
+							m_assist_score.set((int)(Ships[i].assist_score_pct*100));
 
 							if (Ships[i].hotkey != m_hotkey - 1){
 								m_hotkey = -1;
@@ -1043,6 +1049,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		m_cargo1 = _T("");
 		m_hotkey = 0;
 		m_score.blank();  // cause control to be blank
+		m_assist_score.blank(); 
 		m_arrival_location = -1;
 		m_departure_location = -1;
 		m_arrival_delay.blank();
@@ -1127,6 +1134,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	}	
 
 	m_score.display();
+	m_assist_score.display();
 	m_arrival_dist.display();
 	m_arrival_delay.display();
 	m_departure_delay.display();
@@ -1250,6 +1258,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	GetDlgItem(IDC_DELETE_SHIP)->EnableWindow(enable);
 	GetDlgItem(IDC_SHIP_RESET)->EnableWindow(enable);
 	GetDlgItem(IDC_SCORE)->EnableWindow(enable);
+	GetDlgItem(IDC_ASSIST_SCORE)->EnableWindow(enable);
 
 //#ifndef NDEBUG
 	GetDlgItem(IDC_SHIP_TBL)->EnableWindow(m_ship_class >= 0);
@@ -1292,11 +1301,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 		SetWindowText("Edit Ship");
 	}
 
-	// setup alternate name stuff	
+	// setup alternate name and callsign stuff
 	if(player_ship >= 0){				
 		ship_alt_name_init(player_ship);
+		ship_callsign_init(player_ship);
 	} else {				
 		ship_alt_name_init(single_ship);
+		ship_callsign_init(single_ship);
 	}
 
 	modified = 0;
@@ -1488,6 +1499,7 @@ int CShipEditorDlg::update_ship(int ship)
 	// THIS DIALOG IS THE SOME OF THE WORST CODE I HAVE EVER SEEN IN MY ENTIRE LIFE. 
 	// IT TOOK A RIDICULOUSLY LONG AMOUNT OF TIME TO ADD 2 FUNCTIONS. OMG
 	ship_alt_name_close(ship);
+	ship_callsign_close(ship);
 
 	if ((Ships[ship].ship_info_index != m_ship_class) && (m_ship_class != -1)) {
 		change_ship_type(ship, m_ship_class);
@@ -1518,6 +1530,20 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 
 	m_score.save(&Ships[ship].score);
+	int temp_assist;
+	m_assist_score.save(&temp_assist); 
+	Ships[ship].assist_score_pct = ((float)temp_assist)/100;
+	// value must be a percentage
+	if (Ships[ship].assist_score_pct < 0) {
+		Ships[ship].assist_score_pct = 0;
+		MessageBox("Assist Percentage too low. Set to 0. No score will be granted for an assist");
+	} 
+	else if (Ships[ship].assist_score_pct > 1) {
+		Ships[ship].assist_score_pct = 1;
+		MessageBox("Assist Percentage too high. Set to 1. Assists well score as many points as a kill");
+	
+	}
+
 	if (m_arrival_location != -1)
 		MODIFY(Ships[ship].arrival_location, m_arrival_location);
 	if (m_departure_location != -1)
@@ -2321,7 +2347,6 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	if(cstr == CString("<none>")){
 		// zero the entry
 		strcpy(Fred_alt_names[base_ship], "");
-
 		return;
 	}	
 	p = cstr.GetBuffer(0);
@@ -2333,20 +2358,102 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	// otherwise see if it already exists
 	if(mission_parse_lookup_alt(str) >= 0){
 		strcpy(Fred_alt_names[base_ship], str);
-
 		return;
 	}
 
 	// otherwise try and add it
 	if(mission_parse_add_alt(str) >= 0){
 		strcpy(Fred_alt_names[base_ship], str);
-
 		return;
 	}
 
 	// bad - couldn't add
 	strcpy(Fred_alt_names[base_ship], "");
 	MessageBox("Couldn't add new alternate type name. Already using too many!");
+}
+
+// callsign stuff
+void CShipEditorDlg::ship_callsign_init(int base_ship)
+{
+	int idx;
+	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CALLSIGN);
+	if(ptr == NULL){
+		Int3();
+		return;
+	}
+
+	// multi-edit. bah	
+	if(multi_edit){		
+		GetDlgItem(IDC_SHIP_CALLSIGN)->EnableWindow(FALSE);
+		return;
+	} 
+	GetDlgItem(IDC_SHIP_CALLSIGN)->EnableWindow(TRUE);	
+
+	// reset the combobox and add all relevant strings
+	ptr->ResetContent();
+	ptr->AddString("<none>");
+	for(idx=0; idx<Mission_callsign_count; idx++){
+		ptr->AddString(Mission_callsigns[idx]);
+	}
+
+	// "none"
+	if(base_ship < 0){
+		ptr->SetCurSel(0);
+	}
+
+	// otherwise look his stuff up
+	if(strlen(Fred_callsigns[base_ship])){
+		ptr->SelectString(0, Fred_callsigns[base_ship]);
+	} else {
+		ptr->SetCurSel(0);
+	}
+}
+
+void CShipEditorDlg::ship_callsign_close(int base_ship)
+{
+	CString cstr;
+	char str[NAME_LENGTH+2] = "";
+	char *p;	
+	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CALLSIGN);
+
+	if(multi_edit){
+		return;
+	}
+	
+	if(ptr == NULL){
+		Int3();
+		return;
+	}
+
+	// see if we have something besides "none" selected
+	ptr->GetWindowText(cstr);
+	if(cstr == CString("<none>")){
+		// zero the entry
+		strcpy(Fred_callsigns[base_ship], "");
+		return;
+	}	
+	p = cstr.GetBuffer(0);
+	if(p == NULL){
+		return;
+	}
+	strcpy(str, p);
+
+	// otherwise see if it already exists
+	if(mission_parse_lookup_callsign(str) >= 0){
+		strcpy(Fred_callsigns[base_ship], str);
+		return;
+	}
+
+	// otherwise try and add it
+	if(mission_parse_add_callsign(str) >= 0){
+		strcpy(Fred_callsigns[base_ship], str);
+
+		return;
+	}
+
+	// bad - couldn't add
+	strcpy(Fred_callsigns[base_ship], "");
+	MessageBox("Couldn't add new callsign. Already using too many!");
 }
 
 void CShipEditorDlg::OnTextures() 

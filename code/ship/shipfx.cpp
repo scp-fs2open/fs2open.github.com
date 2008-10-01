@@ -565,7 +565,7 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "parse/scripting.h"
-
+#include "asteroid/asteroid.h"
 
 
 
@@ -722,6 +722,8 @@ void shipfx_subsystem_mabye_create_live_debris(object *ship_obj, ship *ship_p, s
 					vm_vec_scale(&live_debris_obj->phys_info.vel, ship_obj->radius/250.0f);
 				}
 			}
+
+			shipfx_debris_limit_speed(&Debris[live_debris_obj->instance], ship_p);
 		}
 	}
 
@@ -2000,6 +2002,39 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		}
 	}	
 
+    // check asteroids
+    asteroid *ast = Asteroids;
+
+    if (Asteroid_field.num_initial_asteroids <= 0 )
+    {
+        return 0;
+    }
+
+    for (i = 0 ; i < MAX_ASTEROIDS; i++, ast++)
+    {
+        if (!(ast->flags & AF_USED))
+        {
+            continue;
+        }
+
+        objp = &Objects[ast->objnum];
+
+        vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+
+		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
+		mc.submodel_num = -1;
+		model_clear_instance( mc.model_num );
+		mc.orient = &objp->orient;					// The object's orient
+		mc.pos = &objp->pos;							// The object's position
+		mc.p0 = &rp0;				// Point 1 of ray to check
+		mc.p1 = &rp1;					// Point 2 of ray to check
+		mc.flags = MC_CHECK_MODEL;
+
+		if (model_collide(&mc))	{
+			return 1;
+		}
+    }
+
 	// not in shadow
 	return 0;
 }
@@ -2659,7 +2694,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 			// Draw debris, but not live debris
 			if ( !is_live_debris ) {
 				model_find_world_point(&tmp, &tmp1, pm->id, -1, &half_ship->orient, &temp_pos);
-				submodel_render(pm->id, pm->debris_objects[i], &half_ship->orient, &tmp, render_flags, -1, shipp->replacement_textures);
+				submodel_render(pm->id, pm->debris_objects[i], &half_ship->orient, &tmp, render_flags, -1, shipp->ship_replacement_textures);
 			}
 
 			// make free piece of debris
@@ -2691,6 +2726,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 							float radial_mag = 10.0f + 30.0f*frand();
 							vm_vec_scale_add2(&debris_vel, &radial_vel, radial_mag);
 							debris_obj->phys_info.vel = debris_vel;
+							shipfx_debris_limit_speed(&Debris[debris_obj->instance], shipp);
 						/* } else {
 							debris_obj->phys_info.vel = half_ship->phys_info.vel;
 							debris_obj->phys_info.rotvel = half_ship->phys_info.rotvel;
@@ -2707,7 +2743,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 	vm_vec_unrotate(&model_clip_plane_pt, &temp, &half_ship->orient);
 	vm_vec_add2(&model_clip_plane_pt, &orig_ship_world_center);
 	g3_start_user_clip_plane( &model_clip_plane_pt, &clip_plane_norm );
-	model_render(pm->id, &half_ship->orient, &orig_ship_world_center, render_flags, -1, -1, shipp->replacement_textures);
+	model_render(pm->id, &half_ship->orient, &orig_ship_world_center, render_flags, -1, -1, shipp->ship_replacement_textures);
 }
 
 void shipfx_large_blowup_level_init()
@@ -2733,6 +2769,120 @@ int shipfx_large_blowup_init(ship *shipp)
 	split_ship_init(shipp, &Split_ships[i] );
 	
 	return 1;
+}
+
+void shipfx_debris_limit_speed(debris *db, ship *shipp)
+{
+	if(db == NULL || shipp == NULL)
+		return;
+
+	object *ship_obj = &Objects[shipp->objnum];
+	physics_info *pi = &Objects[db->objnum].phys_info;
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	float curspeed = vm_vec_mag(&pi->vel);
+	if(sip->debris_min_speed >= 0.0f && sip->debris_max_speed >= 0.0f)
+	{
+		float debris_speed = (( sip->debris_max_speed - sip->debris_min_speed ) * frand()) + sip->debris_min_speed;
+		if(fabs(curspeed) >= 0.001f)
+		{
+			float scale = debris_speed / curspeed;
+			vm_vec_scale(&pi->vel, scale);
+		}
+		else
+		{
+			vm_vec_copy_scale(&pi->vel, &ship_obj->orient.vec.fvec, debris_speed);
+		}
+	}
+	else if(sip->debris_min_speed >= 0.0f)
+	{
+		if(curspeed < sip->debris_min_speed)
+		{
+			if(fabs(curspeed) >= 0.001f)
+			{
+				float scale = sip->debris_min_speed / curspeed;
+				vm_vec_scale(&pi->vel, scale);
+			}
+			else
+			{
+				vm_vec_copy_scale(&pi->vel, &ship_obj->orient.vec.fvec, sip->debris_min_speed);
+			}
+		}
+	}
+	else if(sip->debris_max_speed >= 0.0f)
+	{
+		if(curspeed > sip->debris_max_speed)
+		{
+			if(fabs(curspeed) >= 0.001f)
+			{
+				float scale = sip->debris_max_speed / curspeed;
+				vm_vec_scale(&pi->vel, scale);
+			}
+			else
+			{
+				vm_vec_copy_scale(&pi->vel, &ship_obj->orient.vec.fvec, sip->debris_max_speed);
+			}
+		}
+	}
+
+	//WMC - Rotational velocity user cap
+	float currotvel = vm_vec_mag(&pi->rotvel);
+	if(sip->debris_min_rotspeed >= 0.0f && sip->debris_max_rotspeed >= 0.0f)
+	{
+		float debris_rotspeed = (( sip->debris_max_rotspeed - sip->debris_min_rotspeed ) * frand()) + sip->debris_min_rotspeed;
+		if(fabs(currotvel) >= 0.001f)
+		{
+			float scale = debris_rotspeed / currotvel;
+			vm_vec_scale(&pi->rotvel, scale);
+		}
+		else
+		{
+			vm_vec_copy_scale(&pi->rotvel, &ship_obj->orient.vec.uvec, debris_rotspeed);
+		}
+	}
+	else if(sip->debris_min_rotspeed >= 0.0f)
+	{
+		if(curspeed < sip->debris_min_rotspeed)
+		{
+			if(fabs(currotvel) >= 0.001f)
+			{
+				float scale = sip->debris_min_rotspeed / currotvel;
+				vm_vec_scale(&pi->rotvel, scale);
+			}
+			else
+			{
+				vm_vec_copy_scale(&pi->rotvel, &ship_obj->orient.vec.uvec, sip->debris_min_rotspeed);
+			}
+		}
+	}
+	else if(sip->debris_max_rotspeed >= 0.0f)
+	{
+		float curspeed = vm_vec_mag(&pi->rotvel);
+		if(curspeed > sip->debris_max_rotspeed)
+		{
+			if(fabs(currotvel) >= 0.001f)
+			{
+				float scale = sip->debris_max_rotspeed / currotvel;
+				vm_vec_scale(&pi->rotvel, scale);
+			}
+			else
+			{
+				vm_vec_copy_scale(&pi->rotvel, &ship_obj->orient.vec.uvec, sip->debris_max_rotspeed);
+			}
+		}
+	}
+
+	int ship_type = sip->class_type;
+	if(ship_type > -1)
+	{
+		if(vm_vec_mag(&pi->vel) > Ship_types[ship_type].debris_max_speed) {
+			float scale = Ship_types[ship_type].debris_max_speed / vm_vec_mag(&pi->vel);
+			vm_vec_scale(&pi->vel, scale);
+		}
+	}
+
+	Assert(is_valid_vec(&pi->vel));
+	Assert(is_valid_vec(&pi->rotvel));
 }
 
 // ----------------------------------------------------------------------------
@@ -4201,21 +4351,23 @@ int WE_Default::warpStart()
 	}
 	portal_objp = NULL;
 	int portal_objnum = shipp->special_warp_objnum;
-	polymodel *pm = NULL;
+	polymodel *pm = model_get(sip->model_num);
 	if(portal_objnum > -1 && shipfx_special_warp_objnum_valid(portal_objnum))
 	{
 		portal_objp = &Objects[portal_objnum];
-		pm = model_get(sip->model_num);
+	}
+
+	back_len = objp->radius;
+	if(pm != NULL)
+	{
+		back_len = -pm->mins.xyz.z;
 	}
 
 	float warpout_speed = 0.0f;
 	float warp_time = 0.0f;
 	if(direction == WD_WARP_IN)
 	{
-		if(pm != NULL)
-			vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, -pm->mins.xyz.z);
-		else
-			vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, objp->radius );
+		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, back_len );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
@@ -4240,11 +4392,11 @@ int WE_Default::warpStart()
 	{
 		// maybe special warpout
 		if (portal_objp != NULL) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 1, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
 		} else if(Cmdline_tbp) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
 		} else {
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
 		}
 	}
 	else if(direction == WD_WARP_IN)
@@ -4261,11 +4413,11 @@ int WE_Default::warpStart()
 				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
 			}
 
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 0, NULL, warp_time, shipp->ship_info_index, &knossos_orient);
+			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 0, NULL, warp_time, shipp->ship_info_index, &knossos_orient, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
 		}
 		else
 		{
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
 		}
 	}
 
@@ -4281,7 +4433,10 @@ int WE_Default::warpStart()
 	fvec = Objects[warp_objnum].orient.vec.fvec;
 	if (portal_objp != NULL)
 	{
-		if (vm_vec_dotprod(&fvec, &objp->orient.vec.fvec) > 0)
+        float dot = vm_vec_dotprod(&fvec, &objp->orient.vec.fvec);
+
+		if ((dot < 0) && (direction == WD_WARP_IN) ||
+            ((dot > 0) && (direction == WD_WARP_OUT)))
 		{
 			vm_vec_negate(&fvec);
 		}
@@ -4366,7 +4521,7 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) )
+		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) && (vm_dist_to_plane(&objp->pos, &fvec, &pos) > back_len))
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();
@@ -4562,7 +4717,7 @@ int WE_BTRL::warpShipRender()
 		return 0;
 
 	//Figure out which frame we're on
-	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)(anim_nframes) + 0.5);
+	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)(anim_nframes-1) + 0.5);
 
 	if ( frame > (anim_nframes-1) ) {
 		//frame = (anim_nframes-1);
@@ -4603,17 +4758,19 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 
 	//Stage duration presets
 	stage_duration[0] = 0;
-	stage_duration[1] = 500;
-	stage_duration[2] = 500;
+	stage_duration[1] = 1000;
+	stage_duration[2] = 0;
 	stage_duration[3] = -1;
+	stage_duration[4] = 0;
+	stage_duration[5] = 1000;
+
+	//Configure stage duration 3
 	if(direction == WD_WARP_IN)
-		stage_duration[3] = sip->warpin_time;
+		stage_duration[3] = sip->warpin_time - (stage_duration[1] + stage_duration[2] + stage_duration[4] + stage_duration[5]);
 	else if(direction == WD_WARP_OUT)
-		stage_duration[3] = sip->warpout_time;
-	if(stage_duration[3] < 0)
+		stage_duration[3] = sip->warpout_time - (stage_duration[1] + stage_duration[2] + stage_duration[4] + stage_duration[5]);
+	if(stage_duration[3] <= 0)
 		stage_duration[3] = 3000;
-	stage_duration[4] = 500;
-	stage_duration[5] = 500;
 
 	//Anim
 	if(direction == WD_WARP_IN)
@@ -4627,24 +4784,41 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 	fvec = vmd_zero_vector;
 
 	polymodel *pm = model_get(sip->model_num);
-	radius_full = objp->radius;
 	width_full = sip->warpin_radius;
-	if(width_full <= 0.0f && pm != NULL)
+	if(pm != NULL)
+	{
+		if(width_full <= 0.0f)
 	{
 		width_full = pm->maxs.xyz.x - pm->mins.xyz.x;
 		height_full = pm->maxs.xyz.y - pm->mins.xyz.y;
+			z_offset_max = pm->maxs.xyz.z;
+			z_offset_min = pm->mins.xyz.z;
 	}
+	}
+	else
+	{
 	if(width_full <= 0.0f)
 	{
-		width_full = objp->radius;
+			width_full = 2.0f*objp->radius;
+		}
 		height_full = width_full;
+		z_offset_max = objp->radius;
+		z_offset_min = -objp->radius;
 	}
+	//WMC - This scales up or down the sound depending on ship size, with ~100m diameter ship as base
+	//REMEMBER: Radius != diameter
+	snd_range_factor = sqrt(width_full*width_full+height_full*height_full)/141.421356f;
+
 	if(width_full <= 0.0f)
 		width_full = 1.0f;
 	if(height_full <= 0.0f)
 		height_full = 1.0f;
 	width = width_full;
 	height = 0.0f;
+
+	//Sound
+	snd = -1;
+	snd_gs = NULL;
 }
 
 WE_Homeworld::~WE_Homeworld()
@@ -4667,7 +4841,7 @@ int WE_Homeworld::warpStart()
 	stage = 1;
 	total_time_start = timestamp();
 	total_time_end = 0;
-	for(int i = 0; i <= WE_HOMEWORLD_NUM_STAGES; i++)
+	for(int i = 0; i < WE_HOMEWORLD_NUM_STAGES; i++)
 	{
 		total_time_end += stage_duration[i];
 	}
@@ -4675,7 +4849,7 @@ int WE_Homeworld::warpStart()
 	stage_time_end = timestamp(stage_duration[stage]);
 
 	//Position
-	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, radius_full);
+	vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, z_offset_max);
 	fvec = objp->orient.vec.fvec;
 	if(direction == WD_WARP_OUT)
 		vm_vec_negate(&fvec);
@@ -4683,14 +4857,27 @@ int WE_Homeworld::warpStart()
 	width = width_full;
 	height = 0.0f;
 
+	int gs_index = -1;
 	if(direction == WD_WARP_IN)
+	{
 		shipp->flags |= SF_ARRIVING_STAGE_1;
+		gs_index = sip->warpin_snd_start;
+	}
 	else if(direction == WD_WARP_OUT)
+	{
 		shipp->flags |= SF_DEPART_WARP;
+		gs_index = sip->warpout_snd_start;
+	}
 	else
 	{
 		this->warpEnd();
 		return 0;
+	}
+
+	if(gs_index > -1)
+	{
+		snd_gs = &Snds[gs_index];
+		snd = snd_play_3d(snd_gs, &pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
 	}
 
 	return 1;
@@ -4702,11 +4889,14 @@ int WE_Homeworld::warpFrame(float frametime)
 		return 0;
 
 	//Setup stage
-	if ( timestamp_elapsed(stage_time_end ))
+	while( timestamp_elapsed(stage_time_end ))
 	{
 		stage++;
+		if(stage < WE_HOMEWORLD_NUM_STAGES)
+		{
 		stage_time_start = timestamp();
 		stage_time_end = timestamp(stage_duration[stage]);
+		}
 		switch(stage)
 		{
 			case 2:
@@ -4742,7 +4932,7 @@ int WE_Homeworld::warpFrame(float frametime)
 		case 2:
 			break;
 		case 3:
-			vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, radius_full*2.0f*(0.5f-progress));
+			vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, z_offset_max - progress*(z_offset_max-z_offset_min));
 			break;
 		case 4:
 			break;
@@ -4753,6 +4943,10 @@ int WE_Homeworld::warpFrame(float frametime)
 			this->warpEnd();
 			return 0;
 	}
+		
+	//Update sound
+	if(snd > -1)
+		snd_update_3d_pos(snd, snd_gs, &pos, 0.0f, snd_range_factor);
 		
 	return 1;
 }
@@ -4779,6 +4973,14 @@ int WE_Homeworld::warpShipRender()
 	gr_set_bitmap(anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
 	g3_draw_polygon(&pos, &objp->orient, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 	return 1;
+}
+
+int WE_Homeworld::warpEnd()
+{
+	//obj_snd_delete(OBJ_INDEX(objp), obj_snd);
+	if(snd > -1)
+		snd_stop(snd);
+	return WarpEffect::warpEnd();
 }
 
 int WE_Homeworld::getWarpPosition(vec3d *output)

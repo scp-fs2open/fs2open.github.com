@@ -746,6 +746,11 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
+// callsign
+#define MAX_CALLSIGNS					100
+extern char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
+extern int Mission_callsign_count;
+
 // path restrictions
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
@@ -814,6 +819,12 @@ typedef struct texture_replace {
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
+
+	texture_replace()
+	{
+		memset(this, '\0', sizeof(this));
+		new_texture_id = -1;
+	}
 } texture_replace;
 
 extern texture_replace *Fred_texture_replacements;
@@ -873,6 +884,7 @@ typedef struct p_object {
 	int	ai_class;
 	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score;
+	float assist_score_pct;					// percentage of the score which players who gain an assist will get when this ship is killed
 	int	orders_accepted;					// which orders this ship will accept from the player
 	p_dock_instance	*dock_list;				// Goober5000 - parse objects this parse object is docked to
 	object *created_object;					// Goober5000
@@ -891,13 +903,14 @@ typedef struct p_object {
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
 	char	alt_type_index;					// optional alt type index
+	char	callsign_index;					// optional callsign index
 
 	float ship_max_hull_strength;
 	float ship_max_shield_strength;
 
 	// Goober5000
 	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_MODEL_TEXTURES];	// replacement textures - Goober5000
+	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
@@ -945,7 +958,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	14
+#define MAX_PARSE_OBJECT_FLAGS_2	13
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -959,8 +972,7 @@ typedef struct p_object {
 #define P2_SF2_NO_DEATH_SCREAM				(1<<9)
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
 #define P2_SF2_NAV_NEEDSLINK				(1<<11)
-#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<12)
-#define P2_SF2_HIDE_SHIP_NAME				(1<<13)
+#define P2_SF2_HIDE_SHIP_NAME				(1<<12)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
@@ -1063,6 +1075,12 @@ int mission_parse_lookup_alt(char *name);
 void mission_parse_lookup_alt_index(int index, char *out);
 int mission_parse_add_alt(char *name);
 void mission_parse_reset_alt();
+
+// callsign stuff
+int mission_parse_lookup_callsign(char *name);
+void mission_parse_lookup_callsign_index(int index, char *out);
+int mission_parse_add_callsign(char *name);
+void mission_parse_reset_callsign();
 
 // code to save/restore mission parse stuff
 int get_mission_info(char *filename, mission *missionp = NULL, bool basic = true);

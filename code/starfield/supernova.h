@@ -103,6 +103,6 @@ float supernova_pct_complete();
 int supernova_camera_cut();
 
 // get view params from supernova
-void supernova_set_view(vec3d *eye_pos, matrix *eye_orient);
+void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient);
 
 #endif

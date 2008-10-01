@@ -1303,6 +1303,10 @@ int    Current_file_length   = 0;
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 int Mission_alt_type_count = 0;
 
+// callsigns
+char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
+int Mission_callsign_count = 0;
+
 #define SHIP_WARP_TIME 5.0f		// how many seconds it takes for ship to warp in
 
 // the ship arrival list will contain a list of ships that are yet to arrive.  This
@@ -1487,7 +1491,6 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-death-scream",
 	"always-death-scream",
 	"nav-needslink",
-	"use-alt-name-as-callsign",
 	"hide-ship-name",
 };
 
@@ -1901,7 +1904,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 void parse_player_info(mission *pm)
 {
-	char alt[NAME_LENGTH];
+	char temp[NAME_LENGTH];
 	Assert(pm != NULL);
 
 // alternate type names begin here	
@@ -1910,10 +1913,23 @@ void parse_player_info(mission *pm)
 		// read them all in
 		while(!optional_string("#end")){
 			required_string("$Alt:");
-			stuff_string(alt, F_NAME, NAME_LENGTH);
+			stuff_string(temp, F_NAME, NAME_LENGTH);
 
 			// maybe store it
-			mission_parse_add_alt(alt);			
+			mission_parse_add_alt(temp);			
+		}
+	}
+	
+	// callsigns begin here	
+	mission_parse_reset_callsign();
+	if(optional_string("#Callsigns:")){		
+		// read them all in
+		while(!optional_string("#end")){
+			required_string("$Callsign:");
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+
+			// maybe store it
+			mission_parse_add_callsign(temp);			
 		}
 	}
 	
@@ -2809,8 +2825,6 @@ int parse_create_object_sub(p_object *p_objp)
 	ship_weapon *wp;
 
 	// texture replacements
-	char texture_file[MAX_FILENAME_LEN];
-	char *p;
 	polymodel *pm;
 
 	MONITOR_INC(NumShipArrivals, 1);
@@ -2889,8 +2903,9 @@ int parse_create_object_sub(p_object *p_objp)
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
 
-	// alternate type name
+	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
+	shipp->callsign_index = p_objp->callsign_index;
 
 	aip->ai_class = p_objp->ai_class;
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
@@ -2921,6 +2936,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->wingnum = p_objp->wingnum;
 	shipp->hotkey = p_objp->hotkey;
 	shipp->score = p_objp->score;
+	shipp->assist_score_pct = p_objp->assist_score_pct;
 	shipp->persona_index = p_objp->persona_index;
 
 	// reset texture animations
@@ -2929,10 +2945,10 @@ int parse_create_object_sub(p_object *p_objp)
 	// handle the replacement textures
 	if (p_objp->num_texture_replacements > 0)
 	{
-		shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-		for (i = 0; i < MAX_MODEL_TEXTURES; i++)
-			shipp->replacement_textures[i] = -1;
+		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+			shipp->ship_replacement_textures[i] = -1;
 	}
 
 	// now fill them in
@@ -2943,24 +2959,11 @@ int parse_create_object_sub(p_object *p_objp)
 		// look for textures
 		for (j = 0; j < pm->n_textures; j++)
 		{
-			// get texture file name
-			bm_get_filename(pm->maps[j].base_map.GetTexture(), texture_file);
+			texture_map *tmap = &pm->maps[j];
 
-			// get rid of file extension
-			p = strchr(texture_file, '.');
-			if (p)
-			{
-				mprintf(("ignoring extension on file '%s'\n", texture_file));
-				*p = 0;
-			}
-
-			// now compare the extension-less texture file names
-			if (!stricmp(texture_file, p_objp->replacement_textures[i].old_texture))
-			{
-				// replace it
-				shipp->replacement_textures[j] = p_objp->replacement_textures[i].new_texture_id;
-				break;
-			}
+			int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+			if(tnum > -1)
+				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
 		}
 	}
 
@@ -3431,9 +3434,6 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags2 & P2_SF2_NAV_NEEDSLINK)
 		shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
 	
-	if (parse_flags2 & P2_SF2_USE_ALT_NAME_AS_CALLSIGN)
-		shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
-	
 	if (parse_flags2 & P2_SF2_HIDE_SHIP_NAME)
 		shipp->flags2 |= SF2_HIDE_SHIP_NAME;
 }
@@ -3489,6 +3489,22 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			mprintf(("Error looking up alternate ship type name!\n"));
 		else
 			mprintf(("Using alternate ship type name : %s\n", name));
+	}
+
+	// optional callsign
+	p_objp->callsign_index = -1;
+	if(optional_string("$Callsign:"))
+	{
+		// alternate callsign
+		stuff_string(name, F_NAME, NAME_LENGTH);
+
+		// try and find the callsign
+		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
+		Assert(p_objp->callsign_index >= 0);
+		if(p_objp->callsign_index < 0)
+			mprintf(("Error looking up callsign!\n"));
+		else
+			mprintf(("Using callsign: %s\n", name));
 	}
 
 	// static alias stuff - stupid, but it seems to be necessary
@@ -3840,6 +3856,20 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		p_objp->score = Ship_info[p_objp->ship_class].score;
 	}
 
+	if (optional_string("+Assist Score Percentage:")) {
+		stuff_float(&p_objp->assist_score_pct);
+		// value must be a percentage
+		if (p_objp->assist_score_pct < 0) {
+			p_objp->assist_score_pct = 0;
+		} 
+		else if (p_objp->assist_score_pct > 1) {
+			p_objp->assist_score_pct = 1;
+		}
+	}
+	else {
+		p_objp->assist_score_pct = 0;
+	}
+
 	// parse the persona index if present
 	p_objp->persona_index = -1;
 	if (optional_string("+Persona Index:"))
@@ -3851,7 +3881,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	{
 		char *p;
 
-		while ((p_objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
+		while ((p_objp->num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
 		{
 			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
@@ -3872,7 +3902,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			}
 
 			// load the texture
-			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
 
 			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
 			{
@@ -4857,7 +4887,7 @@ void parse_wing(mission *pm)
 	// 7/13/98 -- MWA
 	// error checking against the player ship wings (i.e. starting & tvt) to be sure that wave count doesn't exceed one for
 	// these wings.
-	if ( Game_mode & GM_MULTIPLAYER ) {
+	if ( MULTI_NOT_TEAM ) {
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
 			if ( !stricmp(Starting_wing_names[i], wingp->name) ) {
 				if ( wingp->num_waves > 1 ) {
@@ -4869,6 +4899,8 @@ void parse_wing(mission *pm)
 				}
 			}
 		}
+	}
+	else if (MULTI_TEAM) {
 		for (i = 0; i < MAX_TVT_WINGS; i++ ) {
 			if ( !stricmp(TVT_wing_names[i], wingp->name) ) {
 				if ( wingp->num_waves > 1 ) {
@@ -7868,6 +7900,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;
 	pobj->score = 0;
+	pobj->assist_score_pct = 0;
 
 	pobj->dock_list = NULL;
 	pobj->created_object = NULL;
@@ -7878,6 +7911,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->wing_status_wing_pos = -1;
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
+	pobj->callsign_index = -1;
 	pobj->num_texture_replacements = 0;
 }
 
@@ -7970,7 +8004,7 @@ void mission_parse_lookup_alt_index(int index, char *out)
 	if(out == NULL){
 		return;
 	}
-	if((index < 0) || (index > Mission_alt_type_count)){
+	if((index < 0) || (index >= Mission_alt_type_count)){
 		if (mission_parse_lookup_alt_index_warn) {
 			Warning(LOCATION, "Ship with invalid alt_name.  Get a programmer");
 			mission_parse_lookup_alt_index_warn = 0;
@@ -8004,6 +8038,70 @@ int mission_parse_add_alt(char *name)
 void mission_parse_reset_alt()
 {
 	Mission_alt_type_count = 0;
+}
+
+// callsign stuff
+int mission_parse_lookup_callsign(char *name)
+{
+	int idx;
+
+	// sanity
+	if(name == NULL){
+		return -1;
+	}
+
+	// lookup
+	for(idx=0; idx<Mission_callsign_count; idx++){
+		if(!strcmp(Mission_callsigns[idx], name)){
+			return idx;
+		}
+	}
+
+	// could not find
+	return -1;
+}
+
+static int mission_parse_lookup_callsign_index_warn = 1;
+void mission_parse_lookup_callsign_index(int index, char *out)
+{
+	// sanity
+	if(out == NULL){
+		return;
+	}
+	if((index < 0) || (index >= Mission_callsign_count)){
+		if (mission_parse_lookup_callsign_index_warn) {
+			Warning(LOCATION, "Ship with invalid callsign.  Get a programmer");
+			mission_parse_lookup_callsign_index_warn = 0;
+		}
+		return;
+	}
+
+	// stuff it
+	strcpy(out, Mission_callsigns[index]);
+}
+
+int mission_parse_add_callsign(char *name)
+{
+	// sanity
+	if(name == NULL){
+		return -1;
+	}
+
+	// maybe add
+	if(Mission_callsign_count < MAX_CALLSIGNS){
+		// stuff the name
+		strncpy(Mission_callsigns[Mission_callsign_count++], name, NAME_LENGTH);
+
+		// done
+		return Mission_callsign_count - 1;
+	}
+
+	return -1;
+}
+
+void mission_parse_reset_callsign()
+{
+	Mission_callsign_count = 0;
 }
 
 int is_training_mission()

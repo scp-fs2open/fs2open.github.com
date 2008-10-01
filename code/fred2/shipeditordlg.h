@@ -211,6 +211,10 @@ public:
 	void ship_alt_name_init(int base_ship);
 	void ship_alt_name_close(int base_ship);
 
+	// callsign stuff
+	void ship_callsign_init(int base_ship);
+	void ship_callsign_close(int base_ship);
+
 	BOOL Create();
 
 // Dialog Data
@@ -238,6 +242,7 @@ public:
 	BOOL	m_update_departure;
 	numeric_edit_control	m_destroy_value;
 	numeric_edit_control	m_score;
+	numeric_edit_control	m_assist_score;
 	numeric_edit_control	m_arrival_dist;
 	numeric_edit_control m_kdamage;
 	int		m_arrival_target;

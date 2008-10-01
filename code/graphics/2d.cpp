@@ -1398,6 +1398,13 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		depth = 16;
 	}
 
+#ifdef _DEBUG
+    width = 1024;
+    height = 768;
+    depth = 32;
+    Cmdline_window = 1;
+#endif
+
 	// now try to actually init everything...
 	if ( gr_init_sub(mode, width, height, depth) == false ) {
 		return false;

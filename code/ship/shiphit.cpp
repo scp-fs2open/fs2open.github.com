@@ -762,6 +762,18 @@ typedef struct spark_pair {
 vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
+//WMC - Camera rough draft stuff
+/*
+camid dead_get_camera()
+{
+	static camid dead_camera;
+	if(!dead_camera.isValid())
+		dead_camera = cam_create("Dead camera");
+
+	return dead_camera;
+}
+*/
+
 bool is_subsys_destroyed(ship *shipp, int submodel)
 {
 	ship_subsys *subsys;
@@ -1186,6 +1198,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	}
 
 	int dmg_type_idx = -1;
+
+    if (other_obj)
+    {
 	if(other_obj->type == OBJ_SHOCKWAVE) {
 		dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
 	} else if(other_obj->type == OBJ_WEAPON) {
@@ -1199,6 +1214,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	} else if(other_obj->type == OBJ_SHIP) {
 		dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 	}
+    }
 
 	//This function is screwy
 	if(count)

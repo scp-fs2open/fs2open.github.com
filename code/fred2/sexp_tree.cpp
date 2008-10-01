@@ -1543,6 +1543,11 @@ void sexp_tree::right_clicked(int mode)
 
 							for (int idx=0; idx<max_sexp_vars; idx++) {
 								if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
+									// skip block variables
+									if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
+										continue; 
+									}
+
 									UINT flag = MF_STRING | MF_GRAYED;
 									// maybe gray flag MF_GRAYED
 
@@ -2399,8 +2404,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				Int3();	// unknown type
 			}
 
-		} else {
-	
+		} else {	
 			// verify type in tree is same as type in Sexp_variables array
 			if (type & SEXPT_NUMBER) {
 				Assert(Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER);
@@ -3120,8 +3124,13 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<name of ship here>";
 			break;
 
+		case OPF_ORDER_RECIPIENT:
+			str = "<all fighters>";
+			break;
+
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SHIP_WING_POINT_OR_NONE:
 			str = SEXP_NONE_STRING;
 			break;
 
@@ -3265,6 +3274,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SKYBOX_MODEL_NAME:
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SHIP_WING_POINT_OR_NONE:
 		case OPF_SUBSYS_OR_GENERIC:
 		case OPF_BACKGROUND_BITMAP:
 		case OPF_SUN_BITMAP:
@@ -3278,6 +3288,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
+		case OPF_ORDER_RECIPIENT:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP)
@@ -4770,6 +4781,14 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_wing_point();
 			break;
 
+		case OPF_SHIP_WING_POINT_OR_NONE:
+			list = get_listing_opf_ship_wing_point_or_none();
+			break;
+
+		case OPF_ORDER_RECIPIENT:
+			list = get_listing_opf_order_recipient();
+			break;
+
 		case OPF_SHIP_TYPE:
 			list = get_listing_opf_ship_type();
 			break;
@@ -5252,6 +5271,15 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			child = tree_nodes[child].next;
 			break;
 
+		// this sexp checks the subsystem of the *fourth entry* on the list
+		case OP_QUERY_ORDERS:
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			break;
+
 		// this sexp checks the subsystem of the *ninth entry* on the list
 		case OP_WEAPON_CREATE:
 			// iterate to the next field eight times
@@ -5667,6 +5695,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point_or_none()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+	head.add_list(get_listing_opf_ship_wing_point());
+
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_listing_opf_mission_name()
 {
 	int i;
@@ -5718,6 +5756,17 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 sexp_list_item *sexp_tree::get_listing_opf_ship_wing()
 {
 	sexp_list_item head;
+
+	head.add_list(get_listing_opf_ship());
+	head.add_list(get_listing_opf_wing());
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_order_recipient()
+{
+	sexp_list_item head;
+
+	head.add_data("<all fighters>");
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());

@@ -1004,8 +1004,7 @@ void EndAutoPilot()
 		{
 			Cutscene_bar_flags &= ~CUB_CUTSCENE;
 		}
-		Viewer_mode &= ~VM_FREECAMERA;
-		hud_set_draw(1);
+		cam_reset_camera();
 		CinematicStarted = false;
 	}
 
@@ -1102,13 +1101,17 @@ void EndAutoPilot()
 
 // ********************************************************************************************
 
-void camera_face(vec3d &loc)
+camera* nav_get_set_camera()
 {
-	vec3d destvec;
-	matrix cam_orient;
-	vm_vec_sub(&destvec, &loc, Free_camera->get_position());
-	vm_vector_2_matrix(&cam_orient, &destvec, &Player_obj->orient.vec.uvec, &Player_obj->orient.vec.rvec);
-	Free_camera->set_rotation(&cam_orient, 0.0f, 0.0f);
+	static camid nav_camera;
+	if(!nav_camera.isValid())
+	{
+		nav_camera = cam_create("Nav camera");
+	}
+
+	cam_set_camera(nav_camera);
+
+	return nav_camera.getCamera();
 }
 
 void nav_warp(bool prewarp=false)
@@ -1163,11 +1166,13 @@ void NavSystem_Do()
 		{
 			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
 			{
+				camera *cam = nav_get_set_camera();
 				if (CinematicStarted)
 				{
 					// update our cinematic and possibly perform warp
 					//if (!CameraMoving)
-						camera_face(Player_obj->pos);
+					if(cam != NULL)
+						cam->set_rotation_facing(&Player_obj->pos);
 
 					if (timestamp() >= MoveCamera && !CameraMoving && vm_vec_mag(&cameraTarget) > 0.0f)
 					{
@@ -1191,12 +1196,14 @@ void NavSystem_Do()
 						Cutscene_bar_flags |= CUB_CUTSCENE;
 						Cutscene_bar_flags &= ~CUB_GRADUAL;
 					}
-					Viewer_mode |= VM_FREECAMERA;
-					hud_set_draw(0);
 					nav_warp(true);
 
-					Free_camera->set_position(&cameraPos);
-					camera_face(Player_obj->pos);
+					if(cam != NULL)
+					{
+						cam->set_position(&cameraPos);
+						cam->set_rotation_facing(&Player_obj->pos);
+					}
+
 					CinematicStarted = true;
 				}
 			}
