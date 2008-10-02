@@ -29,51 +29,51 @@ int TrackIR_Query()
 }
 float TrackIR_GetYaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetYawRaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetPitch()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetPitchRaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetRoll()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetRollRaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetX()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetXRaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetY()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetYRaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetZ()
 {
-	return 0.0f
+	return 0.0f;
 }
 float TrackIR_GetZRaw()
 {
-	return 0.0f
+	return 0.0f;
 }
 int TrackIR_ShutDown()
 {
