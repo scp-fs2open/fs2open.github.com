@@ -479,9 +479,9 @@ int Multi_join_restr_mode = -1;
 LOCAL fix Multi_server_wait_start;				// variable to hold start time when waiting to reestablish with server
 
 // non API master tracker vars
-char Multi_tracker_login[100] = "";
-char Multi_tracker_passwd[100] = "";
-char Multi_tracker_squad_name[100] = "";
+char Multi_tracker_login[MULTI_TRACKER_STRING_LEN+1] = "";
+char Multi_tracker_passwd[MULTI_TRACKER_STRING_LEN+1] = "";
+char Multi_tracker_squad_name[MULTI_TRACKER_STRING_LEN+1] = "";
 int Multi_tracker_id = -1;
 char Multi_tracker_id_string[255];
 
