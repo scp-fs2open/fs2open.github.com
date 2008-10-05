@@ -946,10 +946,10 @@ void main_hall_do_multi_ready()
 		break;
 	case NETWORK_ERROR_NO_PROTOCOL:
 		if(Multi_options_g.protocol == NET_TCP){
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", 362));
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "TCP/IP protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
 		} else {
 			Assert(Multi_options_g.protocol == NET_IPX);
-			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "IPX protocol not found.  This protocol is required for multiplayer FreeSpace.", 362));
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "IPX protocol not found.  This protocol is required for multiplayer FreeSpace.", -1));
 		}
 		break;
 	case NETWORK_ERROR_CONNECT_TO_ISP:
@@ -966,7 +966,12 @@ void main_hall_do_multi_ready()
 
 	// if our selected protocol is not active
 	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
-		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362));
+		if (Tcp_failure_code == WSAEADDRINUSE) {
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", -1));
+		} else {
+			popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362));
+		}
+
 		return;
 	} 
 	if((Multi_options_g.protocol == NET_IPX) && !Ipx_active){		

@@ -1773,7 +1773,12 @@ void standalone_main_init()
 		exit(1);
 	}
 	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
-		MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
+		if (Tcp_failure_code == WSAEADDRINUSE) {
+			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", -1), "Error", MB_OK);
+		} else {
+			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
+		}
+
 		exit(1);
 	}
 #endif // ifdef _WIN32

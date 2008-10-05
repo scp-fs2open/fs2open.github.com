@@ -232,6 +232,7 @@ typedef struct _LARGE_INTEGER {
 #define WSAECONNRESET   ECONNRESET
 #define WSAECONNABORTED ECONNABORTED
 #define WSAESHUTDOWN    ESHUTDOWN
+#define WSAEADDRINUSE	EADDRINUSE
 #define SOCKET_ERROR	(-1)
 #define ioctlsocket(x, y, z)	ioctl(x, y, z)
 
