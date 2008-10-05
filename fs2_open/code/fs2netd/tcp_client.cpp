@@ -1028,3 +1028,60 @@ void FS2NetD_GameCountUpdate(char *chan_name)
 	FS2NetD_SendData(buffer, buffer_size);
 }
 
+void FS2NetD_CheckDuplicateLogin(int SID)
+{
+	int buffer_size;
+	char *buffer;
+	int ids_count = 0;
+	int *ids = new int[MAX_PLAYERS];
+	int idx;
+
+	if ( !ids ) {
+		return;
+	}
+
+	for (idx = 0; idx < MAX_PLAYERS; idx++) {
+		if ( MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) ) {      
+			if ( (Net_players[idx].tracker_player_id >= 0) && (Net_players[idx].tracker_player_id != SID) ) {
+				ids[ids_count] = Net_players[idx].tracker_player_id;
+				ids_count++;
+			}
+		}
+	}
+
+	if ( !ids_count ) {
+		delete [] ids;
+		return;
+	}
+
+	buffer = new char[BASE_PACKET_SIZE + sizeof(int) + (MAX_PLAYERS * sizeof(int)) + 10];
+
+	if ( !buffer ) {
+		return;
+	}
+
+	// Clear any old dead crap data
+	FS2NetD_IgnorePackets();
+
+	// create and send request packet
+	INIT_PACKET( PCKT_DUP_LOGIN_RQST );
+
+	PXO_ADD_INT( SID );
+
+	Assert( MAX_PLAYERS <= 255 );
+
+	ubyte tvar = (ubyte)ids_count;
+	PXO_ADD_DATA( tvar );
+
+	for (idx = 0; idx < ids_count; idx++) {
+		PXO_ADD_INT( ids[idx] );
+	}
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+
+	delete [] buffer;
+	delete [] ids;
+}
+

@@ -107,6 +107,7 @@ void FS2NetD_Pong(int tstamp);
 int FS2NetD_ValidateTableList(int timeout = 30);
 void FS2NetD_ChatChannelUpdate(char *chan_name);
 void FS2NetD_GameCountUpdate(char *chan_name);
+void FS2NetD_CheckDuplicateLogin(int SID);
 fs2open_banmask *FS2NetD_GetBanList(int *numBanMasks, int timeout = 15);
 
 // longer timeouts - mySQL operations
