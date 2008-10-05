@@ -6727,15 +6727,20 @@ void hudtarget_page_in()
 	}
 }
 
+extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 void hud_stuff_ship_name(ship *shipp, char *ship_name_text)
 {
 	char ship_name[NAME_LENGTH], callsign[NAME_LENGTH];
 
 	// get names
 	strcpy(ship_name, shipp->ship_name);
-	*callsign = 0;
-	if (shipp->callsign_index >= 0) {
-		mission_parse_lookup_callsign_index(shipp->callsign_index, callsign);
+	if (Fred_running) {
+		strcpy(callsign, Fred_callsigns[shipp-Ships]);
+	} else {
+		*callsign = 0;
+		if (shipp->callsign_index >= 0) {
+			mission_parse_lookup_callsign_index(shipp->callsign_index, callsign);
+		}
 	}
 
 	// handle hash symbol
@@ -6759,15 +6764,20 @@ void hud_stuff_ship_name(ship *shipp, char *ship_name_text)
 	}
 }
 
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
 void hud_stuff_ship_class(ship *shipp, char *ship_class_text)
 {
 	char ship_class[NAME_LENGTH], alt_name[NAME_LENGTH];
 
 	// get names
 	strcpy(ship_class, Ship_info[shipp->ship_info_index].name);
-	*alt_name = 0;
-	if (shipp->alt_type_index >= 0) {
-		mission_parse_lookup_alt_index(shipp->alt_type_index, alt_name);
+	if (Fred_running) {
+		strcpy(alt_name, Fred_alt_names[shipp-Ships]);
+	} else {
+		*alt_name = 0;
+		if (shipp->alt_type_index >= 0) {
+			mission_parse_lookup_alt_index(shipp->alt_type_index, alt_name);
+		}
 	}
 
 	// handle hash symbol

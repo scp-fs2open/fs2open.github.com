@@ -2006,6 +2006,11 @@ int Show_net_stats;
 int Pre_player_entry;
 
 int	Fred_running = 0;
+
+// required for hudtarget... kinda dumb, but meh
+char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
+
 char Game_current_mission_filename[MAX_FILENAME_LEN];
 int game_single_step = 0;
 int last_single_step=0;
