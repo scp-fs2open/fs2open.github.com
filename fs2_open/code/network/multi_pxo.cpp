@@ -338,6 +338,7 @@
 #include "stats/scoring.h"
 #include "playerman/player.h"
 #include "fs2netd/fs2netd_client.h"
+#include "menuui/mainhallmenu.h"
 
 
 
@@ -1557,6 +1558,8 @@ void multi_pxo_init(int use_last_channel)
 	// clear all tracker channel related strings
 	memset(Multi_fs_tracker_channel, 0, MAX_PATH);
 	memset(Multi_fs_tracker_filter, 0, MAX_PATH);
+
+	main_hall_start_music();
 }
 
 // do frame for the PXO screen
