@@ -6753,10 +6753,12 @@ void hud_stuff_ship_name(ship *shipp, char *ship_name_text)
 	}
 
 	// print ship name
-	if ( (Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1) ) {
-		*ship_name_text = 0;
-	} else if (shipp->flags2 & SF2_HIDE_SHIP_NAME) {
-		*ship_name_text = 0;
+	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) ) {
+		if (*callsign) {
+			strcpy(ship_name_text, callsign);
+		} else {
+			*ship_name_text = 0;
+		}
 	} else if (*callsign) {
 		sprintf(ship_name_text, "%s (%s)", ship_name, callsign);
 	} else {
