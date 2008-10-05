@@ -147,6 +147,8 @@ typedef struct multi_global_options {
 	int		std_voice;													// should standalone allow voice
 	char		std_passwd[STD_PASSWD_LEN+1];							// standalone host password
 	char		std_pname[STD_NAME_LEN+1];								// permanent name for the standalone - if any
+	char		std_pxo_login[MULTI_OPTIONS_STRING_LEN];				// pxo login to use
+	char		std_pxo_password[MULTI_OPTIONS_STRING_LEN];				// pxo password to use
 	int		std_framecap;												// standalone frame cap
 } multi_global_options;
 

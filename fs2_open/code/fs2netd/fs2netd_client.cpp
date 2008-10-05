@@ -231,7 +231,20 @@ int fs2netd_login_do()
 			return 2;
 		}
 
-		PXO_SID = FS2NetD_Login(Multi_tracker_login, Multi_tracker_passwd, do_full_packet);
+		const char *user = Multi_tracker_login;
+		const char *passwd = Multi_tracker_passwd;
+
+		if (Is_standalone) {
+			if ( strlen(Multi_options_g.std_pxo_login) ) {
+				user = Multi_options_g.std_pxo_login;
+			}
+
+			if ( strlen(Multi_options_g.std_pxo_password) ) {
+				passwd = Multi_options_g.std_pxo_password;
+			}
+		}
+
+		PXO_SID = FS2NetD_Login(user, passwd, do_full_packet);
 
 		// if we have already been through once then only deal with the recieve packet next time
 		do_full_packet = 0;
