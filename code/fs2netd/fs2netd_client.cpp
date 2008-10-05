@@ -88,6 +88,7 @@ static int do_full_packet = 1;
 static fix timeout = -1;
 static fix NextHeartBeat = -1;
 static ushort GameServerPort = 0;
+static bool Dump_stats = false;
 
 static int FS2NetD_file_list_count = -1;
 static file_record *FS2NetD_file_list = NULL;
@@ -310,17 +311,31 @@ bool fs2netd_login()
 
 	Logged_in = false;
 
+	Multi_tracker_id = -1;
+	memset( Multi_tracker_id_string, 0, sizeof(Multi_tracker_id_string) );
+
+	// if we're a standalone, show a dialog saying "validating tables"
+	if (Is_standalone) {
+		std_create_gen_dialog("Logging into FS2NetD");
+		std_gen_set_text("Connecting...", 1);
+	}
+
 	fs2netd_connect();
 
 	if ( !Is_connected ) {
 		if ( !Is_standalone ) {
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to FS2NetD server!", -1));
+		} else {
+			std_gen_set_text("Connect FAILED!", 1);
+			Sleep(2000);
+			std_destroy_gen_dialog();
 		}
 
 		return false;
 	}
 
 	char error_str[256];
+	char std_error_str[64];
 
 	do_full_packet = 1;
 
@@ -335,6 +350,7 @@ bool fs2netd_login()
 	In_process = false;
 
 	memset( error_str, 0, sizeof(error_str) );
+	memset( std_error_str, 0, sizeof(std_error_str) );
 
 	switch (rc) {
 		// the action was cancelled
@@ -346,6 +362,7 @@ bool fs2netd_login()
 		case 1:
 			ml_printf("FS2NetD ERROR:  Login %s/%s is invalid!", Multi_tracker_login, Multi_tracker_passwd);
 			strcpy(error_str, "Login failed!");
+			strcpy(std_error_str, "Login failed!");
 			retval = false;
 			break;
 
@@ -353,6 +370,7 @@ bool fs2netd_login()
 		case 2:
 			ml_printf("FS2NetD ERROR:  UNKNOWN ERROR when fetching pilot data");
 			strcpy(error_str, "An Unknown Error (probably a timeout) occured when trying to retrieve your pilot data.");
+			strcpy(std_error_str, "Unknown Error (timeout?)");
 			retval = false;
 			break;
 
@@ -366,13 +384,15 @@ bool fs2netd_login()
 		case 4:
 			ml_printf("FS2NetD MSG:  Created New Pilot");
 			strcpy(error_str, "New Pilot has been created.");
+			strcpy(std_error_str, "New Pilot has been created.");
 			retval = true;
 			break;
 
 		// invalid pilot name
 		case 5:
 			ml_printf("FS2NetD ERROR:  Invalid Pilot!");
-			strcpy(error_str, "Invalid Pilot name - A serious error has occured, Contact the FS2NetD Administrator!");
+			strcpy(error_str, "Invalid pilot name - A serious error has occured, Contact the FS2NetD Administrator!");
+			strcpy(std_error_str, "Invalid pilot name!");
 			retval = false;
 			break;
 
@@ -380,6 +400,7 @@ bool fs2netd_login()
 		case 6:
 			ml_printf("FS2NetD ERROR:  Invalid SID!");
 			strcpy(error_str, "Invalid SID - A serious error has occured, Contact the FS2NetD Administrator!");
+			strcpy(std_error_str, "Invalid SID");
 			retval = false;
 			break;
 
@@ -392,10 +413,19 @@ bool fs2netd_login()
 
 	if ( !Is_standalone && strlen(error_str) ) {
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, error_str);
+	} else if ( Is_standalone && std_gen_is_active() && strlen(std_error_str) ) {
+		std_gen_set_text(std_error_str, 1);
+		Sleep(2000);
 	}
 
 	if (retval) {
 		Logged_in = true;
+		Multi_tracker_id = PXO_SID;
+		strcpy(Multi_tracker_id_string, Multi_tracker_login);
+	}
+
+	if (Is_standalone) {
+		std_destroy_gen_dialog();
 	}
 
 	return retval;
@@ -438,7 +468,7 @@ void fs2netd_do_frame()
 
 		Is_connected = false;
 		Logged_in = false;
-		PXO_SID = -1;
+		Multi_tracker_id = PXO_SID = -1;
 
 		NextHeartBeat = -1;
 		NextPing = -1;
@@ -483,7 +513,7 @@ void fs2netd_do_frame()
 			FS2NetD_Disconnect();
 
 			Logged_in = false;
-			PXO_SID = -1;
+			Multi_tracker_id = PXO_SID = -1;
 
 			NextHeartBeat = -1;
 			NextPing = -1;
@@ -498,11 +528,16 @@ void fs2netd_do_frame()
 					gamesnd_play_iface(SND_GENERAL_FAIL);
 					popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
 				}
-		
+
 				return;
 			} else {
 				ml_printf("FS2NetD NOTICE:  Connection to server has been reestablished!");
 			}
+		}
+
+		// verify that we are only logged in once (for stats saving purposes)
+		if ( (Netgame.game_state == NETGAME_STATE_BRIEFING) || (Netgame.game_state == NETGAME_STATE_MISSION_SYNC) ) {
+			FS2NetD_CheckDuplicateLogin(PXO_SID);
 		}
 
 		ml_printf("FS2NetD sent PING/IDENT");
@@ -617,7 +652,22 @@ void fs2netd_do_frame()
 
 					if (login_status != 1) {
 						Logged_in = false;
-						PXO_SID = -1;
+						Multi_tracker_id = PXO_SID = -1;
+					}
+
+					break;
+				}
+
+				case PCKT_DUP_LOGIN_REPLY: {
+					ubyte dupe_status = 0;
+
+					PXO_GET_DATA( dupe_status );
+
+					if (dupe_status) {
+						ml_printf("FS2NetD NOTICE:  Login error! Stats will be tossed!");
+						Dump_stats = true;
+					} else {
+						Dump_stats = false;
 					}
 
 					break;
@@ -641,7 +691,7 @@ void fs2netd_server_send_heartbeat(bool force)
 	}
 
 	// if we aren't hosting this game then bail
-	if ( !(Net_player->flags & NETINFO_FLAG_GAME_HOST) ) {
+	if ( !Is_standalone && !(Net_player->flags & NETINFO_FLAG_GAME_HOST) ) {
 		return;
 	}
 
@@ -651,7 +701,7 @@ void fs2netd_server_send_heartbeat(bool force)
 	}
 
 	// don't bother if there is nothing to actually send yet
-	if ( !strlen(Netgame.mission_name) ) {
+	if ( !Is_standalone && !strlen(Netgame.mission_name) ) {
 		return;
 	}
 
@@ -898,7 +948,7 @@ void fs2netd_debrief_init()
 
 	bool mValidStatus = fs2netd_check_mission(Netgame.mission_name);
 
-	if ( ((multi_num_players() > 1) || (Multi_num_players_at_start > 1)) && !game_hacked_data() && mValidStatus ) {
+	if ( mValidStatus && !Dump_stats && ((multi_num_players() > 1) || (Multi_num_players_at_start > 1)) && !game_hacked_data() ) {
 		// verify that we are logged in before doing anything else
 		fs2netd_login();
 
@@ -1430,7 +1480,7 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 		return -2;
 	}
 
-	player new_plr;
+	static player new_plr;
 
 	if (first_call) {
 		memset( &new_plr, 0, sizeof(player) );
@@ -1439,22 +1489,27 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 		memset( out_plr, 0, sizeof(player) );
 
 		timeout = timer_get_fixed_seconds() + (30 * F1_0);
+
+		In_process = true;
 	}
 
 	int rc = FS2NetD_GetPlayerData(-2, callsign, &new_plr, false, (int)first_call );
 
 	// some sort of failure
 	if (rc > 0) {
+		In_process = false;
 		timeout = -1;
 		return -2;
 	}
 
 	if (rc == 0) {
 		memcpy( out_plr, &new_plr, sizeof(player) );
+		In_process = false;
 	}
 
 	// if timeout passes then bail on failure
 	if ( timer_get_fixed_seconds() > timeout ) {
+		In_process = false;
 		timeout = -1;
 		return -2;
 	}

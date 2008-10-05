@@ -333,7 +333,7 @@ void multi_options_read_config()
 				if ( SETTING("+pxo") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						// whee!
+						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH);
 					}
 				} else
 				// set the standalone server's permanent name
