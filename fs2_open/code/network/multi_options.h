@@ -145,8 +145,8 @@ typedef struct multi_global_options {
 	int		std_max_players;											// max players allowed on the standalone
 	int		std_datarate;												// some OBJ_UPDATE_* value
 	int		std_voice;													// should standalone allow voice
-	char		std_passwd[STD_PASSWD_LEN];							// standalone host password
-	char		std_pname[STD_NAME_LEN];								// permanent name for the standalone - if any
+	char		std_passwd[STD_PASSWD_LEN+1];							// standalone host password
+	char		std_pname[STD_NAME_LEN+1];								// permanent name for the standalone - if any
 	int		std_framecap;												// standalone frame cap
 } multi_global_options;
 
