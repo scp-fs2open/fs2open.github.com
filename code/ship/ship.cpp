@@ -473,7 +473,7 @@
  * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
  *
  * Revision 2.293  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * bercommit of custom IFF stuff :)
  *
  * Revision 2.292  2006/01/09 04:54:14  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
@@ -4982,6 +4982,23 @@ void parse_ship_type()
 		stp = &stp_buf;
 		memset( stp, 0, sizeof(ship_type_info) );
 		strcpy(stp->name, name_buf);
+	}
+
+	char *ship_type = NULL;
+	if (!stricmp(stp->name, "sentrygun")) {
+		ship_type = "sentry gun";
+	} else if (!stricmp(stp->name, "escapepod")) {
+		ship_type = "escape pod";
+	} else if (!stricmp(stp->name, "repair_rearm")) {
+		ship_type = "support";
+	} else if (!stricmp(stp->name, "supercap")) {
+		ship_type = "super cap";
+	} else if (!stricmp(stp->name, "knossos")) {
+		ship_type = "knossos device";
+	}
+
+	if (ship_type != NULL) {
+		Warning(LOCATION, "Bad ship type name in objecttypes.tbl\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin objecttypes.tbl to fix this.\n", stp->name, ship_type);
 	}
 
 	//Okay, now we should have the values to parse
