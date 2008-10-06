@@ -733,7 +733,7 @@ void fs2netd_server_disconnect()
 	}
 
 	// if we aren't hosting this game then bail
-	if ( !(Net_player->flags & NETINFO_FLAG_GAME_HOST) ) {
+	if ( !Is_standalone && !(Net_player->flags & NETINFO_FLAG_GAME_HOST) ) {
 		return;
 	}
 
@@ -1520,6 +1520,22 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 
 void fs2netd_close()
 {
+	// make sure that a hosted games is de-listed
+	fs2netd_server_disconnect();
+
+	FS2NetD_Disconnect();
+
+	Multi_tracker_id = PXO_SID = -1;
+	PXO_port = 0;
+	Is_connected = false;
+	In_process = false;
+	Logged_in = false;
+	do_full_packet = 1;
+	timeout = -1;
+	NextHeartBeat = -1;
+	GameServerPort = 0;
+	Dump_stats = false;
+
 	Table_valid_status.clear();
 
 	if (FS2NetD_file_list != NULL) {
