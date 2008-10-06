@@ -763,13 +763,11 @@ Recieve_Only:
 
 	// receive reply (serverlist_reply_packet)
 	fix end_time = timer_get_fixed_seconds() + (MAX_TIMEOUT * F1_0);
-	net_server templist[MAX_SERVERS];
+	net_server stemp;
 	int i, numServers = 0;
 	uint rc_total = 0;
 	net_addr addr;
 	server_item *item = NULL;
-
-	memset( templist, 0, MAX_SERVERS * sizeof(net_server) );
 
 	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
 		if (rc < BASE_PACKET_SIZE)
@@ -809,23 +807,18 @@ Recieve_Only:
 			return 1;
 		}
 
-		if (numServers > MAX_SERVERS) {
-			ml_printf("FS2NetD WARNING: Server list contains %i server, but can only handle %i at a time!  Some servers will not be listed!", numServers, MAX_SERVERS);
-			numServers = MAX_SERVERS;
-		}
-
 		for (i = 0; i < numServers; i++) {
-			PXO_GET_INT( templist[i].flags );
-			PXO_GET_USHORT( templist[i].port );
-			PXO_GET_STRING( templist[i].ip );
+			PXO_GET_INT( stemp.flags );
+			PXO_GET_USHORT( stemp.port );
+			PXO_GET_STRING( stemp.ip );
 
-			if ( !psnet_is_valid_ip_string(templist[i].ip) ) {
-				nprintf(("Network", "Invalid ip string (%s)\n", templist[i].ip));
+			if ( !psnet_is_valid_ip_string(stemp.ip) ) {
+				nprintf(("Network", "Invalid ip string (%s)\n", stemp.ip));
 			} else {	
 				memset( &addr, 0, sizeof(net_addr) );
 				addr.type = NET_TCP;
-				psnet_string_to_addr(&addr, templist[i].ip);
-				addr.port = (short) templist[i].port;
+				psnet_string_to_addr(&addr, stemp.ip);
+				addr.port = (short) stemp.port;
 
 				if (addr.port == 0)
 					addr.port = DEFAULT_GAME_PORT;

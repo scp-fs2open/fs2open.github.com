@@ -87,7 +87,6 @@
 //#pragma warning(disable:4245)	// signed/unsigned mismatch in conversion of const value
 
 
-#define MAX_SERVERS 150
 #include "fs2netd/protocol.h"
 #include "fs2netd/tcp_socket.h"
 
