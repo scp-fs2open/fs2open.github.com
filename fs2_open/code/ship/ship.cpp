@@ -15537,6 +15537,7 @@ void ship_page_in()
 			nprintf(( "Paging", "Paging in textures for ship '%s'\n", Ships[i].ship_name ));
 			model_page_in_textures(sip->model_num, Ships[i].ship_info_index);
 			// need to make sure and do this again, after we are sure that all of the textures are ready
+			Ships[i].ab_count = 0;
 			ship_init_afterburners( &Ships[i] );
 		}
 
