@@ -512,7 +512,10 @@ void fs2netd_do_frame()
 			ml_printf("FS2NetD WARNING:  Unable to validate login!");
 			FS2NetD_Disconnect();
 
+			Sleep(100);
+
 			Logged_in = false;
+			Is_connected = false;
 			Multi_tracker_id = PXO_SID = -1;
 
 			NextHeartBeat = -1;
