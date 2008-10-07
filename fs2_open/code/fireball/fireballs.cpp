@@ -1494,13 +1494,21 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 
 int fireball_ship_explosion_type(ship_info *sip)
 {
+	Assert( sip != NULL );
+
 	int index = -1;
-	int ship_fireballs = sip->explosion_bitmap_anims.size();
-	int objecttype_fireballs = Ship_types[sip->class_type].explosion_bitmap_anims.size();
+	int ship_fireballs = (int)sip->explosion_bitmap_anims.size();
+	int objecttype_fireballs = -1;
+
+	if (sip->class_type >= 0) {
+		objecttype_fireballs = (int)Ship_types[sip->class_type].explosion_bitmap_anims.size();
+	}
+
 	if(ship_fireballs > 0){
 		index = sip->explosion_bitmap_anims[rand()%ship_fireballs];
 	} else if(objecttype_fireballs > 0){
 		index = Ship_types[sip->class_type].explosion_bitmap_anims[rand()%objecttype_fireballs];
 	}
+
 	return index;
 }
