@@ -1036,10 +1036,13 @@ void dump_text_to_clipboard(char *text)
 
 void _cdecl WinAssert(char * text, char * filename, int linenum )
 {
+	int val;
+
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '\\')+1, linenum ));
+
 	if (Cmdline_nowarn)
 		return;
-
-	int val;
 
 	Messagebox_active = true;
 
@@ -1047,9 +1050,6 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
-
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
-	mprintf(("ASSERTION: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum ));
 
 #ifdef SHOW_CALL_STACK	
 	dumpBuffer.Clear();
