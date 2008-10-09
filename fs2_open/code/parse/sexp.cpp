@@ -8130,6 +8130,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 void sexp_invalidate_argument(int n)
 {
 	int conditional, arg_handler, arg_n;
+	bool invalidated;
 
 	conditional = n; 
 	do {
@@ -8148,22 +8149,45 @@ void sexp_invalidate_argument(int n)
 	// loop through arguments
 	while (n != -1)
 	{
-		// search for argument in arg_handler list
-		arg_n = CDR(arg_handler);
-		while (arg_n != -1)
-		{
-			// match?
-			if (!strcmp(CTEXT(n), CTEXT(arg_n)))
-			{
-				// set it as invalid
-				Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+		invalidated = false; 
 
-				// exit inner loop
-				break;
+		// first we must check if the arg_handler marks a selection. At the moment random-of is the only one that does this
+		arg_n = CDR(arg_handler);
+		while (arg_n != -1) {
+			if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_SELECT) {
+				// now check if the selected argument matches the one we want to invalidate
+				if (!strcmp(CTEXT(n), CTEXT(arg_n))) {
+					// set it as invalid
+					Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+					invalidated = true; 
+				}
 			}
 
 			// iterate
 			arg_n = CDR(arg_n);
+		}
+		
+		if (!invalidated) {
+			// search for argument in arg_handler list
+			arg_n = CDR(arg_handler);
+			while (arg_n != -1)
+			{
+				// match?
+				if (!strcmp(CTEXT(n), CTEXT(arg_n)))
+				{
+					// we need to check if the argument is already invalid as some argument lists may contain duplicates
+					if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID) {
+						// set it as invalid
+						Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+
+						// exit inner loop
+						break;
+					}
+				}
+
+				// iterate
+				arg_n = CDR(arg_n);
+			}
 		}
 
 		// iterate
