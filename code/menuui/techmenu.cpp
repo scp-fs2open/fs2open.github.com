@@ -694,6 +694,7 @@ void techroom_init_desc(char *src, int w)
 void techroom_select_new_entry()
 {
 	Assert(Current_list != NULL);
+
 	if (Current_list == NULL || Current_list_size <= 0) {
 		Cur_entry_index = Cur_entry = -1;
 		techroom_init_desc(NULL,0);
@@ -715,15 +716,27 @@ void techroom_select_new_entry()
 				if ( (i < Cur_entry + 5) && (i > Cur_entry - 5) )
 					continue;
 
-				mprintf(("TECH ROOM: Dumping excess ship textures...\n"));
+				mprintf(("TECH ROOM: Dumping excess ships...\n"));
 
-				model_page_out_textures(Current_list[i].model_num);
+				model_page_out_textures(Current_list[i].model_num, true);
+				model_unload(Current_list[i].model_num);
+
+				ship_page_out_texture_set(Current_list[i].index, true);
 
 				Current_list[i].textures_loaded = 0;
+				Current_list[i].model_num = -1;
 			}
 		}
 
-		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		// don't model_load() again if we don't need to, it messes up the load count
+		if (Current_list[Cur_entry].model_num >= 0) {
+			Techroom_ship_modelnum = Current_list[Cur_entry].model_num;
+		} else {
+			Techroom_ship_modelnum = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
+		}
+
+		// if we have a special texture set for this ship then be sure to load it now
+		ship_init_texture_set(Cur_entry_index, model_get(Techroom_ship_modelnum));
 
 		Current_list[Cur_entry].model_num = Techroom_ship_modelnum;
 
@@ -925,7 +938,7 @@ void techroom_ships_render(float frametime)
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 
-	if (!Cmdline_nohtl) {
+	if ( !Cmdline_nohtl ) {
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
@@ -936,14 +949,12 @@ void techroom_ships_render(float frametime)
 	light_dir.xyz.y = 1.0f;	
 	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
 	light_rotate_all();
-	// lighting for techroom
 
 	model_clear_instance(Techroom_ship_modelnum);
 	model_set_detail_level(0);
-	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
+	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER, -1, -1, sip->texture_set);
 
-	if (!Cmdline_nohtl)
-	{
+	if ( !Cmdline_nohtl ) {
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
@@ -1703,9 +1714,15 @@ void techroom_lists_reset()
 	Current_list = NULL;
 	Current_list_size = 0;
 
-	model_free_all();
-
 	if (Ship_list != NULL) {
+		for (i = 0; i < Ship_list_size; i++) {
+			if (Ship_list[i].model_num >= 0) {
+				model_page_out_textures(Ship_list[i].model_num, true);
+				model_unload(Ship_list[i].model_num);
+				ship_page_out_texture_set(Ship_list[i].index, true);
+			}
+		}
+
 		delete[] Ship_list;
 		Ship_list = NULL;
 	}

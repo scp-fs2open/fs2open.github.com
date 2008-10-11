@@ -47,7 +47,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		// make sure there is an extension
 		strcpy(real_name, filename);
 		char *p = strchr(real_name, '.');
-		if (p) { *p=0; }
+		if (p) { *p = 0; }
 		strcat(real_name, ".dds");
 
 		// try to open the file
@@ -79,8 +79,9 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	dds_header.dwMipMapCount		= cfread_uint(ddsfile);
 
 	// skip over the crap we don't care about
-	for (i = 0; i < 11; i++)
+	for (i = 0; i < 11; i++) {
 		trash = cfread_uint(ddsfile);
+	}
 
 	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile);
 	dds_header.ddpfPixelFormat.dwFlags				= cfread_uint(ddsfile);
@@ -95,11 +96,13 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	dds_header.ddsCaps.dwCaps2		= cfread_uint(ddsfile);
 
 	// sanity
-	if (dds_header.dwDepth == 0)
+	if (dds_header.dwDepth == 0) {
 		dds_header.dwDepth = 1;
+	}
 
-	if (dds_header.dwMipMapCount < 1)
+	if (dds_header.dwMipMapCount < 1) {
 		dds_header.dwMipMapCount = 1;
+	}
 
 	d_width = dds_header.dwWidth;
 	d_height = dds_header.dwHeight;
@@ -122,11 +125,13 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 			d_width /= 2;
 			d_height /= 2;
 
-			if (d_width <= 0)
+			if (d_width <= 0) {
 				d_width = 1;
+			}
 
-			if (d_height <= 0)
+			if (d_height <= 0) {
 				d_height = 1;
+			}
 
 			// size of data block (4x4)
 			d_size += ((d_width + 3) / 4) * ((d_height + 3) / 4) * ((dds_header.ddpfPixelFormat.dwFourCC == FOURCC_DXT1) ? 8 : 16);
@@ -189,14 +194,17 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 			d_height /= 2;
 			d_depth /= 2;
 
-			if (d_width < 1)
+			if (d_width < 1) {
 				d_width = 1;
+			}
 
-			if (d_height < 1)
+			if (d_height < 1) {
 				d_height = 1;
+			}
 
-			if (d_depth < 1)
+			if (d_depth < 1) {
 				d_depth = 1;
+			}
 
 			d_size += d_width * d_height * d_depth * (dds_header.ddpfPixelFormat.dwRGBBitCount / 8);
 		}
@@ -240,20 +248,25 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	}
 
 	// stuff important info
-	if (bpp)
+	if (bpp) {
 		*bpp = bits;
+	}
 
-	if (compression_type)
+	if (compression_type) {
 		*compression_type = ct;
+	}
 
-	if (width)
+	if (width) {
 		*width = dds_header.dwWidth;
+	}
 
-	if (height)
+	if (height) {
 		*height = dds_header.dwHeight;
+	}
 
-	if (levels)
+	if (levels) {
 		*levels = dds_header.dwMipMapCount;
+	}
 
 	if (palette && (bits == 8)) {
 		cfseek(ddsfile, DDS_OFFSET, CF_SEEK_SET);

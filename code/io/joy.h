@@ -114,6 +114,18 @@ typedef struct Joy_info {
 	int	axis_max[JOY_NUM_AXES];
 } Joy_info;
 
+typedef struct joy_button_info {
+	int actual_state;		// Set if the button is physically down
+	int state;				// Set when the button goes from up to down, cleared on down to up.  Different than actual_state after a flush.
+	int down_count;
+	int up_count;
+	int down_time;
+	uint last_down_check;	// timestamp in milliseconds of last 
+} joy_button_info;
+
+const int joy_pollrate = 1000 / 18;  // poll at 18Hz
+
+
 extern int Joy_sensitivity;
 extern int Dead_zone_size;  // percentage of range that is dead zone
 

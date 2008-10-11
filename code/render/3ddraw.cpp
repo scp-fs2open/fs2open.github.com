@@ -596,7 +596,7 @@ int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vec3d *norm
 //draw a polygon.
 //Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
 //returns 1 if off screen, 0 if drew
-int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
+int g3_draw_poly(int nv, vertex **pointlist, uint tmap_flags)
 {
 	int i;
 	vertex **bufptr;
@@ -604,31 +604,40 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 
 	Assert( G3_count == 1 );
 
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+	if ( !Cmdline_nohtl && ((tmap_flags & TMAP_HTL_3D_UNLIT) || (tmap_flags & TMAP_FLAG_TRISTRIP) || (tmap_flags & TMAP_FLAG_QUADSTRIP)) ) {
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
 	}
-	//don't clip in HT&L mode, the card does it for us
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP)) {
-		gr_tmapper( nv, pointlist, tmap_flags );
-		return 0;
-	}
-	if(Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP)){
+
+	Assert( !(tmap_flags & TMAP_FLAG_QUADSTRIP) );
+
+	if ( Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP) ) {
 		bool starting = true;
 		int offset = 0;
-		for (i=0;i<nv;i++){
-			if (!(pointlist[i]->flags&PF_PROJECTED))g3_project_vertex(pointlist[i]);
-			if (pointlist[i]->flags&PF_OVERFLOW){
-				if(starting)
+
+		for (i = 0; i < nv; i++) {
+			if ( !(pointlist[i]->flags & PF_PROJECTED) )
+				g3_project_vertex(pointlist[i]);
+
+			if (pointlist[i]->flags & PF_OVERFLOW) {
+				if (starting)
 					offset++;
+
 				nv--;
-			}else
+			} else {
 				starting = false;
-			if(nv<3)return 1;
+			}
+
+			if (nv < 3)
+				return 1;
 		}
-		if(nv<3)return 1;
+
+		if (nv < 3)
+			return 1;
+
 		pointlist += offset;
 		gr_tmapper( nv, pointlist, tmap_flags );
+
 		return 0;
 	}
 
@@ -721,7 +730,7 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	//Let's begin.
 	
 	const int NUM_VERTICES = 4;
-	vec3d p[NUM_VERTICES] = {0};
+	vec3d p[NUM_VERTICES] = ZERO_VECTOR;
 	vertex v[NUM_VERTICES];
 	//float h = sqrt(2*(radius*radius));
 
@@ -1874,444 +1883,10 @@ void g3_draw_horizon_line()
 }
 
 
-/*
-
-horizon_poly	dw	5 dup (?,?)	;max of 5 points
-
-;for g3_compute_horz_vecs
-xfrac	fix	?
-yfrac	fix	?
-
-vec_ptr	dd	?
-corner_num	dd	?
-
-;for compute corner vec
-m13	fix	?	;m1-m3
-m46	fix	?
-m79	fix	?
-m56	fix	?
-m23	fix	?
-m89	fix	?
-
-_DATA	ends
-
-
-_TEXT	segment	dword public USE32 'CODE'
-
-	extn	gr_setcolor_,gr_clear_canvas_
-	extn	gr_upoly_tmap_
-
-;draw a polygon (one half of horizon) from the horizon line
-draw_horz_poly:	lea	ebx,horizon_poly
-
-;copy horizon line as first points in poly
-
-	mov	eax,[edi]
-	mov	[ebx],eax
-	mov	eax,4[edi]
-	mov	4[ebx],eax
-
-	mov	eax,[esi]
-	mov	8[ebx],eax
-	mov	eax,4[esi]
-	mov	12[ebx],eax
-
-;add corners to polygon
-
-	mov	eax,8[esi]	;edge number of start edge
-
-	mov	ecx,8[edi]	;edge number of end point
-	sub	ecx,eax	;number of edges
-	jns	edgenum_ok
-	add	ecx,4
-edgenum_ok:
-	mov	edx,ecx	;save count
-	sal	eax,3	;edge * 8
-	lea	esi,corners[eax]	;first corner
-	lea	edi,16[ebx]	;rest of poly
-corner_loop:	movsd
-	movsd		;copy a corner
-	cmp	esi,offset corners+8*4	;end of list?
-	jne	no_wrap
-	lea	esi,corners
-no_wrap:	loop	corner_loop
-
-;now draw the polygon
-	mov	eax,edx	;get corner count
-	add	eax,2	;..plus horz line end points
-	lea	edx,horizon_poly	;get the points
-;;	call	gr_poly_	;draw it!
- call gr_upoly_tmap_
-	ret
-
-;return information on the polygon that is the sky. 
-;takes ebx=ptr to x,y pairs, ecx=ptr to vecs for each point
-;returns eax=number of points
-;IMPORTANT: g3_draw_horizon() must be called before this routine.
-g3_compute_sky_polygon:
-	test	sky_ground_flag,-1	;what was drawn
-	js	was_all_ground
-	jg	was_all_sky	
-
-	pushm	ebx,ecx,edx,esi,edi
-
-	lea	esi,left_point
-	lea	edi,right_point
-	test	color_swap,-1
-	jz	no_swap_ends
-	xchg	esi,edi	;sky isn't top
-no_swap_ends:
-
-;copy horizon line as first points in poly
-
-	mov	eax,[edi]	;copy end point
-	mov	[ebx],eax
-	mov	eax,4[edi]
-	mov	4[ebx],eax
-
-	mov	eax,[esi]	;copy start point
-	mov	8[ebx],eax
-	mov	eax,4[esi]
-	mov	12[ebx],eax
-
-	pushm	ebx,ecx
-	push	edi	;save end point
-	push	esi	;save start point
-	mov	esi,edi	;end point is first point
-	mov	edi,ecx	;dest buffer
-	call	compute_horz_end_vec
-
-	pop	esi	;get back start point
-	add	edi,12	;2nd vec
-	call	compute_horz_end_vec
-
-	pop	edi	;get back end point
-	popm	ebx,ecx
-	add	ebx,16	;past two x,y pairs
-	add	ecx,24	;past two vectors
-
-	mov	vec_ptr,ecx
-
-;add corners to polygon
-
-	mov	eax,8[esi]	;edge number of start edge
-	mov	corner_num,eax
-
-	mov	ecx,8[edi]	;edge number of end point
-	sub	ecx,eax	;number of edges
-	jns	edgenum_ok2
-	add	ecx,4
-edgenum_ok2:
-	push	ecx	;save count
-	sal	eax,3	;edge * 8
-	lea	esi,corners[eax]	;first corner
-	mov	edi,ebx	;rest of poly 2d points
-corner_loop2:
-	movsd
-	movsd		;copy a corner
-	cmp	esi,offset corners+8*4	;end of list?
-	jne	no_wrap2
-	lea	esi,corners
-no_wrap2:
-	pushm	ecx,esi,edi
-	mov	edi,vec_ptr
-	mov	eax,corner_num
-	call	compute_corner_vec
-	add	vec_ptr,12
-	inc	corner_num
-	popm	ecx,esi,edi
-
-	loop	corner_loop2
-
-;now return with count
-	pop	eax	;get corner count
-	add	eax,2	;..plus horz line end points
-
-	popm	ebx,ecx,edx,esi,edi
-
-	ret
-
-;we drew all ground, so there was no horizon drawn
-was_all_ground:	xor	eax,eax	;no points in poly
-	ret
-
-;we drew all sky, so find 4 corners
-was_all_sky:	pushm	ebx,ecx,edx,esi,edi
-	push	ecx
-	lea	esi,corners
-	mov	edi,ebx
-	mov	ecx,8
-	rep	movsd
-	pop	edi
-
-	mov	ecx,4
-	xor	eax,eax	;start corner 0
-sky_loop:	pushm	eax,ecx,edi
-	call	compute_corner_vec
-	popm	eax,ecx,edi
-	add	edi,12
-	inc	eax
-	loop	sky_loop
-	mov	eax,4	;4 corners
-	popm	ebx,ecx,edx,esi,edi
-	ret
-
-;compute vec3d describing horizon intersection with a point.
-;takes esi=2d point, edi=vec. trashes eax,ebx,ecx,edx
-compute_horz_end_vec:
-
-;compute rotated x/z & y/z ratios
-
-	mov	eax,[esi]	;get x coord
-  	sub	eax,Canv_w2
-	fixdiv	Canv_w2
-	mov	xfrac,eax	;save
-
-	mov	eax,4[esi]	;get y coord
-  	sub	eax,Canv_h2
-	fixdiv	Canv_h2
-	neg	eax	;y inversion
-	mov	yfrac,eax	;save
-
-;compute fraction unrotated x/z
-
-	mov	eax,xfrac
-	add	eax,yfrac
-	mov	ecx,eax	;save
-	fixmul	View_matrix.m9
-	sub	eax,View_matrix.m7
-	sub	eax,View_matrix.m8
-	mov	ebx,eax	;save numerator
-
-	mov	eax,ecx
-	fixmul	View_matrix.m3
-	mov	ecx,eax
-	mov	eax,View_matrix.m1
-	add	eax,View_matrix.m2
-	sub	eax,ecx
-
-;now eax/ebx = z/x. do divide in way to give result < 0
-
-	pushm	eax,ebx
-	abs_eax
-	xchg	eax,ebx
-	abs_eax
-	cmp	eax,ebx	;which is bigger?
-	popm	eax,ebx
-	jl	do_xz
-
-;x is bigger, so do as z/x
-
-	fixdiv	ebx
-	
-;now eax = z/x ratio.  Compute vec3d by normalizing and correcting sign
-
-	push	eax	;save ratio
-
-	imul	eax	;compute z*z
-	inc	edx	;+ x*x (x==1)
-	call	quad_sqrt
-
-	mov	ecx,eax	;mag in ecx
-	pop	eax	;get ratio, x part
-
-	fixdiv	ecx
-	mov	[edi].xyz.z,eax
-
-	mov	eax,f1_0
-	fixdiv	ecx
-
-	mov	[edi].xyz.x,eax
-
-	jmp	finish_end
-
-;z is bigger, so do as x/z
-do_xz:
-	xchg	eax,ebx
-	fixdiv	ebx
-	
-;now eax = x/z ratio.  Compute vec3d by normalizing and correcting sign
-
-	push	eax	;save ratio
-
-	imul	eax	;compute x*x
-	inc	edx	;+ z*z (z==1)
-	call	quad_sqrt
-
-	mov	ecx,eax	;mag in ecx
-	pop	eax	;get ratio, x part
-
-	fixdiv	ecx
-	mov	[edi].xyz.x,eax
-
-	mov	eax,f1_0
-	fixdiv	ecx
-
-	mov	[edi].xyz.z,eax
-
-finish_end:	xor	eax,eax	;y = 0
-	mov	[edi].xyz.y,eax
-
-;now make sure that this vec3d is in front of you, not behind
-
-	mov	eax,[edi].xyz.x
-	imul	View_matrix.m3
-	mov	ebx,eax
-	mov	ecx,edx
-	mov	eax,[edi].xyz.z
-	imul	View_matrix.m9
-	add	eax,ebx
-	adc	edx,ecx
-	jns	vec_ok	;has positive z, ok
-
-;z is neg, flip vector
-
-	neg	[edi].xyz.x
-	neg	[edi].xyz.z
-vec_ok:
-	ret
-
-MIN_DEN equ 7fffh
-
-sub2	macro	dest,src
-	mov	eax,src
-	sal	eax,1
-	sub	dest,eax
-	endm
-
-;compute vec3d decribing a corner of the screen.
-;takes edi=vector, eax=corner num
-compute_corner_vec:
-
-	cmp	eax,4
-	jl	num_ok
-	sub	eax,4
-num_ok:
-
-;compute all deltas
-	mov	ebx,View_matrix.m1
-	mov	ecx,View_matrix.m4
-	mov	edx,View_matrix.m7
-
-	or	eax,eax
-	jz	neg_x
-	cmp	eax,3
-	jne	no_neg_x
-neg_x:
-	neg	ebx
-	neg	ecx
-	neg	edx
-no_neg_x:	
-	sub	ebx,View_matrix.m3
-	mov	m13,ebx	;m1-m3
-	sub	ecx,View_matrix.m6
-	mov	m46,ecx	;m4-m6
-	sub	edx,View_matrix.m9
-	mov	m79,edx	;m7-m9
-
-	mov	ebx,View_matrix.m5
-	mov	ecx,View_matrix.m2
-	mov	edx,View_matrix.m8
-
-	cmp	eax,2
-	jl	no_neg_y
-neg_y:
-	neg	ebx
-	neg	ecx
-	neg	edx
-no_neg_y:	
-	sub	ebx,View_matrix.m6
-	mov	m56,ebx	;m5-m6
-	sub	ecx,View_matrix.m3
-	mov	m23,ecx	;m2-m3
-	sub	edx,View_matrix.m9
-	mov	m89,edx	;m8-m9
-
-;compute x/z ratio
-
-;compute denomonator
-
-	mov	eax,m46
-	fixmul	m23
-	mov	ebx,eax	;save
-
-	mov	eax,m56
-	fixmul	m13
-	sub	eax,ebx	;eax = denominator
-
-;now we have the denominator.  If it is too small, try x/y, z/y or z/x, y/x
-
-	mov	ecx,eax	;save den
-
-	abs_eax
-	cmp	eax,MIN_DEN
-	jl	z_too_small
-
-z_too_small:
-
-;now do x/z numerator
-
-	mov	eax,m79
-	fixmul	m56	;* (m5-m6)
-	mov	ebx,eax
-
-	mov	eax,m89
-	fixmul	m46	;* (m4-m6)
-	sub	eax,ebx
-
-;now, eax/ecx = x/z ratio
-
-	fixdiv	ecx	;eax = x/z
-
-	mov	[edi].xyz.x,eax	;save x
-
-;now do y/z
-
-	mov	eax,m89
-	fixmul	m13
-	mov	ebx,eax
-
-	mov	eax,m79
-	fixmul	m23
-	sub	eax,ebx
-
-;now eax/ecx = y/z ratio
-
-	fixdiv	ecx
-
-	mov	[edi].xyz.y,eax
-
-	mov	[edi].xyz.z,f1_0
-
-	mov	esi,edi
-	call	vm_vec_normalize
-
-;make sure this vec is pointing in right direction
-
-	lea	edi,View_matrix.vec.fvec
-	call	vm_vec_dotprod
-	or	eax,eax	;check sign
-	jg	vec_sign_ok
-
-	neg	[esi].xyz.x
-	neg	[esi].xyz.y
-	neg	[esi].xyz.z
-vec_sign_ok:
-
-	ret
-
-
-_TEXT	ends
-
-	end
-
-*/
-
-
 // Draws a polygon always facing the viewer.
 // compute the corners of a rod.  fills in vertbuf.
 // Verts has any needs uv's or l's or can be NULL if none needed.
-int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, uint tmap_flags)
+int g3_draw_rod(vec3d *p0, float width1, vec3d *p1, float width2, vertex *verts, uint tmap_flags)
 {
 	vec3d uvec, fvec, rvec, center;
 
@@ -2338,20 +1913,21 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 	vertex pts[4];
 	vertex *ptlist[4] = { &pts[3], &pts[2], &pts[1], &pts[0] };
 
-	vm_vec_scale_add( &vecs[0], p0, &uvec, width1/2.0f );
-	vm_vec_scale_add( &vecs[1], p1, &uvec, width2/2.0f );
-	vm_vec_scale_add( &vecs[2], p1, &uvec, -width2/2.0f );
-	vm_vec_scale_add( &vecs[3], p0, &uvec, -width1/2.0f );
+	vm_vec_scale_add( &vecs[0], p0, &uvec, width1 * 0.5f );
+	vm_vec_scale_add( &vecs[1], p1, &uvec, width2 * 0.5f );
+	vm_vec_scale_add( &vecs[2], p1, &uvec, -width2 * 0.5f );
+	vm_vec_scale_add( &vecs[3], p0, &uvec, -width1 * 0.5f );
 	
-	for (i=0; i<4; i++ )	{
-		if ( verts )	{
+	for (i = 0; i < 4; i++) {
+		if (verts)
 			pts[i] = verts[i];
-		}
-		if(Cmdline_nohtl)
+
+		if (Cmdline_nohtl)
 			g3_rotate_vertex( &pts[i], &vecs[i] );
 		else
 			g3_transfer_vertex( &pts[i], &vecs[i] );
 	}
+
 	ptlist[0]->u = 0.0f;
 	ptlist[0]->v = 0.0f;
 	ptlist[0]->r = gr_screen.current_color.red;
@@ -2380,7 +1956,85 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 	ptlist[3]->b = gr_screen.current_color.blue;
 	ptlist[3]->a = gr_screen.current_color.alpha;
 
-	return g3_draw_poly(4,ptlist,tmap_flags);
+	return g3_draw_poly(4, ptlist, tmap_flags);
+}
+
+#define MAX_ROD_VECS	100
+int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
+{
+	vec3d uvec, fvec, rvec, center;
+	vec3d vecs[MAX_ROD_VECS];
+	vertex pts[MAX_ROD_VECS];
+	vertex *ptlist[MAX_ROD_VECS];
+	int i, nv = 0;
+
+	Assert( num_points >= 2 );
+	Assert( (num_points * 2) < MAX_ROD_VECS );
+
+
+	for (i = 0; i < num_points; i++) {
+		if (nv >= 99) {
+			Warning(LOCATION, "Hit high-water mark (%i) in g3_draw_rod()!!\n", 100);
+			break;
+		}
+
+		if (i < num_points-1) {
+			vm_vec_sub( &fvec, &pvecs[i], &pvecs[i+1] );
+			vm_vec_avg( &center, &pvecs[i], &pvecs[i+1] );
+		} else {
+			vm_vec_sub( &fvec, &pvecs[i-1], &pvecs[i] );
+			vm_vec_avg( &center, &pvecs[i-1], &pvecs[i] );
+		}
+
+		vm_vec_normalize_safe( &fvec );
+
+		vm_vec_sub( &rvec, &Eye_position, &center );
+		vm_vec_normalize( &rvec );
+
+		vm_vec_crossprod( &uvec, &fvec, &rvec );
+
+		// normalize new perpendicular vector
+		vm_vec_normalize( &uvec );
+
+
+		ptlist[nv] = &pts[nv];
+		ptlist[nv+1] = &pts[nv+1];
+
+		vm_vec_scale_add( &vecs[nv], &pvecs[i], &uvec, width * 0.5f );
+		vm_vec_scale_add( &vecs[nv+1], &pvecs[i], &uvec, -width * 0.5f );
+
+		if (Cmdline_nohtl) {
+			g3_rotate_vertex( &pts[nv], &vecs[nv] );
+			g3_rotate_vertex( &pts[nv+1], &vecs[nv+1] );
+		} else {
+			g3_transfer_vertex( &pts[nv], &vecs[nv] );
+			g3_transfer_vertex( &pts[nv+1], &vecs[nv+1] );
+		}
+
+
+		ptlist[nv]->u = 1.0f;
+		ptlist[nv]->v = i2fl(i);
+		ptlist[nv]->r = gr_screen.current_color.red;
+		ptlist[nv]->g = gr_screen.current_color.green;
+		ptlist[nv]->b = gr_screen.current_color.blue;
+		ptlist[nv]->a = gr_screen.current_color.alpha;
+
+		ptlist[nv+1]->u = 0.0f;
+		ptlist[nv+1]->v = i2fl(i);
+		ptlist[nv+1]->r = gr_screen.current_color.red;
+		ptlist[nv+1]->g = gr_screen.current_color.green;
+		ptlist[nv+1]->b = gr_screen.current_color.blue;
+		ptlist[nv+1]->a = gr_screen.current_color.alpha;
+
+		nv += 2;
+	}
+
+	// we should always have at least 4 verts, and there should always be an even number
+	Assert( (nv >= 4) && !(nv % 2) );
+
+	int rc = g3_draw_poly(nv, ptlist, tmap_flags);
+
+	return rc;
 }
 
 // draw a perspective bitmap based on angles and radius
@@ -2857,15 +2511,21 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 
 void g3_draw_htl_line(vec3d *start, vec3d *end)
 {
-	if (Cmdline_nohtl) return;
-	gr_draw_htl_line(start,end);
+	if (Cmdline_nohtl)
+		return;
+
+	gr_line_htl(start, end);
 }
 
 void g3_draw_htl_sphere(vec3d* position, float radius)
 {
-	if (Cmdline_nohtl) return;
+	if (Cmdline_nohtl)
+		return;
+
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
-	gr_draw_htl_sphere(radius);
+
+	gr_sphere_htl(radius);
+
 	g3_done_instance(true);
 }
 

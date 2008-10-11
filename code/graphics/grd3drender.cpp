@@ -2044,7 +2044,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	//BEGIN FINAL SETTINGS
 	if(Cmdline_cell && cell_enabled){
 	
-		if(GLOWMAP < 0 || Cmdline_noglow){
+		if(GLOWMAP < 0 || !Cmdline_glow){
 			d3d_SetTexture(2, NULL);
 			d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	
@@ -2099,7 +2099,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}
 	}
 
-	if(GLOWMAP < 0 || Cmdline_noglow){
+	if(GLOWMAP < 0 || !Cmdline_glow){
 	//	d3d_SetTexture(1, NULL);
 	//	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	}else{

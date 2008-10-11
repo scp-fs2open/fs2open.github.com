@@ -1497,3 +1497,17 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 	*green = fbi->exp_color[1];
 	*blue = fbi->exp_color[2];
 }
+
+int fireball_get_type(object *obj)
+{
+	int num, objnum;
+	fireball *fb;
+
+	num = obj->instance;
+	objnum = OBJ_INDEX(obj);
+	Assert( Fireballs[num].objnum == objnum );
+
+	fb = &Fireballs[num];
+
+	return fb->fireball_info_index;
+}

@@ -2588,7 +2588,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibu
 
 //	bool single_pass_spec = false;
 
-	if(GLOWMAP > -1 && !Cmdline_noglow){
+	if(GLOWMAP > -1 && Cmdline_glow){
 		//glowmapped
 			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 		 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, 0, 1);
@@ -2675,7 +2675,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibu
 				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
-			if(Cmdline_env){
+			if ( !Cmdline_env ) {
 				gr_zbias(2);
 
 				extern int Game_subspace_effect;

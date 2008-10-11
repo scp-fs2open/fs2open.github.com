@@ -318,6 +318,7 @@ protected:
 public:
 	WarpEffect();
 	WarpEffect(object *n_objp, int n_direction);
+	virtual ~WarpEffect() {}
 
 	void clear();
 	bool isValid();
@@ -430,7 +431,7 @@ private:
 	float	height_full;
 public:
 	WE_Homeworld(object *n_objp, int n_direction);
-	~WE_Homeworld();
+	virtual ~WE_Homeworld();
 
 	virtual int warpStart();
 	virtual int warpFrame(float frametime);

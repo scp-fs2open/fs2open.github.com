@@ -330,6 +330,17 @@ void parse_species_tbl(char *filename)
 		bool no_create = false;
 		species_info *species, new_species;
 
+		memset(&new_species, 0, sizeof(species_info));
+
+		// this needs to be right for later, even though it kinda sucks to do it here
+		{
+			new_species.debris_texture.base_map.texture = -1;
+			new_species.debris_texture.glow_map.texture = -1;
+			new_species.debris_texture.spec_map.texture = -1;
+			new_species.debris_texture.norm_map.texture = -1;
+			new_species.debris_texture.height_map.texture = -1;
+		}
+
 		species = &new_species;
 
 		// Start Species - Get its name
@@ -362,7 +373,7 @@ void parse_species_tbl(char *filename)
 			stuff_string(temp_name, F_NAME, NAME_LENGTH);
 
 			// search for it in iffs
-			for (int i = 0; i < Num_iffs; i++)
+			for (i = 0; i < Num_iffs; i++)
 			{
 				if (!stricmp(Iff_info[i].iff_name, temp_name))
 				{
@@ -435,8 +446,8 @@ void parse_species_tbl(char *filename)
 		// Get its Debris Texture
 		if ((!no_create && required_string("+Debris_Texture:")) || optional_string("+Debris_Texture:"))
 		{
-			generic_bitmap_init(&species->debris_texture, NULL);
-			stuff_string(species->debris_texture.filename, F_NAME, MAX_FILENAME_LEN);
+			memset(species->debris_texture_name, 0, sizeof(species->debris_texture_name));
+			stuff_string(species->debris_texture_name, F_NAME, MAX_FILENAME_LEN);
 		}
 
 

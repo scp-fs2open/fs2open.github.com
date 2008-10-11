@@ -153,6 +153,13 @@
 #define snprintf _snprintf
 #endif
 
+#ifndef vsnprintf
+#define vsnprintf _vsnprintf
+#endif
+
+struct timeval;
+int gettimeofday(struct timeval *tv, void *tz);
+
 #else  // ! Win32
 
 

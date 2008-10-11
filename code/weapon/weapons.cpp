@@ -143,7 +143,7 @@
  * if a weapon model isn't loaded then be sure to load it in weapon_create() (catches a few weird weapon setups)
  *
  * Revision 2.169  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.168  2006/01/09 04:53:41  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
@@ -1773,19 +1773,20 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->subtype = WP_UNUSED;
 	wip->render_type = WRT_NONE;
-	
-	wip->title[0] = 0;
+
+	memset(wip->name, 0, sizeof(wip->name));
+	memset(wip->title, 0, sizeof(wip->title));
 	wip->desc = NULL;
-	wip->tech_title[0] = 0;
-	wip->tech_anim_filename[0] = 0;
+	memset(wip->tech_title, 0, sizeof(wip->tech_title));
+	memset(wip->tech_anim_filename, 0, sizeof(wip->tech_anim_filename));
 	wip->tech_desc = NULL;
+
+	memset(wip->tech_model, 0, sizeof(wip->tech_model));
 	
-	wip->tech_model[0] = '\0';
-	
-	wip->hud_filename[0] = '\0';
+	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
 	wip->hud_image_index = -1;
-	
-	wip->pofbitmap_name[0] = '\0';
+
+	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
 
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
@@ -1800,7 +1801,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->laser_head_radius = 1.0f;
 	wip->laser_tail_radius = 1.0f;
 	
-	wip->external_model_name[0] = '\0';
+	memset(wip->external_model_name, 0, sizeof(wip->external_model_name));
 	wip->external_model_num = -1;
 	
 	wip->weapon_submodel_rotate_accell = 10.0f;
@@ -1863,12 +1864,13 @@ void init_weapon_entry(int weap_info_index)
 	wip->tr_info.a_start = 1.0f;
 	wip->tr_info.a_end = 1.0f;
 	wip->tr_info.max_life = 1.0f;
+	wip->tr_info.i_max_life = 0.0f;
 	wip->tr_info.stamp = 0;
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
 
-	wip->icon_filename[0] = 0;
+	memset(wip->icon_filename, 0, sizeof(wip->icon_filename));
 
-	wip->anim_filename[0] = 0;
+	memset(wip->anim_filename, 0, sizeof(wip->anim_filename));
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
@@ -2632,6 +2634,7 @@ int parse_weapon(int subtype, bool replace)
 
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
+			ti->i_max_life = 1.0f / ti->max_life;
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
@@ -2693,9 +2696,6 @@ int parse_weapon(int subtype, bool replace)
 		// look it up
 		wip->muzzle_flash = mflash_lookup(fname);
 	}
-
-	if (wip->muzzle_flash > -1)
-		wip->wi_flags |= WIF_MFLASH;
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
@@ -3703,8 +3703,9 @@ void weapon_load_bitmaps(int weapon_index)
 	weapon_info *wip;
 
 	// not for FRED...
-	if (Fred_running)
+	if (Fred_running) {
 		return;
+	}
 
 	if ( (weapon_index < 0) || (weapon_index >= Num_weapon_types) ) {
 		Int3();
@@ -3744,8 +3745,9 @@ void weapon_load_bitmaps(int weapon_index)
 
 	if (wip->wi_flags & WIF_BEAM) {
 		// particle animation
-		if ( (wip->b_info.beam_particle_ani.first_frame < 0) && strlen(wip->b_info.beam_particle_ani.filename) )
+		if ( (wip->b_info.beam_particle_ani.first_frame < 0) && strlen(wip->b_info.beam_particle_ani.filename) ) {
 			generic_anim_load(&wip->b_info.beam_particle_ani);
+		}
 
 		// muzzle glow
 		if ( (wip->b_info.beam_glow.first_frame < 0) && strlen(wip->b_info.beam_glow.filename) ) {
@@ -3784,14 +3786,15 @@ void weapon_load_bitmaps(int weapon_index)
 		}
 	}
 
-	if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id < 0) )
+	if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id < 0) ) {
 		generic_bitmap_load(&wip->tr_info.texture);
+	}
 
 	//WMC - Don't try to load an anim if no anim is specified, Mmkay?
 	if ( (wip->wi_flags & WIF_PARTICLE_SPEW)
-		&& (wip->particle_spew_anim.first_frame < 0)
-		&& (strlen(wip->particle_spew_anim.filename) > 0) ) {
-
+			&& (wip->particle_spew_anim.first_frame < 0)
+			&& (strlen(wip->particle_spew_anim.filename) > 0) )
+	{
 		wip->particle_spew_anim.first_frame = bm_load(wip->particle_spew_anim.filename);
 
 		if (wip->particle_spew_anim.first_frame >= 0) {
@@ -3825,8 +3828,9 @@ void weapon_load_bitmaps(int weapon_index)
 
 	// if this weapon isn't already marked as used, then mark it as such now
 	// (this should really only happen if the player is cheating)
-	if ( !used_weapons[weapon_index] )
+	if ( !used_weapons[weapon_index] ) {
 		used_weapons[weapon_index]++;
+	}
 }
 
 void weapon_do_post_parse()
@@ -3956,7 +3960,7 @@ void weapon_close()
 	}
 
 	if (Spawn_names != NULL) {
-		for (int i=0; i<Num_spawn_types; i++) {
+		for (i = 0; i < Num_spawn_types; i++) {
 			if (Spawn_names[i] != NULL) {
 				vm_free(Spawn_names[i]);
 				Spawn_names[i] = NULL;
@@ -4150,21 +4154,26 @@ void weapon_render(object *obj)
 			model_clear_instance(wip->model_num);
 
 			if ( (wip->wi_flags & WIF_THRUSTER) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
-				float	ft;
+				float ft;
+				mst_info mst;
 
 				//	Add noise to thruster geometry.
 				//ft = obj->phys_info.forward_thrust;					
 				ft = 1.0f;		// Always use 1.0f for missiles					
-				ft *= (1.0f + frand()/5.0f - 1.0f/10.0f);
+				ft *= (1.0f + frand()/5.0f - 0.1f);
 				if (ft > 1.0f)
 					ft = 1.0f;
 
-				vec3d temp;
-				temp.xyz.x = ft;
-				temp.xyz.y = ft;
-				temp.xyz.z = ft;
+				mst.length.xyz.x = ft;
+				mst.length.xyz.y = ft;
+				mst.length.xyz.z = ft;
 
-				model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
+				mst.primary_bitmap = wp->thruster_bitmap;
+				mst.primary_glow_bitmap = wp->thruster_glow_bitmap;
+				mst.glow_noise = wp->thruster_glow_noise;
+
+				model_set_thrust(wip->model_num, &mst);
+
 				render_flags |= MR_SHOW_THRUSTERS;
 			}
 
@@ -4251,9 +4260,9 @@ void weapon_delete(object *obj)
 	}
 */
 
-	if (wp->trail_ptr != NULL) {
-		trail_object_died(wp->trail_ptr);
-		wp->trail_ptr = NULL;
+	if (wp->trail_id >= 0) {
+		trail_object_died(wp->trail_id);
+		wp->trail_id = -1;
 	}
 
 	wp->objnum = -1;
@@ -5109,14 +5118,12 @@ void weapon_process_post(object * obj, float frame_time)
 
 	// trail missiles
 	if ((wip->wi_flags & WIF_TRAIL) && !(wip->wi_flags & WIF_CORKSCREW)) {
-		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
-			if (trail_stamp_elapsed(wp->trail_ptr)) {
-
-				trail_add_segment( wp->trail_ptr, &obj->pos );
-				
-				trail_set_stamp(wp->trail_ptr);
+		if ( (wp->trail_id >= 0) && (wp->lssm_stage != 3) ) {
+			if (trail_stamp_elapsed(wp->trail_id)) {
+				trail_add_segment(wp->trail_id, &obj->pos);
+				trail_set_stamp(wp->trail_id);
 			} else {
-				trail_set_segment( wp->trail_ptr, &obj->pos );
+				trail_set_segment(wp->trail_id, &obj->pos);
 			}
 
 		}
@@ -5685,18 +5692,16 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if (wip->wi_flags & WIF_TRAIL /*&& !(wip->wi_flags & WIF_CORKSCREW) */) {
-		wp->trail_ptr = trail_create(&wip->tr_info);		
+		wp->trail_id = trail_create(&wip->tr_info);		
 
-		if ( wp->trail_ptr != NULL )	{
+		if (wp->trail_id >= 0) {
 			// Add two segments.  One to stay at launch pos, one to move.
-			trail_add_segment( wp->trail_ptr, &objp->pos );
-			trail_add_segment( wp->trail_ptr, &objp->pos );
+			trail_add_segment(wp->trail_id, &objp->pos);
+			trail_add_segment(wp->trail_id, &objp->pos);
 		}
-	}
-	else
-	{
+	} else {
 		//If a weapon has no trails, make sure we don't try to do anything with them.
-		wp->trail_ptr = NULL;
+		wp->trail_id = -1;
 	}
 
 	// Ensure weapon flyby sound doesn't get played for player lasers
@@ -5935,30 +5940,6 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
 	}
 }
-/*
-const float weapon_electronics_scale[MAX_SHIP_TYPE_COUNTS]=
-{
-	0.0f,	//SHIP_TYPE_NONE
-	10.0f,	//SHIP_TYPE_CARGO
-	4.0f,	//SHIP_TYPE_FIGHTER_BOMBER
-	0.9f,	//SHIP_TYPE_CRUISER
-	1.75f,	//SHIP_TYPE_FREIGHTER
-	0.2f,	//SHIP_TYPE_CAPITAL
-	2.0f,	//SHIP_TYPE_TRANSPORT
-	3.5f,	//SHIP_TYPE_REPAIR_REARM
-	10.0f,	//SHIP_TYPE_NAVBUOY
-	10.0f,	//SHIP_TYPE_SENTRYGUN
-	10.0f,	//SHIP_TYPE_ESCAPEPOD
-	0.075f,	//SHIP_TYPE_SUPERCAP
-	4.0f,	//SHIP_TYPE_STEALTH
-	4.0f,	//SHIP_TYPE_FIGHTER
-	4.0f,	//SHIP_TYPE_BOMBER
-	0.5f,	//SHIP_TYPE_DRYDOCK
-	0.8f,	//SHIP_TYPE_AWACS
-	1.0f,	//SHIP_TYPE_GAS_MINER
-	0.3333f,	//SHIP_TYPE_CORVETTE
-	0.10f,	//SHIP_TYPE_KNOSSOS_DEVICE
-};*/
 
 extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 
@@ -6806,10 +6787,11 @@ void weapon_maybe_spew_particle(object *obj)
 			// emit the particle
 			vm_vec_add(&particle_pos, &obj->pos, &direct);
 
-			if (wip->particle_spew_anim.first_frame < 0)
+			if (wip->particle_spew_anim.first_frame < 0) {
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);
-			else
+			} else {
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_BITMAP, wip->particle_spew_anim.first_frame);
+			}
 		}
 	}
 }

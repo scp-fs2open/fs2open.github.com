@@ -261,7 +261,7 @@ int ETS_bar_h[GR_NUM_RESOLUTIONS] = {
 	41
 };
 
-typedef struct ets_gauge_info
+/*typedef struct ets_gauge_info
 {
 	char	letter;
 	int	letter_coords[2];
@@ -309,6 +309,13 @@ ets_gauge_info Ets_gauge_info_english[GR_NUM_RESOLUTIONS][3] =
 	}
 };
 ets_gauge_info *Ets_gauge_info = NULL;
+*/
+
+const char Ets_gauge_letter_german[3] = { 'G', 'S', 'A' };
+const char Ets_gauge_letter_french[3] = { 'C', 'B', 'M' };
+const char Ets_gauge_letter_english[3] = { 'G', 'S', 'E' };
+
+const char *Ets_gauge_letter = NULL;
 
 char Ets_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 	"energy1",
@@ -330,11 +337,14 @@ void hud_init_ets()
 	}
 
 	if(Lcl_gr){
-		Ets_gauge_info = Ets_gauge_info_german[gr_screen.res];
+	//	Ets_gauge_info = Ets_gauge_info_german[gr_screen.res];
+		Ets_gauge_letter = Ets_gauge_letter_german;
 	} else if(Lcl_fr){
-		Ets_gauge_info = Ets_gauge_info_french[gr_screen.res];
+	//	Ets_gauge_info = Ets_gauge_info_french[gr_screen.res];
+		Ets_gauge_letter = Ets_gauge_letter_french;
 	} else {
-		Ets_gauge_info = Ets_gauge_info_english[gr_screen.res];
+	//	Ets_gauge_info = Ets_gauge_info_english[gr_screen.res];
+		Ets_gauge_letter = Ets_gauge_letter_english;
 	}
 	
 	Hud_ets_inited = 1;
@@ -573,6 +583,7 @@ void ai_manage_ets(object* obj)
 void hud_show_ets()
 {
 	int i, j, index, y_start, y_end, clip_h, w, h, x, y;
+	int top_coords[2], bottom_coords[2];
 
 	ship* ship_p = &Ships[Player_obj->instance];	
 
@@ -582,60 +593,117 @@ void hud_show_ets()
 
 	// if at least two gauges are not shown, don't show any
 	i = 0;
-	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags & OF_NO_SHIELDS) i++;
-	if (!ship_has_engine_power(ship_p)) i++;
-	if (i >= 2) return;
+	if ( !ship_has_energy_weapons(ship_p)) {
+		i++;
+	}
+
+	if (Player_obj->flags & OF_NO_SHIELDS) {
+		i++;
+	}
+
+	if ( !ship_has_engine_power(ship_p) ) {
+		i++;
+	}
+
+	if (i >= 2) {
+		return;
+	}
 
 	hud_set_gauge_color(HUD_ETS_GAUGE);
 
+	Assert( Ets_gauge_letter != NULL );
+
 	// draw the letters for the gauges first, before any clipping occurs
 	i = 0;
-	for ( j = 0; j < 3; j++ )
-	{
-		if (j == 0 && !ship_has_energy_weapons(ship_p))
-		{
-			continue;
+	for (j = 0; j < 3; j++) {
+		switch (j) {
+			case 0: {
+				if ( !ship_has_energy_weapons(ship_p) ) {
+					continue;
+				}
+
+				x = current_hud->ETS_gun_text_coords[0];
+				y = current_hud->ETS_gun_text_coords[1];
+
+				break;
+			}
+
+			case 1: {
+				if (Player_obj->flags & OF_NO_SHIELDS) {
+					continue;
+				}
+
+				x = current_hud->ETS_shield_text_coords[0];
+				y = current_hud->ETS_shield_text_coords[1];
+
+				break;
+			}
+
+			case 2: {
+				if ( !ship_has_engine_power(ship_p) ) {
+					continue;
+				}
+
+				x = current_hud->ETS_engine_text_coords[0];
+				y = current_hud->ETS_engine_text_coords[1];
+
+				break;
+			}
 		}
-		if (j == 1 && Player_obj->flags & OF_NO_SHIELDS)
-		{
-			continue;
-		}
-		if (j == 2 && !ship_has_engine_power(ship_p))
-		{
-			continue;
-		}
-		Assert(Ets_gauge_info != NULL);
-		gr_printf(Ets_gauge_info[i].letter_coords[0], Ets_gauge_info[i].letter_coords[1], NOX("%c"), Ets_gauge_info[j].letter); 
+
+		gr_printf(x, y, NOX("%c"), Ets_gauge_letter[j]); 
 		i++;
 	}
 
 	// draw the three energy gauges
 	i = 0;
 	index = 0;
-	for ( j = 0; j < 3; j++ ) {
+	for (j = 0; j < 3; j++) {
 		switch (j) {
-		case 0:
-			index = ship_p->weapon_recharge_index;
-			if ( !ship_has_energy_weapons(ship_p) )
-			{
-				continue;
+			case 0: {
+				index = ship_p->weapon_recharge_index;
+
+				if ( !ship_has_energy_weapons(ship_p) ) {
+					continue;
+				}
+
+				top_coords[0] = current_hud->ETS_gun_top_coords[0];
+				top_coords[1] = current_hud->ETS_gun_top_coords[1];
+				bottom_coords[0] = current_hud->ETS_gun_bottom_coords[0];
+				bottom_coords[1] = current_hud->ETS_gun_bottom_coords[1];
+	
+				break;
 			}
-			break;
-		case 1:
-			index = ship_p->shield_recharge_index;
-			if ( Player_obj->flags & OF_NO_SHIELDS )
-			{
-				continue;
+
+			case 1: {
+				index = ship_p->shield_recharge_index;
+
+				if (Player_obj->flags & OF_NO_SHIELDS) {
+					continue;
+				}
+
+				top_coords[0] = current_hud->ETS_shield_top_coords[0];
+				top_coords[1] = current_hud->ETS_shield_top_coords[1];
+				bottom_coords[0] = current_hud->ETS_shield_bottom_coords[0];
+				bottom_coords[1] = current_hud->ETS_shield_bottom_coords[1];
+
+				break;
 			}
-			break;
-		case 2:
-			index = ship_p->engine_recharge_index;
-			if ( !ship_has_engine_power(ship_p) )
-			{
-				continue;
+
+			case 2: {
+				index = ship_p->engine_recharge_index;
+
+				if ( !ship_has_engine_power(ship_p) ) {
+					continue;
+				}
+
+				top_coords[0] = current_hud->ETS_engine_top_coords[0];
+				top_coords[1] = current_hud->ETS_engine_top_coords[1];
+				bottom_coords[0] = current_hud->ETS_engine_bottom_coords[0];
+				bottom_coords[1] = current_hud->ETS_engine_bottom_coords[1];
+
+				break;
 			}
-			break;
 		}
 
 		clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h[gr_screen.res] );
@@ -649,16 +717,14 @@ void hud_show_ets()
 
 			// draw the top portion
 
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].top_coords[0];
-			y = Ets_gauge_info[i].top_coords[1];
+			x = top_coords[0];
+			y = top_coords[1];
 			
-			GR_AABITMAP_EX(Ets_gauge.first_frame,x,y,w,clip_h,0,0);			
+			GR_AABITMAP_EX(Ets_gauge.first_frame, x, y, w, clip_h, 0, 0);			
 
 			// draw the bottom portion
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].bottom_coords[0];
-			y = Ets_gauge_info[i].bottom_coords[1];
+			x = bottom_coords[0];
+			y = bottom_coords[1];
 
 			y_start = y + (ETS_bar_h[gr_screen.res] - clip_h);
 			y_end = y + ETS_bar_h[gr_screen.res];
@@ -677,9 +743,8 @@ void hud_show_ets()
 			// some portion of recharge needs to be drawn
 
 			// draw the top portion
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].top_coords[0];
-			y = Ets_gauge_info[i].top_coords[1];
+			x = top_coords[0];
+			y = top_coords[1];
 
 			y_start = y + clip_h;
 			y_end = y + ETS_bar_h[gr_screen.res];
@@ -687,9 +752,8 @@ void hud_show_ets()
 			GR_AABITMAP_EX(Ets_gauge.first_frame+1, x, y_start, w, y_end-y_start, 0, clip_h);			
 
 			// draw the bottom portion
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].bottom_coords[0];
-			y = Ets_gauge_info[i].bottom_coords[1];
+			x = bottom_coords[0];
+			y = bottom_coords[1];
 			
 			GR_AABITMAP_EX(Ets_gauge.first_frame+2, x,y,w,ETS_bar_h[gr_screen.res]-clip_h,0,0);			
 		}

@@ -65,7 +65,7 @@
  * --Goober5000
  *
  * Revision 2.33  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * Ã¼bercommit of custom IFF stuff :)
  *
  * Revision 2.32  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
@@ -1244,32 +1244,31 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 			// only wrap if player won't see asteroid disappear/reverse direction
 			dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 			dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-			
-			if ((dot < 0.7f) || (dist > 3000.0f)) {
+
+			if ( (dot < 0.7f) || (dist > asfieldp->bound_rad) ) {
 				if (Num_asteroids > MAX_ASTEROIDS-10) {
 					objp->flags |= OF_SHOULD_BE_DEAD;
 				} else {
 					// check to ensure player won't see asteroid appear either
 					asteroid_wrap_pos(objp, asfieldp);
 					Asteroids[objp->instance].target_objnum = -1;
-
-					vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
+		
+					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-					dist = vm_vec_dist_quick(&objp->pos, &Eye_position);
 					
-					if (( dot > 0.7f) && (dist < 3000.0f)) {
+					if ( (dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f)) ) {
 						// player would see asteroid pop out other side, so reverse velocity instead of wrapping
 						objp->pos = old_asteroid_pos;		
 						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
 						objp->phys_info.desired_vel = objp->phys_info.vel;
 						Asteroids[objp->instance].target_objnum = -1;
 					}
-
+		
 					// update last pos (after vel is known)
 					vm_vec_scale_add(&objp->last_pos, &objp->pos, &objp->phys_info.vel, -flFrametime);
-
+		
 					asteroid_update_collide(objp);
-
+		
 					if ( MULTIPLAYER_MASTER )
 						send_asteroid_throw( objp );
 				}
@@ -2454,7 +2453,7 @@ void asteroid_page_in()
 
 				// Page in textures
 				for (j=0; j<asip->modelp[k]->n_textures; j++ )	{
-					int bitmap_num = asip->modelp[k]->maps[j].base_map.original_texture;
+					int bitmap_num = asip->modelp[k]->maps[j].base_map.texture;
 
 					if ( bitmap_num > -1 )	{
 						bm_page_in_texture( bitmap_num );

@@ -1813,41 +1813,36 @@ void ship_select_blit_ship_info()
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
+
 	y_start += 10;
 
-	if(ShipSelectModelNum >= 0)
-	{
+	if (ShipSelectModelNum >= 0) {
 		int num_turrets = 0;
-		int x;
-		for(x = 0; x < sip->n_subsystems; x++)
-		{
-			if(sip->subsystems[x].type == SUBSYSTEM_TURRET)
+
+		for (uint x = 0; x < sip->subsystems.size(); x++) {
+			if (sip->subsystems[x].type == SUBSYSTEM_TURRET) {
 				num_turrets++;
-			/*
-			for(y = 0; y < MAX_SHIP_PRIMARY_BANKS || y < MAX_SHIP_SECONDARY_BANKS; y++)
+			}
+
+			/*for (int y = 0; (y < MAX_SHIP_PRIMARY_BANKS) || (y < MAX_SHIP_SECONDARY_BANKS); y++)
 			{
-				if(y < MAX_SHIP_PRIMARY_BANKS)
-				{
-					if(sip->subsystems[x].primary_banks[y] != -1)
-					{
+				if (y < MAX_SHIP_PRIMARY_BANKS) {
+					if (sip->subsystems[x].primary_banks[y] != -1) {
 						num_turrets++;
 						break;
 					}
 				}
 				
-				if(y < MAX_SHIP_SECONDARY_BANKS)
-				{
-					if(sip->subsystems[x].secondary_banks[y] != -1)
-					{
+				if (y < MAX_SHIP_SECONDARY_BANKS) {
+					if (sip->subsystems[x].secondary_banks[y] != -1) {
 						num_turrets++;
 						break;
 					}
 				}
-			}
-			*/
+			}*/
 		}
-		if(num_turrets)
-		{
+
+		if (num_turrets) {
 			gr_set_color_fast(header);
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",-1));
 			y_start += 10;
@@ -2106,31 +2101,34 @@ void ship_select_do(float frametime)
 	
 	if ( ss_icon_being_carried() ) {
 		int mouse_x, mouse_y, sx, sy;
+
 		mouse_get_pos_unscaled( &mouse_x, &mouse_y );
+
 		sx = mouse_x + Ss_delta_x;
 		sy = mouse_y + Ss_delta_y;
-		if(Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED] != -1)
-		{
+
+		if (Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED] != -1) {
 			gr_set_bitmap(Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED]);
 			gr_bitmap(sx, sy);
-		}
-		else
-		{
+		} else {
 			ship_info *sip = &Ship_info[Carried_ss_icon.ship_class];
-			if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1) {
-				Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+			if (Ss_icons[Carried_ss_icon.ship_class].model_index == -1) {
+				Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
+
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, Ss_icons[Carried_ss_icon.ship_class].model_index));
 			}
+
 			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 			//gr_set_shader(&Icon_shaders[ICON_FRAME_SELECTED]);
 
 			int w = 32;
 			int h = 28;
 
-			if(Ss_icons[Carried_ss_icon.ship_class].model_index != -1)
-			{
+			if (Ss_icons[Carried_ss_icon.ship_class].model_index != -1) {
 				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip);
 			}
+
 			draw_brackets_square(sx, sy, sx + w, sy + h);
 			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28);
 		}
@@ -2338,24 +2336,25 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	}
 
 	// blit the icon
-	if(ss_icon->current_icon_bitmap != -1)
-	{
+	if (ss_icon->current_icon_bitmap != -1) {
 		gr_set_bitmap(ss_icon->current_icon_bitmap);
 		gr_bitmap(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1]);
-	}
-	else
-	{
+	} else {
 		ship_info *sip = &Ship_info[ship_class];
-		if(ss_icon->model_index == -1) {
-			ss_icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+		if (ss_icon->model_index == -1) {
+			ss_icon->model_index = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
+
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
+
 		gr_set_color_fast(color_to_draw);
 		//gr_set_shader(shader_to_use);
-		if(ss_icon->model_index != -1)
-		{
+
+		if (ss_icon->model_index != -1) {
 			draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip);
 		}
+
 		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28);
 		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28);
 	}
@@ -2447,7 +2446,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		}
 
 		// Load the necessary model file
-		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		ShipSelectModelNum = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
@@ -2928,31 +2927,28 @@ void ss_make_slot_full(int slot_index)
 void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 {
 	// blit the bitmap in the correct location
-	if(ship_class == -1)
-	{
+	if (ship_class == -1) {
 		gr_set_bitmap(Wing_slot_empty_bitmap);
 		gr_bitmap(x,y);
-	}
-	else
-	{
+	} else {
 		Assert( Ss_icons != NULL );
 
 		ss_icon_info *icon = &Ss_icons[ship_class];
-		if(icon->icon_bmaps[bmap_num] != -1)
-		{
+
+		if (icon->icon_bmaps[bmap_num] != -1) {
 			Assert(icon->icon_bmaps[bmap_num] != -1);	
+
 			gr_set_bitmap(icon->icon_bmaps[bmap_num]);
 			gr_bitmap(x,y);	
-		}
-		else
-		{
+		} else {
 			ship_info *sip = &Ship_info[ship_class];
-			if(icon->model_index == -1) {
-				icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+			if (icon->model_index == -1) {
+				icon->model_index = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, icon->model_index));
 			}
-			if(icon->model_index != -1)
-			{
+
+			if (icon->model_index != -1) {
 				gr_set_color_fast(&Icon_colors[bmap_num]);
 				//gr_set_shader(&Icon_shaders[bmap_num]);
 				draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip);
@@ -3476,25 +3472,24 @@ void ss_load_icons(int ship_class)
 	icon = &Ss_icons[ship_class];
 	ship_info *sip = &Ship_info[ship_class];
 
-	if(!Cmdline_ship_choice_3d && strlen(sip->icon_filename))
-	{
-		int				first_frame, num_frames, i;
-		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
-		if ( first_frame == -1 ) {
+	if ( !Cmdline_ship_choice_3d && strlen(sip->icon_filename) ) {
+		int first_frame, num_frames, i;
+
+		first_frame = bm_load_animation(sip->icon_filename, &num_frames, NULL, 0, CF_TYPE_INTERFACE);
+
+		if (first_frame == -1) {
 			Int3();	// Could not load in icon frames.. get Alan
 			return;
 		}
 
-		for ( i = 0; i < num_frames; i++ ) {
+		for (i = 0; i < num_frames; i++) {
 			icon->icon_bmaps[i] = first_frame+i;
 		}
 
 		// set the current bitmap for the ship icon
 		icon->current_icon_bitmap = icon->icon_bmaps[ICON_FRAME_NORMAL];
-	}
-	else
-	{
-		icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	} else {
+		icon->model_index = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 		model_page_in_textures(icon->model_index, ship_class);
 	}
 }

@@ -297,13 +297,14 @@ float fireball_lifeleft( object *obj );
 // Returns life left of a fireball in percent
 float fireball_lifeleft_percent( object *obj );
 
+// returns the type of fileball (the FIREBALL_* types)
+int fireball_get_type(object *obj);
+
 // returns the lighting color (in [0...1] range) to use for explosion
 void fireball_get_color(int idx, float *red, float *green, float *blue);
 
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
-
-extern int Warp_model;
 
 // Goober5000
 extern int Knossos_warp_ani_used;

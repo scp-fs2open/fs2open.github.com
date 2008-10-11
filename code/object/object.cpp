@@ -1503,16 +1503,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				goto obj_maybe_fire;
 			}
 
-	//		if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled && !OGL_enabled) ) )	{
-	//			// If we're doing model caching, don't rotate asteroids
-	//			vec3d tmp = objp->phys_info.rotvel;
-	//
-	//			objp->phys_info.rotvel = vmd_zero_vector;
-	//			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
-	//			objp->phys_info.rotvel = tmp;
-	//		} else {
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
-	//		}
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 
 			// This code seems to have no effect - DB 1/12/99
 			//if ( MULTIPLAYER_CLIENT && (objp != Player_obj) ){
@@ -1876,8 +1867,9 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_FIREBALL:
 		{
-			if ( !physics_paused )
+			if ( !physics_paused ) {
 				fireball_process_post(objp,frametime);
+			}
 
 			if (Detail.lighting > 3) {
 				float r = 0.0f, g = 0.0f, b = 0.0f;
@@ -1885,21 +1877,39 @@ void obj_move_all_post(object *objp, float frametime)
 				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
 
 				// we don't cast black light, so just bail in that case
-				if ( (r == 0.0f) && (g == 0.0f) && (b == 0.0f) )
+				if ( (r == 0.0f) && (g == 0.0f) && (b == 0.0f) ) {
 					break;
+				}
 
 				// Make explosions cast light
 				float p = fireball_lifeleft_percent(objp);
+
 				if (p > 0.0f) {
-					if (p > 0.5f)
+					if (p > 0.5f) {
 						p = 1.0f - p;
+					}
 
 					p *= 2.0f;
 
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					float rad = p * (1.0f + frand() * 0.05f) * objp->radius;
 
-					light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, 1.0f, r, g, b, -1 );
+				/*	int fbtype = fireball_get_type(objp);
+
+					if ( (fbtype == FIREBALL_WARP_EFFECT) || (fbtype == FIREBALL_KNOSSOS_EFFECT) ) {
+						vec3d p1, p2;
+
+						// the starting point should be about 1/4 of the radius, behind the effect
+						vm_vec_copy_scale(&p1, &objp->pos, -(rad * 0.25f));
+						// the end point should be about 50% greater than the radius, in front of the effect
+						vm_vec_copy_scale(&p2, &objp->pos, rad * 1.5f);
+
+						light_add_tube(&p1, &p2, rad * 0.25f, rad * 1.5f, 1.0f, r, g, b, objp->parent);
+						vm_vec_copy_scale(&p1, &objp->pos, rad * 0.25f);
+						light_add_point(&p1, rad * 2.0f, rad * 5.0f, 1.0f, r, g, b, -1);
+					} else {*/
+						light_add_point(&objp->pos, rad * 2.0f, rad * 5.0f, 1.0f, r, g, b, -1);
+				//	}
 				}
 			}
 

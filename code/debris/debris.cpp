@@ -440,6 +440,7 @@ void debris_init()
 void debris_page_in()
 {
 	uint i;
+	char loader_name[64];
 
 	Debris_model = model_load( NOX("debris01.pof"), 0, NULL );
 	if (Debris_model >= 0)	{
@@ -450,21 +451,22 @@ void debris_page_in()
 
 	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
 
-	for (i=0; i<Species_info.size(); i++ )
-	{
+	for (i = 0; i < Species_info.size(); i++) {
 		species_info *species = &Species_info[i];
 
-		nprintf(( "Paging", "Paging in debris texture '%s'\n", species->debris_texture.filename));
+		if ( strlen(species->species_name) && (species->debris_texture.base_map.texture < 0) ) {
+			memset(loader_name, 0, sizeof(loader_name));
+			snprintf(loader_name, sizeof(loader_name) - 1, "Species: %s\n", species->species_name);
 
-		species->debris_texture.bitmap_id = bm_load(species->debris_texture.filename);
-		if (species->debris_texture.bitmap_id < 0)
-		{
-			Warning( LOCATION, "Couldn't load species %s debris\ntexture, '%s'\n", species->species_name, species->debris_texture.filename);
+			model_load_texture(&species->debris_texture, species->debris_texture_name, loader_name);
+
+			bm_page_in_texture(species->debris_texture.base_map.texture);
+			bm_page_in_texture(species->debris_texture.glow_map.texture);
+			bm_page_in_texture(species->debris_texture.spec_map.texture);
+			bm_page_in_texture(species->debris_texture.norm_map.texture);
+			bm_page_in_texture(species->debris_texture.height_map.texture);
 		}
-
-		bm_page_in_texture(species->debris_texture.bitmap_id);
 	}
-	
 }
 
 MONITOR(NumSmallDebrisRend)
@@ -476,12 +478,12 @@ MONITOR(NumHullDebrisRend)
 //
 void debris_render(object * obj)
 {
-	int			i, num, swapped;
+	int			i, num;
 	polymodel	*pm;
 	debris		*db;
+	texture_map swapped_tex;
+	bool swapped = false;
 
-
-	swapped = -1;
 	pm = NULL;	
 	num = obj->instance;
 
@@ -491,13 +493,13 @@ void debris_render(object * obj)
 	Assert(db->flags & DEBRIS_USED);
 
 	// Swap in a different texture depending on the species
-	if (db->species >= 0)
-	{
+	if (db->species >= 0) {
 		pm = model_get( db->model_num );
 
 		if ( pm && (pm->n_textures == 1) ) {
-			swapped = pm->maps[0].base_map.texture;
-			pm->maps[0].base_map.texture = Species_info[db->species].debris_texture.bitmap_id;
+			memcpy(&swapped_tex, &pm->maps[0], sizeof(texture_map));
+			memcpy(&pm->maps[0], &Species_info[db->species].debris_texture, sizeof(texture_map));
+			swapped = true;
 		}
 	}
 
@@ -520,8 +522,8 @@ void debris_render(object * obj)
 		submodel_render( db->model_num, db->submodel_num, &obj->orient, &obj->pos, MR_NO_LIGHTING );
 	}
 
-	if ((swapped!=-1) && pm)	{
-		pm->maps[0].base_map.texture = swapped;
+	if (swapped) {
+		memcpy(&pm->maps[0], &swapped_tex, sizeof(texture_map));
 	}
 }
 
@@ -835,11 +837,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	// Create Debris piece n!
 	if ( hull_flag ) {
 		if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
-			db->lifeleft = 2.0f * ((float) myrand()/(float) RAND_MAX) + 0.5f;
+			db->lifeleft = 2.0f * (myrand() * RAND_MAX_1f) + 0.5f;
 		else
 			db->lifeleft = -1.0f;		// large hull pieces stay around forever
 	} else {
-		db->lifeleft = (i2fl(myrand())/i2fl(RAND_MAX))*2.0f+0.1f;
+		db->lifeleft = (myrand() * RAND_MAX_1f)*2.0f+0.1f;
 	}
 
 	// increase lifetime for vaporized debris
@@ -1396,6 +1398,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 
 	// John, with new bspgen, just set pi->mass = mass
 	mass = 0.12f * dx * dy * dz;
+
 	pi->mass = (float) pow(mass, 0.6666667f) * 4.65f;
 
 	pi->I_body_inv.vec.rvec.xyz.x = 12.0f / (pi->mass *  (dy*dy + dz*dz));

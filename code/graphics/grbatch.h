@@ -33,10 +33,13 @@ public:
 
 	// initial memory space needed
 	// NOTE: This MUST be called BEFORE calling any of the draw_*() functions!!
-	void allocate(int quad, int n_tri = 0);
+	void allocate(int quad);
+
+	// deallocate any vert memory
+	void deallocate();
 
 	// allocate an additional block of memory to what we already have (this is a resize function)
-	void add_allocate(int quad, int n_tri = 0);
+	void add_allocate(int quad);
 
 	// draw a bitmap into the geometry batcher
 	void draw_bitmap(vertex *position, int orient, float rad, float depth = 0);
@@ -61,7 +64,7 @@ public:
 	void render(int flags);
 
 	// determine if we even need to try and render this (helpful for particle system)
-	int need_to_render() { return n_to_render; };
+	bool need_to_render() { return (n_to_render > 0); };
 
 	void operator =(int){};
 };
@@ -69,9 +72,7 @@ public:
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
 int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
-void batch_render_all();
-void batch_render_bitmaps();
-void batch_render_lasers();
+void batch_render();
 void batch_reset();
 
 #endif

@@ -543,9 +543,6 @@ void player_select_init()
 	/*
 	Demo_title_bitmap = bm_load(Demo_title_bitmap_filename);
 	if ( Demo_title_bitmap >= 0 ) {
-#ifndef HARDWARE_ONLY
-		palette_use_bm_palette(Demo_title_bitmap);
-#endif
 		Demo_title_active = 1;
 		Demo_title_expire_timestamp = timestamp(5000);
 	} else {
@@ -715,9 +712,6 @@ void player_select_do()
 
 	//if ( !Player_select_palette_set ) {
 	//	Assert(Player_select_palette >= 0);
-//#ifndef HARDWARE_ONLY
-//		palette_use_bm_palette(Player_select_palette);
-//#endif
 //		Player_select_palette_set = 1;
 //	}
 		

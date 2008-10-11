@@ -33,18 +33,19 @@
 // 4 - add start trigger (model_anim_start_type)
 // 5 - add stop trigger (model_anim_start_type)
 
-#define TRIGGER_TYPE_NONE					-1		//no animation
-#define TRIGGER_TYPE_INITIAL				0		//this is just the position the subobject should be placed in
-#define TRIGGER_TYPE_DOCKING				1		//before you dock
-#define TRIGGER_TYPE_DOCKED					2		//after you have docked
-#define TRIGGER_TYPE_PRIMARY_BANK			3		//primary banks
-#define TRIGGER_TYPE_SECONDARY_BANK			4		//secondary banks
-#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
-#define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
-#define TRIGGER_TYPE_TURRET_FIRING			7		//Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTEDturret_animation_position				8		//Triggered exclusively by scripting...maybe SEXPs? -C
+#define TRIGGER_TYPE_NONE					-1		// no animation
+#define TRIGGER_TYPE_INITIAL				0		// this is just the position the subobject should be placed in
+#define TRIGGER_TYPE_DOCKING				1		// before you dock
+#define TRIGGER_TYPE_DOCKED					2		// after you have docked
+#define TRIGGER_TYPE_PRIMARY_BANK			3		// for switching between primary banks
+#define TRIGGER_TYPE_SECONDARY_BANK			4		// switching between secondary banks
+#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		// fighter bay doors
+#define TRIGGER_TYPE_AFTERBURNER			6		// afterburner triggered
+#define TRIGGER_TYPE_TURRET_FIRING			7		// turret firing
+#define TRIGGER_TYPE_TURRET_FIRED			8		// turret has fired
+#define TRIGGER_TYPE_SCRIPTED				9		// triggered exclusively by scripting...maybe SEXPs? -C
 
-#define MAX_TRIGGER_ANIMATION_TYPES			9
+#define MAX_TRIGGER_ANIMATION_TYPES			10
 
 // Model Animation Position settings
 #define MA_POS_NOT_SET		0	// not yet setup
@@ -113,7 +114,7 @@ class triggered_rotation
 		void start(queued_animation *q);
 		void set_to_end(queued_animation *q);
 
-		void add_queue(queued_animation *new_queue, int direction);
+		void add_queue(queued_animation *new_queue, int dir);
 		void process_queue();
 
 		vec3d current_ang;

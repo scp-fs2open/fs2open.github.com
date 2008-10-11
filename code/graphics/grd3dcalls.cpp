@@ -542,8 +542,8 @@ BOOL d3d_lost_device(bool force)
 		if(old_render_target){old_render_target->Release();old_render_target=NULL;}
 		if(global_index_buffer){global_index_buffer->Release();global_index_buffer=NULL;}
 
-		extern bool cube_map_drawen;
-		cube_map_drawen = false;
+		extern bool Env_cubemap_drawn;
+		Env_cubemap_drawn = false;
 		
 
 void bm_pre_lost();

@@ -128,7 +128,32 @@
  * $NoKeywords: $
  */
 
-#ifdef SCP_UNIX
+
+#ifdef WIN32
+
+#include <winsock2.h>	// for "timeval" struct
+
+int gettimeofday(struct timeval *tv, void *tz)
+{
+	union {
+		unsigned __int64 ns;
+		FILETIME ft;
+	} now;
+
+	GetSystemTimeAsFileTime (&now.ft);
+
+	// convert from ms epoch (Jan 1, 1601) to unix epoch (Jan 1, 1970)
+	now.ns /= 10;
+	now.ns -= (unsigned __int64)11644473600000000;
+
+	tv->tv_sec  = (long)(now.ns / (long)1000000);
+	tv->tv_usec = (long)(now.ns % (long)1000000);
+
+	return 0;
+}
+
+
+#else // ! Win32
 
 #include <stdarg.h>
 #include <errno.h>
@@ -199,10 +224,16 @@ void Sleep(int mili)
 }
 
 extern void os_deinit();
+extern int Cmdline_dev_nofail;
 // fatal assertion error
 void WinAssert(char * text, char *filename, int line)
 {
+	mprintf(("Assert(): From %s at line %d\n", filename, line));
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
+
+	if (Cmdline_dev_nofail) {
+		return;
+	}
 
 	// we have to call os_deinit() before abort() so we make sure that SDL gets
 	// closed out and we don't lose video/input control
@@ -249,6 +280,84 @@ void Warning( char * filename, int line, const char * format, ... )
 	fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", buffer, filename, line);
 #endif
 }
+
+/*
+#include "lab/wmcgui.h"
+
+
+void warning_do_debugger(Button *caller)
+{
+#ifndef INTERPLAYQA
+	Int3();
+#else
+	AsmInt3();
+#endif
+}
+
+bool warning_do_frame()
+{
+	bool test1 = ( GUI_system.OnFrame(frametime, !(Trackball_active) ? true : false, false) == GSOF_NOTHINGPRESSED );
+
+	if (test1) {
+		int key = GUI_system.GetKeyPressed();
+		int status = GUI_system.GetStatus();
+
+		// set trackball modes
+		if (status & GST_MOUSE_LEFT_BUTTON) {
+			Trackball_active = 1;
+			Trackball_mode = 1;	// rotate
+
+			if ( key_get_shift_status() & KEY_SHIFTED )
+				Trackball_mode = 2;	// pan
+		} else if (status & GST_MOUSE_RIGHT_BUTTON) {
+			Trackball_active = 1;
+			Trackball_mode = 3;	// Zoom
+		} else if ( !mouse_down(MOUSE_LEFT_BUTTON | MOUSE_RIGHT_BUTTON) ) {
+			// reset trackball modes
+			Trackball_active = 0;
+			Trackball_mode = 0;
+		}
+
+		// handle any key presses
+		switch (key)
+		{
+			// bail...
+			case KEY_ESC:
+				get_out_of_lab(NULL);
+				break;
+		}
+	}
+}
+
+// standard warning message
+void Warning( char * filename, int line, char * format, ... )
+{
+#ifndef NDEBUG
+	va_list args;
+	int i;
+	int slen = 0;
+
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
+
+	va_start(args, format);
+	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
+	va_end(args);
+
+	GUIScreen *WarnBox = GUI_system.PushScreen(new GUIScreen("WarningBox"));
+
+	Window *WarnWin = (Window*)WarnBox->Add(new Window("WARNING!", 0, 0, -1, -1, WS_NONMOVEABLE));
+
+	WarnWin->AddChild(new Text(buffer, "", 0, 0));
+
+	int x = 0;
+	GUIObject *cbp = WarnWin->AddChild(new Button("Continue", x, 0, labviewer_make_ship_window));
+
+	x += cbp->GetWidth() + 10;
+	cbp = WarnWin->AddChild(new Button("Break into Debugger", x, 0, warning_do_debugger));
+#endif
+}
+*/
 
 // fatal error message
 void Error( char * filename, int line, const char * format, ... )
@@ -438,9 +547,9 @@ void windebug_memwatch_init()
 #endif
 
 // retrieve the current working directory
-int _getcwd(char *buffer, unsigned int len)
+int _getcwd(char *out_buf, unsigned int len)
 {
-	if (getcwd(buffer, len) == NULL) {
+	if (getcwd(out_buf, len) == NULL) {
 		Error(__FILE__, __LINE__, "buffer overflow in getcwd (buf size = %u)", len);
 	}
 

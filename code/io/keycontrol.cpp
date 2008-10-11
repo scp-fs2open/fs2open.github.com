@@ -73,7 +73,7 @@
  * --Goober5000
  *
  * Revision 2.68  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.67  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
@@ -2102,7 +2102,7 @@ void game_process_cheats(int k)
 		extern void prevent_spawning_collision(object *new_obj);
 		ship_subsys *ptr;
 		char name[NAME_LENGTH];
-		int i, ship_idx, ship_class, num_ships = 1;
+		int ship_idx, ship_class, num_ships = 1;
 
 		// if not found, then don't create it :(
 		ship_class = ship_info_lookup("Volition Bravos");

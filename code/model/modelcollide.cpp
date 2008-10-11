@@ -450,30 +450,34 @@ int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *
 static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_rad, vec3d *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly)
 {
 	vec3d	hit_point;
-	float		dist;
-	float		u, v;
+	float	dist;
+	float	u, v;
 
 	// Check to see if poly is facing away from ray.  If so, don't bother
 	// checking it.
-	if (vm_vec_dot(&Mc_direction,plane_norm) > 0.0f)	{
+	if (vm_vec_dot(&Mc_direction, plane_norm) > 0.0f) {
 		return;
 	}
 
 	// Find the intersection of this ray with the plane that the poly
 	dist = fvi_ray_plane(NULL, plane_pnt, plane_norm, &Mc_p0, &Mc_direction, 0.0f);
 
-	if ( dist < 0.0f ) return; // If the ray is behind the plane there is no collision
-	if ( !(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f) ) return; // The ray isn't long enough to intersect the plane
+	if ( dist < 0.0f )
+		return; // If the ray is behind the plane there is no collision
+
+	if ( !(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f) )
+		return; // The ray isn't long enough to intersect the plane
 
 	// If the ray hits, but a closer intersection has already been found, return
-	if ( Mc->num_hits && (dist >= Mc->hit_dist ) ) return;	
+	if ( Mc->num_hits && (dist >= Mc->hit_dist ) )
+		return;	
 
 	// Find the hit point
 	vm_vec_scale_add( &hit_point, &Mc_p0, &Mc_direction, dist );
 	
 	// Check to see if the point of intersection is on the plane.  If so, this
 	// also finds the uv's where the ray hit.
-	if ( fvi_point_face(&hit_point, nv, verts, plane_norm, &u,&v, uvl_list ) )	{
+	if ( fvi_point_face(&hit_point, nv, verts, plane_norm, &u, &v, uvl_list ) ) {
 		Mc->hit_dist = dist;
 
 		Mc->hit_point = hit_point;
@@ -481,13 +485,13 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_ra
 
 		Mc->hit_normal = *plane_norm;
 
-		if ( uvl_list )	{
+		if (uvl_list) {
 			Mc->hit_u = u;
 			Mc->hit_v = v;
 			Mc->hit_bitmap = Mc_pm->maps[ntmap].base_map.texture;			
 		}
 		
-		if(ntmap >= 0){
+		if (ntmap >= 0) {
 			Mc->t_poly = poly;
 			Mc->f_poly = NULL;
 		} else {
@@ -531,12 +535,16 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 		return;
 	}
 
-	if ( face_t < 0 || face_t > 1) {
-		check_face = 0;		// If the ray is behind the plane there is no collision
-	}
+	// If the ray is behind the plane there is no collision
+	if (face_t > 1.0f) {
+		check_face = 0;
+		check_edges = 0;
+	} else if (face_t < 0.0f) {
+		check_face = 0;
 
-	if ( !(Mc->flags & MC_CHECK_RAY) && (face_t > 1.0f) ) {
-		check_face = 0;		// The ray isn't long enough to intersect the plane
+		// check whether sphere can hit edge in allowed time range
+		if ( (face_t + delta_t) < 0.0f)
+			check_edges = 0;
 	}
 
 	// If the ray hits, but a closer intersection has already been found, don't check face
@@ -545,9 +553,9 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	}
 
 
-	vec3d temp_sphere;
-	vec3d temp_dir;
-	float temp_dist;
+	//vec3d temp_sphere;
+	//vec3d temp_dir;
+	//float temp_dist;
 	// DA 11/5/97  Above is used to test distance between hit_point and sphere_hit_point.
 	// This can be as large as 0.003 on a unit sphere.  I suspect that with larger spheres,
 	// both the relative and absolute error decrease, but this should still be checked for the
@@ -581,6 +589,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 
 			Mc->num_hits++;
 			check_edges = 0;
+			/*
 			vm_vec_scale_add( &temp_sphere, &Mc_p0, &Mc_direction, Mc->hit_dist );
 			temp_dist = vm_vec_dist( &temp_sphere, &hit_point );
 			if ( (temp_dist - DIST_TOL > Mc->radius) || (temp_dist + DIST_TOL < Mc->radius) ) {
@@ -589,21 +598,16 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			}
 			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
 			// Assert( vm_vec_dotprod( &temp_dir, &Mc_direction ) > 0 );
+			*/
 		}
 	}
 
 
 	if ( check_edges ) {
-
 		// Either (face_t) is out of range or we miss the face
 		// Check for sphere hitting edge
 
 		// If checking shields, we *still* need to check edges
-
-		// First check whether sphere can hit edge in allowed time range
-		if ( face_t > 1.0f || face_t+delta_t < 0.0f )	{
-			return;
-		}
 
 		// this is where we need another test to cull checking for edges
 		// PUT TEST HERE
@@ -612,8 +616,8 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 		// Mc->hit_dist stores the best edge time of *all* faces
 		float sphere_time;
 		if ( fvi_polyedge_sphereline(&hit_point, &Mc_p0, &Mc_direction, Mc->radius, nv, verts, &sphere_time)) {
-
 			Assert( sphere_time >= 0.0f );
+			/*
 			vm_vec_scale_add( &temp_sphere, &Mc_p0, &Mc_direction, sphere_time );
 			temp_dist = vm_vec_dist( &temp_sphere, &hit_point );
 			if ( (temp_dist - DIST_TOL > Mc->radius) || (temp_dist + DIST_TOL < Mc->radius) ) {
@@ -622,6 +626,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			}
 			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
 //			Assert( vm_vec_dotprod( &temp_dir, &Mc_direction ) > 0 );
+			*/
 
 			if ( (Mc->num_hits==0) || (sphere_time < Mc->hit_dist) ) {
 				// This is closer than best so far
@@ -672,7 +677,7 @@ void model_collide_defpoints(ubyte * p)
 	
 	Assert( Mc_point_list != NULL );
 
-	for (n=0; n<nverts; n++ ) {
+	for (n = 0; n < nverts; n++) {
 		Mc_point_list[n] = src;
 
 		src += normcount[n]+1;
@@ -700,16 +705,18 @@ void model_collide_flatpoly(ubyte * p)
 	short *verts;
 
 	nv = w(p+36);
-	if ( nv < 0 ) return;
 
-	if ( nv > TMAP_MAX_VERTS ) {
+	if ( nv <= 0 )
+		return;
+
+	if (nv > TMAP_MAX_VERTS) {
 		Int3();
 		return;
 	}
 
 	verts = (short *)(p+44);
 
-	for (i=0;i<nv;i++)	{
+	for (i = 0; i < nv; i++) {
 		points[i] = Mc_point_list[verts[i*2]];
 	}
 
@@ -739,9 +746,11 @@ void model_collide_tmappoly(ubyte * p)
 	model_tmap_vert *verts;
 
 	nv = w(p+36);
-	if ( nv < 0 ) return;
 
-	if ( nv > TMAP_MAX_VERTS ) {
+	if ( nv <= 0 )
+		return;
+
+	if (nv > TMAP_MAX_VERTS) {
 		Int3();
 		return;
 	}
@@ -749,14 +758,14 @@ void model_collide_tmappoly(ubyte * p)
 	int tmap_num = w(p+40);
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);	// Goober5000
 
-	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].base_map.texture < 0) )	{
+	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].base_map.texture < 0) ) {
 		// Don't check invisible polygons.
 		return;
 	}
 
 	verts = (model_tmap_vert *)(p+44);
 
-	for (i=0;i<nv;i++)	{
+	for (i = 0; i < nv; i++) {
 		points[i] = Mc_point_list[verts[i].vertnum];
 		uvlist[i].u = verts[i].u;
 		uvlist[i].v = verts[i].v;
@@ -815,30 +824,47 @@ int model_collide_sub(void *model_ptr )
 	chunk_type = w(p);
 	chunk_size = w(p+4);
 
-	while (chunk_type != OP_EOF)	{
+	while (chunk_type != OP_EOF) {
 
 //		mprintf(( "Processing chunk type %d, len=%d\n", chunk_type, chunk_size ));
 
 		switch (chunk_type) {
-		case OP_EOF: return 1;
-		case OP_DEFPOINTS:	model_collide_defpoints(p); break;
-		case OP_FLATPOLY:		model_collide_flatpoly(p); break;
-		case OP_TMAPPOLY:		model_collide_tmappoly(p); break;
-		case OP_SORTNORM:		model_collide_sortnorm(p); break;
-		case OP_BOUNDBOX:	
-			if (!mc_ray_boundingbox( vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, NULL ))	{
+			case OP_SORTNORM:
+				model_collide_sortnorm(p);
+				break;
+
+			case OP_TMAPPOLY:
+				model_collide_tmappoly(p);
+				break;
+
+			case OP_BOUNDBOX:
+				if ( !mc_ray_boundingbox(vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, NULL) ) {
+					return 1;
+				}
+				break;
+
+			case OP_DEFPOINTS:
+				model_collide_defpoints(p);
+				break;
+
+			case OP_FLATPOLY:
+				model_collide_flatpoly(p);
+				break;
+
+			case OP_EOF:
 				return 1;
-			}
-			break;
-		default:
-			mprintf(( "Bad chunk type %d, len=%d in model_collide_sub\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
-			return 0;
+
+			default:
+				mprintf(( "Bad chunk type %d, len=%d in model_collide_sub\n", chunk_type, chunk_size ));
+				Int3();		// Bad chunk type!
+				return 0;
 		}
+
 		p += chunk_size;
 		chunk_type = w(p);
 		chunk_size = w(p+4);
 	}
+
 	return 1;
 }
 
@@ -984,20 +1010,23 @@ void mc_check_shield()
 
 // This function recursively checks a submodel and its children
 // for a collision with a vector.
-void mc_check_subobj( int mn )
+void mc_check_subobj(int mn)
 {
 	vec3d tempv;
 	vec3d hitpt;		// used in bounding box check
-	bsp_info * sm;
+	bsp_info *sm;
 	int i;
 
-	Assert( mn >= 0 );
-	Assert( mn < Mc_pm->n_models );
+	if ( (mn < 0) || (mn >= Mc_pm->n_models) ) {
+		Int3();
+		return;
+	}
 
-	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
-	
 	sm = &Mc_pm->submodel[mn];
-	if (sm->no_collisions) return; // don't do collisions
+
+	if (sm->no_collisions) {
+		return; // don't do collisions
+	}
 
 	// Rotate the world check points into the current subobject's 
 	// frame of reference.
@@ -1010,47 +1039,51 @@ void mc_check_subobj( int mn )
 	vm_vec_rotate(&Mc_p1, &tempv, &Mc_orient);
 	vm_vec_sub(&Mc_direction, &Mc_p1, &Mc_p0);
 
-	// If we are checking the root submodel, then we might want
-	// to check the shield at this point
-	if (Mc_pm->detail[0] == mn)	{
-
-		// Do a quick out on the entire bounding box of the object
-		if (!mc_ray_boundingbox( &Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL))	{
-			return;
-		}
-			
-		// Check shield if we're supposed to
-		if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0 )) {
-		//	Mc->flags &= ~MC_CHECK_SPHERELINE;
-		//	mc_check_shield();
-		//	int ray_num_hits = Mc->num_hits;
-		//	Mc->num_hits = 0;
-		//	Mc->flags |= MC_CHECK_SPHERELINE;
-			mc_check_shield();
-		//	if ( (ray_num_hits > 0)  && (Mc->num_hits == 0))
-		//		Int3();
-			return;
-		}
-
+	// bail early if no ray exists
+	if ( IS_VEC_NULL(&Mc_direction) ) {
+		return;
 	}
 
-	if(!(Mc->flags & MC_CHECK_MODEL)) return;
-	
+	// quickly bail if we aren't inside the full model bbox
+	if ( !mc_ray_boundingbox(&Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL) ) {
+		return;
+	}
+
+	// If we are checking the root submodel, then we might want
+	// to check the shield at this point
+	if (Mc->flags & MC_CHECK_SHIELD) {
+		if ( (Mc_pm->detail[0] == mn) && (Mc_pm->shield.ntris > 0) ) {
+			mc_check_shield();
+		}
+
+		return;
+	}
+
+	if ( !(Mc->flags & MC_CHECK_MODEL) ) {
+		return;
+	}
+
 	Mc_submodel = mn;
 
-	// Check if the ray intersects this subobject's bounding box 	
-	if (mc_ray_boundingbox(&sm->min, &sm->max, &Mc_p0, &Mc_direction, &hitpt))	{
-
-		// The ray interects this bounding box, so we have to check all the
-		// polygons in this submodel.
-		if ( Mc->flags & MC_ONLY_BOUND_BOX )	{
+	// Check if the ray intersects this subobject's bounding box
+	if ( mc_ray_boundingbox(&sm->min, &sm->max, &Mc_p0, &Mc_direction, &hitpt) ) {
+		if (Mc->flags & MC_ONLY_BOUND_BOX) {
 			float dist = vm_vec_dist( &Mc_p0, &hitpt );
 
-			if ( dist < 0.0f ) goto NoHit; // If the ray is behind the plane there is no collision
-			if ( !(Mc->flags & MC_CHECK_RAY) && (dist > Mc_mag) ) goto NoHit; // The ray isn't long enough to intersect the plane
+			// If the ray is behind the plane there is no collision
+			if (dist < 0.0f) {
+				goto NoHit;
+			}
+
+			// The ray isn't long enough to intersect the plane
+			if ( !(Mc->flags & MC_CHECK_RAY) && (dist > Mc_mag) ) {
+				goto NoHit;
+			}
 
 			// If the ray hits, but a closer intersection has already been found, return
-			if ( Mc->num_hits && (dist >= Mc->hit_dist ) ) goto NoHit;	
+			if ( Mc->num_hits && (dist >= Mc->hit_dist) ) {
+				goto NoHit;
+			}
 
 			Mc->hit_dist = dist;
 			Mc->hit_point = hitpt;
@@ -1058,22 +1091,23 @@ void mc_check_subobj( int mn )
 			Mc->hit_bitmap = -1;
 			Mc->num_hits++;
 		} else {
+			// The ray interects this bounding box, so we have to check all the
+			// polygons in this submodel.
 			model_collide_sub(sm->bsp_data);
 		}
-	} else {
-		//Int3();
 	}
 
 NoHit:
 
 	// If we're only checking one submodel, return
-	if (Mc->flags & MC_SUBMODEL)	{
+	if (Mc->flags & MC_SUBMODEL) {
 		return;
 	}
 
-	
 	// If this subobject doesn't have any children, we're done checking it.
-	if ( sm->num_children < 1 ) return;
+	if (sm->num_children < 1) {
+		return;
+	}
 	
 	// Save instance (Mc_orient, Mc_base, Mc_point_base)
 	matrix saved_orient = Mc_orient;
@@ -1081,7 +1115,7 @@ NoHit:
 	
 	// Check all of this subobject's children
 	i = sm->first_child;
-	while ( i >= 0 )	{
+	while (i >= 0) {
 		bsp_info * csm = &Mc_pm->submodel[i];
 
 		// Don't check it or its children if it is destroyed
@@ -1101,7 +1135,6 @@ NoHit:
 
 		i = csm->next_sibling;
 	}
-
 }
 
 MONITOR(NumFVI)

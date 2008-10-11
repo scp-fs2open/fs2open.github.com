@@ -731,9 +731,6 @@ void multi_ts_init()
 		Multi_ts_inited = 1;
 	}	
 
-	// use the common interface palette
-	multi_common_set_palette();
-
 	// set the interface palette
 	// common_set_interface_palette(MULTI_TS_PALETTE);
 

@@ -244,6 +244,18 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 	{ NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size), HUD_VAR(Wenergy_fname), 0, 0, 0, -1, -1 },
 	{ NULL,			HUD_VAR(Wenergy_text_coords),	"$Weapons Energy Text:",	439, 318, 708, 509, 0, 0, 0, 0, 0, -1, -1 },
 	{ NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, -1, -1 },
+	{ NULL,			HUD_VAR(Head_coords),			"$Talking Head:",			7, 45, 7, 66, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Head_frame_coords),		"$Talking Head Frame:",		5, 35, 5, 56, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Head_message_coords),	"$Talking Head Text:",		7, 37, 11, 57, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_gun_text_coords),		"$ETS Gun Text:",		525, 422, 882, 690, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_gun_top_coords),		"$ETS Gun Top:",		523, 380, 880, 648, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_gun_bottom_coords),		"$ETS Gun Bottom:",		523, 430, 880, 698, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_shield_text_coords),	"$ETS Shield Text:",	542, 422, 900, 690, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_shield_top_coords),		"$ETS Shield Top:",		540, 380, 898, 648, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_shield_bottom_coords),	"$ETS Shield Bottom:",	540, 430, 898, 698, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_engine_text_coords),	"$ETS Engine Text:",	559, 422, 917, 690, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_engine_top_coords),		"$ETS Engine Top:",		557, 380, 916, 648, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(ETS_engine_bottom_coords),	"$ETS Engine Bottom:",	557, 430, 916, 698, 0, 0, 0, 0, 0, -1, -1 },
 
 	//Mini-gauges
 	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	0, 0, 0, 0, 0, -1, -1 },
@@ -260,7 +272,7 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 };
 
 //Number of gauges
-int Num_gauge_types = 17;
+int Num_gauge_types = 29;
 int Num_custom_gauges = 0;
 #endif
 #ifdef NEW_HUD

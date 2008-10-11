@@ -1097,11 +1097,6 @@ void main_hall_init(int main_hall_num)
 	// remove any multiplayer flags from the game mode
 	Game_mode &= ~(GM_MULTIPLAYER);
 
-	// set the interface palette 
-#ifndef HARDWARE_ONLY
-	palette_use_bm_palette(Main_hall_bitmap);	
-#endif
-
 	Main_hall_mask_w = -1;
 	Main_hall_mask_h = -1;
 		
@@ -1307,6 +1302,7 @@ void main_hall_do(float frametime)
 		gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 		gameseq_post_event(GS_EVENT_LAB);
 		break;
+
 #ifndef NDEBUG
 	case KEY_1:		
 		// no soup for you!
@@ -2105,7 +2101,7 @@ void main_hall_handle_random_intercom_sounds()
 {
 	// if we have no timestamp for the next random sound, then set on
 	if((Main_hall_next_intercom_sound_stamp == -1) && (Main_hall_intercom_sound_handle == -1)){
-		Main_hall_next_intercom_sound_stamp = timestamp((int)(((float)rand()/(float)RAND_MAX) * 
+		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
 			                                            (float)(Main_hall->intercom_delay[Main_hall_next_intercom_sound][1]
 																	  - Main_hall->intercom_delay[Main_hall_intercom_sound_handle][0])) );		
 	}
@@ -2137,7 +2133,7 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			Main_hall_next_intercom_sound_stamp = timestamp((int)(((float)rand()/(float)RAND_MAX) * 
+			Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
 			                                            (float)(Main_hall->intercom_delay[Main_hall_next_intercom_sound][1]
 																	  - Main_hall->intercom_delay[Main_hall_next_intercom_sound][0])) );
 
@@ -2214,7 +2210,7 @@ void main_hall_reset_ambient_vol()
 // blit the freespace version #
 void main_hall_blit_version()
 {
-	char version_string[100];
+	char version_string[256];
 	int w;
 
 	// format the version string

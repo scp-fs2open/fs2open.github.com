@@ -983,7 +983,10 @@ void credits_do_frame(float frametime)
 		sy = fl2i(Credit_position-0.5f);
 	}
 
-	gr_string(0x8000, sy, Credit_text);
+extern void gr_opengl_string( float sx, float sy, char *s, bool resize = true );
+
+	gr_opengl_string((float)0x8000, Credit_position, Credit_text);
+//	gr_string(0x8000, sy, Credit_text);
 
 	int temp_time;
 	temp_time = timer_get_milliseconds();

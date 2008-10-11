@@ -65,4 +65,6 @@ void fs2netd_add_table_validation(char *tblname);
 void fs2netd_update_chat_channel();
 void fs2netd_update_game_count(char *chan_name);
 
+void fs2netd_udp_hole_punch();
+
 #endif // _FS2NETD_CLIENT_H

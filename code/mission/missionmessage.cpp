@@ -80,7 +80,7 @@
  * spelling
  *
  * Revision 2.47  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.46  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
@@ -816,14 +816,14 @@ static float Distort_patterns[MAX_DISTORT_PATTERNS][MAX_DISTORT_LEVELS] =
 static int Distort_num;		// which distort pattern is being used
 static int Distort_next;	// which section of distort pattern is next
 
-int Head_coords[GR_NUM_RESOLUTIONS][2] = {
+/*int Head_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		7, 45
 	},
 	{ // GR_1024
 		7, 66
 	}
-};
+};*/
 
 // forward declaration
 void message_maybe_distort_text(char *text);
@@ -1686,7 +1686,7 @@ void message_play_anim( message_q *q )
 
 		// figure out anim start frame
 		anim_start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
-		anim_play_init(&aps, anim_info->anim_data, Head_coords[gr_screen.res][0], Head_coords[gr_screen.res][1]);
+		anim_play_init(&aps, anim_info->anim_data, current_hud->Head_coords[0], current_hud->Head_coords[1]);
 		aps.start_at = anim_start_frame;
 
 		// aps.color = &HUD_color_defaults[HUD_color_alpha];

@@ -665,8 +665,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
+		tangles.p += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.h += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
 	}
 
 
@@ -818,6 +818,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		// Assert( (sim_time > 0.5f) || (vm_vec_mag_squared(&world_disp) < 350*350) );
 	}
 #endif
+
 	vm_vec_add2 (position, &world_disp);
 
 	// update world velocity
@@ -844,7 +845,6 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_ti
 		pi->speed = vm_vec_mag(&pi->vel);							//	Note, cannot use quick version, causes cumulative error, increasing speed.
 		pi->fspeed = vm_vec_dot(&orient->vec.fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
 	}
-
 }
 
 //	-----------------------------------------------------------------------------------------------------------

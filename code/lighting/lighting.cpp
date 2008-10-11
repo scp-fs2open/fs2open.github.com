@@ -563,26 +563,49 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 
 void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
-	Assert( r1 > 0.0f );
-	Assert( r2 > 0.0f );
-
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
-
 	light * l;
 
-	if ( Lighting_off ) return;
+	if (Lighting_off)
+		return;
 
-	if (!Lighting_flag) return;
+	if ( !Lighting_flag )
+		return;
 
 //	if ( keyd_pressed[KEY_LSHIFT] ) return;
 
 	if ( Num_lights >= MAX_LIGHTS ) {
 		mprintf(( "Out of lights!\n" ));
 		return;
+	}
+
+	Assert( r1 > 0.0f );
+	Assert( r2 > 0.0f );
+
+	if ( !specular ) {
+		spec_r = r;
+		spec_g = g;
+		spec_b = b;
+	}
+
+	for (int i = 0; i < Num_lights; i++) {
+		l = &Lights[i];
+
+		if (l->type != LT_POINT)
+			continue;
+
+		if ( vm_vec_dist_quick(&l->vec, pos) < l->rada ) {
+			if (l->r == r && l->g == g && l->b == b) {
+				if (l->light_ignore_objnum == light_ignore_objnum) {
+				//	printf("resuing light %i\n", i);
+
+					l->intensity += (intensity * 0.1f);
+					l->rada += (r1 * 0.225f);
+					l->radb += (r2 * 0.175f);
+
+					return;
+				}
+			}
+		}
 	}
 
 	l = &Lights[Num_lights++];
@@ -925,17 +948,18 @@ int light_get_global_count()
 
 int light_get_global_dir(vec3d *pos, int n)
 {
-	if ( (n < 0) || (n >= (int)Static_light.size()) ) {
+	if ( (n < 0) || (n >= (int)Static_light.size()) )
 		return 0;
-	}
 
-	if (pos) {
-		*pos = Static_light[n]->vec;
+	if (pos == NULL)
+		return 0;
 
-		if ( Lighting_mode != LM_DARKEN )	{
-			vm_vec_scale( pos, -1.0f );
-		}
-	}
+
+	*pos = Static_light[n]->vec;
+
+	if (Lighting_mode != LM_DARKEN)
+		vm_vec_scale( pos, -1.0f );
+
 	return 1;
 }
 
@@ -952,15 +976,22 @@ void light_set_all_relevent()
 
 	gr_reset_lighting();
 
-	for (idx = 0; idx < (int)Static_light.size(); idx++)
+	for (idx = 0; idx < (int)Static_light.size(); idx++) {
 		gr_set_light( Static_light[idx] );
+	}
 
 	// for simplicity sake were going to forget about dynamic lights for the moment
 
 	int n = Num_light_levels-1;
 
-	for (idx = 0; idx < Num_relevent_lights[n]; idx++ )
+	for (idx = 0; idx < Num_relevent_lights[n]; idx++) {
 		gr_set_light( Relevent_lights[idx][n] );
+	}
+
+	if (gr_screen.mode == GR_OPENGL) {
+		extern void opengl_pre_render_init_lights();
+		opengl_pre_render_init_lights();
+	}
 }
 
 
@@ -1059,7 +1090,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 	float rval = 0, gval = 0, bval = 0;
 	int idx;
 
-	if ( Cmdline_nospec ) {
+	if ( !Cmdline_spec ) {
 		*param_r = 0;
 		*param_g = 0;
 		*param_b = 0;
@@ -1407,6 +1438,4 @@ float light_apply( vec3d *pos, vec3d * norm )
 
 }
 */
-
-
 

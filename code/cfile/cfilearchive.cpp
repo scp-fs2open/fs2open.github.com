@@ -321,7 +321,7 @@ int cfread_lua_number(double *buf, CFILE *cfile)
 	Assert( !cb->data );
 	Assert(cb->fp != NULL);
 
-	long orig_pos = ftell(cb->fp);
+	int orig_pos = ftell(cb->fp);
 	int items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);
 	cb->raw_position += ftell(cb->fp)-orig_pos;		
 

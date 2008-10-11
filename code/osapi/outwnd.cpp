@@ -478,7 +478,7 @@ void outwnd_printf2(char *format, ...)
 		return;
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	outwnd_print("General", tmp);
@@ -582,7 +582,7 @@ void outwnd_printf(char *id, char *format, ...)
 		return;
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	outwnd_print(id, tmp);
@@ -1543,7 +1543,7 @@ void safe_point_print(char *format, ...)
 	va_list args;
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	strcpy(safe_string, tmp);

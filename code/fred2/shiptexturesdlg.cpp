@@ -181,7 +181,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	for (i=0; i<pm->n_textures; i++)
 	{
 		// get texture file name
-		bm_get_filename(pm->maps[i].base_map.original_texture, texture_file);
+		strcpy(texture_file, pm->original_maps[i].filename);
 
 		// skip blank textures
 		if (!strlen(texture_file))
@@ -379,7 +379,6 @@ void CShipTexturesDlg::swap_strings(char *str1, char *str2)
 
 texture_replace *CShipTexturesDlg::texture_set(texture_replace *dest, const texture_replace *src)
 {
-	dest->new_texture_id = src->new_texture_id;
 	strcpy(dest->ship_name, src->ship_name);
 	strcpy(dest->old_texture, src->old_texture);
 	strcpy(dest->new_texture, src->new_texture);

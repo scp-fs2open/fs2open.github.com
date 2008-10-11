@@ -275,6 +275,20 @@ typedef struct hud_info
 	//Hudescort
 	int Escort_coords[2];
 
+	int Head_frame_coords[2];
+	int Head_message_coords[2];
+	int Head_coords[2];
+
+	int ETS_gun_text_coords[2];
+	int ETS_gun_top_coords[2];
+	int ETS_gun_bottom_coords[2];
+	int ETS_shield_text_coords[2];
+	int ETS_shield_top_coords[2];
+	int ETS_shield_bottom_coords[2];
+	int ETS_engine_text_coords[2];
+	int ETS_engine_top_coords[2];
+	int ETS_engine_bottom_coords[2];
+
 	//*Gauges*
 	//Shield mini text
 	int Hud_mini_3digit[2];

@@ -695,11 +695,23 @@ SOURCE=..\..\code\graphics\gropenglbmpman.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\graphics\gropengldraw.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\graphics\gropenglextension.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglshader.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglstate.h
 # End Source File
 # Begin Source File
 
@@ -723,11 +735,23 @@ SOURCE=..\..\code\graphics\gropenglbmpman.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\graphics\gropengldraw.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\graphics\gropenglextension.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglshader.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglstate.cpp
 # End Source File
 # Begin Source File
 
@@ -911,6 +935,14 @@ SOURCE=..\..\code\Hud\HUDWingmanStatus.h
 # Begin Group "Io"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE="..\..\code\io\joy-unix.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\code\io\joy-win.cpp"
+# End Source File
 # Begin Source File
 
 SOURCE=..\..\code\Io\Joy.cpp
@@ -2068,7 +2100,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\Working\Projects\fs2_open-Xt\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2087,7 +2119,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\Working\Projects\fs2_open-Xt\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2369,35 +2401,6 @@ SOURCE=..\..\code\Weapon\Weapon.h
 # Begin Source File
 
 SOURCE=..\..\code\Weapon\Weapons.cpp
-# End Source File
-# End Group
-# Begin Group "Nebula"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\Neb.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\Neb.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\NebLightning.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\NebLightning.h
 # End Source File
 # End Group
 # Begin Group "Localization"
@@ -2826,6 +2829,35 @@ SOURCE=..\..\code\iff_defs\iff_defs.cpp
 # Begin Source File
 
 SOURCE=..\..\code\iff_defs\iff_defs.h
+# End Source File
+# End Group
+# Begin Group "Nebula"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\Neb.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\Neb.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\NebLightning.cpp
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# ADD CPP /Od
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\NebLightning.h
 # End Source File
 # End Group
 # Begin Group "fs2netd"

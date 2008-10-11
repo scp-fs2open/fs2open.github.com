@@ -64,7 +64,7 @@
  * spelling
  *
  * Revision 2.60  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.59  2005/12/08 15:17:35  taylor
  * fix several bad crash related problems from WMC's commits on the 4th
@@ -813,7 +813,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 		vec3d temp_vec, center_to_subsys, rand_vec;
 		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
-		for (int i=0; i<num_fireballs; i++) {
+		for (i = 0; i < num_fireballs; i++) {
 			if (i==0) {
 				// make first fireball at hitpos
 				if (hitpos) {
@@ -885,12 +885,15 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Assert( ship_p->ship_info_index < 65535 );
 
 	// get the "index" of this subsystem in the ship info structure.
-	for ( i = 0; i < sip->n_subsystems; i++ ) {
-		if ( &(sip->subsystems[i]) == psub )
+	for (i = 0; i < (int)sip->subsystems.size(); i++) {
+		if ( &sip->subsystems[i] == psub ) {
 			break;
+		}
 	}
-	Assert( i < sip->n_subsystems );
+
+	Assert( i < (int)sip->subsystems.size() );
 	Assert( i < 65535 );
+
 	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (i & 0xffff);
 
 	// Don't log or display info about the activation subsytem
@@ -1201,6 +1204,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		if(subsys_list[0].ptr->system_info->armor_type_idx > -1)
 		{
 			damage = Armor_types[subsys_list[0].ptr->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
+
 			if(hull_should_apply_armor) {
 				*hull_should_apply_armor = false;
 			}
@@ -1324,6 +1328,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			return damage_left;
 		}
 	}
+
 	return damage;
 }
 
@@ -1663,7 +1668,7 @@ int choose_next_spark(object *ship_obj, vec3d *hitpos)
 
 	// get num_spark_paris -- only sort these
 	num_spark_pairs = (num_sparks * num_sparks - num_sparks) / 2;
-
+Assert( is_valid_vec(&ship_obj->pos) );
 	// get the world hitpos for all sparks
 	bool model_started = false;
 	for (spark_num=0; spark_num<num_sparks; spark_num++) {
@@ -1715,6 +1720,11 @@ int choose_next_spark(object *ship_obj, vec3d *hitpos)
 	}
 	Assert(count == num_spark_pairs);
 
+	for (i = 0; i < count; i++) {
+		Assert(!_isnan(spark_pairs[i].dist));
+		Assert(spark_pairs[i].dist >= 0);
+	}
+
 	// sort pairs
 	qsort(spark_pairs, count, sizeof(spark_pair), spark_compare);
 	//mprintf(("Min spark pair dist %.1f\n", spark_pairs[0].dist));
@@ -1760,7 +1770,7 @@ void ship_hit_create_sparks(object *ship_obj, vec3d *hitpos, int submodel_num)
 
 	n = shipp->num_hits;
 	max_sparks = get_max_sparks(ship_obj);
-
+Assert( is_valid_vec(&ship_obj->pos) );
 	if (n >= max_sparks)	{
 		if (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 			// large ship, choose intelligently
@@ -2566,43 +2576,42 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		return;
 	}
 	
-	//	If we hit the shield, reduce it's strength and found
-	// out how much damage is left over.
-	if ( quadrant >= 0 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
+	//	If we hit the shield, reduce it's strength and find out how much damage is left over
+	if ( (quadrant >= 0) && !(ship_obj->flags & OF_NO_SHIELDS) ) {
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;		
 
 		weapon_info_index = shiphit_get_damage_weapon(other_obj);
-		if ( weapon_info_index >= 0 ) {
+
+		if (weapon_info_index >= 0) {
 			shield_factor = Weapon_info[weapon_info_index].shield_factor;
 		}
 
-		if ( shield_factor >= 0 ) {
+		if (shield_factor >= 0.0f) {
 			damage *= shield_factor;
 			subsystem_damage *= shield_factor;
 		}
 
-		if ( damage > 0 ) {
+		if (damage > 0.0f) {
 			float pre_shield = damage;
 
 			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
 
-			if(damage > 0.0f){
+			if (damage > 0.0f)
 				subsystem_damage *= (damage / pre_shield);
-			} else {
+			else
 				subsystem_damage = 0.0f;
-			}
 		}
 
 		// if shield damage was increased, don't carry over leftover damage at scaled level
-		if ( shield_factor > 1 ) {
+		if (shield_factor > 1) {
 			damage /= shield_factor;
 
 			subsystem_damage /= shield_factor;
 		}
 	}
-			
+
 	// Apply leftover damage to the ship's subsystem and hull.
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
 		int	weapon_info_index;		
@@ -2618,25 +2627,24 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		}
 
 		//Do armor stuff
-		if (apply_hull_armor)
-		{
+		if (apply_hull_armor) {
 			int dmg_type_idx = -1;
-			if(other_obj_is_weapon) {
+
+			if (other_obj_is_weapon) {
 				dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-			} else if(other_obj_is_beam) {
+			} else if (other_obj_is_beam) {
 				dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
-			} else if(other_obj_is_shockwave) {
+			} else if (other_obj_is_shockwave) {
 				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-			} else if(other_obj_is_asteroid) {
+			} else if (other_obj_is_asteroid) {
 				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
-			} else if(other_obj_is_debris) {
+			} else if (other_obj_is_debris) {
 				dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
-			} else if(other_obj_is_ship) {
+			} else if (other_obj_is_ship) {
 				dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 			}
 			
-			if(sip->armor_type_idx != -1)
-			{
+			if (sip->armor_type_idx != -1) {
 				damage = Armor_types[sip->armor_type_idx].GetDamage(damage, dmg_type_idx);
 			}
 		}
@@ -2910,7 +2918,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 
 		ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, target, start, ssm_index);
 	}
-
+Assert( is_valid_vec(&ship_obj->pos) );
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {
 		weapon_info	*wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];

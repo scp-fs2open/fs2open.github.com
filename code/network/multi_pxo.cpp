@@ -457,7 +457,6 @@ char Multi_pxo_mask_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 
 UI_WINDOW Multi_pxo_window;
 int Multi_pxo_bitmap = -1;
-int Multi_pxo_palette = -1;
 
 
 // pxo animation
@@ -529,12 +528,6 @@ void multi_pxo_strip_space(char *string1,char *string2);
 
 // fire up the given URL
 void multi_pxo_url(char *url);
-
-// load/set the palette
-void multi_pxo_load_palette();
-
-// unload the palette
-void multi_pxo_unload_palette();
 
 // if we're currently on a private channel
 int multi_pxo_on_private_channel();
@@ -1423,9 +1416,6 @@ void multi_pxo_init(int use_last_channel)
 	Multi_pxo_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
 	Multi_pxo_window.set_mask_bmap(Multi_pxo_mask_fname[gr_screen.res]);
 
-	// multiplayer screen common palettes
-	multi_pxo_load_palette();	
-
 	// create the interface buttons
 	for(idx=0;idx<MULTI_PXO_NUM_BUTTONS;idx++){
 		// create the object
@@ -1673,9 +1663,6 @@ void multi_pxo_close()
 		Multi_pxo_anim = NULL;
 	}
 
-	// unload the palette for this screen
-	multi_pxo_unload_palette();
-	
 	// destroy the UI_WINDOW
 	Multi_pxo_window.destroy();
 
@@ -1919,25 +1906,6 @@ void multi_pxo_url(char *url)
 		}					
 	}
 #endif
-}
-
-// load/set the palette
-void multi_pxo_load_palette()
-{
-	// use the palette
-#ifndef HARDWARE_ONLY
-	palette_use_bm_palette(Multi_pxo_palette);
-#endif
-}
-
-// unload the palette
-void multi_pxo_unload_palette()
-{
-	// unload the palette if it exists
-	if(Multi_pxo_palette != -1){
-		bm_release(Multi_pxo_palette);
-		Multi_pxo_palette = -1;
-	}
 }
 
 // if we're currently on a private channel
@@ -4958,9 +4926,6 @@ void multi_pxo_run_medals()
 
 	// close the medals screen down
 	medal_main_close();
-	
-	// reset the palette
-	multi_pxo_load_palette();
 }
 
 

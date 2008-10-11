@@ -354,6 +354,8 @@ typedef struct config_item {
 	short key_id;  // actual key bound to action
 	short joy_id;  // joystick button bound to action
 	int used;				// has control been used yet in mission?  If so, this is the timestamp
+
+//	config_item() : key_default(-1), joy_default(-1), tab(-1), hasXSTR(false), text(""), type(CC_TYPE_TRIGGER), key_id(-1), joy_id(-1), used(-1) {}
 } config_item;
 
 // --------------------------------------------------

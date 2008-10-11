@@ -65,7 +65,7 @@
  * --Goober5000
  *
  * Revision 1.31  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 1.30  2006/01/11 21:15:15  wmcoolmon
  * Somewhat better turret comments
@@ -1129,7 +1129,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 		return best_subsysp;
 
 	// Make sure big or huge ship *actually* has subsystems  (ie, knossos)
-	if (esip->n_subsystems == 0) {
+	if ( esip->subsystems.empty() ) {
 		return best_subsysp;
 	}
 
@@ -1366,14 +1366,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// now do anything else
 		else {
-			for (int i=0; i < wip->shots; i++)
-			{		
+			for (int i = 0; i < wip->shots; i++) {		
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
-			
 
-				objp=&Objects[weapon_objnum];
-				wp=&Weapons[objp->instance];
+				objp = &Objects[weapon_objnum];
+				wp = &Weapons[objp->instance];
 
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
@@ -1382,7 +1380,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					wp->turret_subsys = turret;	
 
 					// if the gun is a flak gun
-					if(wip->wi_flags & WIF_FLAK){			
+					if (wip->wi_flags & WIF_FLAK) {			
 						// show a muzzle flash
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
@@ -1400,6 +1398,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 					} else if(wip->muzzle_flash > -1) {	
 						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
+					}
+					// otherwise just do mflash if the weapon has it
+					else if (wip->muzzle_flash >= 0) {	
+						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
@@ -1485,6 +1487,11 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Weapons[Objects[weapon_objnum].instance].turret_subsys = tsi->turret;
 		Weapons[Objects[weapon_objnum].instance].target_num = tsi->turret->turret_enemy_objnum;
 
+		// muzzle flash?
+		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
+			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+		}
+
 		// maybe sound
 		if ( Weapon_info[tsi->weapon_class].launch_snd != -1 ) {
 			// Don't play turret firing sound if turret sits on player ship... it gets annoying.
@@ -1492,8 +1499,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 				snd_play_3d( &Snds[Weapon_info[tsi->weapon_class].launch_snd], &turret_pos, &View_position );
 			}
 		}
-		if(Weapon_info[tsi->weapon_class].muzzle_flash > -1)
-			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
@@ -1580,7 +1586,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// (NOTE: this will probably get changed by other parts of the code (swarming, beams, etc) to be
 			// a more accurate time, but we need to give it a long enough time for the other parts of the code
 			// to change the timestamp before it gets acted upon - taylor)
-			ss->turret_animation_done_time = timestamp(1000);
+			ss->turret_animation_done_time = timestamp(200);
 		} else {
 			return;
 		}

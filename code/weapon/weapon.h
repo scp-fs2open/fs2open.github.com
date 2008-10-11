@@ -624,9 +624,8 @@ extern int Num_weapon_subtypes;
 #define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 #define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
 #define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
-#define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
-#define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+#define	WIF_LOCKARM			(1 << 29)			// if the missile was fired without a lock, it does significanlty less damage on impact
+#define  WIF_STREAM			(1 << 30)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 
 #define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
 #define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
@@ -675,7 +674,7 @@ typedef struct weapon {
 	vec3d	homing_pos;						// world position missile is homing on
 	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
-	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
+	int		trail_id;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
 	int		group_id;						// Which group this is in.
 	float	det_range;					//How far from start_pos it blows up

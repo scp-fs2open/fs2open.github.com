@@ -486,7 +486,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		}
 		// add the # of subsystems, and their data
 		else {
-			ns = (ubyte)Ship_info[shipp->ship_info_index].n_subsystems;
+			ns = (ubyte)Ship_info[shipp->ship_info_index].subsystems.size();
 			PACK_BYTE( ns );
 
 			multi_rate_add(NET_PLAYER_NUM(pl), "sub", 1);	

@@ -893,7 +893,6 @@ void hud_render_target_setup(vec3d *camera_eye, matrix *camera_orient, float zoo
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
-
 }
 
 // -------------------------------------------------------------------------------------
@@ -1604,6 +1603,12 @@ void hud_render_target_ship(object *target_objp)
 			model_set_detail_level(target_sip->hud_target_lod);
 		}
 
+		// render transparent, if we are supposed to
+		if (target_sip->flags2 & SIF2_TRANSPARENT) {
+			model_set_alpha(target_sip->alpha_max);
+			flags |= MR_ALL_XPARENT;
+		}
+
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
 			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
@@ -1730,7 +1735,7 @@ void hud_render_target_weapon(object *target_objp)
 	weapon_info	*target_wip = NULL;
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
-	int *replacement_textures = NULL;
+	texture_map	*replacement_textures = NULL;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
 	float			factor;
 	char			outstr[100];				// temp buffer
@@ -1751,12 +1756,12 @@ void hud_render_target_weapon(object *target_objp)
 	}
 
 	if ( Detail.targetview_model )	{
-
 		viewer_obj			= Player_obj;
 		viewed_obj			= target_objp;
 		missile_view		= FALSE;
 		viewed_model_num	= target_wip->model_num;
 		hud_target_lod		= target_wip->hud_target_lod;
+
 		if ( is_homing && is_player_missile ) {
 			ship *homing_shipp = &Ships[wp->homing_object->instance];
 			ship_info *homing_sip = &Ship_info[homing_shipp->ship_info_index];
@@ -1769,15 +1774,14 @@ void hud_render_target_weapon(object *target_objp)
 			hud_target_lod		= homing_sip->hud_target_lod;
 		}
 
-		if (Targetbox_wire!=0)
-		{
+		if ( Targetbox_wire != 0 ) {
 			int is_bright = 0;
 
-			model_set_outline_color_fast(iff_get_color_by_team(target_team, Player_ship->team, is_bright));
+			model_set_outline_color_fast( iff_get_color_by_team(target_team, Player_ship->team, is_bright) );
 
 			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 
-			if (Targetbox_wire==1)
+			if (Targetbox_wire == 1)
 				flags |=MR_NO_POLYS;
 		}
 			

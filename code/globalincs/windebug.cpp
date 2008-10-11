@@ -1231,7 +1231,7 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	memset( AssertText2, 0, sizeof(AssertText2) );
 
 	va_start(args, format);
-	vsprintf(AssertText1, format, args);
+	vsnprintf(AssertText1, sizeof(AssertText1) - 1, format, args);
 	va_end(args);
 
 	slen = strlen(AssertText1);

@@ -158,7 +158,7 @@ void free_temp_point(vertex *p)
 }
 
 //clips an edge against one plane.
-vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
+vertex *clip_edge(int plane_flag, vertex *on_pnt, vertex *off_pnt, uint flags)
 {
 	float ratio;
 	vertex *tmp;
@@ -198,8 +198,7 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		if (plane_flag & (CC_OFF_RIGHT | CC_OFF_LEFT)) {
 			a = on_pnt->x;
 			b = off_pnt->x;
-		}
-		else {
+		} else {
 			a = on_pnt->y;
 			b = off_pnt->y;
 		}
@@ -229,11 +228,11 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	}
 
 	if (flags & TMAP_FLAG_TEXTURED) {
-		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
-		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
+		tmp->u = on_pnt->u + (off_pnt->u - on_pnt->u) * ratio;
+		tmp->v = on_pnt->v + (off_pnt->v - on_pnt->v) * ratio;
 
-		tmp->u2 = on_pnt->u2 + (off_pnt->u2-on_pnt->u2) * ratio;
-		tmp->v2 = on_pnt->v2 + (off_pnt->v2-on_pnt->v2) * ratio;
+	//	tmp->u2 = on_pnt->u2 + (off_pnt->u2 - on_pnt->u2) * ratio;
+	//	tmp->v2 = on_pnt->v2 + (off_pnt->v2 - on_pnt->v2) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {
@@ -244,8 +243,9 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 			on_b = i2fl(on_pnt->b);
 			off_b = i2fl(off_pnt->b);
 
-			tmp->b = ubyte(fl2i(on_b + (off_b-on_b) * ratio));
+			tmp->b = ubyte(fl2i(on_b + (off_b - on_b) * ratio));
 		}
+
 		if (flags & TMAP_FLAG_RGB) {
 			float on_r, on_b, on_g, onspec_r, onspec_g, onspec_b;
 			float off_r, off_b, off_g, offspec_r, offspec_g, offspec_b;
@@ -278,10 +278,8 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 			tmp->spec_g = ubyte(fl2i(onspec_g + (offspec_g-onspec_g) * ratio));
 			tmp->spec_b = ubyte(fl2i(onspec_b + (offspec_b-onspec_b) * ratio));
 		}
-	}
-	else
-	{
-		tmp->spec_r=tmp->spec_g=tmp->spec_b=0;
+	} else {
+		tmp->spec_r = tmp->spec_g = tmp->spec_b = 0;
 	}
 
 	if (flags & TMAP_FLAG_ALPHA) {
@@ -392,11 +390,4 @@ vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 
 	return src;		//we swapped after we copied
 }
-
-
-
-
-
-
-
 

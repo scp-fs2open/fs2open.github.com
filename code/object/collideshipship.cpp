@@ -776,7 +776,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	
 	// Collision detection from rotation enabled if at max rotaional velocity and 5fps, rotation is less than PI/2
 	// This should account for all ships
-	if ( (vm_vec_mag_squared( &heavy_obj->phys_info.max_rotvel ) * .04) < (PI*PI/4) ) {
+	if ( (vm_vec_mag_squared( &heavy_obj->phys_info.max_rotvel ) * 0.04f) < PI_2 ) {
 		// collide_rotate calculate (1) start position and (2) relative velocity
 		ship_ship_hit_info->collide_rotate = 1;
 		vm_vec_rotate(&p0_temp, &p0, &heavy_obj->last_orient);
@@ -2001,4 +2001,4 @@ nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide
 	light->phys_info.vel.x, light->phys_info.vel.y, light->phys_info.vel.z));
 #endif
 
-}	
+}

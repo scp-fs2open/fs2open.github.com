@@ -1025,3 +1025,23 @@ void FS2NetD_GameCountUpdate(char *chan_name)
 	FS2NetD_SendData(buffer, buffer_size);
 }
 
+void FS2NetD_UDPHolePunch(char *ip_string)
+{
+	int buffer_size;
+	char buffer[BASE_PACKET_SIZE+40];
+
+	Assert( ip_string );
+
+	// Clear any old dead crap data
+	FS2NetD_IgnorePackets();
+
+	// (fs2open_ping)
+	INIT_PACKET( PCKT_UDP_HOLE_PUNCH_RQST );
+
+	PXO_ADD_STRING( ip_string );
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+}
+

@@ -1102,7 +1102,6 @@ struct ArmorDamageType
 private:
 	//Rather than make an extra struct,
 	//I just made two arrays
-	int					DamageTypeIndex;
 	std::vector<int>	Calculations;
 	std::vector<float>	Arguments;
 
@@ -1297,6 +1296,14 @@ typedef struct ship_spark {
 	int end_time;
 } ship_spark;
 
+typedef struct dock_anim_t {
+	ubyte docking_anim_position;
+	int docking_anim_done_time;
+
+	ubyte docked_anim_position;
+	int docked_anim_done_time;
+} dock_anim_t;
+
 #define AWACS_WARN_NONE		(1 << 0)
 #define AWACS_WARN_25		(1 << 1)
 #define AWACS_WARN_75		(1 << 2)
@@ -1486,7 +1493,7 @@ typedef struct ship {
 	float emp_decr;									// how much to decrement EMP effect per second for this ship
 
 	// contrail stuff
-	trail *trail_ptr[MAX_SHIP_CONTRAILS];	
+	int trail_id[MAX_SHIP_CONTRAILS];	
 
 	// tag stuff
 	float tag_total;									// total tag time
@@ -1515,14 +1522,14 @@ typedef struct ship {
 	int primitive_sensor_range;
 	
 	// Goober5000 - revised nameplate implementation
-	int *replacement_textures;
+	texture_map *replacement_textures;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
 	// that had this same functionality
 	int current_viewpoint;
 
-	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
+	int ABtrail_id[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 
@@ -1570,6 +1577,8 @@ typedef struct ship {
 	float flare_life;
 	int flare_bm;
 	*/
+
+	dock_anim_t *dock_anim;
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1655,6 +1664,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
+#define SIF2_TRANSPARENT					(1 << 8)	// taylor - render as transparent (NOTE: this is NOT a $Flags: entry since it requires an extra value too!!)
 
 #define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
@@ -1858,8 +1868,9 @@ typedef struct ship_info {
 	int				debris_damage_type_idx;
 
 	// subsystem information
-	int		n_subsystems;						// this number comes from ships.tbl
-	model_subsystem *subsystems;				// see model.h for structure definition
+//	int		n_subsystems;						// this number comes from ships.tbl
+//	model_subsystem *subsystems;				// see model.h for structure definition
+	std::vector<model_subsystem> subsystems;	// see model.h for structure definition
 
 	// Energy Transfer System fields
 	float		power_output;					// power output of ships reactor (EU/s)
@@ -1966,6 +1977,11 @@ typedef struct ship_info {
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+
+	std::vector<texture_replace> replacement_textures;
+	texture_map *texture_set;
+
+	float alpha_max;		// alpha value to use when using SIF2_TRANSPARENT
 } ship_info;
 
 extern int Num_wings;
@@ -2101,6 +2117,9 @@ extern std::vector<ship_counts> Ship_type_counts;
 
 extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
+
+// initialize the ship-level texture replacement set
+extern void ship_init_texture_set(int si_index, polymodel *pm);
 
 //returns -1 if failed
 extern int ship_create(matrix * orient, vec3d * pos, int ship_type, char *ship_name = NULL);
@@ -2384,11 +2403,14 @@ int ship_get_texture(int bitmap);
 // page in bitmaps for all ships on a given level
 void ship_page_in();
 
-// Goober5000 - helper for above
+// ship specific texture helper (should hopefully only ever be called from model_page_in_textures()
 void ship_page_in_textures(int ship_index = -1);
 
 // fixer for above - taylor
 void ship_page_out_textures(int ship_index, bool release = false);
+
+// like model_page_out_textures(), but for ship specific texture sets (replacement textures)
+void ship_page_out_texture_set(int si_index, bool release);
 
 // update artillery lock info
 void ship_update_artillery_lock();

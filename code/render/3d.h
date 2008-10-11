@@ -456,13 +456,13 @@ class flash_ball{
 
 public:
 //	flash_ball():ray(NULL),n_rays(0){}
-	flash_ball(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
+	flash_ball(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
 		:ray(NULL),n_rays(0)
-		{initialize(number, min_ray_width, max_ray_width , dir , center , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
+		{initialize(number, min_ray_width, max_ray_width , dir , pcenter , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
 	~flash_ball(){if(ray)vm_free(ray);}
 
-	void initialize(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
-	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void render(float rad, float intinsity, float life);
 };
 #endif

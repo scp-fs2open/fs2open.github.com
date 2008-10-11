@@ -511,8 +511,6 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 
 
-#define HARDWARE_ONLY
-
 //Stucture to store clipping codes in a word
 typedef struct ccodes {
 	ubyte cc_or, cc_and;		//or is low byte, and is high byte
@@ -525,28 +523,13 @@ typedef struct vec3d {
 		struct {
 			float x,y,z;
 		} xyz;
+
 		float a1d[3];
 	};
-	inline void operator= (vertex&vert);
-	inline void set_screen_vert(vertex&vert);
+
+	inline void operator= (vertex &vert);
+	inline void set_screen_vert(vertex &vert);
 } vec3d;
-
-/*
-// A vector referenced as an array
-typedef struct vectora {
-	float	xyz[3];
-} vectora;
-
-
-typedef struct vec2d {
-	float i,j;
-} vec2d;
-
-// Used for some 2d primitives, like gr_poly
-typedef struct vert2df {
-	float x, y;
-} vert2df;
-*/
 
 typedef struct angles {
 	float	p, b, h;
@@ -557,38 +540,41 @@ typedef struct matrix {
 		struct {
 			vec3d	rvec, uvec, fvec;
 		} vec;
+
 		float a2d[3][3];
 		float a1d[9];
 	};
 } matrix;
 
 typedef struct uv_pair {
-	float u,v;
+	float u, v;
 } uv_pair;
 
 // Used to store rotated points for mines.
 // Has flag to indicate if projected.
 typedef struct vertex {
-	float		x, y, z;				// world space position
-	float		sx, sy, sw;			// screen space position (sw == 1/z)
-	float		u, v, u2, v2, u3, v3, u4, v4;					// texture position
-	vec3d		real_pos;			// _real_ world position
-	ubyte spec_a, spec_r, spec_b, spec_g;	//specular highlights -Bobboau
-	ubyte		r, g, b, a;			// color.  Use b for darkening;
-	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
-	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
-	ubyte		pad[2];				// pad structure to be 4 byte aligned.
-	void operator=(vec3d&vec){
-		memcpy(&x,&vec, sizeof(vec3d));
-	}
+	float	x, y, z;				// world space position
+	float	sx, sy, sw;			// screen space position (sw == 1/z)
+	float	u, v; //, u2, v2, u3, v3, u4, v4;					// texture position
+	vec3d	real_pos;			// _real_ world position
+	ubyte	spec_a, spec_r, spec_b, spec_g;	//specular highlights -Bobboau
+	ubyte	r, g, b, a;			// color.  Use b for darkening;
+	ubyte	codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
+	ubyte	flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
+	ubyte	pad[2];				// pad structure to be 4 byte aligned.
+
+	void operator= (vec3d &vec) { memcpy(&x, &vec, sizeof(vec3d)); }
 } vertex;
 
-inline void vec3d::operator= (vertex&vert){
-	memcpy(this,&vert.x,sizeof(vec3d));
+inline void vec3d::operator= (vertex &vert)
+{
+	memcpy(this, &vert.x, sizeof(vec3d));
 }
+
 //set the vector to the vertex screen position
-inline void vec3d::set_screen_vert(vertex&vert){
-	memcpy(this,&vert.sx,sizeof(vec3d));
+inline void vec3d::set_screen_vert(vertex &vert)
+{
+	memcpy(this, &vert.sx, sizeof(vec3d));
 }
 
 //def_list
@@ -684,6 +670,7 @@ const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
 const int RAND_MAX_2	= (RAND_MAX/2);
+const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 #define ANG_TO_RAD(x)	((x)*PI/180)
 

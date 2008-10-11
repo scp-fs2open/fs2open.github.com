@@ -227,7 +227,7 @@ void ml_printf(char *format, ...)
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 	
 	// log the string

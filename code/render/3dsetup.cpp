@@ -331,8 +331,7 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 
 	View_matrix = *view_matrix;
 
-//	Proj_fov = (4.0f/9.0f) * PI * View_zoom;
-	Proj_fov = 1.39626348f * View_zoom;
+	Proj_fov = 1.39626348f * View_zoom;		// 1.39626348f == (PI * (4.0f/9.0f))
 
 	Eye_matrix = View_matrix;
 	Eye_position = *view_pos;

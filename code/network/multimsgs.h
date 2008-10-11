@@ -781,4 +781,7 @@ void process_host_captain_change_packet(ubyte *data, header *hinfo);
 void send_self_destruct_packet();
 void process_self_destruct_packet(ubyte *data, header *hinfo);
 
+void send_udp_hole_punch(char *ip, short port, short state);
+void process_udp_hole_punch(ubyte *data, header *hinfo);
+
 #endif

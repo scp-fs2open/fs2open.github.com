@@ -631,9 +631,6 @@ void multi_endgame_cleanup()
 	}
 	*/	
 
-	// unload the multiplayer common interface palette
-	multi_common_unload_palette();
-	
 	// reinitialize endgame stuff
 	// multi_endgame_init();
 }

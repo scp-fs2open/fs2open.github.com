@@ -366,12 +366,15 @@ extern int Interface_last_tick;				// last timer tick on flip
 // Noise numbers go from 0 to 1.0
 extern float Noise[NOISE_NUM_FRAMES];
 
+// override states to skip rendering of certain elements, but without disabling them completely
+extern bool Basemap_override;
+extern bool Envmap_override;
+extern bool Specmap_override;
+extern bool Normalmap_override;
+extern bool Heightmap_override;
+extern bool Glowpoint_override;
+extern bool GLSL_override;
 
-// If true, then we are using Direct3D hardware.  This is used for game type stuff
-// that changes when you're using hardware.
-extern int D3D_enabled;
-// for OGL
-extern int OGL_enabled;
 
 // game skill levels 
 #define	NUM_SKILL_LEVELS	5

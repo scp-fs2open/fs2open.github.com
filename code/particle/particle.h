@@ -155,7 +155,7 @@ typedef struct particle_info {
 	float lifetime;
 	float rad;
 	int type;
-	uint optional_data;	
+	int optional_data;	
 
 	// new-style particle info
 	float tracer_length;
@@ -166,7 +166,7 @@ typedef struct particle_info {
 
 // Creates a single particle. See the PARTICLE_?? defines for types.
 void particle_create( particle_info *pinfo );
-void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data=0, float tracer_length=-1.0f, struct object *objp=NULL, bool reverse=false );
+void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, int optional_data=-1, float tracer_length=-1.0f, struct object *objp=NULL, bool reverse=false );
 
 
 //============================================================================
@@ -191,7 +191,8 @@ typedef struct particle_emitter {
 
 // Creates a bunch of particles. You pass a structure
 // rather than a bunch of parameters.
-void particle_emit( particle_emitter *pe, int type, uint optional_data, float range=1.0 );
+void particle_emit( particle_emitter *pe, int type, int optional_data, float range=1.0 );
 
 #endif // _PARTICLE_H
+
 

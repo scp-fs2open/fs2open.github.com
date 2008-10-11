@@ -3245,7 +3245,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 	//		sprintf(buf, "%s", objh->objp->jnp->get_name_ptr());
 	//		break;
 		default:
-			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
+			sprintf(buf, "Object %d [%d]", (int)OBJ_INDEX(objh->objp), objh->sig);
 	}
 
 	return ade_set_args(L, "s", buf);
@@ -3901,7 +3901,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	ship_info *sip = &Ship_info[idx];
 
 	//Make sure model is loaded
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+	sip->model_num = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0], 0);
 
 	if(sip->model_num < 0)
 		return ade_set_args(L, "b", false);
@@ -4736,7 +4736,7 @@ ADE_FUNC(__len, l_ShipTextures, NULL, "Number of textures on ship", "number", "N
 
 ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of ship textures", "texture", "Texture, or invalid texture handle on failure")
 {
-	object_h *oh;
+/*	object_h *oh;
 	char *s;
 	int tdx=-1;
 	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.Get(&tdx)))
@@ -4808,7 +4808,7 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 		return ade_set_args(L, "o", l_Texture.Set(shipp->replacement_textures[idx]));
 	else if(pm->maps[idx].base_map.texture >= 0)
 		return ade_set_args(L, "o", l_Texture.Set(pm->maps[idx].base_map.texture));
-	else
+	else*/
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 }
 
@@ -5197,7 +5197,8 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 
 ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
 {
-	object_h *sh;
+	return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
+/*	object_h *sh;
 	object_h *dh;
 	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&dh), l_Ship.GetPtr(&sh)))
 		return ade_set_error(L, "o", l_ShipTextures.Set(object_h()));
@@ -5218,7 +5219,7 @@ ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptexture
 		}
 	}
 
-	return ade_set_args(L, "o", l_ShipTextures.Set(object_h(dh->objp)));
+	return ade_set_args(L, "o", l_ShipTextures.Set(object_h(dh->objp)));*/
 }
 
 ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct", "boolean", "True if successful, false or nil otherwise")
@@ -6229,7 +6230,7 @@ ade_lib l_CFile("CFile", NULL, "cf", "CFile FS2 filesystem access");
 
 int l_cf_get_path_id(char* n_path)
 {
-	uint i;
+	int i;
 
 	size_t path_len = strlen(n_path);
 	char *buf = (char*) malloc((strlen(n_path)+1) * sizeof(char));
@@ -8106,7 +8107,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 {
 	particle_info pi;
 	pi.type = PARTICLE_DEBUG;
-	pi.optional_data = 0;
+	pi.optional_data = -1;
 	pi.tracer_length = 1.0f;
 	pi.attached_objnum = -1;
 	pi.attached_sig = -1;

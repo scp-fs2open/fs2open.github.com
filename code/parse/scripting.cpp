@@ -148,6 +148,7 @@ void script_init (void)
 		mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
 		Script_system.OutputMeta("scripting.html");
 	}
+
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
 	script_parse_table("scripting.tbl");
 	parse_modular_table(NOX("*-sct.tbm"), script_parse_table);
@@ -700,7 +701,6 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 				LuaError(GetLuaSession(),"RunBytecodeSub tried to call a non-function value!");
 			}
 			lua_pop(GetLuaSession(), 1);	//err
-			
 		}
 		else if(in_lang == SC_PYTHON)
 		{

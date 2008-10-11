@@ -585,6 +585,14 @@
 
 #include <limits.h>
 
+#ifdef SCP_UNIX
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#else
+#include <windows.h>
+#endif
+
 #include "globalincs/pstypes.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -640,6 +648,7 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
@@ -2796,18 +2805,21 @@ void broadcast_game_query()
 	
 	// go through the server list and query each of those as well
 	s_moveup = Game_server_head;
-	if(s_moveup != NULL){
-		do {				
+	if (s_moveup != NULL) {
+		do {
 			send_server_query(&s_moveup->server_addr);			
 			s_moveup = s_moveup->next;					
-		} while(s_moveup != Game_server_head);		
+		} while (s_moveup != Game_server_head);
+
+		// maybe do hole punch.
+		fs2netd_udp_hole_punch();
 	}	
 
 	fill_net_addr(&addr, Psnet_my_addr.addr, Psnet_my_addr.net_id, DEFAULT_GAME_PORT);
 
 	// send out a broadcast if our options allow us
-	if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
-		psnet_broadcast( &addr, data, packet_size);
+	if (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) {
+		psnet_broadcast(&addr, data, packet_size);
 	}		
 }
 
@@ -7504,7 +7516,7 @@ void send_client_update_packet(net_player *pl)
 
 		// also write out the number of subsystems.  We do this because the client might not know
 		// about the object he is getting data for.  (i.e. he killed the object already).
-		ns = (ubyte)sip->n_subsystems;
+		ns = (ubyte)sip->subsystems.size();
 		ADD_DATA( ns );
 
 		// now the subsystems.
@@ -7586,6 +7598,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 
 		// get the data for the subsystems
 		GET_DATA( n_subsystems );
+		Assert( n_subsystems < MAX_MODEL_SUBSYSTEMS );
 		for ( i = 0; i < n_subsystems; i++ ){
 			GET_DATA(ub_tmp);
 			subsystem_percent[i] = ub_tmp;
@@ -7620,9 +7633,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,
 			// then don't read these in.
-			if ( n_subsystems == sip->n_subsystems ) {
-
+			if ( n_subsystems == (int)sip->subsystems.size() ) {
 				n_subsystems = 0;		// reuse this variable
+
 				for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
 					int subsys_type;
 
@@ -8362,7 +8375,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
 	if ( Ship_info[Ships[fire_info.shooter->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
-		for (int i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
+		for (i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
 			if ( Ships[fire_info.shooter->instance].weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
 				fire_info.fighter_beam = true;
 			}
@@ -9048,4 +9061,69 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 
 	// do eet
 	ship_self_destruct(&Objects[Net_players[np_index].m_player->objnum]);
+}
+
+void send_udp_hole_punch(char *ip, short port, short state)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+	net_addr dest;
+
+	BUILD_HEADER( UDP_HOLE_PUNCH );
+
+	ubyte my_state = state & 0xFF;
+
+	if (my_state == UDP_HOLE_PUNCH_STATE_DONE) {
+		my_state = UDP_HOLE_PUNCH_STATE_PONG;
+	}
+
+	ADD_DATA( my_state );
+
+	psnet_string_to_addr( &dest, ip );
+	dest.port = port;
+
+	psnet_send(&dest, data, packet_size);
+}
+
+void process_udp_hole_punch(ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	short port = hinfo->port;
+	ubyte state, new_state = UDP_HOLE_PUNCH_STATE_PING;
+	in_addr addr_tmp;
+	char ip[16];
+	UDP_hole_punch_data *cur = NULL;
+
+	GET_DATA(state);
+	PACKET_SET_SIZE();
+
+	if (state == UDP_HOLE_PUNCH_STATE_PING) {
+		new_state = UDP_HOLE_PUNCH_STATE_PONG;
+	} else if (state == UDP_HOLE_PUNCH_STATE_PONG) {
+		new_state = UDP_HOLE_PUNCH_STATE_DONE;
+	}
+
+	memcpy(&addr_tmp.s_addr, hinfo->addr, 4);
+	strcpy( ip, inet_ntoa(addr_tmp) );
+
+	cur = Net_player->hole_punch_data;
+
+	while (cur != NULL) {
+		if ( !stricmp(cur->ip, ip) ) {
+			break;
+		}
+
+		cur = cur->next;
+	}
+
+	if (cur == NULL) {
+		UDP_hole_punch_data newhpd;
+		newhpd.next = Net_player->hole_punch_data;
+		Net_player->hole_punch_data = cur = &newhpd;
+	}
+
+	cur->state = (short)new_state;
+	memset(cur->ip, 0, 16);
+	strcpy(cur->ip, ip);
+	cur->port = (short)port;
 }

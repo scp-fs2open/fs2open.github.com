@@ -126,7 +126,7 @@ public:
 	//Setting
 	void set_alphacolor(int r, int g, int b, int alpha);
 	void set_model(char *model_name, bool show_polys=false);
-	void show(bool show){if(show){m_flags&=~JN_HIDE;}else{m_flags|=JN_HIDE;}}
+	void show(bool enabled){if(enabled){m_flags&=~JN_HIDE;}else{m_flags|=JN_HIDE;}}
 
 	//Rendering
 	void render(vec3d *pos, vec3d *view_pos = NULL);

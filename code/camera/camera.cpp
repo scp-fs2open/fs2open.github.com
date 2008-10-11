@@ -402,11 +402,19 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 				th = h;
 		}
 
+	//	gr_resize_screen_pos(&tw, &th);
+
 		//Center it?
 		if(center_x)
-			image_pos[0] = (gr_screen.max_w - tw)/2;
+		{
+			image_pos[0] = (gr_screen.max_w_unscaled - tw)/2;
+			gr_resize_screen_pos(&image_pos[0], NULL);
+		}
 		if(center_y)
-			image_pos[1] = (gr_screen.max_h - th)/2;
+		{
+			image_pos[1] = (gr_screen.max_h_unscaled - th)/2;
+			gr_resize_screen_pos(NULL, &image_pos[1]);
+		}
 	}
 	if(in_x_pos < 0 && !center_x)
 		image_pos[0] += gr_screen.max_w + in_x_pos;
@@ -418,21 +426,18 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 	else if(!center_y)
 		image_pos[1] += in_y_pos;
 
+
+	text_pos[0] = image_pos[0];
+
 	if(image_id != -1)
-	{
-		text_pos[0] = image_pos[0] + w;	//Still set from bm_get_info call
-		deltax = text_pos[0] / 1024.0f;	//MikeStar;
-		text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
-	}
-	else
-	{
-		text_pos[0] = image_pos[0];
-		deltax = text_pos[0] / 1024.0f;	//MikeStar;
-		text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
-	}
+		text_pos[0] += w; //Still set from bm_get_info call
+
+//	deltax = text_pos[0] / i2fl(gr_screen.max_w_unscaled);	//MikeStar;
+//	text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
+
 	text_pos[1] = image_pos[1];
-	deltay = text_pos[1] / 768.0f;	//MikeStar;
-	text_pos[1] = gr_screen.max_h * deltay;	//MikeStar;
+//	deltay = text_pos[1] / i2fl(gr_screen.max_h_unscaled);	//MikeStar;
+//	text_pos[1] = gr_screen.max_h * deltay;	//MikeStar;
 
 	time_displayed = 0.0f;
 	time_displayed_end = 2.0f*fade_time + display_time;
@@ -462,11 +467,12 @@ void subtitle::do_frame(float frametime)
 	gr_set_color_fast(&text_color);
 
 	int font_height = gr_get_font_height();
-	int y = text_pos[1];
+	int x = fl2i(text_pos[0]);
+	int y = fl2i(text_pos[1]);
 
 	for(unsigned int i = 0; i < text_lines.size(); i++)
 	{
-		gr_string(text_pos[0], y, (char*)text_lines[i].c_str(), false);
+		gr_string(x, y, (char*)text_lines[i].c_str(), false);
 		y += font_height;
 	}
 

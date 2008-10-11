@@ -250,8 +250,10 @@ void mouse_eval_deltas_di();
 #endif
 
 extern int Cmdline_window;
+extern int Cmdline_no_grab;
 
 void mouse_force_pos(int x, int y);
+
 
 int mouse_is_visible()
 {
@@ -300,7 +302,7 @@ void mouse_init()
 	// (should be on by default already, just here as a reminder)
 	SDL_EventState( SDL_MOUSEBUTTONDOWN, SDL_ENABLE );
 	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
-#endif
+#endif	// SCP_UNIX
 
 	LEAVE_CRITICAL_SECTION( mouse_lock );	
 

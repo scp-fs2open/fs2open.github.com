@@ -106,7 +106,7 @@
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.1.2.2  2002/09/28 22:13:42  randomtiger
- * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
+ * Sorted out some bits and pieces. The background nebula blends now which is nice. ï¿½ RT
  *
  * Revision 2.1.2.1  2002/09/24 18:56:40  randomtiger
  * DX8 branch commit

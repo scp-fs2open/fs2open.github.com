@@ -50,6 +50,7 @@ char *animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
 	"door",
 	"afterburner",
 	"turret firing",
+	"turret fired",
 	"scripted"
 };
 
@@ -156,7 +157,7 @@ triggered_rotation::~triggered_rotation()
 {
 }
 
-void triggered_rotation::add_queue(queued_animation *the_queue, int direction)
+void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 {
 	int i;
 	queued_animation new_queue;
@@ -164,7 +165,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int direction)
 	memcpy( &new_queue, the_queue, sizeof(queued_animation) );
 
 
-	if (direction == -1) {
+	if (dir == -1) {
 		new_queue.start = new_queue.reverse_start;
 		vm_vec_negate( &new_queue.angle );
 	}
@@ -208,9 +209,9 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int direction)
 
 	if (new_queue.instance == instance) {
 		// same animation is playing that we are about to think about playing some point in the future
-		if ( (this->direction.xyz.x * rot_vel.xyz.x) == new_queue.vel.xyz.x &&
-				(this->direction.xyz.y * rot_vel.xyz.y) == new_queue.vel.xyz.y &&
-				(this->direction.xyz.z * rot_vel.xyz.z) == new_queue.vel.xyz.z)
+		if ( (direction.xyz.x * rot_vel.xyz.x) == new_queue.vel.xyz.x &&
+				(direction.xyz.y * rot_vel.xyz.y) == new_queue.vel.xyz.y &&
+				(direction.xyz.z * rot_vel.xyz.z) == new_queue.vel.xyz.z)
 		{
 			// they're going in opposite directions, one of them is a reversal!
 			// so this means thata there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
@@ -495,16 +496,18 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 {
 	Assert( pss != NULL );
 
-	if (pss->current_hits <= 0.0f)
+	if ( (pss->max_hits > 0.0f) && (pss->current_hits <= 0.0f) ) {
 		return false;
+	}
 
 	model_subsystem *psub = pss->system_info;
 	bool retval = false;
 
-	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+	if ( !(psub->flags & MSS_FLAG_TRIGGERED) ) {
 		return false;
+	}
 
-	for (int i = 0; i < psub->n_triggers; i++) {
+	for (uint i = 0; i < psub->triggers.size(); i++) {
 		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
 			psub->triggers[i].instance = i;
 			pss->trigger.add_queue(&psub->triggers[i], direction);
@@ -545,15 +548,16 @@ bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int dir
 int model_anim_instance_get_actual_time(queued_animation *properties)
 {
 	int ret = 0;
-	int temp = 0;
+	int temp;
 
 	for (int a = 0; a < 3; a++) {
-		temp = fl2i( ((3.0f * properties->vel.a1d[a] * properties->vel.a1d[a]) + (2.0f * properties->accel.a1d[a] * fabs(properties->angle.a1d[a])))
-						/ (2.0f * properties->accel.a1d[a] * properties->vel.a1d[a]) * 1000.0f )
-						+ properties->start;
+		float time = ((3.0f * properties->vel.a1d[a] * properties->vel.a1d[a]) + (2.0f * properties->accel.a1d[a] * fabsf(properties->angle.a1d[a])))
+						/ (2.0f * properties->accel.a1d[a] * properties->vel.a1d[a]) * 1000.0f;
+		temp = fl2i(time) + properties->start;
 
-		if (temp > ret)
+		if (temp > ret) {
 			ret = temp;
+		}
 	}
 
 	return ret;
@@ -565,25 +569,28 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 	model_subsystem	*psub;
 	int ret = 0;
 	int temp_ret = 0;
-	int i;
+	uint i;
 
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
 		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
+		if ( (pss->max_hits > 0.0f) && (pss->current_hits <= 0.0f) ) {
 			continue;
+		}
 
 		// not a triggered animation, skip it
-		if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+		if ( !(psub->flags & MSS_FLAG_TRIGGERED) ) {
 			continue;
+		}
 
-		for (i = 0; i < psub->n_triggers; i++) {
+		for (i = 0; i < psub->triggers.size(); i++) {
 			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
-				if (temp_ret > ret)
+				if (temp_ret > ret) {
 					ret = temp_ret;
+				}
 			}
 		}
 	}
@@ -597,17 +604,18 @@ int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subt
 	model_subsystem *psub;
 	int ret = 0;
 	int temp_ret = 0;
-	int n, i;
+	uint i, n;
 
-	for (n = 0; n < sip->n_subsystems; n++) {
+	for (n = 0; n < sip->subsystems.size(); n++) {
 		psub = &sip->subsystems[n];
 
-		for (i = 0; i < psub->n_triggers; i++) {
+		for (i = 0; i < psub->triggers.size(); i++) {
 			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
-				if (temp_ret > ret)
+				if (temp_ret > ret) {
 					ret = temp_ret;
+				}
 			}
 		}
 	}
@@ -618,7 +626,7 @@ int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subt
 void model_anim_fix_reverse_times(ship_info *sip)
 {
 	model_subsystem *psub;
-	int i, j;
+	uint i, j;
 	int ani_time = 0;
 	int type = 0;
 
@@ -626,14 +634,15 @@ void model_anim_fix_reverse_times(ship_info *sip)
 		// figure out how long it's going to take for the animation to complete
 		ani_time = model_anim_get_actual_time_type(sip, type, ANIMATION_SUBTYPE_ALL);
 
-		for (i = 0; i < sip->n_subsystems; i++) {
+		for (i = 0; i < sip->subsystems.size(); i++) {
 			psub = &sip->subsystems[i];
 
-			for (j = 0; j < psub->n_triggers; j++) {
+			for (j = 0; j < psub->triggers.size(); j++) {
 				if (psub->triggers[j].type == type) {
 					// if there isn't a user defined overide already present
-					if (psub->triggers[j].reverse_start == -1)
+					if (psub->triggers[j].reverse_start == -1) {
 						psub->triggers[j].reverse_start = ani_time - model_anim_instance_get_actual_time(&psub->triggers[j]);
+					}
 
 					if (psub->triggers[j].reverse_start < 0) {
 						mprintf(("WARNING:  Animation trigger #%i on subsystem '%s', for ship '%s', has a negative reverse_start value!  Capping it at 0!\n", j, psub->subobj_name, sip->name));
@@ -652,22 +661,25 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 {
 	Assert( pss != NULL );
 
-	if (pss->current_hits <= 0.0f)
+	if ( (pss->max_hits > 0.0f) && (pss->current_hits <= 0.0f) ) {
 		return timestamp();
+	}
 
 	model_subsystem *psub = pss->system_info;
-	int i, ret = 0;
+	int ret = 0;
+	uint i;
 
-	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+	if ( !(psub->flags & MSS_FLAG_TRIGGERED) ) {
 		return timestamp();
+	}
 
-	for (i = 0; i < psub->n_triggers; i++) {
+	for (i = 0; i < psub->triggers.size(); i++) {
 		if ( (psub->triggers[i].type == animation_type) &&
 			((psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == subtype)) )
 		{
 			int ani_time = 0;
 
-			if ( (pss->trigger.current_vel.a1d[0] != 0.0f) || (pss->trigger.current_vel.a1d[1] != 0.0f) || (pss->trigger.current_vel.a1d[2] != 0.0f)) {
+			if ( !IS_VEC_NULL(&pss->trigger.current_vel) ) {
 				// if the subobject is moving then things get really complicated
 				int a_time = 0;
 				int real_time = model_anim_instance_get_actual_time(&psub->triggers[i]);
@@ -682,16 +694,18 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 												pss->trigger.current_vel.a1d[a] * pss->trigger.current_vel.a1d[a]) -pss->trigger.current_vel.a1d[a])
 										/ pss->trigger.rot_accel.a1d[a]) * 1000.0f);
 
-						if (ani_time < a_time)
+						if (ani_time < a_time) {
 							ani_time = a_time;
+						}
 					} else {
 						//if vi is > v
 						if ( (pss->trigger.current_vel.a1d[a] * direction) > (pss->trigger.rot_vel.a1d[a] * direction) ) {
 							a_time = fl2i( (pss->trigger.current_vel.a1d[a] * (pss->trigger.current_vel.a1d[a] + 2))
 											/ (2.0f * pss->trigger.rot_accel.a1d[a]) * 1000.0f);
 
-							if (ani_time < a_time)
+							if (ani_time < a_time) {
 								ani_time = a_time;
+							}
 						}
 						// if vi is <= to v
 						else {
@@ -703,22 +717,25 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 											- (pss->trigger.current_vel.a1d[a] / (pss->trigger.rot_accel.a1d[a] * direction)))
 											* 1000.0f);
 
-							if (ani_time < a_time)
+							if (ani_time < a_time) {
 								ani_time = a_time;
+							}
 						}
 					}
 				}
 
-				if (ani_time)
+				if (ani_time) {
 					ani_time += pad;
+				}
 			} else {
 				// if it isn't moving then it's trivial.
 				// no currently playing animation
 				ani_time = psub->triggers[i].end + psub->triggers[i].start;
 			}
 
-			if (ret < ani_time)
+			if (ret < ani_time) {
 				ret = ani_time;
+			}
 		}
 	}
 
@@ -752,11 +769,13 @@ void model_anim_set_initial_states(ship *shipp)
 	model_subsystem	*psub;
 	int i;
 
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 		swp->primary_animation_done_time[i] = 0;
+	}
 
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
+	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
 		swp->secondary_animation_done_time[i] = 0;
+	}
 
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
@@ -764,14 +783,15 @@ void model_anim_set_initial_states(ship *shipp)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		for (i = 0; i < psub->n_triggers; i++) {
+		for (i = 0; i < (int)psub->triggers.size(); i++) {
 			if (psub->type == SUBSYSTEM_TURRET) {
 				// special case for turrets
 				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 			} else {
-				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL)
+				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
 					pss->trigger.set_to_end(&psub->triggers[i]);
+				}
 			}
 		}
 	}
@@ -790,27 +810,28 @@ void model_anim_handle_multiplayer(ship *shipp)
 		return;
 	}
 
-	if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		return;
+	}
 
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
 		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
+		if ( (pss->max_hits > 0.0f) && (pss->current_hits <= 0.0f) ) {
 			continue;
+		}
 
 		// not a triggered animation, skip it
-		if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+		if ( !(psub->flags & MSS_FLAG_TRIGGERED) ) {
 			continue;
+		}
 
-		for (int i = 0; i < psub->n_triggers; i++) {
-			switch (psub->triggers[i].type)
-			{
+		for (uint i = 0; i < psub->triggers.size(); i++) {
+			switch (psub->triggers[i].type) {
 				case TRIGGER_TYPE_PRIMARY_BANK:
 				case TRIGGER_TYPE_SECONDARY_BANK:
-				case TRIGGER_TYPE_AFTERBURNER:
-				{
+				case TRIGGER_TYPE_AFTERBURNER: {
 					pss->trigger.process_queue();
 					model_anim_submodel_trigger_rotate(psub, pss );
 

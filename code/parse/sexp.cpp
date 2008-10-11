@@ -453,7 +453,7 @@
  * sabotage-subsystem should make the subsystems explode
  *
  * Revision 2.202  2006/01/13 03:31:20  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.201  2006/01/13 02:56:01  Goober5000
  * formatting, meh
@@ -3104,16 +3104,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 
-				for (i=0; i<Ship_info[ship_class].n_subsystems; i++)
-				{
-					if (!subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(node)))
-					{
+				for (i = 0; i < (int)Ship_info[ship_class].subsystems.size(); i++) {
+					if ( !subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(node)) ) {
 						break;
 					}
 				}
 
-				if (i == Ship_info[ship_class].n_subsystems)
-				{
+				if (i == (int)Ship_info[ship_class].subsystems.size()) {
 					return SEXP_CHECK_INVALID_SUBSYS;
 				}
 
@@ -3953,7 +3950,7 @@ void preload_change_ship_class(char *text)
 	// preload the model, just in case there is no other ship of this class in the mission
 	// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
 	sip = &Ship_info[idx];
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	sip->model_num = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 
 	if (sip->model_num >= 0)
 		model_page_in_textures(sip->model_num, idx);
@@ -4138,6 +4135,7 @@ int get_sexp(char *token)
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
+				Dynamic_environment = true;
 				break;
 
 			case OP_WARP_EFFECT:
@@ -4157,6 +4155,7 @@ int get_sexp(char *token)
 				// model is argument #1
 				n = CDR(start);
 				do_preload_for_arguments(sexp_set_skybox_model_preload, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
@@ -4168,11 +4167,13 @@ int get_sexp(char *token)
 			case OP_ADD_SUN_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
+				Dynamic_environment = true;
 				break;
 		}
 	}
@@ -14434,9 +14435,10 @@ int sexp_num_class_kills(int node)
 
 void sexp_subsys_set_random(int node)
 {
-	int sindex, low, high, n, idx, rand, exclusion_list[MAX_MODEL_SUBSYSTEMS];		
+	int sindex, low, high, n, rand, exclusion_list[MAX_MODEL_SUBSYSTEMS];		
 	ship_subsys *subsys;
 	ship *shipp;
+	uint idx;
 
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -14468,7 +14470,7 @@ void sexp_subsys_set_random(int node)
 	n = CDR(CDR(CDR(node)));
 
 	// init exclusion list
-	memset(exclusion_list, 0, sizeof(int) * Ship_info[shipp->ship_info_index].n_subsystems);
+	memset(exclusion_list, 0, sizeof(int) * Ship_info[shipp->ship_info_index].subsystems.size());
 
 	// get exclusion list
 	while( n != -1) {
@@ -14481,7 +14483,7 @@ void sexp_subsys_set_random(int node)
 	}
 
 	// apply to all others
-	for (idx=0; idx<Ship_info[shipp->ship_info_index].n_subsystems; idx++) {
+	for (idx = 0; idx < Ship_info[shipp->ship_info_index].subsystems.size(); idx++) {
 		if ( exclusion_list[idx] == 0 ) {
 			// get non excluded subsystem
 			subsys = ship_get_indexed_subsys(shipp, idx, NULL);
@@ -19215,6 +19217,7 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 
 	if (index >= 0) {
 		strcpy(Sexp_variables[index].text, text);
+		strcpy(Sexp_variables[index].default_text, text);
 		strcpy(Sexp_variables[index].variable_name, var_name);
 		Sexp_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
 		Sexp_variables[index].type = (type | SEXP_VARIABLE_SET);
@@ -19223,6 +19226,24 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 	return index;
 }
 
+// resets a variable to it's default state
+void sexp_reset_variable(int index)
+{
+	Assert(index >= 0 && index < MAX_SEXP_VARIABLES);
+	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
+	Assert( !MULTIPLAYER_CLIENT );
+
+	strcpy(Sexp_variables[index].text, Sexp_variables[index].default_text);
+	Sexp_variables[index].type &= ~SEXP_VARIABLE_SET;
+
+	// do multi_callback_here
+	// send a network packet if we need to
+	if ( (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) 
+			&& (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK))
+	{
+		send_variable_update_packet(index, Sexp_variables[index].text);
+	}
+}
 
 // Modifies and Sexp_variable to be used in a mission
 // This should be called in mission when an sexp_variable is to be modified

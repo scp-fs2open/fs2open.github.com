@@ -392,7 +392,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		vm_vec_scale_add2( &vecs[3], &orient->vec.rvec, -radius );
 		vm_vec_scale_add2( &vecs[3], &orient->vec.fvec, Grid_depth );
 
-	//	vm_vec_scale_add( &vecs[4], ¢er, &orient->vec.fvec, -Grid_depth );
+	//	vm_vec_scale_add( &vecs[4], &center, &orient->vec.fvec, -Grid_depth );
 		vecs[4] = center;
 
 		verts[0].u = 0.01f; verts[0].v = 0.01f; 

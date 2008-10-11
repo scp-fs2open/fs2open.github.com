@@ -957,7 +957,8 @@ extern int Cmdline_cache_bitmaps;
 int GLOWMAP = -1;
 int SPECMAP = -1;
 int ENVMAP = -1;
-int BUMPMAP = -1;
+int NORMMAP = -1;
+int HEIGHTMAP = -1;
 
 bitmap_entry bm_bitmaps[MAX_BITMAPS];
 
@@ -1950,7 +1951,7 @@ uint bm_get_signature( int handle )
 }
 
 extern int palman_is_nondarkening(int r,int g, int b);
-static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flags )
+static void bm_convert_format( bitmap *bmp, ubyte flags )
 {	
 	int idx;
 
@@ -1979,35 +1980,6 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 
 		bmp->flags |= BMP_TEX_XPARENT;
 	}	
-}
-
-// basically, map the bitmap into the current palette. used to be done for all pcx's, now just for
-// Fred, since its the only thing that uses the software tmapper
-void bm_swizzle_8bit_for_fred(bitmap_entry *be, bitmap *bmp, ubyte *data, ubyte *palette)
-{		
-/* 2004/10/17 - taylor - no longer needed since FRED is OGL now
-	int pcx_xparent_index = -1;
-	int i;
-	int r, g, b;
-	ubyte palxlat[256];
-
-	for (i=0; i<256; i++ ) {
-		r = palette[i*3];
-		g = palette[i*3+1];
-		b = palette[i*3+2];
-		if ( g == 255 && r == 0 && b == 0 ) {
-			palxlat[i] = 255;
-			pcx_xparent_index = i;
-		} else {			
-			palxlat[i] = (ubyte)(palette_find( r, g, b ));			
-		}
-	}		
-	for (i=0; i<bmp->w * bmp->h; i++ ) {		
-		ubyte c = palxlat[data[i]];			
-		data[i] = c;		
-	}			
-	be->palette_checksum = gr_palette_checksum;
-*/
 }
 
 void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
@@ -2051,7 +2023,7 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	
 	bmp->flags = 0;	
 
-	bm_convert_format( bitmapnum, bmp, bpp, flags );
+	bm_convert_format( bmp, flags );
 }
 
 void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
@@ -2167,7 +2139,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 			memcpy(dptr, sptr, size);
 		}		
 
-		bm_convert_format( first_frame+i, bm, bpp, flags );
+		bm_convert_format( bm, flags );
 
 		// Skip a frame
 		if ( (i < nframes-1)  && can_drop_frames )	{
@@ -2241,7 +2213,7 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 			// Error( LOCATION, "Unhandled user bitmap conversion from %d to %d bpp", be->info.user.bpp, bmp->bpp );
 	}
 
-	bm_convert_format( bitmapnum, bmp, bpp, flags );
+	bm_convert_format( bmp, flags );
 }
 
 void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
@@ -2303,7 +2275,7 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 	bmp->flags = 0;	
 	
-	bm_convert_format( bitmapnum, bmp, bpp, flags );
+	bm_convert_format( bmp, flags );
 }
 
 //lock a dds file
@@ -2451,7 +2423,7 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 		if (flags & BMP_AABITMAP) {
 			Assert( bpp == 8 );
 		} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
-			Assert( bpp >= 16 );  // cheating but bpp passed isn't what we normally end up with
+	//		Assert( bpp >= 16 );  // cheating but bpp passed isn't what we normally end up with
 		} else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5)){
 			Assert( bpp >= 16 ); // cheating but bpp passed isn't what we normally end up with
 		} else if (flags & BMP_TEX_CUBEMAP) {
@@ -2606,7 +2578,7 @@ int bm_release(int handle, int clear_render_targets)
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
 
-	if ( !clear_render_targets && (be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC) ) {
+	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
 		nprintf(("BmpMan", "Tried to release a render target!\n"));
 		return 0;
 	}
@@ -2771,15 +2743,15 @@ int bm_unload_fast( int handle, int clear_render_targets )
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
-	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
-		return -1;
-	}
-
 	if ( be->type == BM_TYPE_NONE ) {
 		return -1;		// Already been released
 	}
 
 	if ( be->type == BM_TYPE_USER ) {
+		return -1;
+	}
+
+	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
 		return -1;
 	}
 
@@ -3033,9 +3005,6 @@ void bm_page_in_stop()
 					if ( !gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2)) )	{
 						mprintf(( "Out of VRAM.  Done preloading.\n" ));
 						bm_preloading = 0;
-					} else {
-						// it's loaded into API memory now so dump the system version of the data
-						bm_free_data_fast(i);
 					}
 				} else {
 					bm_lock( bm_bitmaps[i].handle, (bm_bitmaps[i].used_flags == BMP_AABITMAP) ? 8 : 16, bm_bitmaps[i].used_flags );
@@ -3123,6 +3092,7 @@ int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )
 {
 	int n = bitmap_id % MAX_BITMAPS;
 
+	Assert( n >= 0 );
 	Assert( bm_bitmaps[n].handle == bitmap_id );		// INVALID BITMAP HANDLE
 
 	bitmap_entry	*be = &bm_bitmaps[n];
@@ -3276,6 +3246,8 @@ void bm_get_filename(int bitmapnum, char *filename)
 {
 	int n = bitmapnum % MAX_BITMAPS;
 
+	Assert( n >= 0 );
+
 	// return filename
 	strcpy(filename, bm_bitmaps[n].filename);
 }
@@ -3286,16 +3258,19 @@ int bm_is_compressed(int num)
 	int n = num % MAX_BITMAPS;
 	ubyte type = BM_TYPE_NONE;
 
-	//duh
-	if (!Use_compressed_textures)
+	// duh
+	if ( !Use_compressed_textures ) {
 		return 0;
+	}
 
-	Assert(num == bm_bitmaps[n].handle);
+	Assert( n >= 0 );
+	Assert( num == bm_bitmaps[n].handle );
 
 	type = bm_bitmaps[n].comp_type;
 
 	switch (type) {
 		case BM_TYPE_NONE:
+		case BM_TYPE_DDS:
 			return 0;
 
 		case BM_TYPE_DXT1:
@@ -3324,7 +3299,7 @@ int bm_has_alpha_channel(int handle)
 {
 	int n = handle % MAX_BITMAPS;
 
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+	Assert( n >= 0 );
 	Assert( handle == bm_bitmaps[n].handle );
 
 	// assume that PCX never has a real alpha channel (it may be 32-bit, but without any alpha)
@@ -3339,11 +3314,24 @@ int bm_has_alpha_channel(int handle)
 // for is TCACHE_TYPE_SECTIONED - taylor
 int bm_get_tcache_type(int num)
 {
-	if ( bm_is_compressed(num) )
+	if ( bm_is_compressed(num) ) {
 		return TCACHE_TYPE_COMPRESSED;
+	}
 
-//	if ( bm_is_render_target(num) )
+//	if ( bm_is_render_target(num) ) {
 //		return TCACHE_TYPE_RENDER_TARGET;
+//	}
+
+	int n = num % MAX_BITMAPS;
+
+	Assert( n >= 0 );
+	Assert( num == bm_bitmaps[n].handle );
+
+/*	switch ( bm_bitmaps[n].comp_type ) {
+
+		default:
+			break;
+	}*/
 
 	return TCACHE_TYPE_NORMAL;
 }
@@ -3352,6 +3340,7 @@ int bm_get_size(int num)
 {
 	int n = num % MAX_BITMAPS;
 
+	Assert( n >= 0 );
 	Assert(num == bm_bitmaps[n].handle);
 
 	return bm_bitmaps[n].mem_taken;
@@ -3361,10 +3350,12 @@ int bm_get_num_mipmaps(int num)
 {
 	int n = num % MAX_BITMAPS;
 
+	Assert( n >= 0 );
 	Assert( num == bm_bitmaps[n].handle );
 
-	if (bm_bitmaps[n].num_mipmaps == 0)
+	if (bm_bitmaps[n].num_mipmaps == 0) {
 		return 1;
+	}
 
 	return bm_bitmaps[n].num_mipmaps;
 }
@@ -3382,6 +3373,7 @@ int bm_convert_color_index_to_BGR(int num, ubyte **out_data)
 
 
 	Assert( out_data != NULL );
+	Assert( n >= 0 );
 	Assert( num == bm_bitmaps[n].handle );
 
 	if ( num != bm_bitmaps[n].handle )
@@ -3560,9 +3552,14 @@ int bm_is_render_target(int bitmap_id)
 {
 	int n = bitmap_id % MAX_BITMAPS;
 
-	Assert(bitmap_id == bm_bitmaps[n].handle);
+	Assert( n >= 0 );
+	Assert( bitmap_id == bm_bitmaps[n].handle );
 
-	return ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) );
+	if ( !((bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
+		return 0;
+	}
+
+	return bm_bitmaps[n].type;
 }
 
 int bm_set_render_target(int handle, int face)
@@ -3598,6 +3595,11 @@ int bm_set_render_target(int handle, int face)
 		gr_screen.rendering_to_texture = n;
 
 		gr_reset_clip();
+
+		if (gr_screen.mode == GR_OPENGL) {
+			extern void opengl_setup_viewport();
+			opengl_setup_viewport();
+		}
 
 		return 1;
 	}

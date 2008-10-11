@@ -391,6 +391,9 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 	gr_zbuffer_set( GR_ZBUFF_FULL );	
 
+	bool full_neb = ((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
+	bool c_viewer = (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
+	
 	// now draw them
  	for (i=0; i<Num_sorted_objects; i++)	{
 		sorted_obj * os = &Sorted_objects[Object_sort_order[i]];
@@ -398,7 +401,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
 		if(os->obj == Viewer_obj
 			&& os->obj->type == OBJ_SHIP
-			&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK))
+			&& c_viewer
 			&& (Ship_info[Ships[os->obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL))
 		{
 			(*draw_viewer_last) = true;
@@ -406,7 +409,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
-		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
+		if (full_neb) {
 			// get the fog values
 			neb2_get_fog_values(&fog_near, &fog_far, os->obj);
 
@@ -436,7 +439,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 	// lasers have to be drawn without fog! - taylor
-	batch_render_lasers();
+	batch_render();
 
 /*	Show spheres where wingmen should be flying
 	{

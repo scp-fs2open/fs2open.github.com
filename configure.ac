@@ -217,7 +217,7 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	D_CFLAGS="$D_CFLAGS -g -Os -Wall -funroll-loops"
+	D_CFLAGS="$D_CFLAGS -g -Os -Wall -Wextra -Wno-unused-parameter -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
@@ -362,11 +362,13 @@ elif test "$fs2_os_unix" = "yes" ; then
 	fi
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
+	AC_DEFINE([USE_SDL])
 elif test "$fs2_os_osx" = "yes" ; then
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenGL.framework/Headers"
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
+	AC_DEFINE([USE_SDL])
 	## don't need the CFLAGS here if recent SDL is used
 fi
 

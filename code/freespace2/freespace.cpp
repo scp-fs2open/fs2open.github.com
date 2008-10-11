@@ -1792,7 +1792,6 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionhotkey.h"
-//#include "mission/missionlist.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
@@ -1903,7 +1902,7 @@ void multi_spew_table_checksums(int max_files, char *outfile);
 
 extern bool frame_rate_display;
 
-bool cube_map_drawen = false;
+bool Env_cubemap_drawn = false;
 
 void game_reset_view_clip();
 void game_reset_shade_frame();
@@ -2694,7 +2693,6 @@ void game_level_close()
 	mission_event_shutdown();
 	asteroid_level_close();
 	jumpnode_level_close();
-//	model_cache_reset();						// Reset/free all the model caching stuff
 	flak_level_close();						// unload flak stuff
 	neb2_level_close();						// shutdown gaseous nebula stuff
 	ct_level_close();
@@ -2704,9 +2702,22 @@ void game_level_close()
 	cameras_close();
 	subtitles_close();
 	trail_level_close();
+	mission_parse_level_close();
+
+	batch_reset();
 
 	audiostream_unpause_all();
 	Game_paused = 0;
+
+	if (gr_screen.envmap_render_target >= 0) {
+		if ( bm_release(gr_screen.envmap_render_target, 1) ) {
+			gr_screen.envmap_render_target = -1;
+		}
+	}
+
+	gr_set_ambient_light(120, 120, 120);
+
+	ENVMAP = Default_env_map;
 }
 
 uint load_gl_init;
@@ -2845,7 +2856,7 @@ void game_level_init(int seed)
 	// campaign wasn't ended
 	Campaign_ended_in_mission = 0;
 
-	cube_map_drawen = false;
+	Env_cubemap_drawn = false;
 
 	load_gl_init = time(NULL) - load_gl_init;
 
@@ -3216,6 +3227,9 @@ void game_post_level_init()
 	// Stuff which gets called after mission is loaded.  Because player isn't created until
 	// after mission loads, some things must get initted after the level loads
 
+	extern void game_environment_map_gen();
+	game_environment_map_gen();
+
 	model_level_post_init();
 
  	HUD_init();
@@ -3257,6 +3271,8 @@ void game_post_level_init()
 int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
+
+	int s1 = timer_get_milliseconds();
 
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
@@ -3334,6 +3350,10 @@ int game_start_mission()
 */
 
 	bm_print_bitmaps();
+
+	int e1 = timer_get_milliseconds();
+
+	printf("Level load took %f seconds.\n", (e1 - s1) / 1000.0f );
 
 	return 1;
 }
@@ -3633,11 +3653,17 @@ void game_init()
 
 
 #ifndef NDEBUG
+#ifdef FS_VERSION_IDENT
+	mprintf(("FreeSpace version: %i.%i.%i (%s)\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_IDENT));
+#else
 	mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+#endif
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
 #endif
+
+	memset(whee, 0, sizeof(whee));
 
 #ifdef APPLE_APP
 	// some OSX hackery to drop us out of the APP the binary is run from
@@ -3671,10 +3697,11 @@ void game_init()
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
-		Cmdline_nospec = 1;
-		Cmdline_noglow = 1;
+		Cmdline_spec = 0;
+		Cmdline_glow = 0;
 		Cmdline_env = 0;
 		Cmdline_3dwarp = 0;
+		Cmdline_normal = 0;
 
 		// now init the standalone server code
 		std_init_standalone();
@@ -3775,92 +3802,27 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
-	// check for hi res pack file 
-	int has_sparky_hi = cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY);
-
-
-	if (!Is_standalone) {
-		int width = 640, height = 480, cdepth = 16, res = GR_640, mode = GR_OPENGL;
-		char Device_init_error[512];
-		bool is_640x480 = true; // default to 640x480 res
-
-
-		// We cannot continue without this, quit, but try to help the user out first
-		ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
-
-		// if we don't have a config string then construct one, using OpenGL 640x480 16-bit as the default
-		if (ptr == NULL) {
-			char Default_video_settings[] = "OGL -(640x480)x16 bit";
-			ptr = &Default_video_settings[0];
-		}
-
-		if(Cmdline_res != NULL) {
-			char Cmdline_video_settings[128];
-			sprintf(Cmdline_video_settings, "OGL -(%s)x16 bit", Cmdline_res);
-			ptr = &Cmdline_video_settings[0];
-		}
-
-		Assert( ptr != NULL );
-
-		// OpenGL should be default
-		mode = GR_OPENGL;
-
-#ifndef NO_DIRECT3D
-		if ( !strncmp(ptr, NOX("D3D8"), 4) )
-			mode = GR_DIRECT3D;
-#endif
-
-		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-		//       If the format of that string changes you'll have to change this too!!!
-		if ( sscanf(ptr+5, "(%dx%d)x%d ", &width, &height, &cdepth) != 3 ) {
-			strcpy(Device_init_error, "Can't understand 'VideocardFs2open' registry entry!");
-			goto VidInitError;
-		}
-
-		// if we are less than 1024x768 res then stay at low-res, otherwise bump it
-		is_640x480 = ( (width < 1024) && (height < 768) );
-	
-		res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
-
-#ifdef WIN32
-		// for Windows, we need to do this just before the gr_init() call
-		extern void win32_create_window(int width, int height);
-		win32_create_window( width, height );
-#endif
-
-		gr_init(res, mode, cdepth, width, height);
-
-VidInitError:
-		extern int Gr_inited;
-		if (!Gr_inited) {
+	if ( gr_init() == false ) {
 #ifdef _WIN32
-			ClipCursor(NULL);
-			ShowCursor(TRUE);
-			ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
-			MessageBox( NULL, Device_init_error, "Error intializing graphics", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-			run_launcher();
+		ClipCursor(NULL);
+		ShowCursor(TRUE);
+		ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
+		MessageBox( NULL, "Error intializing graphics!", "Error", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
+		run_launcher();
 #elif defined(SCP_UNIX)
-			fprintf(stderr, "Error initializing graphics: %s\n\n", Device_init_error);
-			
-			// the default entry should have been created already if it didn't exist, so if we're here then
-			// the current value is invalid and we need to replace it
-			os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
-			
-			// courtesy
-			fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
-			fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
-#endif
-			exit(1);
-			return;
-		}
-	}
-	// we are standalone (ie, server mode)
-	else {
-		gr_init(GR_640, GR_STUB, 16, 640, 480);
-	}
+		fprintf(stderr, "Error initializing graphics!");
 
-	// this has to be set after gr_init() is done on *nix
-	os_set_title(Osreg_title);
+		// the default entry should have been created already if it didn't exist, so if we're here then
+		// the current value is invalid and we need to replace it
+		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x16 bit"));
+
+		// courtesy
+		fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
+		fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
+#endif
+		exit(1);
+		return;
+	}
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
@@ -4171,15 +4133,17 @@ void game_show_framerate()
 	if (Show_framerate)	{
 		gr_set_color_fast(&HUD_color_debug);
 
-		if (frametotal != 0.0f)
+		if (frametotal != 0.0f) {
 			gr_printf( 20, 100, "FPS: %0.1f", Framerate );
-		else
+		} else {
 			gr_string( 20, 100, "FPS: ?" );
+		}
 	}
 
 #ifndef NDEBUG
-	if ( Debug_dump_frames )
+	if (Debug_dump_frames) {
 		return;
+	}
 #endif	
 
 	// possibly show control checking info
@@ -4204,10 +4168,11 @@ void game_show_framerate()
 		GlobalMemoryStatus(&mem_stats);
 
 		// on win2k+, it should be == -1 if >4gig (indicates wrap around)
-		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) )
+		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) ) {
 			sprintf(mem_buffer, "Using Physical: *** (>4G)");
-		else
+		} else {
 			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
+		}
 
 		gr_string( 20, 120, mem_buffer);
 		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
@@ -4215,10 +4180,11 @@ void game_show_framerate()
 		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
 		gr_string( 20, 140, mem_buffer);
 
-		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
+		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) ) {
 			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
-		else
+		} else {
 			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
+		}
 
 		gr_string( 20, 160, mem_buffer);
 		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
@@ -4229,8 +4195,7 @@ void game_show_framerate()
 #endif
 
 #ifndef NDEBUG
-	if ( Show_cpu == 1 ) {
-		
+	if (Show_cpu == 1) {
 		int sx,sy,dy;
 		sx = 530;
 		sy = 15;
@@ -4261,7 +4226,6 @@ void game_show_framerate()
 		sy += dy;
 
 		{
-
 			extern int Num_pairs;		// Number of object pairs that were checked.
 			gr_printf( sx, sy, NOX("PAIRS: %d"), Num_pairs );
 			sy += dy;
@@ -4270,13 +4234,12 @@ void game_show_framerate()
 			gr_printf( sx, sy, NOX("FVI: %d"), Num_pairs_checked );
 			sy += dy;
 			Num_pairs_checked = 0;
-
 		}
 
 		gr_printf( sx, sy, NOX("Snds: %d"), snd_num_playing() );
 		sy += dy;
 
-		if ( Timing_total > 0.01f )	{
+		if (Timing_total > 0.01f)	{
 			gr_printf(  sx, sy, NOX("CLEAR: %.0f%%"), Timing_clear*100.0f/Timing_total );
 			sy += dy;
 			gr_printf( sx, sy, NOX("REND2D: %.0f%%"), Timing_render2*100.0f/Timing_total );
@@ -4290,8 +4253,7 @@ void game_show_framerate()
 		}
 	}
 	 	
-	if ( Show_mem  ) {
-
+	if (Show_mem) {
 		int sx,sy,dy;
 		sx = (gr_screen.res == GR_1024) ? 870 : 530;
 		sy = 15;
@@ -4322,7 +4284,7 @@ void game_show_framerate()
 #endif
 
 #ifndef NO_DIRECT3D
-		if ( gr_screen.mode == GR_DIRECT3D ) {
+		if (gr_screen.mode == GR_DIRECT3D) {
 			extern int D3D_textures_in;
 			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in)/1024 );
 			sy += dy;
@@ -4337,7 +4299,7 @@ void game_show_framerate()
 	}
 
 
-	if ( Show_player_pos ) {
+	if (Show_player_pos) {
 		int sx, sy;
 		sx = 320;
 		sy = 100;
@@ -5052,7 +5014,7 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 {
 	int r = myrand();
 
-	float shake = intensity * (float) (r-RAND_MAX_2)/RAND_MAX;
+	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
 	
 	if (decay_time >= 0) {
 		Assert(max_decay_time > 0);
@@ -5136,7 +5098,7 @@ vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 extern float View_zoom;
 inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
 {
-	bm_set_render_target( (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map, i);
+	bm_set_render_target(gr_screen.envmap_render_target, i);
 
 	gr_clear();
 
@@ -5167,14 +5129,14 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 
 	// prefer the mission specified envmap over the static-generated envmap, but
 	// the dynamic envmap should always get preference if in a subspace mission
-	if ( !Game_subspace_effect && strlen(The_mission.envmap_name) ) {
+	if ( !Dynamic_environment && strlen(The_mission.envmap_name) ) {
 		ENVMAP = bm_load(The_mission.envmap_name);
 
 		if (ENVMAP >= 0)
 			return;
 	}
 
-	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
+	if (gr_screen.envmap_render_target < 0) {
 		if (ENVMAP >= 0)
 			return;
 
@@ -5190,7 +5152,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 		return;
 	}
 
-	ENVMAP = (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
+	ENVMAP = gr_screen.envmap_render_target;
 
 /*
 	Envmap matrix setup -- left-handed
@@ -5257,6 +5219,37 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	// we're done, so now reset
 	bm_set_render_target(-1);
 	g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
+}
+
+// setup the render target ready for this mission's environment map
+void game_environment_map_gen()
+{
+	const int size = 512;
+	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP);
+
+	if ( !Cmdline_env ) {
+		return;
+	}
+
+	if (gr_screen.envmap_render_target >= 0) {
+		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
+			Int3();
+		}
+
+		gr_screen.envmap_render_target = -1;
+	}
+
+	if ( Dynamic_environment || (The_mission.flags & MISSION_FLAG_SUBSPACE) ) {
+		Dynamic_environment = true;
+		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
+		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	}
+	// bail if we are going to be static, and have an envmap specified already
+	else if ( strlen(The_mission.envmap_name) ) {
+		return;
+	}
+
+	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
 }
 
 int Scripting_didnt_draw_hud = 1;
@@ -5575,7 +5568,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
 	HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
-	
+
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
 	// must be done before ships are rendered
@@ -5584,9 +5577,12 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	}
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	if ( Cmdline_env && (!cube_map_drawen || Game_subspace_effect) ) {
+	if ( Cmdline_env && !Env_cubemap_drawn ) {
 		setup_environment_mapping(eye_pos, eye_orient);
-		cube_map_drawen = true;
+
+		if ( !Dynamic_environment ) {
+			Env_cubemap_drawn = true;
+		}
 	}
 
 #ifndef DYN_CLIP_DIST
@@ -7992,7 +7988,7 @@ void game_leave_state( int old_state, int new_state )
 			multi_ingame_select_close();
 			break;
 
-		case GS_STATE_INITIAL_PLAYER_SELECT:			
+		case GS_STATE_INITIAL_PLAYER_SELECT:	
 			player_select_close();			
 			break;		
 
@@ -8055,6 +8051,7 @@ void game_enter_state( int old_state, int new_state )
 #if defined(PRESS_TOUR_BUILD) || defined(PD_BUILD)
 			mht_init();
 #else
+			Assert( Player != NULL );
 			main_hall_init(Player->main_hall);
 #endif
 			break;
@@ -9019,6 +9016,7 @@ DCF(pofspew, "")
 	game_spew_pof_info();
 }
 
+
 // returns:
 //		0 on an error
 //		1 on a clean exit
@@ -9263,7 +9261,8 @@ int main(int argc, char *argv[])
 
 	DBUGFILE_INIT();
 
-	// create user's directory	
+	// create user's directory
+	memset(userdir, 0, sizeof(userdir));
 	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
 	_mkdir(userdir);
 
@@ -9567,12 +9566,15 @@ void game_render_mouse(float frametime)
 	am = &Animating_mouse;
 	if ( am->first_frame != -1 ) {
 		mouse_get_pos(&mx, &my);
+
 		am->elapsed_time += frametime;
 		am->current_frame = fl2i( ( am->elapsed_time / am->time ) * (am->num_frames-1) );
+
 		if ( am->current_frame >= am->num_frames ) {
 			am->current_frame = 0;
 			am->elapsed_time = 0.0f;
 		}
+
 		gr_set_cursor_bitmap(am->first_frame + am->current_frame);
 	}
 }
@@ -9857,13 +9859,11 @@ void Time_model( int modelnum )
 	int i;
 	for (i=0; i<pm->n_textures; i++ )	{
 		char filename[1024];
-		ubyte pal[768];
 
-		int bmp_num = pm->maps[i].base_map.original_texture;
+		int bmp_num = pm->maps[i].base_map.texture;
 		if ( bmp_num > -1 )	{
-			bm_get_palette(pm->maps[i].base_map.original_texture, pal, filename );		
-			int w,h;
-			bm_get_info( pm->maps[i].base_map.original_texture,&w, &h );
+			int w, h;
+			bm_get_info( pm->maps[i].base_map.texture, &w, &h );
 
 
 			if ( (w > 512) || (h > 512) )	{
@@ -10064,27 +10064,16 @@ void get_version_string(char *str, int max_size)
 	Assert( max_size > 6 );
 
 	if ( FS_VERSION_BUILD == 0 ) {
-		sprintf(str,"FreeSpace 2 Open v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+		sprintf(str, "FreeSpace 2 Open v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 	} else {
-		sprintf(str,"FreeSpace 2 Open v%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+		sprintf(str, "FreeSpace 2 Open v%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
 	}
 
-	/*
-	// Goober5000 - although this is cool, it's a bit redundant
-
-	// append the CVS "release" version in the $Name variable, but
-	// only do this if it's been tagged
-	int rcs_name_len = strlen(RCS_Name);
-	if (rcs_name_len > 11)
-	{
-		char buffer[100];
-		strcpy(buffer, RCS_Name + 7);
-		buffer[rcs_name_len-9] = 0;
-
-		SAFE_STRCAT( str, " ", max_size );
-		SAFE_STRCAT( str, buffer, max_size );
-	}
-	*/
+#ifdef FS_VERSION_IDENT
+	SAFE_STRCAT( str, " (", max_size );
+	SAFE_STRCAT( str, FS_VERSION_IDENT, max_size );
+	SAFE_STRCAT( str, ")", max_size );
+#endif
 
 #ifdef INF_BUILD
 	SAFE_STRCAT( str, " Inferno", max_size );
@@ -10098,6 +10087,7 @@ void get_version_string(char *str, int max_size)
 	SAFE_STRCAT( str, " Debug", max_size );
 #endif
 
+	/* This is obsolete now, so don't bother - taylor
 	// Lets get some more info in here
 	switch(gr_screen.mode)
 	{
@@ -10108,7 +10098,7 @@ void get_version_string(char *str, int max_size)
 		case GR_OPENGL:
 			SAFE_STRCAT( str, " OpenGL", max_size );
 			break;
-	}
+	}*/
 
 	if (Cmdline_nohtl)
 		SAFE_STRCAT( str, " non-HT&L", max_size );
@@ -10374,16 +10364,6 @@ void demo_upsell_next_screen()
 	} else {
 		Demo_upsell_show_next_bitmap_time = timer_get_milliseconds() + DEMO_UPSELL_SCREEN_DELAY;
 	}
-
-	/*
-	if ( Demo_upsell_screen_number < NUM_DEMO_UPSELL_SCREENS ) {
-		if ( Demo_upsell_bitmap_filenames[gr_screen.res][Demo_upsell_screen_number] >= 0 ) {
-#ifndef HARDWARE_ONLY
-			palette_use_bm_palette(Demo_upsell_bitmaps[gr_screen.res][Demo_upsell_screen_number]);
-#endif
-		}
-	}
-	*/
 }
 
 void demo_upsell_load_bitmaps()
@@ -11221,7 +11201,6 @@ int game_hacked_data()
 		return 1;
 	}
 
-
 	if ( Om_tracker_flag && !(Hacked_data_check_ready) ) {
 		// this may fail the first time or two
 		if ( (rc = fs2netd_update_valid_tables()) != -1 ) {
@@ -11235,7 +11214,6 @@ int game_hacked_data()
 	if ( !Om_tracker_flag && !(Game_weapons_tbl_valid && Game_ships_tbl_valid) ) {
 		Hacked_data = true;
 	}
-
 
 	return (int)Hacked_data;
 }

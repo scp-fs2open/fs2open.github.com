@@ -41,6 +41,8 @@
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
+#include "graphics/gropenglshader.h"
+#include "graphics/gropenglstate.h"
 #include "graphics/2d.h"
 #include "io/key.h"
 #include "osapi/osapi.h"
@@ -360,16 +362,6 @@ static void OGG_video_init(theora_info *tinfo)
 	g_screenHeight = tinfo->frame_height;
 
 
-	pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
-
-	if (pixelbuf == NULL) {
-		nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
-		video_inited = 1;
-		return;
-	}
-
-	memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
-
 	if (gr_screen.mode == GR_OPENGL) {
 		// set the appropriate texture target
 		if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_RECTANGLE) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) )
@@ -387,22 +379,22 @@ static void OGG_video_init(theora_info *tinfo)
 			return;
 		}
 
-		// disable everything but what we need
-		opengl_switch_arb(-1, 0);
-		opengl_switch_arb(0, 1);
-
 		gr_set_lighting(false, false);
-	
-		glBindTexture(GL_texture_target, GLtex);
-	
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthFunc(GL_ALWAYS);
-		glDepthMask(GL_FALSE);
-		glDisable(GL_DEPTH_TEST);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		GL_state.Texture.DisableAll();
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_texture_target);
+		GL_state.Texture.Enable(GLtex);
+
+		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+
+		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
+		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+
+		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
 
 		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
 		float movie_ratio = (float)g_screenWidth / (float)g_screenHeight;
@@ -422,17 +414,19 @@ static void OGG_video_init(theora_info *tinfo)
 			scale_video = 1;
 		}
 
-		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-		glTexImage2D(GL_texture_target, 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
-
 		// set our color so that we can make sure that it's correct
 		glColor3f(1.0f, 1.0f, 1.0f);
 	}
-#ifndef NO_DIRECT3D
-	else if (gr_screen.mode == GR_DIRECT3D) {
-		// TODO: is there a fast way to do frames in D3D too?
+
+	pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
+
+	if (pixelbuf == NULL) {
+		nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
+		video_inited = 1;
+		return;
 	}
-#endif
+
+	memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
 
 	if (scale_video) {
 		g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_screenWidth) / 2);
@@ -448,7 +442,7 @@ static void OGG_video_init(theora_info *tinfo)
 		gl_screenYH = g_screenY + g_screenHeight;
 		gl_screenXW = g_screenX + g_screenWidth;
 
-		if (GL_texture_target == GL_TEXTURE_RECTANGLE_ARB) {
+		if (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) {
 			gl_screenU = (GLfloat)wp2;
 			gl_screenV = (GLfloat)hp2;
 		} else {
@@ -462,8 +456,9 @@ static void OGG_video_init(theora_info *tinfo)
 
 static void OGG_video_close()
 {
-	if (!video_inited)
+	if ( !video_inited ) {
 		return;
+	}
 
 	if (gr_screen.mode == GR_OPENGL) {
 		if (scale_video) {
@@ -471,15 +466,13 @@ static void OGG_video_close()
 			glPopMatrix();
 		}
 
-		opengl_switch_arb(-1, 0);
-
-		glBindTexture(GL_texture_target, 0);
+		GL_state.Texture.Disable();
+		GL_state.Texture.Delete(GLtex);
 		glDeleteTextures(1, &GLtex);
-		GLtex = 0;
 
 		opengl_set_texture_target();
 
-		glEnable(GL_DEPTH_TEST);
+		GLtex = 0;
 	}
 
 	if (pixelbuf != NULL) {
@@ -578,9 +571,7 @@ static void OGG_video_draw(theora_state *tstate)
 	convert_YUV_to_RGB(&yuv);
 
 	if (gr_screen.mode == GR_OPENGL) {
-		glBindTexture(GL_texture_target, GLtex);
-
-		glTexSubImage2D(GL_texture_target, 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
+		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
 
 		glBegin(GL_QUADS);
 			glTexCoord2f(0, 0);
@@ -595,8 +586,6 @@ static void OGG_video_draw(theora_state *tstate)
 			glTexCoord2f(gl_screenU, 0);
 				glVertex2i(gl_screenXW, g_screenY);
 		glEnd();
-	} else {
-		// TODO:  FIXME!!!
 	}
 
 	gr_flip();
@@ -801,7 +790,7 @@ THEORAFILE *theora_open(char *filename)
 		if ( ogg_sync_pageout(&movie->osyncstate, &movie->opage) > 0 ) {
 			OGG_queue_page(movie); // demux into the appropriate stream
 		} else {
-			int ret = OGG_buffer_data(movie); // someone needs more data
+			ret = OGG_buffer_data(movie); // someone needs more data
 
 			if ( ret == 0 ) {
 				mprintf(("Theora ERROR:  End of file while searching for codec headers in '%s'!\n", lower_name));
@@ -849,6 +838,10 @@ void theora_play(THEORAFILE *movie)
 	double last_time = 0.0;	// for frame skipper
 
 	if ( (movie == NULL) || !movie->theora_p )
+		return;
+
+	// only OGL is supported
+	if (gr_screen.mode != GR_OPENGL)
 		return;
 
 	// open audio

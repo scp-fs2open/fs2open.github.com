@@ -896,7 +896,7 @@ void HUD_fixed_printf(float duration, char * format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	msg_length = strlen(tmp);
@@ -987,7 +987,7 @@ void HUD_printf(char *format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	len = strlen(tmp);
@@ -1006,7 +1006,7 @@ void HUD_ship_sent_printf(int sh, char *format, ...)
 	Assert(len < HUD_MSG_LENGTH_MAX);
 
 	va_start(args, format);
-	vsprintf(tmp + len, format, args);
+	vsnprintf(tmp + len, sizeof(tmp)-1-len, format, args);
 	va_end(args);
 
 	len = strlen(tmp);
@@ -1033,7 +1033,7 @@ void HUD_sourced_printf(int source, char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(source, tmp);

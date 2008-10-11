@@ -101,6 +101,7 @@
 #define PCKT_CHAT_CHAN_COUNT_REPLY	0x19
 #define PCKT_SLIST_HB_2				0x1a
 #define PCKT_SLIST_DISCONNECT		0x1b
+#define PCKT_UDP_HOLE_PUNCH_RQST	0x1c
 
 
 //***********************************************************************************************************************

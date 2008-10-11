@@ -287,6 +287,7 @@
 // os-wide globals
 static HINSTANCE	hInstApp;
 static HWND			hwndApp = NULL;
+static HDC			dcApp = NULL;
 static int			fAppActive = 0;
 static int			fOldAppActive = 0;
 static int			main_window_inited = 0;
@@ -418,6 +419,10 @@ void os_cleanup()
 	if (gr_screen.mode == GR_OPENGL)
 		gr_opengl_shutdown();
 
+
+	if (dcApp != NULL)
+		ReleaseDC( hwndApp, dcApp );
+
 	// destroy the window (takes care of a lot of window related cleanup and sys messages)
 	DestroyWindow( hwndApp );
 
@@ -439,6 +444,14 @@ int os_foreground()
 uint os_get_window()
 {
 	return (uint)hwndApp;
+}
+
+uint os_get_dc()
+{
+	if (dcApp == NULL)
+		dcApp = GetDC(hwndApp);
+
+	return (uint)dcApp;
 }
 
 // Returns the handle to the main window
@@ -830,6 +843,16 @@ void win32_create_window(int width, int height)
 	WNDCLASSEX wclass;							// Huh?
 	HINSTANCE hInst = GetModuleHandle(NULL);
 
+	if (hwndApp != NULL) {
+		if (dcApp != NULL) {
+			ReleaseDC( hwndApp, dcApp );
+			dcApp = NULL;
+		}
+
+		DestroyWindow( hwndApp );
+		hwndApp = NULL;
+	}
+
 	memset( &wclass, 0, sizeof(WNDCLASSEX) );
 
 	wclass.hInstance 		= hInst;
@@ -854,6 +877,7 @@ void win32_create_window(int width, int height)
 	wclass.hbrBackground	= (HBRUSH)GetStockObject(BLACK_BRUSH);
 
 	if ( !RegisterClassEx(&wclass) ) {
+		printf("%i\n", GetLastError());
 		Error( LOCATION, "FATAL ERROR:  Unable to register window class!!" );
 	}
 
@@ -903,6 +927,8 @@ void win32_create_window(int width, int height)
 	}
 
 	main_window_inited = 1;
+
+	win32_process(0);
 
 #ifndef NDEBUG
 	extern void outwnd_init_debug_window(int);

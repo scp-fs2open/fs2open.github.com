@@ -762,14 +762,14 @@ int Subspace_text_val_coords[GR_NUM_RESOLUTIONS][2] = {
 };
 
 // message text coords
-int Head_message_coords[GR_NUM_RESOLUTIONS][2] = {
+/*int Head_message_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		7, 37
 	},
 	{ // GR_1024
 		11, 57
 	}
-};
+};*/
 
 // ping text coords
 int Ping_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -853,14 +853,14 @@ char Kills_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 // used to draw border around a talking head
 static hud_frames Head_frame_gauge;
 static int Head_frame_gauge_loaded = 0;
-int Head_frame_coords[GR_NUM_RESOLUTIONS][2] = {
+/*int Head_frame_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		5, 35
 	},
 	{ // GR_1024
 		5, 56
 	}
-};
+};*/
 char Head_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
 	"head1",
 	"head1"
@@ -1722,10 +1722,10 @@ void hud_maybe_blit_head_border()
 		// hud_set_default_color();
 		hud_set_gauge_color(HUD_TALKING_HEAD);
 
-		GR_AABITMAP(Head_frame_gauge.first_frame, Head_frame_coords[gr_screen.res][0], Head_frame_coords[gr_screen.res][1]);		
+		GR_AABITMAP(Head_frame_gauge.first_frame, current_hud->Head_frame_coords[0], current_hud->Head_frame_coords[1]);		
 
 		// draw title
-		gr_string(Head_message_coords[gr_screen.res][0], Head_message_coords[gr_screen.res][1], XSTR("message", 217));
+		gr_string(current_hud->Head_message_coords[0], current_hud->Head_message_coords[1], XSTR("message", 217));
 	}
 }
 
@@ -1738,11 +1738,7 @@ void hud_maybe_clear_head_area()
 
 	if ( message_anim_is_playing() ) {
 		// clear
-		if (gr_screen.res == GR_640) {
-			HUD_set_clip(7, 45, 160, 120);		// these coords are set in MissionMessage.cpp
-		} else {
-			HUD_set_clip(7, 66, 160, 120);
-		}
+		HUD_set_clip(current_hud->Head_coords[0], current_hud->Head_coords[1], 160, 120);
 		gr_clear();
 		HUD_reset_clip();
 	}

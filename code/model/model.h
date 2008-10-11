@@ -839,8 +839,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	decal_system model_decal_system;
 
-	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations assosiated with this object
+	std::vector<queued_animation> triggers;		//all the triggered animations assosiated with this object
 
 } model_subsystem;
 
@@ -881,11 +880,17 @@ struct buffer_data {
 
 // IBX stuff
 typedef struct IBX {
-	CFILE *read;	// reads, if a IBX file already exists
-	CFILE *write;	// writes, if new file created
-	int size;		// file size used to make sure an IBX contains enough data for the whole model
-	int version;	// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
+	CFILE *read;		// reads, if an IBX file already exists
+	CFILE *write;		// writes, if new file created
+	int size;			// file size used to make sure an IBX contains enough data for the whole model
+	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
+
+	// tangent space data
+	CFILE *tsb_read;	// reads tangent space data (TSB), if it already exists
+	CFILE *tsb_write;	// writes tangent space data, for new file
+	int tsb_size;
+	char tsb_name[MAX_FILENAME_LEN];	// filename of the tsb (tangent space model data)
 } IBX;
 
 
@@ -1017,8 +1022,7 @@ typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			on_time; 
 	int			off_time; 
 	int			disp_time; 
-	int			is_on; 
-	int			is_active; 
+	bool		is_on; 
 	int			submodel_parent; 
 	int			LOD; 
 	int			num_points; 
@@ -1137,32 +1141,50 @@ typedef struct insignia {
 #define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
+#define TMR_SET_ORIGINAL		0
+#define TMR_SET_SHIP			1
+#define TMR_SET_POBJECT			2
+
 // Goober5000
 typedef struct texture_anim_info {
-	int num_frames;
-	float total_time;		// in seconds
+	int		num_frames;
+	float	total_time;		// in seconds
+
+	texture_anim_info() : num_frames(0), total_time(1.0f) {}
 } texture_anim_info;
 
 // Goober5000
 typedef struct texture_info {
-	int original_texture;	// what gets read in from file
-	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
+	int texture;			// what texture you draw with
 
 	bool is_anim;			// whether this is an animated texture
 	texture_anim_info anim;	// animation info (if animated)
+
+	texture_info() : texture(-1), is_anim(false) {}
 } texture_info;
 
 // taylor
 typedef struct texture_map {
+	char filename[MAX_FILENAME_LEN];	// base filename used for all maps
+
 	texture_info base_map;		// the standard base map
 	texture_info glow_map;		// optional glow map
 	texture_info spec_map;		// optional specular map
-#ifdef BUMPMAPPING
-	texture_info bump_map;		// optional bump map
-#endif
+	texture_info norm_map;		// optional normal map
+	texture_info height_map;	// optional height map
 
 	bool is_ambient;
 	bool is_transparent;
+
+	ubyte set_flag;				// determines whether this is part of the original set, or another set
+
+	texture_map() {
+		memset(filename, 0, sizeof(filename));
+
+		is_ambient = false;
+		is_transparent = false;
+		set_flag = 0;
+	}
 } texture_map;
 
 //used to describe a polygon model
@@ -1197,7 +1219,8 @@ typedef struct polymodel {
 															// This is equal to 1/2 of the smallest dimension of the hull's bounding box.
 	// texture maps for model
 	int n_textures;
-	texture_map	maps[MAX_MODEL_TEXTURES];
+	texture_map *maps;
+	texture_map original_maps[MAX_MODEL_TEXTURES];
 	
 	bsp_info		*submodel;							// an array of size n_models of submodel info.
 
@@ -1267,7 +1290,7 @@ void model_free_all();
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
 // Goober5000
-void model_load_texture(polymodel *pm, int i, char *file);
+void model_load_texture(texture_map *tmap, char *file, char *loader_name);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);
@@ -1326,11 +1349,11 @@ void model_set_detail_level(int n);
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
-void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL);
+void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, texture_map *replacement_textures = NULL);
 
 // Renders just one particular submodel on a model.
 // See MR_? defines for values for flags
-void submodel_render(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int *replacement_textures = NULL);
+void submodel_render(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, texture_map *replacement_textures = NULL);
 
 // Returns the radius of a model
 float model_get_radius(int modelnum);
@@ -1619,33 +1642,31 @@ int model_which_octant_distant(vec3d *pnt, int model_num,matrix *model_orient, v
 // data.  Or NULL if the pnt isn't in the octant.
 int model_which_octant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
 
-typedef struct bobboau_extra_mst_info {
+typedef struct mst_info {
+	int primary_bitmap;
+	int primary_glow_bitmap;
 	int secondary_glow_bitmap;
 	int tertiary_glow_bitmap;
-	vec3d *rovel;
 
-	float trf1;
-	float trf2;
-	float trf3;
-	float tlf;
-} bobboau_extra_mst_info;
+	bool use_ab;
+	float glow_noise;
+	const vec3d *rotvel;
+	vec3d length;
+
+	float glow_rad_factor;
+	float secondary_glow_rad_factor;
+	float tertiary_glow_rad_factor;
+	float glow_length_factor;
+
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
+					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f)
+				{}
+} mst_info;
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, bobboau_extra_mst_info *mst = NULL);
-
-//=========================================================
-// model caching
-
-// Call once to init the model caching stuff
-//void model_cache_init();
-
-// Call before every level to clean up the model caching stuff
-//void model_cache_reset();
-
-// If TRUE, then model caching is enabled
-//extern int Model_caching;
-
+void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 
 //=======================================================================================
 // Finds the closest point on a model to a point in space.  Actually only finds a point
@@ -1671,6 +1692,9 @@ void model_set_alpha(float alpha);
 // set the forces bitmap
 void model_set_forced_texture(int bmap);
 
+// set replacement/alternate textures as the currently active set
+void model_set_active_textures(int model_num, texture_map *tmap);
+
 // see if the given texture is used by the passed model. 0 if not used, 1 if used, -1 on error
 int model_find_texture(int model_num, int bitmap);
 
@@ -1688,8 +1712,6 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 void model_page_out_textures(int model_num, bool release = false);
 
 void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = -1.0f);
-
-void model_set_replacement_textures(int *replacement_textures);
 
 int decal_make_model(polymodel * pm);
 

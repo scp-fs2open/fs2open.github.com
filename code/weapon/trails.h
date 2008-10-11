@@ -93,24 +93,11 @@ typedef struct trail_info {
 	float w_end;			// ending width
 	float a_start;			// starting alpha
 	float a_end;			// ending alpha
-	float max_life;		// max_life for a section
+	float max_life;			// max_life for a section
+	float i_max_life;		// inverse of max_life (simply for faster internal use)
 	int stamp;				// spew timestamp
 	generic_bitmap texture;	// texture to use for trail
 } trail_info;
-
-typedef struct trail {
-	int		head, tail;						// pointers into the queue for the trail points
-	vec3d	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
-	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
-	bool	object_died;					// set to zero as long as object	
-	int		trail_stamp;					// trail timestamp	
-
-	// trail info
-	trail_info info;							// this is passed when creating a trail
-
-	struct	trail * next;
-
-} trail;
 
 // Call at the start of freespace to init trails
 
@@ -129,11 +116,11 @@ void trail_render_all();
 // to deal with trails:
 
 // Returns -1 if failed
-trail *trail_create(trail_info *info);
-void trail_add_segment( trail *trailp, vec3d *pos );
-void trail_set_segment( trail *trailp, vec3d *pos );
-void trail_object_died( trail *trailp );
-int trail_stamp_elapsed( trail *trailp );
-void trail_set_stamp( trail *trailp );
+int trail_create(trail_info *info);
+void trail_add_segment(int trail_id, vec3d *pos);
+void trail_set_segment(int trail_id, vec3d *pos);
+void trail_object_died(int trail_id);
+int trail_stamp_elapsed(int trail_id);
+void trail_set_stamp(int trail_id);
 
 #endif //_TRAILS_H

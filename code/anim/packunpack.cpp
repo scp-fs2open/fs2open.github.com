@@ -942,7 +942,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 	anim *a = ai->parent;
 	int pixel_size = (bpp / 8);
 	ubyte r, g, b;
-	Assert(a);	
+	Assert(a);
 
 	// if this is an aabitmap, don't run through the palette
 	if(aabitmap){

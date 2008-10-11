@@ -1008,54 +1008,6 @@ void multi_common_voice_display_status()
 	}
 }
 
-//XSTR:OFF
-// palette initialization stuff
-#define MULTI_COMMON_PALETTE_FNAME			"InterfacePalette"
-//XSTR:ON
-
-int Multi_common_interface_palette = -1;
-
-void multi_common_load_palette();
-void multi_common_set_palette();
-void multi_common_unload_palette();
-
-// load in the palette if it doesn't already exist
-void multi_common_load_palette()
-{
-	if(Multi_common_interface_palette != -1){
-		return;
-	}
-
-	Multi_common_interface_palette = bm_load(MULTI_COMMON_PALETTE_FNAME);
-	if(Multi_common_interface_palette == -1){
-		nprintf(("Network","Error loading multiplayer common palette!\n"));
-	}
-}
-
-// set the common palette to be the active one
-void multi_common_set_palette()
-{
-	// if the palette is not loaded yet, do so now
-	if(Multi_common_interface_palette == -1){
-		multi_common_load_palette();
-	}
-	
-	if(Multi_common_interface_palette != -1){
-#ifndef HARDWARE_ONLY
-		palette_use_bm_palette(Multi_common_interface_palette);
-#endif
-	}
-}
-
-// unload the bitmap palette
-void multi_common_unload_palette()
-{
-	if(Multi_common_interface_palette != -1){
-		bm_unload(Multi_common_interface_palette);
-		Multi_common_interface_palette = -1;
-	}
-}
-
 void multi_common_verify_cd()
 {
 #ifdef GAME_CD_CHECK
@@ -1482,10 +1434,6 @@ void multi_join_game_init()
 
 	// initialize the common text area
 	multi_common_set_text("");	
-
-	// load and use the common interface palette
-	multi_common_load_palette();
-	multi_common_set_palette();
 
 	// load the help overlay
 	help_overlay_load(MULTI_JOIN_OVERLAY);
@@ -2954,9 +2902,6 @@ void multi_start_game_init()
 	// initialize the common text area
 	multi_common_set_text("");
 
-	// use the common interface palette
-	multi_common_set_palette();
-	
 	// create the interface buttons
 	for(idx=0; idx<MULTI_SG_NUM_BUTTONS; idx++){
 		// create the object
@@ -4151,9 +4096,6 @@ void multi_create_game_init()
 	// initialize the common notification messaging
 	multi_common_notify_init();		
 
-	// use the common interface palette
-	multi_common_set_palette();
-
 	// create the interface buttons
 	for(idx=0; idx<MULTI_CREATE_NUM_BUTTONS; idx++){
 		b = &Multi_create_buttons[gr_screen.res][idx];
@@ -4241,7 +4183,7 @@ void multi_create_game_init()
 
 	Multi_create_campaign_count = 0;
 	Multi_create_mission_count = 0;
-	Multi_create_files_loaded = 0;	
+	Multi_create_files_loaded = 0;
 }
 
 void multi_create_game_do()
@@ -5330,7 +5272,7 @@ void multi_create_list_select_item(int n)
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
 				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
-				
+
 				Assert(ng->max_players > 0);
 				strcpy(ng->title,The_mission.name);								
 
@@ -6345,9 +6287,6 @@ void multi_host_options_init()
 	// initialize the common notification messaging
 	multi_common_notify_init();	
 
-	// use the common interface palette
-	multi_common_set_palette();	
-
 	// create the interface buttons
 	for(idx=0;idx<MULTI_HO_NUM_BUTTONS;idx++){
 		// create the object
@@ -7189,9 +7128,6 @@ void multi_game_client_setup_init()
 
 	// initialize the common mission info display area.
 	multi_common_set_text("");	
-
-	// use the common interface palette
-	multi_common_set_palette();	
 
 	// create the interface buttons
 	for(idx=0; idx<MULTI_JW_NUM_BUTTONS; idx++){
@@ -8062,9 +7998,6 @@ void multi_sync_common_init()
 
 	// initialize the common mission info display area.
 	multi_common_set_text("");	
-
-	// use the common interface palette
-	multi_common_set_palette();
 
 	// don't select any player yet.
 	Multi_sync_player_select = -1;

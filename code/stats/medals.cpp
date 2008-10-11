@@ -341,7 +341,6 @@ player *Medals_player;
 
 static bitmap *Medals_mask;
 int Medals_mask_w, Medals_mask_h;
-//static int Medal_palette;              // Medal palette bitmap
 static int Medals_bitmap_mask;         // the mask for the medal case
 static int Medals_bitmap;              // the medal case itself
 static std::vector<int> Medal_bitmaps;  // bitmaps for the individual medals
@@ -542,8 +541,6 @@ void medal_main_init(player *pl, int mode)
 
 
 	Init_flags = 0;	
-
-	//init_medal_palette();
 	
 	Medals_bitmap = bm_load(Medals_background_filename[gr_screen.res]);
 	if (Medals_bitmap < 0) {
@@ -767,17 +764,6 @@ void medal_main_close()
 	palette_restore_palette();
 }
 
-/*
-void init_medal_palette()
-{
-	Medal_palette = bm_load("MedalsPalette.pcx");
-	if(Medal_palette > -1){
-#ifndef HARDWARE_ONLY
-		palette_use_bm_palette(Medal_palette);
-#endif
-	}
-}
-*/
 
 // function to load in the medals for this player.  It loads medals that the player has (known
 // by whether or not a non-zero number is present in the player's medal array), then loads the

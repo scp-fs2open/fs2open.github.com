@@ -121,7 +121,8 @@ typedef struct species_info {
 		int a1d[3];
 	} fred_color;
 
-	generic_bitmap debris_texture;
+	char debris_texture_name[MAX_FILENAME_LEN];
+	texture_map debris_texture;
 	generic_anim shield_anim;
 	thrust_info thruster_info;
 

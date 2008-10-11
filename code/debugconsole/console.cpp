@@ -647,7 +647,7 @@ void dc_printf(char *format, ...)
 	va_list args;
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 
 	char *p = tmp;

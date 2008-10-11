@@ -228,9 +228,13 @@ void os_set_title( char *title )
 	SDL_WM_SetCaption( szWinTitle, NULL );
 }
 
+extern void gr_opengl_shutdown();
+
 // call at program end
 void os_cleanup()
 {
+	gr_opengl_shutdown();
+
 #ifndef NDEBUG
 	outwnd_close();
 #endif
@@ -291,13 +295,13 @@ DWORD unix_process(DWORD lparam)
 			case SDL_ACTIVEEVENT:
 				if( (event.active.state & SDL_APPACTIVE) || (event.active.state & SDL_APPINPUTFOCUS) ) {
 					if (fAppActive != event.active.gain) {
-						if (fAppActive)
-							game_pause();
-						else
-							game_unpause();
+			//			if (fAppActive)
+			//				game_pause();
+			//			else
+			//				game_unpause();
 					}
-					fAppActive = event.active.gain;
-					gr_activate(fAppActive);
+			//		fAppActive = event.active.gain;
+			//		gr_activate(fAppActive);
 				}
 				break;
 
@@ -365,9 +369,15 @@ void os_poll()
 	unix_process(0);
 }
 
+extern int Cmdline_dev_nofail;
 void debug_int3(char *file, int line)
 {
 	mprintf(("Int3(): From %s at line %d\n", file, line));
+
+	if (Cmdline_dev_nofail) {
+		fprintf(stderr, "Int3(): From %s at line %d\n", file, line);
+		return;
+	}
 
 	// we have to call os_deinit() before abort() so we make sure that SDL gets
 	// closed out and we don't lose video/input control

@@ -1702,6 +1702,8 @@ void shipfx_warpout_start( object *objp )
 	*/
 	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
 	Script_system.RemHookVar("Self");
+	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+	Script_system.RemHookVar("Self");
 }
 
 void shipfx_warpout_frame( object *objp, float frametime )
@@ -2046,9 +2048,8 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// ALWAYS do this - since this is called once per firing
 	// if this is a cannon type weapon, create a muzzle flash
 	// HACK - let the flak guns do this on their own since they fire so quickly
-	if((Weapon_info[weapon_info_index].wi_flags & WIF_MFLASH) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
+	if ( (Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK) ) {
 		// spiffy new flash stuff
-
 		vec3d real_pos;
 		vm_vec_unrotate(&real_pos, gun_pos,&objp->orient);
 		vm_vec_add2(&real_pos, &objp->pos);			
@@ -2966,9 +2967,9 @@ void shipfx_large_blowup_render(ship* shipp)
 // ================== DO THE ELECTRIC ARCING STUFF =====================
 // Creates any new ones, moves old ones.
 
-#define MAX_ARC_LENGTH_PERCENTAGE 0.25f
+const float MAX_ARC_LENGTH_PERCENTAGE = 0.25f;
 
-#define MAX_EMP_ARC_TIMESTAMP		 (150.0f)
+const float MAX_EMP_ARC_TIMESTAMP = 150.0f;
 
 void shipfx_do_damaged_arcs_frame( ship *shipp )
 {
@@ -3506,7 +3507,7 @@ void engine_wash_ship_process(ship *shipp)
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if ((wash_sip->flags & SIF_HUGE_SHIP) && Engine_wash_info.size()) {
+				if ( (wash_sip->flags & SIF_HUGE_SHIP) && !Engine_wash_info.empty() ) {
 					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
 				} else {
@@ -3518,7 +3519,7 @@ void engine_wash_ship_process(ship *shipp)
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
-			for (j=0; j<bank->num_points; j++) {
+			for (j = 0; j < bank->num_points; j++) {
 				// get world pos of thruster
 				vm_vec_unrotate(&world_thruster_pos, &bank->points[j].pnt, &wash_objp->orient);
 				vm_vec_add2(&world_thruster_pos, &wash_objp->pos);
@@ -3575,7 +3576,9 @@ void engine_wash_ship_process(ship *shipp)
 				}
 			}
 		}
+
 		shipp->wash_intensity += ship_intensity * speed_scale;
+
 		if (ship_intensity > max_ship_intensity) {
 			max_ship_intensity = ship_intensity;
 			max_ship_intensity_objp = wash_objp;

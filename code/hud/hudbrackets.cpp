@@ -368,8 +368,7 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
 {
 	int	width, height;
 
-	if(resize || gr_screen.rendering_to_texture != -1)
-	{
+	if ( resize && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
 		gr_resize_screen_pos(&x1, &y1);
 		gr_resize_screen_pos(&x2, &y2);
 	}

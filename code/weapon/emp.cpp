@@ -585,7 +585,7 @@ void emp_hud_printf(int x, int y, int gauge_id, char *format, ...)
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
 	
 	// if the emp effect is not active, don't even bother messing with the text

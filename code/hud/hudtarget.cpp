@@ -112,7 +112,7 @@
  * get object vars correct
  *
  * Revision 2.79  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.78  2006/01/10 01:23:09  phreak
  * Fixed a logic error when dealing with non-targetable subsystems
@@ -1094,7 +1094,7 @@ typedef struct homing_beep_info
 	float	precalced_interp;		// a precalculated value used in a linear interpretation
 } homing_beep_info;
 
-homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f };
+homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f, 1.729412f };
 
 // Set at the start of a mission, used to decide how to draw the separation for the warning missile indicators
 float Min_warning_missile_dist;
@@ -1601,8 +1601,8 @@ void hud_make_shader(shader *sh, int r, int g, int b, float dimmer = 1000.0f)
 	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
 	R = fl2i(r * tmp);
-	G = fl2i(r * tmp); // fl2i(g * tmp);  WTF??
-	B = fl2i(r * tmp); // fl2i(b * tmp);  WTF??
+	G = R; // fl2i(g * tmp);  WTF??
+	B = R; // fl2i(b * tmp);  WTF??
 	A = fl2i((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
 	gr_create_shader( sh, R, G, B, A );
@@ -2085,19 +2085,19 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 	if ( !target_found ) {
 	// if no bomb is found, search for bombers
-		ship_obj *start, *so;
+		ship_obj *s_start, *so;
 
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
 			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
 				|| (Objects[aip->target_objnum].flags & OF_TARGETABLE_AS_BOMB))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
-			start = get_ship_obj_ptr_from_index(index);
+			s_start = get_ship_obj_ptr_from_index(index);
 		} else {
-			start = GET_FIRST(&Ship_obj_list);
+			s_start = GET_FIRST(&Ship_obj_list);
 		}
 
-		for (so=advance_ship(start, next_flag); so!=start; so=advance_ship(so, next_flag)) {
+		for (so=advance_ship(s_start, next_flag); so!=s_start; so=advance_ship(so, next_flag)) {
 			A = &Objects[so->objnum];
 
 			// don't look at header
@@ -4778,7 +4778,6 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
-	weapon_info	*tmp=NULL;
 	float			dist_to_target, time_to_target, target_moved_dist, prange;
 	int			bank_to_fire, indicator_frame, frame_offset;
 	float		sx, sy;

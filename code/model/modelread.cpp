@@ -1516,9 +1516,6 @@ void model_init()
 		Polygon_models[i] = NULL;
 	}
 
-	// Init the model caching system
-//	model_cache_init();
-
 	atexit( model_free_all );
 	model_initted = 1;
 }
@@ -1825,11 +1822,11 @@ void print_family_tree( polymodel *obj, int modelnum, char * ident, int islast )
 		mprintf(( " %s", obj->submodel[modelnum].name ));
 		sprintf( temp, " " );
 	} else if ( islast ) 	{
-		mprintf(( "%sÀÄ%s", ident, obj->submodel[modelnum].name ));
+		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
 		sprintf( temp, "%s  ", ident );
 	} else {
-		mprintf(( "%sÃÄ%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s³ ", ident );
+		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
+		sprintf( temp, "%s ", ident );
 	}
 
 	mprintf(( "\n" ));
@@ -2011,9 +2008,15 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		// clear struct and prepare for IBX usage
 		memset( &ibuffer_info, 0, sizeof(IBX) );
 
+		// get name for tangent space file
+		strcpy( ibuffer_info.tsb_name, filename );
+		char *pb = strchr( ibuffer_info.tsb_name, '.' );
+		if ( pb ) *pb = 0;
+		strcat( ibuffer_info.tsb_name, NOX(".tsb") );
+
 		// use the same filename as the POF but with an .ibx extension
 		strcpy( ibuffer_info.name, filename );
-		char *pb = strchr( ibuffer_info.name, '.' );
+		pb = strchr( ibuffer_info.name, '.' );
 		if ( pb ) *pb = 0;
 		strcat( ibuffer_info.name, NOX(".ibx") );
 
@@ -2025,8 +2028,23 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			ibuffer_info.read = NULL;
 		}
 
-		if ( ibuffer_info.read != NULL ) {
+		if ( Cmdline_normal && (ibuffer_info.read != NULL) ) {
+			ibuffer_info.tsb_read = cfopen( ibuffer_info.tsb_name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+			if ( (ibuffer_info.tsb_read == NULL) || !cfilelength(ibuffer_info.tsb_read) ) {
+				if (ibuffer_info.tsb_read != NULL)
+					cfclose( ibuffer_info.tsb_read);
+
+				ibuffer_info.tsb_read = NULL;
+
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+			}
+		}
+
+		if (ibuffer_info.read != NULL) {
 			bool ibx_valid = false;
+			bool tsb_valid = true;	// the TSB is assumed valid by default
 
 			// grab a checksum of the IBX, for debugging purposes
 			uint ibx_checksum = 0;
@@ -2053,30 +2071,64 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					break;
 			}
 
-			if ( !ibx_valid ) {
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-				ibuffer_info.size = 0;
-			} else {
+			if (ibx_valid) {
 				// file is valid so grab the checksum out of the .ibx and verify it matches the POF
 				uint ibx_sum = cfread_uint( ibuffer_info.read );
 				ibuffer_info.size -= sizeof(uint); // subtract
 
-				if ( ibx_sum != pof_checksum ) {
+				if (ibx_sum != pof_checksum) {
 					// bah, it's invalid for this POF
-					// reset and a write file will be used instead
-					cfclose( ibuffer_info.read );
-					ibuffer_info.read = NULL;
-					ibuffer_info.size = 0;
-				} else {
-					mprintf(("IBX: Found a good IBX to read for '%s'.\n", filename));
-					mprintf(("IBX-DEBUG => POF checksum: %10u, IBX checksum: %10u -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
+					ibx_valid = false;
+
+					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
 				}
+
+				if (ibuffer_info.tsb_read != NULL) {
+					// get the file size that we use to safety check with.
+					// be sure to subtract from this when we read something out
+					ibuffer_info.tsb_size = cfilelength( ibuffer_info.tsb_read );
+
+					// check file id
+					int tsb = cfread_int( ibuffer_info.tsb_read );
+					ibuffer_info.tsb_size -= sizeof(int);
+
+					// "BST2" - ("2TSB" in file)
+					if (tsb != 0x42535432)
+						tsb_valid = false;
+
+					// if it's valid then check for the correct IBX checksum
+					if (tsb_valid) {
+						uint tsb_sum = cfread_uint( ibuffer_info.tsb_read );
+						ibuffer_info.tsb_size -= sizeof(uint);
+
+						if (tsb_sum != ibx_checksum)
+							tsb_valid = false;
+					}
+
+					if ( !tsb_valid )
+						mprintf(("IBX:  Warning!  Found invalid TSB file: '%s'\n", ibuffer_info.tsb_name));
+				}
+			}
+
+
+			if ( !ibx_valid || !tsb_valid ) {
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+				ibuffer_info.size = 0;
+
+				if (ibuffer_info.tsb_read != NULL) {
+					cfclose( ibuffer_info.tsb_read);
+					ibuffer_info.tsb_read = NULL;
+					ibuffer_info.tsb_size = 0;
+				}
+			} else {
+				mprintf(("IBX: Found a good %s to read for '%s'.\n", (ibuffer_info.tsb_read != NULL) ? "IBX/TSB" : "IBX", filename));
+				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
 			}
 		}
 
 		// if the read file is absent or invalid then write out the new info
-		if ( ibuffer_info.read == NULL ) {
+		if (ibuffer_info.read == NULL) {
 			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
 
 			if (ibuffer_info.write != NULL) {
@@ -2087,6 +2139,22 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				// POF checksum
 				cfwrite_uint( pof_checksum, ibuffer_info.write );
+
+
+				// tangent space data
+				if (Cmdline_normal) {
+					ibuffer_info.tsb_write = cfopen( ibuffer_info.tsb_name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+					if (ibuffer_info.tsb_write != NULL) {
+						mprintf(("IBX: Starting a new TSB for '%s'.\n", filename));
+
+						// file id
+						cfwrite_int( 0x42535432, ibuffer_info.tsb_write );	// "BST2" - ("2TSB" in file)
+
+						// POF checksum (NOTE: This gets replaced by the IBX checksum after it's been created!)
+						cfwrite_uint( pof_checksum, ibuffer_info.tsb_write );
+					}
+				}
 			}
 		}
 	} // End IBX code
@@ -2207,6 +2275,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if ( pm->version >= 2009 )	{
 																	
 						pm->mass = cfread_float(fp);
+
 						cfread_vector( &pm->center_of_mass, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
@@ -2735,7 +2804,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				{
 					glow_point_bank *bank = &pm->glow_point_banks[gpb];
 
-					bank->is_on = 1;
+					bank->is_on = true;
 					bank->glow_timestamp = 0;
 					bank->disp_time = cfread_int(fp);
 					bank->on_time = cfread_int(fp);
@@ -2750,7 +2819,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
 					if((bank->off_time > 0) && (bank->disp_time > 0))
-						bank->is_on = 0;
+						bank->is_on = false;
 	
 					cfread_string_len(props, MAX_PROP_LEN, fp);
 					// look for $glow_texture=xxx
@@ -3002,7 +3071,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				{
 					char tmp_name[256];
 					cfread_string_len(tmp_name,127,fp);
-					model_load_texture(pm, i, tmp_name);
+					model_load_texture(&pm->original_maps[i], tmp_name, pm->filename);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
 
@@ -3038,59 +3107,65 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_PATH:
 				pm->n_paths = cfread_int( fp );
-				pm->paths = (model_path *)vm_malloc(sizeof(model_path)*pm->n_paths);
-				Assert( pm->paths != NULL );
 
-				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
-					
-				for (i=0; i<pm->n_paths; i++ )	{
-					cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
-					if ( pm->version >= 2002 ) {
-						// store the sub_model name number of the parent
-						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
-						// get rid of leading '$' char in name
-						if ( pm->paths[i].parent_name[0] == '$' ) {
-							char tmpbuf[MAX_NAME_LEN];
-							strcpy(tmpbuf, pm->paths[i].parent_name+1);
-							strcpy(pm->paths[i].parent_name, tmpbuf);
+				if (pm->n_paths > 0) {
+					pm->paths = (model_path *) vm_malloc( sizeof(model_path) * pm->n_paths );
+					memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
+
+					for (i = 0; i < pm->n_paths; i++) {
+						cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
+
+						if (pm->version >= 2002) {
+							// store the sub_model name number of the parent
+							cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
+
+							// get rid of leading '$' char in name
+							if ( pm->paths[i].parent_name[0] == '$' ) {
+								char tmpbuf[MAX_NAME_LEN];
+								strcpy(tmpbuf, pm->paths[i].parent_name+1);
+								strcpy(pm->paths[i].parent_name, tmpbuf);
+							}
+
+							// store the sub_model index (ie index into pm->submodel) of the parent
+							pm->paths[i].parent_submodel = -1;
+
+							for (j = 0; j < pm->n_models; j++) {
+								if ( !stricmp( pm->submodel[j].name, pm->paths[i].parent_name) )
+									pm->paths[i].parent_submodel = j;
+							}
+						} else {
+							pm->paths[i].parent_name[0] = 0;
+							pm->paths[i].parent_submodel = -1;
 						}
-						// store the sub_model index (ie index into pm->submodel) of the parent
-						pm->paths[i].parent_submodel = -1;
-						for ( j = 0; j < pm->n_models; j++ ) {
-							if ( !stricmp( pm->submodel[j].name, pm->paths[i].parent_name) ) {
-								pm->paths[i].parent_submodel = j;
+
+						pm->paths[i].nverts = cfread_int( fp );
+						Assert( pm->paths[i].nverts > 0 );
+
+						pm->paths[i].verts = (mp_vert *) vm_malloc( sizeof(mp_vert) * pm->paths[i].nverts );
+						pm->paths[i].goal = pm->paths[i].nverts - 1;
+						pm->paths[i].type = MP_TYPE_UNUSED;
+						pm->paths[i].value = 0;
+
+						memset( pm->paths[i].verts, 0, sizeof(mp_vert) * pm->paths[i].nverts );
+
+						for (j = 0; j < pm->paths[i].nverts; j++) {
+							cfread_vector(&pm->paths[i].verts[j].pos,fp );
+							pm->paths[i].verts[j].radius = cfread_float( fp );
+						
+							{					// version 1802 added turret stuff
+								int nturrets, k;
+
+								nturrets = cfread_int( fp );
+								pm->paths[i].verts[j].nturrets = nturrets;
+
+								if (nturrets > 0) {
+									pm->paths[i].verts[j].turret_ids = (int *) vm_malloc( sizeof(int) * nturrets );
+
+									for (k = 0; k < nturrets; k++)
+										pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
+								}
 							}
 						}
-					} else {
-						pm->paths[i].parent_name[0] = 0;
-						pm->paths[i].parent_submodel = -1;
-					}
-
-					pm->paths[i].nverts = cfread_int( fp );
-					pm->paths[i].verts = (mp_vert *)vm_malloc( sizeof(mp_vert) * pm->paths[i].nverts );
-					pm->paths[i].goal = pm->paths[i].nverts - 1;
-					pm->paths[i].type = MP_TYPE_UNUSED;
-					pm->paths[i].value = 0;
-					Assert(pm->paths[i].verts!=NULL);
-					memset( pm->paths[i].verts, 0, sizeof(mp_vert) * pm->paths[i].nverts );
-
-					for (j=0; j<pm->paths[i].nverts; j++ )	{
-						cfread_vector(&pm->paths[i].verts[j].pos,fp );
-						pm->paths[i].verts[j].radius = cfread_float( fp );
-						
-						{					// version 1802 added turret stuff
-							int nturrets, k;
-
-							nturrets = cfread_int( fp );
-							pm->paths[i].verts[j].nturrets = nturrets;
-
-							if (nturrets > 0) {
-								pm->paths[i].verts[j].turret_ids = (int *)vm_malloc( sizeof(int) * nturrets );
-								for ( k = 0; k < nturrets; k++ )
-									pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
-							}
-						} 
-						
 					}
 				}
 				break;
@@ -3205,11 +3280,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	cfclose(fp);
 
 	// these must be reset to NULL for the tests to work correctly later
-	if ( ibuffer_info.read != NULL ) {
+	if (ibuffer_info.read != NULL)
 		cfclose( ibuffer_info.read );
-	}
 
-	if ( ibuffer_info.write != NULL ) {
+	if (ibuffer_info.tsb_read != NULL)
+		cfclose( ibuffer_info.tsb_read );
+
+	if (ibuffer_info.write != NULL) {
 		// if we switched to v2 at any point during IBX creation, make sure to update the header
 		if (ibuffer_info.version == 2) {
 			cfseek( ibuffer_info.write, 0, CF_SEEK_SET );
@@ -3219,37 +3296,56 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		cfclose( ibuffer_info.write );
 	}
 
+	if (ibuffer_info.tsb_write != NULL) {
+		// update TSB with IBX checksum, for data sanity reasons
+		CFILE *cfp = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+		Assert( cfp );
+
+		uint ibx_checksum = 0;
+		cfseek(cfp, 0, SEEK_SET);
+		cf_chksum_long(cfp, &ibx_checksum);
+		cfseek(cfp, 0, SEEK_SET);
+
+		cfseek( ibuffer_info.tsb_write, sizeof(int), CF_SEEK_SET );
+		// write new checksum
+		cfwrite_int( ibx_checksum, ibuffer_info.tsb_write );
+
+		cfclose( cfp );
+		cfclose( ibuffer_info.tsb_write );
+	}
+
 	memset( &ibuffer_info, 0, sizeof(IBX) );
+
 
 	// mprintf(("Done processing chunks\n"));
 	return 1;
 }
 
-void model_init_texture_map(texture_map *tmap)
+static void model_init_texture_map(texture_map *tmap, char *fname)
 {
 	if (tmap == NULL)
 		return;
 
 	memset(tmap, 0, sizeof(texture_map));
 
-	tmap->base_map.original_texture = -1;
 	tmap->base_map.texture = -1;
-
-	tmap->glow_map.original_texture = -1;
 	tmap->glow_map.texture = -1;
-
-	tmap->spec_map.original_texture = -1;
 	tmap->spec_map.texture = -1;
+	tmap->norm_map.texture = -1;
+	tmap->height_map.texture = -1;
 
-#ifdef BUMPMAPPING
-	tmap->bump_map.original_texture = -1;
-	tmap->bump_map.texture = -1;
-#endif
+	if (fname) {
+		strncpy(tmap->filename, fname, MAX_FILENAME_LEN-1);
+	}
 }
 
-//Goober
-void model_load_texture(polymodel *pm, int i, char *file)
+// NOTE: "loader_name" could be either model filename or ship name
+void model_load_texture(texture_map *tmap, char *file, char *loader_name)
 {
+	Assert( tmap != NULL );
+	Assert( file != NULL );
+	Assert( loader_name != NULL );
+
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
 	char tmp_name[MAX_FILENAME_LEN];
@@ -3258,60 +3354,50 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 	strlwr(tmp_name);
 
-	texture_map *tmap = &pm->maps[i];
-	model_init_texture_map(tmap);
+	model_init_texture_map(tmap, tmp_name);
 
 	// base maps ---------------------------------------------------------------
-	if (strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
-	{
+	if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap") ) {
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
 		tmap->base_map.texture = -1;
-	}
-	else
-	{
+	} else {
 		// check if we should be transparent, include "-trans" but make sure to skip anything that might be "-transport"
 		if ( (strstr(tmp_name, "-trans") && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") ) {
 			tmap->is_transparent = true;
 		}
 
-		if (strstr(tmp_name, "-amb")) {
+		if ( strstr(tmp_name, "-amb") ) {
 			tmap->is_ambient = true;
 		}
 
 		// try to load an ANI
 		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
-		if (tmap->base_map.texture >= 0)
-		{
+
+		if (tmap->base_map.texture >= 0) {
 			tmap->base_map.is_anim = true;
-			tmap->base_map.anim.total_time = (float) i2fl(tmap->base_map.anim.num_frames) / ((fps > 0) ? fps : 1);
-		}
-		else
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			tmap->base_map.anim.total_time = (tmap->base_map.anim.num_frames / ((fps > 0) ? (float)fps : 1.0f));
+		} else {
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", loader_name, tmp_name));
 			tmap->base_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->base_map.texture = bm_load(tmp_name);
-			if (tmap->base_map.texture < 0)
-			{
-				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
+
+			if (tmap->base_map.texture < 0) {
+				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by '%s'\n", tmp_name, loader_name);
 				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
 
 			nprintf(("Maps", "\n"));
 		}
 	}
-	tmap->base_map.original_texture = tmap->base_map.texture;
 	// -------------------------------------------------------------------------
 
 	// glow maps ---------------------------------------------------------------
-	if (Cmdline_noglow || (tmap->base_map.texture < 0))
-	{
+	if ( !Cmdline_glow || (tmap->base_map.texture < 0) ) {
 		tmap->glow_map.texture = -1;
-	}
-	else
-	{
+	} else {
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
@@ -3319,36 +3405,30 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		// try to load an ANI
 		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
-		if (tmap->glow_map.texture >= 0)
-		{
+
+		if (tmap->glow_map.texture >= 0) {
 			tmap->glow_map.is_anim = true;
-			tmap->glow_map.anim.total_time = (float) i2fl(tmap->glow_map.anim.num_frames) / ((fps > 0) ? fps : 1);
-		}
-		else
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			tmap->glow_map.anim.total_time = (tmap->glow_map.anim.num_frames / ((fps > 0) ? (float)fps : 1.0f));
+		} else {
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", loader_name, tmp_name));
 			tmap->glow_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->glow_map.texture = bm_load(tmp_name);
-			if (tmap->glow_map.texture < 0)
-			{
+
+			if (tmap->glow_map.texture < 0) {
 				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
 
 			nprintf(("Maps", "\n"));
 		}
 	}
-	tmap->glow_map.original_texture = tmap->glow_map.texture;
 	// -------------------------------------------------------------------------
 
 	// specular maps -----------------------------------------------------------
-	if (Cmdline_nospec || (tmap->base_map.texture < 0))
-	{
+	if ( !Cmdline_spec || (tmap->base_map.texture < 0) ) {
 		tmap->spec_map.texture = -1;
-	}
-	else
-	{
+	} else {
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
@@ -3356,51 +3436,85 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		// try to load an ANI
 		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
-		if (tmap->spec_map.texture >= 0)
-		{
+
+		if (tmap->spec_map.texture >= 0) {
 			tmap->spec_map.is_anim = true;
-			tmap->spec_map.anim.total_time = (float) i2fl(tmap->spec_map.anim.num_frames) / ((fps > 0) ? fps : 1);
-		}
-		else
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			tmap->spec_map.anim.total_time = (tmap->spec_map.anim.num_frames / ((fps > 0) ? (float)fps : 1.0f));
+		} else {
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", loader_name, tmp_name));
 			tmap->spec_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->spec_map.texture = bm_load(tmp_name);
-			if (tmap->spec_map.texture < 0)
-			{
+
+			if (tmap->spec_map.texture < 0) {
 				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
 
 			nprintf(("Maps", "\n"));
 		}
 	}
-	tmap->spec_map.original_texture = tmap->spec_map.texture;
 	// -------------------------------------------------------------------------
 
-#ifdef BUMPMAPPING
 	// bump maps ---------------------------------------------------------------
-	if (true || (tmap->base_map.texture < 0))
-	{
-		tmap->bump_map.texture = -1;
-	}
-	else
-	{
+	if ( !Cmdline_normal || (tmap->base_map.texture < 0) ) {
+		tmap->norm_map.texture = -1;
+		tmap->height_map.texture = -1;
+	} else {
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-bump", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+		strncat(tmp_name, "-normal", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
 		strlwr(tmp_name);
 
-		tmap->bump_map.texture = bm_load(tmp_name);
-		if (tmap->bump_map.texture < 0)
-		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
+		// try to load an ANI
+		tmap->norm_map.texture = bm_load_animation(tmp_name, &tmap->norm_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+
+		if (tmap->norm_map.texture >= 0) {
+			tmap->norm_map.is_anim = true;
+			tmap->norm_map.anim.total_time = (tmap->norm_map.anim.num_frames / ((fps > 0) ? (float)fps : 1.0f));
+		} else {
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", loader_name, tmp_name));
+			tmap->norm_map.anim.num_frames = 1;
+
+			// try to load a non-ANI
+			tmap->norm_map.texture = bm_load(tmp_name);
+
+			if (tmap->norm_map.texture < 0) {
+				nprintf(("Maps", " or %s.pcx.", tmp_name));
+			}
+
+			nprintf(("Maps", "\n"));
+		}
+
+		// try to get a height map too
+		if ( Cmdline_height && (tmap->norm_map.texture >= 0) ) {
+			memset(tmp_name, 0, MAX_FILENAME_LEN);
+			strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+			strncat(tmp_name, "-height", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+			strlwr(tmp_name);
+
+			// try to load an ANI
+			tmap->height_map.texture = bm_load_animation(tmp_name, &tmap->height_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+
+			if (tmap->height_map.texture >= 0) {
+				tmap->height_map.is_anim = true;
+				tmap->height_map.anim.total_time = (tmap->height_map.anim.num_frames / ((fps > 0) ? (float)fps : 1.0f));
+			} else {
+				nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", loader_name, tmp_name));
+				tmap->height_map.anim.num_frames = 1;
+
+				// try to load a non-ANI
+				tmap->height_map.texture = bm_load(tmp_name);
+
+				if (tmap->height_map.texture < 0) {
+					nprintf(("Maps", " or %s.pcx.", tmp_name));
+				}
+
+				nprintf(("Maps", "\n"));
+			}
 		}
 	}
-	tmap->bump_map.original_texture = tmap->bump_map.texture;
 	// -------------------------------------------------------------------------
-#endif
 }
 
 //returns the number of this model
@@ -3502,6 +3616,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 //mprintf(( "Loading model '%s'\n", filename ));
 //key_getch();
+
+	// assign the default/original textures as the active set
+	pm->maps = pm->original_maps;
 
 //=============================
 // Find the destroyed replacement models
@@ -3758,10 +3875,8 @@ void model_set_bay_path_nums(polymodel *pm)
 
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for (i = 0; i < pm->n_paths; i++)
-	{
-		if (!strnicmp(pm->paths[i].name, NOX("$bay"), 4))
-		{
+	for (i = 0; i < pm->n_paths; i++) {
+		if ( !strnicmp(pm->paths[i].name, NOX("$bay"), 4) ) {
 			int bay_num;
 			char temp[3];
 
@@ -3769,9 +3884,10 @@ void model_set_bay_path_nums(polymodel *pm)
 			temp[2] = 0;
 			bay_num = atoi(temp);
 
-			Assert(bay_num >= 1 && bay_num <= MAX_SHIP_BAY_PATHS);
-			if (bay_num < 1 || bay_num > MAX_SHIP_BAY_PATHS)
+			if ( (bay_num < 1) || (bay_num > MAX_SHIP_BAY_PATHS) ) {
+				Int3();
 				continue;
+			}
 
 			pm->ship_bay->path_indexes[bay_num - 1] = i;
 			pm->ship_bay->num_paths++;
@@ -3846,7 +3962,7 @@ float submodel_get_radius( int modelnum, int submodelnum )
 
 
 
-polymodel * model_get(int model_num)
+polymodel *model_get(int model_num)
 {
 	Assert( model_num > -1 );
 
@@ -3928,6 +4044,13 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 			g3_project_vertex(&pt);
 
 			if (!(pt.flags & PF_OVERFLOW)) {
+//	float dx = ( tanf((Proj_fov * 0.5f) * 0.5f) * (pos->xyz.x / (gr_screen.clip_width * 0.5f) - 1.0f) / gr_screen.clip_aspect ) * pos->xyz.z;
+//	float dy = ( tanf((Proj_fov * 0.5f) * 0.5f) * (1.0f - pos->xyz.y / (gr_screen.clip_height * 0.5f)) ) * pos->xyz.z;
+//printf("pt.sx: %f (%f)\n", pt.sx, dx);
+//printf("pt.sy: %f (%f)\n", pt.sy, dy);
+			//	pt.sx -= dx * 2.0f;
+			//	pt.sy -= dy * 2.0f;
+
 				x = fl2i(pt.sx);
 				y = fl2i(pt.sy);
 				if ( n_valid_pts == 0 )	{
@@ -4058,6 +4181,11 @@ int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *
 	t = (height*Canv_h2)/pnt.z;
 	h = t*Matrix_scale.xyz.y;
 
+//	float dx = tanf(Proj_fov)*(pnt.sx/(gr_screen.max_w*0.5f)-1.0f)/gr_screen.aspect;
+//	float dy = tanf(Proj_fov)*(1.0f-pnt.sy/(gr_screen.max_h*0.5f));
+//printf("pnt.sx: %f (%f)\n", pnt.sx, dx);
+//printf("pnt.sy: %f (%f)\n", pnt.sy, dy);
+
 	if (x1) *x1 = fl2i(pnt.sx - w);
 	if (y1) *y1 = fl2i(pnt.sy - h);
 
@@ -4095,6 +4223,11 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int 
 
 	t = (height*Canv_h2)/pnt.z;
 	h = t*Matrix_scale.xyz.y;
+
+//	float dx = tanf(Proj_fov*0.5f)*(pnt.sx/(gr_screen.max_w*0.5f)-1.0f)/gr_screen.aspect;
+//	float dy = tanf(Proj_fov*0.5f)*(1.0f-pnt.sy/(gr_screen.max_h*0.5f));
+//printf("pnt.sx: %f (%f)\n", pnt.sx, dx);
+//printf("pnt.sy: %f (%f)\n", pnt.sy, dy);
 
 	if (x1) *x1 = fl2i(pnt.sx - w);
 	if (y1) *y1 = fl2i(pnt.sy - h);
@@ -4799,29 +4932,19 @@ void model_clear_instance(int model_num)
 	int i;
 
 	pm = model_get(model_num);
+	Assert( pm != NULL );
 
 	pm->gun_submodel_rotation = 0.0f;
-	// reset textures to original ones
-	for (i=0; i<pm->n_textures; i++ )	{
-		pm->maps[i].base_map.texture = pm->maps[i].base_map.original_texture;
-		pm->maps[i].glow_map.texture = pm->maps[i].glow_map.original_texture;
-		pm->maps[i].spec_map.texture = pm->maps[i].spec_map.original_texture;
-#ifdef BUMPMAPPING
-		pm->maps[i].bump_map.texture = pm->maps[i].bump_map.original_texture;
-#endif
-	}
-	
-	for (i=0; i<pm->n_models; i++ )	{
+
+	// reset texture set to original
+	pm->maps = pm->original_maps;
+
+	for (i = 0; i < pm->n_models; i++) {
 		bsp_info *sm = &pm->submodel[i];
-		
-		if ( pm->submodel[i].is_damaged )	{
-			sm->blown_off = 1;
-		} else {
-			sm->blown_off = 0;
-		}
-		sm->angs.p = 0.0f;
-		sm->angs.b = 0.0f;
-		sm->angs.h = 0.0f;
+
+		sm->blown_off = (sm->is_damaged > 0);
+
+		memset( &sm->angs, 0, sizeof(angles) );
 
 		// set pointer to other ship subsystem info [turn rate, accel, moment, axis, ...]
 		sm->sii = NULL;
@@ -4829,20 +4952,11 @@ void model_clear_instance(int model_num)
 		sm->num_arcs = 0;		// Turn off any electric arcing effects
 	}
 
-	for (i=0; i<pm->num_lights; i++ )	{
+	for (i = 0; i < pm->num_lights; i++)
 		pm->lights[i].value = 0.0f;
-	}
+
 
 	interp_clear_instance();
-
-//	if ( keyd_pressed[KEY_1] ) pm->lights[0].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_2] ) pm->lights[1].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_3] ) pm->lights[2].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_4] ) pm->lights[3].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_5] ) pm->lights[4].value = 1.0f/255.0f;
-//	if ( keyd_pressed[KEY_6] ) pm->lights[5].value = 1.0f/255.0f;
-
-
 }
 
 // initialization during ship set

@@ -306,10 +306,16 @@ FS2_SOURCES =	\
 	graphics/gropengl.h	\
 	graphics/gropenglbmpman.cpp	\
 	graphics/gropenglbmpman.h	\
+	graphics/gropengldraw.cpp	\
+	graphics/gropengldraw.h	\
 	graphics/gropenglextension.cpp	\
 	graphics/gropenglextension.h	\
 	graphics/gropengllight.cpp	\
 	graphics/gropengllight.h	\
+	graphics/gropenglshader.cpp	\
+	graphics/gropenglshader.h	\
+	graphics/gropenglstate.cpp	\
+	graphics/gropenglstate.h	\
 	graphics/gropengltexture.cpp	\
 	graphics/gropengltexture.h	\
 	graphics/gropengltnl.cpp	\
@@ -318,6 +324,7 @@ FS2_SOURCES =	\
 	graphics/grstub.h	\
 	graphics/line.h	\
 	graphics/tmapper.h	\
+	graphics/textureset.cpp	\
 	hud/hud.cpp	\
 	hud/hud.h	\
 	hud/hudartillery.cpp	\
@@ -362,6 +369,9 @@ FS2_SOURCES =	\
 	inetfile/chttpget.h	\
 	inetfile/inetgetfile.cpp	\
 	inetfile/inetgetfile.h	\
+	io/joy.cpp	\
+	io/joy.h	\
+	io/joy_ff.h	\
 	io/key.cpp	\
 	io/key.h	\
 	io/keycontrol.cpp	\
@@ -675,10 +685,8 @@ FS2_SOURCES =	\
 ## joystic support sources
 if FS2_OS_WIN32
 JOY_SOURCES =	\
-	io/joy.cpp	\
-	io/joy.h	\
+	io/joy-win.cpp	\
 	io/joy_ff.cpp	\
-	io/joy_ff.h	\
 	io/sw_error.hpp	\
 	io/sw_force.h	\
 	io/sw_guid.hpp	\
@@ -687,9 +695,7 @@ endif
 
 if FS2_OS_UNIX
 JOY_SOURCES =	\
-	io/joy.h	\
-	io/joy_ff.h	\
-	io/joy-unix.cpp
+	io/joy-sdl.cpp
 endif
 
 ## sound support sources

@@ -340,7 +340,7 @@
  * --Goober5000
  *
  * Revision 2.135  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.134  2006/01/04 08:19:21  taylor
  * fixes for regular texture replacement
@@ -1560,6 +1560,10 @@ void convertFSMtoFS2();
 void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
+
+// texture replacement handling (the parse_object specific bits anyway)
+void parse_object_page_out_texture_set(p_object *p_objp, bool release);
+void parse_object_init_texture_set(p_object *p_objp, ship_info *sip, polymodel *pm);
 
 
 MONITOR(NumShipArrivals)
@@ -2805,11 +2809,6 @@ int parse_create_object_sub(p_object *p_objp)
 	subsys_status *sssp;
 	ship_weapon *wp;
 
-	// texture replacements
-	char texture_file[MAX_FILENAME_LEN];
-	char *p;
-	polymodel *pm;
-
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
@@ -2924,43 +2923,11 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
 	// handle the replacement textures
-	if (p_objp->num_texture_replacements > 0)
-	{
-		shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+	parse_object_init_texture_set(p_objp, sip, model_get(sip->model_num));
 
-		for (i = 0; i < MAX_MODEL_TEXTURES; i++)
-			shipp->replacement_textures[i] = -1;
-	}
-
-	// now fill them in
-	for (i = 0; i < p_objp->num_texture_replacements; i++)
-	{
-		pm = model_get(sip->model_num);
-
-		// look for textures
-		for (j = 0; j < pm->n_textures; j++)
-		{
-			// get texture file name
-			bm_get_filename(pm->maps[j].base_map.texture, texture_file);
-
-			// get rid of file extension
-			p = strchr(texture_file, '.');
-			if (p)
-			{
-				mprintf(("ignoring extension on file '%s'\n", texture_file));
-				*p = 0;
-			}
-
-			// now compare the extension-less texture file names
-			if (!stricmp(texture_file, p_objp->replacement_textures[i].old_texture))
-			{
-				// replace it
-				shipp->replacement_textures[j] = p_objp->replacement_textures[i].new_texture_id;
-				break;
-			}
-		}
-	}
-
+	// mark the active ship replacement texture set
+	if (p_objp->texture_set != NULL)
+		shipp->replacement_textures = p_objp->texture_set;
 
 	// check the parse object's flags for possible things to set on this newly created ship
 	resolve_parse_flags(&Objects[objnum], p_objp->flags, p_objp->flags2);
@@ -3228,7 +3195,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 	else
 	{
-		int max_allowed_sparks, num_sparks, i;
+		int max_allowed_sparks, num_sparks;
 		polymodel *pm;
 
 		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
@@ -3821,38 +3788,32 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Persona Index:"))
 		stuff_int(&p_objp->persona_index);
 
-	// texture replacement - Goober5000
-	p_objp->num_texture_replacements = 0;
-	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
+	// texture replacement
+	p_objp->replacement_textures.clear();
+	p_objp->texture_set = NULL;
+	if ( optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:") )
 	{
+		texture_replace trp;
 		char *p;
 
-		while ((p_objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
-		{
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
+		while ( optional_string("+old:") ) {
+			stuff_string(trp.old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(trp.new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, '.');
+			p = strchr(trp.old_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture));
-				*p = 0;
-			}
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", trp.old_texture));
 				*p = 0;
 			}
 
-			// load the texture
-			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-
-			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
+			p = strchr(trp.new_texture, '.');
+			if (p)
 			{
-				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name);
+				mprintf(("Extraneous extension found on replacement texture %s!\n", trp.new_texture));
+				*p = 0;
 			}
 
 			// *** account for FRED
@@ -3860,14 +3821,23 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			{
 				Assert( Fred_texture_replacements != NULL );
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = -1;
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, trp.old_texture);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, trp.new_texture);
 				Fred_num_texture_replacements++;
 			}
 
-			// increment
-			p_objp->num_texture_replacements++;
+			// check if we already have an existing replacement texture, and if so delete it to add the new specification
+			for (i = 0; i < (int)p_objp->replacement_textures.size(); i++)
+			{
+				if ( !stricmp(p_objp->replacement_textures[i].old_texture, trp.old_texture) )
+					p_objp->replacement_textures.erase( p_objp->replacement_textures.begin() + i );
+			}
+
+			// add the texture set only if we aren't over the limit
+			if ( p_objp->replacement_textures.size() < MAX_MODEL_TEXTURES )
+				p_objp->replacement_textures.push_back( trp );
+			else
+				mprintf(("Too many replacement textures specified for ship '%s'!\n", p_objp->name));
 		}
 	}
 
@@ -3892,7 +3862,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		Player_start_pobject = *p_objp;
 		Player_start_pobject.flags |= P_SF_PLAYER_START_VALID;
 	}
-	
+
 
 	// Goober5000 - preload stuff for certain object flags
 	// (done after parsing object, but before creating it)
@@ -3901,6 +3871,36 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// this is a valid/legal ship to create
 	return 1;
+}
+
+void mission_parse_handle_late_arrivals(p_object *p_objp)
+{
+	ship_info *sip = NULL;
+	polymodel *pm = NULL;
+	model_subsystem *subsystems = NULL;
+
+	// only for objects which show up after the start of a mission
+	if (p_objp->created_object != NULL)
+		return;
+
+	Assert( p_objp->ship_class >= 0 );
+
+	sip = &Ship_info[p_objp->ship_class];
+
+	if ( !sip->subsystems.empty() ) {
+		subsystems = &sip->subsystems[0];
+	}
+
+	// we need the model to process the texture set, so go ahead and load it now
+	sip->model_num = model_load(sip->pof_file, sip->subsystems.size(), subsystems);
+
+	pm = model_get(sip->model_num);
+
+	// make sure that we have valid ship-level textures loaded, if they exist
+	ship_init_texture_set(p_objp->ship_class, pm);
+
+	// now handle any object specific replacement textures
+	parse_object_init_texture_set(p_objp, sip, pm);
 }
 
 // Goober5000 - I split this because 1) it's clearer; and 2) initially multiple docked ships would have been
@@ -3937,6 +3937,9 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 		// add to arrival list
 		list_append(&Ship_arrival_list, pobjp);
+
+		// we need to deal with replacement textures now, so that texture page-in will work properly
+		mission_parse_handle_late_arrivals(pobjp);
 	}
 	// ingame joiners bail here.
 	else if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
@@ -4182,12 +4185,14 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 
 p_object *mission_parse_get_parse_object(ushort net_signature)
 {
-	int i;
+	uint i;
 
 	// look for original ships
-	for (i = 0; i < (int)Parse_objects.size(); i++)
-		if(Parse_objects[i].net_signature == net_signature)
+	for (i = 0; i < Parse_objects.size(); i++) {
+		if (Parse_objects[i].net_signature == net_signature) {
 			return &Parse_objects[i];
+		}
+	}
 
 	// boo
 	return NULL;
@@ -4196,12 +4201,14 @@ p_object *mission_parse_get_parse_object(ushort net_signature)
 // Goober5000 - also get it by name
 p_object *mission_parse_get_parse_object(char *name)
 {
-	int i;
+	uint i;
 
 	// look for original ships
-	for (i = 0; i < (int)Parse_objects.size(); i++)
-		if(!stricmp(Parse_objects[i].name, name))
+	for (i = 0; i < Parse_objects.size(); i++) {
+		if ( !stricmp(Parse_objects[i].name, name) ) {
 			return &Parse_objects[i];
+		}
+	}
 
 	// boo
 	return NULL;
@@ -5641,6 +5648,13 @@ void parse_asteroid_fields(mission *pm)
 		required_string("$Maximum:");
 		stuff_vector(&Asteroid_field.max_bound);
 
+		vec3d a_rad;
+		vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+		vm_vec_scale(&a_rad, 0.5f);
+		float b_rad = vm_vec_mag(&a_rad);
+
+		Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
 		if (optional_string("+Inner Bound:")) {
 			Asteroid_field.has_inner_bound = 1;
 
@@ -6062,7 +6076,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 {
 	char real_fname[MAX_FILENAME_LEN];
 	strcpy(real_fname, filename);
-	char *p = strchr(real_fname, '.');
+	char *p = strrchr(real_fname, '.');
 	if (p) *p = 0; // remove any extension
 	strcat(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
@@ -6193,19 +6207,24 @@ int parse_main(char *mission_name, int flags)
 	return rval;
 }
 
+void mission_parse_level_close()
+{
+	uint i;
+
+	// free parse object dock lists
+	for (i = 0; i < Parse_objects.size(); i++) {
+		dock_free_instances(&Parse_objects[i]);
+
+		parse_object_page_out_texture_set(&Parse_objects[i], true);
+	}
+}
+
 void mission_parse_close()
 {
 	// free subsystems
-	if (Subsys_status != NULL)
-	{
+	if (Subsys_status != NULL) {
 		vm_free(Subsys_status);
 		Subsys_status = NULL;
-	}
-
-	// free parse object dock lists
-	for (int i = 0; i < (int)Parse_objects.size(); i++)
-	{
-		dock_free_instances(&Parse_objects[i]);
 	}
 }
 
@@ -6379,7 +6398,7 @@ void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_inf
 void parse_object_clear_all_handled_flags()
 {
 	// clear flag for all ships
-	for (int i = 0; i < (int)Parse_objects.size(); i++)
+	for (uint i = 0; i < Parse_objects.size(); i++)
 	{
 		p_object *pobjp = &Parse_objects[i];
 		p_dock_function_info dfi;
@@ -7778,7 +7797,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->wing_status_wing_pos = -1;
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
-	pobj->num_texture_replacements = 0;
+
+	pobj->replacement_textures.clear();
+	pobj->texture_set = NULL;
 }
 
 // returns true if a support ship is currently in the process of warping in.
@@ -7968,24 +7989,23 @@ void restore_default_weapons(char *ships_tbl)
 	ship_info *sip;
 
 	// guesstimate that this actually is a ships.tbl
-	if (!strstr(ships_tbl, "#Ship Classes"))
-	{
+	if ( !strstr(ships_tbl, "#Ship Classes") ) {
 		MessageBox(NULL, "This is not a ships.tbl file.  Aborting conversion...", "Error", MB_OK);
 		return;
 	}
 
 	// for every ship
-	for (i = 0; i < MAX_SHIPS; i++)
-	{
+	for (i = 0; i < MAX_SHIPS; i++) {
 		// ensure the ship slot is used in this mission
-		if (Ships[i].objnum >= 0)
-		{
+		if (Ships[i].objnum >= 0) {
 			// get ship_info
 			sip = &Ship_info[Ships[i].ship_info_index];
 
 			// find the ship class
 			ch = strstr(ships_tbl, ship_class);
-			if (!ch) continue;
+			if (!ch) {
+				continue;
+			}
 
 			// check pbanks (capital ships have these specified but empty)
 			Mp = strstr(ch, "$Default PBanks");
@@ -7999,40 +8019,45 @@ void restore_default_weapons(char *ships_tbl)
 
 			// see if we have any turrets
 			ch = strstr(ch, "$Subsystem");
-			for (ss = GET_FIRST(&Ships[i].subsys_list); ss != END_OF_LIST(&Ships[i].subsys_list); ss = GET_NEXT(ss))
-			{
+			for ( ss = GET_FIRST(&Ships[i].subsys_list); ss != END_OF_LIST(&Ships[i].subsys_list); ss = GET_NEXT(ss) ) {
 				// we do
-				if (ss->system_info->type == SUBSYSTEM_TURRET)
-				{
+				if (ss->system_info->type == SUBSYSTEM_TURRET) {
 					// find it in the ship_info subsys list
 					si_subsys = -1;
-					for (j = 0; j < sip->n_subsystems; j++)
-					{
-						if (!subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name))
-						{
+
+					for (j = 0; j < (int)sip->subsystems.size(); j++) {
+						if ( !subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name) ) {
 							si_subsys = j;
 							break;
 						}
 					}
-					if (si_subsys < 0) continue;
+
+					if (si_subsys < 0) {
+						continue;
+					}
 
 					// find it in the file - make sure it belongs to *this* ship
 					subsys = stristr(ch, ss->system_info->subobj_name);
-					if (!subsys) continue;
-					if (subsys > strstr(ch, "$Name")) continue;
+					if ( !subsys ) {
+						continue;
+					}
+
+					if ( subsys > strstr(ch, "$Name") ) {
+						continue;
+					}
 
 					// check pbanks - make sure they are *this* subsystem's banks
 					Mp = strstr(subsys, "$Default PBanks");
-					if (Mp < strstr(subsys + 1, "$Subsystem"))
-					{
+
+					if ( Mp < strstr(subsys + 1, "$Subsystem") ) {
 						Mp = strchr(Mp, '(');
 						restore_one_primary_bank(ss->weapons.primary_bank_weapons, sip->subsystems[si_subsys].primary_banks);
 					}
 
 					// check sbanks - make sure they are *this* subsystem's banks
 					Mp = strstr(subsys, "$Default SBanks");
-					if (Mp < strstr(subsys + 1, "$Subsystem"))
-					{
+
+					if ( Mp < strstr(subsys + 1, "$Subsystem") ) {
 						Mp = strchr(Mp, '(');
 						restore_one_secondary_bank(ss->weapons.secondary_bank_weapons, sip->subsystems[si_subsys].secondary_banks);
 					}
@@ -8078,6 +8103,91 @@ void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_second
 		{
 			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
 			ship_secondary_weapons[i] = original_weapon;
+		}
+	}
+}
+
+// this init and page_out stuff is basically a copy of the ship_* versions, but specific to p_object handling
+extern void model_page_out_texture_info(texture_info *tinfo, bool release);
+
+void parse_object_page_out_texture_set(p_object *p_objp, bool release)
+{
+	texture_map *tmap;
+	int i;
+
+	if (p_objp == NULL) {
+		Int3();
+		return;
+	}
+
+	if (p_objp->texture_set == NULL) {
+		return;
+	}
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
+		tmap = &p_objp->texture_set[i];
+
+		if (tmap->set_flag != TMR_SET_POBJECT) {
+			continue;
+		}
+
+		model_page_out_texture_info(&tmap->base_map, release);
+		model_page_out_texture_info(&tmap->glow_map, release);
+		model_page_out_texture_info(&tmap->spec_map, release);
+		model_page_out_texture_info(&tmap->norm_map, release);
+		model_page_out_texture_info(&tmap->height_map, release);
+	}
+
+	vm_free(p_objp->texture_set);
+	p_objp->texture_set = NULL;
+}
+
+void parse_object_init_texture_set(p_object *p_objp, ship_info *sip, polymodel *pm)
+{
+	int i, j;
+
+	Assert( pm != NULL );
+	Assert( sip != NULL );
+
+	if (p_objp == NULL) {
+		Int3();
+		return;
+	}
+
+	if (p_objp->texture_set != NULL) {
+		return;
+	}
+
+	if (p_objp->replacement_textures.size() < 1) {
+		return;
+	}
+
+
+	// allocate memory and set original textures by default
+	p_objp->texture_set = (texture_map*) vm_malloc( sizeof(texture_map) * MAX_MODEL_TEXTURES );
+
+	if (sip->texture_set != NULL) {
+		memcpy( p_objp->texture_set, sip->texture_set, sizeof(texture_map) * MAX_MODEL_TEXTURES );
+	} else {
+		memcpy( p_objp->texture_set, pm->original_maps, sizeof(texture_map) * MAX_MODEL_TEXTURES );
+	}
+
+	// now fill in the replacements
+	for (i = 0; i < (int)p_objp->replacement_textures.size(); i++) {
+		// look for textures
+		for (j = 0; j < pm->n_textures; j++) {
+			if ( !strlen(p_objp->texture_set[j].filename) ) {
+				continue;
+			}
+
+			// now compare the extension-less texture file names
+			if ( !stricmp(p_objp->texture_set[j].filename, p_objp->replacement_textures[i].old_texture) ) {
+				// replace it
+				model_load_texture(&p_objp->texture_set[j], p_objp->replacement_textures[i].new_texture, p_objp->name);
+				p_objp->texture_set[j].set_flag = TMR_SET_POBJECT;
+
+				break;
+			}
 		}
 	}
 }

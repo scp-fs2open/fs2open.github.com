@@ -110,7 +110,7 @@
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
  * Revision 2.75  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
+ * ï¿½bercommit of custom IFF stuff :)
  *
  * Revision 2.74  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
@@ -809,7 +809,6 @@ typedef struct texture_replace {
 	char ship_name[NAME_LENGTH];
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
-	int new_texture_id;
 } texture_replace;
 
 extern texture_replace *Fred_texture_replacements;
@@ -892,9 +891,8 @@ typedef struct p_object {
 	float ship_max_hull_strength;
 	float ship_max_shield_strength;
 
-	// Goober5000
-	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_MODEL_TEXTURES];	// replacement textures - Goober5000
+	std::vector<texture_replace> replacement_textures;
+	texture_map *texture_set;
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
@@ -1022,6 +1020,9 @@ p_object *mission_parse_get_parse_object(char *name);
 int parse_create_object(p_object *objp);
 void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2);
 
+// game_level_close() close out
+void mission_parse_level_close();
+// game_shutdown() close out
 void mission_parse_close();
 
 // used in squadmate messaging stuff to create wings from reinforcements.

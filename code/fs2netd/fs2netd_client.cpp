@@ -46,6 +46,7 @@
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
 #include "network/multi_options.h"
+#include "gamesequence/gamesequence.h"
 
 #ifdef WIN32
 //#include <windows.h>
@@ -103,25 +104,25 @@ char Multi_fs_tracker_filter[MAX_PATH] = "";
 
 void fs2netd_options_config_init()
 {
-	if ( !strlen(Multi_options_g.game_tracker_ip) ) {
+//	if ( !strlen(Multi_options_g.game_tracker_ip) ) {
 		ml_printf("FS2NetD MSG:  Address for game tracker not specified, using default instead (%s).", FS2NETD_DEFAULT_SERVER);
 		strncpy( Multi_options_g.game_tracker_ip, FS2NETD_DEFAULT_SERVER, MULTI_OPTIONS_STRING_LEN );
-	}
+//	}
 
-	if ( !strlen(Multi_options_g.user_tracker_ip) ) {
+//	if ( !strlen(Multi_options_g.user_tracker_ip) ) {
 		ml_printf("FS2NetD MSG:  Address for user tracker not specified, using default instead (%s).", FS2NETD_DEFAULT_SERVER);
 		strncpy( Multi_options_g.user_tracker_ip, FS2NETD_DEFAULT_SERVER, MULTI_OPTIONS_STRING_LEN );
-	}
+//	}
 
-	if ( !strlen(Multi_options_g.tracker_port) ) {
+//	if ( !strlen(Multi_options_g.tracker_port) ) {
 		ml_printf("FS2NetD MSG:  Port for game/user trackers not specified, using default instead (%u).", FS2NETD_DEFAULT_PORT);
 		strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
-	}
+//	}
 
-	if ( !strlen(Multi_options_g.pxo_ip) ) {
+//	if ( !strlen(Multi_options_g.pxo_ip) ) {
 		ml_printf("FS2NetD MSG:  Address for chat server not specified, using default instead (%s).", FS2NETD_DEFAULT_CHAT_SERVER);
 		strncpy( Multi_options_g.pxo_ip, FS2NETD_DEFAULT_CHAT_SERVER, MULTI_OPTIONS_STRING_LEN );
-	}
+//	}
 
 	if ( !strlen(Multi_options_g.pxo_banner_url) ) {
 		ml_printf("FS2NetD MSG:  URL for banners not specified, using default instead (%s).", FS2NETD_DEFAULT_BANNER_URL);
@@ -392,6 +393,7 @@ void fs2netd_do_frame()
 	ubyte pid = 0;
 	int itemp;
 	static fix NextPing = -1;
+	static fix NextHolePunch = -1;
 	static fix GotPong = -1;
 	bool reset = false;
 
@@ -425,6 +427,7 @@ void fs2netd_do_frame()
 		PXO_SID = -1;
 
 		NextHeartBeat = -1;
+		NextHolePunch = -1;
 		NextPing = -1;
 		GotPong = -1;
 
@@ -470,6 +473,7 @@ void fs2netd_do_frame()
 			PXO_SID = -1;
 
 			NextHeartBeat = -1;
+			NextHolePunch = -1;
 			NextPing = -1;
 			GotPong = -1;
 
@@ -494,6 +498,49 @@ void fs2netd_do_frame()
 
 	// handle server heart beats
 	fs2netd_server_send_heartbeat();
+/*
+	// send out UDP hole punch updates
+	// we only do this sparingly however, with the updates being sent:
+	//   - every 15 seconds when at the lobby or game start screens
+	//   - and a simple refresh every 5 minutes otherwise
+	if ( (NextHolePunch == -1) || (timer_get_fixed_seconds() >= NextHolePunch) ) {
+		int hp_timeout = 300;
+
+		switch ( gameseq_get_state() ) {
+			case GS_STATE_MULTI_JOIN_GAME:
+			case GS_STATE_MULTI_START_GAME:
+			case GS_STATE_PXO:
+			case GS_STATE_PXO_HELP:
+				hp_timeout = 15;
+				break;
+		}
+
+		NextHolePunch = timer_get_fixed_seconds() + (hp_timeout * F1_0);
+
+
+		UDP_hole_punch_data *cur = Net_player->hole_punch_data;
+
+		while (cur != NULL) {
+			if (cur->state == UDP_HOLE_PUNCH_STATE_DONE) {
+				UDP_hole_punch_data *prev = Net_player->hole_punch_data;
+
+				while (prev->next != cur) {
+					prev = prev->next;
+				}
+
+				cur = prev->next = cur->next;
+
+				continue;
+			}
+
+			send_udp_hole_punch(cur->ip, cur->port, cur->state);
+
+			ml_printf("FS2NetD Info:  Sent UDP hole punch to '%s'", cur->ip);
+	
+			cur = cur->next;
+		}
+	}
+*/
 
 	// Check for GWall messages - ping replies, etc
 	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
@@ -1390,5 +1437,83 @@ void fs2netd_update_game_count(char *chan_name)
 	}
 
 	FS2NetD_GameCountUpdate(chan_name);
+}
+
+
+void fs2netd_udp_hole_punch()
+{
+/*	// don't bother with this if we aren't on FS2NetD
+	if ( !Om_tracker_flag ) {
+		return;
+	}
+
+	if ( !Is_connected ) {
+		return;
+	}
+
+	server_item *cur = Game_server_head;
+	char ip[16];
+	int i = 0;
+
+	// give them a second to respond normally.
+	fix end_time = timer_get_fixed_seconds() + F1_0;
+
+	while ( timer_get_fixed_seconds() <= end_time ) {
+		multi_do_frame();
+	}
+
+
+	do {
+		i++;
+		cur = cur->next;
+	} while (cur != Game_server_head);
+
+
+	// if everyone is counted then just bail
+	if (i == Active_game_count) {
+		ml_printf("FS2NetD Info: (UDP hole-punch) All servers responding.");
+		return;
+	}
+
+	// check every server.
+	do {
+		bool has_responded = false;
+
+		// this is only for TCP connections (which should always be the case for us anyway)
+		if (cur->server_addr.type != NET_TCP) {
+			continue;
+		}
+
+		// see if this server has responded normally.
+		if ( Active_game_count > 0 ) {
+			active_game *agcur = Active_game_head;
+
+			do {
+				// Check if they're equal.
+				if ( (agcur->server_addr.port == cur->server_addr.port) &&
+						memcmp(agcur->server_addr.addr, cur->server_addr.addr, 4) )
+				{
+					has_responded = true;
+					break;
+				}
+
+				agcur = agcur->next;
+			} while (agcur != Active_game_head);
+		}
+
+		if (has_responded) {
+			cur = cur->next;
+			continue;
+		}
+
+		memset(ip, 0, sizeof(ip));
+		psnet_addr_to_string(ip, &cur->server_addr);
+
+		ml_printf("FS2NetD Info: (UDP hole-punch) Requesting response from %s", ip);
+
+		FS2NetD_UDPHolePunch(ip);
+
+		cur = cur->next;
+	} while (cur != Game_server_head);*/
 }
 

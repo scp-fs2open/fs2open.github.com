@@ -1520,7 +1520,7 @@ void wl_render_overhead_view(float frametime)
 		{
 			if (wl_ship->model_num < 0)
 			{
-				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				wl_ship->model_num = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 				model_page_in_textures(wl_ship->model_num, ship_class);
 			}
 
@@ -1545,12 +1545,12 @@ void wl_render_overhead_view(float frametime)
 				if (gr_screen.res == GR_640)
 				{
 					// lo-res
-					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename, NULL, NULL, 0, CF_TYPE_INTERFACE);
 				} else {
 					// high-res
 					char filename[NAME_LENGTH+2] = "2_";
 					strcat(filename, sip->overhead_filename);
-					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename, NULL, NULL, 0, CF_TYPE_INTERFACE);
 				}
 
 				// load the bitmap
@@ -1589,7 +1589,7 @@ void wl_render_overhead_view(float frametime)
 		// Load the necessary model file, if necessary
 		if (wl_ship->model_num < 0)
 		{
-			wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			wl_ship->model_num = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 			model_page_in_textures(wl_ship->model_num, ship_class);
 		}
 		
@@ -1967,7 +1967,7 @@ void wl_load_icons(int weapon_class)
 
 	if(!Cmdline_ship_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
 	{
-		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
+		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames, NULL, 0, CF_TYPE_INTERFACE);
 
 		for ( i = 0; (i < num_frames) && (i < NUM_ICON_FRAMES); i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;
@@ -4911,7 +4911,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	int source_wss_slot, cur_wss_slot;
 	int cur_wing_block, cur_wing_slot, cur_bank;
 	int weapon_type_to_add, result;
-	int i;
+	int i, j;
 
 	ship_info *sip, *source_sip;
 	weapon_info *wip;
@@ -5041,7 +5041,6 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// display error messages
 	if (error_flag)
 	{
-		int i, j;
 		bool is_duplicate;
 		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
 		strcpy(error_msg, "The following errors were encountered:\n\n");

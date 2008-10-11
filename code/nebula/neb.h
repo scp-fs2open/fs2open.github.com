@@ -97,16 +97,15 @@ struct ship;
 struct object;
 
 extern bool Nebula_sexp_used;
+
 // fog near and far values for rendering the background nebula
 extern float Neb_backg_fog_near;
 extern float Neb_backg_fog_far;
 
 // nebula rendering mode
 #define NEB2_RENDER_NONE								0			// no rendering
-#define NEB2_RENDER_POLY								1			// background is the old-school polygons
-#define NEB2_RENDER_POF									2			// background is the nice pof file
-#define NEB2_RENDER_LAME								3			// super simple nebula effect 
-#define NEB2_RENDER_HTL									4			// We are using proper fogging now 
+#define NEB2_RENDER_POF									1			// background is the nice pof file
+#define NEB2_RENDER_HTL									2			// We are using proper fogging now 
 extern int Neb2_render_mode;
 
 // the AWACS suppresion level for the nebula
@@ -129,6 +128,8 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 // how many "slices" are in the current player nebuls
 extern int Neb2_slices;
 
+#define MAX_CPTS		5		// should always be <= slices
+
 // nebula poofs
 typedef struct cube_poof {
 	vec3d	pt;				// point in space
@@ -137,7 +138,7 @@ typedef struct cube_poof {
 	float		rot_speed;		// rotation speed
 	float		flash;			// lightning flash
 } cube_poof;
-#define MAX_CPTS		5		// should always be <= slices
+
 extern cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
 
 
@@ -162,24 +163,8 @@ void neb2_post_level_init();
 // shutdown nebula stuff
 void neb2_level_close();
 
-// create a nebula object, return objnum of the nebula or -1 on fail
-// NOTE : in most cases you will want to pass -1.0f for outer_radius. Trust me on this
-int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius);
-
-// delete a nebula object
-void neb2_delete(object *objp);
-
 // call before beginning all rendering
 void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient);
-
-// renders a nebula object
-void neb2_render(object *objp);
-
-// preprocess the nebula object before simulation
-void neb2_process_pre(object *objp);
-
-// process the nebula object after simulating, but before rendering
-void neb2_process_post(object *objp);
 
 // render the player nebula
 void neb2_render_player();

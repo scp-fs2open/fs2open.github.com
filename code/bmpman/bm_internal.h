@@ -99,8 +99,8 @@
 #define BM_TYPE_CUBEMAP_DXT3	13		// 32-bit cubemap		(compressed cubemap surface)
 #define BM_TYPE_CUBEMAP_DXT5	14		// 32-bit cubemap		(compressed cubemap surface)
 // special types	( used in: bm_bitmaps[i].type )
-#define BM_TYPE_RENDER_TARGET_STATIC	16		// 24/32 bit setup internally as a static render target
-#define BM_TYPE_RENDER_TARGET_DYNAMIC	17		// 24/32 bit setup internally as a dynamic render target
+#define BM_TYPE_RENDER_TARGET_STATIC	15		// 24/32 bit setup internally as a static render target
+#define BM_TYPE_RENDER_TARGET_DYNAMIC	16		// 24/32 bit setup internally as a dynamic render target
 
 
 /// Moved from cpp file ///////////////////

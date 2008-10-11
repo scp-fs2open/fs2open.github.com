@@ -600,6 +600,8 @@ extern int Om_tracker_flag;
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
 
+#define UDP_HOLE_PUNCH				0xF2
+
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
 // ingame ack data codes
@@ -766,6 +768,18 @@ typedef struct net_player_server_info {
 	int					reliable_buffer_size;					// length (in bytes) of data in reliable send_buffer
 } net_player_server_info;
 
+// Defines for UDP_hole_punch_state.
+#define UDP_HOLE_PUNCH_STATE_DONE	0x01	// No need to send anything.
+#define UDP_HOLE_PUNCH_STATE_PING	0x02	// Send UDP_HOLE_PUNCH_PING
+#define UDP_HOLE_PUNCH_STATE_PONG	0x03	// Send UDP_HOLE_PUNCH_PONG
+
+typedef struct UDP_hole_punch_data {
+	short state;
+	char ip[16];
+	short port;
+	UDP_hole_punch_data *next;
+} UDP_hole_punch_data;
+
 // NETPLAYER INFORMATION ALL COMPUTERS IN THE GAME MUST HAVE
 typedef struct net_player_info {
 	p_object			*p_objp;								// pointer to parse object for my ship -- used with respawns
@@ -801,8 +815,10 @@ typedef struct net_player {
 	int				sv_last_pl;							// packet loss
 
 	// CLIENT-side
-	int				cl_bytes_recvd;					// bytes we've received (as a client)		
+	int				cl_bytes_recvd;					// bytes we've received (as a client)
 	int				cl_last_pl;							// packet loss
+
+	UDP_hole_punch_data		*hole_punch_data;		// Holds current state of UDP Hole Punch Attempt.
 } net_player;
 
 // structure which describes the state of the multiplayer game currently being played

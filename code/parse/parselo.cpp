@@ -571,7 +571,7 @@ void diag_printf(char *format, ...)
 	va_list args;
 
 	va_start(args, format);
-	vsprintf(buffer, format, args);
+	vsnprintf(buffer, sizeof(buffer)-1, format, args);
 	va_end(args);
 
 	nprintf(("Parse", "%s", buffer));
@@ -659,7 +659,7 @@ void error_display(int error_level, char *format, ...)
 	nprintf((error_text, "%s(line %i:%s: ", Current_filename, get_line_num(), error_text));
 
 	va_start(args, format);
-	vsprintf(buffer, format, args);
+	vsnprintf(buffer, sizeof(buffer)-1, format, args);
 	va_end(args);
 	Assert(strlen(buffer) < 1024);
 
@@ -1124,17 +1124,20 @@ char* alloc_text_until(char* instr, char* endstr)
 {
 	Assert(instr && endstr);
 	char *foundstr = stristr(instr, endstr);
-	if(foundstr == NULL)
-	{
+
+	if (foundstr == NULL) {
 		Error(LOCATION, "Missing [%s] in file");
 		longjmp(parse_abort, 3);
-	}
-	else
-	{
-		char* rstr = NULL;
-		rstr = (char*) vm_malloc((foundstr - instr)*sizeof(char));
+	} else {
+		if ( (foundstr - instr) <= 0 ) {
+			Int3();  // since this really shouldn't ever happen
+			return NULL;
+		}
 
-		if(rstr != NULL) {
+		char *rstr = NULL;
+		rstr = (char*) vm_malloc( (foundstr - instr + 1) * sizeof(char) );
+
+		if (rstr != NULL) {
 			strncpy(rstr, instr, foundstr-instr);
 			rstr[foundstr-instr] = '\0';
 		} else {
@@ -1252,9 +1255,13 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 		//Set final length for faster calcs
 		flen = pos-Mp;
 
+		// if we don't have anything to read then bail
+		if (flen <= 0) {
+			return NULL;
+		}
+
 		//Allocate the memory
-		//WMC - Don't forget the null character that's added later on.
-		rval = (char*) vm_malloc((flen + extra_chars + 1)*sizeof(char));
+		rval = (char*) vm_malloc( (flen + extra_chars + 1) * sizeof(char) );
 
 		//Copy the text (if memory was allocated)
 		if(rval != NULL) {
@@ -2050,9 +2057,9 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 				*mp++ = 's';
 				*mp++ = 's';
 				str++;
-
-			} else
+			} else {
 				*mp++ = *str++;
+			}
 		}
 
 //		strcpy(mp, outbuf);
