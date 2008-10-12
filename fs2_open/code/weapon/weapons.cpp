@@ -1546,9 +1546,7 @@ void parse_wi_flags(weapon_info *weaponp)
 	num_strings = stuff_string_list(weapon_strings, MAX_WEAPON_FLAGS);
 	
 	for (int i=0; i<num_strings; i++) {
-		if (!stricmp(NOX("Electronics"), weapon_strings[i]))
-			weaponp->wi_flags |= WIF_ELECTRONICS;		
-		else if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
+		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
 		{
             if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 			{
@@ -1614,7 +1612,9 @@ void parse_wi_flags(weapon_info *weaponp)
 		else if (!stricmp(NOX("Corkscrew"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_CORKSCREW;
 		else if (!stricmp(NOX("Shudder"), weapon_strings[i]))
-			weaponp->wi_flags |= WIF_SHUDDER;		
+			weaponp->wi_flags |= WIF_SHUDDER;
+		else if (!stricmp(NOX("Electronics"), weapon_strings[i]))
+			weaponp->wi_flags |= WIF_ELECTRONICS;
 		else if (!stricmp(NOX("lockarm"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_LOCKARM;		
 		else if (!stricmp(NOX("beam"), weapon_strings[i]))
@@ -6017,7 +6017,7 @@ extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 // input:	ship_obj		=>		pointer to ship that holds subsystem
 //				blast_pos	=>		world pos of weapon blast
 //				wi_index		=>		weapon info index of weapon causing blast
-void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_index)
+void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index)
 {
 	weapon_info			*wip;
 	ship					*shipp;
@@ -6272,7 +6272,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
 //	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
 //		if ( other_obj->type == OBJ_SHIP ) {
-//			weapon_do_electronics_affect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
+//			weapon_do_electronics_effect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
 //		}
 //	}
 }
@@ -6428,7 +6428,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 				continue;
 			}
 
-			weapon_do_electronics_affect(objp, hitpos, Weapons[weapon_obj->instance].weapon_info_index);
+			weapon_do_electronics_effect(objp, hitpos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 
