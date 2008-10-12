@@ -465,7 +465,7 @@ int Player_select_clone_flag;									// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];		// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
 
-int Player_select_force_main_hall = 0;
+int Player_select_force_main_hall = -1;
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
 
@@ -535,7 +535,7 @@ void player_select_init()
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
-	Player_select_force_main_hall = 0;
+	Player_select_force_main_hall = -1;
 
 	Player_select_screen_active = 1;
 
@@ -878,8 +878,8 @@ void player_select_close()
 		}
 	}
 
-	if (Player_select_force_main_hall) {
-		Player->main_hall = 1;
+	if (Player_select_force_main_hall >= 0) {
+		Player->main_hall = Player_select_force_main_hall;
 	}
 
 	// free memory from all parsing so far, all tbls found during game_init()
@@ -1703,11 +1703,52 @@ void player_select_cancel_create()
 	Player_select_autoaccept = 0;
 }
 
-DCF(bastion,"Sets the player to be on the bastion")
+DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 {
-	if(gameseq_get_state() == GS_STATE_INITIAL_PLAYER_SELECT){
-		Player_select_force_main_hall = 1;
-		dc_printf("Player is now in the Bastion\n");
+	if(gameseq_get_state() != GS_STATE_INITIAL_PLAYER_SELECT)
+	{
+		dc_printf("This command can only be run in the initial player select screen.\n");
+		return;
+	}
+
+	if (Dc_command)
+	{
+		dc_get_arg(ARG_INT | ARG_NONE);
+
+		if (Dc_arg_type & ARG_INT)
+		{
+			int idx = Dc_arg_int;
+
+			if (idx < 0 || idx >= MAIN_HALLS_MAX)
+			{
+				dc_printf("Main hall index out of range\n");
+			}
+			else
+			{
+				Player_select_force_main_hall = idx;
+				dc_printf("Player is now on main hall #%d\n", idx);
+			}
+		}
+		else
+		{
+			Player_select_force_main_hall = 1;
+			dc_printf("Player is now on the Bastion\n");
+		}
+
+		Dc_status = 0;
+	}
+
+	if (Dc_help)
+	{
+		dc_printf("Usage: bastion [index]\n");
+		dc_printf("       [index] -- optional main hall index; if not supplied, defaults to 1\n");
+
+		Dc_status = 0;
+	}
+
+	if (Dc_status)
+	{
+		dc_printf("There is no current main hall, as the player has not been selected yet!\n");
 	}
 }
 
