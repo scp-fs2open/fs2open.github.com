@@ -1900,13 +1900,12 @@ void init_weapon_entry(int weap_info_index)
 	wip->cs_crotate=1;
 	wip->cs_twist=5.0f;
 	
-	wip->elec_intensity=1.0f;
-	wip->elec_time=6000;
+	wip->elec_time=8000;
 	wip->elec_eng_mult=1.0f;
 	wip->elec_weap_mult=1.0f;
 	wip->elec_beam_mult=1.0f;
 	wip->elec_sensors_mult=1.0f;
-	wip->elec_randomness=4000;
+	wip->elec_randomness=2000;
 	wip->elec_use_new_style=0;
 
 	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
@@ -2771,8 +2770,9 @@ int parse_weapon(int subtype, bool replace)
 		
 		//New only -WMC
 		if(optional_string("+Intensity:")) {
-			stuff_float(&wip->elec_intensity);
-			if(!wip->elec_use_new_style)Warning(LOCATION, "+Intensity may only be used with new style electronics");
+			float temp;
+			stuff_float(&temp);
+			Warning(LOCATION, "+Intensity is deprecated");
 		}
 
 		if(optional_string("+Lifetime:")) {
@@ -6020,26 +6020,18 @@ extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index)
 {
 	weapon_info			*wip;
-	ship					*shipp;
+	ship				*shipp;
 	ship_subsys			*ss;
-	model_subsystem	*psub;
+	model_subsystem		*psub;
 	vec3d				subsys_world_pos;
-	float					dist;
+	float				dist;
 
 	shipp = &Ships[ship_objp->instance];
 	wip = &Weapon_info[wi_index];
 
-	int ship_type=ship_query_general_type(shipp);
-	float base_time = (float)wip->elec_time;
-	if(ship_type > -1) {
-		base_time *= (Ship_types[ship_type].emp_multiplier * wip->elec_intensity);
-	}
-	float sub_time;
-
 	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )
 	{
 		psub = ss->system_info;
-		sub_time=base_time;
 
 		// convert subsys point to world coords
 		vm_vec_unrotate(&subsys_world_pos, &psub->pnt, &ship_objp->orient);
@@ -6049,13 +6041,15 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 		dist = vm_vec_dist_quick(blast_pos, &subsys_world_pos);
 		if ( dist < wip->shockwave.outer_rad )
 		{
+			float disrupt_time = (float)wip->elec_time;
+
 			//use new style electronics disruption
 			if (wip->elec_use_new_style)
 			{
 				//if its an engine subsytem, take the multiplier into account
 				if (psub->type==SUBSYSTEM_ENGINE)
 				{
-					sub_time*=wip->elec_eng_mult;
+					disrupt_time*=wip->elec_eng_mult;
 				}
 	
 				//if its a turret or weapon subsytem, take the multiplier into account
@@ -6066,49 +6060,32 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 					//I figure, the big fancy electronics on beams will be used for the other
 					//weapons as well. No reason having two targeting computers on a turret.
 					//Plus, it's easy and fast to code. :)
-					if ((psub->type==SUBSYSTEM_TURRET)&& turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
+					if ((psub->type==SUBSYSTEM_TURRET) && turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
 					{
-						sub_time*=wip->elec_beam_mult;
+						disrupt_time*=wip->elec_beam_mult;
 					}
 					//disrupt other weapons
 					else
 					{
-						sub_time*=wip->elec_weap_mult;
+						disrupt_time*=wip->elec_weap_mult;
 					}
 				}
 				
 				//disrupt sensor and awacs systems.
 				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
 				{
-					sub_time*=wip->elec_sensors_mult;
-				}
-	
-				//add a little randomness to the disruption time, unless the disuruption time is zero for some reason
-				//perhaps a multiplier was zero or the scale was too small.
-				if (sub_time > 0) 
-				{
-					sub_time+=frand_range(-1.0f, 1.0f) * wip->elec_randomness;
-				}
-		
-				//disrupt this subsystem for the calculated time, plus or minus some time
-				//if it turns out to be less than 0 seconds, don't bother
-				if (sub_time > 0)
-				{
-					ship_subsys_set_disrupted(ss, fl2i(sub_time));
+					disrupt_time*=wip->elec_sensors_mult;
 				}
 			}
-
-			//use the old style disruption effect
-			else 
+	
+			//add a little randomness to the disruption time
+			disrupt_time += frand_range(-1.0f, 1.0f) * wip->elec_randomness;
+		
+			//disrupt this subsystem for the calculated time
+			//if it turns out to be less than 0 seconds, don't bother
+			if (disrupt_time > 0)
 			{
-				sub_time=wip->elec_time + frand_range(-1.0f, 1.0f)*wip->elec_randomness;
-				
-				//disrupt this subsystem for the calculated time, plus or minus some time
-				//if it turns out to be less than 0 seconds, don't bother
-				if (sub_time > 0)
-				{
-					ship_subsys_set_disrupted(ss, fl2i(sub_time));
-				}
+				ship_subsys_set_disrupted(ss, fl2i(disrupt_time));
 			}
 		}
 	}
@@ -6270,11 +6247,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 	}	// end for
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-//	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
-//		if ( other_obj->type == OBJ_SHIP ) {
-//			weapon_do_electronics_effect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
-//		}
-//	}
+	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
+		if ( other_obj->type == OBJ_SHIP ) {
+			weapon_do_electronics_effect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
+		}
+	}
 }
 
 //	----------------------------------------------------------------------
@@ -6399,36 +6376,14 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 		sci = &wip->dinky_shockwave;
 	}
 
-	// check if this is an area effect weapon (ie has shockwave
-	if ( sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
+	// check if this is an area effect weapon (i.e. has a blast radius)
+	if (sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
 	{
-		if(sci->speed > 0.0f)
-		{
+		if(sci->speed > 0.0f) {
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
 			weapon_do_area_effect(weapon_obj, sci, hitpos, other_obj);
-		}
-	}
-
-	if (wip->wi_flags & WIF_ELECTRONICS)
-	{
-		float blast,damage;
-		for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
-		{
-			if (objp->type != OBJ_SHIP)
-			{
-				continue;
-			}
-			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
-			{
-				continue;
-			}
-			if ( weapon_area_calc_damage(objp, hitpos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->shockwave.blast, wip->damage, &blast, &damage, wip->shockwave.outer_rad) == -1 ){
-				continue;
-			}
-
-			weapon_do_electronics_effect(objp, hitpos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 
