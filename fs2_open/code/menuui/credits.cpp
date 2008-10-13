@@ -595,7 +595,7 @@ void credits_init()
 			return;
 		}
 		
-		read_file_text("credits.tbl");
+		read_file_text("credits.tbl", CF_TYPE_TABLES);
 		reset_parse();
 
 		// keep reading everything in

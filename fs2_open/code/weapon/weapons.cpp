@@ -1392,7 +1392,7 @@ void parse_weapon_expl_tbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();		
 
 	required_string("#Start");
@@ -3348,7 +3348,7 @@ void parse_weaponstbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	if(optional_string("#Primary Weapons"))

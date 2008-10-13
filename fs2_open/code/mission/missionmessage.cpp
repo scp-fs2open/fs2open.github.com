@@ -1033,7 +1033,7 @@ void parse_msgtbl()
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("messages.tbl");
+	read_file_text("messages.tbl", CF_TYPE_TABLES);
 	reset_parse();
 	Num_messages = 0;
 	Num_personas = 0;

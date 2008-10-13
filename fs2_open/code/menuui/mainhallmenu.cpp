@@ -2292,7 +2292,7 @@ void main_hall_read_table()
 	}
 
 	// read the file in
-	read_file_text("mainhall.tbl");
+	read_file_text("mainhall.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// go for it

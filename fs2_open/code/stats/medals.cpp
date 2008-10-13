@@ -419,7 +419,7 @@ void parse_medal_tbl()
 		return;
 	}
 
-	read_file_text("medals.tbl");
+	read_file_text("medals.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse in all the rank names

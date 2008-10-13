@@ -1774,7 +1774,7 @@ void player_tips_init()
 		return;
 	}
 
-	read_file_text("tips.tbl");
+	read_file_text("tips.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	while(!optional_string("#end")){

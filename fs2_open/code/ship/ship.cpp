@@ -5166,7 +5166,7 @@ void parse_shiptype_tbl(char *filename)
 	}
 
 	if (filename != NULL)
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 	else
 		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
 
@@ -5237,7 +5237,7 @@ void parse_shiptbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse default ship
@@ -17044,7 +17044,7 @@ void armor_parse_table(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	//Enumerate through all the armor types and add them.

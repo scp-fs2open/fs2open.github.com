@@ -1103,7 +1103,7 @@ void parse_startbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	// freaky! ;)
