@@ -399,7 +399,7 @@ void nebl_init()
 	}
 
 	// parse the lightning table
-	read_file_text("lightning.tbl");
+	read_file_text("lightning.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	Num_bolt_types = 0;

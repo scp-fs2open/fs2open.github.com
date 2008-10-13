@@ -288,7 +288,7 @@ void palman_load_pixels()
 	}
 
 	// open pixels.tbl
-	read_file_text("pixels.tbl");
+	read_file_text("pixels.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse pixels	

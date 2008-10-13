@@ -1377,7 +1377,7 @@ void parse_autopilot_table(char *filename)
 	if (filename == NULL)
 		read_file_text_from_array(defaults_get_file("autopilot.tbl"));
 	else
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 
 	reset_parse();		
 

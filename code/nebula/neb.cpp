@@ -594,7 +594,7 @@ void neb2_init()
 	}
 
 	// read in the nebula.tbl
-	read_file_text("nebula.tbl");
+	read_file_text("nebula.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// background bitmaps

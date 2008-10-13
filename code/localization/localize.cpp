@@ -596,7 +596,7 @@ void parse_stringstbl(char *filename)
 	// make sure localization is NOT running
 	lcl_ext_close();
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	// move down to the proper section		
