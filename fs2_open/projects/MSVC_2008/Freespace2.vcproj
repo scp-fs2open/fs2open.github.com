@@ -96,6 +96,7 @@
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
 				MapFileName="$(TargetDir)$(TargetName).map"
+				MapExports="true"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -182,7 +183,7 @@
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="2"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="0"
+				DebugInformationFormat="3"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -209,6 +210,7 @@
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
 				MapFileName="$(TargetDir)$(TargetName).map"
+				MapExports="true"
 				SubSystem="2"
 				LinkTimeCodeGeneration="1"
 				RandomizedBaseAddress="1"
