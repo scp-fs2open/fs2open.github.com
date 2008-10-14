@@ -3622,7 +3622,7 @@ int beam_ok_to_fire(beam *b)
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
 	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
-		mprintf(("BEAM : powering beam down because of FOV condition!\n"));
+		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
 		return 0;
 	}
 

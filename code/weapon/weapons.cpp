@@ -4523,10 +4523,10 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 					{
 						if (frand() >= chance) {
 							wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
-							mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						//	mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
 						} else  {
 							wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
-							mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						//	mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
 						}
 					}
 				
