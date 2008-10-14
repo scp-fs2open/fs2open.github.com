@@ -4055,6 +4055,8 @@ void multi_create_list_sort(int mode)
 {
 	bool sort_missions = false;
 	bool sort_campaigns = false;
+	char selected_name[255];
+	int new_index = -1;
 
 	if (Multi_create_list_count < 0) {
 		return;
@@ -4075,14 +4077,32 @@ void multi_create_list_sort(int mode)
 			break;
 	}
 
+	// save our current selected item so that we can restore that one after sorting
+	multi_create_select_to_filename(Multi_create_list_select, selected_name);
 
 	if (sort_missions) {
 		std::sort( Multi_create_mission_list.begin(), Multi_create_mission_list.end(), multi_create_sort_func);
+
+		for (size_t idx = 0; idx < Multi_create_mission_list.size(); idx++) {
+			if ( !strcmp(selected_name, Multi_create_mission_list[idx].filename) ) {
+				new_index = (int)idx;
+				break;
+			}
+		}
 	}
 
 	if (sort_campaigns) {
 		std::sort( Multi_create_campaign_list.begin(), Multi_create_campaign_list.end(), multi_create_sort_func);
+
+		for (size_t idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
+			if ( !strcmp(selected_name, Multi_create_campaign_list[idx].filename) ) {
+				new_index = (int)idx;
+				break;
+			}
+		}
 	}
+
+	multi_create_list_select_item(new_index);
 }
 
 void multi_create_setup_list_data(int mode)
@@ -4390,6 +4410,8 @@ void multi_create_game_do()
 			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
 			// the above function doesn't sort initially, so we need this to take care of it
 			multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
+			// the sort function probably changed our selection, but here we always need it to zero
+			multi_create_list_select_item(0);
 		}
 
 		// don't bother setting netgame state if ont the server
