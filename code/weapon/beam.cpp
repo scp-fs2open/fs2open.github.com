@@ -951,7 +951,7 @@ int beam_fire(beam_fire_info *fire_info)
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
+	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
 		return -1;
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
@@ -1108,7 +1108,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
+	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
 		return -1;
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
@@ -2952,10 +2952,11 @@ int beam_collide_ship(obj_pair *pair)
 		if (quadrant_num >= 0)
 		{
 			// do the hit effect
-			if (shield_collision)
+			if (shield_collision) {
 				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
-			else
+			} else {
 				/* TODO */;
+			}
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
