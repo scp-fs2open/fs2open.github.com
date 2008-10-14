@@ -9344,6 +9344,10 @@ void show_ship_subsys_count()
 
 void ship_init_afterburners(ship *shipp)
 {
+	Assert( shipp );
+
+	shipp->ab_count = 0;
+
 	if (shipp->ship_info_index < 0) {
 		Int3();
 		return;
@@ -9582,8 +9586,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
-	// first try at ABtrails -Bobboau	
-	shipp->ab_count = 0;
+	// first try at ABtrails -Bobboau
 	ship_init_afterburners(shipp);
 
 	// call the contrail system
@@ -15537,7 +15540,6 @@ void ship_page_in()
 			nprintf(( "Paging", "Paging in textures for ship '%s'\n", Ships[i].ship_name ));
 			model_page_in_textures(sip->model_num, Ships[i].ship_info_index);
 			// need to make sure and do this again, after we are sure that all of the textures are ready
-			Ships[i].ab_count = 0;
 			ship_init_afterburners( &Ships[i] );
 		}
 
