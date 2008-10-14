@@ -8235,6 +8235,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	ubyte u_beam_info;
 	char subsys_index;
 	beam_info b_info;
+	ushort target_sig;
 
 	// only the server should ever be doing this
 	Assert(MULTIPLAYER_MASTER);
@@ -8252,13 +8253,21 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		if (target == NULL) {
 			return;
 		}
+
+		target_sig = target->net_signature;
+	} else {
+		target_sig = (target) ? target->net_signature : 0;
 	}
 
 	u_beam_info = (ubyte)beam_info_index;
-	subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter));
-	Assert(subsys_index >= 0);
-	if(subsys_index < 0){
-		return;
+	subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter), 1);
+
+	// it's ok for subsys_index to be invalid for fighters (since it doesn't have to be on a turret)
+	if ( !fighter_beam ) {
+		Assert(subsys_index >= 0);
+		if (subsys_index < 0) {
+			return;
+		}
 	}
 
 	// swap the beam_info override info into little endian byte order
@@ -8281,7 +8290,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	BUILD_HEADER(BEAM_FIRED);
 	ADD_USHORT(shooter->net_signature);
 	ADD_DATA(subsys_index);
-	ADD_USHORT(target->net_signature);
+	ADD_USHORT(target_sig);
 	ADD_DATA(u_beam_info);
 	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
 //	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
@@ -8349,22 +8358,27 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
 	if ( Ship_info[Ships[fire_info.shooter->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
-		for (int i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
+		for (i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
 			if ( Ships[fire_info.shooter->instance].weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
 				fire_info.fighter_beam = true;
 			}
 		}
 	}
 
-	if (fire_info.fighter_beam && (fire_info.target == NULL)) {
+	if ( !fire_info.fighter_beam && (fire_info.target == NULL) ) {
 		nprintf(("Network", "Couldn't get target info for BEAM weapon!\n"));
 		return;
 	}
 
-	fire_info.turret = ship_get_indexed_subsys( &Ships[fire_info.shooter->instance], (int)subsys_index);
-	if (!fire_info.fighter_beam && (fire_info.turret == NULL)) {
-		nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
-		return;
+	if ( fire_info.fighter_beam && ((int)subsys_index < 0) ) {
+		fire_info.turret = NULL;
+	} else {
+		fire_info.turret = ship_get_indexed_subsys( &Ships[fire_info.shooter->instance], (int)subsys_index);
+
+		if (fire_info.turret == NULL) {
+			nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
+			return;
+		}
 	}
 
 	// fire da beam
