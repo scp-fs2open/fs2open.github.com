@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		25FB46190E2E537F0089DF93 /* gropenglshader.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB46180E2E537F0089DF93 /* gropenglshader.h */; };
+		25FB461D0E2E55370089DF93 /* gropenglstate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB461A0E2E55370089DF93 /* gropenglstate.cpp */; };
+		25FB461E0E2E55370089DF93 /* gropenglstate.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB461B0E2E55370089DF93 /* gropenglstate.h */; };
+		25FB461F0E2E55370089DF93 /* gropenglshader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB461C0E2E55370089DF93 /* gropenglshader.cpp */; };
+		25FB46220E2E55500089DF93 /* gropengldraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB46200E2E55500089DF93 /* gropengldraw.cpp */; };
+		25FB46230E2E55500089DF93 /* gropengldraw.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB46210E2E55500089DF93 /* gropengldraw.h */; };
 		3419B21B091016C700DC7D47 /* iff_defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3419B219091016C700DC7D47 /* iff_defs.cpp */; };
 		3419B21C091016C700DC7D47 /* iff_defs.h in Headers */ = {isa = PBXBuildFile; fileRef = 3419B21A091016C700DC7D47 /* iff_defs.h */; };
 		344BA944095A59BF00B9D97D /* ai_profiles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 344BA942095A59BF00B9D97D /* ai_profiles.cpp */; };
@@ -783,6 +789,12 @@
 /* Begin PBXFileReference section */
 		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		25FB46180E2E537F0089DF93 /* gropenglshader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gropenglshader.h; sourceTree = "<group>"; };
+		25FB461A0E2E55370089DF93 /* gropenglstate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gropenglstate.cpp; sourceTree = "<group>"; };
+		25FB461B0E2E55370089DF93 /* gropenglstate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gropenglstate.h; sourceTree = "<group>"; };
+		25FB461C0E2E55370089DF93 /* gropenglshader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gropenglshader.cpp; sourceTree = "<group>"; };
+		25FB46200E2E55500089DF93 /* gropengldraw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gropengldraw.cpp; sourceTree = "<group>"; };
+		25FB46210E2E55500089DF93 /* gropengldraw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gropengldraw.h; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		3419B219091016C700DC7D47 /* iff_defs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iff_defs.cpp; sourceTree = "<group>"; };
@@ -3017,6 +3029,12 @@
 		34595A7D08C3DAA2003B1351 /* OpenGL */ = {
 			isa = PBXGroup;
 			children = (
+				25FB46200E2E55500089DF93 /* gropengldraw.cpp */,
+				25FB46210E2E55500089DF93 /* gropengldraw.h */,
+				25FB461A0E2E55370089DF93 /* gropenglstate.cpp */,
+				25FB461B0E2E55370089DF93 /* gropenglstate.h */,
+				25FB461C0E2E55370089DF93 /* gropenglshader.cpp */,
+				25FB46180E2E537F0089DF93 /* gropenglshader.h */,
 				3459538208C3D6A0003B1351 /* gropengl.cpp */,
 				3459538308C3D6A0003B1351 /* gropengl.h */,
 				3459538408C3D6A0003B1351 /* gropenglbmpman.cpp */,
@@ -3131,6 +3149,9 @@
 				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				3459586F08C3D8CB003B1351 /* freespace.h in Headers */,
 				3459587008C3D8CB003B1351 /* levelpaging.h in Headers */,
+				25FB46190E2E537F0089DF93 /* gropenglshader.h in Headers */,
+				25FB461E0E2E55370089DF93 /* gropenglstate.h in Headers */,
+				25FB46230E2E55500089DF93 /* gropengldraw.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3639,6 +3660,9 @@
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				3459596B08C3D8CB003B1351 /* freespace.cpp in Sources */,
 				3459596C08C3D8CB003B1351 /* levelpaging.cpp in Sources */,
+				25FB461D0E2E55370089DF93 /* gropenglstate.cpp in Sources */,
+				25FB461F0E2E55370089DF93 /* gropenglshader.cpp in Sources */,
+				25FB46220E2E55500089DF93 /* gropengldraw.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
