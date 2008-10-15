@@ -1215,7 +1215,7 @@ void hud_render_target_ship_info(object *target_objp)
 	ship			*target_shipp;
 	ship_info	*target_sip;
 	int			w, h, screen_integrity = 1;
-	char			outstr[256];
+	char			outstr[NAME_LENGTH * 2 + 5];
 	float			ship_integrity, shield_strength;
 
 	Assert(target_objp);	// Goober5000
@@ -1223,19 +1223,7 @@ void hud_render_target_ship_info(object *target_objp)
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
 
-//	if (Cmdline_wcsaga &&
-//		(target_shipp->wingnum != -1) && 
-//		(target_shipp->team != Player_ship->team)) 
-//	Backslash - Instead of rely on command line, let's use a flag in Iff_defs.tbl
-	if ( (Iff_info[target_shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (target_shipp->wingnum != -1) ) {
-		strcpy( outstr, "");
-	} else if (target_shipp->flags2 & SF2_HIDE_SHIP_NAME) {
-		strcpy( outstr, "");		
-	} else {
-		strcpy( outstr, target_shipp->ship_name );
-		end_string_at_first_hash_symbol(outstr);
-	}
-
+	// set up colors
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {
 		hud_set_iff_color(target_objp, 1);
 	} else {
@@ -1247,27 +1235,13 @@ void hud_render_target_ship_info(object *target_objp)
 		}
 	}
 
-	// maybe do some translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name(outstr);
-	}
+	// print lines
+	hud_stuff_ship_name(target_shipp, outstr);
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr);	
+	hud_stuff_ship_class(target_shipp, outstr);
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, outstr);
 
-	// print out ship class
-	char temp_name[NAME_LENGTH+2] = "";
-
-	// if this ship has an alternate type name
-	if (target_shipp->alt_type_index >= 0) {
-		mission_parse_lookup_alt_index(target_shipp->alt_type_index, temp_name);
-	} else {
-		strcpy(temp_name, Ship_info[target_shipp->ship_info_index].name);
-	}
-	end_string_at_first_hash_symbol(temp_name);
-
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name(temp_name);
-	}
-	emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, temp_name);
+	// ----------
 
 	ship_integrity = 1.0f;
 	shield_strength = 1.0f;
@@ -1284,7 +1258,7 @@ void hud_render_target_ship_info(object *target_objp)
 		}
 	}
 	// Print out right-justified integrity
-	sprintf(outstr,XSTR( "%d%%", 341), screen_integrity);
+	sprintf(outstr, XSTR( "%d%%", 341), screen_integrity);
 	gr_get_string_size(&w,&h,outstr);
 
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {

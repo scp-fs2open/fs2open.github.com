@@ -2417,22 +2417,22 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 
 		return JOIN_DENY_JR_STATE;
 	}
-	
+
 	// the standalone has some oddball situations which we must handle seperately
 	if (Game_mode & GM_STANDALONE_SERVER) {		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){
-
-			// Karajorma - Since we're not actually using any of this code comment it all out
 			/*
+			   TODO:  We can use this now, but it's not compatible with older builds,
+			          so comment it out until the next release
+
 			// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 			// we probably eventually want to make sure he's not passing us a fake tracker id#
 			if (MULTI_IS_TRACKER_GAME) {
-				if(jr->tracker_id < 0){
-					FS2 Open PXO doesn't use this
+				if (jr->tracker_id < 0) {
 					return JOIN_DENY_JR_TRACKER_INVAL; 
 				}			
-			}		
+			}
 			*/
 
 			// if we're password protected		
@@ -2464,15 +2464,19 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		// we're full buddy - sorry
 		return JOIN_DENY_JR_FULL;
 	}
-	
+
+	/*
+	   TODO:  We can use this now, but it's not compatible with older builds,
+			  so comment it out until the next release
+
 	// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 	// we probably eventually want to make sure he's not passing us a fake tracker id#
 	if (MULTI_IS_TRACKER_GAME) {
-		if(jr->tracker_id < 0){
-			// FS2Open PXO Doesn't use this
-			//return JOIN_DENY_JR_TRACKER_INVAL;
+		if (jr->tracker_id < 0){
+			return JOIN_DENY_JR_TRACKER_INVAL;
 		}			
 	}
+	*/
 
 	// check to see if the player is trying to ingame join in a closed game
 	if(MULTI_IN_MISSION && (Netgame.mode == NG_MODE_CLOSED)){

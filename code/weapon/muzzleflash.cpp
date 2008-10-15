@@ -160,7 +160,7 @@ void parse_mflash_tbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();		
 
 	// header

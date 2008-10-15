@@ -836,15 +836,18 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 						objp = &Objects[ao->objnum];
 						evaluate_obj_as_target(objp, &eeo);
 					}
+
+					if (eeo.nearest_objnum != -1) {
+						return eeo.nearest_objnum;
+					}
 				}
-				return eeo.nearest_objnum;										// lowest priority is the closest enemy objnum
+				break;
 
 			default:
 				Int3(); //Means invalid number passed.
 		}
 	}
 
-	//prevent warning of all control paths not returning a value
 	return -1;
 }
 

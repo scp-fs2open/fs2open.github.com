@@ -1662,6 +1662,9 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 			if (num_files >= max)
 				break;
 
+            if (strcmp(strstr(filter, "."), strstr(find.name,".")) != 0)
+                continue;
+
 			if ( strlen(find.name) >= MAX_FILENAME_LEN )
 				continue;
 
@@ -1866,6 +1869,9 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 				break;
 
 			if (!(find.attrib & _A_SUBDIR)) {
+            
+                if (strcmp(strstr(filter, "."), strstr(find.name,".")) != 0)
+                    continue;
 
 				if ( strlen(find.name) >= MAX_FILENAME_LEN )
 					continue;

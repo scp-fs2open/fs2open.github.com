@@ -1964,6 +1964,7 @@ sexp_oper Operators[] = {
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
 	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
+	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -7860,7 +7861,7 @@ int special_argument_appears_in_sexp_list(int node)
 // eval_when evaluates the when conditional
 int eval_when(int n, int use_arguments)
 {
-	int arg_handler, cond, val, actions, exp;
+	int arg_handler, cond, val, actions, exp, op_num;
 
 	Assert( n >= 0 );
 
@@ -7894,16 +7895,30 @@ int eval_when(int n, int use_arguments)
 			exp = CAR(actions);
 			if (exp != -1)
 			{
-				// if we're using the special argument in this action
-				if (special_argument_appears_in_sexp_tree(exp))
-				{
-					do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
-				}
-				// if not, just evaluate it once as-is
-				else
-				{
-					// Goober5000 - possible bug? (see when val is used below)
-					/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+				
+				op_num = get_operator_const(CTEXT(exp));
+				switch (op_num) {
+					// if the op is a conditional then we just evaluate it
+					case OP_WHEN:
+					case OP_WHEN_ARGUMENT:
+					case OP_EVERY_TIME:
+					case OP_EVERY_TIME_ARGUMENT:
+						eval_sexp(exp);
+						break;
+
+					// otherwise we need to check if arguments are used
+					default: 
+						// if we're using the special argument in this action
+						if (special_argument_appears_in_sexp_tree(exp))
+						{
+							do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
+						}
+						// if not, just evaluate it once as-is
+						else
+						{
+							// Goober5000 - possible bug? (see when val is used below)
+							/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+						}
 				}
 			}
 			actions = CDR(actions);
@@ -8204,6 +8219,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 void sexp_invalidate_argument(int n)
 {
 	int conditional, arg_handler, arg_n;
+	bool invalidated;
 
 	conditional = n; 
 	do {
@@ -8222,22 +8238,45 @@ void sexp_invalidate_argument(int n)
 	// loop through arguments
 	while (n != -1)
 	{
-		// search for argument in arg_handler list
-		arg_n = CDR(arg_handler);
-		while (arg_n != -1)
-		{
-			// match?
-			if (!strcmp(CTEXT(n), CTEXT(arg_n)))
-			{
-				// set it as invalid
-				Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+		invalidated = false; 
 
-				// exit inner loop
-				break;
+		// first we must check if the arg_handler marks a selection. At the moment random-of is the only one that does this
+		arg_n = CDR(arg_handler);
+		while (arg_n != -1) {
+			if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_SELECT) {
+				// now check if the selected argument matches the one we want to invalidate
+				if (!strcmp(CTEXT(n), CTEXT(arg_n))) {
+					// set it as invalid
+					Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+					invalidated = true; 
+				}
 			}
 
 			// iterate
 			arg_n = CDR(arg_n);
+		}
+		
+		if (!invalidated) {
+			// search for argument in arg_handler list
+			arg_n = CDR(arg_handler);
+			while (arg_n != -1)
+			{
+				// match?
+				if (!strcmp(CTEXT(n), CTEXT(arg_n)))
+				{
+					// we need to check if the argument is already invalid as some argument lists may contain duplicates
+					if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID) {
+						// set it as invalid
+						Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+
+						// exit inner loop
+						break;
+					}
+				}
+
+				// iterate
+				arg_n = CDR(arg_n);
+			}
 		}
 
 		// iterate
@@ -12882,13 +12921,13 @@ void sexp_deal_with_afterburner_lock (int node, bool lock)
 	do {
 		// Check that a ship has been supplied
 		ship_index = ship_name_lookup(CTEXT(node));
-		if (ship_index < 0) {
+		if (ship_index < 0)	{
 			node = CDR (node);
 			continue ;
 		}
 
 		// Check that it's valid
-		if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS)) {
+		if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS))	{
 			node = CDR (node);
 			continue ;
 		}
@@ -14777,6 +14816,33 @@ int sexp_is_player (int node)
 
 		// if we reached this far they all checked out
 		return SEXP_TRUE;
+	}
+}
+
+void sexp_set_respawns(int node)
+{
+	int num_respawns; 
+	int sindex; 
+	player *p = NULL;
+	p_object *p_objp;
+
+	// we're wasting our time if you can't respawn
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		return;
+	}
+
+	num_respawns = eval_num(node);
+
+	node = CDR(node);
+
+	while (node != -1) {
+		// get the parse object for the ship
+		p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+		if (p_objp != NULL) {
+			p_objp->respawn_count = num_respawns;
+		}
+
+		node = CDR(node);
 	}
 }
 
@@ -17153,6 +17219,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_return_player_data(node, op_num);
 				break;
 
+			case OP_SET_RESPAWNS:
+				sexp_set_respawns(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_NUM_TYPE_KILLS:
 				sexp_val = sexp_num_type_kills(node);
 				break;
@@ -18146,6 +18217,7 @@ int query_operator_return_type(int op)
 		case OP_RESET_ORDERS:
 		case OP_SET_PERSONA:
 		case OP_CHANGE_SUBSYSTEM_NAME:
+		case OP_SET_RESPAWNS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -19079,6 +19151,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_DEATHS: 
 		case OP_RESPAWNS_LEFT:
 			return OPF_SHIP;
+
+		case OP_SET_RESPAWNS:
+			if (argnum == 0 ) {
+				return OPF_POSITIVE;
+			}
+			else {
+				return OPF_SHIP;
+			}
 
 		case OP_NUM_TYPE_KILLS:
 			if(argnum == 0){
@@ -22360,6 +22440,12 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_RESPAWNS_LEFT, "respawns-left\r\n"
 		"\tReturns the # respawns a player (or AI that could have been a player) has remaining.\r\n"
 		"\tThe ship specified in the first field should be the player start.\r\n"
+		"\tOnly really useful for multiplayer."},
+
+	{ OP_SET_RESPAWNS, "set-respawns\r\n"
+		"\tSet the # respawns a player (or AI that could have been a player) has used.\r\n"
+		"\t1: Number of respawns used up\r\n"
+		"\tRest: The player start ship to operate on.\r\n"
 		"\tOnly really useful for multiplayer."},
 
 	{ OP_NUM_TYPE_KILLS, "num-type-kills\r\n"

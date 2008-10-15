@@ -1607,7 +1607,7 @@ void debrief_traitor_init()
 			return;
 		}
 
-		read_file_text("traitor.tbl");
+		read_file_text("traitor.tbl", CF_TYPE_TABLES);
 		reset_parse();		
 
 		// simplied form of the debriefing stuff.

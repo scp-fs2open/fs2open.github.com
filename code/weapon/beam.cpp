@@ -951,7 +951,7 @@ int beam_fire(beam_fire_info *fire_info)
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
+	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
 		return -1;
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
@@ -1108,7 +1108,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
+	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
 		return -1;
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
@@ -2952,10 +2952,11 @@ int beam_collide_ship(obj_pair *pair)
 		if (quadrant_num >= 0)
 		{
 			// do the hit effect
-			if (shield_collision)
+			if (shield_collision) {
 				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
-			else
+			} else {
 				/* TODO */;
+			}
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
@@ -3621,7 +3622,7 @@ int beam_ok_to_fire(beam *b)
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
 	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
-		mprintf(("BEAM : powering beam down because of FOV condition!\n"));
+		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
 		return 0;
 	}
 

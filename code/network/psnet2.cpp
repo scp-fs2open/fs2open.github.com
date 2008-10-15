@@ -2800,7 +2800,13 @@ int psnet_init_tcp()
 	sockaddr.sin_port = htons( Psnet_default_port );
 	if ( bind(TCP_socket, (SOCKADDR*)&sockaddr, sizeof (sockaddr)) == SOCKET_ERROR) {	
 		Tcp_failure_code = WSAGetLastError();
-		ml_printf("Couldn't bind TCP socket (%d)! Invalidating TCP\n", Tcp_failure_code ); 
+
+		if (Tcp_failure_code == WSAEADDRINUSE) {
+			ml_printf("TCP socket already in use!  Another instance running?  (Try using the \"-port %i\" cmdline option)\n", Psnet_default_port + 1);
+		} else {
+			ml_printf("Couldn't bind TCP socket (%d)! Invalidating TCP\n", Tcp_failure_code );
+		}
+
 		return 0;
 	}
 

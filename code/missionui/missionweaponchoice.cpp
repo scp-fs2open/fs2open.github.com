@@ -1963,7 +1963,7 @@ void wl_load_icons(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
-	if(!Cmdline_ship_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
+	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
 	{
 		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
 
@@ -2006,7 +2006,7 @@ void wl_load_anim(int weapon_class)
 	icon = &Wl_icons[weapon_class];
 	Assert( icon->wl_anim == NULL );
 	
-	if(!Cmdline_ship_choice_3d || wip->render_type == WRT_LASER)
+	if(!Cmdline_weapon_choice_3d || wip->render_type == WRT_LASER)
 	{
 		// 1024x768 SUPPORT
 		// If we are in 1024x768, we first want to append "2_" in front of the filename
@@ -3596,7 +3596,23 @@ void weapon_select_do(float frametime)
 
 				anim_release_render_instance(icon->wl_anim_instance);
 				anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
-				aps.start_at = WEAPON_ANIM_LOOP_FRAME-1;
+
+                if (icon->wl_anim->num_keys > 1)
+                {
+                    if (icon->wl_anim->keys[1].frame_num > icon->wl_anim->keys[0].frame_num)
+                    {
+                        aps.start_at = icon->wl_anim->keys[1].frame_num - 1;
+                    }
+                    else
+                    {
+                        aps.start_at = icon->wl_anim->keys[0].frame_num - 1;
+                    }
+                }
+                else
+                {
+                    aps.start_at = WEAPON_ANIM_LOOP_FRAME - 1;
+                }
+
 				aps.screen_id = ON_WEAPON_SELECT;
 				aps.framerate_independent = 1;
 				aps.skip_frames = 0;

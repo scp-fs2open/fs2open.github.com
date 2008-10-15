@@ -101,6 +101,8 @@
 #define PCKT_CHAT_CHAN_COUNT_REPLY	0x19
 #define PCKT_SLIST_HB_2				0x1a
 #define PCKT_SLIST_DISCONNECT		0x1b
+#define PCKT_DUP_LOGIN_RQST			0x1c
+#define PCKT_DUP_LOGIN_REPLY		0x1d
 
 
 //***********************************************************************************************************************

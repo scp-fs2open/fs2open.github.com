@@ -317,7 +317,7 @@ void parse_rank_tbl()
 		return;
 	} 
 
-	read_file_text("rank.tbl");
+	read_file_text("rank.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse in all the rank names

@@ -333,7 +333,7 @@ void multi_options_read_config()
 				if ( SETTING("+pxo") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						// whee!
+						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH);
 					}
 				} else
 				// set the standalone server's permanent name
@@ -393,7 +393,21 @@ void multi_options_read_config()
 				// set standalone to high updates
 				if ( SETTING("+lan_update") ) {
 					Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
-				} 
+				} else
+				// standalone pxo login user
+				if ( SETTING("+pxo_login") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						strncpy(Multi_options_g.std_pxo_login, tok, MULTI_TRACKER_STRING_LEN);
+					}
+				} else
+				// standalone pxo login password
+				if ( SETTING("+pxo_password") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						strncpy(Multi_options_g.std_pxo_password, tok, MULTI_TRACKER_STRING_LEN);
+					}
+				}
 			}
 
 			// ... common to all modes ...

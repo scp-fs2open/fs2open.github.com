@@ -473,7 +473,7 @@
  * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
  *
  * Revision 2.293  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * bercommit of custom IFF stuff :)
  *
  * Revision 2.292  2006/01/09 04:54:14  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
@@ -2889,7 +2889,7 @@ void init_ship_entry(ship_info *sip)
 	sip->debris_min_rotspeed = -1.0f;
 	sip->debris_max_rotspeed = -1.0f;
 	sip->debris_damage_type_idx = -1;
-	
+
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
 		sip->allowed_weapons[i] = 0;
@@ -4983,6 +4983,23 @@ void parse_ship_type()
 		strcpy(stp->name, name_buf);
 	}
 
+	char *ship_type = NULL;
+	if (!stricmp(stp->name, "sentrygun")) {
+		ship_type = "sentry gun";
+	} else if (!stricmp(stp->name, "escapepod")) {
+		ship_type = "escape pod";
+	} else if (!stricmp(stp->name, "repair_rearm")) {
+		ship_type = "support";
+	} else if (!stricmp(stp->name, "supercap")) {
+		ship_type = "super cap";
+	} else if (!stricmp(stp->name, "knossos")) {
+		ship_type = "knossos device";
+	}
+
+	if (ship_type != NULL) {
+		Warning(LOCATION, "Bad ship type name in objecttypes.tbl\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin objecttypes.tbl to fix this.\n", stp->name, ship_type);
+	}
+
 	//Okay, now we should have the values to parse
 	//But they aren't here!! :O
 	//Now they are!! Whee fogging!!
@@ -5148,7 +5165,7 @@ void parse_shiptype_tbl(char *filename)
 	}
 
 	if (filename != NULL)
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 	else
 		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
 
@@ -5219,7 +5236,7 @@ void parse_shiptbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse default ship
@@ -5952,6 +5969,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
 	shipp->alt_type_index = -1;
+	shipp->callsign_index = -1;
 
 	shipp->lightning_stamp = -1;
 
@@ -9319,6 +9337,10 @@ void show_ship_subsys_count()
 
 void ship_init_afterburners(ship *shipp)
 {
+	Assert( shipp );
+
+	shipp->ab_count = 0;
+
 	if (shipp->ship_info_index < 0) {
 		Int3();
 		return;
@@ -9557,8 +9579,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
-	// first try at ABtrails -Bobboau	
-	shipp->ab_count = 0;
+	// first try at ABtrails -Bobboau
 	ship_init_afterburners(shipp);
 
 	// call the contrail system
@@ -9670,6 +9691,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship			*sp;
 	object		*objp;
 	float hull_pct, shield_pct;
+	physics_info ph_inf;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
@@ -9696,6 +9718,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		} else {
 			shield_pct = 0.0f;
 		}
+
+		// physics
+		ph_inf = objp->phys_info;
 	}
 	// set to 100% otherwise
 	else
@@ -9755,12 +9780,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// make sure that shields are enabled if they need to be
 	if (sp->ship_max_shield_strength > 0.0f) {
 		objp->flags &= ~OF_NO_SHIELDS;
+	} else {
+		objp->flags |= OF_NO_SHIELDS;
 	}
 
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
-
 
 	// subsys stuff done only after hull stuff is set
 
@@ -9779,6 +9805,27 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
 	ets_init_ship(&Objects[sp->objnum]);
+
+	// Reset physics to previous values
+	if (by_sexp) {
+		Objects[sp->objnum].phys_info.desired_rotvel = ph_inf.desired_rotvel;
+		Objects[sp->objnum].phys_info.desired_vel = ph_inf.desired_vel;
+		Objects[sp->objnum].phys_info.forward_thrust = ph_inf.forward_thrust;
+		Objects[sp->objnum].phys_info.fspeed = ph_inf.fspeed;
+		Objects[sp->objnum].phys_info.heading = ph_inf.heading;
+		Objects[sp->objnum].phys_info.last_rotmat = ph_inf.last_rotmat;
+		Objects[sp->objnum].phys_info.prev_fvec = ph_inf.prev_fvec;
+		Objects[sp->objnum].phys_info.prev_ramp_vel = ph_inf.prev_ramp_vel;
+		Objects[sp->objnum].phys_info.reduced_damp_decay = ph_inf.reduced_damp_decay;
+		Objects[sp->objnum].phys_info.rotvel = ph_inf.rotvel;
+		Objects[sp->objnum].phys_info.shockwave_decay = ph_inf.shockwave_decay;
+		Objects[sp->objnum].phys_info.shockwave_shake_amp = ph_inf.shockwave_shake_amp;
+		Objects[sp->objnum].phys_info.side_thrust = ph_inf.side_thrust;
+		Objects[sp->objnum].phys_info.speed = ph_inf.speed;
+		Objects[sp->objnum].phys_info.vel = ph_inf.vel;
+		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
+	}
+
 	// mwa removed the next line in favor of simply setting the ai_class in AI_info.  ai_object_init
 	// was trashing mode in ai_info when it was valid due to goals.
 	//ai_object_init(&Objects[sp->objnum], sp->ai_index);
@@ -10541,28 +10588,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			{
 //Assert (!(winfo_p->wi_flags & WIF_BEAM))
 
-
-				// The energy-consumption code executes even for ballistic primaries, because
-				// there may be a reason why you want to have ballistics consume energy.  Perhaps
-				// you can't fire too many too quickly or they'll overheat.  If not, just set
-				// the weapon's energy_consumed to 0 and it'll work just fine. - Goober5000
-
-				// fail unless we're forcing (energy based primaries)
-				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed) && !force)
-				{
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
-					if ( obj == Player_obj )
-					{
-						if ( ship_maybe_play_primary_fail_sound() )
-						{
-							// I guess they just deleted the commented HUD message here (they left
-							// it in in other routines)
-						}
-					}
-					ship_stop_fire_primary_bank(obj, bank_to_fire);
-					continue;
-				}			
-
 				int points = 0, numtimes = 1;
 
 				// ok if this is a cycling weapon use shots as the number of points to fire from at a time
@@ -10574,6 +10599,29 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					numtimes = winfo_p->shots;
 					points = num_slots;
 				}
+
+				// The energy-consumption code executes even for ballistic primaries, because
+				// there may be a reason why you want to have ballistics consume energy.  Perhaps
+				// you can't fire too many too quickly or they'll overheat.  If not, just set
+				// the weapon's energy_consumed to 0 and it'll work just fine. - Goober5000
+
+				// fail unless we're forcing (energy based primaries)
+				if ( (shipp->weapon_energy < points*numtimes * winfo_p->energy_consumed)			//was num_slots
+				 && !force ) {
+
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
+					if ( obj == Player_obj )
+					{
+						if ( ship_maybe_play_primary_fail_sound() )
+						{
+							// I guess they just deleted the commented HUD message here (they left
+							// it in in other routines)
+						}
+					}
+					ship_stop_fire_primary_bank(obj, bank_to_fire);
+					continue;
+				}
+				// moved the above to here to use points instead of num_slots for energy consumption check
 
 				// ballistics support for primaries - Goober5000
 				if ( winfo_p->wi_flags2 & WIF2_BALLISTIC )
@@ -10619,96 +10667,103 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					// deplete ammo
 					if ( Weapon_energy_cheat == 0 )
 					{
-						swp->primary_bank_ammo[bank_to_fire] -= points;
+						swp->primary_bank_ammo[bank_to_fire] -= points*numtimes;
+						// note for later: do we ever want primaries to have ammo 'sizes' other than 1?
 
 						// make sure we don't go below zero; any such error is excusable
 						// because it only happens when the bank is depleted in one shot
-						if (swp->primary_bank_ammo[bank_to_fire] < 0)
-						{
-							swp->primary_bank_ammo[bank_to_fire] = 0;
-						}
+						CLAMP(swp->primary_bank_ammo[bank_to_fire], 0, swp->primary_bank_capacity[bank_to_fire]);
 					}
 				}
 
 				// now handle the energy as usual
 				// deplete the weapon reserve energy by the amount of energy used to fire the weapon				
-				shipp->weapon_energy -= points * winfo_p->energy_consumed;
+				shipp->weapon_energy -= points*numtimes * winfo_p->energy_consumed;
+				// note for later: option for fuel!
 				
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
 
 //mprintf(("I am going to fire a weapon %d times, from %d points, the last point fired was %d, and that will be point %d\n",numtimes,points,shipp->last_fired_point[bank_to_fire],shipp->last_fired_point[bank_to_fire]%num_slots));
-				for( w = 0; w<numtimes; w++ ){
-				for ( j = 0; j < points; j++ )
-				{
-					int pt; //point
-					if (winfo_p->wi_flags2 & WIF2_CYCLE){
-						//pnt = pm->gun_banks[bank_to_fire].pnt[shipp->last_fired_point[bank_to_fire]+j%num_slots];
-						pt = (shipp->last_fired_point[bank_to_fire]+j)%num_slots;
+				for ( w = 0; w < numtimes; w++ ) {
+					for ( j = 0; j < points; j++ ) {
+						int pt; //point
+						if (winfo_p->wi_flags2 & WIF2_CYCLE){
+							//pnt = pm->gun_banks[bank_to_fire].pnt[shipp->last_fired_point[bank_to_fire]+j%num_slots];
+							pt = (shipp->last_fired_point[bank_to_fire]+1)%num_slots;
 //mprintf(("fireing from %d\n",shipp->last_fired_point[bank_to_fire]+j%num_slots));
-					}else{
-						//pnt = pm->gun_banks[bank_to_fire].pnt[j];
-						pt = j;
+						}else{
+							//pnt = pm->gun_banks[bank_to_fire].pnt[j];
+							pt = j;
 //mprintf(("fireing from %d\n",j));
-					}
+						}
 
-					int sub_shots = 1;
-					polymodel *weapon_model = NULL;
-					if(winfo_p->external_model_num >= 0){
-						weapon_model = model_get(winfo_p->external_model_num);
-						if(weapon_model->n_guns)sub_shots = weapon_model->gun_banks[0].num_slots;
-					}
+						int sub_shots = 1;
+						polymodel *weapon_model = NULL;
+						if(winfo_p->external_model_num >= 0){
+							weapon_model = model_get(winfo_p->external_model_num);
+//							if(weapon_model->n_guns)sub_shots = weapon_model->gun_banks[0].num_slots;
+							if (weapon_model->n_guns) 
+								sub_shots = weapon_model->gun_banks[bank_to_fire].num_slots;
+						}
 
-					for(int s = 0; s<sub_shots; s++){
-						pnt = pm->gun_banks[bank_to_fire].pnt[pt];
-						if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
+						for(int s = 0; s<sub_shots; s++){
+							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
+//							if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
+							if (weapon_model && weapon_model->n_guns)
+								vm_vec_add2(&pnt, &weapon_model->gun_banks[bank_to_fire].pnt[s]);
 
-						vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
-						vm_vec_add(&firing_pos, &gun_point, &obj->pos);
+							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
+							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
 
-						matrix firing_orient;
-						if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
-						{
-							if (sip->has_autoaim &&
-								aip->target_objnum != -1 &&
-								Players[Player_num].lead_indicator_active == 1)
+							matrix firing_orient;
+							if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
 							{
-								// Fire weapon in target direction
-								vec3d target_position, target_velocity_vec, predicted_target_pos;
-								vec3d firing_vec, last_delta_vec, player_forward_vec;
-								float dist_to_target, time_to_target, angle_to_target;
-
-								// If a subsystem is targeted, fire in that direction instead
-								if (aip->targeted_subsys != NULL)
+								if (sip->has_autoaim &&
+									aip->target_objnum != -1 &&
+									Players[Player_num].lead_indicator_active == 1)
 								{
-									get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-								}
-								else
-								{
-									target_position = Objects[aip->target_objnum].pos;
-								}
+									// Fire weapon in target direction
+									vec3d target_position, target_velocity_vec, predicted_target_pos;
+									vec3d firing_vec, last_delta_vec, player_forward_vec;
+									float dist_to_target, time_to_target, angle_to_target;
 
-								target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
-								dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
-								time_to_target = 0.0f;
+									// If a subsystem is targeted, fire in that direction instead
+									if (aip->targeted_subsys != NULL)
+									{
+										get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+									}
+									else
+									{
+										target_position = Objects[aip->target_objnum].pos;
+									}
 
-								if (winfo_p->max_speed != 0)
-								{
-									time_to_target = dist_to_target / winfo_p->max_speed;
-								}
+									target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
+									dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
+									time_to_target = 0.0f;
 
-								vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
-								polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
-								vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
+									if (winfo_p->max_speed != 0)
+									{
+										time_to_target = dist_to_target / winfo_p->max_speed;
+									}
 
-								// Deactivate autoaiming if the target leaves the autoaim-FOV cone
-								player_forward_vec = obj->orient.vec.fvec;
-								angle_to_target = vm_vec_delta_ang(&player_forward_vec, &firing_vec, NULL);
+									vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
+									polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
+									vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
 
-								if (angle_to_target < sip->autoaim_fov)
-								{
-									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+									// Deactivate autoaiming if the target leaves the autoaim-FOV cone
+									player_forward_vec = obj->orient.vec.fvec;
+									angle_to_target = vm_vec_delta_ang(&player_forward_vec, &firing_vec, NULL);
+
+									if (angle_to_target < sip->autoaim_fov)
+									{
+										vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+									}
+									else
+									{
+										firing_orient = obj->orient;
+									}
 								}
 								else
 								{
@@ -10717,86 +10772,78 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 							else
 							{
-								firing_orient = obj->orient;
+								vec3d firing_vec;
+								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
+								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
 							}
-						}
-						else
-						{
-							vec3d firing_vec;
-							vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
-							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-						}
-						// create the weapon -- the network signature for multiplayer is created inside
-						// of weapon_create
+							// create the weapon -- the network signature for multiplayer is created inside
+							// of weapon_create
 
-						weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
-	
-						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
-	
-						if (winfo_p->wi_flags & WIF_FLAK)
-						{
-							object *target;
-							vec3d predicted_pos;
-							float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
-							float range_to_target = flak_range;
-							float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
+							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
 
-							if (aip->target_objnum != -1) {
-								target = &Objects[aip->target_objnum];
-							} else {
-								target = NULL;
-							}
+							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 
-							if (target != NULL) {
-								set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
-								range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
-							}
-
-							//if we have a target and its in range
-							if ( (target != NULL) && (range_to_target < flak_range) )
+							if (winfo_p->wi_flags & WIF_FLAK)
 							{
-								//set flak range to range of ship
-								flak_pick_range(&Objects[weapon_objnum], &firing_pos, &predicted_pos,wepstr);
+								object *target;
+								vec3d predicted_pos;
+								float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
+								float range_to_target = flak_range;
+								float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
+
+								if (aip->target_objnum != -1) {
+									target = &Objects[aip->target_objnum];
+								} else {
+									target = NULL;
+								}
+
+								if (target != NULL) {
+									set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
+									range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
+								}
+
+								//if we have a target and its in range
+								if ( (target != NULL) && (range_to_target < flak_range) )
+								{
+									//set flak range to range of ship
+									flak_pick_range(&Objects[weapon_objnum], &firing_pos, &predicted_pos,wepstr);
+								}
+								else
+								{
+									flak_set_range(&Objects[weapon_objnum], flak_range-20);
+								}
+
+								if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
+								{
+									flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, &obj->phys_info, swp->primary_bank_weapons[bank_to_fire]);
+								}
 							}
-							else
-							{
-								flak_set_range(&Objects[weapon_objnum], flak_range-20);
+							// create the muzzle flash effect
+							if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+								// show the flash only if in not cockpit view, or if "show ship" flag is set
+								shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
 							}
-	
-							if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
-							{
-								flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, &obj->phys_info, swp->primary_bank_weapons[bank_to_fire]);
+
+							// maybe shudder the ship - if its me
+							if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+								// calculate some arbitrary value between 100
+								// (mass * velocity) / 10
+								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f);
 							}
+
+							num_fired++;
+							shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 						}
-						// create the muzzle flash effect
-						if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
-							// show the flash only if in not cockpit view, or if "show ship" flag is set
-							shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
-						}
-	
-						// maybe shudder the ship - if its me
-						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
-							// calculate some arbitrary value between 100
-							// (mass * velocity) / 10
-							game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f);
-						}
-	
-						num_fired++;
 					}
-				}
-				shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
+//					shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 				}
 			}
-			
 
-			if(shipp->weapon_energy < 0.0f){
-				shipp->weapon_energy = 0.0f;
-			}
-
+			CLAMP(shipp->weapon_energy, 0.0f, sip->max_weapon_reserve);
 
 			banks_fired |= (1<<bank_to_fire);				// mark this bank as fired.
-		}		
-		
+		}
+
 		
 		// Only play the weapon fired sound if it hasn't been played yet.  This is to 
 		// avoid playing the same sound multiple times when banks are linked with the
@@ -11930,7 +11977,7 @@ int ship_info_lookup_sub(char *token)
 int ship_template_lookup(char *token)
 {
 	int	i;
-	
+
 	for ( i = 0; i < (int)Ship_templates.size(); i++ ) {
 		if ( !stricmp(token, Ship_templates[i].name) ) {
 			return i;
@@ -15630,7 +15677,7 @@ void ship_page_in()
 			for(j = 0; j < num_fireballs; j++){
 				fireball_used[sip->explosion_bitmap_anims[j]] = 1;
 			}
-		} else if(Ship_types[sip->class_type].explosion_bitmap_anims.size() > 0) { 
+		} else if(sip->class_type >= 0 && Ship_types[sip->class_type].explosion_bitmap_anims.size() > 0) { 
 			int num_fireballs = Ship_types[sip->class_type].explosion_bitmap_anims.size();
 			for(j = 0; j < num_fireballs; j++){
 				fireball_used[Ship_types[sip->class_type].explosion_bitmap_anims[j]] = 1;
@@ -16992,7 +17039,7 @@ void armor_parse_table(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	//Enumerate through all the armor types and add them.

@@ -125,25 +125,21 @@
 typedef int socklen_t;
 #endif
 
-#if !defined(CLOSEFUNC)
-#define CLOSEFUNC closesocket
-#endif
-
-#if !defined(STYPE)
-#define STYPE SOCKET
-#endif
-
 
 static bool Connecting = false;
 static bool Connected = false;
-static STYPE mySocket;
+static SOCKET mySocket = INVALID_SOCKET;
 
 static sockaddr_in PXO_addr;
 
 
 void FS2NetD_Disconnect()
 {
-	CLOSEFUNC(mySocket);
+	if (mySocket != INVALID_SOCKET) {
+		shutdown(mySocket, 2);
+		closesocket(mySocket);
+		mySocket = INVALID_SOCKET;
+	}
 
 	Connected = false;
 	Connecting = false;

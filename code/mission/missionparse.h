@@ -746,6 +746,11 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
+// callsign
+#define MAX_CALLSIGNS					100
+extern char Mission_callsigns[MAX_CALLSIGNS][NAME_LENGTH];
+extern int Mission_callsign_count;
+
 // path restrictions
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
@@ -903,6 +908,7 @@ typedef struct p_object {
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
 	char	alt_type_index;					// optional alt type index
+	char	callsign_index;					// optional callsign index
 
 	float ship_max_hull_strength;
 	float ship_max_shield_strength;
@@ -960,6 +966,7 @@ typedef struct p_object {
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
 #define MAX_PARSE_OBJECT_FLAGS_2	15
+#define MAX_PARSE_OBJECT_FLAGS_2	13
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -973,8 +980,7 @@ typedef struct p_object {
 #define P2_SF2_NO_DEATH_SCREAM				(1<<9)
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
 #define P2_SF2_NAV_NEEDSLINK				(1<<11)
-#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<12)
-#define P2_SF2_HIDE_SHIP_NAME				(1<<13)
+#define P2_SF2_HIDE_SHIP_NAME				(1<<12)
 #define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<14)
 
 // and again: these flags do not appear in the array
@@ -1087,6 +1093,12 @@ int mission_parse_lookup_alt(char *name);
 void mission_parse_lookup_alt_index(int index, char *out);
 int mission_parse_add_alt(char *name);
 void mission_parse_reset_alt();
+
+// callsign stuff
+int mission_parse_lookup_callsign(char *name);
+void mission_parse_lookup_callsign_index(int index, char *out);
+int mission_parse_add_callsign(char *name);
+void mission_parse_reset_callsign();
 
 // code to save/restore mission parse stuff
 int get_mission_info(char *filename, mission *missionp = NULL, bool basic = true);

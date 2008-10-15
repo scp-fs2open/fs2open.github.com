@@ -309,7 +309,7 @@ void parse_species_tbl(char *filename)
 	if (filename == NULL)
 		read_file_text_from_array(defaults_get_file("species_defs.tbl"));
 	else
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 
 	reset_parse();		
 

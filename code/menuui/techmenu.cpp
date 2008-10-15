@@ -1520,7 +1520,7 @@ void techroom_intel_init()
 		return;
 	}
 	
-	read_file_text("species.tbl");
+	read_file_text("species.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	Intel_info_size = 0;

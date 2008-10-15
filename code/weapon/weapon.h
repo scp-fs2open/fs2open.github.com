@@ -922,7 +922,6 @@ typedef struct weapon_info {
 	float decal_rad;
 
 	//electronics info - phreak 5/3/03
-	float elec_intensity;		//intensity detirmines how well it works on different ship classes
 	int elec_time;				//how long it lasts, in milliseconds
 	float elec_eng_mult;		//multiplier on engine subsystem
 	float elec_weap_mult;		//multiplier on weapon subsystem and turrets

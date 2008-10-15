@@ -763,38 +763,38 @@ void std_connect_set_gamename(char *name)
 // the user has changed the text in the server name text box. handle this
 void std_connect_handle_name_change()
 {
-	char buf[MAX_GAMENAME_LEN+2];
-	int max_len = MAX_GAMENAME_LEN+2;
+	char buf[MAX_GAMENAME_LEN+1];
+	int max_len = MAX_GAMENAME_LEN;
 
 	if(Multi_std_namechange_force){
-		memset(buf,0,MAX_GAMENAME_LEN+2);
+		memset(buf,0,MAX_GAMENAME_LEN+1);
 		memcpy(&buf[0],&max_len,sizeof(int));
 
 		// get the new text
 		SendMessage(Multi_std_name,EM_GETLINE,(WPARAM)0,(LPARAM)(LPCSTR)buf);
 
 		// just copy it over for now. we may want to process this more later on
-		strcpy(Netgame.name,buf);
+		strncpy(Netgame.name, buf, sizeof(Netgame.name));
 
 		// copy it to the permanent name
-		strcpy(Multi_options_g.std_pname, buf);
+		strncpy(Multi_options_g.std_pname, buf, sizeof(Multi_options_g.std_pname));
 	}
 }
 
 // the user has changed the text in the host password text box
 void std_connect_handle_passwd_change()
 {
-	char buf[STD_PASSWD_LEN+2];
-	int max_len = STD_PASSWD_LEN+2;
+	char buf[STD_PASSWD_LEN+1];
+	int max_len = STD_PASSWD_LEN;
 	
-	memset(buf,0,STD_PASSWD_LEN+2);
+	memset(buf,0,STD_PASSWD_LEN+1);
 	memcpy(&buf[0],&max_len,sizeof(int));
 
 	// get the new text
 	SendMessage(Multi_std_host_passwd,EM_GETLINE,(WPARAM)0,(LPARAM)(LPCSTR)buf);
 
 	// just copy it over for now. we may want to process this more later on
-	strcpy(Multi_options_g.std_passwd, buf);
+	strncpy(Multi_options_g.std_passwd, buf, sizeof(Multi_options_g.std_passwd));
 }
 
 // convert the index of an item in the list box into an index into the net players array
@@ -841,7 +841,7 @@ BOOL CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 		
 		// create the standalone name text box and limit its text length
 		Multi_std_name = GetDlgItem(hwndDlg, (int)MAKEINTRESOURCE(IDC_STD_NAME));
-		SendMessage(Multi_std_name, EM_SETLIMITTEXT, (WPARAM)MAX_GAMENAME_LEN-1, (LPARAM)0);
+		SendMessage(Multi_std_name, EM_SETLIMITTEXT, (WPARAM)MAX_GAMENAME_LEN, (LPARAM)0);
 		Multi_std_namechange_force = 1;
 
 		// create the standalone host password input box

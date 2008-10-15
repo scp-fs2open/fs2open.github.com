@@ -58,7 +58,6 @@ public:
 	CButton m_friendly_stealth_invisible;
 	CButton m_nav_carry;
 	CButton m_nav_needslink;
-	CButton m_alt_as_callsign;
 	CButton m_hide_ship_name;
 	CButton	m_set_class_dynamically;
 	CSpinButtonCtrl	m_destroy_spin;

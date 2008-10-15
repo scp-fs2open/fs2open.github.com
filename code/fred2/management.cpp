@@ -609,6 +609,7 @@ char Fred_exe_dir[512] = "";
 char Fred_base_dir[512] = "";
 
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 
 // object numbers for ships in a wing.
 int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
@@ -1501,9 +1502,10 @@ void clear_mission()
 	Player_starts = 0;
 	Num_teams = 1;
 
-	// reset alternate name stuff
+	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
 		strcpy(Fred_alt_names[i], "");
+		strcpy(Fred_callsigns[i], "");
 	}
 
 	// set up the default ship types for all teams.  For now, this is the same class

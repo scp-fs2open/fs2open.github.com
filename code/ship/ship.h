@@ -1279,9 +1279,8 @@ typedef struct ship_subsys_info {
 #define SF2_NO_DEATH_SCREAM					(1<<12)		// Goober5000 - for WCS
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<13)		// Goober5000 - for WCS
 #define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
-#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<15)		// Karajorma - When sending messages from this ship use the alt name instead of name
-#define SF2_HIDE_SHIP_NAME					(1<<16)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
-#define SF2_AFTERBURNER_LOCKED				(1<<17)		// KeldorKatarn - This ship can't use its afterburners
+#define SF2_HIDE_SHIP_NAME					(1<<15)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
+#define SF2_AFTERBURNER_LOCKED				(1<<16)		// KeldorKatarn - This ship can't use its afterburners
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 
 
@@ -1324,8 +1323,9 @@ typedef struct ship {
 	char	wing_status_wing_index;			// wing index (0-4) in wingman status gauge
 	char	wing_status_wing_pos;			// wing position (0-5) in wingman status gauge
 
-	// alternate type name index
+	// alternate indexes
 	char alt_type_index;								// only used for display purposes (read : safe)
+	char callsign_index;								// ditto
 
 	// targeting laser info
 	char targeting_laser_bank;						// -1 if not firing, index into polymodel gun points if it _is_ firing

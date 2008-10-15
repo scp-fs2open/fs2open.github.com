@@ -1365,6 +1365,8 @@ struct ship_subsys;
 #define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 #define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 
+#define OP_SET_RESPAWNS						(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1470,9 +1472,9 @@ struct ship_subsys;
 #define SEXP_NONE_STRING			"<none>"
 
 // macros for accessing sexpression atoms
-#define CAR(n)		(Sexp_nodes[n].first)
-#define CDR(n)		(Sexp_nodes[n].rest)
-#define CADR(n)	(Sexp_nodes[Sexp_nodes[n].rest].first)
+#define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)
+#define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
+#define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
 char *CTEXT(int n);
 

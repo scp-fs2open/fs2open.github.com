@@ -504,9 +504,7 @@ typedef unsigned int ptr_u;
 #endif // 64-bit
 
 typedef __int64 longlong;
-typedef __int64 int64;
 typedef unsigned __int64 ulonglong;
-typedef unsigned __int64 uint64;
 typedef unsigned char ubyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
@@ -636,7 +634,7 @@ extern void _cdecl Warning( char * filename, int line, const char * format, ... 
 #define Assert(x) do {} while (0)
 #else
 void gr_activate(int);
-#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
+#define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
 #endif
 /*******************NEVER UNCOMMENT Assert ************************************************/
 

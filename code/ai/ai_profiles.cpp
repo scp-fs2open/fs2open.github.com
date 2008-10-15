@@ -149,7 +149,7 @@ void parse_ai_profiles_tbl(char *filename)
 	if (filename == NULL)
 		read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
 	else
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 
 	reset_parse();		
 
@@ -301,6 +301,12 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Hostile AI Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Friendly AI Secondary Fire Delay Scale:"))
+				parse_float_list(profile->ship_fire_secondary_delay_scale_friendly, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
+				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
+
 			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
@@ -333,6 +339,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT);
 
+			set_flag(profile, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT);
+
 			set_flag(profile, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE);
 			
 			set_flag(profile, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS);
@@ -362,6 +370,8 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$score assists based on damage caused:", AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE);
 
 			set_flag(profile, "$allow event and goal scoring in multiplayer:", AIPF_ALLOW_MULTI_EVENT_SCORING);
+
+			set_flag(profile, "$fix linked primary weapon decision bug:", AIPF_FIX_LINKED_PRIMARY_BUG);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

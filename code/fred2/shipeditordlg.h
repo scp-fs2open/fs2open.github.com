@@ -211,6 +211,10 @@ public:
 	void ship_alt_name_init(int base_ship);
 	void ship_alt_name_close(int base_ship);
 
+	// callsign stuff
+	void ship_callsign_init(int base_ship);
+	void ship_callsign_close(int base_ship);
+
 	BOOL Create();
 
 // Dialog Data

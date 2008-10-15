@@ -567,16 +567,17 @@ void gr_opengl_line_htl(vec3d *start, vec3d *end)
 
 	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(zbuffer_state);
 
-	glBegin(GL_LINES);
-		if (gr_screen.current_color.is_alphacolor) {
-			glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-		} else {
-			glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-		}
+    if (gr_screen.current_color.is_alphacolor) {
+        GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+        glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+    } else {
+        GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+        glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+    }
 
+    glBegin(GL_LINES);
 		glVertex3fv(start->a1d);
 		glVertex3fv(end->a1d);
 	glEnd();
@@ -1301,8 +1302,8 @@ void gr_opengl_flash(int r, int g, int b)
 
 	int x1 = (gr_screen.clip_left + gr_screen.offset_x);
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
-	int x2 = (gr_screen.clip_right + gr_screen.offset_x);
-	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y);
+	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
+	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
 
 	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
 
@@ -1331,8 +1332,8 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 
 	int x1 = (gr_screen.clip_left + gr_screen.offset_x);
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
-	int x2 = (gr_screen.clip_right + gr_screen.offset_x);
-	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y);
+	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
+	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
 
 	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
 

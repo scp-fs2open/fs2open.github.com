@@ -531,7 +531,7 @@ void gamesnd_parse_soundstbl()
 		return;
 	}
 
-	read_file_text("sounds.tbl");
+	read_file_text("sounds.tbl", CF_TYPE_TABLES);
 	reset_parse();		
 
 	// Parse the gameplay sounds section
