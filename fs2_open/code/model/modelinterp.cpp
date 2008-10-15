@@ -5028,8 +5028,23 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		}
 	}
 
+	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
+
 	//set to true since D3d and OGL need the api matrices set
 	g3_start_instance_matrix(pos,orient, true);
+
+	if (is_outlines_only_htl) {
+		gr_set_fill_mode( GR_FILL_MODE_WIRE );
+
+		// lines shouldn't be rendered with textures or special RGB colors (assuming preset colors)
+		Interp_flags |= MR_NO_TEXTURING;
+		Interp_tmap_flags &= ~TMAP_FLAG_TEXTURED;
+		Interp_tmap_flags &= ~TMAP_FLAG_RGB;
+		// don't render with lighting either
+		Interp_flags |= MR_NO_LIGHTING;
+	} else {
+		gr_set_fill_mode( GR_FILL_MODE_SOLID );
+	}
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) ) {
 		Interp_light = 1.0f;
@@ -5070,6 +5085,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	}
 
 	gr_set_cull(cull);
+
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	if ( pm->submodel[submodel_num].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[submodel_num]);
