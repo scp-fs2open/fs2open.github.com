@@ -510,6 +510,8 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 
+extern int delete_pilot_file(char *pilot_name, int single);
+
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0) 
 void player_select_set_controls(int gray)
@@ -1138,6 +1140,7 @@ void player_select_delete_pilot()
 {
 	char filename[MAX_PATH_LEN + 1];
 	int i, deleted_cur_pilot;
+	int del_rval;
 
 	deleted_cur_pilot = 0;
 
@@ -1146,38 +1149,12 @@ void player_select_delete_pilot()
 	// make sure we do this based upon whether we're in single or multiplayer mode
 	strcpy( filename, Pilots[Player_select_pilot] );
 
-	if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-		SAFE_STRCAT( filename, NOX(".pl2"), sizeof(filename) );
-	} else {
-		SAFE_STRCAT( filename, NOX(".plr"), sizeof(filename) );
+	del_rval = delete_pilot_file(filename, (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
+
+	if ( !del_rval ) {
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
+		return;
 	}
-
-	int del_rval;
-	int popup_rval = 0;
-	do {
-		// attempt to delete the pilot
-		if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-			del_rval = cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-		} else {
-			del_rval = cf_delete( filename, CF_TYPE_MULTI_PLAYERS );
-		}
-
-		if(!del_rval) {
-			popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Retry", -1), XSTR("&Cancel",-1),
-				XSTR("Error\nFailed to delete pilot file.  File may be read-only.\n", -1));
-		}
-
-		//Abort
-		if(popup_rval)
-		{
-			return;
-		}
-
-		//Try again
-	} while (!del_rval);
-
-	// delete all the campaign save files for this pilot.
-	mission_campaign_delete_all_savefiles( Pilots[Player_select_pilot], (Player_select_mode != PLAYER_SELECT_MODE_SINGLE) );
 
 	// move all the players down
 	for (i=Player_select_pilot; i<Player_select_num_pilots-1; i++){
