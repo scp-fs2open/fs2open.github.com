@@ -10675,11 +10675,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					if ( Weapon_energy_cheat == 0 )
 					{
 						swp->primary_bank_ammo[bank_to_fire] -= points*numtimes;
-						// note for later: do we ever want primaries to have ammo 'sizes' other than 1?
 
 						// make sure we don't go below zero; any such error is excusable
 						// because it only happens when the bank is depleted in one shot
-						CLAMP(swp->primary_bank_ammo[bank_to_fire], 0, swp->primary_bank_capacity[bank_to_fire]);
+						if (swp->primary_bank_ammo[bank_to_fire] < 0)
+						{
+							swp->primary_bank_ammo[bank_to_fire] = 0;
+						}
 					}
 				}
 
