@@ -1676,6 +1676,10 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // for ships of this type, we make beam weapons miss a little bit otherwise they'd be way too powerful
 #define	SIF_BEAM_JITTER			(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_SENTRYGUN | SIF_NAVBUOY | SIF_ESCAPEPOD)
 
+// masks for preventing only non flag entry SIF flags from being cleared
+#define SIF_MASK				SIF_AFTERBURNER
+#define SIF2_MASK				0
+
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 

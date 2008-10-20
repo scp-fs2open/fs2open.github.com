@@ -1544,6 +1544,12 @@ void parse_wi_flags(weapon_info *weaponp)
 	int	num_strings;
 
 	num_strings = stuff_string_list(weapon_strings, MAX_WEAPON_FLAGS);
+
+	if (optional_string("+override")) {
+		// reseting the flag values if set to override the existing flags
+		weaponp->wi_flags = WIF_DEFAULT_VALUE;
+		weaponp->wi_flags2 = WIF2_DEFAULT_VALUE;
+	}
 	
 	for (int i=0; i<num_strings; i++) {
 		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
