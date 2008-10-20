@@ -168,9 +168,13 @@ void parse_mflash_tbl(char *filename)
 
 	while ( optional_string("$Mflash:") ) {
 		mflash_info mflash;
+		bool override_mflash = false;
 
 		required_string("+name:");
 		stuff_string(mflash.name, F_NAME, MAX_FILENAME_LEN);
+
+		if (optional_string("+override"))
+			override_mflash = true;
 
 		// read in all blobs
 		while ( optional_string("+blob_name:") ) {
@@ -188,8 +192,12 @@ void parse_mflash_tbl(char *filename)
 		}
 
 		for (i = 0; i < Mflash_info.size(); i++) {
-			if ( !stricmp(mflash.name, Mflash_info[i].name) )
+			if ( !stricmp(mflash.name, Mflash_info[i].name) ) {
+				if (override_mflash) {
+					Mflash_info[i] = mflash;
+				}
 				break;
+			}
 		}
 
 		// no matching name exists so add as new
@@ -198,7 +206,9 @@ void parse_mflash_tbl(char *filename)
 		}
 		// a mflash of the same name exists, don't add it again
 		else {
-			Warning(LOCATION, "Muzzle flash \"%s\" already exists!  Using existing entry instead.", mflash.name);
+			if (!override_mflash) {
+				Warning(LOCATION, "Muzzle flash \"%s\" already exists!  Using existing entry instead.", mflash.name);
+			}
 		}
 	}
 

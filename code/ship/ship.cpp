@@ -4066,9 +4066,12 @@ strcpy(parse_error_text, temp_error);
 		int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
 		int ship_type_index = -1;
 
-		// clear flags since we might have a modular table
-		sip->flags = SIF_DEFAULT_VALUE;
-		sip->flags2 = SIF2_DEFAULT_VALUE;
+		if (!optional_string("+noreplace")) {
+			// clear flags since we might have a modular table
+			// clear only those which are actually set in the flags
+			sip->flags = (sip->flags & SIF_MASK);
+			sip->flags2 = (sip->flags2 & SIF2_MASK);
+		}
 
 		for (i = 0; i < num_strings; i++)
 		{
