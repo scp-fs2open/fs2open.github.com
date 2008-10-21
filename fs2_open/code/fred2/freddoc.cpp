@@ -818,7 +818,9 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 
 				// also zero it
 				Ships[objp->instance].alt_type_index = -1;
-			} else if (Ships[objp->instance].callsign_index >= 0) {
+			}
+			
+			if (Ships[objp->instance].callsign_index >= 0) {
 				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index, Fred_callsigns[objp->instance]);
 
 				// also zero it
