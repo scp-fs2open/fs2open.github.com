@@ -15645,7 +15645,7 @@ void ship_page_in()
 				for (j = 0; j < sip->n_subsystems; j++) {
 					//Assert( sip->subsystems[j].model_num == sip->modelnum );
 					if (sip->subsystems[j].model_num != sip->model_num)
-						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].name, sip->pof_file);
+						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].subobj_name, sip->pof_file);
 				}
 #endif
 			}
