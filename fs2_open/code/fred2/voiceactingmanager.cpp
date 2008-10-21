@@ -9,6 +9,7 @@
 #include "mission/missionmessage.h"
 #include "hud/hudtarget.h"
 #include "parse/sexp.h"
+#include "iff_defs/iff_defs.h"
 #include <math.h>
 
 #ifdef _DEBUG
@@ -422,27 +423,29 @@ void VoiceActingManager::OnGenerateScript()
 			strcpy(sender, get_message_sender(message->name));
 			int shipnum = ship_name_lookup(sender);
 
-			// we may have to use the callsign
-			if ((shipnum >= 0) && (*Fred_callsigns[shipnum]))
+			if (shipnum >= 0)
 			{
-				entry.Replace("$sender", Fred_callsigns[shipnum]);
-			}
-			// account for hidden ship names
-			else if ((shipnum >= 0) && (Ships[shipnum].flags2 & SF2_HIDE_SHIP_NAME))
-			{
-				hud_stuff_ship_class(&Ships[shipnum], sender);
-				entry.Replace("$sender", sender);
-			}
-			// use the regular sender text
-			else
-			{
-				// skip past the first # when truncating a name,
-				// in case of something like #Command or #Alpha 1
-				end_string_at_first_hash_symbol(&sender[1]);
+				ship *shipp = &Ships[shipnum];
 
-				// replace sender
-				entry.Replace("$sender", sender);
+				// we may have to use the callsign
+				if (*Fred_callsigns[shipnum])
+				{
+					hud_stuff_ship_callsign(sender, shipp);
+				}
+				// account for hidden ship names
+				else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) )
+				{
+					hud_stuff_ship_class(sender, shipp);
+				}
+				// use the regular sender text
+				else
+				{
+					end_string_at_first_hash_symbol(sender);
+				}
 			}
+
+			// replace sender
+			entry.Replace("$sender", sender);
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
