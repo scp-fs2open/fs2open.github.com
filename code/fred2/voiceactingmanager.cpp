@@ -444,8 +444,11 @@ void VoiceActingManager::OnGenerateScript()
 				}
 			}
 
-			// replace sender
-			entry.Replace("$sender", sender);
+			// replace sender (but print #Command as Command)
+			if (*sender == '#')
+				entry.Replace("$sender", &sender[1]);
+			else
+				entry.Replace("$sender", sender);
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
