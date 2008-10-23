@@ -682,6 +682,7 @@
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
+#include "menuui/mainhallmenu.h"
 
 #include <vector>
 #include <algorithm>
@@ -1552,6 +1553,9 @@ void multi_join_game_init()
 
 	// slider
 	Multi_join_slider.create(&Multi_join_window, Mj_slider_coords[gr_screen.res][MJ_X_COORD], Mj_slider_coords[gr_screen.res][MJ_Y_COORD], Mj_slider_coords[gr_screen.res][MJ_W_COORD], Mj_slider_coords[gr_screen.res][MJ_H_COORD], 0, Mj_slider_name[gr_screen.res], &multi_join_list_scroll_up, &multi_join_list_scroll_down, NULL);
+
+	// make sure that we turn music/sounds back on (will be disabled after playing a mission)
+	main_hall_start_music();
 
 	// if starting a network game, then go to the create game screen
 	if ( Cmdline_start_netgame ) {
