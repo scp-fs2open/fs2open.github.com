@@ -1436,36 +1436,36 @@ void std_pinfo_display_player_info(net_player *p)
 	// his alltime stats
 	scoring_struct *ptr = &p->m_player->stats;
 	STD_ADDSTRING(Player_stats[0],ptr->p_shots_fired);
-   STD_ADDSTRING(Player_stats[1],ptr->p_shots_hit);
+	STD_ADDSTRING(Player_stats[1],ptr->p_shots_hit);
 	STD_ADDSTRING(Player_stats[2],ptr->p_bonehead_hits);
 	STD_ADDSTRING(Player_stats[3],
-                (int)((float)100.0*((float)ptr->p_shots_hit/(float)ptr->p_shots_fired)));
+		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_shots_hit/(float)ptr->p_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[4],
-		          (int)((float)100.0*((float)ptr->p_bonehead_hits/(float)ptr->p_shots_fired)));
+		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_bonehead_hits/(float)ptr->p_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[5],ptr->s_shots_fired);
 	STD_ADDSTRING(Player_stats[6],ptr->s_shots_hit);
 	STD_ADDSTRING(Player_stats[7],ptr->s_bonehead_hits);
 	STD_ADDSTRING(Player_stats[8],
-					 (int)((float)100.0*((float)ptr->s_shots_hit/(float)ptr->s_shots_fired)));
+		(ptr->s_shots_fired > 0) ? (int)((float)100.0*((float)ptr->s_shots_hit/(float)ptr->s_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[9],
-                (int)((float)100.0*((float)ptr->s_bonehead_hits/(float)ptr->s_shots_fired)));
+		(ptr->s_shots_fired > 0) ? (int)((float)100.0*((float)ptr->s_bonehead_hits/(float)ptr->s_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[10],ptr->assists);
 
-   // his stats for the current mission
+	// his stats for the current mission
 	STD_ADDSTRING(Player_mstats[0],ptr->mp_shots_fired);
-   STD_ADDSTRING(Player_mstats[1],ptr->mp_shots_hit);
+	STD_ADDSTRING(Player_mstats[1],ptr->mp_shots_hit);
 	STD_ADDSTRING(Player_mstats[2],ptr->mp_bonehead_hits);
 	STD_ADDSTRING(Player_mstats[3],
-                (int)((float)100.0*((float)ptr->mp_shots_hit/(float)ptr->mp_shots_fired)));
+		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_shots_hit/(float)ptr->mp_shots_fired)) : 0);
 	STD_ADDSTRING(Player_mstats[4],
-		          (int)((float)100.0*((float)ptr->mp_bonehead_hits/(float)ptr->mp_shots_fired)));
+		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_bonehead_hits/(float)ptr->mp_shots_fired)) : 0);
 	STD_ADDSTRING(Player_mstats[5],ptr->ms_shots_fired);
 	STD_ADDSTRING(Player_mstats[6],ptr->ms_shots_hit);
 	STD_ADDSTRING(Player_mstats[7],ptr->ms_bonehead_hits);
 	STD_ADDSTRING(Player_mstats[8],
-					 (int)((float)100.0*((float)ptr->ms_shots_hit/(float)ptr->ms_shots_fired)));
+		(ptr->ms_shots_fired > 0) ? (int)((float)100.0*((float)ptr->ms_shots_hit/(float)ptr->ms_shots_fired)) : 0);
 	STD_ADDSTRING(Player_mstats[9],
-                (int)((float)100.0*((float)ptr->ms_bonehead_hits/(float)ptr->ms_shots_fired))); 
+		(ptr->ms_shots_fired > 0) ? (int)((float)100.0*((float)ptr->ms_bonehead_hits/(float)ptr->ms_shots_fired)) : 0); 
 	STD_ADDSTRING(Player_mstats[10],ptr->m_assists);
 }
 
