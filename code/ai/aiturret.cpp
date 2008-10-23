@@ -1090,7 +1090,20 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 		vec3d	turret_norm;
 
 		vm_vec_rotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
-		return vm_vec_dot(&turret_norm, &vector_out);
+		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
+
+		if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
+			if (dot_return > turret_subsysp->system_info->turret_fov) {
+				// target is in sight and in fov
+				return dot_return;
+			} else {
+				// target is in sight but is not in turret's fov
+				return -1.0f;
+			}
+		} else {
+			// target is in sight and we dont care if its in turret's fov or not
+			return dot_return;
+		}
 	} else
 		return -1.0f;
 
@@ -1197,11 +1210,18 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	}
 	int offset = (int)frand_range(0.0f, (float)(aifft_list_size % stride));
 	int idx;
+	float dot_fov_modifier = 0.0f;
+
+	if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
+		if (ssp->system_info->turret_fov < 0)
+			dot_fov_modifier = ssp->system_info->turret_fov;
+	}
+
 	for(idx=offset; idx<aifft_list_size; idx+=stride){
 		dot = aifft_compute_turret_dot(objp, enemy_objp, &abs_gun_pos, ssp, aifft_list[idx]);			
 
-		if (dot* aifft_rank[idx] > best_dot) {
-			best_dot = dot*aifft_rank[idx];
+		if ((dot - dot_fov_modifier)* aifft_rank[idx] > best_dot) {
+			best_dot = (dot - dot_fov_modifier)*aifft_rank[idx];
 			best_subsysp = aifft_list[idx];
 		}
 	}
