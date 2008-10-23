@@ -149,6 +149,7 @@
 
 #include "globalincs/pstypes.h"
 #include "parse/lua.h"
+#include "cmdline/cmdline.h"
 
 bool env_enabled = false;
 bool cell_enabled = false;
@@ -204,6 +205,13 @@ void WinAssert(char * text, char *filename, int line)
 {
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
 
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '/')+1, line ));
+
+	if (Cmdline_nowarn) {
+		return;
+	}
+
 	// we have to call os_deinit() before abort() so we make sure that SDL gets
 	// closed out and we don't lose video/input control
 	os_deinit();
@@ -245,6 +253,8 @@ void Warning( char * filename, int line, const char * format, ... )
 		buffer[slen] = '\0';
 	}
 
+	mprintf(("WARNING: \"%s\" at %s:%d\n", buffer, strrchr(filename, '/')+1, line));
+
 	// Order UP!!
 	fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", buffer, filename, line);
 #endif
@@ -263,6 +273,8 @@ void Error( char * filename, int line, const char * format, ... )
 	va_start(args, format);
 	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
 	va_end(args);
+
+	mprintf(("ERROR: %s\nFile: %s\nLine: %d\n", buffer_tmp, filename, line));
 
 #if defined(APPLE_APP)
 	CFStringRef AsMessage;
