@@ -501,7 +501,7 @@ ushort multi_assign_network_signature( int what_kind )
 	// as are debris and asteroids since they don't die very often.  It would be vary rare for this
 	// value (the permanent signature) to wrap.  For now, this condition is an error condition
 	if ( what_kind == MULTI_SIG_SHIP ) {
-		if ( Next_ship_signature == 0 ){
+		if ( Next_ship_signature < SHIP_SIG_MIN ){
 			Next_ship_signature = SHIP_SIG_MIN;
 		}
 
@@ -514,7 +514,7 @@ ushort multi_assign_network_signature( int what_kind )
 
 		// signature stuff for asteroids.
 	} else if ( what_kind == MULTI_SIG_ASTEROID ) {
-		if ( Next_asteroid_signature == 0 ){
+		if ( Next_asteroid_signature < ASTEROID_SIG_MIN ){
 			Next_asteroid_signature = ASTEROID_SIG_MIN;
 		}
 
@@ -526,7 +526,7 @@ ushort multi_assign_network_signature( int what_kind )
 
 		// signatures for debris
 	} else if ( what_kind == MULTI_SIG_DEBRIS ) {
-		if ( Next_debris_signature == 0 ){
+		if ( Next_debris_signature < DEBRIS_SIG_MIN ){
 			Next_debris_signature = DEBRIS_SIG_MIN;
 		}
 
@@ -538,12 +538,12 @@ ushort multi_assign_network_signature( int what_kind )
 
 		// signature stuff for weapons and other expendable things.
 	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		if ( Next_non_perm_signature == 0 ){
+		if ( Next_non_perm_signature < NPERM_SIG_MIN ){
 			Next_non_perm_signature = NPERM_SIG_MIN;
 		}
 
 		sig = Next_non_perm_signature++;
-		if ( Next_non_perm_signature == NPERM_SIG_MAX ){
+		if ( (Next_non_perm_signature < NPERM_SIG_MIN) || (Next_non_perm_signature == NPERM_SIG_MAX) ) {
 			Next_non_perm_signature = NPERM_SIG_MIN;
 		}
 	} else {
@@ -559,22 +559,22 @@ ushort multi_assign_network_signature( int what_kind )
 ushort multi_get_next_network_signature( int what_kind )
 {
 	if ( what_kind == MULTI_SIG_SHIP ) {
-		if ( Next_ship_signature == 0 )
+		if ( Next_ship_signature < SHIP_SIG_MIN )
 			Next_ship_signature = SHIP_SIG_MIN;
 		return Next_ship_signature;
 
 	} else if ( what_kind == MULTI_SIG_DEBRIS ) {
-		if ( Next_debris_signature == 0 )
+		if ( Next_debris_signature < DEBRIS_SIG_MIN)
 			Next_debris_signature = DEBRIS_SIG_MIN;
 		return Next_debris_signature;
 
 	} else if ( what_kind == MULTI_SIG_ASTEROID ) {
-		if ( Next_asteroid_signature == 0 )
+		if ( Next_asteroid_signature < ASTEROID_SIG_MIN )
 			Next_asteroid_signature = ASTEROID_SIG_MIN;
 		return Next_asteroid_signature;
 
 	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		if ( Next_non_perm_signature == 0 )
+		if ( Next_non_perm_signature < NPERM_SIG_MIN )
 			Next_non_perm_signature = NPERM_SIG_MIN;
 		return Next_non_perm_signature;
 
@@ -600,7 +600,7 @@ void multi_set_network_signature( ushort signature, int what_kind )
 		Assert( (signature >= ASTEROID_SIG_MIN) && (signature <= ASTEROID_SIG_MAX) );
 		Next_asteroid_signature = signature;
 	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		Assert( (signature >= NPERM_SIG_MIN) && (signature <= NPERM_SIG_MAX) );
+		Assert( (signature >= NPERM_SIG_MIN) /*&& (signature <= NPERM_SIG_MAX)*/ );
 		Next_non_perm_signature = signature;
 	} else
 		Int3();			// get Allender
