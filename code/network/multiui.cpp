@@ -4116,8 +4116,10 @@ void multi_create_setup_list_data(int mode)
 	// set the current mode
 	should_sort = 0;
 	switched_modes = 0;
-	if((Multi_create_list_mode != mode) && (mode != -1)){
+	if ( (Multi_create_list_mode != mode) && (mode != -1) ) {
 		Multi_create_list_mode = mode;	
+		switched_modes = 1;
+	} else if (mode == -1) {
 		switched_modes = 1;
 	}
 
