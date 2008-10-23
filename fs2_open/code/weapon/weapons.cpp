@@ -2028,6 +2028,7 @@ int parse_weapon(int subtype, bool replace)
 	strcpy(parse_error_text, "");
 	strcpy(parse_error_text, "\nin weapon: ");
 	strcat(parse_error_text, fname);
+	strcat(parse_error_text, "\n");
 
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
