@@ -885,5 +885,10 @@ $fix linked primary weapon decision bug: NO								\n\
 ;; range of the weapons of the turret									\n\
 $prevent turrets targeting too distant bombs:	NO						\n\
 																		\n\
+;; if set, prevents turrets from trying to target subsystems beyond		\n\
+;; their fov limits, also keeps the turret subsystem targeting			\n\
+;; preference order intact regardless of the angle to the target		\n\
+$smart subsystem targeting for turrets:		NO							\n\
+																		\n\
 #End																	\n\
 ";
