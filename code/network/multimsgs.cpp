@@ -7017,7 +7017,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	player_num = find_player_id(player_id);
 	if (player_num == -1) {
 		nprintf(("Network", "Couldn't find player for stats update!\n"));
-		ml_string("Couldn't find player for stats update!\n");
+		ml_string("Couldn't find player for stats update!");
 
 		sc = &bogus;
 		Int3();
@@ -7029,7 +7029,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	GET_DATA(val);	
 	switch(val){
 	case STATS_ALLTIME:
-		ml_string("Received STATS_ALLTIME\n");
+		ml_string("Received STATS_ALLTIME");
 
 		// kills - alltime
 		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
@@ -7063,7 +7063,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		break;
 
 	case STATS_MISSION:
-		ml_string("Received STATS_MISSION\n");
+		ml_string("Received STATS_MISSION");
 
 		// kills - mission OK			
 		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
@@ -7087,7 +7087,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		break;
 
 	case STATS_MISSION_KILLS:		
-		ml_string("Received STATS_MISSION_KILLS\n");
+		ml_string("Received STATS_MISSION_KILLS");
 
 		GET_INT(sc->m_kill_count);
 		GET_INT(sc->m_kill_count_ok);
@@ -7095,7 +7095,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		break;		
 
 	case STATS_DOGFIGHT_KILLS:
-		ml_string("Received STATS_DOGFIGHT_KILLS\n");
+		ml_string("Received STATS_DOGFIGHT_KILLS");
 		if(player_num >= 0){
 			ml_printf("Dogfight stats for %s", Net_players[player_num].m_player->callsign);
 		}
