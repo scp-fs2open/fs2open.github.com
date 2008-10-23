@@ -7510,8 +7510,8 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	}
 
 	// Assert(index != -1);
+
 	// this can happen in multiplayer (dogfight, ingame join specifically)
-	Assert(index != -1);	// Goober5000 - until ingame join is fixed, let's Assert
 	if (index == -1)
 		return;
 
