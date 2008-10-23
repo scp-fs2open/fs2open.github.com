@@ -7774,6 +7774,9 @@ void send_homing_weapon_info( int weapon_num )
 	if ( !(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING) )
 		return;
 
+	// default the subsystem
+	t_subsys = -1;
+
 	// get the homing signature.  If this weapon isn't homing on anything, then sent 0 as the
 	// homing signature.
 	homing_signature = 0;
@@ -7782,7 +7785,6 @@ void send_homing_weapon_info( int weapon_num )
 		homing_signature = homing_object->net_signature;
 
 		// get the subsystem index.
-		t_subsys = -1;
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
 			int s_index;
 
@@ -7835,7 +7837,14 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if ( homing_object->type == OBJ_WEAPON ) {
-		Assert((Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_CMEASURE));
+		int flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
+
+	//	Assert( (flags & WIF_BOMB) || (flags & WIF_CMEASURE) );
+
+		if ( !((flags & WIF_BOMB) || (flags & WIF_CMEASURE)) ) {
+			nprintf(("Network", "Homing object is invalid for homing update\n"));
+			return;
+		}
 	}
 
 	wp->homing_object = homing_object;
@@ -8219,7 +8228,11 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	if((Player_obj != NULL) && (Player_obj == objp)){		
 		return;
 	}
-		
+
+	if ( (rand_val >= NPERM_SIG_MIN) && (rand_val <= NPERM_SIG_MAX) ) {
+		multi_set_network_signature((ushort)rand_val, MULTI_SIG_NON_PERMANENT);
+	}
+
 	// make it so ship can fire right away!
 	Ships[objp->instance].cmeasure_fire_stamp = timestamp(0);
 	if ( objp == Player_obj ){		

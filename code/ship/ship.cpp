@@ -9997,8 +9997,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		check_count = 0;
 	}
 
-	if (check_count && (shipp->cmeasure_count <= 0) || sip->cmeasure_type < 0)
-	{
+	if ( check_count && ((shipp->cmeasure_count <= 0) || (sip->cmeasure_type < 0)) ) {
 		if ( objp == Player_obj ) {
 			if(sip->cmeasure_max < 1 || sip->cmeasure_type < 0) {
 				//TODO: multi-lingual support
@@ -10046,7 +10045,7 @@ send_countermeasure_fired:
 		// the new way of doing things
 		// if(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING){
 		if(Game_mode & GM_MULTIPLAYER){
-			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, arand );
+			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, /*arand*/Objects[cobjnum].net_signature );
 		}
 	}
 
