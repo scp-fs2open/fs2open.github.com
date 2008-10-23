@@ -285,8 +285,8 @@
 #define SCORING_DEBUG
 */
 // what percent of points of total damage to a ship a player has to have done to get an assist (or a kill) when it is killed
-float Kill_percentage;
-float Assist_percentage;
+float Kill_percentage = 0.30f;
+float Assist_percentage = 0.15f;
 
 // these tables are overwritten with the values from rank.tbl
 rank_stuff Ranks[NUM_RANKS];
@@ -468,10 +468,14 @@ void scoring_level_init( scoring_struct *scp )
 	for(i=0; i<MAX_PLAYERS; i++){
 		scp->m_dogfight_kills[i] = 0;
 	}
-	
-	Kill_percentage = The_mission.ai_profile->kill_percentage_scale[Game_skill_level];
-	Assist_percentage = The_mission.ai_profile->assist_percentage_scale[Game_skill_level];
 
+	if (The_mission.ai_profile != NULL) {
+		Kill_percentage = The_mission.ai_profile->kill_percentage_scale[Game_skill_level];
+		Assist_percentage = The_mission.ai_profile->assist_percentage_scale[Game_skill_level];
+	} else {
+		Kill_percentage = 0.30f;
+		Assist_percentage = 0.15f;
+	}
 }
 
 void scoring_eval_rank( scoring_struct *sc )
