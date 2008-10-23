@@ -10580,14 +10580,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}else{
 						j=v;
 					}
-					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];			
+
+					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
-			//		winfo_p->b_info.beam_type = BEAM_TYPE_C;
-//mprintf(("I am about to fire a fighter beam4\n"));
+
+					fbfire_info.point = j;
+
 					beam_fire(&fbfire_info);
 					num_fired++;
-					//shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 				}
 
 //mprintf(("I have fired a fighter beam, type %d\n", winfo_p->b_info.beam_type));

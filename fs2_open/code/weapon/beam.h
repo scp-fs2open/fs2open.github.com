@@ -204,7 +204,8 @@ typedef struct beam_fire_info {
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
 	bool fighter_beam;
-	int bank;		//fighter beams, wich bank of the primary weapons are they in
+	int bank;									// for fighters, which bank of the primary weapons are they in
+	int point;									// for fighters, which point on the bank it is from
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {

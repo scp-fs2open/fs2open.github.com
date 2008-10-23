@@ -8241,7 +8241,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam)
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam, int bank_point)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
@@ -8266,21 +8266,22 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		if (target == NULL) {
 			return;
 		}
-
-		target_sig = target->net_signature;
-	} else {
-		target_sig = (target) ? target->net_signature : 0;
 	}
 
-	u_beam_info = (ubyte)beam_info_index;
-	subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter), 1);
+	target_sig = (target) ? target->net_signature : 0;
 
-	// it's ok for subsys_index to be invalid for fighters (since it doesn't have to be on a turret)
-	if ( !fighter_beam ) {
-		Assert(subsys_index >= 0);
-		if (subsys_index < 0) {
-			return;
-		}
+	u_beam_info = (ubyte)beam_info_index;
+
+	if (fighter_beam) {
+		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
+		subsys_index = (char)bank_point;
+	} else {
+		subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter), 1);
+	}
+
+	Assert(subsys_index >= 0);
+	if (subsys_index < 0) {
+		return;
 	}
 
 	// swap the beam_info override info into little endian byte order
@@ -8350,6 +8351,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		b_info.shot_aim[i] = INTEL_FLOAT(&b_info.shot_aim[i]);
 	}
 
+	memset(&fire_info, 0, sizeof(beam_fire_info));
+
 	// lookup all relevant data
 	fire_info.beam_info_index = (int)u_beam_info;
 	fire_info.shooter = NULL;
@@ -8368,11 +8371,13 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
+	ship *shipp = &Ships[fire_info.shooter->instance];
+
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
-	if ( Ship_info[Ships[fire_info.shooter->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
+	if ( Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
-		for (i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
-			if ( Ships[fire_info.shooter->instance].weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
+		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
+			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
 				fire_info.fighter_beam = true;
 			}
 		}
@@ -8383,10 +8388,34 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
-	if ( fire_info.fighter_beam && ((int)subsys_index < 0) ) {
-		fire_info.turret = NULL;
+	if (fire_info.fighter_beam) {
+		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+		float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
+
+		int bank = (ubyte)subsys_index % 10;
+		int point = (ubyte)subsys_index / 10;
+
+		fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+
+		shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
+		shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
+		shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
+		shipp->beam_sys_info.model_num = Ship_info[shipp->ship_info_index].model_num;
+		shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
+		shipp->beam_sys_info.turret_num_firing_points = 1;
+		shipp->beam_sys_info.turret_fov = (float)cos((field_of_fire != 0.0f) ? field_of_fire : 180);
+		shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
+		shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+
+		shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
+		shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
+		shipp->fighter_beam_turret_data.current_hits = 1.0;
+		shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
+
+		fire_info.turret = &shipp->fighter_beam_turret_data;
+		fire_info.bank = bank;
 	} else {
-		fire_info.turret = ship_get_indexed_subsys( &Ships[fire_info.shooter->instance], (int)subsys_index);
+		fire_info.turret = ship_get_indexed_subsys(shipp, (int)subsys_index);
 
 		if (fire_info.turret == NULL) {
 			nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
