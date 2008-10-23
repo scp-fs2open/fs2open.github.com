@@ -881,6 +881,9 @@ $allow event and goal scoring in multiplayer: NO						\n\
 ;; where it mistakenly linked according to absolute energy levels		\n\
 $fix linked primary weapon decision bug: NO								\n\
 																		\n\
+;; if set, prevents turrets from targeting bombs beyond maximum			\n\
+;; range of the weapons of the turret									\n\
+$prevent turrets targeting too distant bombs:	NO						\n\
 																		\n\
 #End																	\n\
 ";

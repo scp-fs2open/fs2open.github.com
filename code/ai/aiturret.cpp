@@ -600,7 +600,15 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 	// check if object is a bomb attacking the turret parent
 	// check if bomb is homing on the turret parent ship
+	bool check_weapon = false;
+
 	if (objp->type == OBJ_WEAPON) {
+		check_weapon = true;
+		if ((The_mission.ai_profile->flags & AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE) && (dist > eeo->weapon_travel_dist))
+			check_weapon = false;
+	}
+
+	if (check_weapon) {
 		if ( Weapons[objp->instance].homing_object == &Objects[eeo->turret_parent_objnum] ) {
 			if ( dist < eeo->nearest_homing_bomb_dist ) {
 				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, tp, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
