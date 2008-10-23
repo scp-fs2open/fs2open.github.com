@@ -604,6 +604,11 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	memset(&pl->m_player->bi, 0, sizeof(pl->m_player->bi));
 	memset(&pl->m_player->ci, 0, sizeof(pl->m_player->ci));
 
+	// set throttle based on initial velocity specified in mission (the vel gets calculated
+	//   like a percentage of our max speed, so we can just use it as-is for the throttle)
+	pl->m_player->ci.forward_cruise_percent = (float)pobjp->initial_velocity;
+	CLAMP(pl->m_player->ci.forward_cruise_percent, 0.0f, 100.0f);
+
 	// if this is me, clear accum button info
 	if(pl == Net_player){
 		// clear multiplayer button info			
