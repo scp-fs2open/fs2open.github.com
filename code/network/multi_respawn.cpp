@@ -545,13 +545,15 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	// set some player information
 	pl->m_player->objnum = objnum;
 	if ( pl == Net_player ) {
-		// this is a hack to ensure that old (dead) player ships are destroyed, since at this point he's actually an OBJ_GHOST
-		Player_obj->flags |= OF_SHOULD_BE_DEAD;						
-		obj_delete(OBJ_INDEX(Player_obj));	
-		
+		object *oldplr = Player_obj;
+
 		Player_obj = objp;
 		Player_ship = shipp;
 		Player_ai = &Ai_info[Player_ship->ai_index];
+
+		// this is a hack to ensure that old (dead) player ships are destroyed, since at this point he's actually an OBJ_GHOST
+		oldplr->flags |= OF_SHOULD_BE_DEAD;						
+		obj_delete(OBJ_INDEX(oldplr));	
 
 		//	get rid of the annoying HUD dead message text.
 		HUD_init_fixed_text();
