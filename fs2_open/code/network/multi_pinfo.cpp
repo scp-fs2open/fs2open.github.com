@@ -845,10 +845,8 @@ void multi_pinfo_build_stats()
 	if(sc->last_flown == 0){
 		strcpy(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],XSTR("No missions flown",693));
 	} else {
-		time_t last_flown_tmp;
-	//	tm *tmr = gmtime(&sc->last_flown);
+		time_t last_flown_tmp = sc->last_flown;
 		tm *tmr = gmtime(&last_flown_tmp);
-		sc->last_flown = (_fs_time_t)last_flown_tmp;
 		if(tmr != NULL){
 			strftime(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],MAX_LABEL_TEXT,"%m/%d/%y %H:%M",tmr);
 		} else {
