@@ -616,7 +616,7 @@ void multi_endgame_cleanup()
 		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);		
 
 		// if we have an error code, bring up the discon popup						
-		if((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1) && !(Game_mode & GM_STANDALONE_SERVER)){
+		if ( ((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1)) && !(Game_mode & GM_STANDALONE_SERVER) ) {
 			multi_endgame_popup(Multi_endgame_notify_code,Multi_endgame_error_code,Multi_endgame_wsa_error);			
 		}		
 	}
