@@ -7416,6 +7416,7 @@ void ship_subsystems_delete(ship *shipp)
 			temp = GET_NEXT( systemp );								// use temporary since pointers will get screwed with next operation
 			list_remove( shipp->subsys_list, systemp );			// remove the element
 			list_append( &ship_subsys_free_list, systemp );		// and place back onto free list
+			Num_ship_subsystems--;								// subtract from our in-use total
 			systemp = temp;												// use the temp variable to move right along
 		}
 	}
