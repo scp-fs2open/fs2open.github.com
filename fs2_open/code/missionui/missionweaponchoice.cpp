@@ -763,6 +763,7 @@
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
+#include "network/multi_pmsg.h"
 
 
 
@@ -1678,7 +1679,7 @@ void wl_render_overhead_view(float frametime)
 					Assert(num_found < NUM_ICON_FRAMES);
 					gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
 					gr_circle(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, 5);
-					for(int y = 0; y < pm->gun_banks[x].num_slots; y++)
+					for(y = 0; y < pm->gun_banks[x].num_slots; y++)
 					{
 						//Stuff
 						vm_vec_unrotate(&subobj_pos,&pm->gun_banks[x].pnt[y],&object_orient);
@@ -3906,11 +3907,12 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 
 	// if icon is selected
 	if ( Selected_wl_class > -1 ) {
-		if ( Selected_wl_class == select_mask)
+		if ( Selected_wl_class == select_mask) {
 			if(icon->icon_bmaps[0] != -1)
 				bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED];	// selected icon
 			else
 				color_to_draw = &Icon_colors[ICON_FRAME_SELECTED];
+		}
 	}
 
 	// if icon is disabled
@@ -4467,7 +4469,7 @@ void wl_saturate_bank(int ship_slot, int bank)
 //			1 -> data changed
 //       sound => gets filled with sound id to play
 // updated for specific bank by Goober5000
-int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
+int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net_player *pl)
 {
 	wss_unit	*slot;
 	int class_mismatch_flag, forced_update;
@@ -4506,26 +4508,28 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 	class_mismatch_flag = (IS_BANK_PRIMARY(from_bank) && IS_BANK_SECONDARY(to_bank)) || (IS_BANK_SECONDARY(from_bank) && IS_BANK_PRIMARY(to_bank));
 	
 	// further ensure that restrictions aren't breached
-	if (!class_mismatch_flag)
-	{
+	if (!class_mismatch_flag) {
 		ship_info *sip = &Ship_info[slot->ship_class];
 
 		// check the to-bank first
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank]))
-		{
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]]))
-			{
+		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
+			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
+				char display_name[NAME_LENGTH];
+				char txt[100];
+
+				strncpy(display_name, Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
+
 				// might have to get weapon name translation
-				if (Lcl_gr)
-				{
-					char display_name[NAME_LENGTH];
-					strncpy(display_name, Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
+				if (Lcl_gr) {
 					lcl_translate_wep_name(display_name);
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("This bank is unable to carry %s weaponry"), display_name);
 				}
-				else
-				{
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("This bank is unable to carry %s weaponry"), Weapon_info[slot->wep[from_bank]].name);
+
+				sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+
+				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
+				} else if (pl != NULL) {
+					send_game_chat_packet(Netgame.host, txt, MULTI_MSG_TARGET, pl, NULL, 1);
 				}
 
 				return forced_update;
@@ -4533,10 +4537,8 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 		}
 
 		// check the from-bank
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[from_bank]))
-		{
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[from_bank][slot->wep[to_bank]]))
-			{
+		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[from_bank])) {
+			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[from_bank][slot->wep[to_bank]])) {
 				// going from "from" to "to" is valid (from previous if), but going the other way isn't...
 				// so return the "to" to the list and just move the "from"
 
@@ -4550,8 +4552,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 		}
 	}
 
-	if ( class_mismatch_flag )
-	{
+	if ( class_mismatch_flag ) {
 		// put from_bank back into list
 		Wl_pool[slot->wep[from_bank]] += slot->wep_count[from_bank];		// return to list
 		slot->wep[from_bank] = -1;														// remove from slot
@@ -4561,16 +4562,14 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 	}
 
 	// case 1: primaries (easy, even with ballistics, because ammo is always maximized)
-	if ( IS_BANK_PRIMARY(from_bank) && IS_BANK_PRIMARY(to_bank) )
-	{
+	if ( IS_BANK_PRIMARY(from_bank) && IS_BANK_PRIMARY(to_bank) ) {
 		wl_swap_weapons(ship_slot, from_bank, to_bank);
 		*sound=SND_ICON_DROP_ON_WING;
 		return 1;
 	}
 
 	// case 2: secondaries (harder)
-	if ( IS_BANK_SECONDARY(from_bank) && IS_BANK_SECONDARY(to_bank) )
-	{
+	if ( IS_BANK_SECONDARY(from_bank) && IS_BANK_SECONDARY(to_bank) ) {
 		// case 2a: secondaries are the same type
 		if ( slot->wep[from_bank] == slot->wep[to_bank] ) {
 			int dest_max, dest_can_fit, source_can_give;
@@ -4597,8 +4596,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 		}
 
 		// case 2b: secondaries are different types
-		if ( slot->wep[from_bank] != slot->wep[to_bank] )
-		{
+		if ( slot->wep[from_bank] != slot->wep[to_bank] ) {
 			// swap 'em 
 			wl_swap_weapons(ship_slot, from_bank, to_bank);
 
@@ -4642,7 +4640,7 @@ int wl_dump_to_list(int from_bank, int to_list, int ship_slot, int *sound)
 // exit: 0 -> no data changed
 //			1 -> data changed
 //       sound => gets filled with sound id to play
-int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
+int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net_player *pl)
 {
 	int update=0;
 	wss_unit	*slot;
@@ -4678,21 +4676,24 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon...
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank]))
-	{
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list]))
-		{
+	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
+		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
+			char display_name[NAME_LENGTH];
+			char txt[100];
+
+			strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
+
 			// might have to get weapon name translation
-			if (Lcl_gr)
-			{
-				char display_name[NAME_LENGTH];
-				strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
+			if (Lcl_gr) {
 				lcl_translate_wep_name(display_name);
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("This bank is unable to carry %s weaponry"), display_name);
 			}
-			else
-			{
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("This bank is unable to carry %s weaponry"), Weapon_info[from_list].name);
+
+			sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+
+			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
+			} else if (pl != NULL) {
+				send_game_chat_packet(Netgame.host, txt, MULTI_MSG_TARGET, pl, NULL, 1);
 			}
 
 			return 0;
@@ -4703,12 +4704,9 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	update = 1;
 
 	// find how much dest bank can fit
-	if ( to_bank < MAX_SHIP_PRIMARY_BANKS )
-	{
+	if ( to_bank < MAX_SHIP_PRIMARY_BANKS ) {
 		max_fit = 1;
-	}
-	else
-	{
+	} else {
 		max_fit = wl_calc_missile_fit(from_list, Ship_info[slot->ship_class].secondary_bank_ammo_capacity[to_bank-MAX_SHIP_PRIMARY_BANKS]);
 	}
 
@@ -4731,7 +4729,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 // exit: 0 -> no data changed
 //			1 -> data changed
 //       sound => gets filled with sound id to play
-int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
+int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net_player *pl)
 {
 	wss_unit	*slot;
 
@@ -4764,21 +4762,24 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank]))
-	{
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list]))
-		{
+	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
+		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
+			char display_name[NAME_LENGTH];
+			char txt[100];
+
+			strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
+
 			// might have to get weapon name translation
-			if (Lcl_gr)
-			{
-				char display_name[NAME_LENGTH];
-				strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
+			if (Lcl_gr) {
 				lcl_translate_wep_name(display_name);
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("This bank is unable to carry %s weaponry"), display_name);
 			}
-			else
-			{
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("This bank is unable to carry %s weaponry"), Weapon_info[from_list].name);
+
+			sprintf(txt, NOX("This bank is unable to carry '%s' weaponry"), display_name);
+
+			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
+			} else if (pl != NULL) {
+				send_game_chat_packet(Netgame.host, txt, MULTI_MSG_TARGET, pl, NULL, 1);
 			}
 
 			return 0;
@@ -4793,12 +4794,9 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 	// put weapon on ship from list
 	
 	// find how much dest bank can fit
-	if ( to_bank < MAX_SHIP_PRIMARY_BANKS )
-	{
+	if ( to_bank < MAX_SHIP_PRIMARY_BANKS ) {
 		max_fit = 1;
-	}
-	else
-	{
+	} else {
 		max_fit = wl_calc_missile_fit(from_list, Ship_info[slot->ship_class].secondary_bank_ammo_capacity[to_bank-MAX_SHIP_PRIMARY_BANKS]);
 	}
 
@@ -4840,16 +4838,16 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 
 	switch(mode){
 	case WSS_SWAP_SLOT_SLOT:
-		update = wl_swap_slot_slot(from_bank, to_bank, ship_slot, &sound);
+		update = wl_swap_slot_slot(from_bank, to_bank, ship_slot, &sound, pl);
 		break;
 	case WSS_DUMP_TO_LIST:
 		update = wl_dump_to_list(from_bank, to_list, ship_slot, &sound);
 		break;
 	case WSS_GRAB_FROM_LIST:
-		update = wl_grab_from_list(from_list, to_bank, ship_slot, &sound);
+		update = wl_grab_from_list(from_list, to_bank, ship_slot, &sound, pl);
 		break;
 	case WSS_SWAP_LIST_SLOT:
-		update = wl_swap_list_slot(from_list, to_bank, ship_slot, &sound);
+		update = wl_swap_list_slot(from_list, to_bank, ship_slot, &sound, pl);
 		break;
 	}
 
