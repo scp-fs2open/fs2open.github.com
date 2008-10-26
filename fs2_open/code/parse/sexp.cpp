@@ -10186,8 +10186,17 @@ void sexp_add_background_bitmap(int n)
 
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
-		// get new numerical value
-		new_number = stars_get_num_bitmaps();
+        if (!stars_add_bitmap_entry(&sle))
+        {
+		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
+            new_number = 0;
+        }
+        else
+        {
+            // get new numerical value
+		    new_number = stars_get_num_bitmaps() - 1;
+        }
+
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -10198,9 +10207,6 @@ void sexp_add_background_bitmap(int n)
 		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
 	}
-
-	if (!stars_add_bitmap_entry(&sle))
-		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
 }
 
 void sexp_remove_background_bitmap(int n)
@@ -10266,7 +10272,16 @@ void sexp_add_sun_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-		new_number = stars_get_num_suns();
+        if (!stars_add_sun_entry(&sle))
+        {
+		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
+            new_number = 0;
+        }
+        else
+        {
+            new_number = stars_get_num_suns() - 1;
+        }
+
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -10277,9 +10292,6 @@ void sexp_add_sun_bitmap(int n)
 		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
 	}
-
-	if (!stars_add_sun_entry(&sle))
-		Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
 }
 
 void sexp_remove_sun_bitmap(int n)
