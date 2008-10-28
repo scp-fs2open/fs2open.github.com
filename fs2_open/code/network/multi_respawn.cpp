@@ -587,6 +587,9 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	// engine ets
 	shipp->engine_recharge_index = (ship_ets & 0x000f);
 
+	// give the current bank a half-second timestamp so that we don't fire immediately unpon respawn
+	shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(500);
+
 	// if this is a dogfight mission, make him TEAM_TRAITOR
 	if(Netgame.type_flags & NG_TYPE_DOGFIGHT){
 		shipp->team = Iff_traitor;
