@@ -1868,19 +1868,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data01.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data02.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data03.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data04.bmp"
+				RelativePath="..\..\code\fred2\res\data00.bmp"
 				>
 			</File>
 			<File
@@ -1888,43 +1876,75 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data06.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data07.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data08.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data09.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\data10.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data11.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data12.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data13.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data14.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\data15.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data20.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data25.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data30.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data35.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data40.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data45.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data50.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data55.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data60.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data65.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data70.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data75.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data80.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data85.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data90.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data95.bmp"
 				>
 			</File>
 			<File
