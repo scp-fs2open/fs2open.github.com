@@ -856,7 +856,7 @@ static void starfield_create_perspective_bitmap_buffer(angles *a, float scale_x,
 	vi = 1.0f / (float)div_y;	
 
 	// adjust for aspect ratio
-	scale_x *= (gr_screen.clip_aspect + 0.55f);		// fudge factor
+	scale_x *= (gr_screen.clip_aspect + (0.7333333f/gr_screen.clip_aspect)); // fudge factor
 
 	float s_phi = 0.5f + (((p_phi * scale_x) / 360.0f) / 2.0f);
 	float s_theta = (((p_theta * scale_y) / 360.0f) / 2.0f);	
@@ -3514,4 +3514,9 @@ void stars_pack_backgrounds()
 			}
 		}
 	}
+}
+
+DCF(sgbib, "")
+{
+    starfield_generate_bitmap_instance_buffers();
 }
