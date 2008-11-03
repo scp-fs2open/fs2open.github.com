@@ -7602,9 +7602,24 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
-
+	
+			int n_shd_sections;	
+			switch (objp->n_shield_segments) {
+				case 1:
+					n_shd_sections = 1;
+					break;
+				case 2:
+					n_shd_sections = 2;
+					break;
+				default:
+					n_shd_sections = MAX_SHIELD_SECTIONS;
+					break;
+			}
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+				if (i >= n_shd_sections){
+					fl_val = 0.0f;
+				}
 				objp->shield_quadrant[i] = fl_val;
 			}
 

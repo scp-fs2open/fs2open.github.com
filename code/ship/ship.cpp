@@ -3036,6 +3036,8 @@ void init_ship_entry(ship_info *sip)
 	sip->radar_image_2d_idx = -1;
 	sip->radar_image_size = -1;
 	sip->radar_projection_size_mult = 1.0f;
+
+	sip->num_shield_segments = 4;
 }
 
 // function to parse the information for a specific ship type.	
@@ -4033,7 +4035,11 @@ strcpy(parse_error_text, temp_error);
 		stuff_ubyte(&sip->shield_color[1]);
 		stuff_ubyte(&sip->shield_color[2]);
 	}
-
+	
+	if(optional_string("$Number of Shield Segments:")){
+		stuff_int(&sip->num_shield_segments);
+	}
+	
 	// The next five fields are used for the ETS
 	if (optional_string("$Power Output:"))
 		stuff_float(&sip->power_output);
@@ -6128,6 +6134,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
 	}
 	objp->hull_strength = shipp->ship_max_hull_strength;
+
+	objp->n_shield_segments = sip->num_shield_segments;
 	
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -10018,6 +10026,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		} else {
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
+		objp->n_shield_segments = sip->num_shield_segments;
+
+		// clear the old shield data
+		int i;
+		for (i=0;i<MAX_SHIELD_SECTIONS; i++)
+			objp->shield_quadrant[i] = 0.0f;
 
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
@@ -14673,7 +14687,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	// convert hitpos to position in model coordinates
 	vm_vec_sub(&tmpv1, hitpos, &hit_objp->pos);
 	vm_vec_rotate(&tmpv2, &tmpv1, &hit_objp->orient);
-	quadrant_num = get_quadrant(&tmpv2);
+	quadrant_num = get_quadrant(&tmpv2, hit_objp);
 	//nprintf(("Alan","Quadrant hit: %d\n", quadrant_num));
 
 	if ( quadrant_num < 0 )

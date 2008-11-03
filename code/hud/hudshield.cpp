@@ -682,12 +682,22 @@ void hud_shield_show(object *objp)
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		int segment = i;
+		if (objp->n_shield_segments == 1) {
+			if (i > 0)
+				break;
+		} else if ((objp->n_shield_segments == 2) && (i > 1)) {
+			break;
+		} else {
+			segment = Quadrant_xlate[i];
+		}
+
+		if ( objp->shield_quadrant[segment] < 0.1f ) {
 			continue;
 		}
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+		hud_color_index = fl2i( (objp->shield_quadrant[segment] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
@@ -904,9 +914,21 @@ void hud_shield_equalize(object *objp, player *pl)
 	if (objp->flags & OF_NO_SHIELDS)
 		return;
 
+	int n_shd_sections;	
+	switch (objp->n_shield_segments) {
+		case 1:
+			return;
+		case 2:
+			n_shd_sections = 2;
+			break;
+		default:
+			n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+	}
+
 	// are all quadrants equal?
 	all_equal = 1;
-	for (idx = 0; idx < MAX_SHIELD_SECTIONS - 1; idx++) {
+	for (idx = 0; idx < n_shd_sections - 1; idx++) {
 		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
 			all_equal = 0;
 			break;
@@ -957,7 +979,24 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	float	max_quadrant_val;
 	int	i;
 
-	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
+	int n_shd_sections;	
+	switch (objp->n_shield_segments) {
+		case 1:
+			return;
+		case 2:
+			n_shd_sections = 2;
+			if (direction == 0)
+				direction = 4;
+			direction--;
+			if (direction > 1)
+				return;
+			break;
+		default:
+			n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+	}
+
+	Assert(direction >= 0 && direction < n_shd_sections);
 	Assert(objp->type == OBJ_SHIP);
 	
 	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
@@ -976,7 +1015,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	}
 
 	energy_avail = 0.0f;
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < n_shd_sections; i++ ) {
 		if ( i == direction )
 			continue;
 		energy_avail += objp->shield_quadrant[i];
@@ -986,7 +1025,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	if ( percent_to_take > 1.0f )
 		percent_to_take = 1.0f;
 
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < n_shd_sections; i++ ) {
 		if ( i == direction )
 			continue;
 		delta = percent_to_take * objp->shield_quadrant[i];
@@ -1098,24 +1137,55 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
 
+	bool single_segment_flash = false;
+
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		bool single_segment = false;
+		if (objp->n_shield_segments == 1)
+			single_segment = true;
+
+		if (single_segment) {
+			if ( objp->shield_quadrant[0] < 0.1f ) {
+				break;
+			}
+		} else if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
-		if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, i) ) {
-			frame_offset = i+MAX_SHIELD_SECTIONS;
-		} else {
-			frame_offset = i;
+		int segment = i;
+
+		if (objp->n_shield_segments == 2) {
+			if (i == 1)
+				segment = 0;
+			if (i == 0)
+				segment = 2;
+		}
+
+		frame_offset = segment;
+
+		if (single_segment) {
+			if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, 1) ) {
+				single_segment_flash = true;
+			}
+			if (single_segment_flash) {
+				frame_offset = i+MAX_SHIELD_SECTIONS;
+			}
+		} else if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, i) ) {
+			frame_offset = segment+MAX_SHIELD_SECTIONS;
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+
+		if (single_segment)
+			hud_color_index = fl2i( (objp->shield_quadrant[0] / max_shield) * range + 0.5);
+		else
+			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {

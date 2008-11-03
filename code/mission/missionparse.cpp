@@ -3247,7 +3247,19 @@ int parse_create_object_sub(p_object *p_objp)
 
 		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
+		int n_shd_sections;  
+		switch (Objects[objnum].n_shield_segments) {
+			case 1:
+				n_shd_sections = 1;
+				break;
+			case 2:
+				n_shd_sections = 2;
+				break;
+			default:
+				n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+		}
+		for (i = 0; i<n_shd_sections; i++)
 			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts

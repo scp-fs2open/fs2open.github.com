@@ -12414,8 +12414,20 @@ int sexp_shield_quad_low(int node)
 	// shield pct
 	check = (float)eval_num(CDR(node));
 
+	int n_shd_sections;
+	switch (objp->n_shield_segments) {
+		case 1:
+			n_shd_sections = 1;
+			break;
+		case 2:
+			n_shd_sections = 2;
+			break;
+		default:
+			n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+	}
 	// check his quadrants
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<n_shd_sections; idx++){
 		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
 			return SEXP_TRUE;
 		}

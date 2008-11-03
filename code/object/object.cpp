@@ -901,7 +901,20 @@ float get_max_shield_quad(object *objp)
 		return 0.0f;
 	}
 
-	return Ships[objp->instance].ship_max_shield_strength / MAX_SHIELD_SECTIONS;
+	int n_shd_sections;	
+	switch (objp->n_shield_segments) {
+		case 1:
+			n_shd_sections = 1;
+			break;
+		case 2:
+			n_shd_sections = 2;
+			break;
+		default:
+			n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+	}
+
+	return Ships[objp->instance].ship_max_shield_strength / n_shd_sections;
 }
 
 // Goober5000

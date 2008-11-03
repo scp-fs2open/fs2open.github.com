@@ -12997,15 +12997,27 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	float	transfer_delta;
 	float	max_quadrant_strength;
 
+	int n_shd_sections;	
+	switch (objp->n_shield_segments) {
+		case 1:
+			return;
+		case 2:
+			n_shd_sections = 2;
+			break;
+		default:
+			n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+	}
+
 	max_quadrant_strength = get_max_shield_quad(objp);
 
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
 
-	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
+	if (objp->shield_quadrant[quadrant_num] + (n_shd_sections-1)*transfer_delta > max_quadrant_strength)
+		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(n_shd_sections-1);
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
+	for (i=0; i<n_shd_sections; i++)
 		if (i != quadrant_num) {
 			if (objp->shield_quadrant[i] >= transfer_delta) {
 				objp->shield_quadrant[i] -= transfer_delta;
@@ -13029,18 +13041,29 @@ void ai_balance_shield(object *objp)
 	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
 		return;
 
+	int n_shd_sections;
+	switch (objp->n_shield_segments) {
+		case 1:
+			return;
+		case 2:
+			n_shd_sections = 2;
+			break;
+		default:
+			n_shd_sections = MAX_SHIELD_SECTIONS;
+			break;
+	}
 
-	shield_strength_avg = shield_get_strength(objp)/MAX_SHIELD_SECTIONS;
+	shield_strength_avg = shield_get_strength(objp)/n_shd_sections;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
+	for (i=0; i<n_shd_sections; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, delta);
 			else
-				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] += delta/n_shd_sections;
 
 			if (objp->shield_quadrant[i] > shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
@@ -13050,7 +13073,7 @@ void ai_balance_shield(object *objp)
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, -delta);
 			else
-				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
+				objp->shield_quadrant[i] -= delta/n_shd_sections;
 
 			if (objp->shield_quadrant[i] < shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;

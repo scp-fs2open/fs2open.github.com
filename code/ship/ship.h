@@ -2015,6 +2015,8 @@ typedef struct ship_info {
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;
+
+	int num_shield_segments;
 } ship_info;
 
 extern int Num_wings;
@@ -2308,7 +2310,7 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
-extern int get_quadrant(vec3d *hit_pnt);						//	Return quadrant num of last hit ponit.
+extern int get_quadrant(vec3d *hit_pnt, object *objp);						//	Return quadrant num of last hit ponit.
 
 extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);
