@@ -1667,7 +1667,7 @@ void event_music_parse_musictbl(char *filename)
 		// open localization
 		lcl_ext_open();
 
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();		
 
 		// Loop through all the sound-tracks

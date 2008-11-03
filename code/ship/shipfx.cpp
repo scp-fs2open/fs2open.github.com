@@ -2323,13 +2323,19 @@ void shipfx_emit_spark( int n, int sn )
     //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
 	
-	if ((shipp->flags & (SF_ARRIVING|SF_DEPART_WARP)) && (shipp->warpout_effect))
+	if ( ((shipp->flags & SF_ARRIVING) && (shipp->warpin_effect != NULL))
+		|| ((shipp->flags & SF_DEPART_WARP) && (shipp->warpout_effect != NULL)) )
     {
         vec3d warp_pnt, tmp;
         matrix warp_orient;
 
-        shipp->warpout_effect->getWarpPosition(&warp_pnt);
-        shipp->warpout_effect->getWarpOrientation(&warp_orient);
+		if (shipp->flags & SF_ARRIVING) {
+			shipp->warpin_effect->getWarpPosition(&warp_pnt);
+			shipp->warpin_effect->getWarpOrientation(&warp_orient);
+		} else {
+			shipp->warpout_effect->getWarpPosition(&warp_pnt);
+			shipp->warpout_effect->getWarpOrientation(&warp_orient);
+		}
 
         vm_vec_sub( &tmp, &outpnt, &warp_pnt );
         
@@ -4338,6 +4344,9 @@ WE_Default::WE_Default(object *n_objp, int n_direction)
 
 	portal_objp = NULL;
 	stage_duration[0] = 0;
+
+	pos = vmd_zero_vector;
+	fvec = vmd_zero_vector;
 }
 
 int WE_Default::warpStart()
@@ -4406,8 +4415,8 @@ int WE_Default::warpStart()
 		{
 			// make sure that the warp effect will always have a forward orient facing the exit direction of the warpin ship - taylor
 			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
-			if ( (knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f) ||
-				(knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f) )
+			if ( ((knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f)) ||
+				((knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f)) )
 			{
 				knossos_orient.vec.uvec.xyz.y = -knossos_orient.vec.uvec.xyz.y;
 				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
@@ -4435,8 +4444,8 @@ int WE_Default::warpStart()
 	{
         float dot = vm_vec_dotprod(&fvec, &objp->orient.vec.fvec);
 
-		if ((dot < 0) && (direction == WD_WARP_IN) ||
-            ((dot > 0) && (direction == WD_WARP_OUT)))
+		if ( ((dot < 0) && (direction == WD_WARP_IN)) ||
+            ((dot > 0) && (direction == WD_WARP_OUT)) )
 		{
 			vm_vec_negate(&fvec);
 		}

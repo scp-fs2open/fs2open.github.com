@@ -545,13 +545,15 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	// set some player information
 	pl->m_player->objnum = objnum;
 	if ( pl == Net_player ) {
-		// this is a hack to ensure that old (dead) player ships are destroyed, since at this point he's actually an OBJ_GHOST
-		Player_obj->flags |= OF_SHOULD_BE_DEAD;						
-		obj_delete(OBJ_INDEX(Player_obj));	
-		
+		object *oldplr = Player_obj;
+
 		Player_obj = objp;
 		Player_ship = shipp;
 		Player_ai = &Ai_info[Player_ship->ai_index];
+
+		// this is a hack to ensure that old (dead) player ships are destroyed, since at this point he's actually an OBJ_GHOST
+		oldplr->flags |= OF_SHOULD_BE_DEAD;						
+		obj_delete(OBJ_INDEX(oldplr));	
 
 		//	get rid of the annoying HUD dead message text.
 		HUD_init_fixed_text();
@@ -585,6 +587,9 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	// engine ets
 	shipp->engine_recharge_index = (ship_ets & 0x000f);
 
+	// give the current bank a half-second timestamp so that we don't fire immediately unpon respawn
+	shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(500);
+
 	// if this is a dogfight mission, make him TEAM_TRAITOR
 	if(Netgame.type_flags & NG_TYPE_DOGFIGHT){
 		shipp->team = Iff_traitor;
@@ -601,6 +606,11 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	// blast his control and button info clear
 	memset(&pl->m_player->bi, 0, sizeof(pl->m_player->bi));
 	memset(&pl->m_player->ci, 0, sizeof(pl->m_player->ci));
+
+	// set throttle based on initial velocity specified in mission (the vel gets calculated
+	//   like a percentage of our max speed, so we can just use it as-is for the throttle)
+	pl->m_player->ci.forward_cruise_percent = (float)pobjp->initial_velocity;
+	CLAMP(pl->m_player->ci.forward_cruise_percent, 0.0f, 100.0f);
 
 	// if this is me, clear accum button info
 	if(pl == Net_player){

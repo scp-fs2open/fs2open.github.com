@@ -81,7 +81,7 @@ void script_parse_table(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	if(optional_string("#Global Hooks"))

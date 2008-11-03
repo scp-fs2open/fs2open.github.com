@@ -149,7 +149,7 @@ void parse_ai_profiles_tbl(char *filename)
 	if (filename == NULL)
 		read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
 	else
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 
 	reset_parse();		
 
@@ -370,6 +370,12 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$score assists based on damage caused:", AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE);
 
 			set_flag(profile, "$allow event and goal scoring in multiplayer:", AIPF_ALLOW_MULTI_EVENT_SCORING);
+
+			set_flag(profile, "$fix linked primary weapon decision bug:", AIPF_FIX_LINKED_PRIMARY_BUG);
+
+			set_flag(profile, "$prevent turrets targeting too distant bombs:", AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE);
+
+			set_flag(profile, "$smart subsystem targeting for turrets:", AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

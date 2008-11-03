@@ -2164,7 +2164,7 @@ void asteroid_parse_tbl()
 		return;
 	}
 
-	read_file_text("asteroid.tbl");
+	read_file_text("asteroid.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	required_string("#Asteroid Types");

@@ -1433,9 +1433,9 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
-				"\t2) You've somehow corrupted your FreeSpace 2 installation;\n"
-				"\t3) You haven't installed FreeSpace 2 at all.\n"
-				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
+				"\t2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
+				"\t3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
+				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
 		}	
 	}
 

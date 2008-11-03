@@ -630,6 +630,7 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "graphics/font.h"
+#include "network/multiutil.h"
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
@@ -6727,62 +6728,86 @@ void hudtarget_page_in()
 	}
 }
 
-void hud_stuff_ship_name(ship *shipp, char *ship_name_text)
+void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 {
-	char ship_name[NAME_LENGTH], callsign[NAME_LENGTH];
-
-	// get names
-	strcpy(ship_name, shipp->ship_name);
-	*callsign = 0;
-	if (shipp->callsign_index >= 0) {
-		mission_parse_lookup_callsign_index(shipp->callsign_index, callsign);
-	}
-
-	// handle hash symbol
-	end_string_at_first_hash_symbol(ship_name);
-
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name(ship_name);
-		lcl_translate_targetbox_name(callsign);
-	}
-
 	// print ship name
-	if ( (Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1) ) {
+	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) ) {
 		*ship_name_text = 0;
-	} else if (shipp->flags2 & SF2_HIDE_SHIP_NAME) {
-		*ship_name_text = 0;
-	} else if (*callsign) {
-		sprintf(ship_name_text, "%s (%s)", ship_name, callsign);
 	} else {
-		strcpy(ship_name_text, ship_name);
+		strcpy(ship_name_text, shipp->ship_name);
+
+		// handle hash symbol
+		end_string_at_first_hash_symbol(ship_name_text);
+
+		// handle translation
+		if (Lcl_gr) {
+			lcl_translate_targetbox_name(ship_name_text);
+		}
 	}
 }
 
-void hud_stuff_ship_class(ship *shipp, char *ship_class_text)
+extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
+void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 {
-	char ship_class[NAME_LENGTH], alt_name[NAME_LENGTH];
+	// only fighters and bombers have callsigns
+	if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
+		*ship_callsign_text = 0;
+		return;
+	}
 
-	// get names
-	strcpy(ship_class, Ship_info[shipp->ship_info_index].name);
-	*alt_name = 0;
-	if (shipp->alt_type_index >= 0) {
-		mission_parse_lookup_alt_index(shipp->alt_type_index, alt_name);
+	// handle multiplayer callsign
+	if (Game_mode & GM_MULTIPLAYER) {
+		// get a player num from the object, then get a callsign from the player structure.
+		int pn = multi_find_player_by_object( &Objects[shipp->objnum] );
+
+		if (pn >= 0) {
+			strcpy(ship_callsign_text, Net_players[pn].m_player->short_callsign);
+			return;
+		}
+	}
+
+	// try to get callsign
+	if (Fred_running) {
+		strcpy(ship_callsign_text, Fred_callsigns[shipp-Ships]);
+	} else {
+		*ship_callsign_text = 0;
+		if (shipp->callsign_index >= 0) {
+			mission_parse_lookup_callsign_index(shipp->callsign_index, ship_callsign_text);
+		}
 	}
 
 	// handle hash symbol
-	end_string_at_first_hash_symbol(ship_class);
+	end_string_at_first_hash_symbol(ship_callsign_text);
 
 	// handle translation
 	if (Lcl_gr) {
-		lcl_translate_targetbox_name(ship_class);
-		lcl_translate_targetbox_name(alt_name);
+		lcl_translate_targetbox_name(ship_callsign_text);
+	}
+}
+
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
+{
+	// try to get alt name
+	if (Fred_running) {
+		strcpy(ship_class_text, Fred_alt_names[shipp-Ships]);
+	} else {
+		*ship_class_text = 0;
+		if (shipp->alt_type_index >= 0) {
+			mission_parse_lookup_alt_index(shipp->alt_type_index, ship_class_text);
+		}
 	}
 
-	// print ship class
-	if (*alt_name) {
-		strcpy(ship_class_text, alt_name);
-	} else {
-		strcpy(ship_class_text, ship_class);
+	// maybe get ship class
+	if (!*ship_class_text) {
+		strcpy(ship_class_text, Ship_info[shipp->ship_info_index].name);
+	}
+
+	// handle hash symbol
+	end_string_at_first_hash_symbol(ship_class_text);
+
+	// handle translation
+	if (Lcl_gr) {
+		lcl_translate_targetbox_name(ship_class_text);
 	}
 }

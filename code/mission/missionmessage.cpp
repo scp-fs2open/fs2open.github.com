@@ -1033,7 +1033,7 @@ void parse_msgtbl()
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("messages.tbl");
+	read_file_text("messages.tbl", CF_TYPE_TABLES);
 	reset_parse();
 	Num_messages = 0;
 	Num_personas = 0;
@@ -1987,12 +1987,13 @@ void message_queue_process()
 	
 	strncpy (who_from, q->who_from, NAME_LENGTH);
 
-	// if this is a ship do we use name or callsign or ship class?
+	// if this is a ship, do we use name or callsign or ship class?
 	if ( Message_shipnum >= 0 ) {
-		if ( Ships[Message_shipnum].callsign_index >= 0 ) {
-			mission_parse_lookup_callsign_index(Ships[Message_shipnum].callsign_index, who_from);
-		} else if ( Ships[Message_shipnum].flags2 & SF2_HIDE_SHIP_NAME ) {
-			hud_stuff_ship_class(&Ships[Message_shipnum], who_from);
+		ship *shipp = &Ships[Message_shipnum];
+		if ( shipp->callsign_index >= 0 ) {
+			hud_stuff_ship_callsign( who_from, shipp );
+		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) ) {
+			hud_stuff_ship_class( who_from, shipp );
 		} else {
 			end_string_at_first_hash_symbol(who_from);
 		}

@@ -294,7 +294,7 @@ void cutscene_init()
 		return;
 	}
 
-	read_file_text("cutscenes.tbl");
+	read_file_text("cutscenes.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse in all the cutscenes

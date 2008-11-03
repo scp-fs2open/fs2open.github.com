@@ -696,6 +696,9 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 	case WM_TIMER:
 		break;
 
+    case WM_SYSCHAR:
+        break;
+
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:	{		
 			int nVirtKey;
@@ -771,6 +774,7 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 				break;
 
 			key_lost_focus();
+            mouse_lost_focus();
 			gr_activate(0);
 			break;
 		}
@@ -781,6 +785,7 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 				break;
 
 			key_got_focus();
+            mouse_got_focus();
 			gr_activate(1);
 			break;
 		}

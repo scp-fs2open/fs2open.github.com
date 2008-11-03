@@ -3141,6 +3141,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						ship_index = CDR(CDR(CDR(CDR(op_node))));
 						break;
 	
+					case OP_WEAPON_CREATE:
+						ship_index = CDDDDDR(CDDDDR(op_node));
+						break;
+
 					default :
 						ship_index = CDR(op_node);
 						break;
@@ -7776,7 +7780,7 @@ int special_argument_appears_in_sexp_list(int node)
 // eval_when evaluates the when conditional
 int eval_when(int n, int use_arguments)
 {
-	int arg_handler, cond, val, actions, exp;
+	int arg_handler, cond, val, actions, exp, op_num;
 
 	Assert( n >= 0 );
 
@@ -7810,16 +7814,30 @@ int eval_when(int n, int use_arguments)
 			exp = CAR(actions);
 			if (exp != -1)
 			{
-				// if we're using the special argument in this action
-				if (special_argument_appears_in_sexp_tree(exp))
-				{
-					do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
-				}
-				// if not, just evaluate it once as-is
-				else
-				{
-					// Goober5000 - possible bug? (see when val is used below)
-					/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+				
+				op_num = get_operator_const(CTEXT(exp));
+				switch (op_num) {
+					// if the op is a conditional then we just evaluate it
+					case OP_WHEN:
+					case OP_WHEN_ARGUMENT:
+					case OP_EVERY_TIME:
+					case OP_EVERY_TIME_ARGUMENT:
+						eval_sexp(exp);
+						break;
+
+					// otherwise we need to check if arguments are used
+					default: 
+						// if we're using the special argument in this action
+						if (special_argument_appears_in_sexp_tree(exp))
+						{
+							do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
+						}
+						// if not, just evaluate it once as-is
+						else
+						{
+							// Goober5000 - possible bug? (see when val is used below)
+							/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+						}
 				}
 			}
 			actions = CDR(actions);
@@ -8120,6 +8138,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 void sexp_invalidate_argument(int n)
 {
 	int conditional, arg_handler, arg_n;
+	bool invalidated;
 
 	conditional = n; 
 	do {
@@ -8138,22 +8157,45 @@ void sexp_invalidate_argument(int n)
 	// loop through arguments
 	while (n != -1)
 	{
-		// search for argument in arg_handler list
-		arg_n = CDR(arg_handler);
-		while (arg_n != -1)
-		{
-			// match?
-			if (!strcmp(CTEXT(n), CTEXT(arg_n)))
-			{
-				// set it as invalid
-				Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+		invalidated = false; 
 
-				// exit inner loop
-				break;
+		// first we must check if the arg_handler marks a selection. At the moment random-of is the only one that does this
+		arg_n = CDR(arg_handler);
+		while (arg_n != -1) {
+			if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_SELECT) {
+				// now check if the selected argument matches the one we want to invalidate
+				if (!strcmp(CTEXT(n), CTEXT(arg_n))) {
+					// set it as invalid
+					Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+					invalidated = true; 
+				}
 			}
 
 			// iterate
 			arg_n = CDR(arg_n);
+		}
+		
+		if (!invalidated) {
+			// search for argument in arg_handler list
+			arg_n = CDR(arg_handler);
+			while (arg_n != -1)
+			{
+				// match?
+				if (!strcmp(CTEXT(n), CTEXT(arg_n)))
+				{
+					// we need to check if the argument is already invalid as some argument lists may contain duplicates
+					if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID) {
+						// set it as invalid
+						Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+
+						// exit inner loop
+						break;
+					}
+				}
+
+				// iterate
+				arg_n = CDR(arg_n);
+			}
 		}
 
 		// iterate
@@ -10245,8 +10287,17 @@ void sexp_add_background_bitmap(int n)
 
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
-		// get new numerical value
-		new_number = stars_get_num_bitmaps();
+        if (!stars_add_bitmap_entry(&sle))
+        {
+		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
+            new_number = 0;
+        }
+        else
+        {
+            // get new numerical value
+		    new_number = stars_get_num_bitmaps() - 1;
+        }
+
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -10257,9 +10308,6 @@ void sexp_add_background_bitmap(int n)
 		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
 	}
-
-	if (!stars_add_bitmap_entry(&sle))
-		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
 }
 
 void sexp_remove_background_bitmap(int n)
@@ -10325,7 +10373,16 @@ void sexp_add_sun_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-		new_number = stars_get_num_suns();
+        if (!stars_add_sun_entry(&sle))
+        {
+		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
+            new_number = 0;
+        }
+        else
+        {
+            new_number = stars_get_num_suns() - 1;
+        }
+
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -10336,9 +10393,6 @@ void sexp_add_sun_bitmap(int n)
 		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
 	}
-
-	if (!stars_add_sun_entry(&sle))
-		Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
 }
 
 void sexp_remove_sun_bitmap(int n)

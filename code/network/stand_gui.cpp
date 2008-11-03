@@ -763,38 +763,38 @@ void std_connect_set_gamename(char *name)
 // the user has changed the text in the server name text box. handle this
 void std_connect_handle_name_change()
 {
-	char buf[MAX_GAMENAME_LEN+2];
-	int max_len = MAX_GAMENAME_LEN+2;
+	char buf[MAX_GAMENAME_LEN+1];
+	int max_len = MAX_GAMENAME_LEN;
 
 	if(Multi_std_namechange_force){
-		memset(buf,0,MAX_GAMENAME_LEN+2);
+		memset(buf,0,MAX_GAMENAME_LEN+1);
 		memcpy(&buf[0],&max_len,sizeof(int));
 
 		// get the new text
 		SendMessage(Multi_std_name,EM_GETLINE,(WPARAM)0,(LPARAM)(LPCSTR)buf);
 
 		// just copy it over for now. we may want to process this more later on
-		strcpy(Netgame.name,buf);
+		strncpy(Netgame.name, buf, sizeof(Netgame.name));
 
 		// copy it to the permanent name
-		strcpy(Multi_options_g.std_pname, buf);
+		strncpy(Multi_options_g.std_pname, buf, sizeof(Multi_options_g.std_pname));
 	}
 }
 
 // the user has changed the text in the host password text box
 void std_connect_handle_passwd_change()
 {
-	char buf[STD_PASSWD_LEN+2];
-	int max_len = STD_PASSWD_LEN+2;
+	char buf[STD_PASSWD_LEN+1];
+	int max_len = STD_PASSWD_LEN;
 	
-	memset(buf,0,STD_PASSWD_LEN+2);
+	memset(buf,0,STD_PASSWD_LEN+1);
 	memcpy(&buf[0],&max_len,sizeof(int));
 
 	// get the new text
 	SendMessage(Multi_std_host_passwd,EM_GETLINE,(WPARAM)0,(LPARAM)(LPCSTR)buf);
 
 	// just copy it over for now. we may want to process this more later on
-	strcpy(Multi_options_g.std_passwd, buf);
+	strncpy(Multi_options_g.std_passwd, buf, sizeof(Multi_options_g.std_passwd));
 }
 
 // convert the index of an item in the list box into an index into the net players array
@@ -841,7 +841,7 @@ BOOL CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 		
 		// create the standalone name text box and limit its text length
 		Multi_std_name = GetDlgItem(hwndDlg, (int)MAKEINTRESOURCE(IDC_STD_NAME));
-		SendMessage(Multi_std_name, EM_SETLIMITTEXT, (WPARAM)MAX_GAMENAME_LEN-1, (LPARAM)0);
+		SendMessage(Multi_std_name, EM_SETLIMITTEXT, (WPARAM)MAX_GAMENAME_LEN, (LPARAM)0);
 		Multi_std_namechange_force = 1;
 
 		// create the standalone host password input box
@@ -1436,36 +1436,36 @@ void std_pinfo_display_player_info(net_player *p)
 	// his alltime stats
 	scoring_struct *ptr = &p->m_player->stats;
 	STD_ADDSTRING(Player_stats[0],ptr->p_shots_fired);
-   STD_ADDSTRING(Player_stats[1],ptr->p_shots_hit);
+	STD_ADDSTRING(Player_stats[1],ptr->p_shots_hit);
 	STD_ADDSTRING(Player_stats[2],ptr->p_bonehead_hits);
 	STD_ADDSTRING(Player_stats[3],
-                (int)((float)100.0*((float)ptr->p_shots_hit/(float)ptr->p_shots_fired)));
+		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_shots_hit/(float)ptr->p_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[4],
-		          (int)((float)100.0*((float)ptr->p_bonehead_hits/(float)ptr->p_shots_fired)));
+		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_bonehead_hits/(float)ptr->p_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[5],ptr->s_shots_fired);
 	STD_ADDSTRING(Player_stats[6],ptr->s_shots_hit);
 	STD_ADDSTRING(Player_stats[7],ptr->s_bonehead_hits);
 	STD_ADDSTRING(Player_stats[8],
-					 (int)((float)100.0*((float)ptr->s_shots_hit/(float)ptr->s_shots_fired)));
+		(ptr->s_shots_fired > 0) ? (int)((float)100.0*((float)ptr->s_shots_hit/(float)ptr->s_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[9],
-                (int)((float)100.0*((float)ptr->s_bonehead_hits/(float)ptr->s_shots_fired)));
+		(ptr->s_shots_fired > 0) ? (int)((float)100.0*((float)ptr->s_bonehead_hits/(float)ptr->s_shots_fired)) : 0);
 	STD_ADDSTRING(Player_stats[10],ptr->assists);
 
-   // his stats for the current mission
+	// his stats for the current mission
 	STD_ADDSTRING(Player_mstats[0],ptr->mp_shots_fired);
-   STD_ADDSTRING(Player_mstats[1],ptr->mp_shots_hit);
+	STD_ADDSTRING(Player_mstats[1],ptr->mp_shots_hit);
 	STD_ADDSTRING(Player_mstats[2],ptr->mp_bonehead_hits);
 	STD_ADDSTRING(Player_mstats[3],
-                (int)((float)100.0*((float)ptr->mp_shots_hit/(float)ptr->mp_shots_fired)));
+		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_shots_hit/(float)ptr->mp_shots_fired)) : 0);
 	STD_ADDSTRING(Player_mstats[4],
-		          (int)((float)100.0*((float)ptr->mp_bonehead_hits/(float)ptr->mp_shots_fired)));
+		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_bonehead_hits/(float)ptr->mp_shots_fired)) : 0);
 	STD_ADDSTRING(Player_mstats[5],ptr->ms_shots_fired);
 	STD_ADDSTRING(Player_mstats[6],ptr->ms_shots_hit);
 	STD_ADDSTRING(Player_mstats[7],ptr->ms_bonehead_hits);
 	STD_ADDSTRING(Player_mstats[8],
-					 (int)((float)100.0*((float)ptr->ms_shots_hit/(float)ptr->ms_shots_fired)));
+		(ptr->ms_shots_fired > 0) ? (int)((float)100.0*((float)ptr->ms_shots_hit/(float)ptr->ms_shots_fired)) : 0);
 	STD_ADDSTRING(Player_mstats[9],
-                (int)((float)100.0*((float)ptr->ms_bonehead_hits/(float)ptr->ms_shots_fired))); 
+		(ptr->ms_shots_fired > 0) ? (int)((float)100.0*((float)ptr->ms_bonehead_hits/(float)ptr->ms_shots_fired)) : 0); 
 	STD_ADDSTRING(Player_mstats[10],ptr->m_assists);
 }
 

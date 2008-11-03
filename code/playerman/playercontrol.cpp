@@ -1999,23 +1999,15 @@ int player_inspect_cargo(float frametime, char *outstr)
 	// check if target is ship class that can be inspected
 	// MWA -- 1/27/98 -- added fighters/bombers to this list.  For multiplayer, we
 	// want to show callsign of player
+	// G5K -- 10/20/08 -- moved the callsign code into hud_stuff_ship_callsign, where
+	// it makes more sense
 
 	// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 	// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
 	if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
-		if ( Game_mode & GM_NORMAL ) {
-			if ( !(cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT)) ) {
-				return 0;
-			}
-		} else {
-			if ( !(cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT|SIF_FIGHTER|SIF_BOMBER)) ) {
-				return 0;
-			}
-		}
-
-		// won't show callsign information for single player games
-		if ( (Game_mode & GM_MULTIPLAYER) && !((cargo_sip->flags & (SIF_FIGHTER|SIF_BOMBER)) && (cargo_objp->flags & OF_PLAYER_SHIP)) )
+		if ( !(cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT)) ) {
 			return 0;
+		}
 	}
 
 	// if cargo is already revealed
@@ -2024,26 +2016,12 @@ int player_inspect_cargo(float frametime, char *outstr)
 			char *cargo_name;
 			cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
 			Assert ( cargo_name );
+			Assert ( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
 
-			if ( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) ) {
-				if ( cargo_name[0] == '#' )
-					sprintf(outstr, XSTR( "passengers:\n   %s", 83), cargo_name+1 );
-				else
-					sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
-			} else {
-				Assert( Game_mode & GM_MULTIPLAYER );
-
-				int pn;
-
-				// get a player num from the object, then get a callsign from the player structure.
-				pn = multi_find_player_by_object( cargo_objp );
-				// Assert( pn != -1 );
-				if(pn == -1){
-					strcpy(outstr, "");
-				} else {
-					sprintf(outstr, "%s", Net_players[pn].m_player->short_callsign );
-				}
-			}
+			if ( cargo_name[0] == '#' )
+				sprintf(outstr, XSTR( "passengers:\n   %s", 83), cargo_name+1 );
+			else
+				sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
 		} else {
 			sprintf(outstr, XSTR( "Scanned", 85) );
 		}

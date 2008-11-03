@@ -81,11 +81,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib"
+				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib trackir.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_10d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -188,11 +188,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib"
+				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib trackir.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_10r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
@@ -1868,19 +1868,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data01.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data02.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data03.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data04.bmp"
+				RelativePath="..\..\code\fred2\res\data00.bmp"
 				>
 			</File>
 			<File
@@ -1888,43 +1876,75 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data06.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data07.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data08.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data09.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\data10.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data11.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data12.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data13.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data14.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\data15.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data20.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data25.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data30.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data35.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data40.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data45.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data50.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data55.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data60.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data65.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data70.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data75.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data80.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data85.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data90.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data95.bmp"
 				>
 			</File>
 			<File

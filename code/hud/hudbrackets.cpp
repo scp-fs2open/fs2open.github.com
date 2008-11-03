@@ -837,17 +837,21 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		object* t_objp = &Objects[target_objnum];
 		char* tinfo_name = NULL;
 		char* tinfo_class = NULL;
-		char temp_name[NAME_LENGTH * 2 + 5];
+		char* tinfo_callsign = NULL;
+		char temp_name[NAME_LENGTH];
 		char temp_class[NAME_LENGTH];
+		char temp_callsign[NAME_LENGTH];
 		char empty='\0';
 
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				hud_stuff_ship_name(&Ships[t_objp->instance], temp_name);
-				hud_stuff_ship_class(&Ships[t_objp->instance], temp_class);
+				hud_stuff_ship_name(temp_name, &Ships[t_objp->instance]);
+				hud_stuff_ship_class(temp_class, &Ships[t_objp->instance]);
+				hud_stuff_ship_callsign(temp_callsign, &Ships[t_objp->instance]);
 				tinfo_name = temp_name;
 				tinfo_class = temp_class;
+				tinfo_callsign = temp_callsign;
 				break;
 
 			case OBJ_DEBRIS:
@@ -882,6 +886,10 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		if(tinfo_class)
 		{
 			gr_string(x2+3, y1+9, tinfo_class);
+		}
+		if(tinfo_callsign)
+		{
+			gr_string(x2+3, y1+18, tinfo_callsign);
 		}
 	}
 }

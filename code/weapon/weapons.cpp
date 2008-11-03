@@ -1392,7 +1392,7 @@ void parse_weapon_expl_tbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();		
 
 	required_string("#Start");
@@ -1544,11 +1544,15 @@ void parse_wi_flags(weapon_info *weaponp)
 	int	num_strings;
 
 	num_strings = stuff_string_list(weapon_strings, MAX_WEAPON_FLAGS);
+
+	if (optional_string("+override")) {
+		// reseting the flag values if set to override the existing flags
+		weaponp->wi_flags = WIF_DEFAULT_VALUE;
+		weaponp->wi_flags2 = WIF2_DEFAULT_VALUE;
+	}
 	
 	for (int i=0; i<num_strings; i++) {
-		if (!stricmp(NOX("Electronics"), weapon_strings[i]))
-			weaponp->wi_flags |= WIF_ELECTRONICS;		
-		else if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
+		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
 		{
             if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 			{
@@ -1614,7 +1618,9 @@ void parse_wi_flags(weapon_info *weaponp)
 		else if (!stricmp(NOX("Corkscrew"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_CORKSCREW;
 		else if (!stricmp(NOX("Shudder"), weapon_strings[i]))
-			weaponp->wi_flags |= WIF_SHUDDER;		
+			weaponp->wi_flags |= WIF_SHUDDER;
+		else if (!stricmp(NOX("Electronics"), weapon_strings[i]))
+			weaponp->wi_flags |= WIF_ELECTRONICS;
 		else if (!stricmp(NOX("lockarm"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_LOCKARM;		
 		else if (!stricmp(NOX("beam"), weapon_strings[i]))
@@ -1915,13 +1921,12 @@ void init_weapon_entry(int weap_info_index)
 	wip->cs_crotate=1;
 	wip->cs_twist=5.0f;
 	
-	wip->elec_intensity=1.0f;
-	wip->elec_time=6000;
+	wip->elec_time=8000;
 	wip->elec_eng_mult=1.0f;
 	wip->elec_weap_mult=1.0f;
 	wip->elec_beam_mult=1.0f;
 	wip->elec_sensors_mult=1.0f;
-	wip->elec_randomness=4000;
+	wip->elec_randomness=2000;
 	wip->elec_use_new_style=0;
 
 	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
@@ -2038,6 +2043,7 @@ int parse_weapon(int subtype, bool replace)
 	strcpy(parse_error_text, "");
 	strcpy(parse_error_text, "\nin weapon: ");
 	strcat(parse_error_text, fname);
+	strcat(parse_error_text, "\n");
 
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
@@ -2789,8 +2795,9 @@ int parse_weapon(int subtype, bool replace)
 		
 		//New only -WMC
 		if(optional_string("+Intensity:")) {
-			stuff_float(&wip->elec_intensity);
-			if(!wip->elec_use_new_style)Warning(LOCATION, "+Intensity may only be used with new style electronics");
+			float temp;
+			stuff_float(&temp);
+			Warning(LOCATION, "+Intensity is deprecated");
 		}
 
 		if(optional_string("+Lifetime:")) {
@@ -3366,7 +3373,7 @@ void parse_weaponstbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	if(optional_string("#Primary Weapons"))
@@ -4541,10 +4548,10 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 					{
 						if (frand() >= chance) {
 							wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
-							mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						//	mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
 						} else  {
 							wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
-							mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						//	mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
 						}
 					}
 				
@@ -5365,7 +5372,6 @@ void weapon_process_post(object * obj, float frame_time)
 //	Update weapon tracking information.
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked, ship_subsys *target_subsys)
 {
-	int			ai_index;
 	object		*parent_objp;
 	weapon		*wp;
 	weapon_info	*wip;
@@ -5379,12 +5385,15 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	wp = &Weapons[Objects[weapon_objnum].instance];
 	wip = &Weapon_info[wp->weapon_info_index];
-	parent_objp = &Objects[parent_objnum];
 
-	Assert(parent_objp->type == OBJ_SHIP);
-	ai_index = Ships[parent_objp->instance].ai_index;
+	if (parent_objnum >= 0) {
+		parent_objp = &Objects[parent_objnum];
+		Assert(parent_objp->type == OBJ_SHIP);
+	} else {
+		parent_objp = NULL;
+	}
 
-	if ( ai_index >= 0 ) {
+	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
 		int target_team = -1;
 		if ( target_objnum >= 0 ) {
 			int obj_type = Objects[target_objnum].type;
@@ -5394,7 +5403,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		}
 	
 		// determining if we're targeting the same team
-		if(Ships[parent_objp->instance].team == target_team){
+		if (parent_objp != NULL && Ships[parent_objp->instance].team == target_team){
 			targeting_same = 1;
 		} else {
 			targeting_same = 0;
@@ -5576,8 +5585,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->team = Ships[parent_objp->instance].team;
 		wp->species = Ship_info[Ships[parent_objp->instance].ship_info_index].species;
 	} else {
-		wp->team = -1;
-		wp->species = -1;
+		// ugh - we need to prevent bad array accesses
+		wp->team = Iff_traitor;
+		wp->species = 0;
 	}
 	wp->turret_subsys = NULL;
 	vm_vec_zero(&wp->homing_pos);
@@ -5825,9 +5835,11 @@ void spawn_child_weapons(object *objp)
 
 	parent_num = objp->parent;
 
-	if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
-		mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
-		return;
+	if (parent_num >= 0) {
+		if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
+			mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
+			return;
+		}
 	}
 
 	starting_sig = 0;
@@ -6042,29 +6054,21 @@ extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 // input:	ship_obj		=>		pointer to ship that holds subsystem
 //				blast_pos	=>		world pos of weapon blast
 //				wi_index		=>		weapon info index of weapon causing blast
-void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_index)
+void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index)
 {
 	weapon_info			*wip;
-	ship					*shipp;
+	ship				*shipp;
 	ship_subsys			*ss;
-	model_subsystem	*psub;
+	model_subsystem		*psub;
 	vec3d				subsys_world_pos;
-	float					dist;
+	float				dist;
 
 	shipp = &Ships[ship_objp->instance];
 	wip = &Weapon_info[wi_index];
 
-	int ship_type=ship_query_general_type(shipp);
-	float base_time = (float)wip->elec_time;
-	if(ship_type > -1) {
-		base_time *= (Ship_types[ship_type].emp_multiplier * wip->elec_intensity);
-	}
-	float sub_time;
-
 	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )
 	{
 		psub = ss->system_info;
-		sub_time=base_time;
 
 		// convert subsys point to world coords
 		vm_vec_unrotate(&subsys_world_pos, &psub->pnt, &ship_objp->orient);
@@ -6074,13 +6078,15 @@ void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_in
 		dist = vm_vec_dist_quick(blast_pos, &subsys_world_pos);
 		if ( dist < wip->shockwave.outer_rad )
 		{
+			float disrupt_time = (float)wip->elec_time;
+
 			//use new style electronics disruption
 			if (wip->elec_use_new_style)
 			{
 				//if its an engine subsytem, take the multiplier into account
 				if (psub->type==SUBSYSTEM_ENGINE)
 				{
-					sub_time*=wip->elec_eng_mult;
+					disrupt_time*=wip->elec_eng_mult;
 				}
 	
 				//if its a turret or weapon subsytem, take the multiplier into account
@@ -6091,49 +6097,32 @@ void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_in
 					//I figure, the big fancy electronics on beams will be used for the other
 					//weapons as well. No reason having two targeting computers on a turret.
 					//Plus, it's easy and fast to code. :)
-					if ((psub->type==SUBSYSTEM_TURRET)&& turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
+					if ((psub->type==SUBSYSTEM_TURRET) && turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
 					{
-						sub_time*=wip->elec_beam_mult;
+						disrupt_time*=wip->elec_beam_mult;
 					}
 					//disrupt other weapons
 					else
 					{
-						sub_time*=wip->elec_weap_mult;
+						disrupt_time*=wip->elec_weap_mult;
 					}
 				}
 				
 				//disrupt sensor and awacs systems.
 				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
 				{
-					sub_time*=wip->elec_sensors_mult;
-				}
-	
-				//add a little randomness to the disruption time, unless the disuruption time is zero for some reason
-				//perhaps a multiplier was zero or the scale was too small.
-				if (sub_time > 0) 
-				{
-					sub_time+=frand_range(-1.0f, 1.0f) * wip->elec_randomness;
-				}
-		
-				//disrupt this subsystem for the calculated time, plus or minus some time
-				//if it turns out to be less than 0 seconds, don't bother
-				if (sub_time > 0)
-				{
-					ship_subsys_set_disrupted(ss, fl2i(sub_time));
+					disrupt_time*=wip->elec_sensors_mult;
 				}
 			}
-
-			//use the old style disruption effect
-			else 
+	
+			//add a little randomness to the disruption time
+			disrupt_time += frand_range(-1.0f, 1.0f) * wip->elec_randomness;
+		
+			//disrupt this subsystem for the calculated time
+			//if it turns out to be less than 0 seconds, don't bother
+			if (disrupt_time > 0)
 			{
-				sub_time=wip->elec_time + frand_range(-1.0f, 1.0f)*wip->elec_randomness;
-				
-				//disrupt this subsystem for the calculated time, plus or minus some time
-				//if it turns out to be less than 0 seconds, don't bother
-				if (sub_time > 0)
-				{
-					ship_subsys_set_disrupted(ss, fl2i(sub_time));
-				}
+				ship_subsys_set_disrupted(ss, fl2i(disrupt_time));
 			}
 		}
 	}
@@ -6295,11 +6284,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 	}	// end for
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-//	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
-//		if ( other_obj->type == OBJ_SHIP ) {
-//			weapon_do_electronics_affect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
-//		}
-//	}
+	if ( (other_obj != NULL) && (wip->wi_flags & WIF_ELECTRONICS) ) {
+		if ( other_obj->type == OBJ_SHIP ) {
+			weapon_do_electronics_effect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
+		}
+	}
 }
 
 //	----------------------------------------------------------------------
@@ -6424,36 +6413,14 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 		sci = &wip->dinky_shockwave;
 	}
 
-	// check if this is an area effect weapon (ie has shockwave
-	if ( sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
+	// check if this is an area effect weapon (i.e. has a blast radius)
+	if (sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
 	{
-		if(sci->speed > 0.0f)
-		{
+		if(sci->speed > 0.0f) {
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
 			weapon_do_area_effect(weapon_obj, sci, hitpos, other_obj);
-		}
-	}
-
-	if (wip->wi_flags & WIF_ELECTRONICS)
-	{
-		float blast,damage;
-		for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
-		{
-			if (objp->type != OBJ_SHIP)
-			{
-				continue;
-			}
-			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
-			{
-				continue;
-			}
-			if ( weapon_area_calc_damage(objp, hitpos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->shockwave.blast, wip->damage, &blast, &damage, wip->shockwave.outer_rad) == -1 ){
-				continue;
-			}
-
-			weapon_do_electronics_affect(objp, hitpos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 

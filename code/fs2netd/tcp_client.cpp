@@ -763,13 +763,11 @@ Recieve_Only:
 
 	// receive reply (serverlist_reply_packet)
 	fix end_time = timer_get_fixed_seconds() + (MAX_TIMEOUT * F1_0);
-	net_server templist[MAX_SERVERS];
+	net_server stemp;
 	int i, numServers = 0;
 	uint rc_total = 0;
 	net_addr addr;
 	server_item *item = NULL;
-
-	memset( templist, 0, MAX_SERVERS * sizeof(net_server) );
 
 	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
 		if (rc < BASE_PACKET_SIZE)
@@ -809,23 +807,18 @@ Recieve_Only:
 			return 1;
 		}
 
-		if (numServers > MAX_SERVERS) {
-			ml_printf("FS2NetD WARNING: Server list contains %i server, but can only handle %i at a time!  Some servers will not be listed!", numServers, MAX_SERVERS);
-			numServers = MAX_SERVERS;
-		}
-
 		for (i = 0; i < numServers; i++) {
-			PXO_GET_INT( templist[i].flags );
-			PXO_GET_USHORT( templist[i].port );
-			PXO_GET_STRING( templist[i].ip );
+			PXO_GET_INT( stemp.flags );
+			PXO_GET_USHORT( stemp.port );
+			PXO_GET_STRING( stemp.ip );
 
-			if ( !psnet_is_valid_ip_string(templist[i].ip) ) {
-				nprintf(("Network", "Invalid ip string (%s)\n", templist[i].ip));
+			if ( !psnet_is_valid_ip_string(stemp.ip) ) {
+				nprintf(("Network", "Invalid ip string (%s)\n", stemp.ip));
 			} else {	
 				memset( &addr, 0, sizeof(net_addr) );
 				addr.type = NET_TCP;
-				psnet_string_to_addr(&addr, templist[i].ip);
-				addr.port = (short) templist[i].port;
+				psnet_string_to_addr(&addr, stemp.ip);
+				addr.port = (short) stemp.port;
 
 				if (addr.port == 0)
 					addr.port = DEFAULT_GAME_PORT;
@@ -1026,5 +1019,62 @@ void FS2NetD_GameCountUpdate(char *chan_name)
 	DONE_PACKET();
 
 	FS2NetD_SendData(buffer, buffer_size);
+}
+
+void FS2NetD_CheckDuplicateLogin(int SID)
+{
+	int buffer_size;
+	char *buffer;
+	int ids_count = 0;
+	int *ids = new int[MAX_PLAYERS];
+	int idx;
+
+	if ( !ids ) {
+		return;
+	}
+
+	for (idx = 0; idx < MAX_PLAYERS; idx++) {
+		if ( MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) ) {      
+			if ( (Net_players[idx].tracker_player_id >= 0) && (Net_players[idx].tracker_player_id != SID) ) {
+				ids[ids_count] = Net_players[idx].tracker_player_id;
+				ids_count++;
+			}
+		}
+	}
+
+	if ( !ids_count ) {
+		delete [] ids;
+		return;
+	}
+
+	buffer = new char[BASE_PACKET_SIZE + sizeof(int) + (MAX_PLAYERS * sizeof(int)) + 10];
+
+	if ( !buffer ) {
+		return;
+	}
+
+	// Clear any old dead crap data
+	FS2NetD_IgnorePackets();
+
+	// create and send request packet
+	INIT_PACKET( PCKT_DUP_LOGIN_RQST );
+
+	PXO_ADD_INT( SID );
+
+	Assert( MAX_PLAYERS <= 255 );
+
+	ubyte tvar = (ubyte)ids_count;
+	PXO_ADD_DATA( tvar );
+
+	for (idx = 0; idx < ids_count; idx++) {
+		PXO_ADD_INT( ids[idx] );
+	}
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+
+	delete [] buffer;
+	delete [] ids;
 }
 
