@@ -437,6 +437,7 @@ int shockwave_load(char *s_name, bool shock_3D = false);
 // -----------------------------------------------------------
 extern int Show_area_effect;
 extern int Cmdline_nohtl;
+extern int Cmdline_enable_3d_shockwave;
 
 
 // ------------------------------------------------------------------------------------
@@ -875,10 +876,10 @@ void shockwave_level_init()
 
 	if ( !Default_shockwave_loaded ) {
 		i = -1;
-
-		// try and load in a 3d shockwave first
+		
+		// try and load in a 3d shockwave first if enabled
 		// Goober5000 - check for existence of file before trying to load it
-		if ( cf_exists_full("shockwave.pof", CF_TYPE_MODELS) ) {
+		if ( Cmdline_enable_3d_shockwave && cf_exists_full("shockwave.pof", CF_TYPE_MODELS) ) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );

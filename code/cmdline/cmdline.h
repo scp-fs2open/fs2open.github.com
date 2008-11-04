@@ -662,6 +662,7 @@ extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern int Cmdline_spec;
 extern int Cmdline_normal;
 extern int Cmdline_height;
+extern int Cmdline_enable_3d_shockwave;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
