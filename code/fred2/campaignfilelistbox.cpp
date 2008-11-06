@@ -48,13 +48,14 @@ void campaign_filelist_box::initialize()
 {
 	int i, z, num_files;
 	char *mission_filenames[2000];
+	char mission_filenames_arr[2000][MAX_FILENAME_LEN];
 	mission a_mission;
 
 	ResetContent();
 
 	extern int Skip_packfile_search;
 	Skip_packfile_search = 1;
-	num_files = cf_get_file_list(2000, mission_filenames, CF_TYPE_MISSIONS, "*.fs2");
+	num_files = cf_get_file_list_preallocated(2000, mission_filenames_arr, mission_filenames, CF_TYPE_MISSIONS, "*.fs2");
 	Skip_packfile_search = 0;
 
 	i=0;
