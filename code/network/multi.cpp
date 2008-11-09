@@ -1898,7 +1898,7 @@ void standalone_main_init()
 		nprintf(("Network","STANDALONE USING LAN UPDATE\n"));
 		break;
 	}
-	
+
 	// clear out various things
 	psnet_flush();
 	game_flush();
@@ -1912,9 +1912,19 @@ void standalone_main_init()
 	multi_create_list_load_missions();
 	multi_create_list_load_campaigns();
 
-	// if this is a tracker game, validate missions
-	if(MULTI_IS_TRACKER_GAME){
-		multi_update_valid_missions();
+	// if this is a tracker game then we have some extra tasks to perform
+	if (MULTI_IS_TRACKER_GAME) {
+		// login (duh!)
+		if ( fs2netd_login() ) {
+			// validate missions
+			multi_update_valid_missions();
+
+			// advertise our game to the server
+			fs2netd_gameserver_start();
+
+			// set tracker id
+			Net_player->tracker_player_id = Multi_tracker_id;
+		}
 	}
 }
 

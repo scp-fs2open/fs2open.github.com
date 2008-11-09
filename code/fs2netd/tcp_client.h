@@ -83,35 +83,41 @@
 
 #include "globalincs/pstypes.h"
 
-//#pragma warning(disable:4018)	// signed/unsigned mismatch
-//#pragma warning(disable:4245)	// signed/unsigned mismatch in conversion of const value
-
-
 #include "fs2netd/protocol.h"
 #include "fs2netd/tcp_socket.h"
+
+#include <vector>
+#include <string>
 
 struct player;
 struct netgame_info;
 
-int FS2NetD_SendPlayerData(int SID, const char* player_name, const char* user, player *pl, int timeout = 15);
-int FS2NetD_GetPlayerData(int SID, const char* player_name, player *pl, bool CanCreate = false, int timeout = 15);
-int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout = 15);
-int FS2NetD_CheckValidSID(int SID);
-int FS2NetD_GetServerList(int timeout = 15);
-void FS2NetD_Ping();
-void FS2NetD_SendHeartBeat();
-void FS2NetD_SendServerDisconnect(ushort port);
-int FS2NetD_Login(const char *username, const char *password, int timeout = 15);
-void FS2NetD_Pong(int tstamp);
-int FS2NetD_ValidateTableList(int timeout = 30);
-void FS2NetD_ChatChannelUpdate(char *chan_name);
-void FS2NetD_GameCountUpdate(char *chan_name);
-void FS2NetD_CheckDuplicateLogin(int SID);
-fs2open_banmask *FS2NetD_GetBanList(int *numBanMasks, int timeout = 15);
 
-// longer timeouts - mySQL operations
-//file_record *FS2NetD_GetTablesList(int *numTables, int timeout = 30);
-file_record *FS2NetD_GetMissionsList(int *numMissions, int timeout = 30);
+int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, bool do_send);
+
+int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send);
+int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, bool do_send);
+
+int FS2NetD_GetBanList(std::vector<std::string> &mask_list, bool do_send);
+
+int FS2NetD_GetMissionsList(std::vector<file_record> &m_list, bool do_send);
+
+int FS2NetD_ValidateTableList(bool do_send);
+
+int FS2NetD_Login(const char *username, const char *password, bool do_send);
+int FS2NetD_CheckValidID();
+void FS2NetD_CheckDuplicateLogin();
+
+void FS2NetD_SendServerStart();
+void FS2NetD_SendServerUpdate();
+void FS2NetD_SendServerDisconnect();
+
+void FS2NetD_RequestServerList();
+
+void FS2NetD_GameCountUpdate(char *chan_name);
+
+void FS2NetD_Ping();
+void FS2NetD_Pong(int tstamp);
 
 
 

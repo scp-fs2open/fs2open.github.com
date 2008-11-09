@@ -593,8 +593,6 @@
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
 
-#include "fs2netd/fs2netd_client.h"
-
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
 

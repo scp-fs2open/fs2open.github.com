@@ -640,6 +640,7 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
@@ -2789,7 +2790,12 @@ void broadcast_game_query()
 	int packet_size;
 	net_addr addr;	
 	server_item *s_moveup;
-	ubyte data[MAX_PACKET_SIZE];	
+	ubyte data[MAX_PACKET_SIZE];
+
+	if ( MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) ) {
+		fs2netd_send_game_request();
+		return;
+	}
 
 	BUILD_HEADER(GAME_QUERY);	
 	
