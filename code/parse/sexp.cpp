@@ -6061,7 +6061,7 @@ int sexp_shields_left(int n)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
+	percent = fl2i((get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f) + 0.5f);
 	return percent;
 }
 
@@ -6088,7 +6088,7 @@ int sexp_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * get_hull_pct(objp));
+	percent = fl2i((100.0f * get_hull_pct(objp)) + 0.5f);
 	return percent;
 }
 
@@ -6113,7 +6113,7 @@ int sexp_sim_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * get_sim_hull_pct(objp));
+	percent = fl2i((100.0f * get_sim_hull_pct(objp)) + 0.5f);
 	return percent;
 }
 
@@ -6278,7 +6278,7 @@ int sexp_hits_left_subsystem(int n)
 			while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) ) {
 
 				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
-					percent = (int) (ss->current_hits / ss->max_hits * 100.0f);
+					percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
 					return percent;
 				}
 
@@ -6291,7 +6291,7 @@ int sexp_hits_left_subsystem(int n)
 			return SEXP_NAN;
 
 		} else {
-			percent = (int)(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
+			percent = fl2i((ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f) + 0.5f);
 			return percent;
 		}
 	}
