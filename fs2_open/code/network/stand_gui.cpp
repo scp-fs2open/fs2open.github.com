@@ -426,6 +426,7 @@
 #include "globalincs/version.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 HANDLE Standalone_thread;
@@ -751,6 +752,13 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy(Netgame.name,name);
+
+		// update fs2netd
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_disconnect();
+			Sleep(50);
+			fs2netd_gameserver_start();
+		}
 	}
 
 	// update the text control
@@ -778,6 +786,13 @@ void std_connect_handle_name_change()
 
 		// copy it to the permanent name
 		strncpy(Multi_options_g.std_pname, buf, sizeof(Multi_options_g.std_pname));
+
+		// update fs2netd with the info
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_disconnect();
+			Sleep(50);
+			fs2netd_gameserver_start();
+		}
 	}
 }
 
@@ -2037,7 +2052,6 @@ void std_reset_standalone_gui()
 // notify the user that the standalone has failed to login to the tracker on startup
 void std_notify_tracker_login_fail()
 {
-	MessageBox(Psht,"Error loading fs2open_pxo.cfg / initializing FS2NetD interface!",XSTR("VMT Warning!",923),MB_OK);
 }
 
 void std_do_gui_frame()
@@ -2068,10 +2082,6 @@ void std_do_gui_frame()
 		// update the controls
 		std_multi_update_netgame_info_controls();
 	}
-
-
-	// ========================= Fs2NetD support =========================
-	// nothing needed here - kazan
 }
 
 

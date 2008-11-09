@@ -158,6 +158,7 @@
 #include "fs2netd/tcp_client.h"
 #include "fs2netd/protocol.h"
 #include "fs2netd/tcp_socket.h"
+#include "fs2netd/fs2netd_client.h"
 #include "network/multi_log.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -168,59 +169,64 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <limits.h>
 
-#define MAX_TIMEOUT		10
-#define MIN_TIMEOUT		5
 
 extern std::vector<crc_valid_status> Table_valid_status;
+ 
 
-
-int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout)
+int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
 	char buffer[100];
 
-	if (timeout == 0)
-		goto Recieve_Only;
+	if (do_send) {
+		INIT_PACKET( PCKT_MISSION_CHECK );
 
+		PXO_ADD_STRING( m_name );
+		PXO_ADD_UINT( crc32 );
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		DONE_PACKET();
 
-	// send packet...  (fs2open_file_check_single)
-	INIT_PACKET( PCKT_MISSION_CHECK );
+		if ( FS2NetD_SendData(buffer, buffer_size) == -1 ) {
+			return 3;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		int rc;
+		uint rc_total = 0;
 
-	PXO_ADD_STRING( m_name );
-	PXO_ADD_UINT( crc32 );
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
 
-	DONE_PACKET();
+			if (rc <= 0) {
+				break;
+			}
 
-	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return 3;
+			rc_total += rc;
 
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
-Recieve_Only:
-
-	// and get the reply...  (fs2open_fcheck_reply)
-	ubyte status = 0;
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
+		if (rc < BASE_PACKET_SIZE) {
 			return 0;
+		}
 
 		VRFY_PACKET2( PCKT_MCHECK_REPLY );
 
-		if (!my_packet)
+		if ( !my_packet ) {
 			return 0;
+		}
 
+		ubyte status = 0;
 		PXO_GET_DATA( status );
 		Assert( (status == 0) || (status == 1) );
 
 		// anything beyond 'true' is considered a failure of some kind
-		if (status > 1)
+		if (status > 1) {
 			status = 0;
+		}
 
 		return status+1;
 	}
@@ -228,183 +234,184 @@ Recieve_Only:
 	return 0;
 }
 
-int FS2NetD_SendPlayerData(int SID, const char *player_name, const char *user, player *pl, int timeout)
+int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
-	char buffer[16384]; // 16K should be enough i think..... I HOPE!
-	int i, num_type_kills = 0;
+	char buffer[16384];
 
+	if (do_send) {
+		int i, num_type_kills = 0;
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		// send packet...  (fs2open_pilot_update)
+		INIT_PACKET( PCKT_PILOT_UPDATE );
 
-	// send packet...  (fs2open_pilot_update)
-	INIT_PACKET( PCKT_PILOT_UPDATE );
+		PXO_ADD_INT( Multi_tracker_id );
 
-	PXO_ADD_INT( SID );
+		PXO_ADD_STRING( player_name );				// name
+		PXO_ADD_STRING( Multi_tracker_login );		// user
 
-	PXO_ADD_STRING( player_name );				// name
-	PXO_ADD_STRING( user );						// user
+		PXO_ADD_INT( pl->stats.score );				// points
+		PXO_ADD_UINT( pl->stats.missions_flown );	// missions
+		PXO_ADD_UINT( pl->stats.flight_time );		// flighttime
+		PXO_ADD_INT( pl->stats.last_flown );		// LastFlight
+		PXO_ADD_INT( pl->stats.kill_count );		// Kills
+		PXO_ADD_INT( pl->stats.kill_count_ok );		// NonFriendlyKills
+		PXO_ADD_INT( pl->stats.assists );			// Assists
+		PXO_ADD_UINT( pl->stats.p_shots_fired );	// PriShots
+		PXO_ADD_UINT( pl->stats.p_shots_hit );		// PriHits
+		PXO_ADD_UINT( pl->stats.p_bonehead_hits );	// PriFHits
+		PXO_ADD_UINT( pl->stats.s_shots_fired );	// SecShots
+		PXO_ADD_UINT( pl->stats.s_shots_hit );		// SecHits
+		PXO_ADD_UINT( pl->stats.s_bonehead_hits );	// SecFHits
+		PXO_ADD_INT( pl->stats.rank );				// rank
 
-	PXO_ADD_INT( pl->stats.score );				// points
-	PXO_ADD_UINT( pl->stats.missions_flown );	// missions
-	PXO_ADD_UINT( pl->stats.flight_time );		// flighttime
-	PXO_ADD_INT( pl->stats.last_flown );		// LastFlight
-	PXO_ADD_INT( pl->stats.kill_count );		// Kills
-	PXO_ADD_INT( pl->stats.kill_count_ok );		// NonFriendlyKills
-	PXO_ADD_INT( pl->stats.assists );			// Assists
-	PXO_ADD_UINT( pl->stats.p_shots_fired );	// PriShots
-	PXO_ADD_UINT( pl->stats.p_shots_hit );		// PriHits
-	PXO_ADD_UINT( pl->stats.p_bonehead_hits );	// PriFHits
-	PXO_ADD_UINT( pl->stats.s_shots_fired );	// SecShots
-	PXO_ADD_UINT( pl->stats.s_shots_hit );		// SecHits
-	PXO_ADD_UINT( pl->stats.s_bonehead_hits );	// SecFHits
-	PXO_ADD_INT( pl->stats.rank );				// rank
-
-	fs2open_ship_typekill *type_kills = NULL;
-	type_kills = (fs2open_ship_typekill*) vm_malloc( sizeof(fs2open_ship_typekill) * MAX_SHIP_CLASSES );
-	Verify( type_kills != NULL );
-
-	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
-		if (pl->stats.kills[i] <= 0)
-			continue;
-
-		strcpy(type_kills[num_type_kills].name, Ship_info[i].name);
-
-		Assert( (pl->stats.kills[i] >= 0) && (pl->stats.kills[i] < USHRT_MAX) );
-		type_kills[num_type_kills].kills = (ushort)pl->stats.kills[i];
-
-		num_type_kills++;
-	}
-
-	Assert( (num_type_kills >= 0) && (num_type_kills < USHRT_MAX) );
-	
-	PXO_ADD_USHORT( (ushort)num_type_kills );
-
-	for (i = 0; i < num_type_kills; i++) {
-		PXO_ADD_STRING( type_kills[i].name );
-		PXO_ADD_USHORT( type_kills[i].kills );
-	}
-
-	PXO_ADD_USHORT( (ushort)MAX_MEDALS );
-
-	for (i = 0; i < MAX_MEDALS; i++)
-		PXO_ADD_INT( pl->stats.medals[i] );
-
-	DONE_PACKET();
-
-	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return -1;
-
-
-	// get reply (fs2open_pilot_updatereply)
-	fix end_time = timer_get_fixed_seconds() + (MIN_TIMEOUT * F1_0);
-	ushort status;
-
-	while ( timer_get_fixed_seconds() <= end_time ) {
-		if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-			if (rc < BASE_PACKET_SIZE)
-				continue;
-
-			VRFY_PACKET( PCKT_PILOT_UREPLY );
-
-			if (!my_packet)
-				continue;
-
-			PXO_GET_DATA( status );
-			Assert( (status == 0) || (status == 1) || (status == 2) );
-
-			if (status > 2)
-				status = 2;
-
-			return (int)status;
+		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+			if (pl->stats.kills[i] > 0) {
+				Assert( (pl->stats.kills[i] >= 0) && (pl->stats.kills[i] < USHRT_MAX) );
+				num_type_kills++;
+			}
 		}
+
+		Assert( (num_type_kills >= 0) && (num_type_kills < USHRT_MAX) );
+
+		PXO_ADD_USHORT( (ushort)num_type_kills );
+
+		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+			if (pl->stats.kills[i] > 0) {
+				PXO_ADD_STRING( Ship_info[i].name );
+				PXO_ADD_USHORT( (ushort)pl->stats.kills[i] );
+			}
+		}
+
+		PXO_ADD_USHORT( (ushort)MAX_MEDALS );
+
+		for (i = 0; i < MAX_MEDALS; i++) {
+			PXO_ADD_INT( pl->stats.medals[i] );
+		}
+
+		DONE_PACKET();
+
+		if ( FS2NetD_SendData(buffer, buffer_size) == -1 ) {
+			return -1;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		int rc;
+		uint rc_total = 0;
+
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
+
+			if (rc <= 0) {
+				break;
+			}
+
+			rc_total += rc;
+
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
+
+		if (rc < BASE_PACKET_SIZE) {
+			return -1;
+		}
+
+		VRFY_PACKET2( PCKT_PILOT_UREPLY );
+
+		if ( !my_packet ) {
+			return -1;
+		}
+
+		ubyte status;
+		PXO_GET_DATA( status );
+		Assert( (status == 0) || (status == 1) || (status == 2) );
+
+		if (status > 2) {
+			status = 2;
+		}
+
+		return (int)status;
 	}
 
 	return -1;
 }
 
-int FS2NetD_GetPlayerData(int SID, const char *player_name, player *pl, bool CanCreate, int timeout)
+int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
-	char buffer[16384]; // 16K should be enough i think..... I HOPE!
-	int i;
-	ubyte create = (ubyte)CanCreate;
+	char buffer[16384];
 
+	if (do_send) {
+		ubyte create = (ubyte)can_create;
 
-	if (timeout == 0)
-		goto Recieve_Only;
+		INIT_PACKET( PCKT_PILOT_GET );
 
+		PXO_ADD_INT( (can_create) ? Multi_tracker_id : -2 );
+		PXO_ADD_STRING( player_name );
+		PXO_ADD_DATA( create );
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		DONE_PACKET();
 
-	// send packet...  (fs2open_get_pilot)
-	INIT_PACKET( PCKT_PILOT_GET );
-
-	PXO_ADD_INT( SID );
-	PXO_ADD_STRING( player_name );
-	PXO_ADD_DATA( create );
-
-	DONE_PACKET();
-
-	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return -1;
-
-
-	Sleep(10); // give it a little time to process
-
-
-Recieve_Only:
-
-	// process the received pilot update data (fs2open_pilot_reply)
-	fix end_time = timer_get_fixed_seconds() + (15 * F1_0);
-	int si_index = 0;
-	uint rc_total = 0;
-	ubyte reply_type = 0;
-	ushort bogus, num_type_kills = 0, num_medals = 0;
-	char ship_name[NAME_LENGTH];
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
+		if ( FS2NetD_SendData(buffer, buffer_size) == -1 ) {
 			return -1;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		const fix end_time = timer_get_fixed_seconds() + (15 * F1_0);
+		int rc;
+		uint rc_total = 0;
+		ubyte reply_type = 0;
+		int si_index = 0;
+		ushort bogus, num_type_kills = 0, num_medals = 0;
+		char ship_name[NAME_LENGTH];
+		int idx;
+
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
+
+			if (rc <= 0) {
+				break;
+			}
+
+			rc_total += rc;
+
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
+
+		if (rc < BASE_PACKET_SIZE) {
+			return -1;
+		}
 
 		VRFY_PACKET2( PCKT_PILOT_REPLY );
 
-		if (!my_packet)
+		if ( !my_packet ) {
 			return -1;
-
-		if ( buffer_size > (int)sizeof(buffer) )
-			ml_printf("FS2NetD WARNING: Pilot update data is larger than receive buffer!  Some data will be lost!");
-
-		rc_total = rc;
-
-		ml_printf("FS2NetD: Pre-completion pilot get: recvsize = %i, expecting = %i", rc, buffer_size);
-
-		while ( (rc_total < (uint)buffer_size) && (timer_get_fixed_seconds() <= end_time) ) {
-			if ( (rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total)) != -1 ) {
-				rc_total += rc;
-				ml_printf("FS2NetD: Pilot get completion: got an additional %i bytes!", rc);
-
-				if ( rc_total >= sizeof(buffer) )
-					break;
-			}
 		}
 
-		ml_printf("FS2NetD: Post-completion pilot get: recvsize = %i, expected = %i", rc_total, buffer_size);
+		if ( buffer_size > (int)sizeof(buffer) ) {
+			ml_printf("FS2NetD WARNING: Pilot update data is larger than receive buffer!  Some data will be lost!");
+		}
 
-		if ( timer_get_fixed_seconds() >= end_time ) {
-			ml_printf("FS2NetD: Pilot get transfer completetion timed out!");
-			return -1;
+		// make sure that we get the entire packet
+		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+			if ( FS2NetD_DataReady() ) {
+				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
+
+				if (rc <= 0) {
+					continue;
+				}
+
+				rc_total += rc;
+			}
+
+			Sleep(20);
 		}
 
 		PXO_GET_DATA( reply_type );
 
 		// if we weren't retrieved or created then bail out now
-		if (reply_type > 1)
+		if (reply_type > 1) {
 			return (int)reply_type;
+		}
 	
 		// initialize the stats to default values
 		init_scoring_element( &pl->stats );
@@ -426,23 +433,25 @@ Recieve_Only:
 
 		PXO_GET_USHORT( num_type_kills );
 
-		for (i = 0; i < (int)num_type_kills; i++) {
+		for (idx = 0; idx < (int)num_type_kills; idx++) {
 			memset( ship_name, 0, sizeof(ship_name) );
 
 			PXO_GET_STRING( ship_name );
 
 			si_index = ship_info_lookup( ship_name );
 
-			if (si_index == -1)
+			if (si_index == -1) {
 				PXO_GET_USHORT( bogus );
-			else
+			} else {
 				PXO_GET_USHORT( pl->stats.kills[si_index] );
+			}
 		}
 
 		PXO_GET_USHORT( num_medals );
 
-		for (i = 0; (i < MAX_MEDALS) && (i < num_medals); i++)
-			PXO_GET_INT( pl->stats.medals[i] );
+		for (idx = 0; (idx < MAX_MEDALS) && (idx < num_medals); idx++) {
+			PXO_GET_INT( pl->stats.medals[idx] );
+		}
 
 		return (int)reply_type;
 	}
@@ -450,220 +459,211 @@ Recieve_Only:
 	return -1;
 }
 
-fs2open_banmask *FS2NetD_GetBanList(int *numBanMasks, int timeout)
+int FS2NetD_GetBanList(std::vector<std::string> &mask_list, bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
-	char buffer[16384];	// 16K should be enough i think..... I HOPE!
+	char buffer[16384];
 
-	if (timeout == 0)
-		goto Recieve_Only;
+	if (do_send) {
+		INIT_PACKET( PCKT_BANLIST_RQST );
+		DONE_PACKET();
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		if ( FS2NetD_SendData(buffer, buffer_size) == -1 ) {
+			return -1;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		const fix end_time = timer_get_fixed_seconds() + (15 * F1_0);
+		int rc;
+		uint rc_total = 0;
+		int num_files = 0;
+		char ip_mask[32];
+		int idx;
 
-	// send request packet (fs2open_file_check)
-	INIT_PACKET( PCKT_BANLIST_RQST );
-	DONE_PACKET();
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
 
-	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return NULL;
+			if (rc <= 0) {
+				break;
+			}
 
+			rc_total += rc;
 
-	Sleep(5); // lets give it a second
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
-
-Recieve_Only:
-
-	// process received ban list (fs2open_banlist_reply)
-	fix end_time = timer_get_fixed_seconds() + (MIN_TIMEOUT * F1_0);
-	fs2open_banmask *masks = NULL;
-	int i, num_files = 0;
-	uint rc_total = 0;
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc <= BASE_PACKET_SIZE)
-			return NULL;
+		if (rc < BASE_PACKET_SIZE) {
+			return -1;
+		}
 
 		VRFY_PACKET2( PCKT_BANLIST_RPLY );
 
-		if (!my_packet)
-			return NULL;
+		if ( !my_packet ) {
+			return 0;
+		}
 
-		if ( buffer_size > (int)sizeof(buffer) )
+		if ( buffer_size > (int)sizeof(buffer) ) {
 			ml_printf("FS2NetD WARNING: Banned user list data is larger than receive buffer!  Some data will be lost!");
+		}
+
+		// make sure that we get the entire packet
+		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+			if ( FS2NetD_DataReady() ) {
+				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
+
+				if (rc <= 0) {
+					continue;
+				}
+
+				rc_total += rc;
+			}
+
+			Sleep(20);
+		}
 
 		PXO_GET_INT( num_files );
 
-		rc_total = rc;
-
-		ml_printf("FS2NetD: Pre-completion banlist get: recvsize = %i, num_ban_masks = %i...", rc, num_files);
-
-		while ( (rc_total < (uint)buffer_size) && (timer_get_fixed_seconds() <= end_time) ) {
-			if ( (rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total)) != -1 ) {
-				rc_total += rc;
-				ml_printf("FS2NetD: Banlist completion: got an additional %i bytes!", rc);
-
-				if ( rc_total >= sizeof(buffer) )
-					break;
-			}
+		for (idx = 0; idx < num_files; idx++) {
+			PXO_GET_STRING( ip_mask );
+			mask_list.push_back( ip_mask );
 		}
-
-		ml_printf("FS2NetD: Post-completion banlist get: recvsize = %i", rc_total);
-
-		if ( timer_get_fixed_seconds() >= end_time ) {
-			ml_printf("FS2NetD: Banlist transfer completetion timed out!");
-			return NULL;
-		}
-
-		masks = new fs2open_banmask[num_files];
-
-		fs2open_banmask *nrecord = &masks[0];
-
-		for (i = 0; i < num_files; i++, nrecord++) {
-			PXO_GET_STRING( nrecord->ip_mask );
-
-		//	ml_printf("FS2NetD: Banlist[%i] = { \"%s\" }", i, nrecord->ip_mask);
-		}
-
-		*numBanMasks = num_files;
 	
-		return masks;
+		return 1;
 	}
 
-	return NULL;
+	return 0;
 }
 
-file_record *FS2NetD_GetMissionsList(int *num_missions, int timeout)
+int FS2NetD_GetMissionsList(std::vector<file_record> &m_list, bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
-	char buffer[16384];	// 16K should be enough i think..... I HOPE!
+	char buffer[16384];
 
-	if (timeout == 0)
-		goto Recieve_Only;
+	if (do_send) {
+		INIT_PACKET( PCKT_MISSIONS_RQST );
+		DONE_PACKET();
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		if ( FS2NetD_SendData(buffer, buffer_size) == -1 ) {
+			return -1;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		const fix end_time = timer_get_fixed_seconds() + (15 * F1_0);
+		int rc;
+		uint rc_total = 0;
+		int i, num_files = 0;
+		file_record nrec;
 
-	// send request packet (fs2open_file_check)
-	INIT_PACKET( PCKT_MISSIONS_RQST );
-	DONE_PACKET();
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
 
-	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return NULL;
+			if (rc <= 0) {
+				break;
+			}
 
+			rc_total += rc;
 
-	Sleep(10); // lets give it a second
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
-
-Recieve_Only:
-
-	// process received mission data (fs2open_pxo_missreply)
-	fix end_time = timer_get_fixed_seconds() + (MAX_TIMEOUT * F1_0);
-	file_record *frecs = NULL;
-	int i, num_files = 0;
-	uint rc_total = 0;
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
-			return NULL;
+		if (rc < BASE_PACKET_SIZE) {
+			return 0;
+		}
 
 		VRFY_PACKET2( PCKT_MISSIONS_REPLY );
 
-		if (!my_packet)
-			return NULL;
+		if ( !my_packet ) {
+			return 0;
+		}
 
-		if ( buffer_size > (int)sizeof(buffer) )
+		if ( buffer_size > (int)sizeof(buffer) ) {
 			ml_printf("FS2NetD WARNING: Mission list data is larger than receive buffer!  Some data will be lost!");
+		}
+
+		// make sure that we get the entire packet
+		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+			if ( FS2NetD_DataReady() ) {
+				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
+
+				if (rc <= 0) {
+					continue;
+				}
+
+				rc_total += rc;
+			}
+
+			Sleep(20);
+		}
 
 		PXO_GET_INT( num_files );
 
-		rc_total = rc;
+		for (i = 0; i < num_files; i++) {
+			memset(&nrec, 0, sizeof(file_record));
 
-		ml_printf("FS2NetD: Pre-completion missions get: recvsize = %i, num_missions = %i...", rc, num_files);
+			PXO_GET_STRING( nrec.name );
+			PXO_GET_UINT( nrec.crc32 );
 
-		while ( (rc_total < (uint)buffer_size) && (timer_get_fixed_seconds() <= end_time) ) {
-			if ( (rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total)) != -1) {
-				rc_total += rc;
-				ml_printf("FS2NetD: Missions completion: got an additional %i bytes!", rc);
-
-				if ( rc_total >= sizeof(buffer) )
-					break;
-			}
+			m_list.push_back( nrec );
 		}
 
-		ml_printf("FS2NetD: Post-completion missions get: recvsize = %i", rc_total);
-
-		if ( timer_get_fixed_seconds() >= end_time ) {
-			ml_printf("FS2NetD: Missions transfer completetion timed out!");
-			return NULL;
-		}
-
-		frecs = new file_record[num_files];
-
-		file_record *nrecord = &frecs[0];
-
-		for (i = 0; i < num_files; i++, nrecord++) {
-			PXO_GET_STRING( nrecord->name );
-			PXO_GET_UINT( nrecord->crc32 );
-
-		//	ml_printf("FS2NetD: Missions[%i] = { \"%s\", 0x%08x }", i, nrecord->name, nrecord->crc32);
-		}
-
-		*num_missions = num_files;
-
-		return frecs;
+		return 1;
 	}
 
-	return NULL;
+	return 0;
 }
 
-int FS2NetD_Login(const char *username, const char *password, int timeout)
+int FS2NetD_Login(const char *username, const char *password, bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
 	char buffer[150];
 
-	if ( timeout == 0 )
-		goto Recieve_Only;
+	if (do_send) {
+		INIT_PACKET( PCKT_LOGIN_AUTH );
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		PXO_ADD_STRING( username );
+		PXO_ADD_STRING( password );
+		PXO_ADD_USHORT( Multi_options_g.port );
 
-	// create and send login packet (fs2open_pxo_login)
-	INIT_PACKET( PCKT_LOGIN_AUTH );
+		DONE_PACKET();
 
-	PXO_ADD_STRING( username );
-	PXO_ADD_STRING( password );
-	PXO_ADD_USHORT( Multi_options_g.port );
-
-	DONE_PACKET();
-
-	if (FS2NetD_SendData(buffer, buffer_size) == -1)
-		return -1;
-
-	
-Recieve_Only:
-
-	// await reply (fs2open_pxo_lreply)
-	ubyte login_status = 0;
-	int sid;
-	short pilots;
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
+		if (FS2NetD_SendData(buffer, buffer_size) == -1) {
 			return -1;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		int rc;
+		uint rc_total = 0;
+		ubyte login_status = 0;
+		int sid;
+		short pilots;
+
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
+
+			if (rc <= 0) {
+				break;
+			}
+
+			rc_total += rc;
+
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
+
+		if (rc < BASE_PACKET_SIZE) {
+			return -1;
+		}
 
 		VRFY_PACKET2( PCKT_LOGIN_REPLY );
 
-		if (!my_packet)
+		if ( !my_packet ) {
 			return -1;
+		}
 			
 		PXO_GET_DATA( login_status );
 
-		if (!login_status)
+		if ( !login_status ) {
 			return -2;
+		}
 
 		PXO_GET_INT( sid );
 
@@ -675,17 +675,13 @@ Recieve_Only:
 	return -1;
 }
 
-void FS2NetD_SendHeartBeat()
+void FS2NetD_SendServerStart()
 {
 	int buffer_size;
 	char buffer[550];
 	ubyte tvar;
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
-
-	// create and send hb packet  (serverlist_hb_packet)
-	INIT_PACKET( PCKT_SLIST_HB_2 );
+	INIT_PACKET( PCKT_SERVER_START );
 
 	PXO_ADD_STRING( Netgame.name );
 	PXO_ADD_STRING( Netgame.mission_name );
@@ -713,139 +709,81 @@ void FS2NetD_SendHeartBeat()
 	tvar = (ubyte)multi_get_connection_speed();
 	PXO_ADD_DATA( tvar );
 
+	PXO_ADD_STRING(Multi_fs_tracker_channel);
+
 	DONE_PACKET();
 
 	FS2NetD_SendData(buffer, buffer_size);
 }
 
-void FS2NetD_SendServerDisconnect(ushort port)
+void FS2NetD_SendServerUpdate()
 {
 	int buffer_size;
-	char buffer[100];
+	char buffer[550];
+	ubyte tvar;
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+	INIT_PACKET( PCKT_SERVER_UPDATE );
 
-	// create and send hb packet  (serverlist_hb_packet)
-	INIT_PACKET( PCKT_SLIST_DISCONNECT );
+	PXO_ADD_STRING( Netgame.mission_name );
+	PXO_ADD_STRING( Netgame.title );
+	PXO_ADD_STRING( Netgame.campaign_name );
+
+	tvar = (ubyte)Netgame.campaign_mode;
+	PXO_ADD_DATA( tvar );
+
+	PXO_ADD_SHORT( (short)multi_num_players() );
+
+	tvar = (ubyte)Netgame.game_state;
+	PXO_ADD_DATA( tvar );
 
 	DONE_PACKET();
 
 	FS2NetD_SendData(buffer, buffer_size);
 }
 
-int FS2NetD_GetServerList(int timeout)
+void FS2NetD_SendServerDisconnect()
 {
-	int rc, buffer_size, buffer_offset;
-	bool my_packet = false;
-	char buffer[5000]; // packet is 30 bytes max, and we need space for 150 servers
+	int buffer_size;
+	char buffer[BASE_PACKET_SIZE];
+
+	INIT_PACKET( PCKT_SERVER_DISCONNECT );
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+}
+
+void FS2NetD_RequestServerList()
+{
+	int buffer_size;
+	char buffer[BASE_PACKET_SIZE+sizeof(int)+sizeof(int)+sizeof(int)+MAX_PATH];
 	int all = 0xFFFFFFFF;
+	bool filtered = false;
 
-	if (timeout == 0)
-		goto Recieve_Only;
+	if ( strlen(Multi_fs_tracker_filter) ) {
+		filtered = true;
+	}
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
-
-	// send request packet (serverlist_request_packet)
-	INIT_PACKET( PCKT_SLIST_REQUEST );
+	// send request packet
+	INIT_PACKET( (filtered) ? PCKT_SLIST_REQUEST_FILTER : PCKT_SLIST_REQUEST );
 
 	PXO_ADD_INT( all );	// type
 	PXO_ADD_INT( all );	// status
 
-	DONE_PACKET();
-
-	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return 2;
-	
-
-Recieve_Only:
-
-	// receive reply (serverlist_reply_packet)
-	fix end_time = timer_get_fixed_seconds() + (MAX_TIMEOUT * F1_0);
-	net_server stemp;
-	int i, numServers = 0;
-	uint rc_total = 0;
-	net_addr addr;
-	server_item *item = NULL;
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
-			return 0;
-
-		VRFY_PACKET2( PCKT_SLIST_REPLY );
-
-		if (!my_packet)
-			return 0;
-
-		if ( buffer_size > (int)sizeof(buffer) )
-			ml_printf("FS2NetD WARNING: Server list data is larger than receive buffer!  Some data will be lost!");
-
-		PXO_GET_USHORT( numServers );
-
-		if (!numServers)
-			return 1;
-
-		rc_total = rc;
-
-		ml_printf("FS2NetD: Pre-completion servers get: recvsize = %i, num servers = %i...", rc, numServers);
-
-		while ( (rc_total < (uint)buffer_size) && (timer_get_fixed_seconds() <= end_time) ) {
-			if ( (rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total)) != -1 ) {
-				rc_total += rc;
-				ml_printf("FS2NetD: Server list completion: got an additional %i bytes!", rc);
-
-				if ( rc_total >= sizeof(buffer) )
-					break;
-			}
-		}
-	
-		ml_printf("FS2NetD: Post-completion servers get: recvsize = %i", rc_total);
-
-		if ( timer_get_fixed_seconds() >= end_time ) {
-			ml_printf("FS2NetD: Server list transfer completetion timed out!");
-			return 1;
-		}
-
-		for (i = 0; i < numServers; i++) {
-			PXO_GET_INT( stemp.flags );
-			PXO_GET_USHORT( stemp.port );
-			PXO_GET_STRING( stemp.ip );
-
-			if ( !psnet_is_valid_ip_string(stemp.ip) ) {
-				nprintf(("Network", "Invalid ip string (%s)\n", stemp.ip));
-			} else {	
-				memset( &addr, 0, sizeof(net_addr) );
-				addr.type = NET_TCP;
-				psnet_string_to_addr(&addr, stemp.ip);
-				addr.port = (short) stemp.port;
-
-				if (addr.port == 0)
-					addr.port = DEFAULT_GAME_PORT;
-
-				// create a new server item on the list
-				item = multi_new_server_item();
-
-				if (item != NULL)
-					memcpy( &item->server_addr, &addr, sizeof(net_addr) );
-			}
-		}
-
-		return 1;
+	if (filtered) {
+		PXO_ADD_STRING(Multi_fs_tracker_filter);
 	}
 
-	return 0;
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
 }
 
 void FS2NetD_Ping()
 {
 	int buffer_size;
-	char buffer[15];
-	
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+	char buffer[BASE_PACKET_SIZE+sizeof(int)];
 
-	// (fs2open_ping)
 	INIT_PACKET( PCKT_PING );
 
 	int time = timer_get_milliseconds();
@@ -859,7 +797,7 @@ void FS2NetD_Ping()
 void FS2NetD_Pong(int tstamp)
 {
 	int buffer_size;
-	char buffer[15];
+	char buffer[BASE_PACKET_SIZE+sizeof(int)];
 
 	INIT_PACKET( PCKT_PONG );
 
@@ -870,98 +808,98 @@ void FS2NetD_Pong(int tstamp)
 	FS2NetD_SendData(buffer, buffer_size);
 }
 
-int FS2NetD_CheckValidSID(int SID)
+int FS2NetD_CheckValidID()
 {
 	int buffer_size;
-	char buffer[150];
-
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
+	char buffer[BASE_PACKET_SIZE+sizeof(int)];
 
 	// create and send request packet
 	INIT_PACKET( PCKT_VALID_SID_RQST );
 
-	PXO_ADD_INT( SID );
+	PXO_ADD_INT( Multi_tracker_id );
 
 	DONE_PACKET();
 
-	if (FS2NetD_SendData(buffer, buffer_size) == -1)
+	if (FS2NetD_SendData(buffer, buffer_size) == -1) {
 		return -1;
+	}
 
 	return 0;
 }
 
-int FS2NetD_ValidateTableList(int timeout)
+int FS2NetD_ValidateTableList(bool do_send)
 {
-	int rc, buffer_size, buffer_offset;
+	int buffer_size, buffer_offset;
 	bool my_packet = false;
 	char buffer[1024];
 	uint i;
 	ushort num_tables = 0;
 
-	if (timeout == 0)
-		goto Recieve_Only;
+	if (do_send) {
+		// create and send the request packet
+		INIT_PACKET( PCKT_TABLES_RQST );
 
-	// clear any old dead crap data
-	FS2NetD_IgnorePackets();
+		num_tables = (ushort)Table_valid_status.size();
 
-	// create and send the request packet
-	INIT_PACKET( PCKT_TABLES_RQST );
+		PXO_ADD_USHORT( num_tables );
 
-	num_tables = (ushort)Table_valid_status.size();
+		for (i = 0; i < Table_valid_status.size(); i++) {
+			PXO_ADD_STRING( Table_valid_status[i].name );
+			PXO_ADD_UINT( Table_valid_status[i].crc32 );
+		}
 
-	PXO_ADD_USHORT( num_tables );
+		DONE_PACKET();
 
-	for (i = 0; i < Table_valid_status.size(); i++) {
-		PXO_ADD_STRING( Table_valid_status[i].name );
-		PXO_ADD_UINT( Table_valid_status[i].crc32 );
-	}
-
-	DONE_PACKET();
-
-	if (FS2NetD_SendData(buffer, buffer_size) == -1)
-		return -1;
-
-	
-Recieve_Only:
-
-	ubyte tbl_valid_status = 0;
-	uint rc_total = 0;
-	fix end_time = timer_get_fixed_seconds() + (MAX_TIMEOUT * F1_0);
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
+		if (FS2NetD_SendData(buffer, buffer_size) == -1) {
 			return -1;
+		}
+	} else if ( FS2NetD_DataReady() ) {
+		int rc;
+		const fix end_time = timer_get_fixed_seconds() + (15 * F1_0);
+		ubyte tbl_valid_status = 0;
+		uint rc_total = 0;
+
+		do {
+			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);
+
+			if (rc <= 0) {
+				break;
+			}
+
+			rc_total += rc;
+
+			Sleep(20);
+		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
+
+		if (rc < BASE_PACKET_SIZE) {
+			return -1;
+		}
 
 		VRFY_PACKET2( PCKT_TABLES_REPLY );
 
-		if (!my_packet)
+		if ( !my_packet ) {
 			return -1;
+		}
+
+		// make sure that we get the entire packet
+		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+			if ( FS2NetD_DataReady() ) {
+				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
+
+				if (rc <= 0) {
+					continue;
+				}
+
+				rc_total += rc;
+			}
+
+			Sleep(20);
+		}
 
 		PXO_GET_USHORT( num_tables );
 
-		if (!num_tables)
+		if ( !num_tables ) {
 			return -1;
-
-		rc_total = rc;
-
-		ml_printf("FS2NetD: Pre-completion tables get: recvsize = %i, num servers = %i...", rc, num_tables);
-
-		while ( (rc_total < (uint)buffer_size) && (timer_get_fixed_seconds() <= end_time) ) {
-			if ( (rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total)) != -1 ) {
-				rc_total += rc;
-				ml_printf("FS2NetD: Table list completion: got an additional %i bytes!", rc);
-
-				if ( rc_total >= sizeof(buffer) )
-					break;
-			}
-		}
-
-		ml_printf("FS2NetD: Post-completion tables get: recvsize = %i", rc_total);
-
-		if ( timer_get_fixed_seconds() >= end_time ) {
-			ml_printf("FS2NetD: Table list transfer completetion timed out!");
-			return 1;
 		}
 
 		if ( num_tables > (int)Table_valid_status.size() ) {
@@ -982,36 +920,11 @@ Recieve_Only:
 	return 0;
 }
 
-void FS2NetD_ChatChannelUpdate(char *chan_name)
-{
-	int buffer_size;
-	char buffer[MAX_PATH+BASE_PACKET_SIZE+15];
-
-	Assert( chan_name );
-	Assert( strlen(chan_name) && (strlen(chan_name) < MAX_PATH) );
-
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
-
-	// (fs2open_ping)
-	INIT_PACKET( PCKT_CHAT_CHANNEL_UPD );
-
-	PXO_ADD_STRING( chan_name );
-
-	DONE_PACKET();
-
-	FS2NetD_SendData(buffer, buffer_size);
-}
-
 void FS2NetD_GameCountUpdate(char *chan_name)
 {
 	int buffer_size;
 	char buffer[MAX_PATH+BASE_PACKET_SIZE+10];
 
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
-
-	// create and send request packet
 	INIT_PACKET( PCKT_CHAT_CHAN_COUNT_RQST );
 
 	PXO_ADD_STRING( chan_name );
@@ -1021,10 +934,10 @@ void FS2NetD_GameCountUpdate(char *chan_name)
 	FS2NetD_SendData(buffer, buffer_size);
 }
 
-void FS2NetD_CheckDuplicateLogin(int SID)
+void FS2NetD_CheckDuplicateLogin()
 {
 	int buffer_size;
-	char *buffer;
+	char buffer[BASE_PACKET_SIZE + sizeof(int) + sizeof(ubyte) + (MAX_PLAYERS * sizeof(int)) + 10];
 	int ids_count = 0;
 	int *ids = new int[MAX_PLAYERS];
 	int idx;
@@ -1035,7 +948,7 @@ void FS2NetD_CheckDuplicateLogin(int SID)
 
 	for (idx = 0; idx < MAX_PLAYERS; idx++) {
 		if ( MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) ) {      
-			if ( (Net_players[idx].tracker_player_id >= 0) && (Net_players[idx].tracker_player_id != SID) ) {
+			if ( (Net_players[idx].tracker_player_id >= 0) && (Net_players[idx].tracker_player_id != Multi_tracker_id) ) {
 				ids[ids_count] = Net_players[idx].tracker_player_id;
 				ids_count++;
 			}
@@ -1047,19 +960,9 @@ void FS2NetD_CheckDuplicateLogin(int SID)
 		return;
 	}
 
-	buffer = new char[BASE_PACKET_SIZE + sizeof(int) + (MAX_PLAYERS * sizeof(int)) + 10];
-
-	if ( !buffer ) {
-		return;
-	}
-
-	// Clear any old dead crap data
-	FS2NetD_IgnorePackets();
-
-	// create and send request packet
 	INIT_PACKET( PCKT_DUP_LOGIN_RQST );
 
-	PXO_ADD_INT( SID );
+	PXO_ADD_INT( Multi_tracker_id );
 
 	Assert( MAX_PLAYERS <= 255 );
 
@@ -1074,7 +977,6 @@ void FS2NetD_CheckDuplicateLogin(int SID)
 
 	FS2NetD_SendData(buffer, buffer_size);
 
-	delete [] buffer;
 	delete [] ids;
 }
 

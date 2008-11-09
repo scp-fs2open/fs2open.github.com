@@ -606,6 +606,11 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
+	// handle game disconnect from FS2NetD (NOTE: must be done *before* standalone is reset!!)
+	if ( MULTI_IS_TRACKER_GAME && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+		fs2netd_gameserver_disconnect();
+	}
+
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
@@ -620,8 +625,6 @@ void multi_endgame_cleanup()
 			multi_endgame_popup(Multi_endgame_notify_code,Multi_endgame_error_code,Multi_endgame_wsa_error);			
 		}		
 	}
-
-	fs2netd_server_disconnect();
 
 	/*
 	extern CFILE *obj_stream;
