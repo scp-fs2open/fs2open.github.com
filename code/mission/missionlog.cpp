@@ -726,6 +726,56 @@ int mission_log_get_time( int type, char *pname, char *sname, fix *time )
 	return mission_log_get_time_indexed( type, pname, sname, 1, time );
 }
 
+// determines the number of times the given type of event takes place
+
+int mission_log_get_count( int type, char *pname, char *sname )
+{
+	int i;
+	log_entry *entry;
+	int count = 0;  
+
+	entry = &log_entries[0];
+
+	for (i = 0; i < last_entry; i++) {
+
+		if ( entry->type == type ) {
+			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
+			// were passed into this function.  Count the entry as found if either name matches both in the other
+			// set.
+			if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED) ) {
+				if (sname == NULL) {
+					Int3();
+					return 0;
+				}
+
+				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) ) {
+					count++;
+				}
+			} else {
+				// for non dock/undock goals, then the names are important!
+				if (pname == NULL) {
+					Int3();
+					return 0;
+				}
+
+				if ( stricmp(entry->pname, pname) ) {
+					goto next_entry;
+				}
+
+				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
+					count++;
+				}
+			}
+		}
+
+next_entry:
+		entry++;
+	}
+
+	return count;
+}
+
+
 void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
 {
 	log_text_seg *seg, **parent;

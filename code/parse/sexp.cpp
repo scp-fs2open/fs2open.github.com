@@ -14829,8 +14829,10 @@ int sexp_return_player_data(int node, int type)
 		if (p_objp->flags & P_OF_PLAYER_START) { 
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
-					return p_objp->respawn_count;
-
+					// when an AI ship is finally killed its respawn count won't be updated so get the number of deaths 
+					// from the log instead
+					return mission_log_get_count(LOG_SHIP_DESTROYED, CTEXT(node), NULL) + mission_log_get_count(LOG_SELF_DESTRUCTED, CTEXT(node), NULL);
+					
 				case OP_RESPAWNS_LEFT:
 					return Netgame.respawn - p_objp->respawn_count; 
 
