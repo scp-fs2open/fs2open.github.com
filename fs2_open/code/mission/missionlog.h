@@ -203,6 +203,9 @@ extern int mission_log_get_time( int type, char *name, char *sname, fix *time);
 // happened
 extern int mission_log_get_time_indexed( int type, char *name, char *sname, int count, fix *time);
 
+// get the number of times an event happened
+extern int mission_log_get_count( int type, char *pname, char *sname ); 
+
 // function to show all message log entries during or after mission
 // (code stolen liberally from Alan!)
 extern void mission_log_scrollback(float frametime);
