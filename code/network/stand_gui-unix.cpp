@@ -46,6 +46,11 @@ void std_debug_set_standalone_state_string(char *str)
 	STUB_FUNCTION;
 }
 
+void std_debug_multilog_add_line(const char *str)
+{
+	STUB_FUNCTION;
+}
+
 void std_destroy_gen_dialog()
 {
 	STUB_FUNCTION;
@@ -137,5 +142,6 @@ void std_update_player_ping(net_player *p)
 {
 	STUB_FUNCTION;
 }
+
 
 #endif		// Goober5000 - #ifndef WIN32

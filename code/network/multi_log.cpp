@@ -267,6 +267,13 @@ void ml_string(char *string, int add_time)
 	cfputs(tmp, Multi_log_out);
 	cflush(Multi_log_out);
 
+	// add to standalone UI too
+	extern int Is_standalone;
+	extern void std_debug_multilog_add_line(const char *str);
+	if (Is_standalone) {
+		std_debug_multilog_add_line(tmp);
+	}
+
 #if defined(MULTI_LOGFILE_ECHO_TO_DEBUG)
 	// nprintf(("Network","%s\n",tmp));
 	mprintf(("ML %s", tmp));
