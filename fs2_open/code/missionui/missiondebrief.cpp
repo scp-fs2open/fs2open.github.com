@@ -885,6 +885,7 @@ static int Current_stage;
 static int Num_stages;
 static int Num_debrief_stages;
 static int Stage_voice = -1;
+static int Debrief_music_timeout = 0;
 
 static int Multi_list_size;
 static int Multi_list_offset;
@@ -2507,7 +2508,34 @@ void debrief_text_init()
 // --------------------------------------------------------------------------------------
 //
 
-extern int Multi_debrief_stats_accept_code;
+// start up the appropriate music
+static void debrief_init_music()
+{
+	int score = SCORE_DEBRIEF_AVERAGE;
+
+	Debrief_music_timeout = 0;
+
+	if ( (Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission) ) {
+		// you failed the mission, so you get the fail music
+		score = SCORE_DEBRIEF_FAIL;
+	} else if ( mission_goals_met() ) {
+		// you completed all primaries and secondaries, so you get the win music
+		score = SCORE_DEBRIEF_SUCCESS;
+	} else {
+		// you somehow passed the mission, so you get a little something for your efforts.
+		score = SCORE_DEBRIEF_AVERAGE;
+	}
+
+	// if multi client then give a slight delay before playing average music
+	// since we'd like to eval the goals once more for slow clients
+	if ( MULTIPLAYER_CLIENT && (score == SCORE_DEBRIEF_AVERAGE) ) {
+		Debrief_music_timeout = timestamp(2000);
+		return;
+	}
+
+	common_music_init(score);
+}
+
 void debrief_init()
 {
 	int i;
@@ -2607,63 +2635,8 @@ void debrief_init()
 	}
 	*/
 
-	// Goober5000 - restored original source, because we can have multiplayer campaigns
-	// also, added flag (Game_mode & GM_CAMPAIGN_MODE) to check if in campaign
-
-//	/* 21-07-02 01:12 Commented out DTP, so we have the original source here 
 	// start up the appropriate music
-	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
-		// you failed the mission, so you get the fail music
-		common_music_init(SCORE_DEBRIEF_FAIL);
-	} else if (mission_goals_met()) {
-		// you completed all primaries and secondaries, so you get the win music
-		common_music_init(SCORE_DEBRIEF_SUCCESS);
-	} else {
-		// you somehow passed the mission, so you get a little something for your efforts.
-		common_music_init(SCORE_DEBRIEF_AVERAGE);
-	}
-
-	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
-		// better luck next time, increase his retries
-		Player->failures_this_session++;
-	} else { 
-		// clear his retries info regardless of whether or not he accepts
-		Player->failures_this_session = 0;
-	}
-//	*/ //commented out stop
-
-/*	// 21-07-02 01:12 DTP; New checks for setting debriefing music. at lot like the old.
-	// this is for single player
-	if (Campaign.next_mission == Campaign.current_mission && (Game_mode & GM_NORMAL)) {	//DTP
-		common_music_init(SCORE_DEBRIEF_FAIL);	//DTP
-	}
-	else if (mission_goals_met() && (Game_mode & GM_NORMAL)) { //DTP
-		common_music_init(SCORE_DEBRIEF_SUCCESS);	//DTP
-	} else {
-		if (Game_mode & GM_NORMAL) {				//DTP
-		common_music_init(SCORE_DEBRIEF_AVERAGE);	//DTP
-		}
-	}
-
-	if (Campaign.next_mission == Campaign.current_mission && (Game_mode & GM_NORMAL) ) {	
-		// better luck next time, increase his retries
-		Player->failures_this_session++;
-	} else {
-		if (Game_mode & GM_NORMAL) {
-		// clear his retries info regardless of whether or not he accepts
-		Player->failures_this_session = 0;
-		}
-	}
-	// 21-07-02 01:14 DTP; if multiplayer then music gets set here.
-	if (mission_evaluate_primary_goals() == PRIMARY_GOALS_COMPLETE && (Game_mode & GM_MULTIPLAYER)) { // DTP
-		common_music_init(SCORE_DEBRIEF_SUCCESS);	//DTP
-	} else {						//DTP
-		if (Game_mode & GM_MULTIPLAYER) {		//DTP
-			common_music_init(SCORE_DEBRIEF_FAIL);	//DTP
-		}
-		
-	}
-*/
+	debrief_init_music();
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
@@ -3052,7 +3025,23 @@ void debrief_do_frame(float frametime)
 	}
 
 	debrief_voice_play();
-	common_music_do();
+
+	// multi clients get a slight delay before music start to check goals again
+	if ( timestamp_valid(Debrief_music_timeout) ) {
+		if ( timestamp_elapsed(Debrief_music_timeout) ) {
+			Debrief_music_timeout = 0;
+
+			if ( mission_goals_met() ) {
+				common_music_init(SCORE_DEBRIEF_SUCCESS);
+			} else {
+				common_music_init(SCORE_DEBRIEF_AVERAGE);
+			}
+
+			common_music_do();
+		}
+	} else {	
+		common_music_do();
+	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_do_frame();
