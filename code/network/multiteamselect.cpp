@@ -1929,7 +1929,7 @@ void multi_ts_init_objnums()
 // get the proper team and slot index for the given ship name
 void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 {
-	int idx, wing_number;//,s_idx;
+	int idx;//,s_idx;
 
 	// set the return values to default values
 	*team_index = -1;
@@ -1938,43 +1938,32 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
-		for(idx=0;idx<MAX_TVT_WINGS;idx++)
-		{
+		for (idx = 0; idx < MAX_TVT_WINGS; idx++) {
 			// get team (wing)
-			if (!strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])))
-			{
-				wing_number = (ship_name[strlen(ship_name)-1] - '1');
+			if ( !strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])) ) {
+				*team_index = idx;
+				*slot_index = (ship_name[strlen(ship_name)-1] - '1');
 
-				// Karajorma - Is this really a ship from the wing? Cause other things may start with the same name
-				if (wing_number >= 0 && wing_number < MAX_SHIPS_PER_WING) 
-				{
-					// get slot (ship in wing)
-					*slot_index = wing_number;
-					*team_index = idx;
-				}
+				// just Assert(), if this is wrong then we're pretty much screwed either way
+				Assert( (*slot_index >= 0) && (*slot_index < MAX_WSS_SLOTS) );
 			}
 		}
 	} 
 	// if we're _not_ in team vs. team mode
 	else {
 		int wing, ship;
-		for(idx=0;idx<MAX_STARTING_WINGS;idx++)
-		{
+		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
 			// get wing
-			if (!strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])))
-			{
-				wing_number = (ship_name[strlen(ship_name)-1] - '1');
+			if ( !strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])) ) {
+				wing = idx;
+				ship = (ship_name[strlen(ship_name)-1] - '1');
 
-				// Karajorma - Again we need to check if this is a real member of this wing. 
-				if (wing_number >= 0 && wing_number < MAX_SHIPS_PER_WING) 
-				{
-					wing = idx;
-					ship = wing_number;
+				// just Assert(), if this is wrong then we're pretty much screwed either way
+				Assert( (ship >= 0) && (ship < MULTI_TS_NUM_SHIP_SLOTS_TEAM) );
 
-					// team is 0, slot is the starting slot for all ships
-					*team_index = 0;
-					*slot_index = wing * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
-				}
+				// team is 0, slot is the starting slot for all ships
+				*team_index = 0;
+				*slot_index = wing * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
 			}
 		}
 	}
