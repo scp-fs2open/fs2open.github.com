@@ -428,11 +428,27 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 
+#include <string>
+
 
 HANDLE Standalone_thread;
 DWORD Standalone_thread_id;
 static HWND Standalone_hwnd = NULL;
+static BOOL Standalone_minimized = FALSE;
 
+#define ST_MODE_CREATE		0
+#define ST_MODE_UPDATE	1
+#define ST_MODE_REMOVE	2
+
+#define MSG_SYSTRAYICON		WM_USER+99
+
+static void standalone_do_systray(int mode);
+
+// system tray menu item identifiers...
+#define STP_RESET_ALL		1
+#define STP_SHUTDOWN		2
+#define STP_SHOW			3
+#define STP_RESET_FS2NETD	4
 
 
 // -----------------------------------------------------------------------------------------
@@ -502,6 +518,11 @@ void std_create_gen_dialog(char *title)
 {
 	// if the dialog is already active, do nothing
 	if(Multi_gen_dialog != NULL){
+		return;
+	}
+
+	// if we are minimized then don't bother
+	if (Standalone_minimized) {
 		return;
 	}
 
@@ -761,6 +782,9 @@ void std_connect_set_gamename(char *name)
 		}
 	}
 
+	// update systray icon
+	standalone_do_systray(ST_MODE_UPDATE);
+
 	// update the text control
 	strcpy(buf,Netgame.name);
 	Multi_std_namechange_force = 0;
@@ -786,6 +810,9 @@ void std_connect_handle_name_change()
 
 		// copy it to the permanent name
 		strncpy(Multi_options_g.std_pname, buf, sizeof(Multi_options_g.std_pname));
+
+		// update systray icon
+		standalone_do_systray(ST_MODE_UPDATE);
 
 		// update fs2netd with the info
 		if (MULTI_IS_TRACKER_GAME) {
@@ -917,7 +944,7 @@ BOOL CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 			PostMessage( Psht, WM_DESTROY, 0, 0 );
 		}
 		break;
-	
+
 	default :
 		return 0;		
 	}
@@ -1421,7 +1448,7 @@ BOOL CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 // player info page/tab functions
 //
 
-#define MAX_PLAYER_STAT_FIELDS 11							// the # of stats fields for a given set
+#define MAX_PLAYER_STAT_FIELDS 14							// the # of stats fields for a given set
 static HWND Player_name_list;									// the listbox control with player callsigns in it
 static HWND Player_ship_type;									// the current player's ship type
 static HWND Player_ping_time;									// the current player's ping time
@@ -1450,38 +1477,44 @@ void std_pinfo_display_player_info(net_player *p)
 	
 	// his alltime stats
 	scoring_struct *ptr = &p->m_player->stats;
-	STD_ADDSTRING(Player_stats[0],ptr->p_shots_fired);
-	STD_ADDSTRING(Player_stats[1],ptr->p_shots_hit);
-	STD_ADDSTRING(Player_stats[2],ptr->p_bonehead_hits);
-	STD_ADDSTRING(Player_stats[3],
+	STD_ADDSTRING(Player_stats[0], ptr->score);
+	STD_ADDSTRING(Player_stats[1], ptr->kill_count);
+	STD_ADDSTRING(Player_stats[2], ptr->kill_count - ptr->kill_count_ok);
+	STD_ADDSTRING(Player_stats[3], ptr->assists);
+	STD_ADDSTRING(Player_stats[4], ptr->p_shots_fired);
+	STD_ADDSTRING(Player_stats[5], ptr->p_shots_hit);
+	STD_ADDSTRING(Player_stats[6], ptr->p_bonehead_hits);
+	STD_ADDSTRING(Player_stats[7],
 		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_shots_hit/(float)ptr->p_shots_fired)) : 0);
-	STD_ADDSTRING(Player_stats[4],
-		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_bonehead_hits/(float)ptr->p_shots_fired)) : 0);
-	STD_ADDSTRING(Player_stats[5],ptr->s_shots_fired);
-	STD_ADDSTRING(Player_stats[6],ptr->s_shots_hit);
-	STD_ADDSTRING(Player_stats[7],ptr->s_bonehead_hits);
 	STD_ADDSTRING(Player_stats[8],
+		(ptr->p_shots_fired > 0) ? (int)((float)100.0*((float)ptr->p_bonehead_hits/(float)ptr->p_shots_fired)) : 0);
+	STD_ADDSTRING(Player_stats[9], ptr->s_shots_fired);
+	STD_ADDSTRING(Player_stats[10], ptr->s_shots_hit);
+	STD_ADDSTRING(Player_stats[11], ptr->s_bonehead_hits);
+	STD_ADDSTRING(Player_stats[12],
 		(ptr->s_shots_fired > 0) ? (int)((float)100.0*((float)ptr->s_shots_hit/(float)ptr->s_shots_fired)) : 0);
-	STD_ADDSTRING(Player_stats[9],
+	STD_ADDSTRING(Player_stats[13],
 		(ptr->s_shots_fired > 0) ? (int)((float)100.0*((float)ptr->s_bonehead_hits/(float)ptr->s_shots_fired)) : 0);
-	STD_ADDSTRING(Player_stats[10],ptr->assists);
 
 	// his stats for the current mission
-	STD_ADDSTRING(Player_mstats[0],ptr->mp_shots_fired);
-	STD_ADDSTRING(Player_mstats[1],ptr->mp_shots_hit);
-	STD_ADDSTRING(Player_mstats[2],ptr->mp_bonehead_hits);
-	STD_ADDSTRING(Player_mstats[3],
+	STD_ADDSTRING(Player_mstats[0], ptr->m_score);
+	STD_ADDSTRING(Player_mstats[1], ptr->m_kill_count);
+	STD_ADDSTRING(Player_mstats[2], ptr->m_kill_count - ptr->m_kill_count_ok);
+	STD_ADDSTRING(Player_mstats[3], ptr->m_assists);
+	STD_ADDSTRING(Player_mstats[4], ptr->mp_shots_fired);
+	STD_ADDSTRING(Player_mstats[5], ptr->mp_shots_hit);
+	STD_ADDSTRING(Player_mstats[6], ptr->mp_bonehead_hits);
+	STD_ADDSTRING(Player_mstats[7],
 		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_shots_hit/(float)ptr->mp_shots_fired)) : 0);
-	STD_ADDSTRING(Player_mstats[4],
-		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_bonehead_hits/(float)ptr->mp_shots_fired)) : 0);
-	STD_ADDSTRING(Player_mstats[5],ptr->ms_shots_fired);
-	STD_ADDSTRING(Player_mstats[6],ptr->ms_shots_hit);
-	STD_ADDSTRING(Player_mstats[7],ptr->ms_bonehead_hits);
 	STD_ADDSTRING(Player_mstats[8],
+		(ptr->mp_shots_fired > 0) ? (int)((float)100.0*((float)ptr->mp_bonehead_hits/(float)ptr->mp_shots_fired)) : 0);
+	STD_ADDSTRING(Player_mstats[9], ptr->ms_shots_fired);
+	STD_ADDSTRING(Player_mstats[10], ptr->ms_shots_hit);
+	STD_ADDSTRING(Player_mstats[11], ptr->ms_bonehead_hits);
+	STD_ADDSTRING(Player_mstats[12],
 		(ptr->ms_shots_fired > 0) ? (int)((float)100.0*((float)ptr->ms_shots_hit/(float)ptr->ms_shots_fired)) : 0);
-	STD_ADDSTRING(Player_mstats[9],
+	STD_ADDSTRING(Player_mstats[13],
 		(ptr->ms_shots_fired > 0) ? (int)((float)100.0*((float)ptr->ms_bonehead_hits/(float)ptr->ms_shots_fired)) : 0); 
-	STD_ADDSTRING(Player_mstats[10],ptr->m_assists);
 }
 
 // check to see if this player is the one being displayed, and if so, then update the display info
@@ -1576,30 +1609,36 @@ void std_pinfo_init_player_info_controls(HWND hwndDlg)
 	Player_ping_time = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_PING_TIME));
 
 	// initialize the various and sundry statistics text controls (alltime)
-   Player_stats[0] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_PSHOTS));
-	Player_stats[1] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_PHITS));
-	Player_stats[2] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_PBHHITS));
-	Player_stats[3] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_PPCT));
-	Player_stats[4] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_PBHPCT));
-	Player_stats[5] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_SSHOTS));
-	Player_stats[6] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_SECHITS));
-	Player_stats[7] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_SBHHITS));
-	Player_stats[8] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_SPCT));
-	Player_stats[9] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_SBHPCT));
-	Player_stats[10] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_ASSISTS));
+	Player_stats[0] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_SCORE));
+	Player_stats[1] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_KILL_COUNT));
+	Player_stats[2] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_KILL_COUNT_BH));
+	Player_stats[3] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_ASSISTS));
+	Player_stats[4] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_PSHOTS));
+	Player_stats[5] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_PHITS));
+	Player_stats[6] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_PBHHITS));
+	Player_stats[7] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_PPCT));
+	Player_stats[8] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_PBHPCT));
+	Player_stats[9] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_SSHOTS));
+	Player_stats[10] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_SECHITS));
+	Player_stats[11] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_SBHHITS));
+	Player_stats[12] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_SPCT));
+	Player_stats[13] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_SBHPCT));
 
 	// initialize the various and sundry statistics text controls (this mission)
-	Player_mstats[0] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MPSHOTS));
-	Player_mstats[1] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MPHITS));
-	Player_mstats[2] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MPBHHITS));
-	Player_mstats[3] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MPPCT));
-	Player_mstats[4] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MPBHPCT));
-	Player_mstats[5] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MSSHOTS));
-	Player_mstats[6] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MSECHITS));
-	Player_mstats[7] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MSBHHITS));
-	Player_mstats[8] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MSPCT));
-	Player_mstats[9] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MSBHPCT));
-	Player_mstats[10] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)MAKEINTRESOURCE(IDC_MASSISTS));
+	Player_mstats[0] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MSCORE));
+	Player_mstats[1] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MKILL_COUNT));
+	Player_mstats[2] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MKILL_COUNT_BH));
+	Player_mstats[3] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MASSISTS));
+	Player_mstats[4] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MPSHOTS));
+	Player_mstats[5] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MPHITS));
+	Player_mstats[6] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MPBHHITS));
+	Player_mstats[7] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MPPCT));
+	Player_mstats[8] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MPBHPCT));
+	Player_mstats[9] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MSSHOTS));
+	Player_mstats[10] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MSECHITS));
+	Player_mstats[11] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MSBHHITS));
+	Player_mstats[12] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MSPCT));
+	Player_mstats[13] = GetDlgItem(Page_handles[PLAYER_INFO_PAGE], (int)MAKEINTRESOURCE(IDC_MSBHPCT));
 }
 
 // returns true or false depending on whether the passed netplayer is the currently selected guy
@@ -1879,6 +1918,7 @@ BOOL CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 //
 
 static HWND Standalone_state_string;								// the text control box
+static HWND Standalone_multilog_string = NULL;
 
 // initialize the controls for the debug page
 void std_debug_init_debug_controls(HWND hwndDlg);
@@ -1888,6 +1928,53 @@ void std_debug_set_standalone_state_string(char *str)
 {
    // set the text
 	SetWindowText(Standalone_state_string,str);
+}
+
+void std_debug_multilog_add_line(const char *str)
+{
+	std::string log_str;
+
+	if ( !str || !strlen(str) ) {
+		return;
+	}
+
+	if (Standalone_multilog_string == NULL) {
+		return;
+	}
+
+	log_str = str;
+
+	// parse the string, adding each new line to the list
+	size_t nline = log_str.find('\n');
+
+	while (nline != std::string::npos) {
+		log_str[nline] = '\0';
+
+		SendMessage(Standalone_multilog_string, LB_ADDSTRING, 0, (LPARAM)log_str.c_str());
+
+		// reset our width, using best guess, so that we have a working hscroll
+		int h_size = SendMessage(Standalone_multilog_string, LB_GETHORIZONTALEXTENT, 0, 0);
+
+		if ( (h_size / 6) < log_str.size() ) {
+			SendMessage(Standalone_multilog_string, LB_SETHORIZONTALEXTENT, log_str.size() * 6, 0);
+		}
+
+		// remove excess lines, if needed
+		int l_count = SendMessage(Standalone_multilog_string, LB_GETCOUNT, 0, 0);
+
+		if ( (l_count > 0) && (l_count >= 100) ) {
+			SendMessage(Standalone_multilog_string, LB_DELETESTRING, 0, 0);
+		}
+
+		// move to next newline, if there is one
+		log_str.erase(0, nline+1);
+		nline = log_str.find('\n');
+
+		// skip single newline at end, if it exists
+		if ( (nline+1) == log_str.size() ) {
+			break;
+		}
+	}
 }
 
 // clear the debug page controls
@@ -1905,6 +1992,10 @@ void std_debug_init_debug_controls(HWND hwndDlg)
 	
 	// standalone state indicator
 	SetWindowText(Standalone_state_string,"");
+
+	// do the multi-log string too
+	Standalone_multilog_string = GetDlgItem(hwndDlg, (int)MAKEINTRESOURCE(IDC_MULTILOG));
+	SendMessage(Standalone_multilog_string, LB_RESETCONTENT, 0, 0);
 }
 
 // message handler for the godstuff tab
@@ -1927,6 +2018,7 @@ BOOL CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 		if(((LPNMHDR)lParam)->code == PSN_SETACTIVE){
 			Active_standalone_page = DEBUG_PAGE;
 		} else if ( (((LPNMHDR)lParam)->code == PSN_APPLY) || (((LPNMHDR)lParam)->code == PSN_RESET) ) {
+			Standalone_multilog_string = NULL;
 			PostMessage( Psht, WM_DESTROY, 0, 0 );
 		}
 		break;
@@ -2331,28 +2423,30 @@ void std_init_property_pages()
 // build a title string
 void std_build_title_string(char *str)
 {
-	char part1[256];
-	char cat[256];
 	char temp[256];
+	char ver_str[15];
 
 	// build the version #
-	memset(part1, 0, 256);
-	memset(cat, 0, 256);
+	memset(ver_str, 0, sizeof(ver_str));
+
+	if (FS_VERSION_BUILD > 0) {
+		snprintf(ver_str, sizeof(ver_str)-1, "%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+	} else {
+		snprintf(ver_str, sizeof(ver_str)-1, "%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	}
+
+	// now build the title
 	memset(temp, 0, 256);
 
-	sprintf(part1, "%s %d.", XSTR("FreeSpace Standalone",935), FS_VERSION_MAJOR);
-	sprintf(cat, "%d", FS_VERSION_MINOR);
-	strcat(part1, cat);
-	strcat(part1, ".");
-	sprintf(cat, "%d", FS_VERSION_BUILD);
-	strcat(part1, cat);	
+	snprintf(temp, sizeof(temp)-1, "%s %s", XSTR("FreeSpace Standalone", 935), ver_str);
 
-	// first part
-	strcpy(str, part1);
+	// output first part
+	strcpy(str, temp);
 
 #ifdef STANDALONE_ONLY_BUILD
-	sprintf(cat, "   %s %d", "Release", STANDALONE_ONLY_RELEASE_VERSION);
-	strcat(str, cat);
+	memset(temp, 0, 256);
+	sprintf(temp, "   %s %d", "Release", STANDALONE_ONLY_RELEASE_VERSION);
+	strcat(str, temp);
 #endif
 }
 
@@ -2383,10 +2477,10 @@ HWND std_init_property_sheet(HWND hwndDlg)
 	Psht = (HWND)PropertySheet(&Sheet);
 
 	// set the window style to include a minimize button
-	//styles = GetWindowLong(Psht, GWL_STYLE );
-	//if ( styles != 0 ) {
-	//	SetWindowLong(Psht, GWL_STYLE, styles | WS_MINIMIZEBOX );
-	//}
+	styles = GetWindowLong(Psht, GWL_STYLE );
+	if ( styles != 0 ) {
+		SetWindowLong(Psht, GWL_STYLE, styles | WS_MINIMIZEBOX);
+	}
 
 	styles = GetWindowLong(Psht, GWL_EXSTYLE );
 	if ( styles != 0 ) {
@@ -2402,11 +2496,161 @@ HWND std_init_property_sheet(HWND hwndDlg)
 	return Psht;
 }
 
+static HMENU std_create_systray_menu()
+{
+	char tstr[64];
+	memset(tstr, 0, sizeof(tstr));
+
+	HMENU stdPopup = CreatePopupMenu();
+
+	// Type of connection:
+	snprintf(tstr, sizeof(tstr)-1, "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "FS2NetD" : "Local/IP");
+	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
+
+	// Status of FS2NetD connection:
+	if (MULTI_IS_TRACKER_GAME) {
+		snprintf(tstr, sizeof(tstr)-1, "FS2NetD Status: %s", fs2netd_is_online() ? "Online" : "Offline");
+		AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
+	}
+
+	// ----------------------------------------------
+	AppendMenu(stdPopup, MF_SEPARATOR, 0, NULL);
+
+	// Game name:
+	snprintf(tstr, sizeof(tstr)-1, "Name: %s", Netgame.name);
+	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
+
+	// Mission name:
+	snprintf(tstr, sizeof(tstr)-1, "Mission: %s", strlen(Netgame.mission_name) ? Netgame.mission_name : "<none>");
+	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
+
+	// Number of players:
+	snprintf(tstr, sizeof(tstr)-1, "Num Players: %d", multi_num_players());
+	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
+
+	// ----------------------------------------------
+	AppendMenu(stdPopup, MF_SEPARATOR, 0, NULL);
+
+	// Reset All (main window command):
+	AppendMenu(stdPopup, MF_STRING, STP_RESET_ALL, "Reset All");
+
+	// Reset FS2NetD (not a main window command, yet):
+	if (MULTI_IS_TRACKER_GAME) {
+		AppendMenu(stdPopup, MF_STRING, STP_RESET_FS2NETD, "Reset FS2NetD");
+	}
+
+	// Shutdown server (main window command):
+	AppendMenu(stdPopup, MF_STRING, STP_SHUTDOWN, "Shutdown");
+
+	// ----------------------------------------------
+	AppendMenu(stdPopup, MF_SEPARATOR, 0, NULL);
+
+	// Show standalone window (set as default):
+	AppendMenu(stdPopup, MF_STRING, STP_SHOW, "Show Window");
+	SetMenuDefaultItem(stdPopup, STP_SHOW, FALSE);
+
+	return stdPopup;
+}
+
+BOOL CALLBACK std_message_handler_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg) {
+		case WM_SYSCOMMAND: {
+			if (wParam == SC_MINIMIZE) {
+				standalone_do_systray(ST_MODE_CREATE);
+				return TRUE;
+			} else if (wParam == SC_RESTORE) {
+				standalone_do_systray(ST_MODE_REMOVE);
+				return TRUE;
+			}
+
+			break;
+		}
+
+		case MSG_SYSTRAYICON: {
+			if (lParam == WM_LBUTTONDBLCLK) {
+				standalone_do_systray(ST_MODE_REMOVE);
+				return TRUE;
+			} else if (lParam == WM_RBUTTONUP) {
+				HMENU stdPopup = std_create_systray_menu();
+
+				POINT cur_pos;
+				GetCursorPos(&cur_pos);
+
+				SetForegroundWindow(Standalone_hwnd);
+
+				int choice = TrackPopupMenuEx(stdPopup, TPM_RETURNCMD | TPM_NONOTIFY, cur_pos.x, cur_pos.y, Standalone_hwnd, NULL);
+
+				SendMessage(Standalone_hwnd, WM_NULL, 0, 0);
+
+				DestroyMenu(stdPopup);
+
+				// reset all (does not include fs2netd!)
+				if (choice == STP_RESET_ALL) {
+					multi_quit_game(PROMPT_NONE);
+				}
+				// reset fs2netd
+				else if (choice == STP_RESET_FS2NETD) {
+					fs2netd_reset_connection();
+				}
+				// shutdown
+				else if (choice == STP_SHUTDOWN) {
+					PostMessage(Psht, WM_DESTROY, 0, 0);
+				}
+				// restore window
+				else if (choice == STP_SHOW) {
+					SendMessage(Standalone_hwnd, WM_SYSCOMMAND, SC_RESTORE, 0);
+				}
+
+				return TRUE;
+			}
+
+			break;
+		}
+
+		case WM_CLOSE:
+			PostMessage(Psht, WM_DESTROY, 0, 0);
+			return TRUE;
+
+		default:
+			return DefWindowProc(hwndDlg, uMsg, wParam, lParam);
+	}
+
+	return FALSE;
+}
+
 extern int Lighting_flag;
 
 BOOL std_create_standalone_window()
-{		
-	Standalone_hwnd = std_init_property_sheet(NULL);
+{
+	// create a hidden window that will process basic events for us (for the systray icon mainly)
+	WNDCLASSEX wclass;							// Huh?
+	HINSTANCE hInst = GetModuleHandle(NULL);
+
+	memset( &wclass, 0, sizeof(WNDCLASSEX) );
+
+	wclass.hInstance 		= hInst;
+	wclass.lpszClassName	= "FS2StandaloneClass";
+	wclass.lpfnWndProc		= (WNDPROC)std_message_handler_proc;	  
+	wclass.style			= CS_OWNDC;
+	wclass.cbSize			= sizeof(WNDCLASSEX);
+	wclass.hIcon			= LoadIcon(hInst, MAKEINTRESOURCE(IDI_APP_ICON) );
+	wclass.hCursor			= LoadCursor(NULL, IDC_ARROW);
+	wclass.lpszMenuName		= NULL;
+	wclass.cbClsExtra		= 0;
+	wclass.cbWndExtra		= 0;
+	wclass.hbrBackground	= (HBRUSH)GetStockObject(WHITE_BRUSH);
+
+	if ( !RegisterClassEx(&wclass) ) {
+		return FALSE;
+	}
+
+	Standalone_hwnd = CreateWindowEx(0, "FS2StandaloneClass", "FreeSpace2 Standalone",
+						WS_POPUP, CW_USEDEFAULT, CW_USEDEFAULT, 10, 10,
+						NULL, NULL, hInst, NULL);
+
+	// create the propery sheet dialog itself
+	std_init_property_sheet(NULL);
 
 	// this is kind of a big-ass hack. But here's what it does. Property sheets only 
 	// initialize their individual pages the first time (and ONLY the first time) they
@@ -2437,7 +2681,49 @@ BOOL std_create_standalone_window()
 	outwnd_init();
 #endif
 
+	Standalone_minimized = FALSE;
+
 	return TRUE;
+}
+
+static void standalone_do_systray(int mode)
+{
+	NOTIFYICONDATA nid;
+
+	memset(&nid, 0, sizeof(nid));
+
+	nid.cbSize = sizeof(nid);
+	nid.hWnd = Standalone_hwnd;
+	nid.uID = 999;
+	nid.uCallbackMessage = MSG_SYSTRAYICON;
+	nid.hIcon = LoadIcon( GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_APP_ICON) );
+	strncpy(nid.szTip, Netgame.name, sizeof(nid.szTip));
+	nid.uFlags = (NIF_MESSAGE | NIF_ICON | NIF_TIP);
+
+	if (mode == ST_MODE_CREATE) {
+		if (Standalone_minimized) {
+			return;
+		}
+
+		Shell_NotifyIcon(NIM_ADD, &nid);
+		ShowWindow(Psht, SW_HIDE);
+		Standalone_minimized = TRUE;
+	} else if (mode == ST_MODE_UPDATE) {
+		if ( !Standalone_minimized ) {
+			return;
+		}
+
+		Shell_NotifyIcon(NIM_MODIFY, &nid);
+	} else if (mode == ST_MODE_REMOVE) {
+		if ( !Standalone_minimized ) {
+			return;
+		}
+
+		Shell_NotifyIcon(NIM_DELETE, &nid);
+		ShowWindow(Psht, SW_RESTORE);
+		SetForegroundWindow(Psht);
+		Standalone_minimized = FALSE;
+	}
 }
 
 // just like the osapi version for the nonstandalone mode of FreeSpace
@@ -2459,15 +2745,22 @@ DWORD standalone_process(WORD lparam)
 			break;
 		}
 #endif
-		if (WaitMessage())	{
-			while(PeekMessage(&msg,0,0,0,PM_REMOVE))	{
-
+		if ( WaitMessage() ) {
+			while ( PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) ) {
 				// if the dialog should be destroyed, then exit.
 				if ( msg.message == WM_DESTROY )	{
+					standalone_do_systray(ST_MODE_REMOVE);	// shouldn't be needed, but make sure it's gone
 					DestroyWindow(Psht);
+					DestroyWindow(Standalone_hwnd);
 					PostQuitMessage(0);
 					gameseq_post_event(GS_EVENT_QUIT_GAME);
 					return 0;
+				}
+
+				// maybe the minimize button got hit
+				if ( (msg.message == WM_NCLBUTTONDOWN) && (msg.wParam == HTMINBUTTON) ) {
+					standalone_do_systray(ST_MODE_CREATE);
+					continue;
 				}
 
 				// see if the message is destined for the edit control, and what the message is.
@@ -2482,8 +2775,10 @@ DWORD standalone_process(WORD lparam)
 					}
 				}
 
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
+				if ( !PropSheet_IsDialogMessage(Psht, &msg) ) {
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
 			}
 		}
 	}
