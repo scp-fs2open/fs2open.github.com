@@ -664,7 +664,7 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 
 	entry = &log_entries[0];
 
-	for (i = 0; i < last_entry; i++) {
+	for (i = 0; i < last_entry; i++, entry++) {
 		found = 0;
 
 		if ( entry->type == type ) {
@@ -688,7 +688,7 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 				}
 
 				if ( stricmp(entry->pname, pname) ) {
-					goto next_entry;
+					continue;
 				}
 
 				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
@@ -710,9 +710,6 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 				}
 			}
 		}
-
-next_entry:
-		entry++;
 	}
 
 	return 0;
@@ -736,7 +733,7 @@ int mission_log_get_count( int type, char *pname, char *sname )
 
 	entry = &log_entries[0];
 
-	for (i = 0; i < last_entry; i++) {
+	for (i = 0; i < last_entry; i++, entry++) {
 
 		if ( entry->type == type ) {
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
@@ -759,7 +756,7 @@ int mission_log_get_count( int type, char *pname, char *sname )
 				}
 
 				if ( stricmp(entry->pname, pname) ) {
-					goto next_entry;
+					continue;
 				}
 
 				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
@@ -767,9 +764,6 @@ int mission_log_get_count( int type, char *pname, char *sname )
 				}
 			}
 		}
-
-next_entry:
-		entry++;
 	}
 
 	return count;
