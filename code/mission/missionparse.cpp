@@ -6081,8 +6081,10 @@ void post_process_mission()
 		}
 	}
 
-	ai_post_process_mission();
-
+	// multiplayer missions are handled just before mission start
+	if (!(Game_mode & GM_MULTIPLAYER) ){	
+		ai_post_process_mission();
+	}
 
 	// first we need to clear out the counts for this mission
 	ship_clear_ship_type_counts();
