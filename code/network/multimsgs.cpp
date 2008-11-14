@@ -8849,7 +8849,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	GET_VECTOR(local_hit_pos);
 	PACKET_SET_SIZE();
 
-	mprintf(("PAIN!\n"));
+	// mprintf(("PAIN!\n"));
 
 	// get weapon info pointer
 	Assert((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER));
