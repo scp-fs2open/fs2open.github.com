@@ -5547,7 +5547,13 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 						head.add_op(i);
 				}
 			}
-
+		// when dealing with the special argument add them all. It's up to the FREDder to ensure invalid orders aren't given
+		} else if (!strcmp(tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
+			for (i=0; i<Num_operators; i++) {
+				if (query_operator_return_type(i) == OPR_AI_GOAL) {
+					head.add_op(i);
+				}
+			}
 		} else
 			return NULL;  // no valid ship or wing to check against, make nothing available
 	}
