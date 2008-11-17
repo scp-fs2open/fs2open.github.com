@@ -562,6 +562,10 @@ void emp_hud_string(int x, int y, int gauge_id, char *str)
 {
 	char tmp[256] = "";
 
+	// maybe bail
+	if (!*str)
+		return;
+
 	// copy the string
 	strcpy(tmp, str);
 

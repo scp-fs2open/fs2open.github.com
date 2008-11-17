@@ -3139,6 +3139,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						ship_index = CDR(CDR(CDR(CDR(op_node))));
 						break;
 	
+					case OP_WEAPON_CREATE:
+						ship_index = CDDDDDR(CDDDDR(op_node));
+						break;
+
 					default :
 						ship_index = CDR(op_node);
 						break;
@@ -6059,7 +6063,7 @@ int sexp_shields_left(int n)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
+	percent = fl2i((get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f) + 0.5f);
 	return percent;
 }
 
@@ -6086,7 +6090,7 @@ int sexp_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * get_hull_pct(objp));
+	percent = fl2i((100.0f * get_hull_pct(objp)) + 0.5f);
 	return percent;
 }
 
@@ -6111,7 +6115,7 @@ int sexp_sim_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * get_sim_hull_pct(objp));
+	percent = fl2i((100.0f * get_sim_hull_pct(objp)) + 0.5f);
 	return percent;
 }
 
@@ -6276,7 +6280,7 @@ int sexp_hits_left_subsystem(int n)
 			while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) ) {
 
 				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
-					percent = (int) (ss->current_hits / ss->max_hits * 100.0f);
+					percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
 					return percent;
 				}
 
@@ -6289,7 +6293,7 @@ int sexp_hits_left_subsystem(int n)
 			return SEXP_NAN;
 
 		} else {
-			percent = (int)(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
+			percent = fl2i((ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f) + 0.5f);
 			return percent;
 		}
 	}
@@ -10271,8 +10275,17 @@ void sexp_add_background_bitmap(int n)
 
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
-		// get new numerical value
-		new_number = stars_get_num_bitmaps();
+        if (!stars_add_bitmap_entry(&sle))
+        {
+		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
+            new_number = 0;
+        }
+        else
+        {
+            // get new numerical value
+		    new_number = stars_get_num_bitmaps() - 1;
+        }
+
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -10283,9 +10296,6 @@ void sexp_add_background_bitmap(int n)
 		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
 	}
-
-	if (!stars_add_bitmap_entry(&sle))
-		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
 }
 
 void sexp_remove_background_bitmap(int n)
@@ -10351,7 +10361,16 @@ void sexp_add_sun_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-		new_number = stars_get_num_suns();
+        if (!stars_add_sun_entry(&sle))
+        {
+		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
+            new_number = 0;
+        }
+        else
+        {
+            new_number = stars_get_num_suns() - 1;
+        }
+
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -10362,9 +10381,6 @@ void sexp_add_sun_bitmap(int n)
 		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
 	}
-
-	if (!stars_add_sun_entry(&sle))
-		Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
 }
 
 void sexp_remove_sun_bitmap(int n)
@@ -14822,7 +14838,6 @@ int sexp_is_player (int node)
 void sexp_set_respawns(int node)
 {
 	int num_respawns; 
-	int sindex; 
 	player *p = NULL;
 	p_object *p_objp;
 
@@ -14929,8 +14944,10 @@ int sexp_return_player_data(int node, int type)
 		if (p_objp->flags & P_OF_PLAYER_START) { 
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
-					return p_objp->respawn_count;
-
+					// when an AI ship is finally killed its respawn count won't be updated so get the number of deaths 
+					// from the log instead
+					return mission_log_get_count(LOG_SHIP_DESTROYED, CTEXT(node), NULL) + mission_log_get_count(LOG_SELF_DESTRUCTED, CTEXT(node), NULL);
+					
 				case OP_RESPAWNS_LEFT:
 					return Netgame.respawn - p_objp->respawn_count; 
 

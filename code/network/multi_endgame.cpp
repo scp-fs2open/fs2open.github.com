@@ -606,6 +606,11 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
+	// handle game disconnect from FS2NetD (NOTE: must be done *before* standalone is reset!!)
+	if ( MULTI_IS_TRACKER_GAME && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+		fs2netd_gameserver_disconnect();
+	}
+
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
@@ -616,12 +621,10 @@ void multi_endgame_cleanup()
 		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);		
 
 		// if we have an error code, bring up the discon popup						
-		if((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1) && !(Game_mode & GM_STANDALONE_SERVER)){
+		if ( ((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1)) && !(Game_mode & GM_STANDALONE_SERVER) ) {
 			multi_endgame_popup(Multi_endgame_notify_code,Multi_endgame_error_code,Multi_endgame_wsa_error);			
 		}		
 	}
-
-	fs2netd_server_disconnect();
 
 	/*
 	extern CFILE *obj_stream;
@@ -723,11 +726,12 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 			case MULTI_END_ERROR_WAVE_COUNT:
 				strcat(err_msg,XSTR("The player wings Alpha, Beta, Gamma, and Zeta must have only 1 wave.  One of these wings currently has more than 1 wave.", 987));
 				break;
+			// Karajorma - both of these should really be replaced with new strings in strings.tbl but for now this one has much the same meaning
 			case MULTI_END_ERROR_TEAM0_EMPTY:
-				strcat(err_msg,XSTR("All players from team 1 have left the game", 1466));
+				strcat(err_msg,XSTR("All players from team 1 have left the game", 664));
 				break;
 			case MULTI_END_ERROR_TEAM1_EMPTY:
-				strcat(err_msg,XSTR("All players from team 2 have left the game", 1467));
+				strcat(err_msg,XSTR("All players from team 2 have left the game", 664));
 				break;
 			case MULTI_END_ERROR_CAPTAIN_LEFT:
 				strcat(err_msg,XSTR("Team captain(s) have left the game, aborting...",664));

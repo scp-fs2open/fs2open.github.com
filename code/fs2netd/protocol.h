@@ -73,6 +73,8 @@
 
 
 // Packet IDs
+#define PCKT_ID_FIRST				0x00
+
 #define PCKT_SLIST_REQUEST			0x01
 #define PCKT_SLIST_REPLY			0x02
 #define PCKT_SLIST_HB				0x03
@@ -100,14 +102,21 @@
 #define PCKT_CHAT_CHAN_COUNT_RQST	0x18
 #define PCKT_CHAT_CHAN_COUNT_REPLY	0x19
 #define PCKT_SLIST_HB_2				0x1a
-#define PCKT_SLIST_DISCONNECT		0x1b
+#define PCKT_SERVER_DISCONNECT		0x1b
 #define PCKT_DUP_LOGIN_RQST			0x1c
 #define PCKT_DUP_LOGIN_REPLY		0x1d
+#define PCKT_SLIST_REQUEST_FILTER	0x1e
+#define PCKT_SERVER_START			0x1f
+
+#define PCKT_SERVER_UPDATE			0x20
+
+#define PCKT_ID_LAST				0x21
+
+#define PCKT_INVALID				0xff
+
+#define VALID_PACKET_ID(p)			(((p) > PCKT_ID_FIRST) && ((p) < PCKT_ID_LAST))
 
 
-//***********************************************************************************************************************
-// Packet Structures
-//***********************************************************************************************************************
 
 struct crc_valid_status {
 	char name[NAME_LENGTH];
@@ -115,122 +124,11 @@ struct crc_valid_status {
 	ubyte valid;
 };
 
-/* ----- Server List -----
-
-//this one is sent Client->Server and when the Server receives it sends back the server list to the sender of this packet
-struct serverlist_request_packet
-{
-     int type; // so you can request only servers of a certain time
-     int status; // so you can request only servers of a certain status
-};
-
-//a server sends this UDP packet to the server every 60 seconds has a "Heartbeat" telling the server it's here -
-// if one isn't received for 120 seconds the server is dropped from the list
-struct serverlist_hb_packet
-{
-	char name[65];
-	char mission_name[65];
-	char title[65];
-	short players;
-	int flags;
-	ushort port;
-};
-
-*/
-
-//the server list will be sent one server at a time - each server being on UDP packet containing this
-// a terminator will be sent with the following values
-// servername = "TERM"
-// netspeed = status = players = type = 0
-
-typedef struct serverlist_reply_packet
-{
-//	char name[65];
-//	char mission_name[65];
-//	char title[65];
-//	short players;
-	int flags;
-
-	char  ip[16]; // "255.255.255.255"
-	ushort port;
-} net_server;
-
-//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-/* ----- Logins -----
-
-//login request
-struct fs2open_pxo_login
-{
-	char username[65];
-	char password[65];         
-};
-
-//and the reply
-struct fs2open_pxo_lreply
-{
-	ubyte login_status;	// true if successful, false if failed
-	int sid;			// if (login_status) sid = session id, ip associated and expires after 1 hour
-	short pilots;			// if (login_status) pilots = number of pilots for this account
-};
-
-*/
-
-//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-/* ----- Missions & Tables -----
-
-struct fs2open_file_check_single
-{
-	char name[60];
-	unsigned int crc32;
-};
-
-struct fs2open_fcheck_reply
-{
-	ubyte status;	// 1 = valid, 0 = invalid
-};
-
-//request
-
-struct fs2open_file_check
-{
-	ubyte pid;		// 0x5 for missions 0x7 for tables ( PCKT_MISSIONS_RQST / PCKT_TABLES_RQST )
-};
-
-//reply
-struct fs2open_pxo_missreply
-{
-	ubyte pid;
-	int num_files;
-	file_record *files;
-};
-
-*/
-
 struct file_record
 {
-	char name[60];
+	char name[33];
 	uint crc32;
 };
-
-//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-
-/* ----- Pilot Management -----
-
-struct fs2open_get_pilot
-{
-	ubyte pid;	// 0x9 ( PCKT_PILOT_GET )
-	int sid;		// session id returned upon login
-	char pilotname[65];
-	ubyte create;	// create pilot
-};
-
-*/
 
 struct fs2open_ship_typekill
 {
@@ -238,119 +136,5 @@ struct fs2open_ship_typekill
 	ushort kills;
 };
 
-/*
-struct fs2open_pilot_reply
-{
-	ubyte pid; // 0x0A (PCKT_PILOT_REPLY)
-	int replytype; // 0 = pilot retrieved, 1 = pilot created, 2 = invalid pilot, 3 = invalid (expired?) sid, 4 = pilot already exists
-
-	// if and only if (replytype == 0) then the rest of this data
-
-	uint points;
-	uint missions;
-	uint flighttime;
-	uint LastFlight;
-	uint Kills;
-	uint Assists;
-	uint NonFriendlyKills;
-	uint PriShots;
-	uint PriHits;
-	uint PriFHits;
-	uint SecShots;
-	uint SecHits;
-	uint SecFHits;
-
-	int rank;
-
-	int num_medals;
-
-	//fs2open_ship_typekill *type_kills;
-	//uint ship_types;
-	//int *medals;
-};
-
-struct fs2open_pilot_update
-{
-	ubyte pid;	// 0x0B (PCKT_PILOT_UPDATE)
-	int sid;	// session id
-
-	char name[65];
-	char user[65];
-
-	int points;
-	uint missions;
-	uint flighttime;
-	int LastFlight;
-	int Kills;
-	int Assists;
-	int NonFriendlyKills;
-	uint PriShots;
-	uint PriHits;
-	uint PriFHits;
-	uint SecShots;
-	uint SecHits;
-	uint SecFHits;
-	int rank;
-
-	int num_medals;
-
-	//fs2open_ship_typekill *type_kills;
-	//uint ship_types;
-	//int *medals;
-};
-
-struct fs2open_pilot_updatereply
-{
-	ubyte pid; // 0x0C (PCKT_PILOT_UREPLY)
-	ubyte replytype; // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
-};
-*/
-
-
-/* ---------------- Generic Ping -----------------
-
-// ping time is in ticks returned by clock()
-struct fs2open_ping
-{
-	int time;
-};
-
-struct fs2open_pingreply
-{
-	int time;
-};
-
-*/
-
-/* ---------------- Banlist Packets -----------------
-
-struct fs2open_banlist_request
-{
-		ubyte pid; // 0x11 (PCKT_BANLIST_RQST)
-		int reserved;
-};
-
-struct fs2open_banlist_reply
-{
-		ubyte pid; // 0x12 (PCKT_BANLIST_RPLY)
-		int num_ban_masks;
-		fs2open_banmask* masks;
-};
-
-*/
-
-struct fs2open_banmask
-{
-	char ip_mask[16]; // up to 15 chars (123.123.123.123) and a NULL
-};
-
-// ---------------- Global Message Packet -----------------
-
-
-struct fs2open_network_wall
-{
-	ubyte pid; // 0x13 (PCKT_NETOWRK_WALL)
-	char message[252];
-};
 
 #endif

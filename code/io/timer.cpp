@@ -235,6 +235,16 @@ fix timer_get_approx_seconds()
 	return timer_get_fixed_seconds();
 }
 
+int timer_get_seconds()
+{
+	if (!Timer_inited) {
+		Int3();
+		return 0;
+	}
+
+	return (timer_get() / 1000);
+}
+
 int timer_get_milliseconds()
 {
 	if (!Timer_inited) {

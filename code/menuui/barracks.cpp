@@ -1008,6 +1008,7 @@ void barracks_delete_pilot()
 {
 	char buf[MAX_FILENAME_LEN];
 	int active = 0;
+	int del_rval;
 
 	if (!Num_pilots) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -1019,33 +1020,22 @@ void barracks_delete_pilot()
 		return;
 	}
 
-	// have to reset popup_rval since it may not update later
-	popup_rval = 0;
-
 	if (!stricmp(Pilots[Selected_line], Cur_pilot->callsign)) {
 		active = 1;
 	}
 
 	strcpy(buf, Pilots[Selected_line]);
 
-	//Try to delete the file
-	int del_rval;
-	do {
-		del_rval = delete_pilot_file(buf, Player_sel_mode == PLAYER_SELECT_MODE_SINGLE ? 1 : 0);
+	del_rval = delete_pilot_file(buf, (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
 
-		if(!del_rval) {
-			popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Retry", -1), XSTR("&Cancel",-1),
-				XSTR("Error\nFailed to delete pilot file.  File may be read-only.\n", -1));
+	if ( !del_rval ) {
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
+		return;
+	} else {
+		if (active) {
+			Cur_pilot->callsign[0] = 0;
 		}
-
-		//Abort
-		if(popup_rval)
-		{
-			return;
-		}
-
-		//Try again
-	} while (!del_rval);
+	}
 
 	for (int i=Selected_line; i<Num_pilots-1; i++) {
 		strcpy(Pilots[i], Pilots[i + 1]);

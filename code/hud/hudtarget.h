@@ -457,7 +457,8 @@ float hud_find_target_distance( object *targetee, object *targeter );
 
 extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
 
-void hud_stuff_ship_name(ship *shipp, char *ship_name_text);
-void hud_stuff_ship_class(ship *shipp, char *ship_class_text);
+void hud_stuff_ship_name(char *ship_name_text, ship *shipp);
+void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp);
+void hud_stuff_ship_class(char *ship_class_text, ship *shipp);
 
 #endif

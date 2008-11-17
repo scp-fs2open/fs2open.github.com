@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="Fred2"
 	ProjectGUID="{92C8C611-75AA-4BD7-9B73-584822AAAEB5}"
+	RootNamespace="Fred2"
 	Keyword="MFCProj"
 	>
 	<Platforms>
@@ -52,7 +53,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../openal/include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;WINVER=0x410"
+				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -81,11 +82,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib"
-				OutputFile="$(OutDir)\Fred2_Open_3_6_10_debug.exe"
+				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib trackir.lib"
+				OutputFile="$(OutDir)\fred2_open_3_6_10d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../../speech/Lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/,../../../speech/Lib"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -160,7 +161,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../../code,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;FS2_SPEECH;FS2_VOICER;WINVER=0x410"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -188,11 +189,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib"
-				OutputFile="$(OutDir)\Fred2_Open_3_6_10.exe"
+				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib trackir.lib"
+				OutputFile="$(OutDir)\fred2_open_3_6_10r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../../speech/Lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/,../../../speech/Lib"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
@@ -278,6 +279,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\AltShipClassDlg.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\AsteroidEditorDlg.cpp"
@@ -1872,59 +1877,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data01.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data02.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data03.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data04.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\data05.bmp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data06.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data07.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data08.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data09.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\data10.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data11.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data12.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data13.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data14.bmp"
 				>
 			</File>
 			<File
@@ -2028,7 +1985,7 @@
 	<Globals>
 		<Global
 			Name="RESOURCE_FILE"
-			Value="\Projects\fs2_open_3_6_9\code\fred2\fred.rc"
+			Value="\Projects\fs2_open_3_6_10\code\fred2\fred.rc"
 		/>
 	</Globals>
 </VisualStudioProject>

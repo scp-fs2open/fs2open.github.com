@@ -325,6 +325,9 @@ public:
 	void clear();
 	bool isValid();
 
+	virtual void pageIn();
+	virtual void pageOut();
+
 	virtual int warpStart();
 	virtual int warpFrame(float frametime);
 	virtual int warpShipClip();
@@ -388,23 +391,47 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[WE_BTRL_NUM_STAGES+1];
+	int stage_duration[WE_BTRL_NUM_STAGES];
 
 	//anim
 	int anim;
 	int anim_nframes;
 	int anim_fps;
+	int anim_total_time;
+	int shockwave;
+	int shockwave_nframes;
+	int shockwave_fps;
+	int shockwave_total_time;
 
 	geometry_batcher batcher;
-	float	radius_full;
+	vec3d	autocenter;
+	float	z_offset_max;
+	float	z_offset_min;
+	float	tube_radius;
+
+	//*****Per-instance
+	vec3d pos;
+	//Sound
+	float snd_range_factor;
+	int snd_start;
+	struct game_snd *snd_start_gs;
+	int snd_end;
+	struct game_snd *snd_end_gs;
+
 public:
 	WE_BTRL(object *n_objp, int n_direction);
 	~WE_BTRL();
 
-	int warpStart();
-	int warpFrame(float frametime);
-	int warpShipClip();
-	int warpShipRender();
+	virtual void pageIn();
+
+	virtual int warpStart();
+	virtual int warpFrame(float frametime);
+	virtual int warpShipClip();
+	virtual int warpShipRender();
+	virtual int warpEnd();
+
+	virtual int getWarpPosition(vec3d *output);
+    virtual int getWarpOrientation(matrix *output);
 };
 
 //********************-----CLASS: WE_Homeworld-----********************//

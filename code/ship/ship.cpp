@@ -3595,7 +3595,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	parse_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
-	parse_sound("$Warpin End Sound:", &sip->warpin_snd_start, sip->name);
+	parse_sound("$Warpin End Sound:", &sip->warpin_snd_end, sip->name);
 
 	if(optional_string("$Warpin speed:"))
 	{
@@ -3643,7 +3643,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	parse_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
-	parse_sound("$Warpout End Sound:", &sip->warpout_snd_start, sip->name);
+	parse_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
 
 	if(optional_string("$Warpout speed:"))
 	{
@@ -4065,9 +4065,12 @@ strcpy(parse_error_text, temp_error);
 		int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
 		int ship_type_index = -1;
 
-		// clear flags since we might have a modular table
-		sip->flags = SIF_DEFAULT_VALUE;
-		sip->flags2 = SIF2_DEFAULT_VALUE;
+		if (!optional_string("+noreplace")) {
+			// clear flags since we might have a modular table
+			// clear only those which are actually set in the flags
+			sip->flags = (sip->flags & SIF_MASK);
+			sip->flags2 = (sip->flags2 & SIF2_MASK);
+		}
 
 		for (i = 0; i < num_strings; i++)
 		{
@@ -7406,6 +7409,7 @@ void ship_subsystems_delete(ship *shipp)
 			temp = GET_NEXT( systemp );								// use temporary since pointers will get screwed with next operation
 			list_remove( shipp->subsys_list, systemp );			// remove the element
 			list_append( &ship_subsys_free_list, systemp );		// and place back onto free list
+			Num_ship_subsystems--;								// subtract from our in-use total
 			systemp = temp;												// use the temp variable to move right along
 		}
 	}
@@ -7500,8 +7504,8 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	}
 
 	// Assert(index != -1);
+
 	// this can happen in multiplayer (dogfight, ingame join specifically)
-	Assert(index != -1);	// Goober5000 - until ingame join is fixed, let's Assert
 	if (index == -1)
 		return;
 
@@ -7552,7 +7556,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 
 #ifndef NDEBUG
 			//WMC - Ships can depart too, besides being destroyed :P
-			if ((wingp->total_destroyed + wingp->total_departed) != wingp->total_arrived_count)
+            if ((wingp->total_destroyed + wingp->total_departed + wingp->total_vanished) != wingp->total_arrived_count)
 			{
 				// apparently, there have been reports of ships still present in the mission when this log
 				// entry if written.  Do a sanity check here to find out for sure.
@@ -9035,7 +9039,12 @@ void ship_process_post(object * obj, float frametime)
 		// JAS -- if the ship is warping out, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpout_frame( obj, frametime );
-	} else {
+	} 
+
+	if ( (!(shipp->flags & SF_ARRIVING) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
+		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags & SF_ARRIVING_STAGE_2)) )
+		&&	!(shipp->flags & SF_DEPART_WARP))
+	{
 		//	Do AI.
 
 		// for multiplayer people.  return here if in multiplay and not the host
@@ -9987,8 +9996,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		check_count = 0;
 	}
 
-	if (check_count && (shipp->cmeasure_count <= 0) || sip->cmeasure_type < 0)
-	{
+	if ( check_count && ((shipp->cmeasure_count <= 0) || (sip->cmeasure_type < 0)) ) {
 		if ( objp == Player_obj ) {
 			if(sip->cmeasure_max < 1 || sip->cmeasure_type < 0) {
 				//TODO: multi-lingual support
@@ -10036,7 +10044,7 @@ send_countermeasure_fired:
 		// the new way of doing things
 		// if(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING){
 		if(Game_mode & GM_MULTIPLAYER){
-			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, arand );
+			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, /*arand*/Objects[cobjnum].net_signature );
 		}
 	}
 
@@ -10571,14 +10579,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}else{
 						j=v;
 					}
-					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];			
+
+					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
 					shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
-			//		winfo_p->b_info.beam_type = BEAM_TYPE_C;
-//mprintf(("I am about to fire a fighter beam4\n"));
+
+					fbfire_info.point = j;
+
 					beam_fire(&fbfire_info);
 					num_fired++;
-					//shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 				}
 
 //mprintf(("I have fired a fighter beam, type %d\n", winfo_p->b_info.beam_type));
@@ -10668,11 +10677,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					if ( Weapon_energy_cheat == 0 )
 					{
 						swp->primary_bank_ammo[bank_to_fire] -= points*numtimes;
-						// note for later: do we ever want primaries to have ammo 'sizes' other than 1?
 
 						// make sure we don't go below zero; any such error is excusable
 						// because it only happens when the bank is depleted in one shot
-						CLAMP(swp->primary_bank_ammo[bank_to_fire], 0, swp->primary_bank_capacity[bank_to_fire]);
+						if (swp->primary_bank_ammo[bank_to_fire] < 0)
+						{
+							swp->primary_bank_ammo[bank_to_fire] = 0;
+						}
 					}
 				}
 
@@ -15536,6 +15547,9 @@ void ship_page_in()
 			ship_init_afterburners( &Ships[i] );
 		}
 
+		//WMC - Since this is already in-mission, ignore the warpin effect.
+		Ships[i].warpout_effect->pageIn();
+
 		// don't need this one anymore, it's already been accounted for
 	//	num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
 	}
@@ -15633,7 +15647,7 @@ void ship_page_in()
 				for (j = 0; j < sip->n_subsystems; j++) {
 					//Assert( sip->subsystems[j].model_num == sip->modelnum );
 					if (sip->subsystems[j].model_num != sip->model_num)
-						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].name, sip->pof_file);
+						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].subobj_name, sip->pof_file);
 				}
 #endif
 			}
@@ -16358,7 +16372,12 @@ float ship_get_warpout_speed(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-	if(sip->warpout_type == WT_SWEEPER)
+	//WMC - Any speed is good for in place anims (aka BSG FTL effect)
+	if(sip->warpout_type == WT_IN_PLACE_ANIM && sip->warpout_speed <= 0.0f)
+	{
+		return objp->phys_info.speed;
+	}
+	else if(sip->warpout_type == WT_SWEEPER || sip->warpout_type == WT_IN_PLACE_ANIM)
 	{
 		return sip->warpout_speed;
 	}

@@ -2216,7 +2216,7 @@ char *sexp_tree::match_closest_operator(char *str, int node)
 		return str;
 
 	// determine which argument we are of the parent
-	arg_num = find_argument_number(z, tree_nodes[z].child);
+	arg_num = find_argument_number(z, node); 
 
 	opf = query_operator_argument_type(op, arg_num); // check argument type at this position
 	opr = query_operator_return_type(op);
@@ -3077,6 +3077,14 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 
 				sprintf(str, "%d", temp);
 				item->set_data_dup(str, (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if ((Operators[op].value == OP_MODIFY_VARIABLE)) {
+				if (get_modify_variable_type(index) == OPF_NUMBER) {
+					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
+				}
+				else {					
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+				}
 			}
 			else
 			{
@@ -4917,12 +4925,14 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	}
 
 	// also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
-	if (opf == OPF_NULL) {
+	if (list == NULL || opf == OPF_NULL) {
 		return list;
 	}
 
-	// add special item
-	head.add_data(SEXP_ARGUMENT_STRING);
+	// the special item is a string and should not be added for numeric lists
+	if (opf != OPF_NUMBER && opf != OPF_POSITIVE) {
+		head.add_data(SEXP_ARGUMENT_STRING);
+	}
 
 	// append other list
 	head.add_list(list);
@@ -5538,7 +5548,13 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 						head.add_op(i);
 				}
 			}
-
+		// when dealing with the special argument add them all. It's up to the FREDder to ensure invalid orders aren't given
+		} else if (!strcmp(tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
+			for (i=0; i<Num_operators; i++) {
+				if (query_operator_return_type(i) == OPR_AI_GOAL) {
+					head.add_op(i);
+				}
+			}
 		} else
 			return NULL;  // no valid ship or wing to check against, make nothing available
 	}

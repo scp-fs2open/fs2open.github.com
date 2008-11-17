@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -103,6 +103,7 @@
 #define IDD_BACKGROUND_CHOOSER          272
 #define IDB_DATA_05                     277
 #define IDB_DATA_10                     286
+#define IDD_ALT_SHIP_CLASS              292
 #define IDB_DATA_15                     296
 #define IDB_DATA_00                     297
 #define IDB_DATA_20                     300
@@ -121,7 +122,7 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
-#define IDD_ALT_SHIP_CLASS              292
+#define IDD_CUTSCENE_EDITOR             317
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -588,6 +589,7 @@
 #define IDC_SHIP_PERSONA                1203
 #define IDC_SET_FROM_SHIP_CLASS         1203
 #define IDC_NEBCOLOR                    1204
+#define IDC_COMBO21                     1204
 #define IDC_SUBSTITUTE_EVENT_MUSIC      1205
 #define IDC_AI_PROFILE                  1207
 #define IDC_LIST3                       1208
@@ -1110,6 +1112,9 @@
 #define IDC_ALT_CLASS_UP                1602
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
+#define IDC_CUTSCENES_TREE              1606
+#define IDC_BUTTON4                     1607
+#define IDC_BUTTON5                     1608
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1388,6 +1393,10 @@
 #define ID_SHOW_IFF_8                   33089
 #define ID_VIEW_FULL_DETAIL             33090
 #define ID_AUTOBALANCE                  33091
+#define ID_EDITORS_CUTSCENEEDITOR       33091
+#define ID_EDITOREDITORS_CUTSCENE       33092
+#define ID_EDITOR_CUTSCENE              33093
+#define ID_EDITORS_CUTSCENES            33094
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1398,9 +1407,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        317
-#define _APS_NEXT_COMMAND_VALUE         33091
-#define _APS_NEXT_CONTROL_VALUE         1605
+#define _APS_NEXT_RESOURCE_VALUE        318
+#define _APS_NEXT_COMMAND_VALUE         33095
+#define _APS_NEXT_CONTROL_VALUE         1609
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

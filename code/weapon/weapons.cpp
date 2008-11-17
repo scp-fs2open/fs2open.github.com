@@ -1544,6 +1544,12 @@ void parse_wi_flags(weapon_info *weaponp)
 	int	num_strings;
 
 	num_strings = stuff_string_list(weapon_strings, MAX_WEAPON_FLAGS);
+
+	if (optional_string("+override")) {
+		// reseting the flag values if set to override the existing flags
+		weaponp->wi_flags = WIF_DEFAULT_VALUE;
+		weaponp->wi_flags2 = WIF2_DEFAULT_VALUE;
+	}
 	
 	for (int i=0; i<num_strings; i++) {
 		if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
@@ -2022,6 +2028,7 @@ int parse_weapon(int subtype, bool replace)
 	strcpy(parse_error_text, "");
 	strcpy(parse_error_text, "\nin weapon: ");
 	strcat(parse_error_text, fname);
+	strcat(parse_error_text, "\n");
 
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
@@ -5347,7 +5354,6 @@ void weapon_process_post(object * obj, float frame_time)
 //	Update weapon tracking information.
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked, ship_subsys *target_subsys)
 {
-	int			ai_index;
 	object		*parent_objp;
 	weapon		*wp;
 	weapon_info	*wip;
@@ -5361,12 +5367,15 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	wp = &Weapons[Objects[weapon_objnum].instance];
 	wip = &Weapon_info[wp->weapon_info_index];
-	parent_objp = &Objects[parent_objnum];
 
-	Assert(parent_objp->type == OBJ_SHIP);
-	ai_index = Ships[parent_objp->instance].ai_index;
+	if (parent_objnum >= 0) {
+		parent_objp = &Objects[parent_objnum];
+		Assert(parent_objp->type == OBJ_SHIP);
+	} else {
+		parent_objp = NULL;
+	}
 
-	if ( ai_index >= 0 ) {
+	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
 		int target_team = -1;
 		if ( target_objnum >= 0 ) {
 			int obj_type = Objects[target_objnum].type;
@@ -5376,7 +5385,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		}
 	
 		// determining if we're targeting the same team
-		if(Ships[parent_objp->instance].team == target_team){
+		if (parent_objp != NULL && Ships[parent_objp->instance].team == target_team){
 			targeting_same = 1;
 		} else {
 			targeting_same = 0;
@@ -5558,8 +5567,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->team = Ships[parent_objp->instance].team;
 		wp->species = Ship_info[Ships[parent_objp->instance].ship_info_index].species;
 	} else {
-		wp->team = -1;
-		wp->species = -1;
+		// ugh - we need to prevent bad array accesses
+		wp->team = Iff_traitor;
+		wp->species = 0;
 	}
 	wp->turret_subsys = NULL;
 	vm_vec_zero(&wp->homing_pos);
@@ -5807,9 +5817,11 @@ void spawn_child_weapons(object *objp)
 
 	parent_num = objp->parent;
 
-	if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
-		mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
-		return;
+	if (parent_num >= 0) {
+		if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
+			mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
+			return;
+		}
 	}
 
 	starting_sig = 0;

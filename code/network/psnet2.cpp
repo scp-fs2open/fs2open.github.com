@@ -549,7 +549,7 @@ void PSNET_TOP_LAYER_PROCESS()
 #endif
 
 	if ( Network_status != NETWORK_STATUS_RUNNING ) {
-		ml_printf("Network ==> socket not inited in PSNET_TOP_LAYER_PROCESS\n");
+		ml_string("Network ==> socket not inited in PSNET_TOP_LAYER_PROCESS");
 		return;
 	}
 
@@ -567,7 +567,7 @@ void PSNET_TOP_LAYER_PROCESS()
 #else
 		if ( select( Unreliable_socket + 1, &rfds, NULL, NULL, &timeout) == SOCKET_ERROR ) {
 #endif
-			ml_printf("Error %d doing a socket select on read\n", WSAGetLastError());
+			ml_printf("Error %d doing a socket select on read", WSAGetLastError());
 			break;
 		}
 
@@ -626,7 +626,7 @@ void PSNET_TOP_LAYER_PROCESS()
 
 		if ( read_len == SOCKET_ERROR ) {
 			// int x = WSAGetLastError();
-			ml_printf("Socket error on socket_get_data()");
+			ml_string("Socket error on socket_get_data()");
 			break;
 		}		
 
@@ -704,12 +704,12 @@ void psnet_init( int protocol, int port_num )
 	// initialize TCP now	
 	Tcp_active = 1;
 	if(!psnet_init_tcp()){
-		ml_printf("Error on TCP startup %d\n", Tcp_failure_code);		
+		ml_printf("Error on TCP startup %d", Tcp_failure_code);		
 
 		Tcp_active = 0;
 	} else {
 		if(!psnet_init_rel_tcp(Psnet_default_port + 1, 0)){
-			ml_printf("Network", "Error on TCP startup %d\n", Tcp_failure_code);			
+			ml_printf("Error on TCP startup %d", Tcp_failure_code);			
 
 			Tcp_active = 0;
 		}
@@ -727,12 +727,12 @@ void psnet_init( int protocol, int port_num )
 	// initialize IPX not
 	Ipx_active = 1;
 	if(!psnet_init_ipx()){
-		ml_printf("Network", "Error on IPX startup %d\n", Ipx_failure_code);		
+		ml_printf("Error on IPX startup %d", Ipx_failure_code);		
 
 		Ipx_active = 0;
 	} else {
 		if(!psnet_init_rel_ipx(Psnet_default_port + 1, 0)){
-			ml_printf("Network", "Error on IPX startup %d\n", Ipx_failure_code);			
+			ml_printf("Error on IPX startup %d", Ipx_failure_code);			
 
 			Ipx_active = 0;
 		}
@@ -845,13 +845,13 @@ int psnet_use_protocol( int protocol )
 
 		Can_broadcast = Ipx_can_broadcast;
 		if(Can_broadcast){
-			ml_printf("Psnet : IPX broadcast\n");
+			ml_string("Psnet : IPX broadcast");
 		}
 
 		// get the socket name for the IPX_socket, and put it into My_addr
 		len = sizeof(SOCKADDR_IPX);
 		if ( getsockname(IPX_socket, (SOCKADDR *)&ipx_addr, &len) == SOCKET_ERROR ) {
-			ml_printf("Unable to get sock name for IPX unreliable socket (%d)\n", WSAGetLastError() );
+			ml_printf("Unable to get sock name for IPX unreliable socket (%d)", WSAGetLastError() );
 			return 0;
 		}
 
@@ -859,7 +859,7 @@ int psnet_use_protocol( int protocol )
 		memcpy(Psnet_my_addr.addr, ipx_addr.sa_nodenum, 6);
 		Psnet_my_addr.port = Psnet_default_port;
 
-		ml_printf("Psnet using - NET_IPX\n");
+		ml_string("Psnet using - NET_IPX");
 		break;
 #endif
 
@@ -874,13 +874,13 @@ int psnet_use_protocol( int protocol )
 
 		Can_broadcast = Tcp_can_broadcast;
 		if(Can_broadcast){
-			ml_printf("Psnet : TCP broadcast\n");
+			ml_string("Psnet : TCP broadcast");
 		}
 
 		// get the socket name for the TCP_socket, and put it into My_addr
 		len = sizeof(SOCKADDR_IN);
 		if ( getsockname(TCP_socket, (SOCKADDR *)&ip_addr, &len) == SOCKET_ERROR ) {
-			ml_printf("Unable to get sock name for TCP unreliable socket (%d)\n", WSAGetLastError() );			
+			ml_printf("Unable to get sock name for TCP unreliable socket (%d)", WSAGetLastError() );			
 			return 0;
 		}
 
@@ -897,7 +897,7 @@ int psnet_use_protocol( int protocol )
 #endif
 				memcpy(&ip_addr.sin_addr, &custom_address.sin_addr, 6);
 			} else {
-				ml_printf("WARNING  =>  psnet_get_ip() custom IP is invalid: %s\n", custom_ip);
+				ml_printf("WARNING  =>  psnet_get_ip() custom IP is invalid: %s", custom_ip);
 			}
 		}
 
@@ -905,7 +905,7 @@ int psnet_use_protocol( int protocol )
 		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, 6);
 		Psnet_my_addr.port = Psnet_default_port;
 
-		ml_printf("Psnet using - NET_TCP\n");
+		ml_string("Psnet using - NET_TCP");
 		break;
 
 	default:
@@ -1075,7 +1075,7 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 	send_sock = Unreliable_socket;		
 
 	if ( Network_status != NETWORK_STATUS_RUNNING ) {
-		ml_printf("Network ==> Socket not inited in psnet_send\n");
+		ml_string("Network ==> Socket not inited in psnet_send");
 		return 0;
 	}
 
@@ -1087,14 +1087,14 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 	memcpy(iaddr, who_to->addr, 6);
 
 	if ( memcmp(iaddr, Null_address, 6) == 0) {
-		ml_printf("Network ==> send to address is 0 in psnet_send\n");
+		ml_string("Network ==> send to address is 0 in psnet_send");
 		return 0;
 	}
 	
 	port = who_to->port;
 		
 	if ( port == 0) {
-		ml_printf("Network ==> destination port %d invalid in psnet_send\n", port);
+		ml_printf("Network ==> destination port %d invalid in psnet_send", port);
 		return 0;
 	}
 
@@ -1112,7 +1112,7 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 #else
 	if ( SELECT( send_sock+1, NULL, &wfds, NULL, &timeout, PSNET_TYPE_UNRELIABLE) == SOCKET_ERROR ) {
 #endif
-		ml_printf("Error on blocking select for write %d\n", WSAGetLastError() );
+		ml_printf("Error on blocking select for write %d", WSAGetLastError() );
 		return 0;
 	}
 
@@ -1134,7 +1134,7 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 
 			multi_rate_add(np_index, "ipx", send_len);
 			if ( (ret != SOCKET_ERROR) && (ret != send_len) ){
-				// ml_printf("requested to send %d bytes -- sent %d instead!!!\n", send_len, ret);
+				// ml_printf("requested to send %d bytes -- sent %d instead!!!", send_len, ret);
 			}
 			break;
 #endif
@@ -1180,12 +1180,12 @@ int psnet_get( void * data, net_addr * from_addr )
 int psnet_broadcast( net_addr * who_to, void * data, int len )
 {
 	if ( Network_status != NETWORK_STATUS_RUNNING ) {
-		ml_printf("Network ==> Socket not inited in psnet_broadcast\n");
+		ml_string("Network ==> Socket not inited in psnet_broadcast");
 		return 0;
 	}
 
 	if ( !Can_broadcast ) {
-		ml_printf("Cannot broadcast -- returning without doing anything\n");
+		ml_string("Cannot broadcast -- returning without doing anything");
 		return 0;
 	}
 
@@ -1314,7 +1314,7 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 		return;
 	}	
 
-	ml_printf("Closing socket %d\n",*sockp);
+	ml_printf("Closing socket %d",*sockp);
 	
 	// go through every buffer and "free it up(tm)"
 	int i;
@@ -1358,7 +1358,7 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 			SENDTO(Unreliable_socket, (char *)&diss_conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[*sockp].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 			break;
 		default:
-			ml_printf("Unknown protocol type in nw_CloseSocket()!\n");			
+			ml_string("Unknown protocol type in nw_CloseSocket()!");			
 			// Int3();
 			break;
 	}
@@ -1382,7 +1382,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 	reliable_socket *rsocket;	
 	
 	if(socketid >= MAXRELIABLESOCKETS){
-		ml_printf("Invalid socket id passed to psnet_rel_send() -- %d\n",socketid);
+		ml_printf("Invalid socket id passed to psnet_rel_send() -- %d",socketid);
 		return -1;
 	}
 
@@ -1392,7 +1392,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 	rsocket=&Reliable_sockets[socketid];
 	if(rsocket->status!=RNF_CONNECTED) {
 		//We can't send because this isn't a connected reliable socket.
-		ml_printf("Can't send packet because of status %d in nw_SendReliable(). socket = %d\n",rsocket->status,socketid);
+		ml_printf("Can't send packet because of status %d in nw_SendReliable(). socket = %d",rsocket->status,socketid);
 		return -1;
 	}
 	
@@ -1435,7 +1435,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 						bytesout = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 						break;
 					default:
-						ml_printf("Unknown protocol type in nw_SendReliable()!\n");
+						ml_string("Unknown protocol type in nw_SendReliable()!");
 						Int3();
 						break;
 				}		
@@ -1453,7 +1453,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 			return bytesout;
 		}
 	}
-	ml_printf("PSNET RELIABLE SEND BUFFER OVERRUN. socket = %d\n",socketid);	
+	ml_printf("PSNET RELIABLE SEND BUFFER OVERRUN. socket = %d",socketid);	
 	// Int3();
 	return 0;
 }
@@ -1469,12 +1469,12 @@ int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int max_len)
 	reliable_socket *rsocket = NULL;
 	psnet_rel_work();
 	if(socketid >= MAXRELIABLESOCKETS){
-		ml_printf("Invalid socket id passed to nw_NewReceiveReliable() -- %d\n",socketid);
+		ml_printf("Invalid socket id passed to nw_NewReceiveReliable() -- %d",socketid);
 		return -1;
 	}
 	rsocket = &Reliable_sockets[socketid];
 	if( (RNF_CONNECTED!=rsocket->status) && (RNF_LIMBO!=rsocket->status) ){
-		ml_printf("Can't receive packet because it isn't connected in nw_ReceiveReliable(). socket = %d\n",socketid);
+		ml_printf("Can't receive packet because it isn't connected in nw_ReceiveReliable(). socket = %d",socketid);
 		return 0;
 	}
 	//If the buffer position is the position we are waiting for, fill in 
@@ -1528,7 +1528,7 @@ void psnet_rel_work()
 #ifdef _WIN32
 			case NET_IPX:
 				if(!Ipx_active){
-					ml_printf("Unable to use this network connection type in nw_WorkReliable()\n");
+					ml_string("Unable to use this network connection type in nw_WorkReliable()");
 					Int3();
 					return;
 				}
@@ -1537,14 +1537,14 @@ void psnet_rel_work()
 #endif
 			case NET_TCP:
 				if(!Tcp_active){
-					ml_printf("Unable to use this network connection type in nw_WorkReliable()\n");
+					ml_string("Unable to use this network connection type in nw_WorkReliable()");
 					Int3();
 					return;
 				}
 				ret = SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[Serverconn].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 				break;
 			default:
-				ml_printf("Unknown protocol type in nw_WorkReliable()!\n");
+				ml_string("Unknown protocol type in nw_WorkReliable()!");
 				Int3();
 				break;
 			}
@@ -1615,7 +1615,7 @@ void psnet_rel_work()
 		}		
 
 		if(bytesin==-1){
-			ml_printf("recvfrom returned an error! -- %d\n",WSAGetLastError());
+			ml_printf("recvfrom returned an error! -- %d",WSAGetLastError());
 			//Int3();//See Kevin			
 			return;
 		}
@@ -1627,7 +1627,7 @@ void psnet_rel_work()
 						//if(memcmp(&rcv_addr,&reliable_sockets[i].addr,sizeof(SOCKADDR))==0)
 						if(memcmp(&d3_rcv_addr, &Reliable_sockets[i].m_net_addr, sizeof(net_addr)) == 0){
 							//We already have a reliable link to this user, so we will ignore it...
-							ml_printf("Received duplicate connection request. %d\n",i);
+							ml_printf("Received duplicate connection request. %d",i);
 							//reliable_sockets[i].last_packet_received = timer_GetTime();
 							psnet_rel_send_ack(&Reliable_sockets[i].addr, rcv_buff.seq, link_type, rcv_buff.send_time);
 							//We will change this as a hack to prevent later code from hooking us up
@@ -1648,13 +1648,13 @@ void psnet_rel_work()
 						Reliable_sockets[i].last_packet_received = psnet_get_time();
 						rsocket = &Reliable_sockets[i];
 						rcvaddr = (SOCKADDR_IN *)&rcv_addr;
-						ml_printf("Connect from %s:%d\n", inet_ntoa(rcvaddr->sin_addr), htons(rcvaddr->sin_port));
+						ml_printf("Connect from %s:%d", inet_ntoa(rcvaddr->sin_addr), htons(rcvaddr->sin_port));
 						break;
 					}
 				}
 				if(i==MAXRELIABLESOCKETS){
 					//No more connections!
-					ml_printf("Out of incoming reliable connection sockets\n");
+					ml_string("Out of incoming reliable connection sockets");
 					//Int3();//See Kevin
 					continue;
 				}
@@ -1672,7 +1672,7 @@ void psnet_rel_work()
 				}				
 			}
 			if(NULL == rsocket){
-				ml_printf("Received reliable data from unconnected client.\n");
+				ml_string("Received reliable data from unconnected client.");
 				ml_printf("Received from %s:%d\n",inet_ntoa(rcvaddr->sin_addr),rcvaddr->sin_port);
 				continue ;
 			}
@@ -1687,14 +1687,14 @@ void psnet_rel_work()
 							ushort *acknum = (ushort *)&rcv_buff.data;
 							if(*acknum == (~CONNECTSEQ & 0xffff)){
 								rsocket->status = RNF_CONNECTED;
-								ml_printf("Got ACK for IAMHERE!\n");
+								ml_string("Got ACK for IAMHERE!");
 							}
 							continue;
 						}
 					} else if(rcv_buff.type == RNT_I_AM_HERE){
 						rsocket->status = RNF_CONNECTING;
 						psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
-						ml_printf("Got IAMHERE!\n");
+						ml_string("Got IAMHERE!");
 						continue;
 					}
 				}
@@ -1760,7 +1760,7 @@ void psnet_rel_work()
 				seqdelta = rcv_buff.seq - rsocket->oursequence;
 				if(seqdelta<0) seqdelta = seqdelta*-1;
 				if(seqdelta>=MAXNETBUFFERS - 1){
-					ml_printf("Received reliable packet out of order!\n");
+					ml_string("Received reliable packet out of order!");
 					//It's out of order, so we won't ack it, which will mean we will get it again soon.
 					continue;
 				}
@@ -1816,7 +1816,7 @@ void psnet_rel_work()
 		if(Serverconn == 0xffffffff){
 			if(rsocket->status==RNF_LIMBO){
 				if(fl_abs((psnet_get_time() - rsocket->last_packet_received))>Nettimeout){
-					ml_printf("Reliable (but in limbo) socket (%d) timed out in nw_WorkReliable().\n",j);
+					ml_printf("Reliable (but in limbo) socket (%d) timed out in nw_WorkReliable().",j);
 					memset(rsocket,0,sizeof(reliable_socket));
 					rsocket->status = RNF_UNUSED;//Won't work if this is an outgoing connection.
 				}
@@ -1824,7 +1824,7 @@ void psnet_rel_work()
 		} else {
 			if((rsocket->status == RNF_LIMBO) && (fl_abs((psnet_get_time() - First_sent_iamhere)) > Nettimeout)){
 				rsocket->status = RNF_BROKEN;
-				ml_printf("Reliable socket (%d) timed out in nw_WorkReliable().\n",j);
+				ml_printf("Reliable socket (%d) timed out in nw_WorkReliable().",j);
 			}
 		}
 		
@@ -1896,7 +1896,7 @@ void psnet_rel_work()
 
 			if((rsocket->status == RNF_CONNECTED) && (fl_abs((psnet_get_time() - rsocket->last_packet_received))>Nettimeout)){
 				//This socket is hosed.....inform someone?
-				ml_printf("Reliable Socket (%d) timed out in nw_WorkReliable().\n",j);
+				ml_printf("Reliable Socket (%d) timed out in nw_WorkReliable().",j);
 				rsocket->status = RNF_BROKEN;
 			}
 		}
@@ -1928,7 +1928,7 @@ int psnet_rel_check_for_listen(net_addr *from_addr)
 		if(Reliable_sockets[i].status == RNF_CONNECTING){
 			Reliable_sockets[i].status = RNF_CONNECTED;
 			//memcpy(from_addr,&reliable_sockets[i].addr,sizeof(SOCKADDR));
-			ml_printf("New reliable connection in nw_CheckListenSocket().\n");
+			ml_string("New reliable connection in nw_CheckListenSocket().");
 			
 			switch ( Reliable_sockets[i].connection_type ){
 #ifdef _WIN32
@@ -2026,7 +2026,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			bytesin = RECVFROM(Unreliable_socket, (char *)&ack_header,sizeof(reliable_header),0,(SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
 			if(bytesin==-1){
 				//Int3();//See Kevin
-				ml_printf("UDP recvfrom returned an error! -- %d\n",WSAGetLastError());
+				ml_printf("UDP recvfrom returned an error! -- %d",WSAGetLastError());
 				break;
 				//return;
 			}
@@ -2045,7 +2045,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			if(bytesin==-1)
 			{
 				//Int3();//See Kevin
-				ml_printf("IPX recvfrom returned an error! -- %d\n",WSAGetLastError());
+				ml_printf("IPX recvfrom returned an error! -- %d",WSAGetLastError());
 				break;
 			}
 			FD_ZERO(&read_fds);
@@ -2069,7 +2069,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			addr = (SOCKADDR *)&ipx_addr;
 			name_length = sizeof(ipx_addr);
 			if( SOCKET_ERROR == SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE) ){
-				ml_printf("Unable to send IPX packet in nw_ConnectToServer()! -- %d\n",WSAGetLastError());
+				ml_printf("Unable to send IPX packet in nw_ConnectToServer()! -- %d",WSAGetLastError());
 				return;
 			}
 			typeless_sock = Unreliable_socket;
@@ -2086,7 +2086,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			addr = (SOCKADDR *)&sockaddr;
 			name_length = sizeof(sockaddr);
 			if( SOCKET_ERROR == SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE) ){
-				ml_printf("Unable to send UDP packet in nw_ConnectToServer()! -- %d\n",WSAGetLastError());
+				ml_printf("Unable to send UDP packet in nw_ConnectToServer()! -- %d",WSAGetLastError());
 				return;
 			}
 			memcpy(d3_rcv_addr.addr, &sockaddr.sin_addr.s_addr, 4);
@@ -2096,7 +2096,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			break;
 
 		default:
-			ml_printf("Network","Unknown protocol type in nw_ConnectToServer()!\n");
+			ml_string("Unknown protocol type in nw_ConnectToServer()!");
 			Int3();
 			return;
 	}		
@@ -2122,7 +2122,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			addrlen = sizeof(SOCKADDR);
 			bytesin = RECVFROM(typeless_sock,(char *)&ack_header,sizeof(reliable_header),0,(SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
 			if(bytesin==-1){
-				ml_printf("recvfrom returned an error! -- %d\n",WSAGetLastError());
+				ml_printf("recvfrom returned an error! -- %d",WSAGetLastError());
 				Int3();//See Kevin
 				return;				
 			}
@@ -2143,7 +2143,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 								memcpy(&Reliable_sockets[i].addr,&rcv_addr,sizeof(SOCKADDR));
 								Reliable_sockets[i].status = RNF_LIMBO;
 								*socket = i;
-								ml_printf("Succesfully connected to server in nw_ConnectToServer().\n");
+								ml_string("Succesfully connected to server in nw_ConnectToServer().");
 								//Now send I_AM_HERE packet
 								conn_header.type = RNT_I_AM_HERE;
 								conn_header.seq = (ushort)(~CONNECTSEQ);
@@ -2156,7 +2156,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 									*socket = INVALID_SOCKET;
 									Reliable_sockets[i].status = RNF_UNUSED;
 									memset(&Reliable_sockets[i],0,sizeof(reliable_socket));
-									ml_printf("Unable to send packet in nw_ConnectToServer()\n");
+									ml_string("Unable to send packet in nw_ConnectToServer()");
 									return;
 								}
 								Reliable_sockets[i].last_packet_sent = psnet_get_time();
@@ -2169,21 +2169,21 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 								return;
 							}
 						}
-						ml_printf("Out of reliable socket space in nw_ConnectToServer().\n");
+						ml_string("Out of reliable socket space in nw_ConnectToServer().");
 						return;						
-					} else ml_printf("Received out of sequence ACK in nw_ConnectToServer().\n");
-				} else ml_printf("Received something that isn't an ACK in nw_ConnectToServer().\n");
-			} else ml_printf("Received 0 bytes from recvfrom() in nw_ConnectToServer().\n");
+					} else ml_string("Received out of sequence ACK in nw_ConnectToServer().");
+				} else ml_string("Received something that isn't an ACK in nw_ConnectToServer().");
+			} else ml_string("Received 0 bytes from recvfrom() in nw_ConnectToServer().");
 		}
 		/*
 		if((psnet_get_time()-time_sent_req)>2)
 		{
-			ml_printf("Resending connect request.\n");
+			ml_string("Resending connect request.");
 			int ret = SENDTO(typeless_sock,(char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 			if(ret != SOCKET_ERROR){
 				time_sent_req = psnet_get_time();
 			} else {
-				ml_printf("Error sending connection request! -- %d\n",WSAGetLastError() );
+				ml_printf("Error sending connection request! -- %d",WSAGetLastError() );
 			}
 		}
 		*/
@@ -2212,7 +2212,7 @@ int psnet_rel_get_ip()
 	} else {
 		ml_string("SOCKET_ERROR in psnet_rel_get_ip()!");
 	}
-	ml_printf(%s:%d\n", inet_ntoa(rcvaddr->sin_addr), htons(rcvaddr->sin_port)
+	ml_printf(%s:%d", inet_ntoa(rcvaddr->sin_addr), htons(rcvaddr->sin_port)
 	return local_address.sin_addr.s_addr;
 }
 */
@@ -2236,7 +2236,7 @@ int psnet_get_ip()
 		local_address.sin_addr.s_addr = INADDR_ANY;			
 	}
 
-	ml_printf("psnet_get_ip() reports IP : %s\n", inet_ntoa(local_address.sin_addr));
+	ml_printf("psnet_get_ip() reports IP : %s", inet_ntoa(local_address.sin_addr));
 	
 	return local_address.sin_addr.s_addr;
 }
@@ -2250,7 +2250,7 @@ int psnet_init_rel_tcp(int port, int should_listen)
 	sockaddr.sin_port = htons((ushort)port);
 	sockaddr.sin_family = AF_INET; 
 	unsigned int my_ip;
-	ml_printf("Setting up reliable sockets.\n");
+	ml_string("Setting up reliable sockets.");
 
 	my_ip = psnet_get_ip();
 
@@ -2258,11 +2258,11 @@ int psnet_init_rel_tcp(int port, int should_listen)
 			
 	Reliable_UDP_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP );
 	if(INVALID_SOCKET == Reliable_UDP_socket){
-		ml_printf("Unable to create reliable UDP socket -- %d\n", WSAGetLastError() );
+		ml_printf("Unable to create reliable UDP socket -- %d", WSAGetLastError() );
 		
 		return 0;
 	} else if(bind(Reliable_UDP_socket,(SOCKADDR *)&sockaddr,sizeof(SOCKADDR))!=0){
-		ml_printf("Unable to bind reliable socket -- %d\n", WSAGetLastError() );
+		ml_printf("Unable to bind reliable socket -- %d", WSAGetLastError() );
 		
 		return 0;
 	}	
@@ -2274,7 +2274,7 @@ int psnet_init_rel_tcp(int port, int should_listen)
 	arg = TRUE;
 	error = ioctlsocket( Reliable_UDP_socket, FIONBIO, &arg );
 	if ( error == SOCKET_ERROR ) {
-		ml_printf("Unable to make reliable UDP socket non-blocking -- %d\n", WSAGetLastError() );
+		ml_printf("Unable to make reliable UDP socket non-blocking -- %d", WSAGetLastError() );
 		
 		return 0;
 	}
@@ -2296,11 +2296,11 @@ int psnet_init_rel_ipx(int port, int should_listen)
 				
 	Reliable_IPX_socket = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
 	if(INVALID_SOCKET == Reliable_IPX_socket){
-		ml_printf("Unable to create reliable IPX socket -- %d\n", WSAGetLastError() );
+		ml_printf("Unable to create reliable IPX socket -- %d", WSAGetLastError() );
 		
 		return 0;
 	} else if(bind(Reliable_IPX_socket,(SOCKADDR *)&ipx_addr,sizeof(SOCKADDR))!=0){
-		ml_printf("Unable to bind reliable IPX socket -- %d\n", WSAGetLastError() );
+		ml_printf("Unable to bind reliable IPX socket -- %d", WSAGetLastError() );
 		
 		return 0;
 	}	
@@ -2312,7 +2312,7 @@ int psnet_init_rel_ipx(int port, int should_listen)
 	arg = TRUE;
 	error = ioctlsocket( Reliable_IPX_socket, FIONBIO, &arg );
 	if ( error == SOCKET_ERROR ) {
-		ml_printf("Unable to make reliable IPX socket non-blocking -- %d\n", WSAGetLastError() );
+		ml_printf("Unable to make reliable IPX socket non-blocking -- %d", WSAGetLastError() );
 		
 		return 0;
 	}
@@ -2375,7 +2375,7 @@ void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, int length,
 
 	// if we didn't find the buffer, report an overrun
 	if(!found_buf){
-		ml_printf("WARNING - Buffer overrun in psnet\n");
+		ml_string("WARNING - Buffer overrun in psnet");
 	} else {
 		// copy in the data
 		memcpy(l->psnet_buffers[idx].data, data, length);
@@ -2660,22 +2660,22 @@ void psnet_ras_status()
 	// JAS: My computer gets to this point, but I have no RAS connections,
 	// so just exit
 	if ( num_connections < 1 )	{
-		ml_printf("Found no connections\n" ); 
+		ml_string("Found no connections" ); 
 		FreeLibrary( ras_handle );
 		return;
 	}
 
-	ml_printf("Found %d connections\n", num_connections);
+	ml_printf("Found %d connections", num_connections);
 
 	for (i = 0; i < num_connections; i++ ) {
 		RASCONNSTATUS status;
 		RASPPPIP projection;
 		unsigned long size;
 
-		ml_printf("Connection %d:\n", i);
-		ml_printf("Entry Name: %s\n", rasbuffer[i].szEntryName);
-		ml_printf("Device Type: %s\n", rasbuffer[i].szDeviceType);
-		ml_printf("Device Name: %s\n", rasbuffer[i].szDeviceName);
+		ml_printf("Connection %d:", i);
+		ml_printf("Entry Name: %s", rasbuffer[i].szEntryName);
+		ml_printf("Device Type: %s", rasbuffer[i].szDeviceType);
+		ml_printf("Device Name: %s", rasbuffer[i].szDeviceName);
 
 		// get the connection status
 		status.dwSize = sizeof(RASCONNSTATUS);
@@ -2685,7 +2685,7 @@ void psnet_ras_status()
 			return;
 		}
 
-		ml_printf("\tStatus: %s\n", (status.rasconnstate==RASCS_Connected)?"Connected":"Not Connected");
+		ml_printf("\tStatus: %s", (status.rasconnstate==RASCS_Connected)?"Connected":"Not Connected");
 
 		// get the projection informatiom
 		size = sizeof(projection);
@@ -2735,14 +2735,14 @@ void psnet_socket_options( SOCKET sock )
 	getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&cursize, &cursizesize);
    setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&bufsize, sizeof(bufsize));
 	getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&cursize, &cursizesize);
-	ml_printf("Receive buffer set to %d\n", cursize);
+	ml_printf("Receive buffer set to %d", cursize);
 
 	// set the current size of the send buffer
 	cursizesize = sizeof(int);
 	getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (LPSTR)&cursize, &cursizesize);
 	setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (LPSTR)&bufsize, sizeof(bufsize));
 	getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (LPSTR)&cursize, &cursizesize);
-	ml_printf("Send buffer set to %d\n", cursize);
+	ml_printf("Send buffer set to %d", cursize);
 }
 
 #ifdef _WIN32
@@ -2756,7 +2756,7 @@ int psnet_init_ipx()
 	IPX_socket = socket( AF_IPX, SOCK_DGRAM, NSPROTO_IPX );
 	if ( IPX_socket == INVALID_SOCKET ) {
 		Ipx_failure_code = WSAGetLastError();
-		ml_printf("Error on IPX startup %d\n", Ipx_failure_code);
+		ml_printf("Error on IPX startup %d", Ipx_failure_code);
 		return 0;
 	}
 
@@ -2766,7 +2766,7 @@ int psnet_init_ipx()
 	sockaddr.sa_socket = htons( Psnet_default_port );
 	if ( bind(IPX_socket, (SOCKADDR*)&sockaddr, sizeof (SOCKADDR_IPX)) == SOCKET_ERROR) {	
 		Ipx_failure_code = WSAGetLastError();
-		ml_printf("Couldn't bind IPX socket (%d)! Invalidating IPX\n", Ipx_failure_code ); 
+		ml_printf("Couldn't bind IPX socket (%d)! Invalidating IPX", Ipx_failure_code ); 
 		return 0;
 	}
 
@@ -2789,7 +2789,7 @@ int psnet_init_tcp()
 	TCP_socket = socket( AF_INET, SOCK_DGRAM, 0 );
 	if ( TCP_socket == (int)INVALID_SOCKET ) {
 		Tcp_failure_code = WSAGetLastError();
-		ml_printf("Error on TCP startup %d\n", Tcp_failure_code);
+		ml_printf("Error on TCP startup %d", Tcp_failure_code);
 		return 0;
 	}
 
@@ -2802,9 +2802,9 @@ int psnet_init_tcp()
 		Tcp_failure_code = WSAGetLastError();
 
 		if (Tcp_failure_code == WSAEADDRINUSE) {
-			ml_printf("TCP socket already in use!  Another instance running?  (Try using the \"-port %i\" cmdline option)\n", Psnet_default_port + 1);
+			ml_printf("TCP socket already in use!  Another instance running?  (Try using the \"-port %i\" cmdline option)", Psnet_default_port + 1);
 		} else {
-			ml_printf("Couldn't bind TCP socket (%d)! Invalidating TCP\n", Tcp_failure_code );
+			ml_printf("Couldn't bind TCP socket (%d)! Invalidating TCP", Tcp_failure_code );
 		}
 
 		return 0;

@@ -71,12 +71,12 @@
 #include "globalincs/pstypes.h" // make sure _cdecl is defined correctly on *nix
 
 
-int FS2NetD_ConnectToServer(char *host, ushort port);
+int FS2NetD_ConnectToServer(const char *host, const char *port);
 void FS2NetD_Disconnect();
 
-int FS2NetD_GetData(char *buffer, int blen, bool OOB = false);
-int FS2NetD_SendData(char *buffer, int msg_len, bool OOB = false);
-void FS2NetD_IgnorePackets();
+int FS2NetD_GetData(char *buffer, int blen);
+int FS2NetD_SendData(char *buffer, int blen);
+bool FS2NetD_DataReady();
 
 
 #endif // __TCP_SOCKET_H_

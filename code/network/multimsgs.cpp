@@ -640,6 +640,7 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
@@ -2807,7 +2808,12 @@ void broadcast_game_query()
 	int packet_size;
 	net_addr addr;	
 	server_item *s_moveup;
-	ubyte data[MAX_PACKET_SIZE];	
+	ubyte data[MAX_PACKET_SIZE];
+
+	if ( MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) ) {
+		fs2netd_send_game_request();
+		return;
+	}
 
 	BUILD_HEADER(GAME_QUERY);	
 	
@@ -7035,7 +7041,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	player_num = find_player_id(player_id);
 	if (player_num == -1) {
 		nprintf(("Network", "Couldn't find player for stats update!\n"));
-		ml_string("Couldn't find player for stats update!\n");
+		ml_string("Couldn't find player for stats update!");
 
 		sc = &bogus;
 		Int3();
@@ -7047,7 +7053,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	GET_DATA(val);	
 	switch(val){
 	case STATS_ALLTIME:
-		ml_string("Received STATS_ALLTIME\n");
+		ml_string("Received STATS_ALLTIME");
 
 		// kills - alltime
 		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
@@ -7081,7 +7087,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		break;
 
 	case STATS_MISSION:
-		ml_string("Received STATS_MISSION\n");
+		ml_string("Received STATS_MISSION");
 
 		// kills - mission OK			
 		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
@@ -7105,7 +7111,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		break;
 
 	case STATS_MISSION_KILLS:		
-		ml_string("Received STATS_MISSION_KILLS\n");
+		ml_string("Received STATS_MISSION_KILLS");
 
 		GET_INT(sc->m_kill_count);
 		GET_INT(sc->m_kill_count_ok);
@@ -7113,7 +7119,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		break;		
 
 	case STATS_DOGFIGHT_KILLS:
-		ml_string("Received STATS_DOGFIGHT_KILLS\n");
+		ml_string("Received STATS_DOGFIGHT_KILLS");
 		if(player_num >= 0){
 			ml_printf("Dogfight stats for %s", Net_players[player_num].m_player->callsign);
 		}
@@ -7499,7 +7505,10 @@ void send_client_update_packet(net_player *pl)
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
-		percent = (ubyte) (get_hull_pct(objp) * 100.0f);
+		percent = (ubyte) ((get_hull_pct(objp) * 100.0f) + 0.5f);
+		if ( (percent == 0) && (get_hull_pct(objp) > 0.0f) ) {
+			percent = 1;
+		}
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
@@ -7792,6 +7801,9 @@ void send_homing_weapon_info( int weapon_num )
 	if ( !(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING) )
 		return;
 
+	// default the subsystem
+	t_subsys = -1;
+
 	// get the homing signature.  If this weapon isn't homing on anything, then sent 0 as the
 	// homing signature.
 	homing_signature = 0;
@@ -7800,7 +7812,6 @@ void send_homing_weapon_info( int weapon_num )
 		homing_signature = homing_object->net_signature;
 
 		// get the subsystem index.
-		t_subsys = -1;
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
 			int s_index;
 
@@ -7853,7 +7864,14 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if ( homing_object->type == OBJ_WEAPON ) {
-		Assert((Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_CMEASURE));
+		int flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
+
+	//	Assert( (flags & WIF_BOMB) || (flags & WIF_CMEASURE) );
+
+		if ( !((flags & WIF_BOMB) || (flags & WIF_CMEASURE)) ) {
+			nprintf(("Network", "Homing object is invalid for homing update\n"));
+			return;
+		}
 	}
 
 	wp->homing_object = homing_object;
@@ -8237,7 +8255,11 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	if((Player_obj != NULL) && (Player_obj == objp)){		
 		return;
 	}
-		
+
+	if ( (rand_val >= NPERM_SIG_MIN) && (rand_val <= NPERM_SIG_MAX) ) {
+		multi_set_network_signature((ushort)rand_val, MULTI_SIG_NON_PERMANENT);
+	}
+
 	// make it so ship can fire right away!
 	Ships[objp->instance].cmeasure_fire_stamp = timestamp(0);
 	if ( objp == Player_obj ){		
@@ -8246,7 +8268,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam)
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam, int bank_point)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
@@ -8271,21 +8293,22 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		if (target == NULL) {
 			return;
 		}
-
-		target_sig = target->net_signature;
-	} else {
-		target_sig = (target) ? target->net_signature : 0;
 	}
 
-	u_beam_info = (ubyte)beam_info_index;
-	subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter), 1);
+	target_sig = (target) ? target->net_signature : 0;
 
-	// it's ok for subsys_index to be invalid for fighters (since it doesn't have to be on a turret)
-	if ( !fighter_beam ) {
-		Assert(subsys_index >= 0);
-		if (subsys_index < 0) {
-			return;
-		}
+	u_beam_info = (ubyte)beam_info_index;
+
+	if (fighter_beam) {
+		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
+		subsys_index = (char)bank_point;
+	} else {
+		subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter), 1);
+	}
+
+	Assert(subsys_index >= 0);
+	if (subsys_index < 0) {
+		return;
 	}
 
 	// swap the beam_info override info into little endian byte order
@@ -8355,6 +8378,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		b_info.shot_aim[i] = INTEL_FLOAT(&b_info.shot_aim[i]);
 	}
 
+	memset(&fire_info, 0, sizeof(beam_fire_info));
+
 	// lookup all relevant data
 	fire_info.beam_info_index = (int)u_beam_info;
 	fire_info.shooter = NULL;
@@ -8373,11 +8398,13 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
+	ship *shipp = &Ships[fire_info.shooter->instance];
+
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
-	if ( Ship_info[Ships[fire_info.shooter->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
+	if ( Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
-		for (i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
-			if ( Ships[fire_info.shooter->instance].weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
+		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
+			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
 				fire_info.fighter_beam = true;
 			}
 		}
@@ -8388,10 +8415,34 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}
 
-	if ( fire_info.fighter_beam && ((int)subsys_index < 0) ) {
-		fire_info.turret = NULL;
+	if (fire_info.fighter_beam) {
+		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+		float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
+
+		int bank = (ubyte)subsys_index % 10;
+		int point = (ubyte)subsys_index / 10;
+
+		fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+
+		shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
+		shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
+		shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
+		shipp->beam_sys_info.model_num = Ship_info[shipp->ship_info_index].model_num;
+		shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
+		shipp->beam_sys_info.turret_num_firing_points = 1;
+		shipp->beam_sys_info.turret_fov = (float)cos((field_of_fire != 0.0f) ? field_of_fire : 180);
+		shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
+		shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+
+		shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
+		shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
+		shipp->fighter_beam_turret_data.current_hits = 1.0;
+		shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
+
+		fire_info.turret = &shipp->fighter_beam_turret_data;
+		fire_info.bank = bank;
 	} else {
-		fire_info.turret = ship_get_indexed_subsys( &Ships[fire_info.shooter->instance], (int)subsys_index);
+		fire_info.turret = ship_get_indexed_subsys(shipp, (int)subsys_index);
 
 		if (fire_info.turret == NULL) {
 			nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
@@ -8816,7 +8867,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	GET_VECTOR(local_hit_pos);
 	PACKET_SET_SIZE();
 
-	mprintf(("PAIN!\n"));
+	// mprintf(("PAIN!\n"));
 
 	// get weapon info pointer
 	Assert((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER));

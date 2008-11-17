@@ -6150,7 +6150,7 @@ int parse_mission(mission *pm, int flags)
 			// build up the prompt...
 			char text[1024];
 
-			sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play something that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "");
+			sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
 				strcat(text, "(The current campaign is \"");
@@ -6171,7 +6171,9 @@ int parse_mission(mission *pm, int flags)
 				}
 			}
 
-			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a campaign that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
+			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ");
+			strcat(text, (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+			strcat(text, " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
 
 			strcat(text, "Do you want to continue to load the mission?");
 
@@ -6316,8 +6318,10 @@ void post_process_mission()
 		}
 	}
 
-	ai_post_process_mission();
-
+	// multiplayer missions are handled just before mission start
+	if (!(Game_mode & GM_MULTIPLAYER) ){	
+		ai_post_process_mission();
+	}
 
 	// first we need to clear out the counts for this mission
 	ship_clear_ship_type_counts();

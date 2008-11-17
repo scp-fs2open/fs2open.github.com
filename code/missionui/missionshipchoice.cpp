@@ -665,7 +665,7 @@
 #include "network/multiui.h"
 #include "network/multiteamselect.h"
 #include "network/multiutil.h"
-
+#include "ai/aigoals.h"
 
 
 
@@ -2618,7 +2618,10 @@ void commit_pressed()
 
 	// move to the next stage
 	// in multiplayer this is the final mission sync
-	if(Game_mode & GM_MULTIPLAYER){		
+	if(Game_mode & GM_MULTIPLAYER){	
+		// process the initial orders now (moved from post_process_mission()in missionparse) 
+		ai_post_process_mission();
+
 		Multi_sync_mode = MULTI_SYNC_POST_BRIEFING;
 		gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);	
 		
