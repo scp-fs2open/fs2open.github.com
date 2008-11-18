@@ -10186,15 +10186,11 @@ void sexp_add_background_bitmap(int n)
 
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
-        if (!stars_add_bitmap_entry(&sle))
+        new_number = stars_add_bitmap_entry(&sle);
+        if (new_number < 0)
         {
 		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
             new_number = 0;
-        }
-        else
-        {
-            // get new numerical value
-		    new_number = stars_get_num_bitmaps() - 1;
         }
 
 		sprintf(number_as_str, "%d", new_number);
@@ -10272,14 +10268,12 @@ void sexp_add_sun_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-        if (!stars_add_sun_entry(&sle))
+        new_number = stars_add_sun_entry(&sle);
+
+        if (new_number < 0)
         {
 		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
             new_number = 0;
-        }
-        else
-        {
-            new_number = stars_get_num_suns() - 1;
         }
 
 		sprintf(number_as_str, "%d", new_number);
