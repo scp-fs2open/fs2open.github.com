@@ -9811,7 +9811,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
 
-	sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
+	// avoid cases where either of these are 0
+	if (sp->current_max_speed != 0 && sip_orig->max_speed != 0) {
+		sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
+	}
+	else {
+		sp->current_max_speed = sip->max_speed;
+	}
 
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
