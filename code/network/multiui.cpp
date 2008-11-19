@@ -5665,6 +5665,24 @@ void multi_create_accept_hit()
         }
     }
 
+    if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.kill_limit < 9999))
+    {
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+                             XSTR("A kill limit is being used in a co-op game.\r\n"
+                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
+                                  "  Select \'Yes\' to continue with this kill limit.\r\n"
+                                  "  Select \'No\' to continue without this kill limit.", -1));
+
+        if (popup_choice == 0)
+        {
+            return;
+        }
+        else if (popup_choice == 2)
+        {
+            Netgame.options.kill_limit = 9999;
+        }
+    }
+
 	// if not on the standalone, move to the mission sync state which will take care of everything
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
