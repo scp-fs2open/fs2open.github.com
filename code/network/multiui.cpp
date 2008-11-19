@@ -5589,7 +5589,8 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 void multi_create_accept_hit()
 {
 	char selected_name[255];
-	int start_campaign = 0;	
+	int start_campaign = 0;
+    int popup_choice = 0;
 
 	// make sure all players have finished joining
 	if(!multi_netplayer_state_check(NETPLAYER_STATE_JOINED,1)){
@@ -5645,6 +5646,24 @@ void multi_create_accept_hit()
 		multi_team_host_lock_all();
 		multi_team_send_update();
 	}
+
+    if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.mission_time_limit > fl2f(-1.0f)))
+    {
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+                             XSTR("A time limit is being used in a co-op game.\r\n"
+                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
+                                  "  Select \'Yes\' to continue with this time limit.\r\n"
+                                  "  Select \'No\' to continue without this time limit.", -1));
+
+        if (popup_choice == 0)
+        {
+            return;
+        }
+        else if (popup_choice == 2)
+        {
+            Netgame.options.mission_time_limit = fl2f(-1.0f);
+        }
+    }
 
 	// if not on the standalone, move to the mission sync state which will take care of everything
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
