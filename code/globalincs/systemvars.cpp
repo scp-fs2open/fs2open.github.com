@@ -328,6 +328,24 @@ int myrand()
 	return rval;
 }
 
+// returns a random number between 0 and 0x7fffffff
+int rand32()
+{
+	if (RAND_MAX == 0x7fff) {
+		int random32;
+		// this gets two random 16 bit numbers and stuffs them into a 32 bit number
+		random32 = (rand() << 16) | rand();
+		//since rand() returns between 0 and 0x7fff, there needs to be a thing to randomly generate the 15th bit
+		random32 |= ((rand() & 1) << 15);
+		
+		return random32;
+	}
+	else {
+		// karajorma - can't imagine what RAND_MAX could be if it's not 0x7fffffff but let's be careful
+		Assert(RAND_MAX == 0x7fffffff);
+		return rand();
+	}
+}
 
 // Variables for the loading callback hooks
 static int cf_timestamp = -1;

@@ -880,6 +880,7 @@ inline float SWAPFLOAT(float *x)
 #define FALSE	0
 
 int myrand();
+int rand32(); // returns a random number between 0 and 0x7fffffff
 
 
 // lod checker for (modular) table parsing

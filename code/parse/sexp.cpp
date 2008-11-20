@@ -4660,7 +4660,7 @@ int rand_internal(int low, int high, int seed = 0)
 	if (diff < 0)
 		diff = 0;
 
-	return (low + rand() % (diff + 1));
+	return (low + rand32() % (diff + 1));
 }
 
 // Goober5000
