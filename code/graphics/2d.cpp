@@ -1398,6 +1398,29 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		depth = 16;
 	}
 
+// These compiler macros will force windowed mode at the specified resolution if
+// built in debug mode.  This helps if you run with the debugger active as the
+// game won't be switching from fullscreen to minimized every time you hit a breakpoint or
+// warning message.
+#ifdef _DEBUG
+#ifdef _FORCE_DEBUG_WIDESCREEN
+    width = 1280;
+    height = 800;
+    depth = 32;
+    Cmdline_window = 1;
+#elif defined(_FORCE_DEBUG_1024)
+    width = 1024;
+    height = 768;
+    depth = 32;
+    Cmdline_window = 1;
+#elif defined(_FORCE_DEBUG_640)
+    width = 640;
+    height = 480;
+    depth = 32;
+    Cmdline_window = 1;
+#endif
+#endif
+
 	// now try to actually init everything...
 	if ( gr_init_sub(mode, width, height, depth) == false ) {
 		return false;
