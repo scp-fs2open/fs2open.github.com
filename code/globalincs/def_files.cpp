@@ -883,12 +883,17 @@ $fix linked primary weapon decision bug: NO								\n\
 																		\n\
 ;; if set, prevents turrets from targeting bombs beyond maximum			\n\
 ;; range of the weapons of the turret									\n\
-$prevent turrets targeting too distant bombs:	NO						\n\
-																		\n\
+$prevent turrets targeting too distant bombs: NO						\n\
+																		\n""\
 ;; if set, prevents turrets from trying to target subsystems beyond		\n\
 ;; their fov limits, also keeps the turret subsystem targeting			\n\
 ;; preference order intact regardless of the angle to the target		\n\
-$smart subsystem targeting for turrets:		NO							\n\
+$smart subsystem targeting for turrets: NO								\n\
+																		\n\
+;; if set, heat-seeking missiles will not home in on stealth ships		\n\
+;; (this mirrors the established behavior where heat-seeking missiles	\n\
+;; do not home in on ships that are hidden from sensors)				\n\
+$fix heat seekers homing on stealth ships bug: NO						\n\
 																		\n\
 #End																	\n\
 ";
