@@ -20193,18 +20193,44 @@ int get_index_sexp_variable_name(const char *temp_name)
 // return index of sexp_variable_name, -1 if not found
 int get_index_sexp_variable_name_special(const char *startpos)
 {
-	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
-			// check case sensitive
-			// check number of chars in variable name
-			if ( !strncmp(startpos, Sexp_variables[i].variable_name, strlen(Sexp_variables[i].variable_name)) ) {
-				return i;
-			}
-		}
-	}
+    const char *pos = NULL;
+    int len;
 
-	// not found
-	return -1;
+    // find where the variable token in the message (whitespace).
+    pos = strchr(startpos, ' ');
+
+    if (!pos)
+    {
+        // if we cant find whitespace, use the rest of the message.
+        len = strlen(startpos);
+        pos = startpos + (len - 1);
+    }
+    else
+    {
+        // go back one character to the end of the variable name
+        pos--;
+    }
+
+    // keep going back if we found punctuation
+    while (*pos == '.' || *pos == ',' || *pos == ';') pos--;
+
+    // get the length of the found variable name
+    len = (pos - startpos) + 1;
+
+    for (int i=0; i<MAX_SEXP_VARIABLES; i++) 
+    {
+        if (Sexp_variables[i].type & SEXP_VARIABLE_SET) 
+        {
+            // check case sensitive
+            // check number of chars in variable name
+            if ( !strncmp(startpos, Sexp_variables[i].variable_name, len) ) {
+                return i;
+            }
+        }
+    }
+
+    // not found
+    return -1;
 }
 
 // Goober5000
