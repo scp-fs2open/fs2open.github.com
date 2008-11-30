@@ -2035,7 +2035,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 
 	// check to be sure that we haven't reached our max limit on these messages yet.
 	if ( MessageQ_num == MAX_MESSAGE_Q ) {
-		Int3();											
+		mprintf(("Message queue already full. Message will not be added!\n"));										
 		return;
 	}
 
