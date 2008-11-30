@@ -20193,7 +20193,7 @@ int get_index_sexp_variable_name(const char *temp_name)
 // return index of sexp_variable_name, -1 if not found
 int get_index_sexp_variable_name_special(const char *startpos)
 {
-	for (int i=MAX_SEXP_VARIABLES; i >= 0; i--) {
+	for (int i = MAX_SEXP_VARIABLES - 1; i >= 0; i--) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
 			// check case sensitive
 			// check number of chars in variable name
