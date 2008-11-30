@@ -6052,7 +6052,7 @@ sexp_list_item *sexp_tree::get_listing_opf_background_bitmap()
 	sexp_list_item head;
 	int i;
 
-	for (i=0; i < stars_get_num_bitmaps(); i++)
+	for (i=0; i < stars_get_num_entries(false, true); i++)
  	{
 		head.add_data( (char*)stars_get_name_FRED(i, false) );
  	}
@@ -6065,7 +6065,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sun_bitmap()
 	sexp_list_item head;
 	int i;
 
-	for (i=0; i < stars_get_num_suns(); i++)
+	for (i=0; i < stars_get_num_entries(true, true); i++)
  	{
 		head.add_data( (char*)stars_get_name_FRED(i, true) );
  	}
