@@ -3847,10 +3847,10 @@ void sexp_tree::verify_and_fix_arguments(int node)
 				char *text_ptr;
 				char default_variable_text[TOKEN_LENGTH];
 				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
-					// special case for modify-variable
-					if ( !stricmp(Operators[op].text, "modify-variable") ||
-						 !stricmp(Operators[op].text, "add-background-bitmap") ||
-						 !stricmp(Operators[op].text, "add-sun-bitmap")) {
+					// special case for SEXPs which can modify a variable 
+					if ( (!stricmp(Operators[op].text, "modify-variable")) ||
+						 ((!stricmp(Operators[op].text, "add-background-bitmap")) && (arg_num == 8)) ||
+						 ((!stricmp(Operators[op].text, "add-sun-bitmap")) && (arg_num == 5))	){
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
