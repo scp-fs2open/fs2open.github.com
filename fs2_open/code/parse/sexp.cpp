@@ -2946,6 +2946,27 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			Assert(0);
 		}
 
+		// variables should only be typechecked. 
+		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
+			int var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+			Assert(var_index != -1);
+	
+			switch (type) {
+				case OPF_NUMBER:
+				case OPF_POSITIVE:
+					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
+						return SEXP_CHECK_INVALID_VARIABLE; 
+				break;
+
+				default: 
+					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
+						return SEXP_CHECK_INVALID_VARIABLE; 
+			}			
+			node = Sexp_nodes[node].rest;
+			argnum++;
+			continue; 
+		}
+
 		switch (type) {
 			case OPF_NAV_POINT:
 				if (type2 != SEXP_ATOM_STRING){
