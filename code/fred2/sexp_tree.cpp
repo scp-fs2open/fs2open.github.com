@@ -3855,8 +3855,37 @@ void sexp_tree::verify_and_fix_arguments(int node)
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
 					} else {
-						get_variable_default_text_from_variable_text(tree_nodes[item_index].text, default_variable_text);
-						text_ptr = default_variable_text;
+						// only the type needs checking for variables. It's up the to the FREDder to ensure the value is valid
+						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);						
+						int sexp_var_index = get_index_sexp_variable_name(default_variable_text);
+						bool types_match = false; 
+						Assert(sexp_var_index != -1);
+
+						switch (type) {
+							case OPF_NUMBER:
+							case OPF_POSITIVE:
+								if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
+									types_match = true; 
+								}
+								break; 
+
+							default: 
+								if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
+									types_match = true; 
+								}
+						}
+						
+						if (types_match) {
+							// on to the next argument
+							item_index = tree_nodes[item_index].next;
+							arg_num++;
+							continue; 
+						}
+						else {
+							// shouldn't really be getting here unless someone has been hacking the mission in a text editor
+							get_variable_default_text_from_variable_text(tree_nodes[item_index].text, default_variable_text);
+							text_ptr = default_variable_text;
+						}
 					}
 				} else {
 					text_ptr = tree_nodes[item_index].text;
