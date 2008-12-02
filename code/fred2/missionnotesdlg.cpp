@@ -848,7 +848,7 @@ void CMissionNotesDlg::OnSquadLogo()
 
 	// get list of squad images
 	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
-	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
+	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx||");
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
