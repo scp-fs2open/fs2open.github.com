@@ -3292,10 +3292,20 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 1;
 
 		case OPF_SHIP:
-		case OPF_SHIP_NOT_PLAYER:
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			return 0;
+
+		case OPF_SHIP_NOT_PLAYER:
 		case OPF_ORDER_RECIPIENT:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
