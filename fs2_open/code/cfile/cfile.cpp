@@ -649,7 +649,7 @@ int cfile_push_chdir(int type)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
+		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
 		return 2;
 	}
 
