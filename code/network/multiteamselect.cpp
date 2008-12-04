@@ -2891,13 +2891,9 @@ void multi_ts_select_ship()
 	*/
 }
 
-
-extern void commit_pressed();
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)
 void multi_ts_commit_pressed()
-{
-    int popup_choice = 0;
-
+{					
 	// if my team's slots are still not "locked", we cannot commit unless we're the only player in the game
 	if(!Multi_ts_team[Net_player->p_info.team].multi_players_locked){
 		if(multi_num_players() != 1){
@@ -2912,41 +2908,28 @@ void multi_ts_commit_pressed()
 	switch(multi_ts_ok_to_commit()){
 	// yes, it _is_ ok to commit
 	case 0:
-		popup_choice = 1;
+		extern void commit_pressed();
+		commit_pressed();
 		break;
 
 	// player has not assigned all necessary ships
 	case 1: 	
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup_choice = popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG, 1, POPUP_OK,
-                             XSTR("You have not yet assigned all necessary ships",752));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("You have not yet assigned all necessary ships",752));
 		break;
 	
 	// there are ships without primary weapons
 	case 2: 
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup_choice = popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG, 2, POPUP_CANCEL, POPUP_OK,
-                             XSTR("There are ships without primary weapons!",753));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without primary weapons!",753));
 		break;
 
 	// there are ships without secondary weapons
 	case 3: 
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup_choice = popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG, 2, POPUP_CANCEL, POPUP_OK, 
-                             XSTR("There are ships without secondary weapons!",754));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without secondary weapons!",754));
 		break;
-
-    case 4:
-        gamesnd_play_iface(SND_GENERAL_FAIL);
-        popup_choice = popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG, 1, POPUP_OK,
-                             XSTR("There are ships without weapons!",-1));
-        break;
 	}
-
-    if (popup_choice == 1)
-    {
-        commit_pressed();
-    }
 }
 
 // is it ok for this player to commit 
@@ -3003,18 +2986,13 @@ int multi_ts_ok_to_commit()
 				}
 			}
 
-            if (!primary_ok && !secondary_ok)
-            {
-                return 4;
-            }
-
 			// if the ship doesn't have primary weapons
-			if(!primary_ok){
+			if(!primary_ok && !The_mission.ai_profile->flags & AIPF_MULTI_ALLOW_EMPTY_PRIMARIES){
 				return 2;
 			} 
 
 			// if the ship doesn't have secondary weapons
-			if(!secondary_ok){
+			if(!secondary_ok && !The_mission.ai_profile->flags & AIPF_MULTI_ALLOW_EMPTY_SECONDARIES){
 				return 3;
 			}
 		}
