@@ -628,6 +628,7 @@ int cfile_push_chdir(int type)
 
 #ifdef _WIN32
 	_strlwr(dir);
+	_strlwr(OriginalDirectory);
 
 	char *Drive = strchr(dir, ':');
 
@@ -649,7 +650,7 @@ int cfile_push_chdir(int type)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
+		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
 		return 2;
 	}
 
@@ -668,6 +669,7 @@ int cfile_chdir(char *dir)
 
 #ifdef _WIN32
 	_strlwr(dir);
+	_strlwr(OriginalDirectory);
 
 	char *Drive = strchr(dir, ':');
 	if (Drive)	{
