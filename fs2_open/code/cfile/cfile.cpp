@@ -627,16 +627,13 @@ int cfile_push_chdir(int type)
 	cf_create_default_path_string( dir, sizeof(dir)-1, type, NULL );
 
 #ifdef _WIN32
-	_strlwr(dir);
-	_strlwr(OriginalDirectory);
+	char *colon_pos = strchr(dir, ':');
 
-	char *Drive = strchr(dir, ':');
-
-	if (Drive) {
-		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
+	if (colon_pos) {
+		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
 			return 1;
 
-		Path = Drive+1;
+		Path = colon_pos+1;
 	} else
 #endif // _WIN32
 	{
@@ -650,7 +647,9 @@ int cfile_push_chdir(int type)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
+#ifdef _WIN32
+		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
+#endif // _WIN32
 		return 2;
 	}
 
@@ -668,15 +667,12 @@ int cfile_chdir(char *dir)
 	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
 
 #ifdef _WIN32
-	_strlwr(dir);
-	_strlwr(OriginalDirectory);
-
-	char *Drive = strchr(dir, ':');
-	if (Drive)	{
-		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
+	char *colon_pos = strchr(dir, ':');
+	if (colon_pos)	{
+		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
 			return 1;
 
-		Path = Drive+1;
+		Path = colon_pos+1;
 	} else
 #endif // _WIN32
 	{
@@ -690,7 +686,9 @@ int cfile_chdir(char *dir)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
+#ifdef _WIN32
+		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
+#endif // _WIN32
 		return 2;
 	}
 
