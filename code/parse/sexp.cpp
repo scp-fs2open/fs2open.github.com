@@ -2948,7 +2948,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		// variables should only be typechecked. 
 		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
-			int var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+			int var_index; 
+			if (Fred_running) {
+				var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+			}
+			else {
+				var_index = atoi(Sexp_nodes[node].text);
+			}
 			Assert(var_index != -1);
 	
 			switch (type) {
