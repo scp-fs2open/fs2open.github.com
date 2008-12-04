@@ -861,6 +861,9 @@ $disable weapon damage scaling: NO										\n\
 ;; if set, will add the weapon velocity to the firing ship's velocity	\n\
 $use additive weapon velocity: NO										\n\
 																		\n\
+;; if set, will dampening closer to real newtonian physics				\n\
+$use newtonian dampening: NO											\n\
+																		\n\
 ;; if set, beam damage is counted when calculating kills and assists 	\n\
 $include beams for kills and assists: NO								\n\
 																		\n\
@@ -894,6 +897,12 @@ $smart subsystem targeting for turrets: NO								\n\
 ;; (this mirrors the established behavior where heat-seeking missiles	\n\
 ;; do not home in on ships that are hidden from sensors)				\n\
 $fix heat seekers homing on stealth ships bug: NO						\n\
+																		\n\
+;; allow a player to commit into a multiplayer game without primaries	\n\
+$multi allow empty primaries:		NO									\n\
+																		\n\
+;; allow a player to commit into a multiplayer game without secondaries	\n\
+$multi allow empty secondaries:		NO									\n\
 																		\n\
 #End																	\n\
 ";
