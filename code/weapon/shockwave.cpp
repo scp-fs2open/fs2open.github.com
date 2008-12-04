@@ -879,7 +879,9 @@ void shockwave_level_init()
 		
 		// try and load in a 3d shockwave first if enabled
 		// Goober5000 - check for existence of file before trying to load it
-		if ( Cmdline_enable_3d_shockwave && cf_exists_full("shockwave.pof", CF_TYPE_MODELS) ) {
+		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check 
+		// 	to use the static name instead, and added a check to override the command line if a 2d default filename is not found
+		if ( (Cmdline_enable_3d_shockwave || !cf_exists_full(Default_shockwave_2D_filename, CF_TYPE_EFFECTS) ) && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );
@@ -891,8 +893,31 @@ void shockwave_level_init()
 		}
 
 		// next, try the 2d shockwave effect, unless the 3d effect was loaded
-		if (i < 0)
+		// chief1983 - added some messages similar to those for the 3d shockwave
+		if (i < 0) {
+			mprintf(("SHOCKWAVE =>  Loading default shockwave animation... \n"));
+
 			i = shockwave_load( Default_shockwave_2D_filename );
+
+			if (i >= 0)
+				mprintf(("SHOCKWAVE =>  Default animation load: SUCCEEDED!!\n"));
+			else
+				mprintf(("SHOCKWAVE =>  Default animation load: FAILED!!  Checking if 3d effect was already tried...\n"));
+		}
+			
+		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
+		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to 
+		// spit out a more meaningful message.  Might as well not bother trying again if the command line option was checked as it should have tried the first time through
+		if ( i < 0 && !Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
+
+			i = shockwave_load( Default_shockwave_3D_filename, true );
+
+			if (i >= 0)
+				mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
+			else
+				mprintf(("SHOCKWAVE =>  Default model load: FAILED!!  No effect loaded...\n"));
+		}
 
 		if (i < 0)
 			Error(LOCATION, "ERROR:  Unable to open neither 3D nor 2D default shockwaves!!");
