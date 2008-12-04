@@ -836,9 +836,16 @@ void CMissionNotesDlg::set_types()
 	GetDlgItem(IDC_RESPAWN_SPIN)->EnableWindow(enable);
 }
 
+char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"JPG Files (*.jpg; *.jpeg)|*.jpg;*.jpeg|"
+						"TGA Files (*.tga)|*.tga|"
+						"All Files (*.*)|*.*|"
+						"|";
+
 void CMissionNotesDlg::OnSquadLogo()
 {	
-	CString pcx_filename;
 	int z;
 
 	//phreak 05/05/2003
@@ -848,7 +855,7 @@ void CMissionNotesDlg::OnSquadLogo()
 
 	// get list of squad images
 	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
-	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx||");
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
@@ -863,14 +870,6 @@ void CMissionNotesDlg::OnSquadLogo()
 		cfile_pop_dir();
 	}	
 }
-
-char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.tga)|*.dds;*.pcx;*.jpg;*.tga|"
-						"DDS Files (*.dds)|*.dds|"
-						"PCX Files (*.pcx)|*.pcx|"
-						"JPG Files (*.jpg)|*.jpg|"
-						"TGA Files (*.tga)|*.tga|"
-						"All Files (*.*)|*.*|"
-						"|";
 
 void CMissionNotesDlg::OnLoad1024()
 {

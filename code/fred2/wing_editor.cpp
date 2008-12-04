@@ -1509,19 +1509,26 @@ void wing_editor::OnSelchangeHotkey()
 	}
 }
 
+char *Logo_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga|"
+					"DDS Files (*.dds)|*.dds|"
+					"PCX Files (*.pcx)|*.pcx|"
+					"JPG Files (*.jpg; *.jpeg)|*.jpg;*.jpeg|"
+					"TGA Files (*.tga)|*.tga|"
+					"All Files (*.*)|*.*|"
+					"|";
+
 void wing_editor::OnSquadLogo()
 {	
-	CString pcx_filename;
 	int z;
 
 	//phreak 05/05/2003
-	//this needs to be here or else the data in the dialog will revert 
+	//this needs to be here or else the data in the wing editor dialog will revert 
 	//to what it was before it was opened.
 	UpdateData(TRUE);
 
 	// get list of squad images
 	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
-	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx||");
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Logo_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
