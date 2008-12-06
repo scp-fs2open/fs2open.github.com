@@ -1995,6 +1995,8 @@ bool SetCmdlineParams()
     if( tbp.found() )
     {
         Cmdline_tbp = 1;
+		Cmdline_enable_3d_shockwave = 1;
+        Cmdline_weapon_choice_3d = 1;
     }
 
 	if ( use_3dwarp.found() ) {
