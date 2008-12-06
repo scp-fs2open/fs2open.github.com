@@ -1991,13 +1991,15 @@ bool SetCmdlineParams()
 		Cmdline_orb_radar = 1;
 	}
 
-    // TBP warp effects -Et1
-    if( tbp.found() )
-    {
-        Cmdline_tbp = 1;
+	// TBP warp effects -Et1
+	// Chief1983 - Add 3d shockwave, ship choice 3d and weapon choice 3d if TBP is checked
+	if( tbp.found() )
+	{
+		Cmdline_tbp = 1;
 		Cmdline_enable_3d_shockwave = 1;
-        Cmdline_weapon_choice_3d = 1;
-    }
+		Cmdline_ship_choice_3d = 1;
+		Cmdline_weapon_choice_3d = 1;
+	}
 
 	if ( use_3dwarp.found() ) {
 		Cmdline_3dwarp = 1;
