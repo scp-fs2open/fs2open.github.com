@@ -1,0 +1,1635 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="code" />
+		<Option compiler="gcc" />
+		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;decals/;demo/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;vcodec/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
+		<Build>
+			<Target title="Debug">
+				<Option output="../Debug/code/lib/libcode" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../Debug/code/obj/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-w" />
+					<Add option="-g" />
+					<Add option="-D_DEBUG" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="../Release/code/lib/libcode" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="../Release/code/obj/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-w" />
+					<Add option="-march=core2" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-DSCP_UNIX" />
+			<Add option="-DUSE_OPENAL" />
+			<Add option="-DUSE_LUA" />
+			<Add option="-DNO_DIRECT3D" />
+			<Add directory="../../../code" />
+			<Add directory="/usr/include/lua5.1" />
+			<Add directory="/usr/include/SDL" />
+		</Compiler>
+		<Unit filename="../../../code/ai/ai.cpp">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/ai.h">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/ai_profiles.cpp">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/ai_profiles.h">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aibig.cpp">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aibig.h">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aicode.cpp">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aigoals.cpp">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aigoals.h">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aiinternal.h">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/ailocal.h">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/ai/aiturret.cpp">
+			<Option virtualFolder="ai/" />
+		</Unit>
+		<Unit filename="../../../code/anim/animplay.cpp">
+			<Option virtualFolder="anim/" />
+		</Unit>
+		<Unit filename="../../../code/anim/animplay.h">
+			<Option virtualFolder="anim/" />
+		</Unit>
+		<Unit filename="../../../code/anim/packunpack.cpp">
+			<Option virtualFolder="anim/" />
+		</Unit>
+		<Unit filename="../../../code/anim/packunpack.h">
+			<Option virtualFolder="anim/" />
+		</Unit>
+		<Unit filename="../../../code/asteroid/asteroid.cpp">
+			<Option virtualFolder="asteroid/" />
+		</Unit>
+		<Unit filename="../../../code/asteroid/asteroid.h">
+			<Option virtualFolder="asteroid/" />
+		</Unit>
+		<Unit filename="../../../code/autopilot/autopilot.cpp">
+			<Option virtualFolder="autopilot/" />
+		</Unit>
+		<Unit filename="../../../code/autopilot/autopilot.h">
+			<Option virtualFolder="autopilot/" />
+		</Unit>
+		<Unit filename="../../../code/bmpman/bm_internal.h">
+			<Option virtualFolder="bmpman/" />
+		</Unit>
+		<Unit filename="../../../code/bmpman/bmpman.cpp">
+			<Option virtualFolder="bmpman/" />
+		</Unit>
+		<Unit filename="../../../code/bmpman/bmpman.h">
+			<Option virtualFolder="bmpman/" />
+		</Unit>
+		<Unit filename="../../../code/camera/camera.cpp">
+			<Option virtualFolder="camera/" />
+		</Unit>
+		<Unit filename="../../../code/camera/camera.h">
+			<Option virtualFolder="camera/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfile.cpp">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfile.h">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfilearchive.cpp">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfilearchive.h">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfilelist.cpp">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfilesystem.cpp">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cfile/cfilesystem.h">
+			<Option virtualFolder="cfile/" />
+		</Unit>
+		<Unit filename="../../../code/cmdline/cmdline.cpp">
+			<Option virtualFolder="cmdline/" />
+		</Unit>
+		<Unit filename="../../../code/cmdline/cmdline.h">
+			<Option virtualFolder="cmdline/" />
+		</Unit>
+		<Unit filename="../../../code/cmeasure/cmeasure.cpp">
+			<Option virtualFolder="cmeasure/" />
+		</Unit>
+		<Unit filename="../../../code/cmeasure/cmeasure.h">
+			<Option virtualFolder="cmeasure/" />
+		</Unit>
+		<Unit filename="../../../code/controlconfig/controlsconfig.cpp">
+			<Option virtualFolder="controlconfig/" />
+		</Unit>
+		<Unit filename="../../../code/controlconfig/controlsconfig.h">
+			<Option virtualFolder="controlconfig/" />
+		</Unit>
+		<Unit filename="../../../code/controlconfig/controlsconfigcommon.cpp">
+			<Option virtualFolder="controlconfig/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/cutscenes.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/cutscenes.h">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/decoder16.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/decoder8.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/movie.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/movie.h">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/mve_audio.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/mvelib.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/mvelib.h">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/mveplayer.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/oggplayer.cpp">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/cutscene/oggplayer.h">
+			<Option virtualFolder="cutscene/" />
+		</Unit>
+		<Unit filename="../../../code/ddsutils/ddsutils.cpp">
+			<Option virtualFolder="ddsutils/" />
+		</Unit>
+		<Unit filename="../../../code/ddsutils/ddsutils.h">
+			<Option virtualFolder="ddsutils/" />
+		</Unit>
+		<Unit filename="../../../code/debris/debris.cpp">
+			<Option virtualFolder="debris/" />
+		</Unit>
+		<Unit filename="../../../code/debris/debris.h">
+			<Option virtualFolder="debris/" />
+		</Unit>
+		<Unit filename="../../../code/debugconsole/console.cpp">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
+		<Unit filename="../../../code/debugconsole/timerbar.cpp">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
+		<Unit filename="../../../code/debugconsole/timerbar.h">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
+		<Unit filename="../../../code/decals/decals.cpp">
+			<Option virtualFolder="decals/" />
+		</Unit>
+		<Unit filename="../../../code/decals/decals.h">
+			<Option virtualFolder="decals/" />
+		</Unit>
+		<Unit filename="../../../code/demo/demo.cpp">
+			<Option virtualFolder="demo/" />
+		</Unit>
+		<Unit filename="../../../code/demo/demo.h">
+			<Option virtualFolder="demo/" />
+		</Unit>
+		<Unit filename="../../../code/exceptionhandler/exceptionhandler.cpp">
+			<Option virtualFolder="exceptionhandler/" />
+		</Unit>
+		<Unit filename="../../../code/exceptionhandler/exceptionhandler.h">
+			<Option virtualFolder="exceptionhandler/" />
+		</Unit>
+		<Unit filename="../../../code/fireball/fireballs.cpp">
+			<Option virtualFolder="fireball/" />
+		</Unit>
+		<Unit filename="../../../code/fireball/fireballs.h">
+			<Option virtualFolder="fireball/" />
+		</Unit>
+		<Unit filename="../../../code/fireball/warpineffect.cpp">
+			<Option virtualFolder="fireball/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/fs2netd_client.cpp">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/fs2netd_client.h">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/protocol.h">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/tcp_client.cpp">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/tcp_client.h">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/tcp_socket.cpp">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/fs2netd/tcp_socket.h">
+			<Option virtualFolder="fs2netd/" />
+		</Unit>
+		<Unit filename="../../../code/gamehelp/contexthelp.cpp">
+			<Option virtualFolder="gamehelp/" />
+		</Unit>
+		<Unit filename="../../../code/gamehelp/contexthelp.h">
+			<Option virtualFolder="gamehelp/" />
+		</Unit>
+		<Unit filename="../../../code/gamehelp/gameplayhelp.cpp">
+			<Option virtualFolder="gamehelp/" />
+		</Unit>
+		<Unit filename="../../../code/gamehelp/gameplayhelp.h">
+			<Option virtualFolder="gamehelp/" />
+		</Unit>
+		<Unit filename="../../../code/gamesequence/gamesequence.cpp">
+			<Option virtualFolder="gamesequence/" />
+		</Unit>
+		<Unit filename="../../../code/gamesequence/gamesequence.h">
+			<Option virtualFolder="gamesequence/" />
+		</Unit>
+		<Unit filename="../../../code/gamesnd/eventmusic.cpp">
+			<Option virtualFolder="gamesnd/" />
+		</Unit>
+		<Unit filename="../../../code/gamesnd/eventmusic.h">
+			<Option virtualFolder="gamesnd/" />
+		</Unit>
+		<Unit filename="../../../code/gamesnd/gamesnd.cpp">
+			<Option virtualFolder="gamesnd/" />
+		</Unit>
+		<Unit filename="../../../code/gamesnd/gamesnd.h">
+			<Option virtualFolder="gamesnd/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/alphacolors.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/alphacolors.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/crypt.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/crypt.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/def_files.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/def_files.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/globals.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/linklist.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/pstypes.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/systemvars.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/systemvars.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/version.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/version.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/2d.cpp">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/2d.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/font.cpp">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/font.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/generic.cpp">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/generic.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/grbatch.cpp">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/grbatch.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/grinternal.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengl.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengl.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglbmpman.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglbmpman.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengldraw.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengldraw.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglextension.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglextension.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengllight.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengllight.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglshader.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglshader.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglstate.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglstate.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengltexture.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengltexture.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengltnl.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropengltnl.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/grstub.cpp">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/grstub.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/line.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/tmapper.h">
+			<Option virtualFolder="graphics/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hud.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hud.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudartillery.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudartillery.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudbrackets.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudbrackets.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudconfig.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudconfig.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudescort.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudescort.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudets.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudets.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudgauges.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudlock.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudlock.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudmessage.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudmessage.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudnavigation.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudnavigation.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudobserver.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudobserver.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudparse.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudparse.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudresource.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudresource.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudreticle.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudreticle.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudshield.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudshield.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudsquadmsg.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudsquadmsg.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudtarget.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudtarget.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudtargetbox.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudtargetbox.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudwingmanstatus.cpp">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/hud/hudwingmanstatus.h">
+			<Option virtualFolder="hud/" />
+		</Unit>
+		<Unit filename="../../../code/iff_defs/iff_defs.cpp">
+			<Option virtualFolder="iff_defs/" />
+		</Unit>
+		<Unit filename="../../../code/iff_defs/iff_defs.h">
+			<Option virtualFolder="iff_defs/" />
+		</Unit>
+		<Unit filename="../../../code/inetfile/cftp.cpp">
+			<Option virtualFolder="inetfile/" />
+		</Unit>
+		<Unit filename="../../../code/inetfile/cftp.h">
+			<Option virtualFolder="inetfile/" />
+		</Unit>
+		<Unit filename="../../../code/inetfile/chttpget.cpp">
+			<Option virtualFolder="inetfile/" />
+		</Unit>
+		<Unit filename="../../../code/inetfile/chttpget.h">
+			<Option virtualFolder="inetfile/" />
+		</Unit>
+		<Unit filename="../../../code/inetfile/inetgetfile.cpp">
+			<Option virtualFolder="inetfile/" />
+		</Unit>
+		<Unit filename="../../../code/inetfile/inetgetfile.h">
+			<Option virtualFolder="inetfile/" />
+		</Unit>
+		<Unit filename="../../../code/io/joy-unix.cpp">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/joy.h">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/key.cpp">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/key.h">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/keycontrol.cpp">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/keycontrol.h">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/mouse.cpp">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/mouse.h">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/timer.cpp">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/timer.h">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/trackir.cpp">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/io/trackir.h">
+			<Option virtualFolder="io/" />
+		</Unit>
+		<Unit filename="../../../code/jpgutils/jpgutils.cpp">
+			<Option virtualFolder="jpegutils/" />
+		</Unit>
+		<Unit filename="../../../code/jpgutils/jpgutils.h">
+			<Option virtualFolder="jpegutils/" />
+		</Unit>
+		<Unit filename="../../../code/jumpnode/jumpnode.cpp">
+			<Option virtualFolder="jumpnode/" />
+		</Unit>
+		<Unit filename="../../../code/jumpnode/jumpnode.h">
+			<Option virtualFolder="jumpnode/" />
+		</Unit>
+		<Unit filename="../../../code/lab/lab.cpp">
+			<Option virtualFolder="lab/" />
+		</Unit>
+		<Unit filename="../../../code/lab/lab.h">
+			<Option virtualFolder="lab/" />
+		</Unit>
+		<Unit filename="../../../code/lab/wmcgui.cpp">
+			<Option virtualFolder="lab/" />
+		</Unit>
+		<Unit filename="../../../code/lab/wmcgui.h">
+			<Option virtualFolder="lab/" />
+		</Unit>
+		<Unit filename="../../../code/lighting/lighting.cpp">
+			<Option virtualFolder="lighting/" />
+		</Unit>
+		<Unit filename="../../../code/lighting/lighting.h">
+			<Option virtualFolder="lighting/" />
+		</Unit>
+		<Unit filename="../../../code/localization/fhash.cpp">
+			<Option virtualFolder="localization/" />
+		</Unit>
+		<Unit filename="../../../code/localization/fhash.h">
+			<Option virtualFolder="localization/" />
+		</Unit>
+		<Unit filename="../../../code/localization/localize.cpp">
+			<Option virtualFolder="localization/" />
+		</Unit>
+		<Unit filename="../../../code/localization/localize.h">
+			<Option virtualFolder="localization/" />
+		</Unit>
+		<Unit filename="../../../code/math/bitarray.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/fix.cpp">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/fix.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/floating.cpp">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/floating.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/fvi.cpp">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/fvi.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/spline.cpp">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/spline.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/staticrand.cpp">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/staticrand.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/vecmat.cpp">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/math/vecmat.h">
+			<Option virtualFolder="math/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/barracks.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/barracks.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/credits.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/credits.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/fishtank.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/fishtank.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/mainhallmenu.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/mainhallmenu.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/mainhalltemp.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/mainhalltemp.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/optionsmenu.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/optionsmenu.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/optionsmenumulti.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/optionsmenumulti.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/playermenu.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/playermenu.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/readyroom.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/readyroom.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/snazzyui.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/snazzyui.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/techmenu.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/techmenu.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/trainingmenu.cpp">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/menuui/trainingmenu.h">
+			<Option virtualFolder="menuui/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionbriefcommon.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionbriefcommon.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missioncampaign.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missioncampaign.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missiongoals.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missiongoals.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missiongrid.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missiongrid.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionhotkey.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionhotkey.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionload.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionload.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionlog.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionlog.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionmessage.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionmessage.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionparse.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missionparse.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missiontraining.cpp">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/mission/missiontraining.h">
+			<Option virtualFolder="mission/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/chatbox.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/chatbox.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/fictionviewer.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/fictionviewer.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionbrief.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionbrief.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missioncmdbrief.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missioncmdbrief.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missiondebrief.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missiondebrief.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionloopbrief.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionloopbrief.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionpause.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionpause.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionrecommend.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionrecommend.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionscreencommon.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionscreencommon.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionshipchoice.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionshipchoice.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionstats.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionstats.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionweaponchoice.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/missionweaponchoice.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/redalert.cpp">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/missionui/redalert.h">
+			<Option virtualFolder="missionui/" />
+		</Unit>
+		<Unit filename="../../../code/model/model.h">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modelanim.cpp">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modelanim.h">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modelcollide.cpp">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modelinterp.cpp">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modeloctant.cpp">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modelread.cpp">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/model/modelsinc.h">
+			<Option virtualFolder="model/" />
+		</Unit>
+		<Unit filename="../../../code/nebula/neb.cpp">
+			<Option virtualFolder="nebula/" />
+		</Unit>
+		<Unit filename="../../../code/nebula/neb.h">
+			<Option virtualFolder="nebula/" />
+		</Unit>
+		<Unit filename="../../../code/nebula/neblightning.cpp">
+			<Option virtualFolder="nebula/" />
+		</Unit>
+		<Unit filename="../../../code/nebula/neblightning.h">
+			<Option virtualFolder="nebula/" />
+		</Unit>
+		<Unit filename="../../../code/network/chat_api.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/chat_api.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_campaign.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_campaign.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_data.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_data.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_dogfight.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_dogfight.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_endgame.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_endgame.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_ingame.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_ingame.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_kick.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_kick.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_log.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_log.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_obj.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_obj.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_observer.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_observer.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_oo.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_oo.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_options.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_options.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pause.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pause.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pinfo.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pinfo.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_ping.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_ping.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pmsg.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pmsg.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pxo.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_pxo.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_rate.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_rate.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_respawn.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_respawn.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_team.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_team.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_update.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_update.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_voice.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_voice.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_xfer.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multi_xfer.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multilag.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multilag.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multimsgs.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multimsgs.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multiteamselect.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multiteamselect.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multiui.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multiui.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multiutil.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/multiutil.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/psnet.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/psnet.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/psnet2.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/psnet2.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/stand_gui-unix.cpp">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/network/stand_gui.h">
+			<Option virtualFolder="network/" />
+		</Unit>
+		<Unit filename="../../../code/object/collidedebrisship.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/collidedebrisweapon.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/collideshipship.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/collideshipweapon.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/collideweaponweapon.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/deadobjectdock.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/deadobjectdock.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objcollide.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objcollide.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/object.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/object.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectdock.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectdock.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectshield.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectshield.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectsnd.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectsnd.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/objectsort.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/parseobjectdock.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/parseobjectdock.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/waypoint.cpp">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/object/waypoint.h">
+			<Option virtualFolder="object/" />
+		</Unit>
+		<Unit filename="../../../code/observer/observer.cpp">
+			<Option virtualFolder="observer/" />
+		</Unit>
+		<Unit filename="../../../code/observer/observer.h">
+			<Option virtualFolder="observer/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/monopub.h">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/osapi.h">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/osapi_unix.cpp">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/osregistry.h">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/osregistry_unix.cpp">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/outwnd.h">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/osapi/outwnd_unix.cpp">
+			<Option virtualFolder="osapi/" />
+		</Unit>
+		<Unit filename="../../../code/palman/palman.cpp">
+			<Option virtualFolder="palman/" />
+		</Unit>
+		<Unit filename="../../../code/palman/palman.h">
+			<Option virtualFolder="palman/" />
+		</Unit>
+		<Unit filename="../../../code/parse/encrypt.cpp">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/encrypt.h">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/lua.cpp">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/lua.h">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/parselo.cpp">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/parselo.h">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/python.cpp">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/python.h">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/scripting.cpp">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/scripting.h">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/sexp.cpp">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/parse/sexp.h">
+			<Option virtualFolder="parse/" />
+		</Unit>
+		<Unit filename="../../../code/particle/particle.cpp">
+			<Option virtualFolder="particle/" />
+		</Unit>
+		<Unit filename="../../../code/particle/particle.h">
+			<Option virtualFolder="particle/" />
+		</Unit>
+		<Unit filename="../../../code/pcxutils/pcxutils.cpp">
+			<Option virtualFolder="pcxutils/" />
+		</Unit>
+		<Unit filename="../../../code/pcxutils/pcxutils.h">
+			<Option virtualFolder="pcxutils/" />
+		</Unit>
+		<Unit filename="../../../code/physics/physics.cpp">
+			<Option virtualFolder="physics/" />
+		</Unit>
+		<Unit filename="../../../code/physics/physics.h">
+			<Option virtualFolder="physics/" />
+		</Unit>
+		<Unit filename="../../../code/playerman/managepilot.cpp">
+			<Option virtualFolder="playerman/" />
+		</Unit>
+		<Unit filename="../../../code/playerman/managepilot.h">
+			<Option virtualFolder="playerman/" />
+		</Unit>
+		<Unit filename="../../../code/playerman/player.h">
+			<Option virtualFolder="playerman/" />
+		</Unit>
+		<Unit filename="../../../code/playerman/playercontrol.cpp">
+			<Option virtualFolder="playerman/" />
+		</Unit>
+		<Unit filename="../../../code/popup/popup.cpp">
+			<Option virtualFolder="popup/" />
+		</Unit>
+		<Unit filename="../../../code/popup/popup.h">
+			<Option virtualFolder="popup/" />
+		</Unit>
+		<Unit filename="../../../code/popup/popupdead.cpp">
+			<Option virtualFolder="popup/" />
+		</Unit>
+		<Unit filename="../../../code/popup/popupdead.h">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radar.cpp">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radar.h">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radarorb.cpp">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radarorb.h">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radarsetup.cpp">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radarsetup.h">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/render/3d.h">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/render/3dclipper.cpp">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/render/3ddraw.cpp">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/render/3dinternal.h">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/render/3dlaser.cpp">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/render/3dmath.cpp">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/render/3dsetup.cpp">
+			<Option virtualFolder="render/" />
+		</Unit>
+		<Unit filename="../../../code/ship/afterburner.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/afterburner.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/awacs.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/awacs.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shield.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/ship.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/ship.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shipcontrails.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shipcontrails.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shipfx.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shipfx.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shiphit.cpp">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/shiphit.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/ship/subsysdamage.h">
+			<Option virtualFolder="ship/" />
+		</Unit>
+		<Unit filename="../../../code/sound/acm-openal.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/acm.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/audiostr-openal.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/audiostr.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/channel.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/ds.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/ds.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/ds3d.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/ds3d.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/dscap.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/dscap.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/fsspeech.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/fsspeech.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/midifile.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/midifile.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/midiseq.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/ogg/ogg.cpp">
+			<Option virtualFolder="sound/ogg/" />
+		</Unit>
+		<Unit filename="../../../code/sound/ogg/ogg.h">
+			<Option virtualFolder="sound/ogg/" />
+		</Unit>
+		<Unit filename="../../../code/sound/rbaudio.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/rbaudio.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/rtvoice.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/rtvoice.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/sound.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/sound.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/speech.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/speech.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/voicerec.cpp">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/sound/voicerec.h">
+			<Option virtualFolder="sound/" />
+		</Unit>
+		<Unit filename="../../../code/species_defs/species_defs.cpp">
+			<Option virtualFolder="species_defs/" />
+		</Unit>
+		<Unit filename="../../../code/species_defs/species_defs.h">
+			<Option virtualFolder="species_defs/" />
+		</Unit>
+		<Unit filename="../../../code/starfield/nebula.cpp">
+			<Option virtualFolder="starfield/" />
+		</Unit>
+		<Unit filename="../../../code/starfield/nebula.h">
+			<Option virtualFolder="starfield/" />
+		</Unit>
+		<Unit filename="../../../code/starfield/starfield.cpp">
+			<Option virtualFolder="starfield/" />
+		</Unit>
+		<Unit filename="../../../code/starfield/starfield.h">
+			<Option virtualFolder="starfield/" />
+		</Unit>
+		<Unit filename="../../../code/starfield/supernova.cpp">
+			<Option virtualFolder="starfield/" />
+		</Unit>
+		<Unit filename="../../../code/starfield/supernova.h">
+			<Option virtualFolder="starfield/" />
+		</Unit>
+		<Unit filename="../../../code/stats/medals.cpp">
+			<Option virtualFolder="stats/" />
+		</Unit>
+		<Unit filename="../../../code/stats/medals.h">
+			<Option virtualFolder="stats/" />
+		</Unit>
+		<Unit filename="../../../code/stats/scoring.cpp">
+			<Option virtualFolder="stats/" />
+		</Unit>
+		<Unit filename="../../../code/stats/scoring.h">
+			<Option virtualFolder="stats/" />
+		</Unit>
+		<Unit filename="../../../code/stats/stats.cpp">
+			<Option virtualFolder="stats/" />
+		</Unit>
+		<Unit filename="../../../code/stats/stats.h">
+			<Option virtualFolder="stats/" />
+		</Unit>
+		<Unit filename="../../../code/tgautils/tgautils.cpp">
+			<Option virtualFolder="tgautils/" />
+		</Unit>
+		<Unit filename="../../../code/tgautils/tgautils.h">
+			<Option virtualFolder="tgautils/" />
+		</Unit>
+		<Unit filename="../../../code/ui/button.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/checkbox.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/gadget.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/icon.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/inputbox.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/keytrap.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/listbox.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/radio.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/scroll.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/slider.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/slider2.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/ui.h">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/uidefs.h">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/uidraw.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/uimouse.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/ui/window.cpp">
+			<Option virtualFolder="ui/" />
+		</Unit>
+		<Unit filename="../../../code/vcodec/codec1.cpp">
+			<Option virtualFolder="vcodec/" />
+		</Unit>
+		<Unit filename="../../../code/vcodec/codec1.h">
+			<Option virtualFolder="vcodec/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/beam.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/beam.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/corkscrew.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/corkscrew.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/emp.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/emp.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/flak.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/flak.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/muzzleflash.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/muzzleflash.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/shockwave.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/shockwave.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/swarm.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/swarm.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/trails.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/trails.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/weapon.h">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/weapon/weapons.cpp">
+			<Option virtualFolder="weapon/" />
+		</Unit>
+		<Unit filename="../../../code/windows_stub/config.h">
+			<Option virtualFolder="windows_stub/" />
+		</Unit>
+		<Unit filename="../../../code/windows_stub/stubs.cpp">
+			<Option virtualFolder="windows_stub/" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
