@@ -836,17 +836,14 @@ void CMissionNotesDlg::set_types()
 	GetDlgItem(IDC_RESPAWN_SPIN)->EnableWindow(enable);
 }
 
-char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga|"
-						"DDS Files (*.dds)|*.dds|"
-						"PCX Files (*.pcx)|*.pcx|"
-						"JPG Files (*.jpg; *.jpeg)|*.jpg;*.jpeg|"
-						"TGA Files (*.tga)|*.tga|"
-						"All Files (*.*)|*.*|"
-						"|";
-
 void CMissionNotesDlg::OnSquadLogo()
 {	
 	int z;
+	char *Logo_ext =	"Image Files (*.dds, *.pcx)|*.dds;*.pcx|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"All Files (*.*)|*.*|"
+						"|";
 
 	//phreak 05/05/2003
 	//this needs to be here or else the data in the mission notes dialog will revert 
@@ -855,7 +852,7 @@ void CMissionNotesDlg::OnSquadLogo()
 
 	// get list of squad images
 	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
-	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Logo_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
@@ -871,16 +868,23 @@ void CMissionNotesDlg::OnSquadLogo()
 	}	
 }
 
+char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"JPG Files (*.jpg; *.jpeg)|*.jpg;*.jpeg|"
+						"TGA Files (*.tga)|*.tga|"
+						"All Files (*.*)|*.*|"
+						"|";
+
 void CMissionNotesDlg::OnLoad1024()
 {
-	CString filename;
 	int z;
 
 	UpdateData(TRUE);
 
 	// get list of
 	z = cfile_push_chdir(CF_TYPE_DATA);
-	CFileDialog dlg(TRUE, NULL, filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
@@ -898,14 +902,13 @@ void CMissionNotesDlg::OnLoad1024()
 
 void CMissionNotesDlg::OnLoad640()
 {
-	CString filename;
 	int z;
 
 	UpdateData(TRUE);
 
 	// get list of
 	z = cfile_push_chdir(CF_TYPE_DATA);
-	CFileDialog dlg(TRUE, NULL, filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
