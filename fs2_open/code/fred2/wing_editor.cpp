@@ -1,4 +1,4 @@
-/*
+go/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -1509,17 +1509,14 @@ void wing_editor::OnSelchangeHotkey()
 	}
 }
 
-char *Logo_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.jpeg, *.tga)|*.dds;*.pcx;*.jpg;*.jpeg;*.tga|"
-					"DDS Files (*.dds)|*.dds|"
-					"PCX Files (*.pcx)|*.pcx|"
-					"JPG Files (*.jpg; *.jpeg)|*.jpg;*.jpeg|"
-					"TGA Files (*.tga)|*.tga|"
-					"All Files (*.*)|*.*|"
-					"|";
-
 void wing_editor::OnSquadLogo()
 {	
 	int z;
+	char *Logo_ext =	"Image Files (*.dds, *.pcx)|*.dds;*.pcx|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"All Files (*.*)|*.*|"
+						"|";
 
 	//phreak 05/05/2003
 	//this needs to be here or else the data in the wing editor dialog will revert 
