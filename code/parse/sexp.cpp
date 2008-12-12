@@ -2964,6 +2964,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						return SEXP_CHECK_INVALID_VARIABLE; 
 				break;
 
+                case OPF_AMBIGUOUS:
+                    break;
+
 				default: 
 					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
 						return SEXP_CHECK_INVALID_VARIABLE; 
