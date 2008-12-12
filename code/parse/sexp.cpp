@@ -2791,6 +2791,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
+	int var_index = -1; 
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
@@ -2948,20 +2949,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		// variables should only be typechecked. 
 		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
-			int var_index; 
-			if (Fred_running) {
-				var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
-			}
-			else {
-				var_index = atoi(Sexp_nodes[node].text);
-			}
+			var_index = get_index_sexp_variable_from_node(node);
 			Assert(var_index != -1);
 	
 			switch (type) {
 				case OPF_NUMBER:
 				case OPF_POSITIVE:
 					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
-						return SEXP_CHECK_INVALID_VARIABLE; 
+						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
 				break;
 
                 case OPF_AMBIGUOUS:
@@ -2969,7 +2964,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				default: 
 					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
-						return SEXP_CHECK_INVALID_VARIABLE; 
+						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
 			}			
 			node = Sexp_nodes[node].rest;
 			argnum++;
@@ -3942,12 +3937,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 
 			case OPF_VARIABLE_NAME:
-				if ( Fred_running ) {
-					if ( get_index_sexp_variable_name(Sexp_nodes[node].text)  == -1) {
-						return SEXP_CHECK_INVALID_VARIABLE;
-					}
+				var_index = get_index_sexp_variable_from_node(node);
+				if ( var_index  == -1) {
+					return SEXP_CHECK_INVALID_VARIABLE;
 				}
-				// if Fred not running anything goes
+
+				// some SEXPs demand a number variable
+				if ((argnum == 8 && !stricmp(Operators[op].text, "add-background-bitmap")) || 
+					(argnum == 5 && !stricmp(Operators[op].text, "add-sun-bitmap"))) {
+					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
+						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
+				}
+				// otherwise anything goes
 				break;
 
 			case OPF_AMBIGUOUS:
@@ -19959,6 +19960,12 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_PERSONA_NAME:
 			return "Invalid persona name";
+
+		case SEXP_CHECK_INVALID_VARIABLE:
+			return "Invalid variable name"; 
+
+		case SEXP_CHECK_INVALID_VARIABLE_TYPE:
+			return "Invalid variable type"; 
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -20202,6 +20209,26 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 	strcpy(Sexp_variables[index].variable_name, var_name);
 	Sexp_variables[index].type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
 }
+
+// given a sexp node returns the index of the variable at that node, -1 if not found
+int get_index_sexp_variable_from_node (int node)
+{
+	int var_index; 
+
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)) {
+		return -1;
+	}
+
+	if (Fred_running) {
+		var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+	}
+	else {
+		var_index = atoi(Sexp_nodes[node].text);
+	}
+
+	return var_index; 
+}
+
 
 // return index of sexp_variable_name, -1 if not found
 int get_index_sexp_variable_name(const char *temp_name)
