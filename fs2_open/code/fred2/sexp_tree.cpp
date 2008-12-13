@@ -4963,7 +4963,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	}
 
 	// also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
-	if (list == NULL || opf == OPF_NULL) {
+	if (opf == OPF_NULL) {
 		return list;
 	}
 
@@ -4971,9 +4971,11 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	if (opf != OPF_NUMBER && opf != OPF_POSITIVE) {
 		head.add_data(SEXP_ARGUMENT_STRING);
 	}
-
-	// append other list
-	head.add_list(list);
+	
+	if (list != NULL) { 
+		// append other list
+		head.add_list(list);
+	}
 
 	// return listing
 	return head.next;
