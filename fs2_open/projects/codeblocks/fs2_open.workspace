@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="fs2_open">
-		<Project filename="../../../../../../../../home/nick/Freespace2/Source/projects/codeblocks/code/code.cbp" />
-		<Project filename="Freespace2/Freespace2.cbp" active="1">
-			<Depends filename="../../../../../../../../home/nick/Freespace2/Source/projects/codeblocks/code/code.cbp" />
-		</Project>
+		<Project filename="Freespace2/Freespace2.cbp" />
+		<Project filename="code/code.cbp" active="1" />
 	</Workspace>
 </CodeBlocks_workspace_file>
