@@ -7926,16 +7926,23 @@ int eval_cond(int n)
 }
 
 // Goober5000
-int test_argument_list_for_condition(int n, int condition_node)
+int test_argument_list_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
-	int val, num_true;
+	int val, num_valid_arguments;
 	Assert(n != -1 && condition_node != -1);
+	Assert((num_true != NULL) && (num_false != NULL) && (num_known_true != NULL) && (num_known_false != NULL));
 
 	// ensure special argument list is empty
 	Sexp_applicable_argument_list.clear_nesting_level();
 
+	// ditto for counters
+	num_valid_arguments = 0;
+	*num_true = 0;
+	*num_false = 0;
+	*num_known_true = 0;
+	*num_known_false = 0;
+
 	// loop through all arguments
-	num_true = 0;
 	while (n != -1)
 	{
 		// only eval this argument if it's valid
@@ -7948,40 +7955,60 @@ int test_argument_list_for_condition(int n, int condition_node)
 			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 			val = eval_sexp(condition_node);
 
-			// true?
-			if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+			switch (val)
 			{
-				num_true++;
-				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+				case SEXP_TRUE:
+					(*num_true)++;
+					Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+					break;
+
+				case SEXP_FALSE:
+					(*num_false)++;
+					break;
+
+				case SEXP_KNOWN_TRUE:
+					(*num_known_true)++;
+					Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+					break;
+
+				case SEXP_KNOWN_FALSE:
+					(*num_known_false)++;
+					break;
 			}
 
 			// clear argument, but not list, as we'll need it later
 			Sexp_replacement_arguments.pop_back();
+
+			// increment
+			num_valid_arguments++;
 		}
 
 		// continue along argument list
 		n = CDR(n);
 	}
 
-	// return number of arguments for which conditional was true
-	return num_true;
+	return num_valid_arguments;
 }
 
 // Goober5000
 int eval_any_of(int arg_handler_node, int condition_node)
 {
-	int n, num_true;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
 
 	// test the whole argument list
-	num_true = test_argument_list_for_condition(n, condition_node);
+	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
-	// true if any argument is true
-	if (num_true > 0)
-		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
+	// use the sexp_or algorithm
+	if (num_known_true)
+		return SEXP_KNOWN_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else if (num_true)
+		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -7989,26 +8016,30 @@ int eval_any_of(int arg_handler_node, int condition_node)
 // Goober5000
 int eval_every_of(int arg_handler_node, int condition_node)
 {
-	int n, num_true;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
 
 	// test the whole argument list
-	num_true = test_argument_list_for_condition(n, condition_node);
+	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
-	// true if all arguments are true
-	if (num_true == query_sexp_args_count(arg_handler_node))
-		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
-	else
+	// use the sexp_and algorithm
+	if (num_known_false)
+		return SEXP_KNOWN_FALSE;
+	else if (num_known_true == num_valid_arguments)
+		return SEXP_KNOWN_TRUE;
+	else if (num_false)
 		return SEXP_FALSE;
+	else
+		return SEXP_TRUE;
 }
 
 // Goober5000
 int eval_number_of(int arg_handler_node, int condition_node)
 {
-	int n, num_true, threshold;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// the arguments should just be data, not operators, so we can skip the CAR
@@ -8019,11 +8050,16 @@ int eval_number_of(int arg_handler_node, int condition_node)
 	n = CDR(n);
 
 	// test the whole argument list
-	num_true = test_argument_list_for_condition(n, condition_node);
+	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
-	// true if at least threshold arguments are true
-	if (num_true >= threshold)
-		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
+	// use the sexp_or algorithm, modified
+	// (true if at least threshold arguments are true)
+	if (num_known_true >= threshold)
+		return SEXP_KNOWN_TRUE;
+	else if (num_valid_arguments - num_known_false < threshold)
+		return SEXP_KNOWN_FALSE;
+	else if (num_true + num_known_true >= threshold)
+		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -20622,7 +20658,6 @@ int get_subcategory(int sexp_id)
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
-		case OP_MODIFY_VARIABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_AWACS_SET_RADIUS:
 		case OP_PRIMITIVE_SENSORS_SET_RANGE:
