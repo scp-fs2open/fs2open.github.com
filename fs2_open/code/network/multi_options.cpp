@@ -830,7 +830,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		GET_UINT(Netgame.respawn);
 
 		// name string
-		memset(str,255,0);
+		memset(str,0,255);
 
 		GET_DATA(code);
 		// campaign mode
