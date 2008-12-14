@@ -2987,12 +2987,12 @@ int multi_ts_ok_to_commit()
 			}
 
 			// if the ship doesn't have primary weapons
-			if(!primary_ok){
+			if (!primary_ok && !(The_mission.ai_profile->flags & AIPF_MULTI_ALLOW_EMPTY_PRIMARIES)) {
 				return 2;
 			} 
 
 			// if the ship doesn't have secondary weapons
-			if(!secondary_ok){
+			if (!secondary_ok && !(The_mission.ai_profile->flags & AIPF_MULTI_ALLOW_EMPTY_SECONDARIES)) {
 				return 3;
 			}
 		}

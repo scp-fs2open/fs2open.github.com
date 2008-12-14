@@ -3265,7 +3265,8 @@ int parse_create_object_sub(p_object *p_objp)
 			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts
-		if (!(Game_mode & GM_IN_MISSION))
+		//WMC - Make it apply for ships with IN_PLACE_ANIM type
+		if (!(Game_mode & GM_IN_MISSION) || sip->warpin_type == WT_IN_PLACE_ANIM)
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;

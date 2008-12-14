@@ -5222,7 +5222,7 @@ void game_environment_map_gen()
 
 	if (gr_screen.envmap_render_target >= 0) {
 		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
-			Int3();
+			Warning(LOCATION, "Unable to release environment map render target.");
 		}
 
 		gr_screen.envmap_render_target = -1;

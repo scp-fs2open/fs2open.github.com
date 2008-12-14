@@ -152,185 +152,184 @@ END
 // Menu
 //
 
-IDR_MAINMENU MENUEX 
+IDR_MAINMENU MENU 
 BEGIN
-    POPUP "&File",                          65535,MFT_STRING,MFS_ENABLED
+    POPUP "&File"
     BEGIN
-        MENUITEM "&New\tCtrl+N",                ID_FILE_NEW,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Save\tCtrl+S",               ID_FILE_SAVE,MFT_STRING,MFS_ENABLED
-        MENUITEM "Save &As...",                 ID_FILE_SAVE_AS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Re&vert",                     ID_REVERT,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        POPUP "Save &Format",                   65535,MFT_STRING,MFS_ENABLED
+        MENUITEM "&New\tCtrl+N",                ID_FILE_NEW
+        MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN
+        MENUITEM "&Save\tCtrl+S",               ID_FILE_SAVE
+        MENUITEM "Save &As...",                 ID_FILE_SAVE_AS
+        MENUITEM "Re&vert",                     ID_REVERT
+        MENUITEM SEPARATOR
+        POPUP "Save &Format"
         BEGIN
-            MENUITEM "FS2 open",                    ID_FORMAT_FS2_OPEN,MFT_STRING,MFS_CHECKED
-            MENUITEM "FS2 retail",                  ID_FORMAT_FS2_RETAIL,MFT_STRING,MFS_ENABLED
+            MENUITEM "FS2 open",                    ID_FORMAT_FS2_OPEN, CHECKED
+            MENUITEM "FS2 retail",                  ID_FORMAT_FS2_RETAIL
         END
-        POPUP "&Import",                        65535,MFT_STRING,MFS_ENABLED
+        POPUP "&Import"
         BEGIN
-            MENUITEM "&FreeSpace 1 mission...",     ID_FILE_IMPORT_FSM,MFT_STRING,MFS_ENABLED
-            MENUITEM "&Weapon loadouts...",         ID_FILE_IMPORT_WEAPONS,MFT_STRING,MFS_ENABLED
+            MENUITEM "&FreeSpace 1 mission...",     ID_FILE_IMPORT_FSM
+            MENUITEM "&Weapon loadouts...",         ID_FILE_IMPORT_WEAPONS
         END
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "&Run FreeSpace\tAlt+R",       ID_RUN_FREESPACE,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1,MFT_STRING,MFS_GRAYED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "E&xit",                       ID_APP_EXIT,MFT_STRING,MFS_ENABLED
+        MENUITEM SEPARATOR
+        MENUITEM "&Run FreeSpace\tAlt+R",       ID_RUN_FREESPACE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
     END
-    POPUP "&Edit",                          65535,MFT_STRING,MFS_ENABLED
+    POPUP "&Edit"
     BEGIN
-        MENUITEM "Undo\tCtrl+Z",                ID_EDIT_UNDO,MFT_STRING,MFS_ENABLED
-        MENUITEM "Delete\tDel",                 ID_EDIT_DELETE,MFT_STRING,MFS_ENABLED
-        MENUITEM "Delete Wing\tCtrl+Del",       ID_EDIT_DELETE_WING,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Disable Undo",                ID_DISABLE_UNDO,MFT_STRING,MFS_ENABLED
+        MENUITEM "Undo\tCtrl+Z",                ID_EDIT_UNDO
+        MENUITEM "Delete\tDel",                 ID_EDIT_DELETE
+        MENUITEM "Delete Wing\tCtrl+Del",       ID_EDIT_DELETE_WING
+        MENUITEM SEPARATOR
+        MENUITEM "Disable Undo",                ID_DISABLE_UNDO
     END
-    POPUP "&View",                          65535,MFT_STRING,MFS_ENABLED
+    POPUP "&View"
     BEGIN
-        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR,MFT_STRING,MFS_CHECKED
-        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR,MFT_STRING,MFS_CHECKED
-        MENUITEM MFT_SEPARATOR
-        POPUP "Display Filter",                 65535,MFT_STRING,MFS_ENABLED
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR, CHECKED
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR, CHECKED
+        MENUITEM SEPARATOR
+        POPUP "Display Filter"
         BEGIN
-            MENUITEM "Show Ships",                  ID_SHOW_SHIPS,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show Player Starts",          ID_SHOW_STARTS,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show Waypoints",              ID_SHOW_WAYPOINTS,MFT_STRING,MFS_ENABLED
-            MENUITEM MFT_SEPARATOR
-            MENUITEM "Show IFF 0",                  ID_SHOW_IFF_0,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 1",                  ID_SHOW_IFF_1,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 2",                  ID_SHOW_IFF_2,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 3",                  ID_SHOW_IFF_3,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 4",                  ID_SHOW_IFF_4,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 5",                  ID_SHOW_IFF_5,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 6",                  ID_SHOW_IFF_6,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 7",                  ID_SHOW_IFF_7,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 8",                  ID_SHOW_IFF_8,MFT_STRING,MFS_ENABLED
-            MENUITEM "Show IFF 9",                  ID_SHOW_IFF_9,MFT_STRING,MFS_ENABLED
+            MENUITEM "Show Ships",                  ID_SHOW_SHIPS
+            MENUITEM "Show Player Starts",          ID_SHOW_STARTS
+            MENUITEM "Show Waypoints",              ID_SHOW_WAYPOINTS
+            MENUITEM SEPARATOR
+            MENUITEM "Show IFF 0",                  ID_SHOW_IFF_0
+            MENUITEM "Show IFF 1",                  ID_SHOW_IFF_1
+            MENUITEM "Show IFF 2",                  ID_SHOW_IFF_2
+            MENUITEM "Show IFF 3",                  ID_SHOW_IFF_3
+            MENUITEM "Show IFF 4",                  ID_SHOW_IFF_4
+            MENUITEM "Show IFF 5",                  ID_SHOW_IFF_5
+            MENUITEM "Show IFF 6",                  ID_SHOW_IFF_6
+            MENUITEM "Show IFF 7",                  ID_SHOW_IFF_7
+            MENUITEM "Show IFF 8",                  ID_SHOW_IFF_8
+            MENUITEM "Show IFF 9",                  ID_SHOW_IFF_9
         END
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Hide Marked Objects",         ID_HIDE_OBJECTS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Hidden Objects",         ID_SHOW_HIDDEN_OBJECTS,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Show Ship Models\tShift+Alt+M", ID_EDIT_POPUP_SHOW_SHIP_MODELS,MFT_STRING,MFS_CHECKED
-        MENUITEM "Show Outlines\tShift+Alt+O",  ID_VIEW_OUTLINES,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Ship Info\tShift+Alt+I", ID_EDIT_POPUP_SHOW_SHIP_ICONS,MFT_STRING | MFT_RIGHTJUSTIFY,MFS_CHECKED
-        MENUITEM "Show Coordinates\tShift+Alt+C", ID_SHOW_COORDINATES,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Grid Positions\tShift+Alt+P", ID_SHOW_GRID_POSITIONS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Distances\tD",           ID_SHOW_DISTANCES,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Model Paths",            ID_SHOW_PATHS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Model Dock Points",      ID_SHOW_DOCK_POINTS,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Show &Grid\tShift+Alt+G",     ID_VIEW_GRID,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Horizon\tShift+Alt+H",   ID_SHOW_HORIZON,MFT_STRING,MFS_ENABLED
-        MENUITEM "Double Fine Gridlines",       ID_DOUBLE_FINE_GRIDLINES,MFT_STRING,MFS_ENABLED
-        MENUITEM "Anti-Aliased Gridlines",      ID_AA_GRIDLINES,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show 3D Compass\tShift+Alt+3", ID_EDIT_POPUP_SHOW_COMPASS,MFT_STRING,MFS_CHECKED
-        MENUITEM "Show Background\tShift+Alt+B", ID_SHOW_STARFIELD,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        POPUP "Viewpoint\tShift+V",             65535,MFT_STRING,MFS_ENABLED
+        MENUITEM SEPARATOR
+        MENUITEM "Hide Marked Objects",         ID_HIDE_OBJECTS
+        MENUITEM "Show Hidden Objects",         ID_SHOW_HIDDEN_OBJECTS
+        MENUITEM SEPARATOR
+        MENUITEM "Show Ship Models\tShift+Alt+M", ID_EDIT_POPUP_SHOW_SHIP_MODELS, CHECKED
+        MENUITEM "Show Outlines\tShift+Alt+O",  ID_VIEW_OUTLINES
+        MENUITEM "Show Ship Info\tShift+Alt+I", ID_EDIT_POPUP_SHOW_SHIP_ICONS, CHECKED, HELP
+        MENUITEM "Show Coordinates\tShift+Alt+C", ID_SHOW_COORDINATES
+        MENUITEM "Show Grid Positions\tShift+Alt+P", ID_SHOW_GRID_POSITIONS
+        MENUITEM "Show Distances\tD",           ID_SHOW_DISTANCES
+        MENUITEM "Show Model Paths",            ID_SHOW_PATHS
+        MENUITEM "Show Model Dock Points",      ID_SHOW_DOCK_POINTS
+        MENUITEM SEPARATOR
+        MENUITEM "Show &Grid\tShift+Alt+G",     ID_VIEW_GRID
+        MENUITEM "Show Horizon\tShift+Alt+H",   ID_SHOW_HORIZON
+        MENUITEM "Double Fine Gridlines",       ID_DOUBLE_FINE_GRIDLINES
+        MENUITEM "Anti-Aliased Gridlines",      ID_AA_GRIDLINES
+        MENUITEM "Show 3D Compass\tShift+Alt+3", ID_EDIT_POPUP_SHOW_COMPASS, CHECKED
+        MENUITEM "Show Background\tShift+Alt+B", ID_SHOW_STARFIELD
+        MENUITEM SEPARATOR
+        POPUP "Viewpoint\tShift+V"
         BEGIN
-            MENUITEM "Camera",                      ID_CHANGE_VIEWPOINT_EXTERNAL,MFT_STRING,MFS_CHECKED
-            MENUITEM "Current Ship",                ID_CHANGE_VIEWPOINT_FOLLOW,MFT_STRING,MFS_ENABLED
+            MENUITEM "Camera",                      ID_CHANGE_VIEWPOINT_EXTERNAL, CHECKED
+            MENUITEM "Current Ship",                ID_CHANGE_VIEWPOINT_FOLLOW
         END
-        MENUITEM "Save Camera Pos\tCtrl+P",     ID_SAVE_CAMERA,MFT_STRING,MFS_ENABLED
-        MENUITEM "Restore Camera Pos\tCtrl+R",  ID_RESTORE_CAMERA,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Lighting from Suns",          ID_VIEW_LIGHTING,MFT_STRING,MFS_ENABLED
-        MENUITEM "Render full detail",          ID_VIEW_FULL_DETAIL,MFT_STRING,MFS_ENABLED
+        MENUITEM "Save Camera Pos\tCtrl+P",     ID_SAVE_CAMERA
+        MENUITEM "Restore Camera Pos\tCtrl+R",  ID_RESTORE_CAMERA
+        MENUITEM SEPARATOR
+        MENUITEM "Lighting from Suns",          ID_VIEW_LIGHTING
+        MENUITEM "Render full detail",          ID_VIEW_FULL_DETAIL
     END
-    POPUP "&Speed",                         65535,MFT_STRING,MFS_ENABLED
+    POPUP "&Speed"
     BEGIN
-        POPUP "Movement",                       65535,MFT_STRING,MFS_ENABLED
+        POPUP "Movement"
         BEGIN
-            MENUITEM "x1\t1",                       ID_SPEED1,MFT_STRING,MFS_CHECKED
-            MENUITEM "x2\t2",                       ID_SPEED2,MFT_STRING,MFS_ENABLED
-            MENUITEM "x3\t3",                       ID_SPEED3,MFT_STRING,MFS_ENABLED
-            MENUITEM "x5\t4",                       ID_SPEED5,MFT_STRING,MFS_ENABLED
-            MENUITEM "x8\t5",                       ID_SPEED8,MFT_STRING,MFS_ENABLED
-            MENUITEM "x10\t6",                      ID_SPEED10,MFT_STRING,MFS_ENABLED
-            MENUITEM "x50\t7",                      ID_SPEED50,MFT_STRING,MFS_ENABLED
-            MENUITEM "x100\t8",                     ID_SPEED100,MFT_STRING,MFS_ENABLED
+            MENUITEM "x1\t1",                       ID_SPEED1, CHECKED
+            MENUITEM "x2\t2",                       ID_SPEED2
+            MENUITEM "x3\t3",                       ID_SPEED3
+            MENUITEM "x5\t4",                       ID_SPEED5
+            MENUITEM "x8\t5",                       ID_SPEED8
+            MENUITEM "x10\t6",                      ID_SPEED10
+            MENUITEM "x50\t7",                      ID_SPEED50
+            MENUITEM "x100\t8",                     ID_SPEED100
         END
-        POPUP "Rotation",                       65535,MFT_STRING,MFS_ENABLED
+        POPUP "Rotation"
         BEGIN
-            MENUITEM "x1\tShift+1",                 ID_ROT1,MFT_STRING,MFS_CHECKED
-            MENUITEM "x5\tShift+2",                 ID_ROT2,MFT_STRING,MFS_ENABLED
-            MENUITEM "x12\tShift+3",                ID_ROT3,MFT_STRING,MFS_ENABLED
-            MENUITEM "x25\tShift+4",                ID_ROT4,MFT_STRING,MFS_ENABLED
-            MENUITEM "x50\tShift+5",                ID_ROT5,MFT_STRING,MFS_ENABLED
-        END
-    END
-    POPUP "E&ditors",                       65535,MFT_STRING,MFS_ENABLED
-    BEGIN
-        MENUITEM "&Ships\tShift+S",             ID_EDITORS_SHIPS,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Wings\tShift+W",             ID_EDITORS_WING,MFT_STRING,MFS_ENABLED
-        MENUITEM "Objects\tShift+O",            ID_EDITORS_ORIENT,MFT_STRING,MFS_ENABLED
-        MENUITEM "Waypoint Paths\tShift+Y",     ID_EDITORS_WAYPOINT,MFT_STRING,MFS_ENABLED
-        MENUITEM "Mission &Objectives\tShift+G", ID_EDITORS_GOALS,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Events\tShift+E",            ID_EDITORS_EVENTS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Team Loadout\tShift+P",       ID_EDITORS_PLAYER,MFT_STRING,MFS_ENABLED
-        MENUITEM "Background\tShift+I",         ID_EDITORS_BG_BITMAPS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Reinforcements\tShift+R",     ID_EDITORS_REINFORCEMENT,MFT_STRING,MFS_ENABLED
-        MENUITEM "Asteroid Field\tShift+A",     ID_ASTEROID_EDITOR,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Mission Specs\tShift+N",     ID_FILE_MISSIONNOTES,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Briefing\tShift+B",          ID_EDITORS_BRIEFING,MFT_STRING,MFS_ENABLED
-        MENUITEM "&Debriefing\tShift+D",        ID_EDITORS_DEBRIEFING,MFT_STRING,MFS_ENABLED
-        MENUITEM "Command Briefing\tShift+C",   ID_EDITORS_CMD_BRIEF,MFT_STRING,MFS_ENABLED
-        MENUITEM "Shield System",               ID_EDITORS_SHIELD_SYS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Set Global Ship Flags",       ID_EDITORS_SET_GLOBAL_SHIP_FLAGS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Voice Acting Manager\tShift+V", ID_EDITORS_VOICE,MFT_STRING,MFS_ENABLED
-        MENUITEM "Cutscene Editor\tShift+M",    ID_EDITORS_CUTSCENES,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Campaign",                    ID_EDITOR_CAMPAIGN,MFT_STRING,MFS_ENABLED
-    END
-    POPUP "&Groups",                        65535,MFT_STRING,MFS_ENABLED
-    BEGIN
-        MENUITEM "Group 1\tCtrl+1",             ID_GROUP1,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 2\tCtrl+2",             ID_GROUP2,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 3\tCtrl+3",             ID_GROUP3,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 4\tCtrl+4",             ID_GROUP4,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 5\tCtrl+5",             ID_GROUP5,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 6\tCtrl+6",             ID_GROUP6,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 7\tCtrl+7",             ID_GROUP7,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 8\tCtrl+8",             ID_GROUP8,MFT_STRING,MFS_ENABLED
-        MENUITEM "Group 9\tCtrl+9",             ID_GROUP9,MFT_STRING,MFS_ENABLED
-        POPUP "Set Group",                      65535,MFT_STRING,MFS_ENABLED
-        BEGIN
-            MENUITEM "Group 1",                     ID_SET_GROUP1,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 2",                     ID_SET_GROUP2,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 3",                     ID_SET_GROUP3,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 4",                     ID_SET_GROUP4,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 5",                     ID_SET_GROUP5,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 6",                     ID_SET_GROUP6,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 7",                     ID_SET_GROUP7,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 8",                     ID_SET_GROUP8,MFT_STRING,MFS_ENABLED
-            MENUITEM "Group 9",                     ID_SET_GROUP9,MFT_STRING,MFS_ENABLED
+            MENUITEM "x1\tShift+1",                 ID_ROT1, CHECKED
+            MENUITEM "x5\tShift+2",                 ID_ROT2
+            MENUITEM "x12\tShift+3",                ID_ROT3
+            MENUITEM "x25\tShift+4",                ID_ROT4
+            MENUITEM "x50\tShift+5",                ID_ROT5
         END
     END
-    POPUP "&Misc",                          65535,MFT_STRING,MFS_ENABLED
+    POPUP "E&ditors"
     BEGIN
-        MENUITEM "Level Object\tL",             ID_LEVEL_OBJ,MFT_STRING,MFS_ENABLED
-        MENUITEM "Align Object\tCtrl+L",        ID_ALIGN_OBJ,MFT_STRING,MFS_ENABLED
-        MENUITEM "Mark Wing\tW",                ID_MARK_WING,MFT_STRING,MFS_ENABLED
-        MENUITEM "Control Object\tT",           ID_CONTROL_OBJ,MFT_STRING,MFS_ENABLED
-        MENUITEM "Next Object\tTab",            ID_NEXT_OBJ,MFT_STRING,MFS_ENABLED
-        MENUITEM "Previous Object\tCtrl+Tab",   ID_PREV_OBJ,MFT_STRING,MFS_ENABLED
-        MENUITEM "Adjust Grid",                 ID_EDITORS_ADJUST_GRID,MFT_STRING,MFS_ENABLED
-        MENUITEM "Next Subsystem\tK",           ID_NEXT_SUBSYS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Prev Subsystem\tShift+K",     ID_PREV_SUBSYS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Cancel Subsystem\tAlt+K",     ID_CANCEL_SUBSYS,MFT_STRING,MFS_ENABLED
-        MENUITEM "Mission Statistics\tCtrl+Shift+D", ID_DUMP_STATS,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "Error checker\tShift+H",      ID_ERROR_CHECKER,MFT_STRING,MFS_ENABLED
+        MENUITEM "&Ships\tShift+S",             ID_EDITORS_SHIPS
+        MENUITEM "&Wings\tShift+W",             ID_EDITORS_WING
+        MENUITEM "Objects\tShift+O",            ID_EDITORS_ORIENT
+        MENUITEM "Waypoint Paths\tShift+Y",     ID_EDITORS_WAYPOINT
+        MENUITEM "Mission &Objectives\tShift+G", ID_EDITORS_GOALS
+        MENUITEM "&Events\tShift+E",            ID_EDITORS_EVENTS
+        MENUITEM "Team Loadout\tShift+P",       ID_EDITORS_PLAYER
+        MENUITEM "Background\tShift+I",         ID_EDITORS_BG_BITMAPS
+        MENUITEM "Reinforcements\tShift+R",     ID_EDITORS_REINFORCEMENT
+        MENUITEM "Asteroid Field\tShift+A",     ID_ASTEROID_EDITOR
+        MENUITEM "&Mission Specs\tShift+N",     ID_FILE_MISSIONNOTES
+        MENUITEM "&Briefing\tShift+B",          ID_EDITORS_BRIEFING
+        MENUITEM "&Debriefing\tShift+D",        ID_EDITORS_DEBRIEFING
+        MENUITEM "Command Briefing\tShift+C",   ID_EDITORS_CMD_BRIEF
+        MENUITEM "Shield System",               ID_EDITORS_SHIELD_SYS
+        MENUITEM "Set Global Ship Flags",       ID_EDITORS_SET_GLOBAL_SHIP_FLAGS
+        MENUITEM "Voice Acting Manager\tShift+V", ID_EDITORS_VOICE
+        MENUITEM SEPARATOR
+        MENUITEM "Campaign",                    ID_EDITOR_CAMPAIGN
     END
-    POPUP "&Help",                          65535,MFT_STRING,MFS_ENABLED
+    POPUP "&Groups"
     BEGIN
-        MENUITEM "&Help Topics",                ID_HELP_FINDER,MFT_STRING,MFS_ENABLED
-        MENUITEM MFT_SEPARATOR
-        MENUITEM "&About FRED2",                ID_APP_ABOUT,MFT_STRING,MFS_ENABLED
-        MENUITEM "Show Sexp Help",              ID_SHOW_SEXP_HELP,MFT_STRING,MFS_ENABLED
+        MENUITEM "Group 1\tCtrl+1",             ID_GROUP1
+        MENUITEM "Group 2\tCtrl+2",             ID_GROUP2
+        MENUITEM "Group 3\tCtrl+3",             ID_GROUP3
+        MENUITEM "Group 4\tCtrl+4",             ID_GROUP4
+        MENUITEM "Group 5\tCtrl+5",             ID_GROUP5
+        MENUITEM "Group 6\tCtrl+6",             ID_GROUP6
+        MENUITEM "Group 7\tCtrl+7",             ID_GROUP7
+        MENUITEM "Group 8\tCtrl+8",             ID_GROUP8
+        MENUITEM "Group 9\tCtrl+9",             ID_GROUP9
+        POPUP "Set Group"
+        BEGIN
+            MENUITEM "Group 1",                     ID_SET_GROUP1
+            MENUITEM "Group 2",                     ID_SET_GROUP2
+            MENUITEM "Group 3",                     ID_SET_GROUP3
+            MENUITEM "Group 4",                     ID_SET_GROUP4
+            MENUITEM "Group 5",                     ID_SET_GROUP5
+            MENUITEM "Group 6",                     ID_SET_GROUP6
+            MENUITEM "Group 7",                     ID_SET_GROUP7
+            MENUITEM "Group 8",                     ID_SET_GROUP8
+            MENUITEM "Group 9",                     ID_SET_GROUP9
+        END
+    END
+    POPUP "&Misc"
+    BEGIN
+        MENUITEM "Level Object\tL",             ID_LEVEL_OBJ
+        MENUITEM "Align Object\tCtrl+L",        ID_ALIGN_OBJ
+        MENUITEM "Mark Wing\tW",                ID_MARK_WING
+        MENUITEM "Control Object\tT",           ID_CONTROL_OBJ
+        MENUITEM "Next Object\tTab",            ID_NEXT_OBJ
+        MENUITEM "Previous Object\tCtrl+Tab",   ID_PREV_OBJ
+        MENUITEM "Adjust Grid",                 ID_EDITORS_ADJUST_GRID
+        MENUITEM "Next Subsystem\tK",           ID_NEXT_SUBSYS
+        MENUITEM "Prev Subsystem\tShift+K",     ID_PREV_SUBSYS
+        MENUITEM "Cancel Subsystem\tAlt+K",     ID_CANCEL_SUBSYS
+        MENUITEM "Mission Statistics\tCtrl+Shift+D", ID_DUMP_STATS
+        MENUITEM SEPARATOR
+        MENUITEM "Error checker\tShift+H",      ID_ERROR_CHECKER
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&Help Topics",                ID_HELP_FINDER
+        MENUITEM SEPARATOR
+        MENUITEM "&About FRED2",                ID_APP_ABOUT
+        MENUITEM "Show Sexp Help",              ID_SHOW_SEXP_HELP
     END
 END
 
@@ -623,7 +622,7 @@ FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
     LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.9 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
-    LTEXT           "Copyright  1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
+    LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
     LTEXT           "Ported to OGL by RT",IDC_STATIC,39,40,68,8
@@ -782,10 +781,10 @@ BEGIN
     LTEXT           "Warning : Orders with a priority above 89 may be higher priority than those given by the player.",IDC_STATIC,60,183,307,11
 END
 
-IDD_MISSION_NOTES DIALOGEX 0, 0, 479, 327
+IDD_MISSION_NOTES DIALOG  0, 0, 479, 327
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Mission Specs"
-FONT 8, "MS Sans Serif", 0, 0, 0x0
+FONT 8, "MS Sans Serif"
 BEGIN
     RTEXT           "Title",IDC_STATIC,7,10,29,8
     EDITTEXT        IDC_MISSION_TITLE,41,7,109,14,ES_AUTOHSCROLL
@@ -909,12 +908,13 @@ BEGIN
     COMBOBOX        IDC_SHIP_TEAM,47,51,94,196,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_SHIP_CARGO1,47,65,94,258,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_SHIP_ALT,47,79,94,125,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Texture Replacement",IDC_TEXTURES,19,100,83,14,0,WS_EX_STATICEDGE
+    COMBOBOX        IDC_SHIP_CALLSIGN,47,93,94,125,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Texture Replacement",IDC_TEXTURES,47,110,93,14,0,WS_EX_STATICEDGE
     COMBOBOX        IDC_HOTKEY,189,24,68,122,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_SHIP_PERSONA,189,40,68,129,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_SCORE,189,55,68,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Player Ship",IDC_PLAYER_SHIP,"Button",BS_3STATE | WS_TABSTOP,189,88,51,10
-    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,189,100,69,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,187,100,69,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Misc",IDC_FLAGS,47,132,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Initial Status",IDC_INITIAL_STATUS,101,132,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Initial Orders",IDC_GOALS,156,132,50,14,0,WS_EX_STATICEDGE
@@ -974,37 +974,37 @@ BEGIN
     LTEXT           "Callsign",IDC_STATIC,18,95,25,8
 END
 
-IDD_WEAPON_EDITOR DIALOG  0, 0, 445, 79
+IDD_WEAPON_EDITOR DIALOGEX 0, 0, 519, 79
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Weapon Editor"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     LISTBOX         IDC_LIST,7,8,75,64,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_GUN1,136,9,67,101,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_GUN2,136,26,67,117,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_GUN3,136,44,67,120,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_AI_CLASS,136,62,67,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_MISSILE1,270,9,67,116,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_AMMO1,342,8,40,14,ES_AUTOHSCROLL
-    CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,386,46,9,14
-    COMBOBOX        IDC_MISSILE2,270,26,67,111,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_AMMO2,342,25,40,14,ES_AUTOHSCROLL
-    CONTROL         "Spin2",IDC_SPIN2,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,396,46,9,14
-    COMBOBOX        IDC_MISSILE3,270,44,67,109,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_AMMO3,342,43,40,14,ES_AUTOHSCROLL
-    CONTROL         "Spin3",IDC_SPIN3,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,408,46,9,14
-    COMBOBOX        IDC_MISSILE4,270,62,67,114,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_AMMO4,342,60,40,14,ES_AUTOHSCROLL
-    CONTROL         "Spin4",IDC_SPIN4,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,418,46,9,14
-    DEFPUSHBUTTON   "Close",IDOK,388,9,50,14
+    COMBOBOX        IDC_GUN1,136,9,89,101,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GUN2,136,26,89,117,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GUN3,136,44,89,120,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_AI_CLASS,136,62,89,108,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_MISSILE1,282,9,121,116,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_AMMO1,409,8,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,453,46,9,14
+    COMBOBOX        IDC_MISSILE2,282,26,121,111,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_AMMO2,409,25,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin2",IDC_SPIN2,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,463,46,9,14
+    COMBOBOX        IDC_MISSILE3,282,44,121,109,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_AMMO3,409,43,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin3",IDC_SPIN3,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,475,46,9,14
+    COMBOBOX        IDC_MISSILE4,282,62,121,114,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_AMMO4,409,60,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin4",IDC_SPIN4,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,485,46,9,14
+    DEFPUSHBUTTON   "Close",IDOK,462,9,50,14
     LTEXT           "Gun bank 1",IDC_STATIC,92,11,38,8
     LTEXT           "Gun bank 2",IDC_STATIC,92,28,38,8
     LTEXT           "Gun bank 3",IDC_STATIC,92,46,38,8
     LTEXT           "AI class",IDC_STATIC,104,63,26,8
-    LTEXT           "Missile bank 1",IDC_STATIC,218,11,46,8
-    LTEXT           "Missile bank 2",IDC_STATIC,218,28,46,8
-    LTEXT           "Missile bank 3",IDC_STATIC,218,46,46,8
-    LTEXT           "Missile bank 4",IDC_STATIC,218,63,46,8
+    LTEXT           "Missile bank 1",IDC_STATIC,232,12,46,8
+    LTEXT           "Missile bank 2",IDC_STATIC,232,30,46,8
+    LTEXT           "Missile bank 3",IDC_STATIC,232,47,46,8
+    LTEXT           "Missile bank 4",IDC_STATIC,232,64,46,8
 END
 
 IDD_SHIP_MARKINGS DIALOG  0, 0, 252, 140
@@ -1697,7 +1697,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,70,189,50,14
 END
 
-IDD_CMD_BRIEF DIALOGEX 0, 0, 201, 279
+IDD_CMD_BRIEF DIALOGEX 0, 0, 189, 158
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Command Briefing Editor"
 MENU IDR_PLAYER_EDIT_MENU
@@ -1708,14 +1708,14 @@ BEGIN
     PUSHBUTTON      "Add",IDC_ADD_STAGE,7,24,38,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Insert",IDC_INSERT_STAGE,48,24,38,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Delete",IDC_DELETE_STAGE,89,24,38,14,0,WS_EX_STATICEDGE
-    EDITTEXT        IDC_TEXT,7,55,187,176,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
-    EDITTEXT        IDC_ANI_FILENAME,61,240,68,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "Browse",IDC_BROWSE_ANI,144,240,50,14,0,WS_EX_STATICEDGE
-    EDITTEXT        IDC_WAVE_FILENAME,61,258,68,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,132,258,34,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,181,258,13,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
-    DEFPUSHBUTTON   "OK",IDOK,144,14,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,144,31,50,14
+    EDITTEXT        IDC_TEXT,7,55,175,59,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
+    EDITTEXT        IDC_ANI_FILENAME,61,118,68,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE_ANI,132,118,50,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_WAVE_FILENAME,61,136,68,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,132,136,34,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,169,136,13,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "OK",IDOK,132,14,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,132,31,50,14
     LTEXT           "Briefing Text",IDC_STATIC,7,44,40,8
     LTEXT           "Ani Filename",IDC_STATIC,7,243,41,8
     LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,10,53,8
@@ -1754,16 +1754,16 @@ BEGIN
     CONTROL         "Kamikaze",IDC_KAMIKAZE,"Button",BS_3STATE | WS_TABSTOP,7,204,42,10
     EDITTEXT        IDC_KDAMAGE,51,213,57,12,ES_AUTOHSCROLL
     LTEXT           "Damage",IDC_STATIC,19,215,28,8
-    CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | WS_TABSTOP,161,7,75,10
-    CONTROL         "Red Alert Carry Status",IDC_REDALERTCARRY,"Button",BS_3STATE | WS_TABSTOP,161,17,85,10
-    CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",BS_3STATE | WS_TABSTOP,161,27,77,10
-    CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,161,36,59,10
-    CONTROL         "Targetable as Bomb",IDC_TARGETABLE_AS_BOMB,"Button",BS_3STATE | WS_TABSTOP,161,47,79,10
+    CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | WS_TABSTOP,165,7,75,10
+    CONTROL         "Red Alert Carry Status",IDC_REDALERTCARRY,"Button",BS_3STATE | WS_TABSTOP,165,17,85,10
+    CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",BS_3STATE | WS_TABSTOP,165,27,77,10
+    CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,37,59,10
+    CONTROL         "Targetable as Bomb",IDC_TARGETABLE_AS_BOMB,"Button",BS_3STATE | WS_TABSTOP,165,47,79,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_SHIP,
-                    "Button",BS_3STATE | WS_TABSTOP,161,57,96,10
-    CONTROL         "Never Scream On Death",IDC_NO_DEATH_SCREAM,"Button",BS_3STATE | WS_TABSTOP,161,66,96,10
-    CONTROL         "Always Scream on Death",IDC_ALWAYS_DEATH_SCREAM,"Button",BS_3STATE | WS_TABSTOP,161,76,98,10
-    CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | WS_TABSTOP,161,87,97,10
+                    "Button",BS_3STATE | WS_TABSTOP,165,57,96,10
+    CONTROL         "Never Scream On Death",IDC_NO_DEATH_SCREAM,"Button",BS_3STATE | WS_TABSTOP,165,67,96,10
+    CONTROL         "Always Scream on Death",IDC_ALWAYS_DEATH_SCREAM,"Button",BS_3STATE | WS_TABSTOP,165,77,98,10
+    CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | WS_TABSTOP,165,87,97,10
     EDITTEXT        IDC_RESPAWN_PRIORITY,221,97,49,14,ES_AUTOHSCROLL
     LTEXT           "Respawn Priority",IDC_STATIC,161,98,54,8
     DEFPUSHBUTTON   "OK",IDOK,7,229,65,14
@@ -2007,7 +2007,7 @@ BEGIN
             VALUE "FileDescription", "Fred2_open 3.6.9"
             VALUE "FileVersion", "3.6.9"
             VALUE "InternalName", "FRED"
-            VALUE "LegalCopyright", "Copyright  1998"
+            VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "FRED.EXE"
             VALUE "ProductName", "FreeSpace"
             VALUE "ProductVersion", "3.6.9"
@@ -2086,7 +2086,7 @@ BEGIN
     IDD_WEAPON_EDITOR, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 438
+        RIGHTMARGIN, 512
         TOPMARGIN, 8
         BOTTOMMARGIN, 72
     END

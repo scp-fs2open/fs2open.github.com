@@ -991,7 +991,7 @@ Flag exe_params[] =
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-missile_lighting",	"Apply Lighting to Missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 	{ "-normal",			"Enable normal maps",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
-	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	0,					0,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
+	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -1991,11 +1991,15 @@ bool SetCmdlineParams()
 		Cmdline_orb_radar = 1;
 	}
 
-    // TBP warp effects -Et1
-    if( tbp.found() )
-    {
-        Cmdline_tbp = 1;
-    }
+	// TBP warp effects -Et1
+	// Chief1983 - Add 3d shockwave, ship choice 3d and weapon choice 3d if TBP is checked
+	if( tbp.found() )
+	{
+		Cmdline_tbp = 1;
+		Cmdline_enable_3d_shockwave = 1;
+		Cmdline_ship_choice_3d = 1;
+		Cmdline_weapon_choice_3d = 1;
+	}
 
 	if ( use_3dwarp.found() ) {
 		Cmdline_3dwarp = 1;
