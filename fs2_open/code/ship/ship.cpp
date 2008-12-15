@@ -3536,6 +3536,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		stuff_vector(&sip->rotation_time);
 
+		// div/0 safety check.
+		if ((sip->rotation_time.xyz.x == 0) || (sip->rotation_time.xyz.y == 0) || (sip->rotation_time.xyz.z == 0))
+			Warning(LOCATION, "Rotation time must have non-zero values in each of the three variables.\nFix this in ship %s\n", sip->name);
+
 		sip->srotation_time = (sip->rotation_time.xyz.x + sip->rotation_time.xyz.y)/2.0f;
 
 		sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
