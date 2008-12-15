@@ -157,6 +157,7 @@ private:
 	int save_plot_info();
 	int save_variables();
 //	int save_briefing_info();
+	int save_cutscenes();
 	int save_fiction();
 	int save_cmd_brief();
 	int save_cmd_briefs();

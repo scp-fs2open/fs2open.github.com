@@ -671,6 +671,22 @@ typedef struct support_ship_info {
 	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
 } support_ship_info;
 
+// movie type defines
+#define	MOVIE_PRE_FICTION		0
+#define	MOVIE_PRE_CMD_BRIEF		1
+#define	MOVIE_PRE_BRIEF			2
+#define	MOVIE_PRE_GAME			3
+#define	MOVIE_PRE_DEBRIEF		4
+
+// defines a mission cutscene.
+typedef struct mission_cutscene {
+	int type; 
+	char cutscene_name[NAME_LENGTH];	
+	int formula; 
+
+	mission_cutscene() { memset(this, 0, sizeof(mission_cutscene)); formula = -1; };
+} mission_cutscene;
+
 typedef struct mission {
 	char	name[NAME_LENGTH];
 	char	author[NAME_LENGTH];
@@ -704,6 +720,8 @@ typedef struct mission {
 
 	// Goober5000
 	ai_profile_t *ai_profile;
+
+	std::vector<mission_cutscene> cutscenes; 
 } mission;
 
 // cargo defines
