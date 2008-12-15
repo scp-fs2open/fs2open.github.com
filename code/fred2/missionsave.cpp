@@ -2023,7 +2023,7 @@ int CFred_mission_save::save_objects()
 
 		fout(" %d", Ships[i].score);
 	
-		/*
+		
 		if (Format_fs2_open && Ships[i].assist_score_pct != 0) {
 			if ( optional_string_fred("+Assist Score Percentage:") ) {
 				parse_comments();
@@ -2033,7 +2033,6 @@ int CFred_mission_save::save_objects()
 			
 			fout(" %f", Ships[i].assist_score_pct);
 		}
-		*/
 
 		// deal with the persona for this ship as well.
 		if ( Ships[i].persona_index != -1 ) {
