@@ -988,12 +988,12 @@ int CFred_mission_save::save_mission_info()
 			parse_comments(2);
 			fout(" %s.pof", out_str);
 		} else {
-			fso_comment_push(";;FSO 3.6.0;;");
+			fso_comment_push(";;FSO 3.6.10;;");
 			fout_version("\n\n$Skybox Model: %s.pof", out_str);
 			fso_comment_pop();
 		}
 	} else {
-		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
+		bypass_comment(";;FSO 3.6.10;; $Skybox Model:");
 	}
 
 	// Goober5000's AI profile stuff
