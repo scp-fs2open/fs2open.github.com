@@ -502,9 +502,6 @@ void multi_options_read_config()
 		cfclose(in);
 		in = NULL;
 	}
-
-	// if any basically required options weren't specified then 
-	fs2netd_options_config_init();
 }
 
 // set netgame defaults 
@@ -833,7 +830,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		GET_UINT(Netgame.respawn);
 
 		// name string
-		memset(str,255,0);
+		memset(str,0,255);
 
 		GET_DATA(code);
 		// campaign mode
@@ -884,7 +881,12 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
 		}
-		
+
+		// update FS2NetD as well
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_update(true);
+		}
+
 		send_netgame_update_packet();	   
 		break;
 

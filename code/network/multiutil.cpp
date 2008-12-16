@@ -2509,7 +2509,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}	*/
 
 	// if the player was banned by the standalone
-	if ( fs2netd_player_banned(addr) || ((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)) ) {
+	if ( (MULTI_IS_TRACKER_GAME && fs2netd_player_banned(addr)) || ((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)) ) {
 		// maybe we should log this
 		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
 		ml_string(knock_message);
@@ -3492,6 +3492,8 @@ void multi_update_valid_missions()
 		std_create_gen_dialog("Validating missions");
 		std_gen_set_text("Querying:", 1);
 	}
+
+	Assert( MULTI_IS_TRACKER_GAME );
 
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
 	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {

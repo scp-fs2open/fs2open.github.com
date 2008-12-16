@@ -2795,6 +2795,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
+	int var_index = -1; 
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
@@ -2948,6 +2949,30 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		} else {
 			Assert(0);
+		}
+
+		// variables should only be typechecked. 
+		if ((Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && (type != OPF_VARIABLE_NAME)) {
+			var_index = get_index_sexp_variable_from_node(node);
+			Assert(var_index != -1);
+	
+			switch (type) {
+				case OPF_NUMBER:
+				case OPF_POSITIVE:
+					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
+						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
+				break;
+
+                case OPF_AMBIGUOUS:
+                    break;
+
+				default: 
+					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
+						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
+			}			
+			node = Sexp_nodes[node].rest;
+			argnum++;
+			continue; 
 		}
 
 		switch (type) {
@@ -3916,12 +3941,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 
 			case OPF_VARIABLE_NAME:
-				if ( Fred_running ) {
-					if ( get_index_sexp_variable_name(Sexp_nodes[node].text)  == -1) {
-						return SEXP_CHECK_INVALID_VARIABLE;
-					}
+				var_index = get_index_sexp_variable_from_node(node);
+				if ( var_index  == -1) {
+					return SEXP_CHECK_INVALID_VARIABLE;
 				}
-				// if Fred not running anything goes
+
+				// some SEXPs demand a number variable
+				if ((argnum == 8 && !stricmp(Operators[op].text, "add-background-bitmap")) || 
+					(argnum == 5 && !stricmp(Operators[op].text, "add-sun-bitmap"))) {
+					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
+						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
+				}
+				// otherwise anything goes
 				break;
 
 			case OPF_AMBIGUOUS:
@@ -4664,7 +4695,7 @@ int rand_internal(int low, int high, int seed = 0)
 	if (diff < 0)
 		diff = 0;
 
-	return (low + rand() % (diff + 1));
+	return (low + rand32() % (diff + 1));
 }
 
 // Goober5000
@@ -6065,7 +6096,7 @@ int sexp_shields_left(int n)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
+	percent = fl2i((get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f) + 0.5f);
 	return percent;
 }
 
@@ -6092,7 +6123,7 @@ int sexp_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * get_hull_pct(objp));
+	percent = fl2i((100.0f * get_hull_pct(objp)) + 0.5f);
 	return percent;
 }
 
@@ -6117,7 +6148,7 @@ int sexp_sim_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * get_sim_hull_pct(objp));
+	percent = fl2i((100.0f * get_sim_hull_pct(objp)) + 0.5f);
 	return percent;
 }
 
@@ -6282,7 +6313,7 @@ int sexp_hits_left_subsystem(int n)
 			while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) ) {
 
 				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
-					percent = (int) (ss->current_hits / ss->max_hits * 100.0f);
+					percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
 					return percent;
 				}
 
@@ -6295,7 +6326,7 @@ int sexp_hits_left_subsystem(int n)
 			return SEXP_NAN;
 
 		} else {
-			percent = (int)(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
+			percent = fl2i((ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f) + 0.5f);
 			return percent;
 		}
 	}
@@ -7899,16 +7930,23 @@ int eval_cond(int n)
 }
 
 // Goober5000
-int test_argument_list_for_condition(int n, int condition_node)
+int test_argument_list_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
-	int val, num_true;
+	int val, num_valid_arguments;
 	Assert(n != -1 && condition_node != -1);
+	Assert((num_true != NULL) && (num_false != NULL) && (num_known_true != NULL) && (num_known_false != NULL));
 
 	// ensure special argument list is empty
 	Sexp_applicable_argument_list.clear_nesting_level();
 
+	// ditto for counters
+	num_valid_arguments = 0;
+	*num_true = 0;
+	*num_false = 0;
+	*num_known_true = 0;
+	*num_known_false = 0;
+
 	// loop through all arguments
-	num_true = 0;
 	while (n != -1)
 	{
 		// only eval this argument if it's valid
@@ -7921,40 +7959,60 @@ int test_argument_list_for_condition(int n, int condition_node)
 			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 			val = eval_sexp(condition_node);
 
-			// true?
-			if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+			switch (val)
 			{
-				num_true++;
-				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+				case SEXP_TRUE:
+					(*num_true)++;
+					Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+					break;
+
+				case SEXP_FALSE:
+					(*num_false)++;
+					break;
+
+				case SEXP_KNOWN_TRUE:
+					(*num_known_true)++;
+					Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+					break;
+
+				case SEXP_KNOWN_FALSE:
+					(*num_known_false)++;
+					break;
 			}
 
 			// clear argument, but not list, as we'll need it later
 			Sexp_replacement_arguments.pop_back();
+
+			// increment
+			num_valid_arguments++;
 		}
 
 		// continue along argument list
 		n = CDR(n);
 	}
 
-	// return number of arguments for which conditional was true
-	return num_true;
+	return num_valid_arguments;
 }
 
 // Goober5000
 int eval_any_of(int arg_handler_node, int condition_node)
 {
-	int n, num_true;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
 
 	// test the whole argument list
-	num_true = test_argument_list_for_condition(n, condition_node);
+	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
-	// true if any argument is true
-	if (num_true > 0)
-		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
+	// use the sexp_or algorithm
+	if (num_known_true)
+		return SEXP_KNOWN_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else if (num_true)
+		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -7962,26 +8020,30 @@ int eval_any_of(int arg_handler_node, int condition_node)
 // Goober5000
 int eval_every_of(int arg_handler_node, int condition_node)
 {
-	int n, num_true;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// the arguments should just be data, not operators, so we can skip the CAR
 	n = CDR(arg_handler_node);
 
 	// test the whole argument list
-	num_true = test_argument_list_for_condition(n, condition_node);
+	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
-	// true if all arguments are true
-	if (num_true == query_sexp_args_count(arg_handler_node))
-		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
-	else
+	// use the sexp_and algorithm
+	if (num_known_false)
+		return SEXP_KNOWN_FALSE;
+	else if (num_known_true == num_valid_arguments)
+		return SEXP_KNOWN_TRUE;
+	else if (num_false)
 		return SEXP_FALSE;
+	else
+		return SEXP_TRUE;
 }
 
 // Goober5000
 int eval_number_of(int arg_handler_node, int condition_node)
 {
-	int n, num_true, threshold;
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// the arguments should just be data, not operators, so we can skip the CAR
@@ -7992,11 +8054,16 @@ int eval_number_of(int arg_handler_node, int condition_node)
 	n = CDR(n);
 
 	// test the whole argument list
-	num_true = test_argument_list_for_condition(n, condition_node);
+	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
-	// true if at least threshold arguments are true
-	if (num_true >= threshold)
-		return SEXP_TRUE;	// SEXP_KNOWN_TRUE; ?????
+	// use the sexp_or algorithm, modified
+	// (true if at least threshold arguments are true)
+	if (num_known_true >= threshold)
+		return SEXP_KNOWN_TRUE;
+	else if (num_valid_arguments - num_known_false < threshold)
+		return SEXP_KNOWN_FALSE;
+	else if (num_true + num_known_true >= threshold)
+		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -10287,15 +10354,11 @@ void sexp_add_background_bitmap(int n)
 
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
-        if (!stars_add_bitmap_entry(&sle))
+        new_number = stars_add_bitmap_entry(&sle);
+        if (new_number < 0)
         {
 		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
             new_number = 0;
-        }
-        else
-        {
-            // get new numerical value
-		    new_number = stars_get_num_bitmaps() - 1;
         }
 
 		sprintf(number_as_str, "%d", new_number);
@@ -10373,14 +10436,12 @@ void sexp_add_sun_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-        if (!stars_add_sun_entry(&sle))
+        new_number = stars_add_sun_entry(&sle);
+
+        if (new_number < 0)
         {
 		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
             new_number = 0;
-        }
-        else
-        {
-            new_number = stars_get_num_suns() - 1;
         }
 
 		sprintf(number_as_str, "%d", new_number);
@@ -10653,40 +10714,52 @@ void sexp_tech_reset_to_default()
 // of a mission
 void sexp_allow_ship(int n)
 {
-	int sindex;
-	char *name;
+	int idx;
+	char name[NAME_LENGTH], temp[NAME_LENGTH];
 
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	// get the name of the ship and lookup up the ship_info index for it
-	name = CTEXT(n);
-	sindex = ship_info_lookup( name );
-	if ( sindex == -1 )
-		return;
+	// get the base name of the ship
+	strcpy(name, CTEXT(n));
+	end_string_at_first_hash_symbol(name);
 
-	// now we have a valid index --
-	mission_campaign_save_persistent( CAMPAIGN_PERSISTENT_SHIP, sindex );
+	// add that ship, as well as any # equivalents
+	for (idx = 0; idx < Num_ship_classes; idx++)
+	{
+		strcpy(temp, Ship_info[idx].name);
+		end_string_at_first_hash_symbol(temp);
+
+		// we have a match, so allow this ship
+		if (!strcmp(name, temp))
+			mission_campaign_save_persistent(CAMPAIGN_PERSISTENT_SHIP, idx);
+	}
 }
 
 void sexp_allow_weapon(int n)
 {
-	int sindex;
-	char *name;
+	int idx;
+	char name[NAME_LENGTH], temp[NAME_LENGTH];
 
 	// this function doesn't mean anything when not in campaign mode
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	// get the name of the weapon and lookup up the weapon_info index for it
-	name = CTEXT(n);
-	sindex = weapon_info_lookup( name );
-	if ( sindex == -1 )
-		return;
+	// get the base name of the weapon
+	strcpy(name, CTEXT(n));
+	end_string_at_first_hash_symbol(name);
 
-	// now we have a valid index --
-	mission_campaign_save_persistent( CAMPAIGN_PERSISTENT_WEAPON, sindex );
+	// add that weapon, as well as any # equivalents
+	for (idx = 0; idx < Num_weapon_types; idx++)
+	{
+		strcpy(temp, Weapon_info[idx].name);
+		end_string_at_first_hash_symbol(temp);
+
+		// we have a match, so allow this weapon
+		if (!strcmp(name, temp))
+			mission_campaign_save_persistent(CAMPAIGN_PERSISTENT_WEAPON, idx);
+	}
 }
 
 // Goober5000
@@ -10703,7 +10776,7 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 		ship_name = CTEXT(node);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL))
+		if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL))
 			continue;
 
 		// see if ship exists in-mission
@@ -15009,8 +15082,10 @@ int sexp_return_player_data(int node, int type)
 		if (p_objp->flags & P_OF_PLAYER_START) { 
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
-					return p_objp->respawn_count;
-
+					// when an AI ship is finally killed its respawn count won't be updated so get the number of deaths 
+					// from the log instead
+					return mission_log_get_count(LOG_SHIP_DESTROYED, CTEXT(node), NULL) + mission_log_get_count(LOG_SELF_DESTRUCTED, CTEXT(node), NULL);
+					
 				case OP_RESPAWNS_LEFT:
 					return Netgame.respawn - p_objp->respawn_count; 
 
@@ -20127,6 +20202,12 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_PERSONA_NAME:
 			return "Invalid persona name";
+
+		case SEXP_CHECK_INVALID_VARIABLE:
+			return "Invalid variable name"; 
+
+		case SEXP_CHECK_INVALID_VARIABLE_TYPE:
+			return "Invalid variable type"; 
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -20371,6 +20452,26 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 	Sexp_variables[index].type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
 }
 
+// given a sexp node returns the index of the variable at that node, -1 if not found
+int get_index_sexp_variable_from_node (int node)
+{
+	int var_index; 
+
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)) {
+		return -1;
+	}
+
+	if (Fred_running) {
+		var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+	}
+	else {
+		var_index = atoi(Sexp_nodes[node].text);
+	}
+
+	return var_index; 
+}
+
+
 // return index of sexp_variable_name, -1 if not found
 int get_index_sexp_variable_name(const char *temp_name)
 {
@@ -20391,7 +20492,7 @@ int get_index_sexp_variable_name(const char *temp_name)
 // return index of sexp_variable_name, -1 if not found
 int get_index_sexp_variable_name_special(const char *startpos)
 {
-	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
+	for (int i = MAX_SEXP_VARIABLES - 1; i >= 0; i--) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
 			// check case sensitive
 			// check number of chars in variable name
@@ -20401,8 +20502,8 @@ int get_index_sexp_variable_name_special(const char *startpos)
 		}
 	}
 
-	// not found
-	return -1;
+    // not found
+    return -1;
 }
 
 // Goober5000
@@ -20766,7 +20867,6 @@ int get_subcategory(int sexp_id)
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
-		case OP_MODIFY_VARIABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_AWACS_SET_RADIUS:
 		case OP_PRIMITIVE_SENSORS_SET_RANGE:

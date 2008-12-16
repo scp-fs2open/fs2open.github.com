@@ -640,6 +640,7 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
@@ -2789,7 +2790,12 @@ void broadcast_game_query()
 	int packet_size;
 	net_addr addr;	
 	server_item *s_moveup;
-	ubyte data[MAX_PACKET_SIZE];	
+	ubyte data[MAX_PACKET_SIZE];
+
+	if ( MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) ) {
+		fs2netd_send_game_request();
+		return;
+	}
 
 	BUILD_HEADER(GAME_QUERY);	
 	
@@ -7481,7 +7487,10 @@ void send_client_update_packet(net_player *pl)
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
-		percent = (ubyte) (get_hull_pct(objp) * 100.0f);
+		percent = (ubyte) ((get_hull_pct(objp) * 100.0f) + 0.5f);
+		if ( (percent == 0) && (get_hull_pct(objp) > 0.0f) ) {
+			percent = 1;
+		}
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
@@ -8900,7 +8909,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	GET_VECTOR(local_hit_pos);
 	PACKET_SET_SIZE();
 
-	mprintf(("PAIN!\n"));
+	// mprintf(("PAIN!\n"));
 
 	// get weapon info pointer
 	Assert((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER));

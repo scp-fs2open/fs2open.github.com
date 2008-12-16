@@ -130,7 +130,7 @@ static bool Connecting = false;
 static bool Connected = false;
 static SOCKET mySocket = INVALID_SOCKET;
 
-static sockaddr_in PXO_addr;
+static sockaddr_in FS2NetD_addr;
 
 
 void FS2NetD_Disconnect()
@@ -145,7 +145,7 @@ void FS2NetD_Disconnect()
 	Connecting = false;
 }
 
-int FS2NetD_ConnectToServer(char *host, ushort port)
+int FS2NetD_ConnectToServer(const char *host, const char *port)
 {
 	struct hostent *my_host = NULL;
 	char host_str[5];
@@ -163,10 +163,10 @@ int FS2NetD_ConnectToServer(char *host, ushort port)
 		}
 #endif
 
-		memset(&PXO_addr, 0, sizeof(sockaddr_in));
-		PXO_addr.sin_family = AF_INET;
-		PXO_addr.sin_addr.s_addr = INADDR_ANY;
-		PXO_addr.sin_port = 0;
+		memset(&FS2NetD_addr, 0, sizeof(sockaddr_in));
+		FS2NetD_addr.sin_family = AF_INET;
+		FS2NetD_addr.sin_addr.s_addr = INADDR_ANY;
+		FS2NetD_addr.sin_port = 0;
 
 		mySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -180,7 +180,7 @@ int FS2NetD_ConnectToServer(char *host, ushort port)
 			return -1;
 		}
 
-		if ( bind(mySocket, (sockaddr *)&PXO_addr, sizeof(sockaddr)) == SOCKET_ERROR ) {
+		if ( bind(mySocket, (sockaddr *)&FS2NetD_addr, sizeof(sockaddr)) == SOCKET_ERROR ) {
 #ifdef SCP_UNIX
 			my_error = errno;
 			ml_printf("FS2NetD ERROR: Couldn't bind socket (\"%s\")!", strerror(my_error));
@@ -218,32 +218,33 @@ int FS2NetD_ConnectToServer(char *host, ushort port)
 				return -1;
 			}
 
-			PXO_addr.sin_addr.s_addr = ((in_addr *)(my_host->h_addr_list[0]))->s_addr;
+			FS2NetD_addr.sin_addr.s_addr = ((in_addr *)(my_host->h_addr_list[0]))->s_addr;
 		}
 		// we might be in dotted format so try using it as such
 		else {
-			PXO_addr.sin_addr.s_addr = inet_addr( host );
+			FS2NetD_addr.sin_addr.s_addr = inet_addr( host );
 		}
 
-		if (PXO_addr.sin_addr.s_addr == INADDR_ANY) {
+		if (FS2NetD_addr.sin_addr.s_addr == INADDR_ANY) {
 			ml_printf("No valid server address to connect with!");
 			return -1;
 		}
 
 		// we need to set the correct port before moving on
-		PXO_addr.sin_port = htons(port);
+		long m_port = strtol(port, (char**)NULL, 10);
+		FS2NetD_addr.sin_port = htons( (ushort)m_port );
 
 
-		if ( connect(mySocket, (sockaddr *)&PXO_addr, sizeof(sockaddr)) == SOCKET_ERROR ) {
+		if ( connect(mySocket, (sockaddr *)&FS2NetD_addr, sizeof(sockaddr)) == SOCKET_ERROR ) {
 			if ( WSAGetLastError() == WSAEWOULDBLOCK ) {
 				Connecting = true;
 				return 0;
 			} else {
 #ifdef SCP_UNIX
 				int errv = errno;
-				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s (\"%s\")!", inet_ntoa(PXO_addr.sin_addr), strerror(errv));
+				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s (\"%s\")!", inet_ntoa(FS2NetD_addr.sin_addr), strerror(errv));
 #else
-				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s!", inet_ntoa(PXO_addr.sin_addr));
+				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s!", inet_ntoa(FS2NetD_addr.sin_addr));
 #endif
 			}
 
@@ -307,20 +308,32 @@ int FS2NetD_ConnectToServer(char *host, ushort port)
 	return -1;
 }
 
-int FS2NetD_GetData(char *buffer, int blen, bool OOB)
+int FS2NetD_GetData(char *buffer, int blen)
 {
 	int flags = 0;
-	int status = SOCKET_ERROR;
-
-	if (OOB)
-		flags = flags | MSG_OOB;
 
 	// clear the buffer
 	memset(buffer, 0, blen);
 
+	socklen_t from_len = sizeof(sockaddr);
+
+	return recvfrom(mySocket, buffer, blen, flags, (sockaddr*)&FS2NetD_addr, &from_len);
+}
+
+int FS2NetD_SendData(char *buffer, int blen)
+{
+	int flags = 0;
+
+	socklen_t to_len = sizeof(sockaddr);
+
+	return sendto(mySocket, buffer, blen, flags, (sockaddr*)&FS2NetD_addr, to_len);
+}
+
+bool FS2NetD_DataReady()
+{
 	timeval wait;
 	wait.tv_sec = 0;
-	wait.tv_usec = 0;
+	wait.tv_usec = 1;
 
 	fd_set recvs;
 
@@ -328,37 +341,10 @@ int FS2NetD_GetData(char *buffer, int blen, bool OOB)
 	FD_SET(mySocket, &recvs);
 
 #ifndef SCP_UNIX
-	status = select(1, &recvs, NULL, NULL, &wait);
+	int status = select(1, &recvs, NULL, NULL, &wait);
 #else
-	status = select(mySocket+1, &recvs, NULL, NULL, &wait);
+	int status = select(mySocket+1, &recvs, NULL, NULL, &wait);
 #endif
 
-	if ( (status == SOCKET_ERROR) || !(FD_ISSET(mySocket, &recvs)) )
-        return -1;
-
-	socklen_t from_len = sizeof(sockaddr);
-
-	return recvfrom(mySocket, buffer, blen, flags, (sockaddr*)&PXO_addr, &from_len);
-}
-
-int FS2NetD_SendData(char *buffer, int msg_len, bool OOB)
-{
-	int flags = 0;
-
-	if (OOB)
-		flags = flags | MSG_OOB;
-
-	socklen_t to_len = sizeof(sockaddr);
-
-	return sendto(mySocket, buffer, msg_len, flags, (sockaddr*)&PXO_addr, to_len);
-}
-
-void FS2NetD_IgnorePackets()
-{
-	// let's say most that is going to be backed up is 32K
-	char *bitbox = new char[1024*32];
-
-	FS2NetD_GetData(bitbox, 1024*32);
-
-	delete[] bitbox;
+	return ( (status != 0) && (status != -1) && FD_ISSET(mySocket, &recvs) );
 }

@@ -656,6 +656,7 @@ int CFREDDoc::autoload()
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
 	SAFE_STRCAT(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
+	strcpy(backup_name, name);
 	SAFE_STRCAT(name, ".002", (sizeof(name) - 1));
 	fp = fopen(name, "r");
 	if (!fp)
@@ -669,7 +670,6 @@ int CFREDDoc::autoload()
 	r = load_mission(name);
 	Update_window = 1;
 
-	strcpy(backup_name, MISSION_BACKUP_NAME);
 	len = strlen(backup_name);
 	strcat(backup_name, ".001");
 	cf_delete(backup_name, CF_TYPE_MISSIONS);

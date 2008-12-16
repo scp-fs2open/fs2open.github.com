@@ -3292,10 +3292,20 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 1;
 
 		case OPF_SHIP:
-		case OPF_SHIP_NOT_PLAYER:
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			return 0;
+
+		case OPF_SHIP_NOT_PLAYER:
 		case OPF_ORDER_RECIPIENT:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -3847,16 +3857,45 @@ void sexp_tree::verify_and_fix_arguments(int node)
 				char *text_ptr;
 				char default_variable_text[TOKEN_LENGTH];
 				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
-					// special case for modify-variable
-					if ( !stricmp(Operators[op].text, "modify-variable") ||
-						 !stricmp(Operators[op].text, "add-background-bitmap") ||
-						 !stricmp(Operators[op].text, "add-sun-bitmap")) {
+					// special case for SEXPs which can modify a variable 
+					if ( (!stricmp(Operators[op].text, "modify-variable")) ||
+						 ((!stricmp(Operators[op].text, "add-background-bitmap")) && (arg_num == 8)) ||
+						 ((!stricmp(Operators[op].text, "add-sun-bitmap")) && (arg_num == 5))	){
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
 					} else {
-						get_variable_default_text_from_variable_text(tree_nodes[item_index].text, default_variable_text);
-						text_ptr = default_variable_text;
+						// only the type needs checking for variables. It's up the to the FREDder to ensure the value is valid
+						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);						
+						int sexp_var_index = get_index_sexp_variable_name(default_variable_text);
+						bool types_match = false; 
+						Assert(sexp_var_index != -1);
+
+						switch (type) {
+							case OPF_NUMBER:
+							case OPF_POSITIVE:
+								if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
+									types_match = true; 
+								}
+								break; 
+
+							default: 
+								if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
+									types_match = true; 
+								}
+						}
+						
+						if (types_match) {
+							// on to the next argument
+							item_index = tree_nodes[item_index].next;
+							arg_num++;
+							continue; 
+						}
+						else {
+							// shouldn't really be getting here unless someone has been hacking the mission in a text editor
+							get_variable_default_text_from_variable_text(tree_nodes[item_index].text, default_variable_text);
+							text_ptr = default_variable_text;
+						}
 					}
 				} else {
 					text_ptr = tree_nodes[item_index].text;
@@ -4924,7 +4963,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	}
 
 	// also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
-	if (list == NULL || opf == OPF_NULL) {
+	if (opf == OPF_NULL) {
 		return list;
 	}
 
@@ -4932,9 +4971,11 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	if (opf != OPF_NUMBER && opf != OPF_POSITIVE) {
 		head.add_data(SEXP_ARGUMENT_STRING);
 	}
-
-	// append other list
-	head.add_list(list);
+	
+	if (list != NULL) { 
+		// append other list
+		head.add_list(list);
+	}
 
 	// return listing
 	return head.next;
@@ -5547,7 +5588,13 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 						head.add_op(i);
 				}
 			}
-
+		// when dealing with the special argument add them all. It's up to the FREDder to ensure invalid orders aren't given
+		} else if (!strcmp(tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
+			for (i=0; i<Num_operators; i++) {
+				if (query_operator_return_type(i) == OPR_AI_GOAL) {
+					head.add_op(i);
+				}
+			}
 		} else
 			return NULL;  // no valid ship or wing to check against, make nothing available
 	}
@@ -6046,7 +6093,7 @@ sexp_list_item *sexp_tree::get_listing_opf_background_bitmap()
 	sexp_list_item head;
 	int i;
 
-	for (i=0; i < stars_get_num_bitmaps(); i++)
+	for (i=0; i < stars_get_num_entries(false, true); i++)
  	{
 		head.add_data( (char*)stars_get_name_FRED(i, false) );
  	}
@@ -6059,7 +6106,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sun_bitmap()
 	sexp_list_item head;
 	int i;
 
-	for (i=0; i < stars_get_num_suns(); i++)
+	for (i=0; i < stars_get_num_entries(true, true); i++)
  	{
 		head.add_data( (char*)stars_get_name_FRED(i, true) );
  	}

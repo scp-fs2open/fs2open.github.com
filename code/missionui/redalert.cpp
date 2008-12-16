@@ -266,6 +266,7 @@
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
 #include "io/mouse.h"
+#include "ai/aigoals.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -466,6 +467,11 @@ void red_alert_button_pressed(int n)
 		mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
 		if(game_do_cd_mission_check(Game_current_mission_filename)){
+			if(Game_mode & GM_MULTIPLAYER){	
+				// process the initial orders now (moved from post_process_mission()in missionparse) 
+				ai_post_process_mission();
+			}
+
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
 		} else {
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
