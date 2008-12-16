@@ -267,15 +267,23 @@ char *Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 	"2_ViewFootage-m"
 };
 
-int Num_cutscenes;
+using std::vector;
+
+size_t Num_cutscenes;
 int Cutscenes_viewable;
 int Description_index;
-cutscene_info Cutscenes[MAX_CUTSCENES];
+vector<cutscene_info> Cutscenes;
 
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
-void cutscene_close(){
-	for(int i = 0; i<MAX_CUTSCENES; i++)
-	if(Cutscenes[i].description)vm_free(Cutscenes[i].description);
+void cutscene_close()
+{
+	for(size_t i = 0; i < Num_cutscenes; i++)
+    {
+	    if(Cutscenes[i].description)
+        {
+            vm_free(Cutscenes[i].description);
+        }
+    }
 }
 
 // initialization stuff for cutscenes
@@ -284,6 +292,7 @@ void cutscene_init()
 	atexit(cutscene_close);
 	char buf[MULTITEXT_LENGTH];
 	int rval;
+    cutscene_info cutinfo;
 
 	// open localization
 	lcl_ext_open();
@@ -301,21 +310,28 @@ void cutscene_init()
 	Num_cutscenes = 0;
 	skip_to_string("#Cutscenes");
 	ignore_white_space();
-	while ( required_string_either("#End", "$Filename:") ) {
-		Assert ( Num_cutscenes < MAX_CUTSCENES );
+
+	while ( required_string_either("#End", "$Filename:") ) 
+    {
+        memset(&cutinfo, 0, sizeof(cutscene_info));
+
 		required_string("$Filename:");
-		stuff_string( Cutscenes[Num_cutscenes].filename, F_PATHNAME, MAX_FILENAME_LEN );
+		stuff_string( cutinfo.filename, F_PATHNAME, MAX_FILENAME_LEN );
+
 		required_string("$Name:");
-		stuff_string( Cutscenes[Num_cutscenes].name, F_NAME, NAME_LENGTH );
+		stuff_string( cutinfo.name, F_NAME, NAME_LENGTH );
+
 		required_string("$Description:");
 		stuff_string(buf, F_MULTITEXT, sizeof(buf));
 		drop_white_space(buf);
 		compact_multitext_string(buf);
-		Cutscenes[Num_cutscenes].description = vm_strdup(buf);
-		required_string("$cd:");
-		stuff_int( &Cutscenes[Num_cutscenes].cd );
+		cutinfo.description = vm_strdup(buf);
 
-		Num_cutscenes++;
+		required_string("$cd:");
+		stuff_int( &cutinfo.cd );
+
+        Cutscenes.push_back(cutinfo);
+        Num_cutscenes++;
 	}
 
 	required_string("#End");
@@ -333,7 +349,7 @@ int cutscenes_get_cd_num( char *filename )
 #if defined(OEM_BUILD)
 	return 0;				// only 1 cd for OEM
 #else
-	int i;
+	size_t i;
 
 	for (i = 0; i < Num_cutscenes; i++ ) {
 		if ( !stricmp(Cutscenes[i].filename, filename) ) {
@@ -348,7 +364,7 @@ int cutscenes_get_cd_num( char *filename )
 // marks a cutscene as viewable
 void cutscene_mark_viewable(char *filename)
 {
-	int i;
+	size_t i;
 	char cut_file[MAX_FILENAME_LEN];
 	char file[MAX_FILENAME_LEN];
 
@@ -390,7 +406,7 @@ void cutscene_mark_viewable(char *filename)
 #define EXIT_BUTTON				7
 
 static int Num_files;
-static int Cutscene_list[MAX_CUTSCENES];
+static vector<int> Cutscene_list;
 //static int Stats_scroll_offset;  // not used - taylor
 static int Selected_line = 0;  // line that is currently selected for binding
 static int Scroll_offset;
@@ -686,6 +702,7 @@ int cutscenes_screen_button_pressed(int n)
 void cutscenes_screen_init()
 {
 	int i;
+    size_t j;
 	ui_button_info *b;
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -730,9 +747,10 @@ void cutscenes_screen_init()
 //  		Cutscenes_viewable = 0xffffffff;		//	Cheat code enables all movies.
 
 	Num_files = 0;
-	for ( i = 0; i < Num_cutscenes; i++ ) {
-		if ( Cutscenes_viewable & (1<<i) ) {
-			Cutscene_list[Num_files] = i;
+    Cutscene_list.clear();
+	for ( j = 0; j < Num_cutscenes; j++ ) {
+		if ( Cutscenes_viewable & (1<<j) ) {
+            Cutscene_list.push_back((int)j);
 			Num_files++;
 		}
 	}
@@ -749,6 +767,7 @@ void cutscenes_screen_close()
 void cutscenes_screen_do_frame()
 {
 	int i, k, y, z;
+    size_t t;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;
 
@@ -792,8 +811,8 @@ void cutscenes_screen_do_frame()
 		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
 		{
 			Num_files = 0;
-			for (i = 0; i < Num_cutscenes; i++) {
-				Cutscene_list[Num_files] = i;
+			for (t = 0; t < Num_cutscenes; t++) {
+				Cutscene_list[Num_files] = (int)t;
 				Num_files++;
 			}
 
