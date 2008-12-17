@@ -564,6 +564,18 @@ void briefing_editor_dlg::update_data(int update)
 				break;
 		}
 
+		//WMC - Safeguard against broken lines
+		i = ptr->num_lines;
+		while(i--)
+		{
+			if(ptr->lines[i].start_icon < 0 || ptr->lines[i].end_icon < 0 || ptr->lines[i].start_icon >= ptr->num_icons || ptr->lines[i].end_icon >= ptr->num_icons)
+			{
+				ptr->num_lines--;
+				for(l = i; l < ptr->num_lines; l++)
+					ptr->lines[l] = ptr->lines[l+1];
+			}
+		}
+
 		if (m_last_icon >= 0) {
 			valid = (m_id != ptr->icons[m_last_icon].id);
 			if (m_id >= 0) {
