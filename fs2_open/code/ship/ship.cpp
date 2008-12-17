@@ -9792,13 +9792,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
 
-	// make sure that shields are enabled if they need to be
-	if (sp->ship_max_shield_strength > 0.0f) {
-		objp->flags &= ~OF_NO_SHIELDS;
-	} else {
-		objp->flags |= OF_NO_SHIELDS;
-	}
-
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
