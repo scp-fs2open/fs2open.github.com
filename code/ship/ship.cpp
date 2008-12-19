@@ -6347,7 +6347,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 	// number as our own and that has the model information
 	// if ( subsystems_needed == sip->n_subsystems ) {
 		for ( i = 0; i < Num_ship_classes; i++ ) {
-			model_subsystem *msp;
+			model_subsystem *source_msp, *dest_msp;
 
 			if ( (Ship_info[i].model_num != model_num) || (&Ship_info[i] == sip) ){
 				continue;
@@ -6357,8 +6357,16 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 			// subsystem since previous error checking would have trapped its loading as an error.
 			Assert( Ship_info[i].n_subsystems == sip->n_subsystems );
 
-			msp = &Ship_info[i].subsystems[0];
-			model_copy_subsystems( sip->n_subsystems, &(sip->subsystems[0]), msp );
+			source_msp = &Ship_info[i].subsystems[0];
+			dest_msp = &(sip->subsystems[0]);
+			if (source_msp->model_num != -1) {
+				model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
+			} else if (dest_msp->model_num != -1) {
+				model_copy_subsystems( sip->n_subsystems, source_msp, dest_msp );
+			} else {
+				//shouldnt be possible
+				Int3();
+			}
 			sip->flags |= SIF_PATH_FIXUP;
 			break;
 		}
