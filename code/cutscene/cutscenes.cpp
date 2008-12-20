@@ -811,8 +811,9 @@ void cutscenes_screen_do_frame()
 		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
 		{
 			Num_files = 0;
+            Cutscene_list.clear();
 			for (t = 0; t < Num_cutscenes; t++) {
-				Cutscene_list[Num_files] = (int)t;
+                Cutscene_list.push_back((int)t);
 				Num_files++;
 			}
 
