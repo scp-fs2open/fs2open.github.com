@@ -1926,10 +1926,30 @@ void multi_ts_init_objnums()
 	}		
 }
 
+bool multi_ts_validate_ship(char *shipname, char *wingname) 
+{
+	int wing_number, wing_idx; 
+
+	// check name isn't too short to be valid
+	if (strlen(shipname) < (strlen (wingname) + 2) ) {		
+		return false;
+	}
+
+	wing_idx = wing_lookup(wingname); 
+	Assert (wing_idx >= 0 && wing_idx < MAX_WINGS); 
+	wing_number = atoi(shipname+strlen(wingname)); 
+
+	if (wing_number > 0 && wing_number <= Wings[wing_idx].wave_count) {
+		return true; 
+	}
+
+	return false;
+}
+
 // get the proper team and slot index for the given ship name
 void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 {
-	int idx;//,s_idx;
+	int idx; 
 
 	// set the return values to default values
 	*team_index = -1;
@@ -1940,7 +1960,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
 		for (idx = 0; idx < MAX_TVT_WINGS; idx++) {
 			// get team (wing)
-			if ( !strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])) ) {
+			if ( !strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])) && multi_ts_validate_ship(ship_name, TVT_wing_names[idx]) ) {				
 				*team_index = idx;
 				*slot_index = (ship_name[strlen(ship_name)-1] - '1');
 
@@ -1954,7 +1974,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 		int wing, ship;
 		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
 			// get wing
-			if ( !strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])) ) {
+			if ( !strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])) && multi_ts_validate_ship(ship_name, Starting_wing_names[idx]) ) {
 				wing = idx;
 				ship = (ship_name[strlen(ship_name)-1] - '1');
 
