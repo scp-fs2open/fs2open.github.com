@@ -2010,12 +2010,17 @@ int CFred_mission_save::save_objects()
 
 		// always write out the score to ensure backwards compatibility. If the score is the same as the value 
 		// in the table write out a flag to tell the game to simply use whatever is in the table instead
-		if (Format_fs2_open && Ship_info[Ships[i].ship_info_index].score == Ships[i].score ) {
+		if (Ship_info[Ships[i].ship_info_index].score == Ships[i].score ) {
 			if ( optional_string_fred("+Use Table Score:") ) {
-				parse_comments();
+				parse_comments(1);
 			} else {
-				fout("\n+Use Table Score:");
+				fso_comment_push(";;FSO 3.6.10;;");
+				fout_version("\n+Use Table Score:");
+				fso_comment_pop();
 			}		
+		}
+		else {
+			bypass_comment(";;FSO 3.6.10;; +Use Table Score:");
 		}
 
 		if (optional_string_fred("+Score:", "$Name:"))
@@ -2028,12 +2033,17 @@ int CFred_mission_save::save_objects()
 		
 		if (Format_fs2_open && Ships[i].assist_score_pct != 0) {
 			if ( optional_string_fred("+Assist Score Percentage:") ) {
-				parse_comments();
+				parse_comments(1);
 			} else {
-				fout("\n+Assist Score Percentage:");
+				fso_comment_push(";;FSO 3.6.10;;");
+				fout_version("\n+Assist Score Percentage:");
+				fso_comment_pop();
 			}
 			
 			fout(" %f", Ships[i].assist_score_pct);
+		}
+		else {
+			bypass_comment(";;FSO 3.6.10;; +Assist Score Percentage:");
 		}
 
 		// deal with the persona for this ship as well.
