@@ -6792,10 +6792,12 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	initial_bank = swp->current_secondary_bank;
 
 	//	Ignore bombs unless one of the priorities asks for them to be selected.
-	if (WIF_HUGE & (priority1 | priority2))
+	int bomb_check = (The_mission.ai_profile->flags & AIPF_USE_BOMB_FOR_AI_SECONDARY_PRIORITY) ? WIF_BOMB : WIF_HUGE;
+
+	if (bomb_check & (priority1 | priority2))
 		ignore_mask = 0;
 	else
-		ignore_mask = WIF_HUGE;
+		ignore_mask = bomb_check;
 
 	if (!(WIF_BOMBER_PLUS & (priority1 | priority2)))
 		ignore_mask |= WIF_BOMBER_PLUS;
