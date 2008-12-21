@@ -6786,19 +6786,25 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	int	i;
-	int	ignore_mask;
+	int	ignore_mask, ignore_mask_without_huge;
 	int	initial_bank;
 
 	initial_bank = swp->current_secondary_bank;
 
-	//	Ignore bombs unless one of the priorities asks for them to be selected.
-	if (WIF_HUGE & (priority1 | priority2))
-		ignore_mask = 0;
-	else
-		ignore_mask = WIF_HUGE;
+	// set up ignore masks
+	ignore_mask = 0;
+	ignore_mask_without_huge = 0;
 
-	if (!(WIF_BOMBER_PLUS & (priority1 | priority2)))
+	// Ignore bombs unless one of the priorities asks for them to be selected.
+	if (!(WIF_HUGE & (priority1 | priority2))) {
+		ignore_mask |= WIF_HUGE;
+	}
+
+	// Ignore bomber+ unless one of the priorities asks for them to be selected
+	if (!(WIF_BOMBER_PLUS & (priority1 | priority2))) {
 		ignore_mask |= WIF_BOMBER_PLUS;
+		ignore_mask_without_huge |= WIF_BOMBER_PLUS;
+	}
 
 #ifndef NDEBUG
 	for (i=0; i<MAX_WEAPON_TYPES; i++) {
@@ -6807,19 +6813,22 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 #endif
 
-	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0))
-		ignore_mask |= WIF_HOMING;
-
 	//	Stuff weapon_bank_list with bank index of available weapons.
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
+
+	// Ignore homing weapons if we didn't specify a flag - for priority 1
+	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0)) {
+		ignore_mask |= WIF_HOMING;
+		ignore_mask_without_huge |= WIF_HOMING;
+	}
 
 	int	priority2_index = -1;
 
 	for (i=0; i<num_weapon_types; i++) {
-		int	wi_flags;
+		int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+		int ignore_mask_to_use = ((The_mission.ai_profile & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
-		wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-		if (!(wi_flags & ignore_mask)) {					//	Maybe bombs are illegal.
+		if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
 			if (wi_flags & priority1) {
 				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
 				break;
@@ -6828,18 +6837,21 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		}
 	}
 
-	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0))
+	// Ignore homing weapons if we didn't specify a flag - for priority 2
+	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0)) {
 		ignore_mask |= WIF_HOMING;
+		ignore_mask_without_huge |= WIF_HOMING;
+	}
 
 	//	If didn't find anything above, then pick any secondary weapon.
 	if (i == num_weapon_types) {
 		swp->current_secondary_bank = priority2_index;	//	Assume we won't find anything.
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
-				int	wi_flags;
+				int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+				int ignore_mask_to_use = ((The_mission.ai_profile & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
-				wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-				if (!(wi_flags & ignore_mask)) {					//	Maybe bombs are illegal.
+				if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
 					if (swp->secondary_bank_ammo[i] > 0) {
 						swp->current_secondary_bank = i;
 						break;
