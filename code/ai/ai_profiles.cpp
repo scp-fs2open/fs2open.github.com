@@ -383,8 +383,6 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$multi allow empty secondaries:", AIPF_MULTI_ALLOW_EMPTY_SECONDARIES);
 
-			set_flag(profile, "$use bomb flag for ai secondary priorities:", AIPF_USE_BOMB_FOR_AI_SECONDARY_PRIORITY);
-
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 				Mp++;
