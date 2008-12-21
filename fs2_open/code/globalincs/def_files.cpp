@@ -904,5 +904,9 @@ $multi allow empty primaries:		NO									\n\
 ;; allow a player to commit into a multiplayer game without secondaries	\n\
 $multi allow empty secondaries:		NO									\n\
 																		\n\
+;; use bomb instead of huge tag for determining which secondary ai		\n\
+;; selects.																\n\
+$use bomb flag for ai secondary priorities:		NO						\n\
+																		\n\
 #End																	\n\
 ";

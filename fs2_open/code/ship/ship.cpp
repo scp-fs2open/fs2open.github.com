@@ -6364,8 +6364,8 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 			} else if (dest_msp->model_num != -1) {
 				model_copy_subsystems( sip->n_subsystems, source_msp, dest_msp );
 			} else {
-				//shouldnt be possible
-				Int3();
+				// if none were found try finding a another ship to copy the data from
+				continue;
 			}
 			sip->flags |= SIF_PATH_FIXUP;
 			break;
@@ -15621,7 +15621,10 @@ void ship_page_in()
 			if ( (Ship_info[j].model_num > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) ) {
 				// Model already loaded
 				model_previously_loaded = Ship_info[j].model_num;
-				ship_previously_loaded = j;
+
+				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
+					ship_previously_loaded = j;
+				}
 
 				// the model should already be loaded so this wouldn't take long, but
 				// we need to make sure that the load count for the model is correct
