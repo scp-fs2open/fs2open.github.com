@@ -872,8 +872,9 @@ void persona_parse()
 
 			// save the Command persona in a global
 			if ( Personas[Num_personas].flags & PERSONA_FLAG_COMMAND ) {
-				if (Default_command_persona < 0)
-					Default_command_persona = Num_personas;
+				// always use the most recent Command persona
+				// found, since that's how retail does it
+				Default_command_persona = Num_personas;
 			}
 
 			break;
