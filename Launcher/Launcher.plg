@@ -1,0 +1,114 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: Launcher - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x809 /fo"Release/Launcher.res" /d "NDEBUG" /d "_AFXDLL" "C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\Launcher.rc"" 
+Creating temporary file "C:\DOCUME~1\DevTom\LOCALS~1\Temp\RSPE7.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /I "..\sound" /I "..\debugconsole" /D "NDEBUG" /D "FS2_SPEECH" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /D "DX9_ENABLED" /Fp"Release/Launcher.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\iniparser\dictionary.c"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\iniparser\iniparser.c"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\iniparser\strlib.c"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\3DFXDisp.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\DX5Disp.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\DX8Disp.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\DX9Disp.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\OGLDisp.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabCommLine.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabHelp.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabMOD.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabNetwork.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabRegOptions.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabSound.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabSpeech.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\TabVideo.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\dbugfile.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\Launcher.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\LauncherDlg.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\misc.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\settings.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\speech.cpp"
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\Win32func.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\DevTom\LOCALS~1\Temp\RSPE7.tmp" 
+Creating temporary file "C:\DOCUME~1\DevTom\LOCALS~1\Temp\RSPE8.tmp" with contents
+[
+/nologo /MD /W3 /GX /O2 /I "..\sound" /I "..\debugconsole" /D "NDEBUG" /D "FS2_SPEECH" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /D "DX9_ENABLED" /Fp"Release/Launcher.pch" /Yc"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\StdAfx.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\DevTom\LOCALS~1\Temp\RSPE8.tmp" 
+Creating temporary file "C:\DOCUME~1\DevTom\LOCALS~1\Temp\RSPE9.tmp" with contents
+[
+Dxerr8.lib d3d8.lib d3dx8.lib dinput.lib winmm.lib d3d9.lib /nologo /subsystem:windows /incremental:yes /pdb:"Release/Launcher.pdb" /machine:I386 /out:"C:\games\Freespace2\Launcher.exe" 
+.\Release\dictionary.obj
+.\Release\iniparser.obj
+.\Release\strlib.obj
+.\Release\3DFXDisp.obj
+.\Release\DX5Disp.obj
+.\Release\DX8Disp.obj
+.\Release\DX9Disp.obj
+.\Release\OGLDisp.obj
+.\Release\TabCommLine.obj
+.\Release\TabHelp.obj
+.\Release\TabMOD.obj
+.\Release\TabNetwork.obj
+.\Release\TabRegOptions.obj
+.\Release\TabSound.obj
+.\Release\TabSpeech.obj
+.\Release\TabVideo.obj
+.\Release\dbugfile.obj
+.\Release\Launcher.obj
+.\Release\LauncherDlg.obj
+.\Release\misc.obj
+.\Release\settings.obj
+.\Release\speech.obj
+.\Release\StdAfx.obj
+.\Release\Win32func.obj
+.\Release\Launcher.res
+]
+Creating command line "link.exe @C:\DOCUME~1\DevTom\LOCALS~1\Temp\RSPE9.tmp"
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+dictionary.c
+iniparser.c
+strlib.c
+3DFXDisp.cpp
+DX5Disp.cpp
+DX8Disp.cpp
+DX9Disp.cpp
+OGLDisp.cpp
+C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\OGLDisp.cpp(140) : warning C4018: '==' : signed/unsigned mismatch
+C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\OGLDisp.cpp(141) : warning C4018: '==' : signed/unsigned mismatch
+C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\OGLDisp.cpp(172) : warning C4018: '==' : signed/unsigned mismatch
+C:\DEV\PROJECTS\Freespace\fs2o\MOD_Launcher\OGLDisp.cpp(173) : warning C4018: '==' : signed/unsigned mismatch
+TabCommLine.cpp
+TabHelp.cpp
+TabMOD.cpp
+TabNetwork.cpp
+TabRegOptions.cpp
+TabSound.cpp
+TabSpeech.cpp
+TabVideo.cpp
+dbugfile.cpp
+Launcher.cpp
+LauncherDlg.cpp
+misc.cpp
+settings.cpp
+speech.cpp
+Win32func.cpp
+Linking...
+
+
+
+<h3>Results</h3>
+Launcher.exe - 0 error(s), 4 warning(s)
+</pre>
+</body>
+</html>
