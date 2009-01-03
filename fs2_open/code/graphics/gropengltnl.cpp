@@ -381,7 +381,7 @@ struct opengl_vertex_buffer {
 	uint stride;		// the current stride
 	uint n_prim;
 	uint n_verts;
-	float *array_list;	// interleaved array
+	GLfloat *array_list;	// interleaved array
 	GLuint vbo;			// buffer for VBO
 	uint flags;			// FVF
 	uint vbo_size;
@@ -447,8 +447,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		return -1;
 	}
 
-	Assert( sizeof(float) == sizeof(GLfloat) );
-
 	vbuffer.stride = 0;
 
 	// setup using flags...
@@ -480,7 +478,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	list_size = vbuffer.stride * list->n_verts;
 
 	// allocate the storage list
-	vbuffer.array_list = (float*)vm_malloc(list_size);
+	vbuffer.array_list = (GLfloat*)vm_malloc_q(list_size);
 
 	// return invalid if we don't have the memory
 	if (vbuffer.array_list == NULL) {
@@ -494,7 +492,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		vertex *vl = &list->vert[i];
 
 		// don't try to generate more data than what's available
-		Assert( ((arsize * sizeof(float)) + vbuffer.stride) <= list_size );
+		Assert( ((arsize * sizeof(GLfloat)) + vbuffer.stride) <= list_size );
 
 		// NOTE: UV->NORM->TSB->VERT, This array order *must* be preserved!!
 
@@ -1170,8 +1168,16 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 	GL_state.Texture.DisableAll();
 	GL_state.Normalize(GL_FALSE);
 	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	vglClientActiveTextureARB(GL_TEXTURE0_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);

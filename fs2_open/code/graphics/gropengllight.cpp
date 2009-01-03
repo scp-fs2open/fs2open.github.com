@@ -232,28 +232,28 @@ static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
 void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 {
-	GLLight->Ambient.r = 0.0f;
-	GLLight->Ambient.g = 0.0f;
-	GLLight->Ambient.b = 0.0f;
-	GLLight->Ambient.a = 1.0f;
+	GLLight->Ambient[0] = 0.0f;
+	GLLight->Ambient[1] = 0.0f;
+	GLLight->Ambient[2] = 0.0f;
+	GLLight->Ambient[3] = 1.0f;
 
-	GLLight->Diffuse.r = FSLight->r * FSLight->intensity;
-	GLLight->Diffuse.g = FSLight->g * FSLight->intensity;
-	GLLight->Diffuse.b = FSLight->b * FSLight->intensity;
-	GLLight->Diffuse.a = 1.0f;
+	GLLight->Diffuse[0] = FSLight->r * FSLight->intensity;
+	GLLight->Diffuse[1] = FSLight->g * FSLight->intensity;
+	GLLight->Diffuse[2] = FSLight->b * FSLight->intensity;
+	GLLight->Diffuse[3] = 1.0f;
 
-	GLLight->Specular.r = FSLight->spec_r * FSLight->intensity;
-	GLLight->Specular.g = FSLight->spec_g * FSLight->intensity;
-	GLLight->Specular.b = FSLight->spec_b * FSLight->intensity;
-	GLLight->Specular.a = 1.0f;
+	GLLight->Specular[0] = FSLight->spec_r * FSLight->intensity;
+	GLLight->Specular[1] = FSLight->spec_g * FSLight->intensity;
+	GLLight->Specular[2] = FSLight->spec_b * FSLight->intensity;
+	GLLight->Specular[3] = 1.0f;
 
 	GLLight->type = FSLight->type;
 
 	// GL default values...
 	// spot direction
-	GLLight->SpotDir.x = 0.0f;
-	GLLight->SpotDir.y = 0.0f;
-	GLLight->SpotDir.z = -1.0f;
+	GLLight->SpotDir[0] = 0.0f;
+	GLLight->SpotDir[1] = 0.0f;
+	GLLight->SpotDir[2] = -1.0f;
 	// spot exponent
 	GLLight->SpotExp = Cmdline_ogl_spec * 0.5f;
 	// spot cutoff
@@ -263,10 +263,10 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	GLLight->LinearAtten = 0.0f;
 	GLLight->QuadraticAtten = 0.0f;
 	// position
-	GLLight->Position.x = FSLight->vec.xyz.x;
-	GLLight->Position.y = FSLight->vec.xyz.y;
-	GLLight->Position.z = FSLight->vec.xyz.z; // flipped axis for FS2
-	GLLight->Position.w = 1.0f;	
+	GLLight->Position[0] = FSLight->vec.xyz.x;
+	GLLight->Position[1] = FSLight->vec.xyz.y;
+	GLLight->Position[2] = FSLight->vec.xyz.z; // flipped axis for FS2
+	GLLight->Position[3] = 1.0f;	
 
 
 	switch (FSLight->type) {
@@ -275,35 +275,35 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 			GLLight->ConstantAtten = 0.0f;
 			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
-			GLLight->Specular.r *= static_point_factor;
-			GLLight->Specular.g *= static_point_factor;
-			GLLight->Specular.b *= static_point_factor;
+			GLLight->Specular[0] *= static_point_factor;
+			GLLight->Specular[1] *= static_point_factor;
+			GLLight->Specular[2] *= static_point_factor;
 
 			break;
 		}
 
 		case LT_TUBE: {
-			GLLight->Specular.r *= static_tube_factor;
-			GLLight->Specular.g *= static_tube_factor;
-			GLLight->Specular.b *= static_tube_factor;	
+			GLLight->Specular[0] *= static_tube_factor;
+			GLLight->Specular[1] *= static_tube_factor;
+			GLLight->Specular[2] *= static_tube_factor;	
 
-			GLLight->SpotDir.x = FSLight->vec2.xyz.x * 1.5f;
-			GLLight->SpotDir.y = FSLight->vec2.xyz.y * 1.5f;
-			GLLight->SpotDir.z = FSLight->vec2.xyz.z * 1.5f;
+			GLLight->SpotDir[0] = FSLight->vec2.xyz.x * 1.5f;
+			GLLight->SpotDir[1] = FSLight->vec2.xyz.y * 1.5f;
+			GLLight->SpotDir[2] = FSLight->vec2.xyz.z * 1.5f;
 			GLLight->SpotCutOff = 90.0f;
 
 			break;
 		}
 
 		case LT_DIRECTIONAL: {
-			GLLight->Position.x = -FSLight->vec.xyz.x;
-			GLLight->Position.y = -FSLight->vec.xyz.y;
-			GLLight->Position.z = -FSLight->vec.xyz.z;
-			GLLight->Position.w = 0.0f; // Directional lights in OpenGL have w set to 0
+			GLLight->Position[0] = -FSLight->vec.xyz.x;
+			GLLight->Position[1] = -FSLight->vec.xyz.y;
+			GLLight->Position[2] = -FSLight->vec.xyz.z;
+			GLLight->Position[3] = 0.0f; // Directional lights in OpenGL have w set to 0
 
-			GLLight->Specular.r *= static_light_factor;
-			GLLight->Specular.g *= static_light_factor;
-			GLLight->Specular.b *= static_light_factor;
+			GLLight->Specular[0] *= static_light_factor;
+			GLLight->Specular[1] *= static_light_factor;
+			GLLight->Specular[2] *= static_light_factor;
 
 			break;
 		}
@@ -319,19 +319,20 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 {
 	Assert(light_num < GL_max_lights);
 
-	ogl_light_color diffuse = ltp->Diffuse;
+	GLfloat diffuse[4];
+	memcpy(diffuse, ltp->Diffuse, sizeof(GLfloat) * 4);
 
 	if ( (ltp->type == LT_DIRECTIONAL) && (Interp_light < 1.0f) ) {
-		diffuse.r *= Interp_light;
-		diffuse.g *= Interp_light;
-		diffuse.b *= Interp_light;
+		diffuse[0] *= Interp_light;
+		diffuse[1] *= Interp_light;
+		diffuse[2] *= Interp_light;
 	}
 
-	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &ltp->Position.x);
-	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &ltp->Ambient.r);
-	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &diffuse.r);
-	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &ltp->Specular.r);
-	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, &ltp->SpotDir.x);
+	glLightfv(GL_LIGHT0+light_num, GL_POSITION, ltp->Position);
+	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, ltp->Ambient);
+	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, ltp->Specular);
+	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, ltp->SpotDir);
 	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten);
 	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, ltp->LinearAtten);
 	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten);
@@ -368,8 +369,8 @@ int opengl_sort_active_lights(const void *a, const void *b)
 
 	// as one extra check, if we're still here, go with overall brightness of light
 
-	float la_value = la->Diffuse.r + la->Diffuse.g + la->Diffuse.b;
-	float lb_value = lb->Diffuse.r + lb->Diffuse.g + lb->Diffuse.b;
+	float la_value = la->Diffuse[0] + la->Diffuse[1] + la->Diffuse[2];
+	float lb_value = lb->Diffuse[0] + lb->Diffuse[1] + lb->Diffuse[2];
 
 	if ( la_value < lb_value )
 		return 1;
@@ -548,33 +549,33 @@ void gr_opengl_set_center_alpha(int type)
 	vm_vec_normalize(&dir);
 
 	if (type == 1) {
-		glight.Diffuse.r = 0.0f;
-		glight.Diffuse.g = 0.0f;
-		glight.Diffuse.b = 0.0f;
-		glight.Ambient.r = gr_screen.current_alpha;
-		glight.Ambient.g = gr_screen.current_alpha;
-		glight.Ambient.b = gr_screen.current_alpha;
+		glight.Diffuse[0] = 0.0f;
+		glight.Diffuse[1] = 0.0f;
+		glight.Diffuse[2] = 0.0f;
+		glight.Ambient[0] = gr_screen.current_alpha;
+		glight.Ambient[1] = gr_screen.current_alpha;
+		glight.Ambient[2] = gr_screen.current_alpha;
 	} else {
-		glight.Diffuse.r = gr_screen.current_alpha;
-		glight.Diffuse.g = gr_screen.current_alpha;
-		glight.Diffuse.b = gr_screen.current_alpha;
-		glight.Ambient.r = 0.0f;
-		glight.Ambient.g = 0.0f;
-		glight.Ambient.b = 0.0f;
+		glight.Diffuse[0] = gr_screen.current_alpha;
+		glight.Diffuse[1] = gr_screen.current_alpha;
+		glight.Diffuse[2] = gr_screen.current_alpha;
+		glight.Ambient[0] = 0.0f;
+		glight.Ambient[1] = 0.0f;
+		glight.Ambient[2] = 0.0f;
 	}
 
-	glight.Specular.r = 0.0f;
-	glight.Specular.g = 0.0f;
-	glight.Specular.b = 0.0f;
-	glight.Specular.a = 0.0f;
+	glight.Specular[0] = 0.0f;
+	glight.Specular[1] = 0.0f;
+	glight.Specular[2] = 0.0f;
+	glight.Specular[3] = 0.0f;
 
-	glight.Ambient.a = 1.0f;
-	glight.Diffuse.a = 1.0f;
+	glight.Ambient[3] = 1.0f;
+	glight.Diffuse[3] = 1.0f;
 
-	glight.Position.x = -dir.xyz.x;
-	glight.Position.y = -dir.xyz.y;
-	glight.Position.z = -dir.xyz.z;
-	glight.Position.w = 0.0f;
+	glight.Position[0] = -dir.xyz.x;
+	glight.Position[1] = -dir.xyz.y;
+	glight.Position[2] = -dir.xyz.z;
+	glight.Position[3] = 0.0f;
 
 	// defaults
 	glight.ConstantAtten = 1.0f;
@@ -586,12 +587,12 @@ void gr_opengl_set_center_alpha(int type)
 	opengl_lights[Num_active_gl_lights++].occupied = true;
 
 	// second light
-	glight.Position.x = dir.xyz.x;
-	glight.Position.y = dir.xyz.y;
-	glight.Position.z = dir.xyz.z;
+	glight.Position[0] = dir.xyz.x;
+	glight.Position[1] = dir.xyz.y;
+	glight.Position[2] = dir.xyz.z;
 
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
-	opengl_lights[Num_active_gl_lights].occupied = true;
+	opengl_lights[Num_active_gl_lights++].occupied = true;
 
 	// reset center alpha
 	GL_center_alpha = 0;
@@ -607,7 +608,7 @@ void gr_opengl_reset_lighting()
 	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
 
 	for (i = 0; i < GL_max_lights; i++) {
-		glDisable(GL_LIGHT0+i);
+		GL_state.Light(i, GL_FALSE);
 	}
 
 	Num_active_gl_lights = 0;
@@ -653,7 +654,7 @@ void opengl_light_init()
 	glMaterialf(GL_FRONT, GL_SHININESS, Cmdline_ogl_spec /*80.0f*/ );
 
 	// more realistic lighting model
-	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
 
 	glGetIntegerv(GL_MAX_LIGHTS, &GL_max_lights); // Get the max number of lights supported
 
