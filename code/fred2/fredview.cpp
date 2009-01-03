@@ -928,6 +928,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_DOCK_POINTS, OnUpdateShowDockPoints)
 	ON_COMMAND(ID_FORMAT_FS2_OPEN, OnFormatFs2Open)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_OPEN, OnUpdateFormatFs2Open)
+	ON_COMMAND(ID_FORMAT_FS2_OPEN_COMP, OnFormatFs2OpenComp)
+	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_OPEN_COMP, OnUpdateFormatFs2OpenComp)
 	ON_COMMAND(ID_FORMAT_FS2_RETAIL, OnFormatFs2Retail)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_RETAIL, OnUpdateFormatFs2Retail)
 	ON_COMMAND(ID_FORMAT_FS1_RETAIL, OnFormatFs1Retail)
@@ -5095,7 +5097,7 @@ void CFREDView::OnDumpStats()
 
 void CFREDView::OnFormatFs2Open() 
 {
-	Format_fs2_open = 1;
+	Format_fs2_open = FSO_FORMAT_STANDARD;
 	Format_fs2_retail = 0;
 	Format_fs1_retail = 0;
 
@@ -5105,7 +5107,22 @@ void CFREDView::OnFormatFs2Open()
 
 void CFREDView::OnUpdateFormatFs2Open(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open);
+	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_STANDARD);
+}
+
+void CFREDView::OnFormatFs2OpenComp() 
+{
+	Format_fs2_open = FSO_FORMAT_COMPATIBILITY_MODE;
+	Format_fs2_retail = 0;
+	Format_fs1_retail = 0;
+
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE);
 }
 
 void CFREDView::OnFormatFs2Retail() 

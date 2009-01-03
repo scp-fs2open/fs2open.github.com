@@ -2011,8 +2011,8 @@ int CFred_mission_save::save_objects()
 		// always write out the score to ensure backwards compatibility. If the score is the same as the value 
 		// in the table write out a flag to tell the game to simply use whatever is in the table instead
 		if (Ship_info[Ships[i].ship_info_index].score == Ships[i].score ) {
-			if ( optional_string_fred("+Use Table Score:") ) {
-				parse_comments(1);
+			if ( optional_string_fred("+Use Table Score:", "$Name:") ) {
+				parse_comments();
 			} else {
 				fso_comment_push(";;FSO 3.6.10;;");
 				fout_version("\n+Use Table Score:");
@@ -2033,7 +2033,7 @@ int CFred_mission_save::save_objects()
 		
 		if (Format_fs2_open && Ships[i].assist_score_pct != 0) {
 			if ( optional_string_fred("+Assist Score Percentage:") ) {
-				parse_comments(1);
+				parse_comments();
 			} else {
 				fso_comment_push(";;FSO 3.6.10;;");
 				fout_version("\n+Assist Score Percentage:");
@@ -2974,7 +2974,7 @@ int CFred_mission_save::fout_version(char *format, ...)
 
 	// output the version first thing, but skip the special case where we use
 	// fout_version() for multiline value strings (typically indicated by an initial space)
-	if ( (*format != ' ') && !fso_ver_comment.empty() ) {
+	if ( (Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE) && (*format != ' ') && !fso_ver_comment.empty() ) {
 		int len = 0;
 		while (*format == '\n') {
 			str[len++] = '\n';
@@ -2997,7 +2997,7 @@ int CFred_mission_save::fout_version(char *format, ...)
 	Assert(strlen(str) < 16384);
 
 	// this could be a multi-line string, so we've got to handle it all properly
-	if ( !fso_ver_comment.empty() ) {
+	if ( (Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE) && !fso_ver_comment.empty() ) {
 		bool first_line = true;
 		char *str_p = str;
 

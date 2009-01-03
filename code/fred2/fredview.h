@@ -546,6 +546,8 @@ protected:
 	afx_msg void OnUpdateShowDockPoints(CCmdUI* pCmdUI);
 	afx_msg void OnFormatFs2Open();
 	afx_msg void OnUpdateFormatFs2Open(CCmdUI* pCmdUI);
+	afx_msg void OnFormatFs2OpenComp();
+	afx_msg void OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI);
 	afx_msg void OnFormatFs2Retail();
 	afx_msg void OnUpdateFormatFs2Retail(CCmdUI* pCmdUI);
 	afx_msg void OnFormatFs1Retail();
@@ -611,6 +613,9 @@ extern int Id_select_type_waypoint;
 extern int Hide_ship_cues, Hide_wing_cues;
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];
+
+#define FSO_FORMAT_STANDARD				1
+#define FSO_FORMAT_COMPATIBILITY_MODE	2
 
 // Goober5000 (currently, FS1 retail not implemented)
 extern int Format_fs2_open;
