@@ -2990,6 +2990,12 @@ bool gr_opengl_init()
 	mprintf(( "  OpenGL Version    : %s\n", ver ));
 	mprintf(( "\n" ));
 
+	if (Cmdline_window) {
+		opengl_go_windowed();
+	} else {
+		opengl_go_fullscreen();
+	}
+
 	// initialize the extensions and make sure we aren't missing something that we need
 	opengl_extensions_init();
 
@@ -3007,12 +3013,6 @@ bool gr_opengl_init()
 
 	// setup default shaders, and shader related items
 	opengl_shader_init();
-
-	if (Cmdline_window) {
-		opengl_go_windowed();
-	} else {
-		opengl_go_fullscreen();
-	}
 
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );

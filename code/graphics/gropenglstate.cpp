@@ -38,36 +38,88 @@ void opengl_texture_state::init(GLint n_units)
 		units[i].active = GL_FALSE;
 		units[i].enabled = GL_FALSE;
 
-		units[i].texture_target = GL_TEXTURE_2D;
-		units[i].texture_id = 0;
-	
-		units[i].texgen_S = GL_FALSE;
-		units[i].texgen_T = GL_FALSE;
-		units[i].texgen_R = GL_FALSE;
-		units[i].texgen_Q = GL_FALSE;
-
-		units[i].texgen_mode_S = GL_EYE_LINEAR;
-		units[i].texgen_mode_T = GL_EYE_LINEAR;
-		units[i].texgen_mode_R = GL_EYE_LINEAR;
-		units[i].texgen_mode_Q = GL_EYE_LINEAR;
-
-		units[i].wrap_S = GL_REPEAT;
-		units[i].wrap_T = GL_REPEAT;
-		units[i].wrap_R = GL_REPEAT;
-	
-		units[i].mag_filter = GL_LINEAR;
-		units[i].min_filter = GL_NEAREST_MIPMAP_LINEAR;
-		units[i].max_level = 1000;
-
-		units[i].aniso_filter = 1.0f;
-
-		units[i].env_mode = GL_MODULATE;
-		units[i].env_combine_rgb = GL_MODULATE;
-		units[i].env_combine_alpha = GL_MODULATE;
-
-		units[i].rgb_scale = 1.0f;
-		units[i].alpha_scale = 1.0f;
+		default_values(i);
 	}
+
+	DisableAll();
+}
+
+void opengl_texture_state::default_values(GLint unit, GLenum target)
+{
+	vglActiveTextureARB(GL_TEXTURE0 + unit);
+
+	if (target == GL_INVALID_ENUM) {
+		if (unit < GL_supported_texture_units) {
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_CUBE_MAP);
+			glDisable(GL_TEXTURE_RECTANGLE_ARB);
+		}
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+
+		units[unit].texture_target = GL_TEXTURE_2D;
+		units[unit].texture_id = 0;
+	}
+
+	glDisable(GL_TEXTURE_GEN_S);
+	glDisable(GL_TEXTURE_GEN_T);
+	glDisable(GL_TEXTURE_GEN_R);
+	glDisable(GL_TEXTURE_GEN_Q);
+
+	units[unit].texgen_S = GL_FALSE;
+	units[unit].texgen_T = GL_FALSE;
+	units[unit].texgen_R = GL_FALSE;
+	units[unit].texgen_Q = GL_FALSE;
+
+	if (unit < GL_supported_texture_units) {
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+	}
+
+	units[unit].texgen_mode_S = GL_EYE_LINEAR;
+	units[unit].texgen_mode_T = GL_EYE_LINEAR;
+	units[unit].texgen_mode_R = GL_EYE_LINEAR;
+	units[unit].texgen_mode_Q = GL_EYE_LINEAR;
+
+	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	units[unit].wrap_S = GL_REPEAT;
+	units[unit].wrap_T = GL_REPEAT;
+	units[unit].wrap_R = GL_REPEAT;
+
+	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_MAX_LEVEL, 1000);
+
+	units[unit].mag_filter = GL_LINEAR;
+	units[unit].min_filter = GL_NEAREST_MIPMAP_LINEAR;
+	units[unit].max_level = 1000;
+
+	if (unit < GL_supported_texture_units) {
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
+	}
+
+	units[unit].env_mode = GL_MODULATE;
+	units[unit].env_combine_rgb = GL_MODULATE;
+	units[unit].env_combine_alpha = GL_MODULATE;
+
+	if (unit < GL_supported_texture_units) {
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
+	}
+
+	units[unit].rgb_scale = 1.0f;
+	units[unit].alpha_scale = 1.0f;
+
+	units[unit].aniso_filter = 1.0f;
 }
 
 GLboolean opengl_texture_state::TexgenS(GLint state)
@@ -152,19 +204,9 @@ void opengl_texture_state::SetTarget(GLenum tex_target)
 			units[active_texture_unit].texture_id = 0;
 		}
 
-		units[active_texture_unit].texture_target = tex_target;
-
 		// reset modes, since those were only valid for the previous texture target
-		SetMagFilter(GL_LINEAR);
-		SetMinFilter(GL_NEAREST_MIPMAP_LINEAR);
-
-		SetWrapS(GL_REPEAT);
-		SetWrapT(GL_REPEAT);
-		SetWrapR(GL_REPEAT);
-
-		SetMaxLevel(1000);
-
-		AnisoFilter(1.0f);
+		default_values(active_texture_unit, tex_target);
+		units[active_texture_unit].texture_target = tex_target;
 	}
 }
 
@@ -199,13 +241,13 @@ void opengl_texture_state::Enable(GLuint tex_id)
 	units[active_texture_unit].active = GL_TRUE;
 }
 
-void opengl_texture_state::Disable()
+void opengl_texture_state::Disable(bool force)
 {
-	if ( !units[active_texture_unit].active ) {
+	if ( !force && !units[active_texture_unit].active ) {
 		return;
 	}
 
-	if (units[active_texture_unit].enabled) {
+	if (force || units[active_texture_unit].enabled) {
 		glDisable( units[active_texture_unit].texture_target );
 		units[active_texture_unit].enabled = GL_FALSE;
 	}
@@ -218,7 +260,7 @@ void opengl_texture_state::DisableAll()
 	for (int i = 0; i < num_texture_units; i++) {
 		if (units[i].active) {
 			SetActiveUnit(i);
-			Disable();
+			Disable(true);
 		}
 	}
 
@@ -234,21 +276,25 @@ void opengl_texture_state::Delete(GLuint tex_id)
 		return;
 	}
 
+	GLuint atu_save = active_texture_unit;
+
 	for (int i = 0; i < num_texture_units; i++) {
 		if (units[i].texture_id == tex_id) {
-		//	glBindTexture(units[i].texture_target, 0);
-			glDisable( units[i].texture_target );
+			SetActiveUnit(i);
+			Disable();
 
-			units[i].enabled = GL_FALSE;
-			units[i].active = GL_FALSE;
+			glBindTexture(units[i].texture_target, 0);
 			units[i].texture_id = 0;
-			units[i].texture_target = GL_TEXTURE_2D;
 
-		//	if (i == active_texture_unit) {
-		//		SetActiveUnit();
-		//	}
+			default_values(i, units[i].texture_target);
+
+			if (i == atu_save) {
+				atu_save = 0;
+			}
 		}
 	}
+
+	SetActiveUnit(atu_save);
 }
 
 GLfloat opengl_texture_state::AnisoFilter(GLfloat aniso)
