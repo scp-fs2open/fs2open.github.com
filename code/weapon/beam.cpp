@@ -2381,7 +2381,7 @@ void beam_delete(beam *b)
 	// subtract one
 	Beam_count--;
 	Assert(Beam_count >= 0);
-	nprintf(("General", "Recycled beam (%d beams remaining)\n", Beam_count));
+	nprintf(("Beam", "Recycled beam (%d beams remaining)\n", Beam_count));
 }
 
 // given an object, return its model num
@@ -3605,7 +3605,7 @@ int beam_ok_to_fire(beam *b)
 				ship_maybe_play_primary_fail_sound();
 			}
 
-			mprintf(("killing fighter beam becase it ran out of energy\n"));
+		//	mprintf(("killing fighter beam becase it ran out of energy\n"));
 
 			return 0;
 		} else {
