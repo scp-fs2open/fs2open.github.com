@@ -1953,7 +1953,7 @@ void std_debug_multilog_add_line(const char *str)
 		SendMessage(Standalone_multilog_string, LB_ADDSTRING, 0, (LPARAM)log_str.c_str());
 
 		// reset our width, using best guess, so that we have a working hscroll
-		int h_size = SendMessage(Standalone_multilog_string, LB_GETHORIZONTALEXTENT, 0, 0);
+		uint h_size = SendMessage(Standalone_multilog_string, LB_GETHORIZONTALEXTENT, 0, 0);
 
 		if ( (h_size / 6) < log_str.size() ) {
 			SendMessage(Standalone_multilog_string, LB_SETHORIZONTALEXTENT, log_str.size() * 6, 0);
@@ -2689,6 +2689,8 @@ BOOL std_create_standalone_window()
 static void standalone_do_systray(int mode)
 {
 	NOTIFYICONDATA nid;
+	RECT stdRect;
+	RECT trayRect;
 
 	memset(&nid, 0, sizeof(nid));
 
@@ -2705,7 +2707,19 @@ static void standalone_do_systray(int mode)
 			return;
 		}
 
+		// add icon
 		Shell_NotifyIcon(NIM_ADD, &nid);
+
+		// do a window minimize animation
+		GetWindowRect(GetDesktopWindow(), &trayRect);
+		GetWindowRect(Psht, &stdRect);
+
+		trayRect.left = trayRect.right;
+		trayRect.top = trayRect.bottom;
+
+		DrawAnimatedRects(Psht, IDANI_CAPTION, &stdRect, &trayRect);
+
+		// hide the property sheet window
 		ShowWindow(Psht, SW_HIDE);
 		Standalone_minimized = TRUE;
 	} else if (mode == ST_MODE_UPDATE) {

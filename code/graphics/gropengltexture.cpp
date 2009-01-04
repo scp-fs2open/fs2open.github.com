@@ -644,7 +644,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 	}
 
 	// if we can support non-power-of-2 textures then just return current sizes - taylor
-	if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) || (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) ) {
+	if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) || (GL_texture_target == GL_TEXTURE_RECTANGLE_ARB) ) {
 		*w_out = w_in;
 		*h_out = h_in;
 
@@ -891,7 +891,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				}
 			}
 
-			if ( !reload ) {
+			if ( !reload || (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) ) {
 				glTexImage2D (GL_state.Texture.GetTarget(), 0, GL_ALPHA, tex_w, tex_h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
 			} else { // faster anis
 				glTexSubImage2D (GL_state.Texture.GetTarget(), 0, 0, 0, tex_w, tex_h, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
@@ -927,7 +927,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				}
 			}
 
-			if ( !reload ) {
+			if ( !reload || (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) ) {
 				glTexImage2D (GL_state.Texture.GetTarget(), 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, (resize) ? texmem : bmp_data);
 			} else { // faster anis
 				glTexSubImage2D (GL_state.Texture.GetTarget(), 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, (resize) ? texmem : bmp_data);

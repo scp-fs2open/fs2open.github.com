@@ -5713,6 +5713,9 @@ void process_mission_sync_packet(ubyte *data, header *hinfo)
 		multi_team_send_update();
 	}
 
+	// process the initial orders now (moved from post_process_mission()in missionparse) 
+	ai_post_process_mission();
+
 	// get the sync mode (pre or post briefing)
 	GET_INT(mode);
 

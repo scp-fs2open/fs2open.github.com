@@ -363,10 +363,7 @@ static void OGG_video_init(theora_info *tinfo)
 
 
 	if (gr_screen.mode == GR_OPENGL) {
-		// set the appropriate texture target
-		if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_RECTANGLE) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) )
-			opengl_set_texture_target( GL_TEXTURE_RECTANGLE_ARB );
-
+		opengl_set_texture_target(GL_TEXTURE_2D);
 		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
 		glGenTextures(1, &GLtex);
@@ -442,13 +439,8 @@ static void OGG_video_init(theora_info *tinfo)
 		gl_screenYH = g_screenY + g_screenHeight;
 		gl_screenXW = g_screenX + g_screenWidth;
 
-		if (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) {
-			gl_screenU = (GLfloat)wp2;
-			gl_screenV = (GLfloat)hp2;
-		} else {
-			gl_screenU = i2fl(g_screenWidth) / i2fl(wp2);
-			gl_screenV = i2fl(g_screenHeight) / i2fl(hp2);
-		}
+		gl_screenU = i2fl(g_screenWidth) / i2fl(wp2);
+		gl_screenV = i2fl(g_screenHeight) / i2fl(hp2);
 	}
 
 	video_inited = 1;

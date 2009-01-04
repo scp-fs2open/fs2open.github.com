@@ -1192,6 +1192,7 @@ float brief_icon_get_dist_moved(icon_move_info *mi, float elapsed_time)
 void brief_render_icon_line(int stage_num, int line_num)
 {
 	brief_line	*bl;
+	brief_stage *bs;
 	brief_icon	*icon[2];
 	vertex		icon_vertex[2];
 	int			icon_status[2] = {0,0};
@@ -1199,9 +1200,26 @@ void brief_render_icon_line(int stage_num, int line_num)
 	float			icon_x[2], icon_y[2];
 
 	bl = &Briefing->stages[stage_num].lines[line_num];
+	bs = &Briefing->stages[stage_num];
 
-	Assert( (bl->start_icon >= 0) && (bl->start_icon < Briefing->stages[stage_num].num_icons) );
-	Assert( (bl->end_icon >= 0) && (bl->end_icon < Briefing->stages[stage_num].num_icons) );
+	if(bl->start_icon < 0 || bl->start_icon >= bs->num_icons)
+	{
+		Warning(LOCATION, "Start icon (%d/%d) missing for line %d in briefing stage %d", bl->start_icon, bs->num_icons, line_num, stage_num);
+		//Remove line
+		bs->num_lines--;
+		for(int i = line_num; i < bs->num_lines; i++)
+			bs->lines[i] = bs->lines[i+1];
+		return;
+	}
+	if(bl->end_icon < 0 || bl->end_icon >= Briefing->stages[stage_num].num_icons)
+	{
+		Warning(LOCATION, "End icon (%d/%d) missing for line %d in briefing stage %d", bl->end_icon, bs->num_icons, line_num, stage_num);
+		//Remove line
+		bs->num_lines--;
+		for(int i = line_num; i < bs->num_lines; i++)
+			bs->lines[i] = bs->lines[i+1];
+		return;
+	}
 
 	icon[0] = &Briefing->stages[stage_num].icons[bl->start_icon];
 	icon[1] = &Briefing->stages[stage_num].icons[bl->end_icon];
