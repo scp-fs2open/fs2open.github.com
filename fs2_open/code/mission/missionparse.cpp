@@ -7662,8 +7662,6 @@ void mission_parse_fixup_players()
 {
 	object *objp;
 
-	// merge created list to have all objects on used list
-	obj_merge_created_list();
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) && (objp->flags & OF_PLAYER_SHIP) ) {
 			game_busy( NOX("** fixing up player/ai stuff **") );	// animate the loading screen, doesn't nothing if the screen is not active
