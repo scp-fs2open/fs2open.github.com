@@ -1584,6 +1584,27 @@ typedef struct ship {
 
 } ship;
 
+struct ai_target_priority {
+	char name[NAME_LENGTH];
+
+	int obj_type;
+	std::vector <int> ship_type;
+	std::vector <int> ship_class;
+	std::vector <int> weapon_class;
+
+	int obj_flags;
+	int sif_flags;
+	int sif2_flags;
+	int wif_flags;
+	int wif2_flags;
+};
+
+extern std::vector <ai_target_priority> Ai_tp_list;
+
+void parse_ai_target_priorities();
+ai_target_priority init_ai_target_priorities();
+
+
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
 #define SEF_DESTROYED			(1<<0)

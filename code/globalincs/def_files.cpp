@@ -801,6 +801,10 @@ $Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 ;; percentage of the capships score when someone scores a kill			\n\
 $Percentage Awarded For Capship Assist: 0.5, 0.5, 0.5, 0.5, 0.5			\n\
 																		\n\
+;; time delay after bombs have been fired before they can collide		\n\
+;; with other weapons (ie. be shot down)								\n\
+$Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n\
+																		\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
@@ -907,6 +911,10 @@ $multi allow empty primaries:		NO									\n\
 																		\n\
 ;; allow a player to commit into a multiplayer game without secondaries	\n\
 $multi allow empty secondaries:		NO									\n\
+																		\n\
+;; if set, allows turrets target other weapons that bombs assuming		\n\
+;; it is within allowed target priorities								\n\
+$allow turrets target weapons freely: NO								\n\
 																		\n\
 #End																	\n\
 ";

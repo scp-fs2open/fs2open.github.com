@@ -2621,6 +2621,7 @@ void commit_pressed()
 	if(Game_mode & GM_MULTIPLAYER){	
 		if (MULTIPLAYER_MASTER) {
 			// process the initial orders now (moved from post_process_mission()in missionparse) 
+			mission_parse_fixup_players(); 
 			ai_post_process_mission();
 		}
 

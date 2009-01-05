@@ -972,6 +972,7 @@ typedef struct weapon_info {
 
 	bool swarm_burst;
 
+	int weapon_hitpoints;
 } weapon_info;
 
 // Data structure to track the active missiles

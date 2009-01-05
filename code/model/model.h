@@ -870,6 +870,11 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	matrix   world_to_turret_matrix;
 
 	int		turret_reset_delay;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
+
 } model_subsystem;
 
 typedef struct model_special {
