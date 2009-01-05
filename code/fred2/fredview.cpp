@@ -3520,7 +3520,7 @@ int CFREDView::global_error_check()
 			if ( j == 0 ) {
 				default_orders = orders;
 			} else if ( default_orders != orders ) {
-				if (error("Wing %s has ships with different player orders which\nare ignored.  They must all be the same", Wings[i].name ) ){
+				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[0]].ship_name ) ){
 					return 1;
 				}
 			}
