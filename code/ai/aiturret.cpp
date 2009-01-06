@@ -894,7 +894,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 				}
 
 				// ...and finally the rest of the lot...
-				if ( eeo.nearest_objnum < return_distance ) {
+				if ( eeo.nearest_dist < return_distance ) {
 					return_objnum =  eeo.nearest_objnum;
 				}
 
