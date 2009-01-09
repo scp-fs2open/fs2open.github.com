@@ -3535,6 +3535,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		stuff_vector(&sip->rotation_time);
 
+		// div/0 safety check.
+		if ((sip->rotation_time.xyz.x == 0) || (sip->rotation_time.xyz.y == 0) || (sip->rotation_time.xyz.z == 0))
+			Warning(LOCATION, "Rotation time must have non-zero values in each of the three variables.\nFix this in ship %s\n", sip->name);
+
 		sip->srotation_time = (sip->rotation_time.xyz.x + sip->rotation_time.xyz.y)/2.0f;
 
 		sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
@@ -6336,7 +6340,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 	// number as our own and that has the model information
 	// if ( subsystems_needed == sip->n_subsystems ) {
 		for ( i = 0; i < Num_ship_classes; i++ ) {
-			model_subsystem *msp;
+			model_subsystem *source_msp, *dest_msp;
 
 			if ( (Ship_info[i].model_num != model_num) || (&Ship_info[i] == sip) ){
 				continue;
@@ -6346,8 +6350,16 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 			// subsystem since previous error checking would have trapped its loading as an error.
 			Assert( Ship_info[i].n_subsystems == sip->n_subsystems );
 
-			msp = &Ship_info[i].subsystems[0];
-			model_copy_subsystems( sip->n_subsystems, &(sip->subsystems[0]), msp );
+			source_msp = &Ship_info[i].subsystems[0];
+			dest_msp = &(sip->subsystems[0]);
+			if (source_msp->model_num != -1) {
+				model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
+			} else if (dest_msp->model_num != -1) {
+				model_copy_subsystems( sip->n_subsystems, source_msp, dest_msp );
+			} else {
+				// if none were found try finding a another ship to copy the data from
+				continue;
+			}
 			sip->flags |= SIF_PATH_FIXUP;
 			break;
 		}
@@ -9784,13 +9796,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
-	}
-
-	// make sure that shields are enabled if they need to be
-	if (sp->ship_max_shield_strength > 0.0f) {
-		objp->flags &= ~OF_NO_SHIELDS;
-	} else {
-		objp->flags |= OF_NO_SHIELDS;
 	}
 
 	// Goober5000: div-0 checks
@@ -15617,7 +15622,10 @@ void ship_page_in()
 			if ( (Ship_info[j].model_num > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) ) {
 				// Model already loaded
 				model_previously_loaded = Ship_info[j].model_num;
-				ship_previously_loaded = j;
+
+				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
+					ship_previously_loaded = j;
+				}
 
 				// the model should already be loaded so this wouldn't take long, but
 				// we need to make sure that the load count for the model is correct

@@ -65,8 +65,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
-
-#define MAX_CUTSCENES	10
+#include <vector>
 
 // this cutscene is always available.
 #define INTRO_CUTSCENE_FLAG		(1<<0)
@@ -79,8 +78,8 @@ typedef struct cutscene_info
 	int		cd;
 } cutscene_info;
 
-extern cutscene_info Cutscenes[MAX_CUTSCENES];
-extern int Num_cutscenes;
+extern std::vector<cutscene_info> Cutscenes;
+extern size_t Num_cutscenes;
 extern int Cutscenes_viewable;
 
 // initializa table data

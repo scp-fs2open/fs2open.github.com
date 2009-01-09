@@ -3205,9 +3205,13 @@ void freespace_mission_load_stuff()
 		ship_assign_sound_all();	// assign engine sounds to ships
 		game_assign_sound_environment();	 // assign the sound environment for this mission
 
-		// call function in missionparse.cpp to fixup player/ai stuff.
-		game_busy( NOX("** fixing up player/ai stuff **") );
-		mission_parse_fixup_players();
+		obj_merge_created_list();
+
+		if (!(Game_mode & GM_MULTIPLAYER)) {
+			// call function in missionparse.cpp to fixup player/ai stuff.
+			game_busy( NOX("** fixing up player/ai stuff **") );
+			mission_parse_fixup_players();
+		}
 
 		// Load in all the bitmaps for this level
 		level_page_in();
@@ -3220,8 +3224,7 @@ void freespace_mission_load_stuff()
 	} 
 	// the only thing we need to call on the standalone for now.
 	else {
-		// call function in missionparse.cpp to fixup player/ai stuff.
-		mission_parse_fixup_players();
+		obj_merge_created_list();
 
 		// Load in all the bitmaps for this level
 		level_page_in();

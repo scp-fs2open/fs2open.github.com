@@ -469,6 +469,7 @@ void red_alert_button_pressed(int n)
 		if(game_do_cd_mission_check(Game_current_mission_filename)){
 			if(Game_mode & GM_MULTIPLAYER){	
 				// process the initial orders now (moved from post_process_mission()in missionparse) 
+				mission_parse_fixup_players();
 				ai_post_process_mission();
 			}
 

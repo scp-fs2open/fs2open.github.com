@@ -57,6 +57,8 @@ struct opengl_texture_unit {
 class opengl_texture_state
 {
 	private:
+		void default_values(GLint unit, GLenum target = GL_INVALID_ENUM);
+
 		GLuint active_texture_unit;
 		GLboolean shader_mode;
 
@@ -79,7 +81,7 @@ class opengl_texture_state
 		void SetTarget(GLenum tex_target);
 		void SetActiveUnit(GLuint id = 0);
 		void Enable(GLuint tex_id = 0);
-		void Disable();
+		void Disable(bool force = false);
 		void DisableAll();
 		void Delete(GLuint tex_id);
 		GLfloat AnisoFilter(GLfloat aniso = 0.0f);
@@ -129,6 +131,7 @@ inline void opengl_texture_state::SetEnvCombineMode(GLenum cmode, GLenum cfunc)
 		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, cfunc);
 	}
 }
+
 inline void opengl_texture_state::SetWrapS(GLenum mode)
 {
 	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_S, mode);

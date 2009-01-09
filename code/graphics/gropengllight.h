@@ -88,17 +88,13 @@ struct ogl_light_color {
 // Structures
 struct opengl_light
 {
-	ogl_light_color Diffuse, Specular, Ambient;
+	GLfloat Ambient[4], Diffuse[4], Specular[4];
 
 	// light position
-	struct {
-		float x, y, z, w;
-	} Position;
+	GLfloat Position[4];
 
 	// spotlight direction (for tube lights)
-	struct {
-		float x, y, z;
-	} SpotDir;
+	GLfloat SpotDir[3];
 
 	float SpotExp, SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
