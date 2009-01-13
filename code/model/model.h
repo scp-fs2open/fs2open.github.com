@@ -766,6 +766,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
 #define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
 #define MSS_FLAG_TURRET_HULL_CHECK	(1 << 12)		// makes the turret check to see if it's going to shoot through it's own hull before fireing - Bobboau
+#define MSS_FLAG_NO_SS_TARGETING	(1 << 13)		// toggles the subsystem targeting for the turret
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {

@@ -2500,6 +2500,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE,	0 },
 	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
 	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 },
+	{ "no subsystem targeting", MSS_FLAG_NO_SS_TARGETING, 0},
 	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK,	0 }
 };
 
