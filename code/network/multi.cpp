@@ -2151,6 +2151,10 @@ void multi_display_netinfo()
 		return;
 	}
 
+	if (!HUD_draw) {
+		return;
+	}
+
 	gr_set_color_fast(&Color_normal);
 
 	// server or client
