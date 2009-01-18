@@ -6104,14 +6104,11 @@ int sexp_hits_left(int n)
 	char *shipname;
 
 	shipname = CTEXT(n);
-
-    // if the ship has already been destroyed, return 0.
-    if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL))
-        return 0;
-
-    // if ship is departed, cannot ever evaluate properly.  Return NAN_FOREVER
-    if (mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL))
-        return SEXP_NAN_FOREVER;
+	
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
+		return SEXP_NAN_FOREVER;
+	}
 
 	shipnum = ship_name_lookup( shipname );
 	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
