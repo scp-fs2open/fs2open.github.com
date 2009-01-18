@@ -2271,7 +2271,12 @@ void hud_show_damage_popup()
 					screen_integrity = 1;
 				}
 			}
-			hud_subsys_list[num].name = ship_subsys_get_name(pss);
+
+			if (strlen(psub->alt_dmg_sub_name))
+				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
+			else
+				hud_subsys_list[num].name = ship_subsys_get_name(pss);
+
 			hud_subsys_list[num].str  = screen_integrity;
 			hud_subsys_list[num].type = psub->type;
 			num++;
@@ -2345,7 +2350,16 @@ void hud_show_damage_popup()
 			hud_set_gauge_color(HUD_DAMAGE_GAUGE);
 		}		
 
-		gr_string(sx, sy, hud_targetbox_truncate_subsys_name(hud_subsys_list[best_index].name));
+		char *n_firstline;
+		n_firstline = strrchr(hud_subsys_list[best_index].name, '|');
+		if (n_firstline) {
+			// print only the last line
+			n_firstline++;
+			gr_string(sx, sy, n_firstline);
+		} else {
+			gr_string(sx, sy, hud_targetbox_truncate_subsys_name(hud_subsys_list[best_index].name));
+		}
+
 		sprintf(buf, XSTR( "%d%%", 219), best_str);
 		hud_num_make_mono(buf);
 		gr_get_string_size(&w, &h, buf);
