@@ -1215,7 +1215,9 @@ void hud_render_target_ship_info(object *target_objp)
 	ship			*target_shipp;
 	ship_info	*target_sip;
 	int			w, h, screen_integrity = 1;
-	char			outstr[NAME_LENGTH+1];
+	char			outstr[NAME_LENGTH];
+	char			outstr_name[NAME_LENGTH*2+3];
+	char			outstr_class[NAME_LENGTH];
 	float			ship_integrity, shield_strength;
 
 	Assert(target_objp);	// Goober5000
@@ -1235,13 +1237,23 @@ void hud_render_target_ship_info(object *target_objp)
 		}
 	}
 
+	// set up lines
+	hud_stuff_ship_name(outstr_name, target_shipp);
+	hud_stuff_ship_class(outstr_class, target_shipp);
+
+	// maybe concatenate callsign
+	if (*outstr_name)
+	{
+		char outstr_callsign[NAME_LENGTH];
+
+		hud_stuff_ship_callsign(outstr_callsign, target_shipp);
+		if (*outstr_callsign)
+			sprintf(&outstr_name[strlen(outstr_name)], " (%s)", outstr_callsign);
+	}
+
 	// print lines
-	hud_stuff_ship_name(outstr, target_shipp);
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr);	
-	hud_stuff_ship_class(outstr, target_shipp);
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, outstr);
-	hud_stuff_ship_callsign(outstr, target_shipp);
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CARGO][0], Targetbox_coords[gr_screen.res][TBOX_CARGO][1], EG_TBOX_CARGO, outstr);				
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, outstr_name);	
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, outstr_class);
 
 	// ----------
 
@@ -1700,7 +1712,7 @@ void hud_render_target_debris(object *target_objp)
 	end_string_at_first_hash_symbol(printable_ship_class);
 
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, printable_ship_class);	
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, XSTR( "debris", 348));	
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, XSTR("Debris", 348));	
 }
 
 // -------------------------------------------------------------------------------------
