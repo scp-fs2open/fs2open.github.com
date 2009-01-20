@@ -6320,7 +6320,6 @@ void game_render_post_frame()
 	}
 
 	subtitles_do_frame(frametime);
-	bars_do_frame(frametime);
 	game_shade_frame(frametime);
 }
 
@@ -6452,6 +6451,15 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
+
+            if (Time_compression_locked)
+            {
+                bars_do_frame(flRealframetime);
+            }
+            else
+            {
+                bars_do_frame(flFrametime);
+            }
 
 			game_render_frame( cid );
 
