@@ -5431,6 +5431,9 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 		// packet.  Also set any other flags/modes which need to be set to prevent Asserts.
 		// bleah.
 		if ( (code == REPAIR_INFO_BEGIN) && (repair_objp != NULL) ) {
+// Karajorma removed this in revision 4808 to fix bug 1088.  Problem is, if
+// this was originally intended to prevent docking problems, will they return?
+/*
 			// find indexes from goal
 			ai_info *aip = &Ai_info[Ships[repair_objp->instance].ai_index];
 			Assert(aip->active_goal >= 0);
@@ -5440,6 +5443,8 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 			int docker_index = aigp->docker.index;
 			int dockee_index = aigp->dockee.index;
 
+			ai_do_objects_docked_stuff( repair_objp, docker_index, repaired_objp, dockee_index );
+*/
 			Ai_info[Ships[repair_objp->instance].ai_index].mode = AIM_DOCK;
 		}
 
