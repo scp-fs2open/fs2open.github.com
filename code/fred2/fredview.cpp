@@ -3877,7 +3877,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (!z)
 		return 0;
 
-	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE);
+	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, 2048);
 	sprintf(buf3, "Error in %s: %s\n\nIn sexpression: %s\n(Error appears to be: %s)",
 		buf, sexp_error_message(z), buf2, Sexp_nodes[faulty_node].text);
 

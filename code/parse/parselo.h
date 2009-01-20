@@ -570,7 +570,7 @@ extern void read_file_text_from_array(char *array, char *processed_text = NULL, 
 extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void debug_show_mission_text();
-extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
+extern void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1);
 

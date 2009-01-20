@@ -1743,7 +1743,7 @@ extern int query_referenced_in_sexp(int mode, char *name, int *node);
 extern int verify_vector(char *text);
 extern void skip_white(char **str);
 extern int validate_float(char **str);
-extern int build_sexp_string(int cur_node, int level, int mode);
+extern int build_sexp_string(int cur_node, int level, int mode, int max_len);
 extern int sexp_query_type_match(int opf, int opr);
 extern char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
