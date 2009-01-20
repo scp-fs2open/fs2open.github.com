@@ -464,7 +464,7 @@ BOOL ShipGoalsDlg::OnInitDialog()
 	} else {  // editing orders for all marked ships
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->type == OBJ_SHIP) && (ptr->flags & OF_MARKED)){
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)){
 				for (i=0; i<Ai_goal_list_size; i++){
 					if (!ai_query_goal_valid(ptr->instance, Ai_goal_list[i].def)){
 						valid[i] = 0;
@@ -568,7 +568,7 @@ void ShipGoalsDlg::initialize_multi()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if ((ptr->type == OBJ_SHIP) && (ptr->flags & OF_MARKED)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
 			initialize(Ai_info[Ships[ptr->instance].ai_index].goals, ptr->instance);
 			if (!flag) {
 				flag = 1;
@@ -862,7 +862,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 		case AI_GOAL_STAY_STILL:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
+				if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 					inst = ptr->instance;
 					if (ptr->type == OBJ_SHIP)
 						t = TYPE_SHIP;
@@ -1044,7 +1044,7 @@ void ShipGoalsDlg::update()
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->type == OBJ_SHIP) && (ptr->flags & OF_MARKED)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
 				goalp = Ai_info[Ships[ptr->instance].ai_index].goals;
 				for (i=0; i<ED_MAX_GOALS; i++)
 					update_item(i, 1);
@@ -1055,7 +1055,7 @@ void ShipGoalsDlg::update()
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->type == OBJ_SHIP) && (ptr->flags & OF_MARKED)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
 				self_ship = ptr->instance;
 				goalp = Ai_info[Ships[self_ship].ai_index].goals;
 				verify_orders(self_ship);
