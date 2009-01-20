@@ -957,6 +957,7 @@ int wing_editor::update_data(int redraw)
 		if (stricmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(REF_TYPE_WING, old_name, str);
+			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
 				if (!stricmp(old_name, Reinforcements[i].name)) {
 					Assert(strlen(str) < NAME_LENGTH);
