@@ -7836,6 +7836,7 @@ int special_argument_appears_in_sexp_list(int node)
 int eval_when(int n, int use_arguments)
 {
 	int arg_handler, cond, val, actions, exp, op_num;
+	arg_item *ptr;
 
 	Assert( n >= 0 );
 
@@ -7877,7 +7878,19 @@ int eval_when(int n, int use_arguments)
 					case OP_WHEN_ARGUMENT:
 					case OP_EVERY_TIME:
 					case OP_EVERY_TIME_ARGUMENT:
-						eval_sexp(exp);
+						// need to account for the possibility this call uses <arguments>
+						if (special_argument_appears_in_sexp_tree(exp)) { 
+							ptr = Sexp_applicable_argument_list.get_next();
+							if (ptr != NULL) {
+								do_action_for_each_special_argument(exp);
+							}
+							else {
+								eval_sexp(exp);
+							}
+						}
+						else {
+							eval_sexp(exp);
+						}
 						break;
 
 					// otherwise we need to check if arguments are used
