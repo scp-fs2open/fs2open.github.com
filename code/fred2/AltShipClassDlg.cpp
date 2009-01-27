@@ -276,7 +276,7 @@ void AltShipClassDlg::OnAltClassDelete()
 		return;
 	}
 
-	Assert (index < alt_class_pool.size());
+	Assert (index < (int) alt_class_pool.size());
 	alt_class_pool.erase(alt_class_pool.begin()+index);  
 	alt_class_list_rebuild(); 
 }
