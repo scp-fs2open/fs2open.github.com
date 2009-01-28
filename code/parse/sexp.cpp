@@ -8207,9 +8207,12 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	// loop through the nodes until we find one that is holds a valid argument or run out of nodes
 	for (int i=1 ; i<query_sexp_args_count(arg_handler_node) ; i++)
 	{
-		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
-		{
+		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
 			n = CDR(n) ;
+		}
+		// if we've found a valid node there is no need to continue
+		else {
+			break; 
 		}
 	}
 
