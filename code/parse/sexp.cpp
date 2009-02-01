@@ -2183,7 +2183,7 @@ int	Sexp_music_handle = -1;
 void sexp_stop_music(int fade = 1);
 
 int get_sexp(char *token);
-void build_extended_sexp_string(int cur_node, int level, int mode);
+void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
 void update_sexp_references(char *old_name, char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
 int extract_sexp_variable_index(int node);
@@ -4469,82 +4469,110 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 			sprintf(buffer, "%s ", CTEXT(node));
 		}
 	}
-
 }
 
+static int Sexp_text_overflow_warning = 0;
 
-int build_sexp_string(int cur_node, int level, int mode)
+// speed is not critical, since we're using FRED
+char *sexp_strcat(char *dest, const char *src, int max_len)
+{
+	int dest_len = strlen(dest);
+	int src_len = strlen(src);
+
+	if (dest_len + src_len < max_len - 1)
+	{
+		strcpy(&dest[dest_len], src);
+	}
+	else
+	{
+		if (!Sexp_text_overflow_warning)
+		{
+			char buf[512];
+			strcpy(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
+			strncat(buf, dest, 172);
+			strcat(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
+			mprintf((buf));
+			Error(LOCATION, buf);
+
+			Sexp_text_overflow_warning = 1;
+		}
+	}
+
+	return dest;
+}
+
+int build_sexp_string(int cur_node, int level, int mode, int max_len)
 {
 	char	pstr[128];
 	int len, offset, node;
 
 	Sexp_build_flag = 0;
 	offset = strlen(Sexp_string);
-	strcat(Sexp_string, "( ");
+	sexp_strcat(Sexp_string, "( ", max_len);
 	node = cur_node;
 	while (node != -1) {
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			// build text to string
 			build_sexp_text_string(pstr, node, mode);
-			strcat(Sexp_string, pstr);
+			sexp_strcat(Sexp_string, pstr, max_len);
 
 		} else {
-			build_sexp_string(Sexp_nodes[node].first, level + 1, mode);
+			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
 		}
 
 		node = Sexp_nodes[node].rest;
 	}
 
-	strcat(Sexp_string, ") ");
+	sexp_strcat(Sexp_string, ") ", max_len);
 	len = strlen(Sexp_string) - offset;
 	if (len > 40) {
 		Sexp_string[offset] = 0;
-		build_extended_sexp_string(cur_node, level, mode);
+		build_extended_sexp_string(cur_node, level, mode, max_len);
 		return 1;
 	}
 
 	return 0;
 }
 
-void build_extended_sexp_string(int cur_node, int level, int mode)
+void build_extended_sexp_string(int cur_node, int level, int mode, int max_len)
 {
 	char pstr[128];
 	int i, flag = 0, node;
 
-	strcat(Sexp_string, "( ");
+	sexp_strcat(Sexp_string, "( ", max_len);
 	node = cur_node;
 	while (node != -1) {
 		if (flag)  // not the first line?
 			for (i=0; i<level + 1; i++)
-				strcat(Sexp_string, "   ");
+				sexp_strcat(Sexp_string, "   ", max_len);
 
 		flag = 1;
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			build_sexp_text_string(pstr,node, mode);
-			strcat(Sexp_string, pstr);
+			sexp_strcat(Sexp_string, pstr, max_len);
 
 		} else {
-			build_sexp_string(Sexp_nodes[node].first, level + 1, mode);
+			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
 		}
 
-		strcat(Sexp_string, "\n");
+		sexp_strcat(Sexp_string, "\n", max_len);
 		node = Sexp_nodes[node].rest;
 	}
 
 	for (i=0; i<level; i++)
-		strcat(Sexp_string, "   ");
+		sexp_strcat(Sexp_string, "   ", max_len);
 
-	strcat(Sexp_string, ")");
+	sexp_strcat(Sexp_string, ")", max_len);
 }
 
-void convert_sexp_to_string(int cur_node, char *outstr, int mode)
+void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
 {
 	Sexp_string = outstr;
 	*outstr = 0;
 	if (cur_node >= 0)
-		build_sexp_string(cur_node, 0, mode);
+		build_sexp_string(cur_node, 0, mode, max_len);
 	else
 		strcpy(Sexp_string, "( )");
 }
@@ -7812,6 +7840,7 @@ int special_argument_appears_in_sexp_list(int node)
 int eval_when(int n, int use_arguments)
 {
 	int arg_handler, cond, val, actions, exp, op_num;
+	arg_item *ptr;
 
 	Assert( n >= 0 );
 
@@ -7853,7 +7882,19 @@ int eval_when(int n, int use_arguments)
 					case OP_WHEN_ARGUMENT:
 					case OP_EVERY_TIME:
 					case OP_EVERY_TIME_ARGUMENT:
-						eval_sexp(exp);
+						// need to account for the possibility this call uses <arguments>
+						if (special_argument_appears_in_sexp_tree(exp)) { 
+							ptr = Sexp_applicable_argument_list.get_next();
+							if (ptr != NULL) {
+								do_action_for_each_special_argument(exp);
+							}
+							else {
+								eval_sexp(exp);
+							}
+						}
+						else {
+							eval_sexp(exp);
+						}
 						break;
 
 					// otherwise we need to check if arguments are used
@@ -8170,9 +8211,12 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	// loop through the nodes until we find one that is holds a valid argument or run out of nodes
 	for (int i=1 ; i<query_sexp_args_count(arg_handler_node) ; i++)
 	{
-		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
-		{
+		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
 			n = CDR(n) ;
+		}
+		// if we've found a valid node there is no need to continue
+		else {
+			break; 
 		}
 	}
 
@@ -17923,8 +17967,8 @@ int eval_sexp(int cur_node, int referenced_node)
 			// make sure everything works okay
 			if (arg_num == -1)
 			{
-				char sexp_text[8192];
-				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE);
+				char sexp_text[4096];
+				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE, 4096);
 				Error(LOCATION, "Error finding sexp argument.  Received value %d for sexp:\n%s", sexp_val, sexp_text);
 			}
 

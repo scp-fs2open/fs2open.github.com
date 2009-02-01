@@ -5936,8 +5936,13 @@ int parse_mission(mission *pm, int flags)
 
 	// if we couldn't load some mod data
 	if ((Num_unknown_ship_classes > 0) /*|| (Num_unknown_weapon_classes > 0)*/) {
+		// if running on standalone server, just print to the log
+		if (Game_mode & GM_STANDALONE_SERVER) {
+			mprintf(("Warning!  Could not load %d ship classes!", Num_unknown_ship_classes));
+			return -2;
+		}
 		// don't do this in FRED; we will display a separate popup
-		if (!Fred_running) {
+		else if (!Fred_running) {
 			// build up the prompt...
 			char text[1024];
 
@@ -6095,9 +6100,9 @@ void post_process_mission()
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
 			if ( result ) {
-				char sexp_str[8192], text[8192];
+				char sexp_str[4096], text[4500];
 
-				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE);
+				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, 4096);
 				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
 					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
 
