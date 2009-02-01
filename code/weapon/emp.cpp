@@ -309,6 +309,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 					scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
 
 					if (scale_factor < 0.0f) {
+						moveup = moveup->next;
 						continue;
 					}
 					
