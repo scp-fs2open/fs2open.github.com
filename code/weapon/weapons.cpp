@@ -1665,6 +1665,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_SMART_SPAWN;
 		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
+		else if (!stricmp(NOX("no emp kill"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_NO_EMP_KILL;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
