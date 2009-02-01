@@ -6343,6 +6343,13 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 	}
 	*/
 
+	// no point copying the subsystem data if the ship in question has none...
+	// mark that the ship (cargo container) has the path fixup done.
+	if (sip->n_subsystems == 0) {
+		sip->flags |= SIF_PATH_FIXUP;
+		return;
+	}
+
 	// if we need to get information for all our subsystems, we need to find another ship with the same model
 	// number as our own and that has the model information
 	// if ( subsystems_needed == sip->n_subsystems ) {
