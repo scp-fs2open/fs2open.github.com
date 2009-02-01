@@ -2038,6 +2038,8 @@ typedef struct ship_info {
 	vec3d convergence_offset;
 
 	int num_shield_segments;
+
+	float emp_resistance_mod;
 } ship_info;
 
 extern int Num_wings;

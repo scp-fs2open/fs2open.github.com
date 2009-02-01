@@ -304,7 +304,13 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 					scale_factor = 1.0f;
 					if(dist_mag >= inner_radius){
 						scale_factor = 1.0f - (dist_mag / outer_radius);
-					} 
+					}
+
+					scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
+
+					if (scale_factor < 0.0f) {
+						continue;
+					}
 					
 					// disrupt the turret
 					ship_subsys_set_disrupted(moveup, (int)(MAX_TURRET_DISRUPT_TIME * scale_factor));
@@ -330,10 +336,14 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			// compute a scale factor for the emp effect
 			scale_factor = 1.0f;
 			if(dist_mag >= inner_radius){
-				scale_factor = 1.0f - (dist_mag / outer_radius);
-				actual_intensity = emp_intensity * scale_factor;
-				actual_time = emp_time * scale_factor;		
+				scale_factor = 1.0f - (dist_mag / outer_radius);	
 			} 
+
+			scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
+
+			if (scale_factor < 0.0f) {
+				continue;
+			}
 		
 			// calculate actual EMP effect values
 			actual_intensity = emp_intensity * scale_factor;

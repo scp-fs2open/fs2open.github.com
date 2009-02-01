@@ -3086,6 +3086,8 @@ void init_ship_entry(ship_info *sip)
 	sip->radar_projection_size_mult = 1.0f;
 
 	sip->num_shield_segments = 4;
+
+	sip->emp_resistance_mod = 0.0f;
 }
 
 // function to parse the information for a specific ship type.	
@@ -4703,6 +4705,10 @@ strcpy(parse_error_text, temp_error);
 				}
 			}
 		}
+	}
+
+	if (optional_string("$EMP Resistance Modifier:")) {
+		stuff_float(&sip->emp_resistance_mod);
 	}
 	
 	int n_subsystems = 0;
