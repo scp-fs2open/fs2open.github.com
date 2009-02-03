@@ -2903,6 +2903,11 @@ int parse_create_object_sub(p_object *p_objp)
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
 
+	// make sure aim_safety has its submode defined
+	if (aip->mode == AIM_SAFETY) {
+		aip->submode = AISS_1;
+	}
+
 	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
 	shipp->callsign_index = p_objp->callsign_index;
