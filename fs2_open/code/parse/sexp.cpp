@@ -7775,6 +7775,39 @@ int sexp_has_been_tagged_delay(int n)
 		return SEXP_FALSE;
 }
 
+// Karajorma
+void eval_when_for_each_special_argument( int cur_node )
+{
+	arg_item *ptr;
+
+	// loop through all the supplied arguments
+	ptr = Sexp_applicable_argument_list.get_next();
+	while (ptr != NULL)
+	{
+		// acquire argument to be used
+		Sexp_replacement_arguments.push_back(ptr->text);	
+
+		Sexp_current_argument_nesting_level++;
+		Sexp_applicable_argument_list.add_data(ptr->text);
+
+
+		// execute sexp... CTEXT will insert the argument as necessary
+		// (since these are all actions, they don't return any meaningful values)
+		eval_sexp(cur_node);
+		
+		// clean up any special sexp stuff
+		Sexp_applicable_argument_list.clear_nesting_level();
+		Sexp_current_argument_nesting_level--;
+
+		// remove the argument 
+		Sexp_replacement_arguments.pop_back(); 
+
+		// continue along argument list
+		ptr = ptr->get_next();
+	}
+}
+
+
 // Goober5000
 void do_action_for_each_special_argument( int cur_node )
 {
@@ -7889,7 +7922,7 @@ int eval_when(int n, int use_arguments)
 						if (special_argument_appears_in_sexp_tree(exp)) { 
 							ptr = Sexp_applicable_argument_list.get_next();
 							if (ptr != NULL) {
-								do_action_for_each_special_argument(exp);
+								eval_when_for_each_special_argument(exp);
 							}
 							else {
 								eval_sexp(exp);
