@@ -3536,6 +3536,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		stuff_vector(&sip->rotation_time);
 
+		// div/0 safety check.
+		if ((sip->rotation_time.xyz.x == 0) || (sip->rotation_time.xyz.y == 0) || (sip->rotation_time.xyz.z == 0))
+			Warning(LOCATION, "Rotation time must have non-zero values in each of the three variables.\nFix this in ship %s\n", sip->name);
+
 		sip->srotation_time = (sip->rotation_time.xyz.x + sip->rotation_time.xyz.y)/2.0f;
 
 		sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
@@ -4985,6 +4989,23 @@ void parse_ship_type()
 		stp = &stp_buf;
 		memset( stp, 0, sizeof(ship_type_info) );
 		strcpy(stp->name, name_buf);
+	}
+
+	char *ship_type = NULL;
+	if (!stricmp(stp->name, "sentrygun")) {
+		ship_type = "sentry gun";
+	} else if (!stricmp(stp->name, "escapepod")) {
+		ship_type = "escape pod";
+	} else if (!stricmp(stp->name, "repair_rearm")) {
+		ship_type = "support";
+	} else if (!stricmp(stp->name, "supercap")) {
+		ship_type = "super cap";
+	} else if (!stricmp(stp->name, "knossos")) {
+		ship_type = "knossos device";
+	}
+
+	if (ship_type != NULL) {
+		Warning(LOCATION, "Bad ship type name in objecttypes.tbl\n\nUsed ship type is redirected to another ship type.\nReplace \"%s\" with \"%s\"\nin objecttypes.tbl to fix this.\n", stp->name, ship_type);
 	}
 
 	//Okay, now we should have the values to parse
@@ -7151,6 +7172,7 @@ void ship_render(object * obj)
                             continue;
 						
 						num_secondaries_rendered++;
+		
 						vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
 						model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
@@ -7413,6 +7435,7 @@ void ship_subsystems_delete(ship *shipp)
 			temp = GET_NEXT( systemp );								// use temporary since pointers will get screwed with next operation
 			list_remove( shipp->subsys_list, systemp );			// remove the element
 			list_append( &ship_subsys_free_list, systemp );		// and place back onto free list
+			Num_ship_subsystems--;								// subtract from our in-use total
 			systemp = temp;												// use the temp variable to move right along
 		}
 	}
@@ -9344,6 +9367,10 @@ void show_ship_subsys_count()
 
 void ship_init_afterburners(ship *shipp)
 {
+	Assert( shipp );
+
+	shipp->ab_count = 0;
+
 	if (shipp->ship_info_index < 0) {
 		Int3();
 		return;

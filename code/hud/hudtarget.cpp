@@ -630,6 +630,7 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "graphics/font.h"
+#include "network/multiutil.h"
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
