@@ -594,7 +594,7 @@ void neb2_init()
 	}
 
 	// read in the nebula.tbl
-	read_file_text("nebula.tbl");
+	read_file_text("nebula.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	// background bitmaps
@@ -1442,7 +1442,7 @@ void neb2_render_player()
 #else */
 				if (!Cmdline_nohtl) gr_set_lighting(false, false);
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
+				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 //#endif
 			}
 		}

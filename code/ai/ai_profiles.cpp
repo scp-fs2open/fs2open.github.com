@@ -149,7 +149,7 @@ void parse_ai_profiles_tbl(char *filename)
 	if (filename == NULL)
 		read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
 	else
-		read_file_text(filename);
+		read_file_text(filename, CF_TYPE_TABLES);
 
 	reset_parse();		
 
@@ -373,6 +373,16 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$fix linked primary weapon decision bug:", AIPF_FIX_LINKED_PRIMARY_BUG);
 
+			set_flag(profile, "$prevent turrets targeting too distant bombs:", AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE);
+
+			set_flag(profile, "$smart subsystem targeting for turrets:", AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS);
+
+			set_flag(profile, "$fix heat seekers homing on stealth ships bug:", AIPF_FIX_HEAT_SEEKER_STEALTH_BUG);
+
+			set_flag(profile, "$multi allow empty primaries:", AIPF_MULTI_ALLOW_EMPTY_PRIMARIES);
+
+			set_flag(profile, "$multi allow empty secondaries:", AIPF_MULTI_ALLOW_EMPTY_SECONDARIES);
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 				Mp++;
@@ -414,7 +424,7 @@ void ai_profiles_init()
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
 
-    // set default if specified
+	// set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
 	if (temp >= 0)
 		Default_ai_profile = temp;

@@ -957,6 +957,7 @@ int wing_editor::update_data(int redraw)
 		if (stricmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(REF_TYPE_WING, old_name, str);
+			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
 				if (!stricmp(old_name, Reinforcements[i].name)) {
 					Assert(strlen(str) < NAME_LENGTH);
@@ -1007,26 +1008,26 @@ void wing_editor::update_data_safe()
 
 	if (m_threshold >= Wings[cur_wing].wave_count) {
 		m_threshold = Wings[cur_wing].wave_count - 1;
-		if (!bypass_errors)
+		if (!bypass_errors) {
 			sprintf(buf, "Wave threshold is set too high.  Value has been lowered to %d", (int) m_threshold);
-
-		MessageBox(buf);
+			MessageBox(buf);
+		}
 	}
 
 	if (m_threshold + Wings[cur_wing].wave_count > MAX_SHIPS_PER_WING) {
 		m_threshold = MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count;
-		if (!bypass_errors)
+		if (!bypass_errors) {
 			sprintf(buf, "Wave threshold is set too high.  Value has been lowered to %d", (int) m_threshold);
-
-		MessageBox(buf);
+			MessageBox(buf);
+		}
 	}
 
 	if (m_waves < 1) {
 		m_waves = 1;
-		if (!bypass_errors)
+		if (!bypass_errors) {
 			sprintf(buf, "Number of waves illegal.  Has been set to 1.", (int) m_waves);
-
-		MessageBox(buf);
+			MessageBox(buf);
+		}
 	}
 
 	MODIFY(Wings[cur_wing].special_ship, m_special_ship);
@@ -1036,10 +1037,11 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].departure_location, m_departure_location);
 	MODIFY(Wings[cur_wing].arrival_delay, m_arrival_delay);
 	if (m_arrival_delay_min > m_arrival_delay_max) {
-		if (!bypass_errors)
+		if (!bypass_errors) {
 			sprintf(buf, "Arrival delay minimum greater than maximum.  Value lowered to %d", m_arrival_delay_max);
+			MessageBox(buf);
+		}
 
-		MessageBox(buf);
 		m_arrival_delay_min = m_arrival_delay_max;
 	}
 
@@ -1054,12 +1056,14 @@ void wing_editor::update_data_safe()
 		if (((m_arrival_location != ARRIVE_AT_LOCATION) && (m_arrival_location != ARRIVE_FROM_DOCK_BAY)) && (i >= 0) && !(i & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
 			d = int(min(500, 2.0f * Objects[Ships[i].objnum].radius));
 			if ((Wings[cur_wing].arrival_distance < d) && (Wings[cur_wing].arrival_distance > -d)) {
-				if (!bypass_errors)
+				if (!bypass_errors) {
 					sprintf(buf, "Ship must arrive at least %d meters away from target.\n"
 						"Value has been reset to this.  Use with caution!\r\n"
 						"Reccomended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[i].objnum].radius) );
 
-				MessageBox(buf);
+					MessageBox(buf);
+				}
+
 				if (Wings[cur_wing].arrival_distance < 0)
 					Wings[cur_wing].arrival_distance = -d;
 				else
@@ -1508,17 +1512,21 @@ void wing_editor::OnSelchangeHotkey()
 
 void wing_editor::OnSquadLogo()
 {	
-	CString pcx_filename;
 	int z;
+	char *Logo_ext =	"Image Files (*.dds, *.pcx)|*.dds;*.pcx|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"All Files (*.*)|*.*|"
+						"|";
 
 	//phreak 05/05/2003
-	//this needs to be here or else the data in the dialog will revert 
+	//this needs to be here or else the data in the wing editor dialog will revert 
 	//to what it was before it was opened.
 	UpdateData(TRUE);
 
 	// get list of squad images
 	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
-	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Logo_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {

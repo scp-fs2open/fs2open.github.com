@@ -1467,7 +1467,7 @@ void gr_opengl_clear()
 
 void gr_opengl_flip()
 {
-	if (!GL_initted)
+	if ( !GL_initted )
 		return;
 
 	gr_reset_clip();
@@ -1484,7 +1484,7 @@ void gr_opengl_flip()
 
 	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
 
-		if ( Gr_cursor != -1 ) {
+		if (Gr_cursor != -1) {
 			gr_set_bitmap(Gr_cursor);
 			gr_bitmap( mx, my, false);
 		}
@@ -1586,7 +1586,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 		GL_state.ScissorTest(GL_FALSE);
 		return;
 	}
-	
+
 	GL_state.ScissorTest(GL_TRUE);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
 }
@@ -1658,7 +1658,7 @@ void gr_opengl_print_screen(char *filename)
 				fclose(fout);
 
 			return;
-	}
+		}
 
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, pbo);
 		vglBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
@@ -1677,7 +1677,7 @@ void gr_opengl_print_screen(char *filename)
 			}
 
 			return;
-	}
+		}
 
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
 		glFlush();
@@ -1707,29 +1707,29 @@ void gr_opengl_print_screen(char *filename)
 		fwrite( &pix, 1, 3, fout );
 #else
 		fwrite( pixels + i, 1, 3, fout );
-		#endif
-		}
+#endif
+	}
 
 	if (pbo) {
 		vglUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		pixels = NULL;
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 		vglDeleteBuffersARB(1, &pbo);
-		}
+	}
 
 	// done!
 	fclose(fout);
 
 	if (pixels != NULL) {
 		vm_free(pixels);
-		}
-		}
+	}
+}
 
 void gr_opengl_cleanup(int minimize)
 {	
 	if ( !GL_initted ) {
 		return;
-}
+	}
 
 	if ( !Fred_running ) {
 		gr_reset_clip();
@@ -1753,12 +1753,12 @@ void gr_opengl_cleanup(int minimize)
 		if ( !wglMakeCurrent(NULL, NULL) ) {
 			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "SHUTDOWN ERROR", "error", MB_OK);
-	}
+		}
 
 		if ( !wglDeleteContext(GL_render_context) ) {
 			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "Unable to delete rendering context", "error", MB_OK);
-	}
+		}
 
 		GL_render_context = NULL;
 	}
@@ -1783,30 +1783,30 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	Assert((r >= 0) && (r < 256));
 	Assert((g >= 0) && (g < 256));
 	Assert((b >= 0) && (b < 256));
-
+	
 	if (fog_mode == GR_FOGMODE_NONE) {
 		if ( GL_state.Fog() ) {
 			GL_state.Fog(GL_FALSE);
-	}
+		}
 
 		gr_screen.current_fog_mode = fog_mode;
-
+		
 		return;
 	}
-
+	
   	if (gr_screen.current_fog_mode != fog_mode) {
 	  	if (OGL_fogmode == 3) {
 			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-	}
+		}
 		// Um.. this is not the correct way to fog in software, probably doesnt matter though
 		else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
 			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
 			fog_near *= fog_near;		// it's faster this way
 			fog_far *= fog_far;		
-	} else {
+		} else {
 			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-	}
+		}
 
 		GL_state.Fog(GL_TRUE); 
 		glFogf(GL_FOG_MODE, GL_LINEAR);
@@ -1815,20 +1815,20 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 
 		gr_screen.current_fog_mode = fog_mode;
 	}
-
+	
 	if ( (gr_screen.current_fog_color.red != r) ||
 			(gr_screen.current_fog_color.green != g) ||
 			(gr_screen.current_fog_color.blue != b) )
 	{
 		GLfloat fc[4];
-
+		
 		gr_init_color( &gr_screen.current_fog_color, r, g, b );
-
+	
 		fc[0] = (float)r/255.0f;
 		fc[1] = (float)g/255.0f;
 		fc[2] = (float)b/255.0f;
 		fc[3] = 1.0f;
-
+		
 		glFogfv(GL_FOG_COLOR, fc);
 	}
 
@@ -1869,7 +1869,7 @@ int gr_opengl_zbuffer_set(int mode)
 
 	gr_zbuffering_mode = mode;
 
-	if (gr_zbuffering_mode == GR_ZBUFF_NONE ) {
+	if (gr_zbuffering_mode == GR_ZBUFF_NONE) {
 		gr_zbuffering = 0;
 		GL_state.DepthTest(GL_FALSE);
 	} else {
@@ -2348,8 +2348,8 @@ void gr_opengl_zbias(int bias)
 		glPolygonOffset(0.0, -i2fl(bias));
 	} else {
 		GL_state.PolygonOffsetFill(GL_FALSE);
-		}
 	}
+}
 
 void gr_opengl_push_texture_matrix(int unit)
 {
@@ -2434,17 +2434,17 @@ int opengl_check_for_errors(char *err_at)
 	const char *error_str = NULL;
 	int num_errors = 0;
 
-		error_str = opengl_error_string();
+	error_str = opengl_error_string();
 
-		if (error_str) {
+	if (error_str) {
 		if (err_at != NULL) {
 			nprintf(("OpenGL", "OpenGL Error from %s: %s\n", err_at, error_str));
 		} else {
 			nprintf(("OpenGL", "OpenGL Error: %s\n", error_str));
 		}
 
-			num_errors++;
-		}
+		num_errors++;
+	}
 
 	return num_errors;
 }
@@ -2543,7 +2543,7 @@ void gr_opengl_shutdown()
 // NOTE: This should only ever be called through atexit()!!!
 void opengl_close()
 {
-//	if (!GL_initted)
+//	if ( !GL_initted )
 //		return;
 }
 
@@ -2558,7 +2558,7 @@ int opengl_init_display_device()
 
 
 	// screen format
-	switch ( bpp ) {
+	switch (bpp) {
 		case 16: {
 			Gr_red.bits = 5;
 			Gr_red.shift = 11;
@@ -2671,7 +2671,7 @@ int opengl_init_display_device()
 
 	memset(&GL_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
 	memset(&pfd_test, 0, sizeof(PIXELFORMATDESCRIPTOR));
-	
+
 	GL_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	GL_pfd.nVersion = 1;
 	GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
@@ -2691,14 +2691,14 @@ int opengl_init_display_device()
 	extern uint os_get_dc();
 	GL_device_context = (HDC)os_get_dc();
 
-	if (!GL_device_context) {
+	if ( !GL_device_context ) {
 		MessageBox(wnd, "Unable to get device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
 	PixelFormat = ChoosePixelFormat(GL_device_context, &GL_pfd);
 
-	if (!PixelFormat) {
+	if ( !PixelFormat ) {
 		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
 		return 1;
 	} else {
@@ -2868,7 +2868,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_dump_frame			= gr_opengl_dump_frame;
 	
 	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
-	
+
 	gr_screen.gf_fog_set			= gr_opengl_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
@@ -2942,7 +2942,7 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_draw_line_list		= gr_opengl_draw_line_list;
 
-    gr_screen.gf_set_line_width     = gr_opengl_set_line_width;
+	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
 	gr_screen.gf_line_htl			= gr_opengl_line_htl;
 	gr_screen.gf_sphere_htl			= gr_opengl_sphere_htl;
@@ -2961,7 +2961,7 @@ bool gr_opengl_init()
 	if ( !GL_initted )
 		atexit(opengl_close);
 
-	if ( GL_initted )	{
+	if (GL_initted) {
 		gr_opengl_cleanup();
 		GL_initted = false;
 	}
@@ -2985,12 +2985,18 @@ bool gr_opengl_init()
 	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
 	opengl_setup_function_pointers();
 
-		mprintf(( "  OpenGL Vendor     : %s\n", glGetString( GL_VENDOR ) ));
-		mprintf(( "  OpenGL Renderer   : %s\n", glGetString( GL_RENDERER ) ));
-		mprintf(( "  OpenGL Version    : %s\n", ver ));
-		mprintf(( "\n" ));
+	mprintf(( "  OpenGL Vendor     : %s\n", glGetString(GL_VENDOR) ));
+	mprintf(( "  OpenGL Renderer   : %s\n", glGetString(GL_RENDERER) ));
+	mprintf(( "  OpenGL Version    : %s\n", ver ));
+	mprintf(( "\n" ));
 
-		// initialize the extensions and make sure we aren't missing something that we need
+	if (Cmdline_window) {
+		opengl_go_windowed();
+	} else {
+		opengl_go_fullscreen();
+	}
+
+	// initialize the extensions and make sure we aren't missing something that we need
 	opengl_extensions_init();
 
 	// setup the lighting stuff that will get used later
@@ -2999,20 +3005,14 @@ bool gr_opengl_init()
 	// init state system (must come AFTER light is set up)
 	GL_state.init();
 
-		// ready the texture system
-		opengl_tcache_init();
+	// ready the texture system
+	opengl_tcache_init();
 
 	extern void opengl_tnl_init();
 	opengl_tnl_init();
 
 	// setup default shaders, and shader related items
 	opengl_shader_init();
-
-		if (Cmdline_window) {
-			opengl_go_windowed();
-		} else {
-			opengl_go_fullscreen();
-		}
 
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );
@@ -3064,9 +3064,6 @@ bool gr_opengl_init()
 	gr_opengl_clear();
 	Mouse_hidden--;
 
-    vglClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
-    vglClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
-    vglClampColorARB(GL_CLAMP_READ_COLOR_ARB, GL_FALSE);
 
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
@@ -3109,7 +3106,7 @@ DCF(ogl_minimize, "Minimizes opengl")
 
 		if ( Dc_arg_type & ARG_TRUE ) {
 			opengl_minimize();
-	}
+		}
 	}
 
 	if (Dc_help)

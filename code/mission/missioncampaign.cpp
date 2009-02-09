@@ -2444,6 +2444,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 	// Goober5000 - player-persistent variables are handled when the mission is
 	// over, not necessarily when the mission is accepted
+	Player->failures_this_session = 0;
 
 	// DKA 12/11/98 - Unneeded already evaluated and stored
 	// determine what new mission we are moving to.

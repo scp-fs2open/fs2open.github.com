@@ -65,7 +65,7 @@
  * --Goober5000
  *
  * Revision 2.33  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * Ã¼bercommit of custom IFF stuff :)
  *
  * Revision 2.32  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
@@ -2164,7 +2164,7 @@ void asteroid_parse_tbl()
 		return;
 	}
 
-	read_file_text("asteroid.tbl");
+	read_file_text("asteroid.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	required_string("#Asteroid Types");

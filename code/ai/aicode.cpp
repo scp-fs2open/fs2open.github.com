@@ -1717,7 +1717,7 @@ void parse_aitbl()
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("ai.tbl");
+	read_file_text("ai.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	//Just in case parse_aitbl is called twice
@@ -6037,9 +6037,9 @@ void evade_ship()
 			if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
 				aip->afterburner_stop_time = Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4;
 			} else {				
-			aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+			}
 		}
-	}
 	}
 
 	vm_vec_sub(&vec_from_enemy, &player_pos, &enemy_pos);
@@ -6572,7 +6572,7 @@ void set_primary_weapon_linkage(object *objp)
 	} else if (energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
 		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f) {
 			shipp->flags |= SF_PRIMARY_LINKED;
-	}
+		}
 	}
 
 	// also check ballistics - Goober5000
@@ -6791,19 +6791,25 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	int	i;
-	int	ignore_mask;
+	int	ignore_mask, ignore_mask_without_huge;
 	int	initial_bank;
 
 	initial_bank = swp->current_secondary_bank;
 
-	//	Ignore bombs unless one of the priorities asks for them to be selected.
-	if (WIF_HUGE & (priority1 | priority2))
-		ignore_mask = 0;
-	else
-		ignore_mask = WIF_HUGE;
+	// set up ignore masks
+	ignore_mask = 0;
+	ignore_mask_without_huge = 0;
 
-	if (!(WIF_BOMBER_PLUS & (priority1 | priority2)))
+	// Ignore bombs unless one of the priorities asks for them to be selected.
+	if (!(WIF_HUGE & (priority1 | priority2))) {
+		ignore_mask |= WIF_HUGE;
+	}
+
+	// Ignore bomber+ unless one of the priorities asks for them to be selected
+	if (!(WIF_BOMBER_PLUS & (priority1 | priority2))) {
 		ignore_mask |= WIF_BOMBER_PLUS;
+		ignore_mask_without_huge |= WIF_BOMBER_PLUS;
+	}
 
 #ifndef NDEBUG
 	for (i=0; i<MAX_WEAPON_TYPES; i++) {
@@ -6812,19 +6818,22 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 #endif
 
-	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0))
-		ignore_mask |= WIF_HOMING;
-
 	//	Stuff weapon_bank_list with bank index of available weapons.
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
+
+	// Ignore homing weapons if we didn't specify a flag - for priority 1
+	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0)) {
+		ignore_mask |= WIF_HOMING;
+		ignore_mask_without_huge |= WIF_HOMING;
+	}
 
 	int	priority2_index = -1;
 
 	for (i=0; i<num_weapon_types; i++) {
-		int	wi_flags;
+		int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+		int ignore_mask_to_use = ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
-		wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-		if (!(wi_flags & ignore_mask)) {					//	Maybe bombs are illegal.
+		if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
 			if (wi_flags & priority1) {
 				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
 				break;
@@ -6833,18 +6842,21 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		}
 	}
 
-	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0))
+	// Ignore homing weapons if we didn't specify a flag - for priority 2
+	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0)) {
 		ignore_mask |= WIF_HOMING;
+		ignore_mask_without_huge |= WIF_HOMING;
+	}
 
 	//	If didn't find anything above, then pick any secondary weapon.
 	if (i == num_weapon_types) {
 		swp->current_secondary_bank = priority2_index;	//	Assume we won't find anything.
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
-				int	wi_flags;
+				int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+				int ignore_mask_to_use = ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
-				wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-				if (!(wi_flags & ignore_mask)) {					//	Maybe bombs are illegal.
+				if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
 					if (swp->secondary_bank_ammo[i] > 0) {
 						swp->current_secondary_bank = i;
 						break;
@@ -7609,7 +7621,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 					if (sip->afterburner_fuel_capacity > 0.0f) {
 						percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
-							afterburners_start(Pl_objp);
+							afterburners_start(Pl_objp);							
 							if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
 								float max_ab_vel;
 								float time_to_exhaust_25pct_fuel;
@@ -7631,12 +7643,12 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 								
 								aip->afterburner_stop_time = Missiontime + F1_0 * ab_time;
 							} else {				
-							aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+								aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+							}
 						}
 					}
 				}
 			}
-		}
 		}
 
 		accelerate_ship(aip, 1.0f);
@@ -10984,7 +10996,7 @@ void ai_guard()
 void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, int how )
 {
 	ai_info *aip, *repair_aip;
-	int		stamp = -1;
+	int	stamp = -1;
 
 	int p_index;
 	int p_team;
@@ -10999,7 +11011,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	aip = &Ai_info[Ships[repaired_objp->instance].ai_index];
 
 	if(Game_mode & GM_MULTIPLAYER){
-		p_index = multi_find_player_by_object(repaired_objp);		
+		p_index = multi_find_player_by_object(repaired_objp);
 		p_team = Net_players[p_index].p_info.team;
 	} else {		
 		if(repaired_objp == Player_obj){
@@ -11082,10 +11094,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 			// send appropriate messages here
 			if (MULTIPLAYER_MASTER) {
-			if ( how == REPAIR_INFO_KILLED ){
+				if ( how == REPAIR_INFO_KILLED ){
 					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
-			} else {
-				if ( repair_objp ){
+				} else {
+					if ( repair_objp ){
 						message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
 					}
 				}
@@ -11107,6 +11119,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			
 			hud_support_view_stop();			
 
+			
 			if (MULTIPLAYER_MASTER) {
 				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, p_team);
 			}

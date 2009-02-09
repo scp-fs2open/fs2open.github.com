@@ -381,7 +381,7 @@ struct opengl_vertex_buffer {
 	uint stride;		// the current stride
 	uint n_prim;
 	uint n_verts;
-	float *array_list;	// interleaved array
+	GLfloat *array_list;	// interleaved array
 	GLuint vbo;			// buffer for VBO
 	uint flags;			// FVF
 	uint vbo_size;
@@ -411,17 +411,17 @@ GLuint opengl_create_vbo(uint size, GLfloat *data)
 	glGetError();
 
 	vglGenBuffersARB(1, &buffer_name);
-	
+
 	// make sure we have one
 	if (buffer_name) {
 		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
-		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB );
+		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
 			vglDeleteBuffersARB(1, &buffer_name);
 			return 0;
-	}
+		}
 
 		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
@@ -446,8 +446,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		Int3();
 		return -1;
 	}
-
-	Assert( sizeof(float) == sizeof(GLfloat) );
 
 	vbuffer.stride = 0;
 
@@ -480,13 +478,13 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	list_size = vbuffer.stride * list->n_verts;
 
 	// allocate the storage list
-	vbuffer.array_list = (float*)vm_malloc(list_size);
+	vbuffer.array_list = (GLfloat*)vm_malloc_q(list_size);
 
 	// return invalid if we don't have the memory
 	if (vbuffer.array_list == NULL) {
 		return -1;
 	}
-		
+
 	memset( vbuffer.array_list, 0, list_size );
 
 	// generate the array
@@ -494,7 +492,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		vertex *vl = &list->vert[i];
 
 		// don't try to generate more data than what's available
-		Assert( ((arsize * sizeof(float)) + vbuffer.stride) <= list_size );
+		Assert( ((arsize * sizeof(GLfloat)) + vbuffer.stride) <= list_size );
 
 		// NOTE: UV->NORM->TSB->VERT, This array order *must* be preserved!!
 
@@ -522,10 +520,10 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		}
 
 		// verts
-			vbuffer.array_list[arsize++] = vl->x;
-			vbuffer.array_list[arsize++] = vl->y;
-			vbuffer.array_list[arsize++] = vl->z;
-		}
+		vbuffer.array_list[arsize++] = vl->x;
+		vbuffer.array_list[arsize++] = vl->y;
+		vbuffer.array_list[arsize++] = vl->z;
+	}
 
 	vbuffer.flags = flags;
 
@@ -534,7 +532,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 
 	// maybe load it into a vertex buffer object
 	if (Use_VBOs) {
-		vbuffer.vbo = opengl_create_vbo( list_size, vbuffer.array_list );
+		vbuffer.vbo = opengl_create_vbo(list_size, vbuffer.array_list);
 
 		if (vbuffer.vbo) {
 			// figure up the size so we can know how much VBO data is in card memory
@@ -673,8 +671,8 @@ static void opengl_init_arrays(opengl_vertex_buffer *vbp)
 	if (sbuffer) {	\
 		vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
 	} else if (ibuffer) {	\
-			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
-		} else {	\
+		vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
+	} else {	\
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);	\
 	}	\
 }
@@ -752,7 +750,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 
 		if (sdr_index < 0) {
 			opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
-		return;
+			return;
 		}
 
 		GL_last_shader_flags = shader_flags;
@@ -866,7 +864,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 
 static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
 {
-	float u_scale,v_scale;
+	float u_scale, v_scale;
 	int render_pass = 0;
 	int r, g, b, a, tmap_type;
 
@@ -976,24 +974,24 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 			if (max_lights > 0) {
 				int i;
 
-			opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+				opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 
-			for (i = 1; i < render_pass; i++) {
-				opengl_switch_arb(i, 0);
+				for (i = 1; i < render_pass; i++) {
+					opengl_switch_arb(i, 0);
+				}
+
+				for (i = 1; (i < max_lights) && (i < max_passes); i++) {
+					opengl_change_active_lights(i);
+
+					// DRAW IT!!
+					DO_RENDER();
+				}
+
+				// reset the active lights to the first set to render the spec related passes with
+				// for performance and quality reasons they don't get special lighting passes
+				opengl_change_active_lights(0);
 			}
-
-			for (i = 1; (i < max_lights) && (i < max_passes); i++) {
-				opengl_change_active_lights(i);
-
-				// DRAW IT!!
-				DO_RENDER();
-			}
-
-			// reset the active lights to the first set to render the spec related passes with
-			// for performance and quality reasons they don't get special lighting passes
-			opengl_change_active_lights(0);
 		}
-	}
 	}*/
 // -------- End 2nd PASS --------------------------------------------------------- //
 
@@ -1114,10 +1112,10 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 		opengl_set_texture_target();
 
 		GL_state.Texture.SetActiveUnit(0);
-			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
 
 		rendered_env = true;
-		}
+	}
 // -------- End 3rd PASS --------------------------------------------------------- //
 
 
@@ -1170,8 +1168,16 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 	GL_state.Texture.DisableAll();
 	GL_state.Normalize(GL_FALSE);
 	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	vglClientActiveTextureARB(GL_TEXTURE0_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
@@ -1204,8 +1210,8 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 		return;
 	}
 
-	Assert(GL_htl_projection_matrix_set);
-	Assert(GL_htl_view_matrix_set);
+	Assert( GL_htl_projection_matrix_set );
+	Assert( GL_htl_view_matrix_set );
 
 	if (offset == NULL) {
 		offset = &vmd_zero_vector;
@@ -1305,7 +1311,7 @@ void gr_opengl_end_projection_matrix()
 	if (GL_rendering_to_framebuffer) {
 		glOrtho(0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
 	} else {
-	glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+		glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
 	}
 
 	glMatrixMode(GL_MODELVIEW);
@@ -1404,7 +1410,7 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 	glScalef(1.0f, 1.0f, -1.0f);
 
 
-	if ( Cmdline_env ) {
+	if (Cmdline_env) {
 		GL_env_texture_matrix_set = true;
 
 		// if our view setup is the same as previous call then we can skip this
@@ -1483,7 +1489,7 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 	if (GL_rendering_to_framebuffer) {
 		glOrtho( 0, gr_screen.max_w, 0, gr_screen.max_h, -1, 1 );
 	} else {
-	glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, -1, 1 );
+		glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, -1, 1 );
 	}
 
 	glMatrixMode( GL_MODELVIEW );

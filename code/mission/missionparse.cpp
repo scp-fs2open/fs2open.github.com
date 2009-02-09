@@ -1714,8 +1714,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.arrival_anchor = -1;
 	pm->support_ships.departure_location = DEPART_AT_LOCATION;
 	pm->support_ships.departure_anchor = -1;
-	pm->support_ships.max_hull_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
-	pm->support_ships.max_subsys_repair_val = 100.0f;
+	pm->support_ships.max_hull_repair_val = 0.0f;
+	pm->support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_support_ships = -1;	// infinite
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
@@ -1907,7 +1907,7 @@ void parse_player_info(mission *pm)
 	char temp[NAME_LENGTH];
 	Assert(pm != NULL);
 
-// alternate type names begin here	
+	// alternate type names begin here	
 	mission_parse_reset_alt();
 	if(optional_string("#Alternate Types:")){		
 		// read them all in
@@ -2903,6 +2903,11 @@ int parse_create_object_sub(p_object *p_objp)
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
 
+	// make sure aim_safety has its submode defined
+	if (aip->mode == AIM_SAFETY) {
+		aip->submode = AISS_1;
+	}
+
 	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
 	shipp->callsign_index = p_objp->callsign_index;
@@ -3488,7 +3493,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		if(p_objp->alt_type_index < 0)
 			mprintf(("Error looking up alternate ship type name!\n"));
 		else
-			mprintf(("Using alternate ship type name : %s\n", name));
+			mprintf(("Using alternate ship type name: %s\n", name));
 	}
 
 	// optional callsign
@@ -5908,12 +5913,17 @@ int parse_mission(mission *pm, int flags)
 
 	// if we couldn't load some mod data
 	if ((Num_unknown_ship_classes > 0) /*|| (Num_unknown_weapon_classes > 0)*/) {
+		// if running on standalone server, just print to the log
+		if (Game_mode & GM_STANDALONE_SERVER) {
+			mprintf(("Warning!  Could not load %d ship classes!", Num_unknown_ship_classes));
+			return -2;
+		}
 		// don't do this in FRED; we will display a separate popup
-		if (!Fred_running) {
+		else if (!Fred_running) {
 			// build up the prompt...
 			char text[1024];
 
-			sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play something that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "");
+			sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
 				strcat(text, "(The current campaign is \"");
@@ -5934,7 +5944,9 @@ int parse_mission(mission *pm, int flags)
 				}
 			}
 
-			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a campaign that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
+			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ");
+			strcat(text, (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+			strcat(text, " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
 
 			strcat(text, "Do you want to continue to load the mission?");
 
@@ -6065,9 +6077,9 @@ void post_process_mission()
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
 			if ( result ) {
-				char sexp_str[8192], text[8192];
+				char sexp_str[4096], text[4500];
 
-				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE);
+				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, 4096);
 				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
 					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
 
@@ -6079,8 +6091,10 @@ void post_process_mission()
 		}
 	}
 
-	ai_post_process_mission();
-
+	// multiplayer missions are handled just before mission start
+	if (!(Game_mode & GM_MULTIPLAYER) ){	
+		ai_post_process_mission();
+	}
 
 	// first we need to clear out the counts for this mission
 	ship_clear_ship_type_counts();
@@ -7658,8 +7672,6 @@ void mission_parse_fixup_players()
 {
 	object *objp;
 
-	// merge created list to have all objects on used list
-	obj_merge_created_list();
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) && (objp->flags & OF_PLAYER_SHIP) ) {
 			game_busy( NOX("** fixing up player/ai stuff **") );	// animate the loading screen, doesn't nothing if the screen is not active

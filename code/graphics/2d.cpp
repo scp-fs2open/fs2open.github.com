@@ -1398,11 +1398,29 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		depth = 16;
 	}
 
+// These compiler macros will force windowed mode at the specified resolution if
+// built in debug mode.  This helps if you run with the debugger active as the
+// game won't be switching from fullscreen to minimized every time you hit a breakpoint or
+// warning message.
+#define _FORCE_DEBUG_640
+
 #ifdef _DEBUG
+#ifdef _FORCE_DEBUG_WIDESCREEN
+    width = 1280;
+    height = 800;
+    depth = 32;
+    Cmdline_window = 1;
+#elif defined(_FORCE_DEBUG_1024)
     width = 1024;
     height = 768;
     depth = 32;
     Cmdline_window = 1;
+#elif defined(_FORCE_DEBUG_640)
+    width = 640;
+    height = 480;
+    depth = 32;
+    Cmdline_window = 1;
+#endif
 #endif
 
 	// now try to actually init everything...
@@ -1440,9 +1458,9 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
-				"\t2) You've somehow corrupted your FreeSpace 2 installation;\n"
-				"\t3) You haven't installed FreeSpace 2 at all.\n"
-				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
+				"\t2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
+				"\t3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
+				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
 		}	
 	}
 

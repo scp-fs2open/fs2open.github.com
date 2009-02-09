@@ -656,6 +656,7 @@ int CFREDDoc::autoload()
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
 	SAFE_STRCAT(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
+	strcpy(backup_name, name);
 	SAFE_STRCAT(name, ".002", (sizeof(name) - 1));
 	fp = fopen(name, "r");
 	if (!fp)
@@ -669,7 +670,6 @@ int CFREDDoc::autoload()
 	r = load_mission(name);
 	Update_window = 1;
 
-	strcpy(backup_name, MISSION_BACKUP_NAME);
 	len = strlen(backup_name);
 	strcat(backup_name, ".001");
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
@@ -771,6 +771,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 				if (stricmp(name, old_name)) {  // need to fix name
 					update_sexp_references(old_name, name);
 					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					update_texture_replacements(old_name, name);
 					for (k=0; k<Num_reinforcements; k++)
 						if (!stricmp(old_name, Reinforcements[k].name)) {
 							Assert(strlen(name) < NAME_LENGTH);
@@ -814,11 +815,13 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		// if this is a ship, check it, and mark its possible alternate name down in the auxiliary array
 		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0)) {
 			if (Ships[objp->instance].alt_type_index >= 0) {
-			mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
+				mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
 
-			// also zero it
-			Ships[objp->instance].alt_type_index = -1;
-			} else if (Ships[objp->instance].callsign_index >= 0) {
+				// also zero it
+				Ships[objp->instance].alt_type_index = -1;
+			}
+			
+			if (Ships[objp->instance].callsign_index >= 0) {
 				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index, Fred_callsigns[objp->instance]);
 
 				// also zero it

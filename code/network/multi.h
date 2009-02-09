@@ -1116,9 +1116,10 @@ extern net_addr Multi_restr_addr;									// net address of the join request
 extern int Multi_join_restr_mode;									// what mode we're in
 
 // non API master tracker vars
-extern char Multi_tracker_login[100];
-extern char Multi_tracker_passwd[100];
-extern char Multi_tracker_squad_name[100];
+#define MULTI_TRACKER_STRING_LEN	100
+extern char Multi_tracker_login[MULTI_TRACKER_STRING_LEN+1];
+extern char Multi_tracker_passwd[MULTI_TRACKER_STRING_LEN+1];
+extern char Multi_tracker_squad_name[MULTI_TRACKER_STRING_LEN+1];
 extern int Multi_tracker_id;
 extern char Multi_tracker_id_string[255];
 

@@ -152,12 +152,12 @@
 
 
 typedef struct tcache_slot_opengl {
-	GLuint	texture_id;
-	GLenum	texture_target;
-	float	u_scale, v_scale;
+	GLuint texture_id;
+	GLenum texture_target;
+	float u_scale, v_scale;
 	int	bitmap_handle;
 	int	size;
-	ushort	w,h;
+	ushort w, h;
 	ubyte bpp;
 	ubyte mipmap_levels;
 } tcache_slot_opengl;

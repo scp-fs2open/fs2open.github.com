@@ -1623,6 +1623,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_INTEL_NAME			-137
 #define SEXP_CHECK_INVALID_SKYBOX_NAME			-138
 #define SEXP_CHECK_INVALID_PERSONA_NAME			-139
+#define SEXP_CHECK_INVALID_VARIABLE_TYPE		-140
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1742,7 +1743,7 @@ extern int query_referenced_in_sexp(int mode, char *name, int *node);
 extern int verify_vector(char *text);
 extern void skip_white(char **str);
 extern int validate_float(char **str);
-extern int build_sexp_string(int cur_node, int level, int mode);
+extern int build_sexp_string(int cur_node, int level, int mode, int max_len);
 extern int sexp_query_type_match(int opf, int opr);
 extern char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
@@ -1764,6 +1765,7 @@ void flush_sexp_tree(int node);
 // sexp_variable
 void sexp_modify_variable(int);
 void sexp_modify_variable(char *text, int index);
+int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *temp_name);
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000
 bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000

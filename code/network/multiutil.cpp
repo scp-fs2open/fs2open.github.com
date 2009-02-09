@@ -501,7 +501,7 @@ ushort multi_assign_network_signature( int what_kind )
 	// as are debris and asteroids since they don't die very often.  It would be vary rare for this
 	// value (the permanent signature) to wrap.  For now, this condition is an error condition
 	if ( what_kind == MULTI_SIG_SHIP ) {
-		if ( Next_ship_signature == 0 ){
+		if ( Next_ship_signature < SHIP_SIG_MIN ){
 			Next_ship_signature = SHIP_SIG_MIN;
 		}
 
@@ -514,7 +514,7 @@ ushort multi_assign_network_signature( int what_kind )
 
 		// signature stuff for asteroids.
 	} else if ( what_kind == MULTI_SIG_ASTEROID ) {
-		if ( Next_asteroid_signature == 0 ){
+		if ( Next_asteroid_signature < ASTEROID_SIG_MIN ){
 			Next_asteroid_signature = ASTEROID_SIG_MIN;
 		}
 
@@ -526,7 +526,7 @@ ushort multi_assign_network_signature( int what_kind )
 
 		// signatures for debris
 	} else if ( what_kind == MULTI_SIG_DEBRIS ) {
-		if ( Next_debris_signature == 0 ){
+		if ( Next_debris_signature < DEBRIS_SIG_MIN ){
 			Next_debris_signature = DEBRIS_SIG_MIN;
 		}
 
@@ -538,12 +538,12 @@ ushort multi_assign_network_signature( int what_kind )
 
 		// signature stuff for weapons and other expendable things.
 	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		if ( Next_non_perm_signature == 0 ){
+		if ( Next_non_perm_signature < NPERM_SIG_MIN ){
 			Next_non_perm_signature = NPERM_SIG_MIN;
 		}
 
 		sig = Next_non_perm_signature++;
-		if ( Next_non_perm_signature == NPERM_SIG_MAX ){
+		if ( (Next_non_perm_signature < NPERM_SIG_MIN) || (Next_non_perm_signature == NPERM_SIG_MAX) ) {
 			Next_non_perm_signature = NPERM_SIG_MIN;
 		}
 	} else {
@@ -559,22 +559,22 @@ ushort multi_assign_network_signature( int what_kind )
 ushort multi_get_next_network_signature( int what_kind )
 {
 	if ( what_kind == MULTI_SIG_SHIP ) {
-		if ( Next_ship_signature == 0 )
+		if ( Next_ship_signature < SHIP_SIG_MIN )
 			Next_ship_signature = SHIP_SIG_MIN;
 		return Next_ship_signature;
 
 	} else if ( what_kind == MULTI_SIG_DEBRIS ) {
-		if ( Next_debris_signature == 0 )
+		if ( Next_debris_signature < DEBRIS_SIG_MIN)
 			Next_debris_signature = DEBRIS_SIG_MIN;
 		return Next_debris_signature;
 
 	} else if ( what_kind == MULTI_SIG_ASTEROID ) {
-		if ( Next_asteroid_signature == 0 )
+		if ( Next_asteroid_signature < ASTEROID_SIG_MIN )
 			Next_asteroid_signature = ASTEROID_SIG_MIN;
 		return Next_asteroid_signature;
 
 	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		if ( Next_non_perm_signature == 0 )
+		if ( Next_non_perm_signature < NPERM_SIG_MIN )
 			Next_non_perm_signature = NPERM_SIG_MIN;
 		return Next_non_perm_signature;
 
@@ -600,7 +600,7 @@ void multi_set_network_signature( ushort signature, int what_kind )
 		Assert( (signature >= ASTEROID_SIG_MIN) && (signature <= ASTEROID_SIG_MAX) );
 		Next_asteroid_signature = signature;
 	} else if ( what_kind == MULTI_SIG_NON_PERMANENT ) {
-		Assert( (signature >= NPERM_SIG_MIN) && (signature <= NPERM_SIG_MAX) );
+		Assert( (signature >= NPERM_SIG_MIN) /*&& (signature <= NPERM_SIG_MAX)*/ );
 		Next_non_perm_signature = signature;
 	} else
 		Int3();			// get Allender
@@ -2417,22 +2417,22 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 
 		return JOIN_DENY_JR_STATE;
 	}
-	
+
 	// the standalone has some oddball situations which we must handle seperately
 	if (Game_mode & GM_STANDALONE_SERVER) {		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){
-
-			// Karajorma - Since we're not actually using any of this code comment it all out
 			/*
+			   TODO:  We can use this now, but it's not compatible with older builds,
+			          so comment it out until the next release
+
 			// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 			// we probably eventually want to make sure he's not passing us a fake tracker id#
 			if (MULTI_IS_TRACKER_GAME) {
-				if(jr->tracker_id < 0){
-					FS2 Open PXO doesn't use this
+				if (jr->tracker_id < 0) {
 					return JOIN_DENY_JR_TRACKER_INVAL; 
 				}			
-			}		
+			}
 			*/
 
 			// if we're password protected		
@@ -2464,15 +2464,19 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		// we're full buddy - sorry
 		return JOIN_DENY_JR_FULL;
 	}
-	
+
+	/*
+	   TODO:  We can use this now, but it's not compatible with older builds,
+			  so comment it out until the next release
+
 	// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 	// we probably eventually want to make sure he's not passing us a fake tracker id#
 	if (MULTI_IS_TRACKER_GAME) {
-		if(jr->tracker_id < 0){
-			// FS2Open PXO Doesn't use this
-			//return JOIN_DENY_JR_TRACKER_INVAL;
+		if (jr->tracker_id < 0){
+			return JOIN_DENY_JR_TRACKER_INVAL;
 		}			
 	}
+	*/
 
 	// check to see if the player is trying to ingame join in a closed game
 	if(MULTI_IN_MISSION && (Netgame.mode == NG_MODE_CLOSED)){
@@ -2505,7 +2509,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}	*/
 
 	// if the player was banned by the standalone
-	if ( fs2netd_player_banned(addr) || ((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)) ) {
+	if ( (MULTI_IS_TRACKER_GAME && fs2netd_player_banned(addr)) || ((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)) ) {
 		// maybe we should log this
 		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
 		ml_string(knock_message);
@@ -3488,6 +3492,8 @@ void multi_update_valid_missions()
 		std_create_gen_dialog("Validating missions");
 		std_gen_set_text("Querying:", 1);
 	}
+
+	Assert( MULTI_IS_TRACKER_GAME );
 
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
 	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {

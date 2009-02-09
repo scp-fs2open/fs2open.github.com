@@ -2045,7 +2045,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			}
 		}
 
-		if ( ibuffer_info.read != NULL ) {
+		if (ibuffer_info.read != NULL) {
 			bool ibx_valid = false;
 			bool tsb_valid = true;	// the TSB is assumed valid by default
 
@@ -2079,7 +2079,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				uint ibx_sum = cfread_uint( ibuffer_info.read );
 				ibuffer_info.size -= sizeof(uint); // subtract
 
-				if ( ibx_sum != pof_checksum ) {
+				if (ibx_sum != pof_checksum) {
 					// bah, it's invalid for this POF
 					ibx_valid = false;
 
@@ -2115,23 +2115,23 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 
 			if ( !ibx_valid || !tsb_valid ) {
-					cfclose( ibuffer_info.read );
-					ibuffer_info.read = NULL;
-					ibuffer_info.size = 0;
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+				ibuffer_info.size = 0;
 
 				if (ibuffer_info.tsb_read != NULL) {
 					cfclose( ibuffer_info.tsb_read);
 					ibuffer_info.tsb_read = NULL;
 					ibuffer_info.tsb_size = 0;
 				}
-				} else {
+			} else {
 				mprintf(("IBX: Found a good %s to read for '%s'.\n", (ibuffer_info.tsb_read != NULL) ? "IBX/TSB" : "IBX", filename));
 				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
 			}
 		}
 
 		// if the read file is absent or invalid then write out the new info
-		if ( ibuffer_info.read == NULL ) {
+		if (ibuffer_info.read == NULL) {
 			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
 
 			if (ibuffer_info.write != NULL) {
@@ -3290,7 +3290,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	if (ibuffer_info.tsb_read != NULL)
 		cfclose( ibuffer_info.tsb_read );
 
-	if ( ibuffer_info.write != NULL ) {
+	if (ibuffer_info.write != NULL) {
 		// if we switched to v2 at any point during IBX creation, make sure to update the header
 		if (ibuffer_info.version == 2) {
 			cfseek( ibuffer_info.write, 0, CF_SEEK_SET );
@@ -3375,8 +3375,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		tbase->LoadTexture(tmp_name, pm->filename);
 		if(tbase->GetTexture() < 0)
-				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
-			}
+			Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
+	}
 	// -------------------------------------------------------------------------
 
 	// glow maps ---------------------------------------------------------------
@@ -3393,7 +3393,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		tglow->LoadTexture(tmp_name, pm->filename);
-		}
+	}
 	// -------------------------------------------------------------------------
 
 	// specular maps -----------------------------------------------------------
@@ -3430,10 +3430,10 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		// try to get a height map too
 		if ( Cmdline_height && (tnorm->GetTexture() > 0) ) {
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+			memset(tmp_name, 0, MAX_FILENAME_LEN);
+			strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 			strncat(tmp_name, "-height", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
-		strlwr(tmp_name);
+			strlwr(tmp_name);
 
 			theight->LoadTexture(tmp_name, pm->filename);
 		}

@@ -65,7 +65,7 @@
  * --Goober5000
  *
  * Revision 1.31  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * Ã¼bercommit of custom IFF stuff :)
  *
  * Revision 1.30  2006/01/11 21:15:15  wmcoolmon
  * Somewhat better turret comments
@@ -600,7 +600,13 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 	// check if object is a bomb attacking the turret parent
 	// check if bomb is homing on the turret parent ship
-	if (objp->type == OBJ_WEAPON) {
+	bool check_weapon = true;
+
+	if ((The_mission.ai_profile->flags & AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE) && (dist > eeo->weapon_travel_dist)) {
+		check_weapon = false;
+	}
+
+	if ((objp->type == OBJ_WEAPON) && check_weapon) {
 		if ( Weapons[objp->instance].homing_object == &Objects[eeo->turret_parent_objnum] ) {
 			if ( dist < eeo->nearest_homing_bomb_dist ) {
 				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, tp, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
@@ -836,15 +842,18 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 						objp = &Objects[ao->objnum];
 						evaluate_obj_as_target(objp, &eeo);
 					}
+
+					if (eeo.nearest_objnum != -1) {
+						return eeo.nearest_objnum;
+					}
 				}
-				return eeo.nearest_objnum;										// lowest priority is the closest enemy objnum
+				break;
 
 			default:
 				Int3(); //Means invalid number passed.
 		}
 	}
 
-	//prevent warning of all control paths not returning a value
 	return -1;
 }
 
@@ -1081,7 +1090,20 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 		vec3d	turret_norm;
 
 		vm_vec_rotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
-		return vm_vec_dot(&turret_norm, &vector_out);
+		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
+
+		if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
+			if (dot_return > turret_subsysp->system_info->turret_fov) {
+				// target is in sight and in fov
+				return dot_return;
+			} else {
+				// target is in sight but is not in turret's fov
+				return -1.0f;
+			}
+		} else {
+			// target is in sight and we dont care if its in turret's fov or not
+			return dot_return;
+		}
 	} else
 		return -1.0f;
 
@@ -1188,11 +1210,18 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	}
 	int offset = (int)frand_range(0.0f, (float)(aifft_list_size % stride));
 	int idx;
+	float dot_fov_modifier = 0.0f;
+
+	if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
+		if (ssp->system_info->turret_fov < 0)
+			dot_fov_modifier = ssp->system_info->turret_fov;
+	}
+
 	for(idx=offset; idx<aifft_list_size; idx+=stride){
 		dot = aifft_compute_turret_dot(objp, enemy_objp, &abs_gun_pos, ssp, aifft_list[idx]);			
 
-		if (dot* aifft_rank[idx] > best_dot) {
-			best_dot = dot*aifft_rank[idx];
+		if ((dot - dot_fov_modifier)* aifft_rank[idx] > best_dot) {
+			best_dot = (dot - dot_fov_modifier)*aifft_rank[idx];
 			best_subsysp = aifft_list[idx];
 		}
 	}

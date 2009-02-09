@@ -530,13 +530,8 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 			gl_screenYH = g_screenY + g_height;
 			gl_screenXW = g_screenX + g_width;
 
-			if (GL_state.Texture.GetTarget() == GL_TEXTURE_RECTANGLE_ARB) {
-				gl_screenU = (GLfloat)g_width;
-				gl_screenV = (GLfloat)g_height;
-			} else {
-				gl_screenU = i2fl(g_width) / i2fl(wp2);
-				gl_screenV = i2fl(g_height) / i2fl(hp2);
-			}
+			gl_screenU = i2fl(g_width) / i2fl(wp2);
+			gl_screenV = i2fl(g_height) / i2fl(hp2);
 		}
 	}
 
@@ -692,10 +687,7 @@ int mve_video_init(ubyte *data)
 	memset(pixelbuf, 0, g_screenWidth * g_screenHeight * 2);
 
 	if (gr_screen.mode == GR_OPENGL) {
-		// set the appropriate texture target
-		if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_RECTANGLE) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) )
-			opengl_set_texture_target( GL_TEXTURE_RECTANGLE_ARB );
-
+		opengl_set_texture_target(GL_TEXTURE_2D);
 		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
 		glGenTextures(1, &GLtex);
@@ -710,7 +702,7 @@ int mve_video_init(ubyte *data)
 
 		gr_set_lighting(false, false);
 		GL_state.Texture.DisableAll();
-	
+
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_texture_target);
 		GL_state.Texture.Enable(GLtex);
@@ -718,7 +710,7 @@ int mve_video_init(ubyte *data)
 		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-	
+
 		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
 		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
 

@@ -148,6 +148,9 @@ int mouse_down(int btn);			// returns 1 if mouse button btn is down, 0 otherwise
 float mouse_down_time(int btn);	// returns the fraction of time btn has been down since last call
 int mouse_is_visible();				// returns 1 if mouse is visible, 0 otherwise
 
+void mouse_lost_focus();
+void mouse_got_focus();
+
 void mouse_eval_deltas();
 void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);
 

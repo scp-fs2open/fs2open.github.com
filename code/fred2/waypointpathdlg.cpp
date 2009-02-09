@@ -326,6 +326,7 @@ int waypoint_path_dlg::update_data(int redraw)
 		if (stricmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(REF_TYPE_WAYPOINT, old_name, str);
+			update_texture_replacements(old_name, str);
 		}
 
 	} else if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {

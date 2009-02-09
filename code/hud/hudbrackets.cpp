@@ -837,21 +837,31 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		object* t_objp = &Objects[target_objnum];
 		char* tinfo_name = NULL;
 		char* tinfo_class = NULL;
-		char temp_name[NAME_LENGTH * 2 + 5];
+		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
 		char empty='\0';
 
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				hud_stuff_ship_name(&Ships[t_objp->instance], temp_name);
-				hud_stuff_ship_class(&Ships[t_objp->instance], temp_class);
+				hud_stuff_ship_name(temp_name, &Ships[t_objp->instance]);
+				hud_stuff_ship_class(temp_class, &Ships[t_objp->instance]);
 				tinfo_name = temp_name;
 				tinfo_class = temp_class;
+
+				// maybe concatenate callsign
+				if (*temp_name)
+				{
+					char temp_callsign[NAME_LENGTH];
+
+					hud_stuff_ship_callsign(temp_callsign, &Ships[t_objp->instance]);
+					if (*temp_callsign)
+						sprintf(&temp_name[strlen(temp_name)], " (%s)", temp_callsign);
+				}
 				break;
 
 			case OBJ_DEBRIS:
-				tinfo_name = XSTR( "Debris", 348);
+				tinfo_name = XSTR("Debris", 348);
 				break;
 			case OBJ_WEAPON:
 				strcpy(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
@@ -867,7 +877,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 						tinfo_name = NOX("Asteroid");
 						break;
 					default:
-						tinfo_name = XSTR( "Debris", 348);
+						tinfo_name = XSTR("Debris", 348);
 				}
 				break;
 			case OBJ_JUMP_NODE:
@@ -883,5 +893,11 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		{
 			gr_string(x2+3, y1+9, tinfo_class);
 		}
+/*
+		if(tinfo_callsign)
+		{
+			gr_string(x2+3, y1+18, tinfo_callsign);
+		}
+ */
 	}
 }

@@ -2000,7 +2000,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		if (model_collide(&mc))	{
 			return 1;
 		}
-	}	
+	}
 
     // check asteroids
     asteroid *ast = Asteroids;
@@ -2323,13 +2323,19 @@ void shipfx_emit_spark( int n, int sn )
     //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
 	
-	if ((shipp->flags & (SF_ARRIVING|SF_DEPART_WARP)) && (shipp->warpout_effect))
+	if ( ((shipp->flags & SF_ARRIVING) && (shipp->warpin_effect != NULL))
+		|| ((shipp->flags & SF_DEPART_WARP) && (shipp->warpout_effect != NULL)) )
     {
         vec3d warp_pnt, tmp;
         matrix warp_orient;
 
-        shipp->warpout_effect->getWarpPosition(&warp_pnt);
-        shipp->warpout_effect->getWarpOrientation(&warp_orient);
+		if (shipp->flags & SF_ARRIVING) {
+			shipp->warpin_effect->getWarpPosition(&warp_pnt);
+			shipp->warpin_effect->getWarpOrientation(&warp_orient);
+		} else {
+			shipp->warpout_effect->getWarpPosition(&warp_pnt);
+			shipp->warpout_effect->getWarpOrientation(&warp_orient);
+		}
 
         vm_vec_sub( &tmp, &outpnt, &warp_pnt );
         
@@ -4338,6 +4344,9 @@ WE_Default::WE_Default(object *n_objp, int n_direction)
 
 	portal_objp = NULL;
 	stage_duration[0] = 0;
+
+	pos = vmd_zero_vector;
+	fvec = vmd_zero_vector;
 }
 
 int WE_Default::warpStart()
@@ -4406,8 +4415,8 @@ int WE_Default::warpStart()
 		{
 			// make sure that the warp effect will always have a forward orient facing the exit direction of the warpin ship - taylor
 			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
-			if ( (knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f) ||
-				(knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f) )
+			if ( ((knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f)) ||
+				((knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f)) )
 			{
 				knossos_orient.vec.uvec.xyz.y = -knossos_orient.vec.uvec.xyz.y;
 				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
@@ -4435,8 +4444,8 @@ int WE_Default::warpStart()
 	{
         float dot = vm_vec_dotprod(&fvec, &objp->orient.vec.fvec);
 
-		if ((dot < 0) && (direction == WD_WARP_IN) ||
-            ((dot > 0) && (direction == WD_WARP_OUT)))
+		if ( ((dot < 0) && (direction == WD_WARP_IN)) ||
+            ((dot > 0) && (direction == WD_WARP_OUT)) )
 		{
 			vm_vec_negate(&fvec);
 		}
@@ -4788,17 +4797,17 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 	if(pm != NULL)
 	{
 		if(width_full <= 0.0f)
-	{
-		width_full = pm->maxs.xyz.x - pm->mins.xyz.x;
-		height_full = pm->maxs.xyz.y - pm->mins.xyz.y;
+		{
+			width_full = pm->maxs.xyz.x - pm->mins.xyz.x;
+			height_full = pm->maxs.xyz.y - pm->mins.xyz.y;
 			z_offset_max = pm->maxs.xyz.z;
 			z_offset_min = pm->mins.xyz.z;
-	}
+		}
 	}
 	else
 	{
-	if(width_full <= 0.0f)
-	{
+		if(width_full <= 0.0f)
+		{
 			width_full = 2.0f*objp->radius;
 		}
 		height_full = width_full;
@@ -4894,8 +4903,8 @@ int WE_Homeworld::warpFrame(float frametime)
 		stage++;
 		if(stage < WE_HOMEWORLD_NUM_STAGES)
 		{
-		stage_time_start = timestamp();
-		stage_time_end = timestamp(stage_duration[stage]);
+			stage_time_start = timestamp();
+			stage_time_end = timestamp(stage_duration[stage]);
 		}
 		switch(stage)
 		{
@@ -4943,7 +4952,7 @@ int WE_Homeworld::warpFrame(float frametime)
 			this->warpEnd();
 			return 0;
 	}
-		
+
 	//Update sound
 	if(snd > -1)
 		snd_update_3d_pos(snd, snd_gs, &pos, 0.0f, snd_range_factor);

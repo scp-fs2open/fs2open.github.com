@@ -479,9 +479,9 @@ int Multi_join_restr_mode = -1;
 LOCAL fix Multi_server_wait_start;				// variable to hold start time when waiting to reestablish with server
 
 // non API master tracker vars
-char Multi_tracker_login[100] = "";
-char Multi_tracker_passwd[100] = "";
-char Multi_tracker_squad_name[100] = "";
+char Multi_tracker_login[MULTI_TRACKER_STRING_LEN+1] = "";
+char Multi_tracker_passwd[MULTI_TRACKER_STRING_LEN+1] = "";
+char Multi_tracker_squad_name[MULTI_TRACKER_STRING_LEN+1] = "";
 int Multi_tracker_id = -1;
 char Multi_tracker_id_string[255];
 
@@ -1773,7 +1773,12 @@ void standalone_main_init()
 		exit(1);
 	}
 	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
-		MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
+		if (Tcp_failure_code == WSAEADDRINUSE) {
+			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", -1), "Error", MB_OK);
+		} else {
+			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
+		}
+
 		exit(1);
 	}
 #endif // ifdef _WIN32
@@ -1893,7 +1898,7 @@ void standalone_main_init()
 		nprintf(("Network","STANDALONE USING LAN UPDATE\n"));
 		break;
 	}
-	
+
 	// clear out various things
 	psnet_flush();
 	game_flush();
@@ -1907,9 +1912,19 @@ void standalone_main_init()
 	multi_create_list_load_missions();
 	multi_create_list_load_campaigns();
 
-	// if this is a tracker game, validate missions
-	if(MULTI_IS_TRACKER_GAME){
-		multi_update_valid_missions();
+	// if this is a tracker game then we have some extra tasks to perform
+	if (MULTI_IS_TRACKER_GAME) {
+		// login (duh!)
+		if ( fs2netd_login() ) {
+			// validate missions
+			multi_update_valid_missions();
+
+			// advertise our game to the server
+			fs2netd_gameserver_start();
+
+			// set tracker id
+			Net_player->tracker_player_id = Multi_tracker_id;
+		}
 	}
 }
 
@@ -2129,6 +2144,10 @@ void multi_display_netinfo()
 
 	// not multiplayer
 	if(!(Game_mode & GM_MULTIPLAYER)){
+		return;
+	}
+
+	if (!HUD_draw) {
 		return;
 	}
 

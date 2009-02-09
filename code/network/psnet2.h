@@ -86,6 +86,8 @@
 
 #ifdef _WIN32
 #include <winsock.h>
+#else
+#include <errno.h>
 #endif
 
 #include "globalincs/pstypes.h"

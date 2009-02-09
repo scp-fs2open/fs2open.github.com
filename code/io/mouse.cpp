@@ -254,6 +254,26 @@ extern int Cmdline_window;
 
 void mouse_force_pos(int x, int y);
 
+static bool Mouse_in_focus = true;
+
+void mouse_got_focus()
+{
+    if ( !mouse_inited ) return;
+
+    Mouse_in_focus = true;
+
+    mouse_flush();
+}
+
+void mouse_lost_focus()
+{
+    if ( !mouse_inited ) return;
+
+    Mouse_in_focus = false;
+
+    mouse_flush();
+}
+
 int mouse_is_visible()
 {
 	return !Mouse_hidden;
@@ -690,6 +710,17 @@ void mouse_eval_deltas_di()
 int mouse_get_pos(int *xpos, int *ypos)
 {
 	int flags;
+
+    if (!Mouse_in_focus)
+    {
+        if (xpos)
+			*xpos = Mouse_x;
+
+		if (ypos)
+			*ypos = Mouse_y;
+
+        return 0;
+    }
 
 	if (Mouse_mode == MOUSE_MODE_DI) {
 		if (xpos)

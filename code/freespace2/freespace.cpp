@@ -2006,6 +2006,11 @@ int Show_net_stats;
 int Pre_player_entry;
 
 int	Fred_running = 0;
+
+// required for hudtarget... kinda dumb, but meh
+char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
+
 char Game_current_mission_filename[MAX_FILENAME_LEN];
 int game_single_step = 0;
 int last_single_step=0;
@@ -3200,9 +3205,13 @@ void freespace_mission_load_stuff()
 		ship_assign_sound_all();	// assign engine sounds to ships
 		game_assign_sound_environment();	 // assign the sound environment for this mission
 
-		// call function in missionparse.cpp to fixup player/ai stuff.
-		game_busy( NOX("** fixing up player/ai stuff **") );
-		mission_parse_fixup_players();
+		obj_merge_created_list();
+
+		if (!(Game_mode & GM_MULTIPLAYER)) {
+			// call function in missionparse.cpp to fixup player/ai stuff.
+			game_busy( NOX("** fixing up player/ai stuff **") );
+			mission_parse_fixup_players();
+		}
 
 		// Load in all the bitmaps for this level
 		level_page_in();
@@ -3215,8 +3224,7 @@ void freespace_mission_load_stuff()
 	} 
 	// the only thing we need to call on the standalone for now.
 	else {
-		// call function in missionparse.cpp to fixup player/ai stuff.
-		mission_parse_fixup_players();
+		obj_merge_created_list();
 
 		// Load in all the bitmaps for this level
 		level_page_in();
@@ -3795,25 +3803,25 @@ void game_init()
 
 	if ( gr_init() == false ) {
 #ifdef _WIN32
-			ClipCursor(NULL);
-			ShowCursor(TRUE);
-			ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
+		ClipCursor(NULL);
+		ShowCursor(TRUE);
+		ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
 		MessageBox( NULL, "Error intializing graphics!", "Error", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-			run_launcher();
+		run_launcher();
 #elif defined(SCP_UNIX)
 		fprintf(stderr, "Error initializing graphics!");
-			
-			// the default entry should have been created already if it didn't exist, so if we're here then
-			// the current value is invalid and we need to replace it
+
+		// the default entry should have been created already if it didn't exist, so if we're here then
+		// the current value is invalid and we need to replace it
 		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x16 bit"));
-			
-			// courtesy
-			fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
-			fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
+
+		// courtesy
+		fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
+		fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
 #endif
-			exit(1);
-			return;
-		}
+		exit(1);
+		return;
+	}
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
@@ -4862,7 +4870,7 @@ DCF(dcf_fov, "Change the field of view of the main camera")
 	if ( Dc_help )	
 		dc_printf( "Usage: fov [factor]\nFactor is the zoom factor btwn .25 and 1.25\nNo parameter resets it to default.\n" );
 
-	if ( Dc_status )				
+	if ( Dc_status )
 	{
 		if(cam == NULL)
 			dc_printf("Camera unavailable.");
@@ -4939,7 +4947,7 @@ void say_view_target()
 			}
 
 			end_string_at_first_hash_symbol(view_target_name);
-			if ( view_target_name ) {
+			if ( strlen(view_target_name) ) {
 				HUD_fixed_printf(0.0f, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
 				Show_viewing_from_self = 1;
 			}
@@ -5217,7 +5225,7 @@ void game_environment_map_gen()
 
 	if (gr_screen.envmap_render_target >= 0) {
 		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
-			Int3();
+			Warning(LOCATION, "Unable to release environment map render target.");
 		}
 
 		gr_screen.envmap_render_target = -1;
@@ -5262,7 +5270,7 @@ camid game_render_frame_setup()
 	}
 	camera *main_cam = Main_camera.getCamera();
 	if(main_cam == NULL)
-{
+	{
 		Error(LOCATION, "Unable to generate main camera");
 		return camid();
 	}
@@ -6224,37 +6232,37 @@ void game_shade_frame(float frametime)
 
 	if (Fade_type != FI_NONE)
 	{
-	if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
-		return;
-	}
-
-	alpha = Viewer_shader.c;
-
-	// Fade in or out if necessary
-	if (Fade_type == FI_FADEOUT) {
-		alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
-	} else if (Fade_type == FI_FADEIN) {
-		alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
-	}
-
-	// Limit and set fade type if done
-	if (alpha < 0) {
-		alpha = 0;
-
-		if (Fade_type == FI_FADEIN) {
-			Fade_type = FI_NONE;
+		if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
+			return;
 		}
-	}
 
-	if (alpha > 255) {
-		alpha = 255;
+		alpha = Viewer_shader.c;
 
+		// Fade in or out if necessary
 		if (Fade_type == FI_FADEOUT) {
-			Fade_type = FI_NONE;
+			alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
+		} else if (Fade_type == FI_FADEIN) {
+			alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
 		}
-	}
 
-	Viewer_shader.c = (ubyte)alpha;
+		// Limit and set fade type if done
+		if (alpha < 0) {
+			alpha = 0;
+
+			if (Fade_type == FI_FADEIN) {
+				Fade_type = FI_NONE;
+			}
+		}
+
+		if (alpha > 255) {
+			alpha = 255;
+
+			if (Fade_type == FI_FADEOUT) {
+				Fade_type = FI_NONE;
+			}
+		}
+
+		Viewer_shader.c = (ubyte)alpha;
 	}
 
 	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
@@ -6264,47 +6272,47 @@ const static int CUTSCENE_BAR_DIVISOR = 8;
 void bars_do_frame(float frametime)
 {
 	if((Cutscene_bar_flags & CUB_GRADUAL) && Cutscene_bars_progress < 1.0f)
-{
+	{
 		//Determine how far along we are
 		Assert(Cutscene_delta_time > 0.0f);
 
 		Cutscene_bars_progress += frametime / Cutscene_delta_time;
 		if(Cutscene_bars_progress >= 1.0f)
-	{
+		{
 			//Reset this stuff
 			Cutscene_delta_time = 1.0f;
 			Cutscene_bars_progress = 1.0f;
-	}
+		}
 
 		//Figure out where the bars should be
 		int yborder;
 		if(Cutscene_bar_flags & CUB_CUTSCENE)
 			yborder = fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
-	else
+		else
 			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
 
 		//Set rectangles
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//Set teh clipping
-		//gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		//gr_set_color(0,0,0);
+		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		//Set clipping
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
 
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );	
+		//gr_set_color(0,0,0);
+		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
 	}
-	}
-	
+}
+
 //WMC - This does stuff like fading in and out and subtitles. Special FX?
 //Basically stuff you need rendered after everything else (including HUD)
 void game_render_post_frame()
-	{
+{
 	float frametime = flFrametime;
 	if(Time_compression_locked)
 	{
@@ -6312,7 +6320,6 @@ void game_render_post_frame()
 	}
 
 	subtitles_do_frame(frametime);
-	bars_do_frame(frametime);
 	game_shade_frame(frametime);
 }
 
@@ -6445,6 +6452,15 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
 
+            if (Time_compression_locked)
+            {
+                bars_do_frame(flRealframetime);
+            }
+            else
+            {
+                bars_do_frame(flFrametime);
+            }
+
 			game_render_frame( cid );
 
 			// save the eye position and orientation
@@ -6468,7 +6484,7 @@ void game_frame(int paused)
 				hud_show_radar();
 			}
 
-			if( (Game_detail_flags & DETAIL_FLAG_HUD) && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) ) ) {
+			if( (Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) ) {
 				hud_maybe_clear_head_area();
 				anim_render_all(0, flFrametime);
 			}
@@ -6603,7 +6619,7 @@ void game_reset_time()
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
 		return ;
 	}
-	
+
 	//	Last_time = timer_get_fixed_seconds();
 	game_start_time();
 	timestamp_reset();
@@ -7030,9 +7046,9 @@ int game_poll()
 	}
 
 	// If a popup is running, don't process all the Fn keys
-	if( popup_active() ) {
-		return k;
-	}
+//	if( popup_active() ) {
+//		return k;
+//	}
 
 	state = gameseq_get_state();
 
@@ -7065,8 +7081,8 @@ int game_poll()
 				case GS_STATE_OPTIONS_MENU:
 				case GS_STATE_HUD_CONFIG:
 				case GS_STATE_CONTROL_CONFIG:
-				case GS_STATE_DEATH_DIED:
-				case GS_STATE_DEATH_BLEW_UP:		
+//				case GS_STATE_DEATH_DIED:
+//				case GS_STATE_DEATH_BLEW_UP:		
 				case GS_STATE_VIEW_MEDALS:
 					break;
 
@@ -8047,7 +8063,7 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			set_time_compression(1.0f);
-	
+
 			// remove any multiplayer flags from the game mode
 			Game_mode &= ~(GM_MULTIPLAYER);
 	
@@ -8208,8 +8224,8 @@ void game_enter_state( int old_state, int new_state )
 			// if we are coming from the briefing, ship select, weapons loadout, or main menu (in the
 			// case of quick start), then do bitmap loads, etc  Don't do any of the loading stuff
 			// if we are in multiplayer -- this stuff is all handled in the multi-wait section
-			if ( !(Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) ||
-				(old_state == GS_STATE_WEAPON_SELECT) || (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_MULTI_STD_WAIT)	|| (old_state == GS_STATE_SIMULATOR_ROOM) ) {
+			if ( !(Game_mode & GM_MULTIPLAYER) && ((old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) ||
+				(old_state == GS_STATE_WEAPON_SELECT) || (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_MULTI_STD_WAIT) || (old_state == GS_STATE_SIMULATOR_ROOM)) ) {
 					// JAS: Used to do all paging here.
 
 					#ifndef NDEBUG
@@ -8224,7 +8240,7 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// special code that restores player ship selection and weapons loadout when doing a quick start
-			if ( !(Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_DEATH_BLEW_UP)  || (old_state == GS_STATE_GAME_PLAY) ) {
+			if ( !(Game_mode & GM_MULTIPLAYER) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_DEATH_BLEW_UP)  || (old_state == GS_STATE_GAME_PLAY)) ) {
 				if ( !stricmp(Player_loadout.filename, Game_current_mission_filename) ) {
 					wss_direct_restore_loadout();
 				}
@@ -8235,7 +8251,7 @@ void game_enter_state( int old_state, int new_state )
 				event_music_first_pattern();	// start the first pattern
 			}
 
-			if ( !(Game_mode & GM_STANDALONE_SERVER) && (old_state != GS_STATE_GAME_PAUSED) && (old_state != GS_STATE_MULTI_PAUSED) ) {
+			if ( !(Game_mode & GM_STANDALONE_SERVER) && ((old_state != GS_STATE_GAME_PAUSED) && (old_state != GS_STATE_MULTI_PAUSED)) ) {
 				event_music_first_pattern();	// start the first pattern
 			}			
 			player_restore_target_and_weapon_link_prefs();
@@ -8283,7 +8299,7 @@ void mouse_force_pos(int x, int y);
 	
 			// under certain circumstances, the server should reset the object update rate limiting stuff
 			if( ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) &&
-				 (old_state == GS_STATE_MULTI_PAUSED) || (old_state == GS_STATE_MULTI_MISSION_SYNC) ){
+				 ((old_state == GS_STATE_MULTI_PAUSED) || (old_state == GS_STATE_MULTI_MISSION_SYNC)) ){
 				
 				// reinitialize the rate limiting system for all clients
 				multi_oo_rate_init_all();
@@ -9891,21 +9907,21 @@ void Time_model( int modelnum )
 		for(int j = 0; j < TM_NUM_TYPES; j++)
 		{
 			int bmp_num = tmap->textures[j].GetOriginalTexture();
-		if ( bmp_num > -1 )	{
-			bm_get_palette(bmp_num, pal, filename );		
-			int w,h;
-			bm_get_info( bmp_num,&w, &h );
+			if ( bmp_num > -1 )	{
+				bm_get_palette(bmp_num, pal, filename );		
+				int w,h;
+				bm_get_info( bmp_num,&w, &h );
 
 
-			if ( (w > 512) || (h > 512) )	{
-				fprintf( Texture_fp, "%s\t%s\t%d\t%d\n", pof_file, filename, w, h );
-				Tmap_num_too_big++;
-				model_needs_splitting++;
+				if ( (w > 512) || (h > 512) )	{
+					fprintf( Texture_fp, "%s\t%s\t%d\t%d\n", pof_file, filename, w, h );
+					Tmap_num_too_big++;
+					model_needs_splitting++;
+				}
+			} else {
+				//fprintf( Texture_fp, "\tTexture %d is bogus\n", i );
 			}
-		} else {
-			//fprintf( Texture_fp, "\tTexture %d is bogus\n", i );
 		}
-	}
 	}
 
 	if ( model_needs_splitting )	{

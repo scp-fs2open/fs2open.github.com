@@ -883,9 +883,9 @@ struct buffer_data {
 // IBX stuff
 typedef struct IBX {
 	CFILE *read;		// reads, if an IBX file already exists
-	CFILE *write;	// writes, if new file created
-	int size;		// file size used to make sure an IBX contains enough data for the whole model
-	int version;	// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
+	CFILE *write;		// writes, if new file created
+	int size;			// file size used to make sure an IBX contains enough data for the whole model
+	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
 
 	// tangent space data

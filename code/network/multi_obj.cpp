@@ -446,6 +446,9 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	if ( oo_flags & OO_HULL_NEW ){
 		// add the hull value for this guy		
 		temp = get_hull_pct(objp);
+		if ( (temp < 0.004f) && (temp > 0.0f) ) {
+			temp = 0.004f;		// 0.004 is the lowest positive value we can have before we zero out when packing
+		}
 		PACK_PERCENT(temp);				
 		multi_rate_add(NET_PLAYER_NUM(pl), "hul", 1);	
 

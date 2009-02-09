@@ -682,6 +682,7 @@
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
+#include "menuui/mainhallmenu.h"
 
 #include <vector>
 #include <algorithm>
@@ -1494,15 +1495,17 @@ void multi_join_game_init()
 	help_overlay_load(MULTI_JOIN_OVERLAY);
 	help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
 	
-	// try to login to fs2netd
-	if ( Om_tracker_flag && !fs2netd_login() ) {
-		// failed!  go back to the main hall
-		gameseq_post_event(GS_EVENT_MAIN_MENU);
-		return;
+	// try to login to the tracker
+	if (MULTI_IS_TRACKER_GAME) {
+		if ( !fs2netd_login() ) {
+			// failed!  go back to the main hall
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			return;
+		}
 	}
 
 	// do TCP and VMT specific initialization
-	if(Multi_options_g.protocol == NET_TCP){		
+	if ( (Multi_options_g.protocol == NET_TCP) && !MULTI_IS_TRACKER_GAME ) {		
 		// if this is a TCP (non tracker) game, we'll load up our default address list right now		
 		multi_join_load_tcp_addrs();		
 	}	
@@ -1552,6 +1555,9 @@ void multi_join_game_init()
 
 	// slider
 	Multi_join_slider.create(&Multi_join_window, Mj_slider_coords[gr_screen.res][MJ_X_COORD], Mj_slider_coords[gr_screen.res][MJ_Y_COORD], Mj_slider_coords[gr_screen.res][MJ_W_COORD], Mj_slider_coords[gr_screen.res][MJ_H_COORD], 0, Mj_slider_name[gr_screen.res], &multi_join_list_scroll_up, &multi_join_list_scroll_down, NULL);
+
+	// make sure that we turn music/sounds back on (will be disabled after playing a mission)
+	main_hall_start_music();
 
 	// if starting a network game, then go to the create game screen
 	if ( Cmdline_start_netgame ) {
@@ -1653,7 +1659,7 @@ void multi_join_game_do_frame()
 		if(help_overlay_active(MULTI_JOIN_OVERLAY)){
 			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
 		} else {		
-			if (Om_tracker_flag) {
+			if (MULTI_IS_TRACKER_GAME) {
 				gameseq_post_event(GS_EVENT_PXO);
 			} else {
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -1788,7 +1794,7 @@ void multi_join_button_pressed(int n)
 	switch(n){
 	case MJ_CANCEL :
 		// if we're player PXO, go back there
-		if (Om_tracker_flag) {
+		if (MULTI_IS_TRACKER_GAME) {
 			gameseq_post_event(GS_EVENT_PXO);
 		} else {
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -1868,8 +1874,6 @@ void multi_join_button_pressed(int n)
 
 	// refresh the game/server list
 	case MJ_REFRESH:	
-	//	multi_join_load_tcp_addrs();
-	//	multi_servers_query();
 		gamesnd_play_iface(SND_USER_SELECT);
 		broadcast_game_query();
 		break;
@@ -2076,77 +2080,58 @@ void multi_join_load_tcp_addrs()
 	char line[MAX_IP_STRING];
 	net_addr addr;	
 	server_item *item;
-//	active_game *aitem;
 	CFILE *file = NULL;
-	
-	// check fs2netd first, then move to standard method if that fails
-	if ( !fs2netd_load_servers() ) {
-		// attempt to open the ip list file
-		file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
-		if(file == NULL){
-			nprintf(("Network","Error loading tcp.cfg file!\n"));
-			return;
-		}
 
-		// free up any existing server list
-		multi_free_server_list();
-
-		// read in all the strings in the file
-		while(!cfeof(file)){
-			line[0] = '\0';
-			cfgets(line,MAX_IP_STRING,file);
-
-			// strip off any newline character
-			if(line[strlen(line) - 1] == '\n'){
-				line[strlen(line) - 1] = '\0';
-			}
-			
-			// empty lines don't get processed
-			if( (line[0] == '\0') || (line[0] == '\n') ){
-				continue;
-			}
-
-			if ( !psnet_is_valid_ip_string(line) ) {
-				nprintf(("Network","Invalid ip string (%s)\n",line));
-			} else {			 
-				// copy the server ip address
-				memset(&addr,0,sizeof(net_addr));
-				addr.type = NET_TCP;
-				psnet_string_to_addr(&addr,line);
-				if ( addr.port == 0 ){
-					addr.port = DEFAULT_GAME_PORT;
-				}
-
-				// create a new server item on the list
-				item = multi_new_server_item();
-				if(item != NULL){
-					memcpy(&item->server_addr,&addr,sizeof(net_addr));
-				}			
-			}
-		}
-
-		cfclose(file);	
+	// attempt to open the ip list file
+	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
+	if(file == NULL){
+		nprintf(("Network","Error loading tcp.cfg file!\n"));
+		return;
 	}
+
+	// free up any existing server list
+	multi_free_server_list();
+
+	// read in all the strings in the file
+	while(!cfeof(file)){
+		line[0] = '\0';
+		cfgets(line,MAX_IP_STRING,file);
+
+		// strip off any newline character
+		if(line[strlen(line) - 1] == '\n'){
+			line[strlen(line) - 1] = '\0';
+		}
+
+		// empty lines don't get processed
+		if( (line[0] == '\0') || (line[0] == '\n') ){
+			continue;
+		}
+
+		if ( !psnet_is_valid_ip_string(line) ) {
+			nprintf(("Network","Invalid ip string (%s)\n",line));
+		} else {			 
+			// copy the server ip address
+			memset(&addr,0,sizeof(net_addr));
+			addr.type = NET_TCP;
+			psnet_string_to_addr(&addr,line);
+			if ( addr.port == 0 ){
+				addr.port = DEFAULT_GAME_PORT;
+			}
+
+			// create a new server item on the list
+			item = multi_new_server_item();
+			if(item != NULL){
+				memcpy(&item->server_addr,&addr,sizeof(net_addr));
+			}			
+		}
+	}
+
+	cfclose(file);
 }
 
 // do stuff like pinging servers, sending out requests, etc
 void multi_join_do_netstuff()
 {
-	//char textbuffer[17];
-	//active_game *Cur;
-/*
-	static fix next_pxo_refresh = -1;
-
-
-	if ( Om_tracker_flag && ((next_pxo_refresh == -1) || (timer_get_fixed_seconds() >= next_pxo_refresh)) )
-	{
-		//multi_join_load_tcp_addrs();
-
-		next_pxo_refresh = timer_get_fixed_seconds() + (15 * F1_0);
-		multi_servers_query();
-	}
-*/
-
 	// handle game query stuff
 	if (Multi_join_glr_stamp == -1) {
 		broadcast_game_query();
@@ -4018,8 +4003,6 @@ int multi_create_select_to_index(int select_index);
 
 int Multi_create_should_show_popup = 0;
 
-int Multi_create_force_heartbeat = 0;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
-
 bool Multi_create_sort_mode = false;		// default to mission name sorting, "true" is mission filename sorting
 
 
@@ -4055,6 +4038,8 @@ void multi_create_list_sort(int mode)
 {
 	bool sort_missions = false;
 	bool sort_campaigns = false;
+	char selected_name[255];
+	int new_index = -1;
 
 	if (Multi_create_list_count < 0) {
 		return;
@@ -4075,14 +4060,32 @@ void multi_create_list_sort(int mode)
 			break;
 	}
 
+	// save our current selected item so that we can restore that one after sorting
+	multi_create_select_to_filename(Multi_create_list_select, selected_name);
 
 	if (sort_missions) {
 		std::sort( Multi_create_mission_list.begin(), Multi_create_mission_list.end(), multi_create_sort_func);
+
+		for (size_t idx = 0; idx < Multi_create_mission_list.size(); idx++) {
+			if ( !strcmp(selected_name, Multi_create_mission_list[idx].filename) ) {
+				new_index = (int)idx;
+				break;
+			}
+		}
 	}
 
 	if (sort_campaigns) {
 		std::sort( Multi_create_campaign_list.begin(), Multi_create_campaign_list.end(), multi_create_sort_func);
+
+		for (size_t idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
+			if ( !strcmp(selected_name, Multi_create_campaign_list[idx].filename) ) {
+				new_index = (int)idx;
+				break;
+			}
+		}
 	}
+
+	multi_create_list_select_item(new_index);
 }
 
 void multi_create_setup_list_data(int mode)
@@ -4092,8 +4095,10 @@ void multi_create_setup_list_data(int mode)
 	// set the current mode
 	should_sort = 0;
 	switched_modes = 0;
-	if((Multi_create_list_mode != mode) && (mode != -1)){
+	if ( (Multi_create_list_mode != mode) && (mode != -1) ) {
 		Multi_create_list_mode = mode;	
+		switched_modes = 1;
+	} else if (mode == -1) {
 		switched_modes = 1;
 	}
 
@@ -4290,7 +4295,7 @@ void multi_create_game_init()
 	// send any pilots as appropriate
 	multi_data_send_my_junk();
 
-	Multi_create_files_loaded = 0;	
+	Multi_create_files_loaded = 0;
 }
 
 void multi_create_game_do()
@@ -4390,19 +4395,24 @@ void multi_create_game_do()
 			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
 			// the above function doesn't sort initially, so we need this to take care of it
 			multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
+			// the sort function probably changed our selection, but here we always need it to zero
+			multi_create_list_select_item(0);
 		}
 
 		// don't bother setting netgame state if ont the server
 		if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 			Netgame.game_state = NETGAME_STATE_FORMING;
 			send_netgame_update_packet();
+
+			// tell FS2NetD about our game as well
+			if (MULTI_IS_TRACKER_GAME) {
+				fs2netd_gameserver_start();
+			}
 		}	
 
 		// if we're on the standalone we have to tell him that we're now in the host setup screen	
 		Net_player->state = NETPLAYER_STATE_HOST_SETUP;	
 		send_netplayer_update_packet();
-
-		fs2netd_server_send_heartbeat(true);
 
 		Multi_create_files_loaded = 1;
 	}
@@ -5382,7 +5392,7 @@ void multi_create_list_select_item(int n)
 		memset(&ng_temp,0,sizeof(netgame_info));
 		ng = &ng_temp;
 	}
-	
+
 	if ( n != Multi_create_list_select ) {
 		// check to see if this is a valid index, and bail if it is not
 		abs_index = multi_create_select_to_index(n);
@@ -5391,8 +5401,6 @@ void multi_create_list_select_item(int n)
 		}
 
 		Multi_create_list_select = n;
-
-		Multi_create_force_heartbeat = 1;
 
 		// set the mission name
 		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
@@ -5511,11 +5519,14 @@ void multi_create_list_select_item(int n)
 
 			// update all machines about stuff like respawns, etc.
 			multi_options_update_netgame();
+
+			// send update to FS2NetD as well
+			if (MULTI_IS_TRACKER_GAME) {
+				fs2netd_gameserver_update(true);
+			}
 		} else {
 			multi_options_update_mission(ng, Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
 		}
-
-		fs2netd_server_send_heartbeat(true);
 	}
 }
 
@@ -5578,7 +5589,8 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 void multi_create_accept_hit()
 {
 	char selected_name[255];
-	int start_campaign = 0;	
+	int start_campaign = 0;
+    int popup_choice = 0;
 
 	// make sure all players have finished joining
 	if(!multi_netplayer_state_check(NETPLAYER_STATE_JOINED,1)){
@@ -5634,6 +5646,42 @@ void multi_create_accept_hit()
 		multi_team_host_lock_all();
 		multi_team_send_update();
 	}
+
+    if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.mission_time_limit > fl2f(-1.0f)))
+    {
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+                             XSTR("A time limit is being used in a co-op game.\r\n"
+                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
+                                  "  Select \'Yes\' to continue with this time limit.\r\n"
+                                  "  Select \'No\' to continue without this time limit.", -1));
+
+        if (popup_choice == 0)
+        {
+            return;
+        }
+        else if (popup_choice == 2)
+        {
+            Netgame.options.mission_time_limit = fl2f(-1.0f);
+        }
+    }
+
+    if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.kill_limit < 9999))
+    {
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+                             XSTR("A kill limit is being used in a co-op game.\r\n"
+                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
+                                  "  Select \'Yes\' to continue with this kill limit.\r\n"
+                                  "  Select \'No\' to continue without this kill limit.", -1));
+
+        if (popup_choice == 0)
+        {
+            return;
+        }
+        else if (popup_choice == 2)
+        {
+            Netgame.options.kill_limit = 9999;
+        }
+    }
 
 	// if not on the standalone, move to the mission sync state which will take care of everything
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
@@ -9334,9 +9382,6 @@ void multi_debrief_init()
 	Multi_debrief_reported_tvt = 0;
 
 	Multi_debrief_server_framecount = 0;
-
-	// setup FS2NetD debriefing stuff
-	fs2netd_debrief_init();
 }
 
 void multi_debrief_do_frame()
@@ -9399,6 +9444,28 @@ void multi_debrief_accept_hit()
 
 	gamesnd_play_iface(SND_COMMIT_PRESSED);
 
+	if (MULTI_IS_TRACKER_GAME) {
+		int res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC, 3, XSTR("&Cancel", 779), XSTR("&Accept", 844), XSTR("&Toss", 845), XSTR("(Continue Netgame)\nDo you wish to accept these stats?", 846));
+
+		// evaluate the result
+		switch (res) {
+			// undo the accept
+			case -1:
+			case 0:
+				Multi_debrief_accept_hit = 0;
+				return;
+
+			// toss the stats
+			case 2 :
+				break;
+		
+			// accept the stats
+			case 1 :
+				fs2netd_store_stats();
+				break;
+		}
+	}
+
 	// if the server has left the game, always just end the game. 
 	if(Multi_debrief_server_left){
 		if(!multi_quit_game(PROMPT_ALL)){
@@ -9411,9 +9478,8 @@ void multi_debrief_accept_hit()
 		// query the host and see if he wants to accept stats
 		if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
 			// if we're on a tracker game, he gets no choice for storing stats
-			if(MULTI_IS_TRACKER_GAME){
+			if (MULTI_IS_TRACKER_GAME) {
 				multi_maybe_set_mission_loop();
-
 			} else {
 				int res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC,3,XSTR("&Cancel",779),XSTR("&Accept",844),XSTR("&Toss",845),XSTR("(Continue Netgame)\nDo you wish to accept these stats?",846));
 		
@@ -9451,6 +9517,27 @@ void multi_debrief_esc_hit()
 {
 	int res;
 
+	if (MULTI_IS_TRACKER_GAME) {
+		res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC, 3, XSTR("&Cancel", 779), XSTR("&Accept", 844), XSTR("&Toss", 845), XSTR("(Exit Netgame)\nDo you wish to accept these stats?", 847));
+
+		// evaluate the result
+		switch (res) {
+			// undo the accept
+			case -1:
+			case 0:
+				break;
+
+			// toss the stats
+			case 2 :
+				break;
+		
+			// accept the stats
+			case 1 :
+				fs2netd_store_stats();
+				break;
+		}
+	}
+
 	// if the server has left
 	if(Multi_debrief_server_left){
 		multi_quit_game(PROMPT_ALL);
@@ -9462,8 +9549,6 @@ void multi_debrief_esc_hit()
 		// if the stats have already been accepted
 		if((Multi_debrief_stats_accept_code != -1) || (MULTI_IS_TRACKER_GAME)){
 			multi_quit_game(PROMPT_HOST);
-
-
 		} else {
 			res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC,3,XSTR("&Cancel",779),XSTR("&Accept",844),XSTR("&Toss",845),XSTR("(Exit Netgame)\nDo you wish to accept these stats?",847));
 		

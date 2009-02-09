@@ -2438,6 +2438,7 @@ int rename_ship(int ship, char *name)
 
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
+	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
 			strcpy(Reinforcements[i].name, name);
@@ -2458,6 +2459,7 @@ int invalidate_references(char *name, int type)
 	sprintf(new_name, "<%s>", name);
 	update_sexp_references(name, new_name);
 	ai_update_goal_references(type, name, new_name);
+	update_texture_replacements(name, new_name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(name, Reinforcements[i].name)) {
 			strcpy(Reinforcements[i].name, new_name);
@@ -3213,4 +3215,16 @@ void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_for
 
 	// get name
 	stuff_special_arrival_anchor_name(buf, iff_index, restrict_to_players, retail_format);
+}
+
+// Goober5000
+void update_texture_replacements(char *old_name, char *new_name)
+{
+	int i;
+
+	for (i = 0; i < Fred_num_texture_replacements; i++)
+	{
+		if (!stricmp(Fred_texture_replacements[i].ship_name, old_name))
+			strcpy(Fred_texture_replacements[i].ship_name, new_name);
+	}
 }

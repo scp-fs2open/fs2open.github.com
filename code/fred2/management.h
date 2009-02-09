@@ -424,5 +424,6 @@ extern int wing_is_player_wing(int wing);
 extern void update_custom_wing_indexes();
 extern void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to_players, int retail_format);
 extern void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_format);
+extern void update_texture_replacements(char *old_name, char *new_name);
 
 #endif

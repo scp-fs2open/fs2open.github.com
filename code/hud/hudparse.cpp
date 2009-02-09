@@ -961,7 +961,7 @@ void parse_hud_gauges_tbl(char *filename)
 		return;
 	}
 
-	read_file_text(filename);
+	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	if(optional_string("$Max Escort Ships:"))

@@ -2371,7 +2371,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(Player_obj, CYCLE_PRIMARY_NEXT)) {
+			if (ship_select_next_primary(objp, CYCLE_PRIMARY_NEXT)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
 					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire

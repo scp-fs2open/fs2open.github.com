@@ -951,7 +951,7 @@ int beam_fire(beam_fire_info *fire_info)
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
+	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
 		return -1;
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
@@ -1066,8 +1066,18 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// if we're a multiplayer master - send a packet
-	if(MULTIPLAYER_MASTER){
-		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, (ubyte)fire_info->fighter_beam);
+	if (MULTIPLAYER_MASTER) {
+		int bank_point = -1;
+
+		if (fire_info->fighter_beam) {
+			// magic numbers suck, be we need to make sure that we are always below UCHAR_MAX (255)
+			Assert( fire_info->point <= 25 );
+			Assert( fire_info->bank <= 5 );
+
+			bank_point = (fire_info->point * 10) + fire_info->bank;
+		}
+
+		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, (ubyte)fire_info->fighter_beam, bank_point);
 	}
 
 	// start the warmup phase
@@ -1108,7 +1118,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 
 	// make sure a ship is firing this
 	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) && (fire_info->shooter->instance >= MAX_SHIPS)){
+	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
 		return -1;
 	}
 	firing_ship = &Ships[fire_info->shooter->instance];
@@ -2371,7 +2381,7 @@ void beam_delete(beam *b)
 	// subtract one
 	Beam_count--;
 	Assert(Beam_count >= 0);
-	nprintf(("General", "Recycled beam (%d beams remaining)\n", Beam_count));
+	nprintf(("Beam", "Recycled beam (%d beams remaining)\n", Beam_count));
 }
 
 // given an object, return its model num
@@ -2952,10 +2962,11 @@ int beam_collide_ship(obj_pair *pair)
 		if (quadrant_num >= 0)
 		{
 			// do the hit effect
-			if (shield_collision)
+			if (shield_collision) {
 				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
-			else
+			} else {
 				/* TODO */;
+			}
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
@@ -3594,7 +3605,7 @@ int beam_ok_to_fire(beam *b)
 				ship_maybe_play_primary_fail_sound();
 			}
 
-			mprintf(("killing fighter beam becase it ran out of energy\n"));
+		//	mprintf(("killing fighter beam becase it ran out of energy\n"));
 
 			return 0;
 		} else {
@@ -3621,7 +3632,7 @@ int beam_ok_to_fire(beam *b)
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
 	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
-		mprintf(("BEAM : powering beam down because of FOV condition!\n"));
+		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
 		return 0;
 	}
 

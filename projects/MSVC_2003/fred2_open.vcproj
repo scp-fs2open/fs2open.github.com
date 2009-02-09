@@ -46,11 +46,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib lua.lib openal32.lib"
+				AdditionalDependencies="Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib lua.lib openal32.lib trackir.lib"
 				OutputFile="C:\Program Files\freespace2\fred2_open_3_6_10_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib;..\..\dx8sdk\lib"
+				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib;..\..\dx8sdk\lib;..\..\trackir\lib"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(IntDir)\fred2_open.pdb"
@@ -121,11 +121,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib code.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib lua.lib openal32.lib"
+				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib code.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib lua.lib openal32.lib trackir.lib"
 				OutputFile="C:\Program Files\freespace2\fred2_open_3_6_10.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib;..\..\dx8sdk\lib"
+				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib;..\..\dx8sdk\lib;..\..\trackir\lib"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				ProgramDatabaseFile="$(IntDir)\fred2_open.pdb"
 				GenerateMapFile="TRUE"

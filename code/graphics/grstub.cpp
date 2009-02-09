@@ -681,7 +681,7 @@ bool gr_stub_init()
 	gr_screen.gf_dump_frame			= gr_stub_dump_frame;
 	
 	gr_screen.gf_set_gamma			= gr_stub_set_gamma;
-	
+
 	gr_screen.gf_fog_set			= gr_stub_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
@@ -755,7 +755,7 @@ bool gr_stub_init()
 
 	gr_screen.gf_draw_line_list		= gr_stub_draw_line_list;
 
-    gr_screen.gf_set_line_width     = gr_stub_set_line_width;
+	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
 
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;

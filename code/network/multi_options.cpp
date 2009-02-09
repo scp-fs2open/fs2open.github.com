@@ -333,7 +333,7 @@ void multi_options_read_config()
 				if ( SETTING("+pxo") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						// whee!
+						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH);
 					}
 				} else
 				// set the standalone server's permanent name
@@ -393,7 +393,21 @@ void multi_options_read_config()
 				// set standalone to high updates
 				if ( SETTING("+lan_update") ) {
 					Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
-				} 
+				} else
+				// standalone pxo login user
+				if ( SETTING("+pxo_login") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						strncpy(Multi_options_g.std_pxo_login, tok, MULTI_TRACKER_STRING_LEN);
+					}
+				} else
+				// standalone pxo login password
+				if ( SETTING("+pxo_password") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						strncpy(Multi_options_g.std_pxo_password, tok, MULTI_TRACKER_STRING_LEN);
+					}
+				}
 			}
 
 			// ... common to all modes ...
@@ -488,9 +502,6 @@ void multi_options_read_config()
 		cfclose(in);
 		in = NULL;
 	}
-
-	// if any basically required options weren't specified then 
-	fs2netd_options_config_init();
 }
 
 // set netgame defaults 
@@ -819,7 +830,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		GET_UINT(Netgame.respawn);
 
 		// name string
-		memset(str,255,0);
+		memset(str,0,255);
 
 		GET_DATA(code);
 		// campaign mode
@@ -870,7 +881,12 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
 		}
-		
+
+		// update FS2NetD as well
+		if (MULTI_IS_TRACKER_GAME) {
+			fs2netd_gameserver_update(true);
+		}
+
 		send_netgame_update_packet();	   
 		break;
 

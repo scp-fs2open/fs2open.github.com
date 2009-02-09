@@ -928,6 +928,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_DOCK_POINTS, OnUpdateShowDockPoints)
 	ON_COMMAND(ID_FORMAT_FS2_OPEN, OnFormatFs2Open)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_OPEN, OnUpdateFormatFs2Open)
+	ON_COMMAND(ID_FORMAT_FS2_OPEN_COMP, OnFormatFs2OpenComp)
+	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_OPEN_COMP, OnUpdateFormatFs2OpenComp)
 	ON_COMMAND(ID_FORMAT_FS2_RETAIL, OnFormatFs2Retail)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_RETAIL, OnUpdateFormatFs2Retail)
 	ON_COMMAND(ID_FORMAT_FS1_RETAIL, OnFormatFs1Retail)
@@ -3518,7 +3520,7 @@ int CFREDView::global_error_check()
 			if ( j == 0 ) {
 				default_orders = orders;
 			} else if ( default_orders != orders ) {
-				if (error("Wing %s has ships with different player orders which\nare ignored.  They must all be the same", Wings[i].name ) ){
+				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[0]].ship_name ) ){
 					return 1;
 				}
 			}
@@ -3875,7 +3877,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (!z)
 		return 0;
 
-	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE);
+	convert_sexp_to_string(sexp, buf2, SEXP_ERROR_CHECK_MODE, 2048);
 	sprintf(buf3, "Error in %s: %s\n\nIn sexpression: %s\n(Error appears to be: %s)",
 		buf, sexp_error_message(z), buf2, Sexp_nodes[faulty_node].text);
 
@@ -5095,7 +5097,7 @@ void CFREDView::OnDumpStats()
 
 void CFREDView::OnFormatFs2Open() 
 {
-	Format_fs2_open = 1;
+	Format_fs2_open = FSO_FORMAT_STANDARD;
 	Format_fs2_retail = 0;
 	Format_fs1_retail = 0;
 
@@ -5105,7 +5107,22 @@ void CFREDView::OnFormatFs2Open()
 
 void CFREDView::OnUpdateFormatFs2Open(CCmdUI* pCmdUI) 
 {
-	pCmdUI->SetCheck(Format_fs2_open);
+	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_STANDARD);
+}
+
+void CFREDView::OnFormatFs2OpenComp() 
+{
+	Format_fs2_open = FSO_FORMAT_COMPATIBILITY_MODE;
+	Format_fs2_retail = 0;
+	Format_fs1_retail = 0;
+
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Format_fs2_open == FSO_FORMAT_COMPATIBILITY_MODE);
 }
 
 void CFREDView::OnFormatFs2Retail() 

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Developer Studio generated include file.
-// Used by FreeSpace.rc
+// Used by freespace.rc
 //
 #define IDD_DEBUG_MENU                  101
 #define IDD_CONNECT                     108
@@ -82,6 +82,13 @@
 #define IDC_COMBO_AATYPE                1071
 #define ID_CANCEL                       1072
 #define ID_OK                           1073
+#define IDC_SCORE                       1074
+#define IDC_KILL_COUNT                  1075
+#define IDC_KILL_COUNT_BH               1076
+#define IDC_MSCORE                      1077
+#define IDC_MKILL_COUNT                 1078
+#define IDC_MKILL_COUNT_BH              1079
+#define IDC_MULTILOG                    1084
 #define IDC_CON_COUNT                   2000
 #define IDC_FRAMECAP_STATIC             2001
 #define IDC_GODSTUFF_FPS                2002
@@ -96,7 +103,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        133
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1074
+#define _APS_NEXT_CONTROL_VALUE         1085
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

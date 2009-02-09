@@ -338,6 +338,7 @@
 #include "stats/scoring.h"
 #include "playerman/player.h"
 #include "fs2netd/fs2netd_client.h"
+#include "menuui/mainhallmenu.h"
 
 
 
@@ -1155,7 +1156,7 @@ player Multi_pxo_pinfo_player;
 int Multi_pxo_retrieve_mode = -1;
 
 char Multi_pxo_retrieve_name[MAX_PLAYER_NAME_LEN+1];
-//char Multi_pxo_retrieve_id[128];
+char Multi_pxo_retrieve_id[128];
 
 // stats label stuff
 #define MULTI_PXO_PINFO_NUM_LABELS			18
@@ -1557,6 +1558,8 @@ void multi_pxo_init(int use_last_channel)
 	// clear all tracker channel related strings
 	memset(Multi_fs_tracker_channel, 0, MAX_PATH);
 	memset(Multi_fs_tracker_filter, 0, MAX_PATH);
+
+	main_hall_start_music();
 }
 
 // do frame for the PXO screen
@@ -4584,8 +4587,56 @@ int multi_pxo_pinfo_cond()
 	{
 		// we don't need to do anything extra here, just move on to mode 1
 		case 0:
-			Multi_pxo_retrieve_mode = 1;
+		{
+			char *ret_string;
+			char temp_string[255];
+			char *tok;
+
+			// if the thing is non-null, do something		
+			ret_string = GetTrackerIdByUser(Multi_pxo_retrieve_name);
+
+			if (ret_string != NULL) {
+				// user not-online/not found
+				if ( (int)ret_string[0] == -1) {
+					return 1;
+				} 
+
+				// user not a tracker pilot
+				if ( !stricmp(ret_string,"-1") ) {
+					return 1;
+				}
+
+				// otherwise parse into his id and callsign
+				strcpy(temp_string, ret_string);
+				tok = strtok(temp_string, " ");
+			
+				// get tracker id
+				if (tok != NULL) {
+					strcpy(Multi_pxo_retrieve_id, tok);
+
+					// get the callsign
+					tok = strtok(NULL, "");
+
+					if (tok != NULL) {
+						strcpy(Multi_pxo_retrieve_name, tok);
+					}
+					// failure
+					else {
+						return 1;
+					}
+				}
+				// failure of some kind or another
+				else {
+					return 1;
+				}			
+
+				Multi_pxo_retrieve_mode = 1;
+
+				return 0;			
+			}
+
 			break;
+		}
 
 		// initial call to get his stats
 		case 1:	

@@ -872,8 +872,9 @@ void persona_parse()
 
 			// save the Command persona in a global
 			if ( Personas[Num_personas].flags & PERSONA_FLAG_COMMAND ) {
-				if (Default_command_persona < 0)
-					Default_command_persona = Num_personas;
+				// always use the most recent Command persona
+				// found, since that's how retail does it
+				Default_command_persona = Num_personas;
 			}
 
 			break;
@@ -1033,7 +1034,7 @@ void parse_msgtbl()
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("messages.tbl");
+	read_file_text("messages.tbl", CF_TYPE_TABLES);
 	reset_parse();
 	Num_messages = 0;
 	Num_personas = 0;
@@ -1987,12 +1988,13 @@ void message_queue_process()
 	
 	strncpy (who_from, q->who_from, NAME_LENGTH);
 
-	// if this is a ship do we use name or callsign or ship class?
+	// if this is a ship, do we use name or callsign or ship class?
 	if ( Message_shipnum >= 0 ) {
-		if ( Ships[Message_shipnum].callsign_index >= 0 ) {
-			mission_parse_lookup_callsign_index(Ships[Message_shipnum].callsign_index, who_from);
-		} else if ( Ships[Message_shipnum].flags2 & SF2_HIDE_SHIP_NAME ) {
-			hud_stuff_ship_class(&Ships[Message_shipnum], who_from);
+		ship *shipp = &Ships[Message_shipnum];
+		if ( shipp->callsign_index >= 0 ) {
+			hud_stuff_ship_callsign( who_from, shipp );
+		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) ) {
+			hud_stuff_ship_class( who_from, shipp );
 		} else {
 			end_string_at_first_hash_symbol(who_from);
 		}
@@ -2034,7 +2036,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 
 	// check to be sure that we haven't reached our max limit on these messages yet.
 	if ( MessageQ_num == MAX_MESSAGE_Q ) {
-		Int3();											
+		mprintf(("Message queue already full. Message will not be added!\n"));										
 		return;
 	}
 

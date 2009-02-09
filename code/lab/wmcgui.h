@@ -84,8 +84,8 @@ struct LinkedList
 public:
 	struct LinkedList *next, *prev;
 
-	LinkedList(){next=this;prev=this;}
-	virtual ~LinkedList(){prev->next=next;next->prev=prev;}
+	LinkedList(){ next = this;  prev = this; }
+	virtual ~LinkedList(){ prev->next = next;  next->prev = prev; }
 };
 
 //*****************************ClassInfoEntry*******************************

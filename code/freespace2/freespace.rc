@@ -1,6 +1,6 @@
 //Microsoft Developer Studio generated resource script.
 //
-#include "FreeSpaceResource.h"
+#include "freespaceresource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 1 TEXTINCLUDE DISCARDABLE 
 BEGIN
-    "FreeSpaceResource.h\0"
+    "freespaceresource.h\0"
 END
 
 2 TEXTINCLUDE DISCARDABLE 
@@ -126,63 +126,73 @@ BEGIN
                     WS_VSCROLL | WS_TABSTOP
     LTEXT           "Ship Type",IDC_STATIC,7,24,38,10
     CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT | SS_NOTIFY | 
-                    SS_SUNKEN,104,24,1,54
-    CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT | SS_NOTIFY | 
-                    SS_SUNKEN,7,77,201,1
+                    SS_SUNKEN,7,55,201,1
     LTEXT           "",IDC_PSHIP_TYPE,53,24,49,10,SS_SUNKEN
-    LTEXT           "Mission Stats",IDC_STATIC,133,79,44,10
-    LTEXT           "Primary Shots",IDC_STATIC,7,89,45,9
-    LTEXT           "Primary Hits",IDC_STATIC,7,100,40,9
-    LTEXT           "Primary BH Hits",IDC_STATIC,7,112,50,9
-    LTEXT           "Primary Hit %",IDC_STATIC,7,123,43,9
-    LTEXT           "Primary BH Hit %",IDC_STATIC,7,134,55,9
+    LTEXT           "Mission Stats",IDC_STATIC,133,59,44,10
+    LTEXT           "Primary Shots",IDC_STATIC,7,118,45,9
+    LTEXT           "Primary Hits",IDC_STATIC,7,129,40,9
+    LTEXT           "Primary BH Hits",IDC_STATIC,7,140,50,9
+    LTEXT           "Primary Hit %",IDC_STATIC,7,151,43,9
+    LTEXT           "Primary BH Hit %",IDC_STATIC,7,162,55,9
     CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT | SS_NOTIFY | 
-                    SS_SUNKEN,104,78,1,168
-    LTEXT           "All Time Stats",IDC_STATIC,33,79,44,10
-    LTEXT           "Primary Shots",IDC_STATIC,107,88,45,9
-    LTEXT           "Primary Hits",IDC_STATIC,107,99,40,9
-    LTEXT           "Primary BH Hits",IDC_STATIC,107,111,50,9
-    LTEXT           "Primary Hit %",IDC_STATIC,107,122,43,9
-    LTEXT           "Primary BH Hit %",IDC_STATIC,107,133,55,9
-    LTEXT           "Secondary Shots",IDC_STATIC,7,145,56,9
-    LTEXT           "Secondary Hits",IDC_STATIC,7,156,49,9
-    LTEXT           "Secondary BH Hits",IDC_STATIC,7,167,63,9
-    LTEXT           "Secondary Hit %",IDC_STATIC,7,177,55,9
-    LTEXT           "Secondary BH Hit %",IDC_STATIC,7,189,65,9
-    LTEXT           "Secondary Shots",IDC_STATIC,107,144,56,9
-    LTEXT           "Secondary Hits",IDC_STATIC,107,155,49,9
-    LTEXT           "Secondary BH Hits",IDC_STATIC,107,166,63,9
-    LTEXT           "Secondary Hit %",IDC_STATIC,107,176,55,9
-    LTEXT           "Secondary BH Hit %",IDC_STATIC,107,187,65,9
-    LTEXT           "",IDC_PSHOTS,75,90,28,8,SS_SUNKEN
-    LTEXT           "",IDC_PHITS,75,101,28,8,SS_SUNKEN
-    LTEXT           "",IDC_PBHHITS,75,112,28,8,SS_SUNKEN
-    LTEXT           "",IDC_PPCT,75,123,28,8,SS_SUNKEN
-    LTEXT           "",IDC_PBHPCT,75,134,28,8,SS_SUNKEN
-    LTEXT           "",IDC_SSHOTS,75,145,28,8,SS_SUNKEN
-    LTEXT           "",IDC_SECHITS,75,156,28,8,SS_SUNKEN
-    LTEXT           "",IDC_SBHHITS,75,166,28,9,SS_SUNKEN
-    LTEXT           "",IDC_SPCT,75,178,28,8,SS_SUNKEN
-    LTEXT           "",IDC_SBHPCT,75,190,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MPSHOTS,180,89,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MPHITS,180,100,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MPBHHITS,180,111,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MPPCT,180,122,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MPBHPCT,180,134,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MSSHOTS,180,145,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MSECHITS,180,156,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MSBHHITS,180,167,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MSPCT,180,178,28,8,SS_SUNKEN
-    LTEXT           "",IDC_MSBHPCT,180,189,28,8,SS_SUNKEN
+                    SS_SUNKEN,106,24,1,222
+    LTEXT           "All Time Stats",IDC_STATIC,33,59,44,10
+    LTEXT           "Primary Shots",IDC_STATIC,109,118,45,9
+    LTEXT           "Primary Hits",IDC_STATIC,109,129,40,9
+    LTEXT           "Primary BH Hits",IDC_STATIC,109,140,50,9
+    LTEXT           "Primary Hit %",IDC_STATIC,109,151,43,9
+    LTEXT           "Primary BH Hit %",IDC_STATIC,109,162,55,9
+    LTEXT           "Secondary Shots",IDC_STATIC,7,173,56,9
+    LTEXT           "Secondary Hits",IDC_STATIC,7,184,49,9
+    LTEXT           "Secondary BH Hits",IDC_STATIC,7,195,63,9
+    LTEXT           "Secondary Hit %",IDC_STATIC,7,206,55,9
+    LTEXT           "Secondary BH Hit %",IDC_STATIC,7,217,65,9
+    LTEXT           "Secondary Shots",IDC_STATIC,109,173,56,9
+    LTEXT           "Secondary Hits",IDC_STATIC,109,184,49,9
+    LTEXT           "Secondary BH Hits",IDC_STATIC,109,195,63,9
+    LTEXT           "Secondary Hit %",IDC_STATIC,109,206,55,9
+    LTEXT           "Secondary BH Hit %",IDC_STATIC,109,217,65,9
+    LTEXT           "",IDC_PSHOTS,75,118,28,8,SS_SUNKEN
+    LTEXT           "",IDC_PHITS,75,129,28,8,SS_SUNKEN
+    LTEXT           "",IDC_PBHHITS,75,140,28,8,SS_SUNKEN
+    LTEXT           "",IDC_PPCT,75,151,28,8,SS_SUNKEN
+    LTEXT           "",IDC_PBHPCT,75,162,28,8,SS_SUNKEN
+    LTEXT           "",IDC_SSHOTS,75,173,28,8,SS_SUNKEN
+    LTEXT           "",IDC_SECHITS,75,184,28,8,SS_SUNKEN
+    LTEXT           "",IDC_SBHHITS,75,195,28,8,SS_SUNKEN
+    LTEXT           "",IDC_SPCT,75,206,28,8,SS_SUNKEN
+    LTEXT           "",IDC_SBHPCT,75,217,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MPSHOTS,180,118,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MPHITS,180,129,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MPBHHITS,180,140,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MPPCT,180,151,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MPBHPCT,180,162,28,9,SS_SUNKEN
+    LTEXT           "",IDC_MSSHOTS,180,173,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MSECHITS,180,184,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MSBHHITS,180,195,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MSPCT,180,206,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MSBHPCT,180,217,28,8,SS_SUNKEN
     CONTROL         "",IDC_PINFO_PING,"Static",SS_WHITERECT | SS_NOTIFY | 
-                    SS_SUNKEN,7,215,201,1
+                    SS_SUNKEN,7,235,201,1
     LTEXT           "Player",IDC_STATIC,44,6,20,8
     LTEXT           "",IDC_PING_TIME,53,38,49,10,SS_SUNKEN
     LTEXT           "Avg Ping",IDC_STATIC,7,38,32,9
-    LTEXT           "Assists",IDC_STATIC,7,200,54,10
-    LTEXT           "Assists",IDC_STATIC,107,200,54,10
-    LTEXT           "",IDC_ASSISTS,75,201,28,9,SS_SUNKEN
-    LTEXT           "",IDC_MASSISTS,180,200,28,9,SS_SUNKEN
+    LTEXT           "Assists",IDC_STATIC,7,107,54,10
+    LTEXT           "Assists",IDC_STATIC,109,107,54,10
+    LTEXT           "",IDC_ASSISTS,75,107,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MASSISTS,180,107,28,8,SS_SUNKEN
+    LTEXT           "Score",IDC_STATIC,7,73,20,8
+    LTEXT           "Score",IDC_STATIC,109,73,20,8
+    LTEXT           "Kills",IDC_STATIC,7,84,13,8
+    LTEXT           "Kills",IDC_STATIC,109,84,13,8
+    LTEXT           "Friendly Kills",IDC_STATIC,109,96,39,8
+    LTEXT           "Friendly Kills",IDC_STATIC,7,96,39,8
+    LTEXT           "",IDC_SCORE,75,74,28,8,SS_SUNKEN
+    LTEXT           "",IDC_KILL_COUNT,75,85,28,8,SS_SUNKEN
+    LTEXT           "",IDC_KILL_COUNT_BH,75,96,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MSCORE,180,74,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MKILL_COUNT,180,85,28,8,SS_SUNKEN
+    LTEXT           "",IDC_MKILL_COUNT_BH,180,96,28,8,SS_SUNKEN
 END
 
 IDD_GODSTUFF DIALOG DISCARDABLE  0, 0, 215, 253
@@ -209,6 +219,10 @@ FONT 8, "MS Sans Serif"
 BEGIN
     LTEXT           "Standalone State :",IDC_STATIC,7,7,61,11
     LTEXT           "",IDC_STANDALONE_STATE,71,7,125,11,SS_SUNKEN
+    LTEXT           "Multi log:",IDC_STATIC,8,26,29,8
+    LISTBOX         IDC_MULTILOG,7,37,201,209,NOT LBS_NOTIFY | 
+                    LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | 
+                    WS_HSCROLL | WS_TABSTOP
 END
 
 IDD_GEN DIALOG DISCARDABLE  0, 0, 186, 95

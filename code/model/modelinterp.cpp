@@ -4073,7 +4073,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	int n_q = 0;
 	vec3d norm, norm2, fvec, pnt, npnt;
 	thruster_bank *bank = NULL;
-	vertex p;	
+	vertex p;
 	bool do_render = false;
 
 	if ( pm == NULL ) {
@@ -4097,17 +4097,17 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	}
 
 	if (Interp_thrust_glow_bitmap >= 0) {
-	primary_thruster_batcher.allocate(n_q);
+		primary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
 	if (Interp_secondary_thrust_glow_bitmap >= 0) {
-			secondary_thruster_batcher.allocate(n_q);
+		secondary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
 	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-			tertiary_thruster_batcher.allocate(n_q);
+		tertiary_thruster_batcher.allocate(n_q);
 		do_render = true;
 	}
 
@@ -4115,17 +4115,17 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		return;
 	}
 
-		// this is used for the secondary thruster glows 
-		// it only needs to be calculated once so I'm doing it here -Bobboau
-		/* norm = bank->norm[j] */;
-		norm.xyz.z = -1.0f;
-		norm.xyz.x = 1.0f;
-		norm.xyz.y = -1.0f;
+	// this is used for the secondary thruster glows 
+	// it only needs to be calculated once so I'm doing it here -Bobboau
+	/* norm = bank->norm[j] */;
+	norm.xyz.z = -1.0f;
+	norm.xyz.x = 1.0f;
+	norm.xyz.y = -1.0f;
 
 	norm.xyz.x *= Interp_thrust_rotvel.xyz.y/2;
 	norm.xyz.y *= Interp_thrust_rotvel.xyz.x/2;
 
-		vm_vec_normalize(&norm);
+	vm_vec_normalize(&norm);
 
 
 	// we need to disable fogging
@@ -4156,7 +4156,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			#define MIN_SCALE 3.4f
 			#define MAX_SCALE 4.7f
 			float scale = MIN_SCALE;
-						
+
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
@@ -4196,7 +4196,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				vm_vec_add2(&npnt, pos);
 
 				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
-	
+
 				if (fog_int > 1.0f)
 					fog_int = 1.0f;
 
@@ -4299,7 +4299,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
 					pe.min_vel = v * 0.75f;
 					pe.max_vel =  v * 1.25f;
-
+	
 					pe.normal = orient->vec.fvec;	// What normal the particle emit around
 					vm_vec_negate(&pe.normal);
 
@@ -5028,8 +5028,23 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		}
 	}
 
+	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
+
 	//set to true since D3d and OGL need the api matrices set
 	g3_start_instance_matrix(pos,orient, true);
+
+	if (is_outlines_only_htl) {
+		gr_set_fill_mode( GR_FILL_MODE_WIRE );
+
+		// lines shouldn't be rendered with textures or special RGB colors (assuming preset colors)
+		Interp_flags |= MR_NO_TEXTURING;
+		Interp_tmap_flags &= ~TMAP_FLAG_TEXTURED;
+		Interp_tmap_flags &= ~TMAP_FLAG_RGB;
+		// don't render with lighting either
+		Interp_flags |= MR_NO_LIGHTING;
+	} else {
+		gr_set_fill_mode( GR_FILL_MODE_SOLID );
+	}
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) ) {
 		Interp_light = 1.0f;
@@ -5070,6 +5085,8 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	}
 
 	gr_set_cull(cull);
+
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	if ( pm->submodel[submodel_num].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[submodel_num]);
@@ -6019,7 +6036,7 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 	extern IBX ibuffer_info;
 
 	// if we have an IBX read file then use it, otherwise generate buffers and save them to file
-	if ( ibuffer_info.read != NULL ) {
+	if (ibuffer_info.read != NULL) {
 		bool ibx_is_short = false;
 		bool tsb_is_short = false;
 		int ibx_verts = 0;
@@ -6110,7 +6127,7 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		// no read file so we'll have to generate
 		model_list.make_index_buffer();
 
-		if ( ibuffer_info.write != NULL ) {
+		if (ibuffer_info.write != NULL) {
 			cfwrite_int( model_list.n_verts, ibuffer_info.write );
 
 			for (i = 0; i < model_list.n_verts; i++) {
@@ -6134,7 +6151,7 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 			}
 
 		}
-		}
+	}
 
 	int vertex_flags = (VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
 
@@ -6991,7 +7008,7 @@ int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 {
 	this->original_texture = bm_load_either(filename, NULL, NULL, 1, CF_TYPE_MAPS);
 	if(this->original_texture < 0)
-		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", dbg_name, filename));
+		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani\n", dbg_name, filename));
 	this->ResetTexture();
 
 	return texture;

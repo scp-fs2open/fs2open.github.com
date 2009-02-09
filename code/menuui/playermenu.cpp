@@ -465,7 +465,7 @@ int Player_select_clone_flag;									// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];		// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
 
-int Player_select_force_main_hall = 0;
+int Player_select_force_main_hall = -1;
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
 
@@ -510,6 +510,8 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 
+extern int delete_pilot_file(char *pilot_name, int single);
+
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0) 
 void player_select_set_controls(int gray)
@@ -535,7 +537,7 @@ void player_select_init()
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
-	Player_select_force_main_hall = 0;
+	Player_select_force_main_hall = -1;
 
 	Player_select_screen_active = 1;
 
@@ -878,8 +880,8 @@ void player_select_close()
 		}
 	}
 
-	if (Player_select_force_main_hall) {
-		Player->main_hall = 1;
+	if (Player_select_force_main_hall >= 0) {
+		Player->main_hall = Player_select_force_main_hall;
 	}
 
 	// free memory from all parsing so far, all tbls found during game_init()
@@ -1138,6 +1140,7 @@ void player_select_delete_pilot()
 {
 	char filename[MAX_PATH_LEN + 1];
 	int i, deleted_cur_pilot;
+	int del_rval;
 
 	deleted_cur_pilot = 0;
 
@@ -1146,38 +1149,12 @@ void player_select_delete_pilot()
 	// make sure we do this based upon whether we're in single or multiplayer mode
 	strcpy( filename, Pilots[Player_select_pilot] );
 
-	if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-		SAFE_STRCAT( filename, NOX(".pl2"), sizeof(filename) );
-	} else {
-		SAFE_STRCAT( filename, NOX(".plr"), sizeof(filename) );
+	del_rval = delete_pilot_file(filename, (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
+
+	if ( !del_rval ) {
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
+		return;
 	}
-
-	int del_rval;
-	int popup_rval = 0;
-	do {
-		// attempt to delete the pilot
-		if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
-			del_rval = cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-		} else {
-			del_rval = cf_delete( filename, CF_TYPE_MULTI_PLAYERS );
-		}
-
-		if(!del_rval) {
-			popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Retry", -1), XSTR("&Cancel",-1),
-				XSTR("Error\nFailed to delete pilot file.  File may be read-only.\n", -1));
-		}
-
-		//Abort
-		if(popup_rval)
-		{
-			return;
-		}
-
-		//Try again
-	} while (!del_rval);
-
-	// delete all the campaign save files for this pilot.
-	mission_campaign_delete_all_savefiles( Pilots[Player_select_pilot], (Player_select_mode != PLAYER_SELECT_MODE_SINGLE) );
 
 	// move all the players down
 	for (i=Player_select_pilot; i<Player_select_num_pilots-1; i++){
@@ -1703,11 +1680,52 @@ void player_select_cancel_create()
 	Player_select_autoaccept = 0;
 }
 
-DCF(bastion,"Sets the player to be on the bastion")
+DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 {
-	if(gameseq_get_state() == GS_STATE_INITIAL_PLAYER_SELECT){
-		Player_select_force_main_hall = 1;
-		dc_printf("Player is now in the Bastion\n");
+	if(gameseq_get_state() != GS_STATE_INITIAL_PLAYER_SELECT)
+	{
+		dc_printf("This command can only be run in the initial player select screen.\n");
+		return;
+	}
+
+	if (Dc_command)
+	{
+		dc_get_arg(ARG_INT | ARG_NONE);
+
+		if (Dc_arg_type & ARG_INT)
+		{
+			int idx = Dc_arg_int;
+
+			if (idx < 0 || idx >= MAIN_HALLS_MAX)
+			{
+				dc_printf("Main hall index out of range\n");
+			}
+			else
+			{
+				Player_select_force_main_hall = idx;
+				dc_printf("Player is now on main hall #%d\n", idx);
+			}
+		}
+		else
+		{
+			Player_select_force_main_hall = 1;
+			dc_printf("Player is now on the Bastion\n");
+		}
+
+		Dc_status = 0;
+	}
+
+	if (Dc_help)
+	{
+		dc_printf("Usage: bastion [index]\n");
+		dc_printf("       [index] -- optional main hall index; if not supplied, defaults to 1\n");
+
+		Dc_status = 0;
+	}
+
+	if (Dc_status)
+	{
+		dc_printf("There is no current main hall, as the player has not been selected yet!\n");
 	}
 }
 
@@ -1733,7 +1751,7 @@ void player_tips_init()
 		return;
 	}
 
-	read_file_text("tips.tbl");
+	read_file_text("tips.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
 	while(!optional_string("#end")){
