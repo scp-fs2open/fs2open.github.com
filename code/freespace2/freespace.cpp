@@ -6292,20 +6292,20 @@ void bars_do_frame(float frametime)
 			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
 
 		//Set rectangles
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//Set teh clipping
-		//gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		//gr_set_color(0,0,0);
+		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		//Set clipping
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
 
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );	
+		//gr_set_color(0,0,0);
+		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
 	}
 }
 
@@ -6320,7 +6320,6 @@ void game_render_post_frame()
 	}
 
 	subtitles_do_frame(frametime);
-	bars_do_frame(frametime);
 	game_shade_frame(frametime);
 }
 
@@ -6452,6 +6451,15 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
+
+            if (Time_compression_locked)
+            {
+                bars_do_frame(flRealframetime);
+            }
+            else
+            {
+                bars_do_frame(flFrametime);
+            }
 
 			game_render_frame( cid );
 
