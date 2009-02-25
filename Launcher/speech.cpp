@@ -11,17 +11,15 @@
 #include <windows.h>
 #include <atlbase.h>
 
-#if FS2_SPEECH
-#include <sapi.h>
+#ifdef FS2_SPEECH
+#include <sapi.h
 #else
-#if NDEBUG
-#error "Speech not being compiled in"
-#endif
+#pragma message("NOTE: Speech is not compiled in")
 #endif
 
 #include "speech.h"
 
-#if FS2_SPEECH
+#ifdef FS2_SPEECH
 ISpVoice *Voice_device;
 #endif
 
@@ -60,8 +58,7 @@ bool speech_play(char *text)
 {
 #ifndef FS2_SPEECH
 	return false;
-#endif
-
+#else
 	if(Speech_init == false) return true;
 	if(text == NULL) return false;
 
@@ -78,6 +75,7 @@ bool speech_play(char *text)
 	Conversion_buffer[i] = '\0';
 
 	return speech_play(Conversion_buffer);
+#endif
 }
 
 bool speech_play(unsigned short *text)

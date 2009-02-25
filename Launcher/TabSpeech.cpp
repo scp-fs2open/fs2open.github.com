@@ -2,9 +2,11 @@
 //
 #include "stdafx.h"
 
+#ifdef FS2_SPEECH
 #include <sapi.h>           
 #include <sphelper.h>
 #include <spuihelp.h>
+#endif
 
 #include "launcher.h"
 #include "TabSpeech.h"
@@ -174,7 +176,9 @@ BOOL CTabSpeech::DestroyWindow()
 {
    	if(m_speech_supported == true) 
 	{
+#ifdef FS2_SPEECH
 		SpDestroyTokenComboBox( GetDlgItem(IDC_VOICE_COMBO )->GetSafeHwnd() );
+#endif
    		speech_deinit();
 	}
 	

@@ -376,6 +376,8 @@ void CTabCommLine::ConstructFlagListRetail()
  */
 void CTabCommLine::ConstructFlagList()
 {
+	int k;
+
 	// If this is a retail FS2 exe skip all this
 	if (Settings::exe_type != EXE_TYPE_CUSTOM) {
 		m_easy_flag.ResetContent();
@@ -478,7 +480,7 @@ void CTabCommLine::ConstructFlagList()
 
 	// Setup Easy Flags
 	m_easy_flag.ResetContent();
-	for(int k = 0; k < num_eflags; k++)
+	for(k = 0; k < num_eflags; k++)
 	{
 		m_easy_flag.InsertString(k,easy_flags[k].name);
 	}

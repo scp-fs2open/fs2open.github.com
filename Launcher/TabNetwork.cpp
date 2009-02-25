@@ -72,8 +72,10 @@ END_MESSAGE_MAP()
 
 void CTabNetwork::OnApply()
 {
+	int i; 
+
 	// Check NetworkConnection radio buttons
- 	for(int i = 0; i < NUM_NET_CONNECTION_TYPES; i++)
+ 	for(i = 0; i < NUM_NET_CONNECTION_TYPES; i++)
 		if(((CButton *) GetDlgItem(net_connection_list[i].id))->GetCheck() == 1)
 		{
 			reg_set_sz(Settings::reg_path, "NetworkConnection", net_connection_list[i].text);
@@ -123,12 +125,13 @@ BOOL CTabNetwork::OnInitDialog()
 
 void CTabNetwork::LoadSettings()
 {
+	int i; 
 	char net_connection[20], net_speed[20];
 
 	reg_get_sz(Settings::reg_path, "NetworkConnection", net_connection, 20);
 	reg_get_sz(Settings::reg_path, "ConnectionSpeed", net_speed, 20);
 
-	for(int i = 0; i < NUM_NET_CONNECTION_TYPES; i++)
+	for(i = 0; i < NUM_NET_CONNECTION_TYPES; i++)
 	{
 		int result = (stricmp(net_connection, net_connection_list[i].text) == 0) ? 1 : 0;
 		((CButton *) GetDlgItem(net_connection_list[i].id))->SetCheck(result);
