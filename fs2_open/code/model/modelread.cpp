@@ -1641,7 +1641,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
 	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
-		mprintf(("Warning: Ignoring unrecognized subsystem %s, believed to be in ship %s\n", dname, Global_filename));
+		mprintf(("Potential problem found: Unrecognized type subsystem '%s', believed to be in ship %s\n", dname, Global_filename));
 	}
 
 	if ( (p = strstr(props, "$triggered:")) != NULL ) {
