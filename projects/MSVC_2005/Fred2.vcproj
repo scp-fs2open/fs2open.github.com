@@ -4,7 +4,6 @@
 	Version="8.00"
 	Name="Fred2"
 	ProjectGUID="{92C8C611-75AA-4BD7-9B73-584822AAAEB5}"
-	RootNamespace="Fred2"
 	Keyword="MFCProj"
 	>
 	<Platforms>
@@ -86,7 +85,7 @@
 				OutputFile="$(OutDir)\fred2_open_3_6_10d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/,../../../speech/Lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -193,7 +192,7 @@
 				OutputFile="$(OutDir)\fred2_open_3_6_10r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/,../../../speech/Lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"

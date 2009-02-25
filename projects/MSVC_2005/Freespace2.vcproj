@@ -19,6 +19,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\CoreWin.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="0"
@@ -29,7 +30,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;"
 				Outputs="$(FS2PATH)\$(TargetFileName)"
 			/>
 			<Tool
@@ -88,7 +89,7 @@
 				OutputFile="$(OutDir)\fs2_open_3_6_10d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib,../../../speech/Lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
@@ -140,7 +141,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;"
 				Outputs="$(FS2PATH)\$(TargetFileName)"
 			/>
 			<Tool
@@ -196,7 +197,7 @@
 				OutputFile="$(OutDir)\fs2_open_3_6_10r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib,../../../speech/Lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
