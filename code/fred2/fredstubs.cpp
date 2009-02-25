@@ -502,7 +502,7 @@ float flFrametime;
 int	game_zbuffer = 1;
 int	Current_mission = 0xdeadbeef;
 char **Builtin_mission_names;
-char *Game_current_mission_filename;
+char Game_current_mission_filename[MAX_FILENAME_LEN];
 CFILE *Working_demo;
 struct beam_info;
 bool Env_cubemap_drawn = false;

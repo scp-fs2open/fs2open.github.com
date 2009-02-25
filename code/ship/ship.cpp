@@ -6002,7 +6002,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->targeting_laser_bank = -1;
 	shipp->targeting_laser_objnum = -1;
 
-	shipp->determination = 10;
 	shipp->wingnum = -1;
 	for (i = 0; i < MAX_PLAYERS; i++)
 		shipp->last_targeted_subobject[i] = NULL;

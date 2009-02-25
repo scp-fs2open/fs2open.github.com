@@ -1558,7 +1558,7 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
 static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
 #endif
 {
-#ifdef _WIN32
+#ifdef _WIN32_VCHAT
     int data;
 #if defined _MSC_VER
     __asm
@@ -1622,7 +1622,7 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
 #endif
     return data;
 #else // _WIN32
-	STUB_FUNCTION;
+	// STUB_FUNCTION;
 	return 0;
 #endif
 }
