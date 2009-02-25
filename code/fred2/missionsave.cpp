@@ -1120,7 +1120,7 @@ int CFred_mission_save::save_cutscenes()
 
 					required_string_fred("+formula:");
 					parse_comments(); 
-					convert_sexp_to_string(The_mission.cutscenes[i].formula, out, SEXP_SAVE_MODE);
+					convert_sexp_to_string(The_mission.cutscenes[i].formula, out, SEXP_SAVE_MODE, 4096);
 					fout(" %s", out);
 				}
 			}
@@ -1922,7 +1922,7 @@ int CFred_mission_save::save_objects()
 
 		required_string_fred("$Determination:");
 		parse_comments();
-		fout(" %d", Ships[i].determination);
+		fout(" 10"); // dummy value for backwards compatibility
 
 		if (optional_string_fred("+Flags:", "$Name:")) {
 			parse_comments();

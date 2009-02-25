@@ -1718,9 +1718,9 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,132,14,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,132,31,50,14
     LTEXT           "Briefing Text",IDC_STATIC,7,44,40,8
-    LTEXT           "Ani Filename",IDC_STATIC,7,243,41,8
+    LTEXT           "Ani Filename",IDC_STATIC,7,121,41,8
     LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,10,53,8
-    LTEXT           "Wave Filename",IDC_STATIC,7,261,50,8
+    LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
 END
 
 IDD_SHIP_FLAGS DIALOG  0, 0, 286, 250
@@ -2283,9 +2283,9 @@ BEGIN
     IDD_CMD_BRIEF, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 194
+        RIGHTMARGIN, 182
         TOPMARGIN, 7
-        BOTTOMMARGIN, 272
+        BOTTOMMARGIN, 151
     END
 
     IDD_SHIP_FLAGS, DIALOG

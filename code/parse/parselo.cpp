@@ -8,19 +8,14 @@
 */
 
 /*
- * $Source: /home/fs2source/cvsroot/fs2_open/code/parse/parselo.cpp,v $
+ * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
  * $Revision: 2.73.2.13 $
  * $Author: Kazan $
- * $Date: 2007/10/20 23:28:49 $
+ * $Date: 2007-10-20 23:28:49 $
  *
  * low level parse routines common to all types of parsers
  *
- * $Log: parselo.cpp,v $
- * Revision 2.73.2.13  2007/10/20 23:28:49  Kazan
- * Enemy cargo containers should not prevent autopilot.
- * Fix build problem in parselo (strrchr returns const char* not char*, need to explicitly cast - raises error in MSVC2005)
- * Update MSVC2005 "code" project to reflect removal/addition of fs2netd related files
- *
+ * $Log: not supported by cvs2svn $
  * Revision 2.73.2.12  2007/10/15 06:43:20  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *

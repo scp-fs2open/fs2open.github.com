@@ -896,7 +896,6 @@ typedef struct p_object {
 	int	departure_delay;
 
 	char	misc[NAME_LENGTH];
-	int	determination;
 
 	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
 	int pos_in_wing;						// Goober5000 - needed for FRED with the new way things work
@@ -1012,6 +1011,7 @@ extern std::vector<p_object> Parse_objects;
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
+
 
 typedef struct {
 	// ships

@@ -1053,11 +1053,6 @@ int scoring_eval_kill(object *ship_obj)
 	// get credit for an assist
 	scoring_eval_assists(dead_ship,killer_sig, is_enemy_player);	
 
-	/* bash damage_ship_id[0] with the signature of the guy who is getting credit for the kill
-	dead_ship->damage_ship_id[0] = killer_sig;
-	dead_ship->damage_ship[0] = max_damage_pct;
-	*/
-
 #ifdef SCORING_DEBUG
 
 	if (Game_mode & GM_MULTIPLAYER) {

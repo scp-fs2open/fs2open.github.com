@@ -1394,7 +1394,6 @@ typedef struct ship {
 	int	departure_cue;			// sexpression to eval when departing
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
-	int	determination;
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
 	int	orders_accepted;					// set of orders this ship will accept from the player.
 

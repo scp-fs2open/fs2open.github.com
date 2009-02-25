@@ -8,19 +8,16 @@
 */
 
 /*
- * $Source: /home/fs2source/cvsroot/fs2_open/code/parse/parselo.h,v $
+ * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
  * $Revision: 2.42.2.6 $
  * $Author: taylor $
- * $Date: 2007/10/15 06:43:20 $
+ * $Date: 2007-10-15 06:43:20 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
- * $Log: parselo.h,v $
- * Revision 2.42.2.6  2007/10/15 06:43:20  taylor
- * FS2NetD v.2  (still a work in progress, but is ~98% complete)
- *
+ * $Log: not supported by cvs2svn $
  * Revision 2.42.2.5  2007/08/17 03:29:49  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *

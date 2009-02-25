@@ -2576,6 +2576,7 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
+bool warning_too_many_ship_classes = false;
 
 // set the ship_obj struct fields to default values
 void ship_obj_list_reset_slot(int index)
@@ -3086,7 +3087,12 @@ int parse_ship(char *filename, bool replace)
 		
 		//Check if there are too many ship classes
 		if(Num_ship_classes >= MAX_SHIP_CLASSES) {
-			Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used", buf, MAX_SHIP_CLASSES, Num_ship_classes);
+			if (!warning_too_many_ship_classes) {
+				Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used\nPlease check also the debug log as it may contain other ship classes which are over the limit", buf, MAX_SHIP_CLASSES, Num_ship_classes);
+				warning_too_many_ship_classes = true;
+			} else {
+				mprintf(("Warning: Too many ship classes before '%s'\n", buf));
+			}
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
 			//WMC - nm, skip just one.
@@ -5994,7 +6000,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->targeting_laser_bank = -1;
 	shipp->targeting_laser_objnum = -1;
 
-	shipp->determination = 10;
 	shipp->wingnum = -1;
 	for (i = 0; i < MAX_PLAYERS; i++)
 		shipp->last_targeted_subobject[i] = NULL;
@@ -8383,6 +8388,9 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 
 int thruster_glow_anim_load(generic_anim *ga)
 {
+	if ( !VALID_FNAME(ga->filename) )
+		return -1;
+
 	int fps = 15;
 
 	ga->first_frame = bm_load(ga->filename);
