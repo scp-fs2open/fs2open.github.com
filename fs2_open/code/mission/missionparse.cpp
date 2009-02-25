@@ -2937,7 +2937,6 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->departure_path_mask = p_objp->departure_path_mask;
 	shipp->departure_cue = p_objp->departure_cue;
 	shipp->departure_delay = p_objp->departure_delay;
-	shipp->determination = p_objp->determination;
 	shipp->wingnum = p_objp->wingnum;
 	shipp->hotkey = p_objp->hotkey;
 	shipp->score = p_objp->score;
@@ -3674,7 +3673,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);
 
 	required_string("$Determination:");
-	stuff_int(&p_objp->determination);
+	int dummy; 
+	stuff_int(&dummy);
 
 	// set flags
 	p_objp->flags = 0;
@@ -7897,7 +7897,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->departure_cue = Locked_sexp_false;
 	pobj->departure_delay = 0;
 
-	pobj->determination = 10;			// ASSUMPTION:  mission file always had this number written out
 	pobj->wingnum = -1;
 
 	pobj->flags = 0;
