@@ -7779,6 +7779,39 @@ int sexp_has_been_tagged_delay(int n)
 		return SEXP_FALSE;
 }
 
+// Karajorma
+void eval_when_for_each_special_argument( int cur_node )
+{
+	arg_item *ptr;
+
+	// loop through all the supplied arguments
+	ptr = Sexp_applicable_argument_list.get_next();
+	while (ptr != NULL)
+	{
+		// acquire argument to be used
+		Sexp_replacement_arguments.push_back(ptr->text);	
+
+		Sexp_current_argument_nesting_level++;
+		Sexp_applicable_argument_list.add_data(ptr->text);
+
+
+		// execute sexp... CTEXT will insert the argument as necessary
+		// (since these are all actions, they don't return any meaningful values)
+		eval_sexp(cur_node);
+		
+		// clean up any special sexp stuff
+		Sexp_applicable_argument_list.clear_nesting_level();
+		Sexp_current_argument_nesting_level--;
+
+		// remove the argument 
+		Sexp_replacement_arguments.pop_back(); 
+
+		// continue along argument list
+		ptr = ptr->get_next();
+	}
+}
+
+
 // Goober5000
 void do_action_for_each_special_argument( int cur_node )
 {
@@ -7812,6 +7845,15 @@ int special_argument_appears_in_sexp_tree(int node)
 	// special argument?
 	if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
 		return 1;
+
+	// we don't want to include special arguments if they are nested in a new argument SEXP
+	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
+		switch (get_operator_const(CTEXT(node))) {
+			case OP_WHEN_ARGUMENT:
+			case OP_EVERY_TIME_ARGUMENT:
+				return 0; 
+		}
+	}
 
 	return special_argument_appears_in_sexp_tree(CAR(node))
 		|| special_argument_appears_in_sexp_tree(CDR(node));
@@ -7879,14 +7921,12 @@ int eval_when(int n, int use_arguments)
 				switch (op_num) {
 					// if the op is a conditional then we just evaluate it
 					case OP_WHEN:
-					case OP_WHEN_ARGUMENT:
 					case OP_EVERY_TIME:
-					case OP_EVERY_TIME_ARGUMENT:
 						// need to account for the possibility this call uses <arguments>
 						if (special_argument_appears_in_sexp_tree(exp)) { 
 							ptr = Sexp_applicable_argument_list.get_next();
 							if (ptr != NULL) {
-								do_action_for_each_special_argument(exp);
+								eval_when_for_each_special_argument(exp);
 							}
 							else {
 								eval_sexp(exp);
@@ -7896,6 +7936,11 @@ int eval_when(int n, int use_arguments)
 							eval_sexp(exp);
 						}
 						break;
+
+					case OP_WHEN_ARGUMENT:
+					case OP_EVERY_TIME_ARGUMENT:
+						eval_sexp(exp);
+						break; 
 
 					// otherwise we need to check if arguments are used
 					default: 

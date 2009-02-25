@@ -63,10 +63,12 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 		units[unit].texture_id = 0;
 	}
 
-	glDisable(GL_TEXTURE_GEN_S);
-	glDisable(GL_TEXTURE_GEN_T);
-	glDisable(GL_TEXTURE_GEN_R);
-	glDisable(GL_TEXTURE_GEN_Q);
+	if (unit < GL_supported_texture_units) {
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+		glDisable(GL_TEXTURE_GEN_R);
+		glDisable(GL_TEXTURE_GEN_Q);
+	}
 
 	units[unit].texgen_S = GL_FALSE;
 	units[unit].texgen_T = GL_FALSE;
