@@ -68,7 +68,8 @@ bool speech_play(char *text)
 		len = MAX_SPEECH_CHAR_LEN - 1;
 	}
 
-	for(int i = 0; i < len; i++) {
+	int i;
+	for(i = 0; i < len; i++) {
 		Conversion_buffer[i] = (unsigned short) text[i];
 	}
 
