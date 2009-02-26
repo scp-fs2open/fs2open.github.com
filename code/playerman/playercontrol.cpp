@@ -1590,6 +1590,9 @@ void read_player_controls(object *objp, float frametime)
 		temp = Player->ci;
 		copy_control_info(&(Player->ci), &(Player->lua_ci));
 		Player->lua_ci = temp;
+	} else {
+		// just copy the ci should that be needed in scripting
+		Player->lua_ci = Player->ci;
 	}
 
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
