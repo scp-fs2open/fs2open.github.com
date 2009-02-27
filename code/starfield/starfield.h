@@ -204,8 +204,11 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "model/model.h"
 
 #include <vector>
+
+#define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
 #define MAX_ASTEROID_FIELDS			4
@@ -233,6 +236,7 @@ typedef struct background_t {
 extern int Num_backgrounds;
 extern int Cur_background;
 extern background_t Backgrounds[MAX_BACKGROUNDS];
+extern int Nmodel_flags;
 
 extern bool Dynamic_environment;
 
@@ -297,7 +301,7 @@ void stars_draw_sun_glow(int sun_n);
 void stars_camera_cut();
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name);
+void stars_set_background_model(char *model_name, char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
 
 // lookup a starfield bitmap, return index or -1 on fail
 int stars_find_bitmap(char *name);

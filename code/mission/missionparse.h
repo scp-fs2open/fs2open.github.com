@@ -705,6 +705,7 @@ typedef struct mission {
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
 	char	envmap_name[MAX_FILENAME_LEN];
+	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
 

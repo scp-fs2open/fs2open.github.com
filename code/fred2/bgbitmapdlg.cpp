@@ -260,6 +260,11 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	b_scale_x = 1.0f; b_scale_y = 1.0f;
 	b_div_x = 1; b_div_y = 1;
 	b_index = -1;
+	m_sky_flag_1 = The_mission.skybox_flags & MR_NO_LIGHTING ? 1 : 0;
+	m_sky_flag_2 = The_mission.skybox_flags & MR_ALL_XPARENT ? 1 : 0;
+	m_sky_flag_3 = The_mission.skybox_flags & MR_NO_ZBUFFER ? 1 : 0;
+	m_sky_flag_4 = The_mission.skybox_flags & MR_NO_CULL ? 1 : 0;
+	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -312,6 +317,11 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, b_div_y, 1, 5);
 	DDX_Text(pDX, IDC_SKYBOX_FNAME, m_skybox_model);
 	DDX_Text(pDX, IDC_ENVMAP, m_envmap);
+	DDX_Check(pDX, IDC_SKY_FLAG_NO_LIGHTING, m_sky_flag_1);
+	DDX_Check(pDX, IDC_SKY_FLAG_XPARENT, m_sky_flag_2);
+	DDX_Check(pDX, IDC_SKY_FLAG_NO_ZBUFF, m_sky_flag_3);
+	DDX_Check(pDX, IDC_SKY_FLAG_NO_CULL, m_sky_flag_4);
+	DDX_Check(pDX, IDC_SKY_FLAG_NO_GLOW, m_sky_flag_5);
 	//}}AFX_DATA_MAP
 }
 
@@ -547,7 +557,8 @@ void bg_bitmap_dlg::OnClose()
 		// init the nebula
 		neb2_level_init();
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;		Nebula_index = m_nebula_index - 1;
+		The_mission.flags &= ~MISSION_FLAG_FULLNEB;		
+		Nebula_index = m_nebula_index - 1;
 		Neb2_awacs = -1.0f;
 		strcpy(Neb2_texture_name, "");
 	}
@@ -579,6 +590,25 @@ void bg_bitmap_dlg::OnClose()
 
 	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH, 1);
 	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH, 1);
+
+	//store the skybox flags
+	The_mission.skybox_flags = 0;
+
+	if(m_sky_flag_1) {
+		The_mission.skybox_flags |= MR_NO_LIGHTING;
+	}
+	if(m_sky_flag_2) {
+		The_mission.skybox_flags |= MR_ALL_XPARENT;
+	}
+	if(m_sky_flag_3) {
+		The_mission.skybox_flags |= MR_NO_ZBUFFER;
+	}
+	if(m_sky_flag_4) {
+		The_mission.skybox_flags |= MR_NO_CULL;
+	}
+	if(m_sky_flag_5) {
+		The_mission.skybox_flags |= MR_NO_GLOWMAPS;
+	}
 
 	// close sun data
 	sun_data_close();
