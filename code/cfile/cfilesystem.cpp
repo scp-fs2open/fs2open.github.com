@@ -2054,7 +2054,7 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 
 #ifdef INF_BUILD
 		// keep pilot files separated for an Inferno build since they aren't compatible
-		if ( pathtype == CF_TYPE_SINGLE_PLAYERS ) {
+		if ( pathtype == CF_TYPE_SINGLE_PLAYERS || pathtype == CF_TYPE_MULTI_PLAYERS ) {
 			SAFE_STRCAT(path, "inferno", path_max);
 			SAFE_STRCAT(path, DIR_SEPARATOR_STR, path_max);
 		}

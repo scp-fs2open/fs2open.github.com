@@ -4314,7 +4314,7 @@ bool is_ship_assignable(p_object *p_objp)
 	}
 
 	// Now we check the alt_classes (if there are any)
-	for (i = 0; i <p_objp->alt_classes.size(); i++) {
+	for (i = 0; i < (int)p_objp->alt_classes.size(); i++) {
 		// we don't check availability unless we are asked to
 		if (p_objp->alt_classes[i].default_to_this_class == false) {
 			loadout_index = p_objp->alt_classes[i].ship_class;
@@ -4348,7 +4348,7 @@ void process_loadout_objects()
 	std::vector<int> reassignments;
 	
 	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
-	for (int i=0; i < Parse_objects.size(); i++)
+	for (int i=0; i < (int)Parse_objects.size(); i++)
 	{
 		p_object *p_objp = &Parse_objects[i];
 		if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
@@ -4365,7 +4365,7 @@ void process_loadout_objects()
 		
 	// Now we go though the ships we were unable to assign earlier and reassign them on a first come first 
 	// served basis.
-	for (int m=0; m < reassignments.size(); m++)
+	for (int m=0; m < (int)reassignments.size(); m++)
 	{
 		p_object *p_objp = &Parse_objects[reassignments[m]];
 		team_data *current_team = &Team_data[p_objp->team];

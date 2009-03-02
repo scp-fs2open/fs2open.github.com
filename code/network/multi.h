@@ -387,7 +387,12 @@ struct player;
 // version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
 // revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
 // STANDALONE_ONLY
+#ifdef INF_BUILD
+#define MULTI_FS_SERVER_VERSION							146
+#else 
 #define MULTI_FS_SERVER_VERSION							46
+#endif
+
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
 // version defines (i.e. demo, full version, special OEM version
@@ -690,11 +695,14 @@ extern int Om_tracker_flag;
 #define SW_STD_BAD					0x3		// from standalone to host - "everything is bad"
 
 // stats block packet
-#define STATS_MISSION				0			// all stats for the mission, for one player
+#define STATS_MISSION				0			// all stats for the mission (except kills), for one player
 #define STATS_ALLTIME				1			// alltime stats, for one player
-#define STATS_MISSION_KILLS		2			// mission kills and assists
+#define STATS_MISSION_KILLS			2			// mission kills and assists
 #define STATS_DOGFIGHT_KILLS		3			// same as mission kills, but also sends per-player kills
+#define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
+#define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
+#define MAX_SHIPS_PER_PACKET		130			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
