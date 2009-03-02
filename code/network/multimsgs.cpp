@@ -5718,10 +5718,6 @@ void process_mission_sync_packet(ubyte *data, header *hinfo)
 		multi_team_send_update();
 	}
 
-	// process the initial orders now (moved from post_process_mission()in missionparse) 
-	mission_parse_fixup_players();
-	ai_post_process_mission();
-
 	// get the sync mode (pre or post briefing)
 	GET_INT(mode);
 
@@ -5749,6 +5745,11 @@ void process_mission_sync_packet(ubyte *data, header *hinfo)
 			GET_STRING(Game_current_mission_filename);
 			strcpy(Netgame.mission_name,Game_current_mission_filename);
 		}
+	}
+	else if (mode == MULTI_SYNC_POST_BRIEFING) {
+		// process the initial orders now (moved from post_process_mission()in missionparse) 
+		mission_parse_fixup_players();
+		ai_post_process_mission();
 	}
 	PACKET_SET_SIZE();
 
