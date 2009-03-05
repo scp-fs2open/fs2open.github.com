@@ -13790,7 +13790,7 @@ void ai_bay_depart()
 		}
 
 		// make ship disappear
-		ship_actually_depart(Pl_objp->instance);
+		ship_actually_depart(Pl_objp->instance, SHIP_DEPARTED_BAY);
 
 		// clean up path stuff
 		aip->path_start = -1;
