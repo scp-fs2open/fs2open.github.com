@@ -858,7 +858,7 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 extern void ai_set_rearm_status( int team, int new_status );
 extern void ai_good_secondary_time( int team, int weapon_index, int num_weapons, char *shipname );
 
-extern void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point);
+extern void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point, bool update_clients = true);
 extern void ai_do_objects_undocked_stuff( object *docker, object *dockee );
 extern void ai_do_objects_repairing_stuff( object *repaired_obj, object *repair_obj, int how );
 
