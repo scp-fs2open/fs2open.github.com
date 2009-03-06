@@ -2737,7 +2737,7 @@ uint load_post_level_init;
 void game_level_init(int seed)
 {
 	game_busy( NOX("** starting game_level_init() **") );
-	load_gl_init = time(NULL);
+	load_gl_init = (uint) time(NULL);
 #ifdef USE_PYTHON
 	//Clear python images
 	py_clear_images();
@@ -2748,7 +2748,7 @@ void game_level_init(int seed)
 		// netgame security flags -- ensures that all players in multiplayer game will have the
 		// same randon number sequence (with static rand functions)
 		if ( Game_mode & GM_NORMAL ) {
-			Game_level_seed = time(NULL);
+			Game_level_seed = (int) time(NULL);
 		} else {
 			Game_level_seed = Netgame.security;
 		}
@@ -2864,7 +2864,7 @@ void game_level_init(int seed)
 
 	Env_cubemap_drawn = false;
 
-	load_gl_init = time(NULL) - load_gl_init;
+	load_gl_init = (uint) (time(NULL) - load_gl_init);
 
 	//WMC - Init multi players for level
 	if (Game_mode & GM_MULTIPLAYER && Player != NULL) {
@@ -3298,7 +3298,7 @@ int game_start_mission()
 	}
 
 	game_busy( NOX("** starting mission_load() **") );
-	load_mission_load = time(NULL);
+	load_mission_load = (uint) time(NULL);
 	if (mission_load(Game_current_mission_filename)) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
@@ -3315,7 +3315,7 @@ int game_start_mission()
 
 		return 0;
 	}
-	load_mission_load = time(NULL) - load_mission_load;
+	load_mission_load = (uint) (time(NULL) - load_mission_load);
 
 	// free up memory from parsing the mission
 	extern void stop_parse();
@@ -3330,9 +3330,9 @@ int game_start_mission()
 	}*/
 
 	game_busy( NOX("** starting game_post_level_init() **") );
-	load_post_level_init = time(NULL);
+	load_post_level_init = (uint) time(NULL);
 	game_post_level_init();
-	load_post_level_init = time(NULL) - load_post_level_init;
+	load_post_level_init = (uint) (time(NULL) - load_post_level_init);
 
 #ifndef NDEBUG
 	{
@@ -3636,7 +3636,7 @@ void game_init()
 
 
 	// seed the random number generator
-	Game_init_seed = time(NULL);
+	Game_init_seed = (int) time(NULL);
 	srand( Game_init_seed );
 
 	Framerate_delay = 0;
@@ -4647,7 +4647,7 @@ void game_tst_frame()
 	
 	// setup tst
 	if(tst == 2){		
-		tst_time = time(NULL);
+		tst_time = (int) time(NULL);
 
 		// load the tst bitmap		
 		switch((int)frand_range(0.0f, 3.0)){

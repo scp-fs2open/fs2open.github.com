@@ -2902,7 +2902,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = time(NULL);
+		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(NULL);
 
 		// send the accept packet here
 		send_accept_packet(net_player_num, (Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN) ? ACCEPT_OBSERVER | ACCEPT_INGAME : ACCEPT_OBSERVER);
@@ -2955,7 +2955,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}		
 
 		// set his reliable connect time
-		Net_players[net_player_num].s_info.reliable_connect_time = time(NULL);
+		Net_players[net_player_num].s_info.reliable_connect_time = (int) time(NULL);
 
 		// if he's joining as a host (on the standalone)
 		if(Net_players[net_player_num].flags & NETINFO_FLAG_GAME_HOST){
