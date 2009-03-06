@@ -358,6 +358,16 @@ typedef struct hud_frames {
 extern int HUD_draw;
 extern int HUD_contrast;
 
+struct lua_hud_inf {
+	// ets_data
+	int ets_drawn;
+	int ets_engine;
+	int ets_shield;
+	int ets_guns;
+	//  ab data
+	int ab_drawn;
+	float ab_pct;
+};
 
 //Current HUD to use for info -C
 #ifndef NEW_HUD

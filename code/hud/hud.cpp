@@ -649,6 +649,8 @@
 #define HUD_NEW_ALPHA_NORMAL_HI		190
 #define HUD_NEW_ALPHA_BRIGHT_HI		255
 
+struct lua_hud_inf	lua_hud_info;
+
 // Externals not related to the HUD code itself
 extern float View_zoom;
 
@@ -1910,6 +1912,10 @@ void HUD_render_2d(float frametime)
 		hud_set_default_color();
 	}
 #endif
+	
+	// reset the lua show gauge flags
+	lua_hud_info.ets_drawn = 0;
+	lua_hud_info.ab_drawn = 0;
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
 	{

@@ -11,6 +11,7 @@
 #include "graphics/font.h"
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
+#include "hud/hud.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -6956,6 +6957,77 @@ ADE_VIRTVAR(Forward, l_Control_Info, "number", "Forward control of the player sh
 	return ade_set_args(L, "f", Player->lua_ci.forward);
 }
 
+extern lua_hud_inf lua_hud_info;
+
+//**********HANDLE: HUD
+ade_obj<int> l_HUD_Info("HUD info", "HUD info handle");
+
+ADE_VIRTVAR(EngineLevel, l_HUD_Info, NULL, "", "number", "Engine energy level ETS gauge")
+{
+	int idx;
+
+	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "i", lua_hud_info.ets_engine);
+}
+
+ADE_VIRTVAR(ShieldLevel, l_HUD_Info, NULL, "", "number", "Shield energy level ETS gauge")
+{
+	int idx;
+
+	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "i", lua_hud_info.ets_shield);
+}
+
+ADE_VIRTVAR(GunsLevel, l_HUD_Info, NULL, "", "number", "Gun energy level ETS gauge")
+{
+	int idx;
+
+	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "i", lua_hud_info.ets_guns);
+}
+
+ADE_FUNC(isETSDrawn, l_HUD_Info, NULL, "", "boolean", "If ETS is drawn or not")
+{
+	int idx;
+
+	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	if (lua_hud_info.ets_drawn == 0) 
+		return ADE_RETURN_FALSE;
+	else
+		return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(ABFuelLevel, l_HUD_Info, NULL, "", "number", "AB fuel level gauge")
+{
+	int idx;
+
+	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "f", lua_hud_info.ab_pct);
+}
+
+ADE_FUNC(isABDrawn, l_HUD_Info, NULL, "", "boolean", "If AB is drawn or not")
+{
+	int idx;
+
+	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	if (lua_hud_info.ab_drawn == 0) 
+		return ADE_RETURN_FALSE;
+	else
+		return ADE_RETURN_TRUE;
+}
+
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
@@ -7168,6 +7240,15 @@ ADE_FUNC(getControlInfo, l_Base, NULL, "Gets the control info handle.", "control
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
 
+ADE_FUNC(getCurrentViewerMode, l_Base, NULL, "Gets the current view mode identifier", "number", "identifier")
+{
+	return ade_set_args(L, "i", Viewer_mode);
+}
+
+ADE_FUNC(getHUD_Info, l_Base, NULL, "Gets the HUD ingo handle.", "HUD info", "HUD info handle")
+{
+	return ade_set_args(L, "o", l_HUD_Info.Set(1));
+}
 /*
 ADE_FUNC(getStateNameByIndex, l_Base, "Index of state (number)", "Gets the name of a state type by its index; this function may be used to list all state types.", "string", "State name, or an empty string if index is invalid")
 {
@@ -7647,6 +7728,59 @@ ADE_FUNC(setCursorHidden, l_Mouse, "True to hide mouse, false to show it", "Show
 		Mouse_hidden = 1;
 	else
 		Mouse_hidden = 0;
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(forceMousePosition, l_Mouse, "number, number (coordinates)", "function to force mouse position", "boolean", "if the operation succeeded or not")
+{
+	if(!mouse_inited)
+		return ADE_RETURN_FALSE;
+
+	if(!Gr_inited)
+		return ADE_RETURN_FALSE;
+
+	int x, y;
+	if (!(ade_get_args(L, "ii", &x, &y)))
+		return ADE_RETURN_FALSE;
+
+	if (!((x >= 0) && (x <= gr_screen.max_w)))
+		return ADE_RETURN_FALSE;
+
+	if (!((y >= 0) && (y <= gr_screen.max_h)))
+		return ADE_RETURN_FALSE;
+
+	mouse_force_pos(x, y);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getMouseControlStatus, l_Mouse, NULL, "Gets the retail mouse control status", "boolean", "if the mouse is on or off")
+{
+	if(!mouse_inited)
+		return ADE_RETURN_NIL;
+
+	bool mouse_status = false;
+
+	if (Use_mouse_to_fly)
+		mouse_status = true;
+
+	return ade_set_args(L, "b", mouse_status);
+}
+
+ADE_FUNC(setMouseControlStatus, l_Mouse, "boolean", "Sets the retail mouse control status", NULL, NULL)
+{
+	if(!mouse_inited)
+		return ADE_RETURN_NIL;
+
+	bool mouse_io;
+	ade_get_args(L, "b", &mouse_io);
+
+	if(mouse_io) {
+		Use_mouse_to_fly = 1;
+	} else {
+		Use_mouse_to_fly = 0;
+	}
 
 	return ADE_RETURN_NIL;
 }

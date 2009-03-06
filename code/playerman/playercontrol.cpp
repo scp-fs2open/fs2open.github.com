@@ -1494,6 +1494,21 @@ void read_player_controls(object *objp, float frametime)
 
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
+
+			if ( lua_game_control == LGC_STEERING ) {
+				// make sure to copy the control before reseting it
+				Player->lua_ci = Player->ci;
+				copy_control_info(&(Player->ci), NULL);
+			} else if ( lua_game_control == LGC_FULL ) {
+				control_info temp;
+				// first copy over the new values, then reset
+				temp = Player->ci;
+				copy_control_info(&(Player->ci), &(Player->lua_ci));
+				Player->lua_ci = temp;
+			} else {
+				// just copy the ci should that be needed in scripting
+				Player->lua_ci = Player->ci;
+			}
 			break;
 
 		case PCM_WARPOUT_STAGE1:	// Accelerate to 40 km/s
@@ -1579,21 +1594,6 @@ void read_player_controls(object *objp, float frametime)
 	if(objp->type != OBJ_OBSERVER){
 		objp->phys_info.max_vel.xyz.z = Ships[objp->instance].current_max_speed;
 	} 
-
-	if ( lua_game_control == LGC_STEERING ) {
-		// make sure to copy the control before reseting it
-		Player->lua_ci = Player->ci;
-		copy_control_info(&(Player->ci), NULL);
-	} else if ( lua_game_control == LGC_FULL ) {
-		control_info temp;
-		// first copy over the new values, then reset
-		temp = Player->ci;
-		copy_control_info(&(Player->ci), &(Player->lua_ci));
-		Player->lua_ci = temp;
-	} else {
-		// just copy the ci should that be needed in scripting
-		Player->lua_ci = Player->ci;
-	}
 
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead

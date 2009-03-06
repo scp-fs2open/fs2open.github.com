@@ -719,6 +719,8 @@ typedef struct _reticle_list {
 	int				flags;
 } reticle_list;
 
+extern lua_hud_inf lua_hud_info;
+
 #define			RESET_TARGET_IN_RETICLE	750
 int				Reticle_save_timestamp;
 reticle_list	Reticle_cur_list;
@@ -5384,6 +5386,9 @@ void hud_show_afterburner_gauge()
 	if ( percent_left > 1 ) {
 		percent_left = 1.0f;
 	}
+
+	lua_hud_info.ab_drawn = 1;
+	lua_hud_info.ab_pct = percent_left;
 	
 	clip_h = fl2i( (1.0f - percent_left) * current_hud->Aburn_size[0] + 0.5f );
 
