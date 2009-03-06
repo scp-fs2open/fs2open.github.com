@@ -1178,8 +1178,8 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
 
-	float min_range = fl2i( (gs->min) * range_factor);
-	float max_range = fl2i( (gs->max) * range_factor + 0.5f);
+	float min_range = (float) (fl2i( (gs->min) * range_factor));
+	float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
 
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, pos, &View_position );
 	distance -= radius;
