@@ -1565,6 +1565,8 @@ void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
+void clear_texture_replacements();
+
 
 MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
@@ -5862,7 +5864,7 @@ int parse_mission(mission *pm, int flags)
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
 	memset( &Player_start_pobject, 0, sizeof(Player_start_pobject) );
-	Fred_num_texture_replacements = 0;
+	clear_texture_replacements();
 
 	// initialize the initially_docked array.
 	for ( i = 0; i < MAX_SHIPS; i++ ) {
@@ -8289,4 +8291,12 @@ void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_second
 			ship_secondary_weapons[i] = original_weapon;
 		}
 	}
+}
+
+void clear_texture_replacements() 
+{
+	for (int i=0; i < Fred_num_texture_replacements; i++) {
+		memset(Fred_texture_replacements, '\0', sizeof(texture_replace)); 
+	}
+	Fred_num_texture_replacements = 0; 
 }
