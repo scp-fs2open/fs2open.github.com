@@ -1565,8 +1565,6 @@ void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
-void clear_texture_replacements();
-
 
 MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
