@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /D "NDEBUG" /D "FS2_SPEECH" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "include" /I "speech/Include" /D "NDEBUG" /D "FS2_SPEECH" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x809 /d "NDEBUG" /d "_AFXDLL"
@@ -53,8 +53,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /machine:I386
-# ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib dinput.lib winmm.lib /nologo /subsystem:windows /incremental:yes /machine:I386 /out:"C:\games\Freespace2\Launcher.exe"
-# SUBTRACT LINK32 /debug
+# ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib dinput.lib winmm.lib /nologo /subsystem:windows /incremental:yes /machine:I386 /out:"C:\games\Freespace2\Launcher.exe" /libpath:"lib" /libpath:"speech/Libs"
+# SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "Launcher - Win32 Debug"
 
@@ -70,7 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /D "FS2_SPEECH" /D "DBUGFILE_ACTIVE" /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "include" /I "speech/Include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /D "FS2_SPEECH" /D "DBUGFILE_ACTIVE" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x809 /d "_DEBUG" /d "_AFXDLL"
@@ -80,7 +80,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib dinput.lib winmm.lib /nologo /subsystem:windows /debug /machine:I386 /out:"C:\games\Freespace2\Launcher debug.exe" /pdbtype:sept
+# ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib dinput.lib winmm.lib /nologo /subsystem:windows /debug /machine:I386 /out:"C:\games\Freespace2\Launcher debug.exe" /pdbtype:sept /libpath:"lib" /libpath:"speech/Libs"
+# SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
 

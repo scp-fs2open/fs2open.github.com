@@ -12,7 +12,7 @@
 #include <atlbase.h>
 
 #ifdef FS2_SPEECH
-#include <sapi.h
+#include <sapi.h>
 #else
 #pragma message("NOTE: Speech is not compiled in")
 #endif
