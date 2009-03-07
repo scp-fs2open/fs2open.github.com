@@ -2994,7 +2994,9 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 		if (*src == '\n') {
 			n_chars[line_num] = src - p_str[line_num];  // track length of line
 			line_num++;
-			p_str[line_num] = NULL;
+			if (line_num > max_lines) {
+				p_str[line_num] = NULL;
+			}
 			new_line = 1;
 
 			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
@@ -3038,7 +3040,9 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 			n_chars[line_num] = end - p_str[line_num];  // track length of line
 			Assert(n_chars[line_num]);
 			line_num++;
-			p_str[line_num] = NULL;
+			if (line_num > max_lines) {
+				p_str[line_num] = NULL;
+			}
 			new_line = 1;
 
 			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
