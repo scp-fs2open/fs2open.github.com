@@ -2994,7 +2994,7 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 		if (*src == '\n') {
 			n_chars[line_num] = src - p_str[line_num];  // track length of line
 			line_num++;
-			if (line_num > max_lines) {
+			if (line_num <= max_lines) {
 				p_str[line_num] = NULL;
 			}
 			new_line = 1;
@@ -3040,7 +3040,7 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 			n_chars[line_num] = end - p_str[line_num];  // track length of line
 			Assert(n_chars[line_num]);
 			line_num++;
-			if (line_num > max_lines) {
+			if (line_num <= max_lines) {
 				p_str[line_num] = NULL;
 			}
 			new_line = 1;
@@ -3054,6 +3054,113 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 	if (p_str[line_num]) {
 		n_chars[line_num] = src - p_str[line_num];  // track length of line
 		Assert(n_chars[line_num]);
+		line_num++;
+	}
+
+	return line_num;
+}
+
+int split_str(char *src, int max_pixel_w, std::vector<int> *n_chars, std::vector<char*> *p_str, char ignore_char)
+{
+	char buffer[SPLIT_STR_BUFFER_SIZE];
+	char *breakpoint = NULL;
+	int sw, new_line = 1, line_num = 0, last_was_white = 0;
+	int ignore_until_whitespace = 0, buf_index = 0;
+	
+	// check our assumptions..
+	Assert(src != NULL);
+	Assert(n_chars != NULL);
+	Assert(p_str != NULL);
+	Assert(max_pixel_w > 0);
+	
+	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+
+	// get rid of any leading whitespace
+	while (is_white_space(*src))
+		src++;
+
+	p_str->clear();
+
+	// iterate through chars in line, keeping track of most recent "white space" location that can be used
+	// as a line splitting point if necessary
+	for (; *src; src++) {
+
+		// starting a new line of text, init stuff for that
+		if (new_line) {
+			if (is_gray_space(*src))
+				continue;
+
+			p_str->push_back(src);
+			breakpoint = NULL;
+			new_line = 0;
+		}
+
+		// maybe skip leading whitespace
+		if (ignore_until_whitespace) {
+			if ( is_white_space(*src) )
+				ignore_until_whitespace = 0;
+
+			continue;
+		}
+
+		// if we have a newline, split the line here
+		if (*src == '\n') {
+			n_chars->push_back(src - p_str->at(line_num));  // track length of line
+			line_num++;
+			new_line = 1;
+
+			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+			buf_index = 0;
+			continue;
+		}
+
+		if (*src == ignore_char) {
+			ignore_until_whitespace = 1;
+			continue;
+		}
+
+		if (is_gray_space(*src)) {
+			if (!last_was_white)  // track at first whitespace in a series of whitespace
+				breakpoint = src;
+
+			last_was_white = 1;
+
+		} else {
+			// indicate next time around that this wasn't a whitespace character
+			last_was_white = 0;
+		}
+
+		// throw it in our buffer
+		buffer[buf_index] = *src;
+		buf_index++;
+		buffer[buf_index] = 0;  // null terminate it
+	
+		gr_get_string_size(&sw, NULL, buffer);
+		if (sw >= max_pixel_w) {
+			char *end;
+
+			if (breakpoint) {
+				end = src = breakpoint;
+
+			} else {
+				end = src;  // force a split here since to whitespace
+				src--;  // reuse this character in next line
+			}
+
+			n_chars->push_back(end - p_str->at(line_num));  // track length of line
+			Assert(n_chars->at(line_num));
+			line_num++;
+			new_line = 1;
+
+			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+			buf_index = 0;
+			continue;
+		}
+	}	// end for
+
+	if (!new_line && p_str->at(line_num)) {
+		n_chars->push_back(src - p_str->at(line_num));  // track length of line
+		Assert(n_chars->at(line_num));
 		line_num++;
 	}
 
