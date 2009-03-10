@@ -13241,13 +13241,12 @@ object *ship_find_repair_ship( object *requester_obj )
 				continue;
 			}
 
-			// don't deal with dying support ships
+			// don't deal with dying or departing support ships
 			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
 				continue;
 			}
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
-			support_ships[num_support_ships] = OBJ_INDEX(objp);
 
 			if (!(Ai_info[shipp->ai_index].ai_flags & AIF_REPAIRING))
 			{
