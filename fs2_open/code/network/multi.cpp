@@ -2147,7 +2147,13 @@ void multi_display_netinfo()
 		return;
 	}
 
+	// HUD is turned off
 	if (!HUD_draw) {
+		return;
+	}
+
+	// message window is open
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE) {
 		return;
 	}
 
