@@ -3076,7 +3076,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		int pnum;
 		char temp;
-		ubyte temp2;
+		short temp2;
 
 		pnum = multi_find_player_by_object( objp );
 		if ( pnum != -1 ) {
@@ -3091,9 +3091,9 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 			temp = (char)Net_players[pnum].m_player->killer_species;
 			ADD_DATA( temp );
 
-			Assert(Net_players[pnum].m_player->killer_weapon_index < UCHAR_MAX); 
-			temp2 = (ubyte)Net_players[pnum].m_player->killer_weapon_index;
-			ADD_DATA( temp );
+			Assert(Net_players[pnum].m_player->killer_weapon_index < SHRT_MAX); 
+			temp2 = (short)Net_players[pnum].m_player->killer_weapon_index;
+			ADD_SHORT( temp2 );
 
 			ADD_STRING( Net_players[pnum].m_player->killer_parent_name );
 		} else {
@@ -3114,8 +3114,9 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	ushort ship_sig, other_sig, debris_sig;
 	object *sobjp, *oobjp;
 	float percent_killed;	
-	ubyte was_player, extra_death_info, sd, killer_weapon_index = -1;
+	ubyte was_player, extra_death_info, sd;
 	char killer_name[NAME_LENGTH], killer_objtype = OBJ_NONE, killer_species = 0;
+	short killer_weapon_index = -1;
 
 	offset = HEADER_LENGTH;
 	GET_USHORT(ship_sig);
@@ -3132,7 +3133,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	if ( was_player != 0 ) {
 		GET_DATA( killer_objtype );
 		GET_DATA( killer_species );
-		GET_DATA( killer_weapon_index );
+		GET_SHORT( killer_weapon_index );
 		GET_STRING( killer_name );
 	}
 
@@ -6399,22 +6400,22 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		ADD_DATA(bval);
 						
 		// primary weapon info
-		val = (ubyte)(shipp->weapons.primary_bank_weapons[0]);
-		ADD_DATA(val);
-		val = (ubyte)(shipp->weapons.primary_bank_weapons[1]);
-		ADD_DATA(val);
+		val_short = (short)(shipp->weapons.primary_bank_weapons[0]);
+		ADD_SHORT(val_short);
+		val_short = (short)(shipp->weapons.primary_bank_weapons[1]);
+		ADD_SHORT(val_short);
 
 		// secondary weapon info
-		val = (ubyte)(shipp->weapons.secondary_bank_weapons[0]);
-		ADD_DATA(val);
+		val_short = (short)(shipp->weapons.secondary_bank_weapons[0]);
+		ADD_SHORT(val_short);
 		val_short = (short)(shipp->weapons.secondary_bank_ammo[0]);
 		ADD_SHORT(val_short);
-		val = (ubyte)(shipp->weapons.secondary_bank_weapons[1]);
-		ADD_DATA(val);
+		val_short = (short)(shipp->weapons.secondary_bank_weapons[1]);
+		ADD_SHORT(val_short);
 		val_short = (short)(shipp->weapons.secondary_bank_ammo[1]);
 		ADD_SHORT(val_short);
-		val = (ubyte)(shipp->weapons.secondary_bank_weapons[2]);
-		ADD_DATA(val);
+		val_short = (short)(shipp->weapons.secondary_bank_weapons[2]);
+		ADD_SHORT(val_short);
 		val_short = (short)(shipp->weapons.secondary_bank_ammo[2]);
 		ADD_SHORT(val_short);		
 		
@@ -6592,25 +6593,25 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		shipp->weapons.current_secondary_bank = (int)b;		
 
 			// primary weapon info
-		GET_DATA(val);
-		shipp->weapons.primary_bank_weapons[0] = (int)val;
+		GET_SHORT(val_short);
+		shipp->weapons.primary_bank_weapons[0] = (int)val_short;
 
-		GET_DATA(val);
-		shipp->weapons.primary_bank_weapons[1] = (int)val;
+		GET_SHORT(val_short);
+		shipp->weapons.primary_bank_weapons[1] = (int)val_short;
 
 		// secondary weapon info
-		GET_DATA(val);
-		shipp->weapons.secondary_bank_weapons[0] = (int)val;
+		GET_SHORT(val_short);
+		shipp->weapons.secondary_bank_weapons[0] = (int)val_short;
 		GET_SHORT(val_short);
 		shipp->weapons.secondary_bank_ammo[0] = (int)val_short;
 
-		GET_DATA(val);
-		shipp->weapons.secondary_bank_weapons[1] = (int)val;
+		GET_SHORT(val_short);
+		shipp->weapons.secondary_bank_weapons[1] = (int)val_short;
 		GET_SHORT(val_short);
 		shipp->weapons.secondary_bank_ammo[1] = (int)val_short;
 
-		GET_DATA(val);
-		shipp->weapons.secondary_bank_weapons[2] = (int)val;
+		GET_SHORT(val_short);
+		shipp->weapons.secondary_bank_weapons[2] = (int)val_short;
 		GET_SHORT(val_short);
 		shipp->weapons.secondary_bank_ammo[2] = (int)val_short;
 
@@ -6701,8 +6702,8 @@ void send_wss_slots_data_packet(int team_num,int final,net_player *p,int std_req
 
 		// add the weapons
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			val = (ubyte)Wss_slots_teams[team_num][idx].wep[i];
-			ADD_DATA(val);
+			val_short = (short)Wss_slots_teams[team_num][idx].wep[i];
+			ADD_SHORT(val_short);
 		}
 
 		// add the weapon counts
@@ -6776,13 +6777,8 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 
 		// get the weapons
 		for(i = 0;i<MAX_SHIP_WEAPONS;i++){
-			GET_DATA(val);
-			Wss_slots_teams[team_num][idx].wep[i] = (int)val;
-
-			// check for signed/unsigned problems
-			if(Wss_slots_teams[team_num][idx].wep[i] == 255){
-				Wss_slots_teams[team_num][idx].wep[i] = -1;
-			}
+			GET_SHORT(val_short);
+			Wss_slots_teams[team_num][idx].wep[i] = (int)val_short;
 		} 
 
 		// get the weapon counts
@@ -8264,7 +8260,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
-	ubyte u_beam_info;
+	short u_beam_info;
 	char subsys_index;
 	beam_info b_info;
 	ushort target_sig;
@@ -8289,7 +8285,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 
 	target_sig = (target) ? target->net_signature : 0;
 
-	u_beam_info = (ubyte)beam_info_index;
+	u_beam_info = (short)beam_info_index;
 
 	if (fighter_beam) {
 		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
@@ -8324,7 +8320,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	ADD_USHORT(shooter->net_signature);
 	ADD_DATA(subsys_index);
 	ADD_USHORT(target_sig);
-	ADD_DATA(u_beam_info);
+	ADD_SHORT(u_beam_info);
 	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
 //	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
 
@@ -8337,7 +8333,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	int i, offset;
 	ushort shooter_sig, target_sig;
 	char subsys_index;
-	ubyte u_beam_info;
+	short u_beam_info;
 	beam_info b_info;
 	beam_fire_info fire_info;
 //	ubyte fighter_beam = 0;
@@ -8350,7 +8346,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	GET_USHORT(shooter_sig);
 	GET_DATA(subsys_index);
 	GET_USHORT(target_sig);
-	GET_DATA(u_beam_info);
+	GET_SHORT(u_beam_info);
 	GET_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
 //	GET_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
 	PACKET_SET_SIZE();
@@ -8814,7 +8810,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos)
 {
 	ubyte data[MAX_PACKET_SIZE];
-	ubyte windex;
+	short windex;
 	ushort udamage;
 	int packet_size = 0;
 
@@ -8829,8 +8825,8 @@ void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage
 
 	// build the packet and add the code
 	BUILD_HEADER(NETPLAYER_PAIN);
-	windex = (ubyte)weapon_info_index;
-	ADD_DATA(windex);
+	windex = (short)weapon_info_index;
+	ADD_SHORT(windex);
 	udamage = (ushort)damage;
 	ADD_USHORT(udamage);
 	ADD_VECTOR((*force));
@@ -8845,7 +8841,7 @@ void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage
 void process_player_pain_packet(ubyte *data, header *hinfo)
 {
 	int offset;
-	ubyte windex = 0;
+	short windex = 0;
 	ushort udamage;
 	vec3d force;
 	vec3d local_hit_pos;
@@ -8853,7 +8849,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 
 	// get the data for the pain packet
 	offset = HEADER_LENGTH;		
-	GET_DATA(windex);
+	GET_SHORT(windex);
 	GET_USHORT(udamage);
 	GET_VECTOR(force);
 	GET_VECTOR(local_hit_pos);
