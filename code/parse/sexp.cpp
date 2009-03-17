@@ -6328,8 +6328,8 @@ int sexp_hits_left_subsystem(int n)
 			single_subsystem = is_sexp_true(n);
 		}
 
-		// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
-		// we are returning the sum of the hits on the 3 engines)
+		// if the third option is present or if this is an unknown subsystem type we only want to find the percentage of the 
+		// named subsystem
 		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
 			// find the ship subsystem by searching ship's subsys_list
 			ship_subsys *ss;
@@ -6349,6 +6349,8 @@ int sexp_hits_left_subsystem(int n)
 			}
 			return SEXP_NAN;
 
+		// by default we return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
+		// we are returning the sum of the hits on the 3 engines)
 		} else {
 			percent = fl2i((ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f) + 0.5f);
 			return percent;
@@ -9571,7 +9573,7 @@ void sexp_sabotage_subsystem(int n)
 	float sabotage_hits;
 	ship	*shipp;
 	ship_subsys *ss, *ss_start;
-	bool generic, do_loop = true;
+	bool is_generic, do_loop = true;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
@@ -9614,16 +9616,16 @@ void sexp_sabotage_subsystem(int n)
 	}
 
 	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic = is_generic_subsys(subsystem);
+	is_generic = is_generic_subsys(subsystem);
 	subsys_type = ai_get_subsystem_type(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (generic) {
+		if (is_generic) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
-				if (subsys_type == ai_get_subsystem_type(ss_start->system_info->name)) {
+				if (subsys_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -9729,7 +9731,7 @@ void sexp_repair_subsystem(int n)
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
-				if (subsys_type == ai_get_subsystem_type(ss_start->system_info->name)) {
+				if (subsys_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -9843,7 +9845,7 @@ void sexp_set_subsystem_strength(int n)
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
-				if (subsys_type == ai_get_subsystem_type(ss_start->system_info->name)) {
+				if (subsys_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -11450,7 +11452,7 @@ void sexp_ship_subsys_untargetable(int n, int untargetable)
 		if (is_generic_subsys(subsys)) { 
 			int subsys_type = ai_get_subsystem_type(subsys);
 			for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
-				if (subsys_type == ai_get_subsystem_type(ss->sub_name)) {
+				if (subsys_type == ss->system_info->type) {
 					if (untargetable)
 						ss->flags |= SSF_UNTARGETABLE;
 					else
@@ -11622,7 +11624,7 @@ void sexp_ship_subsys_guardian_threshold(int num)
 				subsys_type = ai_get_subsystem_type(hull_name);
 				// search through all subsystems
 				for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
-					if (subsys_type == ai_get_subsystem_type(ss->system_info->name)) {
+					if (subsys_type == ss->system_info->type) {
 						ss->subsys_guardian_threshold = threshold;
 					}
 				}
