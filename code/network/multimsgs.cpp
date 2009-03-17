@@ -3880,7 +3880,7 @@ void send_mission_log_packet( int num )
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte type;
-	ushort sindex;
+	int sindex;
 	log_entry *entry;
 
 	Assert ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) );
@@ -3888,12 +3888,12 @@ void send_mission_log_packet( int num )
 	// get the data from the log
 	entry = &log_entries[num];
 	type = (ubyte)entry->type;			// do the type casting thing to save on packet space
-	sindex = (ushort)entry->index;
+	sindex = entry->index;
 
 	BUILD_HEADER(MISSION_LOG_ENTRY);
 	ADD_DATA(type);
 	ADD_INT(entry->flags);
-	ADD_USHORT(sindex);
+	ADD_INT(sindex);
 	ADD_INT(entry->timestamp); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
 	ADD_STRING(entry->pname);
 	ADD_STRING(entry->sname);
@@ -3906,7 +3906,7 @@ void send_mission_log_packet( int num )
 void process_mission_log_packet( ubyte *data, header *hinfo )
 {
 	int offset, flags;
-	ushort sindex;
+	int sindex;
 	ubyte type;
 	char pname[NAME_LENGTH], sname[NAME_LENGTH];
 	fix timestamp;
@@ -3916,7 +3916,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 	offset = HEADER_LENGTH;
 	GET_DATA(type);
 	GET_INT(flags);
-	GET_USHORT(sindex);
+	GET_INT(sindex);
 	GET_INT(timestamp); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
 	GET_STRING(pname);
 	GET_STRING(sname);
