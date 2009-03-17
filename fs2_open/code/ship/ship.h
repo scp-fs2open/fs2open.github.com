@@ -2141,12 +2141,14 @@ extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
 
+#define SHIP_VANISHED			(1<<0)
+#define SHIP_DESTROYED			(1<<1)
+#define SHIP_DEPARTED_WARP		(1<<2)
+#define SHIP_DEPARTED_BAY		(1<<3)
+#define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
 // Goober5000
-#define SHIP_DESTROYED	1
-#define SHIP_DEPARTED	2
-#define SHIP_VANISHED	3
 extern void ship_cleanup(int shipnum, int cleanup_mode);
-extern void ship_actually_depart(int shipnum, bool vanish = false);
+extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.
 extern int ship_stop_fire_primary(object * obj);

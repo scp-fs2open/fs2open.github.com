@@ -11858,7 +11858,7 @@ void sexp_ship_vanish(int n)
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive
 		num = ship_name_lookup(ship_name);
 		if ( num != -1 )
-			ship_actually_depart(num, true);
+			ship_actually_depart(num, SHIP_VANISHED);
 	}
 }
 
@@ -22952,7 +22952,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"
 		"\tChanges the name of the specified subsystem on the specified ship\r\n"
 		"\tTakes 3 or more arguments\r\n"
-		"\t1: Name(s) of ship(s)\r\n"
+		"\t1: Name of the ship.\r\n"
 		"\t2: New name for the subsystem (names larger than the maximum display size will be truncated\r\n"
 		"\t3: Name(s) of subsystem(s) to rename\r\n"
 	},
@@ -22966,7 +22966,7 @@ sexp_help_struct Sexp_help[] = {
 	// Karajorma
 	{ OP_NUM_SHIPS_IN_WING, "num-ships-in-wing\r\n"
 		"\tReturns the number of ships in battle which belong to a given wing.  Takes 1 or more arguments...\r\n"
-		"\t1:\tName of ship (or wing) to check"
+		"\t(all):\tName of wing(s) to check"
 	},
 
 	// Goober5000
@@ -23048,7 +23048,7 @@ sexp_help_struct Sexp_help[] = {
 
 	//phreak
 	{ OP_SCRAMBLE_MESSAGES, "scramble-messages\r\n"
-		"\tCauses messages to be send as if the player has sustained communications subsystem or EMP damage.  Takes no arguments.\r\n"
+		"\tCauses messages to be sent as if the player has sustained communications subsystem or EMP damage.  Takes no arguments.\r\n"
 		"\tThis effect can be reversed using unscramble-messages."
 	},
 

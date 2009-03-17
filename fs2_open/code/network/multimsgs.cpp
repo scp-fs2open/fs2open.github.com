@@ -3325,7 +3325,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 }
 
 // packet indicating a ship is departing
-void send_ship_depart_packet( object *objp )
+void send_ship_depart_packet( object *objp, int method )
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size;
@@ -3335,6 +3335,7 @@ void send_ship_depart_packet( object *objp )
 
 	BUILD_HEADER(SHIP_DEPART);
 	ADD_USHORT( signature );
+	ADD_SHORT( (short) method); 
 	
 	multi_io_send_to_all_reliable(data, packet_size);
 }
@@ -3345,9 +3346,11 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 	int offset;
 	object *objp;
 	ushort signature;
+	short s_method; 
 
 	offset = HEADER_LENGTH;
 	GET_USHORT( signature );
+	GET_SHORT(s_method); 
 	PACKET_SET_SIZE();
 
 	// find the object which is departing
@@ -3357,8 +3360,23 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
-	// start warping him out
-	shipfx_warpout_start( objp );
+	switch (s_method) {
+		case SHIP_DEPARTED_BAY:
+		case SHIP_VANISHED:
+			if (objp->type == OBJ_SHIP) {
+				ship_actually_depart(objp->instance, s_method); 
+			}
+			else {
+				nprintf(("network", "Can not proces ship depart packed. Object with net signature %d is not a ship!\n", signature ));	
+				return;
+			}
+			break;
+
+		// assume standard warp out
+		default: 
+		// start warping him out
+		shipfx_warpout_start( objp );
+	}
 }
 
 // packet to tell clients cargo of a ship was revealed to all

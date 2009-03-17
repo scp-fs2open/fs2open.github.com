@@ -531,7 +531,7 @@ void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_cou
 void send_ship_create_packet( object *objp, int is_support = 0 );
 
 // packet indicating a ship is departing
-void send_ship_depart_packet( object *objp );
+void send_ship_depart_packet( object *objp, int method = -1 );
 
 // send a mission log item packet
 void send_mission_log_packet( int entry );
