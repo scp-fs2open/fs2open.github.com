@@ -1555,6 +1555,7 @@ void clear_mission()
 	debrief_reset();
 	ship_init();
 	event_music_reset_choices();
+	clear_texture_replacements();
 
 	// alternate ship type names
 	mission_parse_reset_alt();

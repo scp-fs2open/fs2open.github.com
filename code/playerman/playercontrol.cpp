@@ -1408,6 +1408,13 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				press_glide = !press_glide;
 			}
 		}
+
+		// if the player is warping out, cancel gliding
+		if (Player_ship->flags & SF_DEPART_WARP) {
+			toggle_glide = 0;
+			press_glide = 0;
+		}
+
 		// Do we want to be gliding?
 		if ( toggle_glide || press_glide ) {
 			// Probably don't need to do this check, but just in case...

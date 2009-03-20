@@ -6035,7 +6035,7 @@ void evade_ship()
 			afterburners_start(Pl_objp);
 			
 			if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
-				aip->afterburner_stop_time = Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4;
+				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
 			} else {				
 				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
 			}
@@ -7630,7 +7630,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 								// Get minimum
 								ab_time = MIN(time_to_exhaust_25pct_fuel, time_to_fly_75pct_of_distance);								
 								
-								aip->afterburner_stop_time = Missiontime + F1_0 * ab_time;
+								aip->afterburner_stop_time = (fix) (Missiontime + F1_0 * ab_time);
 							} else {				
 								aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
 							}
