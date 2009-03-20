@@ -1898,6 +1898,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->tr_info.max_life = 1.0f;
 	wip->tr_info.stamp = 0;
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
+	wip->tr_info.n_fade_out_sections = 0;
 
 	wip->icon_filename[0] = 0;
 
@@ -2673,6 +2674,10 @@ int parse_weapon(int subtype, bool replace)
 		if ( optional_string("+Bitmap:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 			generic_bitmap_init(&ti->texture, fname);
+		}
+
+		if ( optional_string("+Faded Out Sections:") ) {
+			stuff_int(&ti->n_fade_out_sections);
 		}
 
 		// wip->delta_time = fl2i(1000.0f*wip->max_life)/(NUM_TRAIL_SECTIONS+1);		// time between sections.  max_life / num_sections basically.

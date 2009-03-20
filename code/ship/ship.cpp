@@ -3017,6 +3017,7 @@ void init_ship_entry(ship_info *sip)
 	sip->afterburner_trail_width_factor = 1.0f;
 	sip->afterburner_trail_alpha_factor = 1.0f;
 	sip->afterburner_trail_life = 5.0f;
+	sip->afterburner_trail_faded_out_sections = 0;
 	
 	sip->cmeasure_type = Default_cmeasure_index;
 	sip->cmeasure_max = 0;
@@ -4328,6 +4329,11 @@ strcpy(parse_error_text, temp_error);
 			stuff_float(&sip->afterburner_trail_life);
 		}
 		
+		if ( optional_string("+Faded Out Sections:") ) {
+			trails_warning = false;
+			stuff_int(&sip->afterburner_trail_faded_out_sections);
+		}
+		
 		if (trails_warning)
 			Warning(LOCATION, "Ship %s entry has $Trails field specified, but no properties given.", sip->name);
 	}
@@ -4545,6 +4551,11 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	while ( optional_string("$Trail:") ) {
+		// setting '+ClearAll' resets the trails
+		if ( optional_string("+ClearAll")) {
+			memset(&sip->ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
+			sip->ct_count = 0;
+		}
 		// this means you've reached the max # of contrails for a ship
 		if (sip->ct_count >= MAX_SHIP_CONTRAILS) {
 			Warning(LOCATION, "%s has more contrails than the max of %d", sip->name, MAX_SHIP_CONTRAILS);
@@ -4578,6 +4589,10 @@ strcpy(parse_error_text, temp_error);
 		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
 		generic_bitmap_init(&ci->texture, name_tmp);
 		generic_bitmap_load(&ci->texture);
+
+		if (optional_string("+Faded Out Sections:") ) {
+			stuff_int(&ci->n_fade_out_sections);
+		}
 	}
 
 	man_thruster *mtp = NULL;
@@ -9825,6 +9840,8 @@ void ship_init_afterburners(ship *shipp)
 			ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 			ci->stamp = 60;	//spew time???	
 
+			ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // initial fade out
+
 			ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
 
 			nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", shipp->ab_count, shipp->ship_name));
@@ -10316,6 +10333,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 	
 				ci->stamp = 60;	//spew time???	
+
+				ci->n_fade_out_sections = sip->afterburner_trail_faded_out_sections; // table loaded n sections to be faded out
 
 				ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
 				nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", sp->ab_count, sp->ship_name));
