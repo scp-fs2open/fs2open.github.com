@@ -8026,11 +8026,16 @@ void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 }
 
 // Goober5000 - function used to actually remove a ship, plus all the ships it's docked to, from the mission
-void ship_actually_depart(int shipnum, bool vanish)
+void ship_actually_depart(int shipnum, int method)
 {
 	dock_function_info dfi;
-	dfi.parameter_variables.bool_value = vanish;
+	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
+
+	// in a couple of cases we'll need to send a packet to update clients 
+	if (MULTIPLAYER_MASTER && ((method == SHIP_DEPARTED_BAY) || (method == SHIP_VANISHED)) ) {
+		send_ship_depart_packet(&Objects[Ships[shipnum].objnum], method); 
+	}
 }
 
 // Goober5000 - merge ship_destroyed and ship_departed and ship_vanished
@@ -13712,13 +13717,12 @@ object *ship_find_repair_ship( object *requester_obj )
 				continue;
 			}
 
-			// don't deal with dying support ships
+			// don't deal with dying or departing support ships
 			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
 				continue;
 			}
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
-			support_ships[num_support_ships] = OBJ_INDEX(objp);
 
 			if (!(Ai_info[shipp->ai_index].ai_flags & AIF_REPAIRING))
 			{

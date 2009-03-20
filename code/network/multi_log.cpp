@@ -178,7 +178,7 @@ void multi_log_init()
 		multi_log_write_header();
 
 		// initialize our timer info
-		Multi_log_open_systime = time(NULL);
+		Multi_log_open_systime = (int) time(NULL);
 		Multi_log_update_systime = Multi_log_open_systime;
 	} else {
 		nprintf(("Network","Error opening %s for writing!!\n",MULTI_LOGFILE_NAME));
@@ -210,7 +210,7 @@ void multi_log_process()
 		// write the update
 		multi_log_write_update();
 
-		Multi_log_update_systime = time(NULL);
+		Multi_log_update_systime = (int) time(NULL);
 	}
 }
 

@@ -394,6 +394,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
+#include "parse/parselo.h"
 
 
 // defines for different modes in the squad messaging system
@@ -785,6 +786,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		{
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy( MsgItems[Num_menu_items].text, shipp->ship_name );
+			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); // truncate the name if it has a # in it
 			MsgItems[Num_menu_items].instance = SHIP_INDEX(shipp);
 			MsgItems[Num_menu_items].active = 1;
 			Num_menu_items++;

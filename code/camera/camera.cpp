@@ -702,7 +702,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 
 	if(image_id != -1)
 	{
-		text_pos[0] = image_pos[0] + w;	//Still set from bm_get_info call
+		text_pos[0] = (float) (image_pos[0] + w);	//Still set from bm_get_info call
 		if (!center_x)
 		{
 			deltax = text_pos[0] / 1024.0f;	//MikeStar;
@@ -711,14 +711,14 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 	}
 	else
 	{
-		text_pos[0] = image_pos[0];
+		text_pos[0] = (float) image_pos[0];
 		if (!center_x)
 		{
 			deltax = text_pos[0] / 1024.0f;	//MikeStar;
 			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
 		}
 	}
-	text_pos[1] = image_pos[1];
+	text_pos[1] = (float) image_pos[1];
 	if (!center_y)
 	{
 		deltay = text_pos[1] / 768.0f;	//MikeStar;

@@ -4020,7 +4020,7 @@ void ai_stay_still(object *still_objp, vec3d *view_pos)
 // when two objects have completed docking.  used because we can dock object initially at misison load
 // time (meaning that ai_dock() might never get called).  docker has docked with dockee (i.e. docker
 // would be a freighter and dockee would be a cargo).
-void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point)
+void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee, int dockee_point, bool update_clients)
 {
 	Assert((docker != NULL) && (dockee != NULL));
 
@@ -4077,7 +4077,7 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 
 	// add multiplayer hook here to deal with docked objects.  We need to only send information
 	// about the object that is docking.  Both flags will get updated.
-	if ( MULTIPLAYER_MASTER )
+	if ( MULTIPLAYER_MASTER && update_clients)
 		send_ai_info_update_packet( docker, AI_UPDATE_DOCK );
 }
 
@@ -4192,7 +4192,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 	if (dock_type == AIDO_DOCK_NOW)
 	{
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
-		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index );
+		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
 	}
 	// pick a path to use to start docking
 	else
@@ -6035,7 +6035,7 @@ void evade_ship()
 			afterburners_start(Pl_objp);
 			
 			if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
-				aip->afterburner_stop_time = Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4;
+				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
 			} else {				
 				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
 			}
@@ -7630,7 +7630,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 								// Get minimum
 								ab_time = MIN(time_to_exhaust_25pct_fuel, time_to_fly_75pct_of_distance);								
 								
-								aip->afterburner_stop_time = Missiontime + F1_0 * ab_time;
+								aip->afterburner_stop_time = (fix) (Missiontime + F1_0 * ab_time);
 							} else {				
 								aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
 							}
@@ -13813,7 +13813,7 @@ void ai_bay_depart()
 		}
 
 		// make ship disappear
-		ship_actually_depart(Pl_objp->instance);
+		ship_actually_depart(Pl_objp->instance, SHIP_DEPARTED_BAY);
 
 		// clean up path stuff
 		aip->path_start = -1;
