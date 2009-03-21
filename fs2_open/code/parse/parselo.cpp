@@ -3051,7 +3051,7 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 		}
 	}	// end for
 
-	if (p_str[line_num]) {
+	if (!new_line && p_str[line_num]) {
 		n_chars[line_num] = src - p_str[line_num];  // track length of line
 		Assert(n_chars[line_num]);
 		line_num++;
