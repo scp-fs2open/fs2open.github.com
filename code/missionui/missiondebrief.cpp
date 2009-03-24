@@ -1336,7 +1336,9 @@ int debrief_set_stages_and_multi_stuff()
 	// traitor debriefing.  Only done in single player
 	debriefp = Debriefing;
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
-		if (Player_ship->team == Iff_traitor)
+		// although the no traitor flag check seems redundant it allows the mission designer to turn the traitor
+		// debriefing off before the mission ends and supply one themselves 
+		if ((Player_ship->team == Iff_traitor) && !(The_mission.flags & MISSION_FLAG_NO_TRAITOR))
 			debriefp = &Traitor_debriefing;
 	}
 
