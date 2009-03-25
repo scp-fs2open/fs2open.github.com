@@ -6296,9 +6296,9 @@ void process_deny_packet(ubyte *data, header *hinfo)
 
 // this packet will consist of 
 // 1.) netplayer ship classes			(85 bytes max)
-// 2.) ship weapon state data			(241 bytes max)
+// 2.) ship weapon state data			(277 bytes max)
 // 3.) player settings et. al.		(133 bytes max)
-// TOTAL                            459				NOTE : keep this in mind when/if adding new data to this packet
+// TOTAL                            495				NOTE : keep this in mind when/if adding new data to this packet
 void send_post_sync_data_packet(net_player *p, int std_request)
 {
 	ubyte data[MAX_PACKET_SIZE], val;
@@ -6374,7 +6374,7 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		ADD_DATA(val);
 	}	
 
-	// add weapon state information for all starting ships (241 bytes max)
+	// add weapon state information for all starting ships (277 bytes max)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		shipp = &Ships[Objects[so->objnum].instance];
 
@@ -6418,10 +6418,10 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		ADD_DATA(bval);
 						
 		// primary weapon info
-		val_short = (short)(shipp->weapons.primary_bank_weapons[0]);
-		ADD_SHORT(val_short);
-		val_short = (short)(shipp->weapons.primary_bank_weapons[1]);
-		ADD_SHORT(val_short);
+		val = (ubyte)(shipp->weapons.primary_bank_weapons[0]);
+		ADD_DATA(val);
+		val = (ubyte)(shipp->weapons.primary_bank_weapons[1]);
+		ADD_DATA(val);
 
 		// secondary weapon info
 		val_short = (short)(shipp->weapons.secondary_bank_weapons[0]);
@@ -6611,11 +6611,11 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		shipp->weapons.current_secondary_bank = (int)b;		
 
 			// primary weapon info
-		GET_SHORT(val_short);
-		shipp->weapons.primary_bank_weapons[0] = (int)val_short;
+		GET_DATA(val);
+		shipp->weapons.primary_bank_weapons[0] = (int)val;
 
-		GET_SHORT(val_short);
-		shipp->weapons.primary_bank_weapons[1] = (int)val_short;
+		GET_DATA(val);
+		shipp->weapons.primary_bank_weapons[1] = (int)val;
 
 		// secondary weapon info
 		GET_SHORT(val_short);
