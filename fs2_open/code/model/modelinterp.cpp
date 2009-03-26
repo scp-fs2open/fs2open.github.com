@@ -6872,7 +6872,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
-			if ( !strcmp(subname, ssp->system_info->name) ) {
+			if ( !strcmp(subname, ssp->system_info->subobj_name) ) {
 				// this subsystem has 0 or less hits, ie. it's destroyed
 				if ( ssp->current_hits <= 0 )
 					return 0;
