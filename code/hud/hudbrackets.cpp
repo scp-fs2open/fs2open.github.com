@@ -849,7 +849,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				tinfo_name = temp_name;
 				tinfo_class = temp_class;
 
-				// maybe concatenate callsign
+				// maybe concatenate the callsign
 				if (*temp_name)
 				{
 					char temp_callsign[NAME_LENGTH];
@@ -857,6 +857,11 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 					hud_stuff_ship_callsign(temp_callsign, &Ships[t_objp->instance]);
 					if (*temp_callsign)
 						sprintf(&temp_name[strlen(temp_name)], " (%s)", temp_callsign);
+				}
+				// maybe substitute the callsign
+				else
+				{
+					hud_stuff_ship_callsign(temp_name, &Ships[t_objp->instance]);
 				}
 				break;
 
