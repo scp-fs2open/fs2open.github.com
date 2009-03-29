@@ -3398,8 +3398,13 @@ int button_function(int n)
 			break;
 
 		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
-			gamesnd_play_iface(SND_USER_SELECT);
-			hud_targetbox_switch_wireframe_mode();
+			if (!Lock_targetbox_mode) {
+				gamesnd_play_iface(SND_USER_SELECT);
+				hud_targetbox_switch_wireframe_mode();
+			}
+			else {
+				gamesnd_play_iface(SND_GENERAL_FAIL); 
+			}
 			break;	
 
 		// Autopilot key control
