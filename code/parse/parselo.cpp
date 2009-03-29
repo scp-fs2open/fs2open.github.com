@@ -3577,8 +3577,10 @@ int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 	{
 		tally++;
 
-		// adjust range, because the text length might have changed
-		range += strlen(newstr) - strlen(oldstr);
+		if (range) {
+			// adjust range, because the text length might have changed
+			range += strlen(newstr) - strlen(oldstr);
+		}
 	}
 
 	return (val < 0) ? val : tally;

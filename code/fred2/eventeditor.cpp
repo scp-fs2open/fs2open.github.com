@@ -188,6 +188,7 @@
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
+#include "localization/localize.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1295,6 +1296,7 @@ int event_editor::save_message(int num)
 		}
 
 		string_copy(m_messages[num].message, m_message_text, MESSAGE_LENGTH - 1);
+		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH);
 		if (m_messages[num].avi_info.name){
 			free(m_messages[num].avi_info.name);
 		}
