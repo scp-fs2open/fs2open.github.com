@@ -1241,7 +1241,7 @@ void hud_render_target_ship_info(object *target_objp)
 	hud_stuff_ship_name(outstr_name, target_shipp);
 	hud_stuff_ship_class(outstr_class, target_shipp);
 
-	// maybe concatenate callsign
+	// maybe concatenate the callsign
 	if (*outstr_name)
 	{
 		char outstr_callsign[NAME_LENGTH];
@@ -1249,6 +1249,11 @@ void hud_render_target_ship_info(object *target_objp)
 		hud_stuff_ship_callsign(outstr_callsign, target_shipp);
 		if (*outstr_callsign)
 			sprintf(&outstr_name[strlen(outstr_name)], " (%s)", outstr_callsign);
+	}
+	// maybe substitute the callsign
+	else
+	{
+		hud_stuff_ship_callsign(outstr_name, target_shipp);
 	}
 
 	// print lines
