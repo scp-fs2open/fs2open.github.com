@@ -816,15 +816,15 @@ void obj_snd_do_frame()
 			{
 				if (osp->flags & OS_TURRET_BASE_ROTATION)
 				{
-					if (osp->ss->system_info->base_rotation_rate_pct > 0)
-						rot_vol_mult = ((0.25f + (0.75f * osp->ss->system_info->base_rotation_rate_pct)) * osp->ss->system_info->turret_base_rotation_snd_mult);
+					if (osp->ss->base_rotation_rate_pct > 0)
+						rot_vol_mult = ((0.25f + (0.75f * osp->ss->base_rotation_rate_pct)) * osp->ss->system_info->turret_base_rotation_snd_mult);
 					else
 						rot_vol_mult = 0;
 				}
 				if (osp->flags & OS_TURRET_GUN_ROTATION)
 				{
-					if (osp->ss->system_info->gun_rotation_rate_pct > 0)
-						rot_vol_mult = ((0.25f + (0.75f * osp->ss->system_info->gun_rotation_rate_pct)) * osp->ss->system_info->turret_gun_rotation_snd_mult);
+					if (osp->ss->gun_rotation_rate_pct > 0)
+						rot_vol_mult = ((0.25f + (0.75f * osp->ss->gun_rotation_rate_pct)) * osp->ss->system_info->turret_gun_rotation_snd_mult);
 					else
 						rot_vol_mult = 0;
 				}

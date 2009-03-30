@@ -3632,9 +3632,9 @@ int beam_ok_to_fire(beam *b)
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
 	if (b->subsys->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
-		in_fov = turret_adv_fov_test(b->subsys->system_info, &turret_dir, &aim_dir);
+		in_fov = turret_adv_fov_test(b->subsys, &turret_dir, &aim_dir);
 	else
-		in_fov = turret_std_fov_test(b->subsys->system_info, &turret_dir, &aim_dir);
+		in_fov = turret_std_fov_test(b->subsys, &turret_dir, &aim_dir);
 
 	if(in_fov == false){
 		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));

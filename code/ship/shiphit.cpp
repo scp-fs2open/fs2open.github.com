@@ -971,26 +971,26 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// make the shipsounds work as they should...
-	if(subsys->system_info->subsys_snd_flags & SSF_ALIVE)
+	if(subsys->subsys_snd_flags & SSSF_ALIVE)
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->alive_snd, subsys);
-		subsys->system_info->subsys_snd_flags &= ~SSF_ALIVE;
+		subsys->subsys_snd_flags &= ~SSSF_ALIVE;
 	}
-	if(subsys->system_info->subsys_snd_flags & SSF_TURRET_ROTATION)
+	if(subsys->subsys_snd_flags & SSSF_TURRET_ROTATION)
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_base_rotation_snd, subsys);
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_gun_rotation_snd, subsys);
-		subsys->system_info->subsys_snd_flags &= ~SSF_TURRET_ROTATION;
+		subsys->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
 	}
-	if(subsys->system_info->subsys_snd_flags & SSF_ROTATE)
+	if(subsys->subsys_snd_flags & SSSF_ROTATE)
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->rotation_snd, subsys);
-		subsys->system_info->subsys_snd_flags &= ~SSF_ROTATE;
+		subsys->subsys_snd_flags &= ~SSSF_ROTATE;
 	}
-	if((subsys->system_info->dead_snd != -1) && !(subsys->system_info->subsys_snd_flags & SSF_DEAD))
+	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags & SSSF_DEAD))
 	{
 		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
-		subsys->system_info->subsys_snd_flags |= SSF_DEAD;
+		subsys->subsys_snd_flags |= SSSF_DEAD;
 	}
 }
 

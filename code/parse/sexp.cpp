@@ -14123,7 +14123,7 @@ void sexp_turret_subsystem_targeting_disable(int node)
 		}
 
 		// flag the turret
-		turret->system_info->flags |= MSS_FLAG_NO_SS_TARGETING;
+		turret->flags |= SSF_NO_SS_TARGETING;
 
 		// next
 		node = CDR(node);
@@ -14154,7 +14154,7 @@ void sexp_turret_subsystem_targeting_enable(int node)
 		}
 
 		// remove the flag from the turret
-		turret->system_info->flags &= ~(MSS_FLAG_NO_SS_TARGETING);
+		turret->flags &= ~(SSF_NO_SS_TARGETING);
 
 		// next
 		node = CDR(node);
@@ -14189,10 +14189,10 @@ void sexp_set_subsys_rotation_lock(int node, int locked)
 		// set rotate or not, depending on flag
 		if (locked) {
 			rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
-			if (rotate->system_info->subsys_snd_flags & SSF_ROTATE)
+			if (rotate->subsys_snd_flags & SSSF_ROTATE)
 			{
 				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
-				rotate->system_info->subsys_snd_flags &= ~SSF_ROTATE;
+				rotate->subsys_snd_flags &= ~SSSF_ROTATE;
 			}
 		}
 		else

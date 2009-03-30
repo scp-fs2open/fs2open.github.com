@@ -773,12 +773,6 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
 #define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
 
-
-#define SSF_ALIVE					(1 << 0)		// subsystem has active alive sound
-#define SSF_DEAD					(1 << 1)		// subsystem has active dead sound
-#define SSF_ROTATE					(1 << 2)		// subsystem has active rotation sound
-#define SSF_TURRET_ROTATION			(1 << 3)		// rotation sound to be scaled like turrets do
-
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
@@ -860,15 +854,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
-
-	float points_to_target;
-	float base_rotation_rate_pct;
-	float gun_rotation_rate_pct;
-
-	int subsys_snd_flags;
-
-	int      rotation_timestamp;
-	matrix   world_to_turret_matrix;
 
 	int		turret_reset_delay;
 
@@ -1449,7 +1434,7 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, bool reset = false);
+extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.

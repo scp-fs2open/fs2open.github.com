@@ -4554,9 +4554,12 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, bool reset)
+int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset)
 {
 	polymodel * pm;
+	object *objp = &Objects[obj_idx];
+	ship *shipp = &Ships[objp->instance];
+	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
 
 	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
@@ -4591,7 +4594,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	vm_vec_add( &world_to_turret_translate, pos, &tempv );
 
 	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH)
-		world_to_turret_matrix = turret->world_to_turret_matrix;
+		world_to_turret_matrix = ss->world_to_turret_matrix;
 	else
 		vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
 
@@ -4649,10 +4652,14 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	if (reset == true)
 		step_size /= 3.0f;
 	else
-		turret->rotation_timestamp = timestamp(turret->turret_reset_delay);
+		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
 
 	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
 	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
+
+	// reset these two
+	ss->base_rotation_rate_pct = 0.0f;
+	ss->gun_rotation_rate_pct = 0.0f;
 
 	if (turret->turret_base_rotation_snd != -1)	
 	{
@@ -4661,9 +4668,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 			base_delta = (float) (fabs(base_delta)) / step_size;
 			if (base_delta > 1.0f)
 				base_delta = 1.0f;
-			turret->base_rotation_rate_pct = base_delta;
-		} else {
-		turret->base_rotation_rate_pct = 0.0f;
+			ss->base_rotation_rate_pct = base_delta;
 		}
 	}
 
@@ -4674,9 +4679,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 			gun_delta = (float) (fabs(gun_delta)) / step_size;
 			if (gun_delta > 1.0f)
 				gun_delta = 1.0f;
-			turret->gun_rotation_rate_pct = gun_delta;
-		} else {
-		turret->gun_rotation_rate_pct = 0.0f;
+			ss->gun_rotation_rate_pct = gun_delta;
 		}
 	}
 
@@ -4687,7 +4690,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	{
 		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
 		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
-		turret->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
+		ss->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
 	}
 
 	return 1;

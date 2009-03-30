@@ -1137,6 +1137,13 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
+#define SSF_NO_SS_TARGETING		(1 << 2)
+
+// Wanderer 
+#define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
+#define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
+#define SSSF_ROTATE					(1 << 2)		// subsystem has active rotation sound
+#define SSSF_TURRET_ROTATION		(1 << 3)		// rotation sound to be scaled like turrets do
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
@@ -1202,6 +1209,20 @@ typedef	struct ship_subsys {
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
+
+	float points_to_target;
+	float base_rotation_rate_pct;
+	float gun_rotation_rate_pct;
+
+	// still going through these...
+	int subsys_snd_flags;
+
+	int      rotation_timestamp;
+	matrix   world_to_turret_matrix;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -2434,11 +2455,11 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist);
+int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
 
 // functions for testing fov.. returns true if fov test is passed.
-bool turret_std_fov_test(model_subsystem *tp, vec3d *gvec, vec3d *v2e, float size_mod = 0);
-bool turret_adv_fov_test(model_subsystem *tp, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 
 
 // forcible jettison cargo from a ship

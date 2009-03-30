@@ -488,7 +488,7 @@ extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d
 //	If truly_random flag set (haha), then generate a pretty random number.  Otherwise, generate a static rand which
 //	tends to not change from frame to frame.
 //	Try four times and choose nearest point to increase chance of getting a good point.
-void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, model_subsystem *tp)
+void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, vec3d *attack_point, vec3d *local_attack_point, float fov, float weapon_travel_dist, vec3d *surface_normal, ship_subsys *ss)
 {
 	float		nearest_dist;
 	vec3d	result_point, best_point;
@@ -498,6 +498,9 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	polymodel	*pm;
 	int		i, q, octs[4];	
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	model_subsystem *tp = NULL;
+	if (ss != NULL)
+		model_subsystem *tp = ss->system_info;		
 
 	best_point = objp->pos;
 	nearest_dist = weapon_travel_dist;
@@ -549,9 +552,9 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 						in_fov = true;
 				} else {
 					if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-						in_fov = turret_adv_fov_test(tp, attacker_objp_fvec, &v2p);
+						in_fov = turret_adv_fov_test(ss, attacker_objp_fvec, &v2p);
 					else
-						in_fov = turret_std_fov_test(tp, attacker_objp_fvec, &v2p);
+						in_fov = turret_std_fov_test(ss, attacker_objp_fvec, &v2p);
 				}
 
 				if (in_fov) {
@@ -626,7 +629,7 @@ void ai_big_pick_attack_point_turret(object *objp, ship_subsys *ssp, vec3d *gpos
 	} else {
 		vec3d	local_attack_point;
 		ssp->turret_pick_big_attack_point_timestamp = timestamp(2000 + (int) (frand()*500.0f));
-		ai_bpap(objp, gpos, gvec, attack_point, &local_attack_point, fov, weapon_travel_dist, NULL, ssp->system_info);
+		ai_bpap(objp, gpos, gvec, attack_point, &local_attack_point, fov, weapon_travel_dist, NULL, ssp);
 		ssp->turret_big_attack_point = local_attack_point;
 	}
 }
