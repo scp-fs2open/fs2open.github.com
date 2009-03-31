@@ -23076,7 +23076,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_FADE_OUT, "fade-out\r\n"
-		"\tFades in  "
+		"\tFades out  "
 		"Takes 0 to 2 arguments...\r\n"
 		"\t1:\tTime to fade in (in milliseconds)\r\n"
 		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
