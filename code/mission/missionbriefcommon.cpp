@@ -1960,6 +1960,7 @@ int brief_text_colorize(char *src, int instance)
 
 	// null terminate the line
 	dest.letter = 0;
+	dest.color = BRIEF_TEXT_WHITE; 
 	dest_line.push_back(dest);
 	Colored_stream[instance].push_back(dest_line); 
 	Colored_stream[instance].size();
