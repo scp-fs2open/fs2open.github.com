@@ -10747,16 +10747,16 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						polymodel *weapon_model = NULL;
 						if(winfo_p->external_model_num >= 0){
 							weapon_model = model_get(winfo_p->external_model_num);
-//							if(weapon_model->n_guns)sub_shots = weapon_model->gun_banks[0].num_slots;
+							// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
 							if (weapon_model->n_guns) 
-								sub_shots = weapon_model->gun_banks[bank_to_fire].num_slots;
+								sub_shots = weapon_model->gun_banks[0].num_slots;
 						}
 
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
-//							if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
+							// Use 0 instead of bank_to_fire as index to external weapon model firingpoints 
 							if (weapon_model && weapon_model->n_guns)
-								vm_vec_add2(&pnt, &weapon_model->gun_banks[bank_to_fire].pnt[s]);
+								vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
