@@ -4642,13 +4642,16 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	//	If not 1/2 second gone by, don't home yet.
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < wip->free_flight_time )) {
-		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing
-		//	and we don't have a target (else we wouldn't be inside the IF), find a new target.
+		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing, find a new target.
         if ((wip->wi_flags & WIF_HOMING_HEAT) &&
             (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time))
         {
             find_homing_object(obj, num);
         }
+		else if (MULTIPLAYER_MASTER && (wip->wi_flags & WIF_LOCKED_HOMING) && (wp->weapon_flags & WF_HOMING_UPDATE_NEEDED)) {
+			wp->weapon_flags &= ~WF_HOMING_UPDATE_NEEDED; 
+			send_homing_weapon_info(num);
+		}
 
 		if (obj->phys_info.speed > max_speed) {
 			obj->phys_info.speed -= frame_time * 4;
@@ -5441,6 +5444,9 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if (target_is_locked && (wp->target_num != -1) &&
 			(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 			wp->lifeleft *= 1.2f;
+			if (MULTIPLAYER_MASTER) {
+				wp->weapon_flags |= WF_HOMING_UPDATE_NEEDED;
+			}
 		}
 
 		ai_update_danger_weapon(target_objnum, weapon_objnum);		
