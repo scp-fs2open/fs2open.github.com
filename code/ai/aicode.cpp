@@ -13053,6 +13053,12 @@ void ai_balance_shield(object *objp)
 	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
 		return;
 
+	if ( objp->flags & OF_SHIELD_NO_FULL_RECHARGE ) {
+		float max_balanced_pct = Ships[objp->instance].max_shield_recharge_pct;
+		if ( (Ships[objp->instance].ship_max_shield_strength * max_balanced_pct) == shield_get_strength(objp) )
+			return;
+	}
+
 	int n_shd_sections;
 	switch (objp->n_shield_segments) {
 		case 1:
@@ -13122,7 +13128,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
 		if (sip->flags & SIF_SMALL_SHIP) {
-			if (Missiontime - aip->last_hit_time < F1_0*10)
+			if ((aip->last_hit_time != 0) && (Missiontime - aip->last_hit_time < F1_0*10))
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else
 				ai_balance_shield(objp);

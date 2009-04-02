@@ -2867,6 +2867,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
+	shipp->max_shield_recharge_pct = p_objp->max_shield_recharge_percent;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -3267,7 +3268,7 @@ int parse_create_object_sub(p_object *p_objp)
 			break;
 		}
 		for (i = 0; i<n_shd_sections; i++)
-			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+			Objects[objnum].shield_quadrant[i] = (float) (shipp->max_shield_recharge_pct * p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if (!(Game_mode & GM_IN_MISSION))
@@ -3775,6 +3776,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Special Hitpoint index:"))
 		stuff_int(&p_objp->special_hitpoint_index);
 
+	p_objp->max_shield_recharge_percent = Ship_info[p_objp->ship_class].max_shield_recharge;
 	// get hitpoint values
 	if (p_objp->special_hitpoint_index != -1)
 	{
@@ -4234,6 +4236,7 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 
 
 	// Shields
+	p_obj->max_shield_recharge_percent = new_ship_info->max_shield_recharge;
 	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
 	// shield. So first lets see if there is one. 
 	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
@@ -7879,6 +7882,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// set support ship hitpoints
 	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
 	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
+	pobj->max_shield_recharge_percent = Ship_info[i].max_shield_recharge;
 
 	pobj->team = requester_shipp->team;
 

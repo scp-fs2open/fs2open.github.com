@@ -110,8 +110,13 @@ void shield_add_strength(object *objp, float delta)
 			break;
 	}
 
+	float shield_str = shield_get_strength(objp);
+	float shield_recharge_limit = Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge_pct;
+
 	if (!(The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT))
 	{
+		if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
+			delta = shield_recharge_limit - shield_str;
 		for (int i = 0; i < n_shd_sections; i++)
 			shield_add_quad(objp, i, delta / n_shd_sections);
 	}
@@ -140,6 +145,14 @@ void shield_add_strength(object *objp, float delta)
 			// all quads are at full strength
 			if (weakest >= section_max)
 				break;
+
+			// combined shield strength is at the limit
+			if (shield_str >= shield_recharge_limit)
+				break;
+
+			// set the limit for the shield recharge
+			if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
+				delta = shield_recharge_limit - shield_str;
 		
 			// throw all possible shield power at this quadrant
 			// if there's any left over then apply it to the next weakest on the next pass

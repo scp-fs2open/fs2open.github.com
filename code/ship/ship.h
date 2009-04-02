@@ -1392,6 +1392,8 @@ typedef struct ship {
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
 
+	float max_shield_recharge_pct;
+
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
 
@@ -1969,6 +1971,8 @@ typedef struct ship_info {
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
+
+	float	max_shield_recharge;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 

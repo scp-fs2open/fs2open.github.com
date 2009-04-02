@@ -2983,6 +2983,7 @@ void init_ship_entry(ship_info *sip)
 	}
 	
 	sip->max_shield_strength = 0.0f;
+	sip->max_shield_recharge = 1.0f;
 	sip->shield_color[0] = 255;
 	sip->shield_color[1] = 255;
 	sip->shield_color[2] = 255;
@@ -4100,6 +4101,11 @@ strcpy(parse_error_text, temp_error);
 	
 	if(optional_string("$Number of Shield Segments:")){
 		stuff_int(&sip->num_shield_segments);
+	}
+
+	if(optional_string("$Maximum Shield Recharge Percent:")){
+		stuff_float(&sip->max_shield_recharge);
+		CLAMP(sip->max_shield_recharge, 0.0f, 1.0f);
 	}
 	
 	// The next five fields are used for the ETS
@@ -6416,6 +6422,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
 
+	shipp->max_shield_recharge_pct = sip->max_shield_recharge;
+
 	physics_ship_init(objp);
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
@@ -6424,7 +6432,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
-		shield_set_strength(objp, shipp->ship_max_shield_strength);
+		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge_pct);
 	}
 
 	shipp->target_shields_delta = 0.0f;
@@ -10241,6 +10249,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = hull_pct * sp->ship_max_hull_strength;
 	}
 
+	sp->max_shield_recharge_pct = sip->max_shield_recharge;
 
 	// set the correct shield strength
 	if (Fred_running) {
@@ -10260,7 +10269,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		for (i=0;i<MAX_SHIELD_SECTIONS; i++)
 			objp->shield_quadrant[i] = 0.0f;
 
-		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
+		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength * sp->max_shield_recharge_pct);
 	}
 
 	// Goober5000: div-0 checks
