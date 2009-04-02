@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Application" 0x0101
 
-CFG=wxFRED2 - Win32 Debug Inferno
+CFG=wxFRED2 - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,7 +13,7 @@ CFG=wxFRED2 - Win32 Debug Inferno
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "wxFRED2.mak" CFG="wxFRED2 - Win32 Debug Inferno"
+!MESSAGE NMAKE /f "wxFRED2.mak" CFG="wxFRED2 - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -433,7 +433,7 @@ SOURCE=..\..\code\wxfred2\wxfred.xrc
 !IF  "$(CFG)" == "wxFRED2 - Win32 Release"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\Storage\FSO\fs2_open\code\wxfred2
+InputDir=..\..\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
@@ -445,7 +445,7 @@ InputName=wxfred
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\Storage\FSO\fs2_open\code\wxfred2
+InputDir=..\..\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
@@ -457,7 +457,7 @@ InputName=wxfred
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug Inferno"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\Storage\FSO\fs2_open\code\wxfred2
+InputDir=..\..\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
@@ -469,7 +469,7 @@ InputName=wxfred
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Release Inferno"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\Storage\FSO\fs2_open\code\wxfred2
+InputDir=..\..\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
