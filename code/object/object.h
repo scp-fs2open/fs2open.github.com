@@ -513,9 +513,6 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_REFERENCED		(1<<19)	// (Fred) Object is referenced by something somewhere
 #define OF_HIDDEN			(1<<20)	// Object is hidden (not shown) and can't be manipulated
 
-// Wanderer - shield related flags
-#define OF_SHIELD_NO_FULL_RECHARGE	(1<<21)	// defines that the object in question uses shields which do not recharge to the max
-
 // max # of object sounds per object
 //WMC - bumped this to 32 :D
 #define MAX_OBJECT_SOUNDS	32

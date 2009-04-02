@@ -13053,12 +13053,6 @@ void ai_balance_shield(object *objp)
 	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
 		return;
 
-	if ( objp->flags & OF_SHIELD_NO_FULL_RECHARGE ) {
-		float max_balanced_pct = Ships[objp->instance].max_shield_recharge_pct;
-		if ( (Ships[objp->instance].ship_max_shield_strength * max_balanced_pct) == shield_get_strength(objp) )
-			return;
-	}
-
 	int n_shd_sections;
 	switch (objp->n_shield_segments) {
 		case 1:
