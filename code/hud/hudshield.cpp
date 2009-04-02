@@ -929,8 +929,9 @@ void hud_shield_equalize(object *objp, player *pl)
 
 	// are all quadrants equal?
 	all_equal = 1;
+	float shield_mult = Ships[objp->instance].max_shield_recharge_pct;
 	for (idx = 0; idx < n_shd_sections - 1; idx++) {
-		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
+		if ((objp->shield_quadrant[idx] * shield_mult) != (objp->shield_quadrant[idx + 1] * shield_mult)) {
 			all_equal = 0;
 			break;
 		}
@@ -950,8 +951,11 @@ void hud_shield_equalize(object *objp, player *pl)
 		// reset the penalty timestamp
 		pl->shield_penalty_stamp = timestamp(1000);
 	}
-			
-	shield_set_strength(objp, strength);					
+	
+	float shield_str_pct = strength / Ships[objp->instance].ship_max_shield_strength;
+	for (idx = 0; idx < n_shd_sections - 1; idx++) {
+		shield_set_quad(objp,idx, shield_str_pct * Ships[objp->instance].ship_max_shield_segment[idx]);
+	}
 
 	// beep
 	if (objp == Player_obj) {
