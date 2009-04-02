@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Application" 0x0101
 
-CFG=Freespace2 - Win32 Debug Inferno
+CFG=Freespace2 - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,7 +13,7 @@ CFG=Freespace2 - Win32 Debug Inferno
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "Freespace2.mak" CFG="Freespace2 - Win32 Debug Inferno"
+!MESSAGE NMAKE /f "Freespace2.mak" CFG="Freespace2 - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -45,7 +45,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_MBCS" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /Oy /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_MBCS" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -153,7 +153,7 @@ SOURCE="$(InputPath)"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_MBCS" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_MBCS" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /Oy /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_MBCS" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
