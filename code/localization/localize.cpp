@@ -949,7 +949,7 @@ void lcl_fred_replace_stuff(char *text, unsigned int max_len)
 	strcpy(replace[1][1], ";");
 
 	// do all replacements
-	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)
+	for (i = 0; i < LCL_NUM_FRED_REPLACEMENTS; i++)
 	{
 		// replace all instances of that string
 		replace_all(text, replace[i][1], replace[i][0], max_len);

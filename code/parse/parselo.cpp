@@ -3571,14 +3571,14 @@ int replace_one(char *str, char *oldstr, char *newstr, uint max_len, int range)
 // Goober5000
 int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 {
-	int val, tally(0);
+	int val, tally = 0;
 
 	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
 	{
 		tally++;
 
+		// adjust range (if we have one), because the text length might have changed
 		if (range) {
-			// adjust range, because the text length might have changed
 			range += strlen(newstr) - strlen(oldstr);
 		}
 	}
