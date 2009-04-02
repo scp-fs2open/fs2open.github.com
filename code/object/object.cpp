@@ -894,7 +894,7 @@ int free_object_slots(int num_used)
 }
 
 // Goober5000
-float get_max_shield_quad(object *objp)
+float get_max_shield_quad(object *objp, int segment)
 {
 	Assert(objp);
 	if(objp->type != OBJ_SHIP) {
@@ -904,17 +904,22 @@ float get_max_shield_quad(object *objp)
 	int n_shd_sections;	
 	switch (objp->n_shield_segments) {
 		case 1:
-			n_shd_sections = 1;
-			break;
+			return Ships[objp->instance].ship_max_shield_strength;
 		case 2:
 			n_shd_sections = 2;
+			if (segment > 1)
+				return 0.0f;
 			break;
 		default:
 			n_shd_sections = MAX_SHIELD_SECTIONS;
 			break;
 	}
 
-	return Ships[objp->instance].ship_max_shield_strength / n_shd_sections;
+	if (segment != -1) {
+		return Ships[objp->instance].ship_max_shield_segment[segment];
+	} else {
+		return Ships[objp->instance].ship_max_shield_strength / n_shd_sections;
+	}
 }
 
 // Goober5000

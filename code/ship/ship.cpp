@@ -2987,6 +2987,8 @@ void init_ship_entry(ship_info *sip)
 	sip->shield_color[0] = 255;
 	sip->shield_color[1] = 255;
 	sip->shield_color[2] = 255;
+	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		sip->max_shield_segment_strength[i] = 0.0f;
 	
 	sip->power_output = 0.0f;
 	sip->max_overclocked_speed = 0.0f;
@@ -4089,8 +4091,11 @@ strcpy(parse_error_text, temp_error);
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
 	}
 
-	if(optional_string("$Shields:"))
+	if(optional_string("$Shields:")) {
 		stuff_float(&sip->max_shield_strength);
+		for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+			sip->max_shield_segment_strength[i] = sip->max_shield_strength / 4;
+	}
 
 	// optional shield color
 	if(optional_string("$Shield Color:")){
@@ -4101,6 +4106,17 @@ strcpy(parse_error_text, temp_error);
 	
 	if(optional_string("$Number of Shield Segments:")){
 		stuff_int(&sip->num_shield_segments);
+	}
+
+	if(optional_string("$Shield Segments:")) {
+		float tempf[4];
+		float tempf_sum = 0.0f;
+		stuff_float_list(tempf, 4);
+		for (i = 0; i < MAX_SHIELD_SECTIONS; i++) {
+			sip->max_shield_segment_strength[i] = tempf[i];
+			tempf_sum += tempf[i];
+		}
+		sip->max_shield_strength = tempf_sum;
 	}
 
 	if(optional_string("$Maximum Shield Recharge Percent:")){
@@ -6432,7 +6448,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
-		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge_pct);
+		for (i = 0;i < MAX_SHIELD_SECTIONS; i++) {
+			shipp->ship_max_shield_segment[i] = sip->max_shield_segment_strength[i];
+			shield_set_quad(objp, i, shipp->ship_max_shield_segment[i] * shipp->max_shield_recharge_pct);
+		}
 	}
 
 	shipp->target_shields_delta = 0.0f;
@@ -10266,10 +10285,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// clear the old shield data
 		int i;
-		for (i=0;i<MAX_SHIELD_SECTIONS; i++)
+		float shield_mult;
+		for (i=0;i<MAX_SHIELD_SECTIONS; i++) {
 			objp->shield_quadrant[i] = 0.0f;
-
-		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength * sp->max_shield_recharge_pct);
+			shield_mult = sp->ship_max_shield_strength / sip->max_shield_strength;
+			sp->ship_max_shield_segment[i] = sip->max_shield_segment_strength[i] * shield_mult;
+			shield_set_quad(objp, i, sp->ship_max_shield_segment[i] * sp->max_shield_recharge_pct);
+		}
 	}
 
 	// Goober5000: div-0 checks
@@ -13298,7 +13320,7 @@ float ship_calculate_rearm_duration( object *objp )
 	sip = &Ship_info[sp->ship_info_index];
 
 	//find out time to repair shields
-	shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * SHIELD_REPAIR_RATE);
+	shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge_pct) - shield_get_strength(objp)) / (sp->max_shield_recharge_pct * sp->ship_max_shield_strength * SHIELD_REPAIR_RATE);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	//calculate hull_repair_time;
@@ -13435,7 +13457,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = shield_get_strength(objp);
-		if ( shield_str < shipp->ship_max_shield_strength ) {
+		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge_pct) ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
@@ -14930,7 +14952,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = get_max_shield_quad(hit_objp);
+	max_quadrant = get_max_shield_quad(hit_objp, quadrant_num);
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}

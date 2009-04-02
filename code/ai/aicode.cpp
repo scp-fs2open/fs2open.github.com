@@ -13021,7 +13021,7 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 			break;
 	}
 
-	max_quadrant_strength = get_max_shield_quad(objp);
+	max_quadrant_strength = get_max_shield_quad(objp,quadrant_num);
 
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
@@ -13050,7 +13050,7 @@ void ai_balance_shield(object *objp)
 	float	delta;
 
 	// if we are already at the max shield strength for all quads then just bail now
-	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
+	if ( (Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp)) || (Ships[objp->instance].ship_max_shield_strength == 0.0f) )
 		return;
 
 	int n_shd_sections;
@@ -13066,10 +13066,12 @@ void ai_balance_shield(object *objp)
 	}
 
 	shield_strength_avg = shield_get_strength(objp)/n_shd_sections;
+	float shield_multiplier = shield_get_strength(objp) / Ships[objp->instance].ship_max_shield_strength;;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
 	for (i=0; i<n_shd_sections; i++) {
+		shield_strength_avg = Ships[objp->instance].ship_max_shield_segment[i] * shield_multiplier;
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)

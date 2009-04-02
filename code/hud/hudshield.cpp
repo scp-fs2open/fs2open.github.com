@@ -672,8 +672,7 @@ void hud_shield_show(object *objp)
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = get_max_shield_quad(objp);
-	
+		
 	int j, x_val, y_val, mid_val;
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
@@ -695,6 +694,8 @@ void hud_shield_show(object *objp)
 		if ( objp->shield_quadrant[segment] < 0.1f ) {
 			continue;
 		}
+
+		max_shield = get_max_shield_quad(objp,segment);
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
 		hud_color_index = fl2i( (objp->shield_quadrant[segment] / max_shield) * range);
@@ -1000,7 +1001,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	Assert(objp->type == OBJ_SHIP);
 	
 	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
-	max_quadrant_val = get_max_shield_quad(objp);
+	max_quadrant_val = get_max_shield_quad(objp,direction);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
 		xfer_amount = max_quadrant_val - objp->shield_quadrant[direction];
@@ -1135,8 +1136,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = get_max_shield_quad(objp);
-
+	
 	bool single_segment_flash = false;
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
@@ -1144,6 +1144,8 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
 		}
+
+		max_shield = get_max_shield_quad(objp,Quadrant_xlate[i]);
 
 		bool single_segment = false;
 		if (objp->n_shield_segments == 1)
