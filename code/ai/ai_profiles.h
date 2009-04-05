@@ -141,6 +141,9 @@ typedef struct ai_profile_t {
 	// percentage of the capships score given to other team mates on a kill
 	float assist_award_percentage_scale[NUM_SKILL_LEVELS];
 
+	// the number of points subtracted from score for a rearm started on a player
+	int repair_penalty[NUM_SKILL_LEVELS];
+
 } ai_profile_t;
 
 

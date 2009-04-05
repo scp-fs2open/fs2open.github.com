@@ -797,6 +797,10 @@ $Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 ;; percentage of the capships score when someone scores a kill			\n\
 $Percentage Awarded For Capship Assist: 0.5, 0.5, 0.5, 0.5, 0.5			\n\
 																		\n\
+;; the amount to subtract from the player's score if they are			\n\
+;; repaired by a support ship											\n\
+$Repair Penalty: 50, 50, 50, 50 50										\n\
+																		\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
