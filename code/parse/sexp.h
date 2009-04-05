@@ -1162,6 +1162,7 @@ struct ship_subsys;
 #define OP_INVALIDATE_ARGUMENT				(0x0008 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_RANDOM_MULTIPLE_OF				(0x0009 | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_IN_SEQUENCE						(0x000a | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_VALIDATE_ARGUMENT				(0x000b | OP_CATEGORY_CONDITIONAL)	// Karajorma
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)

@@ -1791,6 +1791,7 @@ sexp_oper Operators[] = {
 	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
 	{ "in-sequence",			OP_IN_SEQUENCE,			1, INT_MAX, },	// Karajorma
 	{ "invalidate-argument",	OP_INVALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
+	{ "validate-argument",		OP_VALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
 	{ "send-message",				OP_SEND_MESSAGE,			3,	3,		},
@@ -8423,10 +8424,10 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 }
 
 // Goober5000
-void sexp_invalidate_argument(int n)
+void sexp_change_argument_validity(int n, bool invalidate)
 {
 	int conditional, arg_handler, arg_n;
-	bool invalidated;
+	bool toggled;
 
 	conditional = n; 
 	do {
@@ -8445,17 +8446,17 @@ void sexp_invalidate_argument(int n)
 	// loop through arguments
 	while (n != -1)
 	{
-		invalidated = false; 
+		toggled = false; 
 
 		// first we must check if the arg_handler marks a selection. At the moment random-of is the only one that does this
 		arg_n = CDR(arg_handler);
-		while (arg_n != -1) {
+		while (invalidate && (arg_n != -1)) {
 			if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_SELECT) {
 				// now check if the selected argument matches the one we want to invalidate
 				if (!strcmp(CTEXT(n), CTEXT(arg_n))) {
 					// set it as invalid
 					Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
-					invalidated = true; 
+					toggled = true; 
 				}
 			}
 
@@ -8463,7 +8464,7 @@ void sexp_invalidate_argument(int n)
 			arg_n = CDR(arg_n);
 		}
 		
-		if (!invalidated) {
+		if (!toggled) {
 			// search for argument in arg_handler list
 			arg_n = CDR(arg_handler);
 			while (arg_n != -1)
@@ -8471,13 +8472,24 @@ void sexp_invalidate_argument(int n)
 				// match?
 				if (!strcmp(CTEXT(n), CTEXT(arg_n)))
 				{
-					// we need to check if the argument is already invalid as some argument lists may contain duplicates
-					if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID) {
-						// set it as invalid
-						Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+					if (invalidate) {
+						// we need to check if the argument is already invalid as some argument lists may contain duplicates
+						if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID) {
+							// set it as invalid
+							Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
 
-						// exit inner loop
-						break;
+							// exit inner loop
+							break;
+						}
+					}
+					else {
+						if (!(Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID)) {
+							// set it as valid
+							Sexp_nodes[arg_n].flags |= SNF_ARGUMENT_VALID;
+
+							// exit inner loop
+							break;
+						}
 					}
 				}
 
@@ -11611,7 +11623,7 @@ void sexp_ship_subsys_untargetable(int n, int untargetable)
 void sexp_ship_tag( int n, int tag )
 {
 	int ship_num, tag_level, tag_time, ssm_index(0);
-    int ssm_team;
+    int ssm_team = 0;
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if ( mission_log_get_time(LOG_SHIP_DEPARTED, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
@@ -16792,7 +16804,8 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Goober5000
 			case OP_INVALIDATE_ARGUMENT:
-				sexp_invalidate_argument(node);
+			case OP_VALIDATE_ARGUMENT:
+				sexp_change_argument_validity(node, (op_num == OP_INVALIDATE_ARGUMENT));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -18234,6 +18247,7 @@ int query_operator_return_type(int op)
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
 		case OP_INVALIDATE_ARGUMENT:
+		case OP_VALIDATE_ARGUMENT:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
 		case OP_CLEAR_SHIP_GOALS:
@@ -18925,6 +18939,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_ANYTHING;
 
 		case OP_INVALIDATE_ARGUMENT:
+		case OP_VALIDATE_ARGUMENT:
 			return OPF_ANYTHING;
 
 		case OP_AI_DISABLE_SHIP:
@@ -21696,6 +21711,13 @@ sexp_help_struct Sexp_help[] = {
 		"\tRemoves an argument from future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to remove from the preceding argument list." },
+
+	// Karajorma
+	{ OP_VALIDATE_ARGUMENT, "Validate-argument (Conditional operator)\r\n"
+		"\tRestores an argument for future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
+		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tThe argument to restore to the preceding argument list." },
 
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"
