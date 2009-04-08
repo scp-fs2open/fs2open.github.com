@@ -220,7 +220,7 @@ HKEY reg_open_dir(const char *reg_path)
 	// Try to open the correct registry dir
 	HKEY hkey;
 
-	if ( RegOpenKeyEx(HKEY_LOCAL_MACHINE, reg_path, 0, KEY_ALL_ACCESS, &hkey) != ERROR_SUCCESS )
+	if ( RegOpenKeyEx(HKEY_CURRENT_USER, reg_path, 0, KEY_ALL_ACCESS, &hkey) != ERROR_SUCCESS )
 		return NULL;
 
 	return hkey;
@@ -234,7 +234,7 @@ HKEY reg_create_dir(const char *reg_path)
 	if (reg_path == NULL)
 		return NULL;
 
-	if ( RegCreateKeyEx(HKEY_LOCAL_MACHINE, reg_path, 0,
+	if ( RegCreateKeyEx(HKEY_CURRENT_USER, reg_path, 0,
 			NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE,
 			NULL, &new_key, NULL) != ERROR_SUCCESS )
 	{
