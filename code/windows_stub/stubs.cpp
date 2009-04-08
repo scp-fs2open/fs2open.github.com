@@ -154,6 +154,9 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
+int Global_warning_count = 0;
+int Global_error_count = 0;
+
 #define MAX_BUF_SIZE	1024
 static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
@@ -222,6 +225,8 @@ void WinAssert(char * text, char *filename, int line)
 // standard warning message
 void Warning( char * filename, int line, const char * format, ... )
 {
+	Global_warning_count++;
+
 #ifndef NDEBUG
 	va_list args;
 	int i;
@@ -263,6 +268,8 @@ void Warning( char * filename, int line, const char * format, ... )
 // fatal error message
 void Error( char * filename, int line, const char * format, ... )
 {
+	Global_error_count++;
+
 	va_list args;
 	int i;
 	int slen = 0;

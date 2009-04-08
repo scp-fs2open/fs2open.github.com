@@ -604,6 +604,9 @@ extern void LuaError(struct lua_State *L, char *format=NULL, ...);
 extern void _cdecl Error( char * filename, int line, const char * format, ... );
 extern void _cdecl Warning( char * filename, int line, const char * format, ... );
 
+extern int Global_warning_count;
+extern int Global_error_count;
+
 #include "osapi/outwnd.h"
 
 // To debug printf do this:
