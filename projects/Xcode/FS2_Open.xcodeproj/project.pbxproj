@@ -4616,6 +4616,559 @@
 			};
 			name = Release;
 		};
+		915F25D00F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "3.6.10-trunk";
+				DEAD_CODE_STRIPPING = NO;
+				DEPLOYMENT_POSTPROCESSING = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					_DEBUG,
+					SCP_UNIX,
+					NO_DIRECT3D,
+					USE_OPENAL,
+					APPLE_APP,
+					INF_BUILD,
+				);
+				GENERATE_PROFILING_CODE = NO;
+				INFOPLIST_FILE = "Info-debug.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.4;
+				PRODUCT_NAME = "FS2_Open (debug)";
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				STRIP_INSTALLED_PRODUCT = NO;
+				UNSTRIPPED_PRODUCT = YES;
+				WARNING_CFLAGS = "-Wno-char-subscripts";
+			};
+			name = Debug_Inferno;
+		};
+		915F25D10F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					../../libjpeg,
+					../../lua,
+					./Frameworks/SDL.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(LIBRARY_SEARCH_PATHS)",
+					"$(SRCROOT)/build/Debug",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					SDL,
+					"-lSystemStubs",
+				);
+				PREBINDING = NO;
+			};
+			name = Debug_Inferno;
+		};
+		915F25D20F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
+				);
+				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					_DEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					NO_DIRECT3D,
+					APPLE_APP,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/Ogg.framework/Headers,
+					./Frameworks/Vorbis.framework/Headers,
+					./Frameworks/Theora.framework/Headers,
+					./Frameworks/SDL.framework/Headers,
+					/System/Library/Frameworks/OpenAL.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/lib";
+				LIBRARY_STYLE = STATIC;
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = code;
+				SECTORDER_FLAGS = "";
+				SEPARATE_STRIP = NO;
+				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = "-Wno-char-subscripts";
+				ZERO_LINK = NO;
+			};
+			name = Debug_Inferno;
+		};
+		915F25D30F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					_DEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					NO_DIRECT3D,
+					APPLE_APP,
+				);
+				HEADER_SEARCH_PATHS = ../../libjpeg;
+				LIBRARY_STYLE = STATIC;
+				PREBINDING = NO;
+				PRODUCT_NAME = jpeg;
+				SEPARATE_STRIP = NO;
+				WARNING_CFLAGS = (
+					"-Wno-char-subscripts",
+					"-Wno-main",
+				);
+			};
+			name = Debug_Inferno;
+		};
+		915F25D40F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(LIBRARY_SEARCH_PATHS)",
+					"$(SRCROOT)/../../lua",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = lua;
+				SEPARATE_STRIP = NO;
+				UNSTRIPPED_PRODUCT = "$(UNSTRIPPED_PRODUCT)";
+			};
+			name = Debug_Inferno;
+		};
+		915F25D50F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cfilearchiver;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Debug_Inferno;
+		};
+		915F25D60F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cfileextractor;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Debug_Inferno;
+		};
+		915F25D70F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cryptstring;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Debug_Inferno;
+		};
+		915F25D80F8AA7CE00521775 /* Debug_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = scramble;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Debug_Inferno;
+		};
+		915F25D90F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					ppc,
+					i386,
+				);
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "3.6.10-trunk";
+				DEAD_CODE_STRIPPING = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					INF_BUILD,
+					NDEBUG,
+					SCP_UNIX,
+					NO_DIRECT3D,
+					USE_OPENAL,
+					APPLE_APP,
+				);
+				GCC_STRICT_ALIASING = YES;
+				GCC_UNROLL_LOOPS = YES;
+				INFOPLIST_FILE = Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 10.4;
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SEPARATE_STRIP = YES;
+				WARNING_CFLAGS = "-Wno-char-subscripts";
+			};
+			name = Release_Inferno;
+		};
+		915F25DA0F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = ./Frameworks;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					../../libjpeg,
+					../../lua,
+					./Frameworks/SDL.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(LIBRARY_SEARCH_PATHS)",
+					"$(SRCROOT)/build/Debug",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					SDL,
+					"-lSystemStubs",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = FS2_Open;
+				SEPARATE_STRIP = YES;
+				STRIP_INSTALLED_PRODUCT = YES;
+			};
+			name = Release_Inferno;
+		};
+		915F25DB0F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
+				);
+				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/Ogg.framework/Headers,
+					./Frameworks/Vorbis.framework/Headers,
+					./Frameworks/Theora.framework/Headers,
+					./Frameworks/SDL.framework/Headers,
+					/System/Library/Frameworks/OpenAL.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+				);
+				LIBRARY_STYLE = STATIC;
+				PREBINDING = NO;
+				PRODUCT_NAME = code;
+				SEPARATE_STRIP = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = all;
+			};
+			name = Release_Inferno;
+		};
+		915F25DC0F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				HEADER_SEARCH_PATHS = ../../libjpeg;
+				LIBRARY_STYLE = STATIC;
+				PREBINDING = NO;
+				PRODUCT_NAME = jpeg;
+				SEPARATE_STRIP = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = all;
+			};
+			name = Release_Inferno;
+		};
+		915F25DD0F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
+				LIBRARY_SEARCH_PATHS = (
+					"$(LIBRARY_SEARCH_PATHS)",
+					"$(SRCROOT)/../../lua",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = lua;
+				SEPARATE_STRIP = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = all;
+			};
+			name = Release_Inferno;
+		};
+		915F25DE0F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = cfilearchiver;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release_Inferno;
+		};
+		915F25DF0F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = cfileextractor;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release_Inferno;
+		};
+		915F25E00F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = cryptstring;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release_Inferno;
+		};
+		915F25E10F8AA7D700521775 /* Release_Inferno */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					./Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = scramble;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release_Inferno;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -4623,7 +5176,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				344BA94E095A5A2000B9D97D /* Debug */,
+				915F25D40F8AA7CE00521775 /* Debug_Inferno */,
 				344BA94F095A5A2000B9D97D /* Release */,
+				915F25DD0F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4632,7 +5187,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34BE722D08C940D200673B45 /* Debug */,
+				915F25D30F8AA7CE00521775 /* Debug_Inferno */,
 				34BE722E08C940D200673B45 /* Release */,
+				915F25DC0F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4641,7 +5198,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34BE723108C940D200673B45 /* Debug */,
+				915F25D20F8AA7CE00521775 /* Debug_Inferno */,
 				34BE723208C940D200673B45 /* Release */,
+				915F25DB0F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4650,7 +5209,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34BE723508C940D200673B45 /* Debug */,
+				915F25D10F8AA7CE00521775 /* Debug_Inferno */,
 				34BE723608C940D200673B45 /* Release */,
+				915F25DA0F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4659,7 +5220,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34BE723908C940D200673B45 /* Debug */,
+				915F25D00F8AA7CE00521775 /* Debug_Inferno */,
 				34BE723A08C940D200673B45 /* Release */,
+				915F25D90F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4668,7 +5231,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34DCF83808CFA6F000A528A0 /* Debug */,
+				915F25D50F8AA7CE00521775 /* Debug_Inferno */,
 				34DCF83908CFA6F000A528A0 /* Release */,
+				915F25DE0F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4677,7 +5242,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34DCF85F08CFAF0500A528A0 /* Debug */,
+				915F25D60F8AA7CE00521775 /* Debug_Inferno */,
 				34DCF86008CFAF0500A528A0 /* Release */,
+				915F25DF0F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4686,7 +5253,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34DCF86C08CFB13E00A528A0 /* Debug */,
+				915F25D70F8AA7CE00521775 /* Debug_Inferno */,
 				34DCF86D08CFB13E00A528A0 /* Release */,
+				915F25E00F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -4695,7 +5264,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				34DCF87D08CFB23400A528A0 /* Debug */,
+				915F25D80F8AA7CE00521775 /* Debug_Inferno */,
 				34DCF87E08CFB23400A528A0 /* Release */,
+				915F25E10F8AA7D700521775 /* Release_Inferno */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
