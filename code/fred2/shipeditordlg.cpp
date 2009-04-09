@@ -1536,18 +1536,19 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 
 	m_score.save(&Ships[ship].score);
-	int temp_assist;
+	int temp_assist = -1;
 	m_assist_score.save(&temp_assist); 
-	Ships[ship].assist_score_pct = ((float)temp_assist)/100;
-	// value must be a percentage
-	if (Ships[ship].assist_score_pct < 0) {
-		Ships[ship].assist_score_pct = 0;
-		MessageBox("Assist Percentage too low. Set to 0. No score will be granted for an assist");
-	} 
-	else if (Ships[ship].assist_score_pct > 1) {
-		Ships[ship].assist_score_pct = 1;
-		MessageBox("Assist Percentage too high. Set to 1. Assists well score as many points as a kill");
-	
+	if (temp_assist != -1) {
+		Ships[ship].assist_score_pct = ((float)temp_assist)/100;
+		// value must be a percentage
+		if (Ships[ship].assist_score_pct < 0) {
+			Ships[ship].assist_score_pct = 0;
+			MessageBox("Assist Percentage too low. Set to 0. No score will be granted for an assist");
+		} 
+		else if (Ships[ship].assist_score_pct > 1) {
+			Ships[ship].assist_score_pct = 1;
+			MessageBox("Assist Percentage too high. Set to 1. Assists will score as many points as a kill");	
+		}
 	}
 
 	if (m_arrival_location != -1)
@@ -2105,12 +2106,12 @@ void CShipEditorDlg::show_hide_sexp_help()
 {
 	CRect rect, help;
 	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	float box_size = (help.bottom - help.top);
+	float box_size = (float)(help.bottom - help.top);
 
 	if (Show_sexp_help){
-		cue_height += box_size;
+		cue_height += (int)box_size;
 	} else {
-		cue_height -= box_size;
+		cue_height -= (int)box_size;
 	}
 
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()){
@@ -2120,9 +2121,9 @@ void CShipEditorDlg::show_hide_sexp_help()
 	GetWindowRect(rect);
 
 	if (Show_sexp_help){
-		rect.bottom += box_size;
+		rect.bottom += (LONG)box_size;
 	} else {
-		rect.bottom -= box_size;
+		rect.bottom -= (LONG)box_size;
 	}
 
 	MoveWindow(rect);
