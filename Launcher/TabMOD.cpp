@@ -279,7 +279,7 @@ bool CTabMOD::parse_ini_file(char * ini_name)
 
 void CTabMOD::CheckModSetting(char *mod_string)
 {
-	char *current = strchr(mod_string, '-');
+	char *current = (mod_string != NULL) ? strchr(mod_string, '-') : NULL;
 
 	while(current != NULL)
 	{
