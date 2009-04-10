@@ -368,8 +368,8 @@ FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         150,IDC_LOGO2,"Static",SS_BITMAP | SS_CENTERIMAGE | 
                     SS_SUNKEN | WS_BORDER,5,4,189,38
-    CTEXT           "Welcome to FreeSpace2 Open",IDC_STATIC,5,46,189,8
-    LTEXT           "Basic setup: The first time you run the launcher you must use browse to find your fs2_open exe, then press ""Apply"".  From now on you will be able to run fs2_open without loading the launcher.",
+    CTEXT           "Welcome to FreeSpace 2 Open",IDC_STATIC,5,46,189,8
+    LTEXT           "Select your FreeSpace 2 Open exe by clicking the Browse button.  Afterwards, when you run that exe, it will remember the settings you saved in the launcher.  You can also run it directly from the launcher by clicking the Run button.",
                     IDC_STATIC,5,60,189,33
     PUSHBUTTON      "Readme",IDC_GAME_README,14,174,52,14
     PUSHBUTTON      "Forums",IDC_GOTO_FORUM,74,174,52,14
