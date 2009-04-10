@@ -1187,7 +1187,7 @@ bool d3d_init_device()
 			D3DCREATE_SOFTWARE_VERTEXPROCESSING};
 
 	// Use a pure device if we can, it really speeds things up
-	// However it means we cant use Get* functions (aside from GetFrontBuffer, GetCaps, etc)
+	// However it means we can't use Get* functions (aside from GetFrontBuffer, GetCaps, etc)
 	if(got_caps && GlobalD3DVars::d3d_caps.DevCaps & D3DDEVCAPS_PUREDEVICE) {
 	  	vptypes[0] |= D3DCREATE_PUREDEVICE;
 		mprintf(("  Using PURE D3D Device\n"));
@@ -1237,7 +1237,7 @@ bool d3d_init_device()
 
 		sprintf(Device_init_error, "Failed to get init mode");
 	
-		// Lets draw attension to this bug which we dont yet understand
+		// Let's draw attension to this bug which we don't yet understand
 		if(got_caps == false) 
 		{
 			sprintf(Device_init_error, 
@@ -1382,7 +1382,7 @@ bool d3d_inspect_caps()
 	
 	if ( not_good )	{
 		strcpy(Device_init_error, missing_features);
-	//	return false; I dont think it should fail on this - RT
+	//	return false; I don't think it should fail on this - RT
 	}  
 
 	return true;
@@ -1611,7 +1611,7 @@ void gr_d3d_cleanup()
 
 	d3d_tcache_cleanup();  
 
-	// Ensures gamma options dont return to the desktop
+	// Ensures gamma options don't return to the desktop
 	gr_d3d_set_gamma(1.0);
 
 	// release surfaces

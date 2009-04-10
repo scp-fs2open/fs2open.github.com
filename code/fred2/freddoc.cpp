@@ -83,7 +83,7 @@
  * taylor and I fixed fred2 by making code.lib and fred2's defines match up
  *
  * Revision 1.8  2004/05/02 18:03:19  randomtiger
- * Fred doesnt need subspace palette any more
+ * Fred doesn't need subspace palette any more
  *
  * Revision 1.7  2004/04/03 18:06:35  Kazan
  * Fixes:
@@ -796,7 +796,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	Assert(Mission_palette >= 0);
 	Assert(Mission_palette <= 98);
 
-	// RT, dont need this anymore
+	// RT, don't need this anymore
 #if 0
 
 	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {

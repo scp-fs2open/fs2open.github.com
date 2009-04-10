@@ -61,7 +61,7 @@
  * --Goober5000
  *
  * Revision 2.7  2004/02/16 11:47:31  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -84,7 +84,7 @@
  * Put dithering back in for tgas and jpgs
  *
  * Revision 2.4  2003/11/29 10:52:08  randomtiger
- * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Turned off D3D file mapping, it's using too much memory which may be hurting older systems and doesn't seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
  * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
  * Added fix for fonts wrapping round in non standard hi res modes.
@@ -102,7 +102,7 @@
  * Revision 2.1.2.3  2002/11/04 21:24:59  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.1.2.2  2002/09/28 22:13:42  randomtiger

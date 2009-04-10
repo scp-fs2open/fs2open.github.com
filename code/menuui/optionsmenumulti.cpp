@@ -1839,7 +1839,7 @@ void options_multi_gen_button_pressed(int n)
 		}
 		break;
 	
-	// dont put missions in the multidata directory
+	// don't put missions in the multidata directory
 	case OM_GEN_XFER_MULTIDATA_NO:
 		if(Om_gen_xfer_multidata){
 			gamesnd_play_iface(SND_USER_SELECT);

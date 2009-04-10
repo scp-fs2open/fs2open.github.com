@@ -620,7 +620,7 @@
  *
  * Revision 2.61  2004/02/13 04:17:12  randomtiger
  * Turned off fog in OGL for Fred.
- * Simulated speech doesnt say tags marked by $ now.
+ * Simulated speech doesn't say tags marked by $ now.
  * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
  * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
  * Error now given on missing briefing icon and bad ship normal data.
@@ -721,7 +721,7 @@
  *
  * Revision 2.35  2003/10/14 17:39:13  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *
@@ -1799,7 +1799,7 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 			glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
 		}
-		// Um.. this is not the correct way to fog in software, probably doesnt matter though
+		// Um.. this is not the correct way to fog in software, probably doesn't matter though
 		else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
 			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
 			fog_near *= fog_near;		// it's faster this way

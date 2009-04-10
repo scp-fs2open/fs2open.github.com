@@ -56,7 +56,7 @@
  *
  * Revision 2.2  2003/10/14 17:39:17  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *

@@ -218,7 +218,7 @@
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
  * Revision 2.6  2003/01/27 00:51:46  DTP
- * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
+ * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still can't join. narrowing it down.
  *
  * Revision 2.5  2003/01/14 04:00:16  Goober5000
  * allowed for up to 256 main halls
@@ -1897,7 +1897,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 
 			// check for possible mission loop
-			// check for (1) mission loop available, (2) dont have to repeat last mission
+			// check for (1) mission loop available, (2) don't have to repeat last mission
 			if(!(Game_mode & GM_MULTIPLAYER)){
 				int cur = Campaign.current_mission;
 				bool require_repeat_mission = (Campaign.current_mission == Campaign.next_mission);
@@ -2857,7 +2857,7 @@ void debrief_draw_award_text()
 	}
 }
 
-// clears out text array so we dont have old award text showing up on new awards.
+// clears out text array so we don't have old award text showing up on new awards.
 void debrief_award_text_clear() {
 	int i;
 	
@@ -3177,7 +3177,7 @@ void debrief_do_frame(float frametime)
 
 	gr_flip();
 
-	// dont let dude skip 3-09.  hack.	
+	// don't let dude skip 3-09.  hack.	
 	if(Game_mode & GM_CAMPAIGN_MODE){
 		if((Campaign.current_mission >= 0) && (Campaign.current_mission < MAX_CAMPAIGN_MISSIONS)){
 			if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, "sm3-09.fs2")) {
@@ -3203,7 +3203,7 @@ void debrief_do_frame(float frametime)
 			gameseq_post_event(GS_EVENT_START_GAME);
 			break;
 		case 2:
-			// dont show this again
+			// don't show this again
 			Player->show_skip_popup = 0;
 			break;
 		}
