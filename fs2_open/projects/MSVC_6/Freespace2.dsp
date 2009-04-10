@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /Oy /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_MBCS" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /D "NO_DIRECT3D" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W2 /GX /Zi /O2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_MBCS" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /D "NO_DIRECT3D" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -94,7 +94,7 @@ LINK32=link.exe
 InputPath=.\Debug\fs2_open_trunk_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/fs2_open_trunk_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy /y $(InputPath) "$(FS2PATH)/fs2_open_trunk_d.exe"
 
 # End Custom Build

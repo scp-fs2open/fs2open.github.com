@@ -42,7 +42,7 @@
 ********************************************************************* RAL ***/
 
 //
-//  Dont call this function directly.  Use SpInitTokenComboBox or SpInitTokenListBox.
+//  Don't call this function directly.  Use SpInitTokenComboBox or SpInitTokenListBox.
 //
 inline HRESULT SpInitTokenList(UINT MsgAddString, UINT MsgSetItemData, UINT MsgSetCurSel,
                                HWND hwnd, const WCHAR * pszCatName,
@@ -103,7 +103,7 @@ inline HRESULT SpInitTokenListBox(HWND hwnd, const WCHAR * pszCatName,
 }
 
 //
-//  Dont call this function directly.  Use SpDestoyTokenComboBox or SpDestroyTokenListBox.
+//  Don't call this function directly.  Use SpDestoyTokenComboBox or SpDestroyTokenListBox.
 //
 inline void SpDestroyTokenList(UINT MsgGetCount, UINT MsgGetItemData, HWND hwnd)
 {

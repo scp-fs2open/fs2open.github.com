@@ -487,7 +487,7 @@ int collide_asteroid_ship( obj_pair * pair )
 					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.heavy->instance].ship_name));
 					//}
 				} else {
-					// dont draw sparks (using sphere hitpos)
+					// don't draw sparks (using sphere hitpos)
 					ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
 					//if (asteroid_hit_info.light->type == OBJ_SHIP) {
 					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.light->instance].ship_name));

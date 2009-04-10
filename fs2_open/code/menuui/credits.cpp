@@ -607,7 +607,7 @@ void credits_init()
 			stuff_string_line(line, sizeof(line));
 
 			// This is a bit odd but it means if a total conversion uses different credits the 
-			// Volition credit wont happen
+			// Volition credit won't happen
 			if(first_run == true)
 			{
 				if(strcmp(line, mod_check) == 0)

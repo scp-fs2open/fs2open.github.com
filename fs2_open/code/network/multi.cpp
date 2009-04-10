@@ -434,7 +434,7 @@ net_player *Net_player;												// pointer to console's net_player entry
 
 // netgame vars
 netgame_info Netgame;												// netgame information
-int Multi_mission_loaded = 0;										// flag, so that we dont' load the mission more than once client side
+int Multi_mission_loaded = 0;										// flag, so that we don't load the mission more than once client side
 int Ingame_join_net_signature = -1;								// signature for the player obj for use when joining ingame
 int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical button info on a client machine
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying

@@ -270,7 +270,7 @@
  * 
  * 20    9/07/99 6:55p Jefff
  * functionality to break out of a loop.  hacked functionality to jump to
- * a specific mission in a campaign -- doesnt grant ships/weapons from
+ * a specific mission in a campaign -- doesn't grant ships/weapons from
  * skipped missions tho.
  * 
  * 19    9/07/99 2:19p Jefff

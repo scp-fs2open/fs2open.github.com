@@ -253,7 +253,7 @@
  * Revision 2.0.2.10  2002/11/04 21:24:59  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.0.2.9  2002/11/04 16:04:20  randomtiger
