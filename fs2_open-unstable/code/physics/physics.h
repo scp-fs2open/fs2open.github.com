@@ -66,7 +66,7 @@
  * 
  * 6     8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 5     7/03/99 5:50p Dave
  * Make rotated bitmaps draw properly in padlock views.

@@ -1038,7 +1038,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 				}
 			}
 
-			// use dist normal to enemy here (dont break 50 barrier)
+			// use dist normal to enemy here (don't break 50 barrier)
 			if (dist_to_enemy < ATTACK_STOP_DISTANCE) {
 //				accelerate_ship(aip, accel * 0.5f);
 				accelerate_ship(aip, -1.0f);

@@ -4278,8 +4278,8 @@ void multi_create_game_do()
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING; //DTP must be set before a call to gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC) is done as it is below.
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);//DTP STart game
 
-			Cmdline_almission = NULL; // we dont want to autoload anymore do we, we will be able to quit. halleluja. Startgame has already been disabled, so no need to turn of "Cmdline_start_netgame"
-			return;	// we dont need to check or set regarding ships/weapons anything as we are already progressing into mission so return
+			Cmdline_almission = NULL; // we don't want to autoload anymore do we, we will be able to quit. halleluja. Startgame has already been disabled, so no need to turn of "Cmdline_start_netgame"
+			return;	// we don't need to check or set regarding ships/weapons anything as we are already progressing into mission so return
 		}
 		else {
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(" Not a multi player-mission",9999)); //DTP startgame popup pilot error
@@ -9231,7 +9231,7 @@ void multi_maybe_set_mission_loop()
 	}
 	bool require_repeat_mission = (Campaign.current_mission == Campaign.next_mission);
 
-	// check for (1) mission loop available, (2) dont have to repeat last mission
+	// check for (1) mission loop available, (2) don't have to repeat last mission
 	if ( (Campaign.missions[cur].has_mission_loop && (Campaign.loop_mission != -1)) && !require_repeat_mission ) {
 
 		char buffer[512];

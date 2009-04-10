@@ -290,7 +290,7 @@
  * Set D3D fogging to fall back to vertex fog if table fog not supported.
  *
  * Revision 2.16  2004/02/16 11:47:32  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -1676,7 +1676,7 @@ void gr_set_shader(shader *shade)
 // Set the bitmap for the mouse pointer.  This is called by the animating mouse
 // pointer code.
 //
-// The lock parameter just locks basically disables the next call of this function that doesnt
+// The lock parameter just locks basically disables the next call of this function that doesn't
 // have an unlock feature.  If adding in more cursor-changing situations, be aware of
 // unexpected results. You have been warned.
 //

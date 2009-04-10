@@ -1072,7 +1072,7 @@ extern ushort Next_debris_signature;								// next debris signature
 
 // netgame vars
 extern netgame_info Netgame;											// netgame information
-extern int Multi_mission_loaded;										// flag, so that we dont' load the mission more than once client side
+extern int Multi_mission_loaded;										// flag, so that we don't load the mission more than once client side
 extern ushort Multi_ingame_join_sig;									// signature for the player obj for use when joining ingame
 extern int Multi_button_info_ok;										// flag saying it is ok to apply critical button info on a client machine
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying

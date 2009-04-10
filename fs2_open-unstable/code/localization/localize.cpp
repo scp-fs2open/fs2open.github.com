@@ -532,8 +532,8 @@ void lcl_init(int lang_init)
 	// read the language from the registry
 	if(lang_init < 0){
 		memset(lang_string, 0, 128);
-		// default to DEFAULT_LANGUAGE (which should be english so we dont have to put German text 
-		// in tstrings in the #default section
+		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text 
+		// in tstrings in the #default section)
 		ret = os_config_read_string(NULL, "Language", DEFAULT_LANGUAGE);
 
 		if(ret == NULL){
@@ -1604,7 +1604,7 @@ void lcl_fix_polish(char *str)
 // lcl_translate_wep_name()
 //
 // For displaying weapon names in german version
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_wep_name(char *name)
 {
@@ -1623,7 +1623,7 @@ void lcl_translate_wep_name(char *name)
 // lcl_translate_brief_icon_name()
 //
 // For displaying ship names in german version
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_brief_icon_name(char *name)
 {
@@ -1770,7 +1770,7 @@ void lcl_translate_brief_icon_name(char *name)
 // lcl_translate_brief_icon_name_pl()
 //
 // For displaying ship names in polish version
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_brief_icon_name_pl(char *name)
 {
@@ -1858,7 +1858,7 @@ char buf[128];
 // lcl_translate_ship_name()
 //
 // For displaying ship names in german version in the briefing
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_ship_name(char *name)
 {
@@ -1871,7 +1871,7 @@ void lcl_translate_ship_name(char *name)
 // lcl_translate_targetbox_name()
 //
 // For displaying ship names in german version in the targetbox
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_targetbox_name(char *name)
 {
@@ -1923,7 +1923,7 @@ void lcl_translate_targetbox_name(char *name)
 // lcl_translate_targetbox_name_pl()
 //
 // For displaying ship names in polish version in the targetbox
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_targetbox_name_pl(char *name)
 {

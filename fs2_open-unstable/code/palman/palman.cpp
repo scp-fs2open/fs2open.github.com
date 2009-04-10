@@ -40,7 +40,7 @@
  *
  * Revision 2.1.2.1  2002/10/20 22:21:48  randomtiger
  * Some incomplete code to handle background drawing when message boxes are drawn.
- * It doesnt work but its a good base for someone to start from. - RT
+ * It doesn't work but it's a good base for someone to start from. - RT
  *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move

@@ -185,7 +185,7 @@
  *
  * Revision 2.14  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
- * Simulated speech doesnt say tags marked by $ now.
+ * Simulated speech doesn't say tags marked by $ now.
  * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
  * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
  * Error now given on missing briefing icon and bad ship normal data.

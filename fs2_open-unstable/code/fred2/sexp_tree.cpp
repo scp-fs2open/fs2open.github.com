@@ -1523,7 +1523,7 @@ void sexp_tree::right_clicked(int mode)
 
 					int op_type = query_operator_argument_type(op, Replace_count); // check argument type at this position
 
-					// special case dont allow replace data for variable names
+					// special case don't allow replace data for variable names
 					// Goober5000 - why?  the only place this happens is when replacing the ambiguous argument in
 					// modify-variable with a variable, which seems legal enough.
 					//if (op_type != OPF_AMBIGUOUS) {
@@ -1581,7 +1581,7 @@ void sexp_tree::right_clicked(int mode)
 				}
 			}
 
-			// cant modify if no variables
+			// can't modify if no variables
 			if (sexp_variable_count() == 0) {
 				menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_GRAYED);
 			}
@@ -1829,7 +1829,7 @@ void sexp_tree::right_clicked(int mode)
 
 			list = get_listing_opf(type, parent, Replace_count);
 
-			// special case dont allow replace data for variable names
+			// special case don't allow replace data for variable names
 			if ( (type != OPF_VARIABLE_NAME) && list) {
 				sexp_list_item *ptr;
 
@@ -2388,7 +2388,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		int type = get_type(item_handle);
 		Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
 
-		// dont do type check for modify-variable
+		// don't do type check for modify-variable
 		if (Modify_variable) {
 			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
 				type = SEXPT_NUMBER;

@@ -1154,7 +1154,7 @@
  * and posably fixed Turnsky's shinemap bug
  *
  * Revision 2.107  2004/02/16 11:47:34  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -1734,7 +1734,7 @@
  * 
  * 124   8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 123   8/05/99 6:19p Dave
  * New demo checksums.
@@ -7783,7 +7783,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			for (int zz=0; zz<6; zz++ ) {
-				// dont make sequence of fireballs for knossos
+				// don't make sequence of fireballs for knossos
 				if (knossos_ship) {
 					break;
 				}
@@ -8369,7 +8369,7 @@ void ship_check_player_distance_sub(player *p, int multi_target=-1)
 	}
 
 	if ( !(p->flags & PLAYER_FLAGS_FORCE_MISSION_OVER) && ((p->distance_warning_count > PLAYER_DISTANCE_MAX_WARNINGS) || (dist > PLAYER_MAX_DIST_END)) ) {
-//		DKA 5/17/99 - DONT force warpout.  Won't work multiplayer.  Blow up ship.
+//		DKA 5/17/99 - DON'T force warpout.  Won't work multiplayer.  Blow up ship.
 		if ( !(p->flags & PLAYER_FLAGS_DIST_TO_BE_KILLED) ) {
 			message_send_builtin_to_player( MESSAGE_STRAY_WARNING_FINAL, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, multi_target, -1 );
 			p->flags |= PLAYER_FLAGS_DIST_TO_BE_KILLED;
@@ -11184,7 +11184,7 @@ done_secondary:
 	//
 	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) ) {
 		//int fire_wait = (int)(Weapon_info[weapon].fire_wait * 1000.0f);	//DTP commented out, mistake, takes our current firewait time for our current weapon, it should have been our next valid weapon, but the weapon_info contains no Var for NEXT valid bank
-		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we cant call weapon_info on next fire_wait
+		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
 			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = MAX(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
 				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(1000);	//Bumped from 250 to 1000 because some people seem to be to triggerhappy :).

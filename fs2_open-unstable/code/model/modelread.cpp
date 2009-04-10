@@ -396,7 +396,7 @@
  *
  * Revision 2.30  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
- * Simulated speech doesnt say tags marked by $ now.
+ * Simulated speech doesn't say tags marked by $ now.
  * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
  * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
  * Error now given on missing briefing icon and bad ship normal data.
@@ -423,7 +423,7 @@
  *
  * Revision 2.25  2003/10/14 17:39:15  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *
@@ -2893,7 +2893,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				n = cfread_int(fp);
 				pm->n_textures = n;
-				// Dont overwrite memory!!
+				// Don't overwrite memory!!
 				Assert(n <= MAX_MODEL_TEXTURES);
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )

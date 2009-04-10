@@ -113,7 +113,7 @@
  *
  * Revision 2.13  2004/01/24 15:52:26  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
- * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ * In OGL it works perfectly and in both APIs it doesn't switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
  *
  * Revision 2.12  2004/01/17 21:59:54  randomtiger
  * Some small changes to the main codebase that allow Fred_open OGL to compile.
@@ -145,12 +145,12 @@
  *
  * I have also taken the opertunity to fix a few bugs in the launcher and add a new feature to make selecting mods a bit easier.
  *
- * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher wont compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
+ * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher won't compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
  *
  * I have also removed the internal launcher from the D3D8 module.
  * Please contact me if you have any problems.
  *
- * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and cant afford to find out.
+ * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and can't afford to find out.
  *
  * Revision 2.7  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.

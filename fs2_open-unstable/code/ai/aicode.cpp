@@ -858,7 +858,7 @@
  * 
  * 81    8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 80    8/10/99 5:02p Andsager
  * Fix bug where AI gets stuck in SM_EVADE_WEAPON with no target.
@@ -10330,7 +10330,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			return;
 		}
 
-		// dont attack if you can't see him
+		// don't attack if you can't see him
 		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], 1) < 1 ) {
 			// if he's a stealth and visible, but not targetable, ok to attack.
 			if ( is_object_stealth_ship(hitter_objp) ) {

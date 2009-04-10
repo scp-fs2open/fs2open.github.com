@@ -168,10 +168,10 @@
  * -DTP reworked mod support,
  *
  * Revision 2.6  2002/11/04 08:32:38  DTP
- * Made sure, that VP and Plain files dont get added twice to the search order. Side-effect of Mod support.
+ * Made sure that VP and Plain files don't get added twice to the search order. Side-effect of Mod support.
  *
  * Revision 2.5  2002/10/30 06:31:05  DTP
- * doh!, used upper case in include, dont know how much it matters for *nix systems, but here it is
+ * doh!, used upper case in include, don't know how much it matters for *nix systems, but here it is
  *
  * Revision 2.4  2002/10/27 23:59:28  DTP
  * DTP; started basic implementation of mod-support

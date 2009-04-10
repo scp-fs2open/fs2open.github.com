@@ -365,7 +365,7 @@ void CModifyVariableDlg::OnOK()
 	// validate data
 	validate_data(temp_data, RESET_FOCUS);
 	if (m_data_validated) {
-		// Dont get OnKillfocusModifyDefaultValue when ok
+		// Don't get OnKillfocusModifyDefaultValue when ok
 		if (!m_modified_value) {
 			if ( strcmp(Sexp_variables[get_sexp_var_index()].text, temp_data) ) {
 				m_modified_value = true;

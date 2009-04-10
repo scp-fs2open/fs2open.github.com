@@ -164,7 +164,7 @@
  *
  * Revision 2.17  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
- * Simulated speech doesnt say tags marked by $ now.
+ * Simulated speech doesn't say tags marked by $ now.
  * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
  * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
  * Error now given on missing briefing icon and bad ship normal data.
@@ -179,7 +179,7 @@
  * Added fix for fogging debris in D3D htl.
  *
  * Revision 2.14  2003/11/29 10:52:10  randomtiger
- * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Turned off D3D file mapping, it's using too much memory which may be hurting older systems and doesn't seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
  * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
  * Added fix for fonts wrapping round in non standard hi res modes.
@@ -217,7 +217,7 @@
  *
  * Revision 2.8  2003/10/14 17:39:16  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *

@@ -428,7 +428,7 @@ char *GetChatUserList()
 // You can't be in more than one channel at a time with this API, so you
 // leave the current channel before trying to join
 // a new one. Because of this if the join fails, make sure you try to join
-// another channel, or the user wont be able to chat
+// another channel, or the user won't be able to chat
 //-1 Failed to join
 // 0 joining
 // 1 successfully joined

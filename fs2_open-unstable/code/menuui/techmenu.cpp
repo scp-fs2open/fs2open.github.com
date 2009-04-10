@@ -774,7 +774,7 @@ void techroom_render_desc(int xo, int yo, int ho)
 	// maybe output 'more' indicator
 	if ( z < Text_size ) {
 		// can be scrolled down
-		int more_txt_x = Tech_desc_coords[gr_screen.res][0] + (Tech_desc_coords[gr_screen.res][2]/2) - 10;	// FIXME should move these to constants since they dont move
+		int more_txt_x = Tech_desc_coords[gr_screen.res][0] + (Tech_desc_coords[gr_screen.res][2]/2) - 10;	// FIXME should move these to constants since they don't move
 		int more_txt_y = Tech_desc_coords[gr_screen.res][1] + Tech_desc_coords[gr_screen.res][3];				// located below brief text, centered
 		int w, h;
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
@@ -1052,7 +1052,7 @@ void tech_scroll_list_down()
 	}
 }
 
-// this doesnt do a thing...
+// this doesn't do a thing...
 void tech_ship_scroll_capture()
 {
 	techroom_select_new_entry();
@@ -1249,7 +1249,7 @@ void techroom_change_tab(int num)
 					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask) || (Weapon_info[i].wi_flags2 & mask2))
 					{ 
 						//following was commented out to fix the tech room crash bug when modified weapons.tbl is used.  Fix by Phreak, implemented by Sesquipedalian.
-						// note: hack here to exclude dogfight weapons -- dont put weapon in if it has same description as pvs weapon
+						// note: hack here to exclude dogfight weapons -- don't put weapon in if it has same description as pvs weapon
 						//if ((Weapon_list_size > 0) && (!strcmp(Weapon_info[i].tech_desc, Weapon_list[Weapon_list_size-1].desc))) {
 						//	continue;
 						//}
@@ -1355,7 +1355,7 @@ void techroom_change_tab(int num)
 			}
 
 			// index lookup on intel is a pretty pointless, but it keeps everything 
-			// consistent and doesnt really hurt anything
+			// consistent and doesn't really hurt anything
 			Current_list = Intel_list;
 			Current_list_size = Intel_list_size;
 
@@ -1465,7 +1465,7 @@ int techroom_load_ani(anim **animpp, char *name)
 	char anim_filename[64] = "2_";
 
 	// hi-res support
-	// (i dont think there are any hi-res anims for these tho)
+	// (i don't think there are any hi-res anims for these tho)
 	if (gr_screen.res == GR_1024) {
 		strcat(anim_filename, name);
 	} else {

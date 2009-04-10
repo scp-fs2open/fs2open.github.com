@@ -37,7 +37,7 @@
  * --Goober5000
  *
  * Revision 2.2  2003/01/27 00:51:08  DTP
- * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
+ * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still can't join. narrowing it down.
  *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move

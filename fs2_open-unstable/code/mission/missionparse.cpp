@@ -954,7 +954,7 @@
  * Knossos warp-in warp-out.
  * 
  * 52    8/03/99 5:35p Andsager
- * Dont draw target dot for instructor in training mission
+ * Don't draw target dot for instructor in training mission
  * 
  * 51    7/30/99 7:01p Dave
  * Dogfight escort gauge. Fixed up laser rendering in Glide.

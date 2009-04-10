@@ -2768,7 +2768,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	}
 
 	// If no turret is attacking, check if objp is actually targetting attacked_objnum
-	// dont bail if targeting is for player
+	// don't bail if targeting is for player
 	if ( !targeting_player && !turret_is_attacking ) {
 		ai_info *aip = &Ai_info[esct->shipp->ai_index];
 
@@ -4297,7 +4297,7 @@ void hud_show_hostile_triangle()
 
 		aip = &Ai_info[Ships[A->instance].ai_index];
 
-		// dont look at ignore ships
+		// don't look at ignore ships
 		if ( sp->flags & TARGET_SHIP_IGNORE_FLAGS ) {
 			continue;
 		}

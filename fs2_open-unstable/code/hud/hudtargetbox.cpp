@@ -330,7 +330,7 @@
  * revised the subsystem localization
  * 
  * 27    9/14/99 11:03p Jefff
- * dont draw target names from # on (weapons case)
+ * don't draw target names from # on (weapons case)
  * 
  * 26    9/04/99 5:17p Andsager
  * Make event log record name of destroyed subsytem, and use this name for
@@ -1698,7 +1698,7 @@ void hud_render_target_debris(object *target_objp)
 		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
 
-		// This calls the colour that doesnt get reset
+		// This calls the colour that doesn't get reset
 		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		hud_render_target_close();
 	}

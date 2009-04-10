@@ -373,7 +373,7 @@
  * larger fireballs
  * 
  * 47    9/05/99 11:10a Andsager
- * Fix up which split ship get debris pieces.  Dont render debris pieces
+ * Fix up which split ship get debris pieces.  Don't render debris pieces
  * for split ships until they are near clip plane.
  * 
  * 46    9/02/99 12:55a Mikek
@@ -405,7 +405,7 @@
  * 
  * 37    8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 36    8/05/99 2:06a Dave
  * Whee.
@@ -3725,7 +3725,7 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 			if (get_hull_pct(obj) < .2f)
 			{
 				shipfx_stop_cloak(shipp,25000);
-				break;			//dont need to calc alpha
+				break;			//don't need to calc alpha
 			}
 
 			shipp->cloak_alpha = fl2i(shipfx_calc_visibility(obj, &Eye_position) * 255.0f);

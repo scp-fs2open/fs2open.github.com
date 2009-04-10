@@ -169,7 +169,7 @@
  * Set D3D fogging to fall back to vertex fog if table fog not supported.
  *
  * Revision 2.13  2004/02/16 11:47:33  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -188,7 +188,7 @@
  *
  * Revision 2.11  2004/01/24 15:52:26  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
- * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ * In OGL it works perfectly and in both APIs it doesn't switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
  *
  * Revision 2.10  2003/11/06 21:10:26  randomtiger
  * Added my batching solution for more efficient d3d_string.
@@ -243,7 +243,7 @@
  * The big include file move
  *
  * Revision 2.1  2002/07/29 07:56:10  DTP
- * FIX; Startgame arguement dont go ahead when a singleplayer pilot is selected
+ * FIX; Startgame arguement don't go ahead when a singleplayer pilot is selected
  *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync

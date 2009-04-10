@@ -960,7 +960,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	aip->active_goal = AI_GOAL_NONE;					// for good measure
 
 	// next line moved here on 8/5/97 by MWA
-	// Dont reset player ai (and hence target)
+	// Don't reset player ai (and hence target)
 	// Goober5000 - account for player ai
 	//if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) || Player_use_ai ) {
 	if ( (Player_ship == NULL) || (&Ships[aip->shipnum] != Player_ship) || Player_use_ai )

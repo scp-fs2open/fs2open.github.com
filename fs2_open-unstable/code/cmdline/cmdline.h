@@ -235,7 +235,7 @@
  * and other stuff
  *
  * Revision 2.46  2004/02/16 11:47:31  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -271,7 +271,7 @@
  * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
  *
  * Revision 2.40  2003/11/29 10:52:09  randomtiger
- * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Turned off D3D file mapping, it's using too much memory which may be hurting older systems and doesn't seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
  * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
  * Added fix for fonts wrapping round in non standard hi res modes.
@@ -308,12 +308,12 @@
  *
  * Revision 2.35  2003/11/08 22:25:47  Kazan
  * Timerbar was enabled in both release and debug - so i made it a command line option "-timerbar"
- * DONT MESS WITH OTHER PEOPLES INCLUDE PATHS
- * DONT MESS WITH EXEC NAMES (leave it fs2_open_r and fs2_open_d) or paths!
+ * DON'T MESS WITH OTHER PEOPLES INCLUDE PATHS
+ * DON'T MESS WITH EXEC NAMES (leave it fs2_open_r and fs2_open_d) or paths!
  *
  * Revision 2.34  2003/11/03 18:07:26  randomtiger
  * Added -d3d_no_vsync command to make turning off vsync optional.
- * Removed 32bit command, it doesnt do anything.
+ * Removed 32bit command, it doesn't do anything.
  * Made aa multisample reg check safe.
  *
  * Revision 2.33  2003/10/27 23:04:20  randomtiger
@@ -394,7 +394,7 @@
  * Added "-dshowvid" command-line option, which must be set in order for movies to play.
  *
  * Revision 2.16  2002/12/21 13:39:25  DTP
- * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
+ * did bit more house keeping. modfied Phreak's fps cmdline a bit, so that we don't have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
  *
  * Revision 2.15  2002/12/17 03:08:18  DTP
  * fix to Show_framerate. seems it will call an unresolved external error during fred builds. modified my ifndefs a bit, dsw modified to include preprocessor tag FRED.
@@ -440,7 +440,7 @@
  * Revision 2.3.2.2  2002/11/04 21:24:59  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.3.2.1  2002/08/27 13:19:02  penguin

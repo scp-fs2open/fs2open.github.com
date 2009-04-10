@@ -971,7 +971,7 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 				// reset timestamp
 				Lock_gauge_draw_stamp = timestamp(1000 / (2 * LOCK_GAUGE_BLINK_RATE));
 
-				// switch between draw and dont-draw
+				// switch between draw and don't-draw
 				Lock_gauge_draw = !Lock_gauge_draw;
 			}
 
