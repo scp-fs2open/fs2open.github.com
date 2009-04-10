@@ -197,7 +197,7 @@ bool run_file(char *app_name, char *app_path, char *comm_line, bool wait)
 
 		do 
 		{
-			// Sleep so we dont query madly and slow everything down
+			// Sleep so we don't query madly and slow everything down
 			Sleep(20);
 			GetExitCodeProcess(process_info.hProcess, &exit_code);
 		} while (exit_code == STILL_ACTIVE);
@@ -245,7 +245,7 @@ HKEY reg_create_dir(const char *reg_path)
 }
 
 /**
- * General function for changing registry entries, creates if they dont already exist
+ * General function for changing registry entries; creates if they don't already exist
  *
  * @param const char *reg_path - Path of key
  * @param const char *keyname  - Name of subkey

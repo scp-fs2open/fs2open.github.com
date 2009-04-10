@@ -87,10 +87,10 @@ BEGIN
         BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "Source Code Project\0"
-            VALUE "FileDescription", "Freespace Launcher\0"
+            VALUE "FileDescription", "FreeSpace Launcher\0"
             VALUE "FileVersion", "5.5e\0"
             VALUE "InternalName", "Launcher\0"
-            VALUE "LegalCopyright", "Copyright (C) 2007\0"
+            VALUE "LegalCopyright", "Copyright (C) 2007-2009\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "Launcher.exe\0"
             VALUE "PrivateBuild", "\0"
@@ -431,7 +431,7 @@ BEGIN
     LTEXT           "List type",IDC_STATIC,7,93,27,8
     CTEXT           "Double click flag for online documentation on the feature",
                     IDC_STATIC,7,184,186,9
-    PUSHBUTTON      "Use MOD's default settings",IDC_SETTINGS_MOD,99,36,94,
+    PUSHBUTTON      "Use mod's default settings",IDC_SETTINGS_MOD,99,36,94,
                     14,NOT WS_VISIBLE | WS_DISABLED
     PUSHBUTTON      "Use your normal settings",IDC_SETTINGS_NORMAL,7,36,88,
                     14,NOT WS_VISIBLE | WS_DISABLED
@@ -441,10 +441,10 @@ IDD_MOD DIALOG DISCARDABLE  0, 0, 208, 198
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
-    PUSHBUTTON      "Select MOD",IDC_MOD_SELECT,7,3,44,14
-    PUSHBUTTON      "No MOD",IDC_MOD_NONE,55,3,44,14
+    PUSHBUTTON      "Select Mod",IDC_MOD_SELECT,7,3,44,14
+    PUSHBUTTON      "No Mod",IDC_MOD_NONE,55,3,44,14
     CTEXT           "",IDC_MOD_NAME,104,3,81,14,SS_CENTERIMAGE | SS_SUNKEN
-    GROUPBOX        "MOD Details",IDC_STATIC,8,20,185,172
+    GROUPBOX        "Mod Details",IDC_STATIC,8,20,185,172
     CONTROL         "",IDC_MOD_IMAGE,"Static",SS_BITMAP,15,34,170,69
     PUSHBUTTON      "Website",IDC_MOD_WEBSITE,15,170,76,14,WS_DISABLED
     PUSHBUTTON      "Forum",IDC_MOD_FORUM,109,169,76,14,WS_DISABLED

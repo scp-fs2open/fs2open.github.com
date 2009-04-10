@@ -105,19 +105,6 @@ void remove_file_from_path(char *path)
 	}
 }
 
-char *strcpy_malloc(char *text)
-{
-	if(text == NULL)
-	{
-		return NULL;
-	}
-
-	int len = strlen(text) + 1;
-	char *new_string = (char *) malloc (sizeof(char) * len);
-	strcpy(new_string, text);
-	return new_string;
-}
-
 FILE *ini_open_for_write(char *filepath, bool append, char *comment)
 {
 	char *open_type = append ? "a" : "w";

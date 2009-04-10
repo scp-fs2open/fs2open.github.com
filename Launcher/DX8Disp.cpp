@@ -99,7 +99,7 @@ BOOL CDX8Disp::OnInitDialog()
 		GetDlgItem(IDC_RES_LIST)->ShowWindow(FALSE);
 		GetDlgItem(IDC_CDEPTH_LIST)->ShowWindow(FALSE);
 		GetDlgItem(IDC_ANTIALIAS_LIST)->ShowWindow(FALSE);
-		MessageBox("You do not have DX8.1 installed, cannot offer D3D8 options", "Error", MB_ICONERROR);
+		MessageBox("You do not have DX8.1 installed; cannot offer D3D8 options", "Error", MB_ICONERROR);
 		return TRUE;
 	}
 
@@ -141,7 +141,7 @@ void CDX8Disp::UpdateAdapterList(int select)
 	{
 		if(FAILED(d3d_interface->GetAdapterIdentifier(i, D3DENUM_NO_WHQL_LEVEL, &identifier)))
 		{
-			MessageBox("Failed GetAdapterIdentifier in UpdateAdapterList, trying with WHQL_LEVEL", "Error", MB_ICONWARNING);
+			MessageBox("Failed GetAdapterIdentifier in UpdateAdapterList; trying with WHQL_LEVEL", "Error", MB_ICONWARNING);
 			if(FAILED(d3d_interface->GetAdapterIdentifier(i, 0, &identifier)))
 			{
 				MessageBox("Failed again, cannot get adapter", "Error", MB_ICONERROR);
@@ -254,7 +254,7 @@ void CDX8Disp::UpdateResList(
 
 /*
 		// Lets look ahead and get the lowest refresh rate
-		// Cant assume there will be at least 60 or 0
+		// Can't assume there will be at least 60 or 0
 		while(i > 0)
 		{
 			D3DDISPLAYMODE next_mode;
@@ -511,7 +511,7 @@ void CDX8Disp::OnGenCaps()
 	D3DCAPS8 caps;
 	HRESULT hr = d3d_interface->GetDeviceCaps(selected_adapter, D3DDEVTYPE_HAL, &caps);
 
-	// Dont quit, continue on sometimes it doesnt matter!
+	// Don't quit, continue on; sometimes it doesn't matter!
    	if(FAILED(hr))
 	{
 		char buffer[100];

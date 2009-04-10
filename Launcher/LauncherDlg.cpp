@@ -344,7 +344,7 @@ void CLauncherDlg::OnApply()
 		tab_sound.OnApply();
 		tab_speech.OnApply();
 		tab_network.OnApply();
-		// Call MOD apply from inside comm line 		
+		// Call mod apply from inside comm line 		
 	}
 }
 

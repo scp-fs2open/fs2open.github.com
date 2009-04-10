@@ -101,7 +101,7 @@ BOOL CDX9Disp::OnInitDialog()
 		GetDlgItem(IDC_ADAPTER_LIST)->ShowWindow(FALSE);
 		GetDlgItem(IDC_RES_LIST)->ShowWindow(FALSE);
 		GetDlgItem(IDC_ANTIALIAS_LIST)->ShowWindow(FALSE);
-		MessageBox("You do not have DX9.1 installed, cannot offer D3D9 options", "Error", MB_ICONERROR);
+		MessageBox("You do not have DX9.1 installed; cannot offer D3D9 options", "Error", MB_ICONERROR);
 		return TRUE;
 	}
 
@@ -244,7 +244,7 @@ void CDX9Disp::UpdateResList(
 		}
 
 		// Lets look ahead and get the lowest refresh rate
-		// Cant assume there will be at least 60 or 0
+		// Can't assume there will be at least 60 or 0
 		while(i > 0)
 		{
 			D3DDISPLAYMODE next_mode;
@@ -425,7 +425,7 @@ void CDX9Disp::OnGenCaps()
 	D3DCAPS9 caps;
 	HRESULT hr = d3d_interface->GetDeviceCaps(selected_adapter, D3DDEVTYPE_HAL, &caps);
 
-	// Dont quit, continue on sometimes it doesnt matter!
+	// Don't quit, continue on; sometimes it doesn't matter!
    	if(FAILED(hr))
 	{
 		char buffer[100];

@@ -82,24 +82,24 @@ void CTabMOD::OnModSelect()
 {
 	char absolute_path[MAX_PATH];
 	if(browse_for_dir(GetSafeHwnd(), Settings::exe_pathonly, absolute_path, 
-		"Select your Freespace 2 mod dir") == false)
+		"Select your FreeSpace 2 mod directory") == false)
 	{
 		return;
 	}
 
 	if(strlen(absolute_path) == 0)
 	{  
-		MessageBox("Not a valid MOD directory");
+		MessageBox("Not a valid mod directory");
 		return;
 	}
 
 /*	if(strchr(absolute_path,' '))
 	{
-		MessageBox("Mod directory name cant contain space");
+		MessageBox("Mod directory name can't contain space");
 		return;
 	}*/
 
-	if(stricmp(Settings::exe_pathonly, absolute_path)	== 0)
+	if(stricmp(Settings::exe_pathonly, absolute_path) == 0)
 	{
 		MessageBox("Cannot choose root");
 		return;
@@ -128,12 +128,12 @@ void CTabMOD::SetSettings(char *flags)
 
 	if(ini == NULL)
 	{
-		MessageBox("Couldnt write MOD settings.ini");
+		MessageBox("Couldnt write mod settings.ini");
 		return;
 	}
 
 	ini_write_type(ini, "[settings]");
-	ini_write_comment(ini, "These are the users setting, dont distribute with MOD");
+	ini_write_comment(ini, "These are the user's settings; don't distribute them with the mod because he'll want to choose his own");
 	ini_write_data(ini, "flags", flags);
 
 	ini_close(ini);
@@ -155,7 +155,7 @@ char *CTabMOD::GetSettings(bool defaultSettings)
 		if(ini != NULL)
 		{
 			iniparser_dump(ini, stderr);
-			char *flags = strcpy_malloc(iniparser_getstr(ini, "settings:flags"));
+			char *flags = strdup(iniparser_getstr(ini, "settings:flags"));
 			// Get settings from there
 			iniparser_freedict(ini);
 			return flags;
@@ -167,14 +167,14 @@ char *CTabMOD::GetSettings(bool defaultSettings)
 
 	dictionary *ini = iniparser_load(ini_name);
 
-	// If settings.ini doesnt exist
+	// If settings.ini doesn't exist
 	if(ini == NULL)
 	{	
 		return NULL;
 	}
 
 	iniparser_dump(ini, stderr);
-	char *flags = strcpy_malloc(iniparser_getstr(ini, "settings:flags"));
+	char *flags = strdup(iniparser_getstr(ini, "settings:flags"));
 	iniparser_freedict(ini);
 
 
@@ -182,7 +182,7 @@ char *CTabMOD::GetSettings(bool defaultSettings)
 	return flags;
 }
 
-// This may be called when no MOD is selected, in which case mod_selected is set to false
+// This may be called when no mod is selected, in which case mod_selected is set to false
 void CTabMOD::SetMOD(char *absolute_path) 
 {
 	strcpy(m_absolute_text,absolute_path);
@@ -250,20 +250,20 @@ bool CTabMOD::parse_ini_file(char * ini_name)
 
 	iniparser_dump(ini, stderr);
 	
-	ini_text[INI_MOD_NAME]	  = strcpy_malloc(iniparser_getstr(ini, "launcher:modname"));
-	ini_text[INI_IMAGE_NAME]  = strcpy_malloc(iniparser_getstr(ini, "launcher:image255x112"));
-	ini_text[INI_MOD_TEXT]	  =	strcpy_malloc(iniparser_getstr(ini, "launcher:infotext"));
-	ini_text[INI_URL_WEBSITE] = strcpy_malloc(iniparser_getstr(ini, "launcher:website"));
-	ini_text[INI_URL_FORUM]	  =	strcpy_malloc(iniparser_getstr(ini, "launcher:forum"));
-	ini_text[INI_MOD_PRI]	  =	strcpy_malloc(iniparser_getstr(ini, "multimod:primarylist"));
+	ini_text[INI_MOD_NAME]	  = strdup(iniparser_getstr(ini, "launcher:modname"));
+	ini_text[INI_IMAGE_NAME]  = strdup(iniparser_getstr(ini, "launcher:image255x112"));
+	ini_text[INI_MOD_TEXT]	  =	strdup(iniparser_getstr(ini, "launcher:infotext"));
+	ini_text[INI_URL_WEBSITE] = strdup(iniparser_getstr(ini, "launcher:website"));
+	ini_text[INI_URL_FORUM]	  =	strdup(iniparser_getstr(ini, "launcher:forum"));
+	ini_text[INI_MOD_PRI]	  =	strdup(iniparser_getstr(ini, "multimod:primarylist"));
 	
 	if (p=iniparser_getstr(ini, "multimod:secondarylist"))
 	{
-		ini_text[INI_MOD_SEC]  = strcpy_malloc(p);
+		ini_text[INI_MOD_SEC]  = strdup(p);
 	}
 	else if (p=iniparser_getstr(ini, "multimod:secondrylist"))
 	{
-		ini_text[INI_MOD_SEC]  = strcpy_malloc(p);
+		ini_text[INI_MOD_SEC]  = strdup(p);
 	}
 	else
 	{
@@ -279,25 +279,38 @@ bool CTabMOD::parse_ini_file(char * ini_name)
 
 void CTabMOD::CheckModSetting(char *mod_string)
 {
-	char *current = mod_string;
+	char *current = strchr(mod_string, '-');
 
 	while(current != NULL)
 	{
-		current = strchr(current, '-');
+		// first, see if this is an embedded dash
+		bool embedded_dash = true;
+		char *prev = current--;
+		if (current == mod_string)	// the first character
+			embedded_dash = false;
+		else if (*prev = ' ')		// preceded by space
+			embedded_dash = false;
+		else if (*prev = '\t')		// preceded by tab
+			embedded_dash = false;
+		else if (*prev = '\n')		// preceded by newline
+			embedded_dash = false;
 
-		if(current != NULL)
+		// if it's a proper start to a command-line option, then check the next few characters
+		if(!embedded_dash)
 		{
 			if(current[1] != 'm' ||
 			   current[2] != 'o' ||
 			   current[3] != 'd' ||
 			   current[4] != ' ')
 			{
-				MessageBox("Invalid MOD ini mulitple mod parameter, only -mod calls are allowed");
+				MessageBox("Invalid mod.ini multiple mod parameter; only -mod calls are allowed");
 				exit(0);
 			}
-			current++;
 		}
 
+		// continue searching
+		current++;
+		current = strchr(current, '-');
 	}
 }
 

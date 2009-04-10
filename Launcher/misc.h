@@ -5,7 +5,6 @@ bool file_exists(char *path);
 int get_file_size(char *path);
 char *get_filename_from_path(char *path);
 void remove_file_from_path(char *path);
-char *strcpy_malloc(char *text);
 
 FILE *ini_open_for_write(char *filepath, bool append, char *comment);
 void ini_write_type(FILE *fp, char *type);

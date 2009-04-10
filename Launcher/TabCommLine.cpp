@@ -51,7 +51,7 @@ ExeType exe_types[MAX_EXE_TYPES + 2] =
 	"FS.exe",	   "Volition", "FreeSpace", 		FLAG_MULTI | FLAG_D3D5 | FLAG_FS1 | FLAG_3DFX | FLAG_SFT,	
 	"Placeholder", NULL,		NULL,				0,
 	// Insert new exe data here and in exe_types_string
-	"CUSTOM DONT CHANGE", NULL, NULL,					FLAG_MULTI | FLAG_SCP,
+	"CUSTOM DON'T CHANGE", NULL, NULL,					FLAG_MULTI | FLAG_SCP,
 };
 
 typedef struct

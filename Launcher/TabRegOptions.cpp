@@ -191,7 +191,7 @@ void CTabRegOptions::FillRegList()
 
 			if (pdata == NULL)
 			{
-				MessageBox("An error has occured reading from the registry, cancelling...");
+				MessageBox("An error has occured reading from the registry; cancelling...");
 				break;
 			}
 		} // end cheap data space check
@@ -218,7 +218,7 @@ void CTabRegOptions::FillRegList()
 		if(result != ERROR_SUCCESS && result != ERROR_NO_MORE_ITEMS && result != ERROR_MORE_DATA)
 		{
 			delete[] pdata;
-			MessageBox("An error has occured reading from the registry, cancelling...");
+			MessageBox("An error has occured reading from the registry; cancelling...");
 			break;
 		}
 

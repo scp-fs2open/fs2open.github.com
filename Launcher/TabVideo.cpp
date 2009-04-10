@@ -205,7 +205,7 @@ void CTabVideo::SelectTab(int select)
 		api_dialogs[m_last_tab]->ShowWindow(SW_HIDE);
 	}
 
-	// Bail here if we dont want to display any new tab
+	// Bail here if we don't want to display any new tab
 	if(select < 0 || select > MAX_GR_TYPES || api_dialogs[select] == NULL)
 	{
 		m_last_tab = -1;
