@@ -3091,7 +3091,7 @@ void init_ship_entry(ship_info *sip)
 	sip->radar_image_size = -1;
 	sip->radar_projection_size_mult = 1.0f;
 
-	sip->num_shield_segments = 4;
+	sip->num_shield_segments = MAX_SHIELD_SECTIONS;
 
 	sip->emp_resistance_mod = 0.0f;
 }
@@ -4093,8 +4093,6 @@ strcpy(parse_error_text, temp_error);
 
 	if(optional_string("$Shields:")) {
 		stuff_float(&sip->max_shield_strength);
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
-			sip->max_shield_segment_strength[i] = sip->max_shield_strength / 4;
 	}
 
 	// optional shield color
@@ -4106,6 +4104,31 @@ strcpy(parse_error_text, temp_error);
 	
 	if(optional_string("$Number of Shield Segments:")){
 		stuff_int(&sip->num_shield_segments);
+		if (sip->max_shield_strength > 0.0f) {
+			switch(sip->num_shield_segments) {
+				case 1:
+					for (i = 0; i < MAX_SHIELD_SECTIONS; i++) {
+						if (i == 0)
+							sip->max_shield_segment_strength[i] = sip->max_shield_strength;
+						else
+							sip->max_shield_segment_strength[i] = 0.0f;
+					}
+					break;
+				case 2:
+					for (i = 0; i < MAX_SHIELD_SECTIONS; i++) {
+						if (i < 2)
+							sip->max_shield_segment_strength[i] = sip->max_shield_strength / 2;
+						else
+							sip->max_shield_segment_strength[i] = 0.0f;
+					}
+					break;
+				default:
+					sip->num_shield_segments = MAX_SHIELD_SECTIONS;
+					for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+						sip->max_shield_segment_strength[i] = sip->max_shield_strength / 4;
+					break;
+			}
+		}
 	}
 
 	if(optional_string("$Shield Segments:")) {
@@ -4113,7 +4136,10 @@ strcpy(parse_error_text, temp_error);
 		float tempf_sum = 0.0f;
 		stuff_float_list(tempf, 4);
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++) {
-			sip->max_shield_segment_strength[i] = tempf[i];
+			if (i < sip->num_shield_segments)
+				sip->max_shield_segment_strength[i] = tempf[i];
+			else
+				sip->max_shield_segment_strength[i] = 0.0f;
 			tempf_sum += tempf[i];
 		}
 		sip->max_shield_strength = tempf_sum;
