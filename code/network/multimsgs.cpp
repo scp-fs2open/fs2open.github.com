@@ -641,7 +641,7 @@
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
 #include "fs2netd/fs2netd_client.h"
-
+#include "network/multi_sexp.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -9206,4 +9206,53 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 
 	// do eet
 	ship_self_destruct(&Objects[Net_players[np_index].m_player->objnum]);
+}
+
+void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+	int i;
+	ushort val; 
+
+	Assert (MULTIPLAYER_MASTER);
+	// must have a bare minimum of OP, COUNT and TERMINATOR
+	if (num_ubytes < 9) {
+		Warning(LOCATION, "Invalid call to send_sexp_packet. Not enough data included!"); 
+		return; 
+	}
+	
+	BUILD_HEADER(SEXP);
+
+	val = (ushort)num_ubytes;
+	ADD_USHORT(val);
+
+	for (i =0; i < num_ubytes; i++) {
+		data[packet_size] = sexp_packet[i]; 
+		packet_size++; 
+
+		Assert (packet_size <= MAX_PACKET_SIZE); 
+	}
+
+	// send to all
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_sexp_packet(ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	int i;
+	ushort num_ubytes;
+	ubyte received_packet[MAX_PACKET_SIZE]; 
+
+	// get the number of bytes of data in the packet
+	GET_USHORT(num_ubytes);
+
+	for (i=0; i < num_ubytes; i++) {
+		GET_DATA(received_packet[i]); 
+	}
+
+	PACKET_SET_SIZE();
+
+	sexp_packet_received(received_packet, num_ubytes);
 }

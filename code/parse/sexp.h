@@ -848,6 +848,7 @@
  */
 
 #include "globalincs/pstypes.h"	// for NULL
+#include <vector>
 
 #ifndef _SEXP_H
 #define _SEXP_H
@@ -1719,6 +1720,8 @@ extern int Players_target_timestamp;
 extern int Players_mlocked_timestamp;
 extern int Sexp_clipboard;  // used by Fred
 
+extern std::vector<int> Current_sexp_operator;
+
 extern void init_sexp();
 extern int alloc_sexp(char *text, int type, int subtype, int first, int rest);
 extern int find_free_sexp();
@@ -1824,5 +1827,8 @@ extern int Num_submenus;
 //WMC
 //Outputs sexp.html file
 bool output_sexps(char *filepath);
+
+
+void multi_sexp_eval();
 
 #endif
