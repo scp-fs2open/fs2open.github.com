@@ -4093,6 +4093,9 @@ strcpy(parse_error_text, temp_error);
 
 	if(optional_string("$Shields:")) {
 		stuff_float(&sip->max_shield_strength);
+		sip->num_shield_segments = MAX_SHIELD_SECTIONS;
+		for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+			sip->max_shield_segment_strength[i] = sip->max_shield_strength / 4;
 	}
 
 	// optional shield color
