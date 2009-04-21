@@ -22075,10 +22075,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest:\tShips or wings to check" },
 
 	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
-		"\tReturns the amount of damage one or more ships or wings have done to a ship.\r\n\r\n"
+		"\tReturns the amount of damage one or more ships have done to a ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tShip that has been damaged.\r\n"
-		"\t2:\tName of ships or wings that may have damaged it." },
+		"\t2:\tName of ships that may have damaged it." },
 
 	{ OP_LAST_ORDER_TIME, "Last order time (Status operator)\r\n"
 		"\tReturns true if <count> seconds have elapsed since one or more ships have received "
