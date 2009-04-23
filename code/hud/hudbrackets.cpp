@@ -128,7 +128,7 @@
  *
  * 
  * 6     8/03/99 5:35p Andsager
- * Dont draw target dot for instructor in training mission
+ * Don't draw target dot for instructor in training mission
  * 
  * 5     6/07/99 4:20p Andsager
  * Add HUD color for tagged object.  Apply to target and radar.

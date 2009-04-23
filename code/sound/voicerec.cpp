@@ -228,7 +228,7 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 				int wingType = pElements->pProperties->vValue.ulVal;
 				int shipNum = pElements->pProperties->pNextSibling->vValue.ulVal;
 
-				// Cant issue commands to yourself
+				// Can't issue commands to yourself
 				if(wingType == 0 && shipNum == 1)
 				{
 					break;

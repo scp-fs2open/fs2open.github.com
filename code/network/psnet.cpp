@@ -113,7 +113,7 @@
  * infinate loop
  * 
  * 99    7/06/98 5:05p Allender
- * dont use default port to send UDP data to.  Use port stored in address
+ * don't use default port to send UDP data to.  Use port stored in address
  * 
  * 98    6/13/98 9:32p Mike
  * Kill last character in file which caused "Find in Files" to report the

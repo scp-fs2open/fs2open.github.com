@@ -543,7 +543,7 @@ int popupdead_do_frame(float frametime)
 		return -1;
 	}
 
-	// dont let dude skip 3-09.  hack.
+	// don't let dude skip 3-09.  hack.
 	if(Game_mode & GM_CAMPAIGN_MODE){
 		if((Campaign.current_mission >= 0) && (Campaign.current_mission < MAX_CAMPAIGN_MISSIONS)){
 			if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, "sm3-09.fs2")) {
@@ -570,7 +570,7 @@ int popupdead_do_frame(float frametime)
 			gameseq_post_event(GS_EVENT_START_GAME);
 			return -1;
 		case 2:
-			// dont show this again
+			// don't show this again
 			Player->show_skip_popup = 0;
 			break;
 		}

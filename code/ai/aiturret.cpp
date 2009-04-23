@@ -1101,7 +1101,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 				return -1.0f;
 			}
 		} else {
-			// target is in sight and we dont care if its in turret's fov or not
+			// target is in sight and we don't care if its in turret's fov or not
 			return dot_return;
 		}
 	} else

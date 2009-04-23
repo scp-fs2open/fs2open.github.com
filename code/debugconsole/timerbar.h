@@ -21,7 +21,7 @@
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
  * Revision 1.8  2004/02/16 11:47:31  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -50,8 +50,8 @@
  *
  * Revision 1.4  2003/11/08 22:25:47  Kazan
  * Timerbar was enabled in both release and debug - so i made it a command line option "-timerbar"
- * DONT MESS WITH OTHER PEOPLES INCLUDE PATHS
- * DONT MESS WITH EXEC NAMES (leave it fs2_open_r and fs2_open_d) or paths!
+ * DON'T MESS WITH OTHER PEOPLES INCLUDE PATHS
+ * DON'T MESS WITH EXEC NAMES (leave it fs2_open_r and fs2_open_d) or paths!
  *
  *
  * $NoKeywords: $

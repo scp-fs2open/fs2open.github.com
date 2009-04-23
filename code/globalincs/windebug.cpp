@@ -284,6 +284,9 @@ extern void gr_activate(int active);
 
 bool Messagebox_active = false;
 
+int Global_warning_count = 0;
+int Global_error_count = 0;
+
 #ifdef _MSC_VER
 #include <crtdbg.h>
 
@@ -1188,6 +1191,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 void _cdecl Error( char * filename, int line, const char * format, ... )
 {
+	Global_error_count++;
+
 	int val;
 	va_list args;
 
@@ -1241,6 +1246,8 @@ void _cdecl Error( char * filename, int line, const char * format, ... )
 
 void _cdecl Warning( char *filename, int line, const char *format, ... )
 {
+	Global_warning_count++;
+
 #ifndef NDEBUG
 	va_list args;
 	int result;

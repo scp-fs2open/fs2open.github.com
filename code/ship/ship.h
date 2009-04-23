@@ -786,7 +786,7 @@
  * 
  * 66    8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 65    8/02/99 10:39p Dave
  * Added colored shields. OoOoOoooOoo

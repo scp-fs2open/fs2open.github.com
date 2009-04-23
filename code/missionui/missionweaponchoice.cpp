@@ -987,7 +987,7 @@ static int Wl_bank_coords[GR_NUM_RESOLUTIONS][MAX_SHIP_WEAPONS][2] = {
 };
 
 static int Wl_bank_count_draw_flags[MAX_SHIP_WEAPONS] = { 
-	0, 0, 0,			// primaries -- dont draw counts
+	0, 0, 0,			// primaries -- don't draw counts
 	1, 1, 1, 1		// secondaries -- do draw counts
 };
 

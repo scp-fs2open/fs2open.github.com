@@ -954,7 +954,7 @@
  * Knossos warp-in warp-out.
  * 
  * 52    8/03/99 5:35p Andsager
- * Dont draw target dot for instructor in training mission
+ * Don't draw target dot for instructor in training mission
  * 
  * 51    7/30/99 7:01p Dave
  * Dogfight escort gauge. Fixed up laser rendering in Glide.
@@ -6138,6 +6138,9 @@ void parse_variables()
 
 int parse_mission(mission *pm, int flags)
 {
+	int saved_warning_count = Global_warning_count;
+	int saved_error_count = Global_error_count;
+
 	int i;
 
 	Player_starts = Num_cargo = Num_waypoint_lists = Num_goals = Num_wings = 0;
@@ -6248,6 +6251,12 @@ int parse_mission(mission *pm, int flags)
 	}
 
 	post_process_mission();
+
+	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
+		char text[512];
+		sprintf(text, "Warning!\n\nThe current mission has generated %d warnings and/or errors during load.  These are usually caused by corrupted ship models or syntax errors in the mission file.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mission's data files, not FreeSpace Open's source code.", (saved_warning_count - Global_warning_count) + (saved_error_count - Global_error_count));
+		popup(PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, text);
+	}
 
 	// success
 	return 0;

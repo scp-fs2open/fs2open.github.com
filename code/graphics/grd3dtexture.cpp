@@ -156,7 +156,7 @@
  * and posably fixed Turnsky's shinemap bug
  *
  * Revision 2.30  2004/02/16 11:47:33  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -345,7 +345,7 @@
  * Revision 2.1.2.20  2002/11/04 21:24:59  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.1.2.19  2002/11/04 03:02:29  randomtiger
@@ -411,7 +411,7 @@
  * Revision 2.1.2.8  2002/10/04 00:48:42  randomtiger
  * Fixed video memory leaks
  * Added code to cope with lost device, not tested
- * Got rid of some DX5 stuff we definately dont need
+ * Got rid of some DX5 stuff we definately don't need
  * Moved some enum's into internal,h because gr_d3d_set_state should be able to be called from any dx file
  * Cleaned up some stuff - RT
  *
@@ -803,7 +803,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 
 void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *data, int src_w, int src_h, int *tex_w, int *tex_h, float *u_scale, float *v_scale, int reload)
 {
-	// Dont prepare
+	// Don't prepare
 	bool use_mipmapping = (bitmap_type != TCACHE_TYPE_INTERFACE);
 
 	if(Cmdline_mipmap == 0) {
@@ -1247,7 +1247,7 @@ void d3d_tcache_init()
 	D3D_pow2_textures   = (GlobalD3DVars::d3d_caps.TextureCaps & D3DPTEXTURECAPS_POW2)       ? 1 : 0; 
 
 
-	// RT I dont think wide surfaces are supported in D3D8 so we need this code
+	// RT I don't think wide surfaces are supported in D3D8 so we need this code
 	if(0)
 	{
 		if ( D3D_max_texture_width > gr_screen.max_w ) {

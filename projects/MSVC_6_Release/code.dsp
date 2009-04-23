@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Static Library" 0x0104
 
-CFG=code - Win32 Debug Inferno
+CFG=code - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,7 +13,7 @@ CFG=code - Win32 Debug Inferno
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "code.mak" CFG="code - Win32 Debug Inferno"
+!MESSAGE NMAKE /f "code.mak" CFG="code - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -2296,7 +2296,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=\Storage\FSO\fs2_open\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2315,7 +2315,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\Storage\FSO\fs2_open\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2334,7 +2334,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
 
 # Begin Custom Build
-InputDir=\Storage\FSO\fs2_open\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2353,7 +2353,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
 # Begin Custom Build
-InputDir=\Storage\FSO\fs2_open\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
