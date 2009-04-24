@@ -2598,13 +2598,27 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+					Assert(var_idx > -1);
+					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
+				}
+				else {
+					expand_operator(item_index);
+					replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+				}
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
 				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+					Assert(var_idx > -1);
+					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
+				}
+				else {
+					expand_operator(item_index);
+					replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+				}
 
 			} else
 				Assert(0);  // unknown and/or invalid sexp type
