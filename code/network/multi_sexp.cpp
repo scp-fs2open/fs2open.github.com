@@ -60,6 +60,10 @@ void initalise_sexp_packet()
 
 void multi_start_packet() 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//Write OP into the Type buffer.
 	type[packet_size] = TYPE_SEXP_OPERATOR; 
 	//Write the SEXP_Operator number into the data buffer.
@@ -75,6 +79,10 @@ void multi_start_packet()
 
 void multi_end_packet() 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//write TERMINATOR into the Type and data buffers
 	type[packet_size] = TYPE_DATA_TERMINATES; 
 	byte b = -1; 
@@ -93,6 +101,10 @@ void multi_end_packet()
 
 void multi_sexp_maybe_send_packet() 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	int packet_end = 0;
 	int sub_packet_size = 0;
 	int i, j; 
@@ -140,6 +152,10 @@ void multi_sexp_maybe_send_packet()
 // flushes out the packet and sends any data still in there
 void multi_sexp_flush_packet() 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	// possible to get here when there is nothing in the packet to send
 	if (packet_size == 0){
 		return;
@@ -158,6 +174,10 @@ void multi_sexp_flush_packet()
 
 void multi_send_int(int value) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//Write INT into the Type buffer.
 	type[packet_size] = TYPE_INT; 
 	//Write the int into the data buffer
@@ -170,11 +190,19 @@ void multi_send_int(int value)
 
 void multi_send_ship(int shipnum) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	multi_send_ship(&Ships[shipnum]);
 }
 
 void multi_send_ship(ship *shipp) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//write into the Type buffer.
 	type[packet_size] = TYPE_SHIP; 
 	//write the into the data buffer
@@ -186,6 +214,10 @@ void multi_send_ship(ship *shipp)
 
 void multi_send_parse_object(p_object *pobjp) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//write into the Type buffer.
 	type[packet_size] = TYPE_PARSE_OBJECT; 
 	//write the into the data buffer
@@ -197,6 +229,10 @@ void multi_send_parse_object(p_object *pobjp)
 
 void multi_send_string(char *string) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	int start_size = packet_size; 
 	//write into the Type buffer.
 	type[packet_size] = TYPE_STRING; 
@@ -209,6 +245,10 @@ void multi_send_string(char *string)
 
 void multi_send_bool(bool value) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//Write INT into the Type buffer.
 	type[packet_size] = TYPE_BOOLEAN; 
 	//Write the value into the data buffer
@@ -221,6 +261,10 @@ void multi_send_bool(bool value)
 
 void multi_send_float(float value) 
 {
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
 	//Write INT into the Type buffer.
 	type[packet_size] = TYPE_FLOAT; 
 	//Write the value into the data buffer
