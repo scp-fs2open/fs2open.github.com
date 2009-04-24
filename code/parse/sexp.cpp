@@ -11159,9 +11159,6 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 				if (set_it) {
 					Objects[Ships[ship_index].objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
 				}
-				else {
-					Objects[Ships[ship_index].objnum].phys_info.flags |= PF_AFTERBURNER_ON;
-				}
 			}
 
 			if (send_multiplayer && MULTIPLAYER_MASTER) {
@@ -11260,9 +11257,6 @@ void multi_sexp_deal_with_ship_flag()
 		if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
 			if (set_it) {
 				Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
-			}
-			else {
-				Objects[shipp->objnum].phys_info.flags |= PF_AFTERBURNER_ON;
 			}
 		}
 
