@@ -4722,12 +4722,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 {
 	sexp_list_item head;
 	sexp_list_item *list = NULL;
-	int i, current_node, w_arg, e_arg;
-
-	// get the current node
-	current_node = tree_nodes[parent_node].child;
-	for (i = 0; i < arg_index; i++)
-		current_node = tree_nodes[current_node].next;
+	int w_arg, e_arg;
 
 	switch (opf) {
 		case OPF_NONE:
