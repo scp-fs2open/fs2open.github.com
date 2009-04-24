@@ -5227,11 +5227,6 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 	if ( parent_node >= 0 ) {
 		op = get_operator_const(tree_nodes[parent_node].text);
 
-		// prune out to only capital ships
-		if (!stricmp(tree_nodes[parent_node].text, "cap-subsys-cargo-known-delay")) {
-			require_cap_ship = 1;
-		}
-
 		// get the dock_ship number of if this goal is an ai dock goal.  used to prune out unwanted ships out
 		// of the generated ship list
 		dock_ship = -1;
@@ -5258,7 +5253,17 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 				if ( (dock_ship != ptr->instance) && ship_docking_valid(dock_ship , ptr->instance) )
 					head.add_data(Ships[ptr->instance].ship_name );
 
-			} else {
+			}
+			else if (op == OP_CAP_SUBSYS_CARGO_KNOWN_DELAY) {
+				if ( ((Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) &&	// big ship
+					!(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) )||				// which is not flagged OR
+					((!(Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP)) &&  // small ship
+					(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ) ) {				// which is flagged
+
+						head.add_data(Ships[ptr->instance].ship_name);
+				}
+			}
+			else {
 				if ( !require_cap_ship || (Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) ) {
 					head.add_data(Ships[ptr->instance].ship_name);
 				}
