@@ -2142,6 +2142,17 @@ int sexp_tree::edit_label(HTREEITEM h)
 */
 }
 
+// given a tree node, returns the argument type it should be.
+int sexp_tree::query_node_argument_type(int node)
+{
+	int argnum = 0; 
+	int parent_node = tree_nodes[node].parent; 
+	Assert(parent_node >= 0);
+	argnum = find_argument_number(parent_node, node); 
+	int op_num = get_operator_index(tree_nodes[parent_node].text);
+	return query_operator_argument_type(op_num, argnum);
+}
+
 int sexp_tree::end_label_edit(TVITEMA &item)
 {
 	HTREEITEM h = item.hItem; 
@@ -2184,6 +2195,17 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 			update_node = false;
 		}
 		r = 0;
+	}
+
+	// gotta sidestep Goober5000's number hack and check entries are actually positive. 
+	else if (tree_nodes[node].type & SEXPT_NUMBER) {
+		if (query_node_argument_type(node) == OPF_POSITIVE) {			
+			int val = atoi(str); 
+			if (val < 0) {
+				MessageBox("Can not enter a negative value", "Invalid Number", MB_ICONEXCLAMATION); 
+				update_node = false; 
+			}
+		}		
 	}
 
 	// Error checking would not hurt here
