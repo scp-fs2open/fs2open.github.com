@@ -4982,16 +4982,17 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 	}
 
-	// skip the special argument if we aren't at the right spot in when-argument or
-	// every-time-argument... meaning if either w_arg or e_arg is >= 1, we can continue
-	w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, current_node);
-	e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, current_node);
-	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ ) {
+
+	// skip OPF_NONE, also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
+	if (opf == OPF_NULL || opf == OPF_NONE) {
 		return list;
 	}
 
-	// also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
-	if (opf == OPF_NULL) {
+	// skip the special argument if we aren't at the right spot in when-argument or
+	// every-time-argument... meaning if either w_arg or e_arg is >= 1, we can continue
+	w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
+	e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
+	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ ) {
 		return list;
 	}
 
