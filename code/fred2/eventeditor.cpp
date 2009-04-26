@@ -555,6 +555,7 @@ void event_editor::OnOK()
 		GetDlgItem(IDC_EVENT_TREE)->SetFocus();
 		::SetFocus(h);
 	}
+	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->SetCurSel(m_cur_msg);
 }
 
 int event_editor::query_modified()
