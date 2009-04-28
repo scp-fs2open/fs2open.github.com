@@ -46,6 +46,8 @@ initial_status::initial_status(CWnd* pParent /*=NULL*/)
 	m_locked = FALSE;
 	m_primaries_locked = FALSE;
 	m_secondaries_locked = FALSE;
+	m_turrets_locked = FALSE;
+	m_afterburner_locked = FALSE;
 	m_cargo_name = _T("");
 	//}}AFX_DATA_INIT
 	inited = 0;
@@ -83,6 +85,8 @@ void initial_status::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_LOCKED, m_locked);
 	DDX_Check(pDX, IDC_PRIMARIES_LOCKED, m_primaries_locked);
 	DDX_Check(pDX, IDC_SECONDARIES_LOCKED, m_secondaries_locked);
+	DDX_Check(pDX, IDC_TURRETS_LOCKED, m_turrets_locked);
+	DDX_Check(pDX, IDC_AFTERBURNER_LOCKED, m_afterburner_locked);
 	DDX_Text(pDX, IDC_CARGO_NAME, m_cargo_name);
 	DDV_MaxChars(pDX, m_cargo_name, 20);
 	//}}AFX_DATA_MAP
@@ -121,6 +125,8 @@ BEGIN_MESSAGE_MAP(initial_status, CDialog)
 	ON_BN_CLICKED(IDC_LOCKED, OnLocked)
 	ON_BN_CLICKED(IDC_PRIMARIES_LOCKED, OnPrimariesLocked)
 	ON_BN_CLICKED(IDC_SECONDARIES_LOCKED, OnSecondariesLocked)
+	ON_BN_CLICKED(IDC_TURRETS_LOCKED, OnTurretsLocked)
+	ON_BN_CLICKED(IDC_AFTERBURNER_LOCKED, OnAfterburnersLocked)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -178,24 +184,37 @@ BOOL initial_status::OnInitDialog()
 		m_locked = 0;
 
 	// Lock primaries
-	if (Ships[m_ship].flags2 & SF2_PRIMARIES_LOCKED)
-	{
+	if (Ships[m_ship].flags2 & SF2_PRIMARIES_LOCKED) {
 		m_primaries_locked = 1;
 	}
-	else
-	{
+	else {
 		m_primaries_locked = 0;
 	}
 
 	//Lock secondaries
-	if (Ships[m_ship].flags2 & SF2_SECONDARIES_LOCKED)
-	{
+	if (Ships[m_ship].flags2 & SF2_SECONDARIES_LOCKED) {
 		m_secondaries_locked = 1;
 	}
-	else
-	{
+	else {
 		m_secondaries_locked = 0;
 	}
+
+	//Lock turrets
+	if (Ships[m_ship].flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY) {
+		m_turrets_locked = 1;
+	}
+	else {
+		m_turrets_locked = 0;
+	}
+
+	if (Ships[m_ship].flags2 & SF2_AFTERBURNER_LOCKED) {
+		m_afterburner_locked = 1;
+	}
+	else {
+		m_afterburner_locked = 0;
+	}
+
+
 
 	if (m_multi_edit) {
 		objp = GET_FIRST(&obj_used_list);
@@ -224,6 +243,42 @@ BOOL initial_status::OnInitDialog()
 				} else {
 					if (m_locked)
 						m_locked = 2;
+				}
+
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_PRIMARIES_LOCKED){
+					if (!m_primaries_locked)
+						m_primaries_locked = 2;
+				}
+				else {
+					if (m_primaries_locked)
+						m_primaries_locked = 2;
+				}
+				
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_SECONDARIES_LOCKED){
+					if (!m_secondaries_locked)
+						m_secondaries_locked = 2;
+				}
+				else {
+					if (m_secondaries_locked)
+						m_secondaries_locked = 2;
+				}
+								
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY){
+					if (!m_turrets_locked)
+						m_turrets_locked = 2;
+				}
+				else {
+					if (m_turrets_locked)
+						m_turrets_locked = 2;
+				}
+				
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_AFTERBURNER_LOCKED){
+					if (!m_afterburner_locked)
+						m_afterburner_locked = 2;
+				}
+				else {
+					if (m_afterburner_locked)
+						m_afterburner_locked = 2;
 				}
 			}
 
@@ -348,6 +403,26 @@ void initial_status::OnOK()
 					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_SECONDARIES_LOCKED;
 				}
 
+				if (m_turrets_locked == 1)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_LOCK_ALL_TURRETS_INITIALLY;
+				}
+				else if (!m_turrets_locked)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_LOCK_ALL_TURRETS_INITIALLY;
+				}
+				
+				if (m_afterburner_locked == 1)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_AFTERBURNER_LOCKED;
+				}
+				else if (!m_afterburner_locked)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_AFTERBURNER_LOCKED;
+				}
+
+
+
 			}
 
 			objp = GET_NEXT(objp);
@@ -375,7 +450,17 @@ void initial_status::OnOK()
 		if (m_secondaries_locked == 1)
 			Ships[m_ship].flags2 |= SF2_SECONDARIES_LOCKED;
 		else if (!m_secondaries_locked)
-			Ships[m_ship].flags2 &= ~SF2_SECONDARIES_LOCKED;
+			Ships[m_ship].flags2 &= ~SF2_SECONDARIES_LOCKED;		
+
+		if (m_turrets_locked == 1)
+			Ships[m_ship].flags2 |= SF2_LOCK_ALL_TURRETS_INITIALLY;
+		else if (!m_turrets_locked)
+			Ships[m_ship].flags2 &= ~SF2_LOCK_ALL_TURRETS_INITIALLY;		
+
+		if (m_afterburner_locked == 1)
+			Ships[m_ship].flags2 |= SF2_AFTERBURNER_LOCKED;
+		else if (!m_afterburner_locked)
+			Ships[m_ship].flags2 &= ~SF2_AFTERBURNER_LOCKED;
 	}
 
 
@@ -947,4 +1032,24 @@ void initial_status::OnSecondariesLocked()
 		m_secondaries_locked = 1;
 
 	((CButton *) GetDlgItem(IDC_SECONDARIES_LOCKED))->SetCheck(m_secondaries_locked);	
+}
+
+void initial_status::OnTurretsLocked() 
+{
+	if (m_turrets_locked == 1)
+		m_turrets_locked = 0;
+	else
+		m_turrets_locked = 1;
+
+	((CButton *) GetDlgItem(IDC_TURRETS_LOCKED))->SetCheck(m_turrets_locked);	
+}
+
+void initial_status::OnAfterburnersLocked() 
+{
+	if (m_afterburner_locked == 1)
+		m_afterburner_locked = 0;
+	else
+		m_afterburner_locked = 1;
+
+	((CButton *) GetDlgItem(IDC_AFTERBURNER_LOCKED))->SetCheck(m_afterburner_locked);	
 }

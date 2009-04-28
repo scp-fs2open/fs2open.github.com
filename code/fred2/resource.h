@@ -1120,6 +1120,8 @@
 #define IDC_SKY_FLAG_NO_ZBUFF           1611
 #define IDC_SKY_FLAG_NO_CULL            1612
 #define IDC_SKY_FLAG_NO_GLOW            1613
+#define IDC_TURRETS_LOCKED              1615
+#define IDC_AFTERBURNER_LOCKED          1616
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1416,7 +1418,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        318
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1614
+#define _APS_NEXT_CONTROL_VALUE         1617
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
