@@ -7045,12 +7045,14 @@ int game_poll()
 		return 0;
 	}
 
-	// If a popup is running, don't process all the Fn keys
-//	if( popup_active() ) {
-//		return k;
-//	}
-
 	state = gameseq_get_state();
+
+	// If a popup is running, don't process all the Fn keys
+	if( popup_active()) {
+		if (state != GS_STATE_DEATH_BLEW_UP) {
+			return k;
+		}
+	}
 
 //	if ( k ) nprintf(( "General", "Key = %x\n", k ));
 
@@ -7081,8 +7083,8 @@ int game_poll()
 				case GS_STATE_OPTIONS_MENU:
 				case GS_STATE_HUD_CONFIG:
 				case GS_STATE_CONTROL_CONFIG:
-//				case GS_STATE_DEATH_DIED:
-//				case GS_STATE_DEATH_BLEW_UP:		
+				case GS_STATE_DEATH_DIED:
+//				case GS_STATE_DEATH_BLEW_UP:	// 	DEATH_BLEW_UP might be okay but do not comment out DEATH_DIED as otherwise no clean up is performed on the dead ship
 				case GS_STATE_VIEW_MEDALS:
 					break;
 
