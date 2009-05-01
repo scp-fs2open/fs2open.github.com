@@ -5026,7 +5026,7 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 	
 	total_time_start = total_time_end = timestamp();
 	pos_final = vmd_zero_vector;
-	scale_factor = 50.0f * objp->radius;
+	scale_factor = 750.0f * objp->radius;
 }
 
 int WE_Hyperspace::warpStart()
