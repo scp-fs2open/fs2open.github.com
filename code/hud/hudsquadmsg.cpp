@@ -2254,7 +2254,7 @@ void hud_squadmsg_ship_select()
 			// we must convert the Msg_shortcut_command value to a value that the message
 			// system normally uses to select a command.  Since the menu 
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
+			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, SQUADMSG_HISTORY_ADD_ENTRY, 1 );
 			hud_squadmsg_toggle();
 		}
 	}
@@ -2527,7 +2527,7 @@ void hud_squadmsg_ship_command()
 		if ((Msg_instance == MESSAGE_ALL_FIGHTERS)/* || (MsgItems[k].instance == IGNORE_TARGET_ITEM)*/)
 			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance);
 		else
-			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, 1, SQUADMSG_HISTORY_ADD_ENTRY);
+			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, SQUADMSG_HISTORY_ADD_ENTRY, 1);
 
 		hud_squadmsg_toggle();
 	}
@@ -2770,7 +2770,7 @@ int hud_squadmsg_hotkey_select( int k )
 		if ( !(Ships[objp->instance].orders_accepted & Msg_shortcut_command) )
 			continue;
 
-		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message, SQUADMSG_HISTORY_ADD_ENTRY );
+		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, SQUADMSG_HISTORY_ADD_ENTRY, send_message );
 		send_message  = 0;
 	}
 
