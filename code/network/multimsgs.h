@@ -682,7 +682,7 @@ void send_client_update_packet(net_player *pl);
 // send information about this currently active game to the specified address
 void send_game_active_packet(net_addr* addr);
 
-void send_ai_info_update_packet(object *objp, char what);
+void send_ai_info_update_packet(object *objp, char what, object * other_objp = NULL);
 void process_ai_info_update_packet(ubyte *data, header *hinfo);
 
 void send_asteroid_create(object *new_objp, object *parent_objp, int asteroid_type, vec3d *relvec);
