@@ -657,6 +657,7 @@
 #include "network/multiutil.h"
 
 
+int Num_builtin_message_types; 
 // here is a text list of the builtin message names.  These names are used to match against
 // names read in for builtin message radio bits to see what message to play.  These are
 // generic names, meaning that there will be the same message type for a number of different
@@ -704,7 +705,8 @@ char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
 	"Stray Warning",
 	"Stray Warning Final",
 	"AWACS at 75",
-	"AWACS at 25"
+	"AWACS at 25",
+	"Praise Self"
 //XSTR:ON
 };
 
@@ -1030,6 +1032,7 @@ void message_parse(bool importing_from_fsm)
 void parse_msgtbl()
 {
 	char *p1, *p2, *p3;
+	int i, j;
 
 	// open localization
 	lcl_ext_open();
@@ -1038,6 +1041,7 @@ void parse_msgtbl()
 	reset_parse();
 	Num_messages = 0;
 	Num_personas = 0;
+	Num_builtin_message_types = 0; 
 
 	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
 	p1 = strstr(Mp, "#End");
@@ -1080,6 +1084,19 @@ void parse_msgtbl()
 	Num_builtin_messages = Num_messages;
 	Num_builtin_avis = Num_message_avis;
 	Num_builtin_waves = Num_message_waves;
+
+	// cycle through the messages to determine what is the last type of message the table supports
+	// this can later be used to determine if we should play a builtin that wasn't supported in retail
+	for (i = 0; i < Num_builtin_messages; i++) {
+		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
+			if (!(stricmp(Messages[i].name, Builtin_message_types[j]))) {
+				if (j >= Num_builtin_message_types) {
+					Num_builtin_message_types = j+1; 
+					break;
+				}
+			}
+		}
+	}
 
 	// close localization
 	lcl_ext_close();
@@ -2318,6 +2335,11 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 {
 	int i, persona_index = -1;
 	int source;	
+
+	// builtin type isn't supported by this version of the table
+	if (type >= Num_builtin_message_types) {
+		return;
+	}
 
 	// if we aren't showing builtin msgs, bail
 	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)

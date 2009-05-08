@@ -312,7 +312,7 @@ extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 // probably use these defines.
 
 // this number in this define should match the number of elements in the next array
-#define MAX_BUILTIN_MESSAGE_TYPES	41
+#define MAX_BUILTIN_MESSAGE_TYPES	42
 
 extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 
@@ -357,6 +357,7 @@ extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 #define MESSAGE_STRAY_WARNING_FINAL		38
 #define MESSAGE_AWACS_75			39
 #define MESSAGE_AWACS_25			40
+#define MESSAGE_PRAISE_SELF			41
 
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message
