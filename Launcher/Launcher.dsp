@@ -182,6 +182,10 @@ SOURCE=.\Launcher.rc
 # End Source File
 # Begin Source File
 
+SOURCE=.\launcher_settings.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LauncherDlg.cpp
 # End Source File
 # Begin Source File
@@ -190,7 +194,7 @@ SOURCE=.\misc.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\settings.cpp
+SOURCE=.\mod_settings.cpp
 # End Source File
 # Begin Source File
 
@@ -235,6 +239,10 @@ SOURCE=.\Launcher.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\launcher_settings.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LauncherDlg.h
 # End Source File
 # Begin Source File
@@ -243,15 +251,15 @@ SOURCE=.\misc.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\mod_settings.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\OGLDisp.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\Resource.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\settings.h
 # End Source File
 # Begin Source File
 

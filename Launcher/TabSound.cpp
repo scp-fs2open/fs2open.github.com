@@ -11,7 +11,7 @@
 #include <regstr.h>
 
 #include "win32func.h"
-#include "settings.h"
+#include "launcher_settings.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -81,10 +81,10 @@ void CTabSound::OnApply()
 	char string[50];
 	m_sound_api_list.GetLBText(index, string);
 
-	if ( Settings::openal_build == true ) {
-		reg_set_sz(Settings::reg_path, "SoundDeviceOAL", string);
+	if ( LauncherSettings::is_openal_build() ) {
+		reg_set_sz(LauncherSettings::get_reg_path(), "SoundDeviceOAL", string);
 	} else {
-		reg_set_sz(Settings::reg_path, "Soundcard", string);
+		reg_set_sz(LauncherSettings::get_reg_path(), "Soundcard", string);
 	}
 
 	// Joystick settings
@@ -93,8 +93,8 @@ void CTabSound::OnApply()
 	int ff = (((CButton *) GetDlgItem(IDC_FORCE_FREEDBACK))->GetCheck() == CHECKED) ? 1 : 0;
 	int dh = (((CButton *) GetDlgItem(IDC_DIR_HIT))->GetCheck() == CHECKED) ? 1 : 0;
 		
-	reg_set_dword(Settings::reg_path, "EnableJoystickFF", ff);
-	reg_set_dword(Settings::reg_path, "EnableHitEffect", dh);
+	reg_set_dword(LauncherSettings::get_reg_path(), "EnableJoystickFF", ff);
+	reg_set_dword(LauncherSettings::get_reg_path(), "EnableHitEffect", dh);
 
 	// Set joystick
 	index = m_joystick_list.GetCurSel();
@@ -104,7 +104,7 @@ void CTabSound::OnApply()
 
     int enum_id = m_joystick_list.GetItemData(index);
 
-	reg_set_dword(Settings::reg_path, "CurrentJoystick", enum_id);
+	reg_set_dword(LauncherSettings::get_reg_path(), "CurrentJoystick", enum_id);
 }
 
 void CTabSound::SetupOpenAL()
@@ -245,7 +245,7 @@ void CTabSound::LoadSettings()
 {
 	DWORD ff, dh;
 
-	if ( Settings::openal_build == true ) {
+	if ( LauncherSettings::is_openal_build() ) {
 		GetDlgItem(IDC_OAL_WARN_STATIC)->ShowWindow(true);
 		GetDlgItem(IDC_EAX_STATIC)->ShowWindow(false);
 		GetDlgItem(IDC_SOUND_STATIC)->SetWindowText("Currently selected OpenAL Sound Device");
@@ -256,16 +256,16 @@ void CTabSound::LoadSettings()
 		GetDlgItem(IDC_SOUND_STATIC)->SetWindowText("Currently selected Sound Card");
 	}
 
-	reg_get_dword(Settings::reg_path, "EnableJoystickFF", &ff);
-	reg_get_dword(Settings::reg_path, "EnableHitEffect", &dh);
+	reg_get_dword(LauncherSettings::get_reg_path(), "EnableJoystickFF", &ff);
+	reg_get_dword(LauncherSettings::get_reg_path(), "EnableHitEffect", &dh);
 
 	((CButton *) GetDlgItem(IDC_FORCE_FREEDBACK))->SetCheck(ff ? 1 : 0);
 	((CButton *) GetDlgItem(IDC_DIR_HIT))->SetCheck(dh ? 1 : 0);
 
 	char local_port_text[50];
 
-	if ( Settings::openal_build == false ) {
-		reg_get_sz(Settings::reg_path, "SoundCard", local_port_text, 50);
+	if ( LauncherSettings::is_openal_build() == false ) {
+		reg_get_sz(LauncherSettings::get_reg_path(), "SoundCard", local_port_text, 50);
 
 		for(int i = 0; i < NUM_SND_MODES; i++)
 		{
@@ -276,7 +276,7 @@ void CTabSound::LoadSettings()
 			}
 		}
 	} else {
-		reg_get_sz(Settings::reg_path, "SoundDeviceOAL", local_port_text, 50);
+		reg_get_sz(LauncherSettings::get_reg_path(), "SoundDeviceOAL", local_port_text, 50);
 
 		for (unsigned int i = 0; i < OpenAL_sound_devices.size(); i++) {
 			if ( !stricmp(OpenAL_sound_devices[i].c_str(), local_port_text) ) {
@@ -296,7 +296,7 @@ void CTabSound::LoadSettings()
 
 	// Get joystick
 	DWORD enum_id = 0;
-	reg_get_dword(Settings::reg_path, "CurrentJoystick", &enum_id);
+	reg_get_dword(LauncherSettings::get_reg_path(), "CurrentJoystick", &enum_id);
 
 	int num_joy = m_joystick_list.GetCount();
 	for (int i = 0; i < num_joy; i++) {
@@ -332,7 +332,7 @@ void CTabSound::OnDestroy()
 
 void CTabSound::OnSelChangeSoundDevice()
 {
-	if ( Settings::openal_build == false )
+	if ( LauncherSettings::is_openal_build() == false )
 		return;
 
 	char device_str[50];

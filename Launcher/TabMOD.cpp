@@ -7,7 +7,8 @@
 #include "win32func.h"
 #include "LauncherDlg.h"
 #include "misc.h"
-#include "settings.h"
+#include "launcher_settings.h"
+#include "mod_settings.h"
 
 #include "iniparser/iniparser.h"
 #include "iniparser/dictionary.h"
@@ -81,8 +82,15 @@ END_MESSAGE_MAP()
 void CTabMOD::OnModSelect() 
 {
 	char absolute_path[MAX_PATH];
-	if(browse_for_dir(GetSafeHwnd(), Settings::exe_pathonly, absolute_path, 
-		"Select your FreeSpace 2 mod directory") == false)
+
+	if (LauncherSettings::get_showed_pilot_warning())
+	{
+		MessageBox("To prevent pilot file corruption, it is a good idea to create a separate pilot for each mod you play.  Also, please remember to select a campaign in the Campaign Room that will work with your mod.\n\nThis message will not be shown again.  Have fun!");
+		LauncherSettings::set_showed_pilot_warning(true);
+	}
+
+	if(browse_for_dir(GetSafeHwnd(), LauncherSettings::get_exe_pathonly(), absolute_path, 
+		"Select a FreeSpace 2 mod directory") == false)
 	{
 		return;
 	}
@@ -99,7 +107,7 @@ void CTabMOD::OnModSelect()
 		return;
 	}*/
 
-	if(stricmp(Settings::exe_pathonly, absolute_path) == 0)
+	if(stricmp(LauncherSettings::get_exe_pathonly(), absolute_path) == 0)
 	{
 		MessageBox("Cannot choose root");
 		return;
@@ -108,7 +116,7 @@ void CTabMOD::OnModSelect()
 	SetMOD(absolute_path); 
 
 	// Get the comm tag know about it
-	char *relative_path = absolute_path + strlen(Settings::exe_pathonly) + 1;
+	char *relative_path = absolute_path + strlen(LauncherSettings::get_exe_pathonly()) + 1;
 	tab_comm_line.SetModParam(relative_path);
 }
 
@@ -119,35 +127,23 @@ void CTabMOD::SetSettings(char *flags)
 		return;
 	}
 
-	char ini_name[MAX_PATH];
-	strcpy(ini_name, m_absolute_text);
-	strcat(ini_name, "\\");
-	strcat(ini_name, Settings::ini_mod_custom);
-
-	FILE *ini = ini_open_for_write(ini_name, false, NULL);
-
-	if(ini == NULL)
+	if(ModSettings::save_custom())
 	{
 		MessageBox("Couldnt write mod settings.ini");
-		return;
 	}
-
-	ini_write_type(ini, "[settings]");
-	ini_write_comment(ini, "These are the user's settings; don't distribute them with the mod because he'll want to choose his own");
-	ini_write_data(ini, "flags", flags);
-
-	ini_close(ini);
 }
 
 char *CTabMOD::GetSettings(bool defaultSettings) 
 {
+	Int3();
+	/*
 	char ini_name[MAX_PATH];
 	strcpy(ini_name,m_absolute_text);
 
 	if(defaultSettings == false)
 	{
 		strcat(ini_name, "\\");
-		strcat(ini_name, Settings::ini_mod_custom);
+		strcat(ini_name, LauncherSettings::ini_mod_custom);
 
 		dictionary *ini = iniparser_load(ini_name);
 
@@ -163,7 +159,7 @@ char *CTabMOD::GetSettings(bool defaultSettings)
 	}
 
 	strcat(ini_name, "\\");
-	strcat(ini_name, Settings::ini_mod_default);
+	strcat(ini_name, LauncherSettings::ini_mod_default);
 
 	dictionary *ini = iniparser_load(ini_name);
 
@@ -177,9 +173,9 @@ char *CTabMOD::GetSettings(bool defaultSettings)
 	char *flags = strdup(iniparser_getstr(ini, "settings:flags"));
 	iniparser_freedict(ini);
 
-
+*/
 	// Otherwise get from mod.ini
-	return flags;
+	return "";
 }
 
 // This may be called when no mod is selected, in which case mod_selected is set to false
@@ -188,14 +184,11 @@ void CTabMOD::SetMOD(char *absolute_path)
 	strcpy(m_absolute_text,absolute_path);
 	
 	// Update the mod name 
-	char *relative_path = absolute_path + strlen(Settings::exe_pathonly) + 1;
-	  
-	// Parse that ini
+	char *relative_path = absolute_path + strlen(LauncherSettings::get_exe_pathonly()) + 1;
+
 	char filename[MAX_PATH];
-	strcpy(filename, absolute_path);
-	strcat(filename, "\\");
-	strcat(filename, Settings::ini_mod_default);
-	mod_selected = parse_ini_file(filename);
+	strcpy(filename, LauncherSettings::get_active_mod());
+	mod_selected = *filename != 0;
 
 	// Set mod names
 	SetModName(relative_path, ini_text[INI_MOD_NAME]);
@@ -455,8 +448,8 @@ void CTabMOD::OnApply(int flags)
 	}
 
 
-	MessageBox(Settings::ini_mod_custom);
-	FILE *fp = ini_open_for_write(Settings::ini_mod_custom, true, NULL);
+	MessageBox(LauncherSettings::ini_mod_custom);
+	FILE *fp = ini_open_for_write(LauncherSettings::ini_mod_custom, true, NULL);
 
 	if(fp)
 	{

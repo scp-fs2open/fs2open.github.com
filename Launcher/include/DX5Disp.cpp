@@ -102,7 +102,7 @@ void CDX5Disp::OnApply()
 
 	int current = m_res_list.GetItemData(index);
 
-	if(reg_set_sz(Settings::reg_path, "Videocard", dx5_modes[index].text_desc) == false)
+	if(reg_set_sz(LauncherSettings::get_reg_path(), "Videocard", dx5_modes[index].text_desc) == false)
 	{
 		MessageBox("Failed to set graphic mode", "Error", MB_ICONERROR);
 	}
@@ -144,7 +144,7 @@ void CDX5Disp::LoadSettings()
 	char videocard_string[MAX_PATH];
 
 	// Lets get those video card settings
-	if(reg_get_sz(Settings::reg_path, "VideocardFs2open", videocard_string, MAX_PATH) == false)
+	if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard_string, MAX_PATH) == false)
 	{
 		return;
 	}

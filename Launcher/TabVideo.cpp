@@ -13,7 +13,7 @@
 
 #include "win32func.h"
 #include "misc.h"
-#include "settings.h"
+#include "launcher_settings.h"
 
 CDX9Disp  tab_dx9_disp;
 CDX8Disp  tab_dx8_disp;
@@ -231,13 +231,13 @@ void CTabVideo::OnApply(int flags)
 	// Take note of checkbox options
 	int use_gf4_fix = (m_gf4_fix_button.GetCheck() == 0) ? 0 : 1;
 		
-	reg_set_dword(Settings::reg_path, "D3DTextureOrigin", use_gf4_fix);
+	reg_set_dword(LauncherSettings::get_reg_path(), "D3DTextureOrigin", use_gf4_fix);
 
-	reg_set_dword(Settings::reg_path, "D3DFast", 0);
-	reg_set_dword(Settings::reg_path, "ComputerSpeed", NUM_LEVELS - m_gfx_level_droplist.GetCurSel());
+	reg_set_dword(LauncherSettings::get_reg_path(), "D3DFast", 0);
+	reg_set_dword(LauncherSettings::get_reg_path(), "ComputerSpeed", NUM_LEVELS - m_gfx_level_droplist.GetCurSel());
 
 	int use_large_textures = (m_largetxt_checkbox.GetCheck() == 0) ? 0 : 2;
-	reg_set_dword(Settings::reg_path, "D3DUseLargeTextures", use_large_textures);
+	reg_set_dword(LauncherSettings::get_reg_path(), "D3DUseLargeTextures", use_large_textures);
 
 	switch(m_last_tab)
 	{
@@ -259,14 +259,14 @@ void CTabVideo::OnApply(int flags)
  */
 void CTabVideo::Update(int type, int flags)
 {
-	if(Settings::exe_path_valid == false)
+	if(LauncherSettings::is_exe_path_valid() == false)
 	{
 		SelectTab(-1);
 		return;
 	}
 
 	char vp_path[MAX_PATH];
-	strcpy(vp_path, Settings::exe_pathonly);
+	strcpy(vp_path, LauncherSettings::get_exe_pathonly());
 	strcat(vp_path, "\\sparky_hi_fs2.vp");
 
 	InitTabControl(flags);
@@ -276,7 +276,7 @@ void CTabVideo::Update(int type, int flags)
 	tab_ogl_disp.UpdateLists();
 
 	// Notify tabs that need to know if hi res pack is installed
-	m_hi_sparky_checkbox.SetCheck((flags & FLAG_FS1) || Settings::exe_path_valid == true);
+	m_hi_sparky_checkbox.SetCheck((flags & FLAG_FS1) || LauncherSettings::is_exe_path_valid());
 }
 
 /**
@@ -286,20 +286,20 @@ void CTabVideo::Update(int type, int flags)
 void CTabVideo::LoadSettings(int flags)
 {
 	DWORD gf4_fix;
-	if(reg_get_dword(Settings::reg_path, "D3DTextureOrigin", &gf4_fix) == true)
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "D3DTextureOrigin", &gf4_fix))
 	{
 		m_gf4_fix_button.SetCheck(gf4_fix ? 1 : 0);
 	}	
 
 	DWORD large_textures;
-	if(reg_get_dword(Settings::reg_path, "D3DUseLargeTextures", &large_textures) == true)
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "D3DUseLargeTextures", &large_textures))
 	{
 		m_largetxt_checkbox.SetCheck((large_textures == 2) ? 1 : 0);
 	}
 
 	// Determine general speed settings
 	DWORD level_value;
-	reg_get_dword(Settings::reg_path, "ComputerSpeed", &level_value);
+	reg_get_dword(LauncherSettings::get_reg_path(), "ComputerSpeed", &level_value);
 
 	level_value = NUM_LEVELS - level_value;	
 	m_gfx_level_droplist.SetCurSel(level_value);
@@ -308,10 +308,10 @@ void CTabVideo::LoadSettings(int flags)
 	{
 		char api_name[1024];
 		// If fs2_open videocard is not setup
-		if(reg_get_sz(Settings::reg_path, "VideocardFs2open", api_name, 1024) == false)
+		if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", api_name, 1024) == false)
 		{
 			// Use default videocard entry
-			if(reg_get_sz(Settings::reg_path, "Videocard", api_name, 1024) == false)
+			if(reg_get_sz(LauncherSettings::get_reg_path(), "Videocard", api_name, 1024) == false)
 			{
 				api = SelectAPI(GR_OPENGL);
 				SelectTab(api);

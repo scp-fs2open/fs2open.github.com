@@ -13,7 +13,7 @@
 
 #include "win32func.h"
 #include "speech.h"
-#include "settings.h"
+#include "launcher_settings.h"
 
 
 #ifdef _DEBUG
@@ -100,15 +100,15 @@ void CTabSpeech::OnApply()
 
 	DWORD use;
 	use = (m_checkbox_techroom.GetCheck() == CHECKED);
-	reg_set_dword(Settings::reg_path, "SpeechTechRoom", use);
+	reg_set_dword(LauncherSettings::get_reg_path(), "SpeechTechRoom", use);
 
 	use = (m_checkbox_briefings.GetCheck() == CHECKED);
-	reg_set_dword(Settings::reg_path, "SpeechBriefings", use);
+	reg_set_dword(LauncherSettings::get_reg_path(), "SpeechBriefings", use);
 
 	use = (m_checkbox_ingame.GetCheck() == CHECKED);
-	reg_set_dword(Settings::reg_path, "SpeechIngame", use);
+	reg_set_dword(LauncherSettings::get_reg_path(), "SpeechIngame", use);
 
-	reg_set_dword(Settings::reg_path, "SpeechVolume", m_speech_volume);
+	reg_set_dword(LauncherSettings::get_reg_path(), "SpeechVolume", m_speech_volume);
 
 	// Get the selected voice num in the combo box
 	int selected = ((CComboBox *) GetDlgItem(IDC_VOICE_COMBO))->GetCurSel();
@@ -116,7 +116,7 @@ void CTabSpeech::OnApply()
 
 
 	// Set the voice name as number (sorry, you wouldnt believe how complicated text would be!) 
-	reg_set_dword(Settings::reg_path, "SpeechVoice", selected);
+	reg_set_dword(LauncherSettings::get_reg_path(), "SpeechVoice", selected);
 }
 
 void CTabSpeech::LoadSettings()
@@ -131,19 +131,19 @@ void CTabSpeech::LoadSettings()
 	m_checkbox_ingame.SetCheck(CHECKED);
 
 	DWORD use;
-	if(reg_get_dword(Settings::reg_path, "SpeechTechRoom", &use) && use == 0) {
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "SpeechTechRoom", &use) && use == 0) {
 		m_checkbox_techroom.SetCheck(0);
 	}
 
-	if(reg_get_dword(Settings::reg_path, "SpeechBriefings", &use) && use == 0) {
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "SpeechBriefings", &use) && use == 0) {
 		m_checkbox_briefings.SetCheck(0);
 	}
 
-	if(reg_get_dword(Settings::reg_path, "SpeechIngame", &use) && use == 0) {
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "SpeechIngame", &use) && use == 0) {
 		m_checkbox_ingame.SetCheck(0);
 	}
 
-	if(reg_get_dword(Settings::reg_path, "SpeechVolume", &m_speech_volume) == false) {
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "SpeechVolume", &m_speech_volume) == false) {
 		m_speech_volume = 100;
 	}
 
@@ -152,7 +152,7 @@ void CTabSpeech::LoadSettings()
 
 	// Get the voice name as number
 	DWORD selected;
-	reg_get_dword(Settings::reg_path, "SpeechVoice", &selected);
+	reg_get_dword(LauncherSettings::get_reg_path(), "SpeechVoice", &selected);
 
 	if(selected == -1) return;
 	((CComboBox *) GetDlgItem(IDC_VOICE_COMBO))->SetCurSel(selected);
@@ -174,7 +174,7 @@ void CTabSpeech::OnPlay()
 // Free everything here
 BOOL CTabSpeech::DestroyWindow() 
 {
-   	if(m_speech_supported == true) 
+   	if(m_speech_supported) 
 	{
 #ifdef FS2_SPEECH
 		SpDestroyTokenComboBox( GetDlgItem(IDC_VOICE_COMBO )->GetSafeHwnd() );

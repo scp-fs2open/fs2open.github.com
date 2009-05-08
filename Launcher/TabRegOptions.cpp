@@ -5,8 +5,8 @@
 #include "Launcher.h"
 #include "TabRegOptions.h"
 #include "win32func.h"
-#include "settings.h"
-#include "tabcommline.h"
+#include "launcher_settings.h"
+#include "misc.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -141,18 +141,18 @@ void CTabRegOptions::FillRegList()
 
 	m_reg_option_list.DeleteAllItems();
 
-	if(Settings::exe_type == EXE_TYPE_NONE)
+	if(LauncherSettings::get_exe_type() == EXE_TYPE_NONE)
 	{
 		GetDlgItem(IDC_REG_LOCATION)->SetWindowText("No valid game exe chosen");
 		return;
 	}
 
-	if(strlen(Settings::reg_path) == 0)
+	if(strlen(LauncherSettings::get_reg_path()) == 0)
 	{
 		return;
 	}
 
-	HKEY hkey = reg_open_dir(Settings::reg_path);
+	HKEY hkey = reg_open_dir(LauncherSettings::get_reg_path());
 
 	// Try to open the correct registry dir
 	if(hkey == NULL)
@@ -160,7 +160,7 @@ void CTabRegOptions::FillRegList()
 		return;
 	}
 
-	GetDlgItem(IDC_REG_LOCATION)->SetWindowText(Settings::reg_path);
+	GetDlgItem(IDC_REG_LOCATION)->SetWindowText(LauncherSettings::get_reg_path());
 
 	// Now find and display all the items at this path
 	do
@@ -249,7 +249,7 @@ void CTabRegOptions::FillRegList()
 void CTabRegOptions::OnSet() 
 {
 	// Check the paths are valid
-	if(strlen(Settings::reg_path) == 0)
+	if(strlen(LauncherSettings::get_reg_path()) == 0)
 	{
 		MessageBox("No reg path for this exe");
 		FillRegList();
@@ -277,13 +277,13 @@ void CTabRegOptions::OnSet()
 	{
 		case REG_TYPE_SZ:
 		{
-			result = reg_set_sz(Settings::reg_path, name, (LPCTSTR) new_value); 
+			result = reg_set_sz(LauncherSettings::get_reg_path(), name, (LPCTSTR) new_value); 
 			break;
 		}
 		case REG_TYPE_DWORD:
 		{
 			DWORD number = atoi( (LPCTSTR) new_value );
-			result = reg_set_dword(Settings::reg_path, name, number);
+			result = reg_set_dword(LauncherSettings::get_reg_path(), name, number);
 			break;
 		}
 		default:

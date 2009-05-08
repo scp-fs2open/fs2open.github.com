@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "win32func.h"
-#include "settings.h"
+#include "launcher_settings.h"
 
 typedef struct
 {
@@ -148,7 +148,7 @@ void COGLDisp::OnApply()
 		ogl_modes[current].yres,
 		ogl_modes[current].cdepth);
 
-	if ( reg_set_sz(Settings::reg_path, "VideocardFs2open", videocard) == false )
+	if ( reg_set_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard) == false )
 		MessageBox("Failed to set graphic mode");
 
 	current = m_anisofilter_slider.GetPos();
@@ -156,17 +156,17 @@ void COGLDisp::OnApply()
 	char aniso_setting[10] = "";
 	sprintf(aniso_setting, "%i.0", aniso_value[current]);
 
-	if ( reg_set_sz(Settings.reg_path, "OGL_AnisotropicFilter", aniso_setting) == false )
+	if ( reg_set_sz(LauncherSettings::get_reg_path(), "OGL_AnisotropicFilter", aniso_setting) == false )
 		MessageBox("Failed to set Anisotropic Filter setting.");
 
 	current = m_fsaa_slider.GetPos();
-	if ( reg_set_dword(Settings.reg_path, "OGL_FSAA", fsaa_value[current]) == false )
+	if ( reg_set_dword(LauncherSettings::get_reg_path(), "OGL_FSAA", fsaa_value[current]) == false )
 		MessageBox("Failed to set FSAA setting.");
 
 	current = m_texfilter_list.GetCurSel();
 
 	if (current != CB_ERR) {
-		if ( reg_set_dword(Settings.reg_path, "TextureFilter", current) == false )
+		if ( reg_set_dword(LauncherSettings::get_reg_path(), "TextureFilter", current) == false )
 			MessageBox("Failed to set Texture Filter setting.");
 	}
 }
@@ -332,7 +332,7 @@ void COGLDisp::LoadSettings()
 	char anisofilter_string[10] = "";
 
 	// Lets get those video card settings
-	if(reg_get_sz(Settings::reg_path, "VideocardFs2open", videocard_string, MAX_PATH) == false)
+	if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard_string, MAX_PATH) == false)
 		return;
 
 	if(sscanf(videocard_string, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
@@ -340,19 +340,19 @@ void COGLDisp::LoadSettings()
 
 	UpdateResList(width, height, cdepth);
 
-	if (reg_get_sz(Settings::reg_path, "OGL_AnisotropicFilter", anisofilter_string, 10) == false)
+	if (reg_get_sz(LauncherSettings::get_reg_path(), "OGL_AnisotropicFilter", anisofilter_string, 10) == false)
 		SetAnisoFilter("0.0");
 	else
 		SetAnisoFilter(anisofilter_string);
 
 	DWORD fsaa = 0;
-	if (reg_get_dword(Settings::reg_path, "OGL_FSAA", &fsaa) == false)
+	if (reg_get_dword(LauncherSettings::get_reg_path(), "OGL_FSAA", &fsaa) == false)
 		SetFSAA(0);
 	else
 		SetFSAA(fsaa);
 	
 	DWORD texfilter = 1;
-	if (reg_get_dword(Settings::reg_path, "TextureFilter", &texfilter) == false)
+	if (reg_get_dword(LauncherSettings::get_reg_path(), "TextureFilter", &texfilter) == false)
 		m_texfilter_list.SetCurSel(1);
 	else
 		m_texfilter_list.SetCurSel(texfilter);
@@ -372,20 +372,20 @@ void COGLDisp::UpdateLists()
 
 	// set aniso filter based on reg setting if possible
 	char anisofilter_string[10] = "";
-	if (reg_get_sz(Settings::reg_path, "OGL_AnisotropicFilter", anisofilter_string, 10) == false)
+	if (reg_get_sz(LauncherSettings::get_reg_path(), "OGL_AnisotropicFilter", anisofilter_string, 10) == false)
 		SetAnisoFilter("0.0");
 	else
 		SetAnisoFilter(anisofilter_string);
 
 	DWORD fsaa = 0;
-	if (reg_get_dword(Settings::reg_path, "OGL_FSAA", &fsaa) == false)
+	if (reg_get_dword(LauncherSettings::get_reg_path(), "OGL_FSAA", &fsaa) == false)
 		SetFSAA(0);
 	else
 		SetFSAA(fsaa);
 
 	// set tex filter based on reg setting if possible
 	DWORD texfilter = 1;
-	if (reg_get_dword(Settings::reg_path, "TextureFilter", &texfilter) == false)
+	if (reg_get_dword(LauncherSettings::get_reg_path(), "TextureFilter", &texfilter) == false)
 		m_texfilter_list.SetCurSel(1);
 	else
 		m_texfilter_list.SetCurSel(texfilter);

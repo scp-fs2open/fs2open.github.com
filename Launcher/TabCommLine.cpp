@@ -10,7 +10,8 @@
 
 #include "win32func.h"
 #include "misc.h"
-#include "settings.h"
+#include "launcher_settings.h"
+#include "mod_settings.h"
 
 #include "iniparser/iniparser.h"
 #include "iniparser/dictionary.h"
@@ -183,15 +184,15 @@ BOOL CTabCommLine::OnInitDialog()
  */
 void CTabCommLine::UpdateFields()
 {
-	if(Settings::exe_path_valid == false)
+	if(LauncherSettings::is_exe_path_valid() == false)
 	{
 		GetDlgItem(IDC_COMM_LINE_PATH)->SetWindowText("");
 		return;
 	}
 
-	strcpy(command_line, Settings::exe_filepath);
+	strcpy(command_line, LauncherSettings::get_exe_filepath());
 
-	if (Settings::exe_type != EXE_TYPE_CUSTOM) {
+	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
 		GetDlgItem(IDC_SETTINGS_NORMAL)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SETTINGS_MOD)->EnableWindow(FALSE);
 		GetDlgItem(IDC_COMM_LINE_PATH)->SetWindowText(command_line);   
@@ -260,10 +261,10 @@ CString CTabCommLine::GetCommLine()
  */
 void CTabCommLine::SelectRegPathAndExeType()
 {
-	if(Settings::exe_path_valid == false ||
-	   !file_exists(Settings::exe_filepath))
+	if(LauncherSettings::is_exe_path_valid() == false ||
+	   !file_exists(LauncherSettings::get_exe_filepath()))
 	{
-		Settings::set_reg_path("", EXE_TYPE_NONE);
+		LauncherSettings::set_reg_path("", EXE_TYPE_NONE);
 		return;
 	}
 
@@ -273,7 +274,7 @@ void CTabCommLine::SelectRegPathAndExeType()
 	for(int i = 0; i < MAX_EXE_TYPES; i++)
 	{
 		// Confirm this by name
-		if(stricmp(exe_types[i].exe_name, Settings::exe_nameonly) == 0)
+		if(stricmp(exe_types[i].exe_name, LauncherSettings::get_exe_nameonly()) == 0)
 		{
 			exe_type = i;
 			break;
@@ -295,7 +296,7 @@ void CTabCommLine::SelectRegPathAndExeType()
 				exe_types[EXE_TYPE_FS2].regname);
 	}
 			
-	Settings::set_reg_path(reg_path, exe_type);
+	LauncherSettings::set_reg_path(reg_path, exe_type);
 }
 
 /**
@@ -308,7 +309,7 @@ void CTabCommLine::OnItemchangedFlagList(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 
 	if(pNMListView->iItem < 0) return;
-	if(m_flag_gen_in_process == true) return;
+	if(m_flag_gen_in_process) return;
 
  	int index			= m_flag_list.GetItemData(pNMListView->iItem);
  	flag_states[index]	= (m_flag_list.GetCheck(pNMListView->iItem) != 0);
@@ -325,7 +326,7 @@ void CTabCommLine::UpdateStandardParam(char *standard_param)
 
 	for(int i = 0; i < num_params; i++)
 	{
-		if(flag_states[i] == true)
+		if(flag_states[i])
 		{
 			strcat(standard_param, exe_params[i].name);		
 			strcat(standard_param, " ");		
@@ -338,7 +339,7 @@ void CTabCommLine::ConstructFlagListRetail()
 	int i, count = 0;
 	char last_word[FLAG_TYPE_LEN] = "";
 
-	if ( exe_types[Settings::exe_type].flags & FLAG_FS1 )
+	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
 		num_params = Num_retail_params_FS1;
 	else
 		num_params = Num_retail_params_FS2;
@@ -349,7 +350,7 @@ void CTabCommLine::ConstructFlagListRetail()
 	if ( (exe_params == NULL) || (flag_states == NULL) )
 		return;
 
-	if ( exe_types[Settings::exe_type].flags & FLAG_FS1 )
+	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
 		memcpy( exe_params, retail_params_FS1, sizeof(Flag) * num_params );
 	else
 		memcpy( exe_params, retail_params_FS2, sizeof(Flag) * num_params );
@@ -379,7 +380,7 @@ void CTabCommLine::ConstructFlagList()
 	int k;
 
 	// If this is a retail FS2 exe skip all this
-	if (Settings::exe_type != EXE_TYPE_CUSTOM) {
+	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
 		m_easy_flag.ResetContent();
 		m_easy_flag.EnableWindow(FALSE);
 
@@ -395,11 +396,11 @@ void CTabCommLine::ConstructFlagList()
 
 	// Delete and generate new flag file
 	char flag_file[MAX_PATH];
-	sprintf(flag_file, "%s\\flags.lch",Settings::exe_pathonly);
+	sprintf(flag_file, "%s\\flags.lch",LauncherSettings::get_exe_pathonly());
 
 	DeleteFile(flag_file);
 
-	if ( !run_file((LPTSTR) Settings::exe_nameonly, (LPTSTR) Settings::exe_pathonly," -get_flags", true) )
+	if ( !run_file((LPTSTR) LauncherSettings::get_exe_nameonly(), (LPTSTR) LauncherSettings::get_exe_pathonly()," -get_flags", true) )
 		return;
 
 	FILE *fp = fopen(flag_file, "r");
@@ -470,7 +471,7 @@ void CTabCommLine::ConstructFlagList()
 
 	// hack for OpenAL check
 	if ( (filelength(fileno(fp)) - ftell(fp)) == 1 ) {
-		Settings::is_openal(true);
+		LauncherSettings::set_openal_build(true);
 	}
 
 	fclose(fp);
@@ -525,9 +526,9 @@ void CTabCommLine::ConstructFlagListInternal()
 	int exe_flags = 0;
 
 	// If we are not sure what this exe is give access to all parameters
-	if(Settings::exe_type != EXE_TYPE_NONE)
+	if(LauncherSettings::get_exe_type() != EXE_TYPE_NONE)
 	{
-		exe_flags = exe_types[Settings::exe_type].flags;
+		exe_flags = exe_types[LauncherSettings::get_exe_type()].flags;
 	}
 
 	m_flag_gen_in_process = true;
@@ -538,7 +539,7 @@ void CTabCommLine::ConstructFlagListInternal()
 		if(strcmp(exe_params[i].type, type_text) != 0)
 			continue;
 
-		if(exe_params[i].fso_only && !(exe_types[Settings::exe_type].flags & FLAG_FS2OPEN))
+		if(exe_params[i].fso_only && !(exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS2OPEN))
 		  	continue;
 
 		// Insert this item but keep a record of the index number
@@ -557,14 +558,14 @@ void CTabCommLine::ConstructFlagListInternal()
 
 bool check_cfg_file(char *dest_buffer, bool create_dir = false)
 {
-	strcpy(dest_buffer, Settings::exe_pathonly);
+	strcpy(dest_buffer, LauncherSettings::get_exe_pathonly());
 	strcat(dest_buffer, "\\data");
 
 	if (create_dir) {
 		_mkdir(dest_buffer);
 	}
 
-	if (Settings::exe_type != EXE_TYPE_CUSTOM) {
+	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
 		strcat(dest_buffer, "\\cmdline.cfg");
 	} else {
 		strcat(dest_buffer, "\\cmdline_fso.cfg");
@@ -591,7 +592,7 @@ bool CTabCommLine::SaveSettings()
 	check_cfg_file(path_buffer, true);
 
 	// if not a custom exe then it must be a retail exe, in which case just save to the cfg
-	if ( Settings::exe_type != EXE_TYPE_CUSTOM ) {
+	if ( LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM ) {
 		if (strlen(standard_param) > 0) {
 			strcat(custom_param, " ");
 			strcat(custom_param, standard_param);
@@ -608,23 +609,20 @@ bool CTabCommLine::SaveSettings()
 		return true;
 	}
 
-	tab_mod.SetSettings(standard_param);
-	tab_mod.GetActiveModName(mod_param);
 
+	// Write the launcher settings
+
+	tab_mod.SetSettings(standard_param);
 	if (strlen(standard_param) > 0) {
 		strcat(custom_param, " ");
 		strcat(custom_param, standard_param);
 	}
+	ModSettings::set_cmdline_options(custom_param);
+	ModSettings::save_custom();
 
-	fp = ini_open_for_write(Settings::ini_main, true, NULL);
+	tab_mod.GetActiveModName(mod_param);
+	LauncherSettings::set_active_mod(mod_param);
 
-	if (fp) {
-		ini_write_data(fp, "game_flags", custom_param);
-		ini_write_data(fp, "active_mod", mod_param);
-
-		ini_close(fp);
-		fp = NULL;
-	}
 
 	// Write the mod details for the cfg file
 	tab_mod.GetModCommandLine(mod_param);		
@@ -648,10 +646,10 @@ bool CTabCommLine::SaveSettings()
  */
 int CTabCommLine::GetFlags()
 {
-	if(Settings::exe_type == EXE_TYPE_NONE) 
+	if(LauncherSettings::get_exe_type() == EXE_TYPE_NONE) 
 		return 0;
 
-	return exe_types[Settings::exe_type].flags;
+	return exe_types[LauncherSettings::get_exe_type()].flags;
 }
 
 void CTabCommLine::LoadSettings(char *reg_path)
@@ -659,27 +657,14 @@ void CTabCommLine::LoadSettings(char *reg_path)
 	char custom_param[MAX_CUSTOM_PARAM_SIZE] = "";
 
 	// a non-retail exe will grab options from the launcher ini
-	if (Settings::exe_type == EXE_TYPE_CUSTOM) {
-		int exe_flags = GetFlags();
+	if (LauncherSettings::get_exe_type() == EXE_TYPE_CUSTOM) {
+		ModSettings::load_custom();
 
-		dictionary *ini = iniparser_load(Settings::ini_main);
-
-		if (ini == NULL) 
-			return;
-
-		iniparser_dump(ini, stderr);
-	
-		if (exe_flags & FLAG_MOD) {
-			char *mod = iniparser_getstr(ini, "launcher:active_mod");
-			SetModParam(mod);
+		if (GetFlags() & FLAG_MOD) {
+			SetModParam(LauncherSettings::get_active_mod());
 		}
 
-		char *flags	= iniparser_getstr(ini, "launcher:game_flags");
-
-		if (flags)
-			strcpy(custom_param, flags);
-
-		iniparser_freedict(ini);
+		strcpy(custom_param, ModSettings::get_cmdline_options());
 	}
 	// a retail exe will just grab options from the game cfg
 	else {
@@ -746,7 +731,7 @@ void CTabCommLine::SetModParam(char *path)
 	}
 
 	char absolute_path[MAX_PATH];
-	strcpy(absolute_path, Settings::exe_pathonly);
+	strcpy(absolute_path, LauncherSettings::get_exe_pathonly());
 	strcat(absolute_path, "\\");
 	strcat(absolute_path, path);
 

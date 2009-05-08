@@ -7,35 +7,6 @@
 // TabCommLine.h : header file
 //
 
-enum
-{
-	// First 6 flags must remain set they are
-//	FLAG_D3D9		= 1 << 0,
-	FLAG_OGL		= 1 << 0,
-	FLAG_D3D8		= 1 << 1,
-	FLAG_D3D5		= 1 << 2,
-	FLAG_3DFX		= 1 << 3,
-	FLAG_DD5		= 1 << 4,
-	FLAG_SFT		= 1 << 5,
-	FLAG_FS1		= 1 << 6,
-	FLAG_FS2		= 1 << 7,
-	FLAG_MULTI		= 1 << 8,
-	FLAG_MOD		= 1 << 9,
-	FLAG_FS2OPEN	= 1 << 10,
-	FLAG_SCP		= /*FLAG_D3D9 |*/ FLAG_D3D8 | FLAG_OGL | FLAG_FS2 | FLAG_MOD | FLAG_FS2OPEN,
-	FLAG_NEW		= 1 << 31,
-};
-	
-enum
-	{
-		EXE_TYPE_FS2,
-		EXE_TYPE_FS2DEMO,
-		EXE_TYPE_FS1,
-		MAX_EXE_TYPES,
-		EXE_TYPE_CUSTOM,
-		EXE_TYPE_NONE = MAX_EXE_TYPES,
-	};
-
 /////////////////////////////////////////////////////////////////////////////
 // CTabCommLine dialog
 

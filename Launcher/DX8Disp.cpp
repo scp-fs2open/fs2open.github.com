@@ -11,7 +11,7 @@
 
 #include "win32func.h"
 #include "dbugfile.h"
-#include "settings.h"
+#include "launcher_settings.h"
 
 typedef struct
 {
@@ -319,7 +319,7 @@ void CDX8Disp::UpdateResList(
 				count_back--;
 			}
 
-			if(ignore_this_mode == true)
+			if(ignore_this_mode)
 			{
 				continue;
 			}
@@ -869,8 +869,8 @@ void CDX8Disp::OnApply(int flags)
 		aatype = 0;
 	}
 
-	result += reg_set_dword(Settings::reg_path, "D3D8_AAType",  aatype);
-	result += reg_set_dword(Settings::reg_path, "D3D8_Adapter", selected_adapter); 
+	result += reg_set_dword(LauncherSettings::get_reg_path(), "D3D8_AAType",  aatype);
+	result += reg_set_dword(LauncherSettings::get_reg_path(), "D3D8_Adapter", selected_adapter); 
 
 	if(!result)
 	{
@@ -887,7 +887,7 @@ void CDX8Disp::OnApply(int flags)
 	char *reg_name = "VideocardFs2open";
 
 	sprintf(video_card, "D3D8-(%dx%d)x%d bit", mode.Width, mode.Height, cdepth);
-	reg_set_sz(Settings::reg_path, reg_name, video_card);
+	reg_set_sz(LauncherSettings::get_reg_path(), reg_name, video_card);
 }
 
 void CDX8Disp::LoadSettings(int flags)
@@ -899,7 +899,7 @@ void CDX8Disp::LoadSettings(int flags)
 
 	DWORD adapter, aatype;
 
-	if(reg_get_dword(Settings::reg_path, "D3D8_Adapter", &adapter) == false)
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "D3D8_Adapter", &adapter) == false)
 	{
 		UpdateAdapterList();
 		return;
@@ -915,7 +915,7 @@ void CDX8Disp::LoadSettings(int flags)
 
 	char *reg_name = "VideocardFs2open";
 
-	if(reg_get_sz(Settings::reg_path, reg_name, mode_string, 1024))
+	if(reg_get_sz(LauncherSettings::get_reg_path(), reg_name, mode_string, 1024))
 		if(sscanf(mode_string, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  == 3) 
 			result = true;
 
@@ -929,7 +929,7 @@ void CDX8Disp::LoadSettings(int flags)
 	// Show user choice and set if next setting is already set
 	UpdateResList(width, height, cdepth);
 
-	if(reg_get_dword(Settings::reg_path, "D3D8_AAType", &aatype) == false)
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "D3D8_AAType", &aatype) == false)
 	{
 		// No setting found, show user choice and return
 		UpdateAntialiasList();

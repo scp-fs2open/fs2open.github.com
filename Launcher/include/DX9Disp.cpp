@@ -802,7 +802,7 @@ void CDX9Disp::OnApply(int flags)
 	char *reg_name = "VideocardFs2open";
 
 	sprintf(video_card, "D3D9-(%dx%d)x%d bit ad%d aa%d", mode.Width, mode.Height, cdepth, selected_adapter, aatype);
-	reg_set_sz(Settings::reg_path, reg_name, video_card);
+	reg_set_sz(LauncherSettings::get_reg_path(), reg_name, video_card);
 #else
 
 
@@ -835,7 +835,7 @@ void CDX9Disp::LoadSettings(int flags)
 
 	char *reg_name = "VideocardFs2open";
 
-	if(reg_get_sz(Settings::reg_path, reg_name, mode_string, 1024))
+	if(reg_get_sz(LauncherSettings::get_reg_path(), reg_name, mode_string, 1024))
 		if(sscanf(mode_string, "D3D9-(%dx%d)x%d bit ad%d aa%d", &width, &height, &cdepth, &adapter, &aatype)  == 5) 
 			result = true;
 

@@ -6,7 +6,7 @@
 #include "TabNetwork.h"
 
 #include "win32func.h"
-#include "settings.h"
+#include "launcher_settings.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -78,7 +78,7 @@ void CTabNetwork::OnApply()
  	for(i = 0; i < NUM_NET_CONNECTION_TYPES; i++)
 		if(((CButton *) GetDlgItem(net_connection_list[i].id))->GetCheck() == 1)
 		{
-			reg_set_sz(Settings::reg_path, "NetworkConnection", net_connection_list[i].text);
+			reg_set_sz(LauncherSettings::get_reg_path(), "NetworkConnection", net_connection_list[i].text);
 			continue;
 		}
 
@@ -86,7 +86,7 @@ void CTabNetwork::OnApply()
 	for(i = 0; i < NUM_NET_CONNECTION_SPEED; i++)
 		if(((CButton *) GetDlgItem(connection_speed_list[i].id))->GetCheck() == 1)
 		{
-			reg_set_sz(Settings::reg_path, "ConnectionSpeed", connection_speed_list[i].text);
+			reg_set_sz(LauncherSettings::get_reg_path(), "ConnectionSpeed", connection_speed_list[i].text);
 			continue;
 		}
 
@@ -98,7 +98,7 @@ void CTabNetwork::OnApply()
 	if(strlen(local_port_text) > 0)
 	{
 		local_port_value = atoi(local_port_text);
-		reg_set_dword(Settings::reg_path, "ForcePort", local_port_value);
+		reg_set_dword(LauncherSettings::get_reg_path(), "ForcePort", local_port_value);
 	}
 
 	// custom ip
@@ -106,7 +106,7 @@ void CTabNetwork::OnApply()
 	GetDlgItem(IDC_CUSTOM_IP)->GetWindowText(custom_ip, 20);
 
 	char net_reg_path[MAX_PATH] = { 0 };
-	_snprintf(net_reg_path, MAX_PATH - 1, "%s\\%s", Settings::reg_path, "Network");
+	_snprintf(net_reg_path, MAX_PATH - 1, "%s\\%s", LauncherSettings::get_reg_path(), "Network");
 
 	if ( strlen(custom_ip) > 0 )
 		reg_set_sz(net_reg_path, "CustomIP", custom_ip);
@@ -128,8 +128,8 @@ void CTabNetwork::LoadSettings()
 	int i; 
 	char net_connection[20], net_speed[20];
 
-	reg_get_sz(Settings::reg_path, "NetworkConnection", net_connection, 20);
-	reg_get_sz(Settings::reg_path, "ConnectionSpeed", net_speed, 20);
+	reg_get_sz(LauncherSettings::get_reg_path(), "NetworkConnection", net_connection, 20);
+	reg_get_sz(LauncherSettings::get_reg_path(), "ConnectionSpeed", net_speed, 20);
 
 	for(i = 0; i < NUM_NET_CONNECTION_TYPES; i++)
 	{
@@ -145,7 +145,7 @@ void CTabNetwork::LoadSettings()
 
 	// Force the port number here
 	DWORD local_port_value = 0;
-	if(reg_get_dword(Settings::reg_path, "ForcePort", &local_port_value) == true)
+	if(reg_get_dword(LauncherSettings::get_reg_path(), "ForcePort", &local_port_value))
 	{
 		char local_port_text[50];
 
@@ -154,7 +154,7 @@ void CTabNetwork::LoadSettings()
 	}
 
 	char net_reg_path[MAX_PATH] = { 0 };
-	_snprintf(net_reg_path, MAX_PATH - 1, "%s\\%s", Settings::reg_path, "Network");
+	_snprintf(net_reg_path, MAX_PATH - 1, "%s\\%s", LauncherSettings::get_reg_path(), "Network");
 
 	char custom_ip[20] = { 0 };
 	if ( reg_get_sz(net_reg_path, "CustomIP", custom_ip, 20) )
