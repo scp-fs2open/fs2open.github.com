@@ -1953,7 +1953,12 @@ int player_process_pending_praise()
 		if ( ship_index >= 0 ) {
 			// Only praise if above 50% integrity
 			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {
-				message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				if (Player->stats.m_kill_count_ok > 10) {	// this number should probably be in the AI profile or mission file rather than hardcoded
+					message_send_builtin_to_player(MESSAGE_HIGH_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				}
+				else {
+					message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				}
 				Player->allow_praise_timestamp = timestamp(PLAYER_ALLOW_PRAISE_INTERVAL*(Game_skill_level+1) );
 				Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
 				Player->praise_count++;

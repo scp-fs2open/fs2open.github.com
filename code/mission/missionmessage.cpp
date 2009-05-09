@@ -657,7 +657,7 @@
 #include "network/multiutil.h"
 
 
-int Num_builtin_message_types; 
+int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
 // here is a text list of the builtin message names.  These names are used to match against
 // names read in for builtin message radio bits to see what message to play.  These are
 // generic names, meaning that there will be the same message type for a number of different
@@ -706,7 +706,9 @@ char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
 	"Stray Warning Final",
 	"AWACS at 75",
 	"AWACS at 25",
-	"Praise Self"
+	"Praise Self", 
+	"High Praise",
+	"Primaries Low",
 //XSTR:ON
 };
 
@@ -1041,7 +1043,6 @@ void parse_msgtbl()
 	reset_parse();
 	Num_messages = 0;
 	Num_personas = 0;
-	Num_builtin_message_types = 0; 
 
 	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
 	p1 = strstr(Mp, "#End");
@@ -1085,15 +1086,14 @@ void parse_msgtbl()
 	Num_builtin_avis = Num_message_avis;
 	Num_builtin_waves = Num_message_waves;
 
-	// cycle through the messages to determine what is the last type of message the table supports
-	// this can later be used to determine if we should play a builtin that wasn't supported in retail
+	
+	memset(Valid_builtin_message_types, 0, sizeof(int)); 
+	// now cycle through the messages to determine which type of builtins we have messages for
 	for (i = 0; i < Num_builtin_messages; i++) {
 		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
 			if (!(stricmp(Messages[i].name, Builtin_message_types[j]))) {
-				if (j >= Num_builtin_message_types) {
-					Num_builtin_message_types = j+1; 
-					break;
-				}
+				Valid_builtin_message_types[j] = 1; 
+				break;
 			}
 		}
 	}
@@ -2340,8 +2340,17 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	char *who_from;
 
 	// builtin type isn't supported by this version of the table
-	if (type >= Num_builtin_message_types) {
-		return;
+	if (!Valid_builtin_message_types[type]) {
+		// downgrade certain message types to more generic ones more likely to be supported
+		if (type == MESSAGE_HIGH_PRAISE && Valid_builtin_message_types[MESSAGE_PRAISE] ) {
+			type = MESSAGE_PRAISE; 
+		}
+		else if ( type == MESSAGE_PRIMARIES_LOW && Valid_builtin_message_types[MESSAGE_REARM_REQUEST] ) {
+			type = MESSAGE_REARM_REQUEST; 
+		}
+		else {
+			return;
+		}
 	}
 
 	// if we aren't showing builtin msgs, bail
@@ -2414,6 +2423,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	if (num_matching_builtins <= 0) {
 		nprintf(("messaging", "Couldn't find any builtin message of type %d\n", type ));
+		Int3();
 		return; 
 	}
 

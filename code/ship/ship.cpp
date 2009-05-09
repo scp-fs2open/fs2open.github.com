@@ -15324,7 +15324,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 					{
 						if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
 						{
-							message_type = MESSAGE_REARM_REQUEST;
+							message_type = MESSAGE_PRIMARIES_LOW;
 							break;
 						}
 					}
