@@ -1003,7 +1003,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
-		vec3d	gun_pos, gun_vec;
+		vec3d	gun_pos, gun_vec, target_moving_direction;
 		//float		weapon_speed;
 		float		weapon_system_strength;
 		//HACK HACK HACK -WMC
@@ -1038,8 +1038,14 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 			}
 		}
 
+		target_moving_direction = lep->phys_info.vel;
+
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
-		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &lep->phys_info.vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
+			vm_vec_sub2(&target_moving_direction, &objp->phys_info.vel);
+		}
+
+		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
 
 		//Mess with the turret's accuracy if the weapon system is damaged.
 		if (weapon_system_strength < 0.7f) {

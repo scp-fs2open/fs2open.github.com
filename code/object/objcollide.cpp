@@ -1015,7 +1015,11 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 		//vector	max_vel;			//maximum foward velocity in x,y,z
 
 		float max_vel_weapon, max_vel_other;
-		max_vel_weapon = weapon->phys_info.max_vel.xyz.z;
+
+		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+			max_vel_weapon = vm_vec_mag(&weapon->phys_info.vel);
+		else
+			max_vel_weapon = weapon->phys_info.max_vel.xyz.z;
 
 		if ((Weapons[weapon->instance].lssm_stage==5))
 		{
@@ -1042,7 +1046,8 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 			float root1, root2, root, earliest_time;
 
 			vm_vec_sub( &delta_x, &weapon->pos, &other->pos );
-			vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
+			laser_vel = weapon->phys_info.vel;
+			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
 			delta_x_dot_vl = vm_vec_dotprod( &delta_x, &laser_vel );
 

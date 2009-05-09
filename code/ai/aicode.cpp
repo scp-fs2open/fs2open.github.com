@@ -7382,8 +7382,14 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 {
 	float	weapon_speed, range_time;
 	ship	*shipp = &Ships[pobjp->instance];
+	vec3d	target_moving_direction;
 
 	Assert( eobjp != NULL );
+
+	target_moving_direction = eobjp->phys_info.vel;
+
+	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+		vm_vec_sub2(&target_moving_direction, &pobjp->phys_info.vel);
 
 	weapon_speed = ai_get_weapon_speed(&shipp->weapons);
 	weapon_speed = MAX(weapon_speed, 1.0f);		// set not less than 1
@@ -7403,7 +7409,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 		float	dist;
 
 		dist = vm_vec_dist_quick(&pobjp->pos, &eobjp->pos);
-		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &eobjp->phys_info.vel, aip->time_enemy_in_range * dist/weapon_speed);
+		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &target_moving_direction, aip->time_enemy_in_range * dist/weapon_speed);
 	} else {
 		float	collision_time;
 		vec3d	gun_pos, pnt;
@@ -7418,13 +7424,13 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 		vm_vec_unrotate(&gun_pos, &pnt, &pobjp->orient);
 		vm_vec_add2(&gun_pos, &pobjp->pos);
 
-		collision_time = compute_collision_time(&eobjp->pos, &eobjp->phys_info.vel, &gun_pos, weapon_speed);
+		collision_time = compute_collision_time(&eobjp->pos, &target_moving_direction, &gun_pos, weapon_speed);
 
 		if (collision_time == 0.0f) {
 			collision_time = 100.0f;
 		}
 
-		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &eobjp->phys_info.vel, collision_time);
+		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &target_moving_direction, collision_time);
 
 		// set globals
 		G_collision_time = collision_time;
