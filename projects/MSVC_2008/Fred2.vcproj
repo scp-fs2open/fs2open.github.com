@@ -65,7 +65,7 @@
 				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
-				WarningLevel="3"
+				WarningLevel="4"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 			/>
