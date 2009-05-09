@@ -9944,7 +9944,7 @@ void sexp_sabotage_subsystem(int n)
 	int	percentage, shipnum, index, subsys_type;
 	float sabotage_hits;
 	ship	*shipp;
-	ship_subsys *ss, *ss_start;
+	ship_subsys *ss = NULL, *ss_start;
 	bool is_generic, do_loop = true;
 
 	shipname = CTEXT(n);
@@ -10047,7 +10047,7 @@ void sexp_repair_subsystem(int n)
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	float repair_hits;
 	ship *shipp;
-	ship_subsys *ss, *ss_start;
+	ship_subsys *ss = NULL, *ss_start;
 	bool generic, do_loop = true;
 
 	shipname = CTEXT(n);
@@ -10152,7 +10152,7 @@ void sexp_set_subsystem_strength(int n)
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	ship *shipp;
-	ship_subsys *ss, *ss_start;
+	ship_subsys *ss = NULL, *ss_start;
 	bool generic_subsys; 
 	bool do_loop = true;
 
@@ -11560,7 +11560,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 	
 	int requested_bank; 
 	int delay;
-	int last_fired; 
+	int last_fired = -1; 
 
 	shipp = sexp_get_ship_from_node(node); 
 	if (shipp == NULL) {
@@ -12875,9 +12875,6 @@ int sexp_order(int n)
 	char *order_to = CTEXT(n);
 	char *order = CTEXT(CDR(n));
 	char *target = NULL;
-	char *order_from = NULL;
-	char *special = NULL;
-	int timestamp = 0;
 
 	//target
 	n = CDDR(n); 
@@ -15547,7 +15544,6 @@ int sexp_is_player (int node)
 void sexp_set_respawns(int node)
 {
 	int num_respawns; 
-	player *p = NULL;
 	p_object *p_objp;
 
 	// we're wasting our time if you can't respawn
