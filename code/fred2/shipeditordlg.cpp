@@ -1350,6 +1350,7 @@ int CShipEditorDlg::update_data(int redraw)
 		update_ship(player_ship);
 
 	} else if (single_ship >= 0) {  // editing a single ship
+		m_ship_name.Trim(); 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (cur_object_index != OBJ_INDEX(ptr))) {

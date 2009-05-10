@@ -874,6 +874,8 @@ int wing_editor::update_data(int redraw)
 	UpdateData(TRUE);
 	UpdateData(TRUE);
 
+	m_wing_name.Trim(); 
+
 	if (cur_wing >= 0) {
 		for (i=0; i<MAX_WINGS; i++)
 			if (Wings[i].wave_count && !stricmp(Wings[i].name, m_wing_name) && (i != cur_wing)) {
