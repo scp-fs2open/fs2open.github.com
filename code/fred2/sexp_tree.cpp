@@ -2624,6 +2624,18 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			}
 
 			return 1;
+	
+		case ID_REPLACE_NUMBER:
+			expand_operator(item_index);
+			replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+			EditLabel(tree_nodes[item_index].handle);
+			return 1; 
+	
+		case ID_REPLACE_STRING:
+			expand_operator(item_index);
+			replace_data("string", (SEXPT_STRING | SEXPT_VALID));
+			EditLabel(tree_nodes[item_index].handle);
+			return 1; 
 
 		case ID_ADD_STRING:	{
 			int node;
