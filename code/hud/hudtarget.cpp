@@ -2978,20 +2978,26 @@ void hud_target_targets_target()
 		goto ttt_fail;
 	}
 
-	if (hud_target_invalid_awacs(objp)) {
-		goto ttt_fail;
-	}
-
-	if ( Ships[objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS ) {
-		goto ttt_fail;
-	}
-
 	tt_objnum = Ai_info[Ships[objp->instance].ai_index].target_objnum;
 	if ( tt_objnum < 0 || tt_objnum >= MAX_OBJECTS ) {
 		goto ttt_fail;
 	}
 
 	if ( tt_objnum == OBJ_INDEX(Player_obj) ) {
+		goto ttt_fail;
+	}
+
+	object * tt_objp = &Objects[tt_objnum]; 
+
+	if (hud_target_invalid_awacs(tt_objp)) {
+		goto ttt_fail;
+	}
+
+	if ( tt_objp->type != OBJ_SHIP ) {
+		goto ttt_fail;
+	}
+
+	if ( Ships[tt_objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS ) {
 		goto ttt_fail;
 	}
 
