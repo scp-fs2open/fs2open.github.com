@@ -735,8 +735,8 @@ void initial_status::update_docking_info()
 		object *dockee_objp = dock_find_object_at_dockpoint(objp, i);
 		if (dockee_objp != NULL)
 		{
-			if (dockpoint_array[i].dockee_shipnum != dockee_objp->instance)
-			{
+			// check if the dockee ship thinks that this ship is docked to this dock point
+			if (objp != dock_find_object_at_dockpoint(dockee_objp, dockpoint_array[i].dockee_point) ) {
 				// undock it
 				undock(objp, dockee_objp);
 			}
