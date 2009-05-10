@@ -2966,7 +2966,8 @@ void hud_update_closest_turret()
 //
 void hud_target_targets_target()
 {
-	object	*objp;
+	object *objp = NULL;
+	object *tt_objp = NULL;
 	int		tt_objnum;
 
 	if ( Player_ai->target_objnum < 0 || Player_ai->target_objnum >= MAX_OBJECTS ) {
@@ -2987,7 +2988,7 @@ void hud_target_targets_target()
 		goto ttt_fail;
 	}
 
-	object * tt_objp = &Objects[tt_objnum]; 
+	tt_objp = &Objects[tt_objnum]; 
 
 	if (hud_target_invalid_awacs(tt_objp)) {
 		goto ttt_fail;
