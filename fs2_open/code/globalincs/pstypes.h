@@ -600,6 +600,7 @@ typedef struct flag_def_list {
 
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
+void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... );
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
 extern void _cdecl Error( char * filename, int line, const char * format, ... );
 extern void _cdecl Warning( char * filename, int line, const char * format, ... );
@@ -635,9 +636,12 @@ extern int Global_error_count;
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #define Assert(x) do {} while (0)
+#define Assertion(x, y, ...) do {} while (0)
 #else
 void gr_activate(int);
 #define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+#define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+
 #endif
 /*******************NEVER UNCOMMENT Assert ************************************************/
 
