@@ -2884,7 +2884,7 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 	if (bitmapnum < 0)
 		return;
 
-	Assert( bm_bitmaps[n].handle == bitmapnum );
+	Assertion( (bm_bitmaps[n].handle == bitmapnum), "bitmapnum = %i, n = %i, bm_bitmaps[n].handle = %i", bitmapnum, n, bm_bitmaps[n].handle );
 
 	if (nframes <= 0) {
 		if ( (bm_bitmaps[n].type == BM_TYPE_ANI) || (bm_bitmaps[n].type == BM_TYPE_EFF) )
