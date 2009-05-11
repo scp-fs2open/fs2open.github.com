@@ -538,7 +538,7 @@ void event_editor::OnEndlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item);
 }
 
 // This is needed as a HACK around default MFC standard

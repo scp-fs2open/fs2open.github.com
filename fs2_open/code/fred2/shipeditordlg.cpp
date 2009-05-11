@@ -1752,7 +1752,7 @@ void CShipEditorDlg::OnEndlabeleditArrivalTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_arrival_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_arrival_tree.end_label_edit(pTVDispInfo->item);
 	editing = 0;
 }
 
@@ -1760,7 +1760,7 @@ void CShipEditorDlg::OnEndlabeleditDepartureTree(NMHDR* pNMHDR, LRESULT* pResult
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_departure_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_departure_tree.end_label_edit(pTVDispInfo->item);
 	editing = 0;
 }
 
