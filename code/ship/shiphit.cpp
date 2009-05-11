@@ -2742,7 +2742,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 						if (bobjn >= 0)
 						{
 							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
-								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
+								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && 
+								 !(Objects[bobjn].flags & OF_PLAYER_SHIP) ) {
 								bobjn = -1;
 							}
 						}
