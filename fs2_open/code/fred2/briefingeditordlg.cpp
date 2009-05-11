@@ -226,6 +226,7 @@
 #include "object/objectdock.h"
 #include "iff_defs/iff_defs.h"
 #include "sound/audiostr.h"
+#include "localization/localize.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -512,6 +513,7 @@ void briefing_editor_dlg::update_data(int update)
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
 		deconvert_multiline_string(buf3, m_text, MAX_BRIEF_LEN);
+		lcl_fred_replace_stuff(buf3, MAX_BRIEF_LEN);
 		if (stricmp(ptr->new_text, buf3))
 			set_modified();
 

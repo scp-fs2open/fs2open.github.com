@@ -128,6 +128,7 @@
 #include "parse/sexp.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
+#include "localization/localize.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -278,7 +279,9 @@ void debriefing_editor_dlg::update_data(int update)
 
 		ptr->formula = m_tree.save_tree();
 		deconvert_multiline_string(ptr->new_text, m_text, MAX_DEBRIEF_LEN);
+		lcl_fred_replace_stuff(ptr->new_text, MAX_DEBRIEF_LEN);
 		deconvert_multiline_string(ptr->new_recommendation_text, m_rec_text, MAX_RECOMMENDATION_LEN);
+		lcl_fred_replace_stuff(ptr->new_recommendation_text,MAX_RECOMMENDATION_LEN);
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN);
 	}
 

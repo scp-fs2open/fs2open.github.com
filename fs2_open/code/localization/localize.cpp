@@ -934,6 +934,28 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 	}
 }
 
+#define LCL_NUM_FRED_REPLACEMENTS 2
+void lcl_fred_replace_stuff(char *text, unsigned int max_len)
+{
+	Assert(text);	
+
+	int i;
+	char replace[LCL_NUM_FRED_REPLACEMENTS][2][NAME_LENGTH];
+
+	// fill replacements array (this is if we want to add more in the future)
+	strcpy(replace[0][0], "$quote");
+	strcpy(replace[0][1], "\"");
+	strcpy(replace[1][0], "$semicolon");
+	strcpy(replace[1][1], ";");
+
+	// do all replacements
+	for (i = 0; i < LCL_NUM_FRED_REPLACEMENTS; i++)
+	{
+		// replace all instances of that string
+		replace_all(text, replace[i][1], replace[i][0], max_len);
+	}
+}
+
 // get the localized version of the string. if none exists, return the original string
 // valid input to this function includes :
 // "this is some text"

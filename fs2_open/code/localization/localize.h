@@ -156,6 +156,9 @@ void lcl_ext_close();
 // Goober5000
 void lcl_replace_stuff(char *text, unsigned int max_len);
 
+// Karajorma
+void lcl_fred_replace_stuff(char *text, unsigned int max_len);
+
 // get the localized version of the string. if none exists, return the original string
 // valid input to this function includes :
 // "this is some text"
