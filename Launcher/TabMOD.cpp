@@ -465,3 +465,7 @@ void CTabMOD::LoadSettings(int flags)
 	GetSettings();
 }
 
+void CTabMOD::SaveSettings()
+{
+	LauncherSettings::set_active_mod(active_mod);
+}

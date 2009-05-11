@@ -33,6 +33,24 @@ bool file_exists(const char *path)
 	return false;
 }
 
+bool check_cfg_file(char *dest_buffer, bool create_dir)
+{
+	strcpy(dest_buffer, LauncherSettings::get_exe_pathonly());
+	strcat(dest_buffer, "\\data");
+
+	if (create_dir) {
+		_mkdir(dest_buffer);
+	}
+
+	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
+		strcat(dest_buffer, "\\cmdline.cfg");
+	} else {
+		strcat(dest_buffer, "\\cmdline_fso.cfg");
+	}
+			
+	return file_exists(dest_buffer);
+}
+
 /**
  * Gets a files size using stat
  *

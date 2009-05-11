@@ -432,9 +432,9 @@ BEGIN
     CTEXT           "Double click flag for online documentation on the feature",
                     IDC_STATIC,7,184,186,9
     PUSHBUTTON      "Use mod's default settings",IDC_SETTINGS_MOD,99,36,94,
-                    14,NOT WS_VISIBLE | WS_DISABLED
+                    14,WS_DISABLED
     PUSHBUTTON      "Use your normal settings",IDC_SETTINGS_NORMAL,7,36,88,
-                    14,NOT WS_VISIBLE | WS_DISABLED
+                    14,WS_DISABLED
 END
 
 IDD_MOD DIALOG DISCARDABLE  0, 0, 208, 198

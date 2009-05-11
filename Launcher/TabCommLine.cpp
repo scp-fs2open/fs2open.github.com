@@ -178,60 +178,68 @@ BOOL CTabCommLine::OnInitDialog()
 }
 
 /**
- *
- *
- * @param char *new_path
+ * Populate the command line variable, and update the dialog window.
  */
-void CTabCommLine::UpdateFields()
+void CTabCommLine::UpdateCommandLine()
 {
-	if(LauncherSettings::is_exe_path_valid() == false)
+	bool enable_reset_to_normal = false;	// TODO: what is "normal"?
+	bool enable_reset_to_mod = false;
+	strcpy(command_line, "");
+
+	// add the EXE to the command line
+	if (LauncherSettings::is_exe_path_valid())
 	{
-		GetDlgItem(IDC_COMM_LINE_PATH)->SetWindowText("");
-		return;
-	}
-
-	strcpy(command_line, LauncherSettings::get_exe_filepath());
-
-	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
-		GetDlgItem(IDC_SETTINGS_NORMAL)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SETTINGS_MOD)->EnableWindow(FALSE);
-		GetDlgItem(IDC_COMM_LINE_PATH)->SetWindowText(command_line);   
-		CLauncherDlg::Redraw();
-		return;
-	}
-
-	char mod_param[MAX_PATH * 3];
-	tab_mod.GetModCommandLine(mod_param);
-	if(strlen(mod_param) > 0)
-	{
- 		strcat(command_line, mod_param);
-		GetDlgItem(IDC_SETTINGS_NORMAL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_SETTINGS_MOD)->EnableWindow(TRUE);
+		strcat(command_line, LauncherSettings::get_exe_filepath());
 	}
 	else
 	{
-		GetDlgItem(IDC_SETTINGS_NORMAL)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SETTINGS_MOD)->EnableWindow(FALSE);
+		goto done_with_command_line;
 	}
 
-	char standard_param[MAX_PATH * 3];
-	UpdateStandardParam(standard_param);	
-	if(strlen(standard_param) > 0)
+	// for non-custom EXEs, that's all we can do
+	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM)
 	{
- 		strcat(command_line, " ");
- 		strcat(command_line, standard_param);
+		goto done_with_command_line;
 	}
 
-	CString custom_param;
-	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_param);
-	if(strlen(custom_param) > 0)
+	// add params specified by mod
+	char mod_params[MAX_CMDLINE_SIZE];
+	tab_mod.GetModCommandLine(mod_params);
+	if (strlen(mod_params) > 0)
 	{
- 		strcat(command_line, " ");
- 		strcat(command_line, custom_param);
+ 		strcat(command_line, mod_params);
+		strcat(command_line, " ");
+		enable_reset_to_mod = true;
 	}
 
+	// add params specified by checkbox
+	char standard_params[MAX_CMDLINE_SIZE];
+	GetStandardParameters(standard_params);	
+	if (strlen(standard_params) > 0)
+	{
+ 		strcat(command_line, standard_params);
+ 		strcat(command_line, " ");
+	}
 
-	GetDlgItem(IDC_COMM_LINE_PATH)->SetWindowText(command_line);   
+	// add params entered by user
+	CString custom_params;
+	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params);
+	if (strlen(custom_params) > 0)
+	{
+ 		strcat(command_line, custom_params);
+ 		strcat(command_line, " ");
+	}
+
+	// remove final space
+	int len = strlen(command_line);
+	if (command_line[len-1] == ' ')
+		command_line[len-1] = 0;
+
+done_with_command_line:
+	// draw the dialog window
+	GetDlgItem(IDC_COMM_LINE_PATH)->SetWindowText(command_line);
+	GetDlgItem(IDC_SETTINGS_NORMAL)->EnableWindow(enable_reset_to_normal);
+	GetDlgItem(IDC_SETTINGS_MOD)->EnableWindow(enable_reset_to_mod);
 	CLauncherDlg::Redraw();
 }
 
@@ -241,13 +249,13 @@ void CTabCommLine::UpdateFields()
  */
 void CTabCommLine::OnChangeCustomParam() 
 {
-	UpdateFields();	
+	UpdateCommandLine();	
 }
 
 /**
  * @return CString - string holding command line (may be empty)
  */
-CString CTabCommLine::GetCommLine()
+CString CTabCommLine::GetCommandLine()
 {
 	return CString(command_line);
 }
@@ -261,8 +269,8 @@ CString CTabCommLine::GetCommLine()
  */
 void CTabCommLine::SelectRegPathAndExeType()
 {
-	if(LauncherSettings::is_exe_path_valid() == false ||
-	   !file_exists(LauncherSettings::get_exe_filepath()))
+	if ( !LauncherSettings::is_exe_path_valid() ||
+		 !file_exists(LauncherSettings::get_exe_filepath()) )
 	{
 		LauncherSettings::set_reg_path("", EXE_TYPE_NONE);
 		return;
@@ -271,10 +279,10 @@ void CTabCommLine::SelectRegPathAndExeType()
 	int exe_type = EXE_TYPE_CUSTOM;
 
 	// Use filename and size to determine official builds
-	for(int i = 0; i < MAX_EXE_TYPES; i++)
+	for (int i = 0; i < MAX_EXE_TYPES; i++)
 	{
 		// Confirm this by name
-		if(stricmp(exe_types[i].exe_name, LauncherSettings::get_exe_nameonly()) == 0)
+		if (stricmp(exe_types[i].exe_name, LauncherSettings::get_exe_nameonly()) == 0)
 		{
 			exe_type = i;
 			break;
@@ -283,7 +291,7 @@ void CTabCommLine::SelectRegPathAndExeType()
 
 	char reg_path[MAX_PATH];
 
-	if(exe_type < MAX_EXE_TYPES)
+	if (exe_type < MAX_EXE_TYPES)
 	{
 		sprintf(reg_path, "SOFTWARE\\%s\\%s", 
 			exe_types[exe_type].company, 
@@ -308,28 +316,28 @@ void CTabCommLine::OnItemchangedFlagList(NMHDR* pNMHDR, LRESULT* pResult)
 
 	*pResult = 0;
 
-	if(pNMListView->iItem < 0) return;
-	if(m_flag_gen_in_process) return;
+	if (pNMListView->iItem < 0) return;
+	if (m_flag_gen_in_process) return;
 
  	int index			= m_flag_list.GetItemData(pNMListView->iItem);
  	flag_states[index]	= (m_flag_list.GetCheck(pNMListView->iItem) != 0);
 
-	UpdateFields();
+	UpdateCommandLine();
 }
 
 /**
  * This takes the standard parameter choices the user has made and turns them into a string
  */
-void CTabCommLine::UpdateStandardParam(char *standard_param)
+void CTabCommLine::GetStandardParameters(char *standard_params)
 {
-	strcpy(standard_param, "");
+	strcpy(standard_params, "");
 
-	for(int i = 0; i < num_params; i++)
+	for (int i = 0; i < num_params; i++)
 	{
-		if(flag_states[i])
+		if (flag_states[i])
 		{
-			strcat(standard_param, exe_params[i].name);		
-			strcat(standard_param, " ");		
+			strcat(standard_params, exe_params[i].name);		
+			strcat(standard_params, " ");		
 		}
 	}	 
 }
@@ -348,7 +356,10 @@ void CTabCommLine::ConstructFlagListRetail()
 	flag_states = (bool *) malloc(sizeof(bool) * num_params);
 
 	if ( (exe_params == NULL) || (flag_states == NULL) )
+	{
+		MessageBox("Memory allocation failure!");
 		return;
+	}
 
 	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
 		memcpy( exe_params, retail_params_FS1, sizeof(Flag) * num_params );
@@ -380,7 +391,8 @@ void CTabCommLine::ConstructFlagList()
 	int k;
 
 	// If this is a retail FS2 exe skip all this
-	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
+	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM)
+	{
 		m_easy_flag.ResetContent();
 		m_easy_flag.EnableWindow(FALSE);
 
@@ -401,20 +413,23 @@ void CTabCommLine::ConstructFlagList()
 	DeleteFile(flag_file);
 
 	if ( !run_file((LPTSTR) LauncherSettings::get_exe_nameonly(), (LPTSTR) LauncherSettings::get_exe_pathonly()," -get_flags", true) )
+	{
+		MessageBox("Unable to query FreeSpace Open for launcher flag information!  Is the EXE present?");
 		return;
+	}
 
 	FILE *fp = fopen(flag_file, "r");
 
 	int focount = 2000;
-	while(fp == NULL && focount)
+	while (fp == NULL && focount)
 	{
 		fp = fopen(flag_file, "r");
 		focount--;
 	}
 
-	if(fp == NULL)
+	if (fp == NULL)
 	{
-		MessageBox("Failed to read flag file", "Fatal Error", MB_OK);
+		MessageBox("Failed to read launcher flag file", "Fatal Error", MB_OK);
 		return;
 	}
 
@@ -424,7 +439,7 @@ void CTabCommLine::ConstructFlagList()
 	fread(&eflags_struct_size, sizeof(int), 1, fp);
 	fread(&params_struct_size, sizeof(int), 1, fp);
 
-	if(eflags_struct_size != sizeof(EasyFlag) ||
+	if (eflags_struct_size != sizeof(EasyFlag) ||
 	   params_struct_size != sizeof(Flag))
 	{
 		MessageBox("Launcher and fs2_open versions do not work with each other", "Fatal Error", MB_OK);
@@ -433,17 +448,17 @@ void CTabCommLine::ConstructFlagList()
 		return;
 	}
 
-	if(easy_flags)
+	if (easy_flags)
 		free(easy_flags);
-	if(exe_params)
+	if (exe_params)
 		free(exe_params);
-	if(flag_states)
+	if (flag_states)
 		free(flag_states);
 
 	fread(&num_eflags, sizeof(int), 1, fp);
 	easy_flags = (EasyFlag *) malloc(sizeof(EasyFlag) * num_eflags); 
 
-	if(easy_flags == NULL)
+	if (easy_flags == NULL)
 	{
 		MessageBox("Failed to allocate enough memory for easy_flags", "Fatal Error", MB_OK);
 		fclose(fp);
@@ -459,7 +474,7 @@ void CTabCommLine::ConstructFlagList()
 
 	memset(flag_states, 0, sizeof(bool) * num_params);
 
-	if(exe_params == NULL || flag_states == NULL)
+	if (exe_params == NULL || flag_states == NULL)
 	{
 		MessageBox("Failed to allocate enough memory for exe_params", "Fatal Error", MB_OK);
 		fclose(fp);
@@ -481,7 +496,7 @@ void CTabCommLine::ConstructFlagList()
 
 	// Setup Easy Flags
 	m_easy_flag.ResetContent();
-	for(k = 0; k < num_eflags; k++)
+	for (k = 0; k < num_eflags; k++)
 	{
 		m_easy_flag.InsertString(k,easy_flags[k].name);
 	}
@@ -491,15 +506,15 @@ void CTabCommLine::ConstructFlagList()
 
 	int count = 0;
 	char last_word[FLAG_TYPE_LEN] = "";
-	for(k = 0; k < num_params; k++)
+	for (k = 0; k < num_params; k++)
 	{
-		if(strcmp(exe_params[k].type, last_word) != 0)
+		if (strcmp(exe_params[k].type, last_word) != 0)
 		{
 			m_flag_type_list.InsertString(count, exe_params[k].type);
 			strcpy(last_word, exe_params[k].type);
 			count++;
 
-			if(count > 19)
+			if (count > 19)
 			{
 				MessageBox("Flag type count is 20 or more, please report to coder","Error");
 				count = 19;
@@ -556,89 +571,19 @@ void CTabCommLine::ConstructFlagListInternal()
 	m_flag_gen_in_process = false;
 }
 
-bool check_cfg_file(char *dest_buffer, bool create_dir = false)
-{
-	strcpy(dest_buffer, LauncherSettings::get_exe_pathonly());
-	strcat(dest_buffer, "\\data");
-
-	if (create_dir) {
-		_mkdir(dest_buffer);
-	}
-
-	if (LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM) {
-		strcat(dest_buffer, "\\cmdline.cfg");
-	} else {
-		strcat(dest_buffer, "\\cmdline_fso.cfg");
-	}
-			
-	return file_exists(dest_buffer);
-}
-
 /**
  *
  */
-bool CTabCommLine::SaveSettings()
+void CTabCommLine::SaveSettings()
 {
-	FILE *fp = NULL;
-	char path_buffer[MAX_PATH];
-	char standard_param[MAX_PATH];
-	char mod_param[MAX_PATH];
-	char custom_param[MAX_CUSTOM_PARAM_SIZE] = {'\0'};
+	char standard_params[MAX_CUSTOM_PARAM_SIZE];
+	char custom_params[MAX_CUSTOM_PARAM_SIZE];
 
-	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_param, MAX_CUSTOM_PARAM_SIZE);
+	GetStandardParameters(standard_params);
+	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params, MAX_CUSTOM_PARAM_SIZE);
 
-	UpdateStandardParam(standard_param);
-
-	check_cfg_file(path_buffer, true);
-
-	// if not a custom exe then it must be a retail exe, in which case just save to the cfg
-	if ( LauncherSettings::get_exe_type() != EXE_TYPE_CUSTOM ) {
-		if (strlen(standard_param) > 0) {
-			strcat(custom_param, " ");
-			strcat(custom_param, standard_param);
-		}
-	
-		fp = fopen(path_buffer, "wt");
-			
-		if (fp) {
-			fwrite(custom_param, strlen(custom_param) * sizeof(char), 1, fp);
-			fclose(fp);
-			fp = NULL;
-		}
-
-		return true;
-	}
-
-
-	// Write the launcher settings
-
-	tab_mod.SetSettings(standard_param);
-	if (strlen(standard_param) > 0) {
-		strcat(custom_param, " ");
-		strcat(custom_param, standard_param);
-	}
-	ModSettings::set_cmdline_options(custom_param);
-	ModSettings::save_custom();
-
-	tab_mod.GetActiveModName(mod_param);
-	LauncherSettings::set_active_mod(mod_param);
-
-
-	// Write the mod details for the cfg file
-	tab_mod.GetModCommandLine(mod_param);		
-	if (strlen(mod_param) > 0) {
-		strcat(custom_param, mod_param);
-	}
-
-	// Make the cfg file
-	fp = fopen(path_buffer, "wt");
-
-	if (fp) {
-		fwrite(custom_param, strlen(custom_param) * sizeof(char), 1, fp);
-		fclose(fp);
-	}
-
-	return true;
+	ModSettings::set_standard_parameters(standard_params);
+	ModSettings::set_custom_parameters(custom_params);
 }
 
 /**
@@ -651,6 +596,10 @@ int CTabCommLine::GetFlags()
 
 	return exe_types[LauncherSettings::get_exe_type()].flags;
 }
+
+
+==================== TODO ====================
+
 
 void CTabCommLine::LoadSettings(char *reg_path)
 {

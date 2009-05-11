@@ -37,6 +37,7 @@ const char *CFG_CMDLINE     = "cmdline_fso.cfg";
 
 
 bool file_exists(const char *path);
+bool check_cfg_file(char *dest_buffer, bool create_dir = false);
 int get_file_size(const char *path);
 const char *get_filename_from_path(const char *path);
 void remove_file_from_path(const char *path);

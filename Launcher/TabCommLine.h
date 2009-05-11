@@ -18,17 +18,17 @@ public:
 	CTabCommLine(CWnd* pParent = NULL);   // standard constructor
 	~CTabCommLine();
 
-	void SetModParam(char *path);
+	void SetModParameters(char *path);
 	void LoadSettings(char *reg_path);
 	void ConstructFlagList();
 	void ConstructFlagListRetail();
-	void UpdateStandardParam(char *standard_param);
+	void GetStandardParameters(char *standard_params);
 	int GetFlags();
 	void SelectRegPathAndExeType();
 
-	CString GetCommLine();
-	void UpdateFields();
-	bool SaveSettings();
+	CString GetCommandLine();
+	void UpdateCommandLine();
+	void SaveSettings();
 
 // Dialog Data
 	//{{AFX_DATA(CTabCommLine)
