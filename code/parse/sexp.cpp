@@ -21519,12 +21519,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tAll:\tName of ship to allow to talk." },
 		
 	// Karajorma
-	{ OP_DISABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
+	{ OP_DISABLE_BUILTIN_MESSAGES, "Disable builtin messages (Action operator)\r\n"
 		"\tTurns the built in messages sent by command or pilots off\r\n"
 		"Takes 0 or more arguments....\r\n"
 		"If no arguments are supplied all built in messages are disabled.\r\n"
 		"Using the Any Wingman option silences for all ships in wings.\r\n"
-		"\tAll:\tName of ship to allow to talk." },
+		"\tAll:\tName of ship to be silenced." },
 
 	// Karajorma	
 	{ OP_SET_PERSONA, "Set Persona (Action operator)\r\n"
