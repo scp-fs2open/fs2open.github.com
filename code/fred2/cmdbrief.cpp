@@ -75,6 +75,7 @@
 #include "CmdBrief.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
+#include "localization/localize.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -158,6 +159,7 @@ void cmd_brief_dlg::update_data(int update)
 			free(last_cmd_brief->stage[m_last_stage].text);
 
 		deconvert_multiline_string(buf, m_text, CMD_BRIEF_TEXT_MAX);
+		lcl_fred_replace_stuff(buf, CMD_BRIEF_TEXT_MAX);
 		last_cmd_brief->stage[m_last_stage].text = strdup(buf);
 		string_copy(last_cmd_brief->stage[m_last_stage].ani_filename, m_ani_filename, MAX_FILENAME_LEN);
 		string_copy(last_cmd_brief->stage[m_last_stage].wave_filename, m_wave_filename, MAX_FILENAME_LEN);
