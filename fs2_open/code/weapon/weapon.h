@@ -656,6 +656,7 @@ extern int Num_weapon_subtypes;
 #define WF_LOCKED_WHEN_FIRED			(1<<5)		// fired with a lock
 #define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
 #define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
+#define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
 
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
