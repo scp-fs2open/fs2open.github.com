@@ -150,7 +150,7 @@ public:
 	void expand_branch(HTREEITEM h);
 	void expand_operator(int node);
 	void merge_operator(int node);
-	int end_label_edit(HTREEITEM h, char *str);
+	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h);
 	int identify_arg_type(int node);
 	int count_args(int node);

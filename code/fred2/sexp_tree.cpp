@@ -2142,9 +2142,12 @@ int sexp_tree::edit_label(HTREEITEM h)
 */
 }
 
-int sexp_tree::end_label_edit(HTREEITEM h, char *str)
+int sexp_tree::end_label_edit(TVITEMA &item)
 {
-	int len, r = 1;
+	HTREEITEM h = item.hItem; 
+	char *str = item.pszText;  
+	int len, r = 1;	
+	bool update_node = true; 
 	uint node;
 
 	*modified = 1;
@@ -2173,7 +2176,13 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 
 		SetItemText(h, str);
 		item_index = node;
-		add_or_replace_operator(get_operator_index(str), 1);
+		int op_num = get_operator_index(str); 
+		if (op_num >= 0 ) {
+			add_or_replace_operator(op_num, 1);
+		}
+		else {
+			update_node = false;
+		}
 		r = 0;
 	}
 
@@ -2182,8 +2191,15 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 	if (len >= TOKEN_LENGTH)
 		len = TOKEN_LENGTH - 1;
 
-	strncpy(tree_nodes[node].text, str, len);
-	tree_nodes[node].text[len] = 0;
+	if (update_node) {
+		strncpy(tree_nodes[node].text, str, len);
+		tree_nodes[node].text[len] = 0;
+	}
+	else {
+		strncpy(str, tree_nodes[node].text, len);
+		return 1;
+	}
+
 
 /*	node = tree_nodes[node].parent;
 	if (node != -1) {

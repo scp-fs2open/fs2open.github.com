@@ -500,7 +500,7 @@ void debriefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
 }
 
 void debriefing_editor_dlg::OnClose() 
