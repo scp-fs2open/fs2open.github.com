@@ -184,6 +184,7 @@ public:
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);
 	int find_ancestral_argument_number(int parent_op, int child_node);
+	int query_node_argument_type(int node);
 
 	//WMC
 	int get_sibling_place(int node);

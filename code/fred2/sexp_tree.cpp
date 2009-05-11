@@ -2142,6 +2142,17 @@ int sexp_tree::edit_label(HTREEITEM h)
 */
 }
 
+// given a tree node, returns the argument type it should be.
+int sexp_tree::query_node_argument_type(int node)
+{
+	int argnum = 0; 
+	int parent_node = tree_nodes[node].parent; 
+	Assert(parent_node >= 0);
+	argnum = find_argument_number(parent_node, node); 
+	int op_num = get_operator_index(tree_nodes[parent_node].text);
+	return query_operator_argument_type(op_num, argnum);
+}
+
 int sexp_tree::end_label_edit(TVITEMA &item)
 {
 	HTREEITEM h = item.hItem; 
@@ -2184,6 +2195,17 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 			update_node = false;
 		}
 		r = 0;
+	}
+
+	// gotta sidestep Goober5000's number hack and check entries are actually positive. 
+	else if (tree_nodes[node].type & SEXPT_NUMBER) {
+		if (query_node_argument_type(node) == OPF_POSITIVE) {			
+			int val = atoi(str); 
+			if (val < 0) {
+				MessageBox("Can not enter a negative value", "Invalid Number", MB_ICONEXCLAMATION); 
+				update_node = false; 
+			}
+		}		
 	}
 
 	// Error checking would not hurt here
@@ -2576,13 +2598,27 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+					Assert(var_idx > -1);
+					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
+				}
+				else {
+					expand_operator(item_index);
+					replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+				}
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
 				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+					Assert(var_idx > -1);
+					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
+				}
+				else {
+					expand_operator(item_index);
+					replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+				}
 
 			} else
 				Assert(0);  // unknown and/or invalid sexp type
@@ -4722,12 +4758,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 {
 	sexp_list_item head;
 	sexp_list_item *list = NULL;
-	int i, current_node, w_arg, e_arg;
-
-	// get the current node
-	current_node = tree_nodes[parent_node].child;
-	for (i = 0; i < arg_index; i++)
-		current_node = tree_nodes[current_node].next;
+	int w_arg, e_arg;
 
 	switch (opf) {
 		case OPF_NONE:
@@ -4982,16 +5013,17 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 	}
 
-	// skip the special argument if we aren't at the right spot in when-argument or
-	// every-time-argument... meaning if either w_arg or e_arg is >= 1, we can continue
-	w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, current_node);
-	e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, current_node);
-	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ ) {
+
+	// skip OPF_NONE, also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
+	if (opf == OPF_NULL || opf == OPF_NONE) {
 		return list;
 	}
 
-	// also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
-	if (opf == OPF_NULL) {
+	// skip the special argument if we aren't at the right spot in when-argument or
+	// every-time-argument... meaning if either w_arg or e_arg is >= 1, we can continue
+	w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
+	e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
+	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ ) {
 		return list;
 	}
 
@@ -5209,11 +5241,6 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 	if ( parent_node >= 0 ) {
 		op = get_operator_const(tree_nodes[parent_node].text);
 
-		// prune out to only capital ships
-		if (!stricmp(tree_nodes[parent_node].text, "cap-subsys-cargo-known-delay")) {
-			require_cap_ship = 1;
-		}
-
 		// get the dock_ship number of if this goal is an ai dock goal.  used to prune out unwanted ships out
 		// of the generated ship list
 		dock_ship = -1;
@@ -5240,7 +5267,17 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 				if ( (dock_ship != ptr->instance) && ship_docking_valid(dock_ship , ptr->instance) )
 					head.add_data(Ships[ptr->instance].ship_name );
 
-			} else {
+			}
+			else if (op == OP_CAP_SUBSYS_CARGO_KNOWN_DELAY) {
+				if ( ((Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) &&	// big ship
+					!(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) )||				// which is not flagged OR
+					((!(Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP)) &&  // small ship
+					(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ) ) {				// which is flagged
+
+						head.add_data(Ships[ptr->instance].ship_name);
+				}
+			}
+			else {
 				if ( !require_cap_ship || (Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) ) {
 					head.add_data(Ships[ptr->instance].ship_name);
 				}
