@@ -664,7 +664,8 @@ int Targetbox_flash_flags;
 // during the game.
 int Targetbox_show_extra_info = 1;
 
-int Targetbox_wire=0;
+int Targetbox_wire = 0;
+bool Lock_targetbox_mode = false;
 
 // Different target states.  This drives the text display right below the hull integrity on the targetbox.
 #define TS_DIS		0

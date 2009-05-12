@@ -205,6 +205,7 @@
 #include "hud/hudparse.h" //Duh.
 #include "ship/ship.h" //for ship struct
 #include "graphics/font.h" //for gr_force_fit_string
+#include "hud/hudtargetbox.h" 
 
 
 //Global stuffs
@@ -978,6 +979,17 @@ void parse_hud_gauges_tbl(char *filename)
 			Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
 			Hud_unit_multiplier = 1.0f;
 		}
+	}
+
+	if (optional_string("$Wireframe Targetbox:")) {
+		stuff_int(&Targetbox_wire);
+		if ((Targetbox_wire < 0) || (Targetbox_wire > 2)) {
+			Targetbox_wire = 0;
+		}
+	}
+
+	if (optional_string("$Lock Wireframe Mode:")) {
+		stuff_boolean(&Lock_targetbox_mode);
 	}
 
 	if(optional_string("$Reticle Style:"))
