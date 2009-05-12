@@ -3751,17 +3751,38 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Special Hitpoint index:"))
 		stuff_int(&p_objp->special_hitpoint_index);
 
-	// get hitpoint values
+	// set max hitpoint values	
+	p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+	p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
+	
+	// swap to the special hitpoint ones if they were set
 	if (p_objp->special_hitpoint_index != -1)
 	{
-		p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
+		bool reset_index = false; 
+
+		if ((Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].type & SEXP_VARIABLE_SET)  && 
+			(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].type & SEXP_VARIABLE_BLOCK) ) {
+			p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		}
+		else {
+			Warning(LOCATION, "Special shield hitpoints used for variable number %d. But no variable with this number exists!", p_objp->special_hitpoint_index+SHIELD_STRENGTH); 
+			reset_index = true;
+		}
+
+		if ((Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].type & SEXP_VARIABLE_SET)  && 
+			(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].type & SEXP_VARIABLE_BLOCK) ) {
+			p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
+		}
+		else {
+			Warning(LOCATION, "Special hitpoints used for variable number %d. But no variable with this number exists!", p_objp->special_hitpoint_index+HULL_STRENGTH); 
+			reset_index = true;
+		}
+
+		if (reset_index) {
+			p_objp->special_hitpoint_index = -1;
+		}
 	}
-	else
-	{
-		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
-		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
-	}
+
 	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
