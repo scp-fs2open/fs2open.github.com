@@ -535,8 +535,9 @@ typedef struct colored_char
 	ubyte	color;		// index into Brief_text_colors[]
 } colored_char;
 
-static colored_char Colored_text[MAX_TEXT_STREAMS][MAX_BRIEF_LINES][MAX_BRIEF_LINE_LEN];
-static int Colored_text_len[MAX_TEXT_STREAMS][MAX_BRIEF_LINES];
+typedef std::vector<colored_char> briefing_line; 
+typedef std::vector<briefing_line> briefing_stream; 
+static briefing_stream Colored_stream[MAX_TEXT_STREAMS];
 
 #define MAX_BRIEF_TEXT_COLORS			9
 #define BRIEF_TEXT_WHITE				0
@@ -1607,13 +1608,13 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 void brief_render_line(int line_num, int x, int y, int instance)
 {
 	int len, count, next, truncate_len, last_color, offset, w, h, bright_len, i;
-	colored_char *src;
 	char line[MAX_BRIEF_LINE_LEN];
+	std::vector<colored_char> *src; 
 
-	src = &Colored_text[instance][line_num][0];
-	len = Colored_text_len[instance][line_num];
+	src = &Colored_stream[instance].at(line_num);
+	len = src->size();
 
-	if (len <= 0){
+	if (len == 0){
 		return;
 	}
 
@@ -1645,7 +1646,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 			break;
 		}
 
-		line[next] = src[count].letter;
+		line[next] = src->at(count).letter;
 
 		if (is_white_space(line[next])) {
 			// end of word reached, blit it
@@ -1665,9 +1666,9 @@ void brief_render_line(int line_num, int x, int y, int instance)
 			continue;
 		}
 
-		if (src[count].color != last_color) {
-			brief_set_text_color(src[count].color);
-			last_color = src[count].color;
+		if (src->at(count).color != last_color) {
+			brief_set_text_color(src->at(count).color);
+			last_color = src->at(count).color;
 		}
 
 		count++;
@@ -1683,7 +1684,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 
 		gr_set_color_fast(&Color_bright_white);
 		for (i=0; i<truncate_len+bright_len; i++) {
-			line[i] = src[i].letter;
+			line[i] = src->at(i).letter;
 		}
 
 		line[i] = 0;
@@ -1696,17 +1697,6 @@ void brief_render_line(int line_num, int x, int y, int instance)
 		} else {
 			gr_string(x, y, line);
 		}
-
-		// JAS: Not needed?
-		//		// now erase the part we don't want to be bright white
-		//		gr_set_color_fast(&Color_black);
-		//		if (i > BRIGHTEN_LEAD) {
-		//			line[i - BRIGHTEN_LEAD] = 0;
-		//			gr_get_string_size(&w, &h, line);
-		//			gr_set_clip(x, y, w, gr_get_font_height());
-		//			gr_clear();
-		//			gr_reset_clip();
-		//		}
 	}
 }
 
@@ -1934,20 +1924,15 @@ void brief_set_text_color(int color_index)
 // input:		index		=>		Index into Brief_text[] for source text.
 //					instance	=>		Which instance of Colored_text[] to use.  
 //										Value is 0 unless multiple text streams are required.
-int brief_text_colorize(int index, int instance)
+int brief_text_colorize(char *src, int instance)
 {
-	char *src;
-	int len, i, skip_to_next_word, dest_len;
-	colored_char *dest;
-	ubyte active_color_index;
+	int len, i, skip_to_next_word = 0;
+	colored_char dest; 
+	briefing_line dest_line; 
 
-	src = Brief_text[index];
-	dest = &Colored_text[instance][index][0];
+	ubyte active_color_index = BRIEF_TEXT_WHITE;
+
 	len = strlen(src);
-
-	skip_to_next_word = 0;
-	dest_len = 0;
-	active_color_index = BRIEF_TEXT_WHITE;
 	for (i=0; i<len; i++) {
 		if (skip_to_next_word) {
 			if (is_white_space(src[i])) {
@@ -1967,13 +1952,18 @@ int brief_text_colorize(int index, int instance)
 			active_color_index = BRIEF_TEXT_WHITE;
 		}
 
-		dest[dest_len].letter = src[i];
-		dest[dest_len].color  = active_color_index;
-		dest_len++;
+		dest.letter = src[i];
+		dest.color = active_color_index;
+
+		dest_line.push_back(dest); 
 	} // end for
 
-	dest[dest_len].letter = 0;
-	Colored_text_len[instance][index] = dest_len;
+	// null terminate the line
+	dest.letter = 0;
+	dest.color = BRIEF_TEXT_WHITE; 
+	dest_line.push_back(dest);
+	Colored_stream[instance].push_back(dest_line); 
+	Colored_stream[instance].size();
 	return len;
 }
 
@@ -1984,23 +1974,30 @@ int brief_text_colorize(int index, int instance)
 //				w			=>		max width of line in pixels
 //				instance	=>		optional parameter, used when multiple text streams are required
 //									(default value is 0)
-int brief_color_text_init(char *src, int w, int instance)
+int brief_color_text_init(char *src, int w, int instance, int max_lines)
 {
 	int i, n_lines, len;
-	int n_chars[MAX_BRIEF_LINES];
-	char *p_str[MAX_BRIEF_LINES];
-	
+	std::vector<int> n_chars;
+	std::vector<char*> p_str;
+	char brief_line[MAX_BRIEF_LINE_LEN];
+
 	Assert(src);
-	n_lines = split_str(src, w, n_chars, p_str, MAX_BRIEF_LINES, BRIEF_META_CHAR);
+	n_lines = split_str(src, w, &n_chars, &p_str, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 
+	//for compatability reasons truncate text from everything except the fiction viewer
+	if ((max_lines > 0) && (n_lines > max_lines)) {
+		n_lines = max_lines; 
+	}
+
 	Max_briefing_line_len = 1;
+	Colored_stream[instance].clear();
 	for (i=0; i<n_lines; i++) {
 		Assert(n_chars[i] < MAX_BRIEF_LINE_LEN);
-		strncpy(Brief_text[i], p_str[i], n_chars[i]);
-		Brief_text[i][n_chars[i]] = 0;
-		drop_leading_white_space(Brief_text[i]);
-		len = brief_text_colorize(i, instance);
+		strncpy(brief_line, p_str[i], n_chars[i]);
+		brief_line[n_chars[i]] = 0;
+		drop_leading_white_space(brief_line);
+		len = brief_text_colorize(&brief_line[0], instance);
 		if (len > Max_briefing_line_len)
 			Max_briefing_line_len = len;
 	}

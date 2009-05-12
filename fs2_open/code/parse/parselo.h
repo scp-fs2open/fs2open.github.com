@@ -573,6 +573,7 @@ extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1);
+int split_str(char *src, int max_pixel_w, std::vector<int> *n_chars, std::vector<char*> *p_str, char ignore_char);
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
