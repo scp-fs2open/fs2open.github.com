@@ -880,6 +880,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
 				strcpy( MsgItems[Num_menu_items].text, Wings[wingnum].name );
+				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
 				MsgItems[Num_menu_items].instance = wingnum;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -901,6 +902,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
 				strcpy( MsgItems[Num_menu_items].text, Wings[i].name );
+				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); 
 				MsgItems[Num_menu_items].instance = i;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -2395,6 +2397,7 @@ void hud_squadmsg_reinforcement_select()
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy( MsgItems[Num_menu_items].text, rp->name );
+			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
 			MsgItems[Num_menu_items].instance = i;
 			MsgItems[Num_menu_items].active = 0;
 
