@@ -85,11 +85,9 @@ BOOL CDX5Disp::OnInitDialog()
 }
 
 /**
- * Applies setting cahnges to registry
- *
- * @param char *reg_path - Registry path to apply changes to
+ * Applies setting changes to registry
  */
-void CDX5Disp::OnApply()
+void CDX5Disp::SaveSettings()
 {
 	// Now apply video mode
 	int index = m_res_list.GetCurSel();
@@ -106,6 +104,34 @@ void CDX5Disp::OnApply()
 	{
 		MessageBox("Failed to set graphic mode", "Error", MB_ICONERROR);
 	}
+}
+
+/**
+ * Determines the current settings in the registry and selects them in the list if avaliable
+ */
+void CDX5Disp::LoadSettings()
+{	
+	char videocard_string[MAX_PATH];
+
+	// Lets get those video card settings
+	if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard_string, MAX_PATH) == false)
+	{
+		return;
+	}
+
+	int count = 0;
+	for(int i = 0; i < NUM_DX5_MODES; i++)
+	{
+		if(strcmp(videocard_string, dx5_modes[i].text_desc) == 0)
+		{
+			m_res_list.SetCurSel(count);
+			return;
+		}
+
+		count++;
+	}
+
+	m_res_list.SetCurSel(0);
 }
 
 /**
@@ -128,36 +154,6 @@ void CDX5Disp::UpdateResList()
 		// Store the index
 		int index = m_res_list.InsertString(count, res_text);
 		m_res_list.SetItemData(index, count);
-		count++;
-	}
-
-	m_res_list.SetCurSel(0);
-}
-
-/**
- * Determines the current settings in the registry and selects them in the list if avaliable
- *
- * @param char *reg_path - Registry path to obtain info from
- */
-void CDX5Disp::LoadSettings()
-{	
-	char videocard_string[MAX_PATH];
-
-	// Lets get those video card settings
-	if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard_string, MAX_PATH) == false)
-	{
-		return;
-	}
-
-	int count = 0;
-	for(int i = 0; i < NUM_DX5_MODES; i++)
-	{
-		if(strcmp(videocard_string, dx5_modes[i].text_desc) == 0)
-		{
-			m_res_list.SetCurSel(count);
-			return;
-		}
-
 		count++;
 	}
 

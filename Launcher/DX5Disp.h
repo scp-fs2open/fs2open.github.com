@@ -15,8 +15,8 @@ class CDX5Disp : public CDialog
 // Construction
 public:
 	void LoadSettings();
+	void SaveSettings();
 	void UpdateResList();
-	void OnApply();
 	CDX5Disp(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

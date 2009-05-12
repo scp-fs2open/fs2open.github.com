@@ -113,11 +113,7 @@ void CTabMOD::OnModSelect()
 		return;
 	}
 
-	SetMOD(absolute_path); 
-
-	// Get the comm tag know about it
-	char *relative_path = absolute_path + strlen(LauncherSettings::get_exe_pathonly()) + 1;
-	tab_comm_line.SetModParam(relative_path);
+	SetMOD(absolute_path);
 }
 
 void CTabMOD::SetSettings(char *flags) 
@@ -420,7 +416,7 @@ void CTabMOD::OnModNone()
 	GetDlgItem(IDC_MOD_WEBSITE)->EnableWindow(FALSE); 
 	GetDlgItem(IDC_MOD_FORUM)->EnableWindow(FALSE);
 	GetDlgItem(IDC_MOD_TEXT)->SetWindowText("");
-	tab_comm_line.SetModParam("");
+	LauncherSettings::set_active_mod("");
 
 	CLauncherDlg::Redraw();
 

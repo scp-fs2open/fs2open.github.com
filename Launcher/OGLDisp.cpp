@@ -128,10 +128,8 @@ BOOL COGLDisp::OnInitDialog()
 
 /**
  * The user has chosen to accept these settings
- *
- * @param char *reg_path - Registry path that any settings should be saved to
  */
-void COGLDisp::OnApply()
+void COGLDisp::SaveSettings()
 {
 	int index = m_res_list.GetCurSel();
 
@@ -169,6 +167,40 @@ void COGLDisp::OnApply()
 		if ( reg_set_dword(LauncherSettings::get_reg_path(), "TextureFilter", current) == false )
 			MessageBox("Failed to set Texture Filter setting.");
 	}
+}
+
+void COGLDisp::LoadSettings()
+{
+	unsigned int width, height;
+	int cdepth;
+	char videocard_string[MAX_PATH];
+	char anisofilter_string[10] = "";
+
+	// Lets get those video card settings
+	if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard_string, MAX_PATH) == false)
+		return;
+
+	if(sscanf(videocard_string, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
+		return;
+
+	UpdateResList(width, height, cdepth);
+
+	if (reg_get_sz(LauncherSettings::get_reg_path(), "OGL_AnisotropicFilter", anisofilter_string, 10) == false)
+		SetAnisoFilter("0.0");
+	else
+		SetAnisoFilter(anisofilter_string);
+
+	DWORD fsaa = 0;
+	if (reg_get_dword(LauncherSettings::get_reg_path(), "OGL_FSAA", &fsaa) == false)
+		SetFSAA(0);
+	else
+		SetFSAA(fsaa);
+	
+	DWORD texfilter = 1;
+	if (reg_get_dword(LauncherSettings::get_reg_path(), "TextureFilter", &texfilter) == false)
+		m_texfilter_list.SetCurSel(1);
+	else
+		m_texfilter_list.SetCurSel(texfilter);
 }
 
 int COGLDisp::GetCDepth(int cdepth)
@@ -322,40 +354,6 @@ void COGLDisp::SetAnisoFilter(char *filter_set)
 		sprintf(value, "%ix", aniso_value[cur_setting]);
 
 	GetDlgItem(IDC_ANISO_SETTING)->SetWindowText( value );
-}
-
-void COGLDisp::LoadSettings()
-{
-	unsigned int width, height;
-	int cdepth;
-	char videocard_string[MAX_PATH];
-	char anisofilter_string[10] = "";
-
-	// Lets get those video card settings
-	if(reg_get_sz(LauncherSettings::get_reg_path(), "VideocardFs2open", videocard_string, MAX_PATH) == false)
-		return;
-
-	if(sscanf(videocard_string, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
-		return;
-
-	UpdateResList(width, height, cdepth);
-
-	if (reg_get_sz(LauncherSettings::get_reg_path(), "OGL_AnisotropicFilter", anisofilter_string, 10) == false)
-		SetAnisoFilter("0.0");
-	else
-		SetAnisoFilter(anisofilter_string);
-
-	DWORD fsaa = 0;
-	if (reg_get_dword(LauncherSettings::get_reg_path(), "OGL_FSAA", &fsaa) == false)
-		SetFSAA(0);
-	else
-		SetFSAA(fsaa);
-	
-	DWORD texfilter = 1;
-	if (reg_get_dword(LauncherSettings::get_reg_path(), "TextureFilter", &texfilter) == false)
-		m_texfilter_list.SetCurSel(1);
-	else
-		m_texfilter_list.SetCurSel(texfilter);
 }
 
 void COGLDisp::UpdateLists()

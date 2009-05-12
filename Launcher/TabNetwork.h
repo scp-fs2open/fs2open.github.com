@@ -15,7 +15,7 @@ class CTabNetwork : public CDialog
 // Construction
 public:
 	void LoadSettings();
-	void OnApply();
+	void SaveSettings();
 	CTabNetwork(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

@@ -15,7 +15,7 @@ class CTabSound : public CDialog
 // Construction
 public:
 	void LoadSettings();
-	void OnApply();
+	void SaveSettings();
 	CTabSound(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

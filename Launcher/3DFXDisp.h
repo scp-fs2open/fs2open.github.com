@@ -14,9 +14,9 @@ class C3DFXDisp : public CDialog
 {
 // Construction
 public:
-	void UpdateResList();
 	void LoadSettings();
-	void OnApply();
+	void SaveSettings();
+	void UpdateResList();
 	C3DFXDisp(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

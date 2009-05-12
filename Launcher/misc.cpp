@@ -1,12 +1,14 @@
 
 #include "stdafx.h"
 #include <sys/stat.h>
+#include <direct.h>
 
 #include "iniparser/iniparser.h"
 #include "iniparser/dictionary.h"
 
 
 #include "misc.h"
+#include "launcher_settings.h"
 
 
 /**
@@ -119,6 +121,55 @@ void remove_file_from_path(const char *path)
 	{
 		*filename = '\0';
 	}
+}
+
+bool is_whitespace(char ch)
+{
+	return ch == ' ' || ch == '\n' || ch == '\t';
+}
+
+/**
+ * Remove whitespace surrounding a string, in-place.
+ */
+void trim(char *str)
+{
+	// shortcut if the first char isn't whitespace
+	if (!is_whitespace(*str))
+	{
+		char *ch = str + strlen(str) - 1;
+		while (is_whitespace(*ch))
+			ch--;
+
+		*(ch+1) = 0;
+	}
+	// otherwise copy the non-whitespace part
+	else
+	{
+		char *temp = strdup(str);
+
+		char *start_ch = temp;
+		while (is_whitespace(*start_ch))
+			start_ch++;
+
+		char *end_ch = temp + strlen(temp) - 1;
+		while (is_whitespace(*end_ch))
+			end_ch--;
+
+		int len = end_ch - start_ch + 1;
+		strncpy(str, start_ch, len);
+		str[len] = 0;
+
+		free(temp);
+	}
+}
+
+/**
+ * Remove whitespace surrounding a string, in-place.
+ */
+void trim(CString str)
+{
+	str.TrimLeft();
+	str.TrimRight();
 }
 
 FILE *ini_open_for_write(const char *filepath, bool append, const char *comment)

@@ -182,6 +182,9 @@ BOOL CTabCommLine::OnInitDialog()
  */
 void CTabCommLine::UpdateCommandLine()
 {
+	char *mod_params = NULL;
+	char *standard_params = NULL;
+	char *custom_params = NULL;
 	bool enable_reset_to_normal = false;	// TODO: what is "normal"?
 	bool enable_reset_to_mod = false;
 	strcpy(command_line, "");
@@ -203,8 +206,7 @@ void CTabCommLine::UpdateCommandLine()
 	}
 
 	// add params specified by mod
-	char mod_params[MAX_CMDLINE_SIZE];
-	tab_mod.GetModCommandLine(mod_params);
+	mod_params = ModSettings::get_mod_parameters();
 	if (strlen(mod_params) > 0)
 	{
  		strcat(command_line, mod_params);
@@ -213,8 +215,7 @@ void CTabCommLine::UpdateCommandLine()
 	}
 
 	// add params specified by checkbox
-	char standard_params[MAX_CMDLINE_SIZE];
-	GetStandardParameters(standard_params);	
+	standard_params = ModSettings::get_standard_parameters();
 	if (strlen(standard_params) > 0)
 	{
  		strcat(command_line, standard_params);
@@ -222,18 +223,14 @@ void CTabCommLine::UpdateCommandLine()
 	}
 
 	// add params entered by user
-	CString custom_params;
-	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params);
+	custom_params = ModSettings::get_custom_parameters();
 	if (strlen(custom_params) > 0)
 	{
  		strcat(command_line, custom_params);
  		strcat(command_line, " ");
 	}
 
-	// remove final space
-	int len = strlen(command_line);
-	if (command_line[len-1] == ' ')
-		command_line[len-1] = 0;
+	trim(command_line);
 
 done_with_command_line:
 	// draw the dialog window
@@ -244,11 +241,37 @@ done_with_command_line:
 }
 
 /**
+ * When the flag list is changed, call this function, then UpdateCommandLine.
+ */
+void CTabCommLine::UpdateStandardParameters()
+{
+	// build list of params
+	char standard_params[MAX_CMDLINE_SIZE];
+	strcpy(standard_params, "");
+	for (int i = 0; i < num_params; i++)
+	{
+		if (flag_states[i])
+		{
+			strcat(standard_params, exe_params[i].name);		
+			strcat(standard_params, " ");		
+		}
+	}
+	trim(standard_params);
+	ModSettings::set_standard_parameters(standard_params);
+}
+
+/**
  * When the custom parameter edit box is typed into reflect this change in the
  * final command line box
  */
 void CTabCommLine::OnChangeCustomParam() 
 {
+	// get trimmed list of params
+	CString custom_params;
+	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params);
+	trim(custom_params);
+	ModSettings::set_custom_parameters(custom_params);
+
 	UpdateCommandLine();	
 }
 
@@ -258,6 +281,26 @@ void CTabCommLine::OnChangeCustomParam()
 CString CTabCommLine::GetCommandLine()
 {
 	return CString(command_line);
+}
+
+/**
+ *  This is called when a tick box is ticked or unticked on the parameter list
+ */
+void CTabCommLine::OnItemchangedFlagList(NMHDR* pNMHDR, LRESULT* pResult) 
+{
+	NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
+
+	*pResult = 0;
+
+	if (pNMListView->iItem < 0) return;
+	if (m_flag_gen_in_process) return;
+
+ 	int index			= m_flag_list.GetItemData(pNMListView->iItem);
+ 	flag_states[index]	= (m_flag_list.GetCheck(pNMListView->iItem) != 0);
+
+	UpdateStandardParameters();
+
+	UpdateCommandLine();
 }
 
 /**
@@ -305,41 +348,6 @@ void CTabCommLine::SelectRegPathAndExeType()
 	}
 			
 	LauncherSettings::set_reg_path(reg_path, exe_type);
-}
-
-/**
- *  This is called when a tick box is ticked or unticked on the parameter list
- */
-void CTabCommLine::OnItemchangedFlagList(NMHDR* pNMHDR, LRESULT* pResult) 
-{
-	NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
-
-	*pResult = 0;
-
-	if (pNMListView->iItem < 0) return;
-	if (m_flag_gen_in_process) return;
-
- 	int index			= m_flag_list.GetItemData(pNMListView->iItem);
- 	flag_states[index]	= (m_flag_list.GetCheck(pNMListView->iItem) != 0);
-
-	UpdateCommandLine();
-}
-
-/**
- * This takes the standard parameter choices the user has made and turns them into a string
- */
-void CTabCommLine::GetStandardParameters(char *standard_params)
-{
-	strcpy(standard_params, "");
-
-	for (int i = 0; i < num_params; i++)
-	{
-		if (flag_states[i])
-		{
-			strcat(standard_params, exe_params[i].name);		
-			strcat(standard_params, " ");		
-		}
-	}	 
 }
 
 void CTabCommLine::ConstructFlagListRetail()
@@ -572,24 +580,9 @@ void CTabCommLine::ConstructFlagListInternal()
 }
 
 /**
- *
- */
-void CTabCommLine::SaveSettings()
-{
-	char standard_params[MAX_CUSTOM_PARAM_SIZE];
-	char custom_params[MAX_CUSTOM_PARAM_SIZE];
-
-	GetStandardParameters(standard_params);
-	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params, MAX_CUSTOM_PARAM_SIZE);
-
-	ModSettings::set_standard_parameters(standard_params);
-	ModSettings::set_custom_parameters(custom_params);
-}
-
-/**
  * @return - EXE_TYPE_NONE, EXE_TYPE_CUSTOM or if recognised exe it returns the flag list.
  */
-int CTabCommLine::GetFlags()
+int CTabCommLine::GetEXEFlags()
 {
 	if(LauncherSettings::get_exe_type() == EXE_TYPE_NONE) 
 		return 0;
@@ -597,11 +590,9 @@ int CTabCommLine::GetFlags()
 	return exe_types[LauncherSettings::get_exe_type()].flags;
 }
 
+=== YARR ===
 
-==================== TODO ====================
-
-
-void CTabCommLine::LoadSettings(char *reg_path)
+void CTabCommLine::LoadSettings()
 {
 	char custom_param[MAX_CUSTOM_PARAM_SIZE] = "";
 
@@ -669,8 +660,18 @@ void CTabCommLine::LoadSettings(char *reg_path)
 	}
 
 	GetDlgItem(IDC_CUSTOM_PARAM)->SetWindowText(custom_param);
+
 	UpdateFlagList();
-}	  
+	UpdateCommandLine();
+}
+
+/**
+ * Save command line to settings.ini file.
+ */
+void CTabCommLine::SaveSettings()
+{
+	ModSettings::save_user();
+}
 
 void CTabCommLine::SetModParam(char *path)
 {
@@ -685,7 +686,7 @@ void CTabCommLine::SetModParam(char *path)
 	strcat(absolute_path, path);
 
    	tab_mod.SetMOD(absolute_path);
-	UpdateFields();
+	UpdateCommandLine();
 	return;
 }
 
@@ -707,7 +708,7 @@ void CTabCommLine::OnSelchangeFlagSetup()
 	}
 
    	UpdateFlagList();
-   	UpdateFields();
+   	UpdateCommandLine();
 }
 
 // User has selected a new flag group type
@@ -764,18 +765,14 @@ void CTabCommLine::OnDblclkFlagList(NMHDR* pNMHDR, LRESULT* pResult)
 		MessageBox("No online help for this feature","Sorry");
 }
 
-
 void CTabCommLine::OnSettingsNormal() 
 {
-	// TODO: Add your control notification handler code here
-	UpdateFields();
-	
+	UpdateCommandLine();	
 }
 
 void CTabCommLine::OnSettingsMod() 
 {
-	// TODO: Add your control notification handler code here
-	tab_mod.GetSettings(true);
-	UpdateFields();	
-
+	ModSettings::set_standard_parameters("");
+	ModSettings::set_custom_parameters("");
+	UpdateCommandLine();
 }

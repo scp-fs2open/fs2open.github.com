@@ -28,20 +28,20 @@ Class16=CTabSpeech
 Class17=CTabVideo
 
 ResourceCount=15
-Resource1=IDD_SOUND (English (U.K.))
-Resource2=IDD_NETWORK (English (U.K.))
-Resource3=IDD_OGL (English (U.K.))
-Resource4=IDD_DX5 (English (U.K.))
-Resource5=IDD_3DFX (English (U.K.))
-Resource6=IDD_SPEECH (English (U.K.))
-Resource7=IDD_HELP (English (U.K.))
-Resource8=IDD_DX8 (English (U.K.))
-Resource9=IDD_COMM_LINE (English (U.K.))
-Resource10=IDD_ABOUTBOX
-Resource11=IDD_LAUNCHER_DIALOG
-Resource12=IDD_REG_OPTIONS (English (U.K.))
-Resource13=IDD_VIDEO (English (U.K.))
-Resource14=IDD_DX9 (English (U.K.))
+Resource1=IDD_LAUNCHER_DIALOG
+Resource2=IDD_REG_OPTIONS (English (U.K.))
+Resource3=IDD_NETWORK (English (U.K.))
+Resource4=IDD_SOUND (English (U.K.))
+Resource5=IDD_DX8 (English (U.K.))
+Resource6=IDD_OGL (English (U.K.))
+Resource7=IDD_DX5 (English (U.K.))
+Resource8=IDD_VIDEO (English (U.K.))
+Resource9=IDD_HELP (English (U.K.))
+Resource10=IDD_3DFX (English (U.K.))
+Resource11=IDD_DX9 (English (U.K.))
+Resource12=IDD_COMM_LINE (English (U.K.))
+Resource13=IDD_ABOUTBOX
+Resource14=IDD_SPEECH (English (U.K.))
 Resource15=IDD_MOD (English (U.K.))
 
 [CLS:C3DFXDisp]
@@ -407,8 +407,8 @@ Control6=IDC_STATIC,static,1342308352
 Control7=IDC_FLAG_TYPE,combobox,1344339971
 Control8=IDC_STATIC,static,1342308352
 Control9=IDC_STATIC,static,1342308353
-Control10=IDC_SETTINGS_MOD,button,1208025088
-Control11=IDC_SETTINGS_NORMAL,button,1208025088
+Control10=IDC_SETTINGS_MOD,button,1476460544
+Control11=IDC_SETTINGS_NORMAL,button,1476460544
 
 [DLG:IDD_MOD (English (U.K.))]
 Type=1

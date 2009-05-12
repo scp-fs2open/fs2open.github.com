@@ -14,9 +14,9 @@ class CTabSpeech : public CDialog
 {
 // Construction
 public:
-	void UpdateVoiceFromCombo();
 	void LoadSettings();
-	void OnApply();
+	void SaveSettings();
+	void UpdateVoiceFromCombo();
 	CTabSpeech(CWnd* pParent = NULL);   // standard constructor
 
 // Dialog Data

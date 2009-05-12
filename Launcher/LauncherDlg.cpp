@@ -12,7 +12,7 @@
 #include "iniparser/iniparser.h"
 #include "iniparser/dictionary.h"
 
-CLauncherDlg *CLauncherDlg::pthis = NULL;
+CLauncherDlg *CLauncherDlg::singleton = NULL;
 
 
 CTabCommLine   tab_comm_line;
@@ -92,15 +92,16 @@ CLauncherDlg::CLauncherDlg(CWnd* pParent /*=NULL*/)
 
 	currently_selected_tab = -1;
 
-	pthis = this;
+	// this is bad design
+	singleton = this;
 }
 
 // Force the whole app to redraw
 void CLauncherDlg::Redraw()
 {
-	if(pthis)
+	if(singleton)
 	{
-		pthis->RedrawWindow();
+		singleton->RedrawWindow();
 	}
 }
 
@@ -139,7 +140,7 @@ END_MESSAGE_MAP()
  */
 BOOL CLauncherDlg::InitTabControl()
 {
-	// Prepare the inferface
+	// Prepare the interface
     TCITEM tab; 
 	// Add tabs for each string 
     tab.mask = TCIF_TEXT | TCIF_IMAGE; 
@@ -449,7 +450,7 @@ void CLauncherDlg::OnBrowse()
 
 	if(GetOpenFileName(&details) == TRUE)
 	{
-		NewExeSet(new_path);
+		ExeSelected(new_path);
 	}
 }
 

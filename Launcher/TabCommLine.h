@@ -14,21 +14,23 @@ class CTabCommLine : public CDialog
 {
 // Construction
 public:
-	void UpdateFlagList();
 	CTabCommLine(CWnd* pParent = NULL);   // standard constructor
 	~CTabCommLine();
 
-	void SetModParameters(char *path);
-	void LoadSettings(char *reg_path);
+	void LoadSettings();
+	void SaveSettings();
+
 	void ConstructFlagList();
 	void ConstructFlagListRetail();
-	void GetStandardParameters(char *standard_params);
-	int GetFlags();
+
 	void SelectRegPathAndExeType();
+
+	void UpdateFlagList();
+	int GetEXEFlags();
 
 	CString GetCommandLine();
 	void UpdateCommandLine();
-	void SaveSettings();
+	void UpdateStandardParameters();
 
 // Dialog Data
 	//{{AFX_DATA(CTabCommLine)

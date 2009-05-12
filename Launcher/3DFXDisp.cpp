@@ -82,11 +82,9 @@ BOOL C3DFXDisp::OnInitDialog()
 }
 
 /**
- * Applies setting cahnges to registry
- *
- * @param char *reg_path - Registry path to apply changes to
+ * Applies setting changes to registry
  */
-void C3DFXDisp::OnApply()
+void C3DFXDisp::SaveSettings()
 {
 	// Now apply video mode
 	int index = m_res_list.GetCurSel();
@@ -111,32 +109,7 @@ void C3DFXDisp::OnApply()
 }
 
 /**
- * Refreshes the list of modes avaliable, this depends on variables that have already 
- * been set using other functions of this class.
- */
-void C3DFXDisp::UpdateResList()
-{
-	int count = 0;
-	char res_text[20];
- 	m_res_list.ResetContent();
-
-	for(int i = 0; i < NUM_3DFX_MODES; i++)
-	{
-		sprintf(res_text, "%d x %d", glide_modes[i].xres, glide_modes[i].yres);
-
-		// Store the index
-		int index = m_res_list.InsertString(count, res_text);
-		m_res_list.SetItemData(index, count);
-		count++;
-	}
-
-	m_res_list.SetCurSel(0);
-}
-
-/**
  * Determines the current settings in the registry and selects them in the list if avaliable
- *
- * @param char *reg_path - Registry path to obtain info from
  */
 void C3DFXDisp::LoadSettings()
 {
@@ -162,3 +135,26 @@ void C3DFXDisp::LoadSettings()
 
 	m_res_list.SetCurSel(0);
 }			 
+
+/**
+ * Refreshes the list of modes avaliable, this depends on variables that have already 
+ * been set using other functions of this class.
+ */
+void C3DFXDisp::UpdateResList()
+{
+	int count = 0;
+	char res_text[20];
+ 	m_res_list.ResetContent();
+
+	for(int i = 0; i < NUM_3DFX_MODES; i++)
+	{
+		sprintf(res_text, "%d x %d", glide_modes[i].xres, glide_modes[i].yres);
+
+		// Store the index
+		int index = m_res_list.InsertString(count, res_text);
+		m_res_list.SetItemData(index, count);
+		count++;
+	}
+
+	m_res_list.SetCurSel(0);
+}

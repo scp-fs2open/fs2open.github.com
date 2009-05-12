@@ -41,6 +41,9 @@ bool check_cfg_file(char *dest_buffer, bool create_dir = false);
 int get_file_size(const char *path);
 const char *get_filename_from_path(const char *path);
 void remove_file_from_path(const char *path);
+bool is_whitespace(char ch);
+void trim(char *str);
+void trim(CString str);
 
 FILE *ini_open_for_write(const char *filepath, bool append, const char *comment);
 void ini_write_type(FILE *fp, const char *type);

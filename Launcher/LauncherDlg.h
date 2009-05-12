@@ -24,9 +24,10 @@ class CLauncherDlg : public CDialog
 {
 // Construction
 public:
-	void NewExeSet(char *exe_path);
-	void SelectTab(int selected_tab = 0);
 	CLauncherDlg(CWnd* pParent = NULL);	// standard constructor
+
+	void TabSelected(int selected_tab = 0);
+	void ExeSelected(char *exe_path);
 
 	static void Redraw();
 
@@ -44,7 +45,7 @@ public:
 
 // Implementation
 protected:
-	static CLauncherDlg *pthis;
+	static CLauncherDlg *singleton;
 	int currently_selected_tab;
 	BOOL InitTabControl();
 	HICON m_hIcon;

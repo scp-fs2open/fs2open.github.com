@@ -90,7 +90,7 @@ BOOL CDX8Disp::OnInitDialog()
 
 	d3d_interface = Direct3DCreate8( D3D_SDK_VERSION );
 
-	// User does not have DX8 installed disable all functionality
+	// User does not have DX8 installed; disable all functionality
    	if( d3d_interface == NULL ) 
 	{
 		GetDlgItem(IDC_DX8_NOT_INSTALLED)->ShowWindow(TRUE);
@@ -848,10 +848,8 @@ void CDX8Disp::OnDestroy()
 
 /**
  * The user has chosen to accept these settings
- *
- * @param char *reg_path - Registry path that any settings should be saved to
  */
-void CDX8Disp::OnApply(int flags)
+void CDX8Disp::SaveSettings()
 {
 	if(m_dx8_initialised_ok == false)
 	{
@@ -890,7 +888,7 @@ void CDX8Disp::OnApply(int flags)
 	reg_set_sz(LauncherSettings::get_reg_path(), reg_name, video_card);
 }
 
-void CDX8Disp::LoadSettings(int flags)
+void CDX8Disp::LoadSettings()
 {
    	if(m_dx8_initialised_ok == false)
 	{

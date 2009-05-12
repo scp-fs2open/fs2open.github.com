@@ -15,11 +15,11 @@ class COGLDisp : public CDialog
 // Construction
 public:
 	void LoadSettings();
-	COGLDisp(CWnd* pParent = NULL);   // standard constructor
-	void OnApply();
+	void SaveSettings();
 	void SetAnisoFilter(char *filter = NULL);
 	void SetFSAA(DWORD new_value);
 	void UpdateLists();
+	COGLDisp(CWnd* pParent = NULL);   // standard constructor
 
 
 // Dialog Data

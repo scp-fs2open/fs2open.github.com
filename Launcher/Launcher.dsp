@@ -219,10 +219,6 @@ SOURCE=.\3DFXDisp.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\DevToolsDialog.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\DX5Disp.h
 # End Source File
 # Begin Source File

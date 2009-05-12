@@ -769,10 +769,8 @@ void CDX9Disp::OnDestroy()
 
 /**
  * The user has chosen to accept these settings
- *
- * @param char *reg_path - Registry path that any settings should be saved to
  */
-void CDX9Disp::OnApply(int flags)
+void CDX9Disp::SaveSettings()
 {
 #ifdef DX9_ENABLED
 
@@ -816,7 +814,7 @@ void CDX9Disp::OnApply(int flags)
 
 }
 
-void CDX9Disp::LoadSettings(int flags)
+void CDX9Disp::LoadSettings()
 {
 #ifdef DX9_ENABLED
 

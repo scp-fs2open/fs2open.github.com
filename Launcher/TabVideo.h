@@ -14,14 +14,14 @@ class CTabVideo : public CDialog
 {
 // Construction
 public:
+	void LoadSettings();
+	void SaveSettings();
 	int SelectAPI(int api);
-	void LoadSettings(int flags);
 	void Update(int type, int flgas);
 	void SelectTab(int select);
 	BOOL InitTabControl(int type);
 	CTabVideo(CWnd* pParent = NULL);   // standard constructor
 
-	void OnApply(int flags);
 
 // Dialog Data
 	//{{AFX_DATA(CTabVideo)

@@ -14,8 +14,8 @@ class CDX8Disp : public CDialog
 {
 // Construction
 public:
-	bool m_allow_only_standard_modes;
-	void LoadSettings(int flags);
+	void LoadSettings();
+	void SaveSettings();
 	void UpdateAntialiasList(int select = 0);
 	void UpdateResList(
 		unsigned int requested_wdith = -1, 
@@ -23,7 +23,6 @@ public:
 		int requested_cdepth = -1);
 	void UpdateAdapterList(int select = 0);
 	CDX8Disp(CWnd* pParent = NULL);   // standard constructor
-	void OnApply(int flags);
 
 // Dialog Data
 	//{{AFX_DATA(CDX8Disp)
@@ -57,6 +56,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
+	bool m_allow_only_standard_modes;
 	bool m_dx8_initialised_ok;
 	int GetCDepth(int cdepth);
 	void UpdateCDepthList();

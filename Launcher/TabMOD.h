@@ -15,15 +15,12 @@ class CTabMOD : public CDialog
 // Construction
 public:
 	CTabMOD(CWnd* pParent = NULL);   // standard constructor
-	void SetMOD(char *absolute_path); 
+
+	void LoadSettings();
+	void SaveSettings();
+
 	void GetModCommandLine(char *result);
 	void GetActiveModName(char *result);
-
-	void  SetSettings(char *flags); 
-	char *GetSettings(bool defaultSettings = false); 
-
-	void OnApply(int flags);
-	void LoadSettings(int flags);
 
 // Dialog Data
 	//{{AFX_DATA(CTabMOD)
