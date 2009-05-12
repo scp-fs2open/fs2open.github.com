@@ -20547,7 +20547,7 @@ int sexp_variable_allocate_block(const char* block_name, int block_type)
 // squeeze all blocks to top of array
 void sexp_variable_condense_block()
 {
-	int temp_idx, idx, var_count;
+	int temp_idx, idx, var_count, i;
 
 	var_count = sexp_variable_count();
 	temp_idx = MAX_SEXP_VARIABLES-1;
@@ -20557,6 +20557,16 @@ void sexp_variable_condense_block()
 			if (temp_idx > idx) {
 				Sexp_variables[temp_idx] = Sexp_variables[idx];
 				Sexp_variables[idx].type = SEXP_VARIABLE_NOT_USED;
+
+				// now we need to check that nothing actually used this block
+				for (i = 0; i < MAX_SHIPS; i++) {
+					if (Ships[i].special_exp_index == idx) {
+						Ships[i].special_exp_index = temp_idx;
+					}
+					if (Ships[i].special_hitpoint_index == idx) {
+						Ships[i].special_hitpoint_index = temp_idx;
+					}
+				}
 			}
 			temp_idx--;
 		}
