@@ -172,6 +172,7 @@ extern int Targetbox_show_extra_info;
 
 //used to track if the player has wireframe hud target box turned on
 extern int Targetbox_wire;
+extern bool Lock_targetbox_mode;
 
 void	hud_targetbox_init();
 void	hud_targetbox_init_flash();
