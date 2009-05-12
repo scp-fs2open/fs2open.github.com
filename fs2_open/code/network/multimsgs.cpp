@@ -1189,6 +1189,7 @@ void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player
 {
 	ubyte data[MAX_PACKET_SIZE],mode;
 	int packet_size,idx;
+	bool undeliverable = true;
 	
 	BUILD_HEADER(GAME_CHAT);
 	
@@ -1255,10 +1256,27 @@ void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player
 			for(idx=0;idx<MAX_PLAYERS;idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && (&Net_players[idx] != from) && multi_msg_matches_expr(&Net_players[idx],expr) ){					
 					multi_io_send_reliable(&Net_players[idx], data, packet_size);
+					undeliverable = false; 
 				}
 			}
 			break;
-		}		
+		}	
+
+		// if the message can't be delivered, notify the player
+		if (undeliverable) {
+			switch(mode){
+				case MULTI_MSG_EXPR:
+					// if the message came from the server
+					if (from == Net_player) {
+						multi_display_chat_msg ("Unable to send message, player does not exist", 0, 0);
+					}
+					// otherwise send a message back to the player
+					else {
+						send_game_chat_packet(Net_player, "Unable to send message, player does not exist", MULTI_MSG_TARGET, from, NULL, 1); 
+					}
+					break;
+			}	
+		}
 	}
 	// send to the server, who will take care of routing it
 	else {		
