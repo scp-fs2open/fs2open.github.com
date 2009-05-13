@@ -198,7 +198,7 @@ static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
                                    { { { 0.0f, -1.0f, 0.0f } } },
                                    { { { 0.0f, 0.0f, -1.0f } } } } } };
 
-static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
+static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -3.0f } } };
 
 // forward declarations
 void draw_radar_blips_orb(int blip_type, int bright, int distort = 0);
