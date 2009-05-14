@@ -2185,7 +2185,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 					killer_ship_name = Ships_exited[ei].ship_name;
 				}
 			}
-			killer_damage_percent = (int)(sp->damage_ship[killer_index] * 100.0f);
+			killer_damage_percent = (int)(sp->damage_ship[killer_index]/sp->total_damage_received * 100.0f);
 		}		
 
 		if(!self_destruct){
