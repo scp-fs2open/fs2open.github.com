@@ -409,7 +409,10 @@ char	*get_order_name(int order);
 void	object_moved(object *ptr);
 int	invalidate_references(char *name, int type);
 int	query_whole_wing_marked(int wing);
-void	generate_weaponry_usage_list(int *arr);
+void	generate_weaponry_usage_list(int team, int *arr);
+void	generate_weaponry_usage_list(int *arr, int wing);
+void	generate_ship_usage_list(int *arr, int wing);
+
 jump_node *jumpnode_get_by_name(CString& name);
 
 // function and defines to use when adding ships to combo boxes

@@ -363,6 +363,7 @@
 #include "ShipSpecialDamage.h"
 #include "ShipTexturesDlg.h"
 #include "ShipSpecialHitpoints.h"
+#include "altshipclassdlg.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 #include "restrictpaths.h"
@@ -557,6 +558,7 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_SPECIAL_EXP, OnSpecialExp)
 	ON_BN_CLICKED(IDC_TEXTURES, OnTextures)
 	ON_BN_CLICKED(IDC_SPECIAL_HITPOINTS, OnSpecialHitpoints)
+	ON_BN_CLICKED(IDC_ALT_SHIP_CLASS, OnAltShipClass)
 	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_WM_INITMENU()
@@ -1206,6 +1208,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(m_ship_class >= 0);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(TRUE);
+		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(TRUE);	
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
@@ -1214,6 +1217,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(FALSE);
 	}
 
 	// disable textures for multiple ships
@@ -2481,6 +2485,12 @@ void CShipEditorDlg::OnTextures()
 void CShipEditorDlg::OnSpecialHitpoints() 
 {
 	ShipSpecialHitpoints dlg;
+	dlg.DoModal();
+}
+
+void CShipEditorDlg::OnAltShipClass() 
+{
+	AltShipClassDlg dlg;
 	dlg.DoModal();
 }
 

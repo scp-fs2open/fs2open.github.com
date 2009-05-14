@@ -1737,6 +1737,7 @@ sexp_oper Operators[] = {
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
+	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
 
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	3	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	3	},	// WMC
@@ -7198,6 +7199,93 @@ int sexp_was_medal_granted(int n)
 		return SEXP_TRUE;
 
 	return SEXP_FALSE;
+}
+
+float get_damage_caused(int damaged_ship, int attacker ) 
+{
+	int sindex, idx;
+	float damage_total = 0.0f; 
+
+
+	// is the ship that took damage in the mission still?
+	sindex = ship_get_by_signature(damaged_ship);
+
+	if (sindex >= 0 ) {
+		for(idx=0; idx<MAX_DAMAGE_SLOTS; idx++){
+			if (Ships[sindex].damage_ship_id[idx] == attacker) {
+				damage_total += Ships[sindex].damage_ship[idx];
+				break;
+			}
+		}
+	}
+	else {
+		//TO DO - Add code to check the damage ships which have exited have taken
+	
+		sindex = ship_find_exited_ship_by_signature(damaged_ship);
+		for(idx=0; idx<MAX_DAMAGE_SLOTS; idx++){
+			if (Ships_exited[sindex].damage_ship_id[idx] == attacker) {
+				damage_total += Ships_exited[sindex].damage_ship[idx];
+				break;
+			}
+		}
+
+	
+	}
+	return damage_total; 
+}
+
+// Karajorma
+int sexp_get_damage_caused(int node) 
+{
+	int sindex, damaged_sig, attacker_sig; 
+	float damage_caused = 0.0f;
+	char	*name;
+	int ship_class;
+
+	name = CTEXT(node);
+	sindex = ship_name_lookup(name); 
+	if (sindex < 0) {
+		// this ship may have exited already.
+		sindex = ship_find_exited_ship_by_name(CTEXT(node));
+		if (sindex < 0) {
+			// this is probably a ship which hasn't arrived and thus can't have taken any damage yet
+			return fl2i(damage_caused);
+		}
+		else {
+			damaged_sig = Ships_exited[sindex].obj_signature;
+			ship_class = Ships_exited[sindex].ship_class;
+		}
+	}
+	else {
+		damaged_sig = Objects[Ships[sindex].objnum].signature ;
+		ship_class = Ships[sindex].ship_info_index;
+	}
+
+
+	node = CDR(node);
+	Assert (node != -1);
+
+	// go through the list of ships who we think may have attacked the ship
+	for ( ; node != -1; node = CDR(node) ) {
+		name = CTEXT(node);
+		sindex = ship_name_lookup(name); 
+		if (sindex < 0) {
+			sindex = ship_find_exited_ship_by_name(name);
+			attacker_sig = Ships_exited[sindex].obj_signature; 
+		}
+		else {
+			attacker_sig = Objects[Ships[sindex].objnum].signature ;
+		}
+
+		if (attacker_sig < 0) {
+			continue;
+		}
+
+		damage_caused += get_damage_caused (damaged_sig, attacker_sig);
+	}
+	
+	Assert ((ship_class > -1) && (ship_class < MAX_SHIP_CLASSES));
+	return (int) ((damage_caused/Ship_info[ship_class].max_hull_strength) * 100.0f);
 }
 
 // function which returns true if the percentage of ships (and ships in wings) departed is at
@@ -16559,6 +16647,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_was_medal_granted(node);
 				break;
 
+			case OP_GET_DAMAGE_CAUSED:
+				sexp_val = sexp_get_damage_caused(node);
+				break;
+
 			case OP_PERCENT_SHIPS_DEPARTED:
 			case OP_PERCENT_SHIPS_DESTROYED:
 			case OP_PERCENT_SHIPS_DISARMED:
@@ -18047,6 +18139,7 @@ int query_operator_return_type(int op)
 		case OP_NUM_SHIPS_IN_WING:
 		case OP_CURRENT_SPEED:
 		case OP_NAV_DISTANCE:
+		case OP_GET_DAMAGE_CAUSED:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -18442,6 +18535,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_SHIP_VISIBLE:
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
+		case OP_GET_DAMAGE_CAUSED:
 			return OPF_SHIP;
 		
 		case OP_SHIP_CREATE:
@@ -20430,6 +20524,24 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 	return replaced_anything;
 }
 
+// returns the index of the nth variable of the type given or -1 if there aren't that many
+// NOTE : Not 0th order. If you want the 4th string variable call it as get_nth_variable_index(4, SEXP_VARIABLE_STRING)
+int get_nth_variable_index(int nth, int variable_type)
+{
+	// Loop through Sexp_variables until we have found the one corresponding to the argument
+	Assert ((nth > 0) && (nth < MAX_SEXP_VARIABLES));
+	for (int i=0; i < MAX_SEXP_VARIABLES; i++)	{
+		if ((Sexp_variables[i].type & variable_type)) {
+			nth--; 
+		}
+
+		if (!nth) {
+			return i; 
+		}
+	}
+	return -1;
+}
+
 // counts number of sexp_variables that are set
 int sexp_variable_count()
 {
@@ -20456,6 +20568,27 @@ int sexp_campaign_persistent_variable_count()
 	}
 
 	return count;
+}
+
+// given an index in Sexp_variables, returns the number variables of a type in the array until this point
+int sexp_variable_typed_count(int sexp_variables_index, int variable_type)
+{
+	Assert ((sexp_variables_index >= 0) && (sexp_variables_index < MAX_SEXP_VARIABLES));
+	// Loop through Sexp_variables until we have found the one corresponding to the argument
+	int count = 0;
+	for (int i=0; i < MAX_SEXP_VARIABLES; i++)	{
+		if (!(Sexp_variables[i].type & variable_type)) {
+			continue; 
+		}
+
+		if (i == sexp_variables_index) {
+			return count ; 
+		}
+		count++;
+	}
+	// shouldn't ever get here
+	Int3();
+	return -1;
 }
 
 // deletes sexp_variable from active
@@ -21368,6 +21501,12 @@ sexp_help_struct Sexp_help[] = {
 		"\t5: Box height\r\n"
 		"\t6: Box depth\r\n"
 		"\tRest:\tShips or wings to check" },
+
+	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
+		"\tReturns the amount of damage one or more ships or wings have done to a ship.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tShip that has been damaged.\r\n"
+		"\t2:\tName of ships or wings that may have damaged it." },
 
 	{ OP_LAST_ORDER_TIME, "Last order time (Status operator)\r\n"
 		"\tReturns true if <count> seconds have elapsed since one or more ships have received "

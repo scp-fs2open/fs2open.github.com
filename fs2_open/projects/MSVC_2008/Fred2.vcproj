@@ -480,6 +480,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\AltShipClassDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\asteroideditordlg.cpp"
 				>
 			</File>
@@ -726,6 +730,10 @@
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\adjustgriddlg.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\AltShipClassDlg.h"
 				>
 			</File>
 			<File

@@ -1145,6 +1145,7 @@ struct ship_subsys;
 #define	OP_SHIP_DEATHS						(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_RESPAWNS_LEFT					(0x0032 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_IS_PLAYER						(0x0033 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_DAMAGE_CAUSED				(0x0034 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 // conditional sexpressions
@@ -1769,8 +1770,10 @@ int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *temp_name);
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000
 bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000
+int get_nth_variable_index(int nth, int variable_type);	// Karajorma
 int sexp_variable_count();
 int sexp_campaign_persistent_variable_count();	// Goober5000
+int sexp_variable_typed_count(int sexp_variables_index, int variable_type); // Karajorma
 void sexp_variable_delete(int index);
 void sexp_variable_sort();
 void sexp_fred_modify_variable(const char *text, const char *var_name, int index, int type);

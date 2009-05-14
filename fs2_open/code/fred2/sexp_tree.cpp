@@ -6347,3 +6347,36 @@ int sexp_tree::get_variable_count(const char *var_name)
 
 	return count;
 }
+
+// Returns the number of times a variable with this name has been used by player loadout
+int sexp_tree::get_loadout_variable_count(int var_index)
+{
+	// we shouldn't be being passed the index of variables that do not exist
+	Assert (var_index >= 0 && var_index < MAX_SEXP_VARIABLES); 
+
+	int idx;
+	int count = 0; 
+
+	for (int i=0; i < MAX_TVT_TEAMS; i++) {
+		for(idx=0; idx<Team_data[i].num_ship_choices; idx++) {
+			if (var_index == Team_data[i].ship_list_variables[idx]) {
+				count++; 
+			}
+
+			if (var_index == Team_data[i].ship_count_variables[idx]) {
+				count++; 
+			}
+		}
+
+		for (idx=0; idx<Team_data[i].num_weapon_choices; idx++) {
+			if (var_index == Team_data[i].weaponry_pool_variable[idx]) {
+				count++;
+			}
+			if (var_index == Team_data[i].weaponry_amount_variable[idx]) {
+				count++;
+			}
+		}
+	}
+	
+	return count; 
+}

@@ -2423,8 +2423,7 @@ void ship_reset_disabled_physics(object *objp, int ship_class);
 
 
 // information for ships which have exited the game
-exited_ship Ships_exited[MAX_EXITED_SHIPS];
-int Num_exited_ships;
+std::vector<exited_ship> Ships_exited;
 
 int	Num_engine_wash_types;
 int	Num_ship_classes;
@@ -5544,16 +5543,12 @@ void ship_level_init()
 	// Reset everything between levels
 
 	// mwa removed 11/24/97  num_ships = 0;
-	Num_exited_ships = 0;
+	Ships_exited.clear(); 
+	Ships_exited.reserve(100);
 	for (i=0; i<MAX_SHIPS; i++ )
 	{
 		Ships[i].ship_name[0] = '\0';
 		Ships[i].objnum = -1;
-	}
-
-	for ( i = 0; i < MAX_EXITED_SHIPS; i++ ) {
-		memset ( &Ships_exited[i], 0, sizeof(exited_ship) );
-		Ships_exited[i].obj_signature = -1;
 	}
 
 	Num_wings = 0;
@@ -5615,48 +5610,43 @@ void ship_level_init()
 // tells us why the ship left the mission (i.e. departed or destroyed)
 void ship_add_exited_ship( ship *sp, int reason )
 {
-	int i, entry;
+	exited_ship entry; 
 
-	// reuse oldest slots if none left
-	if ( Num_exited_ships == MAX_EXITED_SHIPS ) {
-		int oldest_entry;
-
-		// find the oldest entry
-		oldest_entry = 0;
-		for ( i = 1; i < MAX_SHIPS; i++ ) {
-			if ( Ships_exited[i].time < Ships_exited[oldest_entry].time ) {
-				oldest_entry = i;
-			}
-		}
-		entry = oldest_entry;
-	} else {
-		entry = Num_exited_ships;
-		Num_exited_ships++;
-	}
-
-	strcpy( Ships_exited[entry].ship_name, sp->ship_name );
-	Ships_exited[entry].obj_signature = Objects[sp->objnum].signature;
-	Ships_exited[entry].ship_class = sp->ship_info_index;
-	Ships_exited[entry].team = sp->team;
-	Ships_exited[entry].flags = reason;
+	strcpy(entry.ship_name, sp->ship_name );
+	entry.obj_signature = Objects[sp->objnum].signature;
+	entry.ship_class = sp->ship_info_index;
+	entry.team = sp->team;
+	entry.ship_class = sp->ship_info_index;
+	entry.flags = reason;
 	// if ship is red alert, flag as such
 	if (sp->flags & SF_RED_ALERT_STORE_STATUS) {
-		Ships_exited[entry].flags |= SEF_RED_ALERT_CARRY;
+		entry.flags |= SEF_RED_ALERT_CARRY;
 	}
-	Ships_exited[entry].time = Missiontime;
-	Ships_exited[entry].hull_strength = int(Objects[sp->objnum].hull_strength);
+	entry.time = Missiontime;
+	entry.hull_strength = int(Objects[sp->objnum].hull_strength);
 
-	Ships_exited[entry].cargo1 = sp->cargo1;
+	entry.cargo1 = sp->cargo1;
 
-	Ships_exited[entry].time_cargo_revealed = (fix)0;
+	entry.time_cargo_revealed = (fix)0;
 	if ( sp->flags & SF_CARGO_REVEALED )
 	{
-		Ships_exited[entry].flags |= SEF_CARGO_KNOWN;
-		Ships_exited[entry].time_cargo_revealed = sp->time_cargo_revealed;
+		entry.flags |= SEF_CARGO_KNOWN;
+		entry.time_cargo_revealed = sp->time_cargo_revealed;
 	}
 
 	if ( sp->time_first_tagged > 0 )
-		Ships_exited[entry].flags |= SEF_BEEN_TAGGED;
+		entry.flags |= SEF_BEEN_TAGGED;
+	
+	//copy across the damage_ship arrays
+	for (int i = 0; i < MAX_DAMAGE_SLOTS ; i++) {
+		entry.damage_ship_id[i] = sp->damage_ship_id[i] ;
+		entry.damage_ship[i] = sp->damage_ship[i] ;
+	}
+	
+	if ( (Ships_exited.capacity() - Ships_exited.size() ) < 5u ) {
+		Ships_exited.reserve((int)(Ships_exited.capacity() + 100)); 
+	}
+	Ships_exited.push_back(entry);
 }
 
 // function which attempts to find information about an exited ship based on shipname
@@ -5664,7 +5654,7 @@ int ship_find_exited_ship_by_name( char *name )
 {
 	int i;
 
-	for (i = 0; i < Num_exited_ships; i++) {
+	for (i = 0; i < (int)Ships_exited.size(); i++) {
 		if ( !stricmp(name, Ships_exited[i].ship_name) )
 			return i;
 	}
@@ -5677,7 +5667,7 @@ int ship_find_exited_ship_by_signature( int signature )
 {
 	int i;
 
-	for (i = 0; i < Num_exited_ships; i++) {
+	for (i = 0; i < (int)Ships_exited.size(); i++) {
 		if ( signature == Ships_exited[i].obj_signature )
 			return i;
 	}
@@ -6264,6 +6254,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->thrusters_start[i] = 0;
 		shipp->thrusters_sounds[i] = -1;
 	}
+
+	// Alt classes
+	shipp->s_alt_classes.clear(); 
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because

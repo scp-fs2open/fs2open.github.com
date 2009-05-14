@@ -121,6 +121,7 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
+#define IDD_ALT_SHIP_CLASS              292
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -526,17 +527,28 @@
 #define IDC_SUN1                        1188
 #define IDC_SHIP_DEBRIS1                1188
 #define IDC_OLD_TEXTURE                 1188
+#define IDC_ASCT1_CLASS_COMBO1          1188
+#define IDC_SHIP_VARIABLES_COMBO        1188
 #define IDC_SUFFIX                      1188
 #define IDC_CREATED                     1189
 #define IDC_DEPARTURE_TARGET            1189
 #define IDC_SBITMAP                     1189
+#define IDC_ASCT1_VARIABLES_COMBO1      1189
+#define IDC_WEAPON_VARIABLES_COMBO      1189
+#define IDC_ASCT1_CLASS_COMBO2          1190
 #define IDC_BACKGROUND_NUM              1190
 #define IDC_WING_DISPLAY_FILTER         1191
+#define IDC_ASCT1_VARIABLES_COMBO2      1191
 #define IDC_BACKGROUND_SWAP_NUM         1191
 #define IDC_SHIP_DEBRIS2                1192
+#define IDC_ASCT1_CLASS_COMBO3          1192
 #define IDC_SHIP_LIST                   1193
 #define IDC_SHIP_DEBRIS3                1193
+#define IDC_ASCT1_VARIABLES_COMBO3      1193
 #define IDC_AI_CLASS                    1194
+#define IDC_ASCT2_CLASS_COMBO1          1194
+#define IDC_SHIP_VARIABLES_LIST         1194
+#define IDC_ASCT2_VARIABLES_COMBO1      1195
 #define IDC_NEW_WING                    1197
 #define IDC_DELETE_WING                 1197
 #define IDC_BUTTON2                     1198
@@ -549,10 +561,12 @@
 #define IDC_COPY_VIEW                   1198
 #define IDC_LOADING_SCREEN_BUTTON640    1198
 #define IDC_FORUMS                      1198
+#define IDC_ALT_CLASS_ADD               1198
 #define IDC_DELETE_STAGE                1199
 #define IDC_DELETE_MSG                  1199
 #define IDC_TOGGLE_LOOP                 1199
 #define IDC_DEL_SBITMAP                 1199
+#define IDC_ALT_CLASS_DELETE            1199
 #define IDC_DELETE2                     1200
 #define IDC_TREE2                       1200
 #define IDC_TREE3                       1201
@@ -572,12 +586,14 @@
 #define IDC_EVENT_MUSIC                 1203
 #define IDC_NEBPATTERN                  1203
 #define IDC_SHIP_PERSONA                1203
+#define IDC_SET_FROM_SHIP_CLASS         1203
 #define IDC_NEBCOLOR                    1204
 #define IDC_SUBSTITUTE_EVENT_MUSIC      1205
 #define IDC_AI_PROFILE                  1207
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
 #define IDC_YES_MESSAGE_LIST            1208
+#define IDC_ALT_CLASS_LIST              1208
 #define IDC_COMMAND_SENDER              1209
 #define IDC_COMMAND_PERSONA             1210
 #define IDC_FILTER_WAYPOINTS            1211
@@ -623,6 +639,7 @@
 #define IDC_SHIP_TYPE                   1244
 #define IDC_NEB2_TEXTURE                1244
 #define IDC_SHIP_ALT                    1244
+#define IDC_SET_FROM_VARIABLES          1244
 #define IDC_COMBO4                      1245
 #define IDC_BEHAVIOR2                   1245
 #define IDC_PRIORITY                    1245
@@ -744,6 +761,7 @@
 #define IDC_GOAL_NAME                   1342
 #define IDC_HOTKEY                      1342
 #define IDC_SBITMAP_LIST                1342
+#define IDC_WEAPON_VARIABLES_LIST       1342
 #define IDC_EDIT2                       1343
 #define IDC_AMMO2                       1343
 #define IDC_TEXT                        1343
@@ -1085,6 +1103,13 @@
 #define IDC_ALT_AS_CALLSIGN             1593
 #define IDC_DEACTIVATE_AUTOPILOT        1594
 #define IDC_HIDE_SHIP_NAME              1594
+#define IDC_SET_CLASS_DYNAMICALLY       1595
+#define IDC_ALT_SHIP_CLASS              1598
+#define ID_STATIC                       1600
+#define IDC_DEFAULT_TO_CLASS            1601
+#define IDC_ALT_CLASS_UP                1602
+#define IDC_ALT_CLASS_DOWN              1603
+#define IDC_ALT_CLASS_INSERT            1604
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1362,6 +1387,7 @@
 #define ID_SHOW_IFF_7                   33088
 #define ID_SHOW_IFF_8                   33089
 #define ID_VIEW_FULL_DETAIL             33090
+#define ID_AUTOBALANCE                  33091
 #define ID_SAVEFORMAT_FS2OPEN           33091
 #define ID_FORMAT_FS2_OPEN_COMP         33092
 #define ID_INDICATOR_MODE               59142
@@ -1376,7 +1402,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        317
 #define _APS_NEXT_COMMAND_VALUE         33093
-#define _APS_NEXT_CONTROL_VALUE         1595
+#define _APS_NEXT_CONTROL_VALUE         1605
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
