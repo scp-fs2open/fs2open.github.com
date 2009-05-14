@@ -8,16 +8,19 @@
 */
 
 /*
- * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
+ * $Source: /home/fs2source/cvsroot/fs2_open/code/parse/parselo.h,v $
  * $Revision: 2.42.2.6 $
  * $Author: taylor $
- * $Date: 2007-10-15 06:43:20 $
+ * $Date: 2007/10/15 06:43:20 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
- * $Log: not supported by cvs2svn $
+ * $Log: parselo.h,v $
+ * Revision 2.42.2.6  2007/10/15 06:43:20  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.42.2.5  2007/08/17 03:29:49  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -466,6 +469,14 @@ extern jmp_buf parse_abort;
 #define	RAW_INTEGER_TYPE	3	//	to parse a list of integers
 #define	WEAPON_POOL_TYPE	4
 
+// Karajorma - Used by the stuff_ship_list and stuff_weapon_list SEXPs
+#define NOT_SET_BY_SEXP_VARIABLE	-1
+
+#define MISSION_LOADOUT_SHIP_LIST		0
+#define MISSION_LOADOUT_WEAPON_LIST		1
+#define CAMPAIGN_LOADOUT_SHIP_LIST		2
+#define CAMPAIGN_LOADOUT_WEAPON_LIST	3
+
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
 
@@ -609,6 +620,12 @@ inline void parse_advance(int s){Mp+=s;}
 extern int parse_modular_table(char *name_check, void (*parse_callback)(char *filename), int path_type = CF_TYPE_TABLES, int sort_type = CF_SORT_REVERSE);
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
+
+//Karajorma - Parses mission and campaign ship loadouts. 
+int stuff_loadout_list (int *ilp, int max_ints, int lookup_type);
+int get_string_or_variable (char *str);
+#define PARSING_FOUND_STRING		0
+#define PARSING_FOUND_VARIABLE		1
 
 
 #endif

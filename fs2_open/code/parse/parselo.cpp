@@ -8,14 +8,19 @@
 */
 
 /*
- * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
+ * $Source: /home/fs2source/cvsroot/fs2_open/code/parse/parselo.cpp,v $
  * $Revision: 2.73.2.13 $
  * $Author: Kazan $
- * $Date: 2007-10-20 23:28:49 $
+ * $Date: 2007/10/20 23:28:49 $
  *
  * low level parse routines common to all types of parsers
  *
- * $Log: not supported by cvs2svn $
+ * $Log: parselo.cpp,v $
+ * Revision 2.73.2.13  2007/10/20 23:28:49  Kazan
+ * Enemy cargo containers should not prevent autopilot.
+ * Fix build problem in parselo (strrchr returns const char* not char*, need to explicitly cast - raises error in MSVC2005)
+ * Update MSVC2005 "code" project to reflect removal/addition of fs2netd related files
+ *
  * Revision 2.73.2.12  2007/10/15 06:43:20  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -1307,6 +1312,41 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	return rval;
 }
 
+// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string 
+// variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present. 
+int get_string_or_variable (char *str)
+{
+	int result; 
+
+	ignore_white_space();
+	
+	// Variable
+	if (*Mp == '@') 
+	{
+		Mp++;
+		stuff_string_white(str); 
+		int sexp_variable_index = get_index_sexp_variable_name(str); 
+		
+		// We only want String variables
+		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
+
+		result = PARSING_FOUND_VARIABLE; 
+	}
+	// Quoted string
+	else if (*Mp == '"')
+	{
+		get_string(str);
+		result =  PARSING_FOUND_STRING;
+	}
+	else
+	{
+		get_string(str);
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str); 
+	}
+
+	return result;
+}
+
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
@@ -2222,6 +2262,112 @@ void stuff_int(int *i)
 	diag_printf("Stuffed int: %i\n", *i);
 }
 
+//int stuff_int_or_variable (int &ilp, bool positive_value = false);
+int stuff_int_or_variable (int *ilp, int count, bool positive_value = false);
+
+/* Karajorma - Disabled for now cause I don't think I need it
+// Stuffs an int value or the value of a number variable. Returns the index of the variable or NOT_SET_BY_SEXP_VARIABLE.
+int stuff_int_or_variable (int &i, bool positive_value)
+{
+	int index = NOT_SET_BY_SEXP_VARIABLE;
+
+	if (*Mp == '@') 
+	{
+		Mp++;
+		int value = -1; 
+		char str[128];
+		stuff_string(str, F_NAME, sizeof(str));
+
+		index = get_index_sexp_variable_name(str); 
+			
+		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		{
+			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
+			{
+				value = atoi(Sexp_variables[index].text);
+			}
+			else 
+			{
+				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
+			}
+		}
+		else
+		{
+			
+			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
+		}
+
+		// zero negative values if requested
+		if (positive_value && value < 0)
+		{
+			value = 0;
+		}
+
+		
+		// Record the value of the index for FreeSpace 
+		i = value;
+	}
+	else 
+	{
+		stuff_int(&i);
+	}
+	return index;
+}
+*/
+
+
+// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the 
+// index of the variable in the following slot.
+int stuff_int_or_variable (int *ilp, int count, bool positive_value)
+{
+	if (*Mp == '@') 
+	{
+		Mp++;
+		int value = -1; 
+		char str[128];
+		stuff_string(str, F_NAME, sizeof(str));
+
+		int index = get_index_sexp_variable_name(str); 
+			
+		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		{
+			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
+			{
+				value = atoi(Sexp_variables[index].text);
+			}
+			else 
+			{ 
+				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
+			}
+		}
+		else
+		{
+			
+			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
+		}
+
+		// zero negative values if requested
+		if (positive_value && value < 0)
+		{
+			value = 0;
+		}
+
+		
+		// Record the value of the index for FreeSpace 
+		ilp[count++] = value;
+		// Record the index itself because we may need it later.
+		ilp[count++] = index;
+	}
+	else 
+	{
+		stuff_int(&ilp[count++]);
+		// Since we have a numerical value we don't have a SEXP variable index to add for next slot. 
+		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
+	}
+	return count;
+}
+
+
 //Stuffs boolean value.
 //Passes things off to stuff_boolean(bool)
 void stuff_boolean(int *i, bool a_to_eol)
@@ -2547,6 +2693,86 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 	Mp++;
 
+	return count;
+}
+
+// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices. 
+// Unlike stuff_int_list it can deal with variables and it also has better error reporting.
+int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
+{
+	int count = 0; 
+	int index, sexp_variable_index, variable_found;
+	char str[128];
+
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
+		longjmp(parse_abort, 6);
+	}
+
+	Mp++;
+	ignore_white_space();
+
+	while (*Mp != ')') {
+		if (count >= max_ints) {
+			Error(LOCATION, "Loadout contains too many entries.\n");
+		}
+
+		index = -1;
+		sexp_variable_index = NOT_SET_BY_SEXP_VARIABLE;
+		variable_found = get_string_or_variable (str); 
+
+		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found 
+		// a variable or not it now holds the name of the ship or weapon we're interested in.
+		if (variable_found) {
+			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
+			sexp_variable_index = get_index_sexp_variable_name(str);
+			strcpy (str, Sexp_variables[sexp_variable_index].text);
+		}
+
+		switch (lookup_type) {
+			case MISSION_LOADOUT_SHIP_LIST:
+			case CAMPAIGN_LOADOUT_SHIP_LIST:
+				index = ship_info_lookup(str);
+				break;
+
+			case MISSION_LOADOUT_WEAPON_LIST:
+			case CAMPAIGN_LOADOUT_WEAPON_LIST:
+				index = weapon_info_lookup(str);
+				break;
+
+			default:
+				Int3();
+		}
+
+		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing 
+		// no ships from the current tables (when swapping mods) so don't report that as an error. 
+		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
+				Error(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+		}
+
+		
+		// we've found a real item. Add its index to the list.
+		ilp[count++] = index;
+		
+		ignore_white_space();
+
+		// Campaign lists need go no further
+		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST || lookup_type == CAMPAIGN_LOADOUT_WEAPON_LIST) {
+			continue;
+		}
+		
+		// record the index of the variable that gave us this item if any
+		ilp[count++] = sexp_variable_index;
+
+		// Now read in the number of this type available. The number must be positive
+		count = stuff_int_or_variable(ilp, count, true);
+
+		ignore_white_space();
+	}
+
+	Mp++;
 	return count;
 }
 
