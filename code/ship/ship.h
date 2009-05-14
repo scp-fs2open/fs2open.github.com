@@ -1281,6 +1281,7 @@ typedef struct ship_subsys_info {
 #define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 #define SF2_HIDE_SHIP_NAME					(1<<15)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
 #define SF2_AFTERBURNER_LOCKED				(1<<16)		// KeldorKatarn - This ship can't use its afterburners
+#define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
@@ -1576,6 +1577,8 @@ typedef struct ship {
 	float flare_life;
 	int flare_bm;
 	*/
+
+	std::vector<alt_class> s_alt_classes;	
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1587,8 +1590,6 @@ typedef struct ship {
 #define SEF_BEEN_TAGGED			(1<<4)
 #define SEF_RED_ALERT_CARRY	(1<<5)
 
-#define MAX_EXITED_SHIPS	(2*MAX_SHIPS) //DTP changed for MAX_SHIPS sake. double of max_ships.
-
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
 	int		obj_signature;
@@ -1599,11 +1600,13 @@ typedef struct exited_ship {
 	int		hull_strength;
 	fix		time_cargo_revealed;
 	char	cargo1;
+	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
+	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
 	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
-extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
+extern std::vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );

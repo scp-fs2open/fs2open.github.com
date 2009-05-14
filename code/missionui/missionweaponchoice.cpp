@@ -1943,14 +1943,12 @@ void wl_init_pool(team_data *td)
 
 	Assert( Wl_pool != NULL );
 
-	/* Goober5000 - isn't this superfluous?
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = -1;
+		Wl_pool[i] = 0;
 	}
-	*/
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = td->weaponry_pool[i];	// read from mission
+	for ( i = 0; i < td->num_weapon_choices; i++ ) {
+		Wl_pool[td->weaponry_pool[i]] += td->weaponry_count[i];	// read from mission
 	}
 }
 

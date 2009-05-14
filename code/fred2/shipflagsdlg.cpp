@@ -69,6 +69,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_NAV_CARRY, m_nav_carry);
 	DDX_Control(pDX, IDC_NAV_NEEDSLINK, m_nav_needslink);
 	DDX_Control(pDX, IDC_HIDE_SHIP_NAME, m_hide_ship_name);
+	DDX_Control(pDX, IDC_SET_CLASS_DYNAMICALLY, m_set_class_dynamically);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -125,6 +126,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NAV_CARRY, OnNavCarry)
 	ON_BN_CLICKED(IDC_NAV_NEEDSLINK, OnNavNeedslink)
 	ON_BN_CLICKED(IDC_HIDE_SHIP_NAME, OnHideShipName)
+	ON_BN_CLICKED(IDC_SET_CLASS_DYNAMICALLY, OnSetClassDynamically)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -145,7 +147,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warp = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
 	int no_death_scream = 0, always_death_scream = 0;
-	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0;
+	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0, set_class_dynamically = 0;
+
 	object *objp;
 	ship *shipp;
 	bool ship_in_wing = false;
@@ -176,6 +179,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = (shipp->flags & SF_CARGO_REVEALED) ? 1 : 0;
 					no_dynamic = (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
 					disable_messages = (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
+					set_class_dynamically = (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY) ? 1 : 0;
 					no_death_scream = (shipp->flags2 & SF2_NO_DEATH_SCREAM) ? 1 : 0;
 					always_death_scream = (shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM) ? 1 : 0;
 					guardian = (shipp->ship_guardian_threshold) ? 1 : 0;
@@ -228,6 +232,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = tristate_set(shipp->flags & SF_CARGO_REVEALED, cargo_known);
 					no_dynamic = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
 					disable_messages = tristate_set(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
+					set_class_dynamically = tristate_set(shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY, set_class_dynamically);
 					no_death_scream = tristate_set(shipp->flags2 & SF2_NO_DEATH_SCREAM, no_death_scream);
 					always_death_scream = tristate_set(shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM, always_death_scream);
 					guardian = tristate_set(shipp->ship_guardian_threshold, guardian);
@@ -294,6 +299,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_red_alert_carry.SetCheck(red_alert_carry);
 	m_special_warp.SetCheck(special_warp);
 	m_disable_messages.SetCheck(disable_messages);
+	m_set_class_dynamically.SetCheck(set_class_dynamically);
 	m_no_death_scream.SetCheck(no_death_scream);
 	m_always_death_scream.SetCheck(always_death_scream);
 	m_guardian.SetCheck(guardian);
@@ -715,6 +721,22 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
+	switch (m_set_class_dynamically.GetCheck()) {
+		case 1:
+			if ( !(shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY) )
+				set_modified();
+
+			shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+			break;
+
+		case 0:
+			if ( shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY )
+				set_modified();
+
+			shipp->flags2 &= ~SF2_SET_CLASS_DYNAMICALLY;
+			break;
+	}
+
 	switch (m_no_death_scream.GetCheck()) {
 		case 1:
 			if ( !(shipp->flags2 & SF2_NO_DEATH_SCREAM) )
@@ -1076,6 +1098,14 @@ void ship_flags_dlg::OnDisableBuiltinShip()
 	}
 }
 
+void ship_flags_dlg::OnSetClassDynamically() 
+{
+	if (m_set_class_dynamically.GetCheck() == 1) {
+		m_set_class_dynamically.SetCheck(0);
+	} else {
+		m_set_class_dynamically.SetCheck(1);
+	}
+}
 void ship_flags_dlg::OnNoDeathScream()
 {
 	if (m_no_death_scream.GetCheck() == 1) {

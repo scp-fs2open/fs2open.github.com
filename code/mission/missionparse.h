@@ -829,6 +829,11 @@ typedef struct texture_replace {
 
 extern texture_replace *Fred_texture_replacements;
 
+typedef struct alt_class {
+	int ship_class;				
+	int variable_index;			// if set allows the class to be set by a variable
+	bool default_to_this_class;
+}alt_class;
 
 #define MAX_OBJECT_STATUS	10
 
@@ -910,6 +915,8 @@ typedef struct p_object {
 	// Goober5000
 	int num_texture_replacements;
 	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
+
+	std::vector<alt_class> alt_classes;	
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
@@ -957,7 +964,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	13
+#define MAX_PARSE_OBJECT_FLAGS_2	14
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -972,6 +979,7 @@ typedef struct p_object {
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
 #define P2_SF2_NAV_NEEDSLINK				(1<<11)
 #define P2_SF2_HIDE_SHIP_NAME				(1<<12)
+#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<13)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
@@ -986,13 +994,22 @@ extern std::vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-
 typedef struct {
+	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
-	int		number_choices; // number of ship choices inside ship_list
+	int		num_ship_choices; // number of ship choices inside ship_list 
+	int		loadout_total;	// Total number of ships available of all classes 
 	int		ship_list[MAX_SHIP_CLASSES];
+	int		ship_list_variables[MAX_SHIP_CLASSES];
 	int		ship_count[MAX_SHIP_CLASSES];
+	int		ship_count_variables[MAX_SHIP_CLASSES];
+
+	// weapons
+	int		num_weapon_choices;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
+	int		weaponry_count[MAX_WEAPON_TYPES];
+	int		weaponry_pool_variable[MAX_WEAPON_TYPES];
+	int		weaponry_amount_variable[MAX_WEAPON_TYPES];
 } team_data;
 
 #define MAX_P_WINGS		16

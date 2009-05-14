@@ -366,6 +366,11 @@ void briefing_editor_dlg::OnInitMenu(CMenu* pMenu)
 	// put a check next to the currently selected item
 	m->CheckMenuItem(m_current_briefing, MF_BYPOSITION | MF_CHECKED );
 
+	// Karajorma - it might be nice to autobalance the briefings and debriefings but I'm not doing anything till I
+	// understand how the how system works better. disabling the option for now. 
+	m = pMenu->GetSubMenu(1); 
+	m->EnableMenuItem(ID_AUTOBALANCE, MF_GRAYED); 
+
 	CDialog::OnInitMenu(pMenu);
 }
 

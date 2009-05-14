@@ -2133,6 +2133,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
+	int killer_index = -1;
 	object *killer_objp = NULL;
 
 	sp = &Ships[ship_obj->instance];
@@ -2153,18 +2154,18 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
-		scoring_eval_kill( ship_obj );
+		killer_index = scoring_eval_kill( ship_obj );
 
 		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
 		// killed this ship.  scoring_eval_kill above should leave the obj signature of the ship who killed
 		// this guy (or a -1 if no one got the kill).
 		killer_ship_name = NULL;
 		killer_damage_percent = -1;
-		if ( sp->damage_ship_id[0] != -1 ) {
+		if ( killer_index >= 0 ) {
 			object *objp;
 			int sig;
 
-			sig = sp->damage_ship_id[0];
+			sig = sp->damage_ship_id[killer_index];
 			for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 				if ( objp->signature == sig ){
 					break;
@@ -2184,7 +2185,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 					killer_ship_name = Ships_exited[ei].ship_name;
 				}
 			}
-			killer_damage_percent = (int)(sp->damage_ship[0] * 100.0f);
+			killer_damage_percent = (int)(sp->damage_ship[killer_index] * 100.0f);
 		}		
 
 		if(!self_destruct){
@@ -2228,7 +2229,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		}
 
 		// maybe praise the player for this kill
- 		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
+		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
 			ship_maybe_praise_player(sp);
 		}
 	}

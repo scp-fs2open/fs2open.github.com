@@ -1492,9 +1492,27 @@ int CFred_mission_save::save_players()
 		parse_comments();
 		fout(" (\n");
 
-		for (j=0; j<Team_data[i].number_choices; j++)
-			fout("\t\"%s\"\t%d\n", Ship_info[Team_data[i].ship_list[j]].name,
-				Team_data[i].ship_count[j]);
+		for (j=0; j<Team_data[i].num_ship_choices; j++) {
+			// Check to see if a variable name should be written for the class rather than a number
+			if (Team_data[i].ship_list_variables[j] != -1) {
+				Assert (Team_data[i].ship_list_variables[j] > -1 && Team_data[i].ship_list_variables[j] < MAX_SEXP_VARIABLES); 
+			
+				fout("\t@%s\t", Sexp_variables[Team_data[i].ship_list_variables[j]].variable_name);
+			}
+			else {
+				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name); 
+			}
+
+			// Now check if we should write a variable or a number for the amount of ships available
+			if (Team_data[i].ship_count_variables[j] != -1) {
+				Assert (Team_data[i].ship_count_variables[j] > -1 && Team_data[i].ship_count_variables[j] < MAX_SEXP_VARIABLES); 
+			
+				fout("@%s\n", Sexp_variables[Team_data[i].ship_count_variables[j]].variable_name);			
+			}
+			else {
+				fout("%d\n", Team_data[i].ship_count[j]);
+			}
+		}
 
 		fout(")");
 
@@ -1505,10 +1523,41 @@ int CFred_mission_save::save_players()
 		}
 
 		fout(" (\n");
-		generate_weaponry_usage_list(used_pool);
+		generate_weaponry_usage_list(i, used_pool); 
+		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
+			// first output the weapon name or a variable that sets it 
+			if (Team_data[i].weaponry_pool_variable[j] != -1) {
+				Assert (Team_data[i].weaponry_pool_variable[j] > -1 && Team_data[i].weaponry_pool_variable[j] < MAX_SEXP_VARIABLES); 
+
+				fout("\t@%s\t", Sexp_variables[Team_data[i].weaponry_pool_variable[j]].variable_name); 
+			}
+			else {
+				fout("\t\"%s\"\t", Weapon_info[Team_data[i].weaponry_pool[j]].name);
+			}
+
+			// now output the amount of this weapon or a variable that sets it. If this weapon is in the used pool and isn't
+			// set by a variable we should add the amount of weapons used by the wings to it and zero the entry so we know 
+			// that we have dealt with it
+			if (Team_data[i].weaponry_amount_variable[j] != -1) {
+				Assert (Team_data[i].weaponry_amount_variable[j] > -1 && Team_data[i].weaponry_amount_variable[j] < MAX_SEXP_VARIABLES); 
+
+				fout ("@%s\n", Sexp_variables[Team_data[i].weaponry_amount_variable[j]].variable_name); 			
+			}
+			else {
+				if (Team_data[i].weaponry_pool_variable[j] != -1) {
+					fout ("%d\n", Team_data[i].weaponry_count[j]);
+				}
+				else {
+					fout ("%d\n", Team_data[i].weaponry_count[j] + used_pool[Team_data[i].weaponry_pool[j]]);
+					used_pool[Team_data[i].weaponry_pool[j]] = 0; 
+				}
+			}
+		}
+
+		// now we add anything left in the used pool as a static entry
 		for (j=0; j<Num_weapon_types; j++){
-			if (Team_data[i].weaponry_pool[j] + used_pool[j] > 0){
-				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, Team_data[i].weaponry_pool[j] + used_pool[j]);
+			if (used_pool[j] > 0){
+				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
 			}
 		}
 
@@ -1588,6 +1637,27 @@ int CFred_mission_save::save_objects()
 		required_string_fred("$Class:");
 		parse_comments(0);
 		fout(" %s", Ship_info[Ships[i].ship_info_index].name);
+
+		//alt classes stuff
+		if (Format_fs2_open) {
+			if ((int)Ships[i].s_alt_classes.size()) {
+				for (k = 0; k < (int)Ships[i].s_alt_classes.size() ; k++) {
+					// is this a variable?
+					if (Ships[i].s_alt_classes[k].variable_index != -1) {
+						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: @%s", Sexp_variables[Ships[i].s_alt_classes[k].variable_index].variable_name);  
+					}
+					else {
+						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: \"%s\"", Ship_info[Ships[i].s_alt_classes[k].ship_class].name);
+					}
+
+					// default class?					
+					if (Ships[i].s_alt_classes[k].default_to_this_class) {
+						fout_version("\n;;FSO 3.6.10;; +Default Class:");
+					}
+				}
+
+			}
+		}
 
 		// optional alternate type name
 		if(strlen(Fred_alt_names[i])){
@@ -1878,6 +1948,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"nav-needslink\"");
 			if (Ships[i].flags2 & SF2_HIDE_SHIP_NAME)
 				fout(" \"hide-ship-name\"");
+			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
+				fout(" \"set-class-dynamically\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
