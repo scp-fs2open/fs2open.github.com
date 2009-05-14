@@ -1294,6 +1294,7 @@ int Fred_num_texture_replacements = 0;
 
 int Num_unknown_ship_classes;
 int Num_unknown_weapon_classes;
+int Num_unknown_loadout_classes;
 
 ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
@@ -6216,7 +6217,7 @@ int parse_mission(mission *pm, int flags)
 	parse_music(pm, flags);
 
 	// if we couldn't load some mod data
-	if ((Num_unknown_ship_classes > 0) /*|| (Num_unknown_weapon_classes > 0)*/) {
+	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )/*|| (Num_unknown_weapon_classes > 0)*/) {
 		// if running on standalone server, just print to the log
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			mprintf(("Warning!  Could not load %d ship classes!", Num_unknown_ship_classes));
@@ -6227,7 +6228,12 @@ int parse_mission(mission *pm, int flags)
 			// build up the prompt...
 			char text[1024];
 
-			sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+			if (Num_unknown_ship_classes > 0) {
+				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+			}
+			else {
+				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_loadout_classes, (Num_unknown_loadout_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+			}
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
 				strcat(text, "(The current campaign is \"");
@@ -6589,6 +6595,7 @@ int parse_main(char *mission_name, int flags)
 	// reset parse error stuff
 	Num_unknown_ship_classes = 0;
 	Num_unknown_weapon_classes = 0;
+	Num_unknown_loadout_classes =0;
 
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;

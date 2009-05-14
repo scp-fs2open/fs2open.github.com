@@ -2262,10 +2262,10 @@ void stuff_int(int *i)
 	diag_printf("Stuffed int: %i\n", *i);
 }
 
-//int stuff_int_or_variable (int &ilp, bool positive_value = false);
+int stuff_int_or_variable (int &i, bool positive_value = false);
 int stuff_int_or_variable (int *ilp, int count, bool positive_value = false);
 
-/* Karajorma - Disabled for now cause I don't think I need it
+
 // Stuffs an int value or the value of a number variable. Returns the index of the variable or NOT_SET_BY_SEXP_VARIABLE.
 int stuff_int_or_variable (int &i, bool positive_value)
 {
@@ -2313,8 +2313,6 @@ int stuff_int_or_variable (int &i, bool positive_value)
 	}
 	return index;
 }
-*/
-
 
 // Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the 
 // index of the variable in the following slot.
@@ -2749,7 +2747,17 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing 
 		// no ships from the current tables (when swapping mods) so don't report that as an error. 
 		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
-				Error(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+			// print a warning in debug mode
+			Warning(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+			// increment counter for release FRED builds. 
+			Num_unknown_loadout_classes++;
+
+			// clean out the broken entry
+			ignore_white_space();
+			int dummy; 
+			stuff_int_or_variable(dummy);
+			ignore_white_space();
+			continue;
 		}
 
 		

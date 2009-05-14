@@ -451,6 +451,7 @@ int Undo_count = 0;
 
 extern int Num_unknown_ship_classes;
 extern int Num_unknown_weapon_classes;
+extern int Num_unknown_loadout_classes;
 
 CFREDDoc::CFREDDoc()
 {
@@ -722,7 +723,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		return -1;
 	}
 
-	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0))
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0))
 	{
 		if (flags & MPF_IMPORT_FSM)
 		{
