@@ -1722,14 +1722,16 @@ sexp_oper Operators[] = {
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
-	{ "shield-quad-low",						OP_SHIELD_QUAD_LOW,					2,	2			},
+	{ "shield-quad-low",					OP_SHIELD_QUAD_LOW,					2,	2			},
 	{ "primary-ammo-pct",					OP_PRIMARY_AMMO_PCT,				2,	2			},
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
 	{ "get-primary-ammo",					OP_GET_PRIMARY_AMMO,				2,	2			}, // Karajorma
 	{ "get-secondary-ammo",					OP_GET_SECONDARY_AMMO,				2,	2			}, // Karajorma
 	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
-	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
+	{ "afterburner-energy-pct",				OP_AFTERBURNER_LEFT,		1, 1			},
+	{ "weapon-energy-pct",					OP_WEAPON_ENERGY_LEFT,			1, 1			},
+	{ "shields-left",						OP_SHIELDS_LEFT,					1, 1,			},
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 3, },
 	{ "sim-hits-left",						OP_SIM_HITS_LEFT,					1, 1, }, // Turey
@@ -6094,6 +6096,49 @@ int sexp_time_wing_departed(int n)
 	}
 
 	return f2i(time);
+}
+
+int sexp_get_energy_pct (int node, int op_num)
+{
+	int sindex;
+	float maximum = 0.0f, current = 0.0f; 
+	ship * shipp; 
+	ship_info * sip; 
+	char *shipname;
+
+	// get the ship
+	shipname = CTEXT(node);
+	
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
+		return SEXP_NAN_FOREVER;
+	}
+
+	sindex = ship_name_lookup( shipname );
+	if ( sindex == -1 ){					// hmm.. if true, must not have arrived yet
+		return SEXP_NAN;
+	}
+
+	shipp = &Ships[sindex]; 
+	sip = &Ship_info[Ships[sindex].ship_info_index]; 
+
+	switch (op_num) {
+		case OP_AFTERBURNER_LEFT:
+			maximum = sip->afterburner_fuel_capacity;
+			current = shipp->afterburner_fuel;
+			break; 
+		case OP_WEAPON_ENERGY_LEFT:
+			if (ship_has_energy_weapons(shipp)) {
+				maximum = sip->max_weapon_reserve; 
+				current = shipp->weapon_energy;
+			}
+			break; 
+	}
+	if (maximum < WEAPON_RESERVE_THRESHOLD || current < WEAPON_RESERVE_THRESHOLD) {
+		return 0;
+	}
+
+	return (int)(100 * (current/maximum));
 }
 
 // function to return the remaining shields as a percentage of the given ship.
@@ -16565,7 +16610,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_time_undocked(node);
 				break;
 
-			// info based sexpressions (like shields, hits
+			case OP_AFTERBURNER_LEFT:
+				sexp_val = sexp_get_energy_pct(node, op_num);
+				break;
+
+			case OP_WEAPON_ENERGY_LEFT:
+				sexp_val = sexp_get_energy_pct(node, op_num);
+				break;
+
 			case OP_SHIELDS_LEFT:
 				sexp_val = sexp_shields_left(node);
 				break;
@@ -18110,6 +18162,8 @@ int query_operator_return_type(int op)
 		case OP_MISSION_TIME:
 		case OP_TIME_DOCKED:
 		case OP_TIME_UNDOCKED:
+		case OP_AFTERBURNER_LEFT:
+		case OP_WEAPON_ENERGY_LEFT:
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
@@ -18503,6 +18557,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TIME_SHIP_DESTROYED:
 		case OP_TIME_SHIP_ARRIVED:
 		case OP_TIME_SHIP_DEPARTED:
+		case OP_AFTERBURNER_LEFT:
+		case OP_WEAPON_ENERGY_LEFT:
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_SIM_HITS_LEFT:
@@ -21453,6 +21509,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe name of the docker ship.\r\n"
 		"\t2:\tThe name of the dockee ship.\r\n"
 		"\t3:\tThe number of times they must have undocked to be true." },
+
+	{ OP_AFTERBURNER_LEFT, "Afterburner left\r\n"
+		"\tReturns a ship's current engine energy as a percentage.\r\n"
+		"\t1: Ship name\r\n" },
+
+	{ OP_WEAPON_ENERGY_LEFT, "Weapon energy left\r\n"
+		"\tReturns a ship's current weapon energy as a percentage.\r\n"
+		"\t1: Ship name\r\n" },
 
 	{ OP_SHIELDS_LEFT, "Shields left (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's shields as a percentage.\r\n\r\n"
