@@ -8130,6 +8130,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_FICTION_VIEWER:
+			common_maybe_play_cutscene(MOVIE_PRE_FICTION); 	
 			fiction_viewer_init();
 			break;
 
@@ -8137,6 +8138,7 @@ void game_enter_state( int old_state, int new_state )
 			if (old_state == GS_STATE_OPTIONS_MENU) {
 				cmd_brief_unhold();
 			} else {
+				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF); 	
 				int team_num = 0;  // team number used as index for which cmd brief to use.
 				cmd_brief_init(team_num);
 			}
@@ -8144,10 +8146,12 @@ void game_enter_state( int old_state, int new_state )
 		}
 
 		case GS_STATE_RED_ALERT:
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 	
 			red_alert_init();
 			break;
 
 		case GS_STATE_BRIEFING:
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 
 			brief_init();
 			break;
 
@@ -8155,6 +8159,7 @@ void game_enter_state( int old_state, int new_state )
 			game_stop_looped_sounds();
 			mission_goal_fail_incomplete();				// fail all incomplete goals before entering debriefing
 			if ( (old_state != GS_STATE_VIEW_MEDALS) && (old_state != GS_STATE_OPTIONS_MENU) ){
+				common_maybe_play_cutscene(MOVIE_PRE_DEBRIEF); 	
 				debrief_init();
 			}
 			break;
@@ -8210,6 +8215,12 @@ void game_enter_state( int old_state, int new_state )
 			break;
  
 		case GS_STATE_GAME_PLAY:
+
+			// maybe play a cutscene
+			if((old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) || 
+			   (old_state == GS_STATE_WEAPON_SELECT) || (old_state == GS_STATE_RED_ALERT) ) {
+				common_maybe_play_cutscene(MOVIE_PRE_GAME); 
+			}
 			// reset time compression to default level so it's right at the beginning of a mission - taylor
 			if(old_state != GS_STATE_GAME_PAUSED)
 			{

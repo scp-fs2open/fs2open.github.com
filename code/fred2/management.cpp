@@ -1427,6 +1427,7 @@ void clear_mission()
 	extern void allocate_mission_text(int size);
 	allocate_mission_text( MISSION_TEXT_SIZE );
 
+	The_mission.cutscenes.clear(); 
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	mission_event_shutdown();
