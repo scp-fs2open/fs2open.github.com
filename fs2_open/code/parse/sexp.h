@@ -1146,6 +1146,8 @@ struct ship_subsys;
 #define	OP_RESPAWNS_LEFT					(0x0032 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_IS_PLAYER						(0x0033 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_DAMAGE_CAUSED				(0x0034 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_AFTERBURNER_LEFT					(0x0035 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_WEAPON_ENERGY_LEFT				(0x0036 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 // conditional sexpressions
@@ -1364,7 +1366,6 @@ struct ship_subsys;
 #define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 #define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 #define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
-
 
 /* made obsolete by Goober5000
 // debugging sexpressions
