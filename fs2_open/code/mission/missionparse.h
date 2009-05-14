@@ -815,6 +815,7 @@ extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
 extern int Num_unknown_weapon_classes;
+extern int Num_unknown_loadout_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
