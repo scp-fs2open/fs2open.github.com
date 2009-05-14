@@ -583,6 +583,8 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		err = -3;
 //	else if (save_briefing_info())
 //		err = -4;
+	else if (save_cutscenes())
+		err = -4;
 	else if (save_cmd_briefs())
 		err = -4;
 	else if (save_briefing())
@@ -680,6 +682,8 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 //		err = -4;
 	else if (save_fiction())
 		err = -3;
+	else if (save_cutscenes())
+		err = -4;
 	else if (save_cmd_briefs())
 		err = -4;
 	else if (save_briefing())
@@ -1067,6 +1071,71 @@ int CFred_mission_save::save_plot_info()
 	fso_comment_pop(true);
 
 	return err;
+}
+
+int CFred_mission_save::save_cutscenes()
+{	
+	char type[NAME_LENGTH]; 
+	char out[MULTITEXT_LENGTH];
+
+	// Let's just assume it has them for now - 
+	if (!(The_mission.cutscenes.empty()) ) {
+		if (Format_fs2_open) {
+			if (optional_string_fred("#Cutscenes")) {
+				parse_comments(2);
+			}
+			else {
+				fout_version("\n\n#Cutscenes\n\n");
+			}
+
+			for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
+				if ( strlen(The_mission.cutscenes[i].cutscene_name) ) {
+					// determine the name of this cutscene type
+					switch (The_mission.cutscenes[i].type) {
+						case MOVIE_PRE_FICTION:
+							strcpy(type, "$Fiction Viewer Cutscene:");  
+							break; 
+						case MOVIE_PRE_CMD_BRIEF:
+							strcpy(type, "$Command Brief Cutscene:");  
+							break; 
+						case MOVIE_PRE_BRIEF:
+							strcpy(type, "$Briefing Cutscene:");  
+							break; 
+						case MOVIE_PRE_GAME:
+							strcpy(type, "$Pre-game Cutscene:");  
+							break; 
+						case MOVIE_PRE_DEBRIEF:
+							strcpy(type, "$Debriefing Cutscene:");  
+							break; 
+						default: 
+							Int3(); 
+							continue; 
+					}
+					
+					if (optional_string_fred(type)) {
+						parse_comments();
+						fout(" %s", The_mission.cutscenes[i].cutscene_name); 
+					}
+					else {
+						fout_version("%s %s\n", type, The_mission.cutscenes[i].cutscene_name); 
+					}
+
+					required_string_fred("+formula:");
+					parse_comments(); 
+					convert_sexp_to_string(The_mission.cutscenes[i].formula, out, SEXP_SAVE_MODE, 4096);
+					fout(" %s", out);
+				}
+			}
+			required_string_fred("#end"); 
+			parse_comments();
+		}
+		else {
+			MessageBox(NULL, "Warning: This mission contains cutscene data, but you are saving in the retail mission format. This infomration will be lost", "Incompatibility with retail mission format", MB_OK);
+		}
+	}
+
+	fso_comment_pop(true);
+	return err; 
 }
 
 int CFred_mission_save::save_fiction()

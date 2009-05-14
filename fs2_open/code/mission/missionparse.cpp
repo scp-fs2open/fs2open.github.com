@@ -2054,6 +2054,50 @@ void parse_player_info2(mission *pm)
 		Error(LOCATION, "Not enough ship/weapon pools for mission.  There are %d teams and only %d pools.", Num_teams, nt);
 }
 
+// a little helper for the next function
+void parse_single_cutscene (mission *pm, int type) 
+{
+	mission_cutscene scene; 
+
+	scene.type = type; 
+	stuff_string (scene.cutscene_name, F_NAME, NAME_LENGTH);
+	
+	if ( required_string("+formula:") ) {
+		scene.formula = get_sexp_main();
+	}
+
+	pm->cutscenes.push_back(scene); 
+}
+
+void parse_cutscenes(mission *pm) 
+{
+	pm->cutscenes.clear(); 
+
+	if (optional_string("#Cutscenes")) {		
+		while(!optional_string("#end")){
+			if (optional_string("$Fiction Viewer Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_PRE_FICTION);
+			}
+			
+			if (optional_string("$Command Brief Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_PRE_CMD_BRIEF);
+			}
+			
+			if (optional_string("$Briefing Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_PRE_BRIEF);
+			}
+			
+			if (optional_string("$Pre-game Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_PRE_GAME);
+			}
+			
+			if (optional_string("$Debriefing Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
+			}
+		}
+	}
+}
+
 void parse_plot_info(mission *pm)
 {
 	if (optional_string("#Plot Info"))
@@ -4330,8 +4374,6 @@ void process_loadout_objects()
 		p_object *p_objp = &Parse_objects[i];
 		if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
 		{
-			bool successful = is_ship_assignable(p_objp);
-
 			if (!(is_ship_assignable(p_objp)))
 			{
 				// store the ship so we can come back to it later.
@@ -6156,6 +6198,7 @@ int parse_mission(mission *pm, int flags)
 	parse_plot_info(pm);
 	parse_variables();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
+	parse_cutscenes(pm);
 	parse_fiction(pm);
 	parse_cmd_briefs(pm);
 	parse_briefing(pm, flags);
