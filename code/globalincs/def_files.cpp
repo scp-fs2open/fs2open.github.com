@@ -795,7 +795,11 @@ $Percentage Required For Assist Scale: 0.15, 0.15, 0.15, 0.15, 0.15		\n\
 																		\n\
 ;; in TvT and Coop missions all teammates will be granted this 		 	\n\
 ;; percentage of the capships score when someone scores a kill			\n\
-$Percentage Awarded For Capship Assist: 0.5, 0.5, 0.5, 0.5, 0.5			\n\
+$Percentage Awarded For Capship Assist: 0.1, 0.2, 0.35, 0.5, 0.6		\n\
+																		\n\
+;; the amount to subtract from the player's score if they are			\n\
+;; repaired by a support ship											\n\
+$Repair Penalty: 10, 20, 35, 50, 60										\n\
 																		\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
