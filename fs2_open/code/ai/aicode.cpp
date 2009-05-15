@@ -10965,11 +10965,6 @@ void ai_guard()
 
 }
 
-
-// define for the points subtracted from score for a rearm started on a player.
-#define REPAIR_PENALTY		50
-
-
 // function to clean up ai flags, variables, and other interesting information
 // for a ship that was getting repaired.  The how parameter is useful for multiplayer
 // only in that it tells us why the repaired ship is being cleaned up.
@@ -11008,7 +11003,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		// if this is a player ship, then subtract the repair penalty from this player's score
 		if ( repaired_objp->flags & OF_PLAYER_SHIP ) {
 			if ( !(Game_mode & GM_MULTIPLAYER) ) {
-				Player->stats.m_score -= (int)(REPAIR_PENALTY * scoring_get_scale_factor());			// subtract the penalty
+				Player->stats.m_score -= The_mission.ai_profile->repair_penalty[Game_skill_level];			// subtract the penalty
 			} else {
 				/*
 				int pnum;
@@ -11016,10 +11011,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 				// multiplayer game -- find the player, then subtract the score
 				pnum = multi_find_player_by_object( repaired_objp );
 				if ( pnum != -1 ) {
-					Net_players[pnum].player->stats.m_score -= (int)(REPAIR_PENALTY * scoring_get_scale_factor());
+					Net_players[pnum].player->stats.m_score -= The_mission.ai_profile->repair_penalty[Game_skill_level];
 
 					// squad war
-					multi_team_maybe_add_score(-(int)(REPAIR_PENALTY * scoring_get_scale_factor()), Net_players[pnum].p_info.team);
+					multi_team_maybe_add_score(-(The_mission.ai_profile->repair_penalty[Game_skill_level]), Net_players[pnum].p_info.team);
 				} else {
 					nprintf(("Network", "Couldn't find player for ship %s for repair penalty\n", Ships[repaired_objp->instance].ship_name));
 				}

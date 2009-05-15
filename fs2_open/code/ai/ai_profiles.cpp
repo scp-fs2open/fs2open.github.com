@@ -331,6 +331,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Percentage Awarded For Capship Assist:"))
 				parse_float_list(profile->assist_award_percentage_scale, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Repair Penalty:"))
+				parse_int_list(profile->repair_penalty, NUM_SKILL_LEVELS);
+
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
