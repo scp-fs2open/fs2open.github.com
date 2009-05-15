@@ -5007,6 +5007,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\network\multi_sexp.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_sexp.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\network\multi_team.cpp"
 				>
 			</File>

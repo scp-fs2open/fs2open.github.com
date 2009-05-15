@@ -848,6 +848,7 @@
  */
 
 #include "globalincs/pstypes.h"	// for NULL
+#include <vector>
 
 #ifndef _SEXP_H
 #define _SEXP_H
@@ -1367,6 +1368,7 @@ struct ship_subsys;
 #define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 #define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 #define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
+#define OP_SET_RESPAWNS						(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1717,6 +1719,8 @@ extern int Players_target_timestamp;
 extern int Players_mlocked_timestamp;
 extern int Sexp_clipboard;  // used by Fred
 
+extern std::vector<int> Current_sexp_operator;
+
 extern void init_sexp();
 extern int alloc_sexp(char *text, int type, int subtype, int first, int rest);
 extern int find_free_sexp();
@@ -1822,5 +1826,8 @@ extern int Num_submenus;
 //WMC
 //Outputs sexp.html file
 bool output_sexps(char *filepath);
+
+
+void multi_sexp_eval();
 
 #endif

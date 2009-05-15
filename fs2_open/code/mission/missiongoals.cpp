@@ -428,6 +428,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multi_team.h"
+#include "network/multi_sexp.h"
 
 
 
@@ -1445,6 +1446,11 @@ void mission_eval_goals()
 				mission_process_event( i );
 			}
 		}
+	}
+
+	// send and remaining sexp data to the clients
+	if (MULTIPLAYER_MASTER) {
+		multi_sexp_flush_packet();
 	}
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING){
