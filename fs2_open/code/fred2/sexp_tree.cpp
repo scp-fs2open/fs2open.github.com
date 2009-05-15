@@ -2517,6 +2517,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		if (id == (Operators[op].value | OP_REPLACE_FLAG)) {
 			add_or_replace_operator(op, 1);
+			expand_branch(item_handle); 
 			return 1;
 		}
 
@@ -2623,6 +2624,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			} else
 				Assert(0);  // unknown and/or invalid sexp type
 
+			expand_branch(item_handle);
+
 			return 1;
 
 		case ID_EDIT_PASTE_SPECIAL:  // add paste, instead of replace.
@@ -2654,6 +2657,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			} else
 				Assert(0);  // unknown and/or invalid sexp type
+
+			expand_branch(item_handle);
 
 			return 1;
 
