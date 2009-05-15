@@ -11539,20 +11539,6 @@ void multi_sexp_set_persona()
 	}
 }
 
-/*
-fix time_weapon_last_fired(ship * shipp, int requested_bank) 
-{
-	if (requested_bank < 0 || requested_bank >= MAX_SHIP_SECONDARY_BANKS) {
-		Warning(LOCATION, "time_weapon_last_fired() called for non-existant secondary bank");
-		return 0; 
-	}
-
-	weapon_info * wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
-	
-	return (shipp->weapons.next_secondary_fire_stamp[requested_bank]) - (int)(wip->fire_wait * 1000); 
-}
-*/
-
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
