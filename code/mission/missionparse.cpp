@@ -1494,6 +1494,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"nav-needslink",
 	"hide-ship-name",
 	"set-class-dynamically",
+	"lock-all-turrets",
+	"afterburners-locked",
 };
 
 
@@ -3236,6 +3238,15 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
+			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+			{
+				// mark all turrets as locked
+				if(ptr->system_info->type == SUBSYSTEM_TURRET)
+				{
+					ptr->weapons.flags |= SW_FLAG_TURRET_LOCK;
+				}
+			}
+
 			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name))
 			{
 				if (Fred_running)
@@ -3510,6 +3521,12 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags2 & P2_SF2_HIDE_SHIP_NAME)
 		shipp->flags2 |= SF2_HIDE_SHIP_NAME;
+
+	if (parse_flags2 & P2_SF2_LOCK_ALL_TURRETS_INITIALLY) 
+		shipp->flags2 |= SF2_LOCK_ALL_TURRETS_INITIALLY;
+
+	if (parse_flags2 & P2_SF2_AFTERBURNER_LOCKED) 
+		shipp->flags2 |= SF2_AFTERBURNER_LOCKED;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
