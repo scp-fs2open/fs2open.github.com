@@ -6523,7 +6523,10 @@ void post_process_mission()
 int get_mission_info(char *filename, mission *mission_p, bool basic)
 {
 	char real_fname[MAX_FILENAME_LEN];
-	strcpy(real_fname, filename);
+	
+	strncpy(real_fname, filename, MAX_FILENAME_LEN-1);
+	real_fname[sizeof(real_fname)-1] = '\0';
+	
 	char *p = strrchr(real_fname, '.');
 	if (p) *p = 0; // remove any extension
 	strcat(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
