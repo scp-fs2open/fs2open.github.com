@@ -1012,7 +1012,7 @@ struct ship_subsys;
 // to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
 // goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
 // will return the subcategory for each sexp that uses it, and the submenu name in the
-// op_submenu[] array in sexp_tree.cpp.
+// op_submenu[] array in sexp.cpp.
 #define SUBCATEGORY_MASK									0x00ff
 #define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
@@ -1028,6 +1028,13 @@ struct ship_subsys;
 #define CHANGE_SUBCATEGORY_CUTSCENES						(0x000b | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x000c | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			(0x000d | OP_CATEGORY_CHANGE)
+#define STATUS_SUBCATEGORY_MULTIPLAYER						(0x000e | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		(0x000f | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_CARGO							(0x0010 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_SHIP_STATUS						(0x0011 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_DAMAGE							(0x0012 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			(0x0013 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_KILLS_AND_SCORING				(0x0014 | OP_CATEGORY_STATUS)
 
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
