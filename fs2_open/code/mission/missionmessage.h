@@ -312,7 +312,7 @@ extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 // probably use these defines.
 
 // this number in this define should match the number of elements in the next array
-#define MAX_BUILTIN_MESSAGE_TYPES	41
+#define MAX_BUILTIN_MESSAGE_TYPES	44
 
 extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 
@@ -322,12 +322,12 @@ extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 #define MESSAGE_CHECK_6				3
 #define MESSAGE_ENGAGE				4
 #define MESSAGE_GAMMA_ARRIVED		5
-#define MESSAGE_HELP					6
+#define MESSAGE_HELP				6
 #define MESSAGE_PRAISE				7
-#define MESSAGE_REINFORCEMENTS	8
+#define MESSAGE_REINFORCEMENTS		8
 #define MESSAGE_IGNORE				9
 #define MESSAGE_NOSIR				10
-#define MESSAGE_OOPS					11
+#define MESSAGE_OOPS				11
 #define MESSAGE_PERMISSION			12
 #define MESSAGE_STRAY				13
 #define MESSAGE_WARP_OUT			14
@@ -337,26 +337,29 @@ extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 #define MESSAGE_REARM_WARP			18
 #define MESSAGE_NO_TARGET			19
 #define MESSAGE_DOCK_YES			20
-#define MESSAGE_REPAIR_DONE		21
-#define MESSAGE_REPAIR_ABORTED	22
+#define MESSAGE_REPAIR_DONE			21
+#define MESSAGE_REPAIR_ABORTED		22
 #define MESSAGE_HAMMER_SWINE		23
 #define MESSAGE_REARM_REQUEST		24		// wingman messages player when he calls a support ship
-#define MESSAGE_DISABLE_TARGET	25
+#define MESSAGE_DISABLE_TARGET		25
 #define MESSAGE_DISARM_TARGET		26
-#define MESSAGE_PLAYER_DIED		27		// message sent when player starts death roll
-#define MESSAGE_WINGMAN_SCREAM	28
-#define MESSAGE_SUPPORT_KILLED	29
+#define MESSAGE_PLAYER_DIED			27		// message sent when player starts death roll
+#define MESSAGE_WINGMAN_SCREAM		28
+#define MESSAGE_SUPPORT_KILLED		29
 #define MESSAGE_ALL_CLEAR			30
 #define MESSAGE_ALL_ALONE			31		// message sent when player is last ship left and primary objectives still exist
-#define MESSAGE_REPAIR_REQUEST	32
+#define MESSAGE_REPAIR_REQUEST		32
 #define MESSAGE_DELTA_ARRIVED		33
-#define MESSAGE_EPSILON_ARRIVED	34
-#define MESSAGE_INSTRUCTOR_HIT	35
-#define MESSAGE_INSTRUCTOR_ATTACK 36
-#define MESSAGE_STRAY_WARNING				37
+#define MESSAGE_EPSILON_ARRIVED		34
+#define MESSAGE_INSTRUCTOR_HIT		35
+#define MESSAGE_INSTRUCTOR_ATTACK	36
+#define MESSAGE_STRAY_WARNING		37
 #define MESSAGE_STRAY_WARNING_FINAL		38
 #define MESSAGE_AWACS_75			39
 #define MESSAGE_AWACS_25			40
+#define MESSAGE_PRAISE_SELF			41
+#define MESSAGE_HIGH_PRAISE			42
+#define MESSAGE_PRIMARIES_LOW		43
 
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message

@@ -14936,7 +14936,54 @@ void ship_maybe_praise_player(ship *deader_sp)
 	Player->praise_delay_timestamp = timestamp_rand(1000, 2000);
 }
 
-// player has just killed a ship, maybe offer send a 'good job' message
+void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
+{
+	int j; 
+	bool wingman = false;
+
+	if ( myrand()&10 ) {
+		return;
+	}
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	// only praise if killing an enemy so check they both attack each other!
+	if (!((iff_x_attacks_y(deader_sp->team, killer_sp->team)) && (iff_x_attacks_y(killer_sp->team, deader_sp->team ))) ) {
+		return;
+	}
+
+	
+	// only send messages from the player's wingmen
+	if (killer_sp->wingnum == -1) {
+		return; 
+	}
+	for ( j = 0; j < MAX_STARTING_WINGS; j++ ) {
+		if ( Starting_wings[j] == killer_sp->wingnum) {
+			wingman = true; 
+			break;
+		}
+	}
+
+	if (!wingman) {
+		return;
+	}
+
+	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
+	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].message_bools & STI_MSG_PRAISE_DESTRUCTION) ) {
+		return;
+	}
+
+	// ensure the ship isn't silenced
+	if ( killer_sp->flags2 & SF2_NO_BUILTIN_MESSAGES ) {
+		return; 
+	}
+
+	message_send_builtin_to_player(MESSAGE_PRAISE_SELF, killer_sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				
+}
+
 #define PLAYER_ASK_HELP_INTERVAL			60000		// minimum time between praises
 #define PLAYER_MAX_ASK_HELP				10			// max number of warnings player can receive in a mission
 #define ASK_HELP_SHIELD_PERCENT			0.1		// percent shields at which ship will ask for help
@@ -15208,7 +15255,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 					{
 						if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
 						{
-							message_type = MESSAGE_REARM_REQUEST;
+							message_type = MESSAGE_PRIMARIES_LOW;
 							break;
 						}
 					}

@@ -1293,7 +1293,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		12
-#define MAX_MAN_THRUSTERS	32
+#define MAX_MAN_THRUSTERS	64
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -2345,6 +2345,7 @@ void	ship_check_cargo_all();	// called from game_simulation_frame
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
+void	ship_maybe_praise_self(ship *deader_sp, ship *killer_sp);
 void	ship_maybe_ask_for_help(ship *sp);
 void	ship_scream(ship *sp);
 void	ship_maybe_scream(ship *sp);

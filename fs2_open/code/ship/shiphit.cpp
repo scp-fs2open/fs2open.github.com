@@ -2229,8 +2229,13 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		}
 
 		// maybe praise the player for this kill
-		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
-			ship_maybe_praise_player(sp);
+		if ( (killer_damage_percent > 10) && (other_obj != NULL) ) {
+			if (other_obj->parent_sig == Player_obj->signature) {
+				ship_maybe_praise_player(sp);
+			}
+			else if ((other_obj->parent_type == OBJ_SHIP) || (other_obj->parent_type == OBJ_START))  {
+				ship_maybe_praise_self(sp, &Ships[Objects[other_obj->parent].instance]);
+			}
 		}
 	}
 

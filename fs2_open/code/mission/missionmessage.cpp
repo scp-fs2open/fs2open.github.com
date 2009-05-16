@@ -657,6 +657,7 @@
 #include "network/multiutil.h"
 
 
+int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
 // here is a text list of the builtin message names.  These names are used to match against
 // names read in for builtin message radio bits to see what message to play.  These are
 // generic names, meaning that there will be the same message type for a number of different
@@ -704,7 +705,10 @@ char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
 	"Stray Warning",
 	"Stray Warning Final",
 	"AWACS at 75",
-	"AWACS at 25"
+	"AWACS at 25",
+	"Praise Self", 
+	"High Praise",
+	"Primaries Low",
 //XSTR:ON
 };
 
@@ -1030,6 +1034,7 @@ void message_parse(bool importing_from_fsm)
 void parse_msgtbl()
 {
 	char *p1, *p2, *p3;
+	int i, j;
 
 	// open localization
 	lcl_ext_open();
@@ -1080,6 +1085,18 @@ void parse_msgtbl()
 	Num_builtin_messages = Num_messages;
 	Num_builtin_avis = Num_message_avis;
 	Num_builtin_waves = Num_message_waves;
+
+	
+	memset(Valid_builtin_message_types, 0, sizeof(int)); 
+	// now cycle through the messages to determine which type of builtins we have messages for
+	for (i = 0; i < Num_builtin_messages; i++) {
+		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
+			if (!(stricmp(Messages[i].name, Builtin_message_types[j]))) {
+				Valid_builtin_message_types[j] = 1; 
+				break;
+			}
+		}
+	}
 
 	// close localization
 	lcl_ext_close();
@@ -2316,8 +2333,25 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
-	int i, persona_index = -1;
+	int i, persona_index = -1, message_index = -1;
 	int source;	
+	int matching_builtins[MAX_MISSION_MESSAGES]; 
+	int num_matching_builtins = 0; 
+	char *who_from;
+
+	// builtin type isn't supported by this version of the table
+	if (!Valid_builtin_message_types[type]) {
+		// downgrade certain message types to more generic ones more likely to be supported
+		if (type == MESSAGE_HIGH_PRAISE && Valid_builtin_message_types[MESSAGE_PRAISE] ) {
+			type = MESSAGE_PRAISE; 
+		}
+		else if ( type == MESSAGE_PRIMARIES_LOW && Valid_builtin_message_types[MESSAGE_REARM_REQUEST] ) {
+			type = MESSAGE_REARM_REQUEST; 
+		}
+		else {
+			return;
+		}
+	}
 
 	// if we aren't showing builtin msgs, bail
 	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
@@ -2346,16 +2380,14 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}
 
+	char *name = Builtin_message_types[type];
+
 	// try to find a builtin message with the given type for the given persona
 	// make a loop out of this routne since we may try to play a message in the wrong
 	// persona if we can't find the right message for the given persona
 	do {
 		for ( i = 0; i < Num_builtin_messages; i++ ) {
-			char *name, *who_from;
-
-			name = Builtin_message_types[type];
-
-			// see if the have the type of message
+			// check the type of message
 			if ( stricmp(Messages[i].name, name) ){
 				continue;
 			}
@@ -2365,68 +2397,88 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			if ( (persona_index != -1 ) && (Messages[i].persona_index != persona_index) ){
 				continue;
 			}
+			
+			matching_builtins[num_matching_builtins++] = i; 
 
-			// get who this message is from -- kind of a hack since we assume Terran Command in the
-			// absence of a ship.  This will be fixed later
-			if ( shipp ) {
-				who_from = shipp->ship_name;
-				source = HUD_team_get_source( shipp->team );
-			} else {
-				who_from = The_mission.command_sender;
-
-				// Goober5000 - if Command is a ship that is present, change the source accordingly
-				int shipnum = ship_name_lookup(who_from);
-				if (shipnum >= 0)
-					source = HUD_team_get_source( Ships[shipnum].team );
-				else
-					source = HUD_SOURCE_TERRAN_CMD;
+			// if we don't care about the persona we do not need to check for other matching messages, we grab the first one 
+			// of the correct type we find and run
+			if (persona_index == -1 ) { 
+				break;
 			}
-
-			// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
-			if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
-				who_from = SUPPORT_NAME;
-			}
-
-			// determine what we should actually do with this dang message.  In multiplayer, we must
-			// deal with the fact that this message might not get played on my machine if I am a server
-
-			// not multiplayer or this message is for me, then queue it
-			if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
-
-				// if this filter matches mine
-				if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
-					message_queue_message( i, priority, timing, who_from, source, group, delay, type );
-
-					// post a builtin message
-					if(Game_mode & GM_DEMO_RECORD){
-						demo_POST_builtin_message(type, shipp, priority, timing);
-					}
-				}
-			}
-
-			// send a message packet to a player if destined for everyone or only a specific person
-			if ( MULTIPLAYER_MASTER ) {
-				// only send a message if it is of a particular type
-				if(multi_target == -1){
-					if(multi_message_should_broadcast(type)){				
-						send_mission_message_packet( i, who_from, priority, timing, source, type, -1, multi_team_filter );
-					}
-				} else {
-					send_mission_message_packet( i, who_from, priority, timing, source, type, multi_target, multi_team_filter );
-				}
-			}
-
-			return;		// all done with displaying
 		}
-
-		if ( persona_index >= 0 ) {
+		
+		// if we didn't find any matching builtins for a valid persona go round again and just grab the first one of the
+		// correct type
+		if ( persona_index >= 0 && num_matching_builtins == 0 ) {
 			nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
 			nprintf(("messaging", "looking for message for any persona\n"));
 			persona_index = -1;
-		} else {
-			persona_index = -999;		// used here and the next line only -- hard code bad, but I'm lazy
 		}
-	} while ( persona_index != -999 );
+		// otherwise whether we found valid message(s) or not, we're done with the loop
+		else {
+			// exit do-while
+			break; 
+		}
+	} while ( true );
+
+	if (num_matching_builtins <= 0) {
+		nprintf(("messaging", "Couldn't find any builtin message of type %d\n", type ));
+		Int3();
+		return; 
+	}
+
+	// since we may have multiple builtins we need to pick one at random
+	message_index = matching_builtins[(int)rand32() % num_matching_builtins]; 
+
+	// get who this message is from -- kind of a hack since we assume Terran Command in the
+	// absence of a ship.  This will be fixed later
+	if ( shipp ) {
+		who_from = shipp->ship_name;
+		source = HUD_team_get_source( shipp->team );
+	} else {
+		who_from = The_mission.command_sender;
+
+		// Goober5000 - if Command is a ship that is present, change the source accordingly
+		int shipnum = ship_name_lookup(who_from);
+		if (shipnum >= 0)
+			source = HUD_team_get_source( Ships[shipnum].team );
+		else
+			source = HUD_SOURCE_TERRAN_CMD;
+	}
+
+	// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
+	if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
+		who_from = SUPPORT_NAME;
+	}
+
+	// determine what we should actually do with this dang message.  In multiplayer, we must
+	// deal with the fact that this message might not get played on my machine if I am a server
+
+	// not multiplayer or this message is for me, then queue it
+	if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
+
+		// if this filter matches mine
+		if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
+			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type );
+
+			// post a builtin message
+			if(Game_mode & GM_DEMO_RECORD){
+				demo_POST_builtin_message(type, shipp, priority, timing);
+			}
+		}
+	}
+
+	// send a message packet to a player if destined for everyone or only a specific person
+	if ( MULTIPLAYER_MASTER ) {
+		// only send a message if it is of a particular type
+		if(multi_target == -1){
+			if(multi_message_should_broadcast(type)){				
+				send_mission_message_packet( message_index, who_from, priority, timing, source, type, -1, multi_team_filter );
+			}
+		} else {
+			send_mission_message_packet( message_index, who_from, priority, timing, source, type, multi_target, multi_team_filter );
+		}
+	}
 }
 
 // message_is_playing()
