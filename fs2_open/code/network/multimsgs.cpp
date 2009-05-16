@@ -5502,7 +5502,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 // sends information updating clients on certain AI information that clients will
 // need to know about to keep HUD information up to date.  objp is the object that we
 // are updating, and what is the type of stuff that we are updating.
-void send_ai_info_update_packet( object *objp, char what )
+void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 {
 	int packet_size;
 	ushort other_signature;
@@ -5521,8 +5521,20 @@ void send_ai_info_update_packet( object *objp, char what )
 	if ( Ships[objp->instance].flags & (SF_DEPARTING | SF_DYING) )
 		return;
 
-	// possibly docked (multi only supports one docked object)
-	object *docked_objp = dock_get_first_docked_object(objp);
+	switch( what ) {
+
+	case AI_UPDATE_DOCK:
+	case AI_UPDATE_UNDOCK:
+		Assert (other_objp != NULL); 
+		if (other_objp == NULL) {
+			return; 
+		}
+		break; 
+
+	default: 
+		Assert (other_objp == NULL); 
+		break;
+	}
 
 	BUILD_HEADER( AI_INFO_UPDATE );
 	ADD_USHORT( objp->net_signature );
@@ -5534,12 +5546,12 @@ void send_ai_info_update_packet( object *objp, char what )
 
 	case AI_UPDATE_DOCK:
 		// for docking ships, add the signature of the ship that we are docked with.
-		Assert( docked_objp != NULL );
-		other_signature = docked_objp->net_signature;
+		Assert( other_objp != NULL );
+		other_signature = other_objp->net_signature;
 
 		// Goober5000 - this is sort of weird, but it's the best way to do it
-		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, docked_objp);
-		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(docked_objp, objp);
+		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, other_objp);
+		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(other_objp, objp);
 
 		ADD_USHORT( other_signature );
 		ADD_DATA( docker_index );
@@ -5548,8 +5560,8 @@ void send_ai_info_update_packet( object *objp, char what )
 
 	case AI_UPDATE_UNDOCK:
 		// same for undocking ships
-		Assert( docked_objp != NULL );
-		other_signature = docked_objp->net_signature;
+		Assert( other_objp != NULL );
+		other_signature = other_objp->net_signature;
 		ADD_USHORT( other_signature );
 
 		break;

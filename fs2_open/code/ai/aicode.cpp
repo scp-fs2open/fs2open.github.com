@@ -4031,22 +4031,6 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 		return;
 	}
 
-	// if this is a multi game, we currently only support one-on-one docking
-	if (Game_mode & GM_MULTIPLAYER)
-	{
-		if (object_is_docked(docker))
-		{
-			Error(LOCATION, "Ship %s tried to dock to more than one object.  Multiplayer currently does not support multiple ship docking.\n", Ships[docker->instance].ship_name);
-			return;
-		}
-
-		if (object_is_docked(dockee))
-		{
-			Error(LOCATION, "Ship %s tried to dock to more than one object.  Multiplayer currently does not support multiple ship docking.\n", Ships[dockee->instance].ship_name);
-			return;
-		}
-	}
-
 	// link the two objects
 	dock_dock_objects(docker, docker_point, dockee, dockee_point);
 
@@ -4075,10 +4059,9 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 		}
 	}
 
-	// add multiplayer hook here to deal with docked objects.  We need to only send information
-	// about the object that is docking.  Both flags will get updated.
+	// add multiplayer hook here to deal with docked objects.  
 	if ( MULTIPLAYER_MASTER && update_clients)
-		send_ai_info_update_packet( docker, AI_UPDATE_DOCK );
+		send_ai_info_update_packet( docker, AI_UPDATE_DOCK, dockee );
 }
 
 // code which is called when objects become undocked. Equivalent of above function.
@@ -4098,7 +4081,7 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 	// do anything else.  We don't need to send info for both objects, since multi
 	// only supports one docked object
 	if ( MULTIPLAYER_MASTER )
-		send_ai_info_update_packet( docker, AI_UPDATE_UNDOCK );
+		send_ai_info_update_packet( docker, AI_UPDATE_UNDOCK, dockee );
 
 	if (docker->type == OBJ_SHIP && dockee->type == OBJ_SHIP)
 	{
