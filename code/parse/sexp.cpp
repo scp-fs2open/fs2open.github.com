@@ -1624,6 +1624,7 @@
 #include "parse/scripting.h"
 #include "object/objcollide.h"
 #include "object/waypoint.h"
+#include "graphics/2d.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -1860,6 +1861,7 @@ sexp_oper Operators[] = {
 	{ "set-afterburner-energy",		OP_SET_AFTERBURNER_ENERGY,		2, INT_MAX },		// Karajorma
 	{ "set-weapon-energy",			OP_SET_WEAPON_ENERGY,			2, INT_MAX },		// Karajorma
 	{ "set-shield-energy",			OP_SET_SHIELD_ENERGY,			2, INT_MAX },		// Karajorma
+	{ "set-ambient-light",			OP_SET_AMBIENT_LIGHT,			3, 3 },				// Karajorma
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -13937,6 +13939,59 @@ void sexp_activate_deactivate_glow_maps(int n, int activate)
 	}
 }
 
+void sexp_set_ambient_light(int node)
+{
+	int red, green, blue; 
+	int level = 0;
+
+	Assert(node > -1);
+	red = eval_num(node); 
+	if (red < 0 || red > 255) {
+		red = 0;
+	}
+
+	node = CDR(node); 
+	Assert(node > -1);
+	green = eval_num(node); 
+	if (green < 0 || green > 255) {
+		green = 0;
+	}
+
+	node = CDR(node); 
+	Assert(node > -1);
+	blue = eval_num(node); 
+	if (blue < 0 || blue > 255) {
+		blue = 0;
+	}
+
+	level |= red; 
+	level |= green << 8;
+	level |= blue << 16;
+
+	// setting the ambient light level for the mission won't actually do anything as it is parsed at mission 
+	// start but it should be updated in case someone changes that later
+	The_mission.ambient_light_level = level; 
+
+	// call the graphics function to actually set the level
+	gr_set_ambient_light(red, green, blue);
+
+	// do the multiplayer callback
+	if (MULTIPLAYER_MASTER) {
+		multi_start_packet();
+		multi_send_int(level);
+		multi_end_packet();
+	}
+}
+
+void multi_sexp_set_ambient_light()
+{
+	int level = 0;
+	if (multi_get_int(level)) {
+		The_mission.ambient_light_level = level;
+		gr_set_ambient_light((level & 0xff),((level >> 8) & 0xff), ((level >> 16) & 0xff));
+	}
+}
+
 // taylor - load and set a skybox model
 void sexp_set_skybox_model(int n)
 {
@@ -18189,6 +18244,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_AMBIENT_LIGHT: 
+				sexp_set_ambient_light(node); 
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_PRIMARY_FIRED_SINCE:
 			case OP_SECONDARY_FIRED_SINCE:
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
@@ -18561,6 +18621,10 @@ void multi_sexp_eval()
 
 			case OP_SET_AFTERBURNER_ENERGY: 
 				multi_sexp_set_energy_pct();
+				break;
+
+			case OP_SET_AMBIENT_LIGHT:
+				multi_sexp_set_ambient_light();
 				break;
 
 			// bad sexp in the packet
@@ -19022,6 +19086,7 @@ int query_operator_return_type(int op)
 		case OP_SET_AFTERBURNER_ENERGY: 
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
+		case OP_SET_AMBIENT_LIGHT:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -20158,6 +20223,10 @@ int query_operator_argument_type(int op, int argnum)
 			else {
 				return OPF_SHIP;
 			}
+			
+		case OP_SET_AMBIENT_LIGHT:
+			return OPF_POSITIVE;
+
 
 		case OP_CHANGE_SUBSYSTEM_NAME:
 			if (argnum == 0) {
@@ -21615,6 +21684,7 @@ int get_subcategory(int sexp_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_SET_AMBIENT_LIGHT:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_HUD_DISABLE:
@@ -23892,11 +23962,19 @@ sexp_help_struct Sexp_help[] = {
 		"\t(rest): Name(s) of ship(s)"
 	},
 
-	{ OP_SET_AFTERBURNER_ENERGY, "set-shield-energy\r\n"
+	{ OP_SET_SHIELD_ENERGY, "set-shield-energy\r\n"
 		"\tSets the shield energy for the specified ship(s)\r\n"
 		"\tTakes 2 or more arguments\r\n"
 		"\t1: percentage of maximum shield energy.\r\n"
 		"\t(rest): Name(s) of ship(s)"
+	},
+
+	{ OP_SET_AMBIENT_LIGHT, "set-ambient-light\r\n"
+		"\tSets the ambient light level for the mission\r\n"
+		"\tTakes 3 arguments\r\n"
+		"\t1: Red (0 - 255).\r\n"
+		"\t2: Green (0 - 255).\r\n"
+		"\t3: Blue (0 - 255)."
 	},
 
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"
