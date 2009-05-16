@@ -2393,7 +2393,7 @@ ADE_VIRTVAR(Value, l_SEXPVariable, "number/string", "SEXP variable value", "stri
 
 	if(ADE_SETTING_VAR && newvalue)
 	{
-		sexp_modify_variable(newvalue, svh->idx);
+		sexp_modify_variable(newvalue, svh->idx, false);
 	}
 
 	if(sv->type && SEXP_VARIABLE_NUMBER)
@@ -8655,7 +8655,7 @@ ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP 
 	{
 		if(ADE_SETTING_VAR && newval != NULL)
 		{
-			sexp_modify_variable(newval, idx);
+			sexp_modify_variable(newval, idx, false);
 		}
 	}
 
