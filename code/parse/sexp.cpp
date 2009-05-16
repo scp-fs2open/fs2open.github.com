@@ -9941,7 +9941,7 @@ void sexp_sabotage_subsystem(int n)
 	int	percentage, shipnum, index, subsys_type;
 	float sabotage_hits;
 	ship	*shipp;
-	ship_subsys *ss, *ss_start;
+	ship_subsys *ss = NULL, *ss_start;
 	bool is_generic, do_loop = true;
 
 	shipname = CTEXT(n);
@@ -10044,7 +10044,7 @@ void sexp_repair_subsystem(int n)
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	float repair_hits;
 	ship *shipp;
-	ship_subsys *ss, *ss_start;
+	ship_subsys *ss = NULL, *ss_start;
 	bool generic, do_loop = true;
 
 	shipname = CTEXT(n);
@@ -10149,7 +10149,7 @@ void sexp_set_subsystem_strength(int n)
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
 	ship *shipp;
-	ship_subsys *ss, *ss_start;
+	ship_subsys *ss = NULL, *ss_start;
 	bool generic_subsys; 
 	bool do_loop = true;
 
@@ -11536,20 +11536,6 @@ void multi_sexp_set_persona()
 	}
 }
 
-/*
-fix time_weapon_last_fired(ship * shipp, int requested_bank) 
-{
-	if (requested_bank < 0 || requested_bank >= MAX_SHIP_SECONDARY_BANKS) {
-		Warning(LOCATION, "time_weapon_last_fired() called for non-existant secondary bank");
-		return 0; 
-	}
-
-	weapon_info * wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
-	
-	return (shipp->weapons.next_secondary_fire_stamp[requested_bank]) - (int)(wip->fire_wait * 1000); 
-}
-*/
-
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
@@ -11557,7 +11543,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 	
 	int requested_bank; 
 	int delay;
-	int last_fired; 
+	int last_fired = -1; 
 
 	shipp = sexp_get_ship_from_node(node); 
 	if (shipp == NULL) {
@@ -12872,9 +12858,6 @@ int sexp_order(int n)
 	char *order_to = CTEXT(n);
 	char *order = CTEXT(CDR(n));
 	char *target = NULL;
-	char *order_from = NULL;
-	char *special = NULL;
-	int timestamp = 0;
 
 	//target
 	n = CDDR(n); 

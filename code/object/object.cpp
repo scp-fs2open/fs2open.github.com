@@ -2447,7 +2447,7 @@ int obj_team(object *objp)
 		case OBJ_GHOST:
 		case OBJ_SHOCKWAVE:		
 		case OBJ_BEAM:
-			nprintf(("Warning","Warning => Asking for a team for object type %d\n", Object_type_names[objp->type]));
+			nprintf(("Warning","Warning => Asking for a team for object type %s\n", Object_type_names[objp->type]));
 			team = -1;
 			break;
 
