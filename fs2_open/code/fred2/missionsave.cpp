@@ -2019,6 +2019,10 @@ int CFred_mission_save::save_objects()
 				fout(" \"hide-ship-name\"");
 			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
 				fout(" \"set-class-dynamically\"");
+			if (Ships[i].flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+				fout(" \"lock-all-turrets\"");
+			if (Ships[i].flags2 & SF2_AFTERBURNER_LOCKED)
+				fout(" \"afterburners-locked\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

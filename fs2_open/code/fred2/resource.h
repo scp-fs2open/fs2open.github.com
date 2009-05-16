@@ -1110,6 +1110,8 @@
 #define IDC_ALT_CLASS_UP                1602
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
+#define IDC_TURRETS_LOCKED              1615
+#define IDC_AFTERBURNER_LOCKED          1616
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1400,9 +1402,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        317
-#define _APS_NEXT_COMMAND_VALUE         33093
-#define _APS_NEXT_CONTROL_VALUE         1605
+#define _APS_NEXT_RESOURCE_VALUE        318
+#define _APS_NEXT_COMMAND_VALUE         33098
+#define _APS_NEXT_CONTROL_VALUE         1617
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

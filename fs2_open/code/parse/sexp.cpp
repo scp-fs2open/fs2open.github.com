@@ -1770,6 +1770,8 @@ sexp_oper Operators[] = {
 	{ "was-promotion-granted",		OP_WAS_PROMOTION_GRANTED,	0, 1,			},
 	{ "was-medal-granted",			OP_WAS_MEDAL_GRANTED,		0, 1,			},
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
+	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
+	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -1781,19 +1783,20 @@ sexp_oper Operators[] = {
 	{ "time-docked",			OP_TIME_DOCKED,				3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
-	{ "cond",					OP_COND,				1, INT_MAX, },
-	{ "when",					OP_WHEN,				2, INT_MAX, },
-	{ "when-argument",			OP_WHEN_ARGUMENT,		3, INT_MAX, },	// Goober5000
-	{ "every-time",				OP_EVERY_TIME,			2, INT_MAX, },	// Goober5000
-	{ "every-time-argument",	OP_EVERY_TIME_ARGUMENT,	3, INT_MAX, },	// Goober5000
-	{ "any-of",					OP_ANY_OF,				1, INT_MAX, },	// Goober5000
-	{ "every-of",				OP_EVERY_OF,			1, INT_MAX, },	// Goober5000
-	{ "random-of",				OP_RANDOM_OF,			1, INT_MAX, },	// Goober5000
-	{ "random-multiple-of",		OP_RANDOM_MULTIPLE_OF,	1, INT_MAX, },	// Karajorma
-	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
-	{ "in-sequence",			OP_IN_SEQUENCE,			1, INT_MAX, },	// Karajorma
-	{ "invalidate-argument",	OP_INVALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
-	{ "validate-argument",		OP_VALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
+	{ "cond",						OP_COND,					1, INT_MAX, },
+	{ "when",						OP_WHEN,					2, INT_MAX, },
+	{ "when-argument",				OP_WHEN_ARGUMENT,			3, INT_MAX, },	// Goober5000
+	{ "every-time",					OP_EVERY_TIME,				2, INT_MAX, },	// Goober5000
+	{ "every-time-argument",		OP_EVERY_TIME_ARGUMENT,		3, INT_MAX, },	// Goober5000
+	{ "any-of",						OP_ANY_OF,					1, INT_MAX, },	// Goober5000
+	{ "every-of",					OP_EVERY_OF,				1, INT_MAX, },	// Goober5000
+	{ "random-of",					OP_RANDOM_OF,				1, INT_MAX, },	// Goober5000
+	{ "random-multiple-of",			OP_RANDOM_MULTIPLE_OF,		1, INT_MAX, },	// Karajorma
+	{ "number-of",					OP_NUMBER_OF,				2, INT_MAX, },	// Goober5000
+	{ "in-sequence",				OP_IN_SEQUENCE,				1, INT_MAX, },	// Karajorma
+	{ "invalidate-argument",		OP_INVALIDATE_ARGUMENT,		1, INT_MAX, },	// Goober5000
+	{ "validate-argument",			OP_VALIDATE_ARGUMENT,		1, INT_MAX, },	// Karajorma
+	{ "do-for-valid-arguments",		OP_DO_FOR_VALID_ARGUMENTS,	1, INT_MAX, },	// Karajorma
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
 	{ "send-message",				OP_SEND_MESSAGE,			3,	3,		},
@@ -4586,6 +4589,28 @@ void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
 	else
 		strcpy(Sexp_string, "( )");
 }
+
+// given a node, returns a pointer to the ship or NULL if this isn't the name of a ship
+ship * sexp_get_ship_from_node(int node)
+{
+	int sindex;
+	ship *shipp = NULL;
+
+	sindex = ship_name_lookup( CTEXT(node) );
+
+	if (sindex < 0) {
+		return shipp;
+	}
+
+	if (Ships[sindex].objnum < 0) {
+		return shipp;
+	}
+
+	shipp = &Ships[sindex]; 
+	return shipp;
+}
+
+
 
 // determine if the named ship or wing hasn't arrived yet (wing or ship must be on arrival list)
 int sexp_query_has_yet_to_arrive(char *name)
@@ -8121,7 +8146,7 @@ int special_argument_appears_in_sexp_list(int node)
 // eval_when evaluates the when conditional
 int eval_when(int n, int use_arguments)
 {
-	int arg_handler, cond, val, actions, exp, op_num;
+	int arg_handler, cond, val, actions, exp, op_num, do_node;
 	arg_item *ptr;
 
 	Assert( n >= 0 );
@@ -8174,6 +8199,19 @@ int eval_when(int n, int use_arguments)
 						}
 						else {
 							eval_sexp(exp);
+						}
+						break;
+
+					case OP_DO_FOR_VALID_ARGUMENTS:
+						if (special_argument_appears_in_sexp_tree(exp)) { 
+							Warning(LOCATION, "<Argument> used within Do-for-valid-arguments SEXP. Skipping entire SEXP"); 
+							break; 
+						}
+
+						do_node = CDR(exp); 
+						while (do_node != -1) {
+							do_action_for_each_special_argument(do_node); 
+							do_node = CDR(do_node); 
 						}
 						break;
 
@@ -11496,6 +11534,78 @@ void multi_sexp_set_persona()
 			shipp->persona_index = persona_index;
 		}
 	}
+}
+
+/*
+fix time_weapon_last_fired(ship * shipp, int requested_bank) 
+{
+	if (requested_bank < 0 || requested_bank >= MAX_SHIP_SECONDARY_BANKS) {
+		Warning(LOCATION, "time_weapon_last_fired() called for non-existant secondary bank");
+		return 0; 
+	}
+
+	weapon_info * wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
+	
+	return (shipp->weapons.next_secondary_fire_stamp[requested_bank]) - (int)(wip->fire_wait * 1000); 
+}
+*/
+
+int sexp_weapon_fired_delay(int node, int op_num)
+{
+	ship *shipp;
+	weapon_info * wip;
+	
+	int requested_bank; 
+	int delay;
+	int last_fired; 
+
+	shipp = sexp_get_ship_from_node(node); 
+	if (shipp == NULL) {
+		return SEXP_FALSE;
+	}
+
+	// Get the bank to check
+	node = CDR(node);
+	requested_bank = eval_num(node);
+	if (requested_bank < 0) {
+		return SEXP_FALSE;
+	}
+
+	// get the delay
+	node = CDR(node);
+	delay = eval_num(node);
+	if (delay <= 0 ) {
+		return SEXP_FALSE; 
+	}
+
+	switch (op_num) {
+		case OP_PRIMARY_FIRED_SINCE: 
+			if (requested_bank >= shipp->weapons.num_primary_banks) {
+				return SEXP_FALSE;
+			}
+			wip = &Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]];
+			last_fired = shipp->weapons.next_primary_fire_stamp[requested_bank] - (int)(wip->fire_wait * 1000);
+			break; 
+
+		case OP_SECONDARY_FIRED_SINCE: 
+			if (requested_bank >= shipp->weapons.num_secondary_banks) {
+				return SEXP_FALSE;
+			}
+			wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
+			last_fired = shipp->weapons.next_secondary_fire_stamp[requested_bank] - (int)(wip->fire_wait * 1000);
+			break; 
+	}
+
+	if (last_fired < 0) {
+		// weapon was never fired
+		return SEXP_FALSE;
+	}
+
+	if (timestamp() - delay < last_fired) {
+		return SEXP_TRUE; 
+	}
+
+	return SEXP_FALSE;
 }
 
 // function to deal with getting status of goals for previous missions (in the current campaign).
@@ -17158,6 +17268,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_DO_FOR_VALID_ARGUMENTS:
+				// do-for-valid-arguments should only ever be called within eval_when()
+				Int3();
+				break;
+
 			// sexpressions with side effects
 			case OP_CHANGE_IFF:
 				sexp_change_iff(node);
@@ -18091,6 +18206,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_PRIMARY_FIRED_SINCE:
+			case OP_SECONDARY_FIRED_SINCE:
+				sexp_val = sexp_weapon_fired_delay(node, op_num); 
+				break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -18623,6 +18743,8 @@ int query_operator_return_type(int op)
 		case OP_NAV_IS_VISITED:
 		case OP_NAV_ISLINKED:
 		case OP_IS_PLAYER:
+		case OP_PRIMARY_FIRED_SINCE:
+		case OP_SECONDARY_FIRED_SINCE:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -18694,6 +18816,7 @@ int query_operator_return_type(int op)
 		case OP_EVERY_TIME_ARGUMENT:
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
+		case OP_DO_FOR_VALID_ARGUMENTS:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
 		case OP_CLEAR_SHIP_GOALS:
@@ -19373,6 +19496,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_NULL;
+			
+		case OP_DO_FOR_VALID_ARGUMENTS:
+			return OPF_NULL;
 
 		case OP_ANY_OF:
 		case OP_EVERY_OF:
@@ -20138,6 +20264,13 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CURRENT_SPEED:
 			return OPF_SHIP_WING;
+			
+		case OP_PRIMARY_FIRED_SINCE:
+		case OP_SECONDARY_FIRED_SINCE:
+			if (argnum == 0) 
+				return OPF_SHIP;
+			else 
+				return OPF_POSITIVE;
 
 		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
@@ -21559,6 +21692,8 @@ int get_subcategory(int sexp_id)
 		case OP_GET_SECONDARY_AMMO:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
+		case OP_PRIMARY_FIRED_SINCE:
+		case OP_SECONDARY_FIRED_SINCE:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -22192,6 +22327,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe arguments to evaluate (see any-of, all-of, random-of, etc.).\r\n"
 		"\t2:\tBoolean expression that must be true for actions to take place.\r\n"
 		"\tRest:\tActions to take when the boolean expression becomes true." },
+
+	// Karajorma
+	{ OP_DO_FOR_VALID_ARGUMENTS, "Do-for-valid-arguments (Conditional operator)\r\n"
+		"\tPerforms specified actions once for each valid " SEXP_ARGUMENT_STRING " in the parent conditional.\r\n"
+		"\tMust not be used for any SEXP that actually contains " SEXP_ARGUMENT_STRING " as these are already being executed\r\n"
+		"\tmultiple times without using Do-for-valid-arguments. Any use of "  SEXP_ARGUMENT_STRING " and will \r\n" 
+		"\tprevent execution of the entire SEXP unless it is nested inside another when(or every-time)-argument SEXP.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tActions to take." },
 
 	// Goober5000
 	{ OP_ANY_OF, "Any-of (Conditional operator)\r\n"
@@ -23867,6 +24011,22 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_CURRENT_SPEED, "current-speed\r\n"
 		"\tReturns the speed of the given object. Takes 1 argument...\r\n"
 		"\t1:\tHUD gauge to be modified"
+	},
+
+	// Karajora
+	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
+		"\tReturns true if the primary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tWeapon bank number\r\n"
+		"\t3:\tDelay (in millieconds)\r\n"
+	},
+
+	// Karajora
+	{ OP_SECONDARY_FIRED_SINCE, "primary-fired-since\r\n"
+		"\tReturns true if the primary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tWeapon bank number\r\n"
+		"\t3:\tDelay (in millieconds)\r\n"
 	},
 
 	//phreak
