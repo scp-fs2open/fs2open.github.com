@@ -1786,7 +1786,7 @@ void flush_sexp_tree(int node);
 
 // sexp_variable
 void sexp_modify_variable(int);
-void sexp_modify_variable(char *text, int index);
+void sexp_modify_variable(char *text, int index, bool sexp_callback = true);
 int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *temp_name);
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000

@@ -2215,6 +2215,7 @@ bool is_blank_of_op(int op_const);
 //Karajorma
 bool is_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
+void multi_sexp_modify_variable();
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
@@ -18627,6 +18628,10 @@ void multi_sexp_eval()
 				multi_sexp_set_ambient_light();
 				break;
 
+			case OP_MODIFY_VARIABLE:
+				multi_sexp_modify_variable();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -21113,7 +21118,7 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 
 // Modifies and Sexp_variable to be used in a mission
 // This should be called in mission when an sexp_variable is to be modified
-void sexp_modify_variable(char *text, int index)
+void sexp_modify_variable(char *text, int index, bool sexp_callback)
 {
 	Assert(index >= 0 && index < MAX_SEXP_VARIABLES);
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
@@ -21123,11 +21128,34 @@ void sexp_modify_variable(char *text, int index)
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
 	// do multi_callback_here
-	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK))
-	{
+	// if we're called from the sexp code send a SEXP packet (more efficient) 
+	if( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) && sexp_callback) {
+		multi_start_packet();
+		multi_send_int(index);
+		multi_send_string(Sexp_variables[index].text);
+		multi_end_packet();
+	}
+	// otherwise send a SEXP variable packet
+	else if ( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
 		send_variable_update_packet(index, Sexp_variables[index].text);
 	}
+}
+
+void multi_sexp_modify_variable()
+{
+	char value[TOKEN_LENGTH];
+	int variable_index = -1;
+
+	// get the data
+	multi_get_int(variable_index);
+	if (!multi_get_string(value)) {
+		return;
+	}
+
+	// set the sexp_variable
+	if ( (variable_index >= 0) && (variable_index < sexp_variable_count()) ) {
+		strcpy(Sexp_variables[variable_index].text, value); 
+	}	
 }
 
 void sexp_modify_variable(int n)
