@@ -85,7 +85,7 @@ void multi_end_packet()
 
 	//write TERMINATOR into the Type and data buffers
 	type[packet_size] = TYPE_DATA_TERMINATES; 
-	byte b = -1; 
+	byte b = (byte)-1; 
 	ADD_DATA(b); 
 
 	//Write the COUNT into the data buffer at the index we saved earlier.
