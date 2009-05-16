@@ -1180,7 +1180,8 @@ typedef	struct ship_subsys {
 	int		turret_animation_done_time;
 
 	// swarm (rapid fire) info
-	int		turret_swarm_info_index;	
+	int		turret_swarm_info_index[MAX_TFP];	
+	int		turret_swarm_num;	
 
 	// awacs info
 	float		awacs_intensity;

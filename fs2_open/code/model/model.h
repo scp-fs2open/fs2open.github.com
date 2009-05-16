@@ -766,6 +766,12 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
 #define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
 #define MSS_FLAG_TURRET_HULL_CHECK	(1 << 12)		// makes the turret check to see if it's going to shoot through it's own hull before fireing - Bobboau
+#define MSS_FLAG_TURRET_FIXED_FP	(1 << 13)		// forces turret (when defined with multiple weapons) to prevent the firepoints from alternating
+#define MSS_FLAG_TURRET_SALVO		(1 << 14)		// forces turret to fire salvos (all guns simultaneously) - independent targeting
+#define MSS_FLAG_FIRE_ON_TARGET		(1 << 15)		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
+#define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
+#define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
+#define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
