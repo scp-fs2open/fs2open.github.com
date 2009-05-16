@@ -21539,7 +21539,64 @@ int get_subcategory(int sexp_id)
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 			return CHANGE_SUBCATEGORY_JUMP_NODES;
+
+		case OP_NUM_PLAYERS:
+		case OP_TEAM_SCORE:
+		case OP_SHIP_DEATHS:
+		case OP_RESPAWNS_LEFT:
+		case OP_IS_PLAYER:
+			return STATUS_SUBCATEGORY_MULTIPLAYER;
+
+		case OP_SHIELD_RECHARGE_PCT:
+		case OP_ENGINE_RECHARGE_PCT:
+		case OP_WEAPON_RECHARGE_PCT:
+		case OP_SHIELD_QUAD_LOW:
+		case OP_PRIMARY_AMMO_PCT:
+		case OP_SECONDARY_AMMO_PCT:
+		case OP_IS_PRIMARY_SELECTED:
+		case OP_IS_SECONDARY_SELECTED:
+		case OP_GET_PRIMARY_AMMO:
+		case OP_GET_SECONDARY_AMMO:
+		case OP_AFTERBURNER_LEFT:
+		case OP_WEAPON_ENERGY_LEFT:
+			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
+			
+		case OP_CARGO_KNOWN_DELAY:
+		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
+		case OP_IS_CARGO:
+			return STATUS_SUBCATEGORY_CARGO;
+			
+		case OP_HAS_BEEN_TAGGED_DELAY:
+		case OP_IS_TAGGED:
+		case OP_IS_SHIP_VISIBLE:
+		case OP_IS_SHIP_STEALTHY:
+		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
+			return STATUS_SUBCATEGORY_SHIP_STATUS;
+			
+		case OP_SHIELDS_LEFT:
+		case OP_HITS_LEFT:
+		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_SIM_HITS_LEFT:
+		case OP_GET_DAMAGE_CAUSED:
+			return STATUS_SUBCATEGORY_DAMAGE;
 		
+		case OP_DISTANCE:
+		case OP_DISTANCE_SUBSYSTEM:
+		case OP_GET_OBJECT_X:
+		case OP_GET_OBJECT_Y:
+		case OP_GET_OBJECT_Z:
+		case OP_NUM_WITHIN_BOX:
+			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
+			
+		case OP_WAS_PROMOTION_GRANTED:
+		case OP_WAS_MEDAL_GRANTED:
+		case OP_NUM_KILLS:
+		case OP_NUM_ASSISTS:
+		case OP_NUM_TYPE_KILLS:
+		case OP_NUM_CLASS_KILLS:
+		case OP_SHIP_SCORE:
+			return STATUS_SUBCATEGORY_KILLS_AND_SCORING;
+
 		default:
 			return -1;		// sexp doesn't have a subcategory
 	}
@@ -24134,6 +24191,13 @@ op_menu_struct op_submenu[] =
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
 	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
 	{	"Backgrounds and Nebula",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},
+	{	"Multiplayer",					STATUS_SUBCATEGORY_MULTIPLAYER						},
+	{	"Shields, Engines and Weapons",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
+	{	"Cargo",						STATUS_SUBCATEGORY_CARGO							},
+	{	"Ship Status",					STATUS_SUBCATEGORY_SHIP_STATUS						},
+	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
+	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
+	{	"Kills and Scoring",			STATUS_SUBCATEGORY_KILLS_AND_SCORING				},
 };
 int Num_sexp_help = sizeof(Sexp_help) / sizeof(sexp_help_struct);
 int Num_op_menus = sizeof(op_menu) / sizeof(op_menu_struct);
