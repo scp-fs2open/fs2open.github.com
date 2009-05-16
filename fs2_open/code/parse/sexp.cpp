@@ -2200,6 +2200,7 @@ int eval_num(int node);
 
 std::vector<char*> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
+std::vector<char*> Applicable_arguments_temp;
 
 // Goober5000
 arg_item Sexp_applicable_argument_list;
@@ -8263,6 +8264,7 @@ int test_argument_list_for_condition(int n, int condition_node, int *num_true, i
 
 	// ensure special argument list is empty
 	Sexp_applicable_argument_list.clear_nesting_level();
+	Applicable_arguments_temp.clear();
 
 	// ditto for counters
 	num_valid_arguments = 0;
@@ -8288,7 +8290,7 @@ int test_argument_list_for_condition(int n, int condition_node, int *num_true, i
 			{
 				case SEXP_TRUE:
 					(*num_true)++;
-					Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+					Applicable_arguments_temp.push_back(Sexp_nodes[n].text);
 					break;
 
 				case SEXP_FALSE:
@@ -8297,7 +8299,7 @@ int test_argument_list_for_condition(int n, int condition_node, int *num_true, i
 
 				case SEXP_KNOWN_TRUE:
 					(*num_known_true)++;
-					Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+					Applicable_arguments_temp.push_back(Sexp_nodes[n].text);
 					break;
 
 				case SEXP_KNOWN_FALSE:
@@ -8314,6 +8316,13 @@ int test_argument_list_for_condition(int n, int condition_node, int *num_true, i
 
 		// continue along argument list
 		n = CDR(n);
+	}
+
+	// now we write from the temporary store into the real one, reversing the order. We do this because 
+	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
+	while(!Applicable_arguments_temp.empty()) {
+		Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
+		Applicable_arguments_temp.pop_back(); 
 	}
 
 	return num_valid_arguments;
