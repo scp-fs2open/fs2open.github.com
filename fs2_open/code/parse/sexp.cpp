@@ -1630,6 +1630,7 @@
 #endif
 
 #include "autopilot/autopilot.h"
+#include "object/objectshield.h"
 #include "network/multi_sexp.h"
 
 
@@ -1853,6 +1854,9 @@ sexp_oper Operators[] = {
 	{ "change-subsystem-name",		OP_CHANGE_SUBSYSTEM_NAME,		3, INT_MAX },		// Karajorma
 	{ "lock-afterburner",			OP_LOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
 	{ "unlock-afterburner",			OP_UNLOCK_AFTERBURNER,			1, INT_MAX },		// KeldorKatarn
+	{ "set-afterburner-energy",		OP_SET_AFTERBURNER_ENERGY,		2, INT_MAX },		// Karajorma
+	{ "set-weapon-energy",			OP_SET_WEAPON_ENERGY,			2, INT_MAX },		// Karajorma
+	{ "set-shield-energy",			OP_SET_SHIELD_ENERGY,			2, INT_MAX },		// Karajorma
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -6103,6 +6107,110 @@ int sexp_time_wing_departed(int n)
 
 	return f2i(time);
 }
+
+void sexp_set_energy_pct (int node, int op_num)
+{
+	int sindex;
+	float new_pct; 
+	char *shipname;
+	ship * shipp; 
+	ship_info * sip; 
+
+	Assert (node > -1);
+	new_pct = eval_num(node) / 100.0f;
+
+	// deal with ridiculous percentages
+	if (new_pct > 1.0f) {
+		new_pct = 1.0f;
+	}
+	else if (new_pct < 0.0f) {
+		new_pct = 0.0f; 
+	}
+	
+	// only need to send a packet for afterburners because shields and weapon energy are sent from server to clients
+	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
+		multi_start_packet();
+		multi_send_float(new_pct); 
+	}
+
+	node = CDR(node); 
+
+	while (node > -1) {
+		// get the ship
+		shipname = CTEXT(node);
+
+		sindex = ship_name_lookup( shipname );
+		if ( sindex == -1 ){					// hmm.. if true, must not have arrived yet
+			continue;
+		}
+		
+		shipp = &Ships[sindex]; 
+		sip = &Ship_info[Ships[sindex].ship_info_index]; 
+
+		switch (op_num) {
+			case OP_SET_AFTERBURNER_ENERGY:
+				shipp->afterburner_fuel = sip->afterburner_fuel_capacity * new_pct; 
+				break;
+
+			case OP_SET_WEAPON_ENERGY:
+				if (!(ship_has_energy_weapons(shipp)) ) {
+					node = CDR(node); 
+					continue;
+				}
+				
+				shipp->weapon_energy = sip->max_weapon_reserve * new_pct;
+				break; 
+
+			case OP_SET_SHIELD_ENERGY:
+				if (shipp->ship_max_shield_strength == 0.0f) {
+					node = CDR(node); 
+					continue;
+				}	
+
+				shield_set_strength(&Objects[shipp->objnum], (shipp->ship_max_shield_strength * new_pct));
+				break;
+		}
+
+		if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
+			multi_send_ship(shipp); 
+		}
+
+		node = CDR(node); 
+	}
+
+	if (MULTIPLAYER_MASTER && (op_num == OP_SET_AFTERBURNER_ENERGY)) {
+		multi_end_packet(); 
+	}
+}
+
+void multi_sexp_set_energy_pct() 
+{
+	ship *shipp; 
+	float new_pct; 
+	ship_info * sip; 
+
+	int op_num = multi_sexp_get_operator(); 
+
+	multi_get_float(new_pct); 
+	while (multi_get_ship(shipp)) {
+		sip = &Ship_info[shipp->ship_info_index]; 
+
+		switch (op_num) {
+			case OP_SET_AFTERBURNER_ENERGY:
+				shipp->afterburner_fuel = sip->afterburner_fuel_capacity * new_pct; 
+				break;
+
+			case OP_SET_WEAPON_ENERGY:
+				shipp->weapon_energy = sip->max_weapon_reserve * new_pct;
+				break; 
+
+			case OP_SET_SHIELD_ENERGY:
+				shield_set_strength(&Objects[shipp->objnum], (shipp->ship_max_shield_strength * new_pct));
+				break;
+		}
+	}
+}
+
 
 int sexp_get_energy_pct (int node, int op_num)
 {
@@ -17967,6 +18075,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_AFTERBURNER_ENERGY: 
+			case OP_SET_WEAPON_ENERGY:
+			case OP_SET_SHIELD_ENERGY:
+				sexp_set_energy_pct(node, op_num);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -18330,6 +18445,10 @@ void multi_sexp_eval()
 			case OP_LOCK_SECONDARY_WEAPON:
 			case OP_UNLOCK_SECONDARY_WEAPON:
 				multi_sexp_deal_with_ship_flag();
+				break;
+
+			case OP_SET_AFTERBURNER_ENERGY: 
+				multi_sexp_set_energy_pct();
 				break;
 
 			// bad sexp in the packet
@@ -18785,6 +18904,9 @@ int query_operator_return_type(int op)
 		case OP_SET_PERSONA:
 		case OP_CHANGE_SUBSYSTEM_NAME:
 		case OP_SET_RESPAWNS:
+		case OP_SET_AFTERBURNER_ENERGY: 
+		case OP_SET_WEAPON_ENERGY:
+		case OP_SET_SHIELD_ENERGY:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -19907,6 +20029,17 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_LOCK_AFTERBURNER:
 		case OP_UNLOCK_AFTERBURNER:
 			return OPF_SHIP;
+
+		
+		case OP_SET_AFTERBURNER_ENERGY: 
+		case OP_SET_WEAPON_ENERGY:
+		case OP_SET_SHIELD_ENERGY:
+			if (argnum == 0) {
+				return OPF_POSITIVE;
+			}
+			else {
+				return OPF_SHIP;
+			}
 
 		case OP_CHANGE_SUBSYSTEM_NAME:
 			if (argnum == 0) {
@@ -21238,6 +21371,9 @@ int get_subcategory(int sexp_id)
 		case OP_CHANGE_SUBSYSTEM_NAME:
 		case OP_LOCK_AFTERBURNER:	// KeldorKatarn
 		case OP_UNLOCK_AFTERBURNER:	// KeldorKatarn
+		case OP_SET_AFTERBURNER_ENERGY: 
+		case OP_SET_WEAPON_ENERGY:
+		case OP_SET_SHIELD_ENERGY:
 
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -23549,6 +23685,27 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	// Karajorma
+	{ OP_SET_AFTERBURNER_ENERGY, "set-afterburner-energy\r\n"
+		"\tSets the afterburner energy for the specified ship(s)\r\n"
+		"\tTakes 2 or more arguments\r\n"
+		"\t1: percentage of maximum afterburner energy.\r\n"
+		"\t(rest): Name(s) of ship(s)"
+	},
+
+	{ OP_SET_WEAPON_ENERGY, "set-weapon-energy\r\n"
+		"\tSets the weapon energy for the specified ship(s)\r\n"
+		"\tTakes 2 or more arguments\r\n"
+		"\t1: percentage of maximum weapon energy.\r\n"
+		"\t(rest): Name(s) of ship(s)"
+	},
+
+	{ OP_SET_AFTERBURNER_ENERGY, "set-shield-energy\r\n"
+		"\tSets the shield energy for the specified ship(s)\r\n"
+		"\tTakes 2 or more arguments\r\n"
+		"\t1: percentage of maximum shield energy.\r\n"
+		"\t(rest): Name(s) of ship(s)"
+	},
+
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"
 		"\tChanges the name of the specified subsystem on the specified ship\r\n"
 		"\tTakes 3 or more arguments\r\n"
