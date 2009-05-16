@@ -2315,7 +2315,6 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 			if(Game_mode & GM_DEMO_RECORD){
 				demo_POST_unique_message(id, who_from, m_source, priority);
 			}
-			// }
 
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){

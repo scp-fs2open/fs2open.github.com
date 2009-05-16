@@ -3039,8 +3039,6 @@ void generate_weaponry_usage_list(int team, int *arr)
 {
 	int i;
 
-; 
-
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
 		arr[i] = 0;
 	 

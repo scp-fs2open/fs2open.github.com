@@ -944,7 +944,7 @@ int player_start_editor::GetSelectedWeaponListIndex()
 	if((selected != -1) && m_weapon_list.GetCheck(selected))
 	{
 		// lookup the weapon
-		m_weapon_list.GetText(m_ship_list.GetCurSel(), name);
+		m_weapon_list.GetText(m_weapon_list.GetCurSel(), name);
 		int weapon_index = weapon_info_lookup(name);
 		return weapon_index;
 	}

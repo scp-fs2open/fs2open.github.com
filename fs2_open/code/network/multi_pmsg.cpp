@@ -475,29 +475,6 @@ int multi_msg_matches_expr(net_player *np,char *expr)
 	}
 
 	return stricmp(expr, np->m_player->callsign) ? 0 : 1 ; 
-	/*
-	char callsign[CALLSIGN_LEN+1];
-	int len,idx;
-
-
-	// get the completely lowercase callsign
-	memset(callsign,0,CALLSIGN_LEN+1);
-	len = strlen(np->m_player->callsign);
-	for(idx=0;idx<len;idx++){
-		callsign[idx] = (char)tolower(np->m_player->callsign[idx]);
-	}
-
-	// see if this guy's callsign matches the expr
-	len = strlen(expr);
-	for(idx=0;idx<len;idx++){
-		// look for non-matching characters
-		if(callsign[idx] != (char)tolower(expr[idx])){
-			return 0;
-		}
-	}
-				
-	// matches
-	return 1;*/
 }
 
 // if text input mode is active, clear it

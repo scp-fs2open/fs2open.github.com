@@ -2010,15 +2010,6 @@ void parse_player_info2(mission *pm)
 		if (ptr->default_ship == -1)  // invalid or not specified, make first in list
 			ptr->default_ship = ptr->ship_list[0];
 
-		/*
-		for (i=0; i<MAX_WEAPON_TYPES; i++) {
-			ptr->weaponry_pool[i] = 0;
-			ptr->weaponry_amount_variable[i] = -1;
-			ptr->weaponry_pool_variable[i] = -1;
-		}
-		*/
-			
-
 		required_string("+Weaponry Pool:");
 		total = stuff_loadout_list(list2, MAX_WEAPON_TYPES * 4, MISSION_LOADOUT_WEAPON_LIST);
 
@@ -3325,7 +3316,8 @@ int parse_create_object_sub(p_object *p_objp)
 			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts
-		if (!(Game_mode & GM_IN_MISSION))
+		//WMC - Make it apply for ships with IN_PLACE_ANIM type
+		if (!(Game_mode & GM_IN_MISSION) || sip->warpin_type == WT_IN_PLACE_ANIM)
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
@@ -4353,7 +4345,7 @@ bool is_ship_assignable(p_object *p_objp)
 	}
 
 	// Now we check the alt_classes (if there are any)
-	for (i = 0; i <p_objp->alt_classes.size(); i++) {
+	for (i = 0; i < (int)p_objp->alt_classes.size(); i++) {
 		// we don't check availability unless we are asked to
 		if (p_objp->alt_classes[i].default_to_this_class == false) {
 			loadout_index = p_objp->alt_classes[i].ship_class;
@@ -4387,7 +4379,7 @@ void process_loadout_objects()
 	std::vector<int> reassignments;
 	
 	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
-	for (int i=0; i < Parse_objects.size(); i++)
+	for (int i=0; i < (int)Parse_objects.size(); i++)
 	{
 		p_object *p_objp = &Parse_objects[i];
 		if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
@@ -4402,7 +4394,7 @@ void process_loadout_objects()
 		
 	// Now we go though the ships we were unable to assign earlier and reassign them on a first come first 
 	// served basis.
-	for (int m=0; m < reassignments.size(); m++)
+	for (int m=0; m < (int)reassignments.size(); m++)
 	{
 		p_object *p_objp = &Parse_objects[reassignments[m]];
 		team_data *current_team = &Team_data[p_objp->team];
