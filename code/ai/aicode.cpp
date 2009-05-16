@@ -13253,8 +13253,10 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	float t = ai_endangered_by_weapon(aip);
 	if ((t > 0.0f) && (t < 1.0f)) {
 	// Check if this weapon is from a large ship Pl_objp is attacking... if so, enter strafe mode
-		if ( ai_big_maybe_enter_strafe_mode(Pl_objp, aip->danger_weapon_objnum) ) {
-			return;
+		if ( !(aip->ai_flags & AIF_NO_DYNAMIC) ) {
+			if ( ai_big_maybe_enter_strafe_mode(Pl_objp, aip->danger_weapon_objnum) ) {
+				return;
+			}
 		}
 
 		switch (aip->mode) {
@@ -15844,7 +15846,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		if (aip->submode == SM_ATTACK_FOREVER)
 			return;
 
-		if ( hit_objp->type == OBJ_WEAPON ) {
+		if ( (hit_objp->type == OBJ_WEAPON) && !(aip->ai_flags & AIF_NO_DYNAMIC) ) {
 			if ( ai_big_maybe_enter_strafe_mode(objp_ship, OBJ_INDEX(hit_objp), 1) )
 				return;
 		}
