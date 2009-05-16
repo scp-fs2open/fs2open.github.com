@@ -2500,7 +2500,10 @@ flag_def_list Subsystem_flags[] = {
 	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE,	0 },
 	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
 	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 },
-	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK,	0 }
+	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK,	0 },
+	{ "fixed firingpoints",	MSS_FLAG_TURRET_FIXED_FP,	0 },
+	{ "salvo mode",			MSS_FLAG_TURRET_SALVO,		0 },
+	{ "no subsystem targeting", MSS_FLAG_NO_SS_TARGETING, 0},
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -4737,6 +4740,11 @@ strcpy(parse_error_text, temp_error);
 				old_flags = true;
 			}
 
+			if ((sp->flags & MSS_FLAG_TURRET_FIXED_FP) && !(sp->flags & MSS_FLAG_USE_MULTIPLE_GUNS)) {
+				Warning(LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag on a subsystem on ship %s.\n\"use multiple guns\" flags added by default\n", sip->name);
+				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+			}
+
 			if (old_flags) {
 			/*	Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
@@ -6462,6 +6470,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->time_subsys_cargo_revealed = 0;
 		
 		j = 0;
+		int number_of_weapons = 0;
+
 		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++){
 			if (model_system->primary_banks[k] != -1) {
 				ship_system->weapons.primary_bank_weapons[j] = model_system->primary_banks[k];
@@ -6471,6 +6481,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		ship_system->weapons.num_primary_banks = j;
+		number_of_weapons += j;
 
 		j = 0;
 		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++){
@@ -6482,9 +6493,59 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		ship_system->weapons.num_secondary_banks = j;
+		number_of_weapons += j;
 		ship_system->weapons.current_primary_bank = -1;
 		ship_system->weapons.current_secondary_bank = -1;
 		
+		// Make turret flag checks and warnings
+
+		
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP))
+		{
+			Warning (LOCATION, "\"salvo mode\" flag used with \"fixed firingpoints\" flag\nsubsystem '%s' on ship type '%s'.\n\"salvo mode\" flag is ignored\n", model_system->subobj_name, sinfo->name );
+			ship_system->system_info->flags &= (~MSS_FLAG_TURRET_SALVO);
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (model_system->turret_num_firing_points < 2))
+		{
+			Warning (LOCATION, "\"salvo mode\" flag used with turret which has less than two firingpoints\nsubsystem '%s' on ship type '%s'.\n\"salvo mode\" flag is ignored\n", model_system->subobj_name, sinfo->name );
+			ship_system->system_info->flags &= (~MSS_FLAG_TURRET_SALVO);
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && (model_system->turret_num_firing_points < 2))
+		{
+			Warning (LOCATION, "\"fixed firingpoints\" flag used with turret which has less than two firingpoints\nsubsystem '%s' on ship type '%s'.\n\"fixed firingpoints\" flag is ignored\n", model_system->subobj_name, sinfo->name );
+			ship_system->system_info->flags &= (~MSS_FLAG_TURRET_FIXED_FP);
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+		{
+			Warning (LOCATION, "\"salvo mode\" flag used with \"use multiple guns\" flag\nsubsystem '%s' on ship type '%s'.\n\"use multiple guns\" flag is ignored\n", model_system->subobj_name, sinfo->name );
+			ship_system->system_info->flags &= (~MSS_FLAG_USE_MULTIPLE_GUNS);
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && !(ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+		{
+			Warning (LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag\nsubsystem '%s' on ship type '%s'.\n\"use multiple guns\" guns added by default\n", model_system->subobj_name, sinfo->name );
+			ship_system->system_info->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (number_of_weapons > 1))
+		{
+			Warning (LOCATION, "\"salvo mode\" flag used with turret which has more than one weapon defined for it\nsubsystem '%s' on ship type '%s'.\nonly single weapon will be used\n", model_system->subobj_name, sinfo->name );
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && (number_of_weapons > model_system->turret_num_firing_points))
+		{
+			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has more weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nweapons will share firingpoints\n", model_system->subobj_name, sinfo->name );
+		}
+
+		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && (number_of_weapons < model_system->turret_num_firing_points))
+		{
+			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name );
+		}
+
+
 		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++) {
 			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k]);
 
@@ -6503,7 +6564,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->weapons.ai_class = sinfo->ai_class;  // assume ai class of ship for turret
 
 		// rapid fire (swarm) stuff
-		ship_system->turret_swarm_info_index = -1;
+		for (k = 0; k < MAX_TFP; k++)
+			ship_system->turret_swarm_info_index[k] = -1;
+
+		ship_system->turret_swarm_num;
 
 		// AWACS stuff
 		ship_system->awacs_intensity = model_system->awacs_intensity;

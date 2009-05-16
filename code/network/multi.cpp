@@ -2151,6 +2151,7 @@ void multi_display_netinfo()
 		return;
 	}
 
+
 	// HUD is turned off
 	if (!HUD_draw) {
 		return;
