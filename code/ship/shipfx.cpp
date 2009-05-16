@@ -1439,7 +1439,9 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	*warp_time = shipfx_calculate_warp_time(objp, WD_WARP_OUT);
 
 	// Calculate speed to fly through
-	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
+	//*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
+	//WMC - use the function
+	*speed = ship_get_warpout_speed(objp);
 	
 	// increase time, because we have extra distance to cover
 	*warp_time += dist_to_plane / *speed;
@@ -1471,7 +1473,9 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 	*warp_time = shipfx_calculate_warp_time(objp, WD_WARP_OUT);
 
 	// Pick some speed at which we want to go through the warp effect.  
-	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
+	//*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
+	//WMC - Use the function
+	*speed = ship_get_warpout_speed(objp);
 
 	if ( objp == Player_obj )	{
 		// Goober5000 - cap at 65
@@ -1484,7 +1488,8 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 	else
 	{
 		polymodel *pm = model_get(sip->model_num);
-		vm_vec_add(&center_pos,&objp->pos,&pm->autocenter);
+		vm_vec_unrotate(&center_pos, &pm->autocenter, &objp->orient);
+		vm_vec_add2(&center_pos,&objp->pos);
 	}
 
 
@@ -2323,19 +2328,13 @@ void shipfx_emit_spark( int n, int sn )
     //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
 	
-	if ( ((shipp->flags & SF_ARRIVING) && (shipp->warpin_effect != NULL))
-		|| ((shipp->flags & SF_DEPART_WARP) && (shipp->warpout_effect != NULL)) )
+	if ((shipp->flags & (SF_ARRIVING|SF_DEPART_WARP)) && (shipp->warpout_effect))
     {
         vec3d warp_pnt, tmp;
         matrix warp_orient;
 
-		if (shipp->flags & SF_ARRIVING) {
-			shipp->warpin_effect->getWarpPosition(&warp_pnt);
-			shipp->warpin_effect->getWarpOrientation(&warp_orient);
-		} else {
-			shipp->warpout_effect->getWarpPosition(&warp_pnt);
-			shipp->warpout_effect->getWarpOrientation(&warp_orient);
-		}
+        shipp->warpout_effect->getWarpPosition(&warp_pnt);
+        shipp->warpout_effect->getWarpOrientation(&warp_orient);
 
         vm_vec_sub( &tmp, &outpnt, &warp_pnt );
         
@@ -4278,9 +4277,19 @@ bool WarpEffect::isValid()
 	return true;
 }
 
+void WarpEffect::pageIn()
+{
+}
+void WarpEffect::pageOut()
+{
+}
+
 int WarpEffect::warpStart()
 {
-	return 0;
+	if(!this->isValid())
+		return 0;
+
+	return 1;
 }
 
 int WarpEffect::warpFrame(float frametime)
@@ -4638,53 +4647,188 @@ int WE_Default::getWarpOrientation(matrix* output)
 WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	:WarpEffect(n_objp, n_direction)
 {
-	//Set radius
-	anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, 1);
+	//Zero animation and such
+	anim = shockwave = -1;
+	anim_fps = shockwave_fps = 0;
+	anim_nframes = shockwave_nframes = 0;
+	anim_total_time = shockwave_total_time = 0;
 
-	int total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
-	stage = 0;
-	stage_duration[0] = 0;
-	stage_duration[1] = sip->warpin_time;
-	stage_duration[2] = total_time - sip->warpin_time;
-
-	batcher.allocate(1);
-	radius_full = 0.0f;
+	//Setup anim name
+	char tmp_name[MAX_FILENAME_LEN];
+	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	if(direction == WD_WARP_IN)
-		radius_full = sip->warpin_radius;
+		strncpy(tmp_name, sip->warpin_anim, MAX_FILENAME_LEN-1);
 	else if(direction == WD_WARP_OUT)
-		radius_full = sip->warpout_radius;
-	if(radius_full <= 0.0f)
-		radius_full = objp->radius;
+		strncpy(tmp_name, sip->warpout_anim, MAX_FILENAME_LEN-1);
+	strlwr(tmp_name);
 
+	if(strlen(tmp_name))
+	{
+		//Load anim
+		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, 1);
+		if(anim > -1)
+		{
+			anim_total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
+		}
+
+		//Setup shockwave name
+		strncat(tmp_name, "-shockwave", MAX_FILENAME_LEN-1);
+
+		//Load shockwave
+		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, 1);
+		if(shockwave > -1)
+		{
+			shockwave_total_time = fl2i(((float)shockwave_nframes / (float)shockwave_fps) * 1000.0f);
+		}
+	}
+	//Set radius
+	tube_radius = 0.0f;
+	if(direction == WD_WARP_IN)
+		tube_radius = sip->warpin_radius;
+	else
+		tube_radius = sip->warpout_radius;
+
+	polymodel *pm = model_get(sip->model_num);
+	if(pm == NULL)
+	{
+		autocenter = vmd_zero_vector;
+		z_offset_max = objp->radius;
+		z_offset_min = -objp->radius;
+
+		if(tube_radius <= 0.0f)
+			tube_radius = objp->radius;
+	}
+	else
+	{
+		//Autogenerate everything from ship dimensions
+		if(tube_radius <= 0.0f)
+			tube_radius = MAX((pm->maxs.xyz.y - pm->mins.xyz.y), (pm->maxs.xyz.x - pm->mins.xyz.x))/2.0f;
+		autocenter = pm->autocenter;
+		z_offset_max = pm->maxs.xyz.z - pm->autocenter.xyz.z;
+		z_offset_min = pm->mins.xyz.z - pm->autocenter.xyz.z;
+	}
+
+	//*****Timing
+	stage = -1;
+	if(direction == WD_WARP_IN)
+	{
+		stage_duration[0] = sip->warpin_time;
+		stage_duration[1] = MAX(anim_total_time - sip->warpin_time, shockwave_total_time);
+	}
+	else
+	{
+		stage_duration[0] = sip->warpout_time;
+		stage_duration[1] = MAX(anim_total_time - sip->warpout_time, shockwave_total_time);
+	}
 	stage_time_start = stage_time_end = total_time_start = total_time_end = timestamp();
+
+	//*****Graphics
+	batcher.allocate(1);
+
+	//*****Sound
+	snd_range_factor = 1.0f;
+	snd_start = snd_end = -1;
+	snd_start_gs = snd_end_gs = NULL;
+
+	//*****Instance
+	pos = vmd_zero_vector;
 }
 
 WE_BTRL::~WE_BTRL()
 {
 	if(anim > -1)
 		bm_unload(anim);
+	if(shockwave > -1)
+		bm_unload(shockwave);
+}
+
+void WE_BTRL::pageIn()
+{
+	if(anim > -1)
+		bm_page_in_texture(anim);
+	if(shockwave > -1)
+		bm_page_in_texture(shockwave);
 }
 
 int WE_BTRL::warpStart()
 {
-	if(!this->isValid())
+	if(!WarpEffect::warpStart())
 		return 0;
 
 	//WMC - bail
-	if (anim < 0)
+	if (anim < 0 && shockwave < 0)
 	{
 		this->warpEnd();
 		return 0;
 	}
 
-	stage = 1;
-	total_time_start = timestamp();
-	int total_duration = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
-	total_time_end = timestamp(total_duration);
-	stage_time_start = total_time_start;
-	stage_time_end = timestamp(stage_duration[1]);
+	//WMC - If object is docked now, update data:
+	if(object_is_docked(objp))
+	{
+		z_offset_max = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+		z_offset_min = -z_offset_max;
+		if(tube_radius <= 0.0f)
+		{
+			float x_radius = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, X_AXIS);
+			float y_radius = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Y_AXIS);
+			tube_radius = MAX(x_radius, y_radius);
+		}
 
-	shipp->flags |= SF_ARRIVING_STAGE_1;
+		vec3d dock_center;
+		dock_calc_docked_center(&dock_center, objp);
+		vm_vec_sub(&autocenter, &dock_center, &objp->pos);
+	}
+
+	if(direction == WD_WARP_IN)
+		shipp->flags |= SF_ARRIVING_STAGE_1;
+	else
+		shipp->flags |= SF_DEPART_WARP;
+
+	//*****Sound
+	int gs_start_index = -1;
+	int gs_end_index = -1;
+	if(direction == WD_WARP_IN)
+	{
+		shipp->flags |= SF_ARRIVING_STAGE_1;
+		gs_start_index = sip->warpin_snd_start;
+		gs_end_index = sip->warpin_snd_end;
+	}
+	else if(direction == WD_WARP_OUT)
+	{
+		shipp->flags |= SF_DEPART_WARP;
+		gs_start_index = sip->warpout_snd_start;
+		gs_end_index = sip->warpout_snd_end;
+	}
+	else
+	{
+		this->warpEnd();
+		return 0;
+	}
+
+	//Base is 100m long/diameter ship
+	//WMC - Leave this as 1.0f
+	//snd_range_factor = objp->radius / 50.0f;
+	if(gs_start_index > -1)
+	{
+		snd_start_gs = &Snds[gs_start_index];
+		snd_start = snd_play_3d(snd_start_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+	}
+	if(gs_end_index > -1)
+	{
+		snd_end_gs = &Snds[gs_end_index];
+		snd_end = -1;
+	}
+
+	stage = 0;
+	int total_duration = 0;
+	for(int i = 0; i < WE_BTRL_NUM_STAGES; i++)
+		total_duration += stage_duration[i];
+
+	total_time_start = timestamp();
+	total_time_end = timestamp(total_duration);
+
+	stage_time_start = total_time_start;
+	stage_time_end = timestamp(stage_duration[stage]);
 
 	return 1;
 }
@@ -4694,27 +4838,60 @@ int WE_BTRL::warpFrame(float frametime)
 	if(!this->isValid())
 		return 0;
 
-	if (stage == 1 && timestamp_elapsed(stage_time_end ))
+	while( timestamp_elapsed(stage_time_end ))
 	{
-		objp->phys_info.flags |= PF_WARP_IN;
-		shipp->flags &= (~SF_ARRIVING_STAGE_1);
-		shipp->flags |= SF_ARRIVING_STAGE_2;
+		stage++;
+		if(stage < WE_BTRL_NUM_STAGES)
+		{
+			stage_time_start = timestamp();
+			stage_time_end = timestamp(stage_duration[stage]);
+		}
+		switch(stage)
+		{
+			case 1:
+				if(direction == WD_WARP_IN)
+				{
+					//objp->phys_info.flags |= PF_WARP_IN;
+					shipp->flags &= (~SF_ARRIVING_STAGE_1);
+					shipp->flags |= SF_ARRIVING_STAGE_2;
+				}
+				break;
+			default:
+				this->warpEnd();
+				return 0;
+		}
+	}
 
-		stage = 2;
-		stage_time_start = timestamp();
-		stage_time_end = timestamp(stage_duration[2]);
-	}
-	if(stage == 2 && timestamp_elapsed(stage_time_end))
+	switch(stage)
 	{
-		this->warpEnd();
+		case 0:
+		case 1:
+			vm_vec_unrotate(&pos, &autocenter, &objp->orient);
+			vm_vec_add2(&pos, &objp->pos);
+			break;
+		default:
+			this->warpEnd();
+			return 0;
 	}
+
+	if(snd_start > -1)
+		snd_update_3d_pos(snd_start, snd_start_gs, &objp->pos, 0.0f, snd_range_factor);
 
 	return 1;
 }
 
 int WE_BTRL::warpShipClip()
 {
-	return 0;
+	if(!this->isValid())
+		return 0;
+
+	if(direction == WD_WARP_OUT && stage > 0)
+	{
+		vec3d pos;
+		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+		g3_start_user_clip_plane( &pos, &objp->orient.vec.fvec );
+	}
+	return 1;
 }
 
 int WE_BTRL::warpShipRender()
@@ -4722,36 +4899,104 @@ int WE_BTRL::warpShipRender()
 	if(!this->isValid())
 		return 0;
 
-	if(anim < 0)
+	if(anim < 0 && shockwave < 0)
 		return 0;
 
-	//Figure out which frame we're on
-	int frame = fl2i((float)((float)(timestamp() - (float)total_time_start) / (float)(total_time_end - (float)total_time_start)) * (float)(anim_nframes-1) + 0.5);
-
-	if ( frame > (anim_nframes-1) ) {
-		//frame = (anim_nframes-1);
-		return 1;
-	}
-
-	//Set the correct frame
-	gr_set_bitmap(anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-
-	//Do warpout geometry
-	vec3d start, end;
-	vm_vec_scale_add(&start, &objp->pos, &objp->orient.vec.fvec, radius_full);
-	vm_vec_scale_add(&end, &objp->pos, &objp->orient.vec.fvec, -radius_full);
-	batcher.draw_beam(&start, &end, radius_full*2.0f, 1.0f);
-	
 	// turn off zbuffering	
 	int saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);	
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	//Render the warpout effect
-	batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+	if(anim > -1)
+	{
+		//Figure out which frame we're on
+		//int anim_frame = fl2i( (((float)timestamp() - (float)total_time_start) / ((float) anim_total_time)) * (float)(anim_nframes-1) + 0.5f);
+		int anim_frame = fl2i( ((float)(timestamp() - total_time_start)/1000.0f) * (float)anim_fps);
+
+		if ( anim_frame < anim_nframes )
+		{
+			//Set the correct frame
+			gr_set_bitmap(anim + anim_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+
+			//Do warpout geometry
+			vec3d start, end;
+			vm_vec_scale_add(&start, &pos, &objp->orient.vec.fvec, z_offset_min);
+			vm_vec_scale_add(&end, &pos, &objp->orient.vec.fvec, z_offset_max);
+
+			//vm_vec_scale_add(&start, &objp->pos, &objp->orient.vec.fvec, z_offset_min);
+			//vm_vec_scale_add(&end, &objp->pos, &objp->orient.vec.fvec, z_offset_max);
+
+			batcher.draw_beam(&start, &end, tube_radius*2.0f, 1.0f);	
+
+			//Render the warpout effect
+			batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+		}
+	}
+
+	if(stage == 1 && shockwave > -1)
+	{
+		//int shockwave_frame = fl2i( (((float)timestamp() - (float)stage_time_start) / ((float) shockwave_total_time)) * (float)(shockwave_nframes-1) + 0.5f);
+		int shockwave_frame = fl2i( ((float)(timestamp() - stage_time_start)/1000.0f) * (float)shockwave_fps);
+
+		if(shockwave_frame < shockwave_nframes)
+		{
+			vertex p;
+			//vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, (z_offset_max - z_offset_min)/2.0f);
+			extern int Cmdline_nohtl;
+			if(Cmdline_nohtl) {
+				g3_rotate_vertex(&p, &pos );
+			}else{
+				g3_transfer_vertex(&p, &pos);
+			}
+			gr_set_bitmap(shockwave + shockwave_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+			g3_draw_bitmap(&p, 0, objp->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+		}
+	}
 
 	// restore zbuffer mode
 	gr_zbuffer_set(saved_zbuffer_mode);
 	return 1;
+}
+
+int WE_BTRL::warpEnd()
+{
+	if(snd_start > -1)
+		snd_stop(snd_start);
+	if(snd_end_gs != NULL)
+		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+
+	return WarpEffect::warpEnd();
+}
+
+//WMC - These two functions are used to fool collision detection code
+//And do player warpout
+int WE_BTRL::getWarpPosition(vec3d *output)
+{
+	if(!this->isValid())
+		return 0;
+
+	vec3d pos;
+	if(direction == WD_WARP_OUT && stage > 0)
+	{
+		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+	}
+	else
+	{
+		vm_vec_scale_add(&pos, &objp->pos, &objp->orient.vec.fvec, objp->radius);
+	}
+
+	*output = pos;
+	return 1;
+}
+
+int WE_BTRL::getWarpOrientation(matrix* output)
+{
+    if (!this->isValid())
+    {
+        return 0;
+    }
+
+    vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+    return 1;
 }
 
 //********************-----CLASS: WE_Homeworld-----********************//

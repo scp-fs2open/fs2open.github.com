@@ -3605,7 +3605,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	parse_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
-	parse_sound("$Warpin End Sound:", &sip->warpin_snd_start, sip->name);
+	parse_sound("$Warpin End Sound:", &sip->warpin_snd_end, sip->name);
 
 	if(optional_string("$Warpin speed:"))
 	{
@@ -3653,7 +3653,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	parse_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
-	parse_sound("$Warpout End Sound:", &sip->warpout_snd_start, sip->name);
+	parse_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
 
 	if(optional_string("$Warpout speed:"))
 	{
@@ -15619,6 +15619,9 @@ void ship_page_in()
 			ship_init_afterburners( &Ships[i] );
 		}
 
+		//WMC - Since this is already in-mission, ignore the warpin effect.
+		Ships[i].warpout_effect->pageIn();
+
 		// don't need this one anymore, it's already been accounted for
 	//	num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
 	}
@@ -16444,7 +16447,12 @@ float ship_get_warpout_speed(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-	if(sip->warpout_type == WT_SWEEPER)
+	//WMC - Any speed is good for in place anims (aka BSG FTL effect)
+	if(sip->warpout_type == WT_IN_PLACE_ANIM && sip->warpout_speed <= 0.0f)
+	{
+		return objp->phys_info.speed;
+	}
+	else if(sip->warpout_type == WT_SWEEPER || sip->warpout_type == WT_IN_PLACE_ANIM)
 	{
 		return sip->warpout_speed;
 	}
