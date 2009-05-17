@@ -316,7 +316,7 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 			y = far_p_table[k*2+1];
 
 			copyFrame(*pFrame, *pFrame + x + y*g_width);
-			*pDataRemain--;
+			(*pDataRemain)--;
 			break;
 
 		case 0x3:
@@ -327,7 +327,7 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 			y = far_n_table[k*2+1];
 
 			copyFrame(*pFrame, *pFrame + x + y*g_width);
-			*pDataRemain--;				  
+			(*pDataRemain)--;				  
 			break;
 
 		case 0x4:
@@ -338,7 +338,7 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 			y = close_table[k*2+1];
 
 			copyFrame(*pFrame, *pFrame + (backBuf2 - backBuf1) + x + y*g_width);
-			*pDataRemain--;
+			(*pDataRemain)--;
 			break;
 
 		case 0x5:

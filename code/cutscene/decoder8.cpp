@@ -220,21 +220,21 @@ static void dispatchDecoder8(ubyte **pFrame, ubyte codeType, ubyte **pData, int 
 			relFar(*(*pData)++, 1, &x, &y);
 			copyFrame(*pFrame, *pFrame + x + y*g_width);
 			*pFrame += 8;
-			*pDataRemain--;
+			(*pDataRemain)--;
 			break;
 
 		case 0x3:
 			relFar(*(*pData)++, -1, &x, &y);
 			copyFrame(*pFrame, *pFrame + x + y*g_width);
 			*pFrame += 8;
-			*pDataRemain--;
+			(*pDataRemain)--;
 			break;
 
 		case 0x4:
 			relClose(*(*pData)++, &x, &y);
 			copyFrame(*pFrame, *pFrame + ((ubyte *)g_vBackBuf2 - (ubyte *)g_vBackBuf1) + x + y*g_width);
 			*pFrame += 8;
-			*pDataRemain--;
+			(*pDataRemain)--;
 			break;
 
 		case 0x5:
@@ -521,7 +521,7 @@ static void dispatchDecoder8(ubyte **pFrame, ubyte codeType, ubyte **pData, int 
 			}
 
 			(*pData)++;
-			*pDataRemain--;
+			(*pDataRemain)--;
 			*pFrame -= (8*g_width - 8);
 			break;
 

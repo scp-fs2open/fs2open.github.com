@@ -4210,7 +4210,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 					debris *db;
 
 					db = &Debris[i];
-					if (!db->flags & DEBRIS_USED)				// not used, move onto the next one.
+					if (!(db->flags & DEBRIS_USED))				// not used, move onto the next one.
 						continue;
 					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
@@ -4392,8 +4392,6 @@ void process_loadout_objects()
 		p_object *p_objp = &Parse_objects[i];
 		if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
 		{
-			bool successful = is_ship_assignable(p_objp);
-
 			if (!(is_ship_assignable(p_objp)))
 			{
 				// store the ship so we can come back to it later.

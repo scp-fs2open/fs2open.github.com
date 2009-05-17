@@ -368,7 +368,7 @@ void cutscene_mark_viewable(char *filename)
 	char cut_file[MAX_FILENAME_LEN];
 	char file[MAX_FILENAME_LEN];
 
-	Assert(filename);
+	Assert(filename!=NULL);
 
 	// strip off extension
 	strcpy( file, filename );

@@ -2086,19 +2086,19 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 	if ( !target_found ) {
 	// if no bomb is found, search for bombers
-		ship_obj *start, *so;
+		ship_obj *startShip, *so;
 
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
 			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
 				|| (Objects[aip->target_objnum].flags & OF_TARGETABLE_AS_BOMB))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
-			start = get_ship_obj_ptr_from_index(index);
+			startShip = get_ship_obj_ptr_from_index(index);
 		} else {
-			start = GET_FIRST(&Ship_obj_list);
+			startShip = GET_FIRST(&Ship_obj_list);
 		}
 
-		for (so=advance_ship(start, next_flag); so!=start; so=advance_ship(so, next_flag)) {
+		for (so=advance_ship(startShip, next_flag); so!=startShip; so=advance_ship(so, next_flag)) {
 			A = &Objects[so->objnum];
 
 			// don't look at header
@@ -2966,7 +2966,8 @@ void hud_update_closest_turret()
 //
 void hud_target_targets_target()
 {
-	object	*objp;
+	object *objp = NULL;
+	object *tt_objp = NULL;
 	int		tt_objnum;
 
 	if ( Player_ai->target_objnum < 0 || Player_ai->target_objnum >= MAX_OBJECTS ) {
@@ -2987,7 +2988,7 @@ void hud_target_targets_target()
 		goto ttt_fail;
 	}
 
-	object * tt_objp = &Objects[tt_objnum]; 
+	tt_objp = &Objects[tt_objnum]; 
 
 	if (hud_target_invalid_awacs(tt_objp)) {
 		goto ttt_fail;

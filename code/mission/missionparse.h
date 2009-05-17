@@ -1016,7 +1016,6 @@ extern std::vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-
 typedef struct {
 	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)

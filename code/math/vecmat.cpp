@@ -768,14 +768,14 @@ float vm_vec_mag_quick(vec3d *v)
 		c = v->xyz.z;
 
 	if (a < b) {
-		float t=a; a=b; b=t;
+		float temp=a; a=b; b=temp;
 	}
 
 	if (b < c) {
-		float t=b; b=c; c=t;
+		float temp=b; b=c; c=temp;
 
 		if (a < b) {
-			float t=a; a=b; b=t;
+			float temp2=a; a=b; b=temp2;
 		}
 	}
 
@@ -1252,7 +1252,9 @@ bad_vector2:
 //quicker version of vm_vector_2_matrix() that takes normalized vectors
 matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 {
-	vec3d *xvec=&m->vec.rvec,*yvec=&m->vec.uvec,*zvec=&m->vec.fvec;
+	vec3d *xvec=&m->vec.rvec;
+	vec3d *yvec=&m->vec.uvec;
+	vec3d *zvec=&m->vec.fvec;
 
 
 	Assert(fvec != NULL);

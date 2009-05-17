@@ -839,7 +839,6 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
-		char empty='\0';
 
 		switch(t_objp->type)
 		{

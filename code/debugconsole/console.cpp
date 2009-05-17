@@ -759,9 +759,9 @@ void debug_console( void (*_func)() )
 					last_oldcommand++;
 					strcpy( oldcommand_line[last_oldcommand], command_line);
 				} else {
-					int i;
-					for (i=0; i<last_oldcommand; i++ )	{
-						strcpy( oldcommand_line[i], oldcommand_line[i+1] );
+					int iLoop;
+					for (iLoop=0; iLoop<last_oldcommand; iLoop++ )	{
+						strcpy( oldcommand_line[iLoop], oldcommand_line[iLoop+1] );
 					}
 					strcpy( oldcommand_line[last_oldcommand], command_line);
 				}

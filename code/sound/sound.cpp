@@ -658,7 +658,7 @@ void snd_spew_debug_info()
 
 	// count up game, interface and message sounds
 	for(int idx=0; idx<Num_sounds; idx++){
-		if(!Sounds[idx].flags & SND_F_USED){
+		if(!(Sounds[idx].flags & SND_F_USED)){
 			continue;
 		}
 
@@ -1231,6 +1231,8 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 	float volume;
 	int	handle = -1;
 	sound	*snd;	
+
+	Assert( gs != NULL );
 
 	if (!Sound_enabled)
 		return -1;

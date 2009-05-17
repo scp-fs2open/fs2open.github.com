@@ -148,6 +148,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int special_warp = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
 	int no_death_scream = 0, always_death_scream = 0;
 	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0, set_class_dynamically = 0;
+
 	object *objp;
 	ship *shipp;
 	bool ship_in_wing = false;

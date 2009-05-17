@@ -1058,7 +1058,7 @@ void EndAutoPilot()
 			{
 				for (j = 0; j < MAX_AI_GOALS; j++)
 				{
-					ai_goal *aigp = &Wings[i].ai_goals[j];
+					ai_goal *aigp = &Wings[Ships[i].wingnum].ai_goals[j];
 
 					if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
 							&& (aigp->ai_mode == goal) )
@@ -1678,7 +1678,7 @@ unsigned int DistanceTo(char *nav)
 
 unsigned int DistanceTo(int nav)
 {
-	if (nav > MAX_NAVPOINTS && nav < 0)
+	if (nav >= MAX_NAVPOINTS && nav < 0)
 		return 0xFFFFFFFF;
 
 	return (uint)vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
@@ -1695,7 +1695,7 @@ bool IsVisited(char *nav)
 
 bool IsVisited(int nav)
 {
-	if (nav > MAX_NAVPOINTS && nav < 0)
+	if (nav >= MAX_NAVPOINTS && nav < 0)
 		return 0;
 
 	if (Navs[nav].flags & NP_VISITED)
