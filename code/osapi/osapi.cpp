@@ -458,7 +458,7 @@ uint os_get_dc()
 // Returns the handle to the main window
 void os_set_window(uint new_handle)
 {
-	hwndApp = (HWND) new_handle;
+	hwndApp = (HWND)new_handle;
 }
 
 

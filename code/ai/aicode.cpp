@@ -6303,7 +6303,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	
 	sip = &Ship_info[shipp->ship_info_index];
 //made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
-	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP)) 
+	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
 //	if (flags & WIF_PUNCTURE) 
 	{
 		if (swp->current_primary_bank >= 0) 

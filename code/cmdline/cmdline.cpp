@@ -1684,7 +1684,7 @@ int cmdline_parm::get_int()
 // returns - the float representation for the parameter arguement
 float cmdline_parm::get_float()
 {
-	Assert(args);
+	Assert(args!=NULL);
 	int offset = 0;
 
 	if (stacks) {

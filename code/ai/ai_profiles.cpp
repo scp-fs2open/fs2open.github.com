@@ -280,13 +280,13 @@ void parse_ai_profiles_tbl(char *filename)
 			// represented in fractions of F1_0
 			if (optional_string("$Predict Position Delay:"))
 			{
-				int i;
+				int iLoop;
 				float temp_list[NUM_SKILL_LEVELS];
 
 				parse_float_list(temp_list, NUM_SKILL_LEVELS);
 
-				for (i = 0; i < NUM_SKILL_LEVELS; i++)
-					profile->predict_position_delay[i] = fl2f(temp_list[i]);
+				for (iLoop = 0; iLoop < NUM_SKILL_LEVELS; iLoop++)
+					profile->predict_position_delay[iLoop] = fl2f(temp_list[iLoop]);
 			}
 
 			if (optional_string("$Player Shield Recharge Scale:"))

@@ -4202,7 +4202,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 					debris *db;
 
 					db = &Debris[i];
-					if (!db->flags & DEBRIS_USED)				// not used, move onto the next one.
+					if (!(db->flags & DEBRIS_USED))				// not used, move onto the next one.
 						continue;
 					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;

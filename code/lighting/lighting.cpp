@@ -972,8 +972,7 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 
 	if (Detail.lighting==0) {
 		// No static light
-		ubyte l = ubyte(fl2i(static_light_level*255.0f));
-		return l;
+		return ubyte(fl2i(static_light_level*255.0f));
 	}
 
 	if ( Lighting_off ) return 191;
@@ -1033,9 +1032,9 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 				lval += l->intensity*dot;
 			} else if ( dist < l->radb_squared )	{
 				// dist from 0 to 
-				float n = dist - l->rada_squared;
-				float d = l->radb_squared - l->rada_squared;
-				float ltmp = (1.0f - n / d )*dot*l->intensity;
+				float nnum = dist - l->rada_squared;
+				float dden = l->radb_squared - l->rada_squared;
+				float ltmp = (1.0f - nnum / dden )*dot*l->intensity;
 				lval += ltmp;
 			}
 			if ( lval > 1.0f ) {
@@ -1192,9 +1191,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 			} else if ( dist < l->radb_squared )	{
 				float ratio;
 				// dist from 0 to 
-				float n = dist - l->rada_squared;
-				float d = l->radb_squared - l->rada_squared;
-				ratio = (1.0f - n / d)*dot*l->intensity*factor;
+				float nnum = dist - l->rada_squared;
+				float dden = l->radb_squared - l->rada_squared;
+				ratio = (1.0f - nnum / dden)*dot*l->intensity*factor;
 				ratio *= 0.25f;
 				rval += l->spec_r*ratio;
 				gval += l->spec_g*ratio;
@@ -1232,10 +1231,10 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 
 	if (Detail.lighting==0) {
 		// No static light
-		ubyte l = ubyte(fl2i(static_light_level*255.0f));
-		*param_r = l;
-		*param_g = l;
-		*param_b = l;
+		ubyte lVal = ubyte(fl2i(static_light_level*255.0f));
+		*param_r = lVal;
+		*param_g = lVal;
+		*param_b = lVal;
 		return;
 	}
 
@@ -1349,9 +1348,9 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 			} else if ( dist < l->radb_squared )	{
 				float ratio;
 				// dist from 0 to 
-				float n = dist - l->rada_squared;
-				float d = l->radb_squared - l->rada_squared;
-				ratio = (1.0f - n / d)*dot*l->intensity;
+				float nnum = dist - l->rada_squared;
+				float dden = l->radb_squared - l->rada_squared;
+				ratio = (1.0f - nnum / dden)*dot*l->intensity;
 				ratio *= 0.25f;
 				rval += l->r*ratio;
 				gval += l->g*ratio;

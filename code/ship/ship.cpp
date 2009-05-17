@@ -10022,7 +10022,7 @@ int ship_fire_primary_debug(object *objp)
 	shipp->weapons.next_primary_fire_stamp[0] = timestamp(250);
 
 	//	Debug code!  Make the single laser fire only one bolt and from the object center!
-	for (i=0; i<MAX_WEAPONS; i++)
+	for (i=0; i<MAX_WEAPON_TYPES; i++)
 		if (!stricmp(Weapon_info[i].name, NOX("Debug Laser")))
 			break;
 	

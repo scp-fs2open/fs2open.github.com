@@ -855,7 +855,7 @@ int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
 	// copy rest of filename from temp
 	SAFE_STRCAT(current_path, temp, path_max);
 
-	delete temp;
+	delete [] temp;
 	return 1;
 }
 

@@ -714,7 +714,7 @@ void deconvert_multiline_string(char *buf, CString &str, int max_len)
 	CString str2;
 
 	Assert(max_len > 1);
-	Assert(buf);
+	Assert(ptr!=NULL);
 	max_len -= 2;
 	while ((i = str.Find("\r\n")) >= 0) {
 		for (j=0; j<i; j++)

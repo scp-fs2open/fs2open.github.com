@@ -1826,7 +1826,7 @@ void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int imme
 	int i;
 
 	// be sure we are not trying to issue dock or undock goals to wings
-	Assert ( (goal_type != AI_GOAL_DOCK) || (goal_type != AI_GOAL_UNDOCK) );
+	Assert ( (goal_type != AI_GOAL_DOCK) && (goal_type != AI_GOAL_UNDOCK) );
 
 	for (i = 0; i < wingp->current_count; i++) {
 		int num = wingp->ship_index[i];
