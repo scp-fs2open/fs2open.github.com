@@ -1316,7 +1316,7 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 // variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present. 
 int get_string_or_variable (char *str)
 {
-	int result; 
+	int result = -1; 
 
 	ignore_white_space();
 	
@@ -2694,6 +2694,17 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	return count;
 }
 
+// helper for the next function. Removes a broken entry from ship or weapon lists and advances to the next one
+void clean_loadout_list_entry()
+{
+	int dummy; 
+
+	// clean out the broken entry
+	ignore_white_space();
+	stuff_int_or_variable(dummy);
+	ignore_white_space();
+}
+
 // Karajorma - Stuffs an int list by parsing a list of ship or weapon choices. 
 // Unlike stuff_int_list it can deal with variables and it also has better error reporting.
 int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
@@ -2752,14 +2763,21 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 			// increment counter for release FRED builds. 
 			Num_unknown_loadout_classes++;
 
-			// clean out the broken entry
-			ignore_white_space();
-			int dummy; 
-			stuff_int_or_variable(dummy);
-			ignore_white_space();
+			clean_loadout_list_entry(); 
 			continue;
 		}
 
+		// similarly, complain if this is a valid ship or weapon class that the player can't use
+		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) & (!(Ship_info[index].flags & SIF_PLAYER_SHIP)) ) {
+			clean_loadout_list_entry(); 
+			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
+			continue;
+		}
+		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) & (!(Weapon_info[index].wi_flags & WIF_PLAYER_ALLOWED)) ) {
+			clean_loadout_list_entry(); 
+			Warning(LOCATION, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
+			continue;
+		}
 		
 		// we've found a real item. Add its index to the list.
 		ilp[count++] = index;
@@ -3444,8 +3462,8 @@ char *stristr(const char *str, const char *substr)
 		return NULL;
 
 	// save both a lowercase and an uppercase version of the first character of substr
-	char substr_ch_lower = tolower(*substr);
-	char substr_ch_upper = toupper(*substr);
+	char substr_ch_lower = (char)tolower(*substr);
+	char substr_ch_upper = (char)toupper(*substr);
 
 	// find the maximum distance to search
 	char *upper_bound = (char *)str + strlen(str) - strlen(substr);
