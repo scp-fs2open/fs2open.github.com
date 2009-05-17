@@ -1804,7 +1804,7 @@ void labviewer_make_ship_window(Button *caller)
 			Lab_species_nodes[idx]->ClearAllItems();
 		}
 
-		delete Lab_species_nodes;
+		delete [] Lab_species_nodes;
 		Lab_species_nodes = NULL;
 	}
 

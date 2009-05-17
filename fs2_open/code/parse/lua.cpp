@@ -2396,9 +2396,9 @@ ADE_VIRTVAR(Value, l_SEXPVariable, "number/string", "SEXP variable value", "stri
 		sexp_modify_variable(newvalue, svh->idx, false);
 	}
 
-	if(sv->type && SEXP_VARIABLE_NUMBER)
+	if(sv->type & SEXP_VARIABLE_NUMBER)
 		return ade_set_args(L, "i", atoi(sv->text));
-	else if(sv->type && SEXP_VARIABLE_STRING)
+	else if(sv->type & SEXP_VARIABLE_STRING)
 		return ade_set_args(L, "s", sv->text);
 	else
 		return ADE_RETURN_NIL;

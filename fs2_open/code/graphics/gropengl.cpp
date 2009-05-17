@@ -2735,7 +2735,8 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	if ( !(GL_render_context = wglCreateContext(GL_device_context)) ) {
+	GL_render_context = wglCreateContext(GL_device_context);
+	if ( !GL_render_context ) {
 		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}

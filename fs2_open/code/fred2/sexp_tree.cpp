@@ -2695,18 +2695,18 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			return 1; 
 
 		case ID_ADD_STRING:	{
-			int node;
+			int theNode;
 			
-			node = add_data("string", (SEXPT_STRING | SEXPT_VALID));
-			EditLabel(tree_nodes[node].handle);
+			theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
+			EditLabel(tree_nodes[theNode].handle);
 			return 1;
 		}
 
 		case ID_ADD_NUMBER:	{
-			int node;
+			int theNode;
 
-			node = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
-			EditLabel(tree_nodes[node].handle);
+			theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+			EditLabel(tree_nodes[theNode].handle);
 			return 1;
 		}
 
@@ -2721,45 +2721,45 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			// fall through to ID_DELETE case.
 
 		case ID_DELETE:	{
-			int parent, node;
-			HTREEITEM h;
+			int parent, theNode;
+			HTREEITEM h_parent;
 
 			if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
 				item_index = GetItemData(item_handle);
 				if (m_mode == MODE_GOALS) {
 					Assert(Goal_editor_dlg);
-					node = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
+					theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
 
 				} else if (m_mode == MODE_EVENTS) {
 					Assert(Event_editor_dlg);
-					node = Event_editor_dlg->handler(ROOT_DELETED, item_index);
+					theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
 
 				} else {
 					Assert(m_mode == MODE_CAMPAIGN);
-					node = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
+					theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
 				}
 
-				Assert(node >= 0);
-				free_node2(node);
+				Assert(theNode >= 0);
+				free_node2(theNode);
 				DeleteItem(item_handle);
 				*modified = 1;
 				return 1;
 			}
 
 			Assert(item_index >= 0);
-			h = GetParentItem(item_handle);
+			h_parent = GetParentItem(item_handle);
 			parent = tree_nodes[item_index].parent;
 			if ((parent == -1) && (m_mode == MODE_EVENTS))
 				Int3();  // no longer used, temporary to check if called still.
 
-			Assert(parent != -1 && tree_nodes[parent].handle == h);
+			Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
 			free_node(item_index);
 			DeleteItem(item_handle);
 
-			node = tree_nodes[parent].child;
+			theNode = tree_nodes[parent].child;
 /*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
 				sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
-				SetItem(h, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
+				SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
 				tree_nodes[parent].flags = OPERAND | EDITABLE;
 				tree_nodes[node].flags = COMBINED;
 				DeleteItem(tree_nodes[node].handle);
@@ -3050,7 +3050,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			else if ( (Operators[op].value == OP_EXPLOSION_EFFECT) )
 			{
 				int temp;
-				char str[TOKEN_LENGTH];
+				char sexp_str_token[TOKEN_LENGTH];
 
 				switch (i)
 				{
@@ -3084,13 +3084,13 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 				}
 
 				// Goober5000 - set_data_dup is required if we're passing a variable
-				sprintf(str, "%d", temp);
-				item->set_data_dup(str, (SEXPT_NUMBER | SEXPT_VALID));
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if ( (Operators[op].value == OP_WARP_EFFECT) )
 			{
 				int temp;
-				char str[TOKEN_LENGTH];
+				char sexp_str_token[TOKEN_LENGTH];
 
 				switch (i)
 				{
@@ -3112,13 +3112,13 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 				}
 
 				// Goober5000 - set_data_dup is required if we're passing a variable
-				sprintf(str, "%d", temp);
-				item->set_data_dup(str, (SEXPT_NUMBER | SEXPT_VALID));
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if ((Operators[op].value == OP_ADD_BACKGROUND_BITMAP))
 			{
 				int temp = 0;
-				char str[TOKEN_LENGTH];
+				char sexp_str_token[TOKEN_LENGTH];
 
 				switch (i)
 				{
@@ -3133,18 +3133,18 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 						break;
 				}
 
-				sprintf(str, "%d", temp);
-				item->set_data_dup(str, (SEXPT_NUMBER | SEXPT_VALID));
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if ((Operators[op].value == OP_ADD_SUN_BITMAP))
 			{
 				int temp = 0;
-				char str[TOKEN_LENGTH];
+				char sexp_str_token[TOKEN_LENGTH];
 
 				if (i==4) temp = 100;
 
-				sprintf(str, "%d", temp);
-				item->set_data_dup(str, (SEXPT_NUMBER | SEXPT_VALID));
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if ((Operators[op].value == OP_MODIFY_VARIABLE)) {
 				if (get_modify_variable_type(index) == OPF_NUMBER) {
@@ -4289,7 +4289,7 @@ void sexp_tree::swap_roots(HTREEITEM one, HTREEITEM two)
 
 void sexp_tree::OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	UINT flags;
+	UINT flags = 0;
 
 //	ScreenToClient(&m_pt);
 	ASSERT(!m_dragging);
@@ -4321,8 +4321,8 @@ void sexp_tree::OnLButtonDown(UINT nFlags, CPoint point)
 
 void sexp_tree::OnMouseMove(UINT nFlags, CPoint point) 
 {
-	HTREEITEM hitem;
-	UINT flags;
+	HTREEITEM hitem = NULL;
+	UINT flags = 0;
 
 	if (m_dragging) {
 		ASSERT(m_p_image_list != NULL);

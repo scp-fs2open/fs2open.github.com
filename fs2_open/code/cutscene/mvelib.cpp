@@ -82,7 +82,8 @@ MVEFILE *mvefile_open(char *filename)
 
 	// NOTE: CF_TYPE *must* be ANY to get movies off of the CDs
 	// assume lower case filename for *nix
-	if ( (file->stream = cfopen(lower_name, "rb", CFILE_NORMAL, CF_TYPE_ANY)) ) {
+	file->stream = cfopen(lower_name, "rb", CFILE_NORMAL, CF_TYPE_ANY);
+	if ( file->stream ) {
 		cf_opened = 1;
 	}
 

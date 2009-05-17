@@ -13299,7 +13299,7 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
-	if (!Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC)
+	if (!(Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC))
 	{
 		return ;
 	}

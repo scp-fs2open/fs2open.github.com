@@ -1080,7 +1080,7 @@ int event_music_enemy_arrival()
 	if ( Current_pattern == SONG_DEAD_1 )
 		return 0;	// death is the last song to play
 
-	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_1) )
+	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_2) )
 		return 0;
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
@@ -1174,7 +1174,7 @@ int event_music_friendly_arrival()
 	if ( Current_pattern == SONG_DEAD_1 )
 		return 0;	// death is the last song to play
 
-	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_1) )
+	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_2) )
 		return 0;
 
 	// Goober5000 - to avoid array out-of-bounds
