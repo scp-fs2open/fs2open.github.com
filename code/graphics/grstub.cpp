@@ -266,7 +266,7 @@ void gr_stub_save_mouse_area(int x, int y, int w, int h)
 {
 }
 
-void gr_stub_scaler(vertex *va, vertex *vb )
+void gr_stub_scaler(vertex *va, vertex *vb, bool bw_bitmap )
 {
 }
 

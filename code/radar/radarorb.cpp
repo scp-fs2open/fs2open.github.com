@@ -457,6 +457,8 @@ void radar_plot_object_orb( object *objp )
 //	b->x = xpos;
 //	b->y = ypos;
 	b->position = pos;
+	b->radar_image_2d = -1;
+	b->radar_projection_size = 1.0f;
 
 	// see if blip should be drawn distorted
 	if (objp->type == OBJ_SHIP)
@@ -468,6 +470,14 @@ void radar_plot_object_orb( object *objp )
 		// determine if its AWACS distorted
 		if (awacs_level < 1.0f)
 			b->flags |= BLIP_DRAW_DISTORTED;
+
+		ship_info Iff_ship_info = Ship_info[Ships[objp->instance].ship_info_index];
+
+		if (Iff_ship_info.radar_image_2d_idx >= 0)
+		{
+			b->radar_image_2d = Iff_ship_info.radar_image_2d_idx;
+			b->radar_projection_size = Iff_ship_info.radar_projection_size_mult;
+		}
 	}				
 
 	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
@@ -732,6 +742,10 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
             {
                 radar_orb_draw_contact(&b->position,b->rad);
             }
+            else if (b->radar_image_2d >= 0)
+			{
+				radar_orb_draw_image(&b->position, b->rad, b->radar_image_2d, b->radar_projection_size);
+			}
             else
             {
                 radar_orb_draw_contact_htl(&b->position,b->rad);
@@ -1051,4 +1065,47 @@ void radar_blit_gauge_orb()
 void radar_page_in_orb()
 {
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
+}
+
+void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
+{
+    int tmap_flags = 0;
+    int h, w;
+    float aspect_mp;
+
+    // need to get bitmap info
+    bm_get_info(idx, &w, &h);
+
+    Assert(w > 0);
+
+    // get multiplier
+    if (h == w) {
+        aspect_mp = 1.0f;
+    } else {
+        aspect_mp = (((float) h) / ((float) w));
+    }
+
+    gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+
+    float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
+
+    // might need checks unless the targeted blip is always wanted to be larger
+    float radius = (float) Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
+
+    if (sizef < radius)
+        sizef = radius;
+
+    //Make so no evil things happen
+    Assert(mult > 0.0f);
+
+    //modify size according to value from tables
+    sizef *= mult;
+
+    tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
+
+    g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+    if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+    {
+        g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+    }
 }

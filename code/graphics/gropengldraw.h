@@ -32,7 +32,7 @@ void gr_opengl_pixel(int x, int y, bool resize);
 void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize);
 void gr_opengl_circle(int xc, int yc, int d, bool resize);
 void gr_opengl_curve(int xc, int yc, int r, int direction);
-void gr_opengl_scaler(vertex *va, vertex *vb);
+void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap );
 void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);
 void gr_opengl_shade(int x, int y, int w, int h, bool resize);
 void gr_opengl_flash(int r, int g, int b);

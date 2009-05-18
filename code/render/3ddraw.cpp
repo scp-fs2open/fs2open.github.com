@@ -1169,6 +1169,11 @@ int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float de
 	vertex va, vb;
 	float t,w,h;
 	float width, height;
+	bool bw_bitmap = false;
+
+	if ( tmap_flags & TMAP_FLAG_BW_TEXTURE ) {
+		bw_bitmap = true;
+	}
 
 	if ( tmap_flags & TMAP_FLAG_TEXTURED )	{
 		int bw, bh;
@@ -1240,7 +1245,7 @@ int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float de
 		vb.v = 1.0f;
 	}
 
-	gr_scaler(&va, &vb);
+	gr_scaler(&va, &vb, bw_bitmap);
 
 	return 0;
 }

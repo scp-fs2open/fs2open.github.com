@@ -94,6 +94,7 @@ void radar_draw_circle_std( int x, int y, int rad );
 void radar_blip_draw_distorted_std(blip *b);
 void radar_blip_draw_flicker_std(blip *b);
 void radar_page_in_std();
+void radar_draw_image_std( int x, int y, int rad, int idx, int size);
 
 #endif
 
