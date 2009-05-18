@@ -5051,7 +5051,11 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 	if ( !(wp->weapon_flags & WF_PLAYED_FLYBY_SOUND) && (wp->weapon_flags & WF_CONSIDER_FOR_FLYBY_SOUND) ) {
 		float		dist, dot, radius;
 
-		dist = vm_vec_dist_quick(&weapon_objp->pos, &Eye_position);
+		if ( (Weapon_info[wp->weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
+			dist = vm_vec_dist_quick(&weapon_objp->last_pos, &Eye_position);
+		} else {
+			dist = vm_vec_dist_quick(&weapon_objp->pos, &Eye_position);
+		}
 
 		if ( Viewer_obj ) {
 			radius = Viewer_obj->radius;
@@ -6433,7 +6437,12 @@ void weapon_detonate(object *objp)
 	}
 
 	// call weapon hit
-	weapon_hit(objp, NULL, &objp->pos);
+	// Wanderer - use last frame pos for the corkscrew missiles
+	if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
+		weapon_hit(objp, NULL, &objp->last_pos);
+	} else {
+		weapon_hit(objp, NULL, &objp->pos);
+	}
 }
 
 //	Return the Weapon_info[] index of the weapon with name *name.

@@ -379,6 +379,10 @@ void radar_plot_object_orb( object *objp )
 			if (Weapons[objp->instance].lssm_stage == 3)
 				return;
 
+			// if corkscrew missile use last frame pos for pos
+			if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CORKSCREW) )
+				world_pos = objp->last_pos;
+
 			break;
 		}
 
