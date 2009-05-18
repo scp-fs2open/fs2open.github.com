@@ -4395,6 +4395,10 @@ void find_homing_object(object *weapon_objp, int num)
 			if((objp->flags & OF_PROTECTED) && (wp->weapon_flags & WF_SPAWNED))
 				continue;
 
+			// Spawned weapons should never home in on their parent - even in multiplayer dogfights where they would pass the iff test below
+			if ((wp->weapon_flags & WF_SPAWNED) && (objp == &Objects[weapon_objp->parent]))
+				continue; 
+
 			homing_object_team = obj_team(objp);
 			if (iff_x_attacks_y(wp->team, homing_object_team))
 			{
