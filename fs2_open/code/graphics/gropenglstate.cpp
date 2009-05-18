@@ -750,6 +750,12 @@ void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_ty
 		b = gr_screen.current_color.blue;
 	}
 
+	if (flags & TMAP_FLAG_BW_TEXTURE) {
+		r = gr_screen.current_color.red;
+		g = gr_screen.current_color.green;
+		b = gr_screen.current_color.blue;
+	}
+
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
 		if ( (gr_screen.current_bitmap >= 0) && bm_has_alpha_channel(gr_screen.current_bitmap) ) {
 			tmap_type = TCACHE_TYPE_XPARENT;

@@ -38,6 +38,7 @@ extern int Radar_static_looping;
 struct object;
 struct blip;
 struct color;
+struct vec3d;
 
 extern void radar_init_orb();
 extern void radar_plot_object_orb( object *objp );
@@ -55,6 +56,7 @@ void radar_draw_circle_orb( int x, int y, int rad );
 void radar_blip_draw_distorted_orb(blip *b);
 void radar_blip_draw_flicker_orb(blip *b);
 void radar_page_in_orb();
+void radar_orb_draw_image(vec3d *out, int rad, int idx, float mult);
 
 #endif
 

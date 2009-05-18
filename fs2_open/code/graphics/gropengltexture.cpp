@@ -1421,7 +1421,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 	if ( (bitmap_type == TCACHE_TYPE_INTERFACE) && Is_Extension_Enabled(OGL_ARB_TEXTURE_RECTANGLE)
 			&& !Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) )
 	{
-		opengl_set_texture_target( GL_TEXTURE_RECTANGLE_ARB );
+		//opengl_set_texture_target( GL_TEXTURE_RECTANGLE_ARB );
 	}
 
 	if ( (bitmap_type == TCACHE_TYPE_CUBEMAP) ) {

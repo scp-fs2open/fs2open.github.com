@@ -1998,6 +1998,10 @@ typedef struct ship_info {
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+
+	int radar_image_2d_idx;
+	int radar_image_size;
+	float radar_projection_size_mult;
 } ship_info;
 
 extern int Num_wings;

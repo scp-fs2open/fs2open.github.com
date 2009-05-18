@@ -3019,6 +3019,10 @@ void init_ship_entry(ship_info *sip)
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
+
+	sip->radar_image_2d_idx = -1;
+	sip->radar_image_size = -1;
+	sip->radar_projection_size_mult = 1.0f;
 }
 
 // function to parse the information for a specific ship type.	
@@ -4546,6 +4550,18 @@ strcpy(parse_error_text, temp_error);
 		parse_sound("+StartSnd:", &mtp->start_snd, sip->name);
 		parse_sound("+LoopSnd:", &mtp->loop_snd, sip->name);
 		parse_sound("+StopSnd:", &mtp->stop_snd, sip->name);
+	}
+
+	if (optional_string("$Radar Image 2D:"))
+	{
+		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
+		sip->radar_image_2d_idx = bm_load(name_tmp);
+
+		if (optional_string("$Radar Image Size:"))
+			stuff_int(&sip->radar_image_size);
+
+		if (optional_string("$3D Radar Blip Size Multiplier:"))
+			stuff_float(&sip->radar_projection_size_mult);
 	}
 	
 	int n_subsystems = 0;

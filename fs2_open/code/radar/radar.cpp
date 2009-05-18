@@ -554,8 +554,11 @@ void radar_plot_object_std( object *objp )
 
 	b->x = xpos;
 	b->y = ypos;
+	b->radar_image_2d = -1;
+	b->radar_image_size = -1;
 
 	// see if blip should be drawn distorted
+	// also determine if alternate image was defined for this ship
 	if (objp->type == OBJ_SHIP)
 	{
 		// ships specifically hidden from sensors
@@ -565,6 +568,14 @@ void radar_plot_object_std( object *objp )
 		// determine if its AWACS distorted
 		if (awacs_level < 1.0f)
 			b->flags |= BLIP_DRAW_DISTORTED;
+
+		ship_info Iff_ship_info = Ship_info[Ships[objp->instance].ship_info_index];
+
+		if (Iff_ship_info.radar_image_2d_idx >= 0)
+		{
+			b->radar_image_2d = Iff_ship_info.radar_image_2d_idx;
+			b->radar_image_size = Iff_ship_info.radar_image_size;
+		}
 	}				
 
 	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
@@ -668,7 +679,7 @@ void radar_blip_draw_distorted_std(blip *b)
 		ydiff = (int)((float)ydiff * scale);
 	}
 
-	radar_draw_circle_std( b->x+xdiff, b->y+ydiff, b->rad ); 
+	radar_draw_circle_std(b->x+xdiff, b->y+ydiff, b->rad);
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -696,7 +707,7 @@ void radar_blip_draw_flicker_std(blip *b)
 		ydiff = -2 + rand()%4;
 	}
 
-	radar_draw_circle_std( b->x+xdiff, b->y+ydiff, b->rad ); 
+	radar_draw_circle_std(b->x+xdiff, b->y+ydiff, b->rad);
 }
 
 // Draw all the active radar blips
@@ -745,7 +756,10 @@ void draw_radar_blips_std(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			radar_draw_circle_std(b->x, b->y, b->rad);
+			if (b->radar_image_2d == -1)
+				radar_draw_circle_std(b->x, b->y, b->rad);
+			else
+				radar_draw_image_std(b->x, b->y, b->rad, b->radar_image_2d, b->radar_image_size);
 		}
 	}
 }
@@ -875,4 +889,73 @@ void radar_blit_gauge_std()
 void radar_page_in_std()
 {
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
+}
+
+void radar_draw_image_std( int x, int y, int rad, int idx, int size )
+{
+	// this we will move as ships.tbl option (or use for radar scaling etc etc)
+	//int size = 24; 
+	
+	int w, h, old_bottom, old_bottom_unscaled, old_right, old_right_unscaled;
+	float scalef, wf, hf, xf, yf;
+	vec3d blip_scaler;
+
+	if(bm_get_info(idx, &w, &h) < 0)
+	{
+		// Just if something goes terribly wrong
+		radar_draw_circle_std(x, y, rad);
+		return;
+	}
+
+	// just to make sure the missing casts wont screw the math
+	wf = (float) w;
+	hf = (float) h;
+	xf = (float) x;
+	yf = (float) y;
+
+	// make sure we use the larger dimension for the scaling
+	// lets go case by case to make sure there are no probs
+	if (size == -1)
+		scalef = 1.0f;
+	else if ((h == w) && (size == h))
+		scalef = 1.0f;
+	else if ( h > w)
+		scalef = ((float) size) / hf;
+	else
+		scalef = ((float) size) / wf;
+
+	Assert(scalef != 0);
+
+	// setup the scaler
+	blip_scaler.xyz.x = scalef;
+	blip_scaler.xyz.y = scalef;
+	blip_scaler.xyz.z = 1.0f;
+	
+	old_bottom = gr_screen.clip_bottom;
+	old_bottom_unscaled = gr_screen.clip_bottom_unscaled;
+	gr_screen.clip_bottom = (int) (old_bottom/scalef);
+	gr_screen.clip_bottom_unscaled = (int) (old_bottom_unscaled/scalef);
+
+	old_right = gr_screen.clip_right;
+	old_right_unscaled = gr_screen.clip_right_unscaled;
+	gr_screen.clip_right = (int) (old_right/scalef);
+	gr_screen.clip_right_unscaled = (int) (old_right_unscaled/scalef);
+
+	// scale the drawing coordinates
+	x = (int) ((xf / scalef) - wf/2.0f);
+	y = (int) ((yf / scalef) - hf/2.0f);
+
+	gr_push_scale_matrix(&blip_scaler);
+	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+	gr_aabitmap( x, y );
+	//If it is targeted
+	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] )	
+		gr_aabitmap( x, y );
+	gr_pop_scale_matrix();
+
+	gr_screen.clip_bottom = old_bottom;
+	gr_screen.clip_bottom_unscaled = old_bottom_unscaled;
+
+	gr_screen.clip_right = old_right;
+	gr_screen.clip_right_unscaled = old_right_unscaled;
 }
