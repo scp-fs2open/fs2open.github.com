@@ -281,6 +281,7 @@ $Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
@@ -311,6 +312,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		3.5												\n\
@@ -357,6 +359,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
@@ -381,6 +384,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\

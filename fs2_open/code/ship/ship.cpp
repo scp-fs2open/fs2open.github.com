@@ -5073,6 +5073,10 @@ void parse_ship_type()
 		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_WARP_PUSHABLE);
 	}
 
+	if(optional_string("$Turrets prioritize ship target:")) {
+		stuff_boolean_flag(&stp->ship_bools, STI_TURRET_TGT_SHIP_TGT);
+	}
+
 	if(optional_string("$Max Debris Speed:")) {
 		stuff_float(&stp->debris_max_speed);
 	}

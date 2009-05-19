@@ -1707,6 +1707,7 @@ typedef struct thruster_particles {
 #define STI_SHIP_SCANNABLE				(1<<0)
 #define STI_SHIP_WARP_PUSHES			(1<<1)
 #define STI_SHIP_WARP_PUSHABLE			(1<<2)
+#define STI_TURRET_TGT_SHIP_TGT			(1<<3)
 
 #define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
 

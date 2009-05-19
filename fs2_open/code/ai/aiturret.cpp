@@ -886,7 +886,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	ai_info	*aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
 	sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 
-	if ((sip->flags & SIF_SMALL_SHIP) && (aip->target_objnum != -1)) {
+	if ((Ship_types[sip->class_type].ship_bools & STI_TURRET_TGT_SHIP_TGT) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
