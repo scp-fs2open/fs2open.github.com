@@ -4639,7 +4639,7 @@ int WE_Default::getWarpOrientation(matrix* output)
         return 0;
     }
 
-    vm_vector_2_matrix(output, &fvec, NULL, NULL);
+    vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
     return 1;
 }
 
