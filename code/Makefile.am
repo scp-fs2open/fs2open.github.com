@@ -536,6 +536,8 @@ FS2_SOURCES =	\
 	network/multi_rate.h	\
 	network/multi_respawn.cpp	\
 	network/multi_respawn.h	\
+	network/multi_sexp.cpp	\
+	network/multi_sexp.h	\
 	network/multi_team.cpp	\
 	network/multi_team.h	\
 	network/multi_update.h	\
