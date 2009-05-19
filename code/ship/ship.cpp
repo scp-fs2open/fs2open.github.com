@@ -3023,6 +3023,14 @@ void init_ship_entry(ship_info *sip)
 	sip->radar_image_2d_idx = -1;
 	sip->radar_image_size = -1;
 	sip->radar_projection_size_mult = 1.0f;
+
+	for (i=0;i<MAX_IFFS;i++)
+	{
+		for (j=0;j<MAX_IFFS;j++)
+		{
+			sip->ship_iff_info[i][j] = -1;
+		}
+	}
 }
 
 // function to parse the information for a specific ship type.	
@@ -4563,6 +4571,30 @@ strcpy(parse_error_text, temp_error);
 		if (optional_string("$3D Radar Blip Size Multiplier:"))
 			stuff_float(&sip->radar_projection_size_mult);
 	}
+
+	// Alternate - per ship class - IFF colors
+	while((optional_string("$Ship IFF Colors:")) || (optional_string("$Ship IFF Colours:")))
+	{
+		char iff_1[NAME_LENGTH];
+		char iff_2[NAME_LENGTH];
+		int iff_color_data[3];
+		int iff_data[2];
+		
+		// Get the iff strings and get the iff indexes
+		required_string("+Seen By:");
+		stuff_string(iff_1, F_NAME, NAME_LENGTH);
+		
+		required_string("+When IFF Is:");
+		stuff_string(iff_2, F_NAME, NAME_LENGTH);
+		iff_data[0] = iff_lookup(iff_1);
+		iff_data[1] = iff_lookup(iff_2);
+
+		// Set the color
+		required_string("+As Color:");
+		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
+		sip->ship_iff_info[iff_data[0]][iff_data[1]] = iff_init_color(iff_color_data[0],iff_color_data[1],iff_color_data[2]);
+	}
+
 	
 	int n_subsystems = 0;
 	int cont_flag = 1;
@@ -5928,7 +5960,7 @@ void ship_cam_chase_custom_position(camera *cam, vec3d *c_pos)
 
 void ship_set(int ship_index, int objnum, int ship_type)
 {
-	int i;
+	int i, j;
 
 	object	*objp = &Objects[objnum];
 	ship	*shipp = &Ships[ship_index];
@@ -6285,6 +6317,15 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Alt classes
 	shipp->s_alt_classes.clear(); 
+
+	// Make sure these get set to -1
+	for(i=0;i<MAX_IFFS;i++)
+	{
+		for(j=0;j<MAX_IFFS;j++)
+		{
+			shipp->ship_iff_color[i][j] = -1;
+		}
+	}
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because

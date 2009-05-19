@@ -172,6 +172,8 @@ extern int Radar_static_looping;					// id for looping radar static sound
 
 extern hud_frames Radar_gauge;
 
+extern int radar_iff_color[5][2][4];
+
 extern int Cmdline_nohtl;
 
 static const int NUM_ORB_RING_SLICES = 16;
@@ -215,7 +217,16 @@ void radar_init_orb()
 
 	for (i=0; i<MAX_RADAR_COLORS; i++ )	{
 		for (j=0; j<MAX_RADAR_LEVELS; j++ )	{
-			gr_init_alphacolor( &Radar_colors[i][j], Radar_color_rgb[i][j].r, Radar_color_rgb[i][j].g, Radar_color_rgb[i][j].b, 255 );
+			{
+				if (radar_iff_color[i][j][0] >= 0)
+				{
+					gr_init_alphacolor( &Radar_colors[i][j], radar_iff_color[i][j][0], radar_iff_color[i][j][1], radar_iff_color[i][j][2], radar_iff_color[i][j][3] );
+				}
+				else
+				{
+					gr_init_alphacolor( &Radar_colors[i][j], Radar_color_rgb[i][j].r, Radar_color_rgb[i][j].g, Radar_color_rgb[i][j].b, 255 );
+				}
+			}
 		}
 	}
 
@@ -275,7 +286,7 @@ void radar_stuff_blip_info_orb(object *objp, int is_bright, color **blip_color, 
 			}
 			else
 			{
-				*blip_color = iff_get_color_by_team(shipp->team, Player_ship->team, is_bright);
+				*blip_color = iff_get_color_by_team_and_object(shipp->team, Player_ship->team, is_bright, objp);
 				*blip_type = BLIP_TYPE_NORMAL_SHIP;
 			}
 
