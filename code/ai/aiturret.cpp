@@ -1718,7 +1718,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		}
 
 		//If this is a spawning type weapon, shoot it!
-		if ( wip->wi_flags & WIF_SPAWN )
+		//If 'smart spawn' just use it like normal weapons
+		if ( (wip->wi_flags & WIF_SPAWN) && !(wip->wi_flags2 & WIF2_SMART_SPAWN) )
 		{
 			if (( num_ships_nearby >= 3 ) || ((num_ships_nearby >= 2) && (frand() < 0.1f))) {
 				turret_fire_weapon(i, ss, parent_objnum, &gpos, &ss->turret_last_fire_direction);

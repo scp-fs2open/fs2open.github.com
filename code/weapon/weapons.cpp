@@ -1661,6 +1661,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else if (!stricmp(NOX("training"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TRAINING;
+		else if (!stricmp(NOX("smart spawn"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SMART_SPAWN;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -1699,6 +1701,11 @@ void parse_wi_flags(weapon_info *weaponp)
 	if ((weaponp->wi_flags2 & WIF2_SMALL_ONLY) && (weaponp->wi_flags & WIF_HUGE))
 	{
 		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
+	}
+
+	if (!(weaponp->wi_flags & WIF_SPAWN) && (weaponp->wi_flags2 & WIF2_SMART_SPAWN))
+	{
+		Warning(LOCATION,"\"smart spawn\" flag used without \"spawn\" flag in %s\n",weaponp->name);
 	}
 
 }
