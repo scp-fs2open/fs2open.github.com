@@ -2910,6 +2910,14 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->escort_priority = p_objp->escort_priority;
 	shipp->special_exp_index = p_objp->special_exp_index;
 
+	for (i=0;i<MAX_IFFS;i++)
+	{
+		for (j=0;j<MAX_IFFS;j++)
+		{
+			shipp->ship_iff_color[i][j] = p_objp->alt_iff_color[i][j];
+		}
+	}
+
 	// Goober5000
 	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
@@ -4080,6 +4088,14 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	p_objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 	p_objp->pos_in_wing = -1;				// Goober5000
+
+	for (i=0;i<MAX_IFFS;i++)
+	{
+		for (j=0;j<MAX_IFFS;j++)
+		{
+			p_objp->alt_iff_color[i][j] = -1;
+		}
+	}
 
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
@@ -8082,7 +8098,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	//float mag;
 	p_object *pobj;
 	ship *requester_shipp;
-	int i, requester_species;
+	int i, j, requester_species;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?
@@ -8178,6 +8194,14 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
 
 	pobj->team = requester_shipp->team;
+
+	for (i=0;i<MAX_IFFS;i++)
+	{
+		for (j=0;j<MAX_IFFS;j++)
+		{
+			pobj->alt_iff_color[i][j] = -1;
+		}
+	}
 
 	pobj->behavior = AIM_NONE;		// ASSUMPTION:  the mission file has the string "None" which maps to AIM_NONE
 

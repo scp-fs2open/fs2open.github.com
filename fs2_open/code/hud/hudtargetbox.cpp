@@ -1592,7 +1592,7 @@ void hud_render_target_ship(object *target_objp)
 				model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, is_bright));
 			else
 			{
-				model_set_outline_color_fast(iff_get_color_by_team(target_shipp->team, Player_ship->team, is_bright));
+				model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, is_bright, target_objp));
 			}
 
 			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
@@ -1778,7 +1778,7 @@ void hud_render_target_weapon(object *target_objp)
 		{
 			int is_bright = 0;
 
-			model_set_outline_color_fast(iff_get_color_by_team(target_team, Player_ship->team, is_bright));
+			model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, is_bright, target_objp));
 
 			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 

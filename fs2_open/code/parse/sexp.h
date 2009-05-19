@@ -1384,6 +1384,7 @@ struct ship_subsys;
 #define OP_SET_WEAPON_ENERGY				(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_SHIELD_ENERGY				(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_AMBIENT_LIGHT				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_CHANGE_IFF_COLOR					(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 
 /* made obsolete by Goober5000
 // debugging sexpressions

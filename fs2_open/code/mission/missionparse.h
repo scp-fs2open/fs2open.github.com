@@ -936,6 +936,8 @@ typedef struct p_object {
 	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
 
 	std::vector<alt_class> alt_classes;	
+
+	int alt_iff_color[MAX_IFFS][MAX_IFFS];
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special

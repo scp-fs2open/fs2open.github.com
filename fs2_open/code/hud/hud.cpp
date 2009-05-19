@@ -3030,7 +3030,7 @@ void hud_set_iff_color(object *objp, int is_bright)
 		}
 		else
 		{
-			use_color = iff_get_color_by_team(obj_team(objp), Player_ship->team, is_bright);
+			use_color = iff_get_color_by_team_and_object(obj_team(objp), Player_ship->team, is_bright, objp);
 		}
 	}
 

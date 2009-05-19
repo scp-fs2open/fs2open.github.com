@@ -1581,6 +1581,8 @@ typedef struct ship {
 	*/
 
 	std::vector<alt_class> s_alt_classes;	
+
+	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -2003,6 +2005,8 @@ typedef struct ship_info {
 	int radar_image_2d_idx;
 	int radar_image_size;
 	float radar_projection_size_mult;
+
+	int ship_iff_info[MAX_IFFS][MAX_IFFS];
 } ship_info;
 
 extern int Num_wings;
