@@ -84,7 +84,7 @@
 #define AIPF_FIX_HEAT_SEEKER_STEALTH_BUG							(1 << 23)
 #define AIPF_MULTI_ALLOW_EMPTY_PRIMARIES							(1 << 24)
 #define AIPF_MULTI_ALLOW_EMPTY_SECONDARIES							(1 << 25)
-
+#define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
 
 #define MAX_AI_PROFILES	5
 
@@ -143,6 +143,8 @@ typedef struct ai_profile_t {
 
 	// the number of points subtracted from score for a rearm started on a player
 	int repair_penalty[NUM_SKILL_LEVELS];
+
+	float delay_bomb_arm_timer[NUM_SKILL_LEVELS];
 
 } ai_profile_t;
 
