@@ -1903,6 +1903,9 @@ sexp_oper Operators[] = {
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
 	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
 	{ "ship-turret-target-order",			OP_SHIP_TURRET_TARGET_ORDER,		1, 1+NUM_TURRET_ORDER_TYPES},	//WMC
+	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE, 2, INT_MAX	},
+	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,	2, INT_MAX	},
+
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
@@ -14701,6 +14704,67 @@ void sexp_ship_turret_target_order(int node)
 	}
 }
 
+void sexp_turret_subsystem_targeting_disable(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+
+	// get the ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	node = CDR(node);
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// flag the turret
+		turret->flags |= SSF_NO_SS_TARGETING;
+
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_subsystem_targeting_enable(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+
+	// get the ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	node = CDR(node);
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// remove the flag from the turret
+		turret->flags &= ~(SSF_NO_SS_TARGETING);
+
+		// next
+		node = CDR(node);
+	}
+}
 
 // Goober5000
 void sexp_set_subsys_rotation_lock(int node, int locked)
@@ -18134,6 +18198,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_ship_turret_target_order(node);
 				break;
 
+			case OP_TURRET_SUBSYS_TARGET_DISABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_subsystem_targeting_disable(node);
+				break;
+
+			case OP_TURRET_SUBSYS_TARGET_ENABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_subsystem_targeting_enable(node);
+				break;
+
 			case OP_ADD_REMOVE_ESCORT:
 				sexp_val = SEXP_TRUE;
 				sexp_add_remove_escort(node);
@@ -19065,6 +19139,8 @@ int query_operator_return_type(int op)
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
+		case OP_TURRET_SUBSYS_TARGET_DISABLE:
+		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
@@ -20164,6 +20240,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TURRET_LOCK:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+		case OP_TURRET_SUBSYS_TARGET_DISABLE:
+		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			if(argnum == 0){
 				return OPF_SHIP;
 			} else {
@@ -21749,6 +21827,8 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
+		case OP_TURRET_SUBSYS_TARGET_DISABLE:
+		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_RED_ALERT:
@@ -23680,6 +23760,16 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets targeting order of all turrets on a given ship\r\n"
 		"\t1: Ship turrets are on\r\n"
 		"\trest: Target order type (Bombs,ships,asteroids)"},
+
+	{ OP_TURRET_SUBSYS_TARGET_DISABLE, "turret-subsys-target-disable\r\n"
+		"\tPrevents turrets from targeting only the subsystems when targeting large targets\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\trest: List of turrets that are affected\r\n"},
+
+	{ OP_TURRET_SUBSYS_TARGET_ENABLE, "turret-subsys-target-enable\r\n"
+		"\tSets turret to target the subsystems when targeting large targets\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\trest: List of turrets that are affected\r\n"},
 
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"
