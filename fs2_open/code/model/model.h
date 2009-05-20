@@ -814,6 +814,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
+	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
+	float	turret_y_fov;						//  turret's base's fov
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
@@ -853,6 +855,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
+	int		turret_reset_delay;
 } model_subsystem;
 
 typedef struct model_special {
