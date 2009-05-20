@@ -1025,7 +1025,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		//Figure out what point on the ship we want to point the gun at, and store the global location
 		//in enemy_point.
 		vec3d	enemy_point;
-		if (ss->targeted_subsys != NULL) {
+		if ((ss->targeted_subsys != NULL) && !(ss->flags & SSF_NO_SS_TARGETING)) {
 			if (ss->turret_enemy_objnum != -1) {
 				vm_vec_unrotate(&enemy_point, &ss->targeted_subsys->system_info->pnt, &Objects[ss->turret_enemy_objnum].orient);
 				vm_vec_add2(&enemy_point, &Objects[ss->turret_enemy_objnum].pos);
@@ -1830,7 +1830,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		if (ss->turret_enemy_objnum != -1) {
 			float	dot = 1.0f;
 			lep = &Objects[ss->turret_enemy_objnum];
-			if ( lep->type == OBJ_SHIP ) {
+			if (( lep->type == OBJ_SHIP ) && !(ss->flags & SSF_NO_SS_TARGETING)) {
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, lep, &dot);				
 			}
 			ss->turret_next_enemy_check_stamp = timestamp((int) (MAX(dot, 0.5f)*2000.0f) + 1000);

@@ -6497,6 +6497,9 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		// Goober5000
 		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
 			ship_system->flags |= SSF_UNTARGETABLE;
+		// Wanderer
+		if (model_system->flags & MSS_FLAG_NO_SS_TARGETING)
+			ship_system->flags |= SSF_NO_SS_TARGETING;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
