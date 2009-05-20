@@ -4650,6 +4650,13 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 //	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
 //	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
 
+	if (turret->flags & MSS_FLAG_FIRE_ON_TARGET)
+	{
+		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
+		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
+		ss->points_to_target = sqrt( pow(base_delta,2) + pow(gun_delta,2));
+	}
+
 	return 1;
 
 }
