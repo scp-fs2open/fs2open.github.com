@@ -743,6 +743,7 @@
 #include "asteroid/asteroid.h"
 #include "parse/scripting.h"
 #include "parse/parselo.h"
+#include "object/objectsnd.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -957,6 +958,29 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 	if ( sound_index >= 0 ) {
 		snd_play_3d( &Snds[sound_index], &g_subobj_pos, &View_position );
+	}
+
+	// make the shipsounds work as they should...
+	if(subsys->subsys_snd_flags & SSSF_ALIVE)
+	{
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->alive_snd, subsys);
+		subsys->subsys_snd_flags &= ~SSSF_ALIVE;
+	}
+	if(subsys->subsys_snd_flags & SSSF_TURRET_ROTATION)
+	{
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_base_rotation_snd, subsys);
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_gun_rotation_snd, subsys);
+		subsys->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
+	}
+	if(subsys->subsys_snd_flags & SSSF_ROTATE)
+	{
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->rotation_snd, subsys);
+		subsys->subsys_snd_flags &= ~SSSF_ROTATE;
+	}
+	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags & SSSF_DEAD))
+	{
+		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
+		subsys->subsys_snd_flags |= SSSF_DEAD;
 	}
 }
 

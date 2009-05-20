@@ -1816,7 +1816,7 @@ int vm_matrix_cmp( matrix * a, matrix * b )
 // Moves angle 'h' towards 'desired_angle', taking the shortest
 // route possible.   It will move a maximum of 'step_size' radians
 // each call.   All angles in radians.
-void vm_interp_angle( float *h, float desired_angle, float step_size )
+float vm_interp_angle( float *h, float desired_angle, float step_size )
 {
 	float delta;
 
@@ -1845,6 +1845,8 @@ void vm_interp_angle( float *h, float desired_angle, float step_size )
 	// angle back in the range 0 to 2*PI.
 	if ( *h > PI2 ) *h -= PI2;
 	if ( *h < 0.0f ) *h += PI2;
+
+	return delta;
 }
 
 // check a matrix for zero rows and columns

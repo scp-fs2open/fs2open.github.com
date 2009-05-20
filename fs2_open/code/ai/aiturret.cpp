@@ -1063,9 +1063,9 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
 			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num,
-										ss->system_info, &Objects[parent_objnum].orient, 
+										tp, &Objects[parent_objnum].orient, 
 										&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
-										&Objects[parent_objnum].pos, predicted_enemy_pos);
+										&Objects[parent_objnum].pos, predicted_enemy_pos, shipp->objnum);
 		}
 	}
 

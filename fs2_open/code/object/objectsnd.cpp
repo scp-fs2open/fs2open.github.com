@@ -730,7 +730,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 //
 void obj_snd_do_frame()
 {
-	float				closest_dist, distance, speed_vol_multiplier, percent_max;
+	float				closest_dist, distance, speed_vol_multiplier, rot_vol_mult, percent_max;
 	obj_snd			*osp;
 	object			*objp, *closest_objp;
 	game_snd			*gs;
@@ -797,6 +797,7 @@ void obj_snd_do_frame()
 		// If the object is a ship, we don't want to start the engine sound unless the ship is
 		// moving (unless flag SIF_BIG_SHIP is set)
 		speed_vol_multiplier = 1.0f;
+		rot_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0 ) {
@@ -809,6 +810,23 @@ void obj_snd_do_frame()
 					speed_vol_multiplier = 1.0f;
 				else {
 					speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
+				}
+			}
+			if (osp->ss != NULL)
+			{
+				if (osp->flags & OS_TURRET_BASE_ROTATION)
+				{
+					if (osp->ss->base_rotation_rate_pct > 0)
+						rot_vol_mult = ((0.25f + (0.75f * osp->ss->base_rotation_rate_pct)) * osp->ss->system_info->turret_base_rotation_snd_mult);
+					else
+						rot_vol_mult = 0;
+				}
+				if (osp->flags & OS_TURRET_GUN_ROTATION)
+				{
+					if (osp->ss->gun_rotation_rate_pct > 0)
+						rot_vol_mult = ((0.25f + (0.75f * osp->ss->gun_rotation_rate_pct)) * osp->ss->system_info->turret_gun_rotation_snd_mult);
+					else
+						rot_vol_mult = 0;
 				}
 			}
 		}
@@ -852,7 +870,7 @@ void obj_snd_do_frame()
 					}
 					else {
 						snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
-						osp->instance = snd_play_looping( gs, osp->pan, 0, 0, (osp->vol*speed_vol_multiplier)/gs->default_volume, SND_PRIORITY_TRIPLE_INSTANCE );
+						osp->instance = snd_play_looping( gs, osp->pan, 0, 0, (osp->vol*speed_vol_multiplier*rot_vol_mult)/gs->default_volume, SND_PRIORITY_TRIPLE_INSTANCE );
 						if ( osp->instance != -1 ) {
 							osp->freq =	snd_get_pitch(osp->instance);
 							Num_obj_sounds_playing++;
@@ -894,7 +912,7 @@ void obj_snd_do_frame()
 			// for DirectSound3D sounds, re-establish the maximum speed based on the
 			//	speed_vol_multiplier
 			if ( sp == NULL || ( (sp != NULL) && (sp->flags & SF_ENGINES_ON) ) ) {
-				snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier );
+				snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult );
 			}
 			else {
 				// engine sound is disabled
@@ -917,7 +935,7 @@ void obj_snd_do_frame()
 		else {
 			if ( sp == NULL || (sp != NULL && (sp->flags & SF_ENGINES_ON) ) ) {
 				snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
-				snd_set_volume( osp->instance, osp->vol*speed_vol_multiplier );
+				snd_set_volume( osp->instance, osp->vol*speed_vol_multiplier*rot_vol_mult );
 				snd_set_pan( osp->instance, osp->pan );
 				// Don't play doppler effect for cruisers or capitals
 				if ( objp->type == OBJ_SHIP && Doppler_enabled == TRUE ) {
@@ -953,7 +971,7 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship_subsys *associated_sub)
 {
 	if(objnum < 0 || objnum > MAX_OBJECTS)
 		return -1;
@@ -992,6 +1010,10 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, ship_subsys *as
 
 	if(main){
 		snd->flags |= OS_MAIN;
+	}
+
+	if(flags > 0){
+		snd->flags |= flags;
 	}
 
 	if ( sndnum == -1 ) {

@@ -818,7 +818,11 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_rotation_snd;				// Sound to make when the turret moves
+	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
+	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
+
 
 	//Sound stuff
 	int		alive_snd;		//Sound to make while the subsystem is not-dead
@@ -1422,7 +1426,7 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst);
+extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
