@@ -14801,8 +14801,13 @@ void sexp_set_subsys_rotation_lock(int node, int locked)
 				rotate->subsys_snd_flags &= ~SSSF_ROTATE;
 			}
 		}
-		else
+		else {
 			rotate->system_info->flags |= MSS_FLAG_ROTATES;
+			if (rotate->system_info->rotation_snd != -1) {
+				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
+				rotate->subsys_snd_flags |= SSSF_ROTATE;
+			}
+		}
 
 		// iterate
 		node = CDR(node);
