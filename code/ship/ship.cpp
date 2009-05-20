@@ -2856,8 +2856,11 @@ void init_ship_entry(ship_info *sip)
 	sip->can_glide = false;
 	sip->glide_cap = 0.0f;
 
-	sip->has_autoaim = false;
+	sip->aiming_flags = 0;
 	sip->autoaim_fov = 0.0f;
+	sip->minimum_convergence_distance = 0.0f;
+	sip->convergence_distance = 100.0f;
+	vm_vec_zero(&sip->convergence_offset);
 
 	sip->warpin_snd_start = -1;
 	sip->warpout_snd_start = -1;
@@ -3604,8 +3607,32 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		// Make sure it is a reasonable value
 		fov_temp = (((fov_temp % 360) + 360) % 360) / 2;
 
-		sip->has_autoaim = true;
+		sip->aiming_flags |= AIM_FLAG_AUTOAIM;
 		sip->autoaim_fov = (float)fov_temp * PI / 180.0f;
+
+		if(optional_string("+Converging Autoaim"))
+			sip->aiming_flags |= AIM_FLAG_AUTOAIM_CONVERGENCE;
+
+		if(optional_string("+Minimum Distance:"))
+			stuff_float(&sip->minimum_convergence_distance);
+	}
+
+	if(optional_string("$Convergence:"))
+	{
+		if(optional_string("+Automatic"))
+		{
+			sip->aiming_flags |= AIM_FLAG_AUTO_CONVERGENCE;
+			if(optional_string("+Minimum Distance:"))
+				stuff_float(&sip->minimum_convergence_distance);
+		}
+		if(optional_string("+Standard"))
+		{
+			sip->aiming_flags |= AIM_FLAG_STD_CONVERGENCE;
+			if(required_string("+Distance:"))
+				stuff_float(&sip->convergence_distance);
+		}
+		if(optional_string("+Offset:"))
+			stuff_vector(&sip->convergence_offset);
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -10941,13 +10968,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							matrix firing_orient;
 							if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
 							{
-								if (sip->has_autoaim &&
+								if ((sip->aiming_flags & AIM_FLAG_AUTOAIM) &&
 									aip->target_objnum != -1 &&
 									Players[Player_num].lead_indicator_active == 1)
 								{
 									// Fire weapon in target direction
 									vec3d target_position, target_velocity_vec, predicted_target_pos;
-									vec3d firing_vec, last_delta_vec, player_forward_vec;
+									vec3d firing_vec, last_delta_vec, player_forward_vec, plr_to_target_vec;
 									float dist_to_target, time_to_target, angle_to_target;
 
 									// If a subsystem is targeted, fire in that direction instead
@@ -10971,11 +10998,25 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 									vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
 									polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
-									vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
+									vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
+
+									// minimum convergence distance
+									if (sip->minimum_convergence_distance > dist_to_target) {
+										float dist_mult;
+										dist_mult = sip->minimum_convergence_distance / dist_to_target;
+										vm_vec_scale_add(&predicted_target_pos, &obj->pos, &plr_to_target_vec, dist_mult);
+									}
+									
+									// setting to autoaim to converge on to the target.
+									if (sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE)
+										vm_vec_sub(&firing_vec, &predicted_target_pos, &firing_pos);
+									else
+										vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
+
 
 									// Deactivate autoaiming if the target leaves the autoaim-FOV cone
 									player_forward_vec = obj->orient.vec.fvec;
-									angle_to_target = vm_vec_delta_ang(&player_forward_vec, &firing_vec, NULL);
+									angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
 
 									if (angle_to_target < sip->autoaim_fov)
 									{
@@ -10985,6 +11026,62 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 									{
 										firing_orient = obj->orient;
 									}
+								}
+								else if ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1))
+								{
+									//Write automatic convergence code here!
+									//If set, switch to manual if automatic fails
+									//better idea.. mix it with the above... assume autoaim takes precedence
+									
+									// Fire weapon in target direction
+									vec3d target_position, target_vec;
+									vec3d firing_vec, player_forward_vec, convergence_offset;
+									float dist_to_target;
+	
+									// If a subsystem is targeted, fire in that direction instead
+									if (aip->targeted_subsys != NULL)
+									{
+										get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+									}
+									else
+									{
+										target_position = Objects[aip->target_objnum].pos;
+									}
+
+									dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
+
+									if (sip->minimum_convergence_distance > dist_to_target)
+										dist_to_target = sip->minimum_convergence_distance;
+
+									player_forward_vec = obj->orient.vec.fvec;
+									// make sure vector is of the set length
+									vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+									vm_vec_scale(&target_vec, dist_to_target);
+									// if there is convergence offset then make use of it)
+									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
+									vm_vec_add2(&target_vec, &convergence_offset);
+									vm_vec_add2(&target_vec, &obj->pos);
+									vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
+
+									// set orientation
+									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+								
+								}
+								else if (sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE)
+								{
+									vec3d player_forward_vec, target_vec, firing_vec, convergence_offset;
+									player_forward_vec = obj->orient.vec.fvec;
+									// make sure vector is of the set length
+									vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+									vm_vec_scale(&target_vec, sip->convergence_distance);
+									// if there is convergence offset then make use of it)
+									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
+									vm_vec_add2(&target_vec, &convergence_offset);
+									vm_vec_add2(&target_vec, &obj->pos);
+									vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
+
+									// set orientation
+									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
 								}
 								else
 								{

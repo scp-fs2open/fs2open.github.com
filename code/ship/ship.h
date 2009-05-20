@@ -1704,6 +1704,11 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
+#define AIM_FLAG_AUTOAIM				(1 << 0)	// has autoaim
+#define AIM_FLAG_AUTO_CONVERGENCE		(1 << 1)	// has automatic convergence
+#define AIM_FLAG_STD_CONVERGENCE		(1 << 2)	// has standard - ie. non-automatic - convergence
+#define AIM_FLAG_AUTOAIM_CONVERGENCE	(1 << 3)	// has autoaim with convergence
+
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
 	float		min_rad;
@@ -2008,7 +2013,6 @@ typedef struct ship_info {
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
 	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
 
-	bool has_autoaim;
 	float autoaim_fov;
 
 	bool topdown_offset_def;
@@ -2022,6 +2026,11 @@ typedef struct ship_info {
 	float radar_projection_size_mult;
 
 	int ship_iff_info[MAX_IFFS][MAX_IFFS];
+
+	int aiming_flags;
+	float minimum_convergence_distance;
+	float convergence_distance;
+	vec3d convergence_offset;
 } ship_info;
 
 extern int Num_wings;
