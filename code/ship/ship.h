@@ -1042,7 +1042,6 @@ typedef struct {
 #define SW_FLAG_BEAM_FREE					(1<<0)							// if this is a beam weapon, its free to fire
 #define SW_FLAG_TURRET_LOCK				(1<<1)							//	is this turret is free to fire or locked
 #define SW_FLAG_TAGGED_ONLY				(1<<2)							// only fire if target is tagged
-#define SSF_NO_SS_TARGETING             (1 << 2)
 
 typedef struct ship_weapon {
 	int num_primary_banks;					// Number of primary banks (same as model)
@@ -1138,6 +1137,13 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
+#define SSF_NO_SS_TARGETING     (1 << 2)
+
+// Wanderer 
+#define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
+#define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
+#define SSSF_ROTATE					(1 << 2)		// subsystem has active rotation sound
+#define SSSF_TURRET_ROTATION		(1 << 3)		// rotation sound to be scaled like turrets do
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
@@ -1203,6 +1209,14 @@ typedef	struct ship_subsys {
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
+
+	float points_to_target;
+	float base_rotation_rate_pct;
+	float gun_rotation_rate_pct;
+
+	// still going through these...
+	int subsys_snd_flags;
+
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.

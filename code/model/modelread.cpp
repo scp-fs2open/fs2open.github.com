@@ -4554,9 +4554,12 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst)
+int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset)
 {
 	polymodel * pm;
+	object *objp = &Objects[obj_idx];
+	ship *shipp = &Ships[objp->instance];
+	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
 
 	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
@@ -4613,9 +4616,36 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	//------------	
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
+	float base_delta, gun_delta;
 
-	vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
-	vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
+	// reset these two
+	ss->base_rotation_rate_pct = 0.0f;
+	ss->gun_rotation_rate_pct = 0.0f;
+
+	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
+
+	if (turret->turret_base_rotation_snd != -1)	
+	{
+		if (step_size > 0)
+		{
+			base_delta = (float) (fabs(base_delta)) / step_size;
+			if (base_delta > 1.0f)
+				base_delta = 1.0f;
+			ss->base_rotation_rate_pct = base_delta;
+		}
+	}
+
+	if (turret->turret_gun_rotation_snd != -1)
+	{
+		if (step_size > 0)
+		{
+			gun_delta = (float) (fabs(gun_delta)) / step_size;
+			if (gun_delta > 1.0f)
+				gun_delta = 1.0f;
+			ss->gun_rotation_rate_pct = gun_delta;
+		}
+	}
 
 //	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
 //	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );

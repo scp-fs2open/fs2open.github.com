@@ -1625,6 +1625,7 @@
 #include "object/objcollide.h"
 #include "object/waypoint.h"
 #include "graphics/2d.h"
+#include "object/objectsnd.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -14792,8 +14793,14 @@ void sexp_set_subsys_rotation_lock(int node, int locked)
 			return;
 
 		// set rotate or not, depending on flag
-		if (locked)
+		if (locked) {
 			rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
+			if (rotate->subsys_snd_flags & SSSF_ROTATE)
+			{
+				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
+				rotate->subsys_snd_flags &= ~SSSF_ROTATE;
+			}
+		}
 		else
 			rotate->system_info->flags |= MSS_FLAG_ROTATES;
 

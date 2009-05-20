@@ -4665,7 +4665,10 @@ strcpy(parse_error_text, temp_error);
 				sp->alive_snd = -1;
 				sp->dead_snd = -1;
 				sp->rotation_snd = -1;
-				sp->turret_rotation_snd = -1;
+				sp->turret_gun_rotation_snd = -1;
+				sp->turret_gun_rotation_snd_mult = 1.0f;
+				sp->turret_base_rotation_snd = -1;
+				sp->turret_base_rotation_snd_mult = 1.0f;
 				
 				sp->flags = 0;
 				
@@ -4748,6 +4751,14 @@ strcpy(parse_error_text, temp_error);
 			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
 			parse_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
 			parse_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
+			parse_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name);
+			parse_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name);
+
+			if (optional_string("$Turret BaseSnd Volume:"))
+				stuff_float(&sp->turret_base_rotation_snd_mult);
+
+			if (optional_string("$Turret GunSnd Volume:"))
+				stuff_float(&sp->turret_gun_rotation_snd_mult);
 				
 			// Get any AWACS info
 			sp->awacs_intensity = 0.0f;
@@ -6359,17 +6370,60 @@ void ship_recalc_subsys_strength( ship *shipp )
 		//Get rid of any persistent sounds on the subsystem
 		//This is inefficient + sloppy but there's not really an easy way to handle things
 		//if a subsystem is brought back from the dead, other than this
-		if(ship_system->current_hits < ship_system->max_hits)
+		if(ship_system->current_hits > 0.0f)
 		{
-			obj_snd_delete_type(shipp->objnum, -1, ship_system);
-			if(ship_system->system_info->dead_snd != -1)
-				obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 1);
+			if(ship_system->subsys_snd_flags & SSSF_DEAD)
+			{
+				obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
+				ship_system->subsys_snd_flags &= ~SSSF_DEAD;
+			}
+			if((ship_system->system_info->alive_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ALIVE))
+			{
+				obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ALIVE, ship_system);
+				ship_system->subsys_snd_flags |= SSSF_ALIVE;
+			}
+			if(!(ship_system->subsys_snd_flags & SSSF_TURRET_ROTATION))
+			{
+				if(ship_system->system_info->turret_base_rotation_snd != -1)
+				{
+					obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, ship_system);
+					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+				}
+				if(ship_system->system_info->turret_gun_rotation_snd != -1)
+				{
+					obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, ship_system);
+					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+				}
+			}
+			if((ship_system->system_info->flags & MSS_FLAG_ROTATES) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
+			{
+				obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
+				ship_system->subsys_snd_flags |= SSSF_ROTATE;
+			}
 		}
 		else
 		{
-			obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
-			if(ship_system->system_info->alive_snd != -1)
-				obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 1);
+			if(ship_system->subsys_snd_flags & SSSF_ALIVE)
+			{
+				obj_snd_delete_type(shipp->objnum, ship_system->system_info->alive_snd, ship_system);
+				ship_system->subsys_snd_flags &= ~SSSF_ALIVE;
+			}
+			if(ship_system->subsys_snd_flags & SSSF_TURRET_ROTATION)
+			{
+				obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, ship_system);
+				obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, ship_system);
+				ship_system->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
+			}
+			if(ship_system->subsys_snd_flags & SSSF_ROTATE)
+			{
+				obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
+				ship_system->subsys_snd_flags &= ~SSSF_ROTATE;
+			}
+			if((ship_system->system_info->dead_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_DEAD))
+			{
+				obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_DEAD, ship_system);
+				ship_system->subsys_snd_flags |= SSSF_DEAD;
+			}
 		}
 	}
 
@@ -6493,6 +6547,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		// zero flags
 		ship_system->flags = 0;
 		ship_system->weapons.flags = 0;
+		ship_system->subsys_snd_flags = 0;
 
 		// Goober5000
 		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
@@ -13579,15 +13634,36 @@ void ship_assign_sound(ship *sp)
 		}
 
 		//Do any normal subsystem sounds
-		if(moveup->current_hits < moveup->max_hits)
+		if(moveup->current_hits > 0.0f)
 		{
 			if(moveup->system_info->alive_snd != -1)
-				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 1);
-		}
+			{
+				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ALIVE, moveup);
+				moveup->subsys_snd_flags |= SSSF_ALIVE;
+			}
+			if(moveup->system_info->turret_base_rotation_snd != -1)
+			{
+				obj_snd_assign(sp->objnum, moveup->system_info->turret_base_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, moveup);
+				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+			}
+			if(moveup->system_info->turret_gun_rotation_snd != -1)
+			{
+				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
+				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+			}
+			if((moveup->system_info->rotation_snd != -1) && (moveup->system_info->flags & MSS_FLAG_ROTATES))
+			{
+				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
+				moveup->subsys_snd_flags |= SSSF_ROTATE;
+			}
+		} 
 		else 
 		{
 			if(moveup->system_info->dead_snd != -1)
-				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 1);
+			{
+				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_DEAD, moveup);
+				moveup->subsys_snd_flags |= SSSF_DEAD;
+			}
 		}
 
 		// next
