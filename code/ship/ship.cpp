@@ -2557,6 +2557,54 @@ flag_def_list Ship_flags[] = {
 
 const int Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list);
 
+/*
+++Here be dragons.. err.. begins the section for the ai targeting revision
+++  First flag_def_list (& its size) for object types (ship/asteroid/weapon)
+++  List of reasonable object flags (from object.h)
+++  List of potentially useful ship class flags
+++  List of potentially useful weapon class flags
+*/
+flag_def_list ai_tgt_objects[] = {
+	{ "ship",		OBJ_SHIP,		0 },
+	{ "asteroid",	OBJ_ASTEROID,	0 },
+	{ "weapon",		OBJ_WEAPON,		0 }
+};
+
+int num_ai_tgt_objects = sizeof(ai_tgt_objects) / sizeof(flag_def_list);
+
+flag_def_list ai_tgt_obj_flags[] = {
+	{ "no shields",			OF_NO_SHIELDS,			0 },
+	{ "targetable as bomb",	OF_TARGETABLE_AS_BOMB,	0 }
+};
+
+int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
+
+flag_def_list ai_tgt_ship_flags[] = {
+	{ "afterburners",	SIF_AFTERBURNER,	0 },
+	{ "big damage",		SIF_BIG_DAMAGE,		0 },
+	{ "has awacs",		SIF_HAS_AWACS,		0 }
+};
+
+int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list);
+
+flag_def_list ai_tgt_weapon_flags[] = {
+	{ "bomb",				WIF_BOMB,				0 },
+	{ "huge damage",		WIF_HUGE,				0 },
+	{ "supercap damage",	WIF_SUPERCAP,			0 },
+	{ "bomber+",			WIF_BOMBER_PLUS,		0 },
+	{ "electronics",		WIF_ELECTRONICS,		0 },
+	{ "puncture",			WIF_PUNCTURE,			0 },
+	{ "emp",				WIF_EMP,				0 },
+	{ "heat seeking",		WIF_HOMING_HEAT,		0 },
+	{ "aspect seeking",		WIF_HOMING_ASPECT,		0 },
+	{ "engine seeking",		WIF_HOMING_JAVELIN,		0 },
+	{ "pierce shields",		WIF2_PIERCE_SHIELDS,	1 },
+	{ "local ssm",			WIF2_LOCAL_SSM,			1 }
+};
+
+int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
+
+std::vector <ai_target_priority> Ai_tp_list;
 
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
@@ -4624,6 +4672,37 @@ strcpy(parse_error_text, temp_error);
 		sip->ship_iff_info[iff_data[0]][iff_data[1]] = iff_init_color(iff_color_data[0],iff_color_data[1],iff_color_data[2]);
 	}
 
+	if (optional_string("$Target Priority Groups:") ) {
+		std::vector <std::string> target_group_strings, *target_group_string_p;
+		target_group_string_p = &target_group_strings;
+		int num_strings = stuff_string_list(target_group_string_p);
+		int num_groups = Ai_tp_list.size();
+		int k;
+		bool override_strings = false;
+
+		if (optional_string("+Override")) {
+			override_strings = true;
+		}
+
+		for(i = 0; i < num_groups; i++) {
+			for(j = 0; j < num_strings; j++) {
+				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
+					//so now the string from the list above as well as the ai priority group name match
+					//clear it if override has been set
+					if (override_strings) {
+						Ai_tp_list[i].ship_class.clear();
+						override_strings = false;
+					}
+					for (k = 0; k < Num_ship_classes; k++) {
+						//find the index number of the current ship info type
+						if (Ship_info[k].name == sip->name) {
+							Ai_tp_list[i].ship_class.push_back(k);
+						}
+					}
+				}
+			}
+		}
+	}
 	
 	int n_subsystems = 0;
 	int cont_flag = 1;
@@ -4710,6 +4789,10 @@ strcpy(parse_error_text, temp_error);
 				sp->turret_max_fov = 1.0f;
 
 				sp->turret_reset_delay = 2000;
+
+				for (i = 0; i < 32; i++) {
+					sp->target_priority[i] = -1;
+				}
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -4820,6 +4903,27 @@ strcpy(parse_error_text, temp_error);
 
 			if (optional_string("$Turret Reset Delay:"))
 				stuff_int(&sp->turret_reset_delay);
+
+			if (optional_string("$Target Priority:")) {
+				std::vector <std::string> tgt_priorities, *tgt_priorities_p;
+				tgt_priorities_p = &tgt_priorities;
+				int num_strings = stuff_string_list(tgt_priorities_p);
+				sp->num_target_priorities = 0;
+
+				if (num_strings > 32)
+					num_strings = 32;
+
+				int num_groups = Ai_tp_list.size();
+
+				for(i = 0; i < num_strings; i++) {
+					for(j = 0; j < num_groups; j++) {
+						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
+							sp->target_priority[i] = j;
+							sp->num_target_priorities++;
+						}
+					}
+				}
+			}
 
 			if (optional_string("$Flags:")) {
 				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
@@ -5136,6 +5240,35 @@ void parse_ship_type()
 	//But they aren't here!! :O
 	//Now they are!! Whee fogging!!
 
+	//AI turret targeting priority setup
+	if (optional_string("$Target Priority Groups:") ) {
+		std::vector <std::string> target_group_strings, *target_group_string_p;
+		target_group_string_p = &target_group_strings;
+		int num_strings = stuff_string_list(target_group_string_p);
+		int num_groups = Ai_tp_list.size();
+		int i, j;
+		bool override_strings = false;
+
+		if (optional_string("+Override")) {
+			override_strings = true;
+		}
+
+		for(i = 0; i < num_groups; i++) {
+			for(j = 0; j < num_strings; j++) {
+				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
+					//so now the string from the list above as well as the ai priority group name match
+					//clear it if override has been set
+					if (override_strings) {
+						Ai_tp_list[i].ship_type.clear();
+						override_strings = false;
+					}
+					//find the index number of the current ship info type
+					Ai_tp_list[i].ship_type.push_back(ship_type_name_lookup(name_buf));
+				}
+			}
+		}
+	}
+
 	if(optional_string("$Counts for Alone:")) {
 		stuff_boolean_flag(&stp->message_bools, STI_MSG_COUNTS_FOR_ALONE);
 	}
@@ -5306,6 +5439,14 @@ void parse_shiptype_tbl(char *filename)
 		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
 
 	reset_parse();
+
+	if (optional_string("#Target Priorities"))
+	{
+		while (required_string_either("#End", "$Name:"))
+			parse_ai_target_priorities();
+
+		required_string("#End");
+	}
 
 	if (optional_string("#Ship Types"))
 	{
@@ -6594,6 +6735,12 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 		else {
 			memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
+		}
+
+		// copy subsystem target priorities stuff
+		ship_system->num_target_priorities = ship_system->system_info->num_target_priorities;
+		for (j = 0; j < 32; j++) {
+			ship_system->target_priority[j] = ship_system->system_info->target_priority[j];
 		}
 
 		// zero flags
@@ -17488,4 +17635,132 @@ void armor_init()
 
 		armor_inited = 1;
 	}
+}
+
+//**************************************************************
+// AI targeting priority functions
+//**************************************************************
+void parse_ai_target_priorities()
+{
+	int i, j, num_strings;
+	int n_entries = Ai_tp_list.size();
+	std::vector <std::string> temp_strings, *temp_strings_p;
+	temp_strings_p = &temp_strings;
+
+	bool first_time = false;
+	int already_exists = -1;
+
+	if (n_entries == 0)
+		first_time = true;
+
+	required_string("$Name:");
+	ai_target_priority temp_priority = init_ai_target_priorities();
+	ai_target_priority *temp_priority_p;
+	temp_priority_p = &temp_priority;
+
+	stuff_string(temp_priority.name, F_NAME, NAME_LENGTH);
+	if (first_time == false) {
+		for (i = 0; i < n_entries; i++) {
+			if (!strnicmp(temp_priority.name, Ai_tp_list[i].name, NAME_LENGTH)) {
+				already_exists = i;
+			}
+		}
+	}
+
+	if (optional_string("+Object Type:") ) {
+		char tempname[NAME_LENGTH];
+		stuff_string(tempname, F_NAME, NAME_LENGTH);
+
+		for (j = 0; j < num_ai_tgt_objects; j++) {
+			if ( !stricmp(ai_tgt_objects[j].name, tempname) ) {
+				temp_priority.obj_type = ai_tgt_objects[j].def;
+			}
+		}
+	}
+
+	if (optional_string("+Weapon Class:") ) {
+		temp_strings.clear();
+		num_strings = stuff_string_list(temp_strings_p);
+
+		for(i = 0; i < num_strings; i++) {
+			for(j = 0; j < MAX_WEAPON_TYPES ; j++) {
+				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
+					temp_priority.weapon_class.push_back(j);
+				}
+			}
+		}
+	}
+
+	if (optional_string("+Object Flags:") ) {
+		temp_strings.clear();
+		num_strings = stuff_string_list(temp_strings_p);
+
+		for (i = 0; i < num_strings; i++) {
+			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
+				if ( !stricmp(ai_tgt_obj_flags[j].name, temp_strings[i].c_str()) ) {
+					temp_priority.obj_flags |= ai_tgt_obj_flags[j].def;
+				}
+			}
+		}
+	}
+
+	if (optional_string("+Ship Class Flags:") ) {
+		temp_strings.clear();
+		num_strings = stuff_string_list(temp_strings_p);
+
+		for (i = 0; i < num_strings; i++) {
+			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
+				if ( !stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str()) ) {
+					if (ai_tgt_ship_flags[j].var == 0) {
+						temp_priority.sif_flags |= ai_tgt_ship_flags[j].def;
+					} else {
+						temp_priority.sif2_flags |= ai_tgt_ship_flags[j].def;
+					}
+				}
+			}
+		}
+	}
+
+	if (optional_string("+Weapon Class Flags:") ) {
+		temp_strings.clear();
+		num_strings = stuff_string_list(temp_strings_p);
+
+		for (i = 0; i < num_strings; i++) {
+			for (j = 0; j < num_ai_tgt_weapon_flags; j++) {
+				if ( !stricmp(ai_tgt_weapon_flags[j].name, temp_strings[i].c_str()) ) {
+					if (ai_tgt_weapon_flags[j].var == 0) {
+						temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
+					} else {
+						temp_priority.wif2_flags |= ai_tgt_weapon_flags[j].def;
+					}
+				}
+			}
+		}
+	}
+
+	temp_strings.clear();
+
+	if (already_exists == -1) {
+		Ai_tp_list.push_back(temp_priority);
+	} else {
+		Ai_tp_list[already_exists] = temp_priority;
+	}
+}
+
+ai_target_priority init_ai_target_priorities()
+{
+	ai_target_priority temp_priority;
+
+	//initialize the entries
+	temp_priority.obj_flags = 0;
+	temp_priority.obj_type = -1;
+	temp_priority.ship_class.clear();
+	temp_priority.ship_type.clear();
+	temp_priority.sif_flags = 0;
+	temp_priority.weapon_class.clear();
+	temp_priority.wif2_flags = 0;
+	temp_priority.wif_flags = 0;
+
+	//return the initialized
+	return temp_priority;
 }

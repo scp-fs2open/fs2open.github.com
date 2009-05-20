@@ -500,7 +500,7 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 	model_subsystem *tp = NULL;
 	if (ss != NULL)
-		model_subsystem *tp = ss->system_info;	
+		tp = ss->system_info;	
 
 	best_point = objp->pos;
 	nearest_dist = weapon_travel_dist;
