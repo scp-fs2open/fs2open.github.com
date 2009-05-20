@@ -650,6 +650,10 @@ int vm_matrix_cmp( matrix * a, matrix * b );
 // each call.   All angles in radians.
 float vm_interp_angle( float *h, float desired_angle, float step_size );
 
+// calculate and return the difference (ie. delta) between two angles
+// using same method as with vm_interp_angle().
+float vm_delta_from_interp_angle( float current_angle, float desired_angle );
+
 // check a matrix for zero rows and columns
 int vm_check_matrix_for_zeros(matrix *m);
 

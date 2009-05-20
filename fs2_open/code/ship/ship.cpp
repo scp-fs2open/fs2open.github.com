@@ -2504,6 +2504,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "fixed firingpoints",	MSS_FLAG_TURRET_FIXED_FP,	0 },
 	{ "salvo mode",			MSS_FLAG_TURRET_SALVO,		0 },
 	{ "no subsystem targeting", MSS_FLAG_NO_SS_TARGETING, 0},
+	{ "fire on target",		MSS_FLAG_FIRE_ON_TARGET,	0 },
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
