@@ -1217,6 +1217,8 @@ typedef	struct ship_subsys {
 	// still going through these...
 	int subsys_snd_flags;
 
+	int      rotation_timestamp;
+	matrix   world_to_turret_matrix;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -2426,6 +2428,10 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
 int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
+
+// functions for testing fov.. returns true if fov test is passed.
+bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

@@ -2505,6 +2505,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "salvo mode",			MSS_FLAG_TURRET_SALVO,		0 },
 	{ "no subsystem targeting", MSS_FLAG_NO_SS_TARGETING, 0},
 	{ "fire on target",		MSS_FLAG_FIRE_ON_TARGET,	0 },
+	{ "reset when idle", MSS_FLAG_TURRET_RESET_IDLE,   0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -4706,6 +4707,9 @@ strcpy(parse_error_text, temp_error);
 				sp->model_num = -1;		// init value for later sanity checking!!
 				sp->armor_type_idx = -1;
 				sp->path_num = -1;
+				sp->turret_max_fov = 1.0f;
+
+				sp->turret_reset_delay = 2000;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -4796,6 +4800,26 @@ strcpy(parse_error_text, temp_error);
 					stuff_float_optional(&sp->awacs_radius);
 				sip->flags |= SIF_HAS_AWACS;
 			}
+
+			if(optional_string("$Maximum Barrel Elevation:")){
+				int i;
+				stuff_int(&i);
+				CAP(i, 0, 90);
+				float angle = ANG_TO_RAD((float) (90 - i));
+				sp->turret_max_fov = (float)cos(angle);
+			}
+
+			if(optional_string("$Turret Base FOV:")) {
+				int i;
+				stuff_int(&i);
+				CAP(i, 0, 359);
+				float angle = ANG_TO_RAD((float) i)/2.0f;
+				sp->turret_y_fov = (float)cos(angle);
+				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
+			}
+
+			if (optional_string("$Turret Reset Delay:"))
+				stuff_int(&sp->turret_reset_delay);
 
 			if (optional_string("$Flags:")) {
 				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);

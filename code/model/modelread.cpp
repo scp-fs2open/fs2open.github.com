@@ -4593,7 +4593,10 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	vm_vec_unrotate( &tempv, &base->offset, orient);
 	vm_vec_add( &world_to_turret_translate, pos, &tempv );
 
-	vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
+	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH)
+		world_to_turret_matrix = ss->world_to_turret_matrix;
+	else
+		vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
 
 	vm_vec_sub( &tempv, dst, &world_to_turret_translate );
 	vm_vec_rotate( &of_dst, &tempv, &world_to_turret_matrix );
@@ -4607,9 +4610,25 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	angles desired_angles;
 //	vm_extract_angles_vector(&desired_angles, &of_dst);
 
-	desired_angles.p = (float)acos(of_dst.xyz.z);
-	desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
-	desired_angles.b = 0.0f;
+	if (reset == false) {
+		desired_angles.p = (float)acos(of_dst.xyz.z);
+		desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
+		desired_angles.b = 0.0f;
+	} else {
+		desired_angles.p = 0.0f;
+		desired_angles.h = 0.0f;
+		desired_angles.b = 0.0f;
+		if (turret->n_triggers > 0) {
+			int i;
+			for (i = 0; i<turret->n_triggers; i++) {
+				if (turret->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+					desired_angles.p = turret->triggers[i].angle.xyz.x;
+					desired_angles.h = turret->triggers[i].angle.xyz.y;
+					i = turret->n_triggers;
+				}
+			}
+		}
+	}
 
 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
 
@@ -4617,6 +4636,23 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
 	float base_delta, gun_delta;
+
+	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH) {
+		vec3d turret_base_to_enemy = of_dst;
+		if ( (turret_base_to_enemy.xyz.x) != 0 || (turret_base_to_enemy.xyz.y != 0) )  {
+			turret_base_to_enemy.xyz.z = 0;
+			vm_vec_normalize(&turret_base_to_enemy);
+			// if these two do not point roughly to the same direction...
+			// swing the gun to the forward position before continuing to chase the target
+			if ((turret_base_to_enemy.xyz.x * sin(base_angles->h)) < 0)
+				desired_angles.h = 0;
+		}
+	}
+
+	if (reset == true)
+		step_size /= 3.0f;
+	else
+		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
 
 	// reset these two
 	ss->base_rotation_rate_pct = 0.0f;
