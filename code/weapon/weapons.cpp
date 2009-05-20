@@ -2011,6 +2011,8 @@ void init_weapon_entry(int weap_info_index)
 
 	// this can get reset after the constructor, so be sure it's correct
 	wip->shockwave.damage_type_idx = -1;
+
+	wip->weapon_hitpoints = 0;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -3188,6 +3190,15 @@ int parse_weapon(int subtype, bool replace)
 			if (wip->alpha_max == wip->alpha_min)
 				Warning(LOCATION, "WARNING:  Alpha is set to cycle for '%s', but max and min values are the same!", wip->name);
 		}
+	}
+
+	if (optional_string("$Weapon Hitpoints:")) {
+		stuff_int(&wip->weapon_hitpoints);
+	}
+
+	// making sure bombs get their hitpoints assigned
+	if ((wip->wi_flags & WIF_BOMB) && (wip->weapon_hitpoints == 0)) {
+		wip->weapon_hitpoints = 50;
 	}
 
 	//pretty stupid if a target must be tagged to shoot tag missiles at it
@@ -5686,8 +5697,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
 	objp->shield_quadrant[0] = wip->damage;
-	if (wip->wi_flags & WIF_BOMB){
-		objp->hull_strength = 50.0f;
+	if (wip->weapon_hitpoints > 0){
+		objp->hull_strength = (float) wip->weapon_hitpoints;
 	} else {
 		objp->hull_strength = 0.0f;
 	}

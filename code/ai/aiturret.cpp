@@ -495,7 +495,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( !(wip->wi_flags & WIF_BOMB) ) {
+		if ( (!(wip->wi_flags & WIF_BOMB) && !(The_mission.ai_profile->flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
 			return 0;
 		}
 

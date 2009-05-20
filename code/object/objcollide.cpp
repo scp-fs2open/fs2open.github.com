@@ -532,7 +532,17 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		weapon_info *awip, *bwip;
 		awip = &Weapon_info[Weapons[A->instance].weapon_info_index];
 		bwip = &Weapon_info[Weapons[B->instance].weapon_info_index];
-		
+
+		if ((awip->weapon_hitpoints > 0) || (bwip->weapon_hitpoints > 0)) {
+			if (bwip->weapon_hitpoints == 0) {
+				check_collision = collide_weapon_weapon;
+				swapped=1;
+			} else {
+				check_collision = collide_weapon_weapon;
+			}
+		}
+/*
+
 		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
 			if (awip->subtype == WP_LASER) {
 				if ( bwip->wi_flags & WIF_BOMB ) {
@@ -549,6 +559,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 				}
 			}
 		}
+*/
 /*
 		int	atype, btype;
 

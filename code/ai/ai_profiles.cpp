@@ -334,6 +334,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Repair Penalty:"))
 				parse_int_list(profile->repair_penalty, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Delay Before Allowing Bombs to Be Shot Down:"))
+				parse_float_list(profile->delay_bomb_arm_timer, NUM_SKILL_LEVELS);
+
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
@@ -385,6 +388,8 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$multi allow empty primaries:", AIPF_MULTI_ALLOW_EMPTY_PRIMARIES);
 
 			set_flag(profile, "$multi allow empty secondaries:", AIPF_MULTI_ALLOW_EMPTY_SECONDARIES);
+
+			set_flag(profile, "$allow turrets target weapons freely:", AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

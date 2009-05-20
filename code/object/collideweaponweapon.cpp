@@ -118,9 +118,11 @@
 #include "ship/ship.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
+#include "freespace2/freespace.h"
 
 
-#define	BOMB_ARM_TIME	1.5f
+// moved to ai_profiles.tbl
+//#define	BOMB_ARM_TIME	1.5f
 
 // Checks weapon-weapon collisions.  pair->a and pair->b are weapons.
 // Returns 1 if all future collisions between these can be ignored
@@ -158,15 +160,15 @@ int collide_weapon_weapon( obj_pair * pair )
 
 	//WMC - Here's a reason why...scripting now!
 
-	if (wipA->wi_flags & WIF_BOMB) {
+	if (wipA->weapon_hitpoints > 0) {
 		A_radius *= 2;		// Makes bombs easier to hit
-		if (wipA->lifetime - wpA->lifeleft < BOMB_ARM_TIME)
+		if ( (wipA->lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
-	if (wipB->wi_flags & WIF_BOMB) {
+	if (wipB->weapon_hitpoints > 0) {
 		B_radius *= 2;		// Makes bombs easier to hit
-		if (wipB->lifetime - wpB->lifeleft < BOMB_ARM_TIME)
+		if ( (wipB->lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -191,8 +193,8 @@ int collide_weapon_weapon( obj_pair * pair )
 			// MWA -- commented out next line because it was too long for output window on occation.
 			// Yes -- I should fix the output window, but I don't have time to do it now.
 			//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", Iff_info[sbp->team].iff_name, sbp->ship_name, B->instance, Iff_info[sap->team].iff_name, sap->ship_name, A->instance));
-			if (wipA->wi_flags & WIF_BOMB) {
-				if (wipB->wi_flags & WIF_BOMB) {		//	Two bombs collide, detonate both.
+			if (wipA->weapon_hitpoints > 0) {
+				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					Weapons[A->instance].lifeleft = 0.01f;
 					Weapons[B->instance].lifeleft = 0.01f;
 					Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
@@ -204,7 +206,7 @@ int collide_weapon_weapon( obj_pair * pair )
 						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					}
 				}
-			} else if (wipB->wi_flags & WIF_BOMB) {
+			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= wipA->damage;
 				if (B->hull_strength < 0.0f) {
 					Weapons[B->instance].lifeleft = 0.01f;
