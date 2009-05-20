@@ -1219,6 +1219,10 @@ typedef	struct ship_subsys {
 
 	int      rotation_timestamp;
 	matrix   world_to_turret_matrix;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -1601,6 +1605,26 @@ typedef struct ship {
 
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 } ship;
+
+struct ai_target_priority {
+	char name[NAME_LENGTH];
+
+	int obj_type;
+	std::vector <int> ship_type;
+	std::vector <int> ship_class;
+	std::vector <int> weapon_class;
+
+	int obj_flags;
+	int sif_flags;
+	int sif2_flags;
+	int wif_flags;
+	int wif2_flags;
+};
+
+extern std::vector <ai_target_priority> Ai_tp_list;
+
+void parse_ai_target_priorities();
+ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.

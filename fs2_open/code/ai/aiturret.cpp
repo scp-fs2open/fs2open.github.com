@@ -519,7 +519,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
 	ship		*shipp;
 	ship_subsys *ss = eeo->turret_subsys;
-	model_subsystem *tp = ss->system_info;
 	float dist;
 
 	// Don't look for bombs when weapon system is not ok
@@ -782,82 +781,208 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.nearest_dist = 99999.0f;
 	eeo.nearest_objnum = -1;
 
-	for(int i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
-	{
-		switch(turret_subsys->turret_targeting_order[i])
-		{
-			case -1:
-					//Empty priority slot
-				break;
+	// here goes the new targeting priority setting
+	int n_tgt_priorities = turret_subsys->num_target_priorities;
+	if (n_tgt_priorities > 0) {
 
-			case 0:
-				//Return if a bomb is found
-				//don't fire anti capital ship turrets at bombs.
-				if ( !((The_mission.ai_profile->flags & AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS) && big_only_flag) )
-				{
-					// Missile_obj_list
-					for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-						objp = &Objects[mo->objnum];
-						
-						Assert(objp->type == OBJ_WEAPON);
-						if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
-						{
-							evaluate_obj_as_target(objp, &eeo);
+		for(int i = 0; i < n_tgt_priorities; i++) {
+			// courtesy of WMC...
+			ai_target_priority *tt = &Ai_tp_list[turret_subsys->target_priority[i]];
+			int n_types = tt->ship_type.size();
+			int n_s_classes = tt->ship_class.size();
+			int n_w_classes = tt->weapon_class.size();
+			
+			bool found_something;
+			object *ptr = GET_FIRST(&obj_used_list);
+			
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				found_something = false;
+
+				if(tt->obj_type > -1 && (ptr->type == tt->obj_type)) {
+					found_something = true;
+				}
+
+				if( ( n_types > 0 ) && ( ptr->type == OBJ_SHIP ) ) {
+					for (int j = 0; j < n_types; j++) {
+						if ( Ship_info[Ships[ptr->instance].ship_info_index].class_type == tt->ship_type[j] ) {
+							found_something = true;
 						}
 					}
-					// highest priority
-					if ( eeo.nearest_homing_bomb_objnum != -1 ) {					// highest priority is an incoming homing bomb
-						return eeo.nearest_homing_bomb_objnum;
-					} else if ( eeo.nearest_bomb_objnum != -1 ) {					// next highest priority is an incoming dumbfire bomb
-						return eeo.nearest_bomb_objnum;
+				}
+
+				if( ( n_s_classes > 0 ) && ( ptr->type == OBJ_SHIP ) ) {
+					for (int j = 0; j < n_s_classes; j++) {
+						if ( Ships[ptr->instance].ship_info_index == tt->ship_class[j] ) {
+							found_something = true;
+						}
 					}
 				}
-				break;
 
-			case 1:
-				//Return if a ship is found
-				// Ship_used_list
-				for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-					objp = &Objects[so->objnum];
-					evaluate_obj_as_target(objp, &eeo);
+				if( ( n_w_classes > 0 ) && ( ptr->type == OBJ_WEAPON ) ) {
+					for (int j = 0; j < n_w_classes; j++) {
+						if ( Weapons[ptr->instance].weapon_info_index == tt->weapon_class[j] ) {
+							found_something = true;
+						}
+					}
 				}
 
-				Assert(eeo.nearest_attacker_objnum < 0 || is_target_beam_valid(swp, &Objects[eeo.nearest_attacker_objnum]));
-					// next highest priority is attacking ship
-				if ( eeo.nearest_attacker_objnum != -1 ) {			// next highest priority is an attacking ship
-					return eeo.nearest_attacker_objnum;
+				if( ( (tt->wif2_flags != 0) || (tt->wif_flags != 0) ) && (ptr->type == OBJ_WEAPON) ) {
+					if( ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags & tt->wif_flags ) == tt->wif_flags)
+						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags2 & tt->wif2_flags ) == tt->wif2_flags) ) {
+							found_something = true;
+					}
 				}
-				break;
 
-			case 2:
-				//Return if an asteroid is found
-				// asteroid check - taylor
-				asteroid_obj *ao;
+				if( ( ( tt->sif_flags != 0 ) || ( tt->sif2_flags != 0 ) ) && (ptr->type == OBJ_SHIP) ) {
+					if( ( (Ship_info[Ships[ptr->instance].ship_info_index].flags & tt->sif_flags) == tt->sif_flags)
+						&& ( (Ship_info[Ships[ptr->instance].ship_info_index].flags2 & tt->sif2_flags) == tt->sif2_flags) ) {
+							found_something = true;
+					}
+				}
 
-				// don't use turrets that are better for other things:
-				// - no cap ship beams
-				// - no flak
-				// - no heat or aspect missiles
-				// - no spawn type missiles/bombs
-				// do use for sure:
-				// - lasers
-				// - dumbfire type missiles
-				// - AAA beams
-				if ( !all_turret_weapons_have_flags(swp, WIF_HUGE | WIF_FLAK | WIF_HOMING | WIF_SPAWN) ) {
-					// Asteroid_obj_list
-					for ( ao = GET_FIRST(&Asteroid_obj_list); ao != END_OF_LIST(&Asteroid_obj_list); ao = GET_NEXT(ao) ) {
-						objp = &Objects[ao->objnum];
+				if((tt->obj_flags != 0) && !((ptr->flags & tt->obj_flags) == tt->obj_flags)) {
+					found_something = true;
+				}
+
+				if(!(found_something)) {
+					//we didnt find this object within this priority group
+					//skip to next without evaluating the object as target
+					ptr = GET_NEXT(ptr);
+
+					continue;
+				}
+
+
+				evaluate_obj_as_target(ptr, &eeo);
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			//homing weapon entry...
+			/*
+			if ( eeo.nearest_homing_bomb_objnum != -1 ) {               // highest priority is an incoming homing bomb
+				return eeo.nearest_homing_bomb_objnum;
+				//weapon entry...
+			} else if ( eeo.nearest_bomb_objnum != -1 ) {               // next highest priority is an incoming dumbfire bomb
+				return eeo.nearest_bomb_objnum;
+				//ship entry...
+			} else if ( eeo.nearest_attacker_objnum != -1 ) {        // next highest priority is an attacking ship
+				return eeo.nearest_attacker_objnum;
+				//something else entry...
+			} else if ( eeo.nearest_objnum != -1 ) {
+				return eeo.nearest_objnum;
+			}
+			*/
+			// if we got something...
+			if ( ( eeo.nearest_homing_bomb_objnum != -1 ) || 
+				( eeo.nearest_bomb_objnum != -1 ) || 
+				( eeo.nearest_attacker_objnum != -1 ) ||
+				( eeo.nearest_objnum != -1 ) )
+			{
+				// ...start with homing bombs...
+				int return_objnum =	eeo.nearest_homing_bomb_objnum;
+				float return_distance = eeo.nearest_homing_bomb_dist;
+
+				// ...next test non-homing bombs...
+				if ( eeo.nearest_bomb_dist < return_distance ) {
+					return_objnum =  eeo.nearest_bomb_objnum;
+					return_distance = eeo.nearest_bomb_dist;
+				}
+
+				// ...then attackers...
+				if ( eeo.nearest_attacker_dist < return_distance ) {
+					return_objnum =  eeo.nearest_attacker_objnum;
+					return_distance = eeo.nearest_attacker_dist;
+				}
+
+				// ...and finally the rest of the lot...
+				if ( eeo.nearest_dist < return_distance ) {
+					return_objnum =  eeo.nearest_objnum;
+				}
+
+				// ...and return the objnum to the closest target regardless
+				return return_objnum;
+			}
+		}
+	} else {
+
+		for(int i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
+		{
+			switch(turret_subsys->turret_targeting_order[i])
+			{
+				case -1:
+						//Empty priority slot
+					break;
+
+				case 0:
+					//Return if a bomb is found
+					//don't fire anti capital ship turrets at bombs.
+					if ( !((The_mission.ai_profile->flags & AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS) && big_only_flag) )
+					{
+						// Missile_obj_list
+						for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
+							objp = &Objects[mo->objnum];
+							
+							Assert(objp->type == OBJ_WEAPON);
+							if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+							{
+								evaluate_obj_as_target(objp, &eeo);
+							}
+						}
+						// highest priority
+						if ( eeo.nearest_homing_bomb_objnum != -1 ) {					// highest priority is an incoming homing bomb
+							return eeo.nearest_homing_bomb_objnum;
+						} else if ( eeo.nearest_bomb_objnum != -1 ) {					// next highest priority is an incoming dumbfire bomb
+							return eeo.nearest_bomb_objnum;
+						}
+					}
+					break;
+
+				case 1:
+					//Return if a ship is found
+					// Ship_used_list
+					for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+						objp = &Objects[so->objnum];
 						evaluate_obj_as_target(objp, &eeo);
 					}
 
-					if (eeo.nearest_objnum != -1) {
-						return eeo.nearest_objnum;
+					Assert(eeo.nearest_attacker_objnum < 0 || is_target_beam_valid(swp, &Objects[eeo.nearest_attacker_objnum]));
+						// next highest priority is attacking ship
+					if ( eeo.nearest_attacker_objnum != -1 ) {			// next highest priority is an attacking ship
+						return eeo.nearest_attacker_objnum;
 					}
-				}
-				break;
+					break;
 
-			default:
-				Int3(); //Means invalid number passed.
+				case 2:
+					//Return if an asteroid is found
+					// asteroid check - taylor
+					asteroid_obj *ao;
+
+					// don't use turrets that are better for other things:
+					// - no cap ship beams
+					// - no flak
+					// - no heat or aspect missiles
+					// - no spawn type missiles/bombs
+					// do use for sure:
+					// - lasers
+					// - dumbfire type missiles
+					// - AAA beams
+					if ( !all_turret_weapons_have_flags(swp, WIF_HUGE | WIF_FLAK | WIF_HOMING | WIF_SPAWN) ) {
+						// Asteroid_obj_list
+						for ( ao = GET_FIRST(&Asteroid_obj_list); ao != END_OF_LIST(&Asteroid_obj_list); ao = GET_NEXT(ao) ) {
+							objp = &Objects[ao->objnum];
+							evaluate_obj_as_target(objp, &eeo);
+						}
+
+						if (eeo.nearest_objnum != -1) {
+							return eeo.nearest_objnum;
+						}
+					}
+					break;
+
+				default:
+					Int3(); //Means invalid number passed.
+			}
 		}
 	}
 

@@ -856,6 +856,10 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
 	int		turret_reset_delay;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
 } model_subsystem;
 
 typedef struct model_special {
