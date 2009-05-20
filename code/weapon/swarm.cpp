@@ -608,7 +608,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 		}
 		turret->turret_swarm_info_index[9] = -1;
 		turret->turret_swarm_num--;
-		//shipp->num_turret_swarm_info--;
+		shipp->num_turret_swarm_info--;
 	}
 	turret->turret_swarm_info_index[turret->turret_swarm_num] = tsi_index;
 	turret->turret_swarm_num++;
