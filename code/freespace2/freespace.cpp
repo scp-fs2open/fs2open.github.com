@@ -6296,6 +6296,7 @@ void bars_do_frame(float frametime)
 		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
 		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		//Set clipping
+		gr_reset_clip();
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
@@ -6305,6 +6306,7 @@ void bars_do_frame(float frametime)
 		//gr_set_color(0,0,0);
 		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
 		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		gr_reset_clip();
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
 	}
 }
@@ -6452,14 +6454,8 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
 
-            if (Time_compression_locked)
-            {
-                bars_do_frame(flRealframetime);
-            }
-            else
-            {
-                bars_do_frame(flFrametime);
-            }
+			// WMC's cutscene bars function
+			bars_do_frame(Time_compression_locked ? flRealframetime : flFrametime);
 
 			game_render_frame( cid );
 
