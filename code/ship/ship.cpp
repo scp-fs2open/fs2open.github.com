@@ -4978,7 +4978,7 @@ strcpy(parse_error_text, temp_error);
 				"\t+untargetable\n" \
 				"\t+carry-no-damage\n" \
 				"\t+use-multiple-guns\n" \
-				"\t+fire-down-normals\n", sip->name, sp->name));
+				"\t+fire-down-normals\n", sip->name, sp->subobj_name));
 			}
 
 			while(optional_string("$animation:"))
@@ -14643,7 +14643,7 @@ int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos,
 
 		if (ss->system_info->path_num > pm->n_paths) {
 			// possibly a bad model?
-			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->name));
+			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name));
 		//	Int3();
 			return 1;
 		}
@@ -15056,7 +15056,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DESTROY_SUBSYSTEM: {
 			char name[NAME_LENGTH];
 			if ( aip->targeted_subsys != NULL ) {
-				sprintf(outbuf, XSTR( "atk %s %s", 496), temp_name, hud_targetbox_truncate_subsys_name(aip->targeted_subsys->system_info->name));
+				sprintf(outbuf, XSTR( "atk %s %s", 496), temp_name, hud_targetbox_truncate_subsys_name(aip->targeted_subsys->system_info->subobj_name));
 				strcat(outbuf, name);	//what is this for?
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495) );
@@ -15934,7 +15934,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 
 	// if the cargo is something other than "nothing", then make a log entry
 	if ( (subsys->subsys_cargo_name > 0) && stricmp(Cargo_names[subsys->subsys_cargo_name], NOX("nothing")) ){
-		mission_log_add_entry(LOG_CAP_SUBSYS_CARGO_REVEALED, shipp->ship_name, subsys->system_info->name, subsys->subsys_cargo_name );
+		mission_log_add_entry(LOG_CAP_SUBSYS_CARGO_REVEALED, shipp->ship_name, subsys->system_info->subobj_name, subsys->subsys_cargo_name );
 	}	
 }
 

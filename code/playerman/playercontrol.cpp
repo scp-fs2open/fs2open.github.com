@@ -2117,7 +2117,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// don't scan cargo on turrets, radar, etc.  only the majors: fighterbay, sensor, engines, weapons, nav, comm
-	if (!valid_cap_subsys_cargo_list(subsys->system_info->name)) {
+	if (!valid_cap_subsys_cargo_list(subsys->system_info->subobj_name)) {
 		return 0;
 	}
 
