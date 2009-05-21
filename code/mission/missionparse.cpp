@@ -1885,6 +1885,14 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_string(pm->skybox_model, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	if (optional_string("+Skybox Flags:")){
+		pm->skybox_flags = 0;
+		stuff_int(&pm->skybox_flags); 
+		// parse_string_flag_list(&pm->skybox_flags, model_render_flags, model_render_flags_size);
+	}else{
+		pm->skybox_flags = DEFAULT_NMODEL_FLAGS;
+	}
+
 	// Goober5000 - AI on a per-mission basis
 	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 	if (optional_string("$AI Profile:"))

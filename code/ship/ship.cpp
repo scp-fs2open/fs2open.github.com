@@ -12774,8 +12774,8 @@ void ship_model_start(object *objp)
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
 			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2 );
 		}
-
 	}
+	model_do_dumb_rotation(model_num);
 }
 
 //==========================================================

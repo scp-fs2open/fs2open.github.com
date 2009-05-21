@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -103,6 +103,7 @@
 #define IDD_BACKGROUND_CHOOSER          272
 #define IDB_DATA_05                     277
 #define IDB_DATA_10                     286
+#define IDD_ALT_SHIP_CLASS              292
 #define IDB_DATA_15                     296
 #define IDB_DATA_00                     297
 #define IDB_DATA_20                     300
@@ -121,7 +122,6 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
-#define IDD_ALT_SHIP_CLASS              292
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1110,6 +1110,12 @@
 #define IDC_ALT_CLASS_UP                1602
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
+#define IDC_SKY_FLAG_NO_LIGHTING        1609
+#define IDC_SKY_FLAG                    1610
+#define IDC_SKY_FLAG_XPARENT            1610
+#define IDC_SKY_FLAG_NO_ZBUFF           1611
+#define IDC_SKY_FLAG_NO_CULL            1612
+#define IDC_SKY_FLAG_NO_GLOW            1613
 #define IDC_TURRETS_LOCKED              1615
 #define IDC_AFTERBURNER_LOCKED          1616
 #define ID_FILE_MISSIONNOTES            32771
@@ -1389,9 +1395,9 @@
 #define ID_SHOW_IFF_7                   33088
 #define ID_SHOW_IFF_8                   33089
 #define ID_VIEW_FULL_DETAIL             33090
-#define ID_AUTOBALANCE                  33091
 #define ID_SAVEFORMAT_FS2OPEN           33091
 #define ID_FORMAT_FS2_OPEN_COMP         33092
+#define ID_AUTOBALANCE                  33093
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144

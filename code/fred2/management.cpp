@@ -1577,6 +1577,9 @@ void clear_mission()
 	for(i=0; i<MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
+
+	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
+	The_mission.skybox_flags  = DEFAULT_NMODEL_FLAGS;
 	Nmodel_num = -1;
 	Nmodel_bitmap = -1;
 
