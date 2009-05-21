@@ -4757,6 +4757,7 @@ strcpy(parse_error_text, temp_error);
 				sp->weapon_rotation_pbank = -1;
 
 				memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name) );
+				memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name) );
 
 				for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 					sp->primary_banks[i] = -1;
@@ -4821,6 +4822,11 @@ strcpy(parse_error_text, temp_error);
 			if(optional_string("$Alt Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 				strcpy(sp->alt_sub_name, buf);
+			}
+
+			if(optional_string("$Alt Damage Popup Subsystem Name:")) {
+				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+				strcpy(sp->alt_dmg_sub_name, buf);
 			}
 
 			if(optional_string("$Armor Type:")) {
