@@ -96,6 +96,7 @@ typedef struct trail_info {
 	float max_life;		// max_life for a section
 	int stamp;				// spew timestamp
 	generic_bitmap texture;	// texture to use for trail
+	int n_fade_out_sections;// number of initial sections used for fading out start 'edge' of the effect
 } trail_info;
 
 typedef struct trail {
