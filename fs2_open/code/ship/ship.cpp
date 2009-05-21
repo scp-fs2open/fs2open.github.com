@@ -9481,7 +9481,12 @@ void ship_process_post(object * obj, float frametime)
 		// JAS -- if the ship is warping out, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpout_frame( obj, frametime );
-	} else {
+	} 
+
+	if ( (!(shipp->flags & SF_ARRIVING) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
+		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags & SF_ARRIVING_STAGE_2)) )
+		&&	!(shipp->flags & SF_DEPART_WARP))
+	{
 		//	Do AI.
 
 		// for multiplayer people.  return here if in multiplay and not the host
