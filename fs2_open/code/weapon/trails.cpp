@@ -421,12 +421,22 @@ void trail_render( trail * trailp )
 
 	float w_size = (ti->w_end - ti->w_start);
 	float a_size = (ti->a_end - ti->a_start);
+	int num_faded_sections = ti->n_fade_out_sections;
 
 	for (i = 0; i < num_sections; i++) {
 		n = sections[i];
+		float init_fade_out = 1.0f;
+
+		if ((num_faded_sections > 0) && (i < num_faded_sections)) {
+			init_fade_out = ((float) i) / (float) num_faded_sections;
+		}
 
 		w = trailp->val[n] * w_size + ti->w_start;
-		l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
+		if (init_fade_out != 1.0f) {
+			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
+		} else {
+			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
+		}
 
 		if ( i == 0 )	{
 			if ( num_sections > 1 )	{

@@ -2010,6 +2010,7 @@ typedef struct ship_info {
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
 	float afterburner_trail_life;
+	int afterburner_trail_faded_out_sections;
 
 	// thruster particles
 	std::vector<thruster_particles> normal_thruster_particles;
