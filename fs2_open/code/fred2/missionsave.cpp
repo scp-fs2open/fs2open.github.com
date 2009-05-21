@@ -1002,6 +1002,22 @@ int CFred_mission_save::save_mission_info()
 		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
 	}
 
+	// are skybox flags in use?
+	if (The_mission.skybox_flags != DEFAULT_NMODEL_FLAGS) {
+		//char out_str[4096];
+		if (optional_string_fred("+Skybox Flags:")) {
+			parse_comments(0);
+			fout( " %d", The_mission.skybox_flags);
+		} else {
+			fso_comment_push(";;FSO 3.6.11;;");
+			fout_version("\n+Skybox Flags: %d", The_mission.skybox_flags);
+			fso_comment_pop();
+		}
+	}
+	else {
+		bypass_comment(";;FSO 3.6.11;; +Skybox Flags:");
+	}
+
 	// Goober5000's AI profile stuff
 	int profile_index = (The_mission.ai_profile - Ai_profiles);
 	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);

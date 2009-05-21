@@ -738,6 +738,7 @@ int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vc
 // background data
 int Stars_background_inited = 0;			// if we're inited
 int Nmodel_num = -1;							// model num
+int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
 
 int Num_debris_normal = 0;
@@ -1463,7 +1464,7 @@ void stars_post_level_init()
 	ubyte red,green,blue,alpha;
 
 
-	stars_set_background_model(The_mission.skybox_model, NULL);
+	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
 
 	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
 
@@ -2906,27 +2907,27 @@ void stars_page_in()
 // background nebula models and planets
 void stars_draw_background()
 {	
-	int flags = MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING;
-
 	if (Nmodel_num < 0)
 		return;
 
 	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(Nmodel_bitmap);
-		flags |= MR_FORCE_TEXTURE;
+		Nmodel_flags |= MR_FORCE_TEXTURE;
 	}
 
 	// draw the model at the player's eye with no z-buffering
 	model_set_alpha(1.0f);
 
-	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
+	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, Nmodel_flags);	
 
-	if (Nmodel_bitmap >= 0)
+	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(-1);
+		Nmodel_flags &= !MR_FORCE_TEXTURE;
+	}
 }
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name)
+void stars_set_background_model(char *model_name, char *texture_name, int flags)
 {
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
@@ -2937,6 +2938,8 @@ void stars_set_background_model(char *model_name, char *texture_name)
 		model_unload(Nmodel_num);
 		Nmodel_num = -1;
 	}
+
+	Nmodel_flags = flags;
 
 	if ( (model_name == NULL) || (*model_name == '\0') )
 		return;

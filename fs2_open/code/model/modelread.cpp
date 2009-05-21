@@ -1243,6 +1243,16 @@
 
 #include "gamesnd/gamesnd.h"
 
+flag_def_list model_render_flags[] =
+{
+	{"no lighting",		MR_NO_LIGHTING},
+	{"transparent",		MR_ALL_XPARENT},
+	{"no Zbuffer",		MR_NO_ZBUFFER},
+	{"no cull",			MR_NO_CULL},
+	{"no glowmaps",		MR_NO_GLOWMAPS}
+};
+  	 
+int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 
@@ -2426,6 +2436,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}else if(strstr(props, "$triggered:")){
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
 					}
+				}
+
+
+				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
+					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
+					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
+				}else{
+					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
 
 				if ( pm->submodel[n].name[0] == '\0' ) {
@@ -5041,6 +5059,47 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	for (i=0; i<sm->num_details; i++ )	{
 		model_set_instance(model_num, sm->details[i], sii );
 	}
+}
+
+
+
+void model_do_childeren_dumb_rotation(polymodel * pm, int mn){
+	while ( mn >= 0 )	{
+
+		bsp_info * sm = &pm->submodel[mn];
+
+		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
+			float *ang;
+			int axis = sm->movement_axis;
+			switch(axis){
+			case MOVEMENT_AXIS_X:
+				ang = &sm->angs.p;
+					break;
+			case MOVEMENT_AXIS_Z:
+				ang = &sm->angs.b;
+					break;
+			default:
+			case MOVEMENT_AXIS_Y:
+				ang = &sm->angs.h;
+					break;
+			}
+			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
+			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
+			//this keeps ang from getting bigger than 2PI
+		}
+
+		if(pm->submodel[mn].first_child >-1)model_do_childeren_dumb_rotation(pm, pm->submodel[mn].first_child);
+
+		mn = pm->submodel[mn].next_sibling;
+	}
+}
+void model_do_dumb_rotation(int pn){
+	polymodel * pm;
+
+	pm = model_get(pn);
+	int mn = pm->detail[0];
+
+	model_do_childeren_dumb_rotation(pm,mn);
 }
 
 

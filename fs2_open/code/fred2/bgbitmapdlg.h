@@ -207,6 +207,11 @@ public:
 	int b_div_x;
 	int b_div_y;
 	int b_index;
+	int m_sky_flag_1;
+	int m_sky_flag_2;
+	int m_sky_flag_3;
+	int m_sky_flag_4;
+	int m_sky_flag_5;
 	CString m_skybox_model;
 	CString m_envmap;
 	//}}AFX_DATA
