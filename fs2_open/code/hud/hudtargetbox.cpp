@@ -2133,7 +2133,7 @@ void hud_show_target_data(float frametime)
 				sy += dy;
 
 				if ( aip->targeted_subsys != NULL ) {
-					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->name);
+					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name);
 					gr_printf(sx, sy, outstr);
 				}
 				sy += dy;

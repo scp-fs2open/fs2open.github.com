@@ -309,7 +309,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 					// disrupt the turret
 					ship_subsys_set_disrupted(moveup, (int)(MAX_TURRET_DISRUPT_TIME * scale_factor));
 
-					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
+					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->subobj_name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
 				}
 				
 				// next item

@@ -1972,7 +1972,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// for this goal to be valid).
 			Assert ( aigp->ai_submode >= 0 );
 			ssp = ship_get_indexed_subsys( &Ships[sindex], aigp->ai_submode );
-			status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->ship_name, ssp->system_info->name, NULL );
+			status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->ship_name, ssp->system_info->subobj_name, NULL );
 
 			break;
 		}

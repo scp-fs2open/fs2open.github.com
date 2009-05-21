@@ -15621,7 +15621,7 @@ int sexp_missile_locked(int node)
 				return SEXP_FALSE;
 
 			// if we're not targeting the specific subsystem, it's false
-			if (subsystem_stricmp(Player_ai->targeted_subsys->system_info->name, CTEXT(CDR(CDR(node)))))
+			if (subsystem_stricmp(Player_ai->targeted_subsys->system_info->subobj_name, CTEXT(CDR(CDR(node)))))
 				return SEXP_FALSE;
 		}
 	}
