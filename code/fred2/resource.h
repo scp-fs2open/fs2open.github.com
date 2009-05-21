@@ -588,7 +588,6 @@
 #define IDC_SHIP_PERSONA                1203
 #define IDC_SET_FROM_SHIP_CLASS         1203
 #define IDC_NEBCOLOR                    1204
-#define IDC_COMBO21                     1204
 #define IDC_SUBSTITUTE_EVENT_MUSIC      1205
 #define IDC_AI_PROFILE                  1207
 #define IDC_LIST3                       1208
@@ -1111,9 +1110,6 @@
 #define IDC_ALT_CLASS_UP                1602
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
-#define IDC_CUTSCENES_TREE              1606
-#define IDC_BUTTON4                     1607
-#define IDC_BUTTON5                     1608
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1402,10 +1398,6 @@
 #define ID_SAVEFORMAT_FS2OPEN           33091
 #define ID_FORMAT_FS2_OPEN_COMP         33092
 #define ID_AUTOBALANCE                  33093
-#define ID_EDITORS_CUTSCENEEDITOR       33094
-#define ID_EDITOREDITORS_CUTSCENE       33095
-#define ID_EDITOR_CUTSCENE              33096
-#define ID_EDITORS_CUTSCENES            33097
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144

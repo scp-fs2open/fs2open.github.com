@@ -1138,5 +1138,6 @@ void clear_texture_replacements();
 // Goober5000
 subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name);
 
+
 #endif
 
