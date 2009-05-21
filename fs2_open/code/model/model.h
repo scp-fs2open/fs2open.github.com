@@ -800,6 +800,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	char		name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
 	char		subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
 	char		alt_sub_name[NAME_LENGTH];					//Karajorma - Name that overrides name of original
+	char		alt_dmg_sub_name[NAME_LENGTH];      // Name for the damage popup subsystems, allows for translation
 	int		subobj_num;								// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries
 	int		model_num;								// Which model this is attached to (i.e. the polymodel[] index)
 	int		type;										// type. see SUBSYSTEM_* types above.  A generic type thing

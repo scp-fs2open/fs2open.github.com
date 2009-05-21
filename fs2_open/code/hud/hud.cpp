@@ -2271,7 +2271,12 @@ void hud_show_damage_popup()
 					screen_integrity = 1;
 				}
 			}
-			hud_subsys_list[num].name = ship_subsys_get_name(pss);
+
+			if (strlen(psub->alt_dmg_sub_name))
+				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
+			else
+				hud_subsys_list[num].name = ship_subsys_get_name(pss);
+
 			hud_subsys_list[num].str  = screen_integrity;
 			hud_subsys_list[num].type = psub->type;
 			num++;
