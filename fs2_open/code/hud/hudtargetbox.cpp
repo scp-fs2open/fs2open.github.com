@@ -1323,8 +1323,30 @@ void hud_render_target_ship_info(object *target_objp)
 		} else {
 			sprintf(outstr, "%s", ship_subsys_get_name(Player_ai->targeted_subsys));
 		}
-		hud_targetbox_truncate_subsys_name(outstr);
-		gr_printf(Target_window_coords[gr_screen.res][0]+2, Target_window_coords[gr_screen.res][1]+Target_window_coords[gr_screen.res][3]-h, outstr);
+
+		char *p_line;
+		// hence pipe shall be the linebreak
+		char linebreak[2] = "|";
+		int n_linebreaks = 0;
+		p_line = strpbrk(outstr,linebreak);
+		
+		// figure out how many linebreaks we actually have
+		while (p_line != NULL) {
+			n_linebreaks++;
+			p_line = strpbrk(p_line+1,linebreak);
+		}
+
+		if (n_linebreaks) {
+			p_line = strtok(outstr,linebreak);
+			while (p_line != NULL) {
+				gr_printf(Target_window_coords[gr_screen.res][0]+2, Target_window_coords[gr_screen.res][1]+Target_window_coords[gr_screen.res][3]-h-(10*n_linebreaks), p_line);
+				p_line = strtok(NULL,linebreak);
+				n_linebreaks--;
+			}
+		} else {
+			hud_targetbox_truncate_subsys_name(outstr);
+			gr_printf(Target_window_coords[gr_screen.res][0]+2, Target_window_coords[gr_screen.res][1]+Target_window_coords[gr_screen.res][3]-h, outstr);
+		}
 
 		// AL 23-3-98: Fighter bays are a special case.  Player cannot destroy them, so don't
 		//					show the subsystem strength
