@@ -9903,8 +9903,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
 
-	if ( sip->flags & SIF_NAVBUOY )	{
-		// JAS: Nav buoys don't need to do collisions!
+	// JAS: Nav buoys don't need to do collisions!
+	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
+	if ( sip->flags & SIF_NO_COLLIDE )	{
 		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_PHYSICS );
 	} else {
 		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
