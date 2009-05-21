@@ -3266,7 +3266,14 @@ void hud_target_subsystem_in_reticle()
 
 	if ( nearest_subsys != NULL ) {
 		set_targeted_subsys(Player_ai, nearest_subsys, Player_ai->target_objnum);
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting subsystem %s.", 323), Player_ai->targeted_subsys->system_info->name);
+		char r_name[NAME_LENGTH];
+		int i;
+		strcpy(r_name, ship_subsys_get_name(Player_ai->targeted_subsys));
+		for (i = 0; r_name[i] > 0; i++) {
+			if (r_name[i] == '|')
+				r_name[i] = ' ';
+		}
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting subsystem %s.", 323), r_name);
 		Ships[shipnum].last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
 	}	
 	else {
