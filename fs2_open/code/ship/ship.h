@@ -2057,6 +2057,8 @@ typedef struct ship_info {
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;
+
+	float emp_resistance_mod;
 } ship_info;
 
 extern int Num_wings;
