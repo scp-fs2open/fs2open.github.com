@@ -240,7 +240,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		
 		// if we have a bomb weapon
 		wip_target = &Weapon_info[Weapons[target->instance].weapon_info_index];
-		if(wip_target->wi_flags & WIF_BOMB){
+		if((wip_target->weapon_hitpoints > 0) && !(wip_target->wi_flags2 & WIF2_NO_EMP_KILL)) {
 			// get the distance between the detonation and the target object
 			vm_vec_sub(&dist, &target->pos, pos);
 			dist_mag = vm_vec_mag(&dist);
@@ -249,7 +249,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			if(dist_mag <= (outer_radius * 0.25f)){
 				// memset(&target->phys_info, 0, sizeof(physics_info));
 				Weapons[target->instance].weapon_flags |= WF_DEAD_IN_WATER;
-				mprintf(("EMP killing bomb\n"));
+				mprintf(("EMP killing weapon\n"));
 			}
 		}	
 	}
@@ -305,11 +305,18 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 					if(dist_mag >= inner_radius){
 						scale_factor = 1.0f - (dist_mag / outer_radius);
 					} 
+
+					scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
+
+					if (scale_factor < 0.0f) {
+						moveup = moveup->next;
+						continue;
+					}
 					
 					// disrupt the turret
 					ship_subsys_set_disrupted(moveup, (int)(MAX_TURRET_DISRUPT_TIME * scale_factor));
 
-					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
+					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->subobj_name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
 				}
 				
 				// next item
@@ -330,10 +337,14 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			// compute a scale factor for the emp effect
 			scale_factor = 1.0f;
 			if(dist_mag >= inner_radius){
-				scale_factor = 1.0f - (dist_mag / outer_radius);
-				actual_intensity = emp_intensity * scale_factor;
-				actual_time = emp_time * scale_factor;		
+				scale_factor = 1.0f - (dist_mag / outer_radius);	
 			} 
+
+			scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
+
+			if (scale_factor < 0.0f) {
+				continue;
+			}
 		
 			// calculate actual EMP effect values
 			actual_intensity = emp_intensity * scale_factor;

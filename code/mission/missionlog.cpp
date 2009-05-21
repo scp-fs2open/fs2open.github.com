@@ -965,7 +965,7 @@ void message_log_init_scrollback(int pw)
 
 				message_log_add_segs(XSTR( "Subsystem ", 410), LOG_COLOR_NORMAL);
 				//message_log_add_segs(entry->sname, LOG_COLOR_BRIGHT);
-				char *subsys_name = Ship_info[si_index].subsystems[model_index].name;
+				char *subsys_name = Ship_info[si_index].subsystems[model_index].subobj_name;
 				if (Ship_info[si_index].subsystems[model_index].type == SUBSYSTEM_TURRET) {
 					subsys_name = XSTR("Turret", 1487);
 				}

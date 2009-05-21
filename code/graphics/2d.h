@@ -988,7 +988,7 @@ typedef struct screen {
 	void (*gf_pixel)( int x, int y, bool resize );
 
 	// Scales current bitmap between va and vb with clipping
-	void (*gf_scaler)(vertex *va, vertex *vb );
+	void (*gf_scaler)(vertex *va, vertex *vb, bool bw_bitmap );
 
 	// Scales current bitmap between va and vb with clipping, draws an aabitmap
 	void (*gf_aascaler)(vertex *va, vertex *vb );

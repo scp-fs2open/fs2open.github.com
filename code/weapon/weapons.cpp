@@ -1661,6 +1661,12 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else if (!stricmp(NOX("training"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TRAINING;
+		else if (!stricmp(NOX("smart spawn"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SMART_SPAWN;
+		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
+		else if (!stricmp(NOX("no emp kill"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_NO_EMP_KILL;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -1701,6 +1707,15 @@ void parse_wi_flags(weapon_info *weaponp)
 		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
 	}
 
+	if (!(weaponp->wi_flags & WIF_SPAWN) && (weaponp->wi_flags2 & WIF2_SMART_SPAWN))
+	{
+		Warning(LOCATION,"\"smart spawn\" flag used without \"spawn\" flag in %s\n",weaponp->name);
+	}
+
+	if ((weaponp->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (!(weaponp->wi_flags & WIF_CHILD)))
+	{
+		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
+	}
 }
 
 void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
@@ -1881,6 +1896,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->tr_info.max_life = 1.0f;
 	wip->tr_info.stamp = 0;
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
+	wip->tr_info.n_fade_out_sections = 0;
 
 	wip->icon_filename[0] = 0;
 
@@ -1998,6 +2014,8 @@ void init_weapon_entry(int weap_info_index)
 
 	// this can get reset after the constructor, so be sure it's correct
 	wip->shockwave.damage_type_idx = -1;
+
+	wip->weapon_hitpoints = 0;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -2653,6 +2671,9 @@ int parse_weapon(int subtype, bool replace)
 			generic_bitmap_init(&ti->texture, fname);
 		}
 
+		if ( optional_string("+Faded Out Sections:") ) {
+			stuff_int(&ti->n_fade_out_sections);
+		}
 		// wip->delta_time = fl2i(1000.0f*wip->max_life)/(NUM_TRAIL_SECTIONS+1);		// time between sections.  max_life / num_sections basically.
 	}
 
@@ -3175,6 +3196,15 @@ int parse_weapon(int subtype, bool replace)
 			if (wip->alpha_max == wip->alpha_min)
 				Warning(LOCATION, "WARNING:  Alpha is set to cycle for '%s', but max and min values are the same!", wip->name);
 		}
+	}
+
+	if (optional_string("$Weapon Hitpoints:")) {
+		stuff_int(&wip->weapon_hitpoints);
+	}
+
+	// making sure bombs get their hitpoints assigned
+	if ((wip->wi_flags & WIF_BOMB) && (wip->weapon_hitpoints == 0)) {
+		wip->weapon_hitpoints = 50;
 	}
 
 	//pretty stupid if a target must be tagged to shoot tag missiles at it
@@ -5055,7 +5085,11 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 	if ( !(wp->weapon_flags & WF_PLAYED_FLYBY_SOUND) && (wp->weapon_flags & WF_CONSIDER_FOR_FLYBY_SOUND) ) {
 		float		dist, dot, radius;
 
-		dist = vm_vec_dist_quick(&weapon_objp->pos, &Eye_position);
+		if ( (Weapon_info[wp->weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
+			dist = vm_vec_dist_quick(&weapon_objp->last_pos, &Eye_position);
+		} else {
+			dist = vm_vec_dist_quick(&weapon_objp->pos, &Eye_position);
+		}
 
 		if ( Viewer_obj ) {
 			radius = Viewer_obj->radius;
@@ -5669,8 +5703,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
 	objp->shield_quadrant[0] = wip->damage;
-	if (wip->wi_flags & WIF_BOMB){
-		objp->hull_strength = 50.0f;
+	if (wip->weapon_hitpoints > 0){
+		objp->hull_strength = (float) wip->weapon_hitpoints;
 	} else {
 		objp->hull_strength = 0.0f;
 	}
@@ -5816,7 +5850,7 @@ void spawn_child_weapons(object *objp)
 	int	parent_num;
 	ushort starting_sig;
 	weapon	*wp;
-	weapon_info	*wip;
+	weapon_info	*wip, *child_wip;
 
 	Assert(objp->type == OBJ_WEAPON);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
@@ -5853,6 +5887,7 @@ void spawn_child_weapons(object *objp)
 		    matrix	orient;
 
             child_id = wip->spawn_info[i].spawn_type;
+			child_wip = &Weapon_info[child_id];
 
 		    // for multiplayer, use the static randvec functions based on the network signatures to provide
 		    // the randomness so that it is the same on all machines.
@@ -5865,6 +5900,12 @@ void spawn_child_weapons(object *objp)
 
 		    vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
 		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+
+			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
+			if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
+			{
+				weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+			}
 
     		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
 		    if (weapon_objnum != -1) {
@@ -6437,7 +6478,12 @@ void weapon_detonate(object *objp)
 	}
 
 	// call weapon hit
-	weapon_hit(objp, NULL, &objp->pos);
+	// Wanderer - use last frame pos for the corkscrew missiles
+	if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
+		weapon_hit(objp, NULL, &objp->last_pos);
+	} else {
+		weapon_hit(objp, NULL, &objp->pos);
+	}
 }
 
 //	Return the Weapon_info[] index of the weapon with name *name.

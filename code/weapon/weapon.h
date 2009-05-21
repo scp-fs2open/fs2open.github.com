@@ -639,6 +639,9 @@ extern int Num_weapon_subtypes;
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 #define WIF2_TRAINING					(1 << 10)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
+#define WIF2_SMART_SPAWN				(1 << 11)   // Spawn weapon that is fired via turrets like normal weapons
+#define WIF2_INHERIT_PARENT_TARGET		(1 << 12)   // child weapons home in on the target their parent is homing on.
+#define WIF2_NO_EMP_KILL				(1 << 13)	// though weapon has hitpoints it can not be disabled by EMP
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -969,6 +972,7 @@ typedef struct weapon_info {
 	script_hook sc_collide_ship;
 	script_hook sc_collide_weapon;
 
+	int weapon_hitpoints;
 } weapon_info;
 
 // Data structure to track the active missiles

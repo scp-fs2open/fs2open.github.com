@@ -743,6 +743,7 @@
 #include "asteroid/asteroid.h"
 #include "parse/scripting.h"
 #include "parse/parselo.h"
+#include "object/objectsnd.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -917,7 +918,17 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name, log_index );
 		if ( ship_obj == Player_obj ) {
 			snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
-			HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->name);
+			if (strlen(psub->alt_dmg_sub_name))
+				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
+			else {
+				char r_name[NAME_LENGTH];
+				strcpy(r_name, ship_subsys_get_name(subsys));
+				for (i = 0; r_name[i] > 0; i++) {
+					if (r_name[i] == '|')
+						r_name[i] = ' ';
+				}
+				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), r_name );
+			}
 		}
 	}
 
@@ -957,6 +968,29 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 	if ( sound_index >= 0 ) {
 		snd_play_3d( &Snds[sound_index], &g_subobj_pos, &View_position );
+	}
+
+	// make the shipsounds work as they should...
+	if(subsys->subsys_snd_flags & SSSF_ALIVE)
+	{
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->alive_snd, subsys);
+		subsys->subsys_snd_flags &= ~SSSF_ALIVE;
+	}
+	if(subsys->subsys_snd_flags & SSSF_TURRET_ROTATION)
+	{
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_base_rotation_snd, subsys);
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_gun_rotation_snd, subsys);
+		subsys->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
+	}
+	if(subsys->subsys_snd_flags & SSSF_ROTATE)
+	{
+		obj_snd_delete_type(ship_p->objnum, subsys->system_info->rotation_snd, subsys);
+		subsys->subsys_snd_flags &= ~SSSF_ROTATE;
+	}
+	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags & SSSF_DEAD))
+	{
+		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
+		subsys->subsys_snd_flags |= SSSF_DEAD;
 	}
 }
 

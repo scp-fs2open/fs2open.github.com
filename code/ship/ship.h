@@ -1137,6 +1137,13 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
+#define SSF_NO_SS_TARGETING     (1 << 2)
+
+// Wanderer 
+#define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
+#define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
+#define SSSF_ROTATE					(1 << 2)		// subsystem has active rotation sound
+#define SSSF_TURRET_ROTATION		(1 << 3)		// rotation sound to be scaled like turrets do
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
@@ -1202,6 +1209,20 @@ typedef	struct ship_subsys {
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
+
+	float points_to_target;
+	float base_rotation_rate_pct;
+	float gun_rotation_rate_pct;
+
+	// still going through these...
+	int subsys_snd_flags;
+
+	int      rotation_timestamp;
+	matrix   world_to_turret_matrix;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -1581,7 +1602,29 @@ typedef struct ship {
 	*/
 
 	std::vector<alt_class> s_alt_classes;	
+
+	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 } ship;
+
+struct ai_target_priority {
+	char name[NAME_LENGTH];
+
+	int obj_type;
+	std::vector <int> ship_type;
+	std::vector <int> ship_class;
+	std::vector <int> weapon_class;
+
+	int obj_flags;
+	int sif_flags;
+	int sif2_flags;
+	int wif_flags;
+	int wif2_flags;
+};
+
+extern std::vector <ai_target_priority> Ai_tp_list;
+
+void parse_ai_target_priorities();
+ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
@@ -1687,6 +1730,11 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
+#define AIM_FLAG_AUTOAIM				(1 << 0)	// has autoaim
+#define AIM_FLAG_AUTO_CONVERGENCE		(1 << 1)	// has automatic convergence
+#define AIM_FLAG_STD_CONVERGENCE		(1 << 2)	// has standard - ie. non-automatic - convergence
+#define AIM_FLAG_AUTOAIM_CONVERGENCE	(1 << 3)	// has autoaim with convergence
+
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
 	float		min_rad;
@@ -1707,6 +1755,7 @@ typedef struct thruster_particles {
 #define STI_SHIP_SCANNABLE				(1<<0)
 #define STI_SHIP_WARP_PUSHES			(1<<1)
 #define STI_SHIP_WARP_PUSHABLE			(1<<2)
+#define STI_TURRET_TGT_SHIP_TGT			(1<<3)
 
 #define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
 
@@ -1961,6 +2010,7 @@ typedef struct ship_info {
 	float afterburner_trail_width_factor;
 	float afterburner_trail_alpha_factor;
 	float afterburner_trail_life;
+	int afterburner_trail_faded_out_sections;
 
 	// thruster particles
 	std::vector<thruster_particles> normal_thruster_particles;
@@ -1990,7 +2040,6 @@ typedef struct ship_info {
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
 	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
 
-	bool has_autoaim;
 	float autoaim_fov;
 
 	bool topdown_offset_def;
@@ -1998,6 +2047,19 @@ typedef struct ship_info {
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+
+	int radar_image_2d_idx;
+	int radar_image_size;
+	float radar_projection_size_mult;
+
+	int ship_iff_info[MAX_IFFS][MAX_IFFS];
+
+	int aiming_flags;
+	float minimum_convergence_distance;
+	float convergence_distance;
+	vec3d convergence_offset;
+
+	float emp_resistance_mod;
 } ship_info;
 
 extern int Num_wings;
@@ -2392,7 +2454,11 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist);
+int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist);
+
+// functions for testing fov.. returns true if fov test is passed.
+bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

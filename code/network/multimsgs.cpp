@@ -8097,6 +8097,51 @@ void process_change_iff_packet( ubyte *data, header *hinfo)
 	}	
 }
 
+void send_change_iff_color_packet(ushort net_signature, int observer_team, int observed_team, int alternate_iff_color)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	if(Net_player == NULL){
+		return;
+	}
+	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+		return;
+	}
+
+	// build the packet and add the data
+	BUILD_HEADER(CHANGE_IFF_COLOR);
+	ADD_USHORT(net_signature);
+	ADD_INT(observer_team);
+	ADD_INT(observed_team);
+	ADD_INT(alternate_iff_color);
+
+	// send to all players	
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_change_iff_color_packet( ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	ushort net_signature;
+	int observer_team, observed_team, alternate_iff_color;	
+	object *objp;
+
+	// get the data
+	GET_USHORT(net_signature);
+	GET_INT(observer_team);
+	GET_INT(observed_team);
+	GET_INT(alternate_iff_color);
+	PACKET_SET_SIZE();
+
+	// lookup the object
+	objp = multi_get_network_object(net_signature);
+	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
+	{
+		Ships[objp->instance].ship_iff_color[observer_team][observed_team] = alternate_iff_color;
+	}	
+}
+
 void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class)
 {
 	ubyte data[MAX_PACKET_SIZE];

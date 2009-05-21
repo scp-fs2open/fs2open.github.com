@@ -803,6 +803,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	char		name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
 	char		subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
 	char		alt_sub_name[NAME_LENGTH];					//Karajorma - Name that overrides name of original
+	char		alt_dmg_sub_name[NAME_LENGTH];      // Name for the damage popup subsystems, allows for translation
 	int		subobj_num;								// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries
 	int		model_num;								// Which model this is attached to (i.e. the polymodel[] index)
 	int		type;										// type. see SUBSYSTEM_* types above.  A generic type thing
@@ -817,11 +818,17 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
+	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
+	float	turret_y_fov;						//  turret's base's fov
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_rotation_snd;				// Sound to make when the turret moves
+	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
+	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
+
 
 	//Sound stuff
 	int		alive_snd;		//Sound to make while the subsystem is not-dead
@@ -852,6 +859,11 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
+	int		turret_reset_delay;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
 } model_subsystem;
 
 typedef struct model_special {
@@ -1426,7 +1438,7 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst);
+extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.

@@ -281,6 +281,7 @@ $Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
@@ -311,6 +312,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		3.5												\n\
@@ -357,6 +359,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
@@ -381,6 +384,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
+$Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
@@ -783,7 +787,11 @@ $Max Turret Target Ownage: 3, 4, 7, 12, 19								\n\
 																		\n\
 ;; maximum number of turrets on one ship allowed to be attacking the	\n\
 ;; player at a given time												\n\
-$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n""\
+$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n\
+																		\n\
+;; time delay after bombs have been fired before they can collide		\n\
+;; with other weapons (ie. be shot down)								\n\
+$Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n""\
 																		\n\
 ;; the minimum percentage of the total assessed damage a player		 	\n\
 ;; must inflict in order to be awarded a kill							\n\
@@ -907,6 +915,10 @@ $multi allow empty primaries:		NO									\n\
 																		\n\
 ;; allow a player to commit into a multiplayer game without secondaries	\n\
 $multi allow empty secondaries:		NO									\n\
+																		\n\
+;; if set, allows turrets target other weapons that bombs assuming		\n\
+;; it is within allowed target priorities								\n\
+$allow turrets target weapons freely: NO								\n\
 																		\n\
 #End																	\n\
 ";
