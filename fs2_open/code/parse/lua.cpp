@@ -7639,6 +7639,51 @@ ADE_FUNC(setCursorHidden, l_Mouse, "True to hide mouse, false to show it", "Show
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(forceMousePosition, l_Mouse, "number, number (coordinates)", "function to force mouse position", "boolean", "if the operation succeeded or not")
+{
+	if(!mouse_inited)
+		return ADE_RETURN_FALSE;
+
+	if(!Gr_inited)
+		return ADE_RETURN_FALSE;
+
+	int x, y;
+	if (!(ade_get_args(L, "ii", &x, &y)))
+		return ADE_RETURN_FALSE;
+
+	if (!((x >= 0) && (x <= gr_screen.max_w)))
+		return ADE_RETURN_FALSE;
+
+	if (!((y >= 0) && (y <= gr_screen.max_h)))
+		return ADE_RETURN_FALSE;
+
+	mouse_force_pos(x, y);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mouse control status", "boolean", "if the retail mouse is on or off")
+{
+	if(!mouse_inited)
+		return ADE_RETURN_NIL;
+
+	bool mouse_io;
+	bool mouse_status = false;
+	if(!(ade_get_args(L, "*|b", &mouse_io)))
+		return ADE_RETURN_NIL;
+
+	if(mouse_io) {
+		Use_mouse_to_fly = 1;
+	} else {
+		Use_mouse_to_fly = 0;
+	}
+
+	if (Use_mouse_to_fly)
+		mouse_status = true;
+
+	return ade_set_args(L, "b", mouse_status);
+}
+
 //**********LIBRARY: Graphics
 ade_lib l_Graphics("Graphics", NULL, "gr", "Graphics Library");
 
