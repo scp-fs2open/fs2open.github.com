@@ -653,6 +653,8 @@ player	*Player = NULL;
 // Goober5000
 int		Player_use_ai = 0;
 
+int		lua_game_control = 0;
+
 physics_info Descent_physics;			// used when we want to control the player like the descent ship
 
 angles chase_slew_angles;
@@ -1459,6 +1461,28 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 }
 
+void copy_control_info(control_info *dest_ci, control_info *src_ci)
+{
+	if (dest_ci == NULL)
+		return;
+
+	if (src_ci == NULL) {
+		dest_ci->pitch = 0.0f;
+		dest_ci->vertical = 0.0f;
+		dest_ci->heading = 0.0f;
+		dest_ci->sideways = 0.0f;
+		dest_ci->bank = 0.0f;
+		dest_ci->forward = 0.0f;
+	} else {
+		dest_ci->pitch = src_ci->pitch;
+		dest_ci->vertical = src_ci->vertical;
+		dest_ci->heading = src_ci->heading;
+		dest_ci->sideways = src_ci->sideways;
+		dest_ci->bank = src_ci->bank;
+		dest_ci->forward = src_ci->forward;
+	}
+}
+
 void read_player_controls(object *objp, float frametime)
 {
 	float diff;
@@ -1477,6 +1501,21 @@ void read_player_controls(object *objp, float frametime)
 
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
+
+			if ( lua_game_control == LGC_STEERING ) {
+				// make sure to copy the control before reseting it
+				Player->lua_ci = Player->ci;
+				copy_control_info(&(Player->ci), NULL);
+			} else if ( lua_game_control == LGC_FULL ) {
+				control_info temp;
+				// first copy over the new values, then reset
+				temp = Player->ci;
+				copy_control_info(&(Player->ci), &(Player->lua_ci));
+				Player->lua_ci = temp;
+			} else {
+				// just copy the ci should that be needed in scripting
+				Player->lua_ci = Player->ci;
+			}
 			break;
 
 		case PCM_WARPOUT_STAGE1:	// Accelerate to 40 km/s
