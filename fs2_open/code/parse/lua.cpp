@@ -747,7 +747,7 @@ ADE_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 48; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 51; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -892,13 +892,13 @@ static flag_def_list Enumerations[] = {
 	{		"MISSION_REPEAT",				LE_MISSION_REPEAT,				0},
 
 	#define LE_NORMAL_CONTROLS				48
-	{     "NORMAL_CONTROLS",				LE_NORMAL_CONTROLS,				0},
+	{		"NORMAL_CONTROLS",				LE_NORMAL_CONTROLS,				0},
 
 	#define LE_LUA_STEERING_CONTROLS		49
-	{     "LUA_STEERING_CONTROLS",			LE_LUA_STEERING_CONTROLS,		0},
+	{		"LUA_STEERING_CONTROLS",		LE_LUA_STEERING_CONTROLS,		0},
 
 	#define LE_LUA_FULL_CONTROLS			50
-	{     "LUA_FULL_CONTROLS",				LE_LUA_FULL_CONTROLS,			0},
+	{		"LUA_FULL_CONTROLS",			LE_LUA_FULL_CONTROLS,			0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
