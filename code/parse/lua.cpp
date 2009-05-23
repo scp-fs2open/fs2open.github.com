@@ -20,6 +20,8 @@
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "model/model.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
 #include "parse/lua.h"
@@ -888,6 +890,15 @@ static flag_def_list Enumerations[] = {
 
 	#define	LE_MISSION_REPEAT				47
 	{		"MISSION_REPEAT",				LE_MISSION_REPEAT,				0},
+
+	#define LE_NORMAL_CONTROLS				48
+	{     "NORMAL_CONTROLS",				LE_NORMAL_CONTROLS,				0},
+
+	#define LE_LUA_STEERING_CONTROLS		49
+	{     "LUA_STEERING_CONTROLS",			LE_LUA_STEERING_CONTROLS,		0},
+
+	#define LE_LUA_FULL_CONTROLS			50
+	{     "LUA_FULL_CONTROLS",				LE_LUA_FULL_CONTROLS,			0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -6840,6 +6851,99 @@ ADE_VIRTVAR(Position, l_Sound, "vector", "Position of sound (World vector)", "ve
 		return ade_set_error(L, "o", l_Vector.Set(vmd_identity_vector));
 }*/
 
+//**********HANDLE: Control Info
+ade_obj<int> l_Control_Info("control info", "control info handle");
+
+ADE_VIRTVAR(Pitch, l_Control_Info, "number", "Pitch of the player ship", "number", "Pitch")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.pitch = new_ci;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.pitch);
+}
+
+ADE_VIRTVAR(Heading, l_Control_Info, "number", "Heading of the player ship", "number", "Heading")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.heading = new_ci;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.heading);
+}
+
+ADE_VIRTVAR(Bank, l_Control_Info, "number", "Bank of the player ship", "number", "Bank")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.bank = new_ci;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.bank);
+}
+
+ADE_VIRTVAR(Vertical, l_Control_Info, "number", "Vertical control of the player ship", "number", "Vertical control")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.vertical = new_ci;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.vertical);
+}
+
+ADE_VIRTVAR(Sideways, l_Control_Info, "number", "Sideways control of the player ship", "number", "Sideways control")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.sideways = new_ci;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.sideways);
+}
+
+ADE_VIRTVAR(Forward, l_Control_Info, "number", "Forward control of the player ship", "number", "Forward")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.forward = new_ci;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.forward);
+}
+
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
@@ -6997,6 +7101,59 @@ ADE_FUNC(getCurrentGameState, l_Base, "[Depth (number)]", "Gets current FreeSpac
 		return ade_set_args(L, "o", l_GameState.Set(gamestate_h()));
 
 	return ade_set_args(L, "o", l_GameState.Set(gamestate_h(gameseq_get_state(depth))));
+}
+
+ADE_FUNC(getCurrentMPStatus, l_Base, "NIL", "Gets this computers current MP status", "string", "Current MP status" )
+{
+	if ( MULTIPLAYER_MASTER )
+		return ade_set_args(L, "s", "MULTIPLAYER_MASTER");
+
+	if ( MULTIPLAYER_HOST )
+		return ade_set_args(L, "s", "MULTIPLAYER_HOST");
+
+	if ( MULTIPLAYER_CLIENT )
+		return ade_set_args(L, "s", "MULTIPLAYER_CLIENT");
+
+	if ( MULTIPLAYER_STANDALONE )
+		return ade_set_args(L, "s", "MULTIPLAYER_STANDALONE");
+
+	return ade_set_args(L, "s", "SINGLEPLAYER");
+}
+
+ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+{
+	enum_h *e = NULL;
+	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
+		switch (lua_game_control) {
+			case LGC_NORMAL:
+				return ade_set_args(L, "s", "NORMAL");
+			case LGC_STEERING:
+				return ade_set_args(L, "s", "STEERING");
+			case LGC_FULL:
+				return ade_set_args(L, "s", "FULL");
+			default:
+				return ade_set_error(L, "s", "");
+		}
+	}
+
+	switch (e->index) {
+		case LE_NORMAL_CONTROLS:
+			lua_game_control = LGC_NORMAL;
+			return ade_set_args(L, "s", "NORMAL CONTROLS");
+		case LE_LUA_STEERING_CONTROLS:
+			lua_game_control = LGC_STEERING;
+			return ade_set_args(L, "s", "LUA STEERING CONTROLS");
+		case LE_LUA_FULL_CONTROLS:
+			lua_game_control = LGC_FULL;
+			return ade_set_args(L, "s", "LUA FULL CONTROLS");
+		default:
+			return ade_set_error(L, "s", "");
+	}
+}
+
+ADE_FUNC(getControlInfo, l_Base, NULL, "Gets the control info handle.", "control info", "control info handle")
+{
+	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
 
 /*
