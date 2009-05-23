@@ -159,5 +159,6 @@ void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);
 void getWindowMousePos(POINT * pt);
 void setWindowMousePos(POINT * pt);
 
+extern void mouse_force_pos(int x, int y);
 
 #endif
