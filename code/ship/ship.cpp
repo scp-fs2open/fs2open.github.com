@@ -4813,6 +4813,7 @@ strcpy(parse_error_text, temp_error);
 
 				sp->turret_reset_delay = 2000;
 
+				sp->num_target_priorities = 0;
 				for (i = 0; i < 32; i++) {
 					sp->target_priority[i] = -1;
 				}
