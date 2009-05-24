@@ -1852,7 +1852,6 @@ ADE_INDEXER(l_ShipOrders, "number Index/string TextureFilename", "Array of ship 
 	if (!objh->IsValid() || s==NULL)
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
-	ship *shipp = &Ships[objh->objp->instance];
 	ai_info *aip = &Ai_info[Ships[objh->objp->instance].ai_index];
 
 	//Determine index
@@ -7470,7 +7469,6 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 		return ade_set_error(L, "b", false);
 
 	const char *ext_list[] = {".ogg", ".txt", ".*"};
-	int ext_list_num = sizeof(ext_list)/sizeof(char *);
 	if(!check_vps)
 		return ade_set_args(L, "b", cf_exists(n_filename, path) != 0);
 	else

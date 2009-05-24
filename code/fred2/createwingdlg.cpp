@@ -56,7 +56,7 @@ END_MESSAGE_MAP()
 
 void create_wing_dlg::OnOK()
 {
-	char msg[512];
+	CString msg;
 	int i;
 	object *ptr;
 
@@ -70,7 +70,7 @@ void create_wing_dlg::OnOK()
 
 	for (i=0; i<MAX_WINGS; i++)
 		if (!stricmp(Wings[i].name, m_name) && Wings[i].wave_count) {
-			sprintf(msg, "The name \"%s\" is already being used by another wing", m_name);
+			msg.Format("The name \"%s\" is already being used by another wing", m_name);
 			MessageBox(msg);
 			return;
 		}

@@ -204,7 +204,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 
 			// check for duplicate textures in list
 			duplicate = -1;
-			for (int k=0; k<texture_count; k++)
+			for (k=0; k<texture_count; k++)
 			{
 				if (!stricmp(old_texture_name[k], texture_file))
 				{

@@ -1787,9 +1787,9 @@ vec3d Interp_offset;
 void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 {
 	return;
-	vec3d R;
+/*	vec3d R;
 	float a;
-//	matrix * m = &View_matrix;
+	matrix * m = &View_matrix;
 
 	vm_vec_rotate( &R, nrm, &View_matrix );	
 	vm_vec_normalize(&R);
@@ -1803,6 +1803,7 @@ void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 	pnt->u2 = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
 	if (pnt->u2 < 0.0) pnt->u2 += 1.0f;
 	pnt->v2 = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
+	*/
 }
 
 
@@ -4262,16 +4263,16 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					vm_vec_sub(&fvec, &norm2, &pnt);
 					vm_vec_normalize(&fvec);
 
-					float w = gpt->radius * scale * 2;
+					float wVal = gpt->radius * scale * 2;
 
-					vm_vec_scale_add(&norm2, &pnt, &fvec, w * 2 * Interp_thrust_glow_len_factor);
+					vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_thrust_glow_len_factor);
 
 					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
 
-					secondary_thruster_batcher.draw_beam(&pnt, &norm2, w*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
+					secondary_thruster_batcher.draw_beam(&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
 				}
 			}
 			// end secondary glows
