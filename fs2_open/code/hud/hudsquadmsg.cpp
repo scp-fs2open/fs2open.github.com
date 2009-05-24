@@ -1207,6 +1207,9 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 		if (multi_player_num != -1) {
 			multi_player_team = Net_players[multi_player_num].p_info.team;
 		}
+		else {
+			multi_player_team = -1;
+		}
 	}
 
 	// see if player is already scheduled on arriving support ship.  If so, issues appripriate

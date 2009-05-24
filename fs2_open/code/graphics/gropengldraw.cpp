@@ -1234,7 +1234,7 @@ void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap = false)
 	v[3].spec_g = 0;
 	v[3].spec_b = 0;
 
-	if (bw_bitmap = false)
+	if (!bw_bitmap)
 	{
 		opengl_tmapper_internal( 4, vl, TMAP_FLAG_TEXTURED, 1 );
 	}

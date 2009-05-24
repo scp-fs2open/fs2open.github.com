@@ -1080,7 +1080,6 @@ void shipfx_warpin_start( object *objp )
 {
 	//float effect_time, effect_radius;
 	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if (shipp->flags & SF_ARRIVING)
 	{
@@ -1251,7 +1250,6 @@ void shipfx_warpin_frame( object *objp, float frametime )
 	ship *shipp;
 
 	shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if ( shipp->flags & SF_DYING ) return;
 
@@ -1542,7 +1540,6 @@ void shipfx_warpout_start( object *objp )
 	//float warp_time;
 	ship *shipp;
 	shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if ( 	shipp->flags & SF_DEPART_WARP )	{
 		mprintf(( "Ship is already departing!\n" ));
@@ -1723,7 +1720,6 @@ void shipfx_warpout_frame( object *objp, float frametime )
 {
 	ship *shipp;
 	shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if ( shipp->flags & SF_DYING ) return;
 

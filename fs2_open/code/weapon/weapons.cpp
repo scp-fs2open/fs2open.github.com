@@ -4017,7 +4017,7 @@ void weapon_close()
 	}
 
 	if (Spawn_names != NULL) {
-		for (int i=0; i<Num_spawn_types; i++) {
+		for (i=0; i<Num_spawn_types; i++) {
 			if (Spawn_names[i] != NULL) {
 				vm_free(Spawn_names[i]);
 				Spawn_names[i] = NULL;

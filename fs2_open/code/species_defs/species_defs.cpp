@@ -362,11 +362,11 @@ void parse_species_tbl(char *filename)
 			stuff_string(temp_name, F_NAME, NAME_LENGTH);
 
 			// search for it in iffs
-			for (int i = 0; i < Num_iffs; i++)
+			for (int iLoop = 0; iLoop < Num_iffs; iLoop++)
 			{
-				if (!stricmp(Iff_info[i].iff_name, temp_name))
+				if (!stricmp(Iff_info[iLoop].iff_name, temp_name))
 				{
-					species->default_iff = i;
+					species->default_iff = iLoop;
 					iff_found = true;
 				}
 			}

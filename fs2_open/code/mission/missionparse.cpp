@@ -3323,13 +3323,15 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 	else
 	{
-		int max_allowed_sparks, num_sparks, i;
+		int max_allowed_sparks, num_sparks, iLoop;
 		polymodel *pm;
 
 		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
-			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+		for (iLoop = 0; iLoop<MAX_SHIELD_SECTIONS; iLoop++)
+		{
+			Objects[objnum].shield_quadrant[iLoop] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+		}
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		//WMC - Make it apply for ships with IN_PLACE_ANIM type
@@ -3353,7 +3355,7 @@ int parse_create_object_sub(p_object *p_objp)
 		if (num_sparks > max_allowed_sparks)
 			num_sparks = max_allowed_sparks;
 
-		for (i = 0; i < num_sparks; i++)
+		for (iLoop = 0; iLoop < num_sparks; iLoop++)
 		{
 			vec3d v1, v2;
 

@@ -4536,7 +4536,7 @@ strcpy(parse_error_text, temp_error);
 			sip->max_decals = 50;
 		}else if(sip->flags & SIF_BIG_SHIP){
 			sip->max_decals = 100;
-		}else if(SIF_HUGE_SHIP){
+		}else if(sip->flags & SIF_HUGE_SHIP){
 			sip->max_decals = 300;
 		}else{
 			sip->max_decals = 10;
@@ -4914,18 +4914,18 @@ strcpy(parse_error_text, temp_error);
 			}
 
 			if(optional_string("$Maximum Barrel Elevation:")){
-				int i;
-				stuff_int(&i);
-				CAP(i, 0, 90);
-				float angle = ANG_TO_RAD((float) (90 - i));
+				int value;
+				stuff_int(&value);
+				CAP(value, 0, 90);
+				float angle = ANG_TO_RAD((float) (90 - value));
 				sp->turret_max_fov = (float)cos(angle);
 			}
 
 			if(optional_string("$Turret Base FOV:")) {
-				int i;
-				stuff_int(&i);
-				CAP(i, 0, 359);
-				float angle = ANG_TO_RAD((float) i)/2.0f;
+				int value;
+				stuff_int(&value);
+				CAP(value, 0, 359);
+				float angle = ANG_TO_RAD((float) value)/2.0f;
 				sp->turret_y_fov = (float)cos(angle);
 				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
 			}

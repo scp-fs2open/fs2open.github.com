@@ -160,6 +160,9 @@ void iff_init()
 
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
+	int i = 0;
+	int j = 0;
+	int string_idx;
 
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
@@ -223,15 +226,16 @@ void iff_init()
 
 
 	// init radar blips colour table
-	int i,j,k,a_bright,a_dim;
+	int iLoop,jLoop,kLoop;
+	int a_bright,a_dim;
 	bool alternate_blip_color;
-	for (i=0;i<5;i++)
+	for (iLoop=0;iLoop<5;iLoop++)
 	{
-		for (j=0;j<2;j++)
+		for (jLoop=0;jLoop<2;jLoop++)
 		{
-			for (k=0;k<3;k++)
+			for (kLoop=0;kLoop<3;kLoop++)
 			{
-				radar_iff_color[i][j][k] = -1;
+				radar_iff_color[iLoop][jLoop][kLoop] = -1;
 			}
 		}
 	}
@@ -408,24 +412,23 @@ void iff_init()
 		iff->flags = 0;
 		if (optional_string("$Flags:"))
 		{
-			int i;
 			char flag_strings[MAX_IFF_FLAGS][NAME_LENGTH];
 
 			int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS);
-			for (i = 0; i < num_strings; i++)
+			for (string_idx = 0; string_idx < num_strings; string_idx++)
 			{
-				if (!stricmp(NOX("support allowed"), flag_strings[i]))
+				if (!stricmp(NOX("support allowed"), flag_strings[string_idx]))
 					iff->flags |= IFFF_SUPPORT_ALLOWED;
-				else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[i]))
+				else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[string_idx]))
 					iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
-				else if (!stricmp(NOX("orders hidden"), flag_strings[i]))
+				else if (!stricmp(NOX("orders hidden"), flag_strings[string_idx]))
 					iff->flags |= IFFF_ORDERS_HIDDEN;
-				else if (!stricmp(NOX("orders shown"), flag_strings[i]))
+				else if (!stricmp(NOX("orders shown"), flag_strings[string_idx]))
 					iff->flags |= IFFF_ORDERS_SHOWN;
-				else if (!stricmp(NOX("wing name hidden"), flag_strings[i]))
+				else if (!stricmp(NOX("wing name hidden"), flag_strings[string_idx]))
 					iff->flags |= IFFF_WING_NAME_HIDDEN;
 				else
-					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[i]);
+					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[string_idx]);
 			}
 		}
 

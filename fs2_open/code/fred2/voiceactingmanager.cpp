@@ -329,7 +329,8 @@ void VoiceActingManager::OnGenerateScript()
 	if (dlg.DoModal() != IDOK)
 		return;
 
-	string_copy(pathname, dlg.GetPathName(), 256);
+	CString dlgPathName = dlg.GetPathName( );
+	string_copy(pathname, dlgPathName, 256);
 	fp = cfopen(pathname, "wt", CFILE_NORMAL);
 	if (!fp)
 	{

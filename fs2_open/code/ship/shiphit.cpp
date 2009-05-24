@@ -827,7 +827,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 		vec3d temp_vec, center_to_subsys, rand_vec;
 		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
-		for (int i=0; i<num_fireballs; i++) {
+		for (i=0; i<num_fireballs; i++) {
 			if (i==0) {
 				// make first fireball at hitpos
 				if (hitpos) {

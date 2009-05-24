@@ -1006,7 +1006,7 @@ int CFred_mission_save::save_mission_info()
 	if (The_mission.skybox_flags != DEFAULT_NMODEL_FLAGS) {
 		//char out_str[4096];
 		if (optional_string_fred("+Skybox Flags:")) {
-			parse_comments(0);
+			parse_comments(1);
 			fout( " %d", The_mission.skybox_flags);
 		} else {
 			fso_comment_push(";;FSO 3.6.11;;");
