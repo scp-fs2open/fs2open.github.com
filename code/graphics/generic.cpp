@@ -33,7 +33,6 @@ void generic_anim_init(generic_anim *ga, char *filename)
 		ga->filename[0] = '\0';
 	} else {
 		strncpy(ga->filename, filename, MAX_FILENAME_LEN - 1);
-		ga->filename[strlen(ga->filename)] = '\0';
 	}
 
 	ga->first_frame = -1;
@@ -48,7 +47,6 @@ void generic_bitmap_init(generic_bitmap *gb, char *filename)
 		gb->filename[0] = '\0';
 	} else {
 		strncpy(gb->filename, filename, MAX_FILENAME_LEN - 1);
-		gb->filename[strlen(gb->filename)] = '\0';
 	}
 
 	gb->bitmap_id = -1;

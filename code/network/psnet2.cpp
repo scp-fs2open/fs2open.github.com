@@ -2564,7 +2564,7 @@ unsigned int psnet_ras_status()
 
 	for (i = 0; i < num_connections; i++ ) {
 		RASCONNSTATUS status;
-		unsigned long size;
+		unsigned long dummySize;
 
 		// don't count VPNs with the non-LAN connections
 		if ( !stricmp(rasbuffer[i].szDeviceType, "RASDT_Vpn") ) {
@@ -2589,7 +2589,7 @@ unsigned int psnet_ras_status()
 		// get the projection informatiom
 		size = sizeof(projection);
 		projection.dwSize = size;
-		rval = pRasGetProjectionInfo(rasbuffer[i].hrasconn, RASP_PppIp, &projection, &size );
+		rval = pRasGetProjectionInfo(rasbuffer[i].hrasconn, RASP_PppIp, &projection, &dummySize );
 		if ( rval != 0 ) {
 			FreeLibrary( ras_handle );
 			return INADDR_ANY;

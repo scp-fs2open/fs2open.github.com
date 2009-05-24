@@ -8903,7 +8903,7 @@ void sexp_change_iff_color(int n)
 			case OSWPT_TYPE_WING:
 			{
 				// current ships
-				for (int i = 0; i < oswpt.wingp->current_count; i++)
+				for (i = 0; i < oswpt.wingp->current_count; i++)
 					sexp_ingame_ship_change_iff_color(&Ships[oswpt.wingp->ship_index[i]], observer_team, observed_team, alternate_iff_color);
 
 				// ships yet to arrive

@@ -1610,7 +1610,7 @@ void parse_menumusic()
 	if(idx < 0 && (nocreate || Num_music_files >= MAX_SPOOLED_MUSIC))
 	{
 		if(Num_music_files >= MAX_SPOOLED_MUSIC) {
-			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files].name, MAX_SPOOLED_MUSIC);
+			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
 		if(!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {

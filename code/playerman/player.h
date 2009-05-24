@@ -247,6 +247,11 @@ struct campaign_info;
 #define PCM_WARPOUT_STAGE3		3	// through warp hole, waiting for it to disapper.
 #define PCM_SUPERNOVA			4	// supernova. lock everything to where it is.
 
+// 'lua game control' settings
+#define LGC_NORMAL				0	// normal controls
+#define LGC_STEERING			1	// allow lua to fully override steering controls
+#define LGC_FULL				2	// allow lua to fully override controls
+
 // number of times dude can fail a mission in a session before 
 // having the opportunity to skip it
 #ifdef RELEASE_REAL
@@ -375,6 +380,8 @@ typedef struct player {
 	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
 
 	char death_message[256];								// Goober5000
+
+	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
 } player;
 
 extern player Players[MAX_PLAYERS];
@@ -392,6 +399,8 @@ extern void player_level_init();
 extern void player_controls_init();				// initialize Descent style controls for use in various places
 extern void player_match_target_speed(char *no_target_text=NULL, char *match_off_text=NULL, char *match_on_text=NULL);		// call to continually match speed with selected target
 extern void player_clear_speed_matching();
+
+extern int lua_game_control;					// defines the level of control set to lua scripting
 
 void player_set_pilot_defaults(player *p);
 

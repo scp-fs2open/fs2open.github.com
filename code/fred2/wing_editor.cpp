@@ -1027,7 +1027,7 @@ void wing_editor::update_data_safe()
 	if (m_waves < 1) {
 		m_waves = 1;
 		if (!bypass_errors) {
-			sprintf(buf, "Number of waves illegal.  Has been set to 1.", (int) m_waves);
+			sprintf(buf, "Number of waves illegal.  Can not have %d waves. Number of waves has as been set to 1.", (int) m_waves);
 			MessageBox(buf);
 		}
 	}

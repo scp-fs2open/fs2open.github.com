@@ -5056,7 +5056,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// display error messages
 	if (error_flag)
 	{
-		int i, j;
+		int j;
 		bool is_duplicate;
 		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
 		strcpy(error_msg, "The following errors were encountered:\n\n");
