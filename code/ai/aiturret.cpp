@@ -1244,7 +1244,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 	if (ship_subsystem_in_sight(enemy_objp, enemy_subsysp, abs_gunposp, &subobj_pos, 1, &dot_out, &vector_out)) {
 		vec3d	turret_norm;
 
-		vm_vec_rotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
+		vm_vec_unrotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
 		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
 
 		if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
