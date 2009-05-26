@@ -3097,7 +3097,7 @@ char *reg_read_string( char *section, char *name, char *default_value )
 
 	strcpy( keyname, section );
 
-	lResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,							// Where it is
+	lResult = RegOpenKeyEx( HKEY_CURRENT_USER,							// Where it is
 											 keyname,								// name of key
 											 NULL,									// DWORD reserved
 											 KEY_QUERY_VALUE,						// Allows all changes

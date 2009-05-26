@@ -101,12 +101,12 @@ void os_config_remove( char *section, char *name )
 		if ( !section )	{			
 			goto Cleanup;
 		}
-		lResult = RegDeleteKey( HKEY_LOCAL_MACHINE, keyname );
+		lResult = RegDeleteKey( HKEY_CURRENT_USER, keyname );
 		if ( lResult != ERROR_SUCCESS )	{			
 			goto Cleanup;
 		}
 	} else	{
-		lResult = RegCreateKeyEx( HKEY_LOCAL_MACHINE,						// Where to add it
+		lResult = RegCreateKeyEx( HKEY_CURRENT_USER,						// Where to add it
 												 keyname,								// name of key
 												 NULL,									// DWORD reserved
 												 "",										// Object class
@@ -151,7 +151,7 @@ void os_config_write_string( char *section, char *name, char *value )
 		sprintf( keyname, "Software\\%s\\%s", szCompanyName, szAppName );
 	}
 
-	lResult = RegCreateKeyEx( HKEY_LOCAL_MACHINE,					// Where to add it
+	lResult = RegCreateKeyEx( HKEY_CURRENT_USER,					// Where to add it
 											 keyname,							// name of key
 											 NULL,								// DWORD reserved
 											 "",									// Object class
@@ -204,7 +204,7 @@ void os_config_write_string2( char *section, char *name, char *value )
 		sprintf( keyname, "Software\\%s", szCompanyName );
 	}
 
-	lResult = RegCreateKeyEx( HKEY_LOCAL_MACHINE,					// Where to add it
+	lResult = RegCreateKeyEx( HKEY_CURRENT_USER,					// Where to add it
 											 keyname,							// name of key
 											 NULL,								// DWORD reserved
 											 "",									// Object class
@@ -257,7 +257,7 @@ void os_config_write_uint( char *section, char *name, uint value )
 		sprintf( keyname, "Software\\%s\\%s", szCompanyName, szAppName );
 	}
 
-	lResult = RegCreateKeyEx( HKEY_LOCAL_MACHINE,						// Where to add it
+	lResult = RegCreateKeyEx( HKEY_CURRENT_USER,						// Where to add it
 											 keyname,								// name of key
 											 NULL,									// DWORD reserved
 											 "",										// Object class
@@ -316,7 +316,7 @@ char * os_config_read_string( char *section, char *name, char *default_value )
 		sprintf( keyname, "Software\\%s\\%s", szCompanyName, szAppName );
 	}
 
-	lResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,							// Where it is
+	lResult = RegOpenKeyEx( HKEY_CURRENT_USER,							// Where it is
 											 keyname,								// name of key
 											 NULL,									// DWORD reserved
 											 KEY_QUERY_VALUE,						// Allows all changes
@@ -369,7 +369,7 @@ char * os_config_read_string2( char *section, char *name, char *default_value )
 		sprintf( keyname, "Software\\%s", szCompanyName );
 	}
 
-	lResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,							// Where it is
+	lResult = RegOpenKeyEx( HKEY_CURRENT_USER,							// Where it is
 											 keyname,								// name of key
 											 NULL,									// DWORD reserved
 											 KEY_QUERY_VALUE,						// Allows all changes
@@ -424,7 +424,7 @@ uint  os_config_read_uint( char *section, char *name, uint default_value )
 		sprintf( keyname, "Software\\%s\\%s", szCompanyName, szAppName );
 	}
 
-	lResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,							// Where it is
+	lResult = RegOpenKeyEx( HKEY_CURRENT_USER,							// Where it is
 											 keyname,								// name of key
 											 NULL,									// DWORD reserved
 											 KEY_QUERY_VALUE,						// Allows all changes
@@ -467,7 +467,7 @@ char * os_config_read_string_ex( char *keyname, char *name, char *default_value 
 	DWORD dwType, dwLen;
 	LONG lResult;
 
-	lResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,							// Where it is
+	lResult = RegOpenKeyEx( HKEY_CURRENT_USER,							// Where it is
 											 keyname,								// name of key
 											 NULL,									// DWORD reserved
 											 KEY_QUERY_VALUE,						// Allows all changes
