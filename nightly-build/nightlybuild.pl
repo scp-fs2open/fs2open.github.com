@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.4
+# Nightly build script version 1.4.1
+# 1.4.1 - just a bit more cleanup
 # 1.4 - performs a local export before compiling for clean working dir, also checks Linux build output for error
 # 1.3.1. - checks for most directories instead of assuming they exist
 # 1.3 - cleans builds every compile, supports VC6 as well as VC2008, set up options in config file
@@ -46,28 +47,25 @@ if(updatesvn() != 1)
 {
 	if($revision eq "FAILURE")
 	{
-		print "Error checking for a revision change, terminating.\n";
+		die "Error checking for a revision change, terminating.\n";
 	}
 	else
 	{
-		print "SVN still at revision " . $revision . ", terminating.\n";
+		die "SVN still at revision " . $revision . ", terminating.\n";
 	}
-	exit;
 }
 
 print "SVN has been updated to revision " . $revision . ", compiling...\n";
 
 if(export() != 1)
 {
-	print "Export to " . $exportpath . " failed...\n";
-	exit;
+	die "Export to " . $exportpath . " failed...\n";
 }
 
 # call Compile scripts
 if(compile() != 1)
 {
-	print "Compile failed...\n";
-	exit;
+	die "Compile failed...\n";
 }
 
 print "Compiling completed\n";
@@ -184,7 +182,6 @@ sub compile
 	my $command;
 	my $cleancmd;
 	my $currentdir;
-	my $untarcommand;
 	my %BUILD_CONFIGS;
 	@BUILD_CONFIGS{split(/~/, $CONFIG->{$OS}->{config_names})} = split(/~/, $CONFIG->{$OS}->{config_strings});
 	
@@ -200,8 +197,7 @@ sub compile
 	if($OS eq "OSX" || $OS eq "WIN")
 	{
 		chdir("projects/" . $CONFIG->{$OS}->{project} . "/");
-		$untarcommand = "tar -xzf Frameworks.tgz";
-		`$untarcommand`;
+		`tar -xzf Frameworks.tgz`;
 	}
 	
 	foreach (keys (%BUILD_CONFIGS))
@@ -270,8 +266,7 @@ sub move_and_rename
 	
 	unless(-d $this_build_drop)
 	{
-		print "Could not find build drop at " . $this_build_drop . ", terminating.\n";
-		exit;
+		die "Could not find build drop at " . $this_build_drop . ", terminating.\n";
 	}
 	
 	chdir($this_build_drop);
@@ -287,8 +282,7 @@ sub move_and_rename
 	
 	if($#files == -1)
 	{
-		print "No files found to move and rename for " . $configname . ", terminating...\n";
-		exit;
+		die "No files found to move and rename for " . $configname . ", terminating...\n";
 	}
 	
 	chdir($currentdir);
@@ -302,8 +296,7 @@ sub move_and_rename
 		
 		unless(-d $CONFIG->{$OS}->{archive_path})
 		{
-			print "Still could not find archive path at " . $CONFIG->{$OS}->{archive_path} . ", terminating.\n";
-			exit;
+			die "Still could not find archive path at " . $CONFIG->{$OS}->{archive_path} . ", terminating.\n";
 		}
 	}
 	
@@ -346,23 +339,19 @@ sub archive
 	
 	if($#filenames == -1)
 	{
-		print "No filenames to archive, terminating...\n";
-		exit;
+		die "No filenames to archive, terminating...\n";
 	}
 	
 	chdir($CONFIG->{$OS}->{archive_path});
 
 	foreach (@filenames)
 	{
-		if(-e $_ && -s $_)
+		unless(-e $_ && -s $_)
 		{
-			$args .= " \"" . $_ . "\"";
+			die "File " . $_ . " does not exist, terminating...\n";
 		}
-		else
-		{
-			print "File " . $_ . " does not exist, terminating...\n";
-			exit;
-		}
+		
+		$args .= " \"" . $_ . "\"";
 	}
 	
 	if($args eq "")
@@ -413,8 +402,7 @@ sub upload
 	
 	if(!(-e $archivename && -s $archivename && -e $md5name && -s $md5name))
 	{
-		print "Could not find a file to upload, terminating...\n";
-		exit;
+		die "Could not find a file to upload, terminating...\n";
 	}
 	
 	print "Uploading " . $CONFIG->{$OS}->{archive_path} . "/" . $archivename . " and " . $CONFIG->{$OS}->{archive_path} . "/" . $md5name . " to " . $CONFIG->{ftp}->{hostname} . "\n";
