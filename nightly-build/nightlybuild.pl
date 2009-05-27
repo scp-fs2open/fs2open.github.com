@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.3.1
+# Nightly build script version 1.4
+# 1.4 - performs a local export before compiling for clean working dir, also checks Linux build output for error
 # 1.3.1. - checks for most directories instead of assuming they exist
 # 1.3 - cleans builds every compile, supports VC6 as well as VC2008, set up options in config file
 # 1.2 - added a lot of error checking, mostly making sure files exist at every step, does some output parsing for error statements
@@ -20,7 +21,6 @@ use File::Path;
 
 my $CONFIG = Config::Tiny->new();
 $CONFIG = Config::Tiny->read("buildconfig.conf"); # Read in the ftp and forum authentication info
-#my $CONFIG = do "buildconfig.pm"; # Set up some configs I want hidden ($CONFIG->{hostname}, $CONFIG->{username}, $CONFIG->{password}, etc)
 my $OS = getOS();
 if(!$OS) { die "Unrecognized OS.\n"; }
 
@@ -40,6 +40,7 @@ my @filenames;
 my $oldrevision;
 my $revision;
 my @archive;
+my $exportpath;
 
 if(updatesvn() != 1)
 {
@@ -56,6 +57,12 @@ if(updatesvn() != 1)
 
 print "SVN has been updated to revision " . $revision . ", compiling...\n";
 
+if(export() != 1)
+{
+	print "Export to " . $exportpath . " failed...\n";
+	exit;
+}
+
 # call Compile scripts
 if(compile() != 1)
 {
@@ -65,8 +72,7 @@ if(compile() != 1)
 
 print "Compiling completed\n";
 # Code was compiled and updated, move the built files somewhere for archiving
-# push(@filenames, move_and_rename());
-# move_and_rename moved inside of compile() for linux, should work the same on all though
+rmtree($exportpath);
 @archive = archive(@filenames);
 upload(@archive);
 post(@archive);
@@ -145,6 +151,32 @@ sub updatesvn
 	}
 }
 
+sub export
+{
+	my $exportoutput;
+	my $exportcommand;
+	my $i = 0;
+
+	do {
+		$exportpath = $CONFIG->{$OS}->{source_path}."_".$i++;
+	} while (-d $exportpath);
+
+	print "Going to export ".$CONFIG->{$OS}->{source_path}." to directory ".$exportpath."\n";
+
+	$exportcommand = "svn export " . $CONFIG->{$OS}->{source_path} . " " . $exportpath;
+	print $exportcommand . "\n";
+	$exportoutput = `$exportcommand`;
+	
+	if($exportoutput =~ /^Export complete./)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 sub compile
 {
 	my @outputlist;
@@ -152,21 +184,24 @@ sub compile
 	my $command;
 	my $cleancmd;
 	my $currentdir;
+	my $untarcommand;
 	my %BUILD_CONFIGS;
 	@BUILD_CONFIGS{split(/~/, $CONFIG->{$OS}->{config_names})} = split(/~/, $CONFIG->{$OS}->{config_strings});
 	
 	$currentdir = cwd();
 
-	unless(-d $CONFIG->{$OS}->{source_path})
+	unless(-d $exportpath)
 	{
-		print "Could not find source code at " . $CONFIG->{$OS}->{source_path} . "\n";
+		print "Could not find source code at " . $exportpath . "\n";
 		return 0;
 	}
 	
-	chdir($CONFIG->{$OS}->{source_path});
+	chdir($exportpath);
 	if($OS eq "OSX" || $OS eq "WIN")
 	{
 		chdir("projects/" . $CONFIG->{$OS}->{project} . "/");
+		$untarcommand = "tar -xzf Frameworks.tgz";
+		`$untarcommand`;
 	}
 	
 	foreach (keys (%BUILD_CONFIGS))
@@ -190,10 +225,12 @@ sub compile
 			$command = $CONFIG->{$OS}->{build_program_path} . " -project FS2_Open.xcodeproj -configuration " . $BUILD_CONFIGS{$_} . " clean build";
 		}
 		elsif($OS eq "LINUX") {
-			$command = $CONFIG->{$OS}->{build_program_path} . " clean && ./autogen.sh " . $BUILD_CONFIGS{$_} . "&& " . $CONFIG->{$OS}->{build_program_path};
+			$command = "./autogen.sh " . $BUILD_CONFIGS{$_} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " clean";
 		}
 		else {
 			# How the fuck did you get this far with an unrecognized OS
+			print "Unrecognized OS detected.\n";
+			return 0;
 		}
 		
 		$command = $command . " 2>&1";
@@ -204,11 +241,12 @@ sub compile
 		
 #		print $output . "\n";
 		# TODO:  Check @outputlist for actual changes, or if it just exited without doing anything
-		if(($OS eq "OSX" && $output =~ / BUILD FAILED /) || ($OS eq "WIN" && !($output =~ /0 Projects failed/))) {
+		if(($OS eq "OSX" && $output =~ / BUILD FAILED /) || 
+			($OS eq "WIN" && !($output =~ /0 Projects failed/)) || 
+			($OS eq "LINUX" && $output =~ / Error 1\n$/)) {
 			print "Building " . $_ . " failed, see output for more information.\n";
 			return 0;
 		}
-
 		push(@filenames, move_and_rename($BUILD_CONFIGS{$_}));
 	}
 	
