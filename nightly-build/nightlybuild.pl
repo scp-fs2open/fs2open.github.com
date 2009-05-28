@@ -221,7 +221,7 @@ sub compile
 			$command = $CONFIG->{$OS}->{build_program_path} . " -project FS2_Open.xcodeproj -configuration " . $BUILD_CONFIGS{$_} . " clean build";
 		}
 		elsif($OS eq "LINUX") {
-			$command = "./autogen.sh " . $BUILD_CONFIGS{$_} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " clean";
+			$command = "./autogen.sh " . $BUILD_CONFIGS{$_} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " clean 2>&1 && " . $CONFIG->{$OS}->{build_program_path};
 		}
 		else {
 			# How the fuck did you get this far with an unrecognized OS
