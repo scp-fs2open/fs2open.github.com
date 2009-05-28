@@ -162,7 +162,7 @@ sub export
 	print "Going to export ".$CONFIG->{$OS}->{source_path}." to directory ".$exportpath."\n";
 
 	$exportcommand = "svn export " . $CONFIG->{$OS}->{source_path} . " " . $exportpath;
-	print $exportcommand . "\n";
+#	print $exportcommand . "\n";
 	$exportoutput = `$exportcommand`;
 	
 	if($exportoutput =~ /^Export complete./)
