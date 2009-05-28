@@ -636,7 +636,11 @@ extern int Global_error_count;
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #define Assert(x) do {} while (0)
+#ifndef _MSC_VER   // non MS compilers
+#define Assertion(x, y, ...) do {} while (0)
+#else
 #define Assertion(x, y) do {} while (0)
+#endif
 #else
 void gr_activate(int);
 #define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
