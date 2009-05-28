@@ -12,6 +12,7 @@
 #include "network/multiutil.h"
 
 #define SEND_PACKET_NOW  384 // (MAX_PACKET_SIZE/4)*3 used to tell when a packet is 3/4 full.
+#define PACKET_TERMINATOR	255
 
 #define TYPE_NOT_DATA			-1
 #define TYPE_SEXP_OPERATOR		0
@@ -85,7 +86,7 @@ void multi_end_packet()
 
 	//write TERMINATOR into the Type and data buffers
 	type[packet_size] = TYPE_DATA_TERMINATES; 
-	byte b = (byte)-1; 
+	ubyte b = PACKET_TERMINATOR; 
 	ADD_DATA(b); 
 
 	//Write the COUNT into the data buffer at the index we saved earlier.
@@ -314,7 +315,7 @@ int multi_sexp_get_operator()
 
 void multi_reduce_counts(int amount)
 {
-	byte terminator; 
+	ubyte terminator; 
 
 	Multi_sexp_bytes_left -= amount; 
 	current_argument_count -= amount; 
@@ -326,7 +327,7 @@ void multi_reduce_counts(int amount)
 	if (current_argument_count == 0) {
 		// read in the terminator
 		GET_DATA(terminator); 
-		if (terminator != (byte) -1) {
+		if (terminator != PACKET_TERMINATOR) {
 			Warning(LOCATION, "multi_get_x function call has been called on an improperly terminated packet. Trace out and fix this!"); 
 			// discard remainder of packet
 			Multi_sexp_bytes_left = 0; 
@@ -341,7 +342,7 @@ bool multi_sexp_discard_operator()
 {
 	int i; 
 	ubyte dummy;
-	byte terminator; 
+	ubyte terminator; 
 
 	// read in a number of bytes equal to the count
 	for (i=0; i<current_argument_count; i++) {
@@ -354,7 +355,7 @@ bool multi_sexp_discard_operator()
 	op_num = -1;
 
 	// the operation terminated correctly, probably a new SEXP that this version doesn't support. 
-	if (terminator == (byte) -1) 
+	if (terminator == PACKET_TERMINATOR) 
 		return true; 
 
 	// packet is probably corrupt

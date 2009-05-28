@@ -3942,8 +3942,7 @@ strcpy(parse_error_text, temp_error);
 		strcpy(parse_error_text, temp_error);
 
 		// error checking
-		for ( i = 0; i < sip->num_primary_banks; i++ )
-		{
+		for ( i = 0; i < sip->num_primary_banks; i++ ) {
 			Assertion((sip->primary_bank_weapons[i] >= 0), "%s. No $Default PBanks supplied for bank %d", parse_error_text, i);
 		}
 	}

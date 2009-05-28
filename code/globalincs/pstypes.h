@@ -636,16 +636,24 @@ extern int Global_error_count;
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #define Assert(x) do {} while (0)
-#define Assertion(x, y, ...) do {} while (0)
+#define Assertion(x, y) do {} while (0)
 #else
 void gr_activate(int);
 #define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+
+// Assertion can only use its proper fuctionality in compilers that support variadic macro
+#ifndef _MSC_VER   // non MS compilers
 #define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#else 
+#if _MSC_VER >= 1400	// VC 2005 or greater
+#define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#else // everything else
+#define Assertion(x, y) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+#endif
+#endif
 
 #endif
-/*******************NEVER UNCOMMENT Assert ************************************************/
-
-// Goober5000 - shouldn't the above be never COMMENT (that is, never DISABLE) Assert?
+/*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
 #define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } } while(0)
