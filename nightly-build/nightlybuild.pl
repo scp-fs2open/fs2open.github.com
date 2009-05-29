@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.4.1
+# Nightly build script version 1.4.2
+# 1.4.2 - fix some more issues with the export method
 # 1.4.1 - just a bit more cleanup
 # 1.4 - performs a local export before compiling for clean working dir, also checks Linux build output for error
 # 1.3.1. - checks for most directories instead of assuming they exist
@@ -263,6 +264,7 @@ sub move_and_rename
 	my $this_build_drop = $CONFIG->{$OS}->{build_drop};
 	my $ext = $CONFIG->{$OS}->{build_extension};
 	$this_build_drop =~ s/##CONFIG##/$configname/;
+	$this_build_drop =~ s/##EXPORTPATH##/$exportpath/;
 	
 	unless(-d $this_build_drop)
 	{
