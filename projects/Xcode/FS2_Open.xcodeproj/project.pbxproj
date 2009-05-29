@@ -677,6 +677,8 @@
 		34DCF87008CFB15700A528A0 /* cryptstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86F08CFB15700A528A0 /* cryptstring.cpp */; };
 		34DCF88208CFB29E00A528A0 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954B208C3D6A0003B1351 /* encrypt.cpp */; };
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
+		914580490FD036ED00788595 /* multi_sexp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914580470FD036ED00788595 /* multi_sexp.cpp */; };
+		9145804A0FD036ED00788595 /* multi_sexp.h in Headers */ = {isa = PBXBuildFile; fileRef = 914580480FD036ED00788595 /* multi_sexp.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1551,6 +1553,8 @@
 		34DCF87A08CFB21600A528A0 /* scramble */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = scramble; sourceTree = BUILT_PRODUCTS_DIR; };
 		34DCF88408CFB2B500A528A0 /* scramble.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = scramble.cpp; sourceTree = "<group>"; };
 		34DCF88508CFB2B500A528A0 /* scramble.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scramble.h; sourceTree = "<group>"; };
+		914580470FD036ED00788595 /* multi_sexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = multi_sexp.cpp; sourceTree = "<group>"; };
+		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
@@ -2480,6 +2484,8 @@
 		3459545108C3D6A0003B1351 /* network */ = {
 			isa = PBXGroup;
 			children = (
+				914580470FD036ED00788595 /* multi_sexp.cpp */,
+				914580480FD036ED00788595 /* multi_sexp.h */,
 				3488082D0DA05488001CAB39 /* chat_api.cpp */,
 				3488082E0DA05488001CAB39 /* chat_api.h */,
 				3459545408C3D6A0003B1351 /* multi.cpp */,
@@ -3152,6 +3158,7 @@
 				25FB46190E2E537F0089DF93 /* gropenglshader.h in Headers */,
 				25FB461E0E2E55370089DF93 /* gropenglstate.h in Headers */,
 				25FB46230E2E55500089DF93 /* gropengldraw.h in Headers */,
+				9145804A0FD036ED00788595 /* multi_sexp.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3663,6 +3670,7 @@
 				25FB461D0E2E55370089DF93 /* gropenglstate.cpp in Sources */,
 				25FB461F0E2E55370089DF93 /* gropenglshader.cpp in Sources */,
 				25FB46220E2E55500089DF93 /* gropengldraw.cpp in Sources */,
+				914580490FD036ED00788595 /* multi_sexp.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
