@@ -874,7 +874,8 @@ int wing_editor::update_data(int redraw)
 	UpdateData(TRUE);
 	UpdateData(TRUE);
 
-	m_wing_name.Trim(); 
+	m_wing_name.TrimLeft(); 
+	m_wing_name.TrimRight(); 
 
 	if (cur_wing >= 0) {
 		for (i=0; i<MAX_WINGS; i++)
