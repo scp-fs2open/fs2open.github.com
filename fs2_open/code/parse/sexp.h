@@ -540,7 +540,7 @@
  * to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
  * goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
  * will return the subcategory for each sexp that uses it, and the submenu name in the
- * op_submenu[] array in sexp_tree.cpp."
+ * op_submenu[] array in sexp.cpp."
  *
  * Please note that I rearranged a whole bunch of sexps in the Operators[] array in sexp.cpp
  * in order to make the subcategories work better, so if you get a whole bunch of differences
