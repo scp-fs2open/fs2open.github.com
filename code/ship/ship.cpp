@@ -2550,6 +2550,7 @@ flag_def_list Ship_flags[] = {
 	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
 	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
+	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -7422,10 +7423,12 @@ void ship_render(object * obj)
 				mst.length.xyz.x = obj->phys_info.side_thrust;
 				mst.length.xyz.y = obj->phys_info.vert_thrust;
 
-				//	Add noise to thruster geometry.
-				mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
-				mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
-				mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
+				//	Maybe add noise to thruster geometry.
+				if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+					mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
+					mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
+					mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
+				}
 
 				CLAMP(mst.length.xyz.z, -1.0f, 1.0f);
 				CLAMP(mst.length.xyz.y, -1.0f, 1.0f);
