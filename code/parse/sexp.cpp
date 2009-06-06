@@ -1227,7 +1227,7 @@
  * to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
  * goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
  * will return the subcategory for each sexp that uses it, and the submenu name in the
- * op_submenu[] array in sexp_tree.cpp."
+ * op_submenu[] array in sexp.cpp."
  *
  * Please note that I rearranged a whole bunch of sexps in the Operators[] array in sexp.cpp
  * in order to make the subcategories work better, so if you get a whole bunch of differences
@@ -23848,15 +23848,15 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
 		"\t1: Time in seconds until the supernova shockwave hits the player\r\n"},
 
+	{ OP_WEAPON_RECHARGE_PCT, "weapon-recharge-pct\r\n"
+		"\tReturns a percentage from 0 to 100\r\n"
+		"\t1: Ship name\r\n" },
+
 	{ OP_SHIELD_RECHARGE_PCT, "shield-recharge-pct\r\n"
 		"\tReturns a percentage from 0 to 100\r\n"
 		"\t1: Ship name\r\n" },
 
 	{ OP_ENGINE_RECHARGE_PCT, "engine-recharge-pct\r\n"
-		"\tReturns a percentage from 0 to 100\r\n"
-		"\t1: Ship name\r\n" },
-
-	{ OP_WEAPON_RECHARGE_PCT, "weapon-recharge-pct\r\n"
 		"\tReturns a percentage from 0 to 100\r\n"
 		"\t1: Ship name\r\n" },
 
@@ -24666,7 +24666,7 @@ op_menu_struct op_submenu[] =
 	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
 	{	"Backgrounds and Nebula",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},
 	{	"Multiplayer",					STATUS_SUBCATEGORY_MULTIPLAYER						},
-	{	"Shields, Engines and Weapons",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
+	{	"Weapons, Shields, and Engines",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
 	{	"Cargo",						STATUS_SUBCATEGORY_CARGO							},
 	{	"Ship Status",					STATUS_SUBCATEGORY_SHIP_STATUS						},
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},

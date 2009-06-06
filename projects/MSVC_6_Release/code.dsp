@@ -2922,6 +2922,14 @@ SOURCE=..\..\code\Network\multi_respawn.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\network\multi_sexp.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_sexp.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Network\multi_team.cpp
 # End Source File
 # Begin Source File

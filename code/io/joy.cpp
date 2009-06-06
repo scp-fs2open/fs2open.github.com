@@ -1103,7 +1103,7 @@ int joy_get_unscaled_reading(int raw, int axn)
 int joy_get_scaled_reading(int raw, int axn)
 {
 	int x, d, dead_zone, rng;
-	float percent, sensitivity_percent, non_sensitivity_percent;
+	float percent;
 
 	// Make sure it's calibrated properly.
 	if (joystick.axis_center[axn] - joystick.axis_min[axn] < 5)
@@ -1132,15 +1132,11 @@ int joy_get_scaled_reading(int raw, int axn)
 
 	Assert(Joy_sensitivity >= 0 && Joy_sensitivity <= 9);
 
-	// compute percentages as a range between 0 and 1
-	sensitivity_percent = (float) Joy_sensitivity / 9.0f;
-	non_sensitivity_percent = (float) (9 - Joy_sensitivity) / 9.0f;
-
 	// find percent of max axis is at
 	percent = (float) d / (float) rng;
 
 	// work sensitivity on axis value
-	percent = (percent * sensitivity_percent + percent * percent * percent * percent * percent * non_sensitivity_percent);
+	percent = pow(percent, (3.0f - ((float) Joy_sensitivity / 4.5f)));
 
 	x = (int) ((float) F1_0 * percent);
 
