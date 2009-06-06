@@ -630,9 +630,11 @@ void labviewer_add_model_thrusters(ship_info *sip)
 	mst.length.xyz.y = 0.0f;
 
 	//	Add noise to thruster geometry.
-	mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
-	mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
-	mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
+	if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+		mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
+		mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
+		mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
+	}
 
 	CLAMP(mst.length.xyz.z, -1.0f, 1.0f);
 	CLAMP(mst.length.xyz.y, -1.0f, 1.0f);
