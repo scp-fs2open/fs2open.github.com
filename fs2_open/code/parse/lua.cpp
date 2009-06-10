@@ -7655,7 +7655,7 @@ ADE_FUNC(forceMousePosition, l_Mouse, "number, number (coordinates)", "function 
 	if (!((y >= 0) && (y <= gr_screen.max_h)))
 		return ADE_RETURN_FALSE;
 
-	mouse_force_pos(x, y);
+	mouse_set_pos(x, y);
 
 	return ADE_RETURN_TRUE;
 }
