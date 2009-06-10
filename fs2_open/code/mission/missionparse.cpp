@@ -1496,6 +1496,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"set-class-dynamically",
 	"lock-all-turrets",
 	"afterburners-locked",
+	"force-shields-on",
 };
 
 
@@ -3055,7 +3056,10 @@ int parse_create_object_sub(p_object *p_objp)
 	// other flag checks
 ////////////////////////
 	if (p_objp->ship_max_shield_strength == 0.0f)
+	if (p_objp->ship_max_shield_strength == 0.0f || (!Fred_running && !(p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)))
 		Objects[objnum].flags |= OF_NO_SHIELDS;
+	else if ((p_objp->ship_max_shield_strength > 0.0f) && (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON))
+		Objects[objnum].flags &= ~OF_NO_SHIELDS;
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
 	// game only before the game or during respawning.
@@ -3441,6 +3445,7 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags & P_SF_REINFORCEMENT)
 		shipp->flags |= SF_REINFORCEMENT;
 
+	Assert(!((parse_flags & P_OF_NO_SHIELDS) && (parse_flags2 & P2_OF_FORCE_SHIELDS_ON)));
 	if (parse_flags & P_OF_NO_SHIELDS)
 		objp->flags |= OF_NO_SHIELDS;
 
