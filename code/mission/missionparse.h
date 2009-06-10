@@ -986,7 +986,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	16
+#define MAX_PARSE_OBJECT_FLAGS_2	17
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -1004,6 +1004,7 @@ typedef struct p_object {
 #define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<13)
 #define P2_SF2_LOCK_ALL_TURRETS_INITIALLY	(1<<14)		
 #define P2_SF2_AFTERBURNER_LOCKED			(1<<15)	
+#define P2_OF_FORCE_SHIELDS_ON				(1<<16)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

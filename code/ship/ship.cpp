@@ -2551,6 +2551,7 @@ flag_def_list Ship_flags[] = {
 	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
+	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -10147,6 +10148,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip_orig;
 	ship			*sp;
 	object		*objp;
+	p_object	*p_objp;
 	float hull_pct, shield_pct;
 	physics_info ph_inf;
 
@@ -10184,6 +10186,21 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	{
 		hull_pct = 1.0f;
 		shield_pct = 1.0f;
+	}
+	
+	// make sure that shields are disabled/enabled if they need to be - Chief1983
+	if (!Fred_running) {
+		p_objp = mission_parse_get_parse_object(sp->ship_name);
+		if ((p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sp->ship_max_shield_strength > 0.0f)) {
+			objp->flags &= ~OF_NO_SHIELDS;
+		} else if ((p_objp->flags & P_OF_NO_SHIELDS) || (sp->ship_max_shield_strength == 0.0f)) {
+			objp->flags |= OF_NO_SHIELDS;
+		// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
+		} else if (!(sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)) {
+			objp->flags |= OF_NO_SHIELDS;
+		} else if ((sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && !(sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sp->ship_max_shield_strength > 0.0f)) {
+			objp->flags &= ~OF_NO_SHIELDS;
+		}
 	}
 
 	// Goober5000 - extra checks
