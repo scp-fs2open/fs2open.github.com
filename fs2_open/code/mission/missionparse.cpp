@@ -3055,7 +3055,6 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// other flag checks
 ////////////////////////
-	if (p_objp->ship_max_shield_strength == 0.0f)
 	if (p_objp->ship_max_shield_strength == 0.0f || (!Fred_running && !(p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)))
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 	else if ((p_objp->ship_max_shield_strength > 0.0f) && (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON))
