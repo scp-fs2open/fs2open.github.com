@@ -704,9 +704,20 @@ void demo_title_blit()
 
 #endif
 
+// no need to reset this to false because we only ever see player_select once per game run
+static bool Startup_warning_dialog_displayed = false;
+
 void player_select_do()
 {
 	int k;
+
+	// Goober5000 - display a popup warning about problems in the mod
+	if ((Global_warning_count > 10 || Global_error_count > 0) && !Startup_warning_dialog_displayed) {
+		char text[512];
+		sprintf(text, "Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formated table files to corrupt models.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mod's data files, not FreeSpace Open's source code.", Global_warning_count + Global_error_count);
+		popup(PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, text);
+		Startup_warning_dialog_displayed = true;
+	}
 
 #ifdef FS2_DEMO
 	if ( Demo_title_active ) {

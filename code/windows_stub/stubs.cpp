@@ -154,6 +154,9 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
+int Global_warning_count = 0;
+int Global_error_count = 0;
+
 #define MAX_BUF_SIZE	1024
 static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
@@ -219,9 +222,62 @@ void WinAssert(char * text, char *filename, int line)
 	abort();
 }
 
+// fatal assertion error
+void WinAssert(char * text, char *filename, int line, const char * format, ... )
+{
+	// Karajorma - Nicked the code from the Warning function below
+	va_list args;
+	int i;
+	int slen = 0;
+
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
+
+	va_start(args, format);
+	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
+	va_end(args);
+
+	slen = strlen(buffer_tmp);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++){
+		if (buffer_tmp[i] == (char)0x0a) {
+			buffer[i] = ' ';
+		} else {
+			buffer[i] = buffer_tmp[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (buffer[slen-1] == (char)0x20) {
+		buffer[slen-1] = '\0';
+	} else {
+		// just being careful
+		buffer[slen] = '\0';
+	}
+
+	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d  %s\n", text, filename, line, buffer);
+
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	mprintf(("ASSERTION: \"%s\" at %s:%d  %s\n", text, strrchr(filename, '/')+1, line, buffer ));
+
+	if (Cmdline_nowarn) {
+		return;
+	}
+
+	// we have to call os_deinit() before abort() so we make sure that SDL gets
+	// closed out and we don't lose video/input control
+	os_deinit();
+
+	abort();
+}
+
+
 // standard warning message
 void Warning( char * filename, int line, const char * format, ... )
 {
+	Global_warning_count++;
+
 #ifndef NDEBUG
 	va_list args;
 	int i;
@@ -263,6 +319,8 @@ void Warning( char * filename, int line, const char * format, ... )
 // fatal error message
 void Error( char * filename, int line, const char * format, ... )
 {
+	Global_error_count++;
+
 	va_list args;
 	int i;
 	int slen = 0;

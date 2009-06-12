@@ -640,7 +640,6 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	tsi->target_subsys = turret->targeted_subsys;
 	tsi->time_to_fire = 1;	// first missile next frame
 	tsi->weapon_num = weapon_num;
-	mprintf(("weapon_num: %i\n", weapon_num));
 }
 
 void turret_swarm_fire_from_turret(turret_swarm_info *tsi);
@@ -666,7 +665,7 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 
 	// search ship subsystems for turrets with valid turret_swarm_info_index
 	for (subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list); subsys = GET_NEXT(subsys)) {
-		if (subsys->turret_swarm_num > 0) {
+ 		if (subsys->turret_swarm_num > 0) {
 
 			int swarms_per_turret = subsys->turret_swarm_num;
 

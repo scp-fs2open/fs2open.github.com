@@ -728,7 +728,7 @@ void blit_label(char *label, int *coords, int num)
 	gr_set_color_fast(&Color_bright);
 
 	// translate medal names before displaying
-	// cant translate in table cuz the names are used in comparisons
+	// can't translate in table cuz the names are used in comparisons
 	if (Lcl_gr) {
 		char translated_label[256];
 		strncpy(translated_label, label, 256);
@@ -954,7 +954,7 @@ void blit_medals()
 		}
 	}
 
-	// now blit rank, since that "medal" doesnt get loaded (or drawn) the normal way
+	// now blit rank, since that "medal" doesn't get loaded (or drawn) the normal way
 	gr_set_bitmap(Rank_bm);
 	gr_bitmap(Medal_coords[gr_screen.res][RANK_MEDAL_REGION][0], Medal_coords[gr_screen.res][RANK_MEDAL_REGION][1]);
 }

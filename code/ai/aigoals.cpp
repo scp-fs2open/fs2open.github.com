@@ -962,7 +962,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	aip->active_goal = AI_GOAL_NONE;					// for good measure
 
 	// next line moved here on 8/5/97 by MWA
-	// Dont reset player ai (and hence target)
+	// Don't reset player ai (and hence target)
 	// Goober5000 - account for player ai
 	//if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) || Player_use_ai ) {
 	if ( (Player_ship == NULL) || (&Ships[aip->shipnum] != Player_ship) || Player_use_ai )
@@ -1826,7 +1826,7 @@ void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int imme
 	int i;
 
 	// be sure we are not trying to issue dock or undock goals to wings
-	Assert ( (goal_type != AI_GOAL_DOCK) || (goal_type != AI_GOAL_UNDOCK) );
+	Assert ( (goal_type != AI_GOAL_DOCK) && (goal_type != AI_GOAL_UNDOCK) );
 
 	for (i = 0; i < wingp->current_count; i++) {
 		int num = wingp->ship_index[i];

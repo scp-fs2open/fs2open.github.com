@@ -895,7 +895,7 @@ void red_alert_store_wingman_status()
 	}
 
 	// store exited ships that did not die
-	for (int idx=0; idx<MAX_EXITED_SHIPS; idx++) {
+	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
 
 		if ( Red_alert_num_slots_used >= MAX_RED_ALERT_SLOTS ) {
 			Int3();	// ran out of red alert slots

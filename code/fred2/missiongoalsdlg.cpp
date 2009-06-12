@@ -437,7 +437,7 @@ void CMissionGoalsDlg::OnEndlabeleditGoalsTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_goals_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_goals_tree.end_label_edit(pTVDispInfo->item);
 }
 
 void CMissionGoalsDlg::OnOK()

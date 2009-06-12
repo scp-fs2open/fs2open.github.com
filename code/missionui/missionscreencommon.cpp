@@ -436,8 +436,9 @@
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
-
-
+#include "cutscene/movie.h"
+#include "cutscene/cutscenes.h"
+#include "parse/sexp.h"
 
 
 //////////////////////////////////////////////////////////////////
@@ -730,6 +731,23 @@ void common_music_close()
 		return;
 
 	briefing_stop_music();
+}
+
+void common_maybe_play_cutscene(int movie_type)
+{
+	for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
+		if (movie_type == The_mission.cutscenes[i].type) {
+			if (!eval_sexp( The_mission.cutscenes[i].formula )) {
+				continue; 
+			}
+
+			if ( strlen(The_mission.cutscenes[i].cutscene_name) ) {
+				common_music_close(); 
+				movie_play( The_mission.cutscenes[i].cutscene_name );	//Play the movie!
+				cutscene_mark_viewable( The_mission.cutscenes[i].cutscene_name );
+			}
+		}
+	}
 }
 
 // function that sets the current palette to the interface palette.  This function

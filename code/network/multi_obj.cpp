@@ -452,24 +452,24 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		PACK_PERCENT(temp);				
 		multi_rate_add(NET_PLAYER_NUM(pl), "hul", 1);	
 
-		float max_shield = shipp->ship_max_shield_strength;
+		float quad = get_max_shield_quad(objp);
 
 		// pack 2 shield values into each byte
 
 		// pack quadrant 1
-		temp = (objp->shield_quadrant[0] / max_shield);
+		temp = (objp->shield_quadrant[0] / quad);
 		PACK_PERCENT(temp);
 				
 		// pack quadrant 2
-		temp = (objp->shield_quadrant[1] / max_shield);
+		temp = (objp->shield_quadrant[1] / quad);
 		PACK_PERCENT(temp);				
 
 		// pack quadrant 3
-		temp = (objp->shield_quadrant[2] / max_shield);
+		temp = (objp->shield_quadrant[2] / quad);
 		PACK_PERCENT(temp);
 				
 		// pack quadrant 2
-		temp = (objp->shield_quadrant[3] / max_shield);
+		temp = (objp->shield_quadrant[3] / quad);
 		PACK_PERCENT(temp);				
 				
 		multi_rate_add(NET_PLAYER_NUM(pl), "shl", 4);	
@@ -878,12 +878,12 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		UNPACK_PERCENT(shield_2);
 		UNPACK_PERCENT(shield_3);
 
-		float max_shield = shipp->ship_max_shield_strength;
+		float quad = get_max_shield_quad(pobjp);
 
-		pobjp->shield_quadrant[0] = (shield_0 * max_shield);
-		pobjp->shield_quadrant[1] = (shield_1 * max_shield);
-		pobjp->shield_quadrant[2] = (shield_2 * max_shield);
-		pobjp->shield_quadrant[3] = (shield_3 * max_shield);
+		pobjp->shield_quadrant[0] = (shield_0 * quad);
+		pobjp->shield_quadrant[1] = (shield_1 * quad);
+		pobjp->shield_quadrant[2] = (shield_2 * quad);
+		pobjp->shield_quadrant[3] = (shield_3 * quad);
 	}	
 
 	if ( oo_flags & OO_SUBSYSTEMS_AND_AI_NEW ) {

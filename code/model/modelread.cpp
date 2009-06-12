@@ -396,7 +396,7 @@
  *
  * Revision 2.30  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
- * Simulated speech doesnt say tags marked by $ now.
+ * Simulated speech doesn't say tags marked by $ now.
  * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
  * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
  * Error now given on missing briefing icon and bad ship normal data.
@@ -423,7 +423,7 @@
  *
  * Revision 2.25  2003/10/14 17:39:15  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *
@@ -1243,6 +1243,16 @@
 
 #include "gamesnd/gamesnd.h"
 
+flag_def_list model_render_flags[] =
+{
+	{"no lighting",		MR_NO_LIGHTING},
+	{"transparent",		MR_ALL_XPARENT},
+	{"no Zbuffer",		MR_NO_ZBUFFER},
+	{"no cull",			MR_NO_CULL},
+	{"no glowmaps",		MR_NO_GLOWMAPS}
+};
+  	 
+int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 
@@ -2428,6 +2438,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
+
+				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
+					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
+					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
+				}else{
+					pm->submodel[n].dumb_turn_rate = 0.0f;
+				}
+
 				if ( pm->submodel[n].name[0] == '\0' ) {
 					strcpy(pm->submodel[n].name, "unknown object name");
 				}
@@ -3069,7 +3087,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				n = cfread_int(fp);
 				pm->n_textures = n;
-				// Dont overwrite memory!!
+				// Don't overwrite memory!!
 				Assert(n <= MAX_MODEL_TEXTURES);
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )
@@ -4654,12 +4672,12 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	else
 		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
 
-	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
-	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
-
 	// reset these two
 	ss->base_rotation_rate_pct = 0.0f;
 	ss->gun_rotation_rate_pct = 0.0f;
+
+	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
 
 	if (turret->turret_base_rotation_snd != -1)	
 	{
@@ -5041,6 +5059,47 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	for (i=0; i<sm->num_details; i++ )	{
 		model_set_instance(model_num, sm->details[i], sii );
 	}
+}
+
+
+
+void model_do_childeren_dumb_rotation(polymodel * pm, int mn){
+	while ( mn >= 0 )	{
+
+		bsp_info * sm = &pm->submodel[mn];
+
+		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
+			float *ang;
+			int axis = sm->movement_axis;
+			switch(axis){
+			case MOVEMENT_AXIS_X:
+				ang = &sm->angs.p;
+					break;
+			case MOVEMENT_AXIS_Z:
+				ang = &sm->angs.b;
+					break;
+			default:
+			case MOVEMENT_AXIS_Y:
+				ang = &sm->angs.h;
+					break;
+			}
+			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
+			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
+			//this keeps ang from getting bigger than 2PI
+		}
+
+		if(pm->submodel[mn].first_child >-1)model_do_childeren_dumb_rotation(pm, pm->submodel[mn].first_child);
+
+		mn = pm->submodel[mn].next_sibling;
+	}
+}
+void model_do_dumb_rotation(int pn){
+	polymodel * pm;
+
+	pm = model_get(pn);
+	int mn = pm->detail[0];
+
+	model_do_childeren_dumb_rotation(pm,mn);
 }
 
 

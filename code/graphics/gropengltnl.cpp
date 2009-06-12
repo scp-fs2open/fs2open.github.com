@@ -1536,11 +1536,11 @@ static bool GL_scale_matrix_set = false;
 
 void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 {
-   if (GL_scale_matrix_set) 
-   {
-      Int3();
-      return;
-   }
+	if (GL_scale_matrix_set) 
+	{
+		Int3();
+		return;
+	}
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -1552,11 +1552,11 @@ void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 
 void gr_opengl_pop_scale_matrix()
 {
-   if (GL_scale_matrix_set) 
-   {
-      Int3();
-      return;
-   }
+	if (GL_scale_matrix_set) 
+	{
+		Int3();
+		return;
+	}
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();

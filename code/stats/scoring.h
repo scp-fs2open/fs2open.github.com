@@ -37,7 +37,7 @@
  * --Goober5000
  *
  * Revision 2.2  2003/01/27 00:51:08  DTP
- * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still cant join. narrowing it down.
+ * Part of bumping MAX_SHIPS to 250 max_ship_types. Server now no more Crashes on kill, when max_shiptypes is above 200. Note Client still can't join. narrowing it down.
  *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
@@ -327,7 +327,7 @@ void scoring_do_accept( scoring_struct *score );
 void scoring_check_medal(scoring_struct *sc);
 
 void scoring_add_damage(object *ship_obj,object *other_obj,float damage);
-void scoring_eval_kill(object *ship_obj);
+int scoring_eval_kill(object *ship_obj);
 void scoring_eval_assists(ship *sp,int killer_sig, bool enemy_player = false);
 
 // bash the passed player to the specified rank

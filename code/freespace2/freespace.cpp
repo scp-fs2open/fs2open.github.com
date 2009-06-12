@@ -856,7 +856,7 @@
  *
  * Revision 2.73  2004/02/20 18:04:27  randomtiger
  * Changed memory leak detection to happen after atexit all other calls.
- * This will mean it doesnt report leaks that are cleared by just before the game quits by preset functions.
+ * This will mean it doesn't report leaks that are cleared by just before the game quits by preset functions.
  *
  * Revision 2.72  2004/02/20 04:29:53  bobboau
  * pluged memory leaks,
@@ -867,7 +867,7 @@
  * Use _REPORT_MEM_LEAKS compile flag in code.lib to get a report of memory leaks from malloc calls.
  *
  * Revision 2.70  2004/02/16 11:47:32  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -890,7 +890,7 @@
  *
  * Revision 2.67  2004/01/24 15:52:25  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
- * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ * In OGL it works perfectly and in both APIs it doesn't switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
  *
  * Revision 2.66  2004/01/23 00:14:27  randomtiger
  * Fixed serious memory leak causes by use of -pcx32 flag
@@ -906,7 +906,7 @@
  * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
  *
  * Revision 2.63  2003/11/29 10:52:09  randomtiger
- * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Turned off D3D file mapping, it's using too much memory which may be hurting older systems and doesn't seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
  * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
  * Added fix for fonts wrapping round in non standard hi res modes.
@@ -993,7 +993,7 @@
  *
  * Revision 2.47  2003/10/14 17:39:12  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *
@@ -1096,12 +1096,12 @@
  *
  * I have also taken the opertunity to fix a few bugs in the launcher and add a new feature to make selecting mods a bit easier.
  *
- * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher wont compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
+ * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher won't compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
  *
  * I have also removed the internal launcher from the D3D8 module.
  * Please contact me if you have any problems.
  *
- * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and cant afford to find out.
+ * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and can't afford to find out.
  *
  * Revision 2.32  2003/05/21 20:26:07  phreak
  * improved chase camera code.. you can now fight using this camera
@@ -1161,7 +1161,7 @@
  * --Goober5000
  *
  * Revision 2.16  2002/12/21 13:39:03  DTP
- * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
+ * did bit more house keeping. modfied Phreak's fps cmdline a bit, so that we don't have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
  *
  * Revision 2.15  2002/12/18 22:21:23  phreak
  * tidied up game_init() a bit.. took out a bunch of unneeded ifdefs like E3_BUILD
@@ -6296,6 +6296,7 @@ void bars_do_frame(float frametime)
 		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
 		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		//Set clipping
+		gr_reset_clip();
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
@@ -6305,6 +6306,7 @@ void bars_do_frame(float frametime)
 		//gr_set_color(0,0,0);
 		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
 		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		gr_reset_clip();
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
 	}
 }
@@ -6452,14 +6454,8 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
 
-            if (Time_compression_locked)
-            {
-                bars_do_frame(flRealframetime);
-            }
-            else
-            {
-                bars_do_frame(flFrametime);
-            }
+			// WMC's cutscene bars function
+			bars_do_frame(Time_compression_locked ? flRealframetime : flFrametime);
 
 			game_render_frame( cid );
 
@@ -7045,12 +7041,14 @@ int game_poll()
 		return 0;
 	}
 
-	// If a popup is running, don't process all the Fn keys
-//	if( popup_active() ) {
-//		return k;
-//	}
-
 	state = gameseq_get_state();
+
+	// If a popup is running, don't process all the Fn keys
+	if( popup_active()) {
+		if (state != GS_STATE_DEATH_BLEW_UP) {
+			return k;
+		}
+	}
 
 //	if ( k ) nprintf(( "General", "Key = %x\n", k ));
 
@@ -7081,8 +7079,8 @@ int game_poll()
 				case GS_STATE_OPTIONS_MENU:
 				case GS_STATE_HUD_CONFIG:
 				case GS_STATE_CONTROL_CONFIG:
-//				case GS_STATE_DEATH_DIED:
-//				case GS_STATE_DEATH_BLEW_UP:		
+				case GS_STATE_DEATH_DIED:
+//				case GS_STATE_DEATH_BLEW_UP:	// 	DEATH_BLEW_UP might be okay but do not comment out DEATH_DIED as otherwise no clean up is performed on the dead ship
 				case GS_STATE_VIEW_MEDALS:
 					break;
 
@@ -8085,7 +8083,7 @@ void game_enter_state( int old_state, int new_state )
 			//	Main_hall_netgame_started = 1;
 			//	main_hall_do_multi_ready();
 			//} DTP commented out to keep original source
-			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl dont get thrown into Multiplayer with a Singleplayer Pilot.
+			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl don't get thrown into Multiplayer with a Singleplayer Pilot.
 				Main_hall_netgame_started = 1;
 				main_hall_do_multi_ready();
 			}
@@ -8128,6 +8126,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_FICTION_VIEWER:
+			common_maybe_play_cutscene(MOVIE_PRE_FICTION); 	
 			fiction_viewer_init();
 			break;
 
@@ -8135,6 +8134,7 @@ void game_enter_state( int old_state, int new_state )
 			if (old_state == GS_STATE_OPTIONS_MENU) {
 				cmd_brief_unhold();
 			} else {
+				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF); 	
 				int team_num = 0;  // team number used as index for which cmd brief to use.
 				cmd_brief_init(team_num);
 			}
@@ -8142,10 +8142,12 @@ void game_enter_state( int old_state, int new_state )
 		}
 
 		case GS_STATE_RED_ALERT:
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 	
 			red_alert_init();
 			break;
 
 		case GS_STATE_BRIEFING:
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF); 
 			brief_init();
 			break;
 
@@ -8153,6 +8155,7 @@ void game_enter_state( int old_state, int new_state )
 			game_stop_looped_sounds();
 			mission_goal_fail_incomplete();				// fail all incomplete goals before entering debriefing
 			if ( (old_state != GS_STATE_VIEW_MEDALS) && (old_state != GS_STATE_OPTIONS_MENU) ){
+				common_maybe_play_cutscene(MOVIE_PRE_DEBRIEF); 	
 				debrief_init();
 			}
 			break;
@@ -8208,6 +8211,12 @@ void game_enter_state( int old_state, int new_state )
 			break;
  
 		case GS_STATE_GAME_PLAY:
+
+			// maybe play a cutscene
+			if((old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) || 
+			   (old_state == GS_STATE_WEAPON_SELECT) || (old_state == GS_STATE_RED_ALERT) ) {
+				common_maybe_play_cutscene(MOVIE_PRE_GAME); 
+			}
 			// reset time compression to default level so it's right at the beginning of a mission - taylor
 			if(old_state != GS_STATE_GAME_PAUSED)
 			{
@@ -10727,7 +10736,7 @@ int find_freespace_cd(char *volume_name)
 						}
 
 #if !defined(OEM_BUILD)
-						// oem not on 80 min cds, so dont check tha size
+						// oem not on 80 min cds, so don't check tha size
 						// check its size
 						uint used_space = game_get_cd_used_space(path);											
 						if(used_space < CD_SIZE_72_MINUTE_MAX){							

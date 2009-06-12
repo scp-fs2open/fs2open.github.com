@@ -743,14 +743,14 @@ void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_ty
 	tmap_type = TCACHE_TYPE_NORMAL;
 
 	if (flags & TMAP_FLAG_TEXTURED) {
-		if (flags & TMAP_FLAG_BW_TEXTURE) {
-			r = gr_screen.current_color.red;
-			g = gr_screen.current_color.green;
-			b = gr_screen.current_color.blue;
-		} else {
-			r = g = b = 255;
-		}
+		r = g = b = 255;
 	} else {
+		r = gr_screen.current_color.red;
+		g = gr_screen.current_color.green;
+		b = gr_screen.current_color.blue;
+	}
+
+	if (flags & TMAP_FLAG_BW_TEXTURE) {
 		r = gr_screen.current_color.red;
 		g = gr_screen.current_color.green;
 		b = gr_screen.current_color.blue;

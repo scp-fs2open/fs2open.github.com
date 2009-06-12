@@ -520,7 +520,7 @@ void DumpStats::get_ship_weapon_selection(CString &buffer)
 		buffer += temp;
 
 		// ships
-		for (j=0; j<Team_data[i].number_choices; j++) {
+		for (j=0; j<Team_data[i].num_ship_choices; j++) {
 			temp.Format("\tShip name: %s, count %d", Ship_info[Ships[Team_data[i].ship_list[j]].ship_info_index].name, Team_data[i].ship_count[j]);
 			buffer += temp;
 
@@ -535,11 +535,11 @@ void DumpStats::get_ship_weapon_selection(CString &buffer)
 		buffer += "\r\n";
 
 		// weapons
-		for (j=0; j<MAX_WEAPON_TYPES; j++) {
-			if (Team_data[i].weaponry_pool[j] > 0) {
-				temp.Format("\tWeapon name: %s, count %d\r\n", Weapon_info[j].name, Team_data[i].weaponry_pool[j]);
-				buffer += temp;
-			}
+		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
+			//if (Team_data[i].weaponry_pool[j] > 0) 
+			temp.Format("\tWeapon name: %s, count %d\r\n", Weapon_info[Team_data[i].weaponry_pool[j]].name, Team_data[i].weaponry_count[j]);
+			buffer += temp;
+			
 		}
 	}
 

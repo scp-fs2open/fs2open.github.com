@@ -858,7 +858,7 @@
  * 
  * 81    8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 80    8/10/99 5:02p Andsager
  * Fix bug where AI gets stuck in SM_EVADE_WEAPON with no target.
@@ -4031,22 +4031,6 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 		return;
 	}
 
-	// if this is a multi game, we currently only support one-on-one docking
-	if (Game_mode & GM_MULTIPLAYER)
-	{
-		if (object_is_docked(docker))
-		{
-			Error(LOCATION, "Ship %s tried to dock to more than one object.  Multiplayer currently does not support multiple ship docking.\n", Ships[docker->instance].ship_name);
-			return;
-		}
-
-		if (object_is_docked(dockee))
-		{
-			Error(LOCATION, "Ship %s tried to dock to more than one object.  Multiplayer currently does not support multiple ship docking.\n", Ships[dockee->instance].ship_name);
-			return;
-		}
-	}
-
 	// link the two objects
 	dock_dock_objects(docker, docker_point, dockee, dockee_point);
 
@@ -4075,10 +4059,9 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 		}
 	}
 
-	// add multiplayer hook here to deal with docked objects.  We need to only send information
-	// about the object that is docking.  Both flags will get updated.
+	// add multiplayer hook here to deal with docked objects.  
 	if ( MULTIPLAYER_MASTER && update_clients)
-		send_ai_info_update_packet( docker, AI_UPDATE_DOCK );
+		send_ai_info_update_packet( docker, AI_UPDATE_DOCK, dockee );
 }
 
 // code which is called when objects become undocked. Equivalent of above function.
@@ -4098,7 +4081,7 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 	// do anything else.  We don't need to send info for both objects, since multi
 	// only supports one docked object
 	if ( MULTIPLAYER_MASTER )
-		send_ai_info_update_packet( docker, AI_UPDATE_UNDOCK );
+		send_ai_info_update_packet( docker, AI_UPDATE_UNDOCK, dockee );
 
 	if (docker->type == OBJ_SHIP && dockee->type == OBJ_SHIP)
 	{
@@ -6320,7 +6303,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	
 	sip = &Ship_info[shipp->ship_info_index];
 //made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
-	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP)) 
+	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
 //	if (flags & WIF_PUNCTURE) 
 	{
 		if (swp->current_primary_bank >= 0) 
@@ -7382,8 +7365,14 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 {
 	float	weapon_speed, range_time;
 	ship	*shipp = &Ships[pobjp->instance];
+	vec3d	target_moving_direction;
 
 	Assert( eobjp != NULL );
+
+	target_moving_direction = eobjp->phys_info.vel;
+
+	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+		vm_vec_sub2(&target_moving_direction, &pobjp->phys_info.vel);
 
 	weapon_speed = ai_get_weapon_speed(&shipp->weapons);
 	weapon_speed = MAX(weapon_speed, 1.0f);		// set not less than 1
@@ -7403,7 +7392,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 		float	dist;
 
 		dist = vm_vec_dist_quick(&pobjp->pos, &eobjp->pos);
-		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &eobjp->phys_info.vel, aip->time_enemy_in_range * dist/weapon_speed);
+		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &target_moving_direction, aip->time_enemy_in_range * dist/weapon_speed);
 	} else {
 		float	collision_time;
 		vec3d	gun_pos, pnt;
@@ -7418,13 +7407,13 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 		vm_vec_unrotate(&gun_pos, &pnt, &pobjp->orient);
 		vm_vec_add2(&gun_pos, &pobjp->pos);
 
-		collision_time = compute_collision_time(&eobjp->pos, &eobjp->phys_info.vel, &gun_pos, weapon_speed);
+		collision_time = compute_collision_time(&eobjp->pos, &target_moving_direction, &gun_pos, weapon_speed);
 
 		if (collision_time == 0.0f) {
 			collision_time = 100.0f;
 		}
 
-		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &eobjp->phys_info.vel, collision_time);
+		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &target_moving_direction, collision_time);
 
 		// set globals
 		G_collision_time = collision_time;
@@ -10317,7 +10306,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			return;
 		}
 
-		// dont attack if you can't see him
+		// don't attack if you can't see him
 		if ( awacs_get_level(hitter_objp, &Ships[aip->shipnum], 1) < 1 ) {
 			// if he's a stealth and visible, but not targetable, ok to attack.
 			if ( is_object_stealth_ship(hitter_objp) ) {
@@ -10959,11 +10948,6 @@ void ai_guard()
 
 }
 
-
-// define for the points subtracted from score for a rearm started on a player.
-#define REPAIR_PENALTY		50
-
-
 // function to clean up ai flags, variables, and other interesting information
 // for a ship that was getting repaired.  The how parameter is useful for multiplayer
 // only in that it tells us why the repaired ship is being cleaned up.
@@ -11002,7 +10986,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		// if this is a player ship, then subtract the repair penalty from this player's score
 		if ( repaired_objp->flags & OF_PLAYER_SHIP ) {
 			if ( !(Game_mode & GM_MULTIPLAYER) ) {
-				Player->stats.m_score -= (int)(REPAIR_PENALTY * scoring_get_scale_factor());			// subtract the penalty
+				Player->stats.m_score -= The_mission.ai_profile->repair_penalty[Game_skill_level];			// subtract the penalty
 			} else {
 				/*
 				int pnum;
@@ -11010,10 +10994,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 				// multiplayer game -- find the player, then subtract the score
 				pnum = multi_find_player_by_object( repaired_objp );
 				if ( pnum != -1 ) {
-					Net_players[pnum].player->stats.m_score -= (int)(REPAIR_PENALTY * scoring_get_scale_factor());
+					Net_players[pnum].player->stats.m_score -= The_mission.ai_profile->repair_penalty[Game_skill_level];
 
 					// squad war
-					multi_team_maybe_add_score(-(int)(REPAIR_PENALTY * scoring_get_scale_factor()), Net_players[pnum].p_info.team);
+					multi_team_maybe_add_score(-(The_mission.ai_profile->repair_penalty[Game_skill_level]), Net_players[pnum].p_info.team);
 				} else {
 					nprintf(("Network", "Couldn't find player for ship %s for repair penalty\n", Ships[repaired_objp->instance].ship_name));
 				}
@@ -13009,27 +12993,15 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	float	transfer_delta;
 	float	max_quadrant_strength;
 
-	int n_shd_sections;	
-	switch (objp->n_shield_segments) {
-		case 1:
-			return;
-		case 2:
-			n_shd_sections = 2;
-			break;
-		default:
-			n_shd_sections = MAX_SHIELD_SECTIONS;
-			break;
-	}
-
-	max_quadrant_strength = get_max_shield_quad(objp,quadrant_num);
+	max_quadrant_strength = get_max_shield_quad(objp);
 
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
 
-	if (objp->shield_quadrant[quadrant_num] + (n_shd_sections-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(n_shd_sections-1);
+	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
+		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
 
-	for (i=0; i<n_shd_sections; i++)
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
 		if (i != quadrant_num) {
 			if (objp->shield_quadrant[i] >= transfer_delta) {
 				objp->shield_quadrant[i] -= transfer_delta;
@@ -13050,34 +13022,21 @@ void ai_balance_shield(object *objp)
 	float	delta;
 
 	// if we are already at the max shield strength for all quads then just bail now
-	if ( (Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp)) || (Ships[objp->instance].ship_max_shield_strength == 0.0f) )
+	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
 		return;
 
-	int n_shd_sections;
-	switch (objp->n_shield_segments) {
-		case 1:
-			return;
-		case 2:
-			n_shd_sections = 2;
-			break;
-		default:
-			n_shd_sections = MAX_SHIELD_SECTIONS;
-			break;
-	}
 
-	shield_strength_avg = shield_get_strength(objp)/n_shd_sections;
-	float shield_multiplier = shield_get_strength(objp) / Ships[objp->instance].ship_max_shield_strength;;
+	shield_strength_avg = shield_get_strength(objp)/MAX_SHIELD_SECTIONS;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i=0; i<n_shd_sections; i++) {
-		shield_strength_avg = Ships[objp->instance].ship_max_shield_segment[i] * shield_multiplier;
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, delta);
 			else
-				objp->shield_quadrant[i] += delta/n_shd_sections;
+				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
 
 			if (objp->shield_quadrant[i] > shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
@@ -13087,7 +13046,7 @@ void ai_balance_shield(object *objp)
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, -delta);
 			else
-				objp->shield_quadrant[i] -= delta/n_shd_sections;
+				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
 
 			if (objp->shield_quadrant[i] < shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
@@ -13124,7 +13083,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
 		if (sip->flags & SIF_SMALL_SHIP) {
-			if ((aip->last_hit_time != 0) && (Missiontime - aip->last_hit_time < F1_0*10))
+			if (Missiontime - aip->last_hit_time < F1_0*10)
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else
 				ai_balance_shield(objp);
@@ -13294,8 +13253,10 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	float t = ai_endangered_by_weapon(aip);
 	if ((t > 0.0f) && (t < 1.0f)) {
 	// Check if this weapon is from a large ship Pl_objp is attacking... if so, enter strafe mode
-		if ( ai_big_maybe_enter_strafe_mode(Pl_objp, aip->danger_weapon_objnum) ) {
-			return;
+		if ( !(aip->ai_flags & AIF_NO_DYNAMIC) ) {
+			if ( ai_big_maybe_enter_strafe_mode(Pl_objp, aip->danger_weapon_objnum) ) {
+				return;
+			}
 		}
 
 		switch (aip->mode) {
@@ -15885,7 +15846,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		if (aip->submode == SM_ATTACK_FOREVER)
 			return;
 
-		if ( hit_objp->type == OBJ_WEAPON ) {
+		if ( (hit_objp->type == OBJ_WEAPON) && !(aip->ai_flags & AIF_NO_DYNAMIC) ) {
 			if ( ai_big_maybe_enter_strafe_mode(objp_ship, OBJ_INDEX(hit_objp), 1) )
 				return;
 		}

@@ -284,6 +284,9 @@ extern void gr_activate(int active);
 
 bool Messagebox_active = false;
 
+int Global_warning_count = 0;
+int Global_error_count = 0;
+
 #ifdef _MSC_VER
 #include <crtdbg.h>
 
@@ -998,7 +1001,7 @@ static DumpBuffer dumpBuffer ;
 #endif	//SHOW_CALL_STACK
 
 
-char AssertText1[1024];
+char AssertText1[2048];
 char AssertText2[1024];
 
 uint flags = MB_SYSTEMMODAL|MB_SETFOREGROUND;
@@ -1050,6 +1053,57 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
+
+#ifdef SHOW_CALL_STACK	
+	dumpBuffer.Clear();
+	dumpBuffer.Printf( AssertText1 );
+	dumpBuffer.Printf( "\r\n" );
+	DumpCallsStack( dumpBuffer ) ;  
+	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
+	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
+
+	val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
+#else
+	val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
+#endif
+
+	if (val == IDCANCEL)
+		exit(1);
+#ifndef INTERPLAYQA
+	Int3();
+#else
+	AsmInt3();
+#endif
+
+	gr_activate(1);
+
+	Messagebox_active = false;
+}
+
+void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... )
+{
+	int val;
+	
+	va_list args;
+
+	va_start(args, format);
+	vsprintf(AssertText2, format, args);
+	va_end(args);
+
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	mprintf(("ASSERTION: \"%s\" at %s:%d\n %s\n", text, strrchr(filename, '\\')+1, linenum, AssertText2 ));
+
+	if (Cmdline_nowarn)
+		return;
+
+	Messagebox_active = true;
+
+	gr_activate(0);
+
+	filename = strrchr(filename, '\\')+1;
+	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n%s\r\n", text, filename, linenum, AssertText2 );
 
 #ifdef SHOW_CALL_STACK	
 	dumpBuffer.Clear();
@@ -1188,6 +1242,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 void _cdecl Error( char * filename, int line, const char * format, ... )
 {
+	Global_error_count++;
+
 	int val;
 	va_list args;
 
@@ -1241,6 +1297,8 @@ void _cdecl Error( char * filename, int line, const char * format, ... )
 
 void _cdecl Warning( char *filename, int line, const char *format, ... )
 {
+	Global_warning_count++;
+
 #ifndef NDEBUG
 	va_list args;
 	int result;

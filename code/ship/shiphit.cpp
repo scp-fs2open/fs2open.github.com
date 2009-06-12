@@ -827,7 +827,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 		vec3d temp_vec, center_to_subsys, rand_vec;
 		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
-		for (int i=0; i<num_fireballs; i++) {
+		for (i=0; i<num_fireballs; i++) {
 			if (i==0) {
 				// make first fireball at hitpos
 				if (hitpos) {
@@ -2167,6 +2167,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
+	int killer_index = -1;
 	object *killer_objp = NULL;
 
 	sp = &Ships[ship_obj->instance];
@@ -2187,18 +2188,18 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
-		scoring_eval_kill( ship_obj );
+		killer_index = scoring_eval_kill( ship_obj );
 
 		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
 		// killed this ship.  scoring_eval_kill above should leave the obj signature of the ship who killed
 		// this guy (or a -1 if no one got the kill).
 		killer_ship_name = NULL;
 		killer_damage_percent = -1;
-		if ( sp->damage_ship_id[0] != -1 ) {
+		if ( killer_index >= 0 ) {
 			object *objp;
 			int sig;
 
-			sig = sp->damage_ship_id[0];
+			sig = sp->damage_ship_id[killer_index];
 			for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 				if ( objp->signature == sig ){
 					break;
@@ -2218,7 +2219,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 					killer_ship_name = Ships_exited[ei].ship_name;
 				}
 			}
-			killer_damage_percent = (int)(sp->damage_ship[0] * 100.0f);
+			killer_damage_percent = (int)(sp->damage_ship[killer_index]/sp->total_damage_received * 100.0f);
 		}		
 
 		if(!self_destruct){
@@ -2262,8 +2263,13 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		}
 
 		// maybe praise the player for this kill
- 		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
-			ship_maybe_praise_player(sp);
+		if ( (killer_damage_percent > 10) && (other_obj != NULL) ) {
+			if (other_obj->parent_sig == Player_obj->signature) {
+				ship_maybe_praise_player(sp);
+			}
+			else if ((other_obj->parent_type == OBJ_SHIP) || (other_obj->parent_type == OBJ_START))  {
+				ship_maybe_praise_self(sp, &Ships[Objects[other_obj->parent].instance]);
+			}
 		}
 	}
 
@@ -2776,7 +2782,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 						if (bobjn >= 0)
 						{
 							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
-								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
+								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && 
+								 !(Objects[bobjn].flags & OF_PLAYER_SHIP) ) {
 								bobjn = -1;
 							}
 						}
@@ -3032,7 +3039,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		vm_vec_rotate( &local_hitpos, &tmp, &ship_obj->orient );
 
 		// shield_quad = quadrant facing the force_center
-		shield_quad = get_quadrant(&local_hitpos, ship_obj);
+		shield_quad = get_quadrant(&local_hitpos);
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL
@@ -3049,20 +3056,8 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		// radius of the object.   
 		vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &ship_obj->orient.vec.fvec, ship_obj->radius );
 
-		int n_shd_sections;  
-		switch (ship_obj->n_shield_segments) {
-			case 1:
-				n_shd_sections = 1;
-				break;
-			case 2:
-				n_shd_sections = 2;
-				break;
-			default:
-				n_shd_sections = MAX_SHIELD_SECTIONS;
-				break;
-		}
-		for (int i=0; i<n_shd_sections; i++){
-			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/n_shd_sections, i);
+		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
+			ship_do_damage(ship_obj, other_obj, &world_hitpos, damage/MAX_SHIELD_SECTIONS, i);
 		}
 	}
 

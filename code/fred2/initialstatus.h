@@ -54,6 +54,8 @@ public:
 	CString	m_cargo_name;
 	int		m_primaries_locked;
 	int		m_secondaries_locked;
+	int		m_turrets_locked;
+	int		m_afterburner_locked;
 
 	//}}AFX_DATA
 
@@ -79,6 +81,8 @@ protected:
 	afx_msg void OnLocked();
 	afx_msg void OnPrimariesLocked();
 	afx_msg void OnSecondariesLocked();
+	afx_msg void OnTurretsLocked();
+	afx_msg void OnAfterburnersLocked();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

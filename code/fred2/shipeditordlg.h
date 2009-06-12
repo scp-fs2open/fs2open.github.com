@@ -295,6 +295,7 @@ protected:
 	afx_msg void OnSpecialExp();
 	afx_msg void OnTextures();
 	afx_msg void OnSpecialHitpoints();
+	afx_msg void OnAltShipClass();
 	afx_msg void OnSetAsPlayerShip();
 	afx_msg void OnRestrictArrival();
 	afx_msg void OnRestrictDeparture();

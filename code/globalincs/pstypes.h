@@ -600,9 +600,13 @@ typedef struct flag_def_list {
 
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
+void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... );
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
 extern void _cdecl Error( char * filename, int line, const char * format, ... );
 extern void _cdecl Warning( char * filename, int line, const char * format, ... );
+
+extern int Global_warning_count;
+extern int Global_error_count;
 
 #include "osapi/outwnd.h"
 
@@ -632,13 +636,28 @@ extern void _cdecl Warning( char * filename, int line, const char * format, ... 
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #define Assert(x) do {} while (0)
+#ifndef _MSC_VER   // non MS compilers
+#define Assertion(x, y, ...) do {} while (0)
+#else
+#define Assertion(x, y) do {} while (0)
+#endif
 #else
 void gr_activate(int);
 #define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
-#endif
-/*******************NEVER UNCOMMENT Assert ************************************************/
 
-// Goober5000 - shouldn't the above be never COMMENT (that is, never DISABLE) Assert?
+// Assertion can only use its proper fuctionality in compilers that support variadic macro
+#ifndef _MSC_VER   // non MS compilers
+#define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#else 
+#if _MSC_VER >= 1400	// VC 2005 or greater
+#define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#else // everything else
+#define Assertion(x, y) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+#endif
+#endif
+
+#endif
+/*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
 #define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } } while(0)

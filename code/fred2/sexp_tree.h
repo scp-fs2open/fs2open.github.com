@@ -150,7 +150,7 @@ public:
 	void expand_branch(HTREEITEM h);
 	void expand_operator(int node);
 	void merge_operator(int node);
-	int end_label_edit(HTREEITEM h, char *str);
+	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h);
 	int identify_arg_type(int node);
 	int count_args(int node);
@@ -180,10 +180,12 @@ public:
 	int get_tree_name_to_sexp_variable_index(const char *tree_name);
 	int get_modify_variable_type(int parent);
 	int get_variable_count(const char *var_name);
+	int get_loadout_variable_count(int var_index);
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);
 	int find_ancestral_argument_number(int parent_op, int child_node);
+	int query_node_argument_type(int node);
 
 	//WMC
 	int get_sibling_place(int node);

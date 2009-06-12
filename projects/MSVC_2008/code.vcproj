@@ -53,7 +53,7 @@
 				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
-				WarningLevel="3"
+				WarningLevel="4"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 				UndefinePreprocessorDefinitions="NDEBUG"
@@ -5004,6 +5004,14 @@
 			</File>
 			<File
 				RelativePath="..\..\code\network\multi_respawn.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_sexp.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_sexp.h"
 				>
 			</File>
 			<File

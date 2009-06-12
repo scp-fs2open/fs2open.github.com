@@ -581,7 +581,6 @@
 #include <setjmp.h>
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
-#include "iff_defs/iff_defs.h"
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
@@ -672,6 +671,22 @@ typedef struct support_ship_info {
 	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
 } support_ship_info;
 
+// movie type defines
+#define	MOVIE_PRE_FICTION		0
+#define	MOVIE_PRE_CMD_BRIEF		1
+#define	MOVIE_PRE_BRIEF			2
+#define	MOVIE_PRE_GAME			3
+#define	MOVIE_PRE_DEBRIEF		4
+
+// defines a mission cutscene.
+typedef struct mission_cutscene {
+	int type; 
+	char cutscene_name[NAME_LENGTH];	
+	int formula; 
+
+	mission_cutscene() { memset(this, 0, sizeof(mission_cutscene)); formula = -1; };
+} mission_cutscene;
+
 typedef struct mission {
 	char	name[NAME_LENGTH];
 	char	author[NAME_LENGTH];
@@ -690,6 +705,7 @@ typedef struct mission {
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
 	char	envmap_name[MAX_FILENAME_LEN];
+	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
 
@@ -705,6 +721,8 @@ typedef struct mission {
 
 	// Goober5000
 	ai_profile_t *ai_profile;
+
+	std::vector<mission_cutscene> cutscenes; 
 } mission;
 
 // cargo defines
@@ -798,6 +816,7 @@ extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
 extern int Num_unknown_weapon_classes;
+extern int Num_unknown_loadout_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
@@ -830,6 +849,11 @@ typedef struct texture_replace {
 
 extern texture_replace *Fred_texture_replacements;
 
+typedef struct alt_class {
+	int ship_class;				
+	int variable_index;			// if set allows the class to be set by a variable
+	bool default_to_this_class;
+}alt_class;
 
 #define MAX_OBJECT_STATUS	10
 
@@ -908,12 +932,11 @@ typedef struct p_object {
 	float ship_max_hull_strength;
 	float ship_max_shield_strength;
 
-	float max_shield_recharge_percent;
-	float max_shield_segment_strength[MAX_SHIELD_SECTIONS];
-
 	// Goober5000
 	int num_texture_replacements;
 	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
+
+	std::vector<alt_class> alt_classes;	
 
 	int alt_iff_color[MAX_IFFS][MAX_IFFS];
 } p_object;
@@ -963,7 +986,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	14
+#define MAX_PARSE_OBJECT_FLAGS_2	17
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -978,7 +1001,10 @@ typedef struct p_object {
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
 #define P2_SF2_NAV_NEEDSLINK				(1<<11)
 #define P2_SF2_HIDE_SHIP_NAME				(1<<12)
-#define P2_OF_FORCE_SHIELDS_ON				(1<<13)
+#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<13)
+#define P2_SF2_LOCK_ALL_TURRETS_INITIALLY	(1<<14)		
+#define P2_SF2_AFTERBURNER_LOCKED			(1<<15)	
+#define P2_OF_FORCE_SHIELDS_ON				(1<<16)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
@@ -993,13 +1019,22 @@ extern std::vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-
 typedef struct {
+	// ships
 	int		default_ship;  // default ship type for player start point (recommended choice)
-	int		number_choices; // number of ship choices inside ship_list
+	int		num_ship_choices; // number of ship choices inside ship_list 
+	int		loadout_total;	// Total number of ships available of all classes 
 	int		ship_list[MAX_SHIP_CLASSES];
+	int		ship_list_variables[MAX_SHIP_CLASSES];
 	int		ship_count[MAX_SHIP_CLASSES];
+	int		ship_count_variables[MAX_SHIP_CLASSES];
+
+	// weapons
+	int		num_weapon_choices;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
+	int		weaponry_count[MAX_WEAPON_TYPES];
+	int		weaponry_pool_variable[MAX_WEAPON_TYPES];
+	int		weaponry_amount_variable[MAX_WEAPON_TYPES];
 } team_data;
 
 #define MAX_P_WINGS		16
@@ -1106,8 +1141,4 @@ subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name);
 
 
 #endif
-
-
-
-
 

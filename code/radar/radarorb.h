@@ -60,5 +60,3 @@ void radar_orb_draw_image(vec3d *out, int rad, int idx, float mult);
 
 #endif
 
-
-

@@ -1716,7 +1716,6 @@ void parse_wi_flags(weapon_info *weaponp)
 	{
 		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
 	}
-
 }
 
 void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
@@ -1867,7 +1866,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->swarm_count = -1;
 	// *Default is 150  -Et1
 	wip->SwarmWait = SWARM_MISSILE_DELAY;
-	wip->swarm_burst = false;
 	
 	wip->launch_snd = -1;
 	wip->impact_snd = -1;
@@ -2515,9 +2513,6 @@ int parse_weapon(int subtype, bool replace)
 		}
 	}
 
-	if((wip->wi_flags & WIF_SWARM) && optional_string( "+No Swarming Movement:" ))
-		stuff_boolean(&wip->swarm_burst);
-
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
 	} else if(first_time && is_homing) {
@@ -2679,7 +2674,6 @@ int parse_weapon(int subtype, bool replace)
 		if ( optional_string("+Faded Out Sections:") ) {
 			stuff_int(&ti->n_fade_out_sections);
 		}
-
 		// wip->delta_time = fl2i(1000.0f*wip->max_life)/(NUM_TRAIL_SECTIONS+1);		// time between sections.  max_life / num_sections basically.
 	}
 
@@ -4023,7 +4017,7 @@ void weapon_close()
 	}
 
 	if (Spawn_names != NULL) {
-		for (int i=0; i<Num_spawn_types; i++) {
+		for (i=0; i<Num_spawn_types; i++) {
 			if (Spawn_names[i] != NULL) {
 				vm_free(Spawn_names[i]);
 				Spawn_names[i] = NULL;
@@ -4431,6 +4425,10 @@ void find_homing_object(object *weapon_objp, int num)
 			if((objp->flags & OF_PROTECTED) && (wp->weapon_flags & WF_SPAWNED))
 				continue;
 
+			// Spawned weapons should never home in on their parent - even in multiplayer dogfights where they would pass the iff test below
+			if ((wp->weapon_flags & WF_SPAWNED) && (objp == &Objects[weapon_objp->parent]))
+				continue; 
+
 			homing_object_team = obj_team(objp);
 			if (iff_x_attacks_y(wp->team, homing_object_team))
 			{
@@ -4678,13 +4676,16 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	//	If not 1/2 second gone by, don't home yet.
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < wip->free_flight_time )) {
-		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing
-		//	and we don't have a target (else we wouldn't be inside the IF), find a new target.
+		//	If this is a heat seeking homing missile and 1/2 second has elapsed since firing, find a new target.
         if ((wip->wi_flags & WIF_HOMING_HEAT) &&
             (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time))
         {
             find_homing_object(obj, num);
         }
+		else if (MULTIPLAYER_MASTER && (wip->wi_flags & WIF_LOCKED_HOMING) && (wp->weapon_flags & WF_HOMING_UPDATE_NEEDED)) {
+			wp->weapon_flags &= ~WF_HOMING_UPDATE_NEEDED; 
+			send_homing_weapon_info(num);
+		}
 
 		if (obj->phys_info.speed > max_speed) {
 			obj->phys_info.speed -= frame_time * 4;
@@ -5287,7 +5288,7 @@ void weapon_process_post(object * obj, float frame_time)
 */		
 		// If this is a swarm type missile, 
 //		if ( wip->wi_flags & WIF_SWARM ) 
-		if (( wp->swarm_index >= 0 ) && (wip->swarm_burst == false)) {
+		if ( wp->swarm_index >= 0 ) {
 			swarm_update_direction(obj, frame_time);
 		}
 
@@ -5481,6 +5482,9 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if (target_is_locked && (wp->target_num != -1) &&
 			(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 			wp->lifeleft *= 1.2f;
+			if (MULTIPLAYER_MASTER) {
+				wp->weapon_flags |= WF_HOMING_UPDATE_NEEDED;
+			}
 		}
 
 		ai_update_danger_weapon(target_objnum, weapon_objnum);		
@@ -6539,7 +6543,10 @@ void weapons_page_in()
 	// for weapons in weaponry pool
 	for (i = 0; i < Num_teams; i++) {
 		for (j = 0; j < Num_weapon_types; j++) {
-			used_weapons[j] += Team_data[i].weaponry_pool[j];
+			used_weapons[j] = 0;
+		}
+		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+			used_weapons[Team_data[i].weaponry_pool[j]] += Team_data[i].weaponry_count[j];
 		}
 	}
 
@@ -6875,11 +6882,7 @@ void weapon_maybe_spew_particle(object *obj)
 			vm_vec_scale(&vel, wip->particle_spew_vel);
 
 			// emit the particle
-			if ( (wip->wi_flags & WIF_CORKSCREW) ) {
-				vm_vec_add(&particle_pos, &obj->last_pos, &direct);
-			} else {
-				vm_vec_add(&particle_pos, &obj->pos, &direct);
-			}
+			vm_vec_add(&particle_pos, &obj->pos, &direct);
 
 			if (wip->particle_spew_anim.first_frame < 0)
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);

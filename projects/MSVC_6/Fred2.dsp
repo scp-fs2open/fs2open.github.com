@@ -118,6 +118,10 @@ SOURCE=..\..\code\fred2\AdjustGridDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\fred2\AltShipClassDlg.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\fred2\AsteroidEditorDlg.cpp
 # End Source File
 # Begin Source File
@@ -363,6 +367,10 @@ SOURCE=..\..\code\fred2\AddVariableDlg.h
 # Begin Source File
 
 SOURCE=..\..\code\fred2\AdjustGridDlg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fred2\AltShipClassDlg.h
 # End Source File
 # Begin Source File
 

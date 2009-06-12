@@ -583,6 +583,8 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		err = -3;
 //	else if (save_briefing_info())
 //		err = -4;
+	else if (save_cutscenes())
+		err = -4;
 	else if (save_cmd_briefs())
 		err = -4;
 	else if (save_briefing())
@@ -680,6 +682,8 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 //		err = -4;
 	else if (save_fiction())
 		err = -3;
+	else if (save_cutscenes())
+		err = -4;
 	else if (save_cmd_briefs())
 		err = -4;
 	else if (save_briefing())
@@ -998,6 +1002,22 @@ int CFred_mission_save::save_mission_info()
 		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
 	}
 
+	// are skybox flags in use?
+	if (The_mission.skybox_flags != DEFAULT_NMODEL_FLAGS) {
+		//char out_str[4096];
+		if (optional_string_fred("+Skybox Flags:")) {
+			parse_comments(1);
+			fout( " %d", The_mission.skybox_flags);
+		} else {
+			fso_comment_push(";;FSO 3.6.11;;");
+			fout_version("\n+Skybox Flags: %d", The_mission.skybox_flags);
+			fso_comment_pop();
+		}
+	}
+	else {
+		bypass_comment(";;FSO 3.6.11;; +Skybox Flags:");
+	}
+
 	// Goober5000's AI profile stuff
 	int profile_index = (The_mission.ai_profile - Ai_profiles);
 	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
@@ -1067,6 +1087,71 @@ int CFred_mission_save::save_plot_info()
 	fso_comment_pop(true);
 
 	return err;
+}
+
+int CFred_mission_save::save_cutscenes()
+{	
+	char type[NAME_LENGTH]; 
+	char out[MULTITEXT_LENGTH];
+
+	// Let's just assume it has them for now - 
+	if (!(The_mission.cutscenes.empty()) ) {
+		if (Format_fs2_open) {
+			if (optional_string_fred("#Cutscenes")) {
+				parse_comments(2);
+			}
+			else {
+				fout_version("\n\n#Cutscenes\n\n");
+			}
+
+			for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
+				if ( strlen(The_mission.cutscenes[i].cutscene_name) ) {
+					// determine the name of this cutscene type
+					switch (The_mission.cutscenes[i].type) {
+						case MOVIE_PRE_FICTION:
+							strcpy(type, "$Fiction Viewer Cutscene:");  
+							break; 
+						case MOVIE_PRE_CMD_BRIEF:
+							strcpy(type, "$Command Brief Cutscene:");  
+							break; 
+						case MOVIE_PRE_BRIEF:
+							strcpy(type, "$Briefing Cutscene:");  
+							break; 
+						case MOVIE_PRE_GAME:
+							strcpy(type, "$Pre-game Cutscene:");  
+							break; 
+						case MOVIE_PRE_DEBRIEF:
+							strcpy(type, "$Debriefing Cutscene:");  
+							break; 
+						default: 
+							Int3(); 
+							continue; 
+					}
+					
+					if (optional_string_fred(type)) {
+						parse_comments();
+						fout(" %s", The_mission.cutscenes[i].cutscene_name); 
+					}
+					else {
+						fout_version("%s %s\n", type, The_mission.cutscenes[i].cutscene_name); 
+					}
+
+					required_string_fred("+formula:");
+					parse_comments(); 
+					convert_sexp_to_string(The_mission.cutscenes[i].formula, out, SEXP_SAVE_MODE, 4096);
+					fout(" %s", out);
+				}
+			}
+			required_string_fred("#end"); 
+			parse_comments();
+		}
+		else {
+			MessageBox(NULL, "Warning: This mission contains cutscene data, but you are saving in the retail mission format. This infomration will be lost", "Incompatibility with retail mission format", MB_OK);
+		}
+	}
+
+	fso_comment_pop(true);
+	return err; 
 }
 
 int CFred_mission_save::save_fiction()
@@ -1492,9 +1577,27 @@ int CFred_mission_save::save_players()
 		parse_comments();
 		fout(" (\n");
 
-		for (j=0; j<Team_data[i].number_choices; j++)
-			fout("\t\"%s\"\t%d\n", Ship_info[Team_data[i].ship_list[j]].name,
-				Team_data[i].ship_count[j]);
+		for (j=0; j<Team_data[i].num_ship_choices; j++) {
+			// Check to see if a variable name should be written for the class rather than a number
+			if (Team_data[i].ship_list_variables[j] != -1) {
+				Assert (Team_data[i].ship_list_variables[j] > -1 && Team_data[i].ship_list_variables[j] < MAX_SEXP_VARIABLES); 
+			
+				fout("\t@%s\t", Sexp_variables[Team_data[i].ship_list_variables[j]].variable_name);
+			}
+			else {
+				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name); 
+			}
+
+			// Now check if we should write a variable or a number for the amount of ships available
+			if (Team_data[i].ship_count_variables[j] != -1) {
+				Assert (Team_data[i].ship_count_variables[j] > -1 && Team_data[i].ship_count_variables[j] < MAX_SEXP_VARIABLES); 
+			
+				fout("@%s\n", Sexp_variables[Team_data[i].ship_count_variables[j]].variable_name);			
+			}
+			else {
+				fout("%d\n", Team_data[i].ship_count[j]);
+			}
+		}
 
 		fout(")");
 
@@ -1505,10 +1608,41 @@ int CFred_mission_save::save_players()
 		}
 
 		fout(" (\n");
-		generate_weaponry_usage_list(used_pool);
+		generate_weaponry_usage_list(i, used_pool); 
+		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
+			// first output the weapon name or a variable that sets it 
+			if (Team_data[i].weaponry_pool_variable[j] != -1) {
+				Assert (Team_data[i].weaponry_pool_variable[j] > -1 && Team_data[i].weaponry_pool_variable[j] < MAX_SEXP_VARIABLES); 
+
+				fout("\t@%s\t", Sexp_variables[Team_data[i].weaponry_pool_variable[j]].variable_name); 
+			}
+			else {
+				fout("\t\"%s\"\t", Weapon_info[Team_data[i].weaponry_pool[j]].name);
+			}
+
+			// now output the amount of this weapon or a variable that sets it. If this weapon is in the used pool and isn't
+			// set by a variable we should add the amount of weapons used by the wings to it and zero the entry so we know 
+			// that we have dealt with it
+			if (Team_data[i].weaponry_amount_variable[j] != -1) {
+				Assert (Team_data[i].weaponry_amount_variable[j] > -1 && Team_data[i].weaponry_amount_variable[j] < MAX_SEXP_VARIABLES); 
+
+				fout ("@%s\n", Sexp_variables[Team_data[i].weaponry_amount_variable[j]].variable_name); 			
+			}
+			else {
+				if (Team_data[i].weaponry_pool_variable[j] != -1) {
+					fout ("%d\n", Team_data[i].weaponry_count[j]);
+				}
+				else {
+					fout ("%d\n", Team_data[i].weaponry_count[j] + used_pool[Team_data[i].weaponry_pool[j]]);
+					used_pool[Team_data[i].weaponry_pool[j]] = 0; 
+				}
+			}
+		}
+
+		// now we add anything left in the used pool as a static entry
 		for (j=0; j<Num_weapon_types; j++){
-			if (Team_data[i].weaponry_pool[j] + used_pool[j] > 0){
-				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, Team_data[i].weaponry_pool[j] + used_pool[j]);
+			if (used_pool[j] > 0){
+				fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
 			}
 		}
 
@@ -1588,6 +1722,27 @@ int CFred_mission_save::save_objects()
 		required_string_fred("$Class:");
 		parse_comments(0);
 		fout(" %s", Ship_info[Ships[i].ship_info_index].name);
+
+		//alt classes stuff
+		if (Format_fs2_open) {
+			if ((int)Ships[i].s_alt_classes.size()) {
+				for (k = 0; k < (int)Ships[i].s_alt_classes.size() ; k++) {
+					// is this a variable?
+					if (Ships[i].s_alt_classes[k].variable_index != -1) {
+						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: @%s", Sexp_variables[Ships[i].s_alt_classes[k].variable_index].variable_name);  
+					}
+					else {
+						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: \"%s\"", Ship_info[Ships[i].s_alt_classes[k].ship_class].name);
+					}
+
+					// default class?					
+					if (Ships[i].s_alt_classes[k].default_to_this_class) {
+						fout_version("\n;;FSO 3.6.10;; +Default Class:");
+					}
+				}
+
+			}
+		}
 
 		// optional alternate type name
 		if(strlen(Fred_alt_names[i])){
@@ -1878,6 +2033,12 @@ int CFred_mission_save::save_objects()
 				fout(" \"nav-needslink\"");
 			if (Ships[i].flags2 & SF2_HIDE_SHIP_NAME)
 				fout(" \"hide-ship-name\"");
+			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
+				fout(" \"set-class-dynamically\"");
+			if (Ships[i].flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+				fout(" \"lock-all-turrets\"");
+			if (Ships[i].flags2 & SF2_AFTERBURNER_LOCKED)
+				fout(" \"afterburners-locked\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

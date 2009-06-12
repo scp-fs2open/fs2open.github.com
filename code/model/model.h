@@ -690,6 +690,8 @@
 
 struct object;
 
+extern flag_def_list model_render_flags[];
+extern int model_render_flags_size;
 
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_DETAIL_LEVELS	8
@@ -772,6 +774,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
 #define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
 #define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
+#define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -826,6 +829,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
 	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
 
+
 	//Sound stuff
 	int		alive_snd;		//Sound to make while the subsystem is not-dead
 	int		dead_snd;		//Sound to make when the subsystem is dead.
@@ -860,7 +864,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	// target priority setting for turrets
 	int      target_priority[32];
 	int      num_target_priorities;
-
 } model_subsystem;
 
 typedef struct model_special {
@@ -975,6 +978,7 @@ typedef struct bsp_info {
 	bool	gun_rotation;//for animated weapon models
 	bool	no_collisions; // for $no_collisions property - kazan
 
+	float		dumb_turn_rate;
 } bsp_info;
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
@@ -1761,4 +1765,5 @@ int decal_make_model(polymodel * pm);
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);
 
+void model_do_dumb_rotation(int modelnum); //Bobboau
 #endif // _MODEL_H

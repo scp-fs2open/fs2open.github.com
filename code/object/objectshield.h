@@ -27,7 +27,7 @@ void shield_add_quad(object *objp, int quadrant_num, float strength);
 
 float shield_get_max_strength(object *objp);
 void shield_set_max_strength(object *objp, float newmax);
-float shield_get_max_quad(object *objp, int segment = -1);
+float shield_get_max_quad(object *objp);
 
 float shield_apply_damage(object *objp, int quadrant, float damage);
 int shield_is_up(object *objp, int quadrant_num);

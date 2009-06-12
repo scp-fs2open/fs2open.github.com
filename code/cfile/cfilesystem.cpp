@@ -156,7 +156,7 @@
  * -DTP reworked mod support,
  *
  * Revision 2.5  2002/10/30 06:29:45  DTP
- * doh!, used upper case in include, dont know how much it matters for *nix systems, but here it is
+ * doh!, used upper case in include, don't know how much it matters for *nix systems, but here it is
  *
  * Revision 2.4  2002/10/30 06:26:11  DTP
  * DTP Implemented basic VP files handling. mission and campaign files inside VP files found in mod dir still not supported, cheking / creating directories not implented either

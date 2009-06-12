@@ -199,7 +199,7 @@
  * fixing lighting bug I accedently introduced
  *
  * Revision 2.54  2004/02/16 11:47:33  randomtiger
- * Removed a lot of files that we dont need anymore.
+ * Removed a lot of files that we don't need anymore.
  * Changed htl to be on by default, command now -nohtl
  * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
  * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
@@ -245,7 +245,7 @@
  * Put dithering back in for tgas and jpgs
  *
  * Revision 2.46  2003/11/29 10:52:09  randomtiger
- * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
+ * Turned off D3D file mapping, it's using too much memory which may be hurting older systems and doesn't seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
  * Trys to play intro.mve and intro.avi, just to be safe since its not set by table.
  * Added fix for fonts wrapping round in non standard hi res modes.
@@ -345,7 +345,7 @@
  *
  * Revision 2.26  2003/10/14 17:39:13  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *
@@ -442,12 +442,12 @@
  *
  * I have also taken the opertunity to fix a few bugs in the launcher and add a new feature to make selecting mods a bit easier.
  *
- * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher wont compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
+ * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher won't compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
  *
  * I have also removed the internal launcher from the D3D8 module.
  * Please contact me if you have any problems.
  *
- * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and cant afford to find out.
+ * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and can't afford to find out.
  *
  * Revision 2.12  2003/07/04 02:27:48  phreak
  * added support for cloaking.
@@ -523,7 +523,7 @@
  * Revision 2.2.2.22  2002/11/04 21:24:59  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.2.2.21  2002/11/04 16:04:20  randomtiger
@@ -568,7 +568,7 @@
  *
  * Revision 2.2.2.14  2002/10/20 22:21:48  randomtiger
  * Some incomplete code to handle background drawing when message boxes are drawn.
- * It doesnt work but its a good base for someone to start from. - RT
+ * It doesn't work but it's a good base for someone to start from. - RT
  *
  * Revision 2.2.2.13  2002/10/19 23:56:40  randomtiger
  * Changed generic bitmap code to allow maximum dimensions to be determined by 3D's engines maximum texture size query.
@@ -600,7 +600,7 @@
  * Revision 2.2.2.8  2002/10/04 00:48:42  randomtiger
  * Fixed video memory leaks
  * Added code to cope with lost device, not tested
- * Got rid of some DX5 stuff we definately dont need
+ * Got rid of some DX5 stuff we definately don't need
  * Moved some enum's into internal,h because gr_d3d_set_state should be able to be called from any dx file
  * Cleaned up some stuff - RT
  *

@@ -269,8 +269,6 @@ typedef struct ets_gauge_info
 	int	bottom_coords[2];
 } ets_gauge_info;
 
-extern lua_hud_inf lua_hud_info;
-
 ets_gauge_info Ets_gauge_info_german[GR_NUM_RESOLUTIONS][3] =
 {
 	{ // GR_640
@@ -417,36 +415,9 @@ void update_ets(object* objp, float fl_frametime)
 
 	shield_add_strength(objp, shield_delta);
 
-	int n_shd_sections;	
-	switch (objp->n_shield_segments) {
-		case 1:
-			n_shd_sections = 1;
-			break;
-		case 2:
-			n_shd_sections = 2;
-			break;
-		default:
-			n_shd_sections = MAX_SHIELD_SECTIONS;
-			break;
-	}
-
-	int i;
-	float total_shield_strength = shield_get_strength(objp);
-	float max_shield_recharge = ship_p->ship_max_shield_strength * ship_p->max_shield_recharge_pct;
-	float shield_balance = 1.0f;
-
-	if ((max_shield_recharge > 0) && (total_shield_strength > max_shield_recharge))
-		shield_balance = total_shield_strength/max_shield_recharge;
-
-	// prevent any of the segments from going over the limits
-	for (i = 0; i < n_shd_sections; i++ ) {
-		if ((total_shield_strength > 0.0f) && (ship_p->ship_max_shield_segment[i] > 0.0f)) {
-			objp->shield_quadrant[i] /= shield_balance;
-			if ( (_ss = shield_get_quad(objp,i)) > ship_p->ship_max_shield_segment[i] ){
-				objp->shield_quadrant[i] *= ship_p->ship_max_shield_segment[i] / _ss;
-			}
-		} else {
-			objp->shield_quadrant[i] = 0.0f;
+	if ( (_ss = shield_get_strength(objp)) > ship_p->ship_max_shield_strength ){
+		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
+			objp->shield_quadrant[i] *= ship_p->ship_max_shield_strength / _ss;
 		}
 	}
 
@@ -617,7 +588,6 @@ void hud_show_ets()
 	if (i >= 2) return;
 
 	hud_set_gauge_color(HUD_ETS_GAUGE);
-	lua_hud_info.ets_drawn = 1;
 
 	// draw the letters for the gauges first, before any clipping occurs
 	i = 0;
@@ -647,7 +617,6 @@ void hud_show_ets()
 		switch (j) {
 		case 0:
 			index = ship_p->weapon_recharge_index;
-			lua_hud_info.ets_guns = index;
 			if ( !ship_has_energy_weapons(ship_p) )
 			{
 				continue;
@@ -655,7 +624,6 @@ void hud_show_ets()
 			break;
 		case 1:
 			index = ship_p->shield_recharge_index;
-			lua_hud_info.ets_shield = index;
 			if ( Player_obj->flags & OF_NO_SHIELDS )
 			{
 				continue;
@@ -663,7 +631,6 @@ void hud_show_ets()
 			break;
 		case 2:
 			index = ship_p->engine_recharge_index;
-			lua_hud_info.ets_engine = index;
 			if ( !ship_has_engine_power(ship_p) )
 			{
 				continue;

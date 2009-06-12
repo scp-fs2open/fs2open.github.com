@@ -604,7 +604,8 @@ extern int Om_tracker_flag;
 												// for both ships and subsystems
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
-#define CHANGE_IFF_COLOR			0xF2		// Wanderer - change iff color
+#define SEXP						0xF2		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
+#define CHANGE_IFF_COLOR			0xF3		// Wanderer - change iff color
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
@@ -1091,7 +1092,7 @@ extern ushort Next_debris_signature;								// next debris signature
 
 // netgame vars
 extern netgame_info Netgame;											// netgame information
-extern int Multi_mission_loaded;										// flag, so that we dont' load the mission more than once client side
+extern int Multi_mission_loaded;										// flag, so that we don't load the mission more than once client side
 extern ushort Multi_ingame_join_sig;									// signature for the player obj for use when joining ingame
 extern int Multi_button_info_ok;										// flag saying it is ok to apply critical button info on a client machine
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying

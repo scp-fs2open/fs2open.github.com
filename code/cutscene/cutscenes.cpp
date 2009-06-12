@@ -65,7 +65,7 @@
  *
  * Revision 2.8  2004/01/24 15:52:25  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
- * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
+ * In OGL it works perfectly and in both APIs it doesn't switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
  *
  * Revision 2.7  2003/08/21 20:54:38  randomtiger
  * Fixed switching - RT
@@ -368,7 +368,7 @@ void cutscene_mark_viewable(char *filename)
 	char cut_file[MAX_FILENAME_LEN];
 	char file[MAX_FILENAME_LEN];
 
-	Assert(filename);
+	Assert(filename!=NULL);
 
 	// strip off extension
 	strcpy( file, filename );

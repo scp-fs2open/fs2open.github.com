@@ -37,8 +37,8 @@ char *Osreg_title = "FreeSpace 2 OEM";
 */
 
 // RT Lets make all versions use the same registry location
-// If we dont the launcher either needs to handle somehow telling what release type a 
-// FS2 exe is or it wont work. Its far similar to just use one default location.
+// If we don't the launcher either needs to handle somehow telling what release type a 
+// FS2 exe is or it won't work. Its far similar to just use one default location.
 // The Launcher will set up everything needed
 char *Osreg_app_name = "FreeSpace2";
 char *Osreg_title = "FreeSpace 2";

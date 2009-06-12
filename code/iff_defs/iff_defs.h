@@ -46,7 +46,6 @@
 struct object;
 
 
-
 // Goober5000 - new IFF color system
 #define IFF_COLOR_SELECTION			0
 #define IFF_COLOR_MESSAGE			1
@@ -122,5 +121,6 @@ extern int iff_x_attacks_y(int team_x, int team_y);
 // mask stuff
 extern int iff_get_mask(int team);
 extern int iff_matches_mask(int team, int mask);
+
 
 #endif

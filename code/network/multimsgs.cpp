@@ -641,7 +641,7 @@
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
 #include "fs2netd/fs2netd_client.h"
-
+#include "network/multi_sexp.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -1189,6 +1189,7 @@ void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player
 {
 	ubyte data[MAX_PACKET_SIZE],mode;
 	int packet_size,idx;
+	bool undeliverable = true;
 	
 	BUILD_HEADER(GAME_CHAT);
 	
@@ -1255,10 +1256,27 @@ void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player
 			for(idx=0;idx<MAX_PLAYERS;idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && (&Net_players[idx] != from) && multi_msg_matches_expr(&Net_players[idx],expr) ){					
 					multi_io_send_reliable(&Net_players[idx], data, packet_size);
+					undeliverable = false; 
 				}
 			}
 			break;
-		}		
+		}	
+
+		// if the message can't be delivered, notify the player
+		if (undeliverable) {
+			switch(mode){
+				case MULTI_MSG_EXPR:
+					// if the message came from the server
+					if (from == Net_player) {
+						multi_display_chat_msg ("Unable to send message, player does not exist", 0, 0);
+					}
+					// otherwise send a message back to the player
+					else {
+						send_game_chat_packet(Net_player, "Unable to send message, player does not exist", MULTI_MSG_TARGET, from, NULL, 1); 
+					}
+					break;
+			}	
+		}
 	}
 	// send to the server, who will take care of routing it
 	else {		
@@ -5484,7 +5502,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 // sends information updating clients on certain AI information that clients will
 // need to know about to keep HUD information up to date.  objp is the object that we
 // are updating, and what is the type of stuff that we are updating.
-void send_ai_info_update_packet( object *objp, char what )
+void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 {
 	int packet_size;
 	ushort other_signature;
@@ -5503,8 +5521,20 @@ void send_ai_info_update_packet( object *objp, char what )
 	if ( Ships[objp->instance].flags & (SF_DEPARTING | SF_DYING) )
 		return;
 
-	// possibly docked (multi only supports one docked object)
-	object *docked_objp = dock_get_first_docked_object(objp);
+	switch( what ) {
+
+	case AI_UPDATE_DOCK:
+	case AI_UPDATE_UNDOCK:
+		Assert (other_objp != NULL); 
+		if (other_objp == NULL) {
+			return; 
+		}
+		break; 
+
+	default: 
+		Assert (other_objp == NULL); 
+		break;
+	}
 
 	BUILD_HEADER( AI_INFO_UPDATE );
 	ADD_USHORT( objp->net_signature );
@@ -5516,12 +5546,12 @@ void send_ai_info_update_packet( object *objp, char what )
 
 	case AI_UPDATE_DOCK:
 		// for docking ships, add the signature of the ship that we are docked with.
-		Assert( docked_objp != NULL );
-		other_signature = docked_objp->net_signature;
+		Assert( other_objp != NULL );
+		other_signature = other_objp->net_signature;
 
 		// Goober5000 - this is sort of weird, but it's the best way to do it
-		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, docked_objp);
-		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(docked_objp, objp);
+		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, other_objp);
+		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(other_objp, objp);
 
 		ADD_USHORT( other_signature );
 		ADD_DATA( docker_index );
@@ -5530,8 +5560,8 @@ void send_ai_info_update_packet( object *objp, char what )
 
 	case AI_UPDATE_UNDOCK:
 		// same for undocking ships
-		Assert( docked_objp != NULL );
-		other_signature = docked_objp->net_signature;
+		Assert( other_objp != NULL );
+		other_signature = other_objp->net_signature;
 		ADD_USHORT( other_signature );
 
 		break;
@@ -7582,7 +7612,7 @@ void send_client_update_packet(net_player *pl)
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / shipp->ship_max_shield_segment[i] * 100.0f);
+			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7699,24 +7729,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
-	
-			int n_shd_sections;	
-			switch (objp->n_shield_segments) {
-				case 1:
-					n_shd_sections = 1;
-					break;
-				case 2:
-					n_shd_sections = 2;
-					break;
-				default:
-					n_shd_sections = MAX_SHIELD_SECTIONS;
-					break;
-			}
+
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * shipp->ship_max_shield_segment[i] / 100.0f);
-				if (i >= n_shd_sections){
-					fl_val = 0.0f;
-				}
+				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
 				objp->shield_quadrant[i] = fl_val;
 			}
 
@@ -9248,4 +9263,53 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 
 	// do eet
 	ship_self_destruct(&Objects[Net_players[np_index].m_player->objnum]);
+}
+
+void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+	int i;
+	ushort val; 
+
+	Assert (MULTIPLAYER_MASTER);
+	// must have a bare minimum of OP, COUNT and TERMINATOR
+	if (num_ubytes < 9) {
+		Warning(LOCATION, "Invalid call to send_sexp_packet. Not enough data included!"); 
+		return; 
+	}
+	
+	BUILD_HEADER(SEXP);
+
+	val = (ushort)num_ubytes;
+	ADD_USHORT(val);
+
+	for (i =0; i < num_ubytes; i++) {
+		data[packet_size] = sexp_packet[i]; 
+		packet_size++; 
+
+		Assert (packet_size <= MAX_PACKET_SIZE); 
+	}
+
+	// send to all
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_sexp_packet(ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	int i;
+	ushort num_ubytes;
+	ubyte received_packet[MAX_PACKET_SIZE]; 
+
+	// get the number of bytes of data in the packet
+	GET_USHORT(num_ubytes);
+
+	for (i=0; i < num_ubytes; i++) {
+		GET_DATA(received_packet[i]); 
+	}
+
+	PACKET_SET_SIZE();
+
+	sexp_packet_received(received_packet, num_ubytes);
 }

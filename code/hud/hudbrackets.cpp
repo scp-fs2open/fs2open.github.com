@@ -128,7 +128,7 @@
  *
  * 
  * 6     8/03/99 5:35p Andsager
- * Dont draw target dot for instructor in training mission
+ * Don't draw target dot for instructor in training mission
  * 
  * 5     6/07/99 4:20p Andsager
  * Add HUD color for tagged object.  Apply to target and radar.
@@ -839,7 +839,6 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
-		char empty='\0';
 
 		switch(t_objp->type)
 		{

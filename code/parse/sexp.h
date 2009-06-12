@@ -540,7 +540,7 @@
  * to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
  * goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
  * will return the subcategory for each sexp that uses it, and the submenu name in the
- * op_submenu[] array in sexp_tree.cpp."
+ * op_submenu[] array in sexp.cpp."
  *
  * Please note that I rearranged a whole bunch of sexps in the Operators[] array in sexp.cpp
  * in order to make the subcategories work better, so if you get a whole bunch of differences
@@ -848,6 +848,7 @@
  */
 
 #include "globalincs/pstypes.h"	// for NULL
+#include <vector>
 
 #ifndef _SEXP_H
 #define _SEXP_H
@@ -1011,7 +1012,7 @@ struct ship_subsys;
 // to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
 // goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
 // will return the subcategory for each sexp that uses it, and the submenu name in the
-// op_submenu[] array in sexp_tree.cpp.
+// op_submenu[] array in sexp.cpp.
 #define SUBCATEGORY_MASK									0x00ff
 #define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
@@ -1027,6 +1028,13 @@ struct ship_subsys;
 #define CHANGE_SUBCATEGORY_CUTSCENES						(0x000b | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x000c | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			(0x000d | OP_CATEGORY_CHANGE)
+#define STATUS_SUBCATEGORY_MULTIPLAYER						(0x000e | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		(0x000f | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_CARGO							(0x0010 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_SHIP_STATUS						(0x0011 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_DAMAGE							(0x0012 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			(0x0013 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_KILLS_AND_SCORING				(0x0014 | OP_CATEGORY_STATUS)
 
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
@@ -1145,6 +1153,11 @@ struct ship_subsys;
 #define	OP_SHIP_DEATHS						(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_RESPAWNS_LEFT					(0x0032 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_IS_PLAYER						(0x0033 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_DAMAGE_CAUSED				(0x0034 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_AFTERBURNER_LEFT					(0x0035 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_WEAPON_ENERGY_LEFT				(0x0036 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_PRIMARY_FIRED_SINCE				(0x0037 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SECONDARY_FIRED_SINCE			(0x0038 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 // conditional sexpressions
@@ -1159,6 +1172,9 @@ struct ship_subsys;
 #define OP_INVALIDATE_ARGUMENT				(0x0008 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_RANDOM_MULTIPLE_OF				(0x0009 | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_IN_SEQUENCE						(0x000a | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_VALIDATE_ARGUMENT				(0x000b | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_DO_FOR_VALID_ARGUMENTS			(0x000c | OP_CATEGORY_CONDITIONAL)	// Karajorma
+
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
@@ -1363,10 +1379,14 @@ struct ship_subsys;
 #define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 #define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 #define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
-
-#define OP_CHANGE_IFF_COLOR					(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
-#define OP_TURRET_SUBSYS_TARGET_DISABLE		(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
-#define OP_TURRET_SUBSYS_TARGET_ENABLE		(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_SET_RESPAWNS						(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_AFTERBURNER_ENERGY			(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_WEAPON_ENERGY				(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_SHIELD_ENERGY				(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_AMBIENT_LIGHT				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_CHANGE_IFF_COLOR					(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_TURRET_SUBSYS_TARGET_DISABLE	(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_TURRET_SUBSYS_TARGET_ENABLE		(0x00c7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1717,6 +1737,8 @@ extern int Players_target_timestamp;
 extern int Players_mlocked_timestamp;
 extern int Sexp_clipboard;  // used by Fred
 
+extern std::vector<int> Current_sexp_operator;
+
 extern void init_sexp();
 extern int alloc_sexp(char *text, int type, int subtype, int first, int rest);
 extern int find_free_sexp();
@@ -1767,13 +1789,15 @@ void flush_sexp_tree(int node);
 
 // sexp_variable
 void sexp_modify_variable(int);
-void sexp_modify_variable(char *text, int index);
+void sexp_modify_variable(char *text, int index, bool sexp_callback = true);
 int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *temp_name);
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000
 bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000
+int get_nth_variable_index(int nth, int variable_type);	// Karajorma
 int sexp_variable_count();
 int sexp_campaign_persistent_variable_count();	// Goober5000
+int sexp_variable_typed_count(int sexp_variables_index, int variable_type); // Karajorma
 void sexp_variable_delete(int index);
 void sexp_variable_sort();
 void sexp_fred_modify_variable(const char *text, const char *var_name, int index, int type);
@@ -1820,5 +1844,8 @@ extern int Num_submenus;
 //WMC
 //Outputs sexp.html file
 bool output_sexps(char *filepath);
+
+
+void multi_sexp_eval();
 
 #endif

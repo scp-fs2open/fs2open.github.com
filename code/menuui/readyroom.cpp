@@ -135,7 +135,7 @@
  * Revision 2.1.2.2  2002/11/04 21:25:00  randomtiger
  *
  * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who dont want to make use of this because they have no memory.
+ * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
  * Cleaned up some more texture stuff enabled console debug for D3D.
  *
  * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
@@ -470,7 +470,7 @@ int hash_filename(char *filename) {
 	ulonglong hash_val = 0;
 	char *ptr = filename;
 	
-	// Dont hash .fsm extension, convert all to upper case
+	// Don't hash .fsm extension, convert all to upper case
 	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
 		hash_val = (hash_val << 4) + toupper(*ptr++);
 	}

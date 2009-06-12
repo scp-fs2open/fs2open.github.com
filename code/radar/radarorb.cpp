@@ -181,7 +181,6 @@ static const int NUM_ORB_RING_SLICES = 16;
 vec3d orb_ring_yz[NUM_ORB_RING_SLICES];
 vec3d orb_ring_xy[NUM_ORB_RING_SLICES];
 vec3d orb_ring_xz[NUM_ORB_RING_SLICES];
-
 vec3d vec_extents[]=
 {
 	{ { { 1.0f, 0.0f, 0.0f } } },
@@ -201,7 +200,7 @@ static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
                                    { { { 0.0f, -1.0f, 0.0f } } },
                                    { { { 0.0f, 0.0f, -1.0f } } } } } };
 
-static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
+static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -3.0f } } };
 
 // forward declarations
 void draw_radar_blips_orb(int blip_type, int bright, int distort = 0);
@@ -648,14 +647,14 @@ void radar_blip_draw_distorted_orb(blip *b)
 	vm_vec_random_cone(&out,&b->position,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	if (Cmdline_nohtl)
-	{
-		radar_orb_draw_contact(&out,b->rad);
-	}
-	else
-	{
-		radar_orb_draw_contact_htl(&out,b->rad);
-	}
+    if (Cmdline_nohtl)
+    {
+	    radar_orb_draw_contact(&out,b->rad);
+    }
+    else
+    {
+        radar_orb_draw_contact_htl(&out,b->rad);
+    }
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -695,13 +694,13 @@ void radar_blip_draw_flicker_orb(blip *b)
 	vm_vec_scale(&out,dist);
 
 	if (Cmdline_nohtl)
-	{
-		radar_orb_draw_contact(&out,b->rad);
-	}
-	else
-	{
-		radar_orb_draw_contact_htl(&out,b->rad);
-	}
+    {
+	    radar_orb_draw_contact(&out,b->rad);
+    }
+    else
+    {
+        radar_orb_draw_contact_htl(&out,b->rad);
+    }
 }
 
 // Draw all the active radar blips
@@ -750,19 +749,19 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			if (Cmdline_nohtl)
-			{
-				radar_orb_draw_contact(&b->position,b->rad);
-			}
-			else if (b->radar_image_2d >= 0) 
+            if (Cmdline_nohtl)
+            {
+                radar_orb_draw_contact(&b->position,b->rad);
+            }
+            else if (b->radar_image_2d >= 0)
 			{
 				radar_orb_draw_image(&b->position, b->rad, b->radar_image_2d, b->radar_projection_size);
 			}
-			else
-			{
-				radar_orb_draw_contact_htl(&b->position,b->rad);
-			}
-		}
+            else
+            {
+                radar_orb_draw_contact_htl(&b->position,b->rad);
+            }
+        }
 	}
 }
 
@@ -1081,43 +1080,43 @@ void radar_page_in_orb()
 
 void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
 {
-	int tmap_flags = 0;
-	int h, w;
-	float aspect_mp;
+    int tmap_flags = 0;
+    int h, w;
+    float aspect_mp;
 
-	// need to get bitmap info
-	bm_get_info(idx, &w, &h);
+    // need to get bitmap info
+    bm_get_info(idx, &w, &h);
 
-	Assert(w > 0);
+    Assert(w > 0);
 
-	// get multiplier 
-	if (h == w) {
-		aspect_mp = 1.0f;
-	} else {
-		aspect_mp = (((float) h) / ((float) w));
- 	}
+    // get multiplier
+    if (h == w) {
+        aspect_mp = 1.0f;
+    } else {
+        aspect_mp = (((float) h) / ((float) w));
+    }
 
-	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+    gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
 
-	float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
+    float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
 
-	// might need checks unless the targeted blip is always wanted to be larger
-	float radius = (float) Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
-	
-	if (sizef < radius)	
-		sizef = radius;
+    // might need checks unless the targeted blip is always wanted to be larger
+    float radius = (float) Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
 
-	//Make so no evil things happen
-	Assert(mult > 0.0f);
-	
-	//modify size according to value from tables
-	sizef *= mult;
+    if (sizef < radius)
+        sizef = radius;
 
-	tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
+    //Make so no evil things happen
+    Assert(mult > 0.0f);
 
-	g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
-	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
-	{
-		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
-	}
+    //modify size according to value from tables
+    sizef *= mult;
+
+    tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
+
+    g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+    if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+    {
+        g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+    }
 }

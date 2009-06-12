@@ -226,6 +226,7 @@
 #include "object/objectdock.h"
 #include "iff_defs/iff_defs.h"
 #include "sound/audiostr.h"
+#include "localization/localize.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -364,6 +365,11 @@ void briefing_editor_dlg::OnInitMenu(CMenu* pMenu)
 
 	// put a check next to the currently selected item
 	m->CheckMenuItem(m_current_briefing, MF_BYPOSITION | MF_CHECKED );
+
+	// Karajorma - it might be nice to autobalance the briefings and debriefings but I'm not doing anything till I
+	// understand how the how system works better. disabling the option for now. 
+	m = pMenu->GetSubMenu(1); 
+	m->EnableMenuItem(ID_AUTOBALANCE, MF_GRAYED); 
 
 	CDialog::OnInitMenu(pMenu);
 }
@@ -512,6 +518,7 @@ void briefing_editor_dlg::update_data(int update)
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
 		deconvert_multiline_string(buf3, m_text, MAX_BRIEF_LEN);
+		lcl_fred_replace_stuff(buf3, MAX_BRIEF_LEN);
 		if (stricmp(ptr->new_text, buf3))
 			set_modified();
 
@@ -1529,7 +1536,7 @@ void briefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
 }
 
 BOOL briefing_editor_dlg::DestroyWindow() 

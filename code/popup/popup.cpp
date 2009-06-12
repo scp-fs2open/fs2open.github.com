@@ -545,7 +545,7 @@ int popup_process_keys(popup_info *pi, int k, int flags)
 
 
 	masked_k = k & ~KEY_CTRLED;	// take out CTRL modifier only
-	if ( (PF_ALLOW_DEAD_KEYS) && (Game_mode & GM_IN_MISSION) ) {
+	if ( (Game_mode & GM_IN_MISSION) ) {
 		process_set_of_keys(masked_k, Dead_key_set_size, Dead_key_set);
 		button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
 	}
@@ -677,7 +677,7 @@ int popup_init(popup_info *pi, int flags)
 	}
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
-	if ( (Game_mode & GM_NORMAL) || ((Game_mode && GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) ){
+	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) ){
 		game_stop_time();
 	}
 
@@ -778,7 +778,7 @@ void popup_close(popup_info *pi, int screen_id)
 	Popup_running_state = 0;
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
-	if ( (Game_mode & GM_NORMAL) || ((Game_mode && GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
+	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
 		game_start_time();
 }
 

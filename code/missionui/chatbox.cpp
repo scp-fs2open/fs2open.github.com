@@ -694,17 +694,52 @@ void chatbox_set_mode(int mode_flags)
 	}
 }
 
+int chatbox_get_msg_target_type(char *msg )
+{
+	if (msg[0] != '/') {
+		return MULTI_MSG_ALL;
+	}
+
+	if (!strnicmp (msg, "/f:", 3)) {
+		return MULTI_MSG_FRIENDLY;
+	}	
+
+	if (!strnicmp (msg, "/h:", 3)) {
+		return MULTI_MSG_HOSTILE;
+	}	
+
+	return MULTI_MSG_EXPR;
+}
+
+int chatbox_get_msg_target_length(char *msg)
+{
+	if ((msg[0] != '/') && (strchr(msg, ':') != NULL) ) {
+		return -1;
+	}
+
+	// find the first space
+	return strcspn(msg, ":") + 1 ;
+
+}
+
 // automatically split up any input text, send it, and leave the remainder 
 void chatbox_autosplit_line()
 {
 	char *remainder,msg[150];
+	char temp[150];
 	int msg_pixel_width;
+	int target, target_length = -1; 
 	
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
 	memset(msg,0,150);
 	Chat_inputbox.get_text(msg);
 	remainder = "";
+
+	// check if this message is supposed to have a recipient
+	target = chatbox_get_msg_target_type(msg); 
+	target_length = chatbox_get_msg_target_length(msg); 
+
 	// determine if the width of the string in pixels is > than the inputbox width -- if so,
 	// then send the message
 	gr_get_string_size(&msg_pixel_width, NULL, msg);
@@ -719,20 +754,49 @@ void chatbox_autosplit_line()
 		}	
 		// if I'm the server, then broadcast the packet		
 		chatbox_recall_add(msg);
-  		send_game_chat_packet(Net_player, msg, MULTI_MSG_ALL,NULL);
+
+		if (target != MULTI_MSG_EXPR) {
+  			send_game_chat_packet(Net_player, msg, target);
+		}
+		else {
+			// copy the name of the player the message is being sent to
+			strncpy(temp, msg+1, target_length-2);
+			temp[target_length-2] = '\0';
+			send_game_chat_packet(Net_player, msg, target, NULL, temp);
+		}
 		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
 
-		// display any remainder of text on the next line
-		Chat_inputbox.set_text(remainder);
+		if (target != MULTI_MSG_ALL) {
+			// we need to add the target the message is going to before we add the rest of the string
+			strncpy(temp, msg, target_length);
+ 			temp[target_length] = ' '; 
+ 			temp[target_length+1] = '\0'; 
+			strcat(temp, remainder); 
+			Chat_inputbox.set_text(temp);
+		}
+		else {
+			// display any remainder of text on the next line
+			Chat_inputbox.set_text(remainder);
+		}
 	} else if((Chat_inputbox.pressed() && (strlen(msg) > 0)) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
 		// tack on the null terminator in the boundary case
 		int x = strlen(msg);
 		if(x >= CHATBOX_MAX_LEN){
 			msg[CHATBOX_MAX_LEN-1] = '\0';
-		}		
+		}
+	
 		// if I'm the server, then broadcast the packet		
 		chatbox_recall_add(msg);
-  		send_game_chat_packet(Net_player, msg, MULTI_MSG_ALL,NULL);
+		if (target != MULTI_MSG_EXPR) {
+  			send_game_chat_packet(Net_player, msg, target);
+		}
+		else {
+			// copy the name of the player the message is being sent to
+			strncpy(temp, msg+1, target_length-2);
+			temp[target_length-2] = '\0';
+			send_game_chat_packet(Net_player, msg, target, NULL, temp);
+		}
+
 		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
 
 		// display any remainder of text on the next line

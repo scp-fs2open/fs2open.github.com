@@ -60,6 +60,10 @@ public:
 	//}}AFX_VIRTUAL
 
 // Implementation
+
+private: 
+	bool IsChangeSafe(char *message);
+
 protected:
 
 	// Generated message map functions

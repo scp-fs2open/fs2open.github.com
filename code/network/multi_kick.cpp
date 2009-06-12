@@ -297,6 +297,7 @@ void multi_kick_get_text(net_player *pl, int reason, char *str)
 	// safety net
 	if((pl == NULL) || (pl->m_player == NULL)){
 		strcpy(str, NOX(""));
+		return;
 	}
 
 	switch(reason){

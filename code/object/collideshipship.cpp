@@ -1120,7 +1120,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	return valid_hit_occured;
 }
 
-// gets modified mass of cruiser in cruiser/asteroid collision so cruisers dont get bumped so hard.
+// gets modified mass of cruiser in cruiser/asteroid collision so cruisers don't get bumped so hard.
 // modified mass is 10x, 4x, or 2x larger than asteroid mass
 // returns 1 if modified mass is larger than given mass, 0 otherwise 
 int check_special_cruiser_asteroid_collision(object *heavy, object *light, float *cruiser_mass, int *cruiser_light)
@@ -1510,7 +1510,7 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
 
 	vm_vec_sub(&tpos, global_pos, &objp->pos);
 	vm_vec_rotate(&rotpos, &tpos, &objp->orient);
-	return get_quadrant(&rotpos, objp);
+	return get_quadrant(&rotpos);
 }
 
 #define	MIN_REL_SPEED_FOR_LOUD_COLLISION		50		// relative speed of two colliding objects at which we play the "loud" collide sound

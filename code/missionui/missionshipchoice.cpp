@@ -3400,7 +3400,7 @@ int ss_fixup_team_data(team_data *tdata)
 
 	p_team_data = tdata;
 	ship_in_parse_player = 0;
-	list_size = p_team_data->number_choices;
+	list_size = p_team_data->num_ship_choices;
 
 	for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {
 		wing *wp;
@@ -3410,7 +3410,7 @@ int ss_fixup_team_data(team_data *tdata)
 		for ( j = 0; j < wp->current_count; j++ ) {
 			ship_in_parse_player = 0;
 			
-			for ( k = 0; k < p_team_data->number_choices; k++ ) {
+			for ( k = 0; k < p_team_data->num_ship_choices; k++ ) {
 				Assert( p_team_data->ship_count[k] >= 0 );
 				if ( p_team_data->ship_list[k] == Ships[wp->ship_index[j]].ship_info_index ) {
 					ship_in_parse_player = 1;
@@ -3421,7 +3421,7 @@ int ss_fixup_team_data(team_data *tdata)
 			if ( !ship_in_parse_player ) {
 				p_team_data->ship_count[list_size] = 0;
 				p_team_data->ship_list[list_size] = Ships[wp->ship_index[j]].ship_info_index;
-				p_team_data->number_choices++;
+				p_team_data->num_ship_choices++;
 				list_size++;
 			}
 		}	// end for, go get next ship in wing
@@ -3432,7 +3432,7 @@ int ss_fixup_team_data(team_data *tdata)
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					ship_in_parse_player = 0;
 			
-					for ( k = 0; k < p_team_data->number_choices; k++ ) {
+					for ( k = 0; k < p_team_data->num_ship_choices; k++ ) {
 						Assert( p_team_data->ship_count[k] >= 0 );
 						if ( p_team_data->ship_list[k] == p_objp->ship_class ) {
 							ship_in_parse_player = 1;
@@ -3443,7 +3443,7 @@ int ss_fixup_team_data(team_data *tdata)
 					if ( !ship_in_parse_player ) {
 						p_team_data->ship_count[list_size] = 0;
 						p_team_data->ship_list[list_size] = p_objp->ship_class;
-						p_team_data->number_choices++;
+						p_team_data->num_ship_choices++;
 						list_size++;
 					}
 				}
@@ -3454,7 +3454,7 @@ int ss_fixup_team_data(team_data *tdata)
 	if ( list_size == 0 ) {
 		// ensure that the default player ship is in the ship_list too
 		ship_in_parse_player = 0;
-		for ( k = 0; k < p_team_data->number_choices; k++ ) {
+		for ( k = 0; k < p_team_data->num_ship_choices; k++ ) {
 			Assert( p_team_data->ship_count[k] >= 0 );
 			if ( p_team_data->ship_list[k] == p_team_data->default_ship ) {
 				ship_in_parse_player = 1;
@@ -3464,7 +3464,7 @@ int ss_fixup_team_data(team_data *tdata)
 		if ( !ship_in_parse_player ) {
 			p_team_data->ship_count[list_size] = 0;
 			p_team_data->ship_list[list_size] = p_team_data->default_ship;
-			p_team_data->number_choices++;
+			p_team_data->num_ship_choices++;
 			list_size++;
 		}
 	}
@@ -3484,8 +3484,11 @@ void ss_init_pool(team_data *pteam)
 	}
 
 	// set number of available ships based on counts in team_data
-	for ( i = 0; i < pteam->number_choices; i++ ) {
-		Ss_pool[pteam->ship_list[i]] = pteam->ship_count[i];
+	for ( i = 0; i < pteam->num_ship_choices; i++ ) {
+		if (Ss_pool[pteam->ship_list[i]] == -1) {
+			Ss_pool[pteam->ship_list[i]] = 0; 
+		}
+		Ss_pool[pteam->ship_list[i]] += pteam->ship_count[i];
 	}
 }
 

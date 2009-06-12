@@ -1398,26 +1398,15 @@ int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
 //	  / \.
 //	/  2  \.
 //	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
-int get_quadrant(vec3d *hit_pnt, object *objp)
+int get_quadrant(vec3d *hit_pnt)
 {
 	int	result = 0;
 
-	switch (objp->n_shield_segments) {
-		case 1:
-			// segment '0' is only one in use
-			break;
-		case 2:
-			// segment '0' front, segment '1' rear
-			if (hit_pnt->xyz.z < 0)
-				result |= 1;
-			break;
-		default:
-			if (hit_pnt->xyz.x < hit_pnt->xyz.z)
-				result |= 1;
-			if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
-				result |= 2;
-			break;
-	}
+	if (hit_pnt->xyz.x < hit_pnt->xyz.z)
+		result |= 1;
+
+	if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
+		result |= 2;
 
 	return result;
 }

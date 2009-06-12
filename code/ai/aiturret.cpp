@@ -244,6 +244,7 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 	vec3d	v2e;
 	float size_mod;
 	bool  in_fov;
+
 	vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
 	size_mod = objp->radius / (dist + objp->radius);
 
@@ -253,7 +254,7 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 		in_fov = turret_std_fov_test(ss, tvec, &v2e, size_mod);
 
 	if ( in_fov ) {
-		return 1;
+ 		return 1;
 	}
 
 	return 0;
@@ -518,7 +519,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
 	ship		*shipp;
 	ship_subsys *ss = eeo->turret_subsys;
-	model_subsystem *tp = ss->system_info;
 	float dist;
 
 	// Don't look for bombs when weapon system is not ok
@@ -985,10 +985,9 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			}
 		}
 	}
+
 	return -1;
-
 }
-
 
 int Use_parent_target = 0;
 DCF_BOOL(use_parent_target, Use_parent_target)
@@ -1059,6 +1058,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 							float dist;
 							bool in_fov;
 							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
+
 							if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
 								in_fov = turret_adv_fov_test(turret_subsys, tvec, &v2e);
 							else
@@ -1140,7 +1140,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
-		vec3d	gun_pos, gun_vec;
+		vec3d	gun_pos, gun_vec, target_moving_direction;
 		//float		weapon_speed;
 		float		weapon_system_strength;
 		//HACK HACK HACK -WMC
@@ -1175,8 +1175,14 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 			}
 		}
 
+		target_moving_direction = lep->phys_info.vel;
+
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
-		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &lep->phys_info.vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
+			vm_vec_sub2(&target_moving_direction, &objp->phys_info.vel);
+		}
+
+		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
 
 		//Mess with the turret's accuracy if the weapon system is damaged.
 		if (weapon_system_strength < 0.7f) {
@@ -1191,6 +1197,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		//If the dot product is smaller than or equal to the turret's FOV, try and point the gun at it.
 		vec3d	v2e;
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, &gun_pos);
+
 		bool in_fov;
 
 		if (tp->flags & MSS_FLAG_TURRET_ALT_MATH) {
@@ -1237,7 +1244,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 	if (ship_subsystem_in_sight(enemy_objp, enemy_subsysp, abs_gunposp, &subobj_pos, 1, &dot_out, &vector_out)) {
 		vec3d	turret_norm;
 
-		vm_vec_rotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
+		vm_vec_unrotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
 		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
 
 		if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
@@ -1249,7 +1256,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 				return -1.0f;
 			}
 		} else {
-			// target is in sight and we dont care if its in turret's fov or not
+			// target is in sight and we don't care if its in turret's fov or not
 			return dot_return;
 		}
 	} else
@@ -2085,7 +2092,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 
 			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
-							
+
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
 			dist_to_enemy = vm_vec_normalize(&v2e);
@@ -2157,10 +2164,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					ok_to_fire = true;
 				}
 			}
+
 			if ( ok_to_fire && (tp->flags & MSS_FLAG_TURRET_HULL_CHECK) ) {
 				int model_num = Ship_info[shipp->ship_info_index].model_num;
 				mc_info hull_check;
 				vec3d end;
+
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
 				hull_check.model_num = model_num;
@@ -2242,8 +2251,8 @@ bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	float dot = vm_vec_dot(v2e, gvec);
 	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov))
 		return true;
-
-return false;
+	
+	return false;
 }
 
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)

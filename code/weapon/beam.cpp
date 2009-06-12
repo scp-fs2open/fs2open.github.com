@@ -2759,7 +2759,8 @@ void beam_aim(beam *b)
 
 	default:
 		Int3();
-	}
+	}		
+
 	b->subsys->turret_next_fire_pos = temp_int;
 
 	// recalculate object pairs
@@ -2949,9 +2950,9 @@ int beam_collide_ship(obj_pair *pair)
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
+			quadrant_num = get_quadrant(&mc_shield.hit_point);
 		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = get_quadrant(&mc_hull_enter.hit_point, ship_objp);
+			quadrant_num = get_quadrant(&mc_hull_enter.hit_point);
 
 		// make sure that the shield is active in that quadrant
 		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
@@ -3627,18 +3628,16 @@ int beam_ok_to_fire(beam *b)
 	// if the beam will be firing out of its FOV, power it down
 	vec3d aim_dir, temp;
 	vec3d turret_dir, turret_pos;
-	//bool in_fov;
 	vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize(&aim_dir);
 	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
-	// nope... this section has nothing to do with turret normals...
+	// NEEDS TO - PROBABLY - BE CHANGED INTO USING STD/ADV FOV TESTS
 	/*
-	if (b->subsys->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
-		in_fov = turret_adv_fov_test(b->subsys, &turret_dir, &aim_dir);
-	else
-		in_fov = turret_std_fov_test(b->subsys, &turret_dir, &aim_dir);
+    if (b->subsys->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
+        in_fov = turret_adv_fov_test(b->subsys, &turret_dir, &aim_dir);
+    else
+        in_fov = turret_std_fov_test(b->subsys, &turret_dir, &aim_dir);
 	*/
-
 	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
 		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
 		return 0;

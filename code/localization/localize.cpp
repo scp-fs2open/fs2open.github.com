@@ -532,8 +532,8 @@ void lcl_init(int lang_init)
 	// read the language from the registry
 	if(lang_init < 0){
 		memset(lang_string, 0, 128);
-		// default to DEFAULT_LANGUAGE (which should be english so we dont have to put German text 
-		// in tstrings in the #default section
+		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text 
+		// in tstrings in the #default section)
 		ret = os_config_read_string(NULL, "Language", DEFAULT_LANGUAGE);
 
 		if(ret == NULL){
@@ -855,7 +855,7 @@ int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
 	// copy rest of filename from temp
 	SAFE_STRCAT(current_path, temp, path_max);
 
-	delete temp;
+	delete [] temp;
 	return 1;
 }
 
@@ -931,6 +931,28 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 	{
 		// replace all instances of that string
 		replace_all(text, replace[i][0], replace[i][1], max_len);
+	}
+}
+
+#define LCL_NUM_FRED_REPLACEMENTS 2
+void lcl_fred_replace_stuff(char *text, unsigned int max_len)
+{
+	Assert(text);	
+
+	int i;
+	char replace[LCL_NUM_FRED_REPLACEMENTS][2][NAME_LENGTH];
+
+	// fill replacements array (this is if we want to add more in the future)
+	strcpy(replace[0][0], "$quote");
+	strcpy(replace[0][1], "\"");
+	strcpy(replace[1][0], "$semicolon");
+	strcpy(replace[1][1], ";");
+
+	// do all replacements
+	for (i = 0; i < LCL_NUM_FRED_REPLACEMENTS; i++)
+	{
+		// replace all instances of that string
+		replace_all(text, replace[i][1], replace[i][0], max_len);
 	}
 }
 
@@ -1604,7 +1626,7 @@ void lcl_fix_polish(char *str)
 // lcl_translate_wep_name()
 //
 // For displaying weapon names in german version
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_wep_name(char *name)
 {
@@ -1623,7 +1645,7 @@ void lcl_translate_wep_name(char *name)
 // lcl_translate_brief_icon_name()
 //
 // For displaying ship names in german version
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_brief_icon_name(char *name)
 {
@@ -1770,7 +1792,7 @@ void lcl_translate_brief_icon_name(char *name)
 // lcl_translate_brief_icon_name_pl()
 //
 // For displaying ship names in polish version
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_brief_icon_name_pl(char *name)
 {
@@ -1858,7 +1880,7 @@ char buf[128];
 // lcl_translate_ship_name()
 //
 // For displaying ship names in german version in the briefing
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_ship_name(char *name)
 {
@@ -1871,7 +1893,7 @@ void lcl_translate_ship_name(char *name)
 // lcl_translate_targetbox_name()
 //
 // For displaying ship names in german version in the targetbox
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_targetbox_name(char *name)
 {
@@ -1923,7 +1945,7 @@ void lcl_translate_targetbox_name(char *name)
 // lcl_translate_targetbox_name_pl()
 //
 // For displaying ship names in polish version in the targetbox
-// since we cant actually just change them outright.
+// since we can't actually just change them outright.
 //
 void lcl_translate_targetbox_name_pl(char *name)
 {

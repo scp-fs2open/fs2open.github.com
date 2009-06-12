@@ -41,7 +41,7 @@
  *
  * Revision 2.15  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
- * Simulated speech doesnt say tags marked by $ now.
+ * Simulated speech doesn't say tags marked by $ now.
  * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
  * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
  * Error now given on missing briefing icon and bad ship normal data.
@@ -84,7 +84,7 @@
  *
  * Revision 2.5  2003/10/14 17:39:18  randomtiger
  * Implemented hardware fog for the HT&L code path.
- * It doesnt use the backgrounds anymore but its still an improvement.
+ * It doesn't use the backgrounds anymore but it's still an improvement.
  * Currently it fogs to a brighter colour than it should because of Bob specular code.
  * I will fix this after discussing it with Bob.
  *
@@ -259,7 +259,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 //Uncomment this to figure out who called g3_start_frame without calling g3_end_frame.
 
-	//mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
+//	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
 
  	Assert( G3_count == 0 );
 	G3_count++;

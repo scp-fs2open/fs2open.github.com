@@ -987,7 +987,7 @@ static int Wl_bank_coords[GR_NUM_RESOLUTIONS][MAX_SHIP_WEAPONS][2] = {
 };
 
 static int Wl_bank_count_draw_flags[MAX_SHIP_WEAPONS] = { 
-	0, 0, 0,			// primaries -- dont draw counts
+	0, 0, 0,			// primaries -- don't draw counts
 	1, 1, 1, 1		// secondaries -- do draw counts
 };
 
@@ -1943,14 +1943,12 @@ void wl_init_pool(team_data *td)
 
 	Assert( Wl_pool != NULL );
 
-	/* Goober5000 - isn't this superfluous?
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = -1;
+		Wl_pool[i] = 0;
 	}
-	*/
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = td->weaponry_pool[i];	// read from mission
+	for ( i = 0; i < td->num_weapon_choices; i++ ) {
+		Wl_pool[td->weaponry_pool[i]] += td->weaponry_count[i];	// read from mission
 	}
 }
 
@@ -5058,7 +5056,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// display error messages
 	if (error_flag)
 	{
-		int i, j;
+		int j;
 		bool is_duplicate;
 		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
 		strcpy(error_msg, "The following errors were encountered:\n\n");

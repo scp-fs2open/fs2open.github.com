@@ -98,8 +98,3 @@ void radar_draw_image_std( int x, int y, int rad, int idx, int size);
 
 #endif
 
-
-
-
-
-

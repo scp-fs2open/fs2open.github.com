@@ -500,7 +500,7 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 	model_subsystem *tp = NULL;
 	if (ss != NULL)
-		model_subsystem *tp = ss->system_info;		
+		tp = ss->system_info;	
 
 	best_point = objp->pos;
 	nearest_dist = weapon_travel_dist;
@@ -546,6 +546,7 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 
 				dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
 				bool in_fov = false;
+
 				if (tp == NULL) {
 					dot = vm_vec_dot(&v2p, attacker_objp_fvec);
 					if (dot > fov)
@@ -1051,7 +1052,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 				}
 			}
 
-			// use dist normal to enemy here (dont break 50 barrier)
+			// use dist normal to enemy here (don't break 50 barrier)
 			if (dist_to_enemy < ATTACK_STOP_DISTANCE) {
 //				accelerate_ship(aip, accel * 0.5f);
 				accelerate_ship(aip, -1.0f);

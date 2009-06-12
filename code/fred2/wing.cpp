@@ -527,6 +527,8 @@ int create_wing()
 		if (dlg.DoModal() == IDCANCEL)
 			return -1;
 
+		dlg.m_name.TrimLeft();
+		dlg.m_name.TrimRight();
 		string_copy(Wings[wing].name, dlg.m_name, NAME_LENGTH - 1);
 	}
 

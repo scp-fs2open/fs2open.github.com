@@ -1108,7 +1108,7 @@ void gr_opengl_tmapper(int nverts, vertex **verts, uint flags)
 
 #define FIND_SCALED_NUM(x, x0, x1, y0, y1) ( ((((x) - (x0)) * ((y1) - (y0))) / ((x1) - (x0))) + (y0) )
 
-void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap)
+void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap = false)
 {
 	float x0, y0, x1, y1;
 	float u0, v0, u1, v1;
@@ -1234,10 +1234,14 @@ void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap)
 	v[3].spec_g = 0;
 	v[3].spec_b = 0;
 
-	if (bw_bitmap == false)
-		opengl_tmapper_internal(4, vl, TMAP_FLAG_TEXTURED, 1);
+	if (!bw_bitmap)
+	{
+		opengl_tmapper_internal( 4, vl, TMAP_FLAG_TEXTURED, 1 );
+	}
 	else
-		opengl_tmapper_internal(4, vl, ( TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE ), 1);
+	{
+		opengl_tmapper_internal( 4, vl,( TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE ), 1 );
+	}
 }
 
 

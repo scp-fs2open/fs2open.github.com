@@ -1011,6 +1011,7 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship
 	if(main){
 		snd->flags |= OS_MAIN;
 	}
+
 	if(flags > 0){
 		snd->flags |= flags;
 	}

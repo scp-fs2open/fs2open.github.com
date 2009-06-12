@@ -874,6 +874,9 @@ int wing_editor::update_data(int redraw)
 	UpdateData(TRUE);
 	UpdateData(TRUE);
 
+	m_wing_name.TrimLeft(); 
+	m_wing_name.TrimRight(); 
+
 	if (cur_wing >= 0) {
 		for (i=0; i<MAX_WINGS; i++)
 			if (Wings[i].wave_count && !stricmp(Wings[i].name, m_wing_name) && (i != cur_wing)) {
@@ -1025,7 +1028,7 @@ void wing_editor::update_data_safe()
 	if (m_waves < 1) {
 		m_waves = 1;
 		if (!bypass_errors) {
-			sprintf(buf, "Number of waves illegal.  Has been set to 1.", (int) m_waves);
+			sprintf(buf, "Number of waves illegal.  Can not have %d waves. Number of waves has as been set to 1.", (int) m_waves);
 			MessageBox(buf);
 		}
 	}
@@ -1234,14 +1237,14 @@ void wing_editor::OnEndlabeleditArrivalTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_arrival_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_arrival_tree.end_label_edit(pTVDispInfo->item);
 }
 
 void wing_editor::OnEndlabeleditDepartureTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_departure_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_departure_tree.end_label_edit(pTVDispInfo->item);
 }
 
 int wing_editor::verify()

@@ -5175,7 +5175,7 @@ void CFREDView::OnDestroy()
 	snd_close();
 	DBUGFILE_OUTPUT_0("About to gr_close");
  	gr_close();
-   	os_set_window(0);	 
+   	os_set_window(NULL);	 
 
 	CView::OnDestroy();
 }

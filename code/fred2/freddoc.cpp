@@ -83,7 +83,7 @@
  * taylor and I fixed fred2 by making code.lib and fred2's defines match up
  *
  * Revision 1.8  2004/05/02 18:03:19  randomtiger
- * Fred doesnt need subspace palette any more
+ * Fred doesn't need subspace palette any more
  *
  * Revision 1.7  2004/04/03 18:06:35  Kazan
  * Fixes:
@@ -451,6 +451,7 @@ int Undo_count = 0;
 
 extern int Num_unknown_ship_classes;
 extern int Num_unknown_weapon_classes;
+extern int Num_unknown_loadout_classes;
 
 CFREDDoc::CFREDDoc()
 {
@@ -722,7 +723,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		return -1;
 	}
 
-	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0))
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0))
 	{
 		if (flags & MPF_IMPORT_FSM)
 		{
@@ -784,19 +785,39 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		}
 	}
 
-	generate_weaponry_usage_list(used_pool);
-	for ( j = 0; j < Num_teams; j++ ) {
-		for (i=0; i<Num_weapon_types; i++) {
-			Team_data[j].weaponry_pool[i] -= used_pool[i];  // convert weaponry_pool to be extras available beyond the current ships weapons
-			if (Team_data[j].weaponry_pool[i] < 0)
-				Team_data[j].weaponry_pool[i] = 0;
+	for ( i = 0; i < Num_teams; i++ ) {
+		generate_weaponry_usage_list(i, used_pool);
+		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
+			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
+			if ((Team_data[i].weaponry_pool_variable[j] == -1) && (Team_data[i].weaponry_amount_variable[j] == -1) ) {
+				// convert weaponry_pool to be extras available beyond the current ships weapons
+				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
+				if (Team_data[i].weaponry_count[j] < 0) {
+					Team_data[i].weaponry_count[j] = 0;				
+				}
+
+				// zero the used pool entry
+				used_pool[Team_data[i].weaponry_pool[j]] = 0;
+			}
+		}
+		// double check the used pool is empty
+		for (j=0; j<MAX_WEAPON_TYPES; j++) {
+			if (used_pool[j] != 0) {
+				Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[j].name , i+1);
+				
+				// add the weapon as a new entry
+				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
+				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j]; 
+				Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices] = -1;
+				Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++] = -1;		
+			}
 		}
 	}
 
 	Assert(Mission_palette >= 0);
 	Assert(Mission_palette <= 98);
 
-	// RT, dont need this anymore
+	// RT, don't need this anymore
 #if 0
 
 	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {

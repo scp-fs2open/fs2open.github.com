@@ -8,14 +8,19 @@
 */
 
 /*
- * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
+ * $Source: /home/fs2source/cvsroot/fs2_open/code/parse/parselo.cpp,v $
  * $Revision: 2.73.2.13 $
  * $Author: Kazan $
- * $Date: 2007-10-20 23:28:49 $
+ * $Date: 2007/10/20 23:28:49 $
  *
  * low level parse routines common to all types of parsers
  *
- * $Log: not supported by cvs2svn $
+ * $Log: parselo.cpp,v $
+ * Revision 2.73.2.13  2007/10/20 23:28:49  Kazan
+ * Enemy cargo containers should not prevent autopilot.
+ * Fix build problem in parselo (strrchr returns const char* not char*, need to explicitly cast - raises error in MSVC2005)
+ * Update MSVC2005 "code" project to reflect removal/addition of fs2netd related files
+ *
  * Revision 2.73.2.12  2007/10/15 06:43:20  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -1307,6 +1312,41 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	return rval;
 }
 
+// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string 
+// variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present. 
+int get_string_or_variable (char *str)
+{
+	int result = -1; 
+
+	ignore_white_space();
+	
+	// Variable
+	if (*Mp == '@') 
+	{
+		Mp++;
+		stuff_string_white(str); 
+		int sexp_variable_index = get_index_sexp_variable_name(str); 
+		
+		// We only want String variables
+		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
+
+		result = PARSING_FOUND_VARIABLE; 
+	}
+	// Quoted string
+	else if (*Mp == '"')
+	{
+		get_string(str);
+		result =  PARSING_FOUND_STRING;
+	}
+	else
+	{
+		get_string(str);
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str); 
+	}
+
+	return result;
+}
+
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
@@ -2222,6 +2262,110 @@ void stuff_int(int *i)
 	diag_printf("Stuffed int: %i\n", *i);
 }
 
+int stuff_int_or_variable (int &i, bool positive_value = false);
+int stuff_int_or_variable (int *ilp, int count, bool positive_value = false);
+
+
+// Stuffs an int value or the value of a number variable. Returns the index of the variable or NOT_SET_BY_SEXP_VARIABLE.
+int stuff_int_or_variable (int &i, bool positive_value)
+{
+	int index = NOT_SET_BY_SEXP_VARIABLE;
+
+	if (*Mp == '@') 
+	{
+		Mp++;
+		int value = -1; 
+		char str[128];
+		stuff_string(str, F_NAME, sizeof(str));
+
+		index = get_index_sexp_variable_name(str); 
+			
+		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		{
+			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
+			{
+				value = atoi(Sexp_variables[index].text);
+			}
+			else 
+			{
+				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
+			}
+		}
+		else
+		{
+			
+			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
+		}
+
+		// zero negative values if requested
+		if (positive_value && value < 0)
+		{
+			value = 0;
+		}
+
+		
+		// Record the value of the index for FreeSpace 
+		i = value;
+	}
+	else 
+	{
+		stuff_int(&i);
+	}
+	return index;
+}
+
+// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the 
+// index of the variable in the following slot.
+int stuff_int_or_variable (int *ilp, int count, bool positive_value)
+{
+	if (*Mp == '@') 
+	{
+		Mp++;
+		int value = -1; 
+		char str[128];
+		stuff_string(str, F_NAME, sizeof(str));
+
+		int index = get_index_sexp_variable_name(str); 
+			
+		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		{
+			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
+			{
+				value = atoi(Sexp_variables[index].text);
+			}
+			else 
+			{ 
+				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
+			}
+		}
+		else
+		{
+			
+			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
+		}
+
+		// zero negative values if requested
+		if (positive_value && value < 0)
+		{
+			value = 0;
+		}
+
+		
+		// Record the value of the index for FreeSpace 
+		ilp[count++] = value;
+		// Record the index itself because we may need it later.
+		ilp[count++] = index;
+	}
+	else 
+	{
+		stuff_int(&ilp[count++]);
+		// Since we have a numerical value we don't have a SEXP variable index to add for next slot. 
+		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
+	}
+	return count;
+}
+
+
 //Stuffs boolean value.
 //Passes things off to stuff_boolean(bool)
 void stuff_boolean(int *i, bool a_to_eol)
@@ -2547,6 +2691,114 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 	Mp++;
 
+	return count;
+}
+
+// helper for the next function. Removes a broken entry from ship or weapon lists and advances to the next one
+void clean_loadout_list_entry()
+{
+	int dummy; 
+
+	// clean out the broken entry
+	ignore_white_space();
+	stuff_int_or_variable(dummy);
+	ignore_white_space();
+}
+
+// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices. 
+// Unlike stuff_int_list it can deal with variables and it also has better error reporting.
+int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
+{
+	int count = 0; 
+	int index, sexp_variable_index, variable_found;
+	char str[128];
+
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
+		longjmp(parse_abort, 6);
+	}
+
+	Mp++;
+	ignore_white_space();
+
+	while (*Mp != ')') {
+		if (count >= max_ints) {
+			Error(LOCATION, "Loadout contains too many entries.\n");
+		}
+
+		index = -1;
+		sexp_variable_index = NOT_SET_BY_SEXP_VARIABLE;
+		variable_found = get_string_or_variable (str); 
+
+		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found 
+		// a variable or not it now holds the name of the ship or weapon we're interested in.
+		if (variable_found) {
+			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
+			sexp_variable_index = get_index_sexp_variable_name(str);
+			strcpy (str, Sexp_variables[sexp_variable_index].text);
+		}
+
+		switch (lookup_type) {
+			case MISSION_LOADOUT_SHIP_LIST:
+			case CAMPAIGN_LOADOUT_SHIP_LIST:
+				index = ship_info_lookup(str);
+				break;
+
+			case MISSION_LOADOUT_WEAPON_LIST:
+			case CAMPAIGN_LOADOUT_WEAPON_LIST:
+				index = weapon_info_lookup(str);
+				break;
+
+			default:
+				Int3();
+		}
+
+		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing 
+		// no ships from the current tables (when swapping mods) so don't report that as an error. 
+		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
+			// print a warning in debug mode
+			Warning(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
+			// increment counter for release FRED builds. 
+			Num_unknown_loadout_classes++;
+
+			clean_loadout_list_entry(); 
+			continue;
+		}
+
+		// similarly, complain if this is a valid ship or weapon class that the player can't use
+		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) & (!(Ship_info[index].flags & SIF_PLAYER_SHIP)) ) {
+			clean_loadout_list_entry(); 
+			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
+			continue;
+		}
+		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) & (!(Weapon_info[index].wi_flags & WIF_PLAYER_ALLOWED)) ) {
+			clean_loadout_list_entry(); 
+			Warning(LOCATION, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
+			continue;
+		}
+		
+		// we've found a real item. Add its index to the list.
+		ilp[count++] = index;
+		
+		ignore_white_space();
+
+		// Campaign lists need go no further
+		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST || lookup_type == CAMPAIGN_LOADOUT_WEAPON_LIST) {
+			continue;
+		}
+		
+		// record the index of the variable that gave us this item if any
+		ilp[count++] = sexp_variable_index;
+
+		// Now read in the number of this type available. The number must be positive
+		count = stuff_int_or_variable(ilp, count, true);
+
+		ignore_white_space();
+	}
+
+	Mp++;
 	return count;
 }
 
@@ -3060,6 +3312,113 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 	return line_num;
 }
 
+int split_str(char *src, int max_pixel_w, std::vector<int> *n_chars, std::vector<char*> *p_str, char ignore_char)
+{
+	char buffer[SPLIT_STR_BUFFER_SIZE];
+	char *breakpoint = NULL;
+	int sw, new_line = 1, line_num = 0, last_was_white = 0;
+	int ignore_until_whitespace = 0, buf_index = 0;
+	
+	// check our assumptions..
+	Assert(src != NULL);
+	Assert(n_chars != NULL);
+	Assert(p_str != NULL);
+	Assert(max_pixel_w > 0);
+	
+	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+
+	// get rid of any leading whitespace
+	while (is_white_space(*src))
+		src++;
+
+	p_str->clear();
+
+	// iterate through chars in line, keeping track of most recent "white space" location that can be used
+	// as a line splitting point if necessary
+	for (; *src; src++) {
+
+		// starting a new line of text, init stuff for that
+		if (new_line) {
+			if (is_gray_space(*src))
+				continue;
+
+			p_str->push_back(src);
+			breakpoint = NULL;
+			new_line = 0;
+		}
+
+		// maybe skip leading whitespace
+		if (ignore_until_whitespace) {
+			if ( is_white_space(*src) )
+				ignore_until_whitespace = 0;
+
+			continue;
+		}
+
+		// if we have a newline, split the line here
+		if (*src == '\n') {
+			n_chars->push_back(src - p_str->at(line_num));  // track length of line
+			line_num++;
+			new_line = 1;
+
+			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+			buf_index = 0;
+			continue;
+		}
+
+		if (*src == ignore_char) {
+			ignore_until_whitespace = 1;
+			continue;
+		}
+
+		if (is_gray_space(*src)) {
+			if (!last_was_white)  // track at first whitespace in a series of whitespace
+				breakpoint = src;
+
+			last_was_white = 1;
+
+		} else {
+			// indicate next time around that this wasn't a whitespace character
+			last_was_white = 0;
+		}
+
+		// throw it in our buffer
+		buffer[buf_index] = *src;
+		buf_index++;
+		buffer[buf_index] = 0;  // null terminate it
+	
+		gr_get_string_size(&sw, NULL, buffer);
+		if (sw >= max_pixel_w) {
+			char *end;
+
+			if (breakpoint) {
+				end = src = breakpoint;
+
+			} else {
+				end = src;  // force a split here since to whitespace
+				src--;  // reuse this character in next line
+			}
+
+			n_chars->push_back(end - p_str->at(line_num));  // track length of line
+			Assert(n_chars->at(line_num));
+			line_num++;
+			new_line = 1;
+
+			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+			buf_index = 0;
+			continue;
+		}
+	}	// end for
+
+	if (!new_line && p_str->at(line_num)) {
+		n_chars->push_back(src - p_str->at(line_num));  // track length of line
+		Assert(n_chars->at(line_num));
+		line_num++;
+	}
+
+	return line_num;
+}
+
 // Goober5000
 // accounts for the dumb communications != communication, etc.
 int subsystem_stricmp(const char *str1, const char *str2)
@@ -3103,8 +3462,8 @@ char *stristr(const char *str, const char *substr)
 		return NULL;
 
 	// save both a lowercase and an uppercase version of the first character of substr
-	char substr_ch_lower = tolower(*substr);
-	char substr_ch_upper = toupper(*substr);
+	char substr_ch_lower = (char)tolower(*substr);
+	char substr_ch_upper = (char)toupper(*substr);
 
 	// find the maximum distance to search
 	char *upper_bound = (char *)str + strlen(str) - strlen(substr);
@@ -3235,14 +3594,16 @@ int replace_one(char *str, char *oldstr, char *newstr, uint max_len, int range)
 // Goober5000
 int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 {
-	int val, tally(0);
+	int val, tally = 0;
 
 	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
 	{
 		tally++;
 
-		// adjust range, because the text length might have changed
-		range += strlen(newstr) - strlen(oldstr);
+		// adjust range (if we have one), because the text length might have changed
+		if (range) {
+			range += strlen(newstr) - strlen(oldstr);
+		}
 	}
 
 	return (val < 0) ? val : tally;

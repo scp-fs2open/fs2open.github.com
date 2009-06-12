@@ -730,8 +730,3 @@ void vm_vec2vert(vec3d *vec, vertex *vert);
 #endif
 
 
-
-
-
-
-

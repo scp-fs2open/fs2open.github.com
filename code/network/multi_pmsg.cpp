@@ -469,32 +469,12 @@ void multi_msg_display_mission_text(char *msg,int player_index)
 // if the passed net_player's callsign matches the reg expression of the passed expr
 int multi_msg_matches_expr(net_player *np,char *expr)
 {
-	char callsign[CALLSIGN_LEN+1];
-	int len,idx;
-
 	// some error checking
 	if((np == NULL) || (expr == NULL) || (strlen(expr) <= 0)){
 		return 0;
 	}
 
-	// get the completely lowercase callsign
-	memset(callsign,0,CALLSIGN_LEN+1);
-	len = strlen(np->m_player->callsign);
-	for(idx=0;idx<len;idx++){
-		callsign[idx] = (char)tolower(np->m_player->callsign[idx]);
-	}
-
-	// see if this guy's callsign matches the expr
-	len = strlen(expr);
-	for(idx=0;idx<len;idx++){
-		// look for non-matching characters
-		if(callsign[idx] != expr[idx]){
-			return 0;
-		}
-	}
-				
-	// matches
-	return 1;
+	return stricmp(expr, np->m_player->callsign) ? 0 : 1 ; 
 }
 
 // if text input mode is active, clear it

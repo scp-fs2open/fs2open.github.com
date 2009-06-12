@@ -188,6 +188,7 @@
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
+#include "localization/localize.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -537,7 +538,7 @@ void event_editor::OnEndlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_event_tree.end_label_edit(pTVDispInfo->item);
 }
 
 // This is needed as a HACK around default MFC standard
@@ -554,6 +555,7 @@ void event_editor::OnOK()
 		GetDlgItem(IDC_EVENT_TREE)->SetFocus();
 		::SetFocus(h);
 	}
+	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->SetCurSel(m_cur_msg);
 }
 
 int event_editor::query_modified()
@@ -1295,6 +1297,7 @@ int event_editor::save_message(int num)
 		}
 
 		string_copy(m_messages[num].message, m_message_text, MESSAGE_LENGTH - 1);
+		lcl_fred_replace_stuff(m_messages[num].message, MESSAGE_LENGTH);
 		if (m_messages[num].avi_info.name){
 			free(m_messages[num].avi_info.name);
 		}

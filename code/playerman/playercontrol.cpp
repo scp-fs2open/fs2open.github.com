@@ -1582,11 +1582,11 @@ void read_player_controls(object *objp, float frametime)
 					// Wait at least 3 seconds before making sure warp speed is set.
 					if ( Warpout_time > MINIMUM_PLAYER_WARPOUT_TIME )	{
 						// If we are going around 5% of the target speed, progress to next stage
-						float diff = objp->phys_info.fspeed;
+						float diffSpeed = objp->phys_info.fspeed;
 						if(target_warpout_speed != 0.0f) {
-							diff = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
+							diffSpeed = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
 						}
-						if ( diff < TARGET_WARPOUT_MATCH_PERCENT )	{
+						if ( diffSpeed < TARGET_WARPOUT_MATCH_PERCENT )	{
 							gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE_STAGE1 );
 						}
 					}
@@ -1601,7 +1601,6 @@ void read_player_controls(object *objp, float frametime)
 	if(objp->type != OBJ_OBSERVER){
 		objp->phys_info.max_vel.xyz.z = Ships[objp->instance].current_max_speed;
 	} 
-
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed
@@ -1993,7 +1992,12 @@ int player_process_pending_praise()
 		if ( ship_index >= 0 ) {
 			// Only praise if above 50% integrity
 			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {
-				message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				if (Player->stats.m_kill_count_ok > 10) {	// this number should probably be in the AI profile or mission file rather than hardcoded
+					message_send_builtin_to_player(MESSAGE_HIGH_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				}
+				else {
+					message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				}
 				Player->allow_praise_timestamp = timestamp(PLAYER_ALLOW_PRAISE_INTERVAL*(Game_skill_level+1) );
 				Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
 				Player->praise_count++;
@@ -2151,7 +2155,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		return 0;
 	}
 
-	// dont scan cargo on turrets, radar, etc.  only the majors: fighterbay, sensor, engines, weapons, nav, comm
+	// don't scan cargo on turrets, radar, etc.  only the majors: fighterbay, sensor, engines, weapons, nav, comm
 	if (!valid_cap_subsys_cargo_list(subsys->system_info->subobj_name)) {
 		return 0;
 	}

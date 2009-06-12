@@ -80,7 +80,7 @@ rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS] =
 	// navbuoy or cargo (gray)
 	{
 		{ 0x40, 0x40, 0x40 },		// dim
-		{ 0x7f, 0x7f, 0x7f },		// bright		
+		{ 0x7f, 0x7f, 0x7f },		// bright
 	},
 
 	// warping ship (blue)

@@ -786,7 +786,7 @@
  * 
  * 66    8/13/99 10:49a Andsager
  * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes dont collide big ships.
+ * modes don't collide big ships.
  * 
  * 65    8/02/99 10:39p Dave
  * Added colored shields. OoOoOoooOoo
@@ -1137,7 +1137,7 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
-#define SSF_NO_SS_TARGETING		(1 << 2)
+#define SSF_NO_SS_TARGETING     (1 << 2)
 
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
@@ -1303,6 +1303,8 @@ typedef struct ship_subsys_info {
 #define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 #define SF2_HIDE_SHIP_NAME					(1<<15)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
 #define SF2_AFTERBURNER_LOCKED				(1<<16)		// KeldorKatarn - This ship can't use its afterburners
+#define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
+#define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
@@ -1313,7 +1315,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		12
-#define MAX_MAN_THRUSTERS	32
+#define MAX_MAN_THRUSTERS	64
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -1391,9 +1393,6 @@ typedef struct ship {
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
-
-	float max_shield_recharge_pct;
-	float ship_max_shield_segment[MAX_SHIELD_SECTIONS];	// defines the per segment maximum shield strengths
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
@@ -1595,16 +1594,16 @@ typedef struct ship {
 
 	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
 	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
-	
-	/*
+/*
 	flash_ball	*debris_flare;
 	int n_debris_flare;
 	float flare_life;
 	int flare_bm;
 	*/
 
-	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+	std::vector<alt_class> s_alt_classes;	
 
+	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 } ship;
 
 struct ai_target_priority {
@@ -1627,7 +1626,6 @@ extern std::vector <ai_target_priority> Ai_tp_list;
 void parse_ai_target_priorities();
 ai_target_priority init_ai_target_priorities();
 
-
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
 #define SEF_DESTROYED			(1<<0)
@@ -1636,8 +1634,6 @@ ai_target_priority init_ai_target_priorities();
 #define SEF_PLAYER_DELETED		(1<<3)			// ship deleted by a player in ship select
 #define SEF_BEEN_TAGGED			(1<<4)
 #define SEF_RED_ALERT_CARRY	(1<<5)
-
-#define MAX_EXITED_SHIPS	(2*MAX_SHIPS) //DTP changed for MAX_SHIPS sake. double of max_ships.
 
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
@@ -1649,11 +1645,13 @@ typedef struct exited_ship {
 	int		hull_strength;
 	fix		time_cargo_revealed;
 	char	cargo1;
+	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
+	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
 	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
-extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
+extern std::vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );
@@ -1711,7 +1709,8 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
-#define SIF2_INTRINSIC_NO_SHIELDS			(1 << 8)	// Chief - disables shields for this ship even without No Shields in mission.
+#define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
+#define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
@@ -1973,9 +1972,6 @@ typedef struct ship_info {
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 
-	float	max_shield_recharge;
-	float	max_shield_segment_strength[MAX_SHIELD_SECTIONS];
-
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
 
@@ -2054,18 +2050,16 @@ typedef struct ship_info {
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
 
-	int ship_iff_info[MAX_IFFS][MAX_IFFS];
-
 	int radar_image_2d_idx;
 	int radar_image_size;
 	float radar_projection_size_mult;
+
+	int ship_iff_info[MAX_IFFS][MAX_IFFS];
 
 	int aiming_flags;
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;
-
-	int num_shield_segments;
 
 	float emp_resistance_mod;
 } ship_info;
@@ -2363,7 +2357,7 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
-extern int get_quadrant(vec3d *hit_pnt, object *objp);						//	Return quadrant num of last hit ponit.
+extern int get_quadrant(vec3d *hit_pnt);						//	Return quadrant num of last hit ponit.
 
 extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);
@@ -2416,6 +2410,7 @@ void	ship_check_cargo_all();	// called from game_simulation_frame
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
+void	ship_maybe_praise_self(ship *deader_sp, ship *killer_sp);
 void	ship_maybe_ask_for_help(ship *sp);
 void	ship_scream(ship *sp);
 void	ship_maybe_scream(ship *sp);
@@ -2466,7 +2461,6 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 // functions for testing fov.. returns true if fov test is passed.
 bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
-
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

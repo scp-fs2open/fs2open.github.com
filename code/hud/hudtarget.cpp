@@ -719,8 +719,6 @@ typedef struct _reticle_list {
 	int				flags;
 } reticle_list;
 
-extern lua_hud_inf lua_hud_info;
-
 #define			RESET_TARGET_IN_RETICLE	750
 int				Reticle_save_timestamp;
 reticle_list	Reticle_cur_list;
@@ -2088,19 +2086,19 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 	if ( !target_found ) {
 	// if no bomb is found, search for bombers
-		ship_obj *start, *so;
+		ship_obj *startShip, *so;
 
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
 			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
 				|| (Objects[aip->target_objnum].flags & OF_TARGETABLE_AS_BOMB))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
-			start = get_ship_obj_ptr_from_index(index);
+			startShip = get_ship_obj_ptr_from_index(index);
 		} else {
-			start = GET_FIRST(&Ship_obj_list);
+			startShip = GET_FIRST(&Ship_obj_list);
 		}
 
-		for (so=advance_ship(start, next_flag); so!=start; so=advance_ship(so, next_flag)) {
+		for (so=advance_ship(startShip, next_flag); so!=startShip; so=advance_ship(so, next_flag)) {
 			A = &Objects[so->objnum];
 
 			// don't look at header
@@ -2771,7 +2769,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	}
 
 	// If no turret is attacking, check if objp is actually targetting attacked_objnum
-	// dont bail if targeting is for player
+	// don't bail if targeting is for player
 	if ( !targeting_player && !turret_is_attacking ) {
 		ai_info *aip = &Ai_info[esct->shipp->ai_index];
 
@@ -2968,7 +2966,8 @@ void hud_update_closest_turret()
 //
 void hud_target_targets_target()
 {
-	object	*objp;
+	object *objp = NULL;
+	object *tt_objp = NULL;
 	int		tt_objnum;
 
 	if ( Player_ai->target_objnum < 0 || Player_ai->target_objnum >= MAX_OBJECTS ) {
@@ -2980,20 +2979,26 @@ void hud_target_targets_target()
 		goto ttt_fail;
 	}
 
-	if (hud_target_invalid_awacs(objp)) {
-		goto ttt_fail;
-	}
-
-	if ( Ships[objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS ) {
-		goto ttt_fail;
-	}
-
 	tt_objnum = Ai_info[Ships[objp->instance].ai_index].target_objnum;
 	if ( tt_objnum < 0 || tt_objnum >= MAX_OBJECTS ) {
 		goto ttt_fail;
 	}
 
 	if ( tt_objnum == OBJ_INDEX(Player_obj) ) {
+		goto ttt_fail;
+	}
+
+	tt_objp = &Objects[tt_objnum]; 
+
+	if (hud_target_invalid_awacs(tt_objp)) {
+		goto ttt_fail;
+	}
+
+	if ( tt_objp->type != OBJ_SHIP ) {
+		goto ttt_fail;
+	}
+
+	if ( Ships[tt_objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS ) {
 		goto ttt_fail;
 	}
 
@@ -4307,7 +4312,7 @@ void hud_show_hostile_triangle()
 
 		aip = &Ai_info[Ships[A->instance].ai_index];
 
-		// dont look at ignore ships
+		// don't look at ignore ships
 		if ( sp->flags & TARGET_SHIP_IGNORE_FLAGS ) {
 			continue;
 		}
@@ -5393,9 +5398,6 @@ void hud_show_afterburner_gauge()
 	if ( percent_left > 1 ) {
 		percent_left = 1.0f;
 	}
-
-	lua_hud_info.ab_drawn = 1;
-	lua_hud_info.ab_pct = percent_left;
 	
 	clip_h = fl2i( (1.0f - percent_left) * current_hud->Aburn_size[0] + 0.5f );
 

@@ -337,7 +337,7 @@ SOURCE=..\..\code\wxfred2\wxfred.xrc
 !IF  "$(CFG)" == "wxFRED2 - Win32 Release"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\projects\fs2_open\code\wxfred2
+InputDir=..\..\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
@@ -349,7 +349,7 @@ InputName=wxfred
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\projects\fs2_open\code\wxfred2
+InputDir=..\..\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 

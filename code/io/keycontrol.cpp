@@ -2915,7 +2915,7 @@ int button_function(int n)
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
 //				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto match target speed activated", -1));
-				if ( !Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
+				if ( !(Player->flags & PLAYER_FLAGS_MATCH_TARGET) ) {
 					player_match_target_speed();
 				}
 			}
@@ -3398,8 +3398,13 @@ int button_function(int n)
 			break;
 
 		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
-			gamesnd_play_iface(SND_USER_SELECT);
-			hud_targetbox_switch_wireframe_mode();
+			if (!Lock_targetbox_mode) {
+				gamesnd_play_iface(SND_USER_SELECT);
+				hud_targetbox_switch_wireframe_mode();
+			}
+			else {
+				gamesnd_play_iface(SND_GENERAL_FAIL); 
+			}
 			break;	
 
 		// Autopilot key control

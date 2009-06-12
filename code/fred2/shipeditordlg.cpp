@@ -363,6 +363,7 @@
 #include "ShipSpecialDamage.h"
 #include "ShipTexturesDlg.h"
 #include "ShipSpecialHitpoints.h"
+#include "altshipclassdlg.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 #include "restrictpaths.h"
@@ -557,6 +558,7 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_SPECIAL_EXP, OnSpecialExp)
 	ON_BN_CLICKED(IDC_TEXTURES, OnTextures)
 	ON_BN_CLICKED(IDC_SPECIAL_HITPOINTS, OnSpecialHitpoints)
+	ON_BN_CLICKED(IDC_ALT_SHIP_CLASS, OnAltShipClass)
 	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_WM_INITMENU()
@@ -1206,6 +1208,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(m_ship_class >= 0);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(TRUE);
+		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(TRUE);	
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
@@ -1214,6 +1217,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(FALSE);
 	}
 
 	// disable textures for multiple ships
@@ -1350,6 +1354,8 @@ int CShipEditorDlg::update_data(int redraw)
 		update_ship(player_ship);
 
 	} else if (single_ship >= 0) {  // editing a single ship
+		m_ship_name.TrimLeft(); 
+		m_ship_name.TrimRight(); 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (cur_object_index != OBJ_INDEX(ptr))) {
@@ -1531,18 +1537,19 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 
 	m_score.save(&Ships[ship].score);
-	int temp_assist;
+	int temp_assist = -1;
 	m_assist_score.save(&temp_assist); 
-	Ships[ship].assist_score_pct = ((float)temp_assist)/100;
-	// value must be a percentage
-	if (Ships[ship].assist_score_pct < 0) {
-		Ships[ship].assist_score_pct = 0;
-		MessageBox("Assist Percentage too low. Set to 0. No score will be granted for an assist");
-	} 
-	else if (Ships[ship].assist_score_pct > 1) {
-		Ships[ship].assist_score_pct = 1;
-		MessageBox("Assist Percentage too high. Set to 1. Assists well score as many points as a kill");
-	
+	if (temp_assist != -1) {
+		Ships[ship].assist_score_pct = ((float)temp_assist)/100;
+		// value must be a percentage
+		if (Ships[ship].assist_score_pct < 0) {
+			Ships[ship].assist_score_pct = 0;
+			MessageBox("Assist Percentage too low. Set to 0. No score will be granted for an assist");
+		} 
+		else if (Ships[ship].assist_score_pct > 1) {
+			Ships[ship].assist_score_pct = 1;
+			MessageBox("Assist Percentage too high. Set to 1. Assists will score as many points as a kill");	
+		}
 	}
 
 	if (m_arrival_location != -1)
@@ -1750,7 +1757,7 @@ void CShipEditorDlg::OnEndlabeleditArrivalTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_arrival_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_arrival_tree.end_label_edit(pTVDispInfo->item);
 	editing = 0;
 }
 
@@ -1758,7 +1765,7 @@ void CShipEditorDlg::OnEndlabeleditDepartureTree(NMHDR* pNMHDR, LRESULT* pResult
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 
-	*pResult = m_departure_tree.end_label_edit(pTVDispInfo->item.hItem, pTVDispInfo->item.pszText);
+	*pResult = m_departure_tree.end_label_edit(pTVDispInfo->item);
 	editing = 0;
 }
 
@@ -2100,12 +2107,12 @@ void CShipEditorDlg::show_hide_sexp_help()
 {
 	CRect rect, help;
 	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	float box_size = (help.bottom - help.top);
+	float box_size = (float)(help.bottom - help.top);
 
 	if (Show_sexp_help){
-		cue_height += box_size;
+		cue_height += (int)box_size;
 	} else {
-		cue_height -= box_size;
+		cue_height -= (int)box_size;
 	}
 
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()){
@@ -2115,9 +2122,9 @@ void CShipEditorDlg::show_hide_sexp_help()
 	GetWindowRect(rect);
 
 	if (Show_sexp_help){
-		rect.bottom += box_size;
+		rect.bottom += (LONG)box_size;
 	} else {
-		rect.bottom -= box_size;
+		rect.bottom -= (LONG)box_size;
 	}
 
 	MoveWindow(rect);
@@ -2479,6 +2486,12 @@ void CShipEditorDlg::OnTextures()
 void CShipEditorDlg::OnSpecialHitpoints() 
 {
 	ShipSpecialHitpoints dlg;
+	dlg.DoModal();
+}
+
+void CShipEditorDlg::OnAltShipClass() 
+{
+	AltShipClassDlg dlg;
 	dlg.DoModal();
 }
 

@@ -714,7 +714,7 @@ void deconvert_multiline_string(char *buf, CString &str, int max_len)
 	CString str2;
 
 	Assert(max_len > 1);
-	Assert(buf);
+	Assert(ptr!=NULL);
 	max_len -= 2;
 	while ((i = str.Find("\r\n")) >= 0) {
 		for (j=0; j<i; j++)
@@ -1427,6 +1427,7 @@ void clear_mission()
 	extern void allocate_mission_text(int size);
 	allocate_mission_text( MISSION_TEXT_SIZE );
 
+	The_mission.cutscenes.clear(); 
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	mission_event_shutdown();
@@ -1515,22 +1516,27 @@ void clear_mission()
 		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
 			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				Team_data[i].ship_list[count] = j;
-				Team_data[i].ship_count[count++] = 5;
+				Team_data[i].ship_list_variables[count] = -1;
+				Team_data[i].ship_count[count] = 5;
+				Team_data[i].ship_count_variables[count++] = -1;
 			}
 		}
-		Team_data[i].number_choices = count;
+		Team_data[i].num_ship_choices = count;
 
+		count = 0;
 		for (j=0; j<MAX_WEAPON_TYPES; j++){
 			if (Weapon_info[j].wi_flags & WIF_PLAYER_ALLOWED){
 				if(Weapon_info[j].subtype == WP_LASER){
-					Team_data[i].weaponry_pool[j] = 16;
+					Team_data[i].weaponry_count[count] = 16;
 				} else {
-					Team_data[i].weaponry_pool[j] = 500;
+					Team_data[i].weaponry_count[count] = 500;
 				}
-			} else {
-				Team_data[i].weaponry_pool[j] = 0;
-			}
+				Team_data[i].weaponry_pool[count] = j; 
+				Team_data[i].weaponry_pool_variable[count] = -1;
+				Team_data[i].weaponry_amount_variable[count++] = -1;
+			} 
 		}
+		Team_data[i].num_weapon_choices = count; 
 	}
 
 	*Mission_text = *Mission_text_raw = EOF_CHAR;
@@ -1571,6 +1577,9 @@ void clear_mission()
 	for(i=0; i<MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
+
+	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
+	The_mission.skybox_flags  = DEFAULT_NMODEL_FLAGS;
 	Nmodel_num = -1;
 	Nmodel_bitmap = -1;
 
@@ -2994,6 +3003,20 @@ int query_whole_wing_marked(int wing)
 	return 0;
 }
 
+void generate_ship_usage_list(int *arr, int wing) 
+{
+	int i; 
+
+	if (wing < 0) {
+		return;
+	}
+	
+	i = Wings[wing].wave_count;
+	while (i--) {
+		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
+	}
+}
+
 void generate_weaponry_usage_list(int *arr, int wing)
 {
 	int i, j;
@@ -3011,21 +3034,29 @@ void generate_weaponry_usage_list(int *arr, int wing)
 
 		j = swp->num_secondary_banks;
 		while (j--)
-			arr[swp->secondary_bank_weapons[j]] += int(ceil(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100 / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size));
+			arr[swp->secondary_bank_weapons[j]] += int(ceil(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100 / (Weapon_info[swp->secondary_bank_weapons[j]].cargo_size + 0.5f)));
 	}
 }
 
-void generate_weaponry_usage_list(int *arr)
+void generate_weaponry_usage_list(int team, int *arr)
 {
 	int i;
 
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
 		arr[i] = 0;
+	 
+    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
+		Assert (team >= 0 && team < MAX_TVT_TEAMS);
 
-	// Goober5000 - I have no idea why :V: did things this way (or even what exactly they're doing);
-	// I'm guessing Zeta needs to be accounted for somewhere but I'm not sure how to do that
-	for (i=0; i<MAX_STARTING_WINGS; i++)
-		generate_weaponry_usage_list(arr, Starting_wings[i]);
+		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
+			generate_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
+		}
+	}
+	else {
+		for (i=0; i<MAX_STARTING_WINGS; i++) {
+			generate_weaponry_usage_list(arr, Starting_wings[i]);
+		}
+	}
 }
 
 jump_node *jumpnode_get_by_name(CString& name)

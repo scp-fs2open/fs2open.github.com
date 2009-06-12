@@ -880,6 +880,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
 				strcpy( MsgItems[Num_menu_items].text, Wings[wingnum].name );
+				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
 				MsgItems[Num_menu_items].instance = wingnum;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -901,6 +902,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
 				strcpy( MsgItems[Num_menu_items].text, Wings[i].name );
+				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); 
 				MsgItems[Num_menu_items].instance = i;
 				MsgItems[Num_menu_items].active = 1;
 				Num_menu_items++;
@@ -1205,6 +1207,9 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 		if (multi_player_num != -1) {
 			multi_player_team = Net_players[multi_player_num].p_info.team;
 		}
+		else {
+			multi_player_team = -1;
+		}
 	}
 
 	// see if player is already scheduled on arriving support ship.  If so, issues appripriate
@@ -1410,7 +1415,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 {
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
-	int i, send_message, special_index = -1;
+	int i, send_message;
 	object *objp;
 
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
@@ -2254,7 +2259,7 @@ void hud_squadmsg_ship_select()
 			// we must convert the Msg_shortcut_command value to a value that the message
 			// system normally uses to select a command.  Since the menu 
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
+			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY);
 			hud_squadmsg_toggle();
 		}
 	}
@@ -2395,6 +2400,7 @@ void hud_squadmsg_reinforcement_select()
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy( MsgItems[Num_menu_items].text, rp->name );
+			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
 			MsgItems[Num_menu_items].instance = i;
 			MsgItems[Num_menu_items].active = 0;
 

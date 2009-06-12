@@ -11,11 +11,12 @@
 #include "graphics/font.h"
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
-#include "hud/hud.h"
+#include "hud/hudbrackets.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -893,13 +894,13 @@ static flag_def_list Enumerations[] = {
 	{		"MISSION_REPEAT",				LE_MISSION_REPEAT,				0},
 
 	#define LE_NORMAL_CONTROLS				48
-	{     "NORMAL_CONTROLS",				LE_NORMAL_CONTROLS,				0},
+	{		"NORMAL_CONTROLS",				LE_NORMAL_CONTROLS,				0},
 
 	#define LE_LUA_STEERING_CONTROLS		49
-	{     "LUA_STEERING_CONTROLS",			LE_LUA_STEERING_CONTROLS,		0},
+	{		"LUA_STEERING_CONTROLS",		LE_LUA_STEERING_CONTROLS,		0},
 
 	#define LE_LUA_FULL_CONTROLS			50
-	{     "LUA_FULL_CONTROLS",				LE_LUA_FULL_CONTROLS,			0},
+	{		"LUA_FULL_CONTROLS",			LE_LUA_FULL_CONTROLS,			0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -1853,7 +1854,6 @@ ADE_INDEXER(l_ShipOrders, "number Index/string TextureFilename", "Array of ship 
 	if (!objh->IsValid() || s==NULL)
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
-	ship *shipp = &Ships[objh->objp->instance];
 	ai_info *aip = &Ai_info[Ships[objh->objp->instance].ai_index];
 
 	//Determine index
@@ -2283,6 +2283,22 @@ ADE_FUNC(getForwardSpeed, l_Physics, NULL, "Gets total speed in the ship's 'forw
 	return ade_set_args(L, "f", pih->pi->fspeed);
 }
 
+// Nuke's afterburner function
+ADE_FUNC(isAfterburnerActive, l_Physics, NULL, "True if Afterburners are on, false or nil if not", "boolean", "Detects whether afterburner is active")
+{
+	physics_info_h *pih;
+	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
+		return ADE_RETURN_NIL;
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "b", false);
+
+	if (pih->pi->flags & PF_AFTERBURNER_ON)
+		return ade_set_args(L, "b",  true);
+	else
+		return ade_set_args(L, "b",  false);
+}
+
 //**********HANDLE: sexpvariable
 struct sexpvar_h
 {
@@ -2405,12 +2421,12 @@ ADE_VIRTVAR(Value, l_SEXPVariable, "number/string", "SEXP variable value", "stri
 
 	if(ADE_SETTING_VAR && newvalue)
 	{
-		sexp_modify_variable(newvalue, svh->idx);
+		sexp_modify_variable(newvalue, svh->idx, false);
 	}
 
-	if(sv->type && SEXP_VARIABLE_NUMBER)
+	if(sv->type & SEXP_VARIABLE_NUMBER)
 		return ade_set_args(L, "i", atoi(sv->text));
-	else if(sv->type && SEXP_VARIABLE_STRING)
+	else if(sv->type & SEXP_VARIABLE_STRING)
 		return ade_set_args(L, "s", sv->text);
 	else
 		return ADE_RETURN_NIL;
@@ -3834,19 +3850,7 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	//WMC - copy shields
 	if(ADE_SETTING_VAR && sobjh != NULL && sobjh->IsValid())
 	{
-		int n_shd_sections;	
-		switch (objh->objp->n_shield_segments) {
-			case 1:
-				n_shd_sections = 1;
-				break;
-			case 2:
-				n_shd_sections = 2;
-				break;
-			default:
-				n_shd_sections = MAX_SHIELD_SECTIONS;
-				break;
-		}
-		for(int i = 0; i < n_shd_sections; i++)
+		for(int i = 0; i < MAX_SHIELD_SECTIONS; i++)
 			shield_set_quad(objh->objp, i, shield_get_quad(sobjh->objp, i));
 	}
 
@@ -4373,6 +4377,71 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
 	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	//OK we're done
+	if (!Cmdline_nohtl) 
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	//Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return ade_set_args(L, "b", true);
+}
+
+// Nuke's alternate tech model rendering function
+ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation=null, [Zoom multiplier]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+{
+	int x1,y1,x2,y2;
+	int idx;
+	float zoom = 1.3f;
+	matrix_h *mh = NULL;
+	if(!ade_get_args(L, "oiiiio|f", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom))
+		return ade_set_error(L, "b", false);
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return ade_set_args(L, "b", false);
+
+	if(x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	ship_info *sip = &Ship_info[idx];
+
+	//Make sure model is loaded
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+	if(sip->model_num < 0)
+		return ade_set_args(L, "b", false);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Clip
+	gr_set_clip(x1,y1,x2-x1,y2-y1,false);
+
+	//Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	//Handle light
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;	
+	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+
+	//Draw the ship!!
+	model_clear_instance(sip->model_num);
+	model_set_detail_level(0);
+	model_render(sip->model_num, orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
 	if (!Cmdline_nohtl) 
@@ -6084,6 +6153,24 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 	return ADE_RETURN_TRUE;
 }
 
+// Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
+ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "True if the ship is warping in, false or nil otherwise")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+	return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if(shipp->flags & SF_ARRIVING_STAGE_1){
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 //**********HANDLE: Weapon
 ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
 
@@ -6957,77 +7044,6 @@ ADE_VIRTVAR(Forward, l_Control_Info, "number", "Forward control of the player sh
 	return ade_set_args(L, "f", Player->lua_ci.forward);
 }
 
-extern lua_hud_inf lua_hud_info;
-
-//**********HANDLE: HUD
-ade_obj<int> l_HUD_Info("HUD info", "HUD info handle");
-
-ADE_VIRTVAR(EngineLevel, l_HUD_Info, NULL, "", "number", "Engine energy level ETS gauge")
-{
-	int idx;
-
-	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "i", lua_hud_info.ets_engine);
-}
-
-ADE_VIRTVAR(ShieldLevel, l_HUD_Info, NULL, "", "number", "Shield energy level ETS gauge")
-{
-	int idx;
-
-	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "i", lua_hud_info.ets_shield);
-}
-
-ADE_VIRTVAR(GunsLevel, l_HUD_Info, NULL, "", "number", "Gun energy level ETS gauge")
-{
-	int idx;
-
-	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "i", lua_hud_info.ets_guns);
-}
-
-ADE_FUNC(isETSDrawn, l_HUD_Info, NULL, "", "boolean", "If ETS is drawn or not")
-{
-	int idx;
-
-	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	if (lua_hud_info.ets_drawn == 0) 
-		return ADE_RETURN_FALSE;
-	else
-		return ADE_RETURN_TRUE;
-}
-
-ADE_VIRTVAR(ABFuelLevel, l_HUD_Info, NULL, "", "number", "AB fuel level gauge")
-{
-	int idx;
-
-	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "f", lua_hud_info.ab_pct);
-}
-
-ADE_FUNC(isABDrawn, l_HUD_Info, NULL, "", "boolean", "If AB is drawn or not")
-{
-	int idx;
-
-	if(!ade_get_args(L, "o", l_HUD_Info.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	if (lua_hud_info.ab_drawn == 0) 
-		return ADE_RETURN_FALSE;
-	else
-		return ADE_RETURN_TRUE;
-}
-
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
@@ -7240,15 +7256,6 @@ ADE_FUNC(getControlInfo, l_Base, NULL, "Gets the control info handle.", "control
 	return ade_set_args(L, "o", l_Control_Info.Set(1));
 }
 
-ADE_FUNC(getCurrentViewerMode, l_Base, NULL, "Gets the current view mode identifier", "number", "identifier")
-{
-	return ade_set_args(L, "i", Viewer_mode);
-}
-
-ADE_FUNC(getHUD_Info, l_Base, NULL, "Gets the HUD ingo handle.", "HUD info", "HUD info handle")
-{
-	return ade_set_args(L, "o", l_HUD_Info.Set(1));
-}
 /*
 ADE_FUNC(getStateNameByIndex, l_Base, "Index of state (number)", "Gets the name of a state type by its index; this function may be used to list all state types.", "string", "State name, or an empty string if index is invalid")
 {
@@ -7563,7 +7570,6 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 		return ade_set_error(L, "b", false);
 
 	const char *ext_list[] = {".ogg", ".txt", ".*"};
-	int ext_list_num = sizeof(ext_list)/sizeof(char *);
 	if(!check_vps)
 		return ade_set_args(L, "b", cf_exists(n_filename, path) != 0);
 	else
@@ -7750,31 +7756,20 @@ ADE_FUNC(forceMousePosition, l_Mouse, "number, number (coordinates)", "function 
 	if (!((y >= 0) && (y <= gr_screen.max_h)))
 		return ADE_RETURN_FALSE;
 
-	mouse_force_pos(x, y);
+	mouse_set_pos(x, y);
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getMouseControlStatus, l_Mouse, NULL, "Gets the retail mouse control status", "boolean", "if the mouse is on or off")
-{
-	if(!mouse_inited)
-		return ADE_RETURN_NIL;
-
-	bool mouse_status = false;
-
-	if (Use_mouse_to_fly)
-		mouse_status = true;
-
-	return ade_set_args(L, "b", mouse_status);
-}
-
-ADE_FUNC(setMouseControlStatus, l_Mouse, "boolean", "Sets the retail mouse control status", NULL, NULL)
+ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mouse control status", "boolean", "if the retail mouse is on or off")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
 
 	bool mouse_io;
-	ade_get_args(L, "b", &mouse_io);
+	bool mouse_status = false;
+	if(!(ade_get_args(L, "*|b", &mouse_io)))
+		return ADE_RETURN_NIL;
 
 	if(mouse_io) {
 		Use_mouse_to_fly = 1;
@@ -7782,7 +7777,10 @@ ADE_FUNC(setMouseControlStatus, l_Mouse, "boolean", "Sets the retail mouse contr
 		Use_mouse_to_fly = 0;
 	}
 
-	return ADE_RETURN_NIL;
+	if (Use_mouse_to_fly)
+		mouse_status = true;
+
+	return ade_set_args(L, "b", mouse_status);
 }
 
 //**********LIBRARY: Graphics
@@ -8354,6 +8352,147 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		g3_end_frame();
 
 	return ADE_RETURN_TRUE;
+}
+
+// Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation", "int", "Zero if successful, otherwise an integer error code")
+{
+	model_h *mdl = NULL;
+	vec3d *v = &vmd_zero_vector;
+	matrix_h *mh = NULL;
+	if(!ade_get_args(L, "ooo", l_Model.GetPtr(&mdl), l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
+		return ade_set_args(L, "i", 1);
+
+	if(mdl == NULL)
+		return ade_set_args(L, "i", 2);
+
+	int model_num = mdl->GetID();
+	if(model_num < 0)
+		return ade_set_args(L, "i", 3);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Clip
+	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, false);
+
+	//Handle 3D init stuff
+	g3_start_frame(1);
+
+	vec3d cam_pos;
+	matrix cam_orient;
+
+	camid cid = cam_get_current();
+	cid.getCamera()->get_info(&cam_pos, &cam_orient);
+
+	g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	//Draw the ship!!
+	model_clear_instance(model_num);
+	model_set_detail_level(0);
+	model_render(model_num, orient, v, MR_NORMAL);
+
+	//OK we're done
+	if (!Cmdline_nohtl) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	//Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return ade_set_args(L, "i", 0);
+}
+
+// Aardwolf's targeting brackets function
+ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, int padding=5]",
+	"Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
+	"number,number,number,number",
+	"Left, top, right, and bottom positions of the brackets, or nil if invalid")
+{
+	if(!Gr_inited) {
+		return ADE_RETURN_NIL;
+	}
+
+	object_h *objh = NULL;
+	bool draw_box = true;
+	int padding = 5;
+
+	if( !ade_get_args(L, "o|bi", l_Object.GetPtr(&objh), &draw_box, &padding) ) {
+		return ADE_RETURN_NIL;
+	}
+
+	// The following code is mostly copied from
+	// void hud_show_brackets(object *targetp, vertex *projected_v)
+	// in hudtarget.cpp
+
+	if( !objh->IsValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	object *targetp = objh->objp;
+
+	int x1,x2,y1,y2;
+	int bound_rc, pof;
+	int modelnum;
+
+	switch ( targetp->type ) {
+		case OBJ_SHIP:
+			modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if ( bound_rc != 0 ) {
+				return ADE_RETURN_NIL;
+			}
+			break;
+		case OBJ_DEBRIS:
+			modelnum = Debris[targetp->instance].model_num;
+			bound_rc = submodel_find_2d_bound_min( modelnum, Debris[targetp->instance].submodel_num, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if ( bound_rc != 0 ) {
+				return ADE_RETURN_NIL;
+			}
+			break;
+		case OBJ_WEAPON:
+			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
+			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
+		case OBJ_ASTEROID:
+			pof = Asteroids[targetp->instance].asteroid_subtype;
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
+		case OBJ_JUMP_NODE:
+			modelnum = targetp->jnp->get_modelnum();
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
+		default:
+			// should never happen
+			Int3();
+			return ADE_RETURN_NIL;
+	}
+
+	x1 -= padding;
+	x2 += padding;
+	y1 -= padding;
+	y2 += padding;
+	if ( draw_box ) {
+		if( !(g3_in_frame() > 0) ) {
+			g3_start_frame(0);
+			draw_brackets_square(x1, y1, x2, y2, false);
+			g3_end_frame();
+		}
+		else {
+			draw_brackets_square(x1, y1, x2, y2, false);
+		}
+	}
+
+	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
 #define MAX_TEXT_LINES		256
@@ -8958,10 +9097,7 @@ ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP 
 	{
 		if(ADE_SETTING_VAR && newval != NULL)
 		{
-			if ( (Sexp_variables[idx].type & SEXP_VARIABLE_NETWORK) && MULTIPLAYER_MASTER ) {
-				send_variable_update_packet(idx, newval);
-			}
-			sexp_modify_variable(newval, idx);
+			sexp_modify_variable(newval, idx, false);
 		}
 	}
 
