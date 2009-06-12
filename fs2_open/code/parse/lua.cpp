@@ -11,10 +11,12 @@
 #include "graphics/font.h"
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
+#include "hud/hudbrackets.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -2281,6 +2283,22 @@ ADE_FUNC(getForwardSpeed, l_Physics, NULL, "Gets total speed in the ship's 'forw
 	return ade_set_args(L, "f", pih->pi->fspeed);
 }
 
+// Nuke's afterburner function
+ADE_FUNC(isAfterburnerActive, l_Physics, NULL, "True if Afterburners are on, false or nil if not", "boolean", "Detects whether afterburner is active")
+{
+	physics_info_h *pih;
+	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
+		return ADE_RETURN_NIL;
+
+	if(!pih->IsValid())
+		return ade_set_error(L, "b", false);
+
+	if (pih->pi->flags & PF_AFTERBURNER_ON)
+		return ade_set_args(L, "b",  true);
+	else
+		return ade_set_args(L, "b",  false);
+}
+
 //**********HANDLE: sexpvariable
 struct sexpvar_h
 {
@@ -4374,6 +4392,71 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	return ade_set_args(L, "b", true);
 }
 
+// Nuke's alternate tech model rendering function
+ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation=null, [Zoom multiplier]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+{
+	int x1,y1,x2,y2;
+	int idx;
+	float zoom = 1.3f;
+	matrix_h *mh = NULL;
+	if(!ade_get_args(L, "oiiiio|f", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom))
+		return ade_set_error(L, "b", false);
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return ade_set_args(L, "b", false);
+
+	if(x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	ship_info *sip = &Ship_info[idx];
+
+	//Make sure model is loaded
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+	if(sip->model_num < 0)
+		return ade_set_args(L, "b", false);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Clip
+	gr_set_clip(x1,y1,x2-x1,y2-y1,false);
+
+	//Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	//Handle light
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;	
+	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+
+	//Draw the ship!!
+	model_clear_instance(sip->model_num);
+	model_set_detail_level(0);
+	model_render(sip->model_num, orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	//OK we're done
+	if (!Cmdline_nohtl) 
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	//Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return ade_set_args(L, "b", true);
+}
+
 //**********HANDLE: Waypoint
 ade_obj<object_h> l_Waypoint("waypoint", "waypoint handle", &l_Object);
 
@@ -6068,6 +6151,24 @@ ADE_FUNC(warpOut, l_Ship, NULL, "Warps ship out", "boolean", "True if successful
 	shipfx_warpout_start(objh->objp);
 
 	return ADE_RETURN_TRUE;
+}
+
+// Aardwolf's function for finding if a ship should be drawn as blue on the radar/minimap
+ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "True if the ship is warping in, false or nil otherwise")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+	return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	if(shipp->flags & SF_ARRIVING_STAGE_1){
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
 }
 
 //**********HANDLE: Weapon
@@ -8251,6 +8352,147 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		g3_end_frame();
 
 	return ADE_RETURN_TRUE;
+}
+
+// Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation", "int", "Zero if successful, otherwise an integer error code")
+{
+	model_h *mdl = NULL;
+	vec3d *v = &vmd_zero_vector;
+	matrix_h *mh = NULL;
+	if(!ade_get_args(L, "ooo", l_Model.GetPtr(&mdl), l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
+		return ade_set_args(L, "i", 1);
+
+	if(mdl == NULL)
+		return ade_set_args(L, "i", 2);
+
+	int model_num = mdl->GetID();
+	if(model_num < 0)
+		return ade_set_args(L, "i", 3);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Clip
+	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, false);
+
+	//Handle 3D init stuff
+	g3_start_frame(1);
+
+	vec3d cam_pos;
+	matrix cam_orient;
+
+	camid cid = cam_get_current();
+	cid.getCamera()->get_info(&cam_pos, &cam_orient);
+
+	g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	//Draw the ship!!
+	model_clear_instance(model_num);
+	model_set_detail_level(0);
+	model_render(model_num, orient, v, MR_NORMAL);
+
+	//OK we're done
+	if (!Cmdline_nohtl) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	//Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return ade_set_args(L, "i", 0);
+}
+
+// Aardwolf's targeting brackets function
+ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, int padding=5]",
+	"Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
+	"number,number,number,number",
+	"Left, top, right, and bottom positions of the brackets, or nil if invalid")
+{
+	if(!Gr_inited) {
+		return ADE_RETURN_NIL;
+	}
+
+	object_h *objh = NULL;
+	bool draw_box = true;
+	int padding = 5;
+
+	if( !ade_get_args(L, "o|bi", l_Object.GetPtr(&objh), &draw_box, &padding) ) {
+		return ADE_RETURN_NIL;
+	}
+
+	// The following code is mostly copied from
+	// void hud_show_brackets(object *targetp, vertex *projected_v)
+	// in hudtarget.cpp
+
+	if( !objh->IsValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	object *targetp = objh->objp;
+
+	int x1,x2,y1,y2;
+	int bound_rc, pof;
+	int modelnum;
+
+	switch ( targetp->type ) {
+		case OBJ_SHIP:
+			modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if ( bound_rc != 0 ) {
+				return ADE_RETURN_NIL;
+			}
+			break;
+		case OBJ_DEBRIS:
+			modelnum = Debris[targetp->instance].model_num;
+			bound_rc = submodel_find_2d_bound_min( modelnum, Debris[targetp->instance].submodel_num, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if ( bound_rc != 0 ) {
+				return ADE_RETURN_NIL;
+			}
+			break;
+		case OBJ_WEAPON:
+			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
+			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
+		case OBJ_ASTEROID:
+			pof = Asteroids[targetp->instance].asteroid_subtype;
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
+		case OBJ_JUMP_NODE:
+			modelnum = targetp->jnp->get_modelnum();
+			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			break;
+		default:
+			// should never happen
+			Int3();
+			return ADE_RETURN_NIL;
+	}
+
+	x1 -= padding;
+	x2 += padding;
+	y1 -= padding;
+	y2 += padding;
+	if ( draw_box ) {
+		if( !(g3_in_frame() > 0) ) {
+			g3_start_frame(0);
+			draw_brackets_square(x1, y1, x2, y2, false);
+			g3_end_frame();
+		}
+		else {
+			draw_brackets_square(x1, y1, x2, y2, false);
+		}
+	}
+
+	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
 #define MAX_TEXT_LINES		256
