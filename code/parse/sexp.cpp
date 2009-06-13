@@ -13149,13 +13149,13 @@ int sexp_shield_quad_low(int node)
 	if(!(sip->flags & SIF_SMALL_SHIP)){
 		return SEXP_FALSE;
 	}
-	max_quad = get_max_shield_quad(objp);	
 
 	// shield pct
 	check = (float)eval_num(CDR(node));
 
 	// check his quadrants
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<objp->n_shield_segments; idx++){
+		max_quad = get_max_shield_quad(objp,idx);
 		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
 			return SEXP_TRUE;
 		}
@@ -13884,9 +13884,10 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 
 	// ...and shields
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	for (i = 0; i < MAX_SHIELD_SECTIONS; i++) {
+		target_shipp->ship_max_shield_segment[i] = source_shipp->ship_max_shield_segment[i];
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
-
+	}
 
 	// search through all subsystems on source ship and map them onto target ship
 	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
@@ -13926,6 +13927,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 	// ...and shields
 	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
+	target_pobjp->max_shield_recharge_percent = source_shipp->max_shield_recharge_pct;
 
 
 	// search through all subsystems on source ship and map them onto target ship
@@ -16097,7 +16099,7 @@ int shield_quad_near_max(int quadnum)
 		remaining += Player_obj->shield_quadrant[i];
 	}
 
-	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > get_max_shield_quad(Player_obj) - 5.0f)) {
+	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > get_max_shield_quad(Player_obj, quadnum) - 5.0f)) {
 		return SEXP_TRUE;
 	} else {
 		return SEXP_FALSE;
@@ -16170,8 +16172,8 @@ int process_special_sexps(int index)
 
 		apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
-			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj);
+		if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj, FRONT_QUAD))
+			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj, FRONT_QUAD);
 
 		//hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%MAX_SHIELD_SECTIONS] - 2.0f)

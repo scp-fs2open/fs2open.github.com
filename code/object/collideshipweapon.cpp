@@ -492,12 +492,12 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point);
+			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 		else if (hull_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS)) {
 			vec3d local_pos, local_pos_rot;
 			vm_vec_sub(&local_pos, &mc_hull.hit_point_world, &ship_objp->pos);
 			vm_vec_rotate(&local_pos_rot, &local_pos, &ship_objp->orient);
-			quadrant_num = get_quadrant(&local_pos_rot);
+			quadrant_num = get_quadrant(&local_pos_rot, ship_objp);
 		}
 
 		// make sure that the shield is active in that quadrant

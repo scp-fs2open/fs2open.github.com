@@ -415,9 +415,24 @@ void update_ets(object* objp, float fl_frametime)
 
 	shield_add_strength(objp, shield_delta);
 
-	if ( (_ss = shield_get_strength(objp)) > ship_p->ship_max_shield_strength ){
-		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
-			objp->shield_quadrant[i] *= ship_p->ship_max_shield_strength / _ss;
+	int i;
+
+	float total_shield_strength = shield_get_strength(objp);
+	float max_shield_recharge = ship_p->ship_max_shield_strength * ship_p->max_shield_recharge_pct;
+	float shield_balance = 1.0f;
+
+	if ((max_shield_recharge > 0) && (total_shield_strength > max_shield_recharge))
+		shield_balance = total_shield_strength/max_shield_recharge;
+
+	// prevent any of the segments from going over the limits
+	for (i=0; i<objp->n_shield_segments; i++){
+		if ((total_shield_strength > 0.0f) && (ship_p->ship_max_shield_segment[i] > 0.0f)) {
+			objp->shield_quadrant[i] /= shield_balance;
+			if ( (_ss = shield_get_quad(objp,i)) > ship_p->ship_max_shield_segment[i] ){
+				objp->shield_quadrant[i] *= ship_p->ship_max_shield_segment[i] / _ss;
+			}
+		} else {
+			objp->shield_quadrant[i] = 0.0f;
 		}
 	}
 

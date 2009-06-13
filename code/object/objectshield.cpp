@@ -49,7 +49,7 @@ float shield_get_strength(object *objp)
 	int	i;
 	float strength = 0.0f;
 
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	for (i = 0; i < objp->n_shield_segments; i++)
 		strength += shield_get_quad(objp, i);
 
 	return strength;
@@ -59,27 +59,30 @@ void shield_set_strength(object *objp, float strength)
 {
 	int	i;
 
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
-		shield_set_quad(objp, i, strength / MAX_SHIELD_SECTIONS);
+	for (i = 0; i < objp->n_shield_segments; i++)
+		shield_set_quad(objp, i, strength / objp->n_shield_segments);
 }
 
 //	Recharge whole shield.
-//	Apply delta/MAX_SHIELD_SECTIONS to each shield section.
+//	Apply delta/objp->n_shield_segments to each shield section.
 void shield_add_strength(object *objp, float delta)
 {
 	// if we aren't going to change anything anyway then just bail
 	if (delta == 0.0f)
 		return;
 
+	float shield_str = shield_get_strength(objp);
+	float shield_recharge_limit = Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge_pct;
+
 	if (!(The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT))
 	{
-		for (int i = 0; i < MAX_SHIELD_SECTIONS; i++)
-			shield_add_quad(objp, i, delta / MAX_SHIELD_SECTIONS);
+		if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
+			delta = shield_recharge_limit - shield_str;
+		for (int i = 0; i < objp->n_shield_segments; i++)
+			shield_add_quad(objp, i, delta / objp->n_shield_segments);
 	}
 	else
 	{
-		float section_max = shield_get_max_quad(objp);
-
 		// smart shield repair
 		while (delta > 0.0f)
 		{
@@ -88,10 +91,11 @@ void shield_add_strength(object *objp, float delta)
 			int weakest_idx = -1;
 
 			// find weakest shield quadrant
-			for (int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+			for (int i = 0; i < objp->n_shield_segments; i++)
 			{
 				float quad = shield_get_quad(objp, i);
-				if (weakest_idx < 0 || quad < weakest)
+				float max_quad = Ships[objp->instance].ship_max_shield_segment[i];
+				if (weakest_idx < 0 || quad < weakest || (quad < max_quad))
 				{
 					weakest = quad;
 					weakest_idx = i;
@@ -99,14 +103,23 @@ void shield_add_strength(object *objp, float delta)
 			}
 
 			// all quads are at full strength
-			if (weakest >= section_max)
+			if (weakest_idx == -1)
 				break;
-		
+
+			// combined shield strength is at the limit
+			if (shield_str >= shield_recharge_limit)
+				break;
+
+			// set the limit for the shield recharge
+			if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
+				delta = shield_recharge_limit - shield_str;
+
 			// throw all possible shield power at this quadrant
 			// if there's any left over then apply it to the next weakest on the next pass
 			float xfer_amount;
-			if (weakest + delta > section_max)
-				xfer_amount = section_max - weakest;
+			float segment_max = Ships[objp->instance].ship_max_shield_segment[weakest_idx];
+			if (weakest + delta > segment_max)
+				xfer_amount = segment_max - weakest;
 			else
 				xfer_amount = delta;
 
@@ -146,8 +159,8 @@ float shield_get_quad(object *objp, int quadrant_num)
 		return 0.0f;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
-	if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
+	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	if (quadrant_num < 0 || quadrant_num >= objp->n_shield_segments)
 		return 0.0f;
 
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
@@ -200,14 +213,20 @@ float shield_get_quad(object *objp, int quadrant_num)
 void shield_set_quad(object *objp, int quadrant_num, float strength)
 {
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
-	if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
-		return;
+    Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
+    if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
+        return;
+
+    if ((objp->n_shield_segments == 1) && (quadrant_num > 0))
+        return;
+
+    if ((objp->n_shield_segments == 2) && (quadrant_num > 1))
+        return;
 
 	// check range
 	if (strength < 0.0f)
 		strength = 0.0f;
-	float max_quad = shield_get_max_quad(objp);
+	float max_quad = shield_get_max_quad(objp, quadrant_num);
 	if (strength > max_quad)
 		strength = max_quad;
 
@@ -222,8 +241,8 @@ void shield_add_quad(object *objp, int quadrant_num, float delta)
 		return;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
-	if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
+	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	if (quadrant_num < 0 || quadrant_num >= objp->n_shield_segments)
 		return;
 
 	// important: don't use shield_get_quad here
@@ -232,7 +251,7 @@ void shield_add_quad(object *objp, int quadrant_num, float delta)
 	// check range
 	if (strength < 0.0f)
 		strength = 0.0f;
-	float max_quad = shield_get_max_quad(objp);
+	float max_quad = shield_get_max_quad(objp, quadrant_num);
 	if (strength > max_quad)
 		strength = max_quad;
 
@@ -257,9 +276,18 @@ void shield_set_max_strength(object *objp, float newmax)
 }
 
 // Goober5000
-float shield_get_max_quad(object *objp)
+float shield_get_max_quad(object *objp, int segment)
 {
-	return shield_get_max_strength(objp) / MAX_SHIELD_SECTIONS;
+	if (segment == 1)
+		return shield_get_max_strength(objp);
+
+	if (segment != -1) {
+		if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
+			return 0.0f;
+		return Ships[objp->instance].ship_max_shield_segment[segment];
+	} else {
+		return shield_get_max_strength(objp) / objp->n_shield_segments;
+	}
 }
 
 //	***** This is the version that works on a quadrant basis.
@@ -274,8 +302,8 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage)
 		return damage;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
-	if ((quadrant_num < 0) || (quadrant_num >= MAX_SHIELD_SECTIONS))
+	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	if ((quadrant_num < 0) || (quadrant_num >= objp->n_shield_segments))
 		return damage;	
 	
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
@@ -302,7 +330,7 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage)
 // just one quadrant
 int shield_is_up(object *objp, int quadrant_num)
 {
-	if ((quadrant_num >= 0) && (quadrant_num < MAX_SHIELD_SECTIONS))
+	if ((quadrant_num >= 0) && (quadrant_num < objp->n_shield_segments))
 	{
 		// Just check one quadrant
 		float quad = shield_get_quad(objp, quadrant_num);
@@ -315,7 +343,7 @@ int shield_is_up(object *objp, int quadrant_num)
 		// Check all quadrants
 		float strength = shield_get_strength(objp);
 
-		if (strength > MAX(2.0f * MAX_SHIELD_SECTIONS, 0.1f * shield_get_max_strength(objp)))
+		if (strength > MAX(2.0f * objp->n_shield_segments, 0.1f * shield_get_max_strength(objp)))
 			return 1;
 	}
 

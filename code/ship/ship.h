@@ -1393,6 +1393,9 @@ typedef struct ship {
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
+	
+	float max_shield_recharge_pct;
+	float ship_max_shield_segment[MAX_SHIELD_SECTIONS];	// defines the per segment maximum shield strengths
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
@@ -1972,6 +1975,9 @@ typedef struct ship_info {
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 
+	float   max_shield_recharge;
+	float	max_shield_segment_strength[MAX_SHIELD_SECTIONS];
+
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
 
@@ -2062,6 +2068,8 @@ typedef struct ship_info {
 	vec3d convergence_offset;
 
 	float emp_resistance_mod;
+
+	int num_shield_segments;
 } ship_info;
 
 extern int Num_wings;
@@ -2357,7 +2365,7 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
-extern int get_quadrant(vec3d *hit_pnt);						//	Return quadrant num of last hit ponit.
+extern int get_quadrant(vec3d *hit_pnt, object *objp);						//	Return quadrant num of last hit ponit.
 
 extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);

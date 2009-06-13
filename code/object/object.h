@@ -551,6 +551,8 @@ typedef struct object {
 
 	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
 	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
+
+	int n_shield_segments;			// for Wanderer's 1 and 2 seg shield code
 } object;
 
 struct object_h {
@@ -654,7 +656,7 @@ void obj_init_all_ships_physics();
 float get_hull_pct(object *objp);
 float get_sim_hull_pct(object *objp);
 float get_shield_pct(object *objp);
-float get_max_shield_quad(object *objp);
+float get_max_shield_quad(object *objp, int segment = -1);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);

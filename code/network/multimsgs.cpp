@@ -7612,7 +7612,7 @@ void send_client_update_packet(net_player *pl)
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+			percent = (ubyte)(objp->shield_quadrant[i] / shipp->ship_max_shield_segment[i] * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7731,7 +7731,10 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			objp->hull_strength = fl_val;
 
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+				fl_val = (shield_percent[i] * shipp->ship_max_shield_segment[i] / 100.0f);
+				if (i >= objp->n_shield_segments){
+					fl_val = 0.0f;
+				}
 				objp->shield_quadrant[i] = fl_val;
 			}
 

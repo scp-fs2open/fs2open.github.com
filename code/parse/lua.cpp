@@ -3850,7 +3850,7 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	//WMC - copy shields
 	if(ADE_SETTING_VAR && sobjh != NULL && sobjh->IsValid())
 	{
-		for(int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		for(int i = 0; i < objh->objp->n_shield_segments; i++)
 			shield_set_quad(objh->objp, i, shield_get_quad(sobjh->objp, i));
 	}
 
