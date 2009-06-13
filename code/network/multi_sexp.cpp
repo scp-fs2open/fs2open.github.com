@@ -13,6 +13,7 @@
 
 #define SEND_PACKET_NOW  384 // (MAX_PACKET_SIZE/4)*3 used to tell when a packet is 3/4 full.
 #define PACKET_TERMINATOR	255
+int TEMP_DATA_SIZE = -1;
 
 #define TYPE_NOT_DATA			-1
 #define TYPE_SEXP_OPERATOR		0
@@ -75,7 +76,7 @@ void multi_start_packet()
 	argument_count_index = packet_size; 
 	// store an invalid count, we'll come back and store the correct value once we know what it is.	
 	type[packet_size] = TYPE_ARGUMENT_COUNT; 
-	ADD_INT(-1); 
+	ADD_INT(TEMP_DATA_SIZE); 
 }
 
 void multi_end_packet() 
