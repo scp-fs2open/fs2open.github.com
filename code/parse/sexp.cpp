@@ -3258,7 +3258,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				break;
 			}
-			return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
+			// return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
 
 			case OPF_POINT:
 				if (type2 != SEXP_ATOM_STRING)
@@ -22946,7 +22946,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: The X coordinate to face.\r\n"
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
-		"\t5: Turn time (optional)\r\n"
+		"\t5: Turn time in milliseconds (optional)\r\n"
 		"\t6: Bank (optional)" },
 
 	// Goober5000
@@ -22955,7 +22955,7 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 arguments...\r\n"
 		"\t1: The name of an object.\r\n"
 		"\t2: The object to face.\r\n"
-		"\t3: Turn time (optional)\r\n"
+		"\t3: Turn time in milliseconds (optional)\r\n"
 		"\t4: Bank (optional)" },
 
 	// Goober5000

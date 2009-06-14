@@ -1710,6 +1710,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
 #define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
+#define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
@@ -2039,7 +2040,10 @@ typedef struct ship_info {
 	
 	bool can_glide;
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
-	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
+	bool glide_dynamic_cap;	//SUSHI: Whether or not we are using a dynamic glide cap
+	float glide_accel_mult;	//SUSHI: acceleration multiplier for glide mode
+	bool use_newtonian_damp; //SUSHI: Whether or not to use newtonian dampening for this ship
+	bool newtonian_damp_override; 
 
 	float autoaim_fov;
 

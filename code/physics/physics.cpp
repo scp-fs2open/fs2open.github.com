@@ -460,6 +460,8 @@
 #define	PHYS_DEBUG						// check if (vel > 500) or (displacement in one frame > 350)
 
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
+float velocity_ramp (float v_in, float v_goal, float time_const, float t);
+float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult);
 
 void physics_init( physics_info * pi )
 {
@@ -755,7 +757,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	} else {
 		// regular damping
-		if ( The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING ) {
+		if (pi->use_newtonian_damp) {
 			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
 		} else {
 			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
@@ -920,7 +922,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	vec3d goal_vel;		// goal velocity in local coords, *not* accounting for ramping of velcity
 	float ramp_time_const;		// time constant for velocity ramping
 
-	float velocity_ramp (float v_in, float v_goal, float time_const, float t);
 
 //	if ( keyd_pressed[KEY_LSHIFT] ) {
 //		keyd_pressed[KEY_LSHIFT] = 0;
@@ -1037,9 +1038,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->slide_decel_time_const;
 			} else {
 				ramp_time_const = pi->slide_decel_time_const;
-				if ( pi->flags & PF_GLIDING )
-					ramp_time_const = 0.0f;
-					// This is to have the engines ramp down VERY quickly, since 'decelerating' shouldn't be factored when gliding
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1060,8 +1058,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->slide_decel_time_const;
 			} else {
 				ramp_time_const = pi->slide_decel_time_const;
-				if ( pi->flags & PF_GLIDING )
-					ramp_time_const = 0.0f;
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1085,19 +1081,12 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->forward_accel_time_const;
 			} else {
 				ramp_time_const = pi->forward_decel_time_const;
-				if ( pi->flags & PF_GLIDING )
-					ramp_time_const = 0.0f;
 			}
 		} else if ( goal_vel.xyz.z < 0.0f ) {
 			ramp_time_const = pi->forward_decel_time_const;
 			// hmm, maybe a reverse_accel_time_const would be a good idea to implement in the future...
-			if ( pi->flags & PF_GLIDING )
-				ramp_time_const = 0.0f;
 		} else {
 			ramp_time_const = pi->forward_decel_time_const;
-			// If gliding, then only accelerate -- if goal is 0, object is not accelerating
-			if ( pi->flags & PF_GLIDING )
-				ramp_time_const = 0.0f;
 		}
 
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
@@ -1111,19 +1100,68 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		if ( pi->flags & PF_GLIDING ) {
 			pi->desired_vel = pi->vel;
-			//ok, if anyone has better math that would make the acceleration be more 'natural', please update this
-			float multiplier = 0.15f;
-			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x / (1.0f + pi->slide_accel_time_const) * multiplier);
-			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y / (1.0f + pi->slide_accel_time_const) * multiplier);
-			if ( pi->flags & PF_AFTERBURNER_ON )
-				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->afterburner_forward_accel_time_const) * multiplier);
-			else
-				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->forward_accel_time_const) * multiplier);
 
-			if ( pi->glide_cap > 0.0f ) {	// so if negative, don't bother with speed cap
+			//SUSHI: A (hopefully better) approach to dealing with accelerations in glide mode
+			//Get *actual* current velocities along each axis and use those instead of ramped velocities
+			vec3d local_vel;
+			vm_vec_rotate(&local_vel, &pi->vel, orient);
+
+			//Having pi->glide_cap == 0 means we're using a dynamic glide cap
+			float curGlideCap = 0.0f;
+			if (pi->glide_cap == 0.0f) {
+				//For dynamic glide capping, normal flight and afterburner have separate glide caps
+				if (pi->flags & PF_AFTERBURNER_ON) {
+					curGlideCap = pi->afterburner_max_vel.xyz.z;
+				}
+				else {
+					//Take the maximum value in X, Y, and Z (including overclocking)
+					curGlideCap = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
+				}
+			}
+			else {
+				curGlideCap = pi->glide_cap;
+			}
+
+			//If we're near the (positive) glide cap, decay velocity where we aren't thrusting
+			//This is a hack, but makes the flight feel a lot smoother
+			//Don't do this if we aren't applying any thrust, we have no glide cap, or the accel multiplier is 0 (no thrust while gliding)
+			float cap_decay_threshold = 0.95f;
+			float cap_decay_amount = 0.2f;
+			if (curGlideCap >= 0.0f && vm_vec_mag(&pi->desired_vel) >= cap_decay_threshold * curGlideCap && 
+					vm_vec_mag(&goal_vel) > 0.0f &&
+					pi->glide_accel_mult != 0.0f) 
+			{
+				if (goal_vel.xyz.x == 0.0f)
+					vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, -cap_decay_amount * local_vel.xyz.x);
+				if (goal_vel.xyz.y == 0.0f)
+					vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, -cap_decay_amount * local_vel.xyz.y);
+				if (goal_vel.xyz.z == 0.0f)
+					vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, -cap_decay_amount * local_vel.xyz.z);
+			}
+
+			//The glide_ramp function uses (basically) the same math as the velocity ramp so that thruster power is consistent
+			//Only ramp if the glide cap is positive
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, glide_ramp(local_vel.xyz.x, goal_vel.xyz.x, pi->slide_accel_time_const, pi->glide_accel_mult));
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, glide_ramp(local_vel.xyz.y, goal_vel.xyz.y, pi->slide_accel_time_const, pi->glide_accel_mult));
+			float zVal = 0.0;
+			if (pi->flags & PF_AFTERBURNER_ON) 
+				zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->afterburner_forward_accel_time_const, pi->glide_accel_mult);
+			else {
+				if (goal_vel.xyz.z >= 0.0f)
+					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_accel_time_const, pi->glide_accel_mult);
+				else
+					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_decel_time_const, pi->glide_accel_mult);
+			}
+			//Hack for some degree of compatibility if $use newtonian damping is off
+			if (!pi->use_newtonian_damp) {
+				zVal *= 0.05f;
+			}
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, zVal);
+
+			if ( curGlideCap >= 0.0f ) {	// so if negative, don't bother with speed cap
 				float currentmag = vm_vec_mag(&pi->desired_vel);
-				if ( currentmag > pi->glide_cap ) {
-					vm_vec_scale( &pi->desired_vel, pi->glide_cap / currentmag );
+				if ( currentmag > curGlideCap ) {
+					vm_vec_scale( &pi->desired_vel, curGlideCap / currentmag );
 				}
 			}
 		}
@@ -1259,6 +1297,37 @@ float velocity_ramp (float v_in, float v_goal, float ramp_time_const, float t)
 	decay_factor = (float)exp(- t / ramp_time_const);
 
 	return (v_in + delta_v * (1.0f - decay_factor) );
+}
+
+//Handles thrust values when gliding. Purposefully similar to velocity_ramp in order to yeild a similar "feel" in
+//terms of thruster accels
+//This is all in the local frame of reference for a single movement axis
+float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult)
+{
+	if (v_goal == 0.0f) {
+		return 0.0f;
+	}
+
+	//This approach to delta_v allows us to ramp accelerations even in glide mode
+	//Get the difference in velocity between current and goal as thrust 
+	//(capped by the goal velocity on one end and 0 on the other)
+	//If accel_mult is < 0, don't ramp (fixed acceleration)
+	float delta_v = 0.0f;
+	if (accel_mult < 0.0f) {
+		if (v_goal > 0.0f) {
+			delta_v = MAX(MIN(v_goal - v_in, v_goal), 0.0f); 
+		}
+		else {
+			delta_v = MIN(MAX(v_goal - v_in, v_goal), 0.0f);
+		}
+	}
+	else {
+		delta_v = v_goal * accel_mult;
+	}
+	
+	//Calculate the (decayed) thrust
+	float decay_factor = (ramp_time_const > 0.0f) ? (1.0f - (float)exp(-1 / ramp_time_const)) : 1.0f;
+	return delta_v * decay_factor;
 }
 
 

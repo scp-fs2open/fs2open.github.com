@@ -2551,6 +2551,7 @@ flag_def_list Ship_flags[] = {
 	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
+	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -2905,6 +2906,10 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->can_glide = false;
 	sip->glide_cap = 0.0f;
+	sip->glide_dynamic_cap = false;
+	sip->glide_accel_mult = 0.0f;
+	sip->use_newtonian_damp = false;
+	sip->newtonian_damp_override = false;
 
 	sip->aiming_flags = 0;
 	sip->autoaim_fov = 0.0f;
@@ -3648,8 +3653,16 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(sip->can_glide == true)
 	{
+		if(optional_string("+Dynamic Glide Cap:"))
+			stuff_boolean(&sip->glide_dynamic_cap);
 		if(optional_string("+Max Glide Speed:"))
 			stuff_float(&sip->glide_cap );
+		if(optional_string("+Glide Accel Mult:"))
+			stuff_float(&sip->glide_accel_mult);
+		if(optional_string("+Use Newtonian Dampening:")) {
+			sip->newtonian_damp_override = true;
+			stuff_boolean(&sip->use_newtonian_damp);
+		}
 	}
 
 	if(optional_string("$Autoaim FOV:"))
@@ -6041,6 +6054,17 @@ void physics_ship_init(object *objp)
 		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
 	// If there's not a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
 	// However, a negative value means we want no cap, thus allowing nearly infinite maximum gliding speeds.
+
+	//SUSHI: If we are using dynamic glide capping, force the glide cap to 0 (understood by physics.cpp to mean the cap should be dynamic)
+	if (sinfo->glide_dynamic_cap)
+		pi->glide_cap = 0;
+
+	pi->glide_accel_mult = sinfo->glide_accel_mult;
+
+	//SUSHI: This defaults to the AI_Profile value, and is only optionally overridden
+	pi->use_newtonian_damp = ((The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING) != 0);
+	if (sinfo->newtonian_damp_override)
+		pi->use_newtonian_damp = sinfo->use_newtonian_damp;
 
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
@@ -10147,6 +10171,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip_orig;
 	ship			*sp;
 	object		*objp;
+	p_object	*p_objp;
 	float hull_pct, shield_pct;
 	physics_info ph_inf;
 
@@ -10184,6 +10209,21 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	{
 		hull_pct = 1.0f;
 		shield_pct = 1.0f;
+	}
+	
+	// make sure that shields are disabled/enabled if they need to be - Chief1983
+	if (!Fred_running) {
+		p_objp = mission_parse_get_parse_object(sp->ship_name);
+		if ((p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sp->ship_max_shield_strength > 0.0f)) {
+			objp->flags &= ~OF_NO_SHIELDS;
+		} else if ((p_objp->flags & P_OF_NO_SHIELDS) || (sp->ship_max_shield_strength == 0.0f)) {
+			objp->flags |= OF_NO_SHIELDS;
+		// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
+		} else if (!(sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)) {
+			objp->flags |= OF_NO_SHIELDS;
+		} else if ((sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && !(sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sp->ship_max_shield_strength > 0.0f)) {
+			objp->flags &= ~OF_NO_SHIELDS;
+		}
 	}
 
 	// Goober5000 - extra checks
