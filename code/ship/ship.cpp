@@ -2906,6 +2906,10 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->can_glide = false;
 	sip->glide_cap = 0.0f;
+	sip->glide_dynamic_cap = false;
+	sip->glide_accel_mult = 0.0f;
+	sip->use_newtonian_damp = false;
+	sip->newtonian_damp_override = false;
 
 	sip->aiming_flags = 0;
 	sip->autoaim_fov = 0.0f;
@@ -3649,8 +3653,16 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(sip->can_glide == true)
 	{
+		if(optional_string("+Dynamic Glide Cap:"))
+			stuff_boolean(&sip->glide_dynamic_cap);
 		if(optional_string("+Max Glide Speed:"))
 			stuff_float(&sip->glide_cap );
+		if(optional_string("+Glide Accel Mult:"))
+			stuff_float(&sip->glide_accel_mult);
+		if(optional_string("+Use Newtonian Dampening:")) {
+			sip->newtonian_damp_override = true;
+			stuff_boolean(&sip->use_newtonian_damp);
+		}
 	}
 
 	if(optional_string("$Autoaim FOV:"))
@@ -6042,6 +6054,17 @@ void physics_ship_init(object *objp)
 		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
 	// If there's not a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
 	// However, a negative value means we want no cap, thus allowing nearly infinite maximum gliding speeds.
+
+	//SUSHI: If we are using dynamic glide capping, force the glide cap to 0 (understood by physics.cpp to mean the cap should be dynamic)
+	if (sinfo->glide_dynamic_cap)
+		pi->glide_cap = 0;
+
+	pi->glide_accel_mult = sinfo->glide_accel_mult;
+
+	//SUSHI: This defaults to the AI_Profile value, and is only optionally overridden
+	pi->use_newtonian_damp = ((The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING) != 0);
+	if (sinfo->newtonian_damp_override)
+		pi->use_newtonian_damp = sinfo->use_newtonian_damp;
 
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);

@@ -2040,7 +2040,10 @@ typedef struct ship_info {
 	
 	bool can_glide;
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
-	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
+	bool glide_dynamic_cap;	//SUSHI: Whether or not we are using a dynamic glide cap
+	float glide_accel_mult;	//SUSHI: acceleration multiplier for glide mode
+	bool use_newtonian_damp; //SUSHI: Whether or not to use newtonian dampening for this ship
+	bool newtonian_damp_override; 
 
 	float autoaim_fov;
 

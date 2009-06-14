@@ -257,7 +257,8 @@ typedef struct physics_info {
 	
 	vec3d glide_saved_vel;	//WMC - the key variable for gliding. Saves the orientation that velocity will be applied on.
 	float	glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity (so that something can't accelerate to ridiculous speeds... unless allowed to)
-	float	glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
+	float	glide_accel_mult;	//SUSHI: The acceleration multiplier for glide mode. A value < 0 means use glide ramping instead
+	bool use_newtonian_damp;	//SUSHI: Whether or not to use newtonian dampening
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating
