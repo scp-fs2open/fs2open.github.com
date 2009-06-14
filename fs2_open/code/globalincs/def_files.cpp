@@ -787,11 +787,7 @@ $Max Turret Target Ownage: 3, 4, 7, 12, 19								\n\
 																		\n\
 ;; maximum number of turrets on one ship allowed to be attacking the	\n\
 ;; player at a given time												\n\
-$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n\
-																		\n\
-;; time delay after bombs have been fired before they can collide		\n\
-;; with other weapons (ie. be shot down)								\n\
-$Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n""\
+$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n""\
 																		\n\
 ;; the minimum percentage of the total assessed damage a player		 	\n\
 ;; must inflict in order to be awarded a kill							\n\
@@ -808,6 +804,10 @@ $Percentage Awarded For Capship Assist: 0.1, 0.2, 0.35, 0.5, 0.6		\n\
 ;; the amount to subtract from the player's score if they are			\n\
 ;; repaired by a support ship											\n\
 $Repair Penalty: 10, 20, 35, 50, 60										\n\
+																		\n\
+;; time delay after bombs have been fired before they can collide		\n\
+;; with other weapons (ie. be shot down)								\n\
+$Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n\
 																		\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
