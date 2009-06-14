@@ -3579,6 +3579,14 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	{
 		if(optional_string("+Max Glide Speed:"))
 			stuff_float(&sip->glide_cap );
+		
+		// 3.6.9 had one set of behaviour for glide acceleration. This was later changed in 3.6.10 and will be changed back again in 
+		// 3.6.11 and will require the following table entry for the 3.6.10 behaviour. In order to preserve compatibility with the 
+		// upcoming change, 3.6.10 builds should be able to parse the entry, even if they don't do anything with it.
+		if(optional_string("+Glide Accel Mult:")) {
+			float dummy; 
+			stuff_float(&dummy);
+		}
 	}
 
 	if(optional_string("$Autoaim FOV:"))
