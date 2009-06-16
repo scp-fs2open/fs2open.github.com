@@ -10024,17 +10024,20 @@ void sexp_end_of_campaign(int n)
 // campaign, and otherwise to do the conventional code
 void sexp_end_campaign(int n)
 {
+	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
 	// in FS2 our ending is a bit wacky. we'll just flag the mission as having ended the campaign	
 	//
 	// changed this to check for an active supernova rather than a special campaign since the supernova
 	// code needs special time to execute and will post GS_EVENT_END_CAMPAIGN with Game_mode check
 	// or show death-popup when it's done - taylor
-	if ( supernova_active()  /*(Game_mode & GM_CAMPAIGN_MODE) && !stricmp(Campaign.filename, "freespace2")*/ ) {
+	if (supernova_active() /*&& !stricmp(Campaign.filename, "freespace2")*/) {
 		Campaign_ended_in_mission = 1;
 	} else {
-		// post and event to move us to the end-of-campaign state.  There we will play a movie, then
-		// go to debriefing.
-		gameseq_post_event( GS_EVENT_END_CAMPAIGN );
+		// post and event to move us to the end-of-campaign state
+		gameseq_post_event(GS_EVENT_END_CAMPAIGN);
 	}
 }
 
