@@ -2876,22 +2876,26 @@ void mission_campaign_end_init()
 
 void mission_campaign_end_do()
 {
-	// play the movies
+	// close out the mission
 	event_music_level_close();
 	mission_goal_fail_incomplete();
 	scoring_level_close();
 	mission_campaign_mission_over();
 
+	// play the movies
 	// eventually we'll want to play one of two options (good ending or bad ending)
-	// did the supernova blow?
-	if(Supernova_status == SUPERNOVA_HIT)
-	{
-		// no soup for you!
-		movie_play_two("endpart1.mve", "endprt2b.mve");			// good ending
+
+	// this is specific to the FreeSpace 2 single-player campaign
+	if (!stricmp(Campaign.filename, "freespace2")) {
+		// did the supernova blow?
+		if (Supernova_status == SUPERNOVA_HIT) {
+			movie_play_two("endpart1.mve", "endprt2b.mve");			// bad ending
+		} else {
+			movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
+		}
 	} else {
-		// no soup for you!
-		movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
-	}	
+		// TODO: might want to provide the option to play custom cutscenes
+	}
 
 #ifdef FS2_DEMO
 	gameseq_post_event( GS_EVENT_END_DEMO );
