@@ -7269,12 +7269,17 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_DEBRIEF:
-			// did we end the campaign in the main freespace 2 single player campaign?
-			if(Campaign_ended_in_mission && (Game_mode & GM_CAMPAIGN_MODE) && !stricmp(Campaign.filename, "freespace2")) {
-				gameseq_post_event(GS_EVENT_END_CAMPAIGN);
-			} else {
-				gameseq_set_state(GS_STATE_DEBRIEF);		
-			}
+			// This IF block isn't needed because it's not part of the end-campaign logic.
+			// The supernova code and end-campaign sexp handle it all. - G5K
+			//
+			//	// did we end the campaign in the middle of a mission?
+			//	if (Campaign_ended_in_mission && (Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/) {
+			//		gameseq_post_event(GS_EVENT_END_CAMPAIGN);
+			//	} else {
+			//		gameseq_set_state(GS_STATE_DEBRIEF);
+			//	}
+			//
+			gameseq_set_state(GS_STATE_DEBRIEF);
 
 			//Player_multi_died_check = -1;
 			break;

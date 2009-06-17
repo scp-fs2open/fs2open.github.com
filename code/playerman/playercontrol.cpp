@@ -1220,13 +1220,16 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					tspeed = tspeed * (0.5f + dist/200.0f);
 				}
 
-				//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
-				pmax_speed = Ships[Player_obj->instance].current_max_speed;
-				ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
-				override_analog_throttle = 1;
-	//			if ( ci->forward_cruise_percent > 100.0f )
-	//				HUD_printf ("Cannot travel that fast.  Setting throttle to full.");
-				// mprintf(("forward -- %7.3f\n", ci->forward_cruise_percent));
+				//SUSHI: If gliding, don't do anything for speed matching
+				if (!(Objects[Player->objnum].phys_info.flags & PF_GLIDING)) {
+					//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
+					pmax_speed = Ships[Player_obj->instance].current_max_speed;
+					ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					override_analog_throttle = 1;
+					//if ( ci->forward_cruise_percent > 100.0f )
+						//HUD_printf ("Cannot travel that fast.  Setting throttle to full.");
+					// mprintf(("forward -- %7.3f\n", ci->forward_cruise_percent));
+				}
 
 			} else
 				Player->flags &= ~PLAYER_FLAGS_MATCH_TARGET;
