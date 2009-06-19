@@ -2932,6 +2932,7 @@ void hud_add_issued_order(char *name, int order)
 	
 	//stick it in history
 	Squadmsg_history.push_back(*latest_order); 
+	delete latest_order;
 }
 
 void hud_update_last_order(char *target, int order_source, int special_index)
