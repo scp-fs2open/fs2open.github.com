@@ -4,25 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/RestrictPaths.h $
- * $Revision: 1.2.2.1 $
- * $Date: 2006-06-04 01:03:13 $
- * $Author: Goober5000 $
- *
- * Code for restricting arrival/departure to specific bays
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2006/05/30 06:01:05  Goober5000
- * fix up CVS headers
- * --Goober5000
- *
- * Revision 1.1  2006/05/30 05:58:59  Goober5000
- * I should probably add these files too
- * --Goober5000
- *
- * $NoKeywords: $
- */
+
 
 #include "model/model.h"
 #include "parse/parselo.h"

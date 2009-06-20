@@ -7,40 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.4.2.1 $
- * $Date: 2007-05-11 03:09:21 $
- * $Author: taylor $
- *
- * Program to create an archive file for use with cfile stuff
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/11/13 06:38:04  taylor
- * never did port this stupid thing to PPC
- *
- * Revision 2.3  2005/09/08 00:09:31  taylor
- * fix building/linking of command line tools under Linux/OSX
- * add tools as targets to OSX project file
- *
- * Revision 2.2  2005/01/30 12:50:08  taylor
- * merge with Linux/OSX tree - p0130
- *
- * Revision 2.1  2003/11/16 09:42:37  Goober5000
- * clarified and pruned debug spew messages
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/23/98 6:15p Dave
- *
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -4,24 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ParseObjectDock.h $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
- *
- * New docking system for parse objects, used only on mission load
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2005/10/31 09:12:16  Goober5000
- * remove unused commented stuff
- * --Goober5000
- *
- * Revision 1.1  2005/10/29 22:09:30  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- */
+
 
 #ifndef _PARSE_OBJECT_DOCK_H
 #define _PARSE_OBJECT_DOCK_H

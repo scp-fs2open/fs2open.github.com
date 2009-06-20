@@ -4,50 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.4.2.5 $
- * $Date: 2007-07-28 22:04:14 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4.2.4  2007/07/15 02:45:48  Goober5000
- * fixed a small bug in the lab
- * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
- * removed my old supercap damage scaling change
- * moved Turey's truefire flag to ai_profiles
- *
- * Revision 1.4.2.3  2007/02/27 01:44:44  Goober5000
- * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
- *
- * Revision 1.4.2.2  2006/07/02 04:13:43  Goober5000
- * bah
- *
- * Revision 1.4.2.1  2006/07/02 03:39:34  Goober5000
- * remove associated AI flags
- * --Goober5000
- *
- * Revision 1.4  2006/04/20 06:32:00  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.3  2006/03/20 06:19:03  taylor
- * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
- * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
- *
- * Revision 1.2  2005/11/24 08:46:11  Goober5000
- * * cleaned up mission_do_departure
- *   * fixed a hidden crash (array index being -1; would only
- * be triggered for ships w/o subspace drives under certain conditions)
- *   * removed finding a new fighterbay target because it might screw up missions
- *   * improved clarity, code flow, and readability :)
- * * added custom AI flag for disabling warpouts if navigation subsystem fails
- * --Goober5000
- *
- * Revision 1.1  2005/11/21 02:43:30  Goober5000
- * change from "setting" to "profile"; this way makes more sense
- * --Goober5000
- *
- */
+
 
 #ifndef _AI_PROFILES_H_
 #define _AI_PROFILES_H_

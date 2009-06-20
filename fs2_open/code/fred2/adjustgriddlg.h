@@ -7,44 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/AdjustGridDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
- *
- * Editor to allow one to change Fred's grid orientation and position.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2005/07/13 02:40:50  Goober5000
- * remove PreProcDefine #includes in FRED
- * --Goober5000
- *
- * Revision 1.2  2004/09/29 17:26:32  Kazan
- * PreProfDefines.h includes for fred2
- *
- * Revision 1.1.1.1  2002/07/15 03:10:52  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 2:59p Dave
- * 
- * 3     8/18/97 10:01p Hoffoss
- * Improved dialog by graying out fields that don't have any effect on
- * current plane setting.
- * 
- * 2     8/18/97 9:31p Hoffoss
- * Added grid adjustment dialog and shield system editor dialog.
- *
- * $NoKeywords: $
- */
+
 
 /////////////////////////////////////////////////////////////////////////////
 // adjust_grid_dlg dialog

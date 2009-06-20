@@ -7,76 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 2.4.2.2 $
- * $Date: 2006-12-07 17:53:08 $
- * $Author: taylor $
- *
- * Low-level floating point math routines
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4.2.1  2006/06/18 16:54:36  taylor
- * various compiler warning fixes
- *
- * Revision 2.4  2005/04/12 05:26:36  taylor
- * many, many compiler warning and header fixes (Jens Granseuer)
- * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
- *
- * Revision 2.3  2004/07/26 20:47:36  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:52  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/28 20:22:00  mharris
- * Changed frand() -- was returning negative values under Linux
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 13    2/26/98 3:28p John
- * Changed all sqrt's to use fl_sqrt.  Took out isqrt function
- * 
- * 12    1/30/98 12:25p Mike
- * Make frand() not return 1.0, which can cause overflow when indexing
- * into arrays.
- * 
- * 11    1/26/98 10:43p Mike
- * Make ships not all zoom away from an impending shockwave at the same
- * time.  Based on ai class and randomness
- * 
- * 10    1/20/98 9:47a Mike
- * Suppress optimized compiler warnings.
- * Some secondary weapon work.
- * 
- * 9     1/17/98 3:32p Mike
- * Add rand_range(), returns random float in min..max.
- * 
- * 8     9/09/97 11:07a Sandeep
- * fixed warning level 4
- * 
- * 7     8/05/97 10:18a Lawrance
- * my_rand() being used temporarily instead of rand()
- * 
- * 6     2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <math.h>

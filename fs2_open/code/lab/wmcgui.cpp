@@ -7,58 +7,7 @@
  *
  */
 
-/*
- * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.28.2.5 $
- * $Date: 2007-09-02 02:07:42 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.28.2.4  2007/02/12 00:23:39  taylor
- * get rid of non-standard itoa(), make use of the proper sprintf() instead
- *
- * Revision 1.28.2.3  2006/11/15 00:40:59  taylor
- * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
- *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
- *
- * Revision 1.28.2.2  2006/09/11 01:15:04  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 1.28.2.1  2006/08/19 04:26:32  taylor
- * add render option for no glowmaps
- * remove render option for fog (why was this even there??)
- * add tech model view for missiles with special tech models (will hopefully help spur some work towards fixing the currently broken models)
- * handle Z-buf issue that made the lab interface disappear when the transparent render option was ticked
- *
- * Revision 1.28  2006/03/22 18:20:06  taylor
- * minor warning fixage
- *
- * Revision 1.27  2006/01/21 02:22:05  wmcoolmon
- * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
- *
- * Revision 1.26  2005/12/06 03:17:48  taylor
- * cleanup some debug log messages:
- *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
- *   make sure that OpenAL init failures always get to the debug log
- *
- * Revision 1.25  2005/12/04 19:07:48  wmcoolmon
- * Final commit of codebase
- *
- * Revision 1.23  2005/10/22 20:17:18  wmcoolmon
- * mission-set-nebula fixage; remainder of python code
- *
- * Revision 1.22  2005/10/09 00:43:08  wmcoolmon
- * Extendable modular tables (XMTs); added weapon dialogs to the Lab
- *
- * Revision 1.21  2005/09/25 07:27:33  Goober5000
- * and again
- * --Goober5000
- *
- * Revision 1.20  2005/09/25 07:26:05  Goober5000
- * try to fix the headers
- * --Goober5000
- *
- */
+
 
 #include "lab/wmcgui.h"
 #include "graphics/2d.h"

@@ -7,14 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Observer/Observer.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 03:35:34 $
- * $Author: Goober5000 $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _OBSERVER_HEADER_FILE
 #define _OBSERVER_HEADER_FILE

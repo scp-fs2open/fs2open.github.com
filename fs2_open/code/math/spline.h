@@ -7,41 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Math/spline.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2005/04/05 05:53:18  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.2  2004/08/11 05:06:27  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 2     7/06/99 4:24p Dave
- * Mid-level checkin. Starting on some potentially cool multiplayer
- * smoothness crap.
- *  
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FS2_SPLINE_HEADER_FILE
 #define __FS2_SPLINE_HEADER_FILE

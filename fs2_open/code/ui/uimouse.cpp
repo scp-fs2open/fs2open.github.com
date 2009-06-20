@@ -7,76 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/UI/UIMOUSE.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-07-18 03:45:10 $
- * $Author: taylor $
- *
- * Code for dealing with the mouse
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/07/02 19:45:02  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.3  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 10    4/12/98 5:31p Lawrance
- * use timer_get_milliseconds() instead of gettime()
- * 
- * 9     4/02/98 5:27p John
- * Removed the mouse_count stuff that Hoffoss added.
- * Still some problems with mose_up_count being used twice, but that is
- * easily fixed.
- * 
- * 8     4/02/98 5:05p Hoffoss
- * Fixed a timestamp() I missed.
- * 
- * 7     4/02/98 10:04a Adam
- * Fixed UI mouse problems with buttons not registering correctly.
- * 
- * 6     4/01/98 5:07p Hoffoss
- * Changed mouse button handling for UI in order to track fast events
- * (like button going down and released all between frames).
- * 
- * 5     2/06/98 3:36p Hoffoss
- * Made disabled buttons play failed sound if clicked on.  This is now
- * standard behavior for all UI buttons everywhere.
- * 
- * 4     1/14/98 6:44p Hoffoss
- * Massive changes to UI code.  A lot cleaner and better now.  Did all
- * this to get the new UI_DOT_SLIDER to work properly, which the old code
- * wasn't flexible enough to handle.
- * 
- * 3     12/02/96 2:17p John
- * Made right button drag UI gadgets around and
- * Ctrl+Shift+Alt+F12 dumps out where they are.
- * 
- * 2     11/15/96 11:43a John
- * 
- * 1     11/14/96 6:55p John
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"

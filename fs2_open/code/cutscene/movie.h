@@ -7,18 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/cutscene/movie.h $
- * $Revision: 2.6.2.1 $
- * $Date: 2007-02-11 09:23:14 $
- * $Author: taylor $
- *
- * movie player header
- * 
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _MOVIE_HEADER_FILE
 #define _MOVIE_HEADER_FILE

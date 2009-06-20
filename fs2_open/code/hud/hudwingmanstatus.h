@@ -7,45 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
- *
- * Header for the wingman status gauge
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 4     3/31/98 11:46p Lawrance
- * Fix several bugs related to departing ships.
- * 
- * 3     3/22/98 11:13p Allender
- * work with respawning -- save parse object so ship can be correctly
- * restored.  Restore wingman status information so gauge updates
- * correctly
- * 
- * 2     3/14/98 4:59p Lawrance
- * Totally rework HUD wingman status gauge to work with 5 arbitrary wings
- * 
- * 1     3/14/98 8:23a Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __HUDWINGMAN_STATUS_H__
 #define __HUDWINGMAN_STATUS_H__

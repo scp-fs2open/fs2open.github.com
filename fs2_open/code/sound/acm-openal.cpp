@@ -2,29 +2,7 @@
  * Portions of this file are Copyright (c) Ryan C. Gordon
  ***********************************************************/
 
-/*
- * $Logfile: /Freespace2/code/sound/acm-openal.cpp $
- * $Revision: 2.3 $
- * $Date: 2005-11-16 09:16:24 $
- * $Author: taylor $
- *
- * OS independant ADPCM decoder
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.1  2005/04/05 11:48:22  taylor
- * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
- * better error handling for OpenAL functions
- * Windows can now build properly with OpenAL
- * extra check to make sure we don't try and use too many hardware bases sources
- * fix memory error from OpenAL extension list in certain instances
- *
- *
- * $NoKeywords: $
- */
+
 
 
 #ifdef USE_OPENAL	// to end of file...

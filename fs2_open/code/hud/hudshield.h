@@ -7,77 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
- *
- * Header file for the display and management of the HUD shield
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.5  2004/05/27 00:49:26  wmcoolmon
- * Made HUD.tbl obsolete. Info is now taken directly from $Shield_icon in ships.tbl
- * Now this table can be used for something more useful...say, hud gauge positions?
- *
- * Revision 2.4  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/09/13 06:02:05  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.1  2003/01/06 17:14:52  Goober5000
- * added wing configurable squad logos - put +Squad Logo: filename.pcx as
- * the last entry in each wing that you want (but the player's squad logo will
- * still be the squad logo for the player's wing)
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     8/27/99 10:36a Dave
- * Impose a 2% penalty for hitting the shield balance key.
- * 
- * 3     7/22/99 4:00p Dave
- * Fixed beam weapon muzzle glow rendering. Externalized hud shield info.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 7     4/25/98 2:00p Dave
- * Installed a bunch of multiplayer context help screens. Reworked ingame
- * join ship select screen. Fix places where network timestamps get hosed.
- * 
- * 6     2/12/98 4:58p Lawrance
- * Change to new flashing method.
- * 
- * 5     11/18/97 5:58p Lawrance
- * flash escort view info when that ship is taking hits
- * 
- * 4     11/08/97 11:08p Lawrance
- * implement new "mini-shield" view that sits near bottom of reticle
- * 
- * 3     11/04/97 7:49p Lawrance
- * integrating new HUD reticle and shield icons
- * 
- * 2     8/25/97 12:24a Lawrance
- * implemented HUD shield management
- * 
- * 1     8/24/97 10:31p Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FREESPACE_HUDSHIELD_H__
 #define __FREESPACE_HUDSHIELD_H__

@@ -3,47 +3,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-01-20 07:10:33 $
- * $Author: Goober5000 $
- *
- * Cross-platform cmdline extractor for VP files
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2005/09/24 02:40:09  Goober5000
- * get rid of a whole bunch of Microsoft warnings
- * --Goober5000
- *
- * Revision 1.7  2005/09/20 02:45:47  taylor
- * bump version to 0.6
- * add a specified directory to output files to
- *
- * Revision 1.6  2005/09/08 05:04:15  taylor
- * make it actually compile under WIN32
- * bump version to 0.5 since little else is going to be done to this thing
- *
- * Revision 1.5  2005/09/08 00:09:31  taylor
- * fix building/linking of command line tools under Linux/OSX
- * add tools as targets to OSX project file
- *
- * Revision 1.4  2005/05/24 20:52:10  taylor
- * make sure that we recursively create directories for Linux/OSX
- * replace older recursive mkdir method in cfileextractor with new method
- *
- * Revision 1.3  2005/05/24 03:12:27  taylor
- * get command sanity check right, fixes lowercase on extract too
- *
- * Revision 1.2  2005/05/18 01:57:54  taylor
- * a few help text adjustments and fix some compiler warnings
- *
- * Revision 1.1  2005/05/17 21:00:57  taylor
- * Initial import of cfileextractor, still needs some work but does what it needs to
- *
- *
- * $NoKeywords: $
- */
+
 
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"

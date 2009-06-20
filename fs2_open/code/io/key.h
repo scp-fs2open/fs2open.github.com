@@ -7,75 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Io/Key.h $
- * $Revision: 2.4 $
- * $Date: 2006-01-13 04:46:17 $
- * $Author: wmcoolmon $
- *
- * Include file for keyboard reading routines
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2005/07/13 03:15:52  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.2  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 26    5/19/98 12:28a Mike
- * Cheat stuff.
- * 
- * 25    5/18/98 11:01p Mike
- * Adding support for cheat system.
- * 
- * 24    5/01/98 4:23p Lawrance
- * Remap the scancode for the UK "\" key
- * 
- * 23    1/07/98 6:41p Lawrance
- * Pass message latency to the keyboard lib.
- * 
- * 22    11/14/97 4:33p Mike
- * Change Debug key to backquote (from F11).
- * Balance a ton of subsystems in ships.tbl.
- * Change "Heavy Laser" to "Disruptor".
- * 
- * 21    10/21/97 7:18p Hoffoss
- * Overhauled the key/joystick control structure and usage throughout the
- * entire FreeSpace code.  The whole system is very different now.
- * 
- * 20    9/13/97 9:30a Lawrance
- * added ability to block certain keys from the keyboard
- * 
- * 19    9/10/97 6:02p Hoffoss
- * Added code to check for key-pressed sexp operator in FreeSpace as part
- * of training mission stuff.
- * 
- * 18    4/15/97 3:47p Allender
- * moved type selection of list box items into actual UI code.  Made it
- * behave more like windows listboxes do
- * 
- * 17    2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _KEY_H
 #define _KEY_H

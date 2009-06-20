@@ -7,24 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /freespace2/code/fs2netd/fs2netd_client.cpp $
- * $Revision: 1.1.2.3 $
- * $Date: 2007-11-22 05:04:07 $
- * $Author: taylor $
- *
- * FS2NetD client handler
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.2  2007/10/15 08:18:33  taylor
- * Oops, forgot that the v.2 daemon is still on the secondary IP :)
- *
- * Revision 1.1.2.1  2007/10/15 06:43:09  taylor
- * FS2NetD v.2  (still a work in progress, but is ~98% complete)
- *
- *
- * $NoKeywords: $
- */
+
 
 #include "globalincs/pstypes.h"
 #include "fs2netd/fs2netd_client.h"

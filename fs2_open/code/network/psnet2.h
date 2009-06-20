@@ -7,78 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/Psnet2.h $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
- *
- * Header file for the application level network-interface.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/01/31 10:34:38  taylor
- * merge with Linux/OSX tree - p0131
- *
- * Revision 2.7  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.6  2004/03/08 22:02:39  Kazan
- * Lobby GUI screen restored
- *
- * Revision 2.5  2003/11/14 22:47:37  Kazan
- * *WARNING* Multi Compatability with previous versions now in question *WARNING*
- * [But that's ok, i incremented the multi version number the other day so that it will say "you don't have a compatable version"]
- *
- * I upped the MAX_PACKET_SIZE from 512 to 4096 -- try and bust multi with more than ?130? ships now :D
- *
- * Revision 2.4  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.3  2002/07/26 16:12:05  penguin
- * fixed bug where winsock.h wasn't defined
- *
- * Revision 2.2  2002/07/22 01:22:26  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:09  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 9     8/16/99 4:06p Dave
- * Big honking checkin.
- * 
- * 8     7/28/99 11:46a Dave
- * Put in FS2_DEMO defines for port stuff.
- * 
- * 7     6/25/99 11:59a Dave
- * Multi options screen.
- * 
- * 6     6/07/99 9:51p Dave
- * Consolidated all multiplayer ports into one.
- * 
- * 5     3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 4     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 3     11/19/98 8:04a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef _PSNET2_H
 #define _PSNET2_H

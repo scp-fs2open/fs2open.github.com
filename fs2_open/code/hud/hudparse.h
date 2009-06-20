@@ -1,32 +1,5 @@
 
-/*
- * $Logfile: /Freespace2/code/hud/hudparse.h $
- * $Revision: 2.19.2.3 $
- * $Date: 2008-01-24 03:53:36 $
- * $Author: Goober5000 $
- *
- * Header file for HUD tbl parsing
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.19.2.2  2007/08/30 04:52:30  Backslash
- * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
- * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
- * $Length Unit Multiplier: 5
- *
- * Revision 2.19.2.1  2006/12/07 18:17:19  taylor
- * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
- *
- * Revision 2.19  2005/07/13 03:15:52  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.18  2005/04/12 05:26:36  taylor
- * many, many compiler warning and header fixes (Jens Granseuer)
- * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
- *
- *
- * $NoKeywords: $
- */
+
 
 
 #ifndef _HUDPARSE_H

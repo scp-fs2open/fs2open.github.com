@@ -7,73 +7,7 @@
  *
  */
 
-/*
- * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.16.2.1 $
- * $Date: 2006-08-27 18:12:42 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.16  2005/11/21 23:57:26  taylor
- * some minor thruster cleanup, if you could actually use the term "clean"
- *
- * Revision 1.15  2005/10/24 07:13:05  Goober5000
- * merge Bobboau's thruster code back in; hopefully this covers everything
- * --Goober5000
- *
- * Revision 1.14  2005/09/27 05:25:19  Goober5000
- * initial commit of basic IFF code
- * --Goober5000
- *
- * Revision 1.13  2005/09/27 05:01:52  Goober5000
- * betterizing
- * --Goober5000
- *
- * Revision 1.12  2005/09/26 02:15:03  Goober5000
- * okay, this should all be working :)
- * --Goober5000
- *
- * Revision 1.11  2005/09/25 20:31:42  Goober5000
- * okay; everything should be good to go
- * --Goober5000
- *
- * Revision 1.10  2005/09/25 18:48:25  taylor
- * GCC fixage, my Whiffle Bat that was saved for Bobboau's constant breaking is currently getting "Goober5000" etched into it :)
- *
- * Revision 1.9  2005/09/25 08:25:16  Goober5000
- * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
- * --Goober5000
- *
- * Revision 1.8  2005/09/25 07:07:34  Goober5000
- * partial commit; hang on
- * --Goober5000
- *
- * Revision 1.7  2005/09/25 05:13:07  Goober5000
- * hopefully complete species upgrade
- * --Goober5000
- *
- * Revision 1.6  2005/09/25 02:15:02  Goober5000
- * meh for consistency
- * --Goober5000
- *
- * Revision 1.5  2005/09/24 07:07:17  Goober5000
- * another species overhaul
- * --Goober5000
- *
- * Revision 1.4  2005/07/13 03:35:35  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 1.3  2005/01/31 10:34:39  taylor
- * merge with Linux/OSX tree - p0131
- *
- * Revision 1.2  2004/08/11 05:06:34  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 1.1  2003/10/15 22:03:27  Kazan
- * Da Species Update :D
- *
- */
+
 
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
