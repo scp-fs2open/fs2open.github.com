@@ -1455,7 +1455,7 @@ void parse_soundtrack()
 	bool nocreate = false;
 
 	//Start parsing soundtrack
-	required_string("#Soundtrack Start");
+	//required_string("#Soundtrack Start");
 
 	//Get the name, and do we have this track already?
 	required_string("$SoundTrack Name:");
@@ -1572,7 +1572,7 @@ void parse_soundtrack()
 	}
 
 	//We're done here.
-	required_string("#SoundTrack End");
+	//required_string("#SoundTrack End");
 
 
 	// Goober5000 - set the valid flag according to whether we can load all our patterns
@@ -1670,21 +1670,21 @@ void event_music_parse_musictbl(char *filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();		
 
-		// Loop through all the sound-tracks
-		if(check_for_string("#Soundtrack Start"))
+		while ( skip_to_start_of_string_either("#Soundtrack Start", "#Menu Music Start", NULL ) )
 		{
-			while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
-				parse_soundtrack();
+			if ( optional_string("#Soundtrack Start") )
+			{
+				parse_soundtrack( );
+				required_string("#Soundtrack End");
 			}
-		}
-
-		// Parse the menu music section
-		if(optional_string("#Menu Music Start"))
-		{
-			while (required_string_either("#Menu Music End","$Name:")) {
-				parse_menumusic();
+			if ( optional_string("#Menu Music Start") )
+			{
+				while ( check_for_string( "$Name:" ) )
+				{
+					parse_menumusic( );
+				}
+				required_string("#Menu Music End");
 			}
-			required_string("#Menu Music End");
 		}
 
 		// close localization
