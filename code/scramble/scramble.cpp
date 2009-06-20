@@ -7,66 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/scramble/scramble.cpp $
- * $Revision: 2.5 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
- *
- * Module for file scrambler
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/09/08 00:09:32  taylor
- * fix building/linking of command line tools under Linux/OSX
- * add tools as targets to OSX project file
- *
- * Revision 2.3  2005/05/12 17:49:16  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.2  2005/04/15 11:35:18  taylor
- * add scramble port
- * support both FS1 (8bit and 7bit) and FS2 style encryption
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:28  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     3/25/99 11:26a Dave
- * Beefed up encryption scheme so that even someone viewing the
- * disassembly would have a hard time cracking it.
- * 
- * 2     10/24/98 11:41p Dave
- * 
- * 1     10/24/98 11:31p Dave
- * 
- * 7     8/09/98 4:44p Lawrance
- * support alternate encryption scheme (doesn't pack chars into 7 bits)
- * 
- * 6     4/14/98 4:14p Lawrance
- * fix bug with ships and weapons tbl preprocessing
- * 
- * 5     4/14/98 1:39p Lawrance
- * Add command line switches to preprocess ship and weapon tables
- * 
- * 4     3/31/98 1:14a Lawrance
- * Get .tbl and mission file encryption working.
- * 
- * 3     3/30/98 5:57p Lawrance
- * add some comments
- * 
- * 2     3/30/98 5:51p Lawrance
- * file encryption and decryption
- *
- * $NoKeywords: $
- *
-*/
+
 
 #include <stdlib.h>
 #include <stdio.h>

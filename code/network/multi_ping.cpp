@@ -7,67 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_ping.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.5  2005/07/13 03:35:32  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.4  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.3  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *  
- * 
- * 5     8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 4     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 4     6/30/98 2:17p Dave
- * Revised object update system. Removed updates for all weapons. Put
- * button info back into control info packet.
- * 
- * 3     6/12/98 2:49p Dave
- * Patch 1.02 changes.
- * 
- * 2     3/15/98 4:17p Dave
- * Fixed oberver hud problems. Put in handy netplayer macros. Reduced size
- * of network orientation matrices.
- * 
- * 1     3/03/98 5:09p Dave
- *  
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi.h"

@@ -7,15 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDObserver.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifndef _HUD_OBSERVER_FILE
 #define _HUD_OBSERVER_FILE

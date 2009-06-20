@@ -7,39 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Radar/radarsetup.h $
- * $Revision: 2.7 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
- *
- * C module containg functions switch between radar modes
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/07/13 03:35:35  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.5  2005/04/05 05:53:23  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.4  2004/08/11 05:06:33  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.3  2004/08/02 22:43:03  phreak
- * orb radar rendering style
- *
- * Revision 2.2  2004/07/03 06:08:54  wmcoolmon
- * Removed function pointer w/ default arguments for compatibility with .NET Sorry, you'll just have to add that "0" by hand. :p
- *
- * Revision 2.1  2004/07/01 01:51:54  phreak
- * function pointer radar update.
- * will enable us to make different radar styles that we can switch between
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifndef _FS2OPEN_RADARSETUP_H
 #define _FS2OPEN_RADARSETUP_H

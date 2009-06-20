@@ -7,15 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
- *
- * $NoKeywords: $
- *
- */
+
 
 
 #include "hud/hudobserver.h"

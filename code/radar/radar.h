@@ -7,67 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Radar/Radar.h $
- * $Revision: 2.6 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
- *
- * Prototypes for radar code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.5  2005/07/13 03:35:35  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.4  2004/08/11 05:06:33  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.3  2004/08/02 22:43:03  phreak
- * orb radar rendering style
- *
- * Revision 2.2  2004/07/01 01:51:54  phreak
- * function pointer radar update.
- * will enable us to make different radar styles that we can switch between
- *
- * Revision 2.1  2004/03/05 09:02:12  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 10    12/29/97 4:22p Lawrance
- * Draw NEUTRAL radar dots after FRIENDLY.. clean up some radar code.
- * 
- * 9     11/06/97 5:02p Dave
- * Finished reworking standalone multiplayer sequencing. Added
- * configurable observer-mode HUD
- * 
- * 8     11/05/97 11:21p Lawrance
- * implement new radar gauge
- * 
- * 7     10/11/97 6:38p Lawrance
- * implementing damage effects to radar
- * 
- * 6     3/25/97 3:55p Lawrance
- * allowing debris to be targeted and shown on radar
- * 
- * 5     2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _RADAR_H
 #define _RADAR_H

@@ -7,39 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.cpp $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-01-07 12:18:09 $
- * $Author: taylor $
- *
- * Player starting point editor dialog box handling code
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2006/01/19 02:27:31  Goober5000
- * import FRED2 back into fs2_open module
- * --Goober5000
- *
- * Revision 1.4  2005/12/29 08:21:00  wmcoolmon
- * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
- *
- * Revision 1.3  2005/09/29 05:18:59  Goober5000
- * the FRED stuff
- * --Goober5000
- *
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:11:00  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 4     2/23/99 7:03p Dave
- * Rewrote a horribly mangled and evil team loadout dialog. Bugs gone.
- * 
- *
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"

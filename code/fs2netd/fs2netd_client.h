@@ -7,18 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /freespace2/code/fs2netd/fs2netd_client.h $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-10-15 06:43:10 $
- * $Author: taylor $
- *
- * FS2NetD client handler (header)
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _FS2NETD_CLIENT_H
 #define _FS2NETD_CLIENT_H

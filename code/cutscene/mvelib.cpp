@@ -1,19 +1,4 @@
-/*
- * $Logfile: /Freespace2/src/cutscene/mvelib.cpp $
- * $Revision: 2.1.2.1 $
- * $Date: 2006-08-19 04:14:57 $
- * $Author: taylor $
- *
- * main lib for using MVEs
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2006/05/13 06:59:48  taylor
- * MVE player (audio only works with OpenAL builds!)
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "cutscene/mvelib.h"

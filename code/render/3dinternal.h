@@ -7,52 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Render/3dInternal.h $
- * $Revision: 2.5 $
- * $Date: 2006-03-18 10:23:46 $
- * $Author: taylor $
- *
- * Used internally by the 3d renderer lib
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/07/13 03:35:29  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.3  2005/04/05 05:53:24  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.2  2004/08/11 05:06:33  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 5     3/16/98 4:51p John
- * Added low-level code to clip all polygons against an arbritary plane.
- * Took out all old model_interp_zclip and used this new method instead.  
- * 
- * 4     4/29/97 9:55a John
- * 
- * 3     2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _3DINTERNAL_H
 #define _3DINTERNAL_H

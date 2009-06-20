@@ -1,22 +1,4 @@
-/*
- * $Logfile: /Freespace2/src/cutscene/mve_audio.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-05-13 06:59:48 $
- * $Author: taylor $
- *
- * Handles compressed audio data in MVE files
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2005/03/29 07:50:34  taylor
- * Update to newest movie code with much better video support and audio support from
- *   Pierre Willenbrock.  Movies are enabled always now (no longer a build option)
- *   and but can be skipped with the "--nomovies" or "-n" cmdline options.
- *
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifdef USE_OPENAL
 

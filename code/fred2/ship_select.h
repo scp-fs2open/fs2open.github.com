@@ -7,65 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/ship_select.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
- *
- * Object selection (marking) dialog box handling code
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.5  2006/01/14 23:49:01  Goober5000
- * second pass; all the errors are fixed now; one more thing to take care of
- * --Goober5000
- *
- * Revision 1.4  2005/07/13 02:40:50  Goober5000
- * remove PreProcDefine #includes in FRED
- * --Goober5000
- *
- * Revision 1.3  2004/09/29 17:26:33  Kazan
- * PreProfDefines.h includes for fred2
- *
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:11:03  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 10    9/09/97 10:29a Hoffoss
- * Added support for neutral team, and fixed changes made to how team is
- * used in ship structure.
- * 
- * 9     8/26/97 11:08a Hoffoss
- * Added waypoint paths to object selection dialog.
- * 
- * 8     7/28/97 5:10p Hoffoss
- * Removed all occurances of neutral team from Fred.
- * 
- * 7     7/24/97 2:43p Hoffoss
- * Made changes whiteside requested.  Double clicking acts as clicking ok
- * button.
- * 
- * 6     5/26/97 10:30a Hoffoss
- * Added select wing to object select dialog.
- * 
- * 5     2/17/97 5:28p Hoffoss
- * Checked RCS headers, added them were missing, changing description to
- * something better, etc where needed.
- *
- * $NoKeywords: $
- */
+
 
 /////////////////////////////////////////////////////////////////////////////
 // ship_select dialog

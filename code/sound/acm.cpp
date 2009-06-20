@@ -7,72 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Sound/acm.cpp $
- * $Revision: 2.7 $
- * $Date: 2006-05-27 16:39:40 $
- * $Author: taylor $
- *
- * C file for interface to Audio Compression Manager functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.5  2005/03/27 06:14:30  taylor
- * update for streaming support and platform independance
- *
- * Revision 2.4  2004/07/26 20:47:52  Kazan
- * remove MCD complete
- *
- * Revision 2.3  2004/07/12 16:33:06  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2003/03/02 06:37:24  penguin
- * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
- *  - penguin
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 8     6/13/98 1:45p Sandeep
- * 
- * 7     2/18/98 5:49p Lawrance
- * Even if the ADPCM codec is unavailable, allow game to continue.
- * 
- * 6     11/28/97 2:09p Lawrance
- * Overhaul how ADPCM conversion works... use much less memory... safer
- * too.
- * 
- * 5     11/22/97 11:32p Lawrance
- * decompress ADPCM data into 8 bit (not 16bit) for regular sounds (ie not
- * music)
- * 
- * 4     9/09/97 3:39p Sandeep
- * warning level 4 bugs
- * 
- * 3     8/05/97 1:39p Lawrance
- * support compressed stereo playback
- * 
- * 2     5/29/97 12:03p Lawrance
- * creation of file to hold AudioCompressionManager specific code
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifndef USE_OPENAL	// to end of file...
 

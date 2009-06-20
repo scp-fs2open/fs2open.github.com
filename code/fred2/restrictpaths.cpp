@@ -4,33 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/RestrictPaths.cpp $
- * $Revision: 1.3.2.2 $
- * $Date: 2007-02-20 04:19:10 $
- * $Author: Goober5000 $
- *
- * Code for restricting arrival/departure to specific bays
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3.2.1  2006/06/04 01:03:13  Goober5000
- * add fighterbay restriction code
- * --Goober5000
- *
- * Revision 1.3  2006/05/31 03:05:42  Goober5000
- * some cosmetic changes in preparation for bay arrival/departure code
- * --Goober5000
- *
- * Revision 1.2  2006/05/30 06:01:05  Goober5000
- * fix up CVS headers
- * --Goober5000
- *
- * Revision 1.1  2006/05/30 05:58:59  Goober5000
- * I should probably add these files too
- * --Goober5000
- *
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"

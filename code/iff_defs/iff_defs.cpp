@@ -4,61 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.9.2.5 $
- * $Date: 2007-10-15 06:43:13 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.9.2.4  2007/09/02 02:07:42  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 1.9.2.3  2007/02/08 07:39:34  Goober5000
- * fix two bugs:
- * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
- * --ships were created with default allowed comm orders regardless of which team they were on
- *
- * Revision 1.9.2.2  2006/09/11 01:15:04  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 1.9.2.1  2006/07/08 19:36:04  Goober5000
- * iff defs should allow specification of both flag fields
- * --Goober5000
- *
- * Revision 1.9  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.8  2006/02/13 00:20:45  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 1.7  2006/01/28 04:33:06  Goober5000
- * fix all teams at war IFF behavior
- * --Goober5000
- *
- * Revision 1.6  2006/01/16 11:02:23  wmcoolmon
- * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
- *
- * Revision 1.5  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 1.4  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 1.3  2005/09/30 03:40:40  Goober5000
- * hooray for more work on the iff code
- * --Goober5000
- *
- * Revision 1.2  2005/09/29 04:26:08  Goober5000
- * parse fixage
- * --Goober5000
- *
- * Revision 1.1  2005/09/27 05:25:18  Goober5000
- * initial commit of basic IFF code
- * --Goober5000
- *
- */
+
 
 #include "globalincs/def_files.h"
 #include "iff_defs/iff_defs.h"

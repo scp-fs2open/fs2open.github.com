@@ -7,43 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/Grid.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
- *
- * Grid dialog box created by Mike.  Probably will never be used again.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2005/04/13 20:11:06  chhogg
- * Changed vector to vec3d for Fred.
- *
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:10:58  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 5     6/18/97 11:36p Lawrance
- * move grid rendering code to MissionGrid.cpp
- * 
- * 4     2/17/97 5:28p Hoffoss
- * Checked RCS headers, added them were missing, changing description to
- * something better, etc where needed.
- *
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"

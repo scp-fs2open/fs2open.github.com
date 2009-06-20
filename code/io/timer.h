@@ -7,71 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Io/Timer.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
- *
- * Include file for timer stuff
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/17 06:45:53  mharris
- * More porting tweaks.  It links!  but segfaults...
- *
- * Revision 1.2  2002/05/10 15:55:31  mharris
- * Moved timestamp_elapsed_safe macro from Network/multi_obj.h
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     5/17/99 6:03p Dave
- * Added new timing code. Put in code to allow camera speed zooming.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 11    4/14/98 2:26p Hoffoss
- * Removed function prototype that doesn't exist anymore.
- * 
- * 10    9/11/97 7:12p Hoffoss
- * Added more functionality to training sexp handling code.
- * 
- * 9     8/05/97 10:18a Lawrance
- * my_rand() being used temporarily instead of rand()
- * 
- * 8     7/29/97 5:30p Lawrance
- * move gettime() from keyboard module to timer module
- * 
- * 7     7/16/97 4:42p Mike
- * Make afterburner shake viewer, not ship.
- * Shake for limited time.
- * Add timestamp_until() function to timer library.
- * 
- * 6     6/26/97 12:05p Allender
- * fixed timestamp_valid macro
- * 
- * 5     2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _TIMER_H
 #define _TIMER_H

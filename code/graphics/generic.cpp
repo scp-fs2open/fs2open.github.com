@@ -1,24 +1,4 @@
-/*
- * $Logfile: /Freespace2/code/graphics/generic.cpp $
- * $Revision: 1.1.2.3 $
- * $Date: 2007-02-12 00:22:05 $
- * $Author: taylor $
- *
- * Generic graphics functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.2  2006/12/26 05:15:40  taylor
- * support both "none" and "<none>" on filenames to skip (will do this better later, ran out of time)
- *
- * Revision 1.1.2.1  2006/10/07 02:43:46  Goober5000
- * bypass annoying warnings for nonexistent bitmaps
- *
- * Revision 1.1  2005/11/21 23:55:00  taylor
- * add generic.cpp and generic.h
- *
- *
- * $NoKeywords: $
- */
+
 
 
 #include "globalincs/pstypes.h"

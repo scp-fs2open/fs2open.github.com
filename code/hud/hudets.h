@@ -7,61 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDets.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
- *
- * Header file that supports code to manage and display the Energy Transfer System (ETS)
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.5  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.4  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/09/13 06:02:05  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 7     8/11/97 10:51a Lawrance
- * fix problem that was not setting correct weapon energy when
- * change_ship_type() was called
- * 
- * 6     4/03/97 5:29p Mike
- * 
- * 5     2/25/97 4:12p Lawrance
- * using frametime to calculate energy recharge
- * 
- * 4     1/01/97 7:34p Lawrance
- * added cheat (Del+W) which keeps weapon energy at max levels.
- * 
- * 3     12/24/96 4:31p Lawrance
- * refining energy transfer system
- * 
- * 2     12/22/96 3:41p Lawrance
- * ETS system working
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _HUD_ETS_H
 #define _HUD_ETS_H

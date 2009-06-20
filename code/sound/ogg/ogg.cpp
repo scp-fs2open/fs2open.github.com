@@ -1,15 +1,4 @@
-/*
- * $Logfile: /Freespace2/code/sound/ogg/ogg.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-06-19 02:45:56 $
- * $Author: taylor $
- *
- * Functions used to handle OGG Vorbis files
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN

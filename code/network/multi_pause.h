@@ -7,45 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_pause.h $
- * $Revision: 2.3 $
- * $Date: 2006-03-26 08:23:06 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2005/07/13 03:35:32  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.1  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *  
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 2     5/07/98 6:26p Dave
- * Fix strange boundary conditions which arise when players die/respawn
- * while the game is being ended. Spiff up the chatbox doskey thing a bit.
- * 
- * 1     4/14/98 12:18p Dave
- *
- * 
- * $NoKeywords: $
- */
+
 
 
 #ifndef _MULTI_PAUSE_HEADER_FILE

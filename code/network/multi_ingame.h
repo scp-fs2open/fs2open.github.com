@@ -7,77 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_ingame.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 12    5/20/98 3:25p Allender
- * ingame join changes (which probably won't make the final version).
- * Added RAS code into psnet
- * 
- * 11    3/24/98 5:12p Allender
- * ingame join packet sequencing
- * 
- * 10    3/14/98 2:48p Dave
- * Cleaned up observer joining code. Put in support for file xfers to
- * ingame joiners (observers or not). Revamped and reinstalled pseudo
- * lag/loss system.
- * 
- * 9     3/13/98 2:51p Dave
- * Put in support for observers to join ingame.
- * 
- * 8     3/11/98 11:42p Allender
- * more ingame join stuff.  Fix to networking code to possibly
- * reinitialize reliable socket when entering join screen
- * 
- * 7     3/06/98 9:33a Allender
- * more ingame join stuff.  Wing packets are done.
- * 
- * 6     3/03/98 8:23p Allender
- * first pass of getting ingame join to a better state.  Started rewriting
- * the ship/wing list code
- * 
- * 5     2/05/98 11:10a Dave
- * Fixed an ingame join bug. Fixed a read-only file problem with
- * multiplayer file xfer.
- * 
- * 4     1/29/98 5:24p Dave
- * Made ingame join handle bad packets gracefully
- * 
- * 3     1/22/98 5:26p Dave
- * Modified some pregame sequencing packets. Starting to repair broken
- * standalone stuff.
- * 
- * 2     1/21/98 5:58p Dave
- * Finished ingame join. Coded in multiplayer interface artwork changes.
- * 
- * 1     1/20/98 5:41p Dave
- * Seperated ingame join functionality into its own module.
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _MULTI_INGAME_JOIN_HEADER_FILE
 #define _MULTI_INGAME_JOIN_HEADER_FILE

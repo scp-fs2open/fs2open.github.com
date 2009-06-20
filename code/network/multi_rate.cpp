@@ -7,65 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_rate.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
- * 
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/07/13 03:35:32  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.6  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.5  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/04/03 06:22:32  Goober5000
- * fixed some stub functions and a bunch of compile warnings
- * --Goober5000
- *
- * Revision 2.2  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 6     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 5     4/25/99 3:02p Dave
- * Build defines for the E3 build.
- * 
- * 4     4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 3     3/20/99 5:09p Dave
- * Fixed release build fred warnings and unhandled exception.
- * 
- * 2     3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- *  
- *   
- * $NoKeywords: $
- */
+
 
 
 // -----------------------------------------------------------------------------------------------------------------------

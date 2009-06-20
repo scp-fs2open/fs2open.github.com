@@ -7,56 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-01-04 21:48:36 $
- * $Author: wmcoolmon $
- *
- * flak functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/12/29 08:08:42  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.6  2005/10/30 06:44:59  wmcoolmon
- * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
- *
- * Revision 2.5  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.4  2004/07/26 20:47:56  Kazan
- * remove MCD complete
- *
- * Revision 2.3  2004/07/12 16:33:09  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2004/03/05 09:01:54  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:11  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 9     7/31/99 2:57p Dave
- * Scaled flak aim and jitter by weapon subsystem strength.
- * 
- * 8     5/24/99 5:45p Dave
- * Added detail levels to the nebula, with a decent speedup. Split nebula
- * lightning into its own section.
- * 
- * $NoKeywords: $
- */
+
 
 #include "weapon/flak.h"
 #include "weapon/weapon.h"

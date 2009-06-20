@@ -7,57 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ship/SubsysDamage.h $
- * $Revision: 2.3.2.1 $
- * $Date: 2007-02-11 21:42:39 $
- * $Author: Goober5000 $
- *
- * Header file for various subystem damage defines
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2005/11/24 08:46:10  Goober5000
- * * cleaned up mission_do_departure
- *   * fixed a hidden crash (array index being -1; would only
- * be triggered for ships w/o subspace drives under certain conditions)
- *   * removed finding a new fighterbay target because it might screw up missions
- *   * improved clarity, code flow, and readability :)
- * * added custom AI flag for disabling warpouts if navigation subsystem fails
- * --Goober5000
- *
- * Revision 2.2  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.1  2004/08/11 05:06:34  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 4     4/07/98 5:30p Lawrance
- * Player can't send/receive messages when comm is destroyed.  Garble
- * messages when comm is damaged.
- * 
- * 3     10/13/97 7:42p Lawrance
- * added MIN_COMM_STR_RECEIVE_OK
- * 
- * 2     10/11/97 6:38p Lawrance
- * move subsys damage #defines to SubsysDamage.h
- * 
- * 1     10/10/97 7:57p Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __SUBSYS_DAMAGE_H__
 #define __SUBSYS_DAMAGE_H__

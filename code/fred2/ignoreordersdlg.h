@@ -7,15 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/IgnoreOrdersDlg.h $
- * $Revision: 1.2 $
- * $Date: 2006-02-02 06:22:58 $
- * $Author: Goober5000 $
- *
- * header for dialog to set which orders from the player that a particular ship should ignore
- *
- */
+
 
 #include "ship/ship.h"
 

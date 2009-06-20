@@ -4,49 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.8.2.2 $
- * $Date: 2006-09-08 06:14:44 $
- * $Author: taylor $
- *
- * New docking system
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8.2.1  2006/07/21 05:41:07  Goober5000
- * add another method for calculating dimensions of docked objects, plus improve an existing one
- * --Goober5000
- *
- * Revision 2.8  2006/04/20 06:32:23  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.7  2005/07/13 03:35:31  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.6  2005/05/27 03:37:53  Goober5000
- * moved some prototypes that WMC put in the header file back to the implementation file
- * --Goober5000
- *
- * Revision 2.5  2005/05/27 03:36:20  Goober5000
- * hmm, rolled back to 2.3
- * --Goober5000
- *
- * Revision 2.3  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.2  2005/03/03 06:05:30  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.1  2005/01/11 21:38:49  Goober5000
- * multiple ship docking :)
- * don't tell anyone yet... check the SCP internal
- * --Goober500
- *
- * Revision 1.0  2004/12/30 16:35:00  Goober5000
- * Addition to CVS repository
- *
- */
+
 
 #ifndef _OBJECT_DOCK_H
 #define _OBJECT_DOCK_H

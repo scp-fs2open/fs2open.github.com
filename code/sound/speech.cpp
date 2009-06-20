@@ -6,49 +6,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
- *
- * Platform specific text-to-speech functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.24  2006/01/21 02:22:05  wmcoolmon
- * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
- *
- * Revision 1.23  2006/01/20 07:10:33  Goober5000
- * reordered #include files to quash Microsoft warnings
- * --Goober5000
- *
- * Revision 1.22  2005/07/13 03:35:29  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 1.21  2005/07/02 19:39:23  taylor
- * fix compiler warnings introduced by recent stub changes (defining an empty stub as something is wrong, it should be nothing)
- * assuming that GetStatus thing wasn't tested since it would never have worked
- *
- * Revision 1.20  2005/06/30 02:35:00  Goober5000
- * added functions to check if speech is playing
- * --Goober5000
- *
- * Revision 1.19  2005/04/19 06:29:28  taylor
- * try not to buffer output to the speech dev so that the text doesn't just show up some time in the future
- *
- * Revision 1.18  2005/03/29 06:36:37  wmcoolmon
- * Added some comments to #defines to make reading easier
- *
- * Revision 1.17  2005/03/27 08:12:53  wmcoolmon
- * Bizarre combo of fopen() and close()
- *
- * Revision 1.16  2005/02/02 10:36:23  taylor
- * merge with Linux/OSX tree - p0202
- *
- *
- * $NoKeywords: $
- */
+
 
 
 
