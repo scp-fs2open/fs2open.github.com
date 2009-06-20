@@ -1846,70 +1846,72 @@ void HUD_render_2d(float frametime)
 		return;
 	}
 
-	//Custom hud stuff
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+		//Custom hud stuff
 #ifdef NEW_HUD
-	//Player_ship->ship_hud.show();
-	//	int i;
-	//	gauge_data* cg;
-/*	for(i = 0; i < current_hud->num_gauges; i++)
-	{
+		//Player_ship->ship_hud.show();
+		//	int i;
+		//	gauge_data* cg;
+		/*	for(i = 0; i < current_hud->num_gauges; i++)
+		{
 		if(current_hud->gauges[i].type == HG_MAINGAUGE)
 		{
-			current_hud->gauges[i].update(current_hud->owner);
+		current_hud->gauges[i].update(current_hud->owner);
 		}
-	}*/
+		}*/
 #else
-	int i;
-	static bool image_ids_set = false;
-	static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
-	if(!image_ids_set)
-	{
-		for(i = 0; i < Num_custom_gauges; i++)
+		int i;
+		static bool image_ids_set = false;
+		static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
+		if(!image_ids_set)
 		{
-			if(strlen(current_hud->custom_gauge_images[i]))
+			for(i = 0; i < Num_custom_gauges; i++)
 			{
-				image_ids[i].first_frame = bm_load_animation(current_hud->custom_gauge_images[i], &image_ids[i].num_frames);
-				if(image_ids[i].first_frame != -1)
+				if(strlen(current_hud->custom_gauge_images[i]))
 				{
-					bm_page_in_aabitmap( image_ids[i].first_frame, image_ids[i].num_frames );
+					image_ids[i].first_frame = bm_load_animation(current_hud->custom_gauge_images[i], &image_ids[i].num_frames);
+					if(image_ids[i].first_frame != -1)
+					{
+						bm_page_in_aabitmap( image_ids[i].first_frame, image_ids[i].num_frames );
+					}
+					else
+					{
+						image_ids[i].first_frame = bm_load(current_hud->custom_gauge_images[i]);
+					}
 				}
 				else
 				{
-					image_ids[i].first_frame = bm_load(current_hud->custom_gauge_images[i]);
+					image_ids[i].first_frame = -1;
 				}
 			}
-			else
+			image_ids_set = true;
+		}
+
+		//Display the gauges
+		for(i = 0; i < Num_custom_gauges; i++)
+		{
+			if(current_hud->custom_gauge_colors[i].red != 0 || current_hud->custom_gauge_colors[i].green != 0 || current_hud->custom_gauge_colors[i].blue != 0)
 			{
-				image_ids[i].first_frame = -1;
+				//No custom alpha gauge color...
+				gr_init_alphacolor(&current_hud->custom_gauge_colors[i], current_hud->custom_gauge_colors[i].red, current_hud->custom_gauge_colors[i].green, current_hud->custom_gauge_colors[i].blue, (HUD_color_alpha+1)*16);
+
+				gr_set_color_fast(&current_hud->custom_gauge_colors[i]);
 			}
-		}
-		image_ids_set = true;
-	}
+			if(strlen(current_hud->custom_gauge_text[i]))
+			{
+				hud_num_make_mono(current_hud->custom_gauge_text[i]);
+				gr_string(current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1], current_hud->custom_gauge_text[i]);
+			}
+			if(image_ids[i].first_frame != -1)
+			{
+				GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+			}
 
-	//Display the gauges
-	for(i = 0; i < Num_custom_gauges; i++)
-	{
-		if(current_hud->custom_gauge_colors[i].red != 0 || current_hud->custom_gauge_colors[i].green != 0 || current_hud->custom_gauge_colors[i].blue != 0)
-		{
-			//No custom alpha gauge color...
-			gr_init_alphacolor(&current_hud->custom_gauge_colors[i], current_hud->custom_gauge_colors[i].red, current_hud->custom_gauge_colors[i].green, current_hud->custom_gauge_colors[i].blue, (HUD_color_alpha+1)*16);
-
-			gr_set_color_fast(&current_hud->custom_gauge_colors[i]);
+			//So we're back to normal
+			hud_set_default_color();
 		}
-		if(strlen(current_hud->custom_gauge_text[i]))
-		{
-			hud_num_make_mono(current_hud->custom_gauge_text[i]);
-			gr_string(current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1], current_hud->custom_gauge_text[i]);
-		}
-		if(image_ids[i].first_frame != -1)
-		{
-			GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
-		}
-
-		//So we're back to normal
-		hud_set_default_color();
-	}
 #endif
+	}
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
 	{
