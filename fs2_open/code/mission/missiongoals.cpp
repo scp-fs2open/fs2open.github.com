@@ -888,6 +888,7 @@ void mission_process_event( int event )
 	int store_count = Mission_events[event].count;
 
 	int result, sindex;
+	bool bump_timestamp = false; 
 
 	Directive_count = 0;
 	Event_index = event;
@@ -952,6 +953,17 @@ void mission_process_event( int event )
 		}
 	}
 
+	// decrement the trigger count.  When at 0, set the repeat count to 0 so we don't eval this function anymore
+	if (result && (Mission_events[event].trigger_count > 0) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) ) {
+		Mission_events[event].trigger_count--;
+		if (Mission_events[event].trigger_count == 0) {
+			 Mission_events[event].repeat_count = 0; 
+		}
+		else {
+			bump_timestamp = true;
+		}
+	}
+
 	// decrement the repeat count.  When at 0, don't eval this function anymore
 	if ( result || timestamp_valid(Mission_events[event].timestamp) ) {
 		// _argv[-1] - negative repeat count means repeat indefinitely.
@@ -969,11 +981,12 @@ void mission_process_event( int event )
 				// deal with the player's score
 				Player->stats.m_score += (int)(Mission_events[event].score * scoring_get_scale_factor());			
 			}
-		} else {
-			// set the timestamp to time out 'interval' seconds in the future.  We must also reset the
-			// value at the sexpresion node to unknown so that it will get reevaled
+		}
+		// Set the timestamp for the next check on this event unless we only have a trigger count and no repeat count and 
+		// this event didn't trigger this frame. 
+		else if (bump_timestamp || (!( Mission_events[event].repeat_count == -1 && Mission_events[event].trigger_count > 0 ))) {
+			// set the timestamp to time out 'interval' seconds in the future.  
 			Mission_events[event].timestamp = timestamp( Mission_events[event].interval * 1000 );
-//			Sexp_nodes[Mission_events[event].formula].value = SEXP_UNKNOWN;
 		}
 	}
 

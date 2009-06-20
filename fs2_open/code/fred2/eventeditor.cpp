@@ -37,6 +37,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(event_editor)
 	m_repeat_count = 0;
+	m_trigger_count = 0;
 	m_interval = 0;
 	m_event_score = 0;
 	m_chain_delay = 0;
@@ -67,6 +68,7 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(event_editor)
 	DDX_Control(pDX, IDC_EVENT_TREE, m_event_tree);
 	DDX_Text(pDX, IDC_REPEAT_COUNT, m_repeat_count);
+	DDX_Text(pDX, IDC_TRIGGER_COUNT, m_trigger_count);
 	DDX_Text(pDX, IDC_INTERVAL_TIME, m_interval);
 	DDX_Text(pDX, IDC_EVENT_SCORE, m_event_score);
 	DDX_Text(pDX, IDC_CHAIN_DELAY, m_chain_delay);
@@ -112,6 +114,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_WM_CLOSE()
 	ON_NOTIFY(TVN_SELCHANGED, IDC_EVENT_TREE, OnSelchangedEventTree)
 	ON_EN_UPDATE(IDC_REPEAT_COUNT, OnUpdateRepeatCount)
+	ON_EN_UPDATE(IDC_TRIGGER_COUNT, OnUpdateTriggerCount)
 	ON_BN_CLICKED(IDC_CHAINED, OnChained)
 	ON_BN_CLICKED(IDC_INSERT, OnInsert)
 	ON_LBN_SELCHANGE(IDC_MESSAGE_LIST, OnSelchangeMessageList)
@@ -405,6 +408,8 @@ int event_editor::query_modified()
 		if (stricmp(m_events[i].name, Mission_events[i].name))
 			return 1;
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count)
+			return 1;
+		if (m_events[i].trigger_count != Mission_events[i].trigger_count)
 			return 1;
 		if (m_events[i].interval != Mission_events[i].interval)
 			return 1;
@@ -709,6 +714,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	h = m_event_tree.insert(m_events[num].name, BITMAP_ROOT, BITMAP_ROOT, TVI_ROOT, after);
 
 	m_events[num].repeat_count = 1;
+	m_events[num].trigger_count = 1;
 	m_events[num].interval = 1;
 	m_events[num].score = 0;
 	m_events[num].chain_delay = -1;
@@ -821,6 +827,7 @@ void event_editor::save_event(int e)
 
 	UpdateData(TRUE);
 	m_events[e].repeat_count = m_repeat_count;
+	m_events[e].trigger_count = m_trigger_count;
 	m_events[e].interval = m_interval;
 	m_events[e].score = m_event_score;
 
@@ -923,6 +930,7 @@ void event_editor::update_cur_event()
 {
 	if (cur_event < 0) {
 		m_repeat_count = 1;
+		m_trigger_count = 1;
 		m_interval = 1;
 		m_chain_delay = 0;
 		m_team = -1;
@@ -930,6 +938,7 @@ void event_editor::update_cur_event()
 		m_obj_key_text.Empty();
 		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_REPEAT_COUNT) -> EnableWindow(FALSE);
+		GetDlgItem(IDC_TRIGGER_COUNT) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_EVENT_SCORE) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_CHAINED) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_CHAIN_DELAY) -> EnableWindow(FALSE);
@@ -944,6 +953,7 @@ void event_editor::update_cur_event()
 	m_team = m_events[cur_event].team;
 
 	m_repeat_count = m_events[cur_event].repeat_count;
+	m_trigger_count = m_events[cur_event].trigger_count;
 	m_interval = m_events[cur_event].interval;
 	m_event_score = m_events[cur_event].score;
 	if (m_events[cur_event].chain_delay >= 0) {
@@ -970,7 +980,9 @@ void event_editor::update_cur_event()
 	}
 
 	GetDlgItem(IDC_REPEAT_COUNT)->EnableWindow(TRUE);
-	if ( m_repeat_count <= 1 ) {
+	GetDlgItem(IDC_TRIGGER_COUNT)->EnableWindow(TRUE);
+
+	if (( m_repeat_count <= 1) && (m_trigger_count <= 1)) {
 		m_interval = 1;
 		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
 	} else {
@@ -992,19 +1004,31 @@ void event_editor::update_cur_event()
 void event_editor::OnUpdateRepeatCount()
 {
 	char buf[128];
-	int count;
-
-	count = 128;
+	int count = 128; 
 	GetDlgItem(IDC_REPEAT_COUNT)->GetWindowText(buf, count);
 	m_repeat_count = atoi(buf);
 
-	if ( m_repeat_count <= 1 ){
+	if ( ( m_repeat_count <= 1) && (m_trigger_count <= 1) ){
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
 	}
 }
 
+void event_editor::OnUpdateTriggerCount()
+{
+	char buf[128];
+	int count = 128;
+
+	GetDlgItem(IDC_TRIGGER_COUNT)->GetWindowText(buf, count);
+	m_trigger_count = atoi(buf);
+
+	if ( ( m_repeat_count <= 1) && (m_trigger_count <= 1) ){
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
+	} else {
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
+	}
+}
 void event_editor::swap_handler(int node1, int node2)
 {
 	int index1, index2;

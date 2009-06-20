@@ -55,6 +55,7 @@ public:
 	enum { IDD = IDD_EVENT_EDITOR };
 	event_sexp_tree	m_event_tree;
 	UINT	m_repeat_count;
+	UINT	m_trigger_count;
 	UINT	m_interval;
 	int		m_event_score;
 	int		m_chain_delay;
@@ -98,6 +99,7 @@ protected:
 	afx_msg void OnClose();
 	afx_msg void OnSelchangedEventTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnUpdateRepeatCount();
+	afx_msg void OnUpdateTriggerCount();
 	afx_msg void OnChained();
 	afx_msg void OnInsert();
 	afx_msg void OnSelchangeMessageList();

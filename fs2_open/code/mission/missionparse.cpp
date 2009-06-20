@@ -4311,6 +4311,18 @@ void parse_event(mission *pm)
 		event->repeat_count = 1;
 	}
 
+	if ( optional_string("+Trigger Count:")){
+		stuff_int( &(event->trigger_count) );
+		// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
+		if (event->repeat_count == 1) {
+			event->repeat_count = -1;
+		}
+		event->flags |= MEF_USING_TRIGGER_COUNT; 
+	} 
+	else {
+		event->trigger_count = 1;
+	}
+
 	event->interval = -1;
 	if ( optional_string("+Interval:")){
 		stuff_int( &(event->interval) );
