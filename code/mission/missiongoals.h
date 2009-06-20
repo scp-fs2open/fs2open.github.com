@@ -80,13 +80,15 @@ extern int	Num_goals;									// number of goals for this mission
 
 #define MEF_CURRENT					(1 << 0)		// is event current or past current yet?
 #define MEF_DIRECTIVE_SPECIAL		(1 << 1)		// used to mark a directive as true even though not fully satisfied
-#define MEF_DIRECTIVE_TEMP_TRUE	(1 << 2)		// this directive is temporarily true.
+#define MEF_DIRECTIVE_TEMP_TRUE		(1 << 2)		// this directive is temporarily true.
+#define MEF_USING_TRIGGER_COUNT		(1 << 3)		// Karajorma - use trigger count as well as repeat count to determine how many repeats this event has
 
 typedef struct mission_event {
 	char	name[NAME_LENGTH];	// used for storing status of events in player file
 	int	formula;					// index into sexpression array for this formula
 	int	result;					// result of most recent evaluation of event
-	int	repeat_count;			// number of times to repeat this goal
+	int	repeat_count;			// number of times to test this goal
+	int trigger_count;			// number of times to allow this goal to trigger
 	int	interval;				// interval (in seconds) at which an evaulation is repeated once true.
 	int	timestamp;				// set at 'interval' seconds when we start to eval.
 	int	score;					// score for this event

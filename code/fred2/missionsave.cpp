@@ -3050,6 +3050,18 @@ int CFred_mission_save::save_events()
 
 		fout(" %d", Mission_events[i].repeat_count);
 
+		if (Format_fs2_open) {
+			if ( optional_string_fred("+Trigger Count:", "$Formula:")){
+				parse_comments();
+			} else {
+				fso_comment_push(";;FSO 3.6.11;;");
+				fout_version("\n+Trigger Count:");
+				fso_comment_pop(); 
+			}
+
+			fout(" %d", Mission_events[i].trigger_count);
+		}
+
 		if ( optional_string_fred("+Interval:", "$Formula:")){
 			parse_comments();
 		} else {
