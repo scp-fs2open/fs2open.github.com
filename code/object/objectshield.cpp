@@ -213,14 +213,8 @@ float shield_get_quad(object *objp, int quadrant_num)
 void shield_set_quad(object *objp, int quadrant_num, float strength)
 {
 	// check array bounds
-    Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
-    if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
-        return;
-
-    if ((objp->n_shield_segments == 1) && (quadrant_num > 0))
-        return;
-
-    if ((objp->n_shield_segments == 2) && (quadrant_num > 1))
+	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	if (quadrant_num < 0 || quadrant_num >= objp->n_shield_segments)
         return;
 
 	// check range
