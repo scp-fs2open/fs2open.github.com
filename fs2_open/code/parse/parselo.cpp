@@ -1059,7 +1059,7 @@ int required_string_4(char *str1, char *str2, char *str3, char *str4)
 			return 2;
 		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
 			diag_printf("Found required string [%s]\n", token_found = str4);
-			return 2;
+			return 3;
 		}
 		
 		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());

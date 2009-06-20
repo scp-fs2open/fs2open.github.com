@@ -2886,11 +2886,11 @@ strcpy(parse_error_text, temp_error);
 		case 2:
 			cont_flag = 0;
 			break;
-			case 3:
-				if (isTemplate) {
-					cont_flag = 0;
-					break;
-				}
+		case 3:
+			if (isTemplate) {
+				cont_flag = 0;
+				break;
+			}
 		default:
 			Int3();	// Impossible return value from required_string_3.
 		}
