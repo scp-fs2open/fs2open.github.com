@@ -5468,6 +5468,8 @@ void ai_waypoints()
 			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 		} else {
+			if ( !wing_leader )
+				wing_leader = Pl_objp;
 			vm_vec_scale_add(&perp, &Pl_objp->pos, &wing_leader->phys_info.vel, 1000.0f);
 			ai_turn_towards_vector(&perp, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 		}
