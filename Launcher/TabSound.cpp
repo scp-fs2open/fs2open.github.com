@@ -204,7 +204,7 @@ BOOL CTabSound::OnInitDialog()
 		// now try to grab the full OEM name for this joystick ...
 
 		sprintf(szKey, "%s\\%s\\%s", REGSTR_PATH_JOYCONFIG, jc.szRegKey, REGSTR_KEY_JOYCURR);
-		lr = RegOpenKeyEx(HKEY_CURRENT_USER, (LPTSTR) &szKey, 0, KEY_QUERY_VALUE, &hKey);
+		lr = RegOpenKeyEx(HKEY_LOCAL_MACHINE, (LPTSTR) &szKey, 0, KEY_QUERY_VALUE, &hKey);
 
 		if (lr != ERROR_SUCCESS)
 			goto Done;
@@ -219,7 +219,7 @@ BOOL CTabSound::OnInitDialog()
 			goto Done;
 
 		sprintf(szKey, "%s\\%s", REGSTR_PATH_JOYOEM, szOEMKey);
-		lr = RegOpenKeyEx(HKEY_CURRENT_USER, szKey, 0, KEY_QUERY_VALUE, &hKey);
+		lr = RegOpenKeyEx(HKEY_LOCAL_MACHINE, szKey, 0, KEY_QUERY_VALUE, &hKey);
 
 		if (lr != ERROR_SUCCESS)
 			goto Done;
