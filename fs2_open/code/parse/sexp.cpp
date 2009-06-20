@@ -9170,6 +9170,31 @@ void sexp_add_goal(int n)
 // Goober5000
 void sexp_remove_goal(int n)
 {
+	Assert( n >= 0 );
+	/* Grab the information that we need about this goal removal action */
+	int num, sindex;
+	int goalindex;
+	char *name;
+
+	name = CTEXT(n);
+	sindex = CDR(n);
+
+	// first, look for ship name -- if found, then add ship goal.  else look for wing name -- if
+	// found, add wing goal
+	if ( (num = ship_name_lookup(name, 1)) != -1 )
+	{
+		goalindex = ai_remove_goal_sexp_sub( sindex, Ai_info[Ships[num].ai_index].goals );
+		if ( goalindex >= 0 )
+		{
+			if ( Ai_info[Ships[num].ai_index].active_goal == goalindex )
+				Ai_info[Ships[num].ai_index].active_goal = AI_GOAL_NONE;
+		}
+	}
+	else if ( (num = wing_name_lookup(name)) != -1 )
+	{
+		ai_remove_wing_goal_sexp( sindex, num );
+	}
+	
 }
 
 // clears out all ai goals for a ship
