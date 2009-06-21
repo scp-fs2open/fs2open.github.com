@@ -7,22 +7,36 @@
  *
 */ 
 
-
-
 // Nothing in this module should be externalized!!!
 //XSTR:OFF
 
 //#define DUMPRAM	// This dumps all symbol sizes. See John for more info
 
+/* Windows Headers */
 #include <windows.h>
 #include <windowsx.h>
 #include <stdio.h>
 
+#ifdef _MSC_VER
+#	include <crtdbg.h>
+	/* Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors */
+#	define SHOW_CALL_STACK
+#endif // _MSC_VER
+
+/* STL Headers */
+#include <string>
+#include <vector>
+
+/* SCP Headers */
 #include "osapi/osapi.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 #include "parse/lua.h"
+
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+#	include "globalincs/mspdb_callstack.h"
+#endif
 
 extern void gr_activate(int active);
 
@@ -30,16 +44,6 @@ bool Messagebox_active = false;
 
 int Global_warning_count = 0;
 int Global_error_count = 0;
-
-#ifdef _MSC_VER
-#include <crtdbg.h>
-
-
-
-//Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors
-#define SHOW_CALL_STACK
-#endif // _MSC_VER
-
 
 #ifndef _ASSERT
   #ifndef _DEBUG
@@ -49,61 +53,127 @@ int Global_error_count = 0;
 //    #error _ASSERT is not defined yet for debug mode with non-MSVC compilers
   #endif
 #endif
-				   
 
-#ifdef SHOW_CALL_STACK
+const char *clean_filename( const char *name)
+{
+	const char *p = name+strlen(name)-1;
+	// Move p to point to first letter of EXE filename
+	while( (*p!='\\') && (*p!='/') && (*p!=':') )
+		p--;
+	p++;	
 
+	return p;	
+}		   
+
+#if defined( SHOW_CALL_STACK )
 static bool Dump_to_log = true; 
 
 class DumpBuffer
-  {
-  public :
-    enum { BUFFER_SIZE = 32000 } ;
-    DumpBuffer() ;
-    void Clear() ;
-    void Printf( const char* format, ... ) ;
-    void SetWindowText( HWND hWnd ) const ;
-    char buffer[ BUFFER_SIZE ] ;
-  private :
-    char* current ;
-  } ;
+{
+public :
+	enum { BUFFER_SIZE = 32000 } ;
+	DumpBuffer() ;
+	void Clear() ;
+	void Printf( const char* format, ... ) ;
+	void SetWindowText( HWND hWnd ) const ;
+	char buffer[ BUFFER_SIZE ] ;
+private :
+	char* current ;
+} ;
 
 
 
 DumpBuffer :: DumpBuffer()
-  {
-  Clear() ;
-  }
+{
+	Clear() ;
+}
 
 
 void DumpBuffer :: Clear()
-  {
-  current = buffer ;
-  }
+{
+	current = buffer ;
+}
 
 
 void DumpBuffer :: Printf( const char* format, ... )
-  {
-  // protect against obvious buffer overflow
-  if( current - buffer < BUFFER_SIZE )
-    {
-    va_list argPtr ;
-    va_start( argPtr, format ) ;
-    int count = vsprintf( current, format, argPtr ) ;
-    va_end( argPtr ) ;
-    current += count ;
-    }
-  }
+{
+	// protect against obvious buffer overflow
+	if( current - buffer < BUFFER_SIZE )
+	{
+		va_list argPtr ;
+		va_start( argPtr, format ) ;
+		int count = vsprintf( current, format, argPtr ) ;
+		va_end( argPtr ) ;
+		current += count ;
+	}
+}
 
 
 void DumpBuffer :: SetWindowText( HWND hWnd ) const
-  {
-  SendMessage( hWnd, WM_SETTEXT, 0, (LPARAM)buffer ) ;
-  }
+{
+	SendMessage( hWnd, WM_SETTEXT, 0, (LPARAM)buffer ) ;
+}
 
+/* Needed by LUA printf */
+// This ought to be local to VerboseAssert, but it
+// causes problems in Visual C++ (in the CRTL init phase)
+static DumpBuffer dumpBuffer;
+const char* Separator = "------------------------------------------------------------------\n" ;
 
+#endif
 
+/* MSVC2005+ callstack support
+ */
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
 
+class SCP_DebugCallStack : public SCP_IDumpHandler
+{
+public:
+	virtual void OnBegin( )
+	{
+	}
+
+	virtual void OnEnd( )
+	{
+	}
+
+	virtual void OnEntry( void* address, const char* module, const char* symbol )
+	{
+		UNREFERENCED_PARAMETER( address );
+
+		StackEntry entry;
+		entry.module = clean_filename( module );
+		entry.symbol = symbol;
+		m_stackFrames.push_back( entry );
+	}
+	
+	virtual void OnError( const char* error )
+	{
+		/* No error handling here! */
+		UNREFERENCED_PARAMETER( error );
+	}
+
+	std::string DumpToString( )
+	{
+		std::string callstack;
+		for ( size_t i = 0; i < m_stackFrames.size( ); i++ )
+		{
+			callstack += m_stackFrames[ i ].module + "!" + m_stackFrames[ i ].symbol + "\n";
+		}
+
+		return callstack; /* Inefficient, but we don't need efficient here */
+	}
+private:
+	struct StackEntry
+	{
+		std::string module;
+		std::string symbol;
+	};
+
+	std::vector< StackEntry > m_stackFrames;
+};
+
+#elif defined( SHOW_CALL_STACK )
 
 class PE_Debug
   {
@@ -670,9 +740,6 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 
 }
 
-const char* Separator = "------------------------------------------------------------------\r\n" ;
-
-
 void DumpCallsStack( DumpBuffer& dumpBuffer )
 {
 	static PE_Debug PE_debug ;
@@ -737,11 +804,6 @@ void DumpCallsStack( DumpBuffer& dumpBuffer )
 	PE_debug.ClearReport() ;  // Prepare for future calls
 }
 
-
-// This ought to be local to VerboseAssert, but it
-// causes problems in Visual C++ (in the CRTL init phase)
-static DumpBuffer dumpBuffer ;
-
 #endif	//SHOW_CALL_STACK
 
 
@@ -753,7 +815,7 @@ uint flags = MB_SYSTEMMODAL|MB_SETFOREGROUND;
 
 extern void gr_force_windowed();
 
-void dump_text_to_clipboard(char *text)
+void dump_text_to_clipboard( const char *text )
 {
 	int len = strlen(text)+1024;
 
@@ -798,7 +860,24 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
 
-#ifdef SHOW_CALL_STACK	
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
+
+#elif defined( SHOW_CALL_STACK )
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText1 );
 	dumpBuffer.Printf( "\r\n" );
@@ -849,7 +928,24 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n%s\r\n", text, filename, linenum, AssertText2 );
 
-#ifdef SHOW_CALL_STACK	
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
+
+#elif defined ( SHOW_CALL_STACK	)
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText1 );
 	dumpBuffer.Printf( "\r\n" );
@@ -1003,7 +1099,24 @@ void _cdecl Error( char * filename, int line, const char * format, ... )
 
 	gr_activate(0);
 
-#ifdef SHOW_CALL_STACK
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	val = MessageBox( NULL, assertString.c_str( ), "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
+
+#elif defined( SHOW_CALL_STACK )
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText2 );
 	dumpBuffer.Printf( "\r\n" );
@@ -1092,7 +1205,24 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 
 	gr_activate(0);
 
-#ifdef SHOW_CALL_STACK
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	result = MessageBox( NULL, assertString.c_str( ), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
+
+#elif defined ( SHOW_CALL_STACK	)
 	//we don't want to dump the call stack for every single warning
 	Dump_to_log = false; 
 
@@ -1302,16 +1432,6 @@ int vm_init(int min_heap_size)
 	return 1;
 }
 
-char *clean_filename(char *name)
-{
-	char *p = name+strlen(name)-1;
-	// Move p to point to first letter of EXE filename
-	while( (*p!='\\') && (*p!='/') && (*p!=':') )
-		p--;
-	p++;	
-
-	return p;	
-}
 
 #ifdef _DEBUG
 
