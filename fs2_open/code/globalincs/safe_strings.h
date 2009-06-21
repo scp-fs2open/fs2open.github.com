@@ -36,7 +36,7 @@ typedef int errno_t;
 
 #	ifndef __safe_strings_error_handler
 #		ifdef _DEBUG
-#			define __safe_strings_error_handler( val ) Assert(0) /* Crash hard here - no better option outside of a cross platform framework */
+#			define __safe_strings_error_handler( val ) Assertion(0,"%s: String error. Please Report", #val) /* Crash hard here - no better option outside of a cross platform framework */
 #		else
 #			define __safe_strings_error_handler( val ) 1/0 /* Crash hard here - no better option outside of a cross platform framework */
 #		endif
