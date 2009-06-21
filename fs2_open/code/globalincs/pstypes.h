@@ -210,27 +210,26 @@ extern int Global_error_count;
 // Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
-#define Assert(x) do {} while (0)
-#ifndef _MSC_VER   // non MS compilers
-#define Assertion(x, y, ...) do {} while (0)
+#	define Assert(x) do {} while (0)
+#	ifndef _MSC_VER   // non MS compilers
+#		define Assertion(x, y, ...) do {} while (0)
+#	else
+#		define Assertion(x, y) do {} while (0)
+#	endif
 #else
-#define Assertion(x, y) do {} while (0)
-#endif
-#else
-void gr_activate(int);
-#define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+	void gr_activate(int);
+#	define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
 
-// Assertion can only use its proper fuctionality in compilers that support variadic macro
-#ifndef _MSC_VER   // non MS compilers
-#define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
-#else 
-#if _MSC_VER >= 1400	// VC 2005 or greater
-#define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
-#else // everything else
-#define Assertion(x, y) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
-#endif
-#endif
-
+	// Assertion can only use its proper fuctionality in compilers that support variadic macro
+#	ifndef _MSC_VER   // non MS compilers
+#		define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#	else 
+#		if _MSC_VER >= 1400	// VC 2005 or greater
+#			define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#		else // everything else
+#			define Assertion(x, y) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+#		endif
+#	endif
 #endif
 /*******************NEVER COMMENT Assert ************************************************/
 

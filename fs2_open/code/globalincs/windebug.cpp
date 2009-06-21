@@ -158,7 +158,7 @@ public:
 		std::string callstack;
 		for ( size_t i = 0; i < m_stackFrames.size( ); i++ )
 		{
-			callstack += m_stackFrames[ i ].module + "!" + m_stackFrames[ i ].symbol + "\n";
+			callstack += m_stackFrames[ i ].module + "! " + m_stackFrames[ i ].symbol + "\n";
 		}
 
 		return callstack; /* Inefficient, but we don't need efficient here */
@@ -1080,7 +1080,7 @@ void LuaError(struct lua_State *L, char *format, ...)
 	Messagebox_active = false;
 }
 
-void _cdecl Error( char * filename, int line, const char * format, ... )
+void _cdecl Just ( char * filename, int line, const char * format, ... )
 {
 	Global_error_count++;
 
