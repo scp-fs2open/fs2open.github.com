@@ -22,6 +22,7 @@
 /* errno_t, EINVAL, ERANGE, etc.. */
 #include <errno.h>
 #include <stdlib.h> /* size_t */
+#include "globalincs/pstypes.h"
 
 /* Because errno_t is not (yet) standard, we define it here like this */
 typedef int errno_t;
@@ -36,7 +37,7 @@ typedef int errno_t;
 
 #	ifndef __safe_strings_error_handler
 #		ifdef _DEBUG
-#			define __safe_strings_error_handler( val ) Assertion(0,"string error, please report") /* Crash hard here - no better option outside of a cross platform framework */
+#			define __safe_strings_error_handler( val ) Assert(0) /* Crash hard here - no better option outside of a cross platform framework */
 #		else
 #			define __safe_strings_error_handler( val ) 1/0 /* Crash hard here - no better option outside of a cross platform framework */
 #		endif
@@ -45,7 +46,7 @@ typedef int errno_t;
 #else
 
 /* For testing only */
-#	define __safe_strings_error_handler( errnoVal ) extern void error_handler( int errnoValue, const char* errnoStr,  const char* file, const char* function, int line );\														 
+#	define __safe_strings_error_handler( errnoVal ) extern void error_handler( int errnoValue, const char* errnoStr,  const char* file, const char* function, int line );\
 																error_handler( errnoVal, #errnoVal, __FILE__, __FUNCTION__, __LINE__ );
 #endif
 
