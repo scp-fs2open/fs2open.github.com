@@ -1,4 +1,4 @@
-#include "safe_strings.h"
+#include "pstypes.h"
 
 /* Licence is given to use in the Hard-Light Productions Source Code Project.
  * You may not use this code for commercial gain
