@@ -1080,7 +1080,7 @@ void LuaError(struct lua_State *L, char *format, ...)
 	Messagebox_active = false;
 }
 
-void _cdecl Just ( char * filename, int line, const char * format, ... )
+void _cdecl Error( char * filename, int line, const char * format, ... )
 {
 	Global_error_count++;
 
