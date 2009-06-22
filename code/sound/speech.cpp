@@ -92,7 +92,7 @@ bool speech_play(char *text)
 
 #ifdef _WIN32
 	int len = strlen(text);
-	unsigned short Conversion_buffer[MAX_SPEECH_CHAR_LEN];
+	wchar_t Conversion_buffer[MAX_SPEECH_CHAR_LEN];
 
 	if(len > (MAX_SPEECH_CHAR_LEN - 1)) {
 		len = MAX_SPEECH_CHAR_LEN - 1;
