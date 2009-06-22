@@ -7,61 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/ShieldSysDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
- *
- * Shield generator system editor.  This dialog allows one to indicate whether all ships
- * (on a certain team or of a certain type) have a shield system or not.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2006/01/14 23:49:01  Goober5000
- * second pass; all the errors are fixed now; one more thing to take care of
- * --Goober5000
- *
- * Revision 1.7  2006/01/14 05:24:19  Goober5000
- * first pass at converting FRED to use new IFF stuff
- * --Goober5000
- *
- * Revision 1.6  2005/12/29 08:21:00  wmcoolmon
- * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
- *
- * Revision 1.5  2003/09/05 07:43:56  Goober5000
- * fix some compile errors
- * --Goober5000
- *
- * Revision 1.4  2003/09/05 05:32:36  Goober5000
- * moved custom buttons from shield sys dialog and added dialog to set
- * ship flags globally
- * --Goober5000
- *
- * Revision 1.3  2003/08/26 06:39:34  Goober5000
- * added special buttons on shield dialog to edit global ship flags
- * --Goober5000
- *
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:11:02  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 2     8/18/97 9:31p Hoffoss
- * Added grid adjustment dialog and shield system editor dialog.
- *
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"

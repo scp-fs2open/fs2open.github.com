@@ -7,35 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Demo/Demo.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 02:50:51 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2004/08/11 05:06:21  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     3/29/99 6:17p Dave
- * More work on demo system. Got just about everything in except for
- * blowing ships up, secondary weapons and player death/warpout.
- * 
- * 2     3/28/99 5:58p Dave
- * Added early demo code. Make objects move. Nice and framerate
- * independant, but not much else. Don't use yet unless you're me :)
- *  
- *  
- * $NoKeywords: $
- */
+
 
 
 #ifndef _FS2_DEMO_SYSTEM_HEADER_FILE

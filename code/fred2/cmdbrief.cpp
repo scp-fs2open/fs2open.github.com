@@ -7,68 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/CmdBrief.cpp $
- * $Revision: 1.1.2.3 $
- * $Date: 2007-04-08 08:28:20 $
- * $Author: karajorma $
- *
- * Command Briefing Editor
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.2  2007/03/07 22:36:51  karajorma
- * Make .ogg selectable in FRED.
- *
- * Revision 1.1.2.1  2006/10/24 13:41:54  taylor
- * fix the cmdbrief editor deleting the wrong stage (Mantis bug #1115)
- *
- * Revision 1.1  2006/01/19 02:27:31  Goober5000
- * import FRED2 back into fs2_open module
- * --Goober5000
- *
- * Revision 1.3  2005/10/22 05:54:48  wmcoolmon
- * Fixed cf_find_file_location
- *
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:10:53  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 8     4/30/98 8:23p John
- * Fixed some bugs with Fred caused by my new cfile code.
- * 
- * 7     4/22/98 9:56a Sandeep
- * 
- * 6     4/20/98 4:40p Hoffoss
- * Added a button to 4 editors to play the chosen wave file.
- * 
- * 5     4/03/98 12:39p Hoffoss
- * Changed starting directory for browse buttons in several editors.
- * 
- * 4     3/19/98 4:24p Hoffoss
- * Added remaining support for command brief screen (ANI and WAVE file
- * playing).
- * 
- * 3     3/06/98 2:36p Hoffoss
- * Placed correct text size limits on edit boxes.
- * 
- * 2     3/05/98 3:59p Hoffoss
- * Added a bunch of new command brief stuff, and asteroid initialization
- * to Fred.
- *
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"

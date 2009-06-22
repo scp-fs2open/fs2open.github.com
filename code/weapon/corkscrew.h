@@ -7,16 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Corkscrew.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
- *
- * Header file for managing corkscrew missiles
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FREESPACE_CORKSCREW_H__
 #define __FREESPACE_CORKSCREW_H__

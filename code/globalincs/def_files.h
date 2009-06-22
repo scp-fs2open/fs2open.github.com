@@ -5,14 +5,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/globalincs/def_files.h $
- * $Revision: 2.3.2.1 $
- * $Date: 2006-07-06 21:23:28 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- */
+
 
 
 #ifndef __DEF_FILES_H_

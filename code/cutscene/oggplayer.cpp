@@ -1,31 +1,4 @@
-/*
- * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 1.1.2.5 $
- * $Date: 2007-04-11 14:44:32 $
- * $Author: taylor $
- *
- * movie player code
- * 
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.4  2007/03/22 20:23:58  taylor
- * fix stupidness that screwed up RGB values (Mantis #1307)
- *
- * Revision 1.1.2.3  2007/02/10 00:01:53  taylor
- * make sure that our color is getting set properly (should properly fix the red/green tint problem, Mantis #1041)
- * slight optimization for Theora YUV->RGB converter
- *
- * Revision 1.1.2.2  2007/01/07 12:10:18  taylor
- * remove D3D support for Theora movies, make sure that it doesn't try to play them (since it wouldn't work properly anyway)
- * fix triple-buffer problem with page flipping (Mantis #1190)
- *
- * Revision 1.1.2.1  2006/12/25 21:44:11  taylor
- * initial OGG Theora movie support (likely to be rewritten at least in large part)
- *
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 // This player code is based largely on the player example in the libtheora package
 // and so they get a fair bit of credit for this code, even if in ideas/comments only

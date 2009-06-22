@@ -1,18 +1,4 @@
-/*
- * $Logfile: /Freespace2/code/graphics/generic.h $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-02-12 00:22:05 $
- * $Author: taylor $
- *
- * Generic graphics functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2005/11/21 23:55:00  taylor
- * add generic.cpp and generic.h
- *
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _GENERIC_H_
 #define _GENERIC_H_

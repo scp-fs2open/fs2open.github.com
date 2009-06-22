@@ -7,41 +7,7 @@
  *
  */
 
-/*
- * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.25.2.1 $
- * $Date: 2006-11-15 00:40:59 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.25  2006/03/22 18:11:28  taylor
- * GCC 4.1 barfed on this
- *
- * Revision 1.24  2006/01/20 07:10:34  Goober5000
- * reordered #include files to quash Microsoft warnings
- * --Goober5000
- *
- * Revision 1.23  2005/12/04 19:07:48  wmcoolmon
- * Final commit of codebase
- *
- * Revision 1.21  2005/10/23 05:01:49  wmcoolmon
- * *Fix*
- *
- * Revision 1.20  2005/10/22 20:17:18  wmcoolmon
- * mission-set-nebula fixage; remainder of python code
- *
- * Revision 1.19  2005/10/09 00:43:08  wmcoolmon
- * Extendable modular tables (XMTs); added weapon dialogs to the Lab
- *
- * Revision 1.18  2005/09/25 07:27:33  Goober5000
- * and again
- * --Goober5000
- *
- * Revision 1.17  2005/09/25 07:26:05  Goober5000
- * try to fix the headers
- * --Goober5000
- *
- */
+
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"

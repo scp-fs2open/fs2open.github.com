@@ -7,68 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.8.2.1 $
- * $Date: 2007-09-02 18:52:50 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/05/12 17:49:11  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.7  2005/04/05 05:53:15  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.6  2005/01/31 23:27:52  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.5  2004/07/26 20:47:27  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:45  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:01:59  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/07 19:55:58  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 6     8/26/99 8:51p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 5     6/16/99 10:20a Dave
- * Added send-message-list sexpression.
- * 
- * 4     4/16/99 5:54p Dave
- * Support for on/off style "stream" weapons. Real early support for
- * target-painting lasers.
- * 
- * 3     3/29/99 6:17p Dave
- * More work on demo system. Got just about everything in except for
- * blowing ships up, secondary weapons and player death/warpout.
- * 
- * 2     3/28/99 5:58p Dave
- * Added early demo code. Make objects move. Nice and framerate
- * independant, but not much else. Don't use yet unless you're me :)
- *  
- *  
- * $NoKeywords: $
- */
+
 
 #include "demo/demo.h"
 #include "ship/ship.h"

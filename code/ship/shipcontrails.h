@@ -7,47 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ship/ShipContrails.h $
- * $Revision: 2.5 $
- * $Date: 2006-02-25 21:47:08 $
- * $Author: Goober5000 $
- *
- * all sorts of cool stuff about ships
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.3  2004/08/11 05:06:34  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2003/11/11 02:15:41  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.1  2002/10/19 19:29:29  bobboau
- * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
- *
- * Revision 2.0  2002/06/03 04:02:28  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     11/14/98 5:33p Dave
- * Lots of nebula work. Put in ship contrails.
- * 
- * 1     11/14/98 3:40p Dave
- * 
- * 1     11/13/98 3:28p Dave
- * 
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef _FREESPACE2_SHIP_CONTRAIL_HEADER_FILE
 #define _FREESPACE2_SHIP_CONTRAIL_HEADER_FILE

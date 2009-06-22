@@ -7,59 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/ShipGoalsDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
- * $Author: Goober5000 $
- *
- * Initial orders editor dialog box handling code.  This dialog is used for both
- * ship and wing initial orders, and can support more if need be without modification.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2005/07/13 02:40:50  Goober5000
- * remove PreProcDefine #includes in FRED
- * --Goober5000
- *
- * Revision 1.2  2004/09/29 17:26:33  Kazan
- * PreProfDefines.h includes for fred2
- *
- * Revision 1.1.1.1  2002/07/15 03:11:03  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 13    8/26/97 4:18p Hoffoss
- * Added error checking to initial orders dialog when ok is clicked.
- * 
- * 12    7/30/97 12:31p Hoffoss
- * Made improvements to ship goals editor (initial orders) to disallow
- * illegal orders.
- * 
- * 11    5/30/97 4:50p Hoffoss
- * Added code to allow marked ship editing of data in child dialogs of
- * ship editor dialog.
- * 
- * 10    3/10/97 5:37p Hoffoss
- * fixed bug in dock goal selection.
- * 
- * 9     3/03/97 4:32p Hoffoss
- * Initial orders supports new docking stuff Allender added.
- * 
- * 8     2/17/97 5:28p Hoffoss
- * Checked RCS headers, added them were missing, changing description to
- * something better, etc where needed.
- *
- * $NoKeywords: $
- */
+
 
 #include "Management.h"
 

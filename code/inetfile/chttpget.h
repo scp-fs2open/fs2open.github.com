@@ -7,52 +7,7 @@
  *
 */
 
-/*
-* $Logfile: /Freespace2/code/Inetfile/Chttpget.h $
-* $Revision: 2.2.2.1 $
-* $Date: 2007-10-15 06:43:14 $
-* $Author: taylor $
-*
-* HTTP Client class (get only)
-*
-* $Log: not supported by cvs2svn $
-* Revision 2.2  2005/07/13 03:15:50  Goober5000
-* remove PreProcDefine #includes in FS2
-* --Goober5000
-*
-* Revision 2.1  2004/08/11 05:06:25  Kazan
-* added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
-*
-* Revision 2.0  2002/06/03 04:02:24  penguin
-* Warpcore CVS sync
-*
-* Revision 1.1  2002/05/02 18:03:08  mharris
-* Initial checkin - converted filenames and includes to lower case
-*
- * 
- * 3     8/22/99 1:19p Dave
- * Fixed up http proxy code. Cleaned up scoring code. Reverse the order in
- * which d3d cards are detected.
- * 
- * 5     8/20/99 3:01p Kevin
- * Added support for Proxies (I hope!)
- * 
- * 4     7/31/98 12:19p Nate
- * Fixed http abort problem.
- * 
- * 3     7/31/98 11:57a Kevin
- * Added new functions for getting state
- * 
- * 2     6/01/98 10:10a Kevin
- * Added DLL connection interface and auto update DLL
- * 
- * 1     5/27/98 9:54a Kevin
- * 
- * 1     5/25/98 5:31p Kevin
- * Initial version
-*
-* $NoKeywords: $
-*/
+
 
 #ifndef _CHTTPGET_HEADER_
 #define _CHTTPGET_HEADER_

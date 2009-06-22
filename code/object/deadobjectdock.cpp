@@ -4,20 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/DeadObjectDock.cpp $
- * $Revision: 1.1.2.2 $
- * $Date: 2006-06-27 04:08:42 $
- * $Author: Goober5000 $
- *
- * Implementation of new docking system for dead objects
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.1  2006/06/27 04:07:10  Goober5000
- * handle docked objects during death roll
- * --Goober5000
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "object/deadobjectdock.h"

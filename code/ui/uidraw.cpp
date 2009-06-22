@@ -7,60 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/UI/UIDRAW.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-07-18 03:45:10 $
- * $Author: taylor $
- *
- * Routines to draw UI sort of stuff.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/07/02 19:45:02  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.3  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 4     3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 3     2/03/98 4:21p Hoffoss
- * Made UI controls draw white text when disabled.
- * 
- * 2     6/11/97 1:13p John
- * Started fixing all the text colors in the game.
- * 
- * 1     11/14/96 6:55p John
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"

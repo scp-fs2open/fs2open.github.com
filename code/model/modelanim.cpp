@@ -4,27 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile:  $
- * $Revision: 1.2.2.3 $
- * $Date: 2007-05-11 03:10:48 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2.2.2  2006/12/07 18:19:23  taylor
- * try and keep angles within PI2 (Bobboau's advice, since he knows more than I do about this stuff :))
- *
- * Revision 1.2.2.1  2006/10/27 21:41:22  taylor
- * updated/fixed modelanim code
- *
- * Revision 1.2  2006/04/20 06:32:15  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.1  2006/04/20 05:42:05  Goober5000
- * change animation.cpp to modelanim.cpp, add CVS info, and add the file to the VC6 project
- * --Goober5000
- *
- */
+
 
 
 #include "ship/ship.h"

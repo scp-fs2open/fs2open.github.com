@@ -7,64 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ship/AWACS.h $
- * $Revision: 2.7 $
- * $Date: 2006-02-19 03:17:01 $
- * $Author: Goober5000 $
- *
- * all sorts of cool stuff about ships
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/09/27 02:36:57  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.5  2005/07/25 03:13:24  Goober5000
- * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
- * should now be added to all places where it is needed (except the turret code, which I still
- * have to to review)
- * --Goober5000
- *
- * Revision 2.4  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.3  2004/08/11 05:06:34  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2004/03/05 09:01:52  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2003/01/03 21:58:07  Goober5000
- * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
- * has primitive sensors it can't target anything and objects don't appear
- * on radar if they're outside a certain range.  This range can be modified
- * via the sexp primitive-sensors-set-range.
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:28  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     6/02/99 12:52p Andsager
- * Added team-wide ship visibility.  Implemented for player.
- * 
- * 3     1/25/99 5:03a Dave
- * First run of stealth, AWACS and TAG missile support. New mission type
- * :)
- * 
- * 2     1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef __FS2_AWACS_HEADER_FILE
 #define __FS2_AWACS_HEADER_FILE

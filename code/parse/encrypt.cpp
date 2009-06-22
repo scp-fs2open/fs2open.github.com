@@ -7,78 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
- *
- * Module for encryption code common to FreeSpace and related tools
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/04/15 11:35:18  taylor
- * add scramble port
- * support both FS1 (8bit and 7bit) and FS2 style encryption
- *
- * Revision 2.6  2005/01/31 10:34:38  taylor
- * merge with Linux/OSX tree - p0131
- *
- * Revision 2.5  2004/07/26 20:47:47  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:33:01  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2003/11/09 04:09:18  Goober5000
- * edited for language
- * --Goober5000
- *
- * Revision 2.2  2003/09/28 21:22:59  Goober5000
- * added the option to import FSM missions, added a replace function, spruced
- * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     4/07/99 5:41p Anoop
- * Fixed encryption in the launcher.
- * 
- * 4     3/25/99 11:55a Dave
- * Fixed up encrypt a bit.
- * 
- * 3     3/25/99 11:26a Dave
- * Beefed up encryption scheme so that even someone viewing the
- * disassembly would have a hard time cracking it.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 5     8/09/98 4:44p Lawrance
- * support alternate encryption scheme (doesn't pack chars into 7 bits)
- * 
- * 4     4/01/98 2:21p Lawrance
- * check for wacky apostrophe char
- * 
- * 3     3/31/98 4:57p Lawrance
- * Add signature at the beginning of encrypted files
- * 
- * 2     3/31/98 1:14a Lawrance
- * Get .tbl and mission file encryption working.
- * 
- * 1     3/30/98 11:02p Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <stdio.h>

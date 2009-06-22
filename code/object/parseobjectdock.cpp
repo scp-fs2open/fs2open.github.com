@@ -4,27 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ParseObjectDock.cpp $
- * $Revision: 1.3.2.1 $
- * $Date: 2007-07-28 21:17:55 $
- * $Author: Goober5000 $
- *
- * Implementation of new docking system for parse objects
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2006/04/20 06:32:23  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.2  2005/10/31 09:12:16  Goober5000
- * remove unused commented stuff
- * --Goober5000
- *
- * Revision 1.1  2005/10/29 22:09:30  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "object/parseobjectdock.h"

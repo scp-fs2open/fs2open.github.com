@@ -7,26 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Radar/radarsetup.cpp $
- * $Revision: 2.7 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
- *
- * C module containg functions to manage different radar modes
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/02/19 07:52:56  wmcoolmon
- * linklist isn't needed for this
- *
- * Revision 2.5  2005/02/04 20:06:07  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.4  2004/08/02 22:54:07  phreak
- * orb radar rendering style
- *
- * $NoKeywords: $
- */
+
 
 #include "radar/radar.h"
 #include "radar/radarorb.h"

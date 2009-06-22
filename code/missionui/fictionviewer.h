@@ -4,18 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/FictionViewer.h $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-11-21 07:27:48 $
- * $Author: Goober5000 $
- *
- * Fiction Viewer briefing screen
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FICTION_VIEWER_H__
 #define __FICTION_VIEWER_H__

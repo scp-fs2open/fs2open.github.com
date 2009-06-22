@@ -4,24 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/DeadObjectDock.h $
- * $Revision: 1.1.2.3 $
- * $Date: 2006-06-27 04:10:23 $
- * $Author: Goober5000 $
- *
- * New docking system for dead objects, used only for death rolls
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.2  2006/06/27 04:08:42  Goober5000
- * cvs header tweak
- * --Goober5000
- *
- * Revision 1.1.2.1  2006/06/27 04:07:10  Goober5000
- * handle docked objects during death roll
- * --Goober5000
- *
- */
+
 
 #ifndef _DEAD_OBJECT_DOCK_H
 #define _DEAD_OBJECT_DOCK_H

@@ -7,75 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-11-13 06:52:06 $
- * $Author: taylor $
- * 
- * source for handling jpeg stuff
- * 
- * $Log: not supported by cvs2svn $
- * Revision 1.19  2005/03/12 05:21:36  wmcoolmon
- * whee!
- *
- * Revision 1.18  2005/03/12 04:59:14  taylor
- * absolute header location for jpeglib.h in jpgutils.cpp (thanks WMC)
- * update VC6 project files to correct versions that work properly with internal libjpeg
- *
- * Revision 1.17  2005/03/11 01:37:35  wmcoolmon
- * Isn't the extern needed too? causes linking errors on my system w/o it, although it compiles fine.
- *
- * Revision 1.16  2005/03/11 01:34:19  wmcoolmon
- * Not really. I've got lib files in my main VC.NET libs directory, and include files in grouped subdirectories under my VC.NET include directory. it keeps my HD free of scattered SDK directories and helps keep conflicts down.
- *
- * Revision 1.15  2005/03/10 16:16:52  taylor
- * maybe WMC can leave the include alone now ;)
- *
- * Revision 1.14  2005/03/06 11:32:40  wmcoolmon
- * Whoops!
- *
- * Revision 1.13  2005/03/06 11:23:45  wmcoolmon
- * RE-fixed stuff. Ogg support. Briefings.
- *
- * Revision 1.12  2005/03/03 07:32:55  wmcoolmon
- * Oops
- *
- * Revision 1.11  2005/03/03 06:05:28  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 1.10  2005/02/12 10:44:11  taylor
- * fix possible crash in bm_get_section_size()
- * get jpeg_read_header() working properly
- * VBO fixes and minor optimizations
- *
- * Revision 1.9  2005/02/07 08:33:14  taylor
- * should fix linker error in libjpeg
- *
- * Revision 1.8  2005/02/05 04:15:35  taylor
- * more post merge happiness
- *
- * Revision 1.7  2005/02/04 10:12:30  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 1.6  2004/10/31 22:00:56  taylor
- * new bmpman merge support, add PreProcDefines.h a few new places
- *
- * Revision 1.5  2004/10/10 16:59:37  taylor
- * holy crap at the copy-paste error
- *
- * Revision 1.4  2004/07/26 20:47:35  Kazan
- * remove MCD complete
- *
- * Revision 1.3  2004/07/12 16:32:51  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 1.2  2004/04/26 12:39:49  taylor
- * correct header to keep cvs log, minor changes
- *
- * 
- * $NoKeywords: $
- */
+
 
 #include <stdio.h>
 #include <string.h>

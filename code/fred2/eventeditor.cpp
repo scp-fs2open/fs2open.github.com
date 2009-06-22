@@ -7,176 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.2.2.7 $
- * $Date: 2007-09-02 20:07:47 $
- * $Author: Goober5000 $
- *
- * Event editor dialog box class and event tree class
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2.2.6  2007/09/02 02:07:40  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 1.2.2.5  2007/07/23 16:08:23  Kazan
- * Autopilot updates, minor misc fixes, working MSVC2005 project files
- *
- * Revision 1.2.2.4  2007/05/20 21:21:30  wmcoolmon
- * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
- *
- * Revision 1.2.2.3  2007/03/07 22:36:52  karajorma
- * Make .ogg selectable in FRED.
- *
- * Revision 1.2.2.2  2007/02/11 09:35:11  taylor
- * add VALID_FNAME() macro and put it around a few places (more to come)
- * clean out some old variables
- * move CLAMP() macro from opengl header to global header
- * update COUNT_ESTIMATE to match new bmpman changes
- *
- * Revision 1.2.2.1  2006/10/09 05:25:07  Goober5000
- * make sexp nodes dynamic
- *
- * Revision 1.2  2006/04/30 16:39:43  phreak
- * You can now preview sounds again in the event editor.
- *
- * Revision 1.1  2006/01/19 02:27:31  Goober5000
- * import FRED2 back into fs2_open module
- * --Goober5000
- *
- * Revision 1.3  2005/10/22 05:54:48  wmcoolmon
- * Fixed cf_find_file_location
- *
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:10:53  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 12    9/13/99 8:03a Andsager
- * Add command heads 3,4,5 as allowable head animations.
- * 
- * 11    9/09/99 5:07a Andsager
- * Make sure TP2 is available in FRED head ani
- * 
- * 10    9/01/99 2:52p Andsager
- * Add new heads to FRED and some debug code for playing heads
- * 
- * 9     8/28/99 7:29p Dave
- * Fixed wingmen persona messaging. Make sure locked turrets don't count
- * towards the # attacking a player.
- * 
- * 8     8/26/99 8:52p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 7     5/04/99 5:21p Andsager
- * 
- * 6     2/17/99 2:11p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 5     1/21/99 9:29a Andsager
- * 
- * 4     12/17/98 2:41p Andsager
- * Changed input into sexp_tree::insert() to include bitmaps
- * 
- * 3     11/06/98 11:21a Johnson
- * Put in handling code for wacky event editor Assert().
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:02p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 55    9/25/98 1:33p Andsager
- * Add color to event editor (root and chain) indicating mission directive
- * 
- * 54    7/09/98 10:57a Hoffoss
- * Fixed bug where the 'update stuff' button was reverting changes made to
- * various message fields.
- * 
- * 53    5/15/98 5:51p Hoffoss
- * Fixed escape key and cancel button bugs.
- * 
- * 52    5/12/98 11:44a Hoffoss
- * Made escape key not close dialog (and lose changes made).
- * 
- * 51    4/30/98 9:53p Hoffoss
- * Added "Head-VC" to ani list at Sandeep's request.
- * 
- * 50    4/30/98 8:23p John
- * Fixed some bugs with Fred caused by my new cfile code.
- * 
- * 49    4/22/98 9:56a Sandeep
- * 
- * 48    4/20/98 4:40p Hoffoss
- * Added a button to 4 editors to play the chosen wave file.
- * 
- * 47    4/03/98 5:20p Hoffoss
- * Changed code so that changing a message's wave file will update the
- * persona as well, if the wave file has the proper prefix.
- * 
- * 46    4/03/98 12:39p Hoffoss
- * Changed starting directory for browse buttons in several editors.
- * 
- * 45    3/10/98 4:06p Hoffoss
- * Fixed browse button blues.
- * 
- * 44    3/06/98 2:24p Hoffoss
- * Fixed bug with going to reference with deleting a entity referenced by
- * an sexp tree.
- * 
- * 43    2/16/98 6:25p Hoffoss
- * Did major rework of the whole right_clicked() handler to simplify it
- * all, break it down and make it more flexible.  Should be a lot easier
- * to work with from now on.
- * 
- * 42    2/16/98 2:42p Hoffoss
- * Added new code in preparation to simplify the sexp_tree monster.
- * Checking in code now as a good foundation point that I can revert back
- * to if needed.
- * 
- * 41    1/23/98 3:06p Hoffoss
- * Added an explicit <none> item to the filename combo boxes at designers
- * request.
- * 
- * 40    1/09/98 3:41p Hoffoss
- * Fixed bug with event moving not updating fields properly.
- * 
- * 39    1/08/98 11:18a Hoffoss
- * Fixed several bugs in new Event Editor.
- * 
- * 38    1/08/98 10:24a Johnson
- * Fixed bug with null strings for filenames.
- * 
- * 37    1/07/98 5:58p Hoffoss
- * Combined message editor into event editor.
- * 
- * 36    1/06/98 8:25p Hoffoss
- * Added insert event functionality to event editor.
- * 
- * 35    1/06/98 3:31p Hoffoss
- * Added image to indicate chained events, and added code to support it.
- * 
- * 34    10/20/97 5:13p Allender
- * new subsystem sabotage/repair/set sexpressions.  Added new event/goal
- * status checking sexpressions (not fully implemented yet).  Change
- * campaign save files to save all events as well as goals
- * 
- * 33    10/10/97 6:21p Hoffoss
- * Put in Fred support for training object list editing.
- * 
- * 32    10/10/97 2:53p Johnson
- * Fixed bug with new items being selected before they are fully
- * registered as added.
- * 
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"
@@ -206,6 +37,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(event_editor)
 	m_repeat_count = 0;
+	m_trigger_count = 0;
 	m_interval = 0;
 	m_event_score = 0;
 	m_chain_delay = 0;
@@ -236,6 +68,7 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(event_editor)
 	DDX_Control(pDX, IDC_EVENT_TREE, m_event_tree);
 	DDX_Text(pDX, IDC_REPEAT_COUNT, m_repeat_count);
+	DDX_Text(pDX, IDC_TRIGGER_COUNT, m_trigger_count);
 	DDX_Text(pDX, IDC_INTERVAL_TIME, m_interval);
 	DDX_Text(pDX, IDC_EVENT_SCORE, m_event_score);
 	DDX_Text(pDX, IDC_CHAIN_DELAY, m_chain_delay);
@@ -281,6 +114,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_WM_CLOSE()
 	ON_NOTIFY(TVN_SELCHANGED, IDC_EVENT_TREE, OnSelchangedEventTree)
 	ON_EN_UPDATE(IDC_REPEAT_COUNT, OnUpdateRepeatCount)
+	ON_EN_UPDATE(IDC_TRIGGER_COUNT, OnUpdateTriggerCount)
 	ON_BN_CLICKED(IDC_CHAINED, OnChained)
 	ON_BN_CLICKED(IDC_INSERT, OnInsert)
 	ON_LBN_SELCHANGE(IDC_MESSAGE_LIST, OnSelchangeMessageList)
@@ -574,6 +408,8 @@ int event_editor::query_modified()
 		if (stricmp(m_events[i].name, Mission_events[i].name))
 			return 1;
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count)
+			return 1;
+		if (m_events[i].trigger_count != Mission_events[i].trigger_count)
 			return 1;
 		if (m_events[i].interval != Mission_events[i].interval)
 			return 1;
@@ -878,6 +714,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	h = m_event_tree.insert(m_events[num].name, BITMAP_ROOT, BITMAP_ROOT, TVI_ROOT, after);
 
 	m_events[num].repeat_count = 1;
+	m_events[num].trigger_count = 1;
 	m_events[num].interval = 1;
 	m_events[num].score = 0;
 	m_events[num].chain_delay = -1;
@@ -990,6 +827,7 @@ void event_editor::save_event(int e)
 
 	UpdateData(TRUE);
 	m_events[e].repeat_count = m_repeat_count;
+	m_events[e].trigger_count = m_trigger_count;
 	m_events[e].interval = m_interval;
 	m_events[e].score = m_event_score;
 
@@ -1092,6 +930,7 @@ void event_editor::update_cur_event()
 {
 	if (cur_event < 0) {
 		m_repeat_count = 1;
+		m_trigger_count = 1;
 		m_interval = 1;
 		m_chain_delay = 0;
 		m_team = -1;
@@ -1099,6 +938,7 @@ void event_editor::update_cur_event()
 		m_obj_key_text.Empty();
 		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_REPEAT_COUNT) -> EnableWindow(FALSE);
+		GetDlgItem(IDC_TRIGGER_COUNT) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_EVENT_SCORE) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_CHAINED) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_CHAIN_DELAY) -> EnableWindow(FALSE);
@@ -1113,6 +953,7 @@ void event_editor::update_cur_event()
 	m_team = m_events[cur_event].team;
 
 	m_repeat_count = m_events[cur_event].repeat_count;
+	m_trigger_count = m_events[cur_event].trigger_count;
 	m_interval = m_events[cur_event].interval;
 	m_event_score = m_events[cur_event].score;
 	if (m_events[cur_event].chain_delay >= 0) {
@@ -1139,7 +980,9 @@ void event_editor::update_cur_event()
 	}
 
 	GetDlgItem(IDC_REPEAT_COUNT)->EnableWindow(TRUE);
-	if ( m_repeat_count <= 1 ) {
+	GetDlgItem(IDC_TRIGGER_COUNT)->EnableWindow(TRUE);
+
+	if (( m_repeat_count <= 1) && (m_trigger_count <= 1)) {
 		m_interval = 1;
 		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
 	} else {
@@ -1161,19 +1004,31 @@ void event_editor::update_cur_event()
 void event_editor::OnUpdateRepeatCount()
 {
 	char buf[128];
-	int count;
-
-	count = 128;
+	int count = 128; 
 	GetDlgItem(IDC_REPEAT_COUNT)->GetWindowText(buf, count);
 	m_repeat_count = atoi(buf);
 
-	if ( m_repeat_count <= 1 ){
+	if ( ( m_repeat_count <= 1) && (m_trigger_count <= 1) ){
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
 	}
 }
 
+void event_editor::OnUpdateTriggerCount()
+{
+	char buf[128];
+	int count = 128;
+
+	GetDlgItem(IDC_TRIGGER_COUNT)->GetWindowText(buf, count);
+	m_trigger_count = atoi(buf);
+
+	if ( ( m_repeat_count <= 1) && (m_trigger_count <= 1) ){
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
+	} else {
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
+	}
+}
 void event_editor::swap_handler(int node1, int node2)
 {
 	int index1, index2;

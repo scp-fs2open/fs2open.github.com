@@ -4,30 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Math/BitArray.h $
- * $Revision: 1.3.2.1 $
- * $Date: 2007-07-28 21:17:53 $
- * $Author: Goober5000 $
- *
- * Cool stuff with bit arrays
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.2  2005/07/13 03:15:50  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 1.1  2004/12/31 03:48:12  Goober5000
- * CVS checkin of bitarray.h; use this for large arrays of boolean values
- * --Goober5000
- *
- * Revision 1.0  2004/12/30 22:45:00  Goober5000
- * Addition to CVS repository
- *
- */
+
 
 #ifndef _BIT_ARRAY_H
 #define _BIT_ARRAY_H

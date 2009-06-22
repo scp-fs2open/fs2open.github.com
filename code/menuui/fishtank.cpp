@@ -7,41 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/fishtank.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
- *
- * bloop
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/07/12 16:32:53  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2004/03/05 09:01:53  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     9/01/99 10:09a Dave
- * Pirate bob.
- * 
- * 2     8/26/99 9:45a Dave
- * First pass at easter eggs and cheats.
- * 
- *
- * $NoKeywords: $
- */
+
 
 #include "anim/animplay.h"
 #include "anim/packunpack.h"

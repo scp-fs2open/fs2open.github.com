@@ -4,34 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/wxFRED2/FREDFrame.h $
- * $Revision: 1.5 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
- *
- * FRED app frame
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2005/05/12 14:00:14  Goober5000
- * added a bunch of dialogs to wxFRED... thanks, taylor, for the GUI development :)
- * --Goober5000
- *
- * Revision 1.3  2005/04/25 06:36:25  taylor
- * newline fix
- *
- * Revision 1.2  2005/04/24 14:42:27  Goober5000
- * wxFRED now uses XRC-based resources
- * --Goober5000
- *
- * Revision 1.1  2005/03/29 13:35:53  Goober5000
- * set up the main menu options
- * --Goober5000
- *
- * Revision 1.0  2005/03/29 07:55:19  Goober5000
- * Addition to CVS repository
- *
- */
+
 
 #ifndef _FREDFRAME_H
 #define _FREDFRAME_H

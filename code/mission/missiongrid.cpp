@@ -7,77 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-12 17:49:13 $
- * $Author: taylor $
- *
- * C module for grid specific functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/04/12 05:26:36  taylor
- * many, many compiler warning and header fixes (Jens Granseuer)
- * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
- *
- * Revision 2.6  2005/04/05 05:53:19  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.5  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2004/01/19 00:56:10  randomtiger
- * Some more small changes for Fred OGL
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:09  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 7     10/03/97 8:55a John
- * moved Fred's grid_render code out of MissionGrid and into Fred.   Added
- * code to turn background under overlays grey.
- * 
- * 6     7/28/97 2:21p John
- * changed vecmat functions to not return src.  Started putting in code
- * for inline vector math.    Fixed some bugs with optimizer.
- * 
- * 5     7/14/97 12:04a Lawrance
- * added function that navmap calls to draw elevation lines
- * 
- * 4     6/24/97 3:47p Hoffoss
- * Changed the default grid elevation to 0 instead of -10.
- * 
- * 3     6/18/97 11:36p Lawrance
- * move grid rendering code to MissionGrid.cpp
- * 
- * 2     6/12/97 11:25a Lawrance
- * added grid_read_camera_controls()
- * 
- * 1     6/12/97 10:17a Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #include "io/key.h"
 #include "mission/missiongrid.h"
