@@ -1485,8 +1485,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if (pm->shield.nverts > 0) {
 						pm->shield.verts = (shield_vertex *)vm_malloc(pm->shield.nverts * sizeof(shield_vertex) );
 						Assert( pm->shield.verts );
-						for ( i = 0; i < pm->shield.nverts; i++ )							// read in the vertex list
+						for ( i = 0; i < pm->shield.nverts; i++ ) {						// read in the vertex list
 							cfread_vector( &(pm->shield.verts[i].pos), fp );
+						}
 					}
 
 					pm->shield.ntris = cfread_int( fp );		// get the number of triangles that compose the shield
@@ -1498,18 +1499,21 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							cfread_vector( &(pm->shield.tris[i].norm), fp );
 							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
-								/*
 #ifndef NDEBUG
-								if (pm->shield.tris[i].verts[j] >= nverts)
-									if (!warning_displayed) {
-										warning_displayed = 1;
-										Warning(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, nverts, pm->shield.tris[i].verts[j]);
-									}
+								if (pm->shield.tris[i].verts[j] >= pm->shield.nverts) {
+									Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, pm->shield.nverts, pm->shield.tris[i].verts[j]);
+								}
 #endif
-								*/
 							}
-							for ( j = 0; j < 3; j++ )
+							
+							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].neighbors[j] = cfread_int( fp );	// read in the neighbor indices -- indexes into tri list
+#ifndef NDEBUG
+								if (pm->shield.tris[i].neighbors[j] >= pm->shield.ntris) {
+									Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i triangles, index %i found.\n", filename, pm->shield.ntris, pm->shield.tris[i].neighbors[j]);
+								}
+#endif
+							}
 						}
 					}
 				}
