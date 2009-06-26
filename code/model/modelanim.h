@@ -7,18 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/model/modelanim.h $
- * $Revision: 1.1.2.1 $
- * $Date: 2006-10-27 21:41:22 $
- * $Author: taylor $
- *
- * header file for information about polygon models
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _MODELANIM_H
 #define _MODELANIM_H

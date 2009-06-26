@@ -4,6 +4,7 @@
 	Version="9.00"
 	Name="code"
 	ProjectGUID="{C55F5706-E947-41EF-A3E8-6D711CD4ECD8}"
+	RootNamespace="code"
 	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
@@ -41,11 +42,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=1;_HAS_ITERATOR_DEBUGGING=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="false"
+				BufferSecurityCheck="true"
 				EnableFunctionLevelLinking="true"
 				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
 				AssemblerListingLocation="$(IntDir)\"
@@ -57,6 +58,7 @@
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 				UndefinePreprocessorDefinitions="NDEBUG"
+				EnablePREfast="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -1448,6 +1450,14 @@
 			</File>
 			<File
 				RelativePath="..\..\code\globalincs\linklist.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\mspdb_callstack.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\mspdb_callstack.h"
 				>
 			</File>
 			<File

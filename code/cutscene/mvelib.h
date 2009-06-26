@@ -1,16 +1,4 @@
-/*
- * $Logfile: /Freespace2/src/cutscene/mvelib.h $
- * $Revision: 2.1 $
- * $Date: 2006-05-13 06:59:48 $
- * $Author: taylor $
- *
- * main lib for using MVEs
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifndef INCLUDED_MVELIB_H
 #define INCLUDED_MVELIB_H

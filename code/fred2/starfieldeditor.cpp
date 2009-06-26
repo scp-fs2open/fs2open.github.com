@@ -7,59 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/FRED2/StarfieldEditor.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
- * $Author: Goober5000 $
- *
- * Starfield editor dialog handling code
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2002/08/15 01:06:34  penguin
- * Include filename reorg (to coordinate w/ fs2_open)
- *
- * Revision 1.1.1.1  2002/07/15 03:11:03  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 11    12/08/97 4:48p Hoffoss
- * Moved starfield editor controls to background editor.
- * 
- * 10    4/17/97 2:01p Hoffoss
- * All dialog box window states are saved between sessions now.
- * 
- * 9     4/17/97 9:33a Hoffoss
- * Squished a warning.
- * 
- * 8     4/16/97 5:18p Hoffoss
- * Moved Asteroid field editor stuff to a seperate dialog box.
- * 
- * 7     3/17/97 3:00p Hoffoss
- * slider updates on the fly now.
- * 
- * 6     2/21/97 5:34p Hoffoss
- * Added extensive modification detection and fixed a bug in initial
- * orders editor.
- * 
- * 5     2/17/97 5:28p Hoffoss
- * Checked RCS headers, added them were missing, changing description to
- * something better, etc where needed.
- * 
- * 4     1/31/97 3:16p Hoffoss
- * Asteroid field management implemented.
- *
- * $NoKeywords: $
- */
+
 
 #include "stdafx.h"
 #include "FRED.h"

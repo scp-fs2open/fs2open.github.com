@@ -7,42 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/localization/fhash.cpp $
- * $Revision: 2.4.2.1 $
- * $Date: 2007-07-28 00:37:35 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/05/12 17:49:13  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.3  2004/07/26 20:47:36  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:52  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     2/23/99 9:25a Dave
- * Stubbed out a bunch of stuff to get cfile and lcl functions in.
- * 
- * 4     12/01/98 4:46p Dave
- * Put in targa bitmap support (16 bit).
- *  
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <memory.h>

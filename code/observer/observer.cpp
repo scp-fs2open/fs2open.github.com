@@ -7,14 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Observer/Observer.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:22 $
- * $Author: taylor $
- *
- * $NoKeywords: $
- */
+
 
 #include "observer/observer.h"
 #include "object/object.h"

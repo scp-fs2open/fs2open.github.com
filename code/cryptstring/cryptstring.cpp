@@ -7,29 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Cryptstring/cryptstring.cpp $
- * $Revision: 2.2 $
- * $Date: 2005-09-08 00:09:32 $
- * $Author: taylor $
- *
- * Applet for crypting strings.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/23/98 6:21p Dave
- *
- * $NoKeywords: $
- */
+
 
 #include <stdio.h>
 #include <stdlib.h>

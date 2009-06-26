@@ -7,64 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.6.2.1 $
- * $Date: 2007-02-11 09:51:21 $
- * $Author: taylor $
- *
- * bmpman info that's internal to bmpman related files only
- * 
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2006/05/27 17:20:48  taylor
- * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
- * bm_load_sub_fast() doesn't need to lowercase filenames, so don't
- * byte-swap 16-bit DDS on big endian (they still don't look right though)
- * update bm_has_alpha_channel() to be less dumb
- *
- * Revision 2.5  2006/05/13 07:29:51  taylor
- * OpenGL envmap support
- * newer OpenGL extension support
- * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
- * add cubemap reading and writing support to DDS loader
- * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
- * add support for a default envmap named "cubemap.dds"
- * new mission flag "$Environment Map:" to use a pre-existing envmap
- * minor cleanup of compiler warning messages
- * get rid of wasteful math from gr_set_proj_matrix()
- * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
- * clean up bmpman flags in reguards to cubemaps and render targets
- * disable D3D envmap code until it can be upgraded to current level of code
- * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
- * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
- *
- * Revision 2.4  2005/11/13 06:44:17  taylor
- * small bit of EFF cleanup
- * add -img2dds support
- * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
- * some minor OGL cleanup and small performance changes
- * converge the various pcx_read_bitmap* functions into one
- * cleanup/rename/remove some cmdline options
- *
- * Revision 2.3  2005/04/21 15:49:20  taylor
- * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
- *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
- *  - a little "stupid" fix for dds bitmap reading
- *  - fix it so that memory is released properly on bitmap read errors
- *  - some cleanup to model texture loading
- *  - allow model textures to get released rather than just unloaded, saves bitmap slots
- *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
- *
- * Revision 2.2  2005/03/03 14:29:37  bobboau
- * fixed a small error from my earlier commit.
- *
- * Revision 2.1  2004/11/23 00:10:06  taylor
- * try and protect the bitmap_entry stuff a bit better
- * fix the transparent support ship, again, but correctly this time
- *
- * 
- * $NoKeywords: $
- */
+
 
 
 #ifndef __BM_INTERNAL_H__

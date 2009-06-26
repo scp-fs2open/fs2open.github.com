@@ -7,66 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
- *
- * Header file for code that controls the Options menu
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2004/08/11 05:06:27  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     6/25/99 11:59a Dave
- * Multi options screen.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 10    1/28/98 6:21p Dave
- * Made the standalone use ~8 megs less memory. Fixed multiplayer submenu
- * endgame problem.
- * 
- * 9     12/27/97 8:07p Lawrance
- * remove old code
- * 
- * 8     8/31/97 6:38p Lawrance
- * pass in frametime to do_frame loop
- * 
- * 7     1/09/97 12:57p Lawrance
- * supporting a new state where the player picks to either save or restore
- * 
- * 6     11/21/96 7:14p Lawrance
- * converted menu code to use a file (menu.tbl) to get the data for the
- * menu
- * 
- * 5     11/13/96 4:02p Lawrance
- * complete over-haul of the menu system and the states associated with
- * them
- * 
- * 4     11/13/96 8:32a Lawrance
- * streamlined menu code
- * 
- * 3     11/06/96 8:54a Lawrance
- * added revision templates, made more efficient
- *
- * $NoKeywords: $
- *
-*/
+
 
 #ifndef _OPTIONSMENU_H
 #define _OPTIONSMENU_H

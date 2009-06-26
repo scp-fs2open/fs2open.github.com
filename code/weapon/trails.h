@@ -7,75 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.9.2.1 $
- * $Date: 2007-02-12 00:45:24 $
- * $Author: taylor $
- *
- * External defs for missile trail stuff
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.9  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.7  2005/02/20 23:11:51  wmcoolmon
- * Fix0r3d trails
- *
- * Revision 2.6  2005/02/20 07:39:14  wmcoolmon
- * Trails update: Better, faster, stronger, but not much more reliable
- *
- * Revision 2.5  2005/02/19 07:54:33  wmcoolmon
- * Removed trails limit
- *
- * Revision 2.4  2004/08/11 05:06:36  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.3  2004/03/17 04:07:32  bobboau
- * new fighter beam code
- * fixed old after burner trails
- * had to bump a few limits, working on some dynamic solutions
- * a few fixed to background POF rendering
- * fixing asorted bugs
- *
- * Revision 2.2  2003/11/02 05:50:08  bobboau
- * modified trails to render with tristrips now rather than with stinky old trifans,
- * MUCH faster now, at least one order of magnatude.
- *
- * Revision 2.1  2002/08/01 01:41:11  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     11/14/98 5:33p Dave
- * Lots of nebula work. Put in ship contrails.
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 3     3/23/98 5:00p John
- * Improved missile trails.  Made smooth alpha under hardware.  Made end
- * taper.  Made trail touch weapon.
- * 
- * 2     12/21/97 6:15p John
- * Made a seperate system for missile trails
- * 
- * 1     12/21/97 5:30p John
- * Initial version
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _TRAILS_H
 #define _TRAILS_H

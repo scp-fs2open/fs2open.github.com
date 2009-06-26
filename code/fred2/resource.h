@@ -854,6 +854,7 @@
 #define IDC_PROTECT_SHIP                1394
 #define IDC_REPEAT_COUNT                1400
 #define IDC_REMOVE_NO_MESSAGE           1401
+#define IDC_TRIGGER_COUNT               1401
 #define IDC_ADD_YES_MESSAGE             1402
 #define IDC_REMOVE_YES_MESSAGE          1403
 #define IDC_NO_MESSAGE_LIST             1404

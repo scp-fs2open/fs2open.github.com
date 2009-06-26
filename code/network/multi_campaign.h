@@ -7,60 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_campaign.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 7     5/21/98 12:14a Allender
- * fix ingame join problems
- * 
- * 6     5/19/98 8:35p Dave
- * Revamp PXO channel listing system. Send campaign goals/events to
- * clients for evaluation. Made lock button pressable on all screens. 
- * 
- * 5     5/05/98 5:02p Dave
- * Fix end-of-campaign sequencing to work right. Make all individual
- * missions of a campaign replayable.
- * 
- * 4     5/05/98 2:10p Dave
- * Verify campaign support for testing. More new tracker code.
- * 
- * 3     2/23/98 11:09p Dave
- * Finished up multiplayer campaign support. Seems bug-free.
- * 
- * 2     2/22/98 2:53p Dave
- * Put in groundwork for advanced multiplayer campaign  options.
- * 
- * 1     2/20/98 4:39p Dave
- * Split up mp campaign functionality into its own module.
- *  
- * $NoKeywords: $
- */
+
 
 #ifndef _MULTIPLAYER_CAMPAIGN_HEADER_FILE
 #define _MULTIPLAYER_CAMPAIGN_HEADER_FILE

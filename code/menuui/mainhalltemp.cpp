@@ -7,53 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/MainHallTemp.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
- *
- * Header file for main-hall menu code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.5  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:53  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:01:53  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     6/04/99 9:52a Dave
- * Fixed some rendering problems.
- * 
- * 2     6/03/99 10:15p Dave
- * Put in temporary main hall screen.
- * 
- * $NoKeywords: $
- *
- */
+
 
 #include "menuui/mainhallmenu.h"
 #include "menuui/mainhalltemp.h"

@@ -6,29 +6,7 @@
  * source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ObjectShield.cpp $
- * $Revision: 2.5 $
- * $Date: 2007-11-23 23:49:34 $
- * $Author: wmcoolmon $
- *
- * Shield-specific functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2007/09/03 01:02:50  Goober5000
- * fix for 1376
- *
- * Revision 2.3  2007/02/12 01:33:46  Goober5000
- * ack
- *
- * Revision 2.2  2007/02/12 01:24:18  Goober5000
- * scale shield strength according to generator damage
- *
- * Revision 2.1  2007/02/11 21:26:35  Goober5000
- * massive shield infrastructure commit
- *
- *
- */
+
 
 #include "math/staticrand.h"
 #include "network/multi.h"

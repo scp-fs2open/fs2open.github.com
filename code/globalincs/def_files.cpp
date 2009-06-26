@@ -5,30 +5,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.15.2.7 $
- * $Date: 2007-07-24 20:08:29 $
- * $Author: Kazan $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.15.2.6  2007/07/23 16:08:26  Kazan
- * Autopilot updates, minor misc fixes, working MSVC2005 project files
- *
- * Revision 2.15.2.5  2007/07/15 02:45:48  Goober5000
- * fixed a small bug in the lab
- * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
- * removed my old supercap damage scaling change
- * moved Turey's truefire flag to ai_profiles
- *
- * Revision 2.15.2.4  2007/02/27 01:44:44  Goober5000
- * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
- *
- * Revision 2.15.2.3  2006/07/06 21:23:28  Goober5000
- * add CVS headers
- * --Goober5000
- *
- */
+
 
 
 #include <string.h>

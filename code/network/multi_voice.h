@@ -7,74 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_voice.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 12    4/25/98 2:02p Dave
- * Put in multiplayer context help screens. Reworked ingame join ship
- * select screen. Fixed places where network timestamps get hosed.
- * 
- * 11    4/21/98 4:44p Dave
- * Implement Vasudan ships in multiplayer. Added a debug function to bash
- * player rank. Fixed a few rtvoice buffer overrun problems. Fixed ui
- * problem in options screen. 
- * 
- * 10    4/17/98 5:27p Dave
- * More work on the multi options screen. Fixed many minor ui todo bugs.
- * 
- * 9     4/09/98 11:01p Dave
- * Put in new multi host options screen. Tweaked multiplayer options a
- * bit.
- * 
- * 8     4/07/98 5:42p Dave
- * Put in support for ui display of voice system status (recording,
- * playing back, etc). Make sure main hall music is stopped before
- * entering a multiplayer game via ingame join.
- * 
- * 7     3/30/98 6:27p Dave
- * Put in a more official set of multiplayer options, including a system
- * for distributing netplayer and netgame settings.
- * 
- * 6     3/23/98 12:59a Lawrance
- * remove obsolete parameters from multi_voice_process_next_chunk()
- * 
- * 5     3/18/98 3:32p Dave
- * Put in a hook for streamed rtvoice data from the rtvoice system.
- * 
- * 4     3/17/98 12:30a Dave
- * Put in hud support for rtvoice. Several ui interface changes.
- * 
- * 3     3/16/98 2:35p Dave
- * Numerous bug fixes. Made the "cue sound" sound play before incoming
- * voice. 
- * 
- * 2     2/26/98 4:21p Dave
- * More robust multiplayer voice.
- * 
- * 1     2/24/98 10:12p Dave
- * Initial pass at multiplayer voice streaming.
- *  
- * $NoKeywords: $
- */
+
 
 #ifndef _MULTIPLAYER_VOICE_STREAMING_HEADER_FILE
 #define _MULTIPLAYER_VOICE_STREAMING_HEADER_FILE

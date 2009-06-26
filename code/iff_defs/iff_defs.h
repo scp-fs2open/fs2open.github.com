@@ -4,36 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/iff_defs/iff_defs.h $
- * $Revision: 1.5.2.2 $
- * $Date: 2007-02-08 07:39:34 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.5.2.1  2006/07/08 19:36:04  Goober5000
- * iff defs should allow specification of both flag fields
- * --Goober5000
- *
- * Revision 1.5  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.4  2006/01/28 04:33:06  Goober5000
- * fix all teams at war IFF behavior
- * --Goober5000
- *
- * Revision 1.3  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 1.2  2005/09/30 03:40:40  Goober5000
- * hooray for more work on the iff code
- * --Goober5000
- *
- * Revision 1.1  2005/09/27 05:25:18  Goober5000
- * initial commit of basic IFF code
- * --Goober5000
- *
- */
+
 
 
 #ifndef _IFF_DEFS_H_

@@ -7,15 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.13 $
- * $Date: 2006-02-18 00:42:51 $
- * $Author: wmcoolmon $
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifndef _MISSION_SCREEN_COMMON_HEADER_FILE
 #define _MISSION_SCREEN_COMMON_HEADER_FILE

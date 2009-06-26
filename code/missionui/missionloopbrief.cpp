@@ -7,74 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.8.2.1 $
- * $Date: 2006-10-01 19:27:28 $
- * $Author: taylor $
- *
- * Campaign Loop briefing screen
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.7  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.6  2004/07/26 20:47:40  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:55  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/09/07 18:14:54  randomtiger
- * Checked in new speech code and calls from relevent modules to make it play.
- * Should all work now if setup properly with version 2.4 of the launcher.
- * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
- * Otherwise the compile flag should not be set and it should all compile OK.
- *
- * - RT
- *
- * Revision 2.2  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/09 23:02:59  mharris
- * Not using default values for audiostream functions, since they may
- * be macros (if NO_SOUND is defined)
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     9/06/99 9:44p Jefff
- * break out of loop support
- * 
- * 3     9/06/99 6:38p Dave
- * Improved CD detection code.
- * 
- * 2     8/27/99 12:04a Dave
- * Campaign loop screen.
- *  
- *
- * $NoKeywords: $
- */
+
 
 #include "missionui/missionloopbrief.h"
 #include "missionui/missionscreencommon.h"

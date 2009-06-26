@@ -7,278 +7,36 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.38.2.7 $
- * $Date: 2007-10-28 16:36:34 $
- * $Author: taylor $
- *
- * Debug stuff
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.38.2.6  2007/10/17 21:03:05  taylor
- * change Warning() and Error() to use const format variables (can't remember who said to do this)
- * fix memory error when zero'ing buffers for error messages on non-Windows platforms
- *
- * Revision 2.38.2.5  2007/04/03 02:19:26  Goober5000
- * meh, space
- *
- * Revision 2.38.2.4  2007/04/03 01:39:31  Goober5000
- * fixed up some error messages
- *
- * Revision 2.38.2.3  2006/12/07 18:04:03  taylor
- * clean up warning code for Windows
- * handle messagebox popups better (until I done with even cooler code for handling that)
- * cleanup window state code a bit, and deal with activation and cursor handling better
- * handle WM_ERASEBKGND msg ourselves, prevents some flickering issues and gets rid of the need to self-paint the window to clear it
- * slightly better Win9x/WinME compatibility for the main window
- *
- * Revision 2.38.2.2  2006/09/09 04:07:21  taylor
- * fix for vanishing FRED2 cursor (Mantis bug #997), plus a little cleanup
- *
- * Revision 2.38.2.1  2006/09/08 06:14:43  taylor
- * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
- *
- * Revision 2.38  2006/04/20 06:32:01  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.37  2006/02/24 07:36:49  taylor
- * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
- *
- * Revision 2.36  2006/01/31 06:42:28  wmcoolmon
- * Removed USE_LUA
- *
- * Revision 2.35  2006/01/27 06:21:10  Goober5000
- * replace quick sort with insertion sort in many places
- * --Goober5000
- *
- * Revision 2.34  2006/01/19 20:18:11  wmcoolmon
- * More Lua checks; added Lua vector object; better operator support.
- *
- * Revision 2.33  2006/01/19 16:00:04  wmcoolmon
- * Lua debugging stuff; gr_bitmap_ex stuff for taylor
- *
- * Revision 2.32  2006/01/12 04:18:10  wmcoolmon
- * Finished committing codebase
- *
- * Revision 2.31  2005/11/13 05:25:59  phreak
- * LuaError() body should not be compiled into the code unless USE_LUA was defined in the project file.
- *
- * Revision 2.30  2005/11/08 01:03:59  wmcoolmon
- * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
- *
- * Revision 2.29  2005/10/17 05:48:18  taylor
- * dynamically allocate object collision pairs
- *
- * Revision 2.28  2005/10/11 08:30:37  taylor
- * fix memory freakage from dynamic spawn weapon types
- *
- * Revision 2.27  2005/09/15 05:19:25  taylor
- * gah, I still messed that up.  Add a NULL check and have register_malloc() actually handle the correct pointer
- *
- * Revision 2.26  2005/09/14 20:38:12  taylor
- * some vm_* fixage for Windows
- *
- * Revision 2.25  2005/08/16 20:06:24  Kazan
- * [hopefully] Fix the bug i introduced in the show memory usage code, and the convergence bug during autopilot [also saves cpu cycles - MANY of them]
- *
- * Revision 2.24  2005/08/14 23:05:27  Kazan
- * i introduced a bug in _vm_realloc.. fixed it
- *
- * Revision 2.23  2005/08/14 21:01:59  Kazan
- * I'm stupid, sorry - fixed release-build-crash
- *
- * Revision 2.22  2005/08/14 17:20:56  Kazan
- * diabled NEW_MALLOC on windows - it was causing crashing - must have been corrupting it's own heap
- *
- * Revision 2.21  2005/06/01 15:10:26  phreak
- * clarified error messages to say that the files listed on asserts/warnings/errors
- * are located on the computers that built the exe.
- *
- * Revision 2.20  2005/05/12 17:49:12  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.19  2005/03/08 04:41:39  Goober5000
- * whoops
- *
- * Revision 2.18  2005/03/08 03:50:25  Goober5000
- * edited for language ;)
- * --Goober5000
- *
- * Revision 2.17  2005/03/01 06:55:40  bobboau
- * oh, hey look I've commited something :D
- * animation system, weapon models detail box alt-tab bug, probly other stuff
- *
- * Revision 2.16  2005/02/04 10:12:29  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.15  2005/01/30 09:27:41  Goober5000
- * nitpicked some boolean tests, and fixed two small bugs
- * --Goober5000
- *
- * Revision 2.14  2004/10/31 21:34:39  taylor
- * rename __ASSERT check to _ASSERT to fix constant warning message - why did no one else fix this?
- *
- * Revision 2.13  2004/07/26 20:47:31  Kazan
- * remove MCD complete
- *
- * Revision 2.12  2004/07/25 18:46:28  Kazan
- * -fred_no_warn has become -no_warn and applies to both fred and fs2
- * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
- * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
- * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
- *
- * Revision 2.11  2004/07/25 00:31:28  Kazan
- * i have absolutely nothing to say about that subject
- *
- * Revision 2.10  2004/07/12 16:32:47  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.9  2004/05/01 21:53:39  taylor
- * add some error handling to vm_strdup()
- *
- * Revision 2.8  2004/04/03 18:11:20  Kazan
- * FRED fixes
- *
- * Revision 2.7  2004/02/25 05:53:32  Goober5000
- * added DONT_SHOW_WARNINGS compile branch
- * --Goober5000
- *
- * Revision 2.6  2004/02/16 21:22:15  randomtiger
- * Use _REPORT_MEM_LEAKS compile flag in code.lib to get a report of memory leaks from malloc calls.
- *
- * Revision 2.5  2004/02/14 00:18:31  randomtiger
- * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
- * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
- * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
- * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
- * Removal of redundant Fred paths that arent needed for Fred OGL.
- * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
- * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
- * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
- *
- * Revision 2.4  2004/01/29 01:34:01  randomtiger
- * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
- * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
- *
- * Revision 2.3  2004/01/24 12:47:48  randomtiger
- * Font and other small changes for Fred
- *
- * Revision 2.2  2003/03/02 05:30:26  penguin
- * Added #ifdef _MSC_VER to MSVC-specific code
- *  - penguin
- *
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:22  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:07  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     12/01/98 4:46p Dave
- * Put in targa bitmap support (16 bit).
- * 
- * 3     11/30/98 5:31p Dave
- * Fixed up Fred support for software mode.
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 32    5/25/98 1:39p John
- * added code to give error and abort if malloc fails.
- * 
- * 31    5/06/98 8:03p Allender
- * AL: Do early out if trying to free NULL pointer in vm_free().  Print
- * out warning message.
- * 
- * 30    4/30/98 12:02a Lawrance
- * compile out Warnings() on NDEBUG builds
- * 
- * 29    4/22/98 5:15p Lawrance
- * fix bug in strdup
- * 
- * 28    4/21/98 1:02p John
- * fixed bug where the clipboard text dumped wasn't null terminated.
- * 
- * 27    4/20/98 3:22p John
- * fixed bug that displayed wrong amount of allocated ram.
- * 
- * 26    4/17/98 3:27p Allender
- * 
- * 25    4/17/98 1:41p Allender
- * made to compile with NDEBUG defined
- * 
- * 24    4/17/98 7:00a John
- * Added in hooks for new memory allocator.  I haven't tried compiling
- * under NDEBUG, but I tried to put in code for it.
- * 
- * 23    4/01/98 9:21p John
- * Made NDEBUG, optimized build with no warnings or errors.
- * 
- * 22    3/31/98 8:17p John
- * Added code to dump memory contents
- * 
- * 21    3/31/98 11:17a Allender
- * fix bug with INTERPLAYQA Int3's and Warning dialogs
- * 
- * 20    3/30/98 4:02p John
- * Made machines with < 32 MB of RAM use every other frame of certain
- * bitmaps.   Put in code to keep track of how much RAM we've malloc'd.
- * 
- * 19    3/14/98 3:35p John
- * cleaned up call stack code.  Exited out on not properly aligned EBP's.
- * 
- * 18    3/14/98 3:25p John
- * Added code to check the parentEBP pointer for validity before
- * derefrencing.
- * 
- * 17    3/11/98 5:34p Lawrance
- * Fix typo in error dialog box
- * 
- * 16    3/06/98 2:21p John
- * Correct some ok/cancel messages.  Made call stack info prettier for
- * modules with no debugging info
- * 
- * 15    3/05/98 3:04p John
- * Made Errors, Assert, Warning info paste to clipboard.
- * 
- * 14    3/05/98 9:17a John
- * Limited stack dump depth to 16
- * 
- * 13    3/05/98 9:14a John
- * Added in a simple function name unmangler
- * 
- * 12    3/04/98 7:08p John
- * Made FreeSpace generate COFF files.   Made Assert,Error, and Warning
- * display the call stack.
- * 
- * 11    2/22/98 2:48p John
- * More String Externalization Classification
- *
- * $NoKeywords: $
- */
-
 // Nothing in this module should be externalized!!!
 //XSTR:OFF
 
 //#define DUMPRAM	// This dumps all symbol sizes. See John for more info
 
+/* Windows Headers */
 #include <windows.h>
 #include <windowsx.h>
 #include <stdio.h>
 
+#ifdef _MSC_VER
+#	include <crtdbg.h>
+	/* Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors */
+#	define SHOW_CALL_STACK
+#endif // _MSC_VER
+
+/* STL Headers */
+#include <string>
+#include <vector>
+
+/* SCP Headers */
 #include "osapi/osapi.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 #include "parse/lua.h"
+
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+#	include "globalincs/mspdb_callstack.h"
+#endif
 
 extern void gr_activate(int active);
 
@@ -286,16 +44,6 @@ bool Messagebox_active = false;
 
 int Global_warning_count = 0;
 int Global_error_count = 0;
-
-#ifdef _MSC_VER
-#include <crtdbg.h>
-
-
-
-//Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors
-#define SHOW_CALL_STACK
-#endif // _MSC_VER
-
 
 #ifndef _ASSERT
   #ifndef _DEBUG
@@ -305,61 +53,127 @@ int Global_error_count = 0;
 //    #error _ASSERT is not defined yet for debug mode with non-MSVC compilers
   #endif
 #endif
-				   
 
-#ifdef SHOW_CALL_STACK
+const char *clean_filename( const char *name)
+{
+	const char *p = name+strlen(name)-1;
+	// Move p to point to first letter of EXE filename
+	while( (*p!='\\') && (*p!='/') && (*p!=':') )
+		p--;
+	p++;	
 
+	return p;	
+}		   
+
+#if defined( SHOW_CALL_STACK )
 static bool Dump_to_log = true; 
 
 class DumpBuffer
-  {
-  public :
-    enum { BUFFER_SIZE = 32000 } ;
-    DumpBuffer() ;
-    void Clear() ;
-    void Printf( const char* format, ... ) ;
-    void SetWindowText( HWND hWnd ) const ;
-    char buffer[ BUFFER_SIZE ] ;
-  private :
-    char* current ;
-  } ;
+{
+public :
+	enum { BUFFER_SIZE = 32000 } ;
+	DumpBuffer() ;
+	void Clear() ;
+	void Printf( const char* format, ... ) ;
+	void SetWindowText( HWND hWnd ) const ;
+	char buffer[ BUFFER_SIZE ] ;
+private :
+	char* current ;
+} ;
 
 
 
 DumpBuffer :: DumpBuffer()
-  {
-  Clear() ;
-  }
+{
+	Clear() ;
+}
 
 
 void DumpBuffer :: Clear()
-  {
-  current = buffer ;
-  }
+{
+	current = buffer ;
+}
 
 
 void DumpBuffer :: Printf( const char* format, ... )
-  {
-  // protect against obvious buffer overflow
-  if( current - buffer < BUFFER_SIZE )
-    {
-    va_list argPtr ;
-    va_start( argPtr, format ) ;
-    int count = vsprintf( current, format, argPtr ) ;
-    va_end( argPtr ) ;
-    current += count ;
-    }
-  }
+{
+	// protect against obvious buffer overflow
+	if( current - buffer < BUFFER_SIZE )
+	{
+		va_list argPtr ;
+		va_start( argPtr, format ) ;
+		int count = vsprintf( current, format, argPtr ) ;
+		va_end( argPtr ) ;
+		current += count ;
+	}
+}
 
 
 void DumpBuffer :: SetWindowText( HWND hWnd ) const
-  {
-  SendMessage( hWnd, WM_SETTEXT, 0, (LPARAM)buffer ) ;
-  }
+{
+	SendMessage( hWnd, WM_SETTEXT, 0, (LPARAM)buffer ) ;
+}
 
+/* Needed by LUA printf */
+// This ought to be local to VerboseAssert, but it
+// causes problems in Visual C++ (in the CRTL init phase)
+static DumpBuffer dumpBuffer;
+const char* Separator = "------------------------------------------------------------------\n" ;
 
+#endif
 
+/* MSVC2005+ callstack support
+ */
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
 
+class SCP_DebugCallStack : public SCP_IDumpHandler
+{
+public:
+	virtual void OnBegin( )
+	{
+	}
+
+	virtual void OnEnd( )
+	{
+	}
+
+	virtual void OnEntry( void* address, const char* module, const char* symbol )
+	{
+		UNREFERENCED_PARAMETER( address );
+
+		StackEntry entry;
+		entry.module = clean_filename( module );
+		entry.symbol = symbol;
+		m_stackFrames.push_back( entry );
+	}
+	
+	virtual void OnError( const char* error )
+	{
+		/* No error handling here! */
+		UNREFERENCED_PARAMETER( error );
+	}
+
+	std::string DumpToString( )
+	{
+		std::string callstack;
+		for ( size_t i = 0; i < m_stackFrames.size( ); i++ )
+		{
+			callstack += m_stackFrames[ i ].module + "! " + m_stackFrames[ i ].symbol + "\n";
+		}
+
+		return callstack; /* Inefficient, but we don't need efficient here */
+	}
+private:
+	struct StackEntry
+	{
+		std::string module;
+		std::string symbol;
+	};
+
+	std::vector< StackEntry > m_stackFrames;
+};
+
+#elif defined( SHOW_CALL_STACK )
 
 class PE_Debug
   {
@@ -926,9 +740,6 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 
 }
 
-const char* Separator = "------------------------------------------------------------------\r\n" ;
-
-
 void DumpCallsStack( DumpBuffer& dumpBuffer )
 {
 	static PE_Debug PE_debug ;
@@ -993,11 +804,6 @@ void DumpCallsStack( DumpBuffer& dumpBuffer )
 	PE_debug.ClearReport() ;  // Prepare for future calls
 }
 
-
-// This ought to be local to VerboseAssert, but it
-// causes problems in Visual C++ (in the CRTL init phase)
-static DumpBuffer dumpBuffer ;
-
 #endif	//SHOW_CALL_STACK
 
 
@@ -1009,7 +815,7 @@ uint flags = MB_SYSTEMMODAL|MB_SETFOREGROUND;
 
 extern void gr_force_windowed();
 
-void dump_text_to_clipboard(char *text)
+void dump_text_to_clipboard( const char *text )
 {
 	int len = strlen(text)+1024;
 
@@ -1054,7 +860,24 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
 
-#ifdef SHOW_CALL_STACK	
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
+
+#elif defined( SHOW_CALL_STACK )
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText1 );
 	dumpBuffer.Printf( "\r\n" );
@@ -1105,7 +928,24 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 	filename = strrchr(filename, '\\')+1;
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n%s\r\n", text, filename, linenum, AssertText2 );
 
-#ifdef SHOW_CALL_STACK	
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
+
+#elif defined ( SHOW_CALL_STACK	)
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText1 );
 	dumpBuffer.Printf( "\r\n" );
@@ -1259,7 +1099,24 @@ void _cdecl Error( char * filename, int line, const char * format, ... )
 
 	gr_activate(0);
 
-#ifdef SHOW_CALL_STACK
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	val = MessageBox( NULL, assertString.c_str( ), "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
+
+#elif defined( SHOW_CALL_STACK )
 	dumpBuffer.Clear();
 	dumpBuffer.Printf( AssertText2 );
 	dumpBuffer.Printf( "\r\n" );
@@ -1348,7 +1205,24 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 
 	gr_activate(0);
 
-#ifdef SHOW_CALL_STACK
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
+	
+	/* Format the string */
+	std::string assertString( AssertText1 );
+	assertString += "\n";
+	assertString += callStack.DumpToString( );
+	
+	/* Copy to the clipboard */
+	dump_text_to_clipboard( assertString.c_str( ) );
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	result = MessageBox( NULL, assertString.c_str( ), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
+
+#elif defined ( SHOW_CALL_STACK	)
 	//we don't want to dump the call stack for every single warning
 	Dump_to_log = false; 
 
@@ -1558,16 +1432,6 @@ int vm_init(int min_heap_size)
 	return 1;
 }
 
-char *clean_filename(char *name)
-{
-	char *p = name+strlen(name)-1;
-	// Move p to point to first letter of EXE filename
-	while( (*p!='\\') && (*p!='/') && (*p!=':') )
-		p--;
-	p++;	
-
-	return p;	
-}
 
 #ifdef _DEBUG
 

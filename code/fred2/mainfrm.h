@@ -7,78 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/fred2/MainFrm.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
- *
- * MainFrm.h : interface of the CMainFrame class
- * The main frame class of a document/view architechure, which we hate but must
- * deal with, due to Microsoft limiting our freedom and forcing us to use whether
- * we want to or not.  The main frame is basically the container window that other
- * view windows are within.  In Fred, our view window is always maximized inside
- * the main frame window, so you can't tell the difference between the two.  A few
- * old MFC events are handled here because the people working on the code before
- * me (Hoffoss) decided to put it here.  I've been putting it all in FredView.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2005/07/13 02:40:50  Goober5000
- * remove PreProcDefine #includes in FRED
- * --Goober5000
- *
- * Revision 1.2  2004/09/29 17:26:32  Kazan
- * PreProfDefines.h includes for fred2
- *
- * Revision 1.1.1.1  2002/07/15 03:10:59  inquisitor
- * Initial FRED2 Checking
- *
- * 
- * 3     9/08/99 12:07a Andsager
- * Add browser based help to Fred
- * 
- * 2     10/07/98 6:28p Dave
- * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
- * Fred. Globalized mission and campaign file extensions. Removed Silent
- * Threat specific code.
- * 
- * 1     10/07/98 3:01p Dave
- * 
- * 1     10/07/98 3:00p Dave
- * 
- * 14    9/16/98 6:54p Dave
- * Upped  max sexpression nodes to 1800 (from 1600). Changed FRED to sort
- * the ship list box. Added code so that tracker stats are not stored with
- * only 1 player.
- * 
- * 13    8/17/97 10:22p Hoffoss
- * Fixed several bugs in Fred with Undo feature.  In the process, recoded
- * a lot of CFile.cpp.
- * 
- * 12    7/21/97 3:57p Hoffoss
- * Removed group combo box from toolbar, since I don't think I'll ever get
- * it working right.
- * 
- * 11    6/09/97 4:57p Hoffoss
- * Added autosave and undo to Fred.
- * 
- * 10    5/05/97 1:35p Hoffoss
- * View window is now refocused when a new ship type selection is made.
- * 
- * 9     3/10/97 12:54p Hoffoss
- * Added drop down combo box to toolbar and fixed compiling errors Mark
- * (maybe Mike?) introduced to code.
- * 
- * 8     2/28/97 11:31a Hoffoss
- * Implemented modeless dialog saving and restoring, and changed some
- * variables names.
- * 
- * 7     2/17/97 5:28p Hoffoss
- * Checked RCS headers, added them were missing, changing description to
- * something better, etc where needed.
- *
- * $NoKeywords: $
- */
+
 
 //class CShipEditorDlg;
 

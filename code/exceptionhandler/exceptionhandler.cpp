@@ -7,78 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.10.2.1 $
- * $Date: 2006-11-15 00:26:03 $
- * $Author: taylor $
- *
- * Main file for dealing with exception handling
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.10  2006/01/26 03:23:29  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 2.9  2006/01/20 07:10:33  Goober5000
- * reordered #include files to quash Microsoft warnings
- * --Goober5000
- *
- * Revision 2.8  2005/01/31 23:27:52  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.7  2004/07/26 20:47:27  Kazan
- * remove MCD complete
- *
- * Revision 2.6  2004/07/12 16:32:45  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.5  2004/03/31 05:42:26  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 2.4  2004/03/06 23:28:22  bobboau
- * fixed motion debris
- * animated laser textures
- * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
- *
- * Revision 2.3  2003/11/11 02:15:43  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.2  2003/11/06 20:22:03  Kazan
- * slight change to .dsp - leave the release target as fs2_open_r.exe already
- * added myself to credit
- * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
- * Release builds should have warning level set no higher than 2 (default is 1)
- * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
- * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
- *
- * Revision 2.1  2003/03/02 05:10:42  penguin
- * Added #ifdef _MSC_VER around strange exception-handling code
- *  - penguin
- *
- * Revision 2.0  2002/06/03 04:02:22  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:05  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 1     6/29/99 7:42p Dave
- * 
- * 3     1/19/99 9:07a Allender
- * removed compiler warning pragma's since we are already ignoring them in
- * vtypes.h
- * 
- * 2     1/18/99 4:34p Allender
- * added the exception handler routines from Game Developer for structured
- * exception handling in vsdk code
- *
- * $NoKeywords: $
- */
+
 
 // Copyright © 1998 Bruce Dawson.
 /*

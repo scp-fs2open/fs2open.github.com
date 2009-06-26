@@ -7,73 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
- *
- * Header file for running the debriefing
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2005/06/03 06:39:26  taylor
- * better audio pause/unpause support when game window loses focus or is minimized
- *
- * Revision 2.1  2004/08/11 05:06:28  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     12/17/98 4:50p Andsager
- * Added debrief_assemble_optional_mission_popup_text() for single and
- * multiplayer
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 7     5/13/98 5:14p Allender
- * red alert support to go back to previous mission
- * 
- * 6     4/27/98 9:08p Allender
- * fix the debriefing stage problems when clients get to screen long after
- * server
- * 
- * 5     4/25/98 11:24a Allender
- * finsihed multiplayer debriefing stuff.  Work on object updates.
- * External view shoudl work in multiplayer correctly
- * 
- * 4     4/09/98 4:32p Hoffoss
- * Fixed several bugs in debriefing.
- * 
- * 3     12/30/97 6:42p Hoffoss
- * New debriefing screen implemented.
- * 
- * 2     10/24/97 6:19p Dave
- * More standalone testing/fixing. Added reliable endgame sequencing.
- * Added reliable ingame joining. Added reliable stats transfer (endgame).
- * Added support for dropping players in debriefing. Removed a lot of old
- * unused code.
- * 
- * 1     9/30/97 10:16a Lawrance
- * move files from Mission lib to MissionUI lib
- * 
- * 3     8/31/97 6:38p Lawrance
- * pass in frametime to do_frame loop
- * 
- * 2     6/13/97 2:30p Lawrance
- * Added debriefings
- * 
- * 1     6/13/97 10:42a Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __MISSIONDEBRIEF_H__
 #define __MISSIONDEBRIEF_H__

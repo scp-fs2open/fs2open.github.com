@@ -7,55 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Emp.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
- *
- * Header file for managing corkscrew missiles
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.2  2004/08/11 05:06:36  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2004/03/05 09:01:54  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     7/02/99 4:31p Dave
- * Much more sophisticated lightning support.
- * 
- * 3     1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 3     8/28/98 3:29p Dave
- * EMP effect done. AI effects may need some tweaking as required.
- * 
- * 2     8/25/98 1:49p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 1     8/24/98 9:29a Dave
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FREESPACE_EMP_MISSILE_HEADER_FILE_
 #define __FREESPACE_EMP_MISSILE_HEADER_FILE_

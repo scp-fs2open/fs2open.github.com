@@ -7,76 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.6.2.2 $
- * $Date: 2007-05-20 02:51:26 $
- * $Author: taylor $
- *
- * Code for doing directory lists and sorts
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6.2.1  2006/08/19 04:16:49  taylor
- * "byte" was the same as "ubyte", but since "byte" has to be an extra #define on everything but Windows, lets just get rid of it
- *
- * Revision 2.6  2005/01/31 23:27:51  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.5  2004/07/26 20:47:25  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/17 09:26:00  taylor
- * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
- *
- * Revision 2.3  2004/07/12 16:32:42  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/29 19:37:21  penguin
- * added #ifdef _WIN32 around windows-specific system headers
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     2/22/99 10:31p Andsager
- * Get rid of unneeded includes.
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 6     5/13/98 10:22p John
- * Added cfile functions to read/write rle compressed blocks of data.
- * Made palman use it for .clr files.  Made alphacolors calculate on the
- * fly rather than caching to/from disk.
- * 
- * 5     5/06/98 5:30p John
- * Removed unused cfilearchiver.  Removed/replaced some unused/little used
- * graphics functions, namely gradient_h and _v and pixel_sp.   Put in new
- * DirectX header files and libs that fixed the Direct3D alpha blending
- * problems.
- * 
- * 4     4/30/98 4:53p John
- * Restructured and cleaned up cfile code.  Added capability to read off
- * of CD-ROM drive and out of multiple pack files.
- * 
- * 3     4/10/98 12:18a Hoffoss
- * Make pilot image search in pack file possible.
- * 
- * 2     3/30/98 10:36p Allender
- * be sure to call _findclose() when done reading a file list
- * 
- * 1     12/28/97 11:48a John
- *
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <string.h>

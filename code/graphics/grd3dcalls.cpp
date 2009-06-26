@@ -7,9 +7,7 @@
  *
 */
 
-/* 
-** $Logfile: /Freespace2/code/Graphics/GrD3DCalls.cpp $ 
-*/ 
+ 
 
 #ifndef NO_DIRECT3D
 

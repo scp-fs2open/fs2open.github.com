@@ -7,16 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
- *
- * C module for managing corkscrew missiles
- * 
- * $NoKeywords: $
- */
+
 
 #include "weapon/corkscrew.h"
 #include "weapon/weapon.h"
