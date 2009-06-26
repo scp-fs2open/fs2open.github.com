@@ -159,7 +159,7 @@ float shield_get_quad(object *objp, int quadrant_num)
 		return 0.0f;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
 	if (quadrant_num < 0 || quadrant_num >= objp->n_shield_segments)
 		return 0.0f;
 
@@ -213,7 +213,7 @@ float shield_get_quad(object *objp, int quadrant_num)
 void shield_set_quad(object *objp, int quadrant_num, float strength)
 {
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
 	if (quadrant_num < 0 || quadrant_num >= objp->n_shield_segments)
         return;
 
@@ -235,7 +235,7 @@ void shield_add_quad(object *objp, int quadrant_num, float delta)
 		return;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
 	if (quadrant_num < 0 || quadrant_num >= objp->n_shield_segments)
 		return;
 
@@ -296,7 +296,7 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage)
 		return damage;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_shield_segments);
+	Assert(quadrant_num >= 0 && quadrant_num < MAX_SHIELD_SECTIONS);
 	if ((quadrant_num < 0) || (quadrant_num >= objp->n_shield_segments))
 		return damage;	
 	

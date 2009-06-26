@@ -982,7 +982,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 			break;
 	}
 
-	Assert(direction >= 0 && direction < objp->n_shield_segments);
+	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
 	Assert(objp->type == OBJ_SHIP);
 	
 	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
