@@ -1916,6 +1916,12 @@ ubyte brief_return_color_index(char c)
 		case 'b':
 			return BRIEF_TEXT_BLUE;
 
+ 		case 'w':
+ 			return BRIEF_TEXT_WHITE;
+ 
+ 		case 'y':
+ 			return BRIEF_TEXT_YELLOW;
+ 
 		default:	
 			Int3();	// unsupported meta-code
 			break;
