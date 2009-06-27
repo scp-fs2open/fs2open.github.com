@@ -131,8 +131,12 @@ void draw_asteroid_field();
 void hilight_bitmap();
 
 color colour_white;
-color colour_grey;
+color colour_green;
 color colour_black;
+color colour_yellow;
+
+#define FRED_COLOUR_WHITE	0xffffff
+#define FRED_COLOUR_YELLOW	0x9fff00
 
 void fred_enable_htl()
 {
@@ -169,7 +173,8 @@ void fred_render_init()
 //	vm_set_identity(&view_orient);
 
 	gr_init_alphacolor( &colour_white, 255,255,255,255);
-	gr_init_alphacolor( &colour_grey, 0,200,0,255);
+	gr_init_alphacolor( &colour_green, 0,200,0,255);
+	gr_init_alphacolor( &colour_yellow, 200,255,0,255);
 	gr_init_alphacolor( &colour_black, 0,0,0,255);
 }
 
@@ -721,10 +726,10 @@ void render_one_model_nohtl(object *objp)
 	rendering_order[render_count] = OBJ_INDEX(objp);
 	Fred_outline = 0;
 	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
-		Fred_outline = 0xffffff;
+		Fred_outline = FRED_COLOUR_WHITE;
 
 	else if ((objp->flags & OF_MARKED) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = 0x9fff00;
+		Fred_outline = FRED_COLOUR_YELLOW;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
 		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, true, objp);
@@ -850,10 +855,10 @@ void render_one_model_htl(object *objp)
 	rendering_order[render_count] = OBJ_INDEX(objp);
 	Fred_outline = 0;
 	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
-		Fred_outline = 0xffffff;
+		Fred_outline = FRED_COLOUR_WHITE;
 
 	else if ((objp->flags & OF_MARKED) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = 0x9fff00;
+		Fred_outline = FRED_COLOUR_YELLOW;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
 		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, true, objp);
@@ -1022,9 +1027,9 @@ void display_ship_info()
 		Fred_outline = 0;
 		render = 1;
 		if (OBJ_INDEX(objp) == cur_object_index)
-			Fred_outline = 0xffffff;
+			Fred_outline = FRED_COLOUR_WHITE;
 		else if (objp->flags & OF_MARKED)  // is it a marked object?
-			Fred_outline = 0x9fff00;
+			Fred_outline = FRED_COLOUR_YELLOW;
 		else
 			Fred_outline = 0;
 
@@ -1088,16 +1093,12 @@ void display_ship_info()
 
 				if (*buf)
 				{
-					if (Fred_outline)
-						gr_set_color_fast(&colour_grey);
+					if (Fred_outline == FRED_COLOUR_WHITE)
+						gr_set_color_fast(&colour_green);
+					else if (Fred_outline == FRED_COLOUR_YELLOW)
+						gr_set_color_fast(&colour_yellow);
 					else
 						gr_set_color_fast(&colour_white);
-
-#if 0
-						gr_set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-					else
-						gr_set_color(160, 160, 160);
-#endif
 
 					gr_string_win((int) v.sx, (int) v.sy, buf);
 				}
