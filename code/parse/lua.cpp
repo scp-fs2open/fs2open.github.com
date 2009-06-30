@@ -7286,10 +7286,15 @@ ADE_FUNC(postGameEvent, l_Base, "event Event", "Sets current game event. Note th
 	if(!gh->IsValid())
 		return ade_set_error(L, "b", false);
 
+	if (Om_tracker_flag) 
+		Multi_options_g.protocol = NET_TCP;
+	psnet_use_protocol(Multi_options_g.protocol);
+	
 	gameseq_post_event(gh->Get());
 
 	return ADE_RETURN_TRUE;
 }
+
 /*
 ADE_FUNC(getEventNameByIndex, l_Base, "Index of event type (number)", "Event name (string)", "Gets the name of a event type, given an index; this function may be used to list all event dealt with by setEvent()")
 {

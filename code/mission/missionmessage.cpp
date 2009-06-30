@@ -1031,13 +1031,17 @@ void message_play_anim( message_q *q )
 				// get a random head
 				// Goober5000 - *sigh*... if mission designers assign a command persona
 				// to a wingman head, they risk having the death ani play
-				Assert(strlen(ani_name) >= 7);
-				if (!strnicmp(ani_name+5,"CM",2) || !strnicmp(ani_name+5,"BS",2))	// Head-CM* or Head-BSH
-					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
-				else
+				if ( !strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7) ) {
+					mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
 					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
+				} else {
+					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
+				}
+
 				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
 				subhead_selected = TRUE;
+			} else {
+				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
 			}
 		}
 
@@ -1307,11 +1311,13 @@ void message_queue_process()
 	if ( Num_messages_playing == MAX_PLAYING_MESSAGES )
 		return;
 
-	Message_shipnum = ship_name_lookup( q->who_from );
+	// Goober5000 - argh, don't conflate special sources with ships!
+	// NOTA BENE: don't check for != MESSAGE_SOURCE_COMMAND, because with the new command persona code, Command could be a ship
+	if ( q->source != MESSAGE_SOURCE_SPECIAL ) {
+		Message_shipnum = ship_name_lookup( q->who_from );
 
-	// see if we need to check if sending ship is alive
-	if ( q->flags & MQF_CHECK_ALIVE ) {
-		if ( Message_shipnum == -1 ) {
+		// see if we need to check if sending ship is alive
+		if ( (Message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
 			goto all_done;
 		}
 	}
@@ -1708,11 +1714,18 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
-	int i, persona_index = -1, message_index = -1;
-	int source;	
-	int matching_builtins[MAX_MISSION_MESSAGES]; 
-	int num_matching_builtins = 0; 
+	int i, persona_index = -1, persona_species = -1, message_index = -1;
+	int source;
 	char *who_from;
+
+	int *matching_builtins = NULL;
+	int matching_builtins_exact[MAX_MISSION_MESSAGES];
+	int matching_builtins_type_and_species[MAX_MISSION_MESSAGES];
+	int matching_builtins_type[MAX_MISSION_MESSAGES];
+	int num_matching_builtins = 0;
+	int num_matching_builtins_exact = 0;
+	int num_matching_builtins_type_and_species = 0;
+	int num_matching_builtins_type = 0;
 
 	// builtin type isn't supported by this version of the table
 	if (!Valid_builtin_message_types[type]) {
@@ -1757,46 +1770,50 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	char *name = Builtin_message_types[type];
 
+	if (persona_index >= 0) {
+		persona_species = Personas[persona_index].species;
+	}
+
 	// try to find a builtin message with the given type for the given persona
-	// make a loop out of this routne since we may try to play a message in the wrong
-	// persona if we can't find the right message for the given persona
-	do {
-		for ( i = 0; i < Num_builtin_messages; i++ ) {
-			// check the type of message
-			if ( stricmp(Messages[i].name, name) ){
-				continue;
+	// we may try to play a message in the wrong persona if we can't find the right message for the given persona
+	for ( i = 0; i < Num_builtin_messages; i++ ) {
+		// check the type of message
+		if ( !stricmp(Messages[i].name, name) ) {
+			// condition 1: we have a type match
+			matching_builtins_type[num_matching_builtins_type++] = i;
+
+			// check the species of this persona (if required)
+			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
+				// condition 2: we have a type + species match
+				matching_builtins_type_and_species[num_matching_builtins_type_and_species++] = i;
 			}
 
-			// must have the correct persona.  persona_index of -1 means find the first
-			// message possibly of the correct type
-			if ( (persona_index != -1 ) && (Messages[i].persona_index != persona_index) ){
-				continue;
-			}
-			
-			matching_builtins[num_matching_builtins++] = i; 
-
-			// if we don't care about the persona we do not need to check for other matching messages, we grab the first one 
-			// of the correct type we find and run
-			if (persona_index == -1 ) { 
-				break;
+			// check the exact persona (if required)
+			// NOTE: doesn't need to be nested under the species condition above
+			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
+				// condition 3: type + species + persona index match
+				matching_builtins_exact[num_matching_builtins_exact++] = i;
 			}
 		}
-		
-		// if we didn't find any matching builtins for a valid persona go round again and just grab the first one of the
-		// correct type
-		if ( persona_index >= 0 && num_matching_builtins == 0 ) {
-			nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
-			nprintf(("messaging", "looking for message for any persona\n"));
-			persona_index = -1;
-		}
-		// otherwise whether we found valid message(s) or not, we're done with the loop
-		else {
-			// exit do-while
-			break; 
-		}
-	} while ( true );
+	}
 
-	if (num_matching_builtins <= 0) {
+	// now decide which set of messages to select from
+	if (num_matching_builtins_exact > 0) {
+		num_matching_builtins = num_matching_builtins_exact;
+		matching_builtins = matching_builtins_exact;
+	} else if (num_matching_builtins_type_and_species > 0) {
+		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
+		nprintf(("messaging", "using a message for any persona of that species\n"));
+
+		num_matching_builtins = num_matching_builtins_type_and_species;
+		matching_builtins = matching_builtins_type_and_species;
+	} else if (num_matching_builtins_type > 0) {
+		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
+		nprintf(("messaging", "looking for message for any persona of any species\n"));
+
+		num_matching_builtins = num_matching_builtins_type;
+		matching_builtins = matching_builtins_type;
+	} else {
 		nprintf(("messaging", "Couldn't find any builtin message of type %d\n", type ));
 		Int3();
 		return; 

@@ -421,7 +421,9 @@ void model_collide_tmappoly(ubyte * p)
 
 	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
 		// Don't check invisible polygons.
-		return;
+		//SUSHI: Unless $collide_invisible is set.
+		if (!(Mc_pm->submodel[Mc_submodel].collide_invisible))
+			return;
 	}
 
 	verts = (model_tmap_vert *)(p+44);
@@ -668,6 +670,7 @@ void mc_check_subobj( int mn )
 	
 	sm = &Mc_pm->submodel[mn];
 	if (sm->no_collisions) return; // don't do collisions
+	if (sm->nocollide_this_only) goto NoHit; // Don't collide for this model, but keep checking others
 
 	// Rotate the world check points into the current subobject's 
 	// frame of reference.
