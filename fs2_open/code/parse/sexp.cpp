@@ -15230,8 +15230,7 @@ void sexp_set_fov(int n)
 
 	//Cap FOV to something reasonable.
 	float new_fov = (float)eval_num(n);
-	new_fov = MIN(new_fov, 360.0f);
-	new_fov = MAX(new_fov, 0.0f);
+	CLAMP(new_fov, 0.0f, 360.0f);
 
 	Sexp_fov = (new_fov * (PI/180.0f));
 	//cam->set_fov(eval_num(n) * (PI/180.0f));
