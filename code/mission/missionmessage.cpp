@@ -1031,13 +1031,17 @@ void message_play_anim( message_q *q )
 				// get a random head
 				// Goober5000 - *sigh*... if mission designers assign a command persona
 				// to a wingman head, they risk having the death ani play
-				Assert(strlen(ani_name) >= 7);
-				if (!strnicmp(ani_name+5,"CM",2) || !strnicmp(ani_name+5,"BS",2))	// Head-CM* or Head-BSH
-					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
-				else
+				if ( !strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7) ) {
+					mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
 					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
+				} else {
+					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
+				}
+
 				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
 				subhead_selected = TRUE;
+			} else {
+				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
 			}
 		}
 
@@ -1307,11 +1311,13 @@ void message_queue_process()
 	if ( Num_messages_playing == MAX_PLAYING_MESSAGES )
 		return;
 
-	Message_shipnum = ship_name_lookup( q->who_from );
+	// Goober5000 - argh, don't conflate special sources with ships!
+	// NOTA BENE: don't check for != MESSAGE_SOURCE_COMMAND, because with the new command persona code, Command could be a ship
+	if ( q->source != MESSAGE_SOURCE_SPECIAL ) {
+		Message_shipnum = ship_name_lookup( q->who_from );
 
-	// see if we need to check if sending ship is alive
-	if ( q->flags & MQF_CHECK_ALIVE ) {
-		if ( Message_shipnum == -1 ) {
+		// see if we need to check if sending ship is alive
+		if ( (Message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
 			goto all_done;
 		}
 	}
