@@ -2780,7 +2780,6 @@ int CFred_mission_save::fout_ext(char *pre_str, char *format, ...)
 	char str_out[16384] = "";
 	va_list args;
 	int str_id;
-	bool add_newline = false;
 	
 	if (err){
 		return err;
@@ -3050,7 +3049,7 @@ int CFred_mission_save::save_events()
 
 		fout(" %d", Mission_events[i].repeat_count);
 
-		if (Format_fs2_open) {
+		if (Format_fs2_open && Mission_events[i].trigger_count != 1 ) {
 			if ( optional_string_fred("+Trigger Count:", "$Formula:")){
 				parse_comments();
 			} else {
