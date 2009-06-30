@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=1;_HAS_ITERATOR_DEBUGGING=1"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
