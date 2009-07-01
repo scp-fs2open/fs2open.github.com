@@ -199,14 +199,16 @@ flag_def_list Player_orders[] = {
 	{ "form on wing",		FORMATION_ITEM,			0 },
 	{ "cover me",			COVER_ME_ITEM,			0 },
 	{ "attack any",			ENGAGE_ENEMY_ITEM,		0 },
-	{ "depart",				DEPART_ITEM,			0 },
 
 	// transports mostly
 	{ "dock",				CAPTURE_TARGET_ITEM,	0 },
 
-	// support
+	// support ships
 	{ "rearm me",			REARM_REPAIR_ME_ITEM,	0 },
 	{ "abort rearm",		ABORT_REARM_REPAIR_ITEM,	0 },
+
+	// all ships
+	{ "depart",				DEPART_ITEM,			0 },
 
 	// extra stuff for support
 	{ "stay near me",		STAY_NEAR_ME_ITEM,		0 },
