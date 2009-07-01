@@ -527,6 +527,7 @@ sexp_oper Operators[] = {
 	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 6, },
 	{ "set-camera-target",			OP_CUTSCENES_SET_CAMERA_TARGET,			1, 2, },
 	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
+	{ "get-fov",					OP_CUTSCENES_GET_FOV,					0, 0, },
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
 	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
 	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
@@ -15236,6 +15237,18 @@ void sexp_set_fov(int n)
 	//cam->set_fov(eval_num(n) * (PI/180.0f));
 }
 
+int sexp_get_fov()
+{
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return -1;
+	else if(Sexp_fov > 0.0f)
+		// SEXP override has been set
+		return Sexp_fov / (PI/180.0f);
+	else	
+		return cam->get_fov() / (PI/180.0f);
+}
+
 void sexp_reset_fov()
 {
 	camera *cam = Main_camera.getCamera();
@@ -17086,6 +17099,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_set_fov(node);
 				break;
+			case OP_CUTSCENES_GET_FOV:	
+				sexp_val = sexp_get_fov();
+				break;
 			case OP_CUTSCENES_RESET_FOV:
 				sexp_val = SEXP_TRUE;
 				sexp_reset_fov();
@@ -17488,6 +17504,7 @@ int query_operator_return_type(int op)
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
+		case OP_CUTSCENES_GET_FOV:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -19052,6 +19069,7 @@ int query_operator_argument_type(int op, int argnum)
 		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
+		case OP_CUTSCENES_GET_FOV:
 			return OPF_NONE;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -20426,6 +20444,7 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
 		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_FOV:
+		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
 		case OP_CUTSCENES_SHOW_SUBTITLE:
@@ -22947,6 +22966,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the field of view - overrides all camera settings  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
+	},
+
+	// Echelon9
+	{ OP_CUTSCENES_GET_FOV, "get-fov\r\n"
+		"\tReturns the current field of view (in degrees) from the Main camera.\r\n\r\n"
+		"Returns a numeric value.  Takes no arguments."
 	},
 
 	{ OP_CUTSCENES_RESET_FOV, "reset-fov\r\n"
