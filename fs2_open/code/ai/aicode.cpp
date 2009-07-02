@@ -5354,15 +5354,6 @@ void set_primary_weapon_linkage(object *objp)
 
 	shipp->flags &= ~SF_PRIMARY_LINKED;
 
-	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f)) {
-		if (shipp->flags & SF_PRIMARY_LINKED)
-			nprintf(("AI", "Frame %i, ship %s: Unlinking primaries.\n", Framecount, shipp->ship_name));
-		shipp->flags &= ~SF_PRIMARY_LINKED;
-		return;		//	If low on slots, don't link.
-	}
-
-	shipp->flags &= ~SF_PRIMARY_LINKED;
-
 	// AL: ensure target is a ship!
 	if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) ) {
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
@@ -5373,6 +5364,13 @@ void set_primary_weapon_linkage(object *objp)
 				return;
 			}
 		}
+	}
+
+	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f) || sip->flags2 & SIF2_NO_PRIMARY_LINKING) {
+		if (shipp->flags & SF_PRIMARY_LINKED)
+			nprintf(("AI", "Frame %i, ship %s: Unlinking primaries.\n", Framecount, shipp->ship_name));
+		shipp->flags &= ~SF_PRIMARY_LINKED;
+		return;		//	If low on slots or primary linking disallowed, don't link.
 	}
 
 	// AL 2-11-98: If ship has a disarm or disable goal, don't link unless both weapons are
