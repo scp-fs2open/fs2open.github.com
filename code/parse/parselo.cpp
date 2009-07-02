@@ -2587,7 +2587,7 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	ignore_white_space();
 
 	while (*Mp != ')') {
-		assert ( count < max_strings );
+		Assert ( count < max_strings );
 		if(*Mp != '\"') {
 			error_display(0, "Missing quotation marks in string list.");
 		}
