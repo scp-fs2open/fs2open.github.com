@@ -179,6 +179,7 @@ void hud_init_comm_orders()
 
 	struct { char *name; int item; } temp_comm_orders[] =
 	{
+		// common stuff
 		{ XSTR("Destroy my target", 299),	ATTACK_TARGET_ITEM },
 		{ XSTR("Disable my target", 300),	DISABLE_TARGET_ITEM },
 		{ XSTR("Disarm my target", 301),	DISARM_TARGET_ITEM },
@@ -188,13 +189,18 @@ void hud_init_comm_orders()
 		{ XSTR("Form on my wing", 305),		FORMATION_ITEM },
 		{ XSTR("Cover me", 306),			COVER_ME_ITEM },
 		{ XSTR("Engage enemy", 307),		ENGAGE_ENEMY_ITEM },
+
+		// transports mostly
 		{ XSTR("Capture my target", 308),	CAPTURE_TARGET_ITEM },
+
+		// support ships
 		{ XSTR("Rearm me", 309),			REARM_REPAIR_ME_ITEM },
 		{ XSTR("Abort rearm", 310),			ABORT_REARM_REPAIR_ITEM },
+
 		// all ships
 		{ XSTR("Depart", 311),				DEPART_ITEM },
 	
-		// support ships (maintain original comm menu order)
+		// extra stuff for support (maintain original comm menu order)
 		{ XSTR("Stay near me", -1),			STAY_NEAR_ME_ITEM},
 		{ XSTR("Stay near my target", -1),	STAY_NEAR_TARGET_ITEM},
 		{ XSTR("Keep safe distance", -1),	KEEP_SAFE_DIST_ITEM},
