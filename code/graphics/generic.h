@@ -12,12 +12,24 @@ typedef struct generic_anim {
 	int	first_frame;
 	int	num_frames;
 	float total_time;		// in seconds
+	
+	generic_anim( )
+		: first_frame( 0 ), num_frames( 0 ), total_time( 0 )
+	{
+		filename[ 0 ] = NULL;
+	}
 } generic_anim;
 
 // Goober5000
 typedef struct generic_bitmap {
 	char filename[MAX_FILENAME_LEN];
 	int bitmap_id;
+
+	generic_bitmap( )
+		: bitmap_id( 0 )
+	{
+		filename[ 0 ] = NULL;
+	}
 } generic_bitmap;
 
 
