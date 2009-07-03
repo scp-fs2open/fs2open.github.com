@@ -24,17 +24,29 @@
 typedef struct thrust_pair_bitmap {
 	generic_bitmap normal;
 	generic_bitmap afterburn;
+
+	thrust_pair_bitmap( )
+	{
+	}
 } thrust_pair_bitmap;
 
 // for animated thrusters
 typedef struct thrust_pair {
 	generic_anim normal;
 	generic_anim afterburn;
+
+	thrust_pair( )
+	{
+	}
 } thrust_pair;
 
 typedef struct thrust_info {
 	thrust_pair flames;
 	thrust_pair glow;
+
+	thrust_info( )
+	{
+	}
 } thrust_info;
 
 
@@ -45,8 +57,8 @@ typedef struct thrust_info {
 typedef struct species_info {
 
 	char species_name[NAME_LENGTH];
-
 	int default_iff;
+	float awacs_multiplier;
 
 	union {
 		struct {
@@ -62,8 +74,6 @@ typedef struct species_info {
 	// Bobboau's thruster stuff
 	thrust_pair_bitmap thruster_secondary_glow_info;
 	thrust_pair_bitmap thruster_tertiary_glow_info;
-
-	float awacs_multiplier;
 
 	// if this will not be parsed in species_defs.tbl, move it below the following comment
 #ifdef NEW_HUD
@@ -82,9 +92,11 @@ typedef struct species_info {
 
 
 	// constructor to initialize everything to 0
-	species_info()
+	species_info( )
+		: default_iff( 0 ), awacs_multiplier( 0 )
 	{
-		memset(this, 0, sizeof(species_info));
+		species_name[ 0 ] = NULL;
+		memset( fred_color.a1d, 0, sizeof( fred_color.a1d ) );
 	}
 
 } species_info;
