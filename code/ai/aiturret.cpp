@@ -1951,7 +1951,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// actual gun point and normal, not just the one for whole turret.
 			// moved here as if there are two weapons with indentical fire stamps
 			// they would have shared the fire point.
-			tv2e = v2e;
+			tv2e = gvec;
 	
 			// make sure to reset this for current weapon
 			ok_to_fire = false;
