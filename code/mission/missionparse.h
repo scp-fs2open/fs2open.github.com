@@ -684,7 +684,11 @@ typedef struct mission_cutscene {
 	char cutscene_name[NAME_LENGTH];	
 	int formula; 
 
-	mission_cutscene() { memset(this, 0, sizeof(mission_cutscene)); formula = -1; };
+	mission_cutscene( ) 
+		: type( 0 ), formula( -1 )
+	{ 
+		cutscene_name[ 0 ] = NULL;
+	}
 } mission_cutscene;
 
 typedef struct mission {
@@ -840,10 +844,12 @@ typedef struct texture_replace {
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
 
-	texture_replace()
+	texture_replace( )
+		: new_texture_id( -1 )
 	{
-		memset(this, '\0', sizeof(this));
-		new_texture_id = -1;
+		ship_name[ 0 ] = NULL;
+		old_texture[ 0 ] = NULL;
+		new_texture[ 0 ] = NULL;
 	}
 } texture_replace;
 

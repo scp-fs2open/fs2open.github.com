@@ -443,7 +443,11 @@ typedef struct weapon_expl_lod {
 	int	num_frames;
 	int	fps;
 
-	weapon_expl_lod() { memset(this, 0, sizeof(weapon_expl_lod)); bitmap_id = -1; }
+	weapon_expl_lod( ) 
+		: bitmap_id( -1 ), num_frames( 0 ), fps( 0 )
+	{ 
+		filename[ 0 ] = NULL;
+	}
 } weapon_expl_lod;
 
 typedef struct weapon_expl_info	{
