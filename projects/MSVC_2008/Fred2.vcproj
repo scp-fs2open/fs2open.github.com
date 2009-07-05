@@ -53,7 +53,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../openal/include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410;_WIN32_WINNT=0x500"
+				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410;_WIN32_WINNT=0x500;FS2_SPEECH;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -167,7 +167,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410;_WIN32_WINNT=0x500"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410;_WIN32_WINNT=0x500;FS2_SPEECH;"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
@@ -1130,7 +1130,7 @@
 	<Globals>
 		<Global
 			Name="RESOURCE_FILE"
-			Value="\Projects\fs2_open_3_6_10\code\fred2\fred.rc"
+			Value="\C++\Freespace\FS2_Open - Diaspora Build\code\fred2\fred.rc"
 		/>
 	</Globals>
 </VisualStudioProject>

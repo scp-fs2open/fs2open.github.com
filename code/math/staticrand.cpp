@@ -55,6 +55,15 @@ float static_randf(int num)
 	return (a & 0xffff) / 65536.0f;
 }
 
+// Note: min and max are inclusive
+int static_rand_range(int num, int min, int max)
+{
+	int	rval = static_rand(num);
+	rval = (rval % (max - min + 1)) + min;
+	return rval;
+}
+
+
 float static_randf_range(int num, float min, float max)
 {
 	float	rval;

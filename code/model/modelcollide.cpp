@@ -669,7 +669,9 @@ void mc_check_subobj( int mn )
 	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
 	
 	sm = &Mc_pm->submodel[mn];
-	if (sm->no_collisions) return; // don't do collisions
+	if (sm->no_collisions) 
+		return; // don't do collisions
+	if (sm->nocollide_this_only) goto NoHit; // Don't collide for this model, but keep checking others
 	if (sm->nocollide_this_only) goto NoHit; // Don't collide for this model, but keep checking others
 
 	// Rotate the world check points into the current subobject's 

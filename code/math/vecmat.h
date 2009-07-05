@@ -507,6 +507,9 @@ void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest,
 void vm_vert2vec(vertex *vert, vec3d *vec);
 void vm_vec2vert(vec3d *vec, vertex *vert);
 
+//SUSHI: 2D vector "box" scaling
+void vm_vec_boxscale(vec2d *vec, float scale);
+
 #endif
 
 
