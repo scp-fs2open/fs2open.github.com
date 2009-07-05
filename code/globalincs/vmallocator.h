@@ -31,6 +31,8 @@ public:
 
 	pointer allocate( size_type n )
 	{
+		if ( n == 0 )
+			return NULL;
 		return (pointer)vm_malloc( n * sizeof( T ) );
 	}
 
