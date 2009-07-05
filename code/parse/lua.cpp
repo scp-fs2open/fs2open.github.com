@@ -8446,12 +8446,21 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	int x1,x2,y1,y2;
 	int bound_rc, pof;
 	int modelnum;
+	bool entered_frame = false;
+	if ( !(g3_in_frame( ) > 0 ) )
+	{
+		g3_start_frame( 0 );
+		entered_frame = true;
+	}
+
 
 	switch ( targetp->type ) {
 		case OBJ_SHIP:
 			modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			if ( bound_rc != 0 ) {
+				if ( entered_frame )
+					g3_end_frame( );
 				return ADE_RETURN_NIL;
 			}
 			break;
@@ -8459,6 +8468,8 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			modelnum = Debris[targetp->instance].model_num;
 			bound_rc = submodel_find_2d_bound_min( modelnum, Debris[targetp->instance].submodel_num, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			if ( bound_rc != 0 ) {
+				if ( entered_frame )
+					g3_end_frame( );
 				return ADE_RETURN_NIL;
 			}
 			break;
@@ -8479,6 +8490,8 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		default:
 			// should never happen
 			Int3();
+			if ( entered_frame )
+				g3_end_frame( );
 			return ADE_RETURN_NIL;
 	}
 
@@ -8487,15 +8500,11 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	y1 -= padding;
 	y2 += padding;
 	if ( draw_box ) {
-		if( !(g3_in_frame() > 0) ) {
-			g3_start_frame(0);
-			draw_brackets_square(x1, y1, x2, y2, false);
-			g3_end_frame();
-		}
-		else {
-			draw_brackets_square(x1, y1, x2, y2, false);
-		}
+		draw_brackets_square(x1, y1, x2, y2, false);
 	}
+
+	if ( entered_frame )
+		g3_end_frame( );
 
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }

@@ -38,6 +38,15 @@ typedef struct game_snd
 	int	id;						// index into Sounds[], where sound data is stored
 	int	id_sig;					// signature of Sounds[] element
 	int	flags;
+
+	game_snd( )
+		: sig ( 0 ), default_volume( 0 ),
+		  preload( 0 ), id( 0 ), id_sig( 0 ), flags( 0 )
+	{
+		filename[ 0 ] = NULL;
+		min = 0;
+		max = 0;
+	}
 } game_snd;
 
 typedef struct sound_env

@@ -275,6 +275,7 @@ flag_def_list Ship_flags[] = {
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
 	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
+	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -9983,6 +9984,10 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank++;
 				}
+				else if( sip->flags2 & SIF2_NO_PRIMARY_LINKING )
+				{
+					swp->current_primary_bank = 0;
+				}
 				else
 				{
 					shipp->flags |= SF_PRIMARY_LINKED;
@@ -9993,6 +9998,10 @@ int ship_select_next_primary(object *objp, int direction)
 				if ( swp->current_primary_bank > 0 )
 				{
 					swp->current_primary_bank--;
+				}
+				else if( sip->flags2 & SIF2_NO_PRIMARY_LINKING )
+				{
+					swp->current_primary_bank = swp->num_primary_banks - 1;
 				}
 				else
 				{

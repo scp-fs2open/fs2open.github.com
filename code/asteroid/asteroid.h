@@ -65,7 +65,17 @@ typedef struct asteroid_info {
 	polymodel	*modelp[NUM_DEBRIS_POFS];
 	int			model_num[NUM_DEBRIS_POFS];
 
-	asteroid_info() { memset(this, 0, sizeof(asteroid_info)); damage_type_idx = -1; };
+	asteroid_info( ) 
+		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( -1 ),
+		  inner_rad( 0 ), outer_rad( 0 ), damage( 0 ), blast( 0 ),
+		  initial_asteroid_strength( 0 )
+	{ 
+		name[ 0 ] = NULL;
+		memset( pof_files, 0, sizeof( pof_files ) );
+		memset( detail_distance, 0, sizeof( detail_distance ) );
+		memset( modelp, 0, sizeof( modelp ) );
+		memset( model_num, 0, sizeof( model_num ) );
+	}
 } asteroid_info;
 
 

@@ -138,7 +138,14 @@ typedef struct brief_stage
 	int			num_lines;
 	brief_line	*lines;
 
-	brief_stage() { memset(this, 0, sizeof(brief_stage)); formula = -1; };
+	brief_stage( ) 
+		: new_text( NULL ), camera_time( 0 ), flags( 0 ), formula( -1 ),
+		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
+	{ 
+		voice[ 0 ] = NULL;
+		memset( &camera_pos, 0, sizeof( vec3d ) );
+		memset( &camera_orient, 0, sizeof( matrix ) );
+	}
 } brief_stage;
 
 typedef struct debrief_stage
@@ -148,7 +155,12 @@ typedef struct debrief_stage
 	char			voice[MAX_FILENAME_LEN];
 	char			*new_recommendation_text;
 
-	debrief_stage() { memset(this, 0, sizeof(debrief_stage)); formula = -1; };
+	debrief_stage( ) 
+		: formula( -1 ), new_text( NULL ),
+		  new_recommendation_text( NULL )
+	{ 
+		voice[ 0 ] = NULL;
+	}
 } debrief_stage;
 
 typedef struct briefing {

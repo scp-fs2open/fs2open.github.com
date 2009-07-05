@@ -701,6 +701,4 @@ public:
 	bool isValid();
 };
 
-#include "safe_strings.h"
-
 #endif		// PS_TYPES_H

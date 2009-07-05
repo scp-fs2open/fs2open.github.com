@@ -26,6 +26,13 @@ typedef struct hud_anim {
 	int sx, sy;			// screen (x,y) of top-left corner of animation
 	float total_time;	// total time in seconds for the animation (depends on animation fps)
 	float time_elapsed;	// time that has elapsed (in seconds) since animation started playing
+
+	hud_anim( )
+		: first_frame( 0 ), num_frames( 0 ), sx( 0 ), sy( 0 ),
+		  total_time( 0 ), time_elapsed( 0 )
+	{
+		filename[ 0 ] = NULL;
+	}
 } hud_anim;
 
 typedef struct hud_frames {

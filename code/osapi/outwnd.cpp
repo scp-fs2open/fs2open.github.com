@@ -60,7 +60,11 @@ struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
 	bool enabled;
 
-	outwnd_filter_struct() { memset(this, 0, sizeof(outwnd_filter_struct)); }
+	outwnd_filter_struct( ) 
+		: enabled( false )
+	{ 
+		name[ 0 ] = NULL;
+	}
 };
 
 std::vector<outwnd_filter_struct> OutwndFilter;
