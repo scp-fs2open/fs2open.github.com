@@ -49,10 +49,10 @@ public:
 			vm_free( p );
 	}
 
-	template< class T >
+	template< class U >
 	struct rebind
 	{
-		typedef SCP_vm_allocator< T > other;
+		typedef SCP_vm_allocator< U > other;
 	};
 
 	size_type max_size( ) const
