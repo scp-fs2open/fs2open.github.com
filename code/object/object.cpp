@@ -1987,12 +1987,3 @@ int object_get_model(object *objp)
 
 	return -1;
 }
-
-bool is_valid_objnum(int objnum)
-{
-	if (objnum >= 0 && objnum < MAX_OBJECTS) {
-		return true;
-	}
-
-	return false; 
-}

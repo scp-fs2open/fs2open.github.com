@@ -107,9 +107,7 @@ typedef struct ship_weapon {
 	int current_tertiary_bank;
 
 	int next_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// next time this primary bank can fire
-	int last_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// last time this primary bank fired (mostly used by SEXPs)
-	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// next time this secondary bank can fire
-	int last_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// last time this secondary bank fired (mostly used by SEXPs)
+	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];	// next time this secondary bank can fire
 	int next_tertiary_fire_stamp;
 
 	// ballistic primary support - by Goober5000
@@ -753,7 +751,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
-// flags2 list. If this is updated MAX_SHIP_FLAGS must also be updated!
+// flags2 list
 #define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
 #define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
@@ -765,7 +763,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
 #define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
 
-#define	MAX_SHIP_FLAGS	10		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 

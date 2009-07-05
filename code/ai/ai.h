@@ -196,10 +196,6 @@ typedef struct ai_class {
 #define	SM_BIG_CIRCLE			16		// Big ship flies circle around other big ship to get good angle to go parallel
 #define	SM_BIG_PARALLEL		17		// Big ship flies parallel to another
 
-//SUSHI: Attack submodes (besides those implicitly listed above) 
-#define AIS_CHASE_GLIDEATTACK	18	// Ship uses glide to move in a constant direction while pointing and shooting at target
-#define AIS_CHASE_CIRCLESTRAFE	19	// Attempt a circle-strafe on the target
-
 //	Submodes for docking behavior
 #define	AIS_DOCK_0		21
 #define	AIS_DOCK_1		22
@@ -341,8 +337,7 @@ typedef struct ai_info {
 	int		goal_check_time;		// timer used for processing goals for this ai object
 
 	vec3d	last_predicted_enemy_pos;		//	Where he thought enemy was last time.
-	float	time_enemy_in_range;				//	Amount of time enemy continuously in "sight", near crosshair.
-	float	time_enemy_near;					//	SUSHI: amount of time enemy continuously "near" the player
+	float		time_enemy_in_range;				//	Amount of time enemy continuously in "sight", near crosshair.
 	fix		last_attack_time;					//	Missiontime of last time this ship attacked its enemy.
 	fix		last_hit_time;						//	Missiontime of last time this ship was hit by anyone.
 	int		last_hit_quadrant;				//	Shield section of last hit.

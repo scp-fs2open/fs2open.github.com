@@ -111,13 +111,12 @@ typedef struct vec3d {
 typedef struct vectora {
 	float	xyz[3];
 } vectora;
-*/
+
 
 typedef struct vec2d {
-	float x, y;
+	float i,j;
 } vec2d;
 
-/*
 // Used for some 2d primitives, like gr_poly
 typedef struct vert2df {
 	float x, y;
