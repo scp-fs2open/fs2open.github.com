@@ -680,6 +680,9 @@ bool is_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
 void multi_sexp_modify_variable();
 
+#define NO_OPERATOR_INDEX_DEFINED		-2
+#define NOT_A_SEXP_OPERATOR				-1
+
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
 {
@@ -870,7 +873,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].rest = rest;
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
 	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;	// Goober5000
-	Sexp_nodes[node].op_index = -1;
+	Sexp_nodes[node].op_index = NO_OPERATOR_INDEX_DEFINED;
 
 	return node;
 }
@@ -1238,13 +1241,13 @@ int get_operator_index(char *token)
 		}
 	}
 
-	return -1;
+	return NOT_A_SEXP_OPERATOR;
 }
 
 // from a sexp node, return the index in the array Operators or 0 if not an operator
 int get_operator_index(int node)
 {
-	if (!Fred_running && Sexp_nodes[node].op_index >= 0) {
+	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
 	}
 
@@ -1259,7 +1262,7 @@ int get_operator_const(char *token)
 {
 	int	idx = get_operator_index(token);
 
-	if (idx == -1)
+	if (idx == NOT_A_SEXP_OPERATOR)
 		return 0;
 
 	return Operators[idx].value;
@@ -1273,7 +1276,7 @@ int get_operator_const(int node)
 
 	int	idx = get_operator_index(node);
 
-	if (idx == -1)
+	if (idx == NOT_A_SEXP_OPERATOR)
 		return 0;
 
 	return Operators[idx].value;
