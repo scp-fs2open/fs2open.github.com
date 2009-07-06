@@ -4052,6 +4052,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	{
 		swp->primary_bank_ammo[i] = 0;						// added by Goober5000
 		swp->next_primary_fire_stamp[i] = timestamp(0);	
+		swp->last_primary_fire_stamp[i] = -1;	
 		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
 
 		swp->primary_animation_position[i] = MA_POS_NOT_SET;
@@ -4098,6 +4099,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->secondary_bank_ammo[i] = 0;
 		swp->secondary_next_slot[i] = 0;
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
+		swp->last_secondary_fire_stamp[i] = -1;
 		swp->secondary_bank_rearm_time[i] = timestamp(0);		// will be able to rearm this bank immediately
 	}
 
@@ -4571,7 +4573,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			if (model_system->primary_banks[k] != -1) {
 				ship_system->weapons.primary_bank_weapons[j] = model_system->primary_banks[k];
 				ship_system->weapons.primary_bank_capacity[j] = model_system->primary_bank_capacity[k];	// added by Goober5000
-				ship_system->weapons.next_primary_fire_stamp[j++] = timestamp(0);
+				ship_system->weapons.next_primary_fire_stamp[j] = timestamp(0);
+				ship_system->weapons.last_primary_fire_stamp[j++] = -1;
 			}
 		}
 
@@ -4583,7 +4586,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			if (model_system->secondary_banks[k] != -1) {
 				ship_system->weapons.secondary_bank_weapons[j] = model_system->secondary_banks[k];
 				ship_system->weapons.secondary_bank_capacity[j] = model_system->secondary_bank_capacity[k];
-				ship_system->weapons.next_secondary_fire_stamp[j++] = timestamp(0);
+				ship_system->weapons.next_secondary_fire_stamp[j] = timestamp(0);
+				ship_system->weapons.last_secondary_fire_stamp[j++] = -1;
 			}
 		}
 
@@ -7422,10 +7426,12 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ){
 		swp->next_primary_fire_stamp[i] = timestamp(0);
+		swp->last_primary_fire_stamp[i] = -1;
 	}
 
 	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ){
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
+		swp->last_secondary_fire_stamp[i] = -1;
 	}
 }
 
@@ -8143,6 +8149,7 @@ int ship_fire_primary_debug(object *objp)
 
 	// do timestamp stuff for next firing time
 	shipp->weapons.next_primary_fire_stamp[0] = timestamp(250);
+	shipp->weapons.last_primary_fire_stamp[0] = timestamp();
 
 	//	Debug code!  Make the single laser fire only one bolt and from the object center!
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
@@ -8699,6 +8706,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
+			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 //			if ((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->b_info.beam_type == BEAM_TYPE_C))// fighter beams fire constantly, they only stop if they run out of power -Bobboau
 //			swp->next_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
@@ -8706,9 +8714,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (winfo_p->wi_flags2 & WIF2_CYCLE){
 			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / pm->gun_banks[bank_to_fire].num_slots));
+			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 			//to maintain balance of fighters with more fire points they will fire faster than ships with fewer points
 		}else{
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
+			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
 		// Note that we can have partial bank firing, if the weapons subsystem is partially
@@ -8728,6 +8738,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			
 			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
 				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)((float) winfo_p->fire_wait * 1000.0f));//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
+				swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 				beam_fire_info fbfire_info;				
 
 				int points;
@@ -9650,6 +9661,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}	
 
 	swp->next_secondary_fire_stamp[bank] = timestamp((int)(Weapon_info[weapon].fire_wait * 1000.0f));	// They can fire 5 times a second
+	swp->last_secondary_fire_stamp[bank] = timestamp();
 
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
 	// do only in single plyaer or if I am the server of a multiplayer game
@@ -9871,6 +9883,7 @@ done_secondary:
 			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = MAX(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
 				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(1000);	//Bumped from 250 to 1000 because some people seem to be to triggerhappy :).
+				shipp->weapons.last_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp();
 			}
 						
 			if ( obj == Player_obj ) {
