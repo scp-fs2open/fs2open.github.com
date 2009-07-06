@@ -103,6 +103,9 @@ typedef struct ai_profile_t {
 
 	float delay_bomb_arm_timer[NUM_SKILL_LEVELS];
 
+	// the change (x/7) that ship is allowed to fire missiles at player ship.
+	int change_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+
 } ai_profile_t;
 
 
