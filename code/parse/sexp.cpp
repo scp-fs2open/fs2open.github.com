@@ -870,6 +870,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].rest = rest;
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
 	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;	// Goober5000
+	Sexp_nodes[node].op_index = -1;
 
 	return node;
 }
@@ -1240,10 +1241,37 @@ int get_operator_index(char *token)
 	return -1;
 }
 
+// from a sexp node, return the index in the array Operators or 0 if not an operator
+int get_operator_index(int node)
+{
+	if (!Fred_running && Sexp_nodes[node].op_index >= 0) {
+		return Sexp_nodes[node].op_index;
+	}
+
+	int index = get_operator_index(Sexp_nodes[node].text); 
+	Sexp_nodes[node].op_index = index;
+	return index;
+}
+
+
 // from an operator name, return its constant (the number it was #define'd with)
 int get_operator_const(char *token)
 {
 	int	idx = get_operator_index(token);
+
+	if (idx == -1)
+		return 0;
+
+	return Operators[idx].value;
+}
+
+int get_operator_const(int node)
+{
+	if (!Fred_running && Sexp_nodes[node].op_index >= 0) {
+		return Operators[Sexp_nodes[node].op_index].value;
+	}
+
+	int	idx = get_operator_index(node);
 
 	if (idx == -1)
 		return 0;
@@ -15552,7 +15580,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 		node = CDR(cur_node);		// makes reading the next bit of code a little easier.
 
-		op_num = get_operator_const(CTEXT(cur_node));
+		op_num = get_operator_const(cur_node);
 		// add the op_num to the stack if it is an actual operator rather than a number
 		if (op_num) {
 			Current_sexp_operator.push_back(op_num); 
@@ -17224,7 +17252,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			}
 
 			// if we need a positive value, make it positive
-			if (query_operator_argument_type(get_operator_index(CTEXT(parent_node)), arg_num) == OPF_POSITIVE)
+			if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
 			{
 				sexp_val *= -1;
 			}
