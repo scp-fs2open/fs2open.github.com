@@ -828,6 +828,7 @@ typedef struct sexp_oper {
 
 typedef struct sexp_node {
 	char	text[TOKEN_LENGTH];
+	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
 	int	type;						// atom, list, or not used
 	int	subtype;					// type of atom or list?
 	int	first;					// if first parameter is sexp, index into Sexp_nodes
