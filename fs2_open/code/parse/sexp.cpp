@@ -21536,7 +21536,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
-		"goals.\r\n\r\n"
+		"goals.\r\n"
+		"Please note that this goal will implicitly call \"protect-ship\" on the target "
+		"to prevent overzealous AI ships from destroying it in the process of disabling it.  "
+		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
@@ -21545,7 +21548,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tThis AI goal causes a ship/wing to destroy all of the turret subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple turret subsystems requiring the use of > 1 ai-destroy-subsystem "
-		"goals.\r\n\r\n"
+		"goals.\r\n"
+		"Please note that this goal will implicitly call \"protect-ship\" on the target "
+		"to prevent overzealous AI ships from destroying it in the process of disarming it.  "
+		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
