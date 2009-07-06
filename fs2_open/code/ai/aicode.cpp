@@ -5829,7 +5829,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 					//	With 5 skill levels, at Very Easy, they fire in 1/7 of every 10 second interval.
 					//	At Easy, 2/7...at Expert, 5/7
 					int t = ((Missiontime /(65536*10)) ^ target_objnum ^ 0x01) % (NUM_SKILL_LEVELS+2);
-					if (t > Game_skill_level) {
+					if (t > The_mission.ai_profile->change_to_use_missiles_on_plr[Game_skill_level]) {
 						//nprintf(("AI", "Not OK to fire homer at time thing %i\n", t));
 						return 0;
 					}
