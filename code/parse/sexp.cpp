@@ -19867,7 +19867,7 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 		multi_end_packet();
 	}
 	// otherwise send a SEXP variable packet
-	else if ( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
+	else if ( (Game_mode & GM_MULTIPLAYER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
 		send_variable_update_packet(index, Sexp_variables[index].text);
 	}
 }
