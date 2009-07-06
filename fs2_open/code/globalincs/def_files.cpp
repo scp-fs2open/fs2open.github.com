@@ -900,5 +900,9 @@ $multi allow empty secondaries:		NO									\n\
 ;; it is within allowed target priorities								\n\
 $allow turrets target weapons freely: NO								\n\
 																		\n\
+;; if set forces turrets to use only the set turret fov limits and		\n\
+;; ignore hard coded limits (with 'fire_down_normals' flag)				\n\
+$use only single fov for turrets:		NO								\n\
+																		\n\
 #End																	\n\
 ";
