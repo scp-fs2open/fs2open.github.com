@@ -1967,9 +1967,26 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			//		heat seeking and target in a fairly wide cone.
 			//		aspect seeking and target is locked.
 			//turret_weapon_class = tp->turret_weapon_type;
+			bool in_sight = false;
+			
+			if (The_mission.ai_profile->flags & AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS) {
+				// we have already passed the FOV test of the turret so...
+				in_sight = true;
+			} else {
+				if (wip->wi_flags & WIF_HOMING_HEAT) {
+					if (dot > AICODE_TURRET_HEATSEEK_ANGLE) {
+						in_sight = true;
+					}
+				} else {
+					if (dot > AICODE_TURRET_DUMBFIRE_ANGLE) {
+						in_sight = true;
+					}
+				}
+			}
+
 			if ( !(wip->wi_flags & WIF_HOMING) )
 			{
-				if ((dist_to_enemy < 75.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				if ((dist_to_enemy < 75.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
@@ -1977,7 +1994,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 			else if ( wip->wi_flags & WIF_HOMING_HEAT )
 			{	// if heat seekers
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_HEATSEEK_ANGLE ))
+				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
@@ -1985,7 +2002,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 			else if ( wip->wi_flags & WIF_HOMING_ASPECT )
 			{	// if aspect seeker
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 				}
@@ -1996,7 +2013,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 			else if ( wip->wi_flags & WIF_HOMING_JAVELIN )
 			{	// if javelin heat seeker
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 				}

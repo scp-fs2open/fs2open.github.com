@@ -305,6 +305,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$allow turrets target weapons freely:", AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY);
 
+			set_flag(profile, "$use only single fov for turrets:", AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS);
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 				Mp++;
