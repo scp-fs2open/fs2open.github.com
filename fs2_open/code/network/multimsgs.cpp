@@ -8201,8 +8201,13 @@ void send_variable_update_packet(int variable_index, char *value)
 	ADD_INT(variable_index);
 	ADD_STRING(value);
 
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
+	if (MULTIPLAYER_MASTER) { 
+		// send to all players	
+		multi_io_send_to_all_reliable(data, packet_size);
+	}
+	else {
+		multi_io_send_reliable(Net_player, data, packet_size);
+	}
 }
 
 void process_variable_update_packet( ubyte *data, header *hinfo)
@@ -8221,6 +8226,11 @@ void process_variable_update_packet( ubyte *data, header *hinfo)
 	{
 		strcpy(Sexp_variables[variable_index].text, value); 
 	}	
+
+	// send the packet on to all clients. 
+	if (MULTIPLAYER_MASTER) {
+		send_variable_update_packet(variable_index, Sexp_variables[variable_index].text);
+	}
 }
 
 // weapon detonate packet
