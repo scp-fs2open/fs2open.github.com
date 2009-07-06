@@ -10192,7 +10192,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 				return SEXP_FALSE;
 			}
 			wip = &Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]];
-			last_fired = shipp->weapons.next_primary_fire_stamp[requested_bank] - (int)(wip->fire_wait * 1000);
+			last_fired = shipp->weapons.last_primary_fire_stamp[requested_bank];
 			break; 
 
 		case OP_SECONDARY_FIRED_SINCE: 
@@ -10200,7 +10200,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 				return SEXP_FALSE;
 			}
 			wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
-			last_fired = shipp->weapons.next_secondary_fire_stamp[requested_bank] - (int)(wip->fire_wait * 1000);
+			last_fired = shipp->weapons.last_secondary_fire_stamp[requested_bank];
 			break; 
 	}
 
