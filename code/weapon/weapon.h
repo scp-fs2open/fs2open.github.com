@@ -425,6 +425,9 @@ typedef struct weapon_info {
 	script_hook sc_collide_weapon;
 
 	int weapon_hitpoints;
+
+	int	burst_shots;
+	int	burst_delay;
 } weapon_info;
 
 // Data structure to track the active missiles
