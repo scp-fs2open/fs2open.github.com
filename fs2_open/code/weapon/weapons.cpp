@@ -948,6 +948,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->shockwave.damage_type_idx = -1;
 
 	wip->weapon_hitpoints = 0;
+
+	wip->burst_delay = 1000; // 1 second, just incase its not defined
+	wip->burst_shots = 0;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -2139,11 +2142,23 @@ int parse_weapon(int subtype, bool replace)
 		wip->weapon_hitpoints = 50;
 	}
 
+	if (optional_string("$Burst Shots:")) {
+		stuff_int(&wip->burst_shots);
+	}
+
+	if (optional_string("$Burst Delay:")) {
+		stuff_int(&wip->burst_delay);
+	}
+
 	//pretty stupid if a target must be tagged to shoot tag missiles at it
 	if ((wip->wi_flags & WIF_TAG) && (wip->wi_flags2 & WIF2_TAGGED_ONLY))
 	{
 		Warning(LOCATION, "%s is a tag missile, but the target must be tagged to shoot it", wip->name);
 	}
+
+	// if burst delay is longer than firewait skip the whole burst fire option
+	if (wip->burst_delay > (int)(wip->fire_wait * 1000.0f))
+		wip->burst_shots = 0;
 
 	return WEAPON_INFO_INDEX(wip);
 }

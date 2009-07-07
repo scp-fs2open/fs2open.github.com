@@ -8502,13 +8502,19 @@ void ai_chase()
 											//	Only if weapon was fired do we specify time until next fire.  If not fired, done in ai_fire_secondary...
 											float t;
 											
-											if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-												t = swip->fire_wait;
+											if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
+												swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
+												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
 											} else {
-												t = set_secondary_fire_delay(aip, temp_shipp, swip);
+												if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
+													t = swip->fire_wait;
+												} else {
+													t = set_secondary_fire_delay(aip, temp_shipp, swip);
+												}
+												//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
+												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
 											}
-											//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 										}
 									} else {
 										swp->next_secondary_fire_stamp[current_bank] = timestamp(250);
