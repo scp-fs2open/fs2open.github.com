@@ -45,7 +45,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Z7 /O2 /I "../../code" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "NO_DIRECT3D" /Fr /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Z7 /O2 /I "../../code" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /Fr /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -55,7 +55,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fred2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../dx8sdk/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fred2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
 InputPath=.\Release\fred2_open_trunk_r.exe
@@ -80,7 +80,7 @@ SOURCE="$(InputPath)"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /GX /ZI /Od /I "../../code" /I "../../openal/include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "NO_DIRECT3D" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /GX /ZI /Od /I "../../code" /I "../../openal/include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -90,7 +90,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug/fred2_open_trunk_d.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../dx8sdk/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug/fred2_open_trunk_d.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
 InputPath=.\Debug\fred2_open_trunk_d.exe
@@ -115,8 +115,8 @@ SOURCE="$(InputPath)"
 # PROP Intermediate_Dir "Debug_Inferno\Profile\fred2"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /GX /ZI /Od /I "../../code" /I "../../openal/include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "NO_DIRECT3D" /FR /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /GX /ZI /Od /I "../../code" /I "../../openal/include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "INF_BUILD" /FR /YX /FD /GZ /c
+# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /GX /ZI /Od /I "../../code" /I "../../openal/include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /GX /ZI /Od /I "../../code" /I "../../openal/include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "INF_BUILD" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -125,9 +125,9 @@ BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo /o"Debug_Inferno/Fred2.bsc"
 LINK32=link.exe
-# ADD BASE LINK32 Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug/fred2_open_trunk_d.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../dx8sdk/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD BASE LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug/fred2_open_trunk_d.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /pdb:"Debug_Inferno/fred2_open_trunk_d_INF.pdb" /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug_Inferno/fred2_open_trunk_d_INF.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../dx8sdk/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /pdb:"Debug_Inferno/fred2_open_trunk_d_INF.pdb" /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug_Inferno/fred2_open_trunk_d_INF.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
 InputPath=.\Debug_Inferno\fred2_open_trunk_d_INF.exe
@@ -152,8 +152,8 @@ SOURCE="$(InputPath)"
 # PROP Intermediate_Dir "Release_Inferno\Profile\fred2"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Z7 /O2 /I "../../code" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "NO_DIRECT3D" /Fr /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Z7 /O2 /I "../../code" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "INF_BUILD" /Fr /YX /FD /c
+# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Z7 /O2 /I "../../code" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /Fr /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Z7 /O2 /I "../../code" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "FRED" /D "USE_OPENAL" /D "INF_BUILD" /Fr /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -162,9 +162,9 @@ BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo /o"Release_Inferno/Fred2.bsc"
 LINK32=link.exe
-# ADD BASE LINK32 DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fred2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../dx8sdk/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD BASE LINK32 wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fred2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /pdb:"Release_Inferno/fred2_open_trunk_r_INF.pdb" /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release_Inferno/fred2_open_trunk_r_INF.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../dx8sdk/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /pdb:"Release_Inferno/fred2_open_trunk_r_INF.pdb" /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release_Inferno/fred2_open_trunk_r_INF.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
 InputPath=.\Release_Inferno\fred2_open_trunk_r_INF.exe

@@ -446,7 +446,6 @@ typedef struct screen {
 // # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
 #define GR_DEFAULT				(-1)		// set to use default settings
 #define GR_STUB					(100)		
-#define GR_DIRECT3D				(102)		// Use Direct3d hardware renderer
 #define GR_OPENGL				(104)		// Use OpenGl hardware renderer
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  

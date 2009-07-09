@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;PDB_DEBUGGING"
+				AdditionalIncludeDirectories="../../code;../../oggvorbis/include;../../lua;../../openal/include"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;PDB_DEBUGGING"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -130,8 +130,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../oggvorbis/include;../../lua;../../openal/include"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -216,8 +216,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../oggvorbis/include;../../lua;../../openal/include"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -303,8 +303,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				AdditionalIncludeDirectories="../../code;../../oggvorbis/include;../../lua;../../openal/include"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -1493,48 +1493,8 @@
 			Name="Graphics"
 			>
 			<File
-				RelativePath="..\..\code\Graphics\2d.cpp"
+				RelativePath="..\..\code\graphics\2d.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE2|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Graphics\2d.h"
@@ -1747,70 +1707,6 @@
 					RelativePath="..\..\code\Graphics\line.h"
 					>
 				</File>
-			</Filter>
-			<Filter
-				Name="D3D8Gr"
-				>
-				<File
-					RelativePath="..\..\code\graphics\grd3d.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dbmpman.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dcalls.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dlight.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3drender.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dsetup.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\GrD3DStateBlock.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dtexture.cpp"
-					>
-				</File>
-				<Filter
-					Name="Headers"
-					>
-					<File
-						RelativePath="..\..\code\graphics\grd3d.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\grd3dbmpman.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\grd3dinternal.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\grd3dlight.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\grd3dsetup.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\GrD3DStateBlock.h"
-						>
-					</File>
-				</Filter>
 			</Filter>
 			<Filter
 				Name="OpenGLGr"
