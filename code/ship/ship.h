@@ -1297,7 +1297,7 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
-extern void subsys_set(int objnum, int ignore_subsys_info = 0);
+extern int subsys_set(int objnum, int ignore_subsys_info = 0);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.

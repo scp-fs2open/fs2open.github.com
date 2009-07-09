@@ -76,7 +76,7 @@
 
 
 
-#define NUM_SHIP_SUBSYSTEM_SETS			15		// number of subobject sets to use (because of the fact that it's a linked list,
+#define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
 												//     we can't easily go fully dynamic)
 
 #define NUM_SHIP_SUBSYSTEMS_PER_SET		200 	// Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
@@ -3512,7 +3512,7 @@ static void ship_clear_subsystems()
 	Num_ship_subsystems_allocated = 0;
 }
 
-static void ship_allocate_subsystems(int num_so, bool page_in = false)
+static int ship_allocate_subsystems(int num_so, bool page_in = false)
 {
 	int idx, i;
 	int num_subsystems_save = 0;
@@ -3520,7 +3520,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 	// "0" itself is safe
 	if (num_so < 0) {
 		Int3();
-		return;
+		return 0;
 	}
 
 	// allow a page-in thingy, so that we can grab as much as possible before mission
@@ -3532,7 +3532,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 
 	// bail if we don't actually need any more
 	if ( Num_ship_subsystems < Num_ship_subsystems_allocated )
-		return;
+		return 1;
 
 	mprintf(("Allocating space for at least %i new ship subsystems ... ", num_so));
 
@@ -3545,8 +3545,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 
 		// safety check, but even if we have this here it will fubar something else later, so we're screwed either way
 		if (idx == NUM_SHIP_SUBSYSTEM_SETS) {
-			Int3();
-			return;
+			return 0;
 		}
 
 		Ship_subsystems[idx] = (ship_subsys*) vm_malloc( sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
@@ -3563,6 +3562,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 		Num_ship_subsystems = num_subsystems_save;
 
 	mprintf((" a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
+	return 1;
 }
 
 // This will get called at the start of each level.
@@ -4173,7 +4173,17 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->ship_guardian_threshold = 0;
 
-	subsys_set(objnum);
+	if (!subsys_set(objnum)) {		
+		char err_msg[512]; 
+		sprintf (err_msg, "Unable to allocate ship subsystems. Maximum is %d. No subsystems have been assigned to %s.", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET), shipp->ship_name);
+
+		if (Fred_running) { 
+			MessageBox(NULL, err_msg, "Error", MB_OK);
+		}
+		else {
+			Error(LOCATION, err_msg); 
+		}
+	}
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 	shipp->num_swarm_missiles_to_fire = 0;	
 	shipp->num_turret_swarm_info = 0;
@@ -4481,7 +4491,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 
 // ignore_subsys_info => default parameter with value of 0.  This is
 //								 only set to 1 by the save/restore code
-void subsys_set(int objnum, int ignore_subsys_info)
+int subsys_set(int objnum, int ignore_subsys_info)
 {	
 	ship	*shipp = &Ships[Objects[objnum].instance];
 	ship_info	*sinfo = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
@@ -4494,7 +4504,9 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
 
 	// make sure to have allocated the number of subsystems we require
-	ship_allocate_subsystems( sinfo->n_subsystems );
+	if (!ship_allocate_subsystems( sinfo->n_subsystems )) {
+		return 0;
+	}
 
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
@@ -4698,6 +4710,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	if ( !ignore_subsys_info ) {
 		ship_recalc_subsys_strength( shipp );
 	}
+
+	return 1;
 }
 
 //	Modify the matrix orient by the slew angles a.
@@ -13981,7 +13995,9 @@ void ship_page_in()
 
 	// pre-allocate the subsystems, this really only needs to happen for ships
 	// which don't exist yet (ie, ships NOT in Ships[])
-	ship_allocate_subsystems(num_subsystems_needed, true);
+	if (!ship_allocate_subsystems(num_subsystems_needed, true)) {
+		Error(LOCATION, "Attempt to page in new subsystems subsystems failed because mission file contains more than %d subsystems", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET)); 
+	}
 
 	mprintf(("About to page in ships!\n"));
 
