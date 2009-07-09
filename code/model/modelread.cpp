@@ -2792,7 +2792,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 
 	po = model_get(model_num);
 
-	g3_start_instance_matrix(pos,orient,(gr_screen.mode == GR_DIRECT3D));
+	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
 
@@ -2838,7 +2838,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 	if (x2) *x2 = max_x;
 	if (y2) *y2 = max_y;
 
-	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(false);
 
 	return rval;
 }
@@ -2858,7 +2858,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 	if ( (submodel < 0) || (submodel >= po->n_models ) ) return 1;
 	sm = &po->submodel[submodel];
 	
-	g3_start_instance_matrix(pos,orient,(gr_screen.mode == GR_DIRECT3D));
+	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
 
@@ -2902,7 +2902,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 	if (x2) *x2 = max_x;
 	if (y2) *y2 = max_y;
 
-	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(false);
 
 	return 0;
 }

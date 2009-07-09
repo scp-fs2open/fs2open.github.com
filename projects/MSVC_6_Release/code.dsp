@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -66,7 +66,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -88,8 +88,8 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Debug_Inferno"
 # PROP Intermediate_Dir "Debug_Inferno"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -111,8 +111,8 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Release_Inferno"
 # PROP Intermediate_Dir "Release_Inferno"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -457,14 +457,7 @@ SOURCE=..\..\code\debugconsole\timerbar.h
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
-# Begin Source File
 
-SOURCE=..\..\code\directx\dx8show.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\directx\dx8show.h
-# End Source File
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vasync.h
@@ -693,70 +686,7 @@ SOURCE=..\..\code\graphics\grstub.h
 SOURCE=..\..\code\Graphics\Line.h
 # End Source File
 # End Group
-# Begin Group "D3D8Gr"
 
-# PROP Default_Filter ""
-# Begin Group "Headers"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Graphics\GrD3D.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DBmpman.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Graphics\GrD3DInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\grd3dlight.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\grd3dsetup.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DStateBlock.h
-# End Source File
-# End Group
-# Begin Source File
-
-SOURCE=..\..\code\Graphics\GrD3D.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DBmpman.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DCalls.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\grd3dlight.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Graphics\GrD3DRender.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3Dsetup.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DStateBlock.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Graphics\GrD3DTexture.cpp
-# End Source File
-# End Group
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""

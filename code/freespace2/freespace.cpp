@@ -2444,13 +2444,6 @@ void game_show_framerate()
 	if (Cmdline_show_stats && HUD_draw) {
 		char mem_buffer[50];
 
-#ifndef NO_DIRECT3D
-		if (gr_screen.mode == GR_DIRECT3D) {
-			extern void d3d_string_mem_use(int x, int y);
-			d3d_string_mem_use(20, 110);
-		}
-#endif
-
 		MEMORYSTATUS mem_stats;
 		GlobalMemoryStatus(&mem_stats);
 
@@ -2488,17 +2481,6 @@ void game_show_framerate()
 		dy = gr_get_font_height() + 1;
 
 		gr_set_color_fast(&HUD_color_debug);
-
-#ifndef NO_DIRECT3D
-		{
-			extern int D3D_textures_in;
-			extern int D3D_textures_in_frame;
-			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in)/1024 );
-			sy += dy;
-			gr_printf( sx, sy, NOX("VRAM: +%d KB\n"), (D3D_textures_in_frame)/1024 );
-			sy += dy;
-		}
-#endif
 
 //		gr_printf( sx, sy, "BPP: %d", gr_screen.bits_per_pixel );
 //		sy += dy;
@@ -2572,13 +2554,6 @@ void game_show_framerate()
 		sy += dy;
 #endif
 
-#ifndef NO_DIRECT3D
-		if ( gr_screen.mode == GR_DIRECT3D ) {
-			extern int D3D_textures_in;
-			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in)/1024 );
-			sy += dy;
-		} else
-#endif
 		{
 			extern int GL_textures_in;
 			extern int GL_vertex_data_in;
@@ -8455,10 +8430,6 @@ void get_version_string(char *str, int max_size)
 	// Lets get some more info in here
 	switch(gr_screen.mode)
 	{
-		case GR_DIRECT3D:
-			SAFE_STRCAT( str, " Direct3D", max_size );
-			break;
-
 		case GR_OPENGL:
 			SAFE_STRCAT( str, " OpenGL", max_size );
 			break;
@@ -9650,13 +9621,6 @@ void game_title_screen_display()
 //		return;
 	}
 	*/
-#ifndef NO_DIRECT3D
-	// d3d	
-	if(gr_screen.mode == GR_DIRECT3D){
-		extern void d3d_start_frame();
-		d3d_start_frame();
-	}
-#endif
 
 	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
 	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
@@ -9701,14 +9665,6 @@ void game_title_screen_display()
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 		
 	Script_system.RemHookVars(2, "SplashScreenImage", "SplashScreenLogo");
-
-#ifndef NO_DIRECT3D
-	// d3d	
-	if(gr_screen.mode == GR_DIRECT3D){
-		extern void d3d_stop_frame();
-		d3d_stop_frame();
-	}
-#endif
 
 	// flip
 	gr_flip();

@@ -687,11 +687,6 @@ int mve_video_init(ubyte *data)
 		// set our color so that we can make sure that it's correct
 		glColor3f(1.0f, 1.0f, 1.0f);
 	}
-#ifndef NO_DIRECT3D
-	else if (gr_screen.mode == GR_DIRECT3D) {
-		// TODO: is there a fast way to do frames in D3D too?
-	}
-#endif
 
 	memset(g_palette, 0, 768);
 	

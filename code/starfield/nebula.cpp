@@ -183,7 +183,7 @@ void nebula_render()
 	}	
 
 	// Rotate the nebula.
-	g3_start_instance_matrix( NULL, &Nebula_orient, (gr_screen.mode == GR_DIRECT3D));
+	g3_start_instance_matrix( NULL, &Nebula_orient, false);
 
 	for (i=0; i<num_pts; i++ )	{
 		g3_rotate_faraway_vertex( &nebula_verts[i], &nebula_vecs[i] );
@@ -205,7 +205,7 @@ void nebula_render()
 		g3_draw_poly(3, verts, TMAP_FLAG_RAMP | TMAP_FLAG_GOURAUD | TMAP_FLAG_NEBULA );
 	}		
 
-	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(false);
 
 	gr_zbuffer_set(saved_gr_zbuffering);
 
