@@ -787,7 +787,7 @@ $Repair Penalty: 10, 20, 35, 50, 60										\n\
 $Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n\
 																		\n\
 ;; Chance AI has to fire missiles at player is (value + 1) / 7 in every	\n\
-;; 10 second interval													\n\
+;; 10 second interval													\n""\
 $Chance AI Has to Fire Missiles at Player:	0, 1, 2, 3, 4				\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
