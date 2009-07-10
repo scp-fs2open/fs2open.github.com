@@ -231,6 +231,7 @@ sexp_oper Operators[] = {
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
 	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
+	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -682,6 +683,10 @@ void multi_sexp_modify_variable();
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
+
+// Karajorma - some useful helper methods
+player * get_player_from_ship_node(int node, bool test_respawns = false);
+ship * sexp_get_ship_from_node(int node);
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
@@ -3087,6 +3092,54 @@ void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
 		strcpy(Sexp_string, "( )");
 }
 
+
+// ----------------------------------------------------------------------------------- 
+// Helper methods for getting data from nodes. Cause it's stupid to keep re-rolling this stuff for every single SEXP
+// -----------------------------------------------------------------------------------
+
+// takes a SEXP node which contains the name of a ship and returns the player for that ship or NULL if it is an AI ship
+player * get_player_from_ship_node(int node, bool test_respawns)
+{
+	int sindex, np_index = -1;	
+	p_object *p_objp;
+	
+	Assert (node != -1);
+
+	sindex = ship_name_lookup(CTEXT(node));
+
+	// singleplayer
+	if (!(Game_mode & GM_MULTIPLAYER)){	
+		if(sindex >= 0){
+			if(Player_obj == &Objects[Ships[sindex].objnum]){
+				return Player;
+			}
+		}
+		return NULL; 
+	}
+	// multiplayer
+	else {
+		if(sindex >= 0){
+			if(Ships[sindex].objnum >= 0) {
+				// try and find the player
+				np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
+			}
+		}
+		if (test_respawns && np_index < 0) {
+			// Respawning ships don't have an objnum so we need to take a different approach 
+			p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+			if (p_objp != NULL) {
+				np_index = multi_find_player_by_parse_object(p_objp);
+			}
+		}
+
+		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
+			return Net_players[np_index].m_player; 
+		}
+
+		return NULL; 
+	}
+}
+
 // given a node, returns a pointer to the ship or NULL if this isn't the name of a ship
 ship * sexp_get_ship_from_node(int node)
 {
@@ -3108,6 +3161,7 @@ ship * sexp_get_ship_from_node(int node)
 }
 
 
+// -----------------------------------------------------------------------------------
 
 // determine if the named ship or wing hasn't arrived yet (wing or ship must be on arrival list)
 int sexp_query_has_yet_to_arrive(char *name)
@@ -11327,6 +11381,20 @@ int sexp_speed(int node)
 	return SEXP_FALSE;
 }
 
+int sexp_get_throttle_speed(int node)
+{
+	player *the_player; 
+
+	the_player = get_player_from_ship_node(node); 
+
+	if (the_player != NULL) {
+		float max_speed = Ship_info[Ships[Objects[the_player->objnum].instance].ship_info_index].max_speed;
+		return (int)(the_player->ci.forward_cruise_percent / 100.0f * max_speed);
+	}
+
+	return 0;
+}
+
 // Goober5000
 int sexp_primaries_depleted(int node)
 {
@@ -16568,6 +16636,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_speed(node);
 				break;
 
+			case OP_GET_THROTTLE_SPEED:
+				sexp_val = sexp_get_throttle_speed(node);
+				break;
+
 			case OP_PRIMARIES_DEPLETED:
 				sexp_val = sexp_primaries_depleted(node);
 				break;
@@ -17536,6 +17608,7 @@ int query_operator_return_type(int op)
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
 		case OP_CUTSCENES_GET_FOV:
+		case OP_GET_THROTTLE_SPEED:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -17988,6 +18061,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_GET_DAMAGE_CAUSED:
+		case OP_GET_THROTTLE_SPEED:
 			return OPF_SHIP;
 		
 		case OP_SHIP_CREATE:
@@ -21658,6 +21732,11 @@ sexp_help_struct Sexp_help[] = {
 		"set-training-context-speed for the specified amount of time.\r\n\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tTime in seconds." },
+
+	{ OP_GET_THROTTLE_SPEED, "Get-Throttle-Speed (Training operator)\r\n"
+		"\tReturns the current throttle speed that the ship has been set to. Reverse speeds are returned as a negative value. "
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the player ship to check the throttle value for." },
 
 	{ OP_FACING, "Facing (Boolean training operator)\r\n"
 		"\tIs true as long as the specified ship is within the player's specified "
