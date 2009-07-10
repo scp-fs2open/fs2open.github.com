@@ -1651,19 +1651,6 @@ struct star_point{
 			gr_resize_screen_posf(&P2->x, &P2->y);
 		}
 */ 
-#ifndef NO_DIRECT3D
-		if(gr_screen.mode != GR_OPENGL){
-			extern float D3D_line_offset;
-			P1->sw = 0.99f;
-			P2->sw = 0.99f;
-
-			P1->sx = i2fl(P1->sx + gr_screen.offset_x)+D3D_line_offset;
-			P1->sy = i2fl(P1->sy + gr_screen.offset_y)+D3D_line_offset;
-
-			P2->sx = i2fl(P2->sx + gr_screen.offset_x)+D3D_line_offset;
-			P2->sy = i2fl(P2->sy + gr_screen.offset_y)+D3D_line_offset;
-	}
-#endif
 
 		p1.vec.set_screen_vert(*P1);
 

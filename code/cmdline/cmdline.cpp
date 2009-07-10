@@ -1259,9 +1259,8 @@ bool SetCmdlineParams()
 			//  this implies an OpenAL build for old Launchers)
 			ubyte build_caps = 0;
 
-#ifndef USE_DIRECT3D
+			/* portej05 defined this always */
 			build_caps |= BUILD_CAP_NO_D3D;
-#endif
 #ifdef USE_OPENAL
 			build_caps |= BUILD_CAP_OPENAL;
 #endif

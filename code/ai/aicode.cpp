@@ -5829,7 +5829,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 					//	With 5 skill levels, at Very Easy, they fire in 1/7 of every 10 second interval.
 					//	At Easy, 2/7...at Expert, 5/7
 					int t = ((Missiontime /(65536*10)) ^ target_objnum ^ 0x01) % (NUM_SKILL_LEVELS+2);
-					if (t > Game_skill_level) {
+					if (t > The_mission.ai_profile->change_to_use_missiles_on_plr[Game_skill_level]) {
 						//nprintf(("AI", "Not OK to fire homer at time thing %i\n", t));
 						return 0;
 					}
@@ -8502,13 +8502,19 @@ void ai_chase()
 											//	Only if weapon was fired do we specify time until next fire.  If not fired, done in ai_fire_secondary...
 											float t;
 											
-											if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-												t = swip->fire_wait;
+											if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
+												swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
+												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
 											} else {
-												t = set_secondary_fire_delay(aip, temp_shipp, swip);
+												if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
+													t = swip->fire_wait;
+												} else {
+													t = set_secondary_fire_delay(aip, temp_shipp, swip);
+												}
+												//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
+												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
 											}
-											//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 										}
 									} else {
 										swp->next_secondary_fire_stamp[current_bank] = timestamp(250);

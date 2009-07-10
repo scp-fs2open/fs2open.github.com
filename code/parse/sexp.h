@@ -319,6 +319,7 @@ struct ship_subsys;
 #define OP_PRIMARY_FIRED_SINCE				(0x0037 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SECONDARY_FIRED_SINCE			(0x0038 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_CUTSCENES_GET_FOV				(0x0039 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Echelon9
+#define OP_GET_THROTTLE_SPEED				(0x003a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 // conditional sexpressions
@@ -828,6 +829,7 @@ typedef struct sexp_oper {
 
 typedef struct sexp_node {
 	char	text[TOKEN_LENGTH];
+	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
 	int	type;						// atom, list, or not used
 	int	subtype;					// type of atom or list?
 	int	first;					// if first parameter is sexp, index into Sexp_nodes

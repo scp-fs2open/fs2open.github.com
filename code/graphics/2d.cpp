@@ -43,7 +43,6 @@
 #endif // SCP_UNIX && !__APPLE__
 
 // Includes for different rendering systems
-#include "graphics/grd3dsetup.h"
 #include "graphics/gropengl.h"
 
 screen gr_screen;
@@ -196,11 +195,6 @@ void gr_close()
 	palette_flush();
 
 	switch (gr_screen.mode) {
-#ifndef NO_DIRECT3D
-		case GR_DIRECT3D:		
-			gr_d3d_cleanup();
-			break;
-#endif
 		case GR_OPENGL:
 			gr_opengl_cleanup();
 			break;
@@ -225,9 +219,7 @@ DCF(gr,"Changes graphics mode")
 	if ( Dc_command )	{
 		dc_get_arg(ARG_STRING);
 		
-		if ( !strcmp( Dc_arg, "d"))	{
-			mode = GR_DIRECT3D;
-		} else if ( !strcmp( Dc_arg, "o"))	{
+		if ( !strcmp( Dc_arg, "o"))	{
 			mode = GR_OPENGL;
 		} else {
 			// print usage, not stats
@@ -250,7 +242,6 @@ DCF(gr,"Changes graphics mode")
 		dc_printf( "The options can be:\n" );
 		dc_printf( "Macros:  A=software win32 window (obsolete)\n" );
 		dc_printf( "         B=software directdraw fullscreen (obsolete)\n" );
-		dc_printf( "         D=Direct3d\n" );
 		dc_printf( "         G=Glide\n" );
 		dc_printf( "         O=OpenGL\n" );
 		Dc_status = 0;	// don't print status if help is printed.  Too messy.
@@ -258,9 +249,6 @@ DCF(gr,"Changes graphics mode")
 
 	if ( Dc_status )	{
 		switch( gr_screen.mode )	{
-		case GR_DIRECT3D:
-			dc_printf( "Direct3D\n" );
-			break;
 		case GR_OPENGL:
 			dc_printf( "OpenGl\n" );
 			break;
@@ -451,12 +439,6 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 #endif
 
 	switch (mode) {
-#ifndef NO_DIRECT3D
-		case GR_DIRECT3D:
-			rc = gr_d3d_init();
-			break;
-#endif  // ifdef WIN32
-
 		case GR_OPENGL:
 			rc = gr_opengl_init();
 			break;
@@ -489,12 +471,6 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	// If already inited, shutdown the previous graphics
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
-#ifndef NO_DIRECT3D
-			case GR_DIRECT3D:
-				gr_d3d_cleanup();
-				break;
-#endif  // !NO_DIRECT3D
-	
 			case GR_OPENGL:
 				gr_opengl_cleanup();
 				break;
@@ -537,13 +513,6 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	if (d_mode == GR_DEFAULT) {
 		// OpenGL should be default
 		mode = GR_OPENGL;
-
-#ifndef NO_DIRECT3D
-		// see if we would actaully rather have a D3D mode
-		if ( !strncmp(ptr, NOX("D3D8"), 4) ) {
-			mode = GR_DIRECT3D;
-		}
-#endif
 	} else {
 		mode = d_mode;
 	}
@@ -663,11 +632,6 @@ void gr_force_windowed()
 	if ( !Gr_inited )	return;
 
 	switch( gr_screen.mode )	{
-#ifndef NO_DIRECT3D
-		case GR_DIRECT3D:
-			break;
-#endif  // ifdef WIN32
-
 		case GR_OPENGL:
 		//	extern void opengl_minimize();
 			//opengl_minimize();
@@ -694,16 +658,6 @@ void gr_activate(int active)
 	if ( !Gr_inited ) return;
 
 	switch( gr_screen.mode )	{
-#ifndef NO_DIRECT3D
-		case GR_DIRECT3D:
-			{	
-				extern void gr_d3d_activate(int active);
-				gr_d3d_activate(active);
-				return;
-			}
-			break;
-#endif  // ifdef WIN32
-
 		case GR_OPENGL:
 			extern void gr_opengl_activate(int active);
 			gr_opengl_activate(active);

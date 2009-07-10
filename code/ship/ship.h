@@ -107,7 +107,9 @@ typedef struct ship_weapon {
 	int current_tertiary_bank;
 
 	int next_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// next time this primary bank can fire
-	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];	// next time this secondary bank can fire
+	int last_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// last time this primary bank fired (mostly used by SEXPs)
+	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// next time this secondary bank can fire
+	int last_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// last time this secondary bank fired (mostly used by SEXPs)
 	int next_tertiary_fire_stamp;
 
 	// ballistic primary support - by Goober5000
@@ -138,6 +140,8 @@ typedef struct ship_weapon {
 	ubyte secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
+
+	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************
@@ -1293,7 +1297,7 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
-extern void subsys_set(int objnum, int ignore_subsys_info = 0);
+extern int subsys_set(int objnum, int ignore_subsys_info = 0);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
