@@ -16,9 +16,6 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltexture.h"
 
-#include <vector>
-
-
 struct opengl_texture_unit {
 	GLboolean active;	// unit is active
 	GLboolean enabled;	// has texture target enabled

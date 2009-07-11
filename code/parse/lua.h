@@ -9,8 +9,6 @@ extern "C" {
 #include "object/object.h"
 #include "globalincs/pstypes.h"
 
-#include <vector>
-
 //*************************Lua funcs*************************
 //Used to parse arguments on the stack to C values
 int ade_get_args(lua_State *L, char *fmt, ...);
@@ -97,7 +95,7 @@ public:
 
 #define ADE_INDEX(ate) (ate - &Ade_table_entries[0])
 
-extern std::vector<class ade_table_entry> Ade_table_entries;
+extern SCP_vector<class ade_table_entry> Ade_table_entries;
 
 class ade_table_entry
 {

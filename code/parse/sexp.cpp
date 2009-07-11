@@ -647,7 +647,7 @@ sexp_node *Sexp_nodes = NULL;
 
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 
-std::vector<int> Current_sexp_operator;
+SCP_vector<int> Current_sexp_operator;
 
 int Players_target = UNINITIALIZED;
 int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
@@ -667,9 +667,9 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
 
-std::vector<char*> Sexp_replacement_arguments;
+SCP_vector<char*> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
-std::vector<char*> Applicable_arguments_temp;
+SCP_vector<char*> Applicable_arguments_temp;
 
 // Goober5000
 arg_item Sexp_applicable_argument_list;
@@ -23360,7 +23360,7 @@ bool output_sexps(char *filepath)
 	fputs("<body>", fp);
 	fprintf(fp,"\t<h1>Sexp Output - Build %d.%d.%d</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 
-	std::vector<int> done_sexp_ids;
+	SCP_vector<int> done_sexp_ids;
 	int x,y,z;
 
 	//Output an overview

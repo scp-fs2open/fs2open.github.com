@@ -2125,7 +2125,7 @@ int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size)
 	return num_strings;
 }
 
-int stuff_string_list(std::vector<std::string> *slp)
+int stuff_string_list(SCP_vector<std::string> *slp)
 {
 	(*slp).clear();
 
@@ -2899,7 +2899,7 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 	return line_num;
 }
 
-int split_str(char *src, int max_pixel_w, std::vector<int> *n_chars, std::vector<char*> *p_str, char ignore_char)
+int split_str(char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_vector<char*> *p_str, char ignore_char)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	char *breakpoint = NULL;

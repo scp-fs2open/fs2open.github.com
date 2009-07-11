@@ -81,5 +81,8 @@ public:
 	}
 };
 
+#include <vector>
+template< typename T >
+class SCP_vector : public std::vector< T, SCP_vm_allocator< T > > { };
 
 #endif // _VMALLOCATOR_H_INCLUDED_

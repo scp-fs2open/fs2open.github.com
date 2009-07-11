@@ -32,8 +32,6 @@
 #endif
 #include <limits.h>
 
-#include <vector>		
-
 unsigned short UserSampleRate, UserSampleBits;
 
 
@@ -51,7 +49,7 @@ typedef struct sound	{
 } sound;
 
 //sound	Sounds[MAX_SOUNDS];
-std::vector<sound> Sounds;
+SCP_vector<sound> Sounds;
 int Num_sounds=0;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off

@@ -6,9 +6,6 @@
  *
 */ 
 
-//#include <map>
-#include <vector>
-
 #include "globalincs/pstypes.h"
 #include "graphics/grbatch.h"
 #include "graphics/2d.h"
@@ -570,7 +567,7 @@ struct batch_item {
 	bool laser;
 };
 
-static std::vector<batch_item> geometry_map;
+static SCP_vector<batch_item> geometry_map;
 
 static int find_good_batch_item(int texture)
 {

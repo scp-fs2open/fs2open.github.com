@@ -15,7 +15,6 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"		// for NAME_LENGTH
 
-#include <vector>
 
 struct object;
 struct polymodel;
@@ -122,7 +121,7 @@ typedef	struct asteroid_field {
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 } asteroid_field;
 
-extern std::vector<asteroid_info> Asteroid_info;
+extern SCP_vector< asteroid_info > Asteroid_info;
 extern asteroid Asteroids[MAX_ASTEROIDS];
 extern asteroid_field	Asteroid_field;
 

@@ -35,12 +35,10 @@ char *Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 	"2_ViewFootage-m"
 };
 
-using std::vector;
-
 size_t Num_cutscenes;
 int Cutscenes_viewable;
 int Description_index;
-vector<cutscene_info> Cutscenes;
+SCP_vector<cutscene_info> Cutscenes;
 
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close()
@@ -174,7 +172,7 @@ void cutscene_mark_viewable(char *filename)
 #define EXIT_BUTTON				7
 
 static int Num_files;
-static vector<int> Cutscene_list;
+static SCP_vector<int> Cutscene_list;
 //static int Stats_scroll_offset;  // not used - taylor
 static int Selected_line = 0;  // line that is currently selected for binding
 static int Scroll_offset;

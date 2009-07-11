@@ -136,7 +136,7 @@ char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
-std::vector<engine_wash_info> Engine_wash_info;
+SCP_vector<engine_wash_info> Engine_wash_info;
 //char get_engine_wash_index(char *engine_wash_name);
 engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 
@@ -144,7 +144,7 @@ void ship_reset_disabled_physics(object *objp, int ship_class);
 
 
 // information for ships which have exited the game
-std::vector<exited_ship> Ships_exited;
+SCP_vector<exited_ship> Ships_exited;
 
 int	Num_engine_wash_types;
 int	Num_ship_classes;
@@ -159,13 +159,13 @@ ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
 ship_info		Ship_info[MAX_SHIP_CLASSES];
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
-std::vector<ship_info> Ship_templates;
+SCP_vector<ship_info> Ship_templates;
 
 static char **tspecies_names = NULL;
 
-std::vector<ship_type_info> Ship_types;
+SCP_vector<ship_type_info> Ship_types;
 
-std::vector<ArmorType> Armor_types;
+SCP_vector<ArmorType> Armor_types;
 
 flag_def_list Man_types[] = {
 	{ "Bank right",		MT_BANK_RIGHT,	0 },
@@ -330,7 +330,7 @@ flag_def_list ai_tgt_weapon_flags[] = {
 
 int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
 
-std::vector <ai_target_priority> Ai_tp_list;
+SCP_vector <ai_target_priority> Ai_tp_list;
 
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
@@ -343,7 +343,7 @@ static int Missile_out_snd_timer;	// timer so we play out of laser sound effect 
 // since the goal code relies on this placement to find the array index in the Ship_counts array
 //WMC - This should be fixed with new system.
 
-std::vector<ship_counts>	Ship_type_counts;
+SCP_vector<ship_counts>	Ship_type_counts;
 
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
@@ -2428,7 +2428,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
-		std::vector <std::string> target_group_strings, *target_group_string_p;
+		SCP_vector <std::string> target_group_strings, *target_group_string_p;
 		target_group_string_p = &target_group_strings;
 		int num_strings = stuff_string_list(target_group_string_p);
 		int num_groups = Ai_tp_list.size();
@@ -2671,7 +2671,7 @@ strcpy(parse_error_text, temp_error);
 				stuff_int(&sp->turret_reset_delay);
 
 			if (optional_string("$Target Priority:")) {
-				std::vector <std::string> tgt_priorities, *tgt_priorities_p;
+				SCP_vector <std::string> tgt_priorities, *tgt_priorities_p;
 				tgt_priorities_p = &tgt_priorities;
 				int num_strings = stuff_string_list(tgt_priorities_p);
 				sp->num_target_priorities = 0;
@@ -3008,7 +3008,7 @@ void parse_ship_type()
 
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
-		std::vector <std::string> target_group_strings, *target_group_string_p;
+		SCP_vector <std::string> target_group_strings, *target_group_string_p;
 		target_group_string_p = &target_group_strings;
 		int num_strings = stuff_string_list(target_group_string_p);
 		int num_groups = Ai_tp_list.size();
@@ -4831,7 +4831,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 	}
 }
 
-std::vector<man_thruster_renderer> Man_thrusters;
+SCP_vector<man_thruster_renderer> Man_thrusters;
 
 //This batch renders all maneuvering thrusters in the array.
 //It also clears the array every 10 seconds to keep mem usage down.
@@ -15172,7 +15172,7 @@ typedef struct DamageTypeStruct
 	char name[NAME_LENGTH];
 } DamageTypeStruct;
 
-std::vector<DamageTypeStruct>	Damage_types;
+SCP_vector<DamageTypeStruct>	Damage_types;
 
 //Gives the index into the Damage_types[] vector of a
 //specified damage type name
@@ -15513,7 +15513,7 @@ void parse_ai_target_priorities()
 {
 	int i, j, num_strings;
 	int n_entries = Ai_tp_list.size();
-	std::vector <std::string> temp_strings, *temp_strings_p;
+	SCP_vector <std::string> temp_strings, *temp_strings_p;
 	temp_strings_p = &temp_strings;
 
 	bool first_time = false;

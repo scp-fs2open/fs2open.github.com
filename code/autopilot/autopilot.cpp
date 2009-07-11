@@ -298,7 +298,7 @@ void StartAutopilot()
 	capship_spreads[1] = 0.0f;
 	capship_spreads[2] = 0.0f;
 
-	std::vector<int> capIndexes;
+	SCP_vector<int> capIndexes;
 
 	// empty the autopilot wings map
 	autopilot_wings.clear();
@@ -1221,7 +1221,7 @@ void NavSystem_Init()
 void parse_autopilot_table(char *filename)
 {
 	int rval;
-	std::vector<std::string> lines;
+	SCP_vector<std::string> lines;
 
 	// open localization
 	lcl_ext_open();

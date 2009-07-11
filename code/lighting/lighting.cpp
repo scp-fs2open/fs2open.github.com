@@ -9,8 +9,6 @@
 
 
 
-#include <vector>
-
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "lighting/lighting.h"
@@ -48,7 +46,7 @@ light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];
 int Num_light_levels = 0;
 
-std::vector<light*> Static_light;
+SCP_vector<light*> Static_light;
 
 static int Light_in_shadow = 0;	// If true, this means we're in a shadow
 

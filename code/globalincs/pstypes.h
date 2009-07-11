@@ -701,4 +701,6 @@ public:
 	bool isValid();
 };
 
+#include "globalincs/vmallocator.h"
+
 #endif		// PS_TYPES_H

@@ -34,9 +34,6 @@
 #include "cmdline/cmdline.h"
 
 
-#include <vector>
-
-
 extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
@@ -83,7 +80,7 @@ struct opengl_vertex_buffer {
 };
 
 
-static std::vector<opengl_vertex_buffer> GL_vertex_buffers;
+static SCP_vector<opengl_vertex_buffer> GL_vertex_buffers;
 static opengl_vertex_buffer *g_vbp = NULL;
 static int GL_vertex_buffers_in_use = 0;
 

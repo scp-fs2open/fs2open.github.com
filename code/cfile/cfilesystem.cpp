@@ -15,7 +15,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-#include <vector>
 
 #ifdef _WIN32
 #include <io.h>
@@ -1179,7 +1178,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// (FIXME: this assumes that everything in ext_list[] is the same length!)
 	uint filespec_len_big = filespec_len + strlen(ext_list[0]);
 
-	std::vector<cf_file*> file_list_index;
+	SCP_vector< cf_file* > file_list_index;
 	int last_root_index = -1;
 	int last_path_index = -1;
 
