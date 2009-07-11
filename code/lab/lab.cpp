@@ -26,9 +26,6 @@
 #include "species_defs/species_defs.h"
 #include "playerman/managepilot.h"
 
-#include <vector>
-
-
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
 #define LAB_FLAG_NO_ROTATION		(1<<0)	// don't rotate models
@@ -81,7 +78,7 @@ static float Lab_viewer_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
 
 static ship_subsys *Lab_ship_subsys = NULL;
-static std::vector<model_subsystem> Lab_ship_model_subsys;
+static SCP_vector<model_subsystem> Lab_ship_model_subsys;
 
 static int Lab_detail_texture_save = 0;
 
@@ -1056,7 +1053,7 @@ typedef struct lab_flag {
 	bool second;
 } lab_flag;
 
-static std::vector<lab_flag> Lab_flags;
+static SCP_vector<lab_flag> Lab_flags;
 
 void labviewer_flags_clear()
 {
@@ -1248,7 +1245,7 @@ void labviewer_make_flags_window(Button *caller)
 	y += ntp->GetHeight() + 10;	\
 }
 
-static std::vector<Text*> Lab_variables;
+static SCP_vector<Text*> Lab_variables;
 
 void labviewer_close_variables_window(GUIObject *caller)
 {

@@ -16,8 +16,6 @@
 #include "ui/ui.h"
 #include "network/multi.h"
 
-#include <vector>
-
 
 struct net_player;
 struct net_addr;
@@ -43,9 +41,11 @@ typedef struct multi_create_info {
 	ubyte		max_players;						// max players allowed for this file	
 	char		valid_status;						// see MVALID_* defines above
 
-	multi_create_info() {
-		memset(this, 0, sizeof(multi_create_info));
-		valid_status = MVALID_STATUS_UNKNOWN;
+	multi_create_info( )
+		: flags( 0 ), respawn( 0 ), max_players( 0 ), valid_status( MVALID_STATUS_UNKNOWN )
+	{
+		filename[ 0 ] = NULL;
+		name[ 0 ] = NULL;
 	}
 } multi_create_info;
 
@@ -82,8 +82,8 @@ void multi_common_unload_palette();
 void multi_common_verify_cd();
 
 // variables to hold the mission and campaign lists
-extern std::vector<multi_create_info> Multi_create_mission_list;
-extern std::vector<multi_create_info> Multi_create_campaign_list;
+extern SCP_vector<multi_create_info> Multi_create_mission_list;
+extern SCP_vector<multi_create_info> Multi_create_campaign_list;
 
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();

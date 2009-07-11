@@ -148,6 +148,7 @@ BOOL event_editor::OnInitDialog()
 	BOOL r = TRUE;
 	CListBox *list;
 	CComboBox *box;
+	MMessage msg; 
 
 	CDialog::OnInitDialog();  // let the base class do the default work
 	m_play_bm.LoadBitmap(IDB_PLAY);
@@ -174,14 +175,14 @@ BOOL event_editor::OnInitDialog()
 
 	m_num_messages = Num_messages - Num_builtin_messages;
 	for (i=0; i<m_num_messages; i++) {
-		m_messages[i] = Messages[i + Num_builtin_messages];
+		msg = Messages[i + Num_builtin_messages];
+		m_messages.push_back(msg); 
 		if (m_messages[i].avi_info.name){
 			m_messages[i].avi_info.name = strdup(m_messages[i].avi_info.name);
 		}
 		if (m_messages[i].wave_info.name){
 			m_messages[i].wave_info.name = strdup(m_messages[i].wave_info.name);
 		}
-		m_msg_sig[i] = i + Num_builtin_messages;
 	}
 
 	((CEdit *) GetDlgItem(IDC_MESSAGE_NAME))->LimitText(NAME_LENGTH - 1);
@@ -263,10 +264,6 @@ BOOL event_editor::OnInitDialog()
 		m_cur_msg = 0;
 	} else {
 		m_cur_msg = -1;
-	}
-
-	if (Num_messages >= MAX_MISSION_MESSAGES){
-		GetDlgItem(IDC_NEW_MSG)->EnableWindow(FALSE);
 	}
 
 	update_cur_message();
@@ -435,8 +432,6 @@ int event_editor::query_modified()
 			return 1;
 
 	for (i=0; i<m_num_messages; i++) {
-		if (m_msg_sig[i] < 0)
-			return 1;
 
 		if ((i != m_cur_msg) && (!stricmp(ptr, m_messages[m_cur_msg].name)))
 			return 1;
@@ -1194,23 +1189,19 @@ int event_editor::save_message(int num)
 
 void event_editor::OnNewMsg() 
 {
-//	if (save_message(m_cur_msg))
-//		return;
+	MMessage msg; 
 
 	save();
-	Assert(m_num_messages + Num_builtin_messages < MAX_MISSION_MESSAGES);
-	strcpy(m_messages[m_num_messages].name, "<new message>");
+	strcpy(msg.name, "<new message>");
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->AddString("<new message>");
 
-	strcpy(m_messages[m_num_messages].message, "<put description here>");
-	m_messages[m_num_messages].avi_info.name = NULL;
-	m_messages[m_num_messages].wave_info.name = NULL;
-	m_messages[m_num_messages].persona_index = -1;
-	m_messages[m_num_messages].multi_team = -1;
+	strcpy(msg.message, "<put description here>");
+	msg.avi_info.name = NULL;
+	msg.wave_info.name = NULL;
+	msg.persona_index = -1;
+	msg.multi_team = -1;
+	m_messages.push_back(msg);
 	m_cur_msg = m_num_messages++;
-	if (m_num_messages + Num_builtin_messages >= MAX_MISSION_MESSAGES){
-		GetDlgItem(IDC_NEW_MSG)->EnableWindow(FALSE);
-	}
 
 	modified = 1;
 	update_cur_message();
@@ -1219,7 +1210,6 @@ void event_editor::OnNewMsg()
 void event_editor::OnDeleteMsg() 
 {
 	char buf[256];
-	int i;
 
 	// handle this case somewhat gracefully
 	Assert((m_cur_msg >= 0) && (m_cur_msg < m_num_messages));
@@ -1238,9 +1228,7 @@ void event_editor::OnDeleteMsg()
 	sprintf(buf, "<%s>", m_messages[m_cur_msg].name);
 	update_sexp_references(m_messages[m_cur_msg].name, buf, OPF_MESSAGE);
 
-	for (i=m_cur_msg; i<m_num_messages-1; i++){
-		m_messages[i] = m_messages[i + 1];
-	}
+	m_messages.erase(m_messages.begin() + m_cur_msg); 
 
 	m_num_messages--;
 	if (m_cur_msg >= m_num_messages){

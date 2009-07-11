@@ -231,6 +231,7 @@ sexp_oper Operators[] = {
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
 	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
+	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -527,6 +528,7 @@ sexp_oper Operators[] = {
 	{ "set-camera-rotation",		OP_CUTSCENES_SET_CAMERA_ROTATION,		3, 6, },
 	{ "set-camera-target",			OP_CUTSCENES_SET_CAMERA_TARGET,			1, 2, },
 	{ "set-fov",					OP_CUTSCENES_SET_FOV,					1, 1, },
+	{ "get-fov",					OP_CUTSCENES_GET_FOV,					0, 0, },
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
 	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
 	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
@@ -645,7 +647,7 @@ sexp_node *Sexp_nodes = NULL;
 
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 
-std::vector<int> Current_sexp_operator;
+SCP_vector<int> Current_sexp_operator;
 
 int Players_target = UNINITIALIZED;
 int Players_mlocked = UNINITIALIZED; // for is-missile-locked - Sesquipedalian
@@ -665,9 +667,9 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
 
-std::vector<char*> Sexp_replacement_arguments;
+SCP_vector<char*> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
-std::vector<char*> Applicable_arguments_temp;
+SCP_vector<char*> Applicable_arguments_temp;
 
 // Goober5000
 arg_item Sexp_applicable_argument_list;
@@ -678,6 +680,13 @@ bool is_blank_of_op(int op_const);
 bool is_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
 void multi_sexp_modify_variable();
+
+#define NO_OPERATOR_INDEX_DEFINED		-2
+#define NOT_A_SEXP_OPERATOR				-1
+
+// Karajorma - some useful helper methods
+player * get_player_from_ship_node(int node, bool test_respawns = false);
+ship * sexp_get_ship_from_node(int node);
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
@@ -869,6 +878,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[node].rest = rest;
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
 	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;	// Goober5000
+	Sexp_nodes[node].op_index = NO_OPERATOR_INDEX_DEFINED;
 
 	return node;
 }
@@ -1236,15 +1246,42 @@ int get_operator_index(char *token)
 		}
 	}
 
-	return -1;
+	return NOT_A_SEXP_OPERATOR;
 }
+
+// from a sexp node, return the index in the array Operators or 0 if not an operator
+int get_operator_index(int node)
+{
+	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
+		return Sexp_nodes[node].op_index;
+	}
+
+	int index = get_operator_index(Sexp_nodes[node].text); 
+	Sexp_nodes[node].op_index = index;
+	return index;
+}
+
 
 // from an operator name, return its constant (the number it was #define'd with)
 int get_operator_const(char *token)
 {
 	int	idx = get_operator_index(token);
 
-	if (idx == -1)
+	if (idx == NOT_A_SEXP_OPERATOR)
+		return 0;
+
+	return Operators[idx].value;
+}
+
+int get_operator_const(int node)
+{
+	if (!Fred_running && Sexp_nodes[node].op_index >= 0) {
+		return Operators[Sexp_nodes[node].op_index].value;
+	}
+
+	int	idx = get_operator_index(node);
+
+	if (idx == NOT_A_SEXP_OPERATOR)
 		return 0;
 
 	return Operators[idx].value;
@@ -3055,6 +3092,54 @@ void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
 		strcpy(Sexp_string, "( )");
 }
 
+
+// ----------------------------------------------------------------------------------- 
+// Helper methods for getting data from nodes. Cause it's stupid to keep re-rolling this stuff for every single SEXP
+// -----------------------------------------------------------------------------------
+
+// takes a SEXP node which contains the name of a ship and returns the player for that ship or NULL if it is an AI ship
+player * get_player_from_ship_node(int node, bool test_respawns)
+{
+	int sindex, np_index = -1;	
+	p_object *p_objp;
+	
+	Assert (node != -1);
+
+	sindex = ship_name_lookup(CTEXT(node));
+
+	// singleplayer
+	if (!(Game_mode & GM_MULTIPLAYER)){	
+		if(sindex >= 0){
+			if(Player_obj == &Objects[Ships[sindex].objnum]){
+				return Player;
+			}
+		}
+		return NULL; 
+	}
+	// multiplayer
+	else {
+		if(sindex >= 0){
+			if(Ships[sindex].objnum >= 0) {
+				// try and find the player
+				np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
+			}
+		}
+		if (test_respawns && np_index < 0) {
+			// Respawning ships don't have an objnum so we need to take a different approach 
+			p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+			if (p_objp != NULL) {
+				np_index = multi_find_player_by_parse_object(p_objp);
+			}
+		}
+
+		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
+			return Net_players[np_index].m_player; 
+		}
+
+		return NULL; 
+	}
+}
+
 // given a node, returns a pointer to the ship or NULL if this isn't the name of a ship
 ship * sexp_get_ship_from_node(int node)
 {
@@ -3076,6 +3161,7 @@ ship * sexp_get_ship_from_node(int node)
 }
 
 
+// -----------------------------------------------------------------------------------
 
 // determine if the named ship or wing hasn't arrived yet (wing or ship must be on arrival list)
 int sexp_query_has_yet_to_arrive(char *name)
@@ -10160,7 +10246,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 				return SEXP_FALSE;
 			}
 			wip = &Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]];
-			last_fired = shipp->weapons.next_primary_fire_stamp[requested_bank] - (int)(wip->fire_wait * 1000);
+			last_fired = shipp->weapons.last_primary_fire_stamp[requested_bank];
 			break; 
 
 		case OP_SECONDARY_FIRED_SINCE: 
@@ -10168,7 +10254,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 				return SEXP_FALSE;
 			}
 			wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]];
-			last_fired = shipp->weapons.next_secondary_fire_stamp[requested_bank] - (int)(wip->fire_wait * 1000);
+			last_fired = shipp->weapons.last_secondary_fire_stamp[requested_bank];
 			break; 
 	}
 
@@ -11293,6 +11379,20 @@ int sexp_speed(int node)
 	}
 
 	return SEXP_FALSE;
+}
+
+int sexp_get_throttle_speed(int node)
+{
+	player *the_player; 
+
+	the_player = get_player_from_ship_node(node); 
+
+	if (the_player != NULL) {
+		float max_speed = Ship_info[Ships[Objects[the_player->objnum].instance].ship_info_index].max_speed;
+		return (int)(the_player->ci.forward_cruise_percent / 100.0f * max_speed);
+	}
+
+	return 0;
 }
 
 // Goober5000
@@ -15232,11 +15332,22 @@ void sexp_set_fov(int n)
 
 	//Cap FOV to something reasonable.
 	float new_fov = (float)eval_num(n);
-	new_fov = MIN(new_fov, 360.0f);
-	new_fov = MAX(new_fov, 0.0f);
+	CLAMP(new_fov, 0.0f, 360.0f);
 
 	Sexp_fov = (new_fov * (PI/180.0f));
 	//cam->set_fov(eval_num(n) * (PI/180.0f));
+}
+
+int sexp_get_fov()
+{
+	camera *cam = Main_camera.getCamera();
+	if(cam == NULL)
+		return -1;
+	else if(Sexp_fov > 0.0f)
+		// SEXP override has been set
+		return Sexp_fov / (PI/180.0f);
+	else	
+		return cam->get_fov() / (PI/180.0f);
 }
 
 void sexp_reset_fov()
@@ -15542,7 +15653,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 		node = CDR(cur_node);		// makes reading the next bit of code a little easier.
 
-		op_num = get_operator_const(CTEXT(cur_node));
+		op_num = get_operator_const(cur_node);
 		// add the op_num to the stack if it is an actual operator rather than a number
 		if (op_num) {
 			Current_sexp_operator.push_back(op_num); 
@@ -16527,6 +16638,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_speed(node);
 				break;
 
+			case OP_GET_THROTTLE_SPEED:
+				sexp_val = sexp_get_throttle_speed(node);
+				break;
+
 			case OP_PRIMARIES_DEPLETED:
 				sexp_val = sexp_primaries_depleted(node);
 				break;
@@ -17089,6 +17204,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_set_fov(node);
 				break;
+			case OP_CUTSCENES_GET_FOV:	
+				sexp_val = sexp_get_fov();
+				break;
 			case OP_CUTSCENES_RESET_FOV:
 				sexp_val = SEXP_TRUE;
 				sexp_reset_fov();
@@ -17211,7 +17329,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			}
 
 			// if we need a positive value, make it positive
-			if (query_operator_argument_type(get_operator_index(CTEXT(parent_node)), arg_num) == OPF_POSITIVE)
+			if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
 			{
 				sexp_val *= -1;
 			}
@@ -17491,6 +17609,8 @@ int query_operator_return_type(int op)
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
+		case OP_CUTSCENES_GET_FOV:
+		case OP_GET_THROTTLE_SPEED:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -17943,6 +18063,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_GET_DAMAGE_CAUSED:
+		case OP_GET_THROTTLE_SPEED:
 			return OPF_SHIP;
 		
 		case OP_SHIP_CREATE:
@@ -19055,6 +19176,7 @@ int query_operator_argument_type(int op, int argnum)
 		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
+		case OP_CUTSCENES_GET_FOV:
 			return OPF_NONE;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -19824,7 +19946,7 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 		multi_end_packet();
 	}
 	// otherwise send a SEXP variable packet
-	else if ( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
+	else if ( (Game_mode & GM_MULTIPLAYER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) ) {
 		send_variable_update_packet(index, Sexp_variables[index].text);
 	}
 }
@@ -20429,6 +20551,7 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_SET_CAMERA_ROTATION:
 		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_FOV:
+		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
 		case OP_CUTSCENES_SHOW_SUBTITLE:
@@ -21520,7 +21643,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
-		"goals.\r\n\r\n"
+		"goals.\r\n"
+		"Please note that this goal will implicitly call \"protect-ship\" on the target "
+		"to prevent overzealous AI ships from destroying it in the process of disabling it.  "
+		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
@@ -21529,7 +21655,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tThis AI goal causes a ship/wing to destroy all of the turret subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
 		"may have multiple turret subsystems requiring the use of > 1 ai-destroy-subsystem "
-		"goals.\r\n\r\n"
+		"goals.\r\n"
+		"Please note that this goal will implicitly call \"protect-ship\" on the target "
+		"to prevent overzealous AI ships from destroying it in the process of disarming it.  "
+		"If the ship must be destroyed later on, be sure to call an \"unprotect-ship\" sexp.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
@@ -21605,6 +21734,11 @@ sexp_help_struct Sexp_help[] = {
 		"set-training-context-speed for the specified amount of time.\r\n\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tTime in seconds." },
+
+	{ OP_GET_THROTTLE_SPEED, "Get-Throttle-Speed (Training operator)\r\n"
+		"\tReturns the current throttle speed that the ship has been set to. Reverse speeds are returned as a negative value. "
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the player ship to check the throttle value for." },
 
 	{ OP_FACING, "Facing (Boolean training operator)\r\n"
 		"\tIs true as long as the specified ship is within the player's specified "
@@ -22952,6 +23086,12 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tNew FOV (degrees)\r\n"
 	},
 
+	// Echelon9
+	{ OP_CUTSCENES_GET_FOV, "get-fov\r\n"
+		"\tReturns the current field of view (in degrees) from the Main camera.\r\n\r\n"
+		"Returns a numeric value.  Takes no arguments."
+	},
+
 	{ OP_CUTSCENES_RESET_FOV, "reset-fov\r\n"
 		"\tResets the field of view  "
 	},
@@ -23222,7 +23362,7 @@ bool output_sexps(char *filepath)
 	fputs("<body>", fp);
 	fprintf(fp,"\t<h1>Sexp Output - Build %d.%d.%d</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 
-	std::vector<int> done_sexp_ids;
+	SCP_vector<int> done_sexp_ids;
 	int x,y,z;
 
 	//Output an overview

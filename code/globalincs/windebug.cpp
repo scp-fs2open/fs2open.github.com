@@ -25,7 +25,6 @@
 
 /* STL Headers */
 #include <string>
-#include <vector>
 
 /* SCP Headers */
 #include "osapi/osapi.h"
@@ -170,7 +169,7 @@ private:
 		std::string symbol;
 	};
 
-	std::vector< StackEntry > m_stackFrames;
+	SCP_vector< StackEntry > m_stackFrames;
 };
 
 #elif defined( SHOW_CALL_STACK )
@@ -1219,7 +1218,7 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	dump_text_to_clipboard( assertString.c_str( ) );
 
 	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
-	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
+	assertString += "\n\nUse Yes to break into Debugger, No to continue.\nand Cancel to Quit\n";
 	result = MessageBox( NULL, assertString.c_str( ), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
 
 #elif defined ( SHOW_CALL_STACK	)

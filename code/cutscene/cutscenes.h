@@ -14,7 +14,6 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
-#include <vector>
 
 // this cutscene is always available.
 #define INTRO_CUTSCENE_FLAG		(1<<0)
@@ -27,7 +26,7 @@ typedef struct cutscene_info
 	int		cd;
 } cutscene_info;
 
-extern std::vector<cutscene_info> Cutscenes;
+extern SCP_vector<cutscene_info> Cutscenes;
 extern size_t Num_cutscenes;
 extern int Cutscenes_viewable;
 

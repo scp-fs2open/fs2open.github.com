@@ -8,10 +8,6 @@
  */
 
 
-
-
-#include <vector>
-
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
 #include "species_defs/species_defs.h"
@@ -22,7 +18,7 @@
 #include "localization/localize.h"
 
 
-std::vector<species_info> Species_info;
+SCP_vector<species_info> Species_info;
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 

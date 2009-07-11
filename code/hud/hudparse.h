@@ -275,6 +275,42 @@ typedef struct hud_info
 //	int gauge_frame_sexp_vars[MAX_HUD_GAUGE_TYPES];
 
 //	hud_info();  // GCC won't take this with offsetof
+
+	hud_info( )
+		: loaded( false )
+	{
+		memset( resolution, 0, sizeof( resolution ) );
+		memset( Player_shield_coords, 0, sizeof( Player_shield_coords ) );
+		memset( Target_shield_coords, 0, sizeof( Target_shield_coords ) );
+		memset( Shield_mini_coords, 0, sizeof( Shield_mini_coords ) );
+		Shield_mini_fname[ 0 ] = NULL;
+		memset( Aburn_coords, 0, sizeof( Aburn_coords ) );
+		memset( Wenergy_coords, 0, sizeof( Wenergy_coords ) );
+		memset( Wenergy_text_coords, 0, sizeof( Wenergy_text_coords ) );
+		memset( Aburn_size, 0, sizeof( Aburn_size ) );
+		memset( Wenergy_size, 0, sizeof( Wenergy_size ) );
+		Aburn_fname[ 0 ] = NULL;
+		Wenergy_fname[ 0 ] = NULL;
+		memset( Escort_coords, 0, sizeof( Escort_coords ) );
+		memset( Hud_mini_3digit, 0, sizeof( Hud_mini_3digit ) );
+		memset( Hud_mini_2digit, 0, sizeof( Hud_mini_2digit ) );
+		memset( Hud_mini_1digit, 0, sizeof( Hud_mini_1digit ) );
+		memset( Escort_htext_coords, 0, sizeof( Escort_htext_coords ) );
+		Escort_htext[ 0 ] = NULL;
+		memset( Escort_list, 0, sizeof( Escort_list ) );
+		memset( Escort_entry, 0, sizeof( Escort_entry ) );
+		memset( Escort_entry_last, 0, sizeof( Escort_entry_last ) );
+		memset( Escort_name, 0, sizeof( Escort_name ) );
+		memset( Escort_integrity, 0, sizeof( Escort_integrity ) );
+		memset( Escort_status, 0, sizeof( Escort_status ) );
+		memset( Escort_filename, 0, sizeof( Escort_filename ) );
+		memset( custom_gauge_coords, 0, sizeof( custom_gauge_coords ) );
+		memset( custom_gauge_sizes, 0, sizeof( custom_gauge_sizes ) );
+		memset( custom_gauge_images, 0, sizeof( custom_gauge_images ) );
+		memset( custom_gauge_frames, 0, sizeof( custom_gauge_frames ) );
+		memset( custom_gauge_text, 0, sizeof( custom_gauge_text ) );
+		memset( custom_gauge_colors, 0, sizeof( custom_gauge_colors ) );
+	}
 } hud_info;
 
 #endif

@@ -17,8 +17,8 @@ warp_camera Warp_camera;
 
 //*************************OTHER STUFF*************************
 //Some global vars
-std::vector<subtitle> Subtitles;
-std::vector<camera*> Cameras;
+SCP_vector<subtitle> Subtitles;
+SCP_vector<camera*> Cameras;
 //Preset cameras
 camid Current_camera;
 camid Main_camera;

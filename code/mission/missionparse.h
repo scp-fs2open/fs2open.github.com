@@ -684,7 +684,11 @@ typedef struct mission_cutscene {
 	char cutscene_name[NAME_LENGTH];	
 	int formula; 
 
-	mission_cutscene() { memset(this, 0, sizeof(mission_cutscene)); formula = -1; };
+	mission_cutscene( ) 
+		: type( 0 ), formula( -1 )
+	{ 
+		cutscene_name[ 0 ] = NULL;
+	}
 } mission_cutscene;
 
 typedef struct mission {
@@ -722,7 +726,7 @@ typedef struct mission {
 	// Goober5000
 	ai_profile_t *ai_profile;
 
-	std::vector<mission_cutscene> cutscenes; 
+	SCP_vector<mission_cutscene> cutscenes; 
 } mission;
 
 // cargo defines
@@ -840,10 +844,12 @@ typedef struct texture_replace {
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
 
-	texture_replace()
+	texture_replace( )
+		: new_texture_id( -1 )
 	{
-		memset(this, '\0', sizeof(this));
-		new_texture_id = -1;
+		ship_name[ 0 ] = NULL;
+		old_texture[ 0 ] = NULL;
+		new_texture[ 0 ] = NULL;
 	}
 } texture_replace;
 
@@ -939,7 +945,7 @@ typedef struct p_object {
 	int num_texture_replacements;
 	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
 
-	std::vector<alt_class> alt_classes;	
+	SCP_vector<alt_class> alt_classes;	
 
 	int alt_iff_color[MAX_IFFS][MAX_IFFS];
 } p_object;
@@ -1016,7 +1022,7 @@ typedef struct p_object {
 
 
 // Goober5000 - this is now dynamic
-extern std::vector<p_object> Parse_objects;
+extern SCP_vector<p_object> Parse_objects;
 #define POBJ_INDEX(pobjp) (pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;

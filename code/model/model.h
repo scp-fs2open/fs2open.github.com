@@ -17,8 +17,6 @@
 #include "graphics/2d.h"
 #include "decals/decals.h"
 
-#include <vector>
-
 struct object;
 
 extern flag_def_list model_render_flags[];
@@ -299,7 +297,7 @@ typedef struct bsp_info {
 	
 	// buffers used by HT&L
 	int indexed_vertex_buffer;
-	std::vector<buffer_data> buffer;
+	SCP_vector<buffer_data> buffer;
 //	int flat_buffer;
 //	int flat_line_buffer;
 
@@ -308,6 +306,8 @@ typedef struct bsp_info {
 	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
 	bool	gun_rotation;//for animated weapon models
 	bool	no_collisions; // for $no_collisions property - kazan
+	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
+	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 
 	float		dumb_turn_rate;
 } bsp_info;

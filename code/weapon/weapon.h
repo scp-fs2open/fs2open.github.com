@@ -19,8 +19,6 @@
 #include "weapon/shockwave.h"
 #include "graphics/generic.h"
 
-#include <vector>
-
 struct object;
 struct ship_subsys;
 
@@ -425,6 +423,9 @@ typedef struct weapon_info {
 	script_hook sc_collide_weapon;
 
 	int weapon_hitpoints;
+
+	int	burst_shots;
+	int	burst_delay;
 } weapon_info;
 
 // Data structure to track the active missiles
@@ -443,7 +444,11 @@ typedef struct weapon_expl_lod {
 	int	num_frames;
 	int	fps;
 
-	weapon_expl_lod() { memset(this, 0, sizeof(weapon_expl_lod)); bitmap_id = -1; }
+	weapon_expl_lod( ) 
+		: bitmap_id( -1 ), num_frames( 0 ), fps( 0 )
+	{ 
+		filename[ 0 ] = NULL;
+	}
 } weapon_expl_lod;
 
 typedef struct weapon_expl_info	{
@@ -454,7 +459,7 @@ typedef struct weapon_expl_info	{
 class weapon_explosions
 {
 private:
-	std::vector<weapon_expl_info> ExplosionInfo;
+	SCP_vector<weapon_expl_info> ExplosionInfo;
 	int GetIndex(char *filename);
 
 public:

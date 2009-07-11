@@ -745,7 +745,13 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 											t = set_secondary_fire_delay(aip, temp_shipp, swip);
 										}
 
-										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+										if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
+											swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
+											swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
+										} else {
+											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+											swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
+										}
 									}
 								//}
 							}

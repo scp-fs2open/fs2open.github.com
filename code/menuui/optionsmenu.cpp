@@ -717,11 +717,7 @@ void options_change_gamma(float delta)
 	gr_set_gamma(FreeSpace_gamma);
 	sprintf(tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma);
 
-//	if ( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) ) {
-		os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
-//	} else {
-//		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
-//	}
+	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
 }
 
 void options_button_pressed(int n)

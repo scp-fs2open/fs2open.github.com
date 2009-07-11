@@ -42,6 +42,7 @@
 #define AIPF_MULTI_ALLOW_EMPTY_PRIMARIES							(1 << 24)
 #define AIPF_MULTI_ALLOW_EMPTY_SECONDARIES							(1 << 25)
 #define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
+#define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
 
 #define MAX_AI_PROFILES	5
 
@@ -102,6 +103,9 @@ typedef struct ai_profile_t {
 	int repair_penalty[NUM_SKILL_LEVELS];
 
 	float delay_bomb_arm_timer[NUM_SKILL_LEVELS];
+
+	// the change (x/7) that ship is allowed to fire missiles at player ship.
+	int change_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 
 } ai_profile_t;
 

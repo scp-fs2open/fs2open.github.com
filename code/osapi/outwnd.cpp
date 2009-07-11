@@ -31,7 +31,6 @@
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"
 
-#include <vector>
 
 extern int Cmdline_debug_window;
 
@@ -60,10 +59,14 @@ struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
 	bool enabled;
 
-	outwnd_filter_struct() { memset(this, 0, sizeof(outwnd_filter_struct)); }
+	outwnd_filter_struct( ) 
+		: enabled( false )
+	{ 
+		name[ 0 ] = NULL;
+	}
 };
 
-std::vector<outwnd_filter_struct> OutwndFilter;
+SCP_vector<outwnd_filter_struct> OutwndFilter;
 
 int mprintf_last_line = -1;
 char outtext[SCROLL_BUFFER_SIZE][MAX_LINE_WIDTH];

@@ -1955,7 +1955,7 @@ typedef struct split_ship {
 } split_ship;
 
 
-static std::vector<split_ship> Split_ships;
+static SCP_vector<split_ship> Split_ships;
 
 static int get_split_ship()
 {

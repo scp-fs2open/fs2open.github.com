@@ -124,8 +124,7 @@ private:
 	int m_sig[MAX_MISSION_EVENTS];
 	mission_event m_events[MAX_MISSION_EVENTS];
 	int m_num_messages;
-	MMessage m_messages[MAX_MISSION_MESSAGES];
-	int m_msg_sig[MAX_MISSION_MESSAGES];
+	SCP_vector<MMessage> m_messages;
 	int m_wave_id;
 };
 

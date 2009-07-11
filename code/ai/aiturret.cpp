@@ -1258,7 +1258,16 @@ int turret_should_pick_new_target(ship_subsys *turret)
 void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsys *turret, ai_info *aip)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
-	float wait = wip->fire_wait * 1000.0f;
+	float wait;
+
+	if (wip->burst_shots > turret->weapons.burst_counter[weapon_num]) {
+		wait = (float) wip->burst_delay;
+		turret->weapons.burst_counter[weapon_num]++;
+	} else {
+		wait = wip->fire_wait * 1000.0f;
+		turret->weapons.burst_counter[weapon_num] = 0;
+	}
+
 	int *fs_dest;
 	if(weapon_num < MAX_SHIP_PRIMARY_BANKS)
 		fs_dest = &turret->weapons.next_primary_fire_stamp[weapon_num];
@@ -1951,7 +1960,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// actual gun point and normal, not just the one for whole turret.
 			// moved here as if there are two weapons with indentical fire stamps
 			// they would have shared the fire point.
-			tv2e = v2e;
+			tv2e = gvec;
 	
 			// make sure to reset this for current weapon
 			ok_to_fire = false;
@@ -1967,9 +1976,26 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			//		heat seeking and target in a fairly wide cone.
 			//		aspect seeking and target is locked.
 			//turret_weapon_class = tp->turret_weapon_type;
+			bool in_sight = false;
+			
+			if (The_mission.ai_profile->flags & AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS) {
+				// we have already passed the FOV test of the turret so...
+				in_sight = true;
+			} else {
+				if (wip->wi_flags & WIF_HOMING_HEAT) {
+					if (dot > AICODE_TURRET_HEATSEEK_ANGLE) {
+						in_sight = true;
+					}
+				} else {
+					if (dot > AICODE_TURRET_DUMBFIRE_ANGLE) {
+						in_sight = true;
+					}
+				}
+			}
+
 			if ( !(wip->wi_flags & WIF_HOMING) )
 			{
-				if ((dist_to_enemy < 75.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				if ((dist_to_enemy < 75.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
@@ -1977,7 +2003,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 			else if ( wip->wi_flags & WIF_HOMING_HEAT )
 			{	// if heat seekers
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_HEATSEEK_ANGLE ))
+				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
@@ -1985,7 +2011,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 			else if ( wip->wi_flags & WIF_HOMING_ASPECT )
 			{	// if aspect seeker
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 				}
@@ -1996,7 +2022,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			}
 			else if ( wip->wi_flags & WIF_HOMING_JAVELIN )
 			{	// if javelin heat seeker
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				if ((dist_to_enemy < 50.0f) || in_sight)
 				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 				}

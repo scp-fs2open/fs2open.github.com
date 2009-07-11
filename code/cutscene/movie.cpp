@@ -11,7 +11,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include "graphics/grd3dinternal.h"
 #endif
 
 #include "graphics/2d.h"
@@ -117,11 +116,6 @@ bool movie_play(char *name)
 	gr_clear();
 
 	if (rc == MOVIE_OGG) {
-		if (gr_screen.mode == GR_DIRECT3D) {
-			mprintf(("MOVIE ERROR: Theora movies are not currently supported in Direct3D mode!\n"));
-			return false;
-		}
-
 		THEORAFILE *movie_ogg = theora_open(name);
 
 		if (movie_ogg) {

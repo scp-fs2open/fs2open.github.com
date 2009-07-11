@@ -29,7 +29,6 @@
 #include "globalincs/pstypes.h"
 #include "fireball/fireballs.h"
 
-#include <vector>
 #include <string>
 
 struct object;
@@ -107,7 +106,9 @@ typedef struct ship_weapon {
 	int current_tertiary_bank;
 
 	int next_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// next time this primary bank can fire
-	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];	// next time this secondary bank can fire
+	int last_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// last time this primary bank fired (mostly used by SEXPs)
+	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// next time this secondary bank can fire
+	int last_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// last time this secondary bank fired (mostly used by SEXPs)
 	int next_tertiary_fire_stamp;
 
 	// ballistic primary support - by Goober5000
@@ -138,6 +139,8 @@ typedef struct ship_weapon {
 	ubyte secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
+
+	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************
@@ -155,8 +158,8 @@ private:
 	//Rather than make an extra struct,
 	//I just made two arrays
 	int					DamageTypeIndex;
-	std::vector<int>	Calculations;
-	std::vector<float>	Arguments;
+	SCP_vector<int>	Calculations;
+	SCP_vector<float>	Arguments;
 
 public:
 	void clear();
@@ -167,7 +170,7 @@ class ArmorType
 private:
 	char Name[NAME_LENGTH];
 
-	std::vector<ArmorDamageType> DamageTypes;
+	SCP_vector<ArmorDamageType> DamageTypes;
 public:
 	ArmorType(char* in_name);
 
@@ -180,7 +183,7 @@ public:
 	void ParseData();
 };
 
-extern std::vector<ArmorType> Armor_types;
+extern SCP_vector<ArmorType> Armor_types;
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
@@ -613,7 +616,7 @@ typedef struct ship {
 //	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
 
 	// glow points
-	std::vector<bool> glow_point_bank_active;
+	SCP_vector<bool> glow_point_bank_active;
 
 	//cloaking stuff
 	vec3d texture_translation_key;		//translate the texture matrix for a cool effect
@@ -655,7 +658,7 @@ typedef struct ship {
 	int flare_bm;
 	*/
 
-	std::vector<alt_class> s_alt_classes;	
+	SCP_vector<alt_class> s_alt_classes;	
 
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 } ship;
@@ -664,9 +667,9 @@ struct ai_target_priority {
 	char name[NAME_LENGTH];
 
 	int obj_type;
-	std::vector <int> ship_type;
-	std::vector <int> ship_class;
-	std::vector <int> weapon_class;
+	SCP_vector <int> ship_type;
+	SCP_vector <int> ship_class;
+	SCP_vector <int> weapon_class;
 
 	int obj_flags;
 	int sif_flags;
@@ -675,7 +678,7 @@ struct ai_target_priority {
 	int wif2_flags;
 };
 
-extern std::vector <ai_target_priority> Ai_tp_list;
+extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
 ai_target_priority init_ai_target_priorities();
@@ -705,7 +708,7 @@ typedef struct exited_ship {
 	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
-extern std::vector<exited_ship> Ships_exited;
+extern SCP_vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );
@@ -754,7 +757,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
-// flags2 list
+// flags2 list. If this is updated MAX_SHIP_FLAGS must also be updated!
 #define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
 #define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
@@ -765,8 +768,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
 #define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
 #define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
+#define SIF2_NO_PRIMARY_LINKING				(1 << 10)	// Chief - slated for 3.7 originally, but this looks pretty simple to implement.
 
-#define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	11		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -850,16 +854,16 @@ typedef struct ship_type_info {
 	int ai_bools;
 	int ai_active_dock;
 	int ai_passive_dock;
-	std::vector<int> ai_actively_pursues;
+	SCP_vector<int> ai_actively_pursues;
 
 	//Resources
-	std::vector<int> explosion_bitmap_anims;
+	SCP_vector<int> explosion_bitmap_anims;
 
 	//Regen values - need to be converted after all types have loaded
-	std::vector<std::string> ai_actively_pursues_temp;
+	SCP_vector<std::string> ai_actively_pursues_temp;
 } ship_type_info;
 
-extern std::vector<ship_type_info> Ship_types;
+extern SCP_vector<ship_type_info> Ship_types;
 
 struct man_thruster_renderer {
 	int bmap_id;
@@ -868,7 +872,7 @@ struct man_thruster_renderer {
 	man_thruster_renderer(int id){bmap_id = id;}
 };
 
-extern std::vector<man_thruster_renderer> Man_thrusters;
+extern SCP_vector<man_thruster_renderer> Man_thrusters;
 
 #define MT_BANK_RIGHT		(1<<0)
 #define MT_BANK_LEFT		(1<<1)
@@ -980,7 +984,7 @@ typedef struct ship_info {
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
 	int	shockwave_count;						// the # of total shockwaves
-	std::vector<int> explosion_bitmap_anims;
+	SCP_vector<int> explosion_bitmap_anims;
 
 	int ispew_max_particles;						//Temp field until someone works on particles -C
 	int dspew_max_particles;						//Temp field until someone works on particles -C
@@ -1072,8 +1076,8 @@ typedef struct ship_info {
 	int afterburner_trail_faded_out_sections;
 
 	// thruster particles
-	std::vector<thruster_particles> normal_thruster_particles;
-	std::vector<thruster_particles> afterburner_thruster_particles;
+	SCP_vector<thruster_particles> normal_thruster_particles;
+	SCP_vector<thruster_particles> afterburner_thruster_particles;
 
 	// Bobboau's extra thruster stuff
 	thrust_pair			thruster_glow_info;
@@ -1148,7 +1152,7 @@ typedef struct engine_wash_info
 	engine_wash_info();
 } engine_wash_info;
 
-extern std::vector<engine_wash_info> Engine_wash_info;
+extern SCP_vector<engine_wash_info> Engine_wash_info;
 
 // flags defined for wings
 #define MAX_WING_FLAGS				8				// total number of flags in the wing structure -- used for parsing wing flags
@@ -1248,7 +1252,7 @@ typedef struct ship_counts {
 	ship_counts(){total=0;killed=0;}
 } ship_counts;
 
-extern std::vector<ship_counts> Ship_type_counts;
+extern SCP_vector<ship_counts> Ship_type_counts;
 
 
 // Use the below macros when you want to find the index of an array element in the
@@ -1300,7 +1304,7 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
-extern void subsys_set(int objnum, int ignore_subsys_info = 0);
+extern int subsys_set(int objnum, int ignore_subsys_info = 0);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.

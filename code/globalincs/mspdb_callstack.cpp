@@ -12,9 +12,6 @@
 #include <windows.h>
 #include <dbghelp.h>
 
-/* STL */
-#include <vector>
-
 /* SCP */
 #include "globalincs/pstypes.h"
 #include "globalincs/mspdb_callstack.h"
@@ -215,7 +212,7 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv )
 #endif
 
 		/* All the discovered addresses will be stored in an array */
-		std::vector< void* > addresses;
+		SCP_vector< void* > addresses;
 
 		/* Walk the stack */
 		for ( int currFrame = 0; currFrame < SCP_MSPDBCS_MAX_STACK_FRAMES; currFrame++ )

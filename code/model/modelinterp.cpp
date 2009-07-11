@@ -520,11 +520,6 @@ void model_set_thrust(int model_num, mst_info *mst)
 }
 
 extern int Cmdline_cell;
-#ifndef NO_DIRECT3D
-extern bool cell_enabled;
-extern bool env_enabled;
-#endif
-
 
 bool splodeing = false;
 int splodeingtexture = -1;
@@ -1127,10 +1122,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			gr_set_bitmap( Interp_warp_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_warp_alpha );
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );
 		}else{
-#ifndef NO_DIRECT3D
-			env_enabled = true;
-			cell_enabled = true;
-#endif
 			// all textured polys go through here
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
@@ -1234,10 +1225,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		}
 	}
 
-#ifndef NO_DIRECT3D
-	env_enabled = false;
-	cell_enabled = false;
-#endif
 	GLOWMAP = -1;
 	SPECMAP = -1;
 	NORMMAP = -1;
@@ -3370,10 +3357,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	int tmp_detail_level = Game_detail_level;
 	
-//	if ( D3D_enabled )	{
-//		tmp_detail_level = -1;		// Force no hires models for Direct3D
-//	}
-
 	//	Tmap_show_layers = 1;
 //	model_set_detail_level(0);
 //	flags |= MR_LOCK_DETAIL|MR_NO_TEXTURING|MR_NO_LIGHTING;		//MR_LOCK_DETAIL |	|MR_NO_LIGHTING|MR_NO_SMOOTHINGMR_NO_TEXTURING | 
@@ -3425,7 +3408,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	bool is_outlines_only = (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));
 	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
-	bool use_api = (!is_outlines_only_htl || (gr_screen.mode == GR_DIRECT3D)) || (gr_screen.mode == GR_OPENGL);
+	bool use_api = !is_outlines_only_htl || (gr_screen.mode == GR_OPENGL);
 
 
 	g3_start_instance_matrix(pos, orient, use_api);

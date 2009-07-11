@@ -5354,15 +5354,6 @@ void set_primary_weapon_linkage(object *objp)
 
 	shipp->flags &= ~SF_PRIMARY_LINKED;
 
-	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f)) {
-		if (shipp->flags & SF_PRIMARY_LINKED)
-			nprintf(("AI", "Frame %i, ship %s: Unlinking primaries.\n", Framecount, shipp->ship_name));
-		shipp->flags &= ~SF_PRIMARY_LINKED;
-		return;		//	If low on slots, don't link.
-	}
-
-	shipp->flags &= ~SF_PRIMARY_LINKED;
-
 	// AL: ensure target is a ship!
 	if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) ) {
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
@@ -5373,6 +5364,13 @@ void set_primary_weapon_linkage(object *objp)
 				return;
 			}
 		}
+	}
+
+	if (Num_weapons > (int) (MAX_WEAPONS * 0.75f) || sip->flags2 & SIF2_NO_PRIMARY_LINKING) {
+		if (shipp->flags & SF_PRIMARY_LINKED)
+			nprintf(("AI", "Frame %i, ship %s: Unlinking primaries.\n", Framecount, shipp->ship_name));
+		shipp->flags &= ~SF_PRIMARY_LINKED;
+		return;		//	If low on slots or primary linking disallowed, don't link.
 	}
 
 	// AL 2-11-98: If ship has a disarm or disable goal, don't link unless both weapons are
@@ -5831,7 +5829,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 					//	With 5 skill levels, at Very Easy, they fire in 1/7 of every 10 second interval.
 					//	At Easy, 2/7...at Expert, 5/7
 					int t = ((Missiontime /(65536*10)) ^ target_objnum ^ 0x01) % (NUM_SKILL_LEVELS+2);
-					if (t > Game_skill_level) {
+					if (t > The_mission.ai_profile->change_to_use_missiles_on_plr[Game_skill_level]) {
 						//nprintf(("AI", "Not OK to fire homer at time thing %i\n", t));
 						return 0;
 					}
@@ -8504,13 +8502,19 @@ void ai_chase()
 											//	Only if weapon was fired do we specify time until next fire.  If not fired, done in ai_fire_secondary...
 											float t;
 											
-											if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-												t = swip->fire_wait;
+											if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
+												swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
+												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
 											} else {
-												t = set_secondary_fire_delay(aip, temp_shipp, swip);
+												if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
+													t = swip->fire_wait;
+												} else {
+													t = set_secondary_fire_delay(aip, temp_shipp, swip);
+												}
+												//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
+												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
 											}
-											//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 										}
 									} else {
 										swp->next_secondary_fire_stamp[current_bank] = timestamp(250);

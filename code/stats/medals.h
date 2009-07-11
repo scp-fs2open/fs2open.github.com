@@ -15,8 +15,6 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-#include <vector>
-
 struct scoring_struct;
 struct player;
 
@@ -73,7 +71,7 @@ typedef struct badge_stuff {
 } badge_stuff;
 */
 
-extern std::vector<medal_stuff> Medals;
+extern SCP_vector<medal_stuff> Medals;
 //extern badge_stuff Badge_info[MAX_BADGES];
 //extern int Badge_index[MAX_BADGES];				// array which contains indices into Medals to indicate which medals are badges
 

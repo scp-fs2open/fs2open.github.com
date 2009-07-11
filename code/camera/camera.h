@@ -9,7 +9,6 @@
 #include "object/object.h"
 
 #include <string>
-#include <vector>
 
 #define CAM_STATIONARY_FOV			(1<<0)
 #define CAM_STATIONARY_ORI			(1<<1)
@@ -125,7 +124,7 @@ class subtitle
 private:
 	void clone(const subtitle &sub);
 
-	std::vector<std::string> text_lines;
+	SCP_vector<std::string> text_lines;
 	float text_pos[2];
 
 	float display_time;
@@ -154,7 +153,7 @@ public:
 };
 
 //Some global stuff
-extern std::vector<subtitle> Subtitles;
+extern SCP_vector<subtitle> Subtitles;
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Sexp_fov;
 

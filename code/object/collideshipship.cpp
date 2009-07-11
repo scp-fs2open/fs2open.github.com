@@ -925,8 +925,8 @@ int maybe_collide_planet (object *obj1, object *obj2)
 			mcp_1(obj1, obj2);
 			return 1;
 		}
-	} else if (is_planet(obj1)) {
-		if (sip2->flags & SIF_PLAYER_SHIP) {
+	} else if (sip2->flags & SIF_PLAYER_SHIP) {
+		if (is_planet(obj1)) {
 			mcp_1(obj2, obj1);
 			return 1;
 		}

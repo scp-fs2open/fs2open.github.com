@@ -9,8 +9,6 @@
 
 
 
-#include <vector>
-
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "render/3d.h" 
@@ -45,7 +43,7 @@ typedef struct particle {
 } particle;
 
 int Num_particles = 0;
-static std::vector<particle> Particles;
+static SCP_vector<particle> Particles;
 int Next_particle = 0;
 
 int Anim_bitmap_id_fire = -1;

@@ -299,7 +299,7 @@ $Fog:																	\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"dock\" \"undock\" \"waypoints\" \"waypoints once\" \"stay near ship\" \"keep safe dist\" \"stay still\" \"play dead\" )							\n\
 	+Accept Player Orders:	YES											\n\
-	+Player orders:			( \"rearm me\" \"abort rearm\" \"stay near me\" \"stay near ship\" \"keep safe dist\" \"depart\" )																	\n\
+	+Player orders:			( \"rearm me\" \"abort rearm\" \"depart\" )																	\n\
 	+Auto attacks:			YES											\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Guards attack this:	YES											\n\
@@ -786,6 +786,9 @@ $Repair Penalty: 10, 20, 35, 50, 60										\n\
 ;; with other weapons (ie. be shot down)								\n\
 $Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n\
 																		\n\
+;; Chance AI has to fire missiles at player is (value + 1) / 7 in every	\n\
+;; 10 second interval													\n""\
+$Chance AI Has to Fire Missiles at Player:	0, 1, 2, 3, 4				\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
@@ -896,6 +899,10 @@ $multi allow empty secondaries:		NO									\n\
 ;; if set, allows turrets target other weapons that bombs assuming		\n\
 ;; it is within allowed target priorities								\n\
 $allow turrets target weapons freely: NO								\n\
+																		\n\
+;; if set forces turrets to use only the set turret fov limits and		\n\
+;; ignore hard coded limits (with 'fire_down_normals' flag)				\n\
+$use only single fov for turrets:		NO								\n\
 																		\n\
 #End																	\n\
 ";

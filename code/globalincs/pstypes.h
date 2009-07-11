@@ -214,7 +214,11 @@ extern int Global_error_count;
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(x, y, ...) do {} while (0)
 #	else
-#		define Assertion(x, y) do {} while (0)
+#		if _MSC_VER >= 1400	// VC 2005 or greater
+#			define Assertion(x, y, ...) do {} while (0)
+#		else 
+#			define Assertion(x, y) do {} while (0)
+#		endif
 #	endif
 #else
 	void gr_activate(int);
@@ -700,5 +704,7 @@ public:
 	int getSignature();
 	bool isValid();
 };
+
+#include "globalincs/vmallocator.h"
 
 #endif		// PS_TYPES_H

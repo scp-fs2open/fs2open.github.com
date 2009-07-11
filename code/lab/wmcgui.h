@@ -19,7 +19,6 @@
 #endif
 
 #include <string>
-#include <vector>
 #include <limits.h>
 
 //*****************************Low-level abstraction*******************************
@@ -150,8 +149,8 @@ private:
 						//If so, set name
 	int Coords[4];
 
-	std::vector<ObjectClassInfoEntry> Subentries;
-	std::vector<ClassInfoEntry> Entries;
+	SCP_vector<ObjectClassInfoEntry> Subentries;
+	SCP_vector<ClassInfoEntry> Entries;
 public:
 	ObjectClassInfoEntry(){Object=-1;Coords[0]=Coords[1]=Coords[2]=Coords[3]=INT_MAX;}
 	bool Parse();
@@ -167,7 +166,7 @@ class ScreenClassInfoEntry : public LinkedList
 	friend class GUIScreen;
 private:
 	std::string Name;
-	std::vector<ObjectClassInfoEntry> Entries;
+	SCP_vector<ObjectClassInfoEntry> Entries;
 public:
 	bool Parse();
 
@@ -315,7 +314,7 @@ private:
 
 	ScreenClassInfoEntry* ScreenClassInfo;
 	GUIObject Guiobjects;
-	std::vector<GUIObject*> DeletionCache;
+	SCP_vector<GUIObject*> DeletionCache;
 public:
 	GUIScreen(std::string in_Name="");
 	~GUIScreen();

@@ -20,8 +20,6 @@
 #include "asteroid/asteroid.h"
 #include "object/object.h"
 
-#include <vector>
-
 
 // -----------------------------------------------------------
 // Data structures
@@ -68,7 +66,7 @@ static char *Default_shockwave_2D_filename = "shockwave01";
 static char *Default_shockwave_3D_filename = "shockwave.pof";
 static int Default_shockwave_loaded = 0;
 
-std::vector<shockwave_info> Shockwave_info;
+SCP_vector<shockwave_info> Shockwave_info;
 
 shockwave Shockwaves[MAX_SHOCKWAVES];
 shockwave Shockwave_list;

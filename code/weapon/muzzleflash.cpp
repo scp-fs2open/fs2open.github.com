@@ -7,10 +7,6 @@
  *
 */
 
-
-
-#include <vector>
-
 #include "globalincs/systemvars.h"
 #include "parse/parselo.h"
 #include "weapon/muzzleflash.h"
@@ -36,12 +32,12 @@ typedef struct mflash_blob_info {
 typedef struct mflash_info {
 	char name[MAX_FILENAME_LEN];
 	int	 used_this_level;
-	std::vector<mflash_blob_info> blobs;
+	SCP_vector<mflash_blob_info> blobs;
 
 	mflash_info() { memset(this, 0, sizeof(mflash_info)); };
 } mflash_info;
 
-std::vector<mflash_info> Mflash_info;
+SCP_vector<mflash_info> Mflash_info;
 
 
 //#define MAX_MFLASH				50

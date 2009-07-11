@@ -76,7 +76,7 @@
 
 
 
-#define NUM_SHIP_SUBSYSTEM_SETS			15		// number of subobject sets to use (because of the fact that it's a linked list,
+#define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
 												//     we can't easily go fully dynamic)
 
 #define NUM_SHIP_SUBSYSTEMS_PER_SET		200 	// Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
@@ -136,7 +136,7 @@ char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
-std::vector<engine_wash_info> Engine_wash_info;
+SCP_vector<engine_wash_info> Engine_wash_info;
 //char get_engine_wash_index(char *engine_wash_name);
 engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 
@@ -144,7 +144,7 @@ void ship_reset_disabled_physics(object *objp, int ship_class);
 
 
 // information for ships which have exited the game
-std::vector<exited_ship> Ships_exited;
+SCP_vector<exited_ship> Ships_exited;
 
 int	Num_engine_wash_types;
 int	Num_ship_classes;
@@ -159,13 +159,13 @@ ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
 ship_info		Ship_info[MAX_SHIP_CLASSES];
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
-std::vector<ship_info> Ship_templates;
+SCP_vector<ship_info> Ship_templates;
 
 static char **tspecies_names = NULL;
 
-std::vector<ship_type_info> Ship_types;
+SCP_vector<ship_type_info> Ship_types;
 
-std::vector<ArmorType> Armor_types;
+SCP_vector<ArmorType> Armor_types;
 
 flag_def_list Man_types[] = {
 	{ "Bank right",		MT_BANK_RIGHT,	0 },
@@ -199,14 +199,16 @@ flag_def_list Player_orders[] = {
 	{ "form on wing",		FORMATION_ITEM,			0 },
 	{ "cover me",			COVER_ME_ITEM,			0 },
 	{ "attack any",			ENGAGE_ENEMY_ITEM,		0 },
-	{ "depart",				DEPART_ITEM,			0 },
 
 	// transports mostly
 	{ "dock",				CAPTURE_TARGET_ITEM,	0 },
 
-	// support
+	// support ships
 	{ "rearm me",			REARM_REPAIR_ME_ITEM,	0 },
 	{ "abort rearm",		ABORT_REARM_REPAIR_ITEM,	0 },
+
+	// all ships
+	{ "depart",				DEPART_ITEM,			0 },
 
 	// extra stuff for support
 	{ "stay near me",		STAY_NEAR_ME_ITEM,		0 },
@@ -273,6 +275,7 @@ flag_def_list Ship_flags[] = {
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
 	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
+	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -327,7 +330,7 @@ flag_def_list ai_tgt_weapon_flags[] = {
 
 int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
 
-std::vector <ai_target_priority> Ai_tp_list;
+SCP_vector <ai_target_priority> Ai_tp_list;
 
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
@@ -340,7 +343,7 @@ static int Missile_out_snd_timer;	// timer so we play out of laser sound effect 
 // since the goal code relies on this placement to find the array index in the Ship_counts array
 //WMC - This should be fixed with new system.
 
-std::vector<ship_counts>	Ship_type_counts;
+SCP_vector<ship_counts>	Ship_type_counts;
 
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
@@ -2484,7 +2487,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
-		std::vector <std::string> target_group_strings, *target_group_string_p;
+		SCP_vector <std::string> target_group_strings, *target_group_string_p;
 		target_group_string_p = &target_group_strings;
 		int num_strings = stuff_string_list(target_group_string_p);
 		int num_groups = Ai_tp_list.size();
@@ -2727,7 +2730,7 @@ strcpy(parse_error_text, temp_error);
 				stuff_int(&sp->turret_reset_delay);
 
 			if (optional_string("$Target Priority:")) {
-				std::vector <std::string> tgt_priorities, *tgt_priorities_p;
+				SCP_vector <std::string> tgt_priorities, *tgt_priorities_p;
 				tgt_priorities_p = &tgt_priorities;
 				int num_strings = stuff_string_list(tgt_priorities_p);
 				sp->num_target_priorities = 0;
@@ -3064,7 +3067,7 @@ void parse_ship_type()
 
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
-		std::vector <std::string> target_group_strings, *target_group_string_p;
+		SCP_vector <std::string> target_group_strings, *target_group_string_p;
 		target_group_string_p = &target_group_strings;
 		int num_strings = stuff_string_list(target_group_string_p);
 		int num_groups = Ai_tp_list.size();
@@ -3568,7 +3571,7 @@ static void ship_clear_subsystems()
 	Num_ship_subsystems_allocated = 0;
 }
 
-static void ship_allocate_subsystems(int num_so, bool page_in = false)
+static int ship_allocate_subsystems(int num_so, bool page_in = false)
 {
 	int idx, i;
 	int num_subsystems_save = 0;
@@ -3576,7 +3579,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 	// "0" itself is safe
 	if (num_so < 0) {
 		Int3();
-		return;
+		return 0;
 	}
 
 	// allow a page-in thingy, so that we can grab as much as possible before mission
@@ -3588,7 +3591,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 
 	// bail if we don't actually need any more
 	if ( Num_ship_subsystems < Num_ship_subsystems_allocated )
-		return;
+		return 1;
 
 	mprintf(("Allocating space for at least %i new ship subsystems ... ", num_so));
 
@@ -3601,8 +3604,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 
 		// safety check, but even if we have this here it will fubar something else later, so we're screwed either way
 		if (idx == NUM_SHIP_SUBSYSTEM_SETS) {
-			Int3();
-			return;
+			return 0;
 		}
 
 		Ship_subsystems[idx] = (ship_subsys*) vm_malloc( sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
@@ -3619,6 +3621,7 @@ static void ship_allocate_subsystems(int num_so, bool page_in = false)
 		Num_ship_subsystems = num_subsystems_save;
 
 	mprintf((" a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
+	return 1;
 }
 
 // This will get called at the start of each level.
@@ -4110,12 +4113,15 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	{
 		swp->primary_bank_ammo[i] = 0;						// added by Goober5000
 		swp->next_primary_fire_stamp[i] = timestamp(0);	
+		swp->last_primary_fire_stamp[i] = -1;	
 		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
 
 		swp->primary_animation_position[i] = MA_POS_NOT_SET;
 		swp->secondary_animation_position[i] = MA_POS_NOT_SET;
 		swp->primary_animation_done_time[i] = timestamp(0);
 		swp->secondary_animation_done_time[i] = timestamp(0);
+
+		swp->burst_counter[i] = 0;
 	}
 
 	shipp->cmeasure_fire_stamp = timestamp(0);
@@ -4156,7 +4162,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->secondary_bank_ammo[i] = 0;
 		swp->secondary_next_slot[i] = 0;
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
+		swp->last_secondary_fire_stamp[i] = -1;
 		swp->secondary_bank_rearm_time[i] = timestamp(0);		// will be able to rearm this bank immediately
+
+		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
 	}
 
 	for ( i = 0; i < sip->num_secondary_banks; i++ )
@@ -4230,7 +4239,17 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->ship_guardian_threshold = 0;
 
-	subsys_set(objnum);
+	if (!subsys_set(objnum)) {		
+		char err_msg[512]; 
+		sprintf (err_msg, "Unable to allocate ship subsystems. Maximum is %d. No subsystems have been assigned to %s.", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET), shipp->ship_name);
+
+		if (Fred_running) { 
+			MessageBox(NULL, err_msg, "Error", MB_OK);
+		}
+		else {
+			Error(LOCATION, err_msg); 
+		}
+	}
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 	shipp->num_swarm_missiles_to_fire = 0;	
 	shipp->num_turret_swarm_info = 0;
@@ -4538,7 +4557,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 
 // ignore_subsys_info => default parameter with value of 0.  This is
 //								 only set to 1 by the save/restore code
-void subsys_set(int objnum, int ignore_subsys_info)
+int subsys_set(int objnum, int ignore_subsys_info)
 {	
 	ship	*shipp = &Ships[Objects[objnum].instance];
 	ship_info	*sinfo = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
@@ -4551,7 +4570,9 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
 
 	// make sure to have allocated the number of subsystems we require
-	ship_allocate_subsystems( sinfo->n_subsystems );
+	if (!ship_allocate_subsystems( sinfo->n_subsystems )) {
+		return 0;
+	}
 
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
@@ -4634,8 +4655,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			if (model_system->primary_banks[k] != -1) {
 				ship_system->weapons.primary_bank_weapons[j] = model_system->primary_banks[k];
 				ship_system->weapons.primary_bank_capacity[j] = model_system->primary_bank_capacity[k];	// added by Goober5000
-				ship_system->weapons.next_primary_fire_stamp[j++] = timestamp(0);
+				ship_system->weapons.next_primary_fire_stamp[j] = timestamp(0);
+				ship_system->weapons.last_primary_fire_stamp[j++] = -1;
 			}
+			ship_system->weapons.burst_counter[k] = 0;
 		}
 
 		ship_system->weapons.num_primary_banks = j;
@@ -4646,8 +4669,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			if (model_system->secondary_banks[k] != -1) {
 				ship_system->weapons.secondary_bank_weapons[j] = model_system->secondary_banks[k];
 				ship_system->weapons.secondary_bank_capacity[j] = model_system->secondary_bank_capacity[k];
-				ship_system->weapons.next_secondary_fire_stamp[j++] = timestamp(0);
+				ship_system->weapons.next_secondary_fire_stamp[j] = timestamp(0);
+				ship_system->weapons.last_secondary_fire_stamp[j++] = -1;
 			}
+			ship_system->weapons.burst_counter[k + MAX_SHIP_PRIMARY_BANKS] = 0;
 		}
 
 		ship_system->weapons.num_secondary_banks = j;
@@ -4751,6 +4776,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	if ( !ignore_subsys_info ) {
 		ship_recalc_subsys_strength( shipp );
 	}
+
+	return 1;
 }
 
 //	Modify the matrix orient by the slew angles a.
@@ -4870,7 +4897,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 	}
 }
 
-std::vector<man_thruster_renderer> Man_thrusters;
+SCP_vector<man_thruster_renderer> Man_thrusters;
 
 //This batch renders all maneuvering thrusters in the array.
 //It also clears the array every 10 seconds to keep mem usage down.
@@ -7485,10 +7512,14 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ){
 		swp->next_primary_fire_stamp[i] = timestamp(0);
+		swp->last_primary_fire_stamp[i] = -1;
+		swp->burst_counter[i] = 0;
 	}
 
 	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ){
 		swp->next_secondary_fire_stamp[i] = timestamp(0);
+		swp->last_secondary_fire_stamp[i] = -1;
+		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
 	}
 }
 
@@ -8217,6 +8248,7 @@ int ship_fire_primary_debug(object *objp)
 
 	// do timestamp stuff for next firing time
 	shipp->weapons.next_primary_fire_stamp[0] = timestamp(250);
+	shipp->weapons.last_primary_fire_stamp[0] = timestamp();
 
 	//	Debug code!  Make the single laser fire only one bolt and from the object center!
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
@@ -8733,7 +8765,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		//nprintf(("AI", "Time = %7.3f, firing %s\n", f2fl(Missiontime), Weapon_info[weapon].name));
 
 		// do timestamp stuff for next firing time
-		float next_fire_delay = (float) winfo_p->fire_wait * 1000.0f;
+		float next_fire_delay;
+		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
+			next_fire_delay = (float) winfo_p->burst_delay;
+			swp->burst_counter[bank_to_fire]++;
+		} else {
+			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
+			swp->burst_counter[bank_to_fire] = 0;
+		}
 		if (!(obj->flags & OF_PLAYER_SHIP) ) {
 			if (shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
@@ -8773,6 +8812,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
+			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 //			if ((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->b_info.beam_type == BEAM_TYPE_C))// fighter beams fire constantly, they only stop if they run out of power -Bobboau
 //			swp->next_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
@@ -8780,9 +8820,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (winfo_p->wi_flags2 & WIF2_CYCLE){
 			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / pm->gun_banks[bank_to_fire].num_slots));
+			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 			//to maintain balance of fighters with more fire points they will fire faster than ships with fewer points
 		}else{
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
+			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
 		// Note that we can have partial bank firing, if the weapons subsystem is partially
@@ -8801,7 +8843,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 			
 			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
-				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)((float) winfo_p->fire_wait * 1000.0f));//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
+				if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
+					swp->next_primary_fire_stamp[bank_to_fire] = winfo_p->burst_delay;
+					swp->burst_counter[bank_to_fire]++;
+				} else {
+					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)((float) winfo_p->fire_wait * 1000.0f));//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
+					swp->burst_counter[bank_to_fire] = 0;
+				}
+				swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 				beam_fire_info fbfire_info;				
 
 				int points;
@@ -9723,7 +9772,14 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}	
 
-	swp->next_secondary_fire_stamp[bank] = timestamp((int)(Weapon_info[weapon].fire_wait * 1000.0f));	// They can fire 5 times a second
+	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank]) {
+		swp->next_secondary_fire_stamp[bank] = Weapon_info[weapon].burst_delay;
+		swp->burst_counter[bank]++;
+	} else {
+		swp->next_secondary_fire_stamp[bank] = timestamp((int)(Weapon_info[weapon].fire_wait * 1000.0f));	// They can fire 5 times a second
+		swp->burst_counter[bank] = 0;
+	}
+	swp->last_secondary_fire_stamp[bank] = timestamp();
 
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
 	// do only in single plyaer or if I am the server of a multiplayer game
@@ -9945,6 +10001,7 @@ done_secondary:
 			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = MAX(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
 				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(1000);	//Bumped from 250 to 1000 because some people seem to be to triggerhappy :).
+				shipp->weapons.last_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp();
 			}
 						
 			if ( obj == Player_obj ) {
@@ -10058,6 +10115,10 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank++;
 				}
+				else if( sip->flags2 & SIF2_NO_PRIMARY_LINKING )
+				{
+					swp->current_primary_bank = 0;
+				}
 				else
 				{
 					shipp->flags |= SF_PRIMARY_LINKED;
@@ -10068,6 +10129,10 @@ int ship_select_next_primary(object *objp, int direction)
 				if ( swp->current_primary_bank > 0 )
 				{
 					swp->current_primary_bank--;
+				}
+				else if( sip->flags2 & SIF2_NO_PRIMARY_LINKING )
+				{
+					swp->current_primary_bank = swp->num_primary_banks - 1;
 				}
 				else
 				{
@@ -14007,7 +14072,9 @@ void ship_page_in()
 
 	// pre-allocate the subsystems, this really only needs to happen for ships
 	// which don't exist yet (ie, ships NOT in Ships[])
-	ship_allocate_subsystems(num_subsystems_needed, true);
+	if (!ship_allocate_subsystems(num_subsystems_needed, true)) {
+		Error(LOCATION, "Attempt to page in new subsystems subsystems failed because mission file contains more than %d subsystems", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET)); 
+	}
 
 	mprintf(("About to page in ships!\n"));
 
@@ -15182,7 +15249,7 @@ typedef struct DamageTypeStruct
 	char name[NAME_LENGTH];
 } DamageTypeStruct;
 
-std::vector<DamageTypeStruct>	Damage_types;
+SCP_vector<DamageTypeStruct>	Damage_types;
 
 //Gives the index into the Damage_types[] vector of a
 //specified damage type name
@@ -15523,7 +15590,7 @@ void parse_ai_target_priorities()
 {
 	int i, j, num_strings;
 	int n_entries = Ai_tp_list.size();
-	std::vector <std::string> temp_strings, *temp_strings_p;
+	SCP_vector <std::string> temp_strings, *temp_strings_p;
 	temp_strings_p = &temp_strings;
 
 	bool first_time = false;

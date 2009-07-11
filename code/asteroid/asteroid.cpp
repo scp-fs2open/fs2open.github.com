@@ -41,7 +41,6 @@
 #include "network/multi.h"
 #include "parse/scripting.h"
 
-#include <vector>
 
 
 //WMC - we want asteroid ability with demo!!
@@ -62,7 +61,7 @@ int	Num_asteroids = 0;
 int	Asteroid_throw_objnum = -1;		//	Object index of ship to throw asteroids at.
 int	Next_asteroid_throw;
 
-std::vector<asteroid_info> Asteroid_info;
+SCP_vector< asteroid_info > Asteroid_info;
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 
