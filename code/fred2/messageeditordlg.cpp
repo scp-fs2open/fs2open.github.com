@@ -151,9 +151,6 @@ BOOL CMessageEditorDlg::OnInitDialog()
 	else
 		m_cur_msg = -1;
 
-	if (Num_messages >= MAX_MISSION_MESSAGES)
-		GetDlgItem(IDC_NEW)->EnableWindow(FALSE);
-
 	update_cur_message();
 	return TRUE;
 }
@@ -491,7 +488,6 @@ void CMessageEditorDlg::OnNew()
 	if (update(m_cur_msg))
 		return;
 
-	Assert(Num_messages < MAX_MISSION_MESSAGES);
 	strcpy(Messages[Num_messages].name, "<new message>");
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->AddString("<new message>");
 
@@ -500,8 +496,6 @@ void CMessageEditorDlg::OnNew()
 	Messages[Num_messages].wave_info.name = NULL;
 	Messages[Num_messages].persona_index = -1;
 	m_cur_msg = Num_messages++;
-	if (Num_messages >= MAX_MISSION_MESSAGES)
-		GetDlgItem(IDC_NEW)->EnableWindow(FALSE);
 
 	modified = 1;
 	update_cur_message();

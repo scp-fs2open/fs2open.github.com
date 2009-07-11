@@ -91,16 +91,15 @@ char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
 //XSTR:ON
 };
 
-MMessage Messages[MAX_MISSION_MESSAGES];
-int Message_times[MAX_MISSION_MESSAGES];
+SCP_vector<MMessage> Messages;
 
 int Num_messages, Num_message_avis, Num_message_waves;
 int Num_builtin_messages, Num_builtin_avis, Num_builtin_waves;
 
 int Message_debug_index = -1;
 
-message_extra Message_avis[MAX_MESSAGE_AVIS];
-message_extra Message_waves[MAX_MESSAGE_WAVES];
+SCP_vector<message_extra> Message_avis;
+SCP_vector<message_extra> Message_waves;
 
 #define MAX_PLAYING_MESSAGES		2
 
@@ -290,56 +289,56 @@ void persona_parse()
 int add_avi( char *avi_name )
 {
 	int i;
+	message_extra extra; 
 
-	Assert ( Num_message_avis < MAX_MESSAGE_AVIS );
 	Assert (strlen(avi_name) < MAX_FILENAME_LEN );
 
 	// check to see if there is an existing avi being used here
-	for ( i = 0; i < Num_message_avis; i++ ) {
+	for ( i = 0; i < (int)Message_avis.size(); i++ ) {
 		if ( !stricmp(Message_avis[i].name, avi_name) )
 			return i;
 	}
 
 	// would have returned if a slot existed.
-	strcpy( Message_avis[Num_message_avis].name, avi_name );
-	Message_avis[Num_message_avis].num = -1;
+	strcpy( extra.name, avi_name );
+	extra.num = -1;
+	extra.anim_data = NULL;
+	Message_avis.push_back(extra); 
 	Num_message_avis++;
-	return (Num_message_avis - 1);
+	return ((int)Message_avis.size() - 1);
 }
 
 int add_wave( char *wave_name )
 {
 	int i;
+	message_extra extra; 
 
-	Assert ( Num_message_waves < MAX_MESSAGE_WAVES );
 	Assert (strlen(wave_name) < MAX_FILENAME_LEN );
 
 	// check to see if there is an existing wave being used here
-	for ( i = 0; i < Num_message_waves; i++ ) {
+	for ( i = 0; i < (int)Message_waves.size(); i++ ) {
 		if ( !stricmp(Message_waves[i].name, wave_name) )
 			return i;
 	}
 
-	strcpy( Message_waves[Num_message_waves].name, wave_name );
-	Message_waves[Num_message_waves].num = -1;
+	strcpy( extra.name, wave_name );
+	extra.num = -1;
+	Message_waves.push_back(extra);
 	Num_message_waves++;
-	return (Num_message_waves - 1);
+	return ((int)Message_waves.size() - 1);
 }
 
 // parses an individual message
 void message_parse(bool importing_from_fsm)
 {
-	MissionMessage *msgp;
+	MissionMessage msg;
 	char persona_name[NAME_LENGTH];
 
-	Assert ( Num_messages < MAX_MISSION_MESSAGES );
-	msgp = &Messages[Num_messages];
-
 	required_string("$Name:");
-	stuff_string(msgp->name, F_NAME, NAME_LENGTH);
+	stuff_string(msg.name, F_NAME, NAME_LENGTH);
 
 	// team
-	msgp->multi_team = -1;
+	msg.multi_team = -1;
 	if(optional_string("$Team:")){
 		int mt;
 		stuff_int(&mt);
@@ -351,28 +350,28 @@ void message_parse(bool importing_from_fsm)
 
 		// only bother with filters if multiplayer and TvT
 		if(Fred_running || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
-			msgp->multi_team = mt;
+			msg.multi_team = mt;
 		}
 	}
 
 	// backwards compatibility for old fred missions - all new ones should use $MessageNew
 	if(optional_string("$Message:")){
-		stuff_string(msgp->message, F_MESSAGE, MESSAGE_LENGTH);
+		stuff_string(msg.message, F_MESSAGE, MESSAGE_LENGTH);
 	} else {
 		required_string("$MessageNew:");
-		stuff_string(msgp->message, F_MULTITEXT, MESSAGE_LENGTH);
+		stuff_string(msg.message, F_MULTITEXT, MESSAGE_LENGTH);
 	}
 
-	msgp->persona_index = -1;
+	msg.persona_index = -1;
 	if ( optional_string("+Persona:") ) {
 		stuff_string(persona_name, F_NAME, NAME_LENGTH);
-		msgp->persona_index = message_persona_name_lookup( persona_name );
+		msg.persona_index = message_persona_name_lookup( persona_name );
 	}
 
 	if ( !Fred_running)
-		msgp->avi_info.index = -1;
+		msg.avi_info.index = -1;
 	else
-		msgp->avi_info.name = NULL;
+		msg.avi_info.name = NULL;
 
 	if ( optional_string("+AVI Name:") ) {
 		char avi_name[MAX_FILENAME_LEN];
@@ -385,29 +384,30 @@ void message_parse(bool importing_from_fsm)
 			avi_name[7] = '4';
 
 		if ( !Fred_running ) {
-			msgp->avi_info.index = add_avi(avi_name);
+			msg.avi_info.index = add_avi(avi_name);
 		} else {
-			msgp->avi_info.name = vm_strdup(avi_name);
+			msg.avi_info.name = vm_strdup(avi_name);
 		}
 	}
 
 	if ( !Fred_running )
-		msgp->wave_info.index = -1;
+		msg.wave_info.index = -1;
 	else
-		msgp->wave_info.name = NULL;
+		msg.wave_info.name = NULL;
 
 	if ( optional_string("+Wave Name:") ) {
 		char wave_name[MAX_FILENAME_LEN];
 
 		stuff_string(wave_name, F_NAME, MAX_FILENAME_LEN);
 		if ( !Fred_running ) {
-			msgp->wave_info.index = add_wave(wave_name);
+			msg.wave_info.index = add_wave(wave_name);
 		} else {
-			msgp->wave_info.name = vm_strdup(wave_name);
+			msg.wave_info.name = vm_strdup(wave_name);
 		}
 	}
 
 	Num_messages++;
+	Messages.push_back(msg); 
 }
 
 void parse_msgtbl()
@@ -417,6 +417,11 @@ void parse_msgtbl()
 
 	// open localization
 	lcl_ext_open();
+
+	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
+	Messages.reserve(500);
+	Message_waves.reserve(300);
+	Message_avis.reserve(30);
 
 	read_file_text("messages.tbl", CF_TYPE_TABLES);
 	reset_parse();
@@ -548,8 +553,8 @@ void messages_init()
 	Message_wave_muted = 0;
 	Next_mute_time = 1;
 
-	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
-
+	//wipe all the non-builtin messages
+	Messages.erase((Messages.begin()+Num_builtin_messages), Messages.end()); 
 }
 
 // free a loaded avi
@@ -862,14 +867,6 @@ bool message_play_wave( message_q *q )
 	int index;
 	MissionMessage *m;
 	char filename[MAX_FILENAME_LEN];
-
-	// check for multiple messages playing.  don't check builtin messages.
-	if (q->message_num >= Num_builtin_messages) {
-		if ( (f2fl(Missiontime - Message_times[q->message_num]) < 10) && (f2fl(Missiontime) > 10) ) {
-			// Int3();  // Get Andsager
-		}
-		Message_times[q->message_num] = Missiontime;
-	}
 
 	m = &Messages[q->message_num];
 
@@ -1709,23 +1706,37 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 	nprintf (("messaging", "Couldn't find message id %s to send to player!\n", id ));
 }
 
+#define BUILTIN_MATCHES_TYPE		0
+#define BUILTIN_MATCHES_SPECIES		1
+#define	BUILTIN_MATCHES_EXACTLY		2
+
+typedef	struct matching_builtin {
+		int type_of_match;
+		int message_index;
+}matching_builtin;
+
 // send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
 // the generic informational type messages.  The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
-	int i, persona_index = -1, persona_species = -1, message_index = -1;
+	int i, persona_index = -1, persona_species = -1, message_index = -1, random_selection = -1;
 	int source;
-	char *who_from;
-
-	int *matching_builtins = NULL;
-	int matching_builtins_exact[MAX_MISSION_MESSAGES];
-	int matching_builtins_type_and_species[MAX_MISSION_MESSAGES];
-	int matching_builtins_type[MAX_MISSION_MESSAGES];
 	int num_matching_builtins = 0;
-	int num_matching_builtins_exact = 0;
-	int num_matching_builtins_type_and_species = 0;
-	int num_matching_builtins_type = 0;
+	char *who_from;
+	int best_match = -1;
+
+	matching_builtin *current_builtin = new matching_builtin(); 
+	SCP_vector <matching_builtin> matching_builtins; 
+
+
+	// if we aren't showing builtin msgs, bail
+	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
+		return;
+
+	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
+	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
+		return;
 
 	// builtin type isn't supported by this version of the table
 	if (!Valid_builtin_message_types[type]) {
@@ -1739,15 +1750,12 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		else {
 			return;
 		}
+
+		// check if the downgraded type is also invalid
+		if (!Valid_builtin_message_types[type]) {
+			return;
+		}
 	}
-
-	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
-		return;
-
-	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
-		return;
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
@@ -1780,47 +1788,63 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		// check the type of message
 		if ( !stricmp(Messages[i].name, name) ) {
 			// condition 1: we have a type match
-			matching_builtins_type[num_matching_builtins_type++] = i;
+			current_builtin->message_index = i;
+			current_builtin->type_of_match =  BUILTIN_MATCHES_TYPE; 
 
 			// check the species of this persona (if required)
 			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
 				// condition 2: we have a type + species match
-				matching_builtins_type_and_species[num_matching_builtins_type_and_species++] = i;
+				current_builtin->type_of_match =  BUILTIN_MATCHES_SPECIES; 
 			}
 
 			// check the exact persona (if required)
 			// NOTE: doesn't need to be nested under the species condition above
 			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
-				// condition 3: type + species + persona index match
-				matching_builtins_exact[num_matching_builtins_exact++] = i;
+				// condition 3: type + species + persona index match	
+				current_builtin->type_of_match =  BUILTIN_MATCHES_EXACTLY; 
 			}
+
+			if (current_builtin->type_of_match == best_match) {
+				num_matching_builtins++;
+			}
+			// otherwise check to see if the this is the best kind of match we've found so far
+			else if (current_builtin->type_of_match > best_match) {
+				best_match = current_builtin->type_of_match; 
+				num_matching_builtins = 1;
+			}
+
+			// add the match to our list
+			matching_builtins.push_back(*current_builtin); 
 		}
 	}
 
-	// now decide which set of messages to select from
-	if (num_matching_builtins_exact > 0) {
-		num_matching_builtins = num_matching_builtins_exact;
-		matching_builtins = matching_builtins_exact;
-	} else if (num_matching_builtins_type_and_species > 0) {
+	if (best_match == BUILTIN_MATCHES_SPECIES) {
 		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
 		nprintf(("messaging", "using a message for any persona of that species\n"));
-
-		num_matching_builtins = num_matching_builtins_type_and_species;
-		matching_builtins = matching_builtins_type_and_species;
-	} else if (num_matching_builtins_type > 0) {
+	} else if (best_match == BUILTIN_MATCHES_TYPE) {
 		nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
 		nprintf(("messaging", "looking for message for any persona of any species\n"));
-
-		num_matching_builtins = num_matching_builtins_type;
-		matching_builtins = matching_builtins_type;
-	} else {
+	} else if (best_match < 0) {
 		nprintf(("messaging", "Couldn't find any builtin message of type %d\n", type ));
 		Int3();
 		return; 
 	}
-
+	
 	// since we may have multiple builtins we need to pick one at random
-	message_index = matching_builtins[(int)rand32() % num_matching_builtins]; 
+	random_selection = (int)(rand32() % num_matching_builtins) + 1; 
+
+	// loop through the vector until we have found enough elements of the correct matching type
+	for (i = 0; i < (int)matching_builtins.size(); i++) {
+		if (matching_builtins[i].type_of_match == best_match) {
+			random_selection--; 
+			if (random_selection == 0) {
+				message_index = matching_builtins[i].message_index;
+				break;
+			}
+		}
+	}
+
+	Assertion (random_selection == 0, "unable to randomly select built in message correctly, still have %d selections left", random_selection); 
 
 	// get who this message is from -- kind of a hack since we assume Terran Command in the
 	// absence of a ship.  This will be fixed later
@@ -2048,14 +2072,14 @@ void message_pagein_mission_messages()
 
 bool add_message(char *name, char *message, int persona_index, int multi_team)
 {
-	if (MAX_MISSION_MESSAGES == Num_messages)
-		return false;
-	strcpy(Messages[Num_messages].name, name);
-	strcpy(Messages[Num_messages].message, message);
-	Messages[Num_messages].persona_index = persona_index;
-	Messages[Num_messages].multi_team = multi_team;
-	Messages[Num_messages].avi_info.index = -1;
-	Messages[Num_messages].wave_info.index = -1;
+	MissionMessage msg; 
+	strcpy(msg.name, name);
+	strcpy(msg.message, message);
+	msg.persona_index = persona_index;
+	msg.multi_team = multi_team;
+	msg.avi_info.index = -1;
+	msg.wave_info.index = -1;
+	Messages.push_back(msg);
 	Num_messages++;
 
 	return true;

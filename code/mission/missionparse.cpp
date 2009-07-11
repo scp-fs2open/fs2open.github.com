@@ -4529,7 +4529,7 @@ void parse_messages(mission *pm, int flags)
 	// end of command stuff ----------------------------------------------
 
 
-	mprintf(("Starting mission message count : %d\n", Num_message_waves));
+	mprintf(("Starting mission message count : %d\n", (int)Message_waves.size()));
 
 	// the message_parse function can be found in MissionMessage.h.  The format in the
 	// mission file takes the same format as the messages in messages,tbl.  Make parsing
@@ -4538,7 +4538,7 @@ void parse_messages(mission *pm, int flags)
 		message_parse((flags & MPF_IMPORT_FSM) != 0);		// call the message parsing system
 	}
 
-	mprintf(("Ending mission message count : %d\n", Num_message_waves));
+	mprintf(("Ending mission message count : %d\n", (int)Message_waves.size()));
 }
 
 void parse_reinforcement(mission *pm)

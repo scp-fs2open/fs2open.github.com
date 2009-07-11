@@ -157,9 +157,7 @@ int HUD_msg_inited = FALSE;
 
 // There is a maximum number of lines that will be stored in the message scrollback.  Oldest
 // messages are deleted to make way for newest messages.
-// Goober5000 - I think it'd be nice to see *all* the messages
-#define MAX_MSG_SCROLLBACK_LINES	MAX_MISSION_MESSAGES
-//#define MAX_MSG_SCROLLBACK_LINES	100
+#define MAX_MSG_SCROLLBACK_LINES	1000
 line_node Msg_scrollback_lines[MAX_MSG_SCROLLBACK_LINES];
 
 line_node Msg_scrollback_free_list;
