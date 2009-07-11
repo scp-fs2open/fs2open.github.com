@@ -245,7 +245,12 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		{
 			// do the hit effect
 			if (shield_collision)
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				if ((sip->surface_shield_ani > -1) && (wip->surface_shield_radius > 0)) {
+					// do in weapons.cpp for most parts just because that is how rest of the functions are handled
+					surface_shield_impact(&mc_shield.hit_point, ship_objp, wip->surface_shield_radius, sip->surface_shield_ani);
+				} else {
+					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				}
 			else
 				/* TODO */;
 
@@ -311,6 +316,12 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
 
 		if(!ship_override && !weapon_override) {
+			if ((quadrant_num >= 0 ) && hull_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS)) {
+				if ((sip->surface_shield_ani > -1) && (wip->surface_shield_radius > 0)) {
+					// do in weapons.cpp for most parts just because that is how rest of the functions are handled
+					surface_shield_impact(&mc.hit_point_world, ship_objp, wip->surface_shield_radius, sip->surface_shield_ani);
+				}
+			}
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 

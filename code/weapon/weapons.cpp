@@ -951,6 +951,8 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->burst_delay = 1000; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
+
+	wip->surface_shield_radius = 0.0f;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -1654,6 +1656,9 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->dinky_impact_explosion_radius);
 	else if (first_time)
 		wip->dinky_impact_explosion_radius = wip->impact_explosion_radius;
+
+	if ( optional_string("$Surface Shield Impact Radius:") )
+		stuff_float(&wip->surface_shield_radius);
 
 	// muzzle flash
 	if ( optional_string("$Muzzleflash:") ) {
@@ -6006,4 +6011,12 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	}
 	
 	return total_scale;
+}
+
+void surface_shield_impact(vec3d *hitpos, object *objp, float radius, int idx) {
+	vec3d hitpos_local, hitpos_local_rotated;
+	vm_vec_sub(&hitpos_local, hitpos, &objp->pos);
+	vm_vec_rotate(&hitpos_local_rotated, &hitpos_local, &objp->orient);
+	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	particle_create( &hitpos_local_rotated, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
 }

@@ -1127,6 +1127,8 @@ typedef struct ship_info {
 
 	float emp_resistance_mod;
 
+	int surface_shield_ani;
+
 	int num_shield_segments;
 } ship_info;
 

@@ -426,6 +426,8 @@ typedef struct weapon_info {
 
 	int	burst_shots;
 	int	burst_delay;
+
+	float surface_shield_radius; // defines the radius for the surface shield effect used
 } weapon_info;
 
 // Data structure to track the active missiles
@@ -551,5 +553,8 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
+
+// function for displaying surface shield impact effects
+void surface_shield_impact(vec3d *hitpos, object *objp, float radius, int idx);
 
 #endif

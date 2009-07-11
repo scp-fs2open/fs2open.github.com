@@ -822,6 +822,8 @@ void init_ship_entry(ship_info *sip)
 	sip->emp_resistance_mod = 0.0f;
 
 	sip->num_shield_segments = MAX_SHIELD_SECTIONS;
+
+	sip->surface_shield_ani = -1;
 }
 
 // function to parse the information for a specific ship type.	
@@ -1888,6 +1890,14 @@ strcpy(parse_error_text, temp_error);
 	if(optional_string("$Maximum Shield Recharge Percent:")){
 		stuff_float(&sip->max_shield_recharge);
 		CLAMP(sip->max_shield_recharge, 0.0f, 1.0f);
+	}
+
+	if(optional_string("$Surface Shield Impact:")) {
+		char fname[MAX_NAME_LEN];
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			sip->surface_shield_ani = Weapon_explosions.Load(fname);
 	}
 
 	// The next five fields are used for the ETS
