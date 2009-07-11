@@ -41,7 +41,7 @@
 #include "weapon/weapon.h"
 
 //*************************Lua globals*************************
-std::vector<ade_table_entry> Ade_table_entries;
+SCP_vector<ade_table_entry> Ade_table_entries;
 
 //*************************Lua classes************************
 

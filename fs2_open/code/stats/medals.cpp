@@ -38,7 +38,7 @@ int Num_medals = 0;
 */
 
 // define for the medal information
-std::vector<medal_stuff> Medals;
+SCP_vector<medal_stuff> Medals;
 //badge_stuff Badge_info[MAX_BADGES];
 
 // holds indices into Medals array of the badges for # kills
@@ -151,7 +151,7 @@ int Medals_mask_w, Medals_mask_h;
 //static int Medal_palette;              // Medal palette bitmap
 static int Medals_bitmap_mask;         // the mask for the medal case
 static int Medals_bitmap;              // the medal case itself
-static std::vector<int> Medal_bitmaps;  // bitmaps for the individual medals
+static SCP_vector<int> Medal_bitmaps;  // bitmaps for the individual medals
 static int Rank_bm;							// bitmap for the rank medal
 
 static MENU_REGION Medal_regions[NUM_MEDAL_REGIONS]; // a semi-hack for now because we only have 4 medals, but we also include the close button

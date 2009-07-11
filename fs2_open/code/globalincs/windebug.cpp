@@ -25,7 +25,6 @@
 
 /* STL Headers */
 #include <string>
-#include <vector>
 
 /* SCP Headers */
 #include "osapi/osapi.h"
@@ -170,7 +169,7 @@ private:
 		std::string symbol;
 	};
 
-	std::vector< StackEntry > m_stackFrames;
+	SCP_vector< StackEntry > m_stackFrames;
 };
 
 #elif defined( SHOW_CALL_STACK )

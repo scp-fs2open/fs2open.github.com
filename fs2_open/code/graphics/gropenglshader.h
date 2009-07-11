@@ -13,7 +13,6 @@
 
 #include "globalincs/pstypes.h"
 
-#include <vector>
 #include <string>
 
 
@@ -38,13 +37,13 @@ typedef struct opengl_shader_t {
 	GLhandleARB program_id;
 	int flags;
 
-	std::vector<opengl_shader_uniform_t> uniforms;
+	SCP_vector<opengl_shader_uniform_t> uniforms;
 
 	opengl_shader_t() : program_id(0), flags(0) {}
 	~opengl_shader_t() { uniforms.clear(); }
 } opengl_shader_t;
 
-extern std::vector<opengl_shader_t> GL_shader;
+extern SCP_vector<opengl_shader_t> GL_shader;
 
 extern opengl_shader_t *Current_shader;
 

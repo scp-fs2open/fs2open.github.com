@@ -33,9 +33,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <vector>
-
-
 // variables
 class cmdline_parm {
 public:

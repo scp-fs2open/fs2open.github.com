@@ -14,8 +14,6 @@
 #include <windows.h>
 #endif
 
-#include <vector>
-
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "osapi/osregistry.h"
@@ -1410,7 +1408,7 @@ struct fbo_t {
 	fbo_t(): renderbuffer_id(0), framebuffer_id(0), width(0), height(0), ref_count(0), working_slot(-1), is_static(0) { }
 };
 
-static std::vector<fbo_t> RenderTarget;
+static SCP_vector<fbo_t> RenderTarget;
 static fbo_t *render_target = NULL;
 
 

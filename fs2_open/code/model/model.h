@@ -17,8 +17,6 @@
 #include "graphics/2d.h"
 #include "decals/decals.h"
 
-#include <vector>
-
 struct object;
 
 extern flag_def_list model_render_flags[];
@@ -299,7 +297,7 @@ typedef struct bsp_info {
 	
 	// buffers used by HT&L
 	int indexed_vertex_buffer;
-	std::vector<buffer_data> buffer;
+	SCP_vector<buffer_data> buffer;
 //	int flat_buffer;
 //	int flat_line_buffer;
 

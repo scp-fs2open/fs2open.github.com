@@ -6,7 +6,6 @@
 #include "parse/lua.h"
 
 #include <stdio.h>
-#include <vector>
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
@@ -86,7 +85,7 @@ struct script_action
 class ConditionedHook
 {
 private:
-	std::vector<script_action> Actions;
+	SCP_vector<script_action> Actions;
 	script_condition Conditions[MAX_HOOK_CONDITIONS];
 public:
 	bool AddCondition(script_condition sc);
@@ -110,8 +109,8 @@ private:
 	struct PyObject *PyLoc;
 
 	//Utility variables
-	std::vector<image_desc> ScriptImages;
-	std::vector<ConditionedHook> ConditionalHooks;
+	SCP_vector<image_desc> ScriptImages;
+	SCP_vector<ConditionedHook> ConditionalHooks;
 
 private:
 	PyObject *GetPyLocals(){return PyLoc;}

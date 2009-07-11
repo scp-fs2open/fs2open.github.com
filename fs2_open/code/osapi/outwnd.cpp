@@ -31,7 +31,6 @@
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"
 
-#include <vector>
 
 extern int Cmdline_debug_window;
 
@@ -67,7 +66,7 @@ struct outwnd_filter_struct {
 	}
 };
 
-std::vector<outwnd_filter_struct> OutwndFilter;
+SCP_vector<outwnd_filter_struct> OutwndFilter;
 
 int mprintf_last_line = -1;
 char outtext[SCROLL_BUFFER_SIZE][MAX_LINE_WIDTH];

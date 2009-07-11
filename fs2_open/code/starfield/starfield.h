@@ -17,8 +17,6 @@
 #include "graphics/2d.h"
 #include "model/model.h"
 
-#include <vector>
-
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
@@ -38,8 +36,8 @@ typedef struct starfield_list_entry {
 
 // backgrounds
 typedef struct background_t {
-	std::vector<starfield_list_entry> bitmaps;
-	std::vector<starfield_list_entry> suns;
+	SCP_vector<starfield_list_entry> bitmaps;
+	SCP_vector<starfield_list_entry> suns;
 } background_t;
 
 #define MAX_BACKGROUNDS	2

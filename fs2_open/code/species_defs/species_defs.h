@@ -12,8 +12,6 @@
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
 
-#include <vector>
-
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "graphics/generic.h"
@@ -101,7 +99,7 @@ typedef struct species_info {
 
 } species_info;
 
-extern std::vector<species_info> Species_info;
+extern SCP_vector<species_info> Species_info;
 
 
 // load up the species_defs.tbl into the correct data areas

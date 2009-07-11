@@ -20,7 +20,6 @@
 #include "fs2netd/protocol.h"
 #include "fs2netd/tcp_socket.h"
 
-#include <vector>
 #include <string>
 
 struct player;
@@ -32,9 +31,9 @@ int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, bool do_send);
 int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send);
 int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, bool do_send);
 
-int FS2NetD_GetBanList(std::vector<std::string> &mask_list, bool do_send);
+int FS2NetD_GetBanList(SCP_vector<std::string> &mask_list, bool do_send);
 
-int FS2NetD_GetMissionsList(std::vector<file_record> &m_list, bool do_send);
+int FS2NetD_GetMissionsList(SCP_vector<file_record> &m_list, bool do_send);
 
 int FS2NetD_ValidateTableList(bool do_send);
 

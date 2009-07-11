@@ -16,8 +16,6 @@
 #include "ui/ui.h"
 #include "network/multi.h"
 
-#include <vector>
-
 
 struct net_player;
 struct net_addr;
@@ -84,8 +82,8 @@ void multi_common_unload_palette();
 void multi_common_verify_cd();
 
 // variables to hold the mission and campaign lists
-extern std::vector<multi_create_info> Multi_create_mission_list;
-extern std::vector<multi_create_info> Multi_create_campaign_list;
+extern SCP_vector<multi_create_info> Multi_create_mission_list;
+extern SCP_vector<multi_create_info> Multi_create_campaign_list;
 
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();

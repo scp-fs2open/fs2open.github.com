@@ -17,7 +17,6 @@
 #include <csetjmp>
 #include <cstdio>
 #include <string>
-#include <vector>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	MISSION_TEXT_SIZE	1000000
@@ -131,7 +130,7 @@ extern int stuff_float_optional(float *f);
 extern void stuff_int(int *i);
 extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
-extern int stuff_string_list(std::vector<std::string> *slp);
+extern int stuff_string_list(SCP_vector<std::string> *slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
@@ -179,7 +178,7 @@ extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1);
-int split_str(char *src, int max_pixel_w, std::vector<int> *n_chars, std::vector<char*> *p_str, char ignore_char);
+int split_str(char *src, int max_pixel_w, SCP_vector<int> *n_chars, SCP_vector<char*> *p_str, char ignore_char);
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);

@@ -234,7 +234,7 @@ char *comm_order_get_text(int item)
 	return NULL;
 }
 
-std::vector<squadmsg_history> Squadmsg_history; 
+SCP_vector<squadmsg_history> Squadmsg_history; 
 
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3

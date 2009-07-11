@@ -27,7 +27,7 @@
 #include "cmdline/cmdline.h"
 
 
-std::vector<opengl_shader_t> GL_shader;
+SCP_vector<opengl_shader_t> GL_shader;
 
 static char *GLshader_info_log = NULL;
 static const int GLshader_info_log_size = 8192;
@@ -638,7 +638,7 @@ GLint opengl_shader_get_uniform(char *uniform_text)
 		return -1;
 	}
 
-	std::vector<opengl_shader_uniform_t>::iterator uniform;
+	SCP_vector<opengl_shader_uniform_t>::iterator uniform;
 	
 	for (uniform = Current_shader->uniforms.begin(); uniform != Current_shader->uniforms.end(); ++uniform) {
 		if ( !uniform->text_id.compare(uniform_text) ) {
