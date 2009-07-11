@@ -65,7 +65,7 @@ private:
 	
 	bool player_ships_only;		// Whether we only add player ships to the alt classes or if we can add any ship
 
-	std::vector<alt_class> alt_class_pool;
+	SCP_vector<alt_class> alt_class_pool;
 	int num_string_variables;							// Number of string variables in the mission
 	int string_variable_indices[MAX_SEXP_VARIABLES];	// maps string variables to their index in Sexp_variables
 	int ship_class_indices[MAX_SHIP_CLASSES];		// maps ships in the ships combobox to their index in Ship_info
