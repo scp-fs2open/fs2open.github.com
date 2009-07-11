@@ -17,26 +17,20 @@
 
 struct ship;
 
-#define MAX_MISSION_MESSAGES	1000
 //Bumped to 500 from 300 06/15/2004 -C
 
 // keep seperate lists of AVI's and wav files.  I suspect that many messages will have
 // duplicate avi's for different messages.  Seperate list for wave files since some messages
 // might not have wave file information.
 
-typedef struct message_avi {
+typedef struct message_extra {
 	char				name[MAX_FILENAME_LEN];
 	int				num;
 	anim				*anim_data;
 } message_extra;
 
-#define MAX_MESSAGE_AVIS		MAX_MISSION_MESSAGES
-extern int		Num_message_avis;
-extern message_extra	Message_avis[MAX_MESSAGE_AVIS];
-
-#define MAX_MESSAGE_WAVES		MAX_MISSION_MESSAGES
-extern int		Num_message_waves;
-extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
+extern SCP_vector<message_extra> Message_avis;
+extern SCP_vector<message_extra> Message_waves;
 
 // defines for message priorities
 #define MESSAGE_PRIORITY_LOW		1
@@ -132,7 +126,7 @@ typedef struct MissionMessage {
 
 } MMessage;
 
-extern MMessage Messages[MAX_MISSION_MESSAGES];
+extern SCP_vector<MMessage> Messages;
 
 extern int Num_messages;
 extern int Num_builtin_messages;				// from messages.tbl -- index of message location to load mission specific messages into
