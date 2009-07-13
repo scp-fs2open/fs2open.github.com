@@ -1397,10 +1397,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 	gr_screen.current_bitmap = bitmap_num;
 }
 
-#ifdef USE_PYTHON
-//WMC - nasty nasty hack
-void python_do_frame();
-#endif
 void gr_flip()
 {
 	//WMC - Evaluate state script hook if not override

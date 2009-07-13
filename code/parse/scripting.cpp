@@ -372,9 +372,6 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 
 //*************************CLASS: script_state*************************
 //Most of the icky stuff is here. Lots of #ifdefs
-#ifndef USE_PYTHON
-#pragma message("NOTE: Python is not compiled in")
-#endif
 
 //WMC - defined in parse/lua.h
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
@@ -735,17 +732,6 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 			lua_pop(GetLuaSession(), 1);	//err
 			
 		}
-		else if(in_lang == SC_PYTHON)
-		{
-#ifdef USE_PYTHON
-			PyObject *chk = PyBytecodeLib.Get(in_idx);
-			if(chk != NULL)
-			{
-				PyEval_EvalCode(PyBytecodeLib.Get(in_idx), GetPyGlobals(), GetPyLocals());
-				return 1;
-			}
-#endif
-		}
 	}
 
 	return 1;
@@ -803,12 +789,6 @@ void script_state::Clear()
 	//Don't close this yet
 	LuaState = NULL;
 	LuaLibs = NULL;
-#ifdef USE_PYTHON
-	Py_XDECREF(PyGlb);
-	PyGlb = NULL;
-	Py_XDECREF(PyLoc);
-	PyLoc = NULL;
-#endif
 }
 
 script_state::script_state(char *name)
@@ -819,9 +799,6 @@ script_state::script_state(char *name)
 
 	LuaState = NULL;
 	LuaLibs = NULL;
-
-	PyGlb = NULL;
-	PyLoc = NULL;
 }
 
 script_state& script_state::operator=(script_state &in)
@@ -853,34 +830,6 @@ void script_state::SetLuaSession(lua_State *L)
 	else if(Langs & SC_LUA) {
 		Langs &= ~SC_LUA;
 	}
-}
-
-void script_state::SetPySession(PyObject *loc, PyObject *glb)
-{
-#ifdef USE_PYTHON
-	//set variables
-	if(PyGlb != NULL)
-	{
-		Py_XDECREF(PyGlb);
-		PyGlb = glb;
-	}
-
-	if(PyLoc != NULL)
-	{
-		Py_XDECREF(PyLoc);
-		PyLoc = loc;
-	}
-
-	//Add or remove python note
-	if(PyGlb != NULL || PyLoc != NULL)
-	{
-		Langs |= SC_PYTHON;
-	}
-	else if(Langs & SC_PYTHON)
-	{
-		Langs &= ~SC_PYTHON;
-	}
-#endif
 }
 
 int script_state::OutputMeta(char *filename)
@@ -922,9 +871,6 @@ int script_state::OutputMeta(char *filename)
 
 	//***Scripting langs
 	fputs("<dt><h2>Scripting languages</h2></dt>", fp);
-	if(Langs & SC_PYTHON) {
-		fputs("<dd><a href=\"#Python\">Python</a></dd>", fp);
-	}
 	if(Langs & SC_LUA) {
 		fputs("<dd><a href=\"#Lua\">Lua</a></dd>", fp);
 	}
@@ -939,10 +885,6 @@ int script_state::OutputMeta(char *filename)
 		OutputLuaMeta(fp);
 		fputs("</dd>", fp);
 	}
-	/*
-	if(Langs & SC_PYTHON) {
-		OutputPyMeta(fp);
-	}*/
 	fputs("</dl></body></html>", fp);
 
 	fclose(fp);
@@ -956,24 +898,7 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 
 	if(string[0] == '{')
 	{
-#ifdef USE_PYTHON
-		if(lastchar == '}')
-		{
-			*lcp = '\0';
-		}
-		else
-		{
-			return false;
-		}
-
-		//WMC - Whoever comes next to Python...needs to fix this.
-		Py_RunString(string, Py_file_input, PyGlb, PyLoc);
-
-		*lcp = lastchar;
-		return true;
-#else
 		return false;
-#endif
 	}
 
 	if(string[0] == '[' && lastchar != ']')
@@ -1137,21 +1062,6 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//free the mem
 		//WMC - This makes debug go wonky.
 		vm_free(raw_lua);
-	}
-	else if(check_for_string("{"))
-	{
-		//Python string
-
-		//Assume python
-		*out_lang = SC_PYTHON;
-
-		//Get the block
-		char* raw_python = alloc_block("{","}");
-#ifdef USE_PYTHON
-		//Add it to the lib
-		*out_index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(raw_python, debug_str, Py_file_input)));
-#endif
-		vm_free(raw_python);
 	}
 	else
 	{
