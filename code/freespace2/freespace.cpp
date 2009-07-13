@@ -4776,17 +4776,6 @@ void game_frame(int paused)
 
 			game_show_time_left();
 
-#ifdef NEW_HUD
-			//Display all new hud gauges. Note this is somewhat inefficient;
-			//set_current_hud really only needs to be called when the viewer
-			//object changes, however, it works fine this way.
-			if(Viewer_obj && Viewer_obj->type == OBJ_SHIP)
-			{
-				set_current_hud(&Ships[Viewer_obj->instance]);
-				Ships[Viewer_obj->instance].ship_hud.show();
-			}
-#endif
-
 			// Draw the 2D HUD gauges
 			if(Scripting_didnt_draw_hud)
 			{
@@ -6532,11 +6521,7 @@ void game_enter_state( int old_state, int new_state )
 			player_restore_target_and_weapon_link_prefs();
 
 			//Set the current hud
-#ifdef NEW_HUD
-			set_current_hud(Player_ship);
-#else
 			set_current_hud(Player_ship->ship_info_index);
-#endif
 
 			Game_mode |= GM_IN_MISSION;
 

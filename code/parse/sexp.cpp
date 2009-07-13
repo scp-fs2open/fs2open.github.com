@@ -7798,7 +7798,6 @@ void sexp_hud_disable_except_messages(int n)
 
 void sexp_hud_set_text_num(int n)
 {
-#ifndef NEW_HUD
 	char* gaugename = CTEXT(n);
 
 	gauge_info* cg = hud_get_gauge(gaugename);
@@ -7806,12 +7805,10 @@ void sexp_hud_set_text_num(int n)
 	{
 		sprintf( HUD_CHAR(current_hud, cg->text_dest), "%d", eval_num(CDR(n)) );
 	}
-#endif
 }
 
 void sexp_hud_set_text(int n)
 {
-#ifndef NEW_HUD
 	char* gaugename = CTEXT(n);
 	char* text = CTEXT(CDR(n));
 
@@ -7820,12 +7817,10 @@ void sexp_hud_set_text(int n)
 	{
 		strcpy(HUD_CHAR(current_hud, cg->text_dest), text);
 	}
-#endif
 }
 
 void sexp_hud_set_coords(int n)
 {
-#ifndef NEW_HUD
 	char* gaugename = CTEXT(n);
 	int coord_x = eval_num(CDR(n));
 	int coord_y = eval_num(CDR(CDR(n)));
@@ -7836,12 +7831,10 @@ void sexp_hud_set_coords(int n)
 		HUD_INT(current_hud, cg->coord_dest)[0] = coord_x;
 		HUD_INT(current_hud, cg->coord_dest)[1] = coord_y;
 	}
-#endif
 }
 
 void sexp_hud_set_frame(int n)
 {
-#ifndef NEW_HUD
 	char* gaugename = CTEXT(n);
 	int frame_num = eval_num(CDR(n));
 
@@ -7851,12 +7844,10 @@ void sexp_hud_set_frame(int n)
 		*HUD_INT(current_hud, cg->frame_dest) = frame_num;
 	}
 	return;
-#endif
 }
 
 void sexp_hud_set_color(int n)
 {
-#ifndef NEW_HUD
 	char* gaugename = CTEXT(n);
 	ubyte red = (ubyte) eval_num(CDR(n));
 	ubyte green = (ubyte) eval_num(CDR(CDR(n)));
@@ -7869,7 +7860,6 @@ void sexp_hud_set_color(int n)
 		HUD_COLOR(current_hud, cg->color_dest)->green = green;
 		HUD_COLOR(current_hud, cg->color_dest)->blue = blue;
 	}
-#endif
 }
 
 

@@ -74,12 +74,6 @@ typedef struct species_info {
 	thrust_pair_bitmap thruster_secondary_glow_info;
 	thrust_pair_bitmap thruster_tertiary_glow_info;
 
-	// if this will not be parsed in species_defs.tbl, move it below the following comment
-#ifdef NEW_HUD
-	hud_info hud;
-#endif
-
-
 	// the members below this comment are not parsed in species_defs.tbl
 
 	game_snd snd_flyby_fighter;
