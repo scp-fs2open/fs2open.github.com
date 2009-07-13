@@ -625,10 +625,6 @@ typedef struct ship {
 
 	decal_system ship_decal_system;
 
-#ifdef NEW_HUD
-	hud ship_hud;
-#endif
-
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
 	// fighter bay door stuff, parent side
