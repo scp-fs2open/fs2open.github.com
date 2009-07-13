@@ -77,6 +77,8 @@
 
 #define NEXT_REARM_TIMESTAMP (60*1000)			//	Ships will re-request rearm, typically, after this long.
 
+#define CIRCLE_STRAFE_DIST 250.0f	//Maximum distance for circle strafe behavior.
+
 // AIM_CHASE submode defines
 // SM_STEALTH_FIND
 #define	SM_SF_AHEAD		0
@@ -1178,6 +1180,8 @@ int set_target_objnum(ai_info *aip, int objnum)
 
 		aip->target_objnum = objnum;
 		aip->target_time = 0.0f;
+		aip->time_enemy_near = 0.0f;				//SUSHI: Reset the "time near" counter whenever the target is changed
+		aip->last_hit_target_time = Missiontime;	//Also, the "last hit target" time should be reset when the target changes
 		aip->target_signature = (objnum >= 0) ? Objects[objnum].signature : -1;
 		// clear targeted subsystem
 		set_targeted_subsys(aip, NULL, -1);
@@ -4606,7 +4610,7 @@ int static_rand_timed(int num, int modulus)
 	else {
 		int	t;
 
-		t = Missiontime >> 18;		//	Get time in quarters of a second
+		t = Missiontime >> 18;		//	Get time in quarters of a second (SUSHI: this comment is wrong! It's actually every 4 seconds!)
 		t += num;
 
 		return !(t % modulus);
@@ -4761,15 +4765,28 @@ void evade_weapon()
 
 		//	If we're sort of pointing towards it...
 		if ((dot_to_enemy < -0.5f) || (dot_to_enemy > 0.5f)) {
-			float	rdot;
+			float rdot;
+			float udot;
 
 			//	Turn hard left or right, depending on which gets out of way quicker.
+			//SUSHI: Also possibly turn up or down. 
 			rdot = vm_vec_dot(&Pl_objp->orient.vec.rvec, &vec_from_enemy);
+			udot = vm_vec_dot(&Pl_objp->orient.vec.uvec, &vec_from_enemy);
 
-			if ((rdot < -0.5f) || (rdot > 0.5f))
-				vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.rvec, -200.0f);
+			if (The_mission.ai_profile->flags & AIPF_ALLOW_VERTICAL_DODGE && abs(udot) > abs(rdot))
+			{
+				if ((udot < -0.5f) || (udot > 0.5f))
+					vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.uvec, -200.0f);
+				else
+					vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.uvec, 200.0f);
+			}
 			else
-				vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.rvec, 200.0f);
+			{
+				if ((rdot < -0.5f) || (rdot > 0.5f))
+					vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.rvec, -200.0f);
+				else
+					vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.rvec, 200.0f);
+			}
 
 			turn_towards_point(Pl_objp, &goal_point, NULL, 0.0f);
 		}
@@ -5465,7 +5482,7 @@ int ai_fire_primary_weapon(object *objp)
 {
 	ship		*shipp = &Ships[objp->instance];
 	ship_weapon	*swp = &shipp->weapons;
-	ship_info	*sip;
+	ship_info	*sip, *enemy_sip;
 	ai_info		*aip;
 	object		*enemy_objp;
 
@@ -5488,8 +5505,10 @@ int ai_fire_primary_weapon(object *objp)
 
 	if (aip->target_objnum != -1){
 		enemy_objp = &Objects[aip->target_objnum];
+		enemy_sip = &Ship_info[Ships[enemy_objp->instance].ship_info_index];
 	} else {
 		enemy_objp = NULL;
+		enemy_sip = NULL;
 	}
 
 	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
@@ -6447,6 +6466,38 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 			aip->ai_flags &= ~AIF_ATTACK_SLOWLY;
 	}
 
+	//Glide attack: we turn on glide to maintain current vector while aiming at the enemy
+	//The aiming part should already be taken care of. 
+	if (aip->submode == AIS_CHASE_GLIDEATTACK) {
+		Pl_objp->phys_info.flags |= PF_GLIDING;
+		accelerate_ship(aip, 0.0f);
+		return;
+	}
+
+	//Circle Strafe: We try to maintain a constant distance from the target while using sidethrust to move in a circle
+	//around the target
+	if (aip->submode == AIS_CHASE_CIRCLESTRAFE) {
+		accelerate_ship(aip, 0.0f); //Just maintain current distance
+
+		//Sidethrust vector is initially based on the velocity vector representing the ship's current sideways motion.
+		vec2d side_vec;
+		//TODO: Leaving this hardcoded for now, but it might be good to make it configurable at some point. 
+		int strafeHoldDirAmount = 3;
+		//Get a random float using some of the more significant chunks of the missiontime as a seed
+		//This means that we get the same random values for a little bit.
+		//Using static_rand(shipnum) as a crude hash function to make sure that the seed is different for each ship and direction
+		//The *2 ensures that y and x stay separate.
+		side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
+		side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
+		//Scale it up so that the longest dimension is length 1.0. This ensures we are always getting as much use out of sidethrust as possible.
+		vm_vec_boxscale(&side_vec, 1.0f);
+
+		AI_ci.sideways = side_vec.x;
+		AI_ci.vertical = side_vec.y;
+		return;
+	}
+
+
 	if (dist_to_enemy > 200.0f + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
 		//nprintf(("AI", "1"));
 		if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
@@ -7017,10 +7068,9 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 	} else
 		new_pos = *predicted_enemy_pos;
 
-	if (dist_to_enemy < 250.0f) {
-		if (dot_from_enemy > 0.7f) {
-			bank_override = Pl_objp->phys_info.speed;
-		}
+	//SUSHI: Don't change bank while circle strafing or glide attacking
+	if (dist_to_enemy < 250.0f && dot_from_enemy > 0.7f && aip->submode != AIS_CHASE_CIRCLESTRAFE && aip->submode != AIS_CHASE_GLIDEATTACK) {
+		bank_override = Pl_objp->phys_info.speed;
 	}
 
 	//	If enemy more than 500 meters away, all ships flying there will tend to match bank.
@@ -8068,6 +8118,9 @@ void ai_chase()
 	dot_to_enemy = vm_vec_dot(&Pl_objp->orient.vec.fvec, &predicted_vec_to_enemy);
 	dot_from_enemy= - vm_vec_dot(&En_objp->orient.vec.fvec, &real_vec_to_enemy);
 
+	//Default to glide OFF
+	Pl_objp->phys_info.flags &= ~PF_GLIDING;
+
 	//
 	//	Set turn and acceleration based on submode.
 	//
@@ -8087,6 +8140,8 @@ void ai_chase()
 	case SM_ATTACK:
 	case SM_SUPER_ATTACK:
 	case SM_ATTACK_FOREVER:
+	case AIS_CHASE_GLIDEATTACK:
+	case AIS_CHASE_CIRCLESTRAFE:
 		if (vm_vec_dist_quick(&Pl_objp->pos, &predicted_enemy_pos) > 100.0f + En_objp->radius * 2.0f) {
 			if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &predicted_enemy_pos, 10.0f))
 				return;
@@ -8135,18 +8190,43 @@ void ai_chase()
 	//
 	if ( (aip->submode != SM_AVOID) && (aip->submode != SM_ATTACK_FOREVER) ) {
 		//	If a very long time since attacked, attack no matter what!
-		if ( (aip->submode != SM_SUPER_ATTACK) && (aip->submode != SM_GET_AWAY) && !(aip->ai_flags & AIF_STEALTH_PURSUIT) ) {
-			if (Missiontime - aip->last_attack_time > i2f(6)) {
+		if (Missiontime - aip->last_attack_time > i2f(6)) {
+			if ( (aip->submode != SM_SUPER_ATTACK) && (aip->submode != SM_GET_AWAY) && !(aip->ai_flags & AIF_STEALTH_PURSUIT) ) {
 				aip->submode = SM_SUPER_ATTACK;
 				aip->submode_start_time = Missiontime;
 				aip->last_attack_time = Missiontime;
 			}
 		}
 
+		//SUSHI: Alternate stalemate dection method: if nobody has hit each other for a while
+		//(and we've been near that whole time), shake things up somehow
+		//Only do this if stalemate time threshold > 0
+		if (The_mission.ai_profile->stalemate_time_thresh[Game_skill_level] > 0.0f &&
+				Missiontime - aip->last_hit_target_time > fl2f(The_mission.ai_profile->stalemate_time_thresh[Game_skill_level]) && 
+				Missiontime - aip->last_hit_time > fl2f(The_mission.ai_profile->stalemate_time_thresh[Game_skill_level]) &&
+				aip->time_enemy_near > The_mission.ai_profile->stalemate_time_thresh[Game_skill_level] &&
+				(dot_to_enemy < 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)))
+		{
+			if ((sip->can_glide == true) && (frand() < The_mission.ai_profile->glide_attack_percent[Game_skill_level])) {
+				//Maybe use glide attack
+				aip->submode = AIS_CHASE_GLIDEATTACK;
+				aip->submode_start_time = Missiontime;
+				aip->last_hit_target_time = Missiontime;
+				aip->time_enemy_near = 0.0f;
+			} else if (frand() < (float) 0.5f * (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)) {
+				//Otherwise, possibly try to get away
+				aip->submode = SM_GET_AWAY;
+				aip->submode_start_time = Missiontime;
+				aip->last_hit_target_time = Missiontime;
+				aip->time_enemy_near = 0.0f;
+			}
+		}
+
 		//	If a collision is expected, pull out!
 		//	If enemy is pointing away and moving a bit, don't worry about collision detection.
 		if ((dot_from_enemy > 0.5f) || (En_objp->phys_info.speed < 10.0f)) {
-			if (might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, 4.0f)) {
+			//If we're in circle strafe mode, don't worry about colliding with the target
+			if (aip->submode != AIS_CHASE_CIRCLESTRAFE && might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, 4.0f)) {
 				if ((Missiontime - aip->last_hit_time > F1_0*4) && (dist_to_enemy < Pl_objp->radius*2 + En_objp->radius*2)) {
 					accelerate_ship(aip, -1.0f);
 				} else {
@@ -8167,11 +8247,17 @@ void ai_chase()
 		break;
 
 	case SM_ATTACK:
-		// if taraget is stealth and stealth not visible, then enter stealth find mode
+		// if target is stealth and stealth not visible, then enter stealth find mode
 		if ( (aip->ai_flags & AIF_STEALTH_PURSUIT) && (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_INVISIBLE) ) {
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
+		} else if (dist_to_enemy < CIRCLE_STRAFE_DIST + En_objp->radius &&
+			(En_objp->phys_info.speed < max(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
+			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < The_mission.ai_profile->circle_strafe_percent[Game_skill_level])) {
+			aip->submode = AIS_CHASE_CIRCLESTRAFE;
+			aip->submode_start_time = Missiontime;
+			aip->last_attack_time = Missiontime;		
 		} else if (ai_near_full_strength(Pl_objp) && (Missiontime - aip->last_hit_target_time > i2f(3)) && (dist_to_enemy < 500.0f) && (dot_to_enemy < 0.5f)) {
 			aip->submode = SM_SUPER_ATTACK;
 			aip->submode_start_time = Missiontime;
@@ -8226,12 +8312,14 @@ void ai_chase()
 		if ((Missiontime - aip->submode_start_time > i2f(5)) || (dist_to_enemy > 300.0f)) {
 			if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.0f) && (dot_from_enemy > 0.5f)) {
 				aip->submode = SM_EVADE_BRAKE;
-				aip->submode_start_time = Missiontime;
+			} else if ((Pl_objp->phys_info.speed >= Pl_objp->phys_info.max_vel.xyz.z / 2.0f) && (sip->can_glide == true) && (frand() < The_mission.ai_profile->glide_attack_percent[Game_skill_level])) {
+				aip->last_attack_time = Missiontime;
+				aip->submode = AIS_CHASE_GLIDEATTACK;
 			} else {
 				aip->last_attack_time = Missiontime;
 				aip->submode = SM_ATTACK;
-				aip->submode_start_time = Missiontime;
 			}
+			aip->submode_start_time = Missiontime;
 		}
 		break;
 	
@@ -8276,6 +8364,12 @@ void ai_chase()
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
+		} else if (dist_to_enemy < CIRCLE_STRAFE_DIST + En_objp->radius &&
+			(En_objp->phys_info.speed < max(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
+			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < The_mission.ai_profile->circle_strafe_percent[Game_skill_level])) {
+			aip->submode = AIS_CHASE_CIRCLESTRAFE;
+			aip->submode_start_time = Missiontime;
+			aip->last_attack_time = Missiontime;		
 		} else if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.8f) && (enemy_sip_flags & SIF_SMALL_SHIP) && (Missiontime - aip->submode_start_time > i2f(5) )) {
 			aip->ai_flags &= ~AIF_ATTACK_SLOWLY;	//	Just in case, clear here.
 
@@ -8342,8 +8436,15 @@ void ai_chase()
 
 			rand_dist = ((Missiontime >> 17) & 0x03) * 100.0f + 200.0f;	//	Some value in 200..500
 			if ((Missiontime - aip->submode_start_time > i2f(5)) || (dist_to_enemy > rand_dist) || (dot_from_enemy < 0.4f)) {
-				aip->ai_flags |= AIF_ATTACK_SLOWLY;
-				aip->submode = SM_ATTACK;
+				//Sometimes use a glide attack instead (if we can)
+				if ((sip->can_glide == true) && (frand() < The_mission.ai_profile->glide_attack_percent[Game_skill_level])) {
+					aip->submode = AIS_CHASE_GLIDEATTACK;
+				}
+				else {
+					aip->ai_flags |= AIF_ATTACK_SLOWLY;
+					aip->submode = SM_ATTACK;
+				}
+
 				aip->submode_start_time = Missiontime;
 				aip->time_enemy_in_range = 2.0f;		//	Cheat.  Presumably if they were running away from you, they were monitoring you!
 				aip->last_attack_time = Missiontime;
@@ -8400,11 +8501,49 @@ void ai_chase()
 	case SM_ATTACK_FOREVER:	//	Engines blown, just attack.
 		break;
 
+	case AIS_CHASE_GLIDEATTACK:
+		//Glide attack lasts at least as long as it takes to turn around and fire for a couple seconds. 
+		if (Missiontime - aip->submode_start_time > i2f((int)(sip->rotation_time.xyz.x) + 4 + static_rand_range(Missiontime >> 19, 0, 3))) {
+			aip->submode = SM_ATTACK;
+			aip->submode_start_time = Missiontime;
+			aip->last_attack_time = Missiontime;
+		}
+		aip->last_attack_time = Missiontime;
+		break;
+
+	case AIS_CHASE_CIRCLESTRAFE:
+		if ((dist_to_enemy > CIRCLE_STRAFE_DIST + En_objp->radius) || (Missiontime - aip->submode_start_time > i2f(4))) {
+			aip->submode = SM_ATTACK;
+			aip->submode_start_time = Missiontime;
+			aip->last_attack_time = Missiontime;
+		}
+		aip->last_attack_time = Missiontime;
+		break;
+
 	default:
 		//Int3();
 		aip->submode = SM_ATTACK;
 		aip->submode_start_time = Missiontime;
 		aip->last_attack_time = Missiontime;
+	}
+
+
+	//Update time enemy near
+	//Ignore for stealth ships that can't be seen
+	//If we're trying to get away, recent counter
+	//Only do this if stalemate distance threshold > 0
+	if (The_mission.ai_profile->stalemate_dist_thresh[Game_skill_level] > 0.0f &&
+			dist_to_enemy < The_mission.ai_profile->stalemate_dist_thresh[Game_skill_level] && 
+			aip->submode != SM_GET_AWAY && aip->submode != AIS_CHASE_GLIDEATTACK && aip->submode != SM_FLY_AWAY && 
+			(!(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE)))
+	{
+		aip->time_enemy_near += flFrametime;
+	}
+	else
+	{
+		aip->time_enemy_near *= (1.0f - flFrametime);
+		if (aip->time_enemy_near < 0.0f)
+			aip->time_enemy_near = 0.0f;
 	}
 
 	//
@@ -14019,6 +14158,7 @@ void init_ai_object(int objnum)
 	aip->prev_goal_point = near_vec;
 	aip->goal_point = near_vec;
 	aip->time_enemy_in_range = 0.0f;
+	aip->time_enemy_near = 0.0f;
 	aip->last_attack_time = 0;
 	aip->last_hit_time = 0;
 	aip->last_hit_quadrant = 0;
@@ -14062,6 +14202,7 @@ void init_ai_object(int objnum)
 
 	aip->last_predicted_enemy_pos.xyz.x = 0.0f;	//	Says this value needs to be recomputed!
 	aip->time_enemy_in_range = 0.0f;
+	aip->time_enemy_near = 0.0f;
 
 	aip->resume_goal_time = -1;					//	Say there is no goal to resume.
 
@@ -14079,6 +14220,7 @@ void init_ai_object(int objnum)
 
 	aip->lead_scale = 0.0f;
 	aip->last_hit_target_time = Missiontime;
+	aip->last_hit_time = Missiontime;
 
 	aip->nearest_locked_object = -1;
 	aip->nearest_locked_distance = 99999.0f;
@@ -14574,8 +14716,24 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	shipp = &Ships[objp_ship->instance];
 	aip = &Ai_info[shipp->ai_index];
 
-	if (objp_ship->flags & OF_PLAYER_SHIP)
+	if (objp_ship->flags & OF_PLAYER_SHIP) {
+		//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
+		//This is all copypasted from code below
+		if (hit_objp->type == OBJ_WEAPON) {
+			hitter_objnum = hit_objp->parent;
+			Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
+			objp_hitter = &Objects[hitter_objnum];
+		} else if (hit_objp->type == OBJ_SHIP) {
+			objp_hitter = hit_objp;
+		} else {
+			Int3();	// Should never happen.
+			return;
+		}
+		Assert(objp_hitter != NULL);
+		hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
+		hitter_aip->last_hit_target_time = Missiontime;
 		return;
+	}
 
 	if ((aip->mode == AIM_WARP_OUT) || (aip->mode == AIM_PLAY_DEAD))
 		return;
