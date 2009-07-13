@@ -17,6 +17,7 @@
 #include "graphics/generic.h"
 #include "gamesnd/gamesnd.h"
 #include "mission/missionbriefcommon.h"
+#include "hud/hudparse.h"
 
 // for bitmap thrusters
 typedef struct thrust_pair_bitmap {

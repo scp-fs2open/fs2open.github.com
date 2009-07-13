@@ -2066,15 +2066,15 @@ private:
 	char name[NAME_LENGTH];
 	void *pointer;
 
-	std::vector<gauge_object*> (*manual_get_object_types)();
-	std::vector<gauge_object*> object_types;
+	SCP_vector<gauge_object*> (*manual_get_object_types)();
+	SCP_vector<gauge_object*> object_types;
 	int flags;
 
 public:
 	gauge_object_instance(){name[0]='\0';pointer=NULL;get_object_types=NULL;flags=0;}
 	void add(class gauge_object_instance* ngip);
 	void set_type_func(std::vector<gauge_object*> (*manual_get_object_types)());
-	std::vector<gauge_object*> (*get_object_types)();
+	SCP_vector<gauge_object*> (*get_object_types)();
 };
 
 gauge_object_instance::gauge_object_instance(char *in_name, void *in_pointer, int in_flags, gauge_object* in_object_types, ...)

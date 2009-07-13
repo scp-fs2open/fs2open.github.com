@@ -1028,10 +1028,6 @@ void game_level_init(int seed)
 {
 	game_busy( NOX("** starting game_level_init() **") );
 	load_gl_init = (uint) time(NULL);
-#ifdef USE_PYTHON
-	//Clear python images
-	py_clear_images();
-#endif
 	// seed the random number generator
 	if ( seed == -1 ) {
 		// if no seed was passed, seed the generator either from the time value, or from the
@@ -7138,8 +7134,6 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
-
-//   python_do_frame();
 }
 
 
@@ -7710,9 +7704,6 @@ void game_shutdown(void)
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();
-#ifdef USE_PYTHON
-	python_close();				//Kill python
-#endif
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system
