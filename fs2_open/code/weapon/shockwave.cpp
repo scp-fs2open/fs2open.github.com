@@ -498,14 +498,14 @@ int shockwave_load(char *s_name, bool shock_3D)
 		si->model_id = model_load( si->filename, 0, NULL );
 
 		if ( si->model_id < 0 ) {
-			Error(LOCATION, "Unable to load 3D shockwave '%s'!\n", si->filename);
+			Shockwave_info.pop_back();
 			return -1;
 		}
 	} else {
 		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, 1 );
 
 		if ( si->bitmap_id < 0 ) {
-			Error(LOCATION, "Unable to load 2D shockwave '%s'!\n", si->filename);
+			Shockwave_info.pop_back();
 			return -1;
 		}
 	}
