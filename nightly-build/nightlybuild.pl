@@ -198,7 +198,10 @@ sub compile
 	if($OS eq "OSX" || $OS eq "WIN")
 	{
 		chdir("projects/" . $CONFIG->{$OS}->{project} . "/");
-		`tar -xzf Frameworks.tgz`;
+		if($OS eq "OSX")
+		{
+			`tar -xzf Frameworks.tgz`;
+		}
 	}
 	
 	foreach (keys (%BUILD_CONFIGS))
