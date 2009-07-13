@@ -2793,3 +2793,13 @@ void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest,
 	// get the distance
 	*dist_squared = vm_vec_dist_squared(nearest, p);
 }
+
+//SUSHI: 2D vector "box" scaling
+//Scales the vector in-place so that the longest dimension = scale
+void vm_vec_boxscale(vec2d *vec, float scale)
+{
+	float ratio = 1.0f / MAX(abs(vec->x), abs(vec->y));
+	vec->x *= ratio;
+	vec->y *= ratio;
+}
+

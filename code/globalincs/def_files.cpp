@@ -752,6 +752,26 @@ $Hostile AI Secondary Fire Delay Scale: 1.4, 1.2, 1.0, 0.8, 0.6			\n\
 ;; factor applied to time it takes for enemy ships to turn				\n\
 $AI Turn Time Scale: 3, 2.2, 1.6, 1.3, 1								\n\
 																		\n\
+;; Percentage of the time where AI ships will use the glide attack		\n\
+;; when it is an option.												\n\
+$Glide Attack Percent: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; Percentage of the time where AI ships will use circle strafe			\n\
+;; when it is an option.												\n\
+$Circle Strafe Percent: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; Percentage of the time where AI ships will use glide to strafe		\n\
+;; capital ships when it is an option.									\n\
+$Glide Strafe Percent: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; The amount of time required for the AI to detect 					\n\
+;; (and try to break) dogfight stalemate.								\n\
+$Stalemate Time Threshold: 0, 0, 0, 0, 0								\n\
+																		\n\
+;; The maximum distance the AI and target must be within				\n\
+;; for a dogfight stalemate												\n\
+$Stalemate Distance Threshold: 0, 0, 0, 0, 0							\n\
+																		\n\
 ;; factor applied to the speed at which the player's shields recharge	\n\
 $Player Shield Recharge Scale: 4, 2, 1.5, 1.25, 1						\n\
 																		\n\
@@ -903,6 +923,9 @@ $allow turrets target weapons freely: NO								\n\
 ;; if set forces turrets to use only the set turret fov limits and		\n\
 ;; ignore hard coded limits (with 'fire_down_normals' flag)				\n\
 $use only single fov for turrets:		NO								\n\
+																		\n\
+;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
+$allow vertical dodge:	NO												\n\
 																		\n\
 #End																	\n\
 ";
