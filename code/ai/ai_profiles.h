@@ -66,8 +66,9 @@ typedef struct ai_profile_t {
 	float link_energy_levels_maybe[NUM_SKILL_LEVELS];		// link if hull strength low
 
 	// AI ships link primaries if ammunition levels greater than these percents
-	float link_ammo_levels_always[NUM_SKILL_LEVELS];		//	always link
-	float link_ammo_levels_maybe[NUM_SKILL_LEVELS];			//	link if hull strength low
+	float link_ammo_levels_always[NUM_SKILL_LEVELS];		// always link
+	float link_ammo_levels_maybe[NUM_SKILL_LEVELS];			// link if hull strength low
+	float primary_ammo_burst_mult[NUM_SKILL_LEVELS];		// SUSHI: Multiplier adjusting burst frequency for ballistic primary weapons
 
 	// difficulty-related scales
 	float cmeasure_life_scale[NUM_SKILL_LEVELS];			// life of countermeasures

@@ -706,6 +706,10 @@ $AI In Range Time: 2, 1.4, 0.75, 0, -1									\n\
 $AI Always Links Ammo Weapons: 95, 80, 60, 40, 20						\n\
 $AI Maybe Links Ammo Weapons: 90, 60, 40, 20, 10						\n\
 																		\n\
+;; Multiplier that modifies the length and frequency of bursts used		\n\
+;; by the AI for ballistic primary weapons								\n\
+$Primary Ammo Burst Multiplier: 0, 0, 0, 0, 0							\n\
+																		\n\
 ;; AI ships will link laser primaries if energy levels are greater		\n\
 ;; than these percents													\n\
 $AI Always Links Energy Weapons: 100, 80, 60, 40, 20					\n\

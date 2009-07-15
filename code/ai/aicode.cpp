@@ -5540,6 +5540,30 @@ int ai_fire_primary_weapon(object *objp)
 		}
 	}
 
+	//SUSHI: Burst-fire for ballistic primaries.
+	if (The_mission.ai_profile->primary_ammo_burst_mult[Game_skill_level] > 0 &&						//Make sure we are using burst fire
+		enemy_objp != NULL &&																			//We need a target, obviously
+		(enemy_objp->phys_info.speed >= 1.0f) &&														//Only burst for moving ships
+		(enemy_sip->flags & (SIF_SMALL_SHIP | SIF_TRANSPORT)) && 										//Only burst for small ships (transports count)
+		swp->primary_bank_start_ammo[swp->current_primary_bank] > 0 &&									//Prevent div by 0
+		Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags2 & WIF2_BALLISTIC)	//Current weapon must be ballistic
+	{
+		float percentAmmoLeft = ((float)swp->primary_bank_ammo[swp->current_primary_bank] / (float)swp->primary_bank_start_ammo[swp->current_primary_bank]);
+		float distToTarget = vm_vec_dist(&enemy_objp->pos, &objp->pos);
+		float weaponRange = Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].weapon_range;
+		float distanceFactor = 1.0f - distToTarget/weaponRange;
+		vec3d vecToTarget;
+		vm_vec_normalized_dir(&vecToTarget, &enemy_objp->pos, &objp->pos);
+		float dotToTarget = vm_vec_dot(&vecToTarget, &objp->orient.vec.fvec);
+		dotToTarget = pow(dotToTarget, 4);	//This makes the dot a tiny bit more impactful (otherwise nearly always over 0.98 or so)
+		
+		//Combine factors
+		float burstFireProb = ((0.6f * percentAmmoLeft) + (0.4f * distanceFactor)) * dotToTarget * The_mission.ai_profile->primary_ammo_burst_mult[Game_skill_level];
+
+		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 15) > burstFireProb)
+			return 0;
+	}
+
 	//	Make sure not firing at a protected ship unless firing at a live subsystem.
 	//	Note: This happens every time the ship tries to fire, perhaps every frame.
 	//	Should be wrapped in a timestamp, same one that enables it to fire, but that is complicated
