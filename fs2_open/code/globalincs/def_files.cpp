@@ -235,6 +235,7 @@ $Fog:																	\n\
 $AI:																	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Sentry Gun										\n\
 $Counts for Alone:		YES												\n\
@@ -253,6 +254,7 @@ $AI:																	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
@@ -269,6 +271,7 @@ $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Cargo											\n\
 $Scannable:				YES												\n\
@@ -281,6 +284,7 @@ $Fog:																	\n\
 	+Compl dist:			500.0										\n\
 $AI:																	\n\
 	+Passive docks:			( \"cargo\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Support											\n\
 $Counts for Alone:		YES												\n\
@@ -305,6 +309,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Active docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 ;;WMC - Stealth ships always have another type, so this isn't used		\n\
 $Name:					Stealth											\n\
@@ -328,6 +333,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Fighter											\n\
 $Counts for Alone:		YES												\n\
@@ -353,6 +359,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Bomber											\n\
 $Counts for Alone:		YES												\n\
@@ -378,6 +385,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 ;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber																																																								\n\
 $Name:					Fighter/bomber									\n\
@@ -403,6 +411,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Transport										\n\
 $Counts for Alone:		YES												\n\
@@ -428,6 +437,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Freighter										\n\
 $Counts for Alone:		YES												\n\
@@ -455,6 +465,7 @@ $AI:																	\n\
 	+Can Form Wing:			YES											\n\
 	+Active docks:			( \"cargo\" )								\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					AWACS											\n\
 $Counts for Alone:		YES												\n\
@@ -480,6 +491,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Gas Miner										\n\
 $Counts for Alone:		YES												\n\
@@ -505,6 +517,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Cruiser											\n\
 $Counts for Alone:		YES												\n\
@@ -530,6 +543,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Corvette										\n\
 $Counts for Alone:		YES												\n\
@@ -555,6 +569,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Capital											\n\
 $Counts for Alone:		YES												\n\
@@ -581,6 +596,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Super Cap										\n\
 $Counts for Alone:		YES												\n\
@@ -605,6 +621,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Drydock											\n\
 $Counts for Alone:		YES												\n\
@@ -627,6 +644,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Knossos Device									\n\
 $Counts for Alone:		YES												\n\
@@ -647,6 +665,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 #End																	\n\
 ";

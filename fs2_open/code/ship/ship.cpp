@@ -656,6 +656,7 @@ void init_ship_entry(ship_info *sip)
 	sip->warpout_player_speed = 0.0f;
 	
 	sip->explosion_propagates = 0;
+	sip->vaporize_chance = 0;
 	sip->shockwave_count = 1;
 	sip->explosion_bitmap_anims.clear();
 /*	sip->inner_rad = 0.0f;
@@ -1550,6 +1551,14 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Expl Propagates:")){
 		stuff_boolean(&sip->explosion_propagates);
+	}
+
+	if(optional_string("$Vaporize Percent Chance:")){
+		stuff_float(&sip->vaporize_chance);
+		if (sip->vaporize_chance < 0.0f || sip->vaporize_chance > 1.0f) {
+			sip->vaporize_chance = 0.0f;
+			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 1 (read %f). Setting to 0.", sip->vaporize_chance);
+		}
 	}
 
 	if(optional_string("$Shockwave Damage Type:")) {
@@ -3151,6 +3160,14 @@ void parse_ship_type()
 		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
 		stp->explosion_bitmap_anims.clear();
 		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
+	}
+
+	if(optional_string("$Vaporize Percent Chance:")) {
+		stuff_float(&stp->vaporize_chance);
+		if (stp->vaporize_chance < 0.0f || stp->vaporize_chance > 1.0f) {
+			stp->vaporize_chance = 0.0f;
+			Warning(LOCATION, "$Vaporize Percent Chance should be between 0 and 1 (read %f). Setting to 0.", stp->vaporize_chance);
+		}
 	}
 
 	if (!nocreate)
