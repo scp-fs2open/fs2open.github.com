@@ -555,6 +555,8 @@ void messages_init()
 
 	//wipe all the non-builtin messages
 	Messages.erase((Messages.begin()+Num_builtin_messages), Messages.end()); 
+	Message_avis.erase((Message_avis.begin()+Num_builtin_avis), Message_avis.end()); 
+	Message_waves.erase((Message_waves.begin()+Num_builtin_waves), Message_waves.end()); 
 }
 
 // free a loaded avi
