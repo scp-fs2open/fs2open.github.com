@@ -45,9 +45,8 @@ extern int HUD_contrast;
 
 
 //Current HUD to use for info -C
-#ifndef NEW_HUD
 extern hud_info* current_hud;
-#endif
+
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];

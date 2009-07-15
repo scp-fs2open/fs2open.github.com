@@ -6,11 +6,9 @@
 #include "parse/lua.h"
 
 #include <stdio.h>
-#include <vector>
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
-#define SC_PYTHON		(1<<1)
 
 //*************************Scripting structs*************************
 #define SCRIPT_END_LIST		NULL
@@ -86,7 +84,7 @@ struct script_action
 class ConditionedHook
 {
 private:
-	std::vector<script_action> Actions;
+	SCP_vector<script_action> Actions;
 	script_condition Conditions[MAX_HOOK_CONDITIONS];
 public:
 	bool AddCondition(script_condition sc);
@@ -106,22 +104,17 @@ private:
 	int Langs;
 	struct lua_State *LuaState;
 	const struct script_lua_lib_list *LuaLibs;
-	struct PyObject *PyGlb;
-	struct PyObject *PyLoc;
 
 	//Utility variables
-	std::vector<image_desc> ScriptImages;
-	std::vector<ConditionedHook> ConditionalHooks;
+	SCP_vector<image_desc> ScriptImages;
+	SCP_vector<ConditionedHook> ConditionalHooks;
 
 private:
-	PyObject *GetPyLocals(){return PyLoc;}
-	PyObject *GetPyGlobals(){return PyGlb;}
 
 	void ParseChunkSub(int *out_lang, int *out_index, char* debug_str=NULL);
 	int RunBytecodeSub(int in_lang, int in_idx, char format='\0', void *data=NULL);
 
 	void SetLuaSession(struct lua_State *L);
-	void SetPySession(struct PyObject *loc, struct PyObject *glb);
 
 	void OutputLuaMeta(FILE *fp);
 	
@@ -149,7 +142,6 @@ public:
 
 	//***Init functions for langs
 	int CreateLuaState();
-	//int CreatePyState(const script_py_lib_list *libraries);
 
 	//***Get data
 	int OutputMeta(char *filename);

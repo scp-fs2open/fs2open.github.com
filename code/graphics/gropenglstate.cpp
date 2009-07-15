@@ -13,8 +13,6 @@
 #include "graphics/gropenglstate.h"
 #include "graphics/gropengllight.h"
 
-#include <vector>
-
 extern GLfloat GL_max_anisotropy;
 
 

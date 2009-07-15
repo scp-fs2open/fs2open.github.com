@@ -14,12 +14,7 @@
 #include "io/mouse.h"
 #include "globalincs/pstypes.h"
 
-#ifdef USE_PYTHON
-#include "parse/python.h"
-#endif
-
 #include <string>
-#include <vector>
 #include <limits.h>
 
 //*****************************Low-level abstraction*******************************
@@ -150,8 +145,8 @@ private:
 						//If so, set name
 	int Coords[4];
 
-	std::vector<ObjectClassInfoEntry> Subentries;
-	std::vector<ClassInfoEntry> Entries;
+	SCP_vector<ObjectClassInfoEntry> Subentries;
+	SCP_vector<ClassInfoEntry> Entries;
 public:
 	ObjectClassInfoEntry(){Object=-1;Coords[0]=Coords[1]=Coords[2]=Coords[3]=INT_MAX;}
 	bool Parse();
@@ -167,7 +162,7 @@ class ScreenClassInfoEntry : public LinkedList
 	friend class GUIScreen;
 private:
 	std::string Name;
-	std::vector<ObjectClassInfoEntry> Entries;
+	SCP_vector<ObjectClassInfoEntry> Entries;
 public:
 	bool Parse();
 
@@ -315,7 +310,7 @@ private:
 
 	ScreenClassInfoEntry* ScreenClassInfo;
 	GUIObject Guiobjects;
-	std::vector<GUIObject*> DeletionCache;
+	SCP_vector<GUIObject*> DeletionCache;
 public:
 	GUIScreen(std::string in_Name="");
 	~GUIScreen();
@@ -711,33 +706,6 @@ public:
 	void Pause();
 	void Stop();
 };
-#ifdef USE_PYTHON
-//*****************************Button*******************************
-//#define DEFAULT_BUTTON_WIDTH	50
-#define B_BORDERWIDTH			1
-#define B_BORDERHEIGHT			1
-#define DEFAULT_BUTTON_HEIGHT	15
-
-#define BS_STICKY			(1<<31)	//Button stays pressed
-
-#define BCI_COORDS			0
-#define BCI_BUTTON			1
-#define BCI_NUM_ENTRIES		2
-
-class HUDGauge : public GUIObject
-{
-	std::string Name;
-
-	PyBytecode DrawFunc;
-
-protected:
-	void DoDraw(float frametime);
-	//int DoRefreshSize();
-public:
-	HUDGauge(std::string in_name, int x_coord, int y_coord, PyBytecode DrawFunc, int x_width = -1, int y_height = -1, int in_style = 0);
-	~HUDGauge();
-};
-#endif //USE_PYTHON
 
 //*****************************GLOBALS*******************************
 extern GUISystem GUI_system;

@@ -22,7 +22,6 @@
 #include "object/waypoint.h"
 
 #include <string>
-#include <vector>
 
 #define BACKUP_DEPTH	9
 

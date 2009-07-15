@@ -19,8 +19,6 @@
 #include "weapon/shockwave.h"
 #include "graphics/generic.h"
 
-#include <vector>
-
 struct object;
 struct ship_subsys;
 
@@ -461,7 +459,7 @@ typedef struct weapon_expl_info	{
 class weapon_explosions
 {
 private:
-	std::vector<weapon_expl_info> ExplosionInfo;
+	SCP_vector<weapon_expl_info> ExplosionInfo;
 	int GetIndex(char *filename);
 
 public:

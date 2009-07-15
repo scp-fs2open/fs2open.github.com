@@ -26,12 +26,11 @@
 #include "globalincs/pstypes.h"
 
 #include <iostream>
-#include <vector>
 #include <string>
 #include <limits.h>
 
 
-extern std::vector<crc_valid_status> Table_valid_status;
+extern SCP_vector<crc_valid_status> Table_valid_status;
  
 
 int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, bool do_send)
@@ -317,7 +316,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 	return -1;
 }
 
-int FS2NetD_GetBanList(std::vector<std::string> &mask_list, bool do_send)
+int FS2NetD_GetBanList(SCP_vector<std::string> &mask_list, bool do_send)
 {
 	int buffer_size, buffer_offset;
 	bool my_packet = false;
@@ -392,7 +391,7 @@ int FS2NetD_GetBanList(std::vector<std::string> &mask_list, bool do_send)
 	return 0;
 }
 
-int FS2NetD_GetMissionsList(std::vector<file_record> &m_list, bool do_send)
+int FS2NetD_GetMissionsList(SCP_vector<file_record> &m_list, bool do_send)
 {
 	int buffer_size, buffer_offset;
 	bool my_packet = false;

@@ -41,7 +41,6 @@
 #endif
 
 #include <string>
-#include <vector>
 #include <limits.h>
 
 
@@ -70,10 +69,10 @@ static int Next_gameserver_update = -1;
 static int Last_pong = -1;
 static int Login_retry_time = -1;
 
-static std::vector<file_record> FS2NetD_file_list;
-static std::vector<std::string> FS2NetD_ban_list;
+static SCP_vector<file_record> FS2NetD_file_list;
+static SCP_vector<std::string> FS2NetD_ban_list;
 
-std::vector<crc_valid_status> Table_valid_status;
+SCP_vector<crc_valid_status> Table_valid_status;
 
 // channel to associate when creating a server
 char Multi_fs_tracker_channel[MAX_PATH] = "";

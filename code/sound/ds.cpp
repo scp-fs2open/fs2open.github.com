@@ -25,7 +25,6 @@
 #include "sound/dscap.h"
 
 #ifdef USE_OPENAL
-	#include <vector>
 
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
@@ -184,7 +183,7 @@ channel *Channels = NULL;
 static int channel_next_sig = 1;
 
 const int BUFFER_BUMP = 50;
-std::vector<sound_buffer> sound_buffers;
+SCP_vector<sound_buffer> sound_buffers;
 
 extern int Snd_sram;					// mem (in bytes) used up by storing sounds in system memory
 

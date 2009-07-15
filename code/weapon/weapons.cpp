@@ -75,7 +75,7 @@ int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
 weapon_explosions Weapon_explosions;
 
-std::vector<lod_checker> LOD_checker;
+SCP_vector<lod_checker> LOD_checker;
 
 int Num_weapon_types = 0;
 

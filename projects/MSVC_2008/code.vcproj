@@ -3313,14 +3313,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\parse\python.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\parse\python.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\parse\scripting.cpp"
 				>
 			</File>

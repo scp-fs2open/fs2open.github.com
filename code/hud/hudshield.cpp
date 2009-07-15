@@ -165,7 +165,6 @@ void hud_shield_level_init()
 	}
 
 	Hud_shield_inited = 1;
-#ifndef NEW_HUD
 	if ( !Shield_mini_loaded ) {
 		Shield_mini_gauge.first_frame = bm_load_animation(current_hud->Shield_mini_fname, &Shield_mini_gauge.num_frames);
 		if ( Shield_mini_gauge.first_frame == -1 ) {
@@ -174,7 +173,6 @@ void hud_shield_level_init()
 		}
 		Shield_mini_loaded = 1;
 	}
-#endif
 }
 
 int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
@@ -212,7 +210,6 @@ extern int Cmdline_nohtl;
 bool shield_ani_warning_displayed_already = false;
 void hud_shield_show(object *objp)
 {
-#ifndef NEW_HUD
 //	static int fod_model = -1;
 	float			max_shield;
 	int			hud_color_index, range;
@@ -525,7 +522,6 @@ void hud_shield_show(object *objp)
 	}
 
 	// hud_set_default_color();
-#endif
 }
 
 // called at beginning of level to page in all ship icons
@@ -702,7 +698,6 @@ void hud_shield_assign_info(ship_info *sip, char *filename)
 
 void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 {
-#ifndef NEW_HUD
 	char	text_integrity[64];
 	int	numeric_integrity;
 	float p_target_integrity;
@@ -744,13 +739,11 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 	}	
 
 	gr_string(final_pos[0] + HUD_nose_x, final_pos[1] + HUD_nose_y, text_integrity);
-#endif
 }
 
 // Draw the miniature shield icon that is drawn near the reticle
 void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_offset, int y_hull_offset)
 {
-#ifndef NEW_HUD
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
 	int			sx, sy, i;
@@ -817,7 +810,6 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	}
 	
 	// hud_set_default_color();
-#endif
 }
 
 // reset the shield_hit_info data structure

@@ -118,7 +118,7 @@ int Mission_callsign_count = 0;
 p_object Ship_arrival_list;	// for linked list of ships to arrive later
 
 // all the ships that we parse
-std::vector<p_object> Parse_objects;
+SCP_vector<p_object> Parse_objects;
 
 
 // list for arriving support ship
@@ -3209,7 +3209,7 @@ bool is_ship_assignable(p_object *p_objp)
 // number of ships of that class that were present in the loadout. 
 void process_loadout_objects() 
 {	
-	std::vector<int> reassignments;
+	SCP_vector<int> reassignments;
 	
 	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
 	for (int i=0; i < (int)Parse_objects.size(); i++)
@@ -4529,7 +4529,7 @@ void parse_messages(mission *pm, int flags)
 	// end of command stuff ----------------------------------------------
 
 
-	mprintf(("Starting mission message count : %d\n", Num_message_waves));
+	mprintf(("Starting mission message count : %d\n", (int)Message_waves.size()));
 
 	// the message_parse function can be found in MissionMessage.h.  The format in the
 	// mission file takes the same format as the messages in messages,tbl.  Make parsing
@@ -4538,7 +4538,7 @@ void parse_messages(mission *pm, int flags)
 		message_parse((flags & MPF_IMPORT_FSM) != 0);		// call the message parsing system
 	}
 
-	mprintf(("Ending mission message count : %d\n", Num_message_waves));
+	mprintf(("Ending mission message count : %d\n", (int)Message_waves.size()));
 }
 
 void parse_reinforcement(mission *pm)

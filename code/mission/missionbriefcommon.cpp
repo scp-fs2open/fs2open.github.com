@@ -183,8 +183,8 @@ typedef struct colored_char
 	ubyte	color;		// index into Brief_text_colors[]
 } colored_char;
 
-typedef std::vector<colored_char> briefing_line; 
-typedef std::vector<briefing_line> briefing_stream; 
+typedef SCP_vector<colored_char> briefing_line; 
+typedef SCP_vector<briefing_line> briefing_stream; 
 static briefing_stream Colored_stream[MAX_TEXT_STREAMS];
 
 #define MAX_BRIEF_TEXT_COLORS			9
@@ -1257,7 +1257,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 {
 	int len, count, next, truncate_len, last_color, offset, w, h, bright_len, i;
 	char line[MAX_BRIEF_LINE_LEN];
-	std::vector<colored_char> *src; 
+	SCP_vector<colored_char> *src; 
 
 	src = &Colored_stream[instance].at(line_num);
 	len = src->size();
@@ -1631,8 +1631,8 @@ int brief_text_colorize(char *src, int instance)
 int brief_color_text_init(char *src, int w, int instance, int max_lines)
 {
 	int i, n_lines, len;
-	std::vector<int> n_chars;
-	std::vector<char*> p_str;
+	SCP_vector<int> n_chars;
+	SCP_vector<char*> p_str;
 	char brief_line[MAX_BRIEF_LINE_LEN];
 
 	Assert(src);

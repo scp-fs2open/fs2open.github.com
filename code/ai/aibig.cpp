@@ -50,12 +50,16 @@
 #define	ATTACK_COLLIDE_SLOW_DIST		150		// perpendicular distance to attack surface at which begin slowing down
 #define	ATTACK_COLLIDE_SLOW_TIME		1.5		// anticipated collision time at which to begin slowing down
 
+#define GLIDE_STRAFE_DISTANCE	50.0f	//Distance from the ship to pass when glide strafing
+#define GLIDE_STRAFE_MIN_TIME	2	//Minimum amount of time to stay on one glide strafe approach vector
+#define GLIDE_STRAFE_MAX_TIME	15	//Maximum amount of time for each glide strafe pass
 
 // forward declarations
 void	ai_big_evade_ship();
 void	ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float dist_to_enemy, int modelnum);
 void	ai_big_avoid_ship();
 int	ai_big_maybe_follow_subsys_path(int do_dot_check=1);
+void ai_big_strafe_position();
 
 extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs);
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
@@ -571,9 +575,8 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			if ( ai_big_maybe_start_strafe(aip, sip) ) {
 				aip->previous_mode = aip->mode;
 				aip->mode = AIM_STRAFE;
-				aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered
-				aip->submode = AIS_STRAFE_ATTACK;
-				aip->submode_start_time = Missiontime;
+				aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
+				ai_big_strafe_position();
 				return;
 			}
 
@@ -799,6 +802,9 @@ void ai_big_chase()
 
 	enemy_ship_type = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
 
+	//Default to glide OFF
+	Pl_objp->phys_info.flags &= ~PF_GLIDING;
+
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 
 	player_pos = Pl_objp->pos;
@@ -822,7 +828,7 @@ void ai_big_chase()
 	if (aip->ai_flags & AIF_TARGET_COLLISION) {
 		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
 			aip->mode = AIM_STRAFE;
-			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered
+			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			aip->submode = AIS_STRAFE_AVOID;
 			aip->submode_start_time = Missiontime;
 			return;
@@ -1302,6 +1308,142 @@ void ai_big_strafe_attack()
 	}
 }
 
+// SUSHI: Strafe attack using glide
+//submode_parm1 encodes the stage we're in.
+//0: Choosing goal point to fly towards
+//1: Accelerating towards the goal point.
+//2: Raining down fire and brimstone on the target.
+//3: Dummy stage used when resetting or exiting the mode
+//TODO: **NOTE** This functionality is still WIP. Expect another commit soon polishing it up.
+void ai_big_strafe_glide_attack()
+{
+	ai_info *aip;
+	vec3d target_pos, vec_to_goal, predicted_enemy_pos, norm_vel_vec;
+	float target_dist, target_dot, target_ship_dist, dot_to_goal, flight_dot_to_enemy;
+	object *target_objp;
+
+	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+	target_objp = &Objects[aip->target_objnum];
+
+	vm_vec_sub(&vec_to_goal, &aip->goal_point, &Pl_objp->pos);
+	vm_vec_normalize(&vec_to_goal);
+
+	if (vm_vec_mag(&Pl_objp->phys_info.vel) > 0.0f)
+		vm_vec_copy_normalize(&norm_vel_vec, &Pl_objp->phys_info.vel);
+	else
+		vm_vec_copy_normalize(&norm_vel_vec, &Pl_objp->orient.vec.fvec);
+
+	dot_to_goal = vm_vec_dot(&vec_to_goal, &norm_vel_vec);	//Angle between flight path and goal point
+	flight_dot_to_enemy = vm_vec_dot(&target_objp->pos, &norm_vel_vec);	//Angle between flight path and target ship
+
+	//If we're following a path, then we shouldn't be doing glide strafe
+	if ( ai_big_maybe_follow_subsys_path(0) ) {
+		return;
+	}
+
+	//Gets a point on the target ship to attack, as well as distance and the angle between the nose of the attacker and that point.
+	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);	
+	target_ship_dist = vm_vec_dist(&target_objp->pos, &Pl_objp->pos);
+
+	//TODO: Maybe retreat if we're too close or collision imminent? (check for imminent collision?)
+	//TODO: Doesn't always trigger for moving targets? (Maybe change the way we get into glide strafe?)
+	//TODO: Somehow deal with the target's motion better? (Don't pick a point that will lead to collision?) (Move the target point based on projected position by the time the AI gets there?)
+	//TODO: Subsytem attacks are a bit wonky? Maybe?
+	//TODO: Don't wig out if target is destroyed.
+	//TODO: Fix problems switching from glide strafe to chase mid-run
+	//TODO: Instead of using the ->radius of the target, use the APPARENT radius from the current point of attack?
+	//TODO: Make sure this scales well for different speeds of attacking ship
+	//TODO: Make sure this scales well for different sizes/speeds of target ship
+
+	//If we haven't chosen the goal point yet, do so now
+	if (aip->submode_parm1 == 0) {
+		//Pick goal point. This should be a random point that passes through the circle whose normal is the vector between attacker and target
+		vec3d targetToAttacker;
+		vec3d tangentPoint;
+		vm_vec_sub(&targetToAttacker, &Pl_objp->pos, &target_objp->pos);
+		matrix orient;
+		vm_vector_2_matrix(&orient, &targetToAttacker, NULL, NULL);
+		vm_vec_random_in_circle(&tangentPoint, &target_objp->pos, &orient, target_objp->radius + GLIDE_STRAFE_DISTANCE, 1);
+		//Get tangent point in coords relative to ship, scale it up so the actual goal point is far away, then put back in world coords
+		vm_vec_sub2(&tangentPoint, &Pl_objp->pos);
+		vm_vec_scale(&tangentPoint, 1000.0f);
+		vm_vec_add(&aip->goal_point, &tangentPoint, &Pl_objp->pos);
+
+		//TODO: Try several points and pick the one closest to the current target point? Might help vs subsystems.
+
+		aip->submode_parm1 = 1;
+	}
+	if (aip->submode_parm1 == 1) {
+		//Stay in acceleration stage?
+		//Accelerate towards goal point until:
+		//	Mostly up to speed AND
+		//	Moving in the correct direction
+		if ((Pl_objp->phys_info.fspeed > (Pl_objp->phys_info.max_vel.xyz.z * 0.85f)) && (dot_to_goal > 0.99f)) 
+			aip->submode_parm1 = 2;
+	}
+	if (aip->submode_parm1 == 2) {
+		//Should we stay in the fire stage?
+		//Keep going until we are too far away.
+		//If we are still on approach but too far away, this will still trigger. This will allow us to reposition the target
+		//point and allow for a "jinking" effect.
+		//TODO: Replace GLIDE_STRAFE_MIN_TIME with the same logic for normal jinking amount based on difficulty level?
+		if (target_ship_dist > (STRAFE_RETREAT_BOX_DIST + target_objp->radius) &&
+			Missiontime - aip->submode_start_time > i2f(GLIDE_STRAFE_MIN_TIME)) {
+			//This checks whether we are moving toward the target or away from it.  If moving towards, we reset the stage so that we
+			//pick a new attack vector (jinking). If moving away, we're at the end of a run so do a full reset (possibly allowing a 
+			//switch back to conventional strafe).
+			if (flight_dot_to_enemy > 0.0f) {
+				aip->submode_parm1 = 0;
+			}
+			else {
+				aip->submode_parm1 = 3;
+				aip->submode = AIS_STRAFE_POSITION;
+			}
+			aip->submode_start_time = Missiontime;
+		}
+	}
+	//Time limit: if we've taken too long, reset
+	if (Missiontime - aip->submode_start_time > i2f(GLIDE_STRAFE_MAX_TIME)) {
+			aip->submode_parm1 = 3;
+			aip->submode = AIS_STRAFE_POSITION;
+			aip->submode_start_time = Missiontime;
+	}
+
+	//Acceleration stage
+	if (aip->submode_parm1 == 1) {
+		accelerate_ship(aip, 1.0f);
+		//Use afterburners if we have them and are pointed the right way
+		if (dot_to_goal > 0.99f) {
+		afterburners_start(Pl_objp);
+		aip->afterburner_stop_time = Missiontime + 3*F1_0;
+		}
+
+		turn_towards_point(Pl_objp, &aip->goal_point, NULL, 0.0f);
+	}
+	//Fire stage
+	if (aip->submode_parm1 == 2) {
+		Pl_objp->phys_info.flags |= PF_GLIDING;
+		accelerate_ship(aip, 0.0f);
+		afterburners_stop(Pl_objp);
+
+		//Compensate for motion of ship and target
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+		vm_vec_add2(&target_pos, &predicted_enemy_pos);
+		vm_vec_sub2(&target_pos, &En_objp->pos);
+
+		turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
+		ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+	}
+
+	// if haven't been hit in quite a while, leave strafe mode
+	// (same as ai_big_strafe_attack)
+	//TODO: Alternately, have a different criteria for leaving glide strafe?
+	fix long_enough = F1_0*20;
+	if ( (Missiontime - aip->last_hit_time > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
+		ai_big_switch_to_chase_mode(aip);
+	}
+}
+
 // pick a new attack point when entering this state, and keep using it
 void ai_big_strafe_avoid()
 {
@@ -1319,9 +1461,7 @@ void ai_big_strafe_avoid()
 		return;
 
 	if ( mode_time > fl2f(0.5)) {
-		aip->submode = AIS_STRAFE_ATTACK;
-		aip->submode_start_time = Missiontime;
-//		nprintf(("Alan","Ship %s entering AIS_STRAFE_ATTACK at frame %d\n", Ships[aip->shipnum].ship_name, Framecount));
+		ai_big_strafe_position();
 	}
 
 	turn_towards_point(Pl_objp, &aip->goal_point, NULL, 0.0f);
@@ -1416,13 +1556,19 @@ void ai_big_strafe_retreat2()
 // reposition self to begin another strafing run
 void ai_big_strafe_position()
 {
+	ship_info *sip;
 	ai_info	*aip;
+	sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
-	// TODO: loop around or something!!
 
-	aip->submode = AIS_STRAFE_ATTACK;
+	//Maybe use AIS_STRAFE_GLIDE_ATTACK
+	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < The_mission.ai_profile->glide_strafe_percent[Game_skill_level])) {
+		aip->submode = AIS_STRAFE_GLIDE_ATTACK;
+		aip->submode_parm1 = 0;
+	} else {
+		aip->submode = AIS_STRAFE_ATTACK;
+	}
 	aip->submode_start_time = Missiontime;
-//	nprintf(("Alan","Ship %s entering AIS_STRAFE_ATTACK\n", Ships[aip->shipnum].ship_name));
 }
 
 //	--------------------------------------------------------------------------
@@ -1447,6 +1593,8 @@ void ai_big_strafe()
 		return;
 	}
 */
+	//Default to glide OFF
+	Pl_objp->phys_info.flags &= ~PF_GLIDING;
 
 	// check if target is still a big ship... if not enter chase mode
 	if ( !(Ship_info[Ships[En_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
@@ -1469,6 +1617,9 @@ void ai_big_strafe()
 		break;
 	case AIS_STRAFE_POSITION:
 		ai_big_strafe_position();
+		break;
+	case AIS_STRAFE_GLIDE_ATTACK:
+		ai_big_strafe_glide_attack();
 		break;
 	default:
 
@@ -1545,7 +1696,7 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 	// big/capital ship... so enter strafe mode
 	aip->previous_mode = aip->mode;
 	aip->mode = AIM_STRAFE;
-	aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered
+	aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 	aip->submode = AIS_STRAFE_AVOID;
 	aip->submode_start_time = Missiontime;
 //	nprintf(("Alan","%s Accepted strafe mode\n", Ships[pl_objp->instance].ship_name));

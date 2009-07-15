@@ -12,13 +12,12 @@
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
 
-#include <vector>
-
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "graphics/generic.h"
 #include "gamesnd/gamesnd.h"
 #include "mission/missionbriefcommon.h"
+#include "hud/hudparse.h"
 
 // for bitmap thrusters
 typedef struct thrust_pair_bitmap {
@@ -75,12 +74,6 @@ typedef struct species_info {
 	thrust_pair_bitmap thruster_secondary_glow_info;
 	thrust_pair_bitmap thruster_tertiary_glow_info;
 
-	// if this will not be parsed in species_defs.tbl, move it below the following comment
-#ifdef NEW_HUD
-	hud_info hud;
-#endif
-
-
 	// the members below this comment are not parsed in species_defs.tbl
 
 	game_snd snd_flyby_fighter;
@@ -101,7 +94,7 @@ typedef struct species_info {
 
 } species_info;
 
-extern std::vector<species_info> Species_info;
+extern SCP_vector<species_info> Species_info;
 
 
 // load up the species_defs.tbl into the correct data areas

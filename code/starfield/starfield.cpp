@@ -110,12 +110,12 @@ typedef struct starfield_bitmap_instance {
 } starfield_bitmap_instance;
 
 // for drawing cool stuff on the background - comes from a table
-static std::vector<starfield_bitmap> Starfield_bitmaps;
-static std::vector<starfield_bitmap_instance> Starfield_bitmap_instances;
+static SCP_vector<starfield_bitmap> Starfield_bitmaps;
+static SCP_vector<starfield_bitmap_instance> Starfield_bitmap_instances;
 
 // sun bitmaps and sun glow bitmaps
-static std::vector<starfield_bitmap> Sun_bitmaps;
-static std::vector<starfield_bitmap_instance> Suns;
+static SCP_vector<starfield_bitmap> Sun_bitmaps;
+static SCP_vector<starfield_bitmap_instance> Suns;
 
 // Goober5000
 int Num_backgrounds = 0;

@@ -167,6 +167,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$AI Maybe Links Ammo Weapons:"))
 				parse_float_list(profile->link_ammo_levels_maybe, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Primary Ammo Burst Multiplier:"))
+				parse_float_list(profile->primary_ammo_burst_mult, NUM_SKILL_LEVELS);
+
 			if (optional_string("$AI Always Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_always, NUM_SKILL_LEVELS);
 
@@ -223,6 +226,21 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$AI Turn Time Scale:"))
 				parse_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Glide Attack Percent:"))
+				parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Circle Strafe Percent:"))
+				parse_float_list(profile->circle_strafe_percent, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Glide Strafe Percent:"))
+				parse_float_list(profile->glide_strafe_percent, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Stalemate Time Threshold:"))
+				parse_float_list(profile->stalemate_time_thresh, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Stalemate Distance Threshold:"))
+				parse_float_list(profile->stalemate_dist_thresh, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Weapon Recharge Scale:"))
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
@@ -306,6 +324,8 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$allow turrets target weapons freely:", AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY);
 
 			set_flag(profile, "$use only single fov for turrets:", AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS);
+
+			set_flag(profile, "$allow vertical dodge:", AIPF_ALLOW_VERTICAL_DODGE);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

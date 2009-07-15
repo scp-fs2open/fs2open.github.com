@@ -1028,10 +1028,6 @@ void game_level_init(int seed)
 {
 	game_busy( NOX("** starting game_level_init() **") );
 	load_gl_init = (uint) time(NULL);
-#ifdef USE_PYTHON
-	//Clear python images
-	py_clear_images();
-#endif
 	// seed the random number generator
 	if ( seed == -1 ) {
 		// if no seed was passed, seed the generator either from the time value, or from the
@@ -4780,17 +4776,6 @@ void game_frame(int paused)
 
 			game_show_time_left();
 
-#ifdef NEW_HUD
-			//Display all new hud gauges. Note this is somewhat inefficient;
-			//set_current_hud really only needs to be called when the viewer
-			//object changes, however, it works fine this way.
-			if(Viewer_obj && Viewer_obj->type == OBJ_SHIP)
-			{
-				set_current_hud(&Ships[Viewer_obj->instance]);
-				Ships[Viewer_obj->instance].ship_hud.show();
-			}
-#endif
-
 			// Draw the 2D HUD gauges
 			if(Scripting_didnt_draw_hud)
 			{
@@ -6536,11 +6521,7 @@ void game_enter_state( int old_state, int new_state )
 			player_restore_target_and_weapon_link_prefs();
 
 			//Set the current hud
-#ifdef NEW_HUD
-			set_current_hud(Player_ship);
-#else
 			set_current_hud(Player_ship->ship_info_index);
-#endif
 
 			Game_mode |= GM_IN_MISSION;
 
@@ -7138,8 +7119,6 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
-
-//   python_do_frame();
 }
 
 
@@ -7710,9 +7689,6 @@ void game_shutdown(void)
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();
-#ifdef USE_PYTHON
-	python_close();				//Kill python
-#endif
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system

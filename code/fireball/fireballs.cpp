@@ -22,13 +22,12 @@
 #include "globalincs/pstypes.h"
 
 #include <stdlib.h>
-#include <vector>
 
 
 // make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)
-extern std::vector<lod_checker> LOD_checker;
+extern SCP_vector<lod_checker> LOD_checker;
 
-static std::vector<color> LOD_color;
+static SCP_vector<color> LOD_color;
 
 int Warp_model;
 int Knossos_warp_ani_used;
