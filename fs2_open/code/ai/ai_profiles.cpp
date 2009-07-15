@@ -167,6 +167,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$AI Maybe Links Ammo Weapons:"))
 				parse_float_list(profile->link_ammo_levels_maybe, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Primary Ammo Burst Multiplier:"))
+				parse_float_list(profile->primary_ammo_burst_mult, NUM_SKILL_LEVELS);
+
 			if (optional_string("$AI Always Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_always, NUM_SKILL_LEVELS);
 
