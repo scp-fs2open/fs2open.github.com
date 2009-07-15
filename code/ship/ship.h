@@ -849,6 +849,9 @@ typedef struct ship_type_info {
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
 
+	//Explosions
+	float vaporize_chance;
+
 	//Resources
 	SCP_vector<int> explosion_bitmap_anims;
 
@@ -978,6 +981,7 @@ typedef struct ship_info {
 	int	explosion_propagates;				// If true, then the explosion propagates
 	int	shockwave_count;						// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
+	float vaporize_chance;					
 
 	int ispew_max_particles;						//Temp field until someone works on particles -C
 	int dspew_max_particles;						//Temp field until someone works on particles -C

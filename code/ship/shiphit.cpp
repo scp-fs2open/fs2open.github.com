@@ -1357,7 +1357,13 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	}
 	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
-	if (sp->flags & SF_VAPORIZE) {
+	//SUSHI: What are the chances of an instant vaporization? Check the ship type first (objecttypes.tbl), then the ship (ships.tbl)
+	ship_type_info *stp = &Ship_types[sip->class_type];
+	float vapChance = stp->vaporize_chance;
+	if (sip->vaporize_chance > 0)
+		vapChance = sip->vaporize_chance;
+
+	if (sp->flags & SF_VAPORIZE || frand() < vapChance) {
 		// Assert(Ship_info[sp->ship_info_index].flags & SIF_SMALL_SHIP);
 
 		// LIVE FOR 100 MS
