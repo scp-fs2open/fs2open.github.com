@@ -932,7 +932,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	// if my taraget is a stealth ship and is not visible
+	// if my target is a stealth ship and is not visible
 	if (aip->target_objnum >= 0) {
 		if ( is_object_stealth_ship(&Objects[aip->target_objnum]) ) {
 			if ( ai_is_stealth_visible(objp, &Objects[aip->target_objnum]) == STEALTH_INVISIBLE ) {
