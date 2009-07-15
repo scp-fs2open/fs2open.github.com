@@ -43,7 +43,7 @@
 #define AIPF_MULTI_ALLOW_EMPTY_SECONDARIES							(1 << 25)
 #define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
 #define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
-#define AIPF_ALLOW_VERTICAL_DODGE									(1 << 27)	//Allows AI ships to evade weapons vertically as well as horizontally
+#define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
 
 #define MAX_AI_PROFILES	5
 
