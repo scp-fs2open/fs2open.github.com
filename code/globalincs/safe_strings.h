@@ -21,14 +21,14 @@
  * 3) All others will be redirected to non-safe versions
  */
 
-#if !defined( _MSC_VER ) /* These are already present in 2005, 2008 - if you're using anything else, you don't get these */
-
 /* errno_t, EINVAL, ERANGE, etc.. */
 #include <errno.h>
 #include <stdlib.h> /* size_t */
 
 /* Because errno_t is not (yet) standard, we define it here like this */
 typedef int errno_t;
+
+#if !defined( _MSC_VER ) /* These are already present in 2005, 2008 - if you're using anything else, you don't get these */
 
 /* In order to compile safe_strings_test.cpp, you must have this defined on the command line */
 /* #define SAFESTRINGS_TEST_APP */
