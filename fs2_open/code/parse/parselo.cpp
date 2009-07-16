@@ -241,10 +241,10 @@ void error_display(int error_level, char *format, ...)
 	va_list args;
 
 	if (error_level == 0) {
-		strcpy(error_text, "Warning");
+		strcpy_s(error_text, "Warning");
 		Warning_count++;
 	} else {
-		strcpy(error_text, "Error");
+		strcpy_s(error_text, "Error");
 		Error_count++;
 	}
 
@@ -271,8 +271,9 @@ void advance_to_eoln(char *more_terminators)
 
 	terminators[0] = EOLN;
 	terminators[1] = (char)EOF_CHAR;
+	terminators[2] = NULL;
 	if (more_terminators != NULL)
-		strcpy(&terminators[2], more_terminators);
+		strcat_s(terminators, more_terminators);
 	else
 		terminators[2] = 0;
 
@@ -699,8 +700,9 @@ void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
 
 	terminators[0] = EOLN;
 	terminators[1] = (char)EOF_CHAR;
+	terminators[2] = NULL;
 	if (more_terminators != NULL)
-		strcpy(&terminators[2], more_terminators);
+		strcat_s(terminators, more_terminators);
 	else
 		terminators[2] = 0;
 
@@ -1485,7 +1487,7 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 	// copy the filename
 	if (!filename)
 		longjmp(parse_abort, 10);
-	strcpy(Current_filename_sub, filename);
+	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( Parsing_paused && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -1509,7 +1511,7 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 void read_file_text_from_array(char *array, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
-	strcpy(Current_filename_sub, "internal default file");
+	strcpy_s(Current_filename_sub, "internal default file");
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( Parsing_paused && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -1718,7 +1720,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 				*mp++ = *str++;
 		}
 
-//		strcpy(mp, outbuf);
+//		strcpy_s(mp, outbuf);
 //		mp += strlen(outbuf);
 	}
 
@@ -1731,11 +1733,11 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 		//	If you hit this assert, it is probably telling you the obvious.  The file
 		//	you are trying to read is truly too large.  Look at *filename to see the file name.
 		Assert(mp_raw - file_text_raw + strlen(outbuf) < MISSION_TEXT_SIZE);
-		strcpy(mp_raw, outbuf);
+		strcpy_s(mp_raw, outbuf);
 		mp_raw += strlen(outbuf);
 
 		in_comment = strip_comments(outbuf, in_comment);
-		strcpy(mp, outbuf);
+		strcpy_s(mp, outbuf);
 		mp += strlen(outbuf);
 	}
 	
@@ -2324,7 +2326,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		if (variable_found) {
 			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
 			sexp_variable_index = get_index_sexp_variable_name(str);
-			strcpy (str, Sexp_variables[sexp_variable_index].text);
+			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
 		}
 
 		switch (lookup_type) {
@@ -2645,8 +2647,8 @@ void pause_parse()
 	Warning_count_save = Warning_count;
 	Error_count_save = Error_count;
 
-	strcpy(parse_error_text_save, parse_error_text);
-	strcpy(Current_filename_save, Current_filename);
+	strcpy_s(parse_error_text_save, parse_error_text);
+	strcpy_s(Current_filename_save, Current_filename);
 
 	Parsing_paused = 1;	
 }
@@ -2664,8 +2666,8 @@ void unpause_parse()
 	Warning_count = Warning_count_save;
 	Error_count = Error_count_save;
 
-	strcpy(parse_error_text, parse_error_text_save);
-	strcpy(Current_filename, Current_filename_save);
+	strcpy_s(parse_error_text, parse_error_text_save);
+	strcpy_s(Current_filename, Current_filename_save);
 
 	Parsing_paused = 0;
 }
@@ -2681,9 +2683,9 @@ void reset_parse(char *text)
 	Warning_count = 0;
 	Error_count = 0;
 
-	strcpy(parse_error_text, "");//better error mesages-Bobboau
+	strcpy_s(parse_error_text, "");//better error mesages-Bobboau
 
-	strcpy(Current_filename, Current_filename_sub);
+	strcpy_s(Current_filename, Current_filename_sub);
 }
 
 // Display number of warnings and errors at the end of a parse.
@@ -3156,7 +3158,7 @@ int replace_one(char *str, char *oldstr, char *newstr, uint max_len, int range)
 		if (temp)
 		{
 			// save remainder of string
-			strcpy(temp, ch + strlen(oldstr));
+			strcpy_s(temp, sizeof(char)*max_len, ch + strlen(oldstr));
 
 			// replace
 			strcpy(ch, newstr);
