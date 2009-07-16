@@ -45,6 +45,8 @@ errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
 
 	char* p = strDest;
 	
+	while ((*p++ = *strSource++) != 0 && --bufferLeft > 0);
+
 	for ( ; *strSource && bufferLeft; bufferLeft-- )
 	{
 		*p = *strSource;
@@ -97,11 +99,7 @@ errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource )
 	}
 
 	/* Concatenate the strings */
-	for ( ; *strSource && bufferLeft; bufferLeft-- )
-	{
-		*p = *strSource;
-		strSource++; p++;
-	}
+	while ((*p++ = *strSource++) != 0 && --bufferLeft > 0);
 
 	if ( bufferLeft == 0 )
 	{
