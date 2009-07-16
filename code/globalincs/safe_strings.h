@@ -17,7 +17,9 @@
 
 /* Rules of use:
  * 1) VC2005 & VC2008 define their own, so don't do anything if they're around
- * 2) MacOS and GCC 
+ * 2) MacOS and GCC will use safe_strings
+ * 3) All others will be redirected to non-safe versions
+ */
 
 #if !defined( _MSC_VER ) /* These are already present in 2005, 2008 - if you're using anything else, you don't get these */
 
