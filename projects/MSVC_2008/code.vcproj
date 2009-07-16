@@ -1465,6 +1465,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\safe_strings.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\safe_strings.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\safe_strings_test.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\globalincs\systemvars.cpp"
 				>
 			</File>
