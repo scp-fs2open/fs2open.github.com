@@ -43,6 +43,7 @@ initial_status::initial_status(CWnd* pParent /*=NULL*/)
 	m_velocity = 0;
 	m_hull = 0;
 	m_has_shields = FALSE;
+	m_force_shields = FALSE;
 	m_locked = FALSE;
 	m_primaries_locked = FALSE;
 	m_secondaries_locked = FALSE;
@@ -82,6 +83,7 @@ void initial_status::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_DAMAGE, m_damage);
 	DDV_MinMaxInt(pDX, m_damage, 0, 100);
 	DDX_Check(pDX, IDC_HAS_SHIELDS, m_has_shields);
+	DDX_Check(pDX, IDC_FORCE_SHIELDS, m_force_shields);
 	DDX_Check(pDX, IDC_LOCKED, m_locked);
 	DDX_Check(pDX, IDC_PRIMARIES_LOCKED, m_primaries_locked);
 	DDX_Check(pDX, IDC_SECONDARIES_LOCKED, m_secondaries_locked);
@@ -122,6 +124,7 @@ BEGIN_MESSAGE_MAP(initial_status, CDialog)
 	ON_CBN_SELCHANGE(IDC_DOCKEE, OnSelchangeDockee)
 	ON_CBN_SELCHANGE(IDC_DOCKEE_POINT, OnSelchangeDockeePoint)
 	ON_BN_CLICKED(IDC_HAS_SHIELDS, OnHasShields)
+	ON_BN_CLICKED(IDC_FORCE_SHIELDS, OnForceShields)
 	ON_BN_CLICKED(IDC_LOCKED, OnLocked)
 	ON_BN_CLICKED(IDC_PRIMARIES_LOCKED, OnPrimariesLocked)
 	ON_BN_CLICKED(IDC_SECONDARIES_LOCKED, OnSecondariesLocked)
@@ -177,6 +180,11 @@ BOOL initial_status::OnInitDialog()
 		m_has_shields = 0;
 	else
 		m_has_shields = 1;
+	
+	if (Ships[m_ship].flags2 & SF2_FORCE_SHIELDS_ON)
+		m_force_shields = 1;
+	else
+		m_force_shields = 0;
 
 	if (Ships[m_ship].flags & SF_LOCKED)
 		m_locked = 1;
@@ -236,6 +244,15 @@ BOOL initial_status::OnInitDialog()
 				}
 
 				Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
+				
+				if (Ships[get_ship_from_obj(objp)].flags2 & SF2_FORCE_SHIELDS_ON) {
+					if (!m_force_shields)
+						m_force_shields = 2;
+
+				} else {
+					if (m_force_shields)
+						m_force_shields = 2;
+				}
 				if (Ships[get_ship_from_obj(objp)].flags & SF_LOCKED) {
 					if (!m_locked)
 						m_locked = 2;
@@ -379,50 +396,46 @@ void initial_status::OnOK()
 					objp->flags &= ~OF_NO_SHIELDS;
 				else if (!m_has_shields)
 					objp->flags |= OF_NO_SHIELDS;
-
+				
+				if (m_force_shields == 1) {
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_FORCE_SHIELDS_ON;
+				}
+				else if (!m_force_shields) {
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_FORCE_SHIELDS_ON;
+				}
+				
 				if (m_locked == 1)
 					Ships[get_ship_from_obj(objp)].flags |= SF_LOCKED;
 				else if (!m_locked)
 					Ships[get_ship_from_obj(objp)].flags &= ~SF_LOCKED;
 
-				if (m_primaries_locked == 1)
-				{
+				if (m_primaries_locked == 1) {
 					Ships[get_ship_from_obj(objp)].flags2 |= SF2_PRIMARIES_LOCKED;
 				}
-				else if (!m_primaries_locked)
-				{
+				else if (!m_primaries_locked) {
 					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_PRIMARIES_LOCKED;
 				}
 
-				if (m_secondaries_locked == 1)
-				{
+				if (m_secondaries_locked == 1) {
 					Ships[get_ship_from_obj(objp)].flags2 |= SF2_SECONDARIES_LOCKED;
 				}
-				else if (!m_secondaries_locked)
-				{
+				else if (!m_secondaries_locked)	{
 					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_SECONDARIES_LOCKED;
 				}
 
-				if (m_turrets_locked == 1)
-				{
+				if (m_turrets_locked == 1) {
 					Ships[get_ship_from_obj(objp)].flags2 |= SF2_LOCK_ALL_TURRETS_INITIALLY;
 				}
-				else if (!m_turrets_locked)
-				{
+				else if (!m_turrets_locked) {
 					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_LOCK_ALL_TURRETS_INITIALLY;
 				}
 				
-				if (m_afterburner_locked == 1)
-				{
+				if (m_afterburner_locked == 1) {
 					Ships[get_ship_from_obj(objp)].flags2 |= SF2_AFTERBURNER_LOCKED;
 				}
-				else if (!m_afterburner_locked)
-				{
+				else if (!m_afterburner_locked)	{
 					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_AFTERBURNER_LOCKED;
 				}
-
-
-
 			}
 
 			objp = GET_NEXT(objp);
@@ -436,6 +449,11 @@ void initial_status::OnOK()
 			Objects[cur_object_index].flags &= ~OF_NO_SHIELDS;
 		else
 			Objects[cur_object_index].flags |= OF_NO_SHIELDS;
+
+		if (m_force_shields == 1)
+			Ships[m_ship].flags2 |= SF2_FORCE_SHIELDS_ON;
+		else if (!m_force_shields)
+			Ships[m_ship].flags2 &= ~SF2_FORCE_SHIELDS_ON;		
 
 		if (m_locked == 1)
 			Ships[m_ship].flags |= SF_LOCKED;
@@ -471,14 +489,50 @@ void initial_status::OnOK()
 
 void initial_status::OnHasShields() 
 {
-	if (m_has_shields == 1)
+	if (m_has_shields == 1) {
 		m_has_shields = 0;
+
+		// can't force shields and also have them off
+		if (m_force_shields) {
+			m_force_shields = 0; 
+			((CButton *) GetDlgItem(IDC_FORCE_SHIELDS))->SetCheck(m_force_shields);
+
+			// warn on multiple ships of different state
+			if (m_multi_edit) {
+				MessageBox("At least one selected ship was set to Force Shields On. This is now turned off for all selected ships", "Resetting Flag", MB_OK | MB_ICONEXCLAMATION);
+			}
+		}
+	}
 	else
 		m_has_shields = 1;
 
 	((CButton *) GetDlgItem(IDC_HAS_SHIELDS))->SetCheck(m_has_shields);
 	GetDlgItem(IDC_SHIELDS)->EnableWindow(m_has_shields);
 	GetDlgItem(IDC_SHIELDS_SPIN)->EnableWindow(m_has_shields);
+}
+
+void initial_status::OnForceShields() 
+{
+	if (m_force_shields == 1)
+		m_force_shields = 0;
+	else {
+		m_force_shields = 1;
+
+		// can't force shields and also turn have them off
+		if (m_has_shields != 1) {
+			m_has_shields = 1; 
+			((CButton *) GetDlgItem(IDC_HAS_SHIELDS))->SetCheck(m_has_shields);
+			GetDlgItem(IDC_SHIELDS)->EnableWindow(m_has_shields);
+			GetDlgItem(IDC_SHIELDS_SPIN)->EnableWindow(m_has_shields);
+
+			// warn on multiple ships of different state
+			if (m_multi_edit) {
+				MessageBox("At least one selected ship was set to have no shields. Shields are now enabled for all selected ships", "Resetting Flag", MB_OK | MB_ICONEXCLAMATION);
+			}
+		}
+	}
+	
+	((CButton *) GetDlgItem(IDC_FORCE_SHIELDS))->SetCheck(m_force_shields);
 }
 
 void initial_status::OnLocked() 
