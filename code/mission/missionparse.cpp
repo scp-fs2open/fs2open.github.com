@@ -2344,6 +2344,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_AFTERBURNER_LOCKED) 
 		shipp->flags2 |= SF2_AFTERBURNER_LOCKED;
+
+	if (parse_flags2 & P2_OF_FORCE_SHIELDS_ON) 
+		shipp->flags2 |= SF2_FORCE_SHIELDS_ON;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
