@@ -707,5 +707,7 @@ public:
 };
 
 #include "globalincs/vmallocator.h"
+#include "globalincs/safe_strings.h"
+
 
 #endif		// PS_TYPES_H

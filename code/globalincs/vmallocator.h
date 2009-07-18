@@ -3,6 +3,10 @@
 
 /* SCP_vm_allocator - maintained by portej05 (i.e. please don't patch this one yourself!) */
 
+#include <vector>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400 || !defined(_MSC_VER)
+
 #define DESTROY( type, p ) (p)->~type( )
 
 template< typename T >
@@ -17,8 +21,7 @@ public:
 	typedef value_type& reference;
 	typedef const value_type& const_reference;
 
-	/* portej05 does not like this particular function.
-	 */
+	/* portej05 does not like this particular function. */
 	void construct( pointer p, const T& value )
 	{
 		::new (p) T(value);
@@ -81,8 +84,13 @@ public:
 	}
 };
 
-#include <vector>
 template< typename T >
 class SCP_vector : public std::vector< T, SCP_vm_allocator< T > > { };
+
+#else
+
+#define SCP_vector std::vector
+
+#endif
 
 #endif // _VMALLOCATOR_H_INCLUDED_

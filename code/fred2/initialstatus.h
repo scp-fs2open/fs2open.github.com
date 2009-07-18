@@ -47,6 +47,7 @@ public:
 	CSpinButtonCtrl	m_damage_spin;
 	int		m_damage;
 	int		m_shields;
+	int		m_force_shields;
 	int		m_velocity;
 	int		m_hull;
 	BOOL	m_has_shields;
@@ -78,6 +79,7 @@ protected:
 	afx_msg void OnSelchangeDockee();
 	afx_msg void OnSelchangeDockeePoint();
 	afx_msg void OnHasShields();
+	afx_msg void OnForceShields();
 	afx_msg void OnLocked();
 	afx_msg void OnPrimariesLocked();
 	afx_msg void OnSecondariesLocked();

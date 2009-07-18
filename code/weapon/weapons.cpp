@@ -978,10 +978,10 @@ int parse_weapon(int subtype, bool replace)
 		create_if_not_found = false;
 	}
 
-	strcpy(parse_error_text, "");
-	strcpy(parse_error_text, "\nin weapon: ");
-	strcat(parse_error_text, fname);
-	strcat(parse_error_text, "\n");
+	strcpy_s(parse_error_text, "");
+	strcpy_s(parse_error_text, "\nin weapon: ");
+	strcat_s(parse_error_text, fname);
+	strcat_s(parse_error_text, "\n");
 
 	//Remove @ symbol
 	//these used to be used to denote weapons that would
@@ -2369,7 +2369,7 @@ void parse_weaponstbl(char *filename)
 		required_string("#End");
 	}
 
-	strcpy(parse_error_text, "in the counter measure table entry");
+	strcpy_s(parse_error_text, "in the counter measure table entry");
 
 	if(optional_string("#Countermeasures"))
 	{
@@ -2394,16 +2394,16 @@ void parse_weaponstbl(char *filename)
 		required_string("#End");
 	}
 
-	strcpy(parse_error_text, "");
+	strcpy_s(parse_error_text, "");
 
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
 	if ( (!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:") )
 	{
-		strcpy(parse_error_text, "in the player weapon precedence list");
+		strcpy_s(parse_error_text, "in the player weapon precedence list");
 		Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-		strcpy(parse_error_text, "");
+		strcpy_s(parse_error_text, "");
 	}
 
 	// add tbl/tbm to multiplayer validation list

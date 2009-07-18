@@ -1465,6 +1465,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\safe_strings.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\safe_strings.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\safe_strings_test.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\globalincs\systemvars.cpp"
 				>
 			</File>
@@ -3843,6 +3855,46 @@
 			<File
 				RelativePath="..\..\code\sound\midiseq.h"
 				>
+			</File>
+			<File
+				RelativePath="..\..\code\sound\phrases.xml"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release SSE|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release SSE2|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\sound\rbaudio.cpp"
