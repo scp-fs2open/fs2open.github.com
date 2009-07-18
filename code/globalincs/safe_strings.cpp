@@ -25,7 +25,7 @@
  * We're not going to actually fully behave like the MS debug version.
  */
 #ifndef NDEBUG
-errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource )
 #else
 errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
 #endif
@@ -68,7 +68,7 @@ errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
 }
 
 #ifndef NDEBUG
-errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource )
 #else
 errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource )
 #endif
