@@ -127,7 +127,13 @@ int write_index(char *hf, char *df)
 	d = fopen(df, "a+b");
 
 	if ( (h == NULL) || (d == NULL) )
+	{
+		if ( h )
+			fclose( h );
+		if ( d )
+			fclose( d );
 		return 0;
+	}
 
 	for (i = 0; i < Num_files; i++) {
 		fread(tmp_data, 32+4+4+4, 1, h);
