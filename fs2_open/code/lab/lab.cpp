@@ -456,6 +456,7 @@ void labviewer_add_model_thrusters(ship_info *sip)
 	int tertiary_glow_bitmap = -1;
 	generic_anim *flame_anim = NULL, *glow_anim = NULL;
 	species_info *species = &Species_info[0];
+	weapon_info *wip = NULL;
 	mst_info mst;
 
 
@@ -464,12 +465,16 @@ void labviewer_add_model_thrusters(ship_info *sip)
 		species = &Species_info[sip->species];
 	}
 
+	if (Lab_mode == LAB_MODE_WEAPON) {
+		wip = &Weapon_info[Lab_selected_index];
+	}
+
 	// init thruster graphics (species stuff)
 	extern void ship_init_thrusters();
 	ship_init_thrusters();
 
 	if ( Lab_thrust_afterburn && (Lab_mode != LAB_MODE_WEAPON) ) {
-		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
+		flame_anim = &sip->thruster_flame_info.afterburn;		// select afterburner flame
 		glow_anim = &sip->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sip->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sip->thruster_tertiary_glow_info.afterburn.bitmap_id;
@@ -479,7 +484,16 @@ void labviewer_add_model_thrusters(ship_info *sip)
 		flame_anim = &species->thruster_info.flames.normal;			// select normal flame
 		glow_anim = &species->thruster_info.glow.normal;			// select normal glow
 
+		if (Lab_mode == LAB_MODE_WEAPON) {
+			if (wip->thruster_flame.first_frame >= 0)
+				flame_anim = &wip->thruster_flame;
+
+			if (wip->thruster_glow.first_frame >= 0)
+				glow_anim = &wip->thruster_glow;
+		}
+
 		if (Lab_mode == LAB_MODE_SHIP) {
+			flame_anim = &sip->thruster_flame_info.normal;		// select normal flame
 			glow_anim = &sip->thruster_glow_info.normal;				// select normal glow
 			secondary_glow_bitmap = sip->thruster_secondary_glow_info.normal.bitmap_id;
 			tertiary_glow_bitmap = sip->thruster_tertiary_glow_info.normal.bitmap_id;
@@ -554,7 +568,13 @@ void labviewer_add_model_thrusters(ship_info *sip)
 	mst.length.xyz.y = 0.0f;
 
 	//	Add noise to thruster geometry.
-	if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+	if ( Lab_mode == LAB_MODE_SHIP ) {
+		if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+			mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
+			mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
+			mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
+		}
+	} else {
 		mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
 		mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
 		mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
@@ -578,6 +598,10 @@ void labviewer_add_model_thrusters(ship_info *sip)
 		mst.secondary_glow_rad_factor = sip->thruster02_glow_rad_factor;
 		mst.tertiary_glow_rad_factor = sip->thruster03_glow_rad_factor;
 		mst.glow_length_factor = sip->thruster02_glow_len_factor;
+	}
+
+	if (Lab_mode == LAB_MODE_WEAPON) {
+		mst.glow_rad_factor = wip->thruster_glow_factor;
 	}
 
 	// set, and go...

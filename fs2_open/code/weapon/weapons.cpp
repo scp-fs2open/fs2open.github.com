@@ -951,6 +951,11 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->burst_delay = 1000; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
+
+	generic_anim_init( &wip->thruster_flame );
+	generic_anim_init( &wip->thruster_glow );
+	
+	wip->thruster_glow_factor = 1.0f;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -2150,6 +2155,24 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->burst_delay);
 	}
 
+	if (optional_string("$Thruster Flame Effect:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if (VALID_FNAME(fname))
+			generic_anim_init( &wip->thruster_flame, fname );
+	}
+
+	if (optional_string("$Thruster Glow Effect:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if (VALID_FNAME(fname))
+			generic_anim_init( &wip->thruster_glow, fname );
+	}
+
+	if (optional_string("$Thruster Glow Radius Factor:")) {
+		stuff_float(&wip->thruster_glow_factor);
+	}
+
 	//pretty stupid if a target must be tagged to shoot tag missiles at it
 	if ((wip->wi_flags & WIF_TAG) && (wip->wi_flags2 & WIF2_TAGGED_ONLY))
 	{
@@ -2697,6 +2720,16 @@ void weapon_release_bitmaps()
 				wip->decal_backface_texture.bitmap_id = -1;
 			}
 		}
+
+		if (wip->thruster_flame.first_frame >= 0) {
+			bm_release(wip->thruster_flame.first_frame);
+			wip->thruster_flame.first_frame = -1;
+		}
+
+		if (wip->thruster_glow.first_frame >= 0) {
+			bm_release(wip->thruster_glow.first_frame);
+			wip->thruster_glow.first_frame = -1;
+		}
 	}
 }
 
@@ -2828,6 +2861,21 @@ void weapon_load_bitmaps(int weapon_index)
 
 			// also grab the backface texture while we're here
 			generic_bitmap_load(&wip->decal_backface_texture);
+		}
+	}
+
+	// load alternate thruster textures
+	if (strlen(wip->thruster_flame.filename)) {
+		generic_anim_load(&wip->thruster_flame);
+	}
+
+	if (strlen(wip->thruster_glow.filename)) {
+		wip->thruster_glow.first_frame = bm_load(wip->thruster_glow.filename);
+		if (wip->thruster_glow.first_frame >= 0) {
+			wip->thruster_glow.num_frames = 1;
+			wip->thruster_glow.total_time = 1;
+		} else {
+			generic_anim_load(&wip->thruster_glow);
 		}
 	}
 
@@ -3174,6 +3222,7 @@ void weapon_render(object *obj)
 
 				mst.primary_bitmap = wp->thruster_bitmap;
 				mst.primary_glow_bitmap = wp->thruster_glow_bitmap;
+				mst.glow_rad_factor = wip->thruster_glow_factor;
 				mst.glow_noise = wp->thruster_glow_noise;
 
 				model_set_thrust(wip->model_num, &mst);
@@ -5611,6 +5660,9 @@ void weapons_page_in()
 		// muzzle flashes
 		if (wip->muzzle_flash >= 0)
 			mflash_mark_as_used(wip->muzzle_flash);
+
+		bm_page_in_texture(wip->thruster_flame.first_frame);
+		bm_page_in_texture(wip->thruster_glow.first_frame);
 	}
 
 	// Counter measures
