@@ -34,8 +34,8 @@
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
-char	parse_error_text[64];//for my better error mesages-Bobboau
-char	parse_error_text_save[64];
+char	parse_error_text[128];//for my better error mesages-Bobboau
+char	parse_error_text_save[128];
 
 char		Current_filename[128];
 char		Current_filename_save[128];
