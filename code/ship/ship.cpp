@@ -769,6 +769,8 @@ void init_ship_entry(ship_info *sip)
 	sip->score = 0;
 
 	// Bobboau's thruster stuff
+	generic_anim_init( &sip->thruster_flame_info.normal );
+	generic_anim_init( &sip->thruster_flame_info.afterburn );
 	generic_anim_init( &sip->thruster_glow_info.normal );
 	generic_anim_init( &sip->thruster_glow_info.afterburn );
 	generic_bitmap_init( &sip->thruster_secondary_glow_info.normal );
@@ -2158,9 +2160,24 @@ strcpy_s(parse_error_text, temp_error);
 	{
 		species_info *species = &Species_info[sip->species];
 
+		sip->thruster_flame_info = species->thruster_info.flames;
 		sip->thruster_glow_info = species->thruster_info.glow;
 		sip->thruster_secondary_glow_info = species->thruster_secondary_glow_info;
 		sip->thruster_tertiary_glow_info = species->thruster_tertiary_glow_info;
+	}
+
+	if ( optional_string("$Thruster Normal Flame:") ) {
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
+	
+		if ( VALID_FNAME(name_tmp) )
+			generic_anim_init( &sip->thruster_flame_info.normal, name_tmp );
+	}
+
+	if ( optional_string("$Thruster Afterburner Flame:") ) {
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
+
+		if ( VALID_FNAME(name_tmp) )
+			generic_anim_init( &sip->thruster_flame_info.afterburn, name_tmp );
 	}
 
 	if ( optional_string("$Thruster Bitmap 1:") ) {
@@ -6596,28 +6613,27 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	int secondary_glow_bitmap, tertiary_glow_bitmap;
 	generic_anim *flame_anim, *glow_anim;
 	ship_info	*sinfo = &Ship_info[shipp->ship_info_index];
-	species_info *species = &Species_info[sinfo->species];
 
 	if ( !Thrust_anim_inited ) {
 		ship_init_thrusters();
 	}
 
 	if (objp->phys_info.flags & PF_AFTERBURNER_ON) {
-		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
+		flame_anim = &sinfo->thruster_flame_info.afterburn;		// select afterburner flame
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
 
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
 	} else if (objp->phys_info.flags & PF_BOOSTER_ON) {
-		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
+		flame_anim = &sinfo->thruster_flame_info.afterburn;		// select afterburner flame
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
 
 		rate = 2.5f;		// go at 2.5x faster when boosters on
 	} else {
-		flame_anim = &species->thruster_info.flames.normal;			// select normal flame
+		flame_anim = &sinfo->thruster_flame_info.normal;			// select normal flame
 		glow_anim = &sinfo->thruster_glow_info.normal;				// select normal glow
 		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.normal.bitmap_id;
 		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.normal.bitmap_id;
@@ -6708,14 +6724,22 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 		ship_init_thrusters();
 
 	species_info *species = &Species_info[weaponp->species];
+	weapon_info *wip = &Weapon_info[weaponp->weapon_info_index];
 
 	// If thrust at 0, go at half as fast, full thrust; full framerate
 	// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
 	// rate = 0.5f + objp->phys_info.forward_thrust / 2.0f;
 	rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
 
-	flame_anim = &species->thruster_info.flames.normal;
-	glow_anim = &species->thruster_info.glow.normal;
+	if (wip->thruster_flame.first_frame >= 0)
+		flame_anim = &wip->thruster_flame;
+	else
+		flame_anim = &species->thruster_info.flames.normal;
+
+	if (wip->thruster_glow.first_frame >= 0)
+		glow_anim = &wip->thruster_glow;
+	else
+		glow_anim  = &species->thruster_info.glow.normal;
 
 	Assert( frametime > 0.0f );
 
@@ -14218,6 +14242,13 @@ void ship_page_in_textures(int ship_index)
 	if ( !generic_bitmap_load(&sip->afterburner_trail) )
 		bm_page_in_texture(sip->afterburner_trail.bitmap_id);
 
+	// Wanderer - just copying over Bobboau's code...
+	if ( !generic_anim_load(&sip->thruster_flame_info.normal) )
+		bm_page_in_texture(sip->thruster_flame_info.normal.first_frame);
+
+	if ( !generic_anim_load(&sip->thruster_flame_info.afterburn) )
+		bm_page_in_texture(sip->thruster_flame_info.afterburn.first_frame);
+
 	// Bobboau's thruster bitmaps
 	// the first set has to be loaded a special way
 	if ( !thruster_glow_anim_load(&sip->thruster_glow_info.normal) )
@@ -14285,6 +14316,8 @@ void ship_page_out_textures(int ship_index, bool release)
 	PAGE_OUT_TEXTURE(sip->afterburner_trail.bitmap_id);
 
 	// thruster bitmaps
+	PAGE_OUT_TEXTURE(sip->thruster_flame_info.normal.first_frame);
+	PAGE_OUT_TEXTURE(sip->thruster_flame_info.afterburn.first_frame);
 	PAGE_OUT_TEXTURE(sip->thruster_glow_info.normal.first_frame);
 	PAGE_OUT_TEXTURE(sip->thruster_glow_info.afterburn.first_frame);
 	PAGE_OUT_TEXTURE(sip->thruster_secondary_glow_info.normal.bitmap_id);

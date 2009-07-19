@@ -3180,14 +3180,20 @@ float beam_get_ship_damage(beam *b, object *objp)
 		return 0.0f;
 	}
 
-	// Bobboau, if you're going to re-implement attenuation, this is how you should do it.
-	//float dist = vm_vec_dist_quick(b->objp->pos, objp->pos);
-	float attenuation = 1.0f; // or scaled by dist
-	//-- Goober5000
+	weapon_info *wip = &Weapon_info[b->weapon_info_index];
+
+	float attenuation = 1.0f;
+
+	if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
+		float dist = vm_vec_dist(&b->last_shot, &b->last_start);
+		float range = b->range;
+		float atten_dist = range * b->damage_threshold;
+		if ((range > dist) && (atten_dist < dist)) {
+			attenuation = (dist - atten_dist) / (range - atten_dist);
+		}
+	}
 
 	float damage = 0.0f;
-
-	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team) && (wip->damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {

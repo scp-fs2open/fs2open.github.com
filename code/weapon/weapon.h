@@ -426,6 +426,11 @@ typedef struct weapon_info {
 
 	int	burst_shots;
 	int	burst_delay;
+
+	// Thruster effects
+	generic_anim	thruster_flame;
+	generic_anim	thruster_glow;
+	float			thruster_glow_factor;
 } weapon_info;
 
 // Data structure to track the active missiles

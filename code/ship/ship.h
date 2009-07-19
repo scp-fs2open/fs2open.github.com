@@ -1074,6 +1074,7 @@ typedef struct ship_info {
 	SCP_vector<thruster_particles> afterburner_thruster_particles;
 
 	// Bobboau's extra thruster stuff
+	thrust_pair			thruster_flame_info;
 	thrust_pair			thruster_glow_info;
 	thrust_pair_bitmap	thruster_secondary_glow_info;
 	thrust_pair_bitmap	thruster_tertiary_glow_info;
