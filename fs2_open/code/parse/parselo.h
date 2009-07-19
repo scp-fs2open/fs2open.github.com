@@ -185,7 +185,7 @@ extern int required_string_fred(char *pstr, char *end = NULL);
 extern int required_string_either_fred(char *str1, char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
 
-extern char	parse_error_text[64];
+extern char	parse_error_text[128];
 
 // Goober5000 - returns position of replacement or -1 for exceeded length
 extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
