@@ -40,7 +40,7 @@ typedef int errno_t;
 
 #	ifndef __safe_strings_error_handler
 #		ifdef _DEBUG
-#			define __safe_strings_error_handler( val ) Assertion(0,"%s: String error. Please Report", #val) /* Crash hard here - no better option outside of a cross platform framework */
+#			define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report", #val, file, line) /* Crash hard here - no better option outside of a cross platform framework */
 #		else
 #			define __safe_strings_error_handler( val ) 1/0 /* Crash hard here - no better option outside of a cross platform framework */
 #		endif
@@ -52,6 +52,8 @@ typedef int errno_t;
 #	define __safe_strings_error_handler( errnoVal ) extern void error_handler( int errnoValue, const char* errnoStr,  const char* file, const char* function, int line );\
 																error_handler( errnoVal, #errnoVal, __FILE__, __FUNCTION__, __LINE__ );
 #endif
+
+#ifdef NDEBUG
 
 extern errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource );
 extern errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource );
@@ -70,6 +72,30 @@ errno_t strcat_s( char (&strDest)[ size ], const char* strSource )
 {
 	return strcat_s( strDest, size, strSource );
 }
+
+#else
+
+extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+extern errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+
+template< size_t size>
+inline
+errno_t scp_strcpy_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
+{
+	return scp_strcpy_s( file, line, strDest, size, strSource );
+}
+
+template< size_t size >
+inline
+errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
+{
+	return scp_strcat_s( file, line, strDest, size, strSource );
+}
+
+#define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
+#define strcat_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
+
+#endif
 
 #elif !( defined(_MSC_VER) && _MSC_VER >= 1400 )
 
