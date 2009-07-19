@@ -1589,7 +1589,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		sip->explosion_bitmap_anims.insert(sip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
 
-char temp_error[64];
+char temp_error[128];
 strcpy_s(temp_error, parse_error_text);
 
 	if (optional_string("$Weapon Model Draw Distance:")) {
