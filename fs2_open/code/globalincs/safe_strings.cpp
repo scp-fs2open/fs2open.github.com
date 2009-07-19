@@ -14,7 +14,11 @@
  *
  */
 
-#if !defined( _MSC_VER ) /* There is no safe strings below VS2005 */
+/* There is no safe strings below VS2005
+ * scp safe_strings are used in VS2005+ DEBUG because they give more info
+ */
+
+#if !defined( _MSC_VER ) || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) )
 
 /* We don't have this here - no standard library stuff included */
 #ifndef NULL

@@ -97,6 +97,33 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 
 #endif
 
+/* Safe strings for VS2005+ in debug builds (these give more info than the MS CRT ones) */
+#elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG)
+
+#ifndef __safe_strings_error_handler
+#define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report", #val, file, line) /* Crash hard here - no better option outside of a cross platform framework */
+#endif
+
+extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+extern errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+
+template< size_t size>
+inline
+errno_t scp_strcpy_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
+{
+	return scp_strcpy_s( file, line, strDest, size, strSource );
+}
+
+template< size_t size >
+inline
+errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
+{
+	return scp_strcat_s( file, line, strDest, size, strSource );
+}
+
+#define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
+#define strcat_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
+
 #elif !( defined(_MSC_VER) && _MSC_VER >= 1400 )
 
 inline errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
