@@ -289,6 +289,9 @@ FS2_SOURCES =	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
 	globalincs/pstypes.h	\
+	globalincs/safe_strings.cpp	\
+	globalincs/safe_strings.h	\
+	globalincs/safe_strings_test.cpp	\
 	globalincs/systemvars.cpp	\
 	globalincs/systemvars.h	\
 	globalincs/version.cpp	\
