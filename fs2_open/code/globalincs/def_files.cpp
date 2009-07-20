@@ -784,7 +784,7 @@ $Glide Attack Percent: 0, 0, 0, 0, 0									\n\
 $Circle Strafe Percent: 0, 0, 0, 0, 0									\n\
 																		\n\
 ;; Percentage of the time where AI ships will use glide to strafe		\n\
-;; capital ships when it is an option.									\n\
+;; capital ships when it is an option.									\n""\
 $Glide Strafe Percent: 0, 0, 0, 0, 0									\n\
 																		\n\
 ;; The amount of time required for the AI to detect 					\n\
