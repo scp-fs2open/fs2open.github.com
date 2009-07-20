@@ -464,26 +464,6 @@ SOURCE=..\..\code\DirectX\vasync.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\DirectX\vD3dcaps.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3drmdef.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3drmobj.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3drmwin.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3dvec.inl
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\DirectX\vDinput.h
 # End Source File
 # Begin Source File
@@ -629,6 +609,18 @@ SOURCE=..\..\code\GlobalIncs\LinkList.h
 # Begin Source File
 
 SOURCE=..\..\code\GlobalIncs\PsTypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\safe_strings.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\safe_strings.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\safe_strings_test.cpp
 # End Source File
 # Begin Source File
 
@@ -1781,14 +1773,6 @@ SOURCE=..\..\code\parse\lua.cpp
 # Begin Source File
 
 SOURCE=..\..\code\parse\lua.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\python.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\python.h
 # End Source File
 # Begin Source File
 
