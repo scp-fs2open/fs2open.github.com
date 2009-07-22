@@ -710,6 +710,8 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 	str = buf;
 	while ((ptr = split_str_once(str, max_width - x)) != NULL) {
 		hud_add_line_to_scrollback(str, source, t, x, 1, w);
+		if ( str == ptr )
+			break;
 		str = ptr;
 		x = offset;
 		t = w = 0;
