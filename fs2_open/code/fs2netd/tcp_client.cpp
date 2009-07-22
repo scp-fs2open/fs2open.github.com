@@ -688,7 +688,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 {
 	int buffer_size, buffer_offset;
 	bool my_packet = false;
-	char buffer[1024];
+	char buffer[4096];
 	uint i;
 	ushort num_tables = 0;
 
