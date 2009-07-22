@@ -174,7 +174,7 @@ void iff_init()
 	// init radar blips colour table
 	int iLoop,jLoop,kLoop;
 	int a_bright,a_dim;
-	bool alternate_blip_color;
+	bool alternate_blip_color = false;
 	for (iLoop=0;iLoop<5;iLoop++)
 	{
 		for (jLoop=0;jLoop<2;jLoop++)
