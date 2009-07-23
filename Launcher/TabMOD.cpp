@@ -277,11 +277,11 @@ void CTabMOD::CheckModSetting(char *mod_string)
 		char *prev = current--;
 		if (current == mod_string)	// the first character
 			embedded_dash = false;
-		else if (*prev = ' ')		// preceded by space
+		else if (*prev == ' ')		// preceded by space
 			embedded_dash = false;
-		else if (*prev = '\t')		// preceded by tab
+		else if (*prev == '\t')		// preceded by tab
 			embedded_dash = false;
-		else if (*prev = '\n')		// preceded by newline
+		else if (*prev == '\n')		// preceded by newline
 			embedded_dash = false;
 
 		// if it's a proper start to a command-line option, then check the next few characters
