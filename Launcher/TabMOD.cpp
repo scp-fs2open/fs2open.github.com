@@ -274,7 +274,7 @@ void CTabMOD::CheckModSetting(char *mod_string)
 	{
 		// first, see if this is an embedded dash
 		bool embedded_dash = true;
-		char *prev = current--;
+		char *prev = current - 1;
 		if (current == mod_string)	// the first character
 			embedded_dash = false;
 		else if (*prev == ' ')		// preceded by space
