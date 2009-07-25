@@ -1284,6 +1284,9 @@ void player_level_init()
 
 	Player->scream_count = 0;					// number of times player has heard wingman screams this mission
 	Player->allow_scream_timestamp = 1;		// timestamp until next wingman scream is allowed
+	
+	Player->low_ammo_complaint_count = 0;	// number of complaints about low ammo received in this mission
+	Player->allow_ammo_timestamp = 1;		// timestamp until next 'Ammo low' message can be played
 
 	Player->request_repair_timestamp = 1;	// timestamp until next 'requesting repair sir' message can be played
 

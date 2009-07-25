@@ -151,6 +151,9 @@ typedef struct player {
 	int				scream_count;								// number of wingman screams received this mission
 	int				allow_scream_timestamp;					// timestamp marking time until next wingman scream is allowed
 
+	int				low_ammo_complaint_count;							// number of complaints about low ammo received in this mission
+	int				allow_ammo_timestamp;					// timestamp marking time until next 'low ammo' complaint is allowed
+
 	int				subsys_in_view;							// set to -1 when this information needs to be re-evaluated
 	int				request_repair_timestamp;				// timestamp marking time until next time we can be informed of a repair ship getting called in
 
