@@ -87,6 +87,7 @@ char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
 	"AWACS at 25",
 	"Praise Self", 
 	"High Praise",
+	"Rearm Primaries",
 	"Primaries Low",
 //XSTR:ON
 };
@@ -1743,10 +1744,10 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	// builtin type isn't supported by this version of the table
 	if (!Valid_builtin_message_types[type]) {
 		// downgrade certain message types to more generic ones more likely to be supported
-		if (type == MESSAGE_HIGH_PRAISE && Valid_builtin_message_types[MESSAGE_PRAISE] ) {
+		if (type == MESSAGE_HIGH_PRAISE ) {
 			type = MESSAGE_PRAISE; 
 		}
-		else if ( type == MESSAGE_PRIMARIES_LOW && Valid_builtin_message_types[MESSAGE_REARM_REQUEST] ) {
+		else if ( type == MESSAGE_REARM_PRIMARIES ) {
 			type = MESSAGE_REARM_REQUEST; 
 		}
 		else {

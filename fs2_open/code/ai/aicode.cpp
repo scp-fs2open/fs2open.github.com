@@ -13864,6 +13864,9 @@ void ai_frame(int objnum)
 			ship_maybe_tell_about_rearm(shipp);
 		}
 	}
+	else {
+		ship_maybe_tell_about_low_ammo(shipp);
+	}
 
 	ai_maybe_depart(Pl_objp);
 

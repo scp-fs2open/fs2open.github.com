@@ -55,7 +55,7 @@ extern SCP_vector<message_extra> Message_waves;
 // probably use these defines.
 
 // this number in this define should match the number of elements in the next array
-#define MAX_BUILTIN_MESSAGE_TYPES	44
+#define MAX_BUILTIN_MESSAGE_TYPES	45
 
 extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 
@@ -102,7 +102,8 @@ extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 #define MESSAGE_AWACS_25			40
 #define MESSAGE_PRAISE_SELF			41
 #define MESSAGE_HIGH_PRAISE			42
-#define MESSAGE_PRIMARIES_LOW		43
+#define MESSAGE_REARM_PRIMARIES		43
+#define MESSAGE_PRIMARIES_LOW		44
 
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message
