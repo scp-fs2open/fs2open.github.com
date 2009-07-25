@@ -357,6 +357,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$allow vertical dodge:", AIPF_ALLOW_VERTICAL_DODGE);
 
+			set_flag(profile, "$disarm or disable cause global ai goal effects:", AIPF_GLOBAL_DISARM_DISABLE_EFFECTS);
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 				Mp++;
