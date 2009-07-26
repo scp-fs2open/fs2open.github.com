@@ -706,6 +706,22 @@ public:
 	bool isValid();
 };
 
+/* Restrict keyword semantics are different under VC and GCC */
+
+#ifndef NO_RESTRICT_USE
+#	ifdef _MSC_VER
+#		if _MSC_VER >= 1400
+#			define RESTRICT __restrict
+#		else
+#			define RESTRICT
+#		endif
+#	else
+#		define RESTRICT restrict
+#	endif
+#else
+#	define RESTRICT
+#endif
+
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
