@@ -159,14 +159,14 @@ void gameplay_help_blit_control_line(int x, int y, int id)
 
 	if ( ci->joy_id >= 0 ) {
 		if ( has_key ) {
-			strcat(buf, XSTR( ", ", 129));
+			strcat_s(buf, XSTR( ", ", 129));
 		}
-		strcat(buf, Joy_button_text[ci->joy_id]);
+		strcat_s(buf, Joy_button_text[ci->joy_id]);
 		has_joy=1;
 	}
 
 	if ( !has_key && !has_joy ) {
-		strcpy(buf, XSTR( "no binding", 130));
+		strcpy_s(buf, XSTR( "no binding", 130));
 	}
 
 	gr_string(x,y,buf);

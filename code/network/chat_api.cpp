@@ -467,7 +467,7 @@ int SetNewChatChannel(char *channel)
 		{
 			//Error -- we got a message that the channel was invite only, or we were banned or something
 			Joining_channel = 0;
-			strcpy(szChat_channel, "");
+			strcpy_s(szChat_channel, "");
 			return -1;
 		}
 	}
@@ -530,7 +530,7 @@ char *ChatGetString(void)
 				return p;
 			}
 			Assert(strlen(Input_chat_buffer) < MAXCHATBUFFER-1);
-			strcat(Input_chat_buffer,ch);
+			strcat_s(Input_chat_buffer,ch);
 		}
 		else
 		{
@@ -717,7 +717,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 			strncpy(szNick,szPrefix,31);
          szNick[31]=0;
 		}
-		//strcpy(NewMsg.Nickname,szNick);
+		//strcpy_s(NewMsg.Nickname,szNick);
 		iNickLen=strlen(szNick);
 		iPrefixLen=strlen(szPrefix);
 	}
@@ -726,7 +726,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 		strncpy(szRemLine, Line, sizeof(szRemLine)-1);
 		strncpy(szNick, Nick_name, sizeof(szNick)-1);
 		strncpy(szPrefix, Nick_name, sizeof(szPrefix)-1);
-		//strcpy(NewMsg.Nickname,szNick);
+		//strcpy_s(NewMsg.Nickname,szNick);
 		iNickLen=-2;
 		iPrefixLen=-2;
 	}
@@ -891,9 +891,9 @@ char * ParseIRCMessage(char *Line, int iMode)
 		
 		pszTempStr=GetWordNum(0,szRemLine);
 		strncpy(szTarget, pszTempStr, sizeof(szTarget)-1);
-		//strcpy(szRemLine,Line+iPrefixLen+strlen(szCmd)+strlen(szTarget)+3);
+		//strcpy_s(szRemLine,Line+iPrefixLen+strlen(szCmd)+strlen(szTarget)+3);
 
-		//strcpy(NewMsg.Channel,szTarget);
+		//strcpy_s(NewMsg.Channel,szTarget);
 
 		AddChatUser(szNick);
 		snprintf(szResponse, SSIZE(szResponse), XSTR("** %s has joined %s", 636), szNick, szTarget);
@@ -1167,8 +1167,8 @@ char * ParseIRCMessage(char *Line, int iMode)
 	{
 		// Stip the message, and display it.
 		// pszTempStr = GetWordNum(3, Line);
-		// strcpy(szResponse, PXO_CHAT_MOTD_PREFIX);
-		// strcat(szResponse, pszTempStr);
+		// strcpy_s(szResponse, PXO_CHAT_MOTD_PREFIX);
+		// strcat_s(szResponse, pszTempStr);
 		return NULL;
 		// return szResponse;
 	}

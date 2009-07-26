@@ -78,8 +78,8 @@ void CAddVariableDlg::OnOK()
 //		int sexp_add_variable(char *text, char*, int type);
 //		char temp_name[32];
 //		char temp_value[32];
-//		strcpy(temp_name, m_variable_name);
-//		strcpy(temp_value, m_default_value);
+//		strcpy_s(temp_name, m_variable_name);
+//		strcpy_s(temp_value, m_default_value);
 		// SEXP_VARIABLE_NUMBER SEXP_VARIABLE_STRING
 //		int type;
 //

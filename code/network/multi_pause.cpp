@@ -527,7 +527,7 @@ void multi_pause_render_callsign()
 	// write out the callsign of the player who paused the game	
 	if((Multi_pause_pauser != NULL) && (Multi_pause_pauser->m_player != NULL)){
 		memset(pause_str,0,100);
-		strcpy(pause_str,Multi_pause_pauser->m_player->callsign);
+		strcpy_s(pause_str,Multi_pause_pauser->m_player->callsign);
 
 		// blit it
 		gr_set_color_fast(&Color_bright);

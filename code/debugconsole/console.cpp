@@ -169,7 +169,7 @@ void scanner_downshift_word()
 	int offset = 'a' - 'A';
 	char * tp;
 
-	strcpy( scanner_word_string, scanner_token_string );
+	strcpy_s( scanner_word_string, scanner_token_string );
 	
 	tp = scanner_word_string;
 	do {
@@ -489,7 +489,7 @@ void debug_output( char c )
 			if ( debug_y >= DROWS )	{
 				int i;
 				for (i=1; i<DROWS; i++ )
-					strcpy( debug_text[i-1], debug_text[i] );
+					strcpy_s( debug_text[i-1], debug_text[i] );
 				debug_y = DROWS-1;
 				debug_x = 0;
 				debug_text[debug_y][debug_x] = 0;
@@ -511,7 +511,7 @@ void debug_output( char c )
 		if ( debug_y >= DROWS )	{
 			int i;
 			for (i=1; i<DROWS; i++ )
-				strcpy( debug_text[i-1], debug_text[i] );
+				strcpy_s( debug_text[i-1], debug_text[i] );
 			debug_y = DROWS-1;
 			debug_x = 0;
 			debug_text[debug_y][debug_x] = 0;
@@ -594,7 +594,7 @@ void debug_console( void (*_func)() )
 
 		case KEY_F3:
 			if ( last_oldcommand > -1 )	{
-				strcpy( command_line, oldcommand_line[last_oldcommand] );
+				strcpy_s( command_line, oldcommand_line[last_oldcommand] );
 				command_line_pos = strlen(command_line);
 				command_line[command_line_pos] = 0;
 			}
@@ -606,7 +606,7 @@ void debug_console( void (*_func)() )
 				command_scroll = last_oldcommand;
 
 			if ( command_scroll > -1 )	{
-				strcpy( command_line, oldcommand_line[command_scroll] );
+				strcpy_s( command_line, oldcommand_line[command_scroll] );
 				command_line_pos = strlen(command_line);
 				command_line[command_line_pos] = 0;
 			}
@@ -619,7 +619,7 @@ void debug_console( void (*_func)() )
 			if (command_scroll>last_oldcommand) 
 				command_scroll = -1;
 			if ( command_scroll > -1 )	{
-				strcpy( command_line, oldcommand_line[command_scroll] );
+				strcpy_s( command_line, oldcommand_line[command_scroll] );
 				command_line_pos = strlen(command_line);
 				command_line[command_line_pos] = 0;
 			}
@@ -640,13 +640,13 @@ void debug_console( void (*_func)() )
 			if ( !found )	{
 				if ( last_oldcommand < DEBUG_HISTORY-1 )	{
 					last_oldcommand++;
-					strcpy( oldcommand_line[last_oldcommand], command_line);
+					strcpy_s( oldcommand_line[last_oldcommand], command_line);
 				} else {
 					int iLoop;
 					for (iLoop=0; iLoop<last_oldcommand; iLoop++ )	{
-						strcpy( oldcommand_line[iLoop], oldcommand_line[iLoop+1] );
+						strcpy_s( oldcommand_line[iLoop], oldcommand_line[iLoop+1] );
 					}
-					strcpy( oldcommand_line[last_oldcommand], command_line);
+					strcpy_s( oldcommand_line[last_oldcommand], command_line);
 				}
 			}
 //			int i;
@@ -671,8 +671,8 @@ void debug_console( void (*_func)() )
 			}
 		}
 
-		strcpy( debug_text[debug_y], ">" );
-		strcat( debug_text[debug_y], command_line );
+		strcpy_s( debug_text[debug_y], ">" );
+		strcat_s( debug_text[debug_y], command_line );
 		debug_draw();
 
 		if ( _func ){

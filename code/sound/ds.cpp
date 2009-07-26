@@ -504,7 +504,7 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 
 
 	// remove extension
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 

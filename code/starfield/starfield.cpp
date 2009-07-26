@@ -666,7 +666,7 @@ void parse_startbl(char *filename)
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
 			if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
-				strcpy(Debris_vclips_normal[Num_debris_normal++].name, name);
+				strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
 			} else {
 				Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
 			}
@@ -681,7 +681,7 @@ void parse_startbl(char *filename)
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
 			if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
-				strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, name);
+				strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
 			} else {
 				Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
 			}

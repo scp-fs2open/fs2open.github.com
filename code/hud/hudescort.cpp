@@ -588,7 +588,7 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 	}
 	
 	// print out player name
-	strcpy(buf, Net_players[np_index].m_player->callsign);
+	strcpy_s(buf, Net_players[np_index].m_player->callsign);
 	gr_force_fit_string(buf, 255, 100 - stat_shift);
 	emp_hud_string( x + current_hud->Escort_name[0], y + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
 
@@ -649,7 +649,7 @@ void hud_escort_show_icon(int x, int y, int index)
 	}
 
 	// print out ship name
-	strcpy(buf, sp->ship_name);
+	strcpy_s(buf, sp->ship_name);
 	gr_force_fit_string(buf, 255, 100);	
     end_string_at_first_hash_symbol(buf);
 	

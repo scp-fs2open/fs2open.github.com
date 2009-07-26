@@ -155,7 +155,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 			{
 				filestart = pURL+i+1;
 				dirstart = pURL+i+1;
-				strcpy(m_szFilename,filestart);
+				strcpy_s(m_szFilename,filestart);
 			}
 			else
 			{
@@ -170,7 +170,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	}
 	else
 	{
-		strcpy(m_szDir,dirstart);//,(filestart-dirstart));
+		strcpy_s(m_szDir,dirstart);//,(filestart-dirstart));
 		//m_szDir[(filestart-dirstart)] = NULL;
 		strncpy(m_szHost,pURL,(dirstart-pURL));
 		m_szHost[(dirstart-pURL)-1] = '\0';
@@ -519,7 +519,7 @@ char *ChttpGet::GetHTTPLine()
 		}
 		else
 		{	chunk[1] = '\0';
-			strcat(recv_buffer,chunk);
+			strcat_s(recv_buffer,chunk);
 		}
 		
 		Sleep(1);

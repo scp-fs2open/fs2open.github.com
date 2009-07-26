@@ -117,20 +117,20 @@ void CustomWingNames::OnOK()
 
 
 	// copy starting wings
-	strcpy(Starting_wing_names[0], m_starting_1);
-	strcpy(Starting_wing_names[1], m_starting_2);
-	strcpy(Starting_wing_names[2], m_starting_3);
+	strcpy_s(Starting_wing_names[0], m_starting_1);
+	strcpy_s(Starting_wing_names[1], m_starting_2);
+	strcpy_s(Starting_wing_names[2], m_starting_3);
 
 	// copy squadron wings
-	strcpy(Squadron_wing_names[0], m_squadron_1);
-	strcpy(Squadron_wing_names[1], m_squadron_2);
-	strcpy(Squadron_wing_names[2], m_squadron_3);
-	strcpy(Squadron_wing_names[3], m_squadron_4);
-	strcpy(Squadron_wing_names[4], m_squadron_5);
+	strcpy_s(Squadron_wing_names[0], m_squadron_1);
+	strcpy_s(Squadron_wing_names[1], m_squadron_2);
+	strcpy_s(Squadron_wing_names[2], m_squadron_3);
+	strcpy_s(Squadron_wing_names[3], m_squadron_4);
+	strcpy_s(Squadron_wing_names[4], m_squadron_5);
 
 	// copy tvt wings
-	strcpy(TVT_wing_names[0], m_tvt_1);
-	strcpy(TVT_wing_names[1], m_tvt_2);
+	strcpy_s(TVT_wing_names[0], m_tvt_1);
+	strcpy_s(TVT_wing_names[1], m_tvt_2);
 
 	update_custom_wing_indexes();
 

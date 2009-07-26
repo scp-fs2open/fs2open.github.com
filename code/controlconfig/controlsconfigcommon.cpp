@@ -474,25 +474,25 @@ char *textify_scancode(int code)
 	*text = 0;
 	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		if(Lcl_gr){		
-			strcat(text, "Alt-");
+			strcat_s(text, "Alt-");
 		} else if(Lcl_fr){		
-			strcat(text, "Alt-");
+			strcat_s(text, "Alt-");
 		} else {		
-			strcat(text, "Alt-");
+			strcat_s(text, "Alt-");
 		}		
 	}
 
 	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {		
 		if(Lcl_gr){
-			strcat(text, "Shift-");
+			strcat_s(text, "Shift-");
 		} else if(Lcl_fr){		
-			strcat(text, "Maj.-");
+			strcat_s(text, "Maj.-");
 		} else {		
-			strcat(text, "Shift-");
+			strcat_s(text, "Shift-");
 		}
 	}
 
-	strcat(text, Scan_code_text[keycode]);
+	strcat_s(text, Scan_code_text[keycode]);
 	return text;
 }
 //XSTR:ON

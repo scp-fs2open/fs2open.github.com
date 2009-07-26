@@ -140,7 +140,7 @@ void parse_ai_profiles_tbl(char *filename)
 		}
 
 		// set the name
-		strcpy(profile->profile_name, profile_name);
+		strcpy_s(profile->profile_name, profile_name);
 
 
 		// fill in any and all settings; they're all optional and can be in any order

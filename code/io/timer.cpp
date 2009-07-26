@@ -292,7 +292,7 @@ void timing_frame_start()
 	Timing_frame.start = timer_get_microseconds();
 	for(idx=0; idx<MAX_TIMING_EVENTS; idx++){
 		Timing_events[idx].microseconds_total = 0;
-		strcpy(Timing_events[idx].name, "");
+		strcpy_s(Timing_events[idx].name, "");
 		Timing_events[idx].ref_count = 0;
 	}
 #endif
@@ -349,7 +349,7 @@ void timing_event_start(char *event_name)
 	// if we need to add a new one
 	else {
 		if(Timing_event_count < MAX_TIMING_EVENTS){
-			strcpy(Timing_events[Timing_event_count].name, event_name);
+			strcpy_s(Timing_events[Timing_event_count].name, event_name);
 			Timing_events[Timing_event_count].start = timer_get_microseconds();
 			Timing_events[Timing_event_count++].ref_count++;
 		}

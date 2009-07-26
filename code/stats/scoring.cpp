@@ -690,7 +690,7 @@ int scoring_eval_kill(object *ship_obj)
 			if (Ship_info[si_index].flags & SIF_SHIP_COPY)
 			{
 				char temp[NAME_LENGTH];
-				strcpy(temp, Ship_info[si_index].name);
+				strcpy_s(temp, Ship_info[si_index].name);
 				end_string_at_first_hash_symbol(temp);
 
 				// Goober5000 - previous error checking guarantees that this will be >= 0
@@ -818,12 +818,12 @@ int scoring_eval_kill(object *ship_obj)
 				sprintf(buf, "%s: %f", plr->callsign, dead_ship->damage_ship[i]);
 
 				if (dead_ship->damage_ship_id[i] == killer_sig ) {
-					strcat(buf, "  KILLER\n");
+					strcat_s(buf, "  KILLER\n");
 				} else {
-					strcat(buf, "\n");
+					strcat_s(buf, "\n");
 				}
 
-				strcat(Scoring_debug_text, buf);	
+				strcat_s(Scoring_debug_text, buf);	
 			}
 		}
 		mprintf ((Scoring_debug_text)); 

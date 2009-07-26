@@ -467,7 +467,7 @@ void emp_hud_string(int x, int y, int gauge_id, char *str)
 		return;
 
 	// copy the string
-	strcpy(tmp, str);
+	strcpy_s(tmp, str);
 
 	// if the emp effect is not active, don't even bother messing with the text
 	if(emp_active_local()){
@@ -536,7 +536,7 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:			
 			int wep_index;
 			wep_index = (int)frand_range(0.0f, (float)(MAX_WEAPON_TYPES - 1));
-			strcpy(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].name);			
+			strcpy_s(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].name);			
 			break;		
 
 		// escort list
@@ -545,32 +545,32 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 			int shipnum;
 			shipnum = ship_get_random_targetable_ship();
 			if(shipnum >= 0){
-				strcpy(wt->str, Ships[shipnum].ship_name);
+				strcpy_s(wt->str, Ships[shipnum].ship_name);
 			}
 			break;
 
 		// directives title
 		case EG_OBJ_TITLE:
-			strcpy(wt->str, "");
+			strcpy_s(wt->str, "");
 			break;
 
 		// directives themselves
 		case EG_OBJ1: case EG_OBJ2: case EG_OBJ3: case EG_OBJ4: case EG_OBJ5:
-			strcpy(wt->str, text);
+			strcpy_s(wt->str, text);
 			emp_randomize_chars(wt->str);
 			break;
 
 		// target box info
 		case EG_TBOX_EXTRA1: case EG_TBOX_EXTRA2: case EG_TBOX_EXTRA3: case EG_TBOX_CLASS:
 		case EG_TBOX_DIST: case EG_TBOX_CARGO: case EG_TBOX_HULL: case EG_TBOX_NAME: case EG_TBOX_INTEG:
-			strcpy(wt->str, text);
+			strcpy_s(wt->str, text);
 			emp_randomize_chars(wt->str);
 			break;
 
 		// squadmsg menu
 		case EG_SQ1: case EG_SQ2: case EG_SQ3: case EG_SQ4: case EG_SQ5: case EG_SQ6: case EG_SQ7:
 		case EG_SQ8: case EG_SQ9: case EG_SQ10:
-			strcpy(wt->str, text);
+			strcpy_s(wt->str, text);
 			emp_randomize_chars(wt->str);
 			break;
 			

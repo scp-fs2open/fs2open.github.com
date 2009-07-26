@@ -122,7 +122,7 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 }
 
 #define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
-#define strcat_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
+#define strcat_s( ... ) scp_strcat_s( __FILE__, __LINE__, __VA_ARGS__ )
 
 #elif !( defined(_MSC_VER) && _MSC_VER >= 1400 )
 

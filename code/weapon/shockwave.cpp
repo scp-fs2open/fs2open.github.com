@@ -481,7 +481,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 	if (s_index < 0) {
 		shockwave_info si_tmp;
 	
-		strcpy(si_tmp.filename, s_name);
+		strcpy_s(si_tmp.filename, s_name);
 
 		Shockwave_info.push_back( si_tmp );
 		s_index = (int)(Shockwave_info.size() - 1);

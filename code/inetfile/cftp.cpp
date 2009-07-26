@@ -79,19 +79,19 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 
 	if(Username)
 	{
-		strcpy(m_szUserName,Username);
+		strcpy_s(m_szUserName,Username);
 	}
 	else
 	{
-		strcpy(m_szUserName,"anonymous");
+		strcpy_s(m_szUserName,"anonymous");
 	}
 	if(Password)
 	{
-		strcpy(m_szPassword,Password);
+		strcpy_s(m_szPassword,Password);
 	}
 	else
 	{
-		strcpy(m_szPassword,"pxouser@pxo.net");
+		strcpy_s(m_szPassword,"pxouser@pxo.net");
 	}
 	m_ListenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if(INVALID_SOCKET == m_ListenSock)
@@ -160,7 +160,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 			{
 				filestart = pURL+i+1;
 				dirstart = pURL+i+1;
-				strcpy(m_szFilename,filestart);
+				strcpy_s(m_szFilename,filestart);
 			}
 			else
 			{
@@ -516,7 +516,7 @@ uint CFtpGet::ReadFTPServerReply()
 		}
 		else
 		{	chunk[1] = '\0';
-			strcat(recv_buffer,chunk);
+			strcat_s(recv_buffer,chunk);
 		}
 		
 		Sleep(1);	

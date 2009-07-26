@@ -224,7 +224,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
 			else {
 				char r_name[NAME_LENGTH];
-				strcpy(r_name, ship_subsys_get_name(subsys));
+				strcpy_s(r_name, ship_subsys_get_name(subsys));
 				for (i = 0; r_name[i] > 0; i++) {
 					if (r_name[i] == '|')
 						r_name[i] = ' ';
@@ -710,12 +710,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
 			if ( pnum != -1 ) {
-				strcpy(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
 			} else {
 				nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
+			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
@@ -734,12 +734,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
 			if ( pnum != -1 ) {
-				strcpy(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
 			} else {
 				nprintf(("Network", "Couldn't find player object of shockwave for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
+			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
@@ -763,12 +763,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 			pnum = multi_find_player_by_object( killer_objp );
 			if ( pnum != -1 ) {
-				strcpy(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
 			} else {
 				nprintf(("Network", "Couldn't find player object for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
+			strcpy_s(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
 			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
@@ -792,12 +792,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_objtype = OBJ_BEAM;
 		if(beam_obj != -1){			
 			if((Objects[beam_obj].type == OBJ_SHIP) && (Objects[beam_obj].instance >= 0)){
-				strcpy(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
+				strcpy_s(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
 				end_string_at_first_hash_symbol(p->killer_parent_name);
 			}
 			p->killer_species = Ship_info[Ships[Objects[beam_obj].instance].ship_info_index].species;
 		} else {			
-			strcpy(p->killer_parent_name, "");
+			strcpy_s(p->killer_parent_name, "");
 		}
 		break;
 	
@@ -1540,9 +1540,9 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 				// get first name				
 				np_index = multi_find_player_by_object(ship_obj);				
 				if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-					strcpy(name1, Net_players[np_index].m_player->callsign);
+					strcpy_s(name1, Net_players[np_index].m_player->callsign);
 				} else {
-					strcpy(name1, sp->ship_name);
+					strcpy_s(name1, sp->ship_name);
 				}
 
 				// argh
@@ -1550,13 +1550,13 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 					// second name
 					if(killer_objp == NULL){
-						strcpy(name2, killer_ship_name);
+						strcpy_s(name2, killer_ship_name);
 					} else {
 						np_index = multi_find_player_by_object(killer_objp);
 						if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-							strcpy(name2, Net_players[np_index].m_player->callsign);
+							strcpy_s(name2, Net_players[np_index].m_player->callsign);
 						} else {
-							strcpy(name2, killer_ship_name);
+							strcpy_s(name2, killer_ship_name);
 						}
 					}					
 				}
@@ -2235,9 +2235,9 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 				/*char	ship_name[64];
 
 				if (other_obj->parent_type == OBJ_SHIP) {
-					strcpy(ship_name, Ships[Objects[other_obj->parent].instance].ship_name);
+					strcpy_s(ship_name, Ships[Objects[other_obj->parent].instance].ship_name);
 				} else
-					strcpy(ship_name, XSTR("[not a ship]",-1));
+					strcpy_s(ship_name, XSTR("[not a ship]",-1));
 				*/
 				// nprintf(("AI", "Ignoring hit on %s by weapon #%i, parent = %s\n", ship_p->ship_name, other_obj-Objects, ship_name));
 				return;

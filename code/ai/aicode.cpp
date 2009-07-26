@@ -1132,14 +1132,14 @@ int set_target_objnum(ai_info *aip, int objnum)
 
 	if (Player_ship && (Ships[aip->shipnum].team == Player_ship->team)) {
 		if (aip->target_objnum == -1)
-			strcpy(old_name, "none");
+			strcpy_s(old_name, "none");
 		else
-			strcpy(old_name, Ships[Objects[aip->target_objnum].instance].ship_name);
+			strcpy_s(old_name, Ships[Objects[aip->target_objnum].instance].ship_name);
 
 		if (objnum == -1)
-			strcpy(new_name, "none");
+			strcpy_s(new_name, "none");
 		else
-			strcpy(new_name, Ships[Objects[objnum].instance].ship_name);
+			strcpy_s(new_name, Ships[Objects[objnum].instance].ship_name);
 
 		nprintf(("AI", "Ship %s changing target from %s to %s\n", Ships[aip->shipnum].ship_name, old_name, new_name));
 	}

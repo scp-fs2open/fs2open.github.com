@@ -45,10 +45,10 @@ int pcx_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 	int i, j;
 
 	if (img_cfp == NULL) {
-		strcpy( filename, real_filename );
+		strcpy_s( filename, real_filename );
 		char *p = strchr( filename, '.' );
 		if ( p ) *p = 0;
-		strcat( filename, ".pcx" );
+		strcat_s( filename, ".pcx" );
 
 		PCXfile = cfopen( filename , "rb" );
 		if ( !PCXfile )
@@ -121,10 +121,10 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 	ubyte *pixdata;
 	char filename[MAX_FILENAME_LEN];
 		
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".pcx" );
+	strcat_s( filename, ".pcx" );
 
 	PCXfile = cfopen( filename , "rb" );
 	if ( !PCXfile )
@@ -229,10 +229,10 @@ int pcx_read_bitmap( char * real_filename, ubyte *org_data, ubyte *pal, int byte
 	COLOR32 bit_32;
 	ubyte r, g, b, al;
 	
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".pcx" );
+	strcat_s( filename, ".pcx" );
 
 	
 	PCXfile = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
@@ -461,10 +461,10 @@ int pcx_write_bitmap( char * real_filename, int w, int h, ubyte ** row_ptrs, uby
 	FILE * PCXfile;
 	char filename[MAX_FILENAME_LEN];
 		
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".pcx" );
+	strcat_s( filename, ".pcx" );
 
 	memset( &header, 0, sizeof( PCXHeader ) );
 

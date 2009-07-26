@@ -108,7 +108,7 @@ int multi_rate_add(int np_index, char *type, int size)
 	m = &Multi_rate[np_index][idx];
 
 	// type string
-	strcpy(m->type, type);
+	strcpy_s(m->type, type);
 
 	// alltime
 	m->total_bytes += size;

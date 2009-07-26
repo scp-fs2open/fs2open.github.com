@@ -621,7 +621,7 @@ int wing_editor::update_data(int redraw)
 				UpdateData(FALSE);
 			}
 
-		strcpy(old_name, Wings[cur_wing].name);
+		strcpy_s(old_name, Wings[cur_wing].name);
 		string_copy(Wings[cur_wing].name, m_wing_name, NAME_LENGTH, 1);
 		update_data_safe();
 
@@ -637,7 +637,7 @@ int wing_editor::update_data(int redraw)
 			for (i=0; i<Num_reinforcements; i++)
 				if (!stricmp(old_name, Reinforcements[i].name)) {
 					Assert(strlen(str) < NAME_LENGTH);
-					strcpy(Reinforcements[i].name, str);
+					strcpy_s(Reinforcements[i].name, str);
 				}
 
 			for (i=0; i<Wings[cur_wing].wave_count; i++) {

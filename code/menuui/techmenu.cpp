@@ -1087,9 +1087,9 @@ int techroom_load_ani(anim **animpp, char *name)
 	// hi-res support
 	// (i don't think there are any hi-res anims for these tho)
 	if (gr_screen.res == GR_1024) {
-		strcat(anim_filename, name);
+		strcat_s(anim_filename, name);
 	} else {
-		strcpy(anim_filename, name);
+		strcpy_s(anim_filename, name);
 	}
 
 	while(1) {

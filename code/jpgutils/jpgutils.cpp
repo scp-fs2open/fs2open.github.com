@@ -102,14 +102,14 @@ int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *b
 	char filename[MAX_FILENAME_LEN];
 
 	if (img_cfp == NULL) {
-		strcpy( filename, real_filename );
+		strcpy_s( filename, real_filename );
 
 		char *p = strchr( filename, '.' );
 
 		if ( p )
 			*p = 0;
 
-		strcat( filename, ".jpg" );
+		strcat_s( filename, ".jpg" );
 
 		jpeg_file = cfopen( filename , "rb" );
 
@@ -171,10 +171,10 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 	JSAMPARRAY buffer = NULL;
 	int rc = 0;
 
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".jpg" );
+	strcat_s( filename, ".jpg" );
 
 
 	img_cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);

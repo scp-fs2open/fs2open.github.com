@@ -432,10 +432,10 @@ char *cf_add_ext(char *filename, char *ext)
 	flen = strlen(filename);
 	elen = strlen(ext);
 	Assert(flen < MAX_PATH_LEN);
-	strcpy(path, filename);
+	strcpy_s(path, filename);
 	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
 		Assert(flen + elen < MAX_PATH_LEN);
-		strcat(path, ext);
+		strcat_s(path, ext);
 	}
 
 	return path;
@@ -665,7 +665,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		if ( strpbrk(file_path,"/\\:")  ) {
 #endif
 			// Full path given?
-			strcpy(longname, file_path );
+			strcpy_s(longname, file_path );
 		} else {
 			// Path type given?
 			Assert( dir_type != CF_TYPE_ANY );
@@ -704,12 +704,12 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 			}
 			happy_mode[i] = '\0';
 			if(need_b)
-				strcat(happy_mode, "b");
+				strcat_s(happy_mode, "b");
 			//*****END PROCESSING OF MODE*****
 		}
 		else
 		{
-			strcpy(happy_mode, mode);
+			strcpy_s(happy_mode, mode);
 		}
 
 		FILE *fp = fopen(longname, happy_mode);
@@ -725,7 +725,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 
 	int offset, size;
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy(copy_file_path, file_path);
+	strcpy_s(copy_file_path, file_path);
 
 
 	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
@@ -842,7 +842,7 @@ CFILE *cfopen_special(char *file_path, char *mode, const int size, const int off
 
 	int offset, size;
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy(copy_file_path, file_path);
+	strcpy_s(copy_file_path, file_path);
 
 	if ( cf_find_file_location_ext(copy_file_path, ext_num, ext_list, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize) ) {
 		// Fount it, now create a cfile out of it

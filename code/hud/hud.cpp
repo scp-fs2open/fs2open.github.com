@@ -1685,7 +1685,7 @@ void hud_show_damage_popup()
 				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
 			else {
 				char r_name[NAME_LENGTH];
-				strcpy(r_name, ship_subsys_get_name(pss));
+				strcpy_s(r_name, ship_subsys_get_name(pss));
 				char *temp_string = strchr(r_name, '|');
 				if (temp_string == NULL) {
 					hud_subsys_list[num].name = r_name;
@@ -1808,7 +1808,7 @@ void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
 	ha->time_elapsed	= 0.0f;
 	ha->sx				= sx;
 	ha->sy				= sy;
-	strcpy(ha->filename, filename);
+	strcpy_s(ha->filename, filename);
 }
 
 // init the members of the hud_frames struct to default values
@@ -1920,7 +1920,7 @@ void hud_start_text_flash(char *txt, int t)
 {
 	// bogus
 	if(txt == NULL){
-		strcpy(Hud_text_flash, "");
+		strcpy_s(Hud_text_flash, "");
 		return;
 	}
 

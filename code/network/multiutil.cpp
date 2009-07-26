@@ -823,7 +823,7 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	Net_players[net_player_num].s_info.reliable_buffer_size = 0;
 	
 	// various ack handles	
-	strcpy(pl->callsign, name);
+	strcpy_s(pl->callsign, name);
 	pilot_set_short_callsign(pl, SHORT_CALLSIGN_PIXEL_W);   // calculate the short callsign 
 	pl->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 	pl->objnum = -1;
@@ -1335,7 +1335,7 @@ int multi_is_builtin_mission()
 
 	// get the full filename
 	memset(name,0,512);
-	strcpy(name,Game_current_mission_filename);
+	strcpy_s(name,Game_current_mission_filename);
 	cf_add_ext(name, FS_MISSION_FILE_EXT);
 
 	// if this mission is builtin	
@@ -1639,7 +1639,7 @@ void multi_create_standalone_object()
 	// make ship hidden from sensors so that this observer cannot target it.  Observers really have two ships
 	// one observer, and one "Player_ship".  Observer needs to ignore the Player_ship.
 	Player_ship->flags |= SF_HIDDEN_FROM_SENSORS;
-	strcpy(Player_ship->ship_name, XSTR("Standalone Ship",904));
+	strcpy_s(Player_ship->ship_name, XSTR("Standalone Ship",904));
 	Player_ai = &Ai_info[Ships[Objects[pobj_num].instance].ai_index];		
 
 }
@@ -1717,9 +1717,9 @@ active_game *multi_update_active_games(active_game *ag)
 
 			// copy in the game information
 			memcpy(&gp->server_addr,&ag->server_addr,sizeof(net_addr));
-			strcpy(gp->name,ag->name);
-			strcpy(gp->mission_name,ag->mission_name);
-			strcpy(gp->title,ag->title);			
+			strcpy_s(gp->name,ag->name);
+			strcpy_s(gp->mission_name,ag->mission_name);
+			strcpy_s(gp->title,ag->title);			
 			gp->num_players = ag->num_players;
 			gp->flags = ag->flags;
 			
@@ -1735,11 +1735,11 @@ active_game *multi_update_active_games(active_game *ag)
 		// otherwise update the netgame info we have for this guy
 		else {				
 			memset(gp->name,0,MAX_GAMENAME_LEN+1);
-			strcpy(gp->name,ag->name);
+			strcpy_s(gp->name,ag->name);
 			memset(gp->mission_name,0,NAME_LENGTH+1);
-			strcpy(gp->mission_name,ag->mission_name);
+			strcpy_s(gp->mission_name,ag->mission_name);
 			memset(gp->title,0,NAME_LENGTH+1);
-			strcpy(gp->title,ag->title);			
+			strcpy_s(gp->title,ag->title);			
 			gp->num_players = ag->num_players;
 			gp->flags = ag->flags;			
 		}
@@ -1749,9 +1749,9 @@ active_game *multi_update_active_games(active_game *ag)
 
 		// copy in the game information	
 		memcpy(&gp->server_addr,&ag->server_addr,sizeof(net_addr));
-		strcpy(gp->name,ag->name);
-		strcpy(gp->mission_name,ag->mission_name);
-		strcpy(gp->title,ag->title);		
+		strcpy_s(gp->name,ag->name);
+		strcpy_s(gp->mission_name,ag->mission_name);
+		strcpy_s(gp->title,ag->title);		
 		gp->num_players = ag->num_players;
 		gp->flags = ag->flags;
 		
@@ -2479,9 +2479,9 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// copy his pilot image filename
 		if(strlen(jr->image_filename) > 0){
-			strcpy(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
 		} else {
-			strcpy(Net_players[net_player_num].m_player->image_filename, "");
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, "");
 		}
 
 		// copy his pilot squad filename
@@ -2502,9 +2502,9 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// store pxo info
 		if(strlen(jr->pxo_squad_name) > 0){
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
 		} else {
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, "");
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, "");
 		}		
 
 		// if he's using hacked data
@@ -2525,9 +2525,9 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		
 		// copy his pilot image filename
 		if(strlen(jr->image_filename) > 0){
-			strcpy(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
 		} else {
-			strcpy(Net_players[net_player_num].m_player->image_filename, "");
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, "");
 		}
 
 		// copy his pilot squad filename		
@@ -2548,9 +2548,9 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 		// store pxo info
 		if(strlen(jr->pxo_squad_name) > 0){
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
 		} else {
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, "");
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, "");
 		}		
 
 		// if he's using hacked data
@@ -3131,10 +3131,10 @@ void multi_update_valid_missions()
 			if (tok == NULL)
 				continue;
 
-			strcpy(temp, tok);
+			strcpy_s(temp, tok);
 			drop_trailing_white_space(temp);
 			drop_leading_white_space(temp);
-			strcpy(next_filename, temp);
+			strcpy_s(next_filename, temp);
 			
 			// read in the status string
 			memset(status_string, 0, 50);
@@ -3144,10 +3144,10 @@ void multi_update_valid_missions()
 			if (tok == NULL)
 				continue;
 
-			strcpy(temp, tok);
+			strcpy_s(temp, tok);
 			drop_trailing_white_space(temp);
 			drop_leading_white_space(temp);
-			strcpy(status_string, temp);
+			strcpy_s(status_string, temp);
 
 			// try and find the file
 			file_index = multi_create_lookup_mission(next_filename);
@@ -3308,8 +3308,8 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 
 	if (file_names != NULL) {
 		memset(wild_card, 0, 10);
-		strcpy(wild_card, NOX("*"));
-		strcat(wild_card, FS_MISSION_FILE_EXT);
+		strcpy_s(wild_card, NOX("*"));
+		strcat_s(wild_card, FS_MISSION_FILE_EXT);
 		count = cf_get_file_list(max_files, file_names, CF_TYPE_MISSIONS, wild_card);	
 
 		if (count <= 0)
@@ -3324,7 +3324,7 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 			goto Done;
 
 		memset( modname, 0, sizeof(modname) );
-		strcpy( modname, Cmdline_spew_mission_crcs );
+		strcpy_s( modname, Cmdline_spew_mission_crcs );
 
 		my_time = time(NULL);
 
@@ -3336,7 +3336,7 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 		// do all the checksums
 		for (idx = 0; idx < count; idx++) {
 			memset( full_name, 0, sizeof(full_name) );			
-			strcpy( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
+			strcpy_s( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
 
 			if ( cf_chksum_long(full_name, &checksum) ) {
 				if (idx == 0)
@@ -3395,7 +3395,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 			goto Done;
 
 		memset( modname, 0, sizeof(modname) );
-		strcpy( modname, Cmdline_spew_table_crcs );
+		strcpy_s( modname, Cmdline_spew_table_crcs );
 
 		my_time = time(NULL);
 	
@@ -3407,7 +3407,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 		// do all the checksums
 		for (idx = 0; idx < count; idx++) {
 			memset( full_name, 0, sizeof(full_name) );			
-			strcpy( full_name, cf_add_ext(file_names[idx], ".tbl") );
+			strcpy_s( full_name, cf_add_ext(file_names[idx], ".tbl") );
 
 			if ( cf_chksum_long(full_name, &checksum) ) {
 				if (idx == 0)

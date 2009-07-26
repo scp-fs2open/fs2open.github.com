@@ -996,7 +996,7 @@ void ship_select_blit_ship_info()
 
 		// Goober5000
 		char temp[NAME_LENGTH];
-		strcpy(temp, sip->name);
+		strcpy_s(temp, sip->name);
 		end_string_at_first_hash_symbol(temp);
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, temp);
@@ -1037,7 +1037,7 @@ void ship_select_blit_ship_info()
 	{
 		polymodel *pm = model_get(ShipSelectModelNum);
 		sprintf( str, "%d", fl2i(pm->maxs.xyz.z - pm->mins.xyz.z) );
-		strcat(str, " M");
+		strcat_s(str, " M");
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
 	else
@@ -1067,19 +1067,19 @@ void ship_select_blit_ship_info()
 	{
 		int sum = fl2i(sip->rotation_time.xyz.x + sip->rotation_time.xyz.y);
 		if(sum <= 6)
-			strcpy(str, "Excellent");
+			strcpy_s(str, "Excellent");
 		else if(sum < 7)
-			strcpy(str, "High");
+			strcpy_s(str, "High");
 		else if(sum < 8)
-			strcpy(str, "Good");
+			strcpy_s(str, "Good");
 		else if(sum < 9)
-			strcpy(str, "Average");
+			strcpy_s(str, "Average");
 		else if(sum < 10)
-			strcpy(str, "Poor");
+			strcpy_s(str, "Poor");
 		else if(sum < 15)
-			strcpy(str, "Very Poor");
+			strcpy_s(str, "Very Poor");
 		else
-			strcpy(str, "Extremely Poor");
+			strcpy_s(str, "Extremely Poor");
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
@@ -1101,27 +1101,27 @@ void ship_select_blit_ship_info()
 	{
 		int sum = fl2i(sip->max_hull_strength + sip->max_shield_strength);
 		if(sum <= 600)
-			strcpy(str, "Light");
+			strcpy_s(str, "Light");
 		else if(sum <= 700)
-			strcpy(str, "Average");
+			strcpy_s(str, "Average");
 		else if(sum <= 900)
-			strcpy(str, "Medium");
+			strcpy_s(str, "Medium");
 		else if(sum <= 1100)
-			strcpy(str,	"Heavy");
+			strcpy_s(str,	"Heavy");
 		else if(sum <= 1300)
-			strcpy(str, "Very Heavy");
+			strcpy_s(str, "Very Heavy");
 		else if(sum <= 2000)
-			strcpy(str, "Ultra Heavy");
+			strcpy_s(str, "Ultra Heavy");
 		else if(sum <= 30000)
-			strcpy(str, "Light Capital");
+			strcpy_s(str, "Light Capital");
 		else if(sum <= 75000)
-			strcpy(str, "Medium Capital");
+			strcpy_s(str, "Medium Capital");
 		else if(sum <= 200000)
-			strcpy(str, "Heavy Capital");
+			strcpy_s(str, "Heavy Capital");
 		else if(sum <= 800000)
-			strcpy(str, "Very Heavy Capital");
+			strcpy_s(str, "Very Heavy Capital");
 		else
-			strcpy(str, "Ultra Heavy Capital");
+			strcpy_s(str, "Ultra Heavy Capital");
 			
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str);
@@ -1153,7 +1153,7 @@ void ship_select_blit_ship_info()
 		if(sum != 0)
 			sprintf(str, "%d", sum);
 		else
-			strcpy(str, "None");
+			strcpy_s(str, "None");
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
 	else
@@ -1167,7 +1167,7 @@ void ship_select_blit_ship_info()
 		}
 		else
 		{
-			strcpy(str, "None");
+			strcpy_s(str, "None");
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
@@ -1189,7 +1189,7 @@ void ship_select_blit_ship_info()
 		}
 		else
 		{
-			strcpy(str, "None");
+			strcpy_s(str, "None");
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
@@ -1802,23 +1802,23 @@ anim* ss_load_individual_animation(int ship_class)
 	// If we are in 1024x768, we first want to append "2_" in front of the filename
 	if (gr_screen.res == GR_1024) {
 		Assert(strlen(Ship_info[ship_class].anim_filename) <= 30);
-		strcpy(animation_filename, "2_");
-		strcat(animation_filename, Ship_info[ship_class].anim_filename);
+		strcpy_s(animation_filename, "2_");
+		strcat_s(animation_filename, Ship_info[ship_class].anim_filename);
 		// now check if file exists
 		// GRR must add a .ANI at the end for detection
-		strcat(animation_filename, ".ani");
+		strcat_s(animation_filename, ".ani");
 		
 		p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 		if (p_anim == NULL) {
 			// failed loading hi-res, revert to low res
-			strcpy(animation_filename, Ship_info[ship_class].anim_filename);
+			strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
 			p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 			mprintf(("Ship ANI: Can not find %s, using lowres version instead.\n", animation_filename)); 
 		} else {
 			mprintf(("SHIP ANI: Found hires version of %s\n",animation_filename));
 		}
 	} else {
-		strcpy(animation_filename, Ship_info[ship_class].anim_filename);
+		strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
 		p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 	}
 	
@@ -1988,8 +1988,8 @@ void commit_pressed()
 
 	// save the player loadout
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
-		strcpy(Player_loadout.filename, Game_current_mission_filename);
-		strcpy(Player_loadout.last_modified, The_mission.modified);
+		strcpy_s(Player_loadout.filename, Game_current_mission_filename);
+		strcpy_s(Player_loadout.last_modified, The_mission.modified);
 		wss_save_loadout();
 	}
 

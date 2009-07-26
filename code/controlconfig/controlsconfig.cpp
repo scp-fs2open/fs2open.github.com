@@ -1440,7 +1440,7 @@ void control_config_do_frame(float frametime)
 			Ui_window.process(0);
 
 			if (k == KEY_ESC) {
-				strcpy(bound_string, XSTR( "Canceled", 206));
+				strcpy_s(bound_string, XSTR( "Canceled", 206));
 				bound_timestamp = timestamp(2500);
 				control_config_do_cancel();
 
@@ -1455,7 +1455,7 @@ void control_config_do_frame(float frametime)
 				if (bind) {
 					if (Axis_override >= 0) {
 						control_config_bind_axis(z, Axis_override);
-						strcpy(bound_string, Joy_axis_text[Axis_override]);
+						strcpy_s(bound_string, Joy_axis_text[Axis_override]);
 						gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 						bound_timestamp = timestamp(2500);
 						control_config_conflict_check();
@@ -1491,7 +1491,7 @@ void control_config_do_frame(float frametime)
 			}
 
 			if (k == KEY_ESC) {
-				strcpy(bound_string, XSTR( "Canceled", 206));
+				strcpy_s(bound_string, XSTR( "Canceled", 206));
 				bound_timestamp = timestamp(2500);
 				control_config_do_cancel();
 
@@ -1521,7 +1521,7 @@ void control_config_do_frame(float frametime)
 					Assert(!(z & JOY_AXIS));
 					control_config_bind_key(z, k);
 
-					strcpy(bound_string, textify_scancode(k));
+					strcpy_s(bound_string, textify_scancode(k));
 					gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 					bound_timestamp = timestamp(2500);
 					control_config_conflict_check();
@@ -1535,7 +1535,7 @@ void control_config_do_frame(float frametime)
 						Assert(!(z & JOY_AXIS));
 						control_config_bind_joy(z, i);
 
-						strcpy(bound_string, Joy_button_text[i]);
+						strcpy_s(bound_string, Joy_button_text[i]);
 						gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 						bound_timestamp = timestamp(2500);
 						control_config_conflict_check();
@@ -1558,7 +1558,7 @@ void control_config_do_frame(float frametime)
 								Assert(!(z & JOY_AXIS));
 								control_config_bind_joy(z, i);
 
-								strcpy(bound_string, Joy_button_text[i]);
+								strcpy_s(bound_string, Joy_button_text[i]);
 								gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 								bound_timestamp = timestamp(2500);
 								control_config_conflict_check();
@@ -1901,9 +1901,9 @@ void control_config_do_frame(float frametime)
 		gr_printf(x - w / 2, y - font_height, str);
 
 		if (Control_config[i].hasXSTR)
-			strcpy(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
+			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
 		else
-			strcpy(buf, Control_config[i].text);
+			strcpy_s(buf, Control_config[i].text);
 
 		gr_force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
@@ -1951,7 +1951,7 @@ void control_config_do_frame(float frametime)
 
 		gr_set_color_fast(c);
 		if (Cc_lines[line].label) {
-			strcpy(buf, Cc_lines[line].label);
+			strcpy_s(buf, Cc_lines[line].label);
 			gr_force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
 			gr_printf(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, buf);
 		}
@@ -1969,7 +1969,7 @@ void control_config_do_frame(float frametime)
 
 			} else {
 				if (k >= 0) {
-					strcpy(buf, textify_scancode(k));
+					strcpy_s(buf, textify_scancode(k));
 					if (Conflicts[z].key >= 0) {
 						if (c == &Color_text_normal)
 							gr_set_color_fast(&Color_text_error);
@@ -2001,7 +2001,7 @@ void control_config_do_frame(float frametime)
 				}
 
 				if (j >= 0) {
-					strcpy(buf, Joy_button_text[j]);
+					strcpy_s(buf, Joy_button_text[j]);
 					if (Conflicts[z].joy >= 0) {
 						if (c == &Color_text_normal)
 							gr_set_color_fast(&Color_text_error);

@@ -130,7 +130,7 @@ void fsspeech_stuff_buffer(char *text)
 	int len = strlen(text);
 
 	if(Speech_buffer_len + len < MAX_SPEECH_BUFFER_LEN) {
-		strcat(Speech_buffer, text);
+		strcat_s(Speech_buffer, text);
 	}
 
 	Speech_buffer_len += len;
