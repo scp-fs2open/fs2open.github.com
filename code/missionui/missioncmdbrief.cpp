@@ -529,7 +529,7 @@ void cmd_brief_ani_wave_init(int index)
 	name = Cur_cmd_brief->stage[index].ani_filename;
 	if (!name[0] || !stricmp(name, NOX("<default>")) || !stricmp(name, NOX("none.ani"))) {
 		name = NOX("CB_default");
-		strcpy(Cur_cmd_brief->stage[index].ani_filename, name);
+		strcpy_s(Cur_cmd_brief->stage[index].ani_filename, name);
 	}
 
 	int load_attempts = 0;

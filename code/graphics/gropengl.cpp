@@ -498,11 +498,11 @@ void gr_opengl_print_screen(char *filename)
 	_mkdir( tmp );
 #else
 	_getcwd( tmp, MAX_PATH_LEN-1 );
-	strcat( tmp, "\\screenshots\\" );
+	strcat_s( tmp, "\\screenshots\\" );
 	_mkdir( tmp );
 
-	strcat( tmp, filename );
-	strcat( tmp, ".tga" );
+	strcat_s( tmp, filename );
+	strcat_s( tmp, ".tga" );
 #endif
 
 	FILE *fout = fopen(tmp, "wb");

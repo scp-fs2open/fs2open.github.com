@@ -2680,7 +2680,7 @@ void hud_target_subsystem_in_reticle()
 		set_targeted_subsys(Player_ai, nearest_subsys, Player_ai->target_objnum);
 		char r_name[NAME_LENGTH];
 		int i;
-		strcpy(r_name, ship_subsys_get_name(Player_ai->targeted_subsys));
+		strcpy_s(r_name, ship_subsys_get_name(Player_ai->targeted_subsys));
 		for (i = 0; r_name[i] > 0; i++) {
 			if (r_name[i] == '|')
 				r_name[i] = ' ';
@@ -5166,7 +5166,7 @@ void hud_show_weapons()
 				GR_AABITMAP(New_weapon.first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
 		}
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5236,9 +5236,9 @@ void hud_show_weapons()
 		
 		// HACK - make Cluster Bomb fit on the HUD.
 		if(!stricmp(wip->name,"cluster bomb")){
-			strcpy(weapon_name, NOX("Cluster"));
+			strcpy_s(weapon_name, NOX("Cluster"));
 		} else {
-			strcpy(weapon_name, wip->name);
+			strcpy_s(weapon_name, wip->name);
 		}
 
 		// get rid of #
@@ -5309,7 +5309,7 @@ void hud_show_weapons()
 		// draw bottom of border
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[0]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[0]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5346,7 +5346,7 @@ void hud_show_weapons()
 		// draw bottom of border
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][2][1]);
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[0]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[0]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5371,7 +5371,7 @@ void hud_show_weapons()
 			emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P1, "%s", name);					
 		}				
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[1]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[1]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}

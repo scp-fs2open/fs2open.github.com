@@ -78,8 +78,8 @@ static void load_hud_defaults(hud_info *hud)
 		hud->Aburn_size[0] = hud->Wenergy_size[0] = 60;
 
 		//Image defaults
-		strcpy(hud->Aburn_fname, "energy2");
-		strcpy(hud->Wenergy_fname, "energy2");
+		strcpy_s(hud->Aburn_fname, "energy2");
+		strcpy_s(hud->Wenergy_fname, "energy2");
 
 		/**************************************************/
 		//DO NOT CHANGE
@@ -93,8 +93,8 @@ static void load_hud_defaults(hud_info *hud)
 		hud->Aburn_size[0] = hud->Wenergy_size[0] = 96;
 
 		//Image defaults
-		strcpy(hud->Aburn_fname, "2_energy2");
-		strcpy(hud->Wenergy_fname, "2_energy2");
+		strcpy_s(hud->Aburn_fname, "2_energy2");
+		strcpy_s(hud->Wenergy_fname, "2_energy2");
 
 		/**************************************************/
 		//DO NOT CHANGE
@@ -104,11 +104,11 @@ static void load_hud_defaults(hud_info *hud)
 	}
 
 	//Neither
-	strcpy(hud->Shield_mini_fname, "targhit1");
-	strcpy(hud->Escort_filename[0], "escort1");
-	strcpy(hud->Escort_filename[1], "escort2");
-	strcpy(hud->Escort_filename[2], "escort3");
-	strcpy(hud->Escort_htext, XSTR( "monitoring", 285));
+	strcpy_s(hud->Shield_mini_fname, "targhit1");
+	strcpy_s(hud->Escort_filename[0], "escort1");
+	strcpy_s(hud->Escort_filename[1], "escort2");
+	strcpy_s(hud->Escort_filename[2], "escort3");
+	strcpy_s(hud->Escort_htext, XSTR( "monitoring", 285));
 
 	/**************************************************/
 	//NONE OF THIS NEEDS TO BE MODIFIED TO SETUP VARS
@@ -140,14 +140,14 @@ static void calculate_gauges(hud_info* dest_hud)
 		if(gr_screen.res == GR_640)
 		{
 			//Image defaults
-			strcpy(dest_hud->Aburn_fname, "energy2_fs1");
-			strcpy(dest_hud->Wenergy_fname, "energy2_fs1");
+			strcpy_s(dest_hud->Aburn_fname, "energy2_fs1");
+			strcpy_s(dest_hud->Wenergy_fname, "energy2_fs1");
 		}
 		else
 		{
 			//Image defaults
-			strcpy(dest_hud->Aburn_fname, "2_energy2_fs1");
-			strcpy(dest_hud->Wenergy_fname, "2_energy2_fs1");
+			strcpy_s(dest_hud->Aburn_fname, "2_energy2_fs1");
+			strcpy_s(dest_hud->Wenergy_fname, "2_energy2_fs1");
 		}
 	}
 
@@ -437,7 +437,7 @@ void parse_custom_gauge()
 		//Gotta make this a token
 		cg->fieldname[0] = '$';
 		stuff_string(cg->fieldname + 1, F_NAME, sizeof(cg->fieldname) - 1);
-		strcat(cg->fieldname, ":");
+		strcat_s(cg->fieldname, ":");
 
 		if(optional_string("+Default640X:"))
 		{

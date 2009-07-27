@@ -1267,16 +1267,16 @@ void multi_ts_blit_wing_callsigns()
 		// if there is a player in the slot
 		if(Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx] != NULL){
 			// make sure the string fits
-			strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
+			strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
 		} else {
 			// determine if this is a locked AI ship
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
 			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
-				strcpy(callsign, NOX("<"));
-				strcat(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
-				strcat(callsign, NOX(">"));
+				strcpy_s(callsign, NOX("<"));
+				strcat_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
+				strcat_s(callsign, NOX(">"));
 			} else {
-				strcpy(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
+				strcpy_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 			}
 		}
 			
@@ -1512,7 +1512,7 @@ void multi_ts_blit_ship_info()
 
 		// Goober5000
 		char temp[NAME_LENGTH];
-		strcpy(temp, sip->name);
+		strcpy_s(temp, sip->name);
 		end_string_at_first_hash_symbol(temp);
 
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, temp);
@@ -1612,11 +1612,11 @@ void multi_ts_blit_status_bar()
 	// mode specific text
 	switch(Multi_ts_status_bar_mode){
 	case 0 :
-		strcpy(text, XSTR("Ships/Weapons Locked",749));
+		strcpy_s(text, XSTR("Ships/Weapons Locked",749));
 		blit = 1;
 		break;
 	case 1 :
-		strcpy(text, XSTR("Ships/Weapons Are Now Free",750));
+		strcpy_s(text, XSTR("Ships/Weapons Are Now Free",750));
 		blit = 1;
 		break;
 	}
@@ -2470,7 +2470,7 @@ void multi_ts_blit_carried_icon()
 		break;
 	case MULTI_TS_PLAYER_LIST:
 		// get the final length of the string so we can calculate a valid offset
-		strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
+		strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
 		gr_force_fit_string(callsign,CALLSIGN_LEN,Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_W_COORD]);						
 		gr_get_string_size(&callsign_w,NULL,callsign);
 
@@ -2630,15 +2630,15 @@ void multi_ts_select_ship()
 
 	// strip out newlines
 	memset(ship_desc,0,1000);
-	strcpy(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
+	strcpy_s(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
 	token = strtok(ship_desc,"\n");
 	if(token != NULL){
-		strcpy(Multi_ts_ship_info_text,token);
+		strcpy_s(Multi_ts_ship_info_text,token);
 		while(token != NULL){
 			token = strtok(NULL,"\n");
 			if(token != NULL){
-				strcat(Multi_ts_ship_info_text," ");
-				strcat(Multi_ts_ship_info_text,token);
+				strcat_s(Multi_ts_ship_info_text," ");
+				strcat_s(Multi_ts_ship_info_text,token);
 			}
 		}
 	}

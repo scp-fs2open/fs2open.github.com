@@ -478,7 +478,7 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 				gr_force_fit_string(outstr, 255, 162);
 				has_orders = 1;
 			} else {
-				strcpy(outstr, XSTR( "no orders", 337));
+				strcpy_s(outstr, XSTR( "no orders", 337));
 			}
 			
 			emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_EXTRA_ORDERS][0], Targetbox_coords[gr_screen.res][TBOX_EXTRA_ORDERS][1], EG_TBOX_EXTRA1, outstr);			
@@ -487,7 +487,7 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 		if ( has_orders ) {
 			sprintf(outstr, XSTR( "time to: ", 338));
 			if ( ship_return_time_to_goal(tmpbuf, target_shipp) ) {
-				strcat(outstr, tmpbuf);
+				strcat_s(outstr, tmpbuf);
 				
 				emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_EXTRA_TIME][0], Targetbox_coords[gr_screen.res][TBOX_EXTRA_TIME][1], EG_TBOX_EXTRA2, outstr);				
 			}
@@ -658,7 +658,7 @@ void hud_render_target_asteroid(object *target_objp)
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
 		case ASTEROID_TYPE_LARGE:
-			strcpy(hud_name, NOX("asteroid"));
+			strcpy_s(hud_name, NOX("asteroid"));
 			break;
 
 		default:
@@ -1253,7 +1253,7 @@ void hud_render_target_debris(object *target_objp)
 	if (debrisp->parent_alt_name >= 0)
 		mission_parse_lookup_alt_index(debrisp->parent_alt_name, printable_ship_class);
 	else
-		strcpy(printable_ship_class, Ship_info[debrisp->ship_info_index].name);
+		strcpy_s(printable_ship_class, Ship_info[debrisp->ship_info_index].name);
 
 	end_string_at_first_hash_symbol(printable_ship_class);
 
@@ -1597,18 +1597,18 @@ void hud_show_target_data(float frametime)
 				Assert(aip->submode <= SM_BIG_PARALLEL);	//	Must be <= largest chase submode value.
 //				sprintf(outstr,"AI: %s",Submode_text[aip->submode]);
 				sprintf(outstr2," / %s",Submode_text[aip->submode]);
-				strcat(outstr,outstr2);
+				strcat_s(outstr,outstr2);
 				break;
 			case AIM_STRAFE:
 				Assert(aip->submode <= AIS_STRAFE_POSITION);	//	Must be <= largest chase submode value.
 //				sprintf(outstr,"AI: %s",Strafe_submode_text[aip->submode-AIS_STRAFE_ATTACK]);
 				sprintf(outstr2," / %s",Strafe_submode_text[aip->submode-AIS_STRAFE_ATTACK]);
-				strcat(outstr,outstr2);
+				strcat_s(outstr,outstr2);
 				break;
 			case AIM_WAYPOINTS:
 //				gr_printf(sx, sy, "Wpnum: %i",aip->wp_index);
 				sprintf(outstr2," / Wpnum: %i",aip->wp_index);
-				strcat(outstr,outstr2);
+				strcat_s(outstr,outstr2);
 				break;
 			default:
 				break;
@@ -1628,7 +1628,7 @@ void hud_show_target_data(float frametime)
 				vec3d	v2t;
 
 				if (aip->target_objnum == Player_obj-Objects)
-					strcpy(target_str, "Player!");
+					strcpy_s(target_str, "Player!");
 				else
 					sprintf(target_str, "%s", Ships[Objects[aip->target_objnum].instance].ship_name);
 

@@ -147,9 +147,9 @@ void CShipTexturesDlg::OnOK()
 			if (strlen(new_texture_name[i]))
 			{
 				// assign to global FRED array
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, old_texture_name[i]);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, new_texture_name[i]);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, Ships[self_ship].ship_name);
+				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, old_texture_name[i]);
+				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, new_texture_name[i]);
+				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, Ships[self_ship].ship_name);
 
 				// increment
 				Fred_num_texture_replacements++;
@@ -223,7 +223,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 			z = box->AddString(texture_file);
 
 			// and add it to the field as well
-			strcpy(old_texture_name[texture_count], texture_file);
+			strcpy_s(old_texture_name[texture_count], texture_file);
 
 			// increment
 			texture_count++;
@@ -246,7 +246,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 				if (!stricmp(old_texture_name[i], Fred_texture_replacements[k].old_texture))
 				{
 					// assign new texture
-					strcpy(new_texture_name[i], Fred_texture_replacements[k].new_texture);
+					strcpy_s(new_texture_name[i], Fred_texture_replacements[k].new_texture);
 
 					// we found one, so no more to check
 					break;
@@ -311,7 +311,7 @@ void CShipTexturesDlg::OnSelchangeOldTextureList()
 	if (stricmp(new_texture_name[active_texture_index], m_new_texture))
 	{
 		// assign it
-		strcpy(new_texture_name[active_texture_index], m_new_texture);
+		strcpy_s(new_texture_name[active_texture_index], m_new_texture);
 	
 		// make it lowercase
 		strlwr(new_texture_name[active_texture_index]);
@@ -380,7 +380,7 @@ void CShipTexturesDlg::swap_strings(char *str1, char *str2)
 */
 
 	char temp[256];
-	strcpy(temp, str1);
+	strcpy_s(temp, str1);
 	strcpy(str1, str2);
 	strcpy(str2, temp);
 }
@@ -388,9 +388,9 @@ void CShipTexturesDlg::swap_strings(char *str1, char *str2)
 texture_replace *CShipTexturesDlg::texture_set(texture_replace *dest, const texture_replace *src)
 {
 	dest->new_texture_id = src->new_texture_id;
-	strcpy(dest->ship_name, src->ship_name);
-	strcpy(dest->old_texture, src->old_texture);
-	strcpy(dest->new_texture, src->new_texture);
+	strcpy_s(dest->ship_name, src->ship_name);
+	strcpy_s(dest->old_texture, src->old_texture);
+	strcpy_s(dest->new_texture, src->new_texture);
 
 	return dest;
 }

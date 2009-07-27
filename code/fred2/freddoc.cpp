@@ -149,13 +149,13 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	int i, len;
 
 	if (pathname)
-		strcpy(mission_pathname, pathname);
+		strcpy_s(mission_pathname, pathname);
 
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
 
 	len = strlen(mission_pathname);
-	strcpy(name, mission_pathname);
+	strcpy_s(name, mission_pathname);
 	if (name[len - 4] == '.')
 		len -= 4;
 
@@ -165,7 +165,7 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 		if ((name[i] == '\\') || (name[i] == ':'))
 			break;
 
-	strcpy(Mission_filename, name + i + 1);
+	strcpy_s(Mission_filename, name + i + 1);
 //	for (i=1; i<=BACKUP_DEPTH; i++) {
 //		sprintf(name + len, ".%.3d", i);
 //		unlink(name);
@@ -192,7 +192,7 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname)
 	FILE *fp;
 
 	len = strlen(pathname);
-	strcpy(name, pathname);
+	strcpy_s(name, pathname);
 	if (name[len - 4] == '.')
 		len -= 4;
 
@@ -201,7 +201,7 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname)
 		if ((name[len] == '\\') || (name[len] == ':'))
 			break;
 
-	strcpy(Mission_filename, name + len + 1);
+	strcpy_s(Mission_filename, name + len + 1);
 	Fred_view_wnd->global_error_check();
 	if (Briefing_dialog) {
 		Briefing_dialog->update_data(1);
@@ -253,8 +253,8 @@ int CFREDDoc::check_undo()
 
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
-	SAFE_STRCAT(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
-	SAFE_STRCAT(name, ".002", (sizeof(name) - 1));
+	strcat_s(name, MISSION_BACKUP_NAME);
+	strcat_s(name, ".002");
 	fp = fopen(name, "r");
 	if (!fp)
 		return 0;
@@ -302,9 +302,9 @@ int CFREDDoc::autoload()
 
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
-	SAFE_STRCAT(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
-	strcpy(backup_name, name);
-	SAFE_STRCAT(name, ".002", (sizeof(name) - 1));
+	strcat_s(name, MISSION_BACKUP_NAME);
+	strcpy_s(backup_name, name);
+	strcat_s(name, ".002");
 	fp = fopen(name, "r");
 	if (!fp)
 		return 0;
@@ -318,7 +318,7 @@ int CFREDDoc::autoload()
 	Update_window = 1;
 
 	len = strlen(backup_name);
-	strcat(backup_name, ".001");
+	strcat_s(backup_name, ".001");
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 
 	for (i=1; i<BACKUP_DEPTH; i++) {
@@ -422,10 +422,10 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 					for (k=0; k<Num_reinforcements; k++)
 						if (!stricmp(old_name, Reinforcements[k].name)) {
 							Assert(strlen(name) < NAME_LENGTH);
-							strcpy(Reinforcements[k].name, name);
+							strcpy_s(Reinforcements[k].name, name);
 						}
 
-					strcpy(Ships[Wings[i].ship_index[j]].ship_name, name);
+					strcpy_s(Ships[Wings[i].ship_index[j]].ship_name, name);
 				}
 			}
 		}
@@ -467,9 +467,9 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 #if 0
 
 	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
-		strcpy(name, NOX("gamepalette-subspace"));
+		strcpy_s(name, NOX("gamepalette-subspace"));
 	} else {
-		strcpy(name, "gamepalette1-01");
+		strcpy_s(name, "gamepalette1-01");
 		// sprintf(name, NOX("gamepalette1-%02d"), Mission_palette + 1);
 	}
 
@@ -526,7 +526,7 @@ void CFREDDoc::Serialize(CArchive& ar)
 
 //	CSfilename = fp->GetFileName();
 //	tfilename = CSfilename.GetBuffer(16);
-//	strcpy(filename, tfilename);
+//	strcpy_s(filename, tfilename);
 //	CSfilename.ReleaseBuffer();
 // -- Don't close this, it gets closed by MFC --	ar.Close();
 
@@ -873,11 +873,11 @@ void CFREDDoc::OnFileImportFSM()
 		char *ch;
 
 		// get base paths
-		strcpy(fs1_mission_path, Fred_exe_dir);
+		strcpy_s(fs1_mission_path, Fred_exe_dir);
 		ch = strrchr(fs1_mission_path, DIR_SEPARATOR_CHAR);
 		if (ch != NULL)
 			*ch = '\0';
-		strcpy(fs2_mission_path, Fred_exe_dir);
+		strcpy_s(fs2_mission_path, Fred_exe_dir);
 		ch = strrchr(fs2_mission_path, DIR_SEPARATOR_CHAR);
 		if (ch != NULL)
 			*ch = '\0';
@@ -889,7 +889,7 @@ void CFREDDoc::OnFileImportFSM()
 		}
 
 		// estimate the mission path for FS2
-		strcat(fs2_mission_path, "\\Data\\Missions");
+		strcat_s(fs2_mission_path, "\\Data\\Missions");
 	}
 
 	// if mission has been modified, offer to save before continuing.
@@ -936,7 +936,7 @@ void CFREDDoc::OnFileImportFSM()
     if(dlgFolder.DoModal() != IDOK)
         return;
 
-	strcpy( dest_directory, dlgFolder.GetFolderPath() );
+	strcpy_s( dest_directory, dlgFolder.GetFolderPath() );
 #endif
 
 	// clean things up first
@@ -970,7 +970,7 @@ void CFREDDoc::OnFileImportFSM()
 			continue;
 
 		// get our mission
-		strcpy(fs1_path, fs1_path_mfc);
+		strcpy_s(fs1_path, fs1_path_mfc);
 
 		// load mission into memory
 		if (load_mission(fs1_path, MPF_IMPORT_FSM))
@@ -979,9 +979,9 @@ void CFREDDoc::OnFileImportFSM()
 		// get filename
 		ch = strrchr(fs1_path, DIR_SEPARATOR_CHAR) + 1;
 		if (ch != NULL)
-			strcpy(filename, ch);
+			strcpy_s(filename, ch);
 		else
-			strcpy(filename, fs1_path);
+			strcpy_s(filename, fs1_path);
 
 		// truncate extension
 		ch = strrchr(filename, '.');
@@ -989,14 +989,14 @@ void CFREDDoc::OnFileImportFSM()
 			*ch = '\0';
 
 		// add new extension
-		strcat(filename, ".fs2");
+		strcat_s(filename, ".fs2");
 
-		strcpy(Mission_filename, filename);
+		strcpy_s(Mission_filename, filename);
 
 		// get new path
-		strcpy(dest_path, dest_directory);
-		strcat(dest_path, "\\");
-		strcat(dest_path, filename);
+		strcpy_s(dest_path, dest_directory);
+		strcat_s(dest_path, "\\");
+		strcat_s(dest_path, filename);
 
 		// check attributes
 		fp = fopen(dest_path, "r");
@@ -1038,7 +1038,7 @@ void CFREDDoc::OnFileImportWeapons()
 	dlg.m_ofn.lpstrTitle = "Specify the ships.tbl with the required loadouts";
 
 	// set initial path
-	strcpy(temp, Fred_exe_dir);
+	strcpy_s(temp, Fred_exe_dir);
 	if ((ch = stristr(temp, "FreeSpace2")) != NULL)
 	{
 		strcpy(ch, "FreeSpace\\Data\\Tables");
@@ -1060,7 +1060,7 @@ void CFREDDoc::OnFileImportWeapons()
 	if (!strlen(ships_tbl_mfc))
 		return;
 
-	strcpy(ships_tbl, ships_tbl_mfc);
+	strcpy_s(ships_tbl, ships_tbl_mfc);
 
 	// allocate junk
 	ships_tbl_text = (char *) malloc(sizeof(char) * MISSION_TEXT_SIZE);

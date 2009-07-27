@@ -78,8 +78,8 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 	
-	strcpy( szWinTitle, title );
-	strcpy( szWinClass, wclass );	
+	strcpy_s( szWinTitle, title );
+	strcpy_s( szWinClass, wclass );	
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
 
@@ -94,7 +94,7 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 // set the main window title
 void os_set_title( char *title )
 {
-	strcpy( szWinTitle, title );
+	strcpy_s( szWinTitle, title );
 
 	SDL_WM_SetCaption( szWinTitle, NULL );
 }

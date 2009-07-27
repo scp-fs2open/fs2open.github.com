@@ -225,7 +225,7 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			Lab_model_num = model_load(model_fname, (valid_ship) ? Ship_info[sel_index].n_subsystems : 0, subsystems, 0);
 
 			if (Lab_model_num >= 0) {
-				strcpy(Lab_model_filename, model_fname);
+				strcpy_s(Lab_model_filename, model_fname);
 			} else {
 				memset( Lab_model_filename, 0, sizeof(Lab_model_filename) );
 			}

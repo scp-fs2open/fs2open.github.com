@@ -283,7 +283,7 @@ void multi_ingame_sync_init()
 	multi_oo_reset_sequencing();
 
 	// send the file signature to the host for possible mission file transfer
-	strcpy(Netgame.mission_name,Game_current_mission_filename);
+	strcpy_s(Netgame.mission_name,Game_current_mission_filename);
 	send_file_sig_packet(Multi_current_file_checksum,Multi_current_file_length);
 	
 	Ingame_ships_deleted = 0;
@@ -630,7 +630,7 @@ void multi_ingame_select_init()
 	Player_obj = &Objects[objnum];
 	Player_obj->net_signature = 0;						
 	Player_ship = &Ships[Player_obj->instance];
-	strcpy(Player_ship->ship_name, NOX("JIP Ship"));
+	strcpy_s(Player_ship->ship_name, NOX("JIP Ship"));
 	Player_ai = &Ai_info[Player_ship->ai_index];
 	*/
 
@@ -1044,7 +1044,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		Objects[objnum].net_signature = net_signature;
 
 		// assign any common data
-		strcpy(Ships[ship_num].ship_name, ship_name);
+		strcpy_s(Ships[ship_num].ship_name, ship_name);
 		Ships[ship_num].flags = sflags;
 		Ships[ship_num].flags2 = sflags2;
 		Ships[ship_num].team = team;

@@ -1263,8 +1263,8 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_icon = NULL;
 		return -1;
 		/*
-		strcpy(pof_filename, NOX("planet.pof"));
-		strcpy(Closeup_icon->closeup_label, XSTR("planet",-1));
+		strcpy_s(pof_filename, NOX("planet.pof"));
+		strcpy_s(Closeup_icon->closeup_label, XSTR("planet",-1));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -8300.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
@@ -1272,23 +1272,23 @@ int brief_setup_closeup(brief_icon *bi)
 		break;
 	case ICON_ASTEROID_FIELD:
 #ifndef FS2_DEMO
-		strcpy(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
-		strcpy(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
+		strcpy_s(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
+		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
 		Closeup_zoom = 0.5f;
 #endif
 		break;
 	case ICON_JUMP_NODE:
-		strcpy(pof_filename, NOX("subspacenode.pof"));
-		strcpy(Closeup_icon->closeup_label, XSTR( "jump node", 432));
+		strcpy_s(pof_filename, NOX("subspacenode.pof"));
+		strcpy_s(Closeup_icon->closeup_label, XSTR( "jump node", 432));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		break;
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
-		strcpy(pof_filename, NOX("unknownship.pof"));
-		strcpy(Closeup_icon->closeup_label, XSTR( "unknown", 433));
+		strcpy_s(pof_filename, NOX("unknownship.pof"));
+		strcpy_s(Closeup_icon->closeup_label, XSTR( "unknown", 433));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
 		break;
@@ -1297,7 +1297,7 @@ int brief_setup_closeup(brief_icon *bi)
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy(Closeup_icon->closeup_label,sip->name);
+		strcpy_s(Closeup_icon->closeup_label,sip->name);
 
 		// cut any text off after (and including) '#' char
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
@@ -1305,7 +1305,7 @@ int brief_setup_closeup(brief_icon *bi)
 		// Goober5000 - wcsaga doesn't want this
 		if (!Cmdline_wcsaga && sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN))
 		{
-			strcat(Closeup_icon->closeup_label, XSTR( " class", 434));
+			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
 
 		break;

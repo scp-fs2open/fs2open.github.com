@@ -489,7 +489,7 @@ int build_standalone_mission_list_do_frame()
 
 	if (Num_standalone_missions > 0) {  // sanity check
 		if (strlen(Mission_filenames[Num_standalone_missions_with_info]) < MAX_FILENAME_LEN - 4) { // sanity check?
-			strcpy(filename, Mission_filenames[Num_standalone_missions_with_info]);
+			strcpy_s(filename, Mission_filenames[Num_standalone_missions_with_info]);
 
 			// update popup		
 			memset(str, 0, 256);
@@ -497,7 +497,7 @@ int build_standalone_mission_list_do_frame()
 			popup_change_text(str);
 
 			// tack on an extension
-			strcat(filename, FS_MISSION_FILE_EXT);
+			strcat_s(filename, FS_MISSION_FILE_EXT);
 			if (!get_mission_info(filename)) {			
 				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
@@ -610,7 +610,7 @@ void sim_room_build_listing()
 						// determine some extra information
 						int flags = 0;
 						memset(full_filename, 0, 256);
-						strcpy(full_filename, cf_add_ext(Mission_filenames[i], FS_MISSION_FILE_EXT));
+						strcpy_s(full_filename, cf_add_ext(Mission_filenames[i], FS_MISSION_FILE_EXT));
 						fs_builtin_mission *fb = game_find_builtin_mission(full_filename);						
 						if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 							flags |= READYROOM_FLAG_FROM_VOLITION;
@@ -636,7 +636,7 @@ void sim_room_build_listing()
 					// determine some extra information
 					int flags = 0;
 					memset(full_filename, 0, 256);
-					strcpy(full_filename, cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT));
+					strcpy_s(full_filename, cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT));
 					fs_builtin_mission *fb = game_find_builtin_mission(full_filename);
 					if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 						flags |= READYROOM_FLAG_FROM_VOLITION;
@@ -823,7 +823,7 @@ int sim_room_maybe_resume_savegame()
 	// Generate the save-game filename for this campaign
 	memset(savegame_filename, 0, _MAX_FNAME);
 	mission_campaign_savefile_generate_root(savegame_filename);
-	strcat(savegame_filename, NOX("svg"));
+	strcat_s(savegame_filename, NOX("svg"));
 
 	// Decide if we should offer choice to resume this savegame
 	if ( sim_room_can_resume_savegame(savegame_filename) ) {
@@ -1113,7 +1113,7 @@ void sim_room_init()
 
 	Scroll_offset = Selected_line = 0;
 
-	strcpy(Cur_campaign, Player->current_campaign);
+	strcpy_s(Cur_campaign, Player->current_campaign);
 	if ( !mission_load_up_campaign() ) {
 		mission_campaign_next_mission();
 	} else {
@@ -1146,8 +1146,8 @@ void sim_room_init()
 
 	Get_file_list_filter = sim_room_standalone_mission_filter;
 	memset(wild_card, 0, 256);
-	strcpy(wild_card, NOX("*"));
-	strcat(wild_card, FS_MISSION_FILE_EXT);
+	strcpy_s(wild_card, NOX("*"));
+	strcat_s(wild_card, FS_MISSION_FILE_EXT);
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
 
 	// set up slider with 0 items to start
@@ -1354,7 +1354,7 @@ void sim_room_do_frame(float frametime)
 	gr_set_font(FONT1);
 	if (Player->readyroom_listing_mode == MODE_CAMPAIGNS) {
 		gr_set_color_fast(&Color_text_heading);
-		strcpy(buf, Campaign.name);
+		strcpy_s(buf, Campaign.name);
 		gr_force_fit_string(buf, 255, list_w1);
 		gr_printf(list_x1, Mission_list_coords[gr_screen.res][1], buf);
 
@@ -1366,7 +1366,7 @@ void sim_room_do_frame(float frametime)
 			// blit the proper icons if necessary
 			char full_name[256];
 			memset(full_name, 0, 256);
-			strcpy(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
+			strcpy_s(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
 			fs_builtin_mission *fb = game_find_builtin_mission(full_name);
 			if(fb != NULL){
 				// sim_room_blit_icons(0, Mission_list_coords[gr_screen.res][1], fb, 0);
@@ -1392,12 +1392,12 @@ void sim_room_do_frame(float frametime)
 		else
 			gr_set_color_fast(&Color_text_normal);
 
-		strcpy(buf, sim_room_lines[line].name);
+		strcpy_s(buf, sim_room_lines[line].name);
 		gr_force_fit_string(buf, 255, list_x1 + list_w1 - sim_room_lines[line].x);
 		gr_printf(sim_room_lines[line].x, y, buf);
 
 		if (sim_room_lines[line].filename) {
-			strcpy(buf, sim_room_lines[line].filename);
+			strcpy_s(buf, sim_room_lines[line].filename);
 			gr_force_fit_string(buf, 255, list_w2);
 			gr_printf(list_x2, y, buf);
 		}
@@ -1625,7 +1625,7 @@ void campaign_room_commit()
 		}
 
 		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
-		strcpy(Player->current_campaign, Campaign.filename);  // track new campaign for player
+		strcpy_s(Player->current_campaign, Campaign.filename);  // track new campaign for player
 
 		// Goober5000 - reset player-persistent variables
 		Player->num_variables = 0;
@@ -1915,7 +1915,7 @@ void campaign_room_do_frame(float frametime)
 		else
 			gr_set_color_fast(&Color_text_normal);
 
-		strcpy(buf, sim_room_lines[line].name);
+		strcpy_s(buf, sim_room_lines[line].name);
 		gr_force_fit_string(buf, 255, Cr_list_coords[gr_screen.res][0] + Cr_list_coords[gr_screen.res][2] - sim_room_lines[line].x);
 		gr_printf(sim_room_lines[line].x, y, buf);
 		line++;

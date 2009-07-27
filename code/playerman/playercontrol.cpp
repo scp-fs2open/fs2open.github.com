@@ -1997,13 +1997,13 @@ void player_display_packlock_view()
 	if ( !(Viewer_mode & (VM_CHASE|VM_EXTERNAL)) ) {
 		switch (padlock_view_index) {
 		case 0:
-			strcpy(str, XSTR( "top view", 101));	break;
+			strcpy_s(str, XSTR( "top view", 101));	break;
 		case 1:
-			strcpy(str, XSTR( "rear view", 102));	break;
+			strcpy_s(str, XSTR( "rear view", 102));	break;
 		case 2:
-			strcpy(str, XSTR( "left view", 103));	break;
+			strcpy_s(str, XSTR( "left view", 103));	break;
 		case 3:
-			strcpy(str, XSTR( "right view", 104));	break;
+			strcpy_s(str, XSTR( "right view", 104));	break;
 			}
 
 		HUD_fixed_printf(0.01f, str);

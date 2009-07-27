@@ -1116,16 +1116,16 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 
 		// copy in the filename
 		if(strlen(new_player_image) > 0){
-			strcpy(Net_players[new_player_num].m_player->image_filename, new_player_image);
+			strcpy_s(Net_players[new_player_num].m_player->image_filename, new_player_image);
 		} else {
-			strcpy(Net_players[new_player_num].m_player->image_filename, "");
+			strcpy_s(Net_players[new_player_num].m_player->image_filename, "");
 		}
 		// copy his pilot squad filename
 		Net_players[new_player_num].m_player->insignia_texture = -1;
 		player_set_squad_bitmap(Net_players[new_player_num].m_player, new_player_squad);				
 
 		// copy in his pxo squad name
-		strcpy(Net_players[new_player_num].p_info.pxo_squad_name, new_player_pxo_squad);
+		strcpy_s(Net_players[new_player_num].p_info.pxo_squad_name, new_player_pxo_squad);
 
 		// since we just created the player, set the last_heard_time here.
 		Net_players[new_player_num].last_heard_time = timer_get_fixed_seconds();
@@ -1326,14 +1326,14 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 		}
 
 		// copy his image filename
-		strcpy(Net_players[player_num].m_player->image_filename, image_name);
+		strcpy_s(Net_players[player_num].m_player->image_filename, image_name);
 		
 		// copy his pilot squad filename
 		Net_players[player_num].m_player->insignia_texture = -1;
 		player_set_squad_bitmap(Net_players[player_num].m_player, squad_name);
 
 		// copy his pxo squad name
-		strcpy(Net_players[player_num].p_info.pxo_squad_name, pxo_squad_name);
+		strcpy_s(Net_players[player_num].p_info.pxo_squad_name, pxo_squad_name);
 
 		// set his player id#
 		Net_players[player_num].player_id = player_id;
@@ -2616,7 +2616,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 			Net_players[pnum].m_player->killer_objtype = killer_objtype;
 			Net_players[pnum].m_player->killer_species = killer_species;
 			Net_players[pnum].m_player->killer_weapon_index = killer_weapon_index;
-			strcpy( Net_players[pnum].m_player->killer_parent_name, killer_name );
+			strcpy_s( Net_players[pnum].m_player->killer_parent_name, killer_name );
 		}
 	}	   
 
@@ -3668,8 +3668,8 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 			// STANDALONE_ONLY			
 			GET_DATA(valid_status);
 
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, name );
 			mcip.flags = flags;
 			mcip.respawn = respawn;
 			mcip.max_players = max_players;
@@ -3679,8 +3679,8 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 
 			Multi_create_mission_list.push_back( mcip );
 		} else if ( type == CAMPAIGN_LIST_ITEMS ) {
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, name );
 			mcip.flags = flags;
 			mcip.respawn = 0;
 			mcip.max_players = max_players;
@@ -4459,7 +4459,7 @@ void process_file_sig_request(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();	
 
 	// set the current mission filename
-	strcpy(Game_current_mission_filename,Netgame.mission_name);
+	strcpy_s(Game_current_mission_filename,Netgame.mission_name);
 
 	// get the checksum
 	multi_get_mission_checksum(Game_current_mission_filename);	
@@ -4700,8 +4700,8 @@ void process_netplayer_load_packet(ubyte *data, header *hinfo)
 	GET_STRING(str);
 	PACKET_SET_SIZE();
 
-	strcpy(Netgame.mission_name,str);
-	strcpy(Game_current_mission_filename,str);
+	strcpy_s(Netgame.mission_name,str);
+	strcpy_s(Game_current_mission_filename,str);
 	if(!Multi_mission_loaded){
 
 		// MWA 2/3/98 -- ingame join changes!!!
@@ -5219,7 +5219,7 @@ void process_mission_sync_packet(ubyte *data, header *hinfo)
 
 			// get the single mission filename
 			GET_STRING(Game_current_mission_filename);
-			strcpy(Netgame.mission_name,Game_current_mission_filename);
+			strcpy_s(Netgame.mission_name,Game_current_mission_filename);
 		}
 	}
 	else if (mode == MULTI_SYNC_POST_BRIEFING) {
@@ -8224,7 +8224,7 @@ void process_variable_update_packet( ubyte *data, header *hinfo)
 	// set the sexp_variable
 	if ( (variable_index >= 0) && (variable_index < sexp_variable_count()) )
 	{
-		strcpy(Sexp_variables[variable_index].text, value); 
+		strcpy_s(Sexp_variables[variable_index].text, value); 
 	}	
 
 	// send the packet on to all clients. 

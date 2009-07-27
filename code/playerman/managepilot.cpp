@@ -114,13 +114,13 @@ int delete_pilot_file( char *pilot_name, int single )
 	// get the player file.
 	_splitpath(pilot_name, NULL, NULL, basename, NULL);
 
-	strcpy( filename, basename );
+	strcpy_s( filename, basename );
 
 	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
-		strcat( filename, NOX(".pl2") ); // we only support the new format now - taylor
+		strcat_s( filename, NOX(".pl2") ); // we only support the new format now - taylor
 		delreturn = cf_delete(filename, CF_TYPE_SINGLE_PLAYERS);
 	} else {
-		strcat( filename, NOX(".plr") ); // multi pilots use modified old format
+		strcat_s( filename, NOX(".plr") ); // multi pilots use modified old format
 		delreturn = cf_delete(filename, CF_TYPE_MULTI_PLAYERS);
 	}
 
@@ -144,8 +144,8 @@ int delete_pilot_file_old( char *pilot_name, int single )
 	// get the player file.
 	_splitpath(pilot_name, NULL, NULL, basename, NULL);
 
-	strcpy( filename, basename );
-	strcat( filename, NOX(".plr") );
+	strcpy_s( filename, basename );
+	strcat_s( filename, NOX(".plr") );
 
 	// this is for single players only
 	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
@@ -168,15 +168,15 @@ int verify_pilot_file(char *filename, int single, int *rank)
 	char pname[MAX_FILENAME_LEN];
 
 	Assert( strlen(filename) < MAX_FILENAME_LEN - 4 );
-	strcpy(pname, filename);
+	strcpy_s(pname, filename);
 
 	char *p = strchr( pname, '.' );
 	if ( p ) *p = 0;
 
 	if (single)
-		strcat(pname, ".pl2");
+		strcat_s(pname, ".pl2");
 	else
-		strcat(pname, ".plr");
+		strcat_s(pname, ".plr");
 
 	if (single){
 		file = cfopen(pname, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
@@ -187,8 +187,8 @@ int verify_pilot_file(char *filename, int single, int *rank)
 	// if we didn't fine the file try the old version
 	if (!file) {
 		if (single){
-			strcpy(pname, filename);
-			strcat(pname, ".plr");
+			strcpy_s(pname, filename);
+			strcat_s(pname, ".plr");
 
 			file = cfopen(pname, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 		}
@@ -264,8 +264,8 @@ int pilot_file_upgrade_check(char *callsign, int single)
 
 	// we only look for old pilot files here so if it's not found then it's assumed to be upgraded already
 	Assert(strlen(callsign) < MAX_FILENAME_LEN - 4);  // ensure we won't overrun the buffer
-	strcpy( pname, callsign );
-	strcat( pname, NOX(".plr") );
+	strcpy_s( pname, callsign );
+	strcat_s( pname, NOX(".plr") );
 
 	// check if we've actually got an old file and make sure the user knows what's going to happen
 	if (cf_exists(pname, CF_TYPE_SINGLE_PLAYERS)) {
@@ -515,8 +515,8 @@ int read_pilot_file(char *callsign, int single, player *p)
 	// if we're a standalone server in multiplayer, just fill in some bogus values since we don't have a pilot file
 	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
 		Player->insignia_texture = -1;
-		strcpy(Player->callsign, NOX("Standalone"));
-		strcpy(Player->short_callsign, NOX("Standalone"));
+		strcpy_s(Player->callsign, NOX("Standalone"));
+		strcpy_s(Player->short_callsign, NOX("Standalone"));
 		return 0;
 	}
 
@@ -535,8 +535,8 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	//sprintf(filename, "%-.8s.plr",Players[Player_num].callsign);
 	Assert(strlen(callsign) < MAX_FILENAME_LEN - 4);  // ensure we won't overrun the buffer
-	strcpy( filename, callsign );
-	strcat( filename, ext );
+	strcpy_s( filename, callsign );
+	strcat_s( filename, ext );
 
 	// see comments at the beginning of function
 	if (single) {
@@ -548,8 +548,8 @@ int read_pilot_file(char *callsign, int single, player *p)
 	// if we couldn't open the new filetype try the old one and upgrade
 	if (!file) {
 		if (single) {
-			strcpy( filename, callsign );
-			strcat( filename, NOX(".plr") );
+			strcpy_s( filename, callsign );
+			strcat_s( filename, NOX(".plr") );
 
 			file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 
@@ -789,7 +789,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 		return errno;
 
 	// restore the callsign into the Player structure
-	strcpy(p->callsign, callsign);
+	strcpy_s(p->callsign, callsign);
 
 	// restore the truncated callsign into Player structure
 	pilot_set_short_callsign(p, SHORT_CALLSIGN_PIXEL_W);
@@ -799,18 +799,18 @@ int read_pilot_file(char *callsign, int single, player *p)
 	// we'll distinguish them by putting an M and the end of the multiplayer callsign and a P at the end of a single player
 	char cat[35];
 
-	strcpy(cat, p->callsign);
+	strcpy_s(cat, p->callsign);
 	if (is_multi)
-		strcat(cat, NOX("M"));
+		strcat_s(cat, NOX("M"));
 	else
-		strcat(cat, NOX("S"));
+		strcat_s(cat, NOX("S"));
 
 	os_config_write_string( NULL, "LastPlayer", cat );
 /*
 	// if he's not a multiplayer pilot, then load in the campaign file at this point!
 	if (!is_multi) {
 		if (mission_campaign_load_by_name(campaign_fname)) {
-			strcpy(campaign_fname, BUILTIN_CAMPAIGN);
+			strcpy_s(campaign_fname, BUILTIN_CAMPAIGN);
 			if (mission_campaign_load_by_name(campaign_fname))
 				Assert(0);
 		}
@@ -930,7 +930,7 @@ int write_pilot_file_core(player *p)
 		return 0;	//	This means there is no player, probably meaning he was deleted and game exited from same screen.
 
 	Assert((i > 0) && (i <= MAX_FILENAME_LEN - 4));  // ensure we won't overrun the buffer
-	strcpy( filename, p->callsign);
+	strcpy_s( filename, p->callsign);
 
 	// determine if this pilot is a multiplayer pilot or not
 	if (p->flags & PLAYER_FLAGS_IS_MULTI){
@@ -941,10 +941,10 @@ int write_pilot_file_core(player *p)
 
 	// see above
 	if ( !is_multi ){
-		strcat( filename, NOX(".pl2") ); // support only new format on save - taylor
+		strcat_s( filename, NOX(".pl2") ); // support only new format on save - taylor
 		file = cfopen(filename, "wb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 	} else {
-		strcat( filename, NOX(".plr") );
+		strcat_s( filename, NOX(".plr") );
 		file = cfopen(filename, "wb", CFILE_NORMAL, CF_TYPE_MULTI_PLAYERS);
 	}
 
@@ -1325,8 +1325,8 @@ void init_new_pilot(player *p, int reset)
 	}
 
 	// unassigned squadron
-	strcpy(p->squad_name, XSTR("Unassigned", 1255));
-	strcpy(p->squad_filename, "");
+	strcpy_s(p->squad_name, XSTR("Unassigned", 1255));
+	strcpy_s(p->squad_filename, "");
 
 	// set him to be a single player pilot by default (the actual creation routines will change this if necessary)
 	p->flags &= ~PLAYER_FLAGS_IS_MULTI;
@@ -1365,7 +1365,7 @@ void init_new_pilot(player *p, int reset)
 
 void pilot_set_short_callsign(player *p, int max_width)
 {
-	strcpy(p->short_callsign, p->callsign);
+	strcpy_s(p->short_callsign, p->callsign);
 	gr_set_font(FONT1);
 	gr_force_fit_string(p->short_callsign, CALLSIGN_LEN - 1, max_width);
 	gr_get_string_size( &(p->short_callsign_width), NULL, p->short_callsign );
@@ -1376,12 +1376,12 @@ void pilot_set_random_pic(player *p)
 {
 	// if there are no available pilot pics, set the image filename to null
 	if (Num_pilot_images <= 0) {
-		strcpy(p->image_filename, "");
+		strcpy_s(p->image_filename, "");
 	} else {
 		// pick a random name from the list
 		int random_index = rand() % Num_pilot_images;
 		Assert((random_index >= 0) && (random_index < Num_pilot_images));
-		strcpy(p->image_filename, Pilot_images_arr[random_index]);
+		strcpy_s(p->image_filename, Pilot_images_arr[random_index]);
 	}	
 }
 
@@ -1391,13 +1391,13 @@ void pilot_set_random_squad_pic(player *p)
 	// if there are no available pilot pics, set the image filename to null
 	if (Num_pilot_squad_images <= 0) {
 		player_set_squad_bitmap(p, "");
-		// strcpy(p->squad_filename, "");		
+		// strcpy_s(p->squad_filename, "");		
 	} else {
 		// pick a random name from the list
 		int random_index = rand() % Num_pilot_squad_images;		
 		Assert((random_index >= 0) && (random_index < Num_pilot_squad_images));
 		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index]); 
-		// strcpy(p->squad_filename, Pilot_squad_images_arr[random_index]);
+		// strcpy_s(p->squad_filename, Pilot_squad_images_arr[random_index]);
 	}	
 }
 
@@ -1488,10 +1488,10 @@ void player_set_squad_bitmap(player *p, char *fname)
 	flen = strlen(filename);
 	elen = strlen(ext);
 	Assert(flen < MAX_PATH_LEN);
-	strcpy(path, filename);
+	strcpy_s(path, filename);
 	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
 		Assert(flen + elen < MAX_PATH_LEN);
-		strcat(path, ext);
+		strcat_s(path, ext);
 	}
 	*/
 }

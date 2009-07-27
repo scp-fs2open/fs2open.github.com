@@ -166,7 +166,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 
 	new_wei.lod_count = 1;
 
-	strcpy(new_wei.lod[0].filename, filename);
+	strcpy_s(new_wei.lod[0].filename, filename);
 	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, 1);
 
 	if (new_wei.lod[0].bitmap_id < 0) {
@@ -184,7 +184,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, 1);
 
 			if (bitmap_id > 0) {
-				strcpy(new_wei.lod[idx].filename, name_tmp);
+				strcpy_s(new_wei.lod[idx].filename, name_tmp);
 				new_wei.lod[idx].bitmap_id = bitmap_id;
 				new_wei.lod[idx].num_frames = nframes;
 				new_wei.lod[idx].fps = nfps;
@@ -1037,7 +1037,7 @@ int parse_weapon(int subtype, bool replace)
 		init_weapon_entry(Num_weapon_types);
 		first_time = true;
 		
-		strcpy(wip->name, fname);
+		strcpy_s(wip->name, fname);
 		Num_weapon_types++;
 	}
 	//Set subtype
@@ -2258,7 +2258,7 @@ void parse_cmeasure(bool replace)
 		init_cmeasure_entry(Num_cmeasure_types);
 		cmeasurep = &Cmeasure_info[Num_cmeasure_types];
 		Num_cmeasure_types++;
-		strcpy(cmeasurep->cmeasure_name, buf);
+		strcpy_s(cmeasurep->cmeasure_name, buf);
 	}
 	else
 	{
@@ -2410,7 +2410,7 @@ void parse_weaponstbl(char *filename)
 			//Set cmeasure index
 			if(!strlen(Default_cmeasure_name)) {
 				//We can't be sure that index will be the same after sorting, so save the name
-				strcpy(Default_cmeasure_name, Weapon_info[idx].name);
+				strcpy_s(Default_cmeasure_name, Weapon_info[idx].name);
 			}
 		}
 
@@ -2851,12 +2851,12 @@ void weapon_load_bitmaps(int weapon_index)
 			// base texture loaded, so try glow and burn variants now
 			char tmp_name[MAX_FILENAME_LEN] = { '\0' };
 
-			strcpy(tmp_name, wip->decal_texture.filename);
-			SAFE_STRCAT(tmp_name, "-glow", sizeof(tmp_name));
+			strcpy_s(tmp_name, wip->decal_texture.filename);
+			strcat_s(tmp_name, "-glow");
 			wip->decal_glow_texture_id = bm_load(tmp_name);
 
-			strcpy(tmp_name, wip->decal_texture.filename);
-			SAFE_STRCAT(tmp_name, "-burn", sizeof(tmp_name));
+			strcpy_s(tmp_name, wip->decal_texture.filename);
+			strcat_s(tmp_name, "-burn");
 			wip->decal_burn_texture_id = bm_load(tmp_name);
 
 			// also grab the backface texture while we're here

@@ -606,10 +606,10 @@ void init_ship_entry(ship_info *sip)
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
 	sip->hud_target_lod = -1;
-	strcpy(sip->cockpit_pof_file, "");
+	strcpy_s(sip->cockpit_pof_file, "");
 	sip->cockpit_offset = vmd_zero_vector;
-	strcpy(sip->pof_file, "");
-	strcpy(sip->pof_file_hud, "");
+	strcpy_s(sip->pof_file, "");
+	strcpy_s(sip->pof_file_hud, "");
 	
 	sip->num_nondark_colors = 0;
 	
@@ -665,9 +665,9 @@ void init_ship_entry(ship_info *sip)
 	sip->blast = 0.0f;
 	sip->shockwave_speed = 0.0f;
 	sip->shockwave_model = -1;
-	strcpy(sip->shockwave_pof_file, "");
+	strcpy_s(sip->shockwave_pof_file, "");
 	sip->shockwave_info_index = -1;
-	strcpy(sip->shockwave_name,"");*/
+	strcpy_s(sip->shockwave_name,"");*/
 
 	sip->collision_damage_type_idx = -1;
 	sip->debris_min_lifetime = -1.0f;
@@ -786,10 +786,10 @@ void init_ship_entry(ship_info *sip)
 	
 //	sip->thruster_particle_bitmap01 = -1;
 
-//	strcpy(sip->thruster_particle_bitmap01_name,"thrusterparticle");
+//	strcpy_s(sip->thruster_particle_bitmap01_name,"thrusterparticle");
 
 	sip->splodeing_texture = -1;
-	strcpy(sip->splodeing_texture_name, "boom");
+	strcpy_s(sip->splodeing_texture_name, "boom");
 
 	sip->normal_thruster_particles.clear();
 	sip->afterburner_thruster_particles.clear();
@@ -908,7 +908,7 @@ int parse_ship(char *filename, bool replace)
 		first_time = true;
 		init_ship_entry(sip);
 		
-		strcpy(sip->name, buf);
+		strcpy_s(sip->name, buf);
 		Num_ship_classes++;
 	}
 
@@ -925,7 +925,7 @@ int parse_ship(char *filename, bool replace)
 			if ( template_id != -1 ) {
 				first_time = false;
 				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
-				strcpy(sip->name, buf);
+				strcpy_s(sip->name, buf);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, buf);
@@ -940,7 +940,7 @@ int parse_ship(char *filename, bool replace)
 	// Goober5000 - made nonfatal and a bit clearer
 	if (sip->flags & SIF_SHIP_COPY)
 	{
-		strcpy(name_tmp, sip->name);
+		strcpy_s(name_tmp, sip->name);
 
 		if (end_string_at_first_hash_symbol(name_tmp))
 		{
@@ -997,7 +997,7 @@ int parse_ship_template()
 	else {
 		
 		init_ship_entry(sip);
-		strcpy(sip->name, buf);
+		strcpy_s(sip->name, buf);
 		//Use another template for this template. This allows for template hierarchies. - Turey
 		if( optional_string("+Use Template:") ) {
 			char template_name[SHIP_MULTITEXT_LENGTH];
@@ -1006,7 +1006,7 @@ int parse_ship_template()
 			
 			if ( template_id != -1 ) {
 				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
-				strcpy(sip->name, buf);
+				strcpy_s(sip->name, buf);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
@@ -1126,7 +1126,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					valid = false;
 
 		if (valid)
-			strcpy(sip->cockpit_pof_file, temp);
+			strcpy_s(sip->cockpit_pof_file, temp);
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
@@ -1148,7 +1148,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					valid = false;
 
 		if (valid)
-			strcpy(sip->pof_file, temp);
+			strcpy_s(sip->pof_file, temp);
 	}
 
 	// ship class texture replacement - Goober5000 and taylor
@@ -1209,7 +1209,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 					valid = false;
 
 		if (valid)
-			strcpy(sip->pof_file_hud, temp);
+			strcpy_s(sip->pof_file_hud, temp);
 	}
 
 	// optional hud target LOD if not using special hud model
@@ -2536,7 +2536,7 @@ strcpy_s(parse_error_text, temp_error);
 					break;
 				}
 				sp = &subsystems[n_subsystems++];			// subsystems a local -- when done, we will malloc and copy
-				strcpy(sp->subobj_name, name_tmp);
+				strcpy_s(sp->subobj_name, name_tmp);
 				
 				//Init blank values
 				sp->max_subsys_strength = 0.0f;
@@ -2609,12 +2609,12 @@ strcpy_s(parse_error_text, temp_error);
 
 			if(optional_string("$Alt Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				strcpy(sp->alt_sub_name, buf);
+				strcpy_s(sp->alt_sub_name, buf);
 			}
 
 			if(optional_string("$Alt Damage Popup Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				strcpy(sp->alt_dmg_sub_name, buf);
+				strcpy_s(sp->alt_dmg_sub_name, buf);
 			}
 
 			if(optional_string("$Armor Type:")) {
@@ -3010,7 +3010,7 @@ void parse_ship_type()
 	{
 		stp = &stp_buf;
 		memset( stp, 0, sizeof(ship_type_info) );
-		strcpy(stp->name, name_buf);
+		strcpy_s(stp->name, name_buf);
 	}
 
 	char *ship_type = NULL;
@@ -3203,7 +3203,7 @@ void init_shiptype_defs()
 	ship_type_info *sti = NULL;
 
 	sti = &Ship_types[idx++];
-	strcpy(sti->name, "Navbuoy");
+	strcpy_s(sti->name, "Navbuoy");
 	sti->debris_max_speed = 200.0f;
 	sti->ff_multiplier = 1.0f;
 	sti->emp_multiplier = 10.0f;
@@ -3212,7 +3212,7 @@ void init_shiptype_defs()
 	sti->ai_bools |= STI_AI_TURRETS_ATTACK;
 
 	sti = &Ship_types[idx++];
-	strcpy(sti->name, "Sentry gun");
+	strcpy_s(sti->name, "Sentry gun");
 	sti->message_bools |= STI_MSG_COUNTS_FOR_ALONE;
 	sti->hud_bools |= STI_HUD_HOTKEY_ON_LIST | STI_HUD_TARGET_AS_THREAT | STI_HUD_SHOW_ATTACK_DIRECTION;
 	sti->debris_max_speed = 200.0f;
@@ -3281,7 +3281,7 @@ void ship_set_default_player_ship()
 	{
 		if(Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP)
 		{
-			strcpy(default_player_ship, Ship_info[i].name);
+			strcpy_s(default_player_ship, Ship_info[i].name);
 			return;
 		}
 	}
@@ -3291,7 +3291,7 @@ void ship_set_default_player_ship()
 	{
 		if(Ship_info[i].flags & SIF_PLAYER_SHIP)
 		{
-			strcpy(default_player_ship, Ship_info[i].name);
+			strcpy_s(default_player_ship, Ship_info[i].name);
 			return;
 		}
 	}
@@ -3299,7 +3299,7 @@ void ship_set_default_player_ship()
 	// find the first ship
 	if(Num_ship_classes > 0)
 	{
-		strcpy(default_player_ship, Ship_info[0].name);
+		strcpy_s(default_player_ship, Ship_info[0].name);
 	}
 }
 
@@ -3376,7 +3376,7 @@ void parse_shiptbl(char *filename)
 	// during ship selection.
 	// Guess it isn't -WMC
 	/*
-	strcpy(parse_error_text,"'player ship precedence");
+	strcpy_s(parse_error_text,"'player ship precedence");
 	if(!Parsing_modular_table)
 	{
 		required_string("$Player Ship Precedence:");
@@ -3389,7 +3389,7 @@ void parse_shiptbl(char *filename)
 			Num_player_ship_precedence = stuff_int_list(Player_ship_precedence, MAX_PLAYER_SHIP_CHOICES, SHIP_INFO_TYPE);
 		}
 	}
-	strcpy(parse_error_text, "");
+	strcpy_s(parse_error_text, "");
 	*/
 
 	// close localization
@@ -3492,7 +3492,7 @@ void ship_init()
 		{			
 			Num_engine_wash_types = 0;
 			Num_ship_classes = 0;
-			strcpy(default_player_ship, "");
+			strcpy_s(default_player_ship, "");
 
 			// static alias stuff - stupid, but it seems to be necessary
 			tspecies_names = (char **) vm_malloc( Species_info.size() * sizeof(char*) );
@@ -3642,20 +3642,20 @@ void ship_level_init()
 	// Goober5000
 
 	// set starting wing names to default
-	strcpy(Starting_wing_names[0], "Alpha");
-	strcpy(Starting_wing_names[1], "Beta");
-	strcpy(Starting_wing_names[2], "Gamma");
+	strcpy_s(Starting_wing_names[0], "Alpha");
+	strcpy_s(Starting_wing_names[1], "Beta");
+	strcpy_s(Starting_wing_names[2], "Gamma");
 
 	// set squadron wing names to default
-	strcpy(Squadron_wing_names[0], "Alpha");
-	strcpy(Squadron_wing_names[1], "Beta");
-	strcpy(Squadron_wing_names[2], "Gamma");
-	strcpy(Squadron_wing_names[3], "Delta");
-	strcpy(Squadron_wing_names[4], "Epsilon");
+	strcpy_s(Squadron_wing_names[0], "Alpha");
+	strcpy_s(Squadron_wing_names[1], "Beta");
+	strcpy_s(Squadron_wing_names[2], "Gamma");
+	strcpy_s(Squadron_wing_names[3], "Delta");
+	strcpy_s(Squadron_wing_names[4], "Epsilon");
 
 	// set tvt wing names to default
-	strcpy(TVT_wing_names[0], "Alpha");
-	strcpy(TVT_wing_names[1], "Zeta");
+	strcpy_s(TVT_wing_names[0], "Alpha");
+	strcpy_s(TVT_wing_names[1], "Zeta");
 
 
 	// Empty the subsys list
@@ -3680,7 +3680,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 {
 	exited_ship entry; 
 
-	strcpy(entry.ship_name, sp->ship_name );
+	strcpy_s(entry.ship_name, sp->ship_name );
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
@@ -6056,8 +6056,8 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	}
 
 	if ( shockwave_speed > 0 ) {
-		strcpy(sci.name, sip->shockwave.name);
-		strcpy(sci.pof_name, sip->shockwave.pof_name);
+		strcpy_s(sci.name, sip->shockwave.name);
+		strcpy_s(sci.pof_name, sip->shockwave.pof_name);
 		sci.inner_rad = inner_rad;
 		sci.outer_rad = outer_rad;
 		sci.blast = max_blast;
@@ -7773,7 +7773,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
 		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
 	} else {
-		strcpy(shipp->ship_name, ship_name);
+		strcpy_s(shipp->ship_name, ship_name);
 	}
 
 	ship_set_default_weapons(shipp, sip);	//	Moved up here because ship_set requires that weapon info be valid.  MK, 4/28/98
@@ -9455,7 +9455,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 				/*
 				if (src == Player_obj) {
 					char missile_name[NAME_LENGTH];
-					strcpy(missile_name, wip->name);
+					strcpy_s(missile_name, wip->name);
 					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Detonated %s!", 486), missile_name);
 				}
@@ -9675,7 +9675,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too far from target to acquire lock", 487));
 					} else {
 						char missile_name[NAME_LENGTH];
-						strcpy(missile_name, wip->name);
+						strcpy_s(missile_name, wip->name);
 						end_string_at_first_hash_symbol(missile_name);
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
 					}
@@ -9756,7 +9756,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
 					char missile_name[NAME_LENGTH];
-					strcpy(missile_name, Weapon_info[weapon].name);
+					strcpy_s(missile_name, Weapon_info[weapon].name);
 					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
 				}
@@ -10459,11 +10459,11 @@ int ship_info_lookup(char *token)
 	}
 
 	// get first part of new string
-	strcpy(temp1, token);
+	strcpy_s(temp1, token);
 	end_string_at_first_hash_symbol(temp1);
 
 	// get second part
-	strcpy(temp2, p + 1);
+	strcpy_s(temp2, p + 1);
 
 	// found a hash
 	if (*p == '#')
@@ -12928,7 +12928,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 	strcpy(outbuf, order_text);
 
 	if ( aigp->ship_name ) {
-		strcpy(temp_name, aigp->ship_name);
+		strcpy_s(temp_name, aigp->ship_name);
 		end_string_at_first_hash_symbol(temp_name);
 	}
 	switch (aigp->ai_mode ) {

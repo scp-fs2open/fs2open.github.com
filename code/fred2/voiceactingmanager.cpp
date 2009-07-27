@@ -144,16 +144,16 @@ void VoiceActingManager::OnClose()
 	UpdateData(TRUE);
 
 	// save data for file names
-	strcpy(Voice_abbrev_briefing, m_abbrev_briefing);
-	strcpy(Voice_abbrev_campaign, m_abbrev_campaign);
-	strcpy(Voice_abbrev_command_briefing, m_abbrev_command_briefing);
-	strcpy(Voice_abbrev_debriefing, m_abbrev_debriefing);
-	strcpy(Voice_abbrev_message, m_abbrev_message);
-	strcpy(Voice_abbrev_mission, m_abbrev_mission);
+	strcpy_s(Voice_abbrev_briefing, m_abbrev_briefing);
+	strcpy_s(Voice_abbrev_campaign, m_abbrev_campaign);
+	strcpy_s(Voice_abbrev_command_briefing, m_abbrev_command_briefing);
+	strcpy_s(Voice_abbrev_debriefing, m_abbrev_debriefing);
+	strcpy_s(Voice_abbrev_message, m_abbrev_message);
+	strcpy_s(Voice_abbrev_mission, m_abbrev_mission);
 	Voice_no_replace_filenames = m_no_replace == TRUE ? true : false;
 
 	// save data for script
-	strcpy(Voice_script_entry_format, m_script_entry_format);
+	strcpy_s(Voice_script_entry_format, m_script_entry_format);
 	if (m_export_command_briefings)
 		Voice_export_selection = 1;
 	else if (m_export_briefings)
@@ -421,7 +421,7 @@ void VoiceActingManager::OnGenerateScript()
 
 			// determine sender
 			char sender[NAME_LENGTH+1];
-			strcpy(sender, get_message_sender(message->name));
+			strcpy_s(sender, get_message_sender(message->name));
 			int shipnum = ship_name_lookup(sender);
 
 			if (shipnum >= 0)

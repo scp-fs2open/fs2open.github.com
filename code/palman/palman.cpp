@@ -132,7 +132,7 @@ void palette_load_table( char * filename )
 	int w, h;
 	int pcx_error;
 
-	strcpy( palette_base_filename, filename );
+	strcpy_s( palette_base_filename, filename );
 	char * p = strchr(palette_base_filename,'.');
 	if ( p )	{
 		*p = 0;
@@ -280,8 +280,8 @@ void palette_write_cached1( char *name )
 	CFILE *fp;
 	char new_name[128];
 
-	strcpy( new_name, name );
-	strcat( new_name, ".clr" );
+	strcpy_s( new_name, name );
+	strcat_s( new_name, ".clr" );
 	
 //	mprintf(( "Writing palette cache file '%s'\n", new_name ));
 
@@ -325,8 +325,8 @@ int palette_read_cached( char *name )
 	uint id, new_checksum;
 	ubyte new_palette[768];
 
-	strcpy( new_name, name );
-	strcat( new_name, ".clr" );
+	strcpy_s( new_name, name );
+	strcat_s( new_name, ".clr" );
 
 //	mprintf(( "Reading palette '%s'\n", name ));
 	
@@ -502,11 +502,11 @@ void palette_update(char *name_with_extension, int restrict_font_to_128)
 
 	Palman_restrict_colors = restrict_font_to_128;
 	
-	strcpy( name, name_with_extension );
+	strcpy_s( name, name_with_extension );
 	char *p = strchr( name, '.' );
 	if ( p ) *p = 0;
 
-	strcpy( palette_name, name );
+	strcpy_s( palette_name, name );
 
 	tmp_checksum = palette_compute_checksum( gr_palette );
 	if ( tmp_checksum == gr_palette_checksum ) return;

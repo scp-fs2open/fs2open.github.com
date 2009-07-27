@@ -334,7 +334,7 @@ void reinforcement_editor_dlg::OnAdd()
 		}
 
 		i = m_num_reinforcements++;
-		strcpy(m_reinforcements[i].name, dlg.name);
+		strcpy_s(m_reinforcements[i].name, dlg.name);
 		((CListBox *) GetDlgItem(IDC_LIST)) -> AddString(dlg.name);
 		m_reinforcements[i].type = 0;
 		m_reinforcements[i].uses = 1;

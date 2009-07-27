@@ -694,7 +694,7 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 
 	w = 0;
 	Assert(msg_len < HUD_MSG_LENGTH_MAX);
-	strcpy(buf, text);
+	strcpy_s(buf, text);
 	ptr = strstr(buf, NOX(": "));
 	if (ptr) {
 		gr_get_string_size(&w, NULL, buf, ptr - buf);

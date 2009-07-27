@@ -299,7 +299,7 @@ void barracks_squad_change_popup();
 
 #define STRCPY1(a, b) do {	\
 	Assert(strlen(b) < STAT_COLUMN1_W); \
-	strcpy(a, b); \
+	strcpy_s(a, b); \
 } while (0)
 
 void barracks_init_stats(scoring_struct *stats)
@@ -548,7 +548,7 @@ int barracks_new_pilot_selected()
 	int i;
 	barracks_init_stats(&Cur_pilot->stats);
 	for (i=0; i<Num_pilot_images; i++) {
-		strcpy(stripped, Cur_pilot->image_filename);
+		strcpy_s(stripped, Cur_pilot->image_filename);
 		barracks_strip_pcx(stripped);
 		if (!stricmp(stripped, Pilot_image_names[i])) {
 			break;
@@ -556,7 +556,7 @@ int barracks_new_pilot_selected()
 	}
 	Pic_number = i;
 	for ( i=0; i<Num_pilot_squad_images; i++) {
-		strcpy(stripped, Cur_pilot->squad_filename);
+		strcpy_s(stripped, Cur_pilot->squad_filename);
 		barracks_strip_pcx(stripped);
 		if (!stricmp(stripped, Pilot_squad_image_names[i])) {
 			break;
@@ -652,8 +652,8 @@ int barracks_pilot_accepted()
 	// when we store the LastPlayer key, we have to mark it as being single or multiplayer, so we know where to look for him
 	// (since we could have a single and a multiplayer pilot with the same callsign)
 	// we'll distinguish them by putting an M and the end of the multiplayer callsign and a P at the end of a single player
-	strcpy(str, Cur_pilot->callsign);
-	strcat(str, is_pilot_multi(Cur_pilot) ? NOX("M") : NOX("S"));
+	strcpy_s(str, Cur_pilot->callsign);
+	strcat_s(str, is_pilot_multi(Cur_pilot) ? NOX("M") : NOX("S"));
 	os_config_write_string( NULL, "LastPlayer", str );
 	return 0;
 }
@@ -731,7 +731,7 @@ void barracks_prev_pic()
 
 	// copy pilot pic filename into pilot struct
 	if ((Pic_number >= 0) && (Pic_number < Num_pilot_images)) {
-		strcpy(Cur_pilot->image_filename, Pilot_image_names[Pic_number]);
+		strcpy_s(Cur_pilot->image_filename, Pilot_image_names[Pic_number]);
 	}
 
 	// play scroll sound
@@ -755,7 +755,7 @@ void barracks_next_pic()
 
 	// copy pilot pic filename into pilot struct
 	if ((Pic_number >= 0) && (Pic_number < Num_pilot_images)){
-		strcpy(Cur_pilot->image_filename, Pilot_image_names[Pic_number]);
+		strcpy_s(Cur_pilot->image_filename, Pilot_image_names[Pic_number]);
 	}
 
 	// play scroll sound
@@ -779,7 +779,7 @@ void barracks_prev_squad_pic()
 
 	// copy pilot pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
-		strcpy(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
 
 	// play scroll sound
@@ -803,7 +803,7 @@ void barracks_next_squad_pic()
 
 	// copy pilot pic filename into pilot struct
 	if ((Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)){
-		strcpy(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
+		strcpy_s(Cur_pilot->squad_filename, Pilot_squad_image_names[Pic_squad_number]);
 	}
 
 	// play scroll sound
@@ -830,7 +830,7 @@ void barracks_delete_pilot()
 		active = 1;
 	}
 
-	strcpy(buf, Pilots[Selected_line]);
+	strcpy_s(buf, Pilots[Selected_line]);
 
 	del_rval = delete_pilot_file(buf, (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
 
@@ -1086,13 +1086,13 @@ void barracks_button_pressed(int n)
 						break;
 				}
 
-				strcpy(old_pic, Cur_pilot->image_filename);
-				strcpy(old_squad_pic, Cur_pilot->squad_filename);
-				strcpy(old_squad, Cur_pilot->squad_name);
+				strcpy_s(old_pic, Cur_pilot->image_filename);
+				strcpy_s(old_squad_pic, Cur_pilot->squad_filename);
+				strcpy_s(old_squad, Cur_pilot->squad_name);
 				init_new_pilot(Cur_pilot, 0);
-				strcpy(Cur_pilot->image_filename, old_pic);
-				strcpy(Cur_pilot->squad_filename, old_squad_pic);
-				strcpy(Cur_pilot->squad_name, old_squad);
+				strcpy_s(Cur_pilot->image_filename, old_pic);
+				strcpy_s(Cur_pilot->squad_filename, old_squad_pic);
+				strcpy_s(Cur_pilot->squad_name, old_squad);
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 					Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
 					write_pilot_file();
@@ -1278,7 +1278,7 @@ void barracks_accept_new_pilot_callsign()
 		if (!stricmp(buf, Pilots[i])) {
 			z = 1;
 			if (pilot_verify_overwrite() == 1) {
-				strcpy(name, Pilots[Selected_line]);
+				strcpy_s(name, Pilots[Selected_line]);
 				for (z=i; z<Num_pilots-1; z++) {
 					strcpy(Pilots[z], Pilots[z + 1]);
 					Pilot_ranks[z] = Pilot_ranks[z + 1];

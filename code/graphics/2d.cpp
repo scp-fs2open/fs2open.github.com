@@ -324,7 +324,7 @@ void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	char *p;
 	palette_flush();
-	strcpy( Gr_current_palette_name, name );
+	strcpy_s( Gr_current_palette_name, name );
 	p = strchr( Gr_current_palette_name, '.' );
 	if ( p ) *p = 0;
 	gr_screen.signature = Gr_signature++;

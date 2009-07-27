@@ -44,18 +44,18 @@ int multi_update_http_init()
 	char local_file[512] = "";
 
 	// url
-	strcpy(url_file, VERSION_URL);
+	strcpy_s(url_file, VERSION_URL);
 
 	// local file
-	strcpy(local_file, Cfile_root_dir);
-	strcat(local_file, DIR_SEPARATOR_STR);
-	strcat(local_file, VERSION_LOC_FNAME);
+	strcpy_s(local_file, Cfile_root_dir);
+	strcat_s(local_file, DIR_SEPARATOR_STR);
+	strcat_s(local_file, VERSION_LOC_FNAME);
 
 	// new file	
 	Multi_update_get = new InetGetFile(url_file, local_file);
 	if(Multi_update_get == NULL){
 		// error string
-		strcpy(Multi_update_error_string, XSTR("Could not get data from website", 977));
+		strcpy_s(Multi_update_error_string, XSTR("Could not get data from website", 977));
 
 		return 0;
 	}
@@ -69,7 +69,7 @@ int multi_update_http_do()
 	// sanity
 	if(Multi_update_get == NULL){
 		// error string
-		strcpy(Multi_update_error_string, XSTR("Could not get data from website", 977));
+		strcpy_s(Multi_update_error_string, XSTR("Could not get data from website", 977));
 
 		return 2;
 	}
@@ -80,7 +80,7 @@ int multi_update_http_do()
 		Multi_update_get = NULL;
 
 		// error string
-		strcpy(Multi_update_error_string, XSTR("Could not get data from website", 977));
+		strcpy_s(Multi_update_error_string, XSTR("Could not get data from website", 977));
 		
 		return 2;
 	} 	
@@ -111,10 +111,10 @@ int multi_update_error_verifying()
 	char out_str[512];
 
 	memset(out_str, 0, 512);
-	strcpy(out_str, "(");
-	strcat(out_str, Multi_update_error_string);
-	strcat(out_str, ")\n\n");
-	strcat(out_str, XSTR("There was an error verifying your version of FreeSpace, if you continue, you will not necessarily be up to date", 978));	
+	strcpy_s(out_str, "(");
+	strcat_s(out_str, Multi_update_error_string);
+	strcat_s(out_str, ")\n\n");
+	strcat_s(out_str, XSTR("There was an error verifying your version of FreeSpace, if you continue, you will not necessarily be up to date", 978));	
 
 	switch(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Go back", 1524), XSTR("&Continue", 1525), out_str)){
 	// continue on in freespace like nothing happened
@@ -165,7 +165,7 @@ int multi_update_gobaby()
 	if(strlen(Multi_options_proxy) > 0){
 		sprintf(msg, "%s (%s : %d)", XSTR("Verifying FreeSpace Version",981), Multi_options_proxy, Multi_options_proxy_port);
 	} else {
-		strcpy(msg, XSTR("Verifying FreeSpace Version",981));
+		strcpy_s(msg, XSTR("Verifying FreeSpace Version",981));
 	}
 	ret_code = popup_till_condition(multi_update_http_do, XSTR("Cancel",948), msg);		
 

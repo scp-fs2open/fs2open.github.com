@@ -321,7 +321,7 @@ const char* PE_Debug :: GetSymbolName( PIMAGE_SYMBOL sym )
 
 void unmangle(char *dst, const char *src)
 {
-	//strcpy( dst, src );
+	//strcpy_s( dst, src );
 	//return;
 
 	src++;
@@ -366,10 +366,10 @@ void Add_Symbol( int section, int offset, const char *name, char *module )
 	sym->offset = offset;
 	sym->size = -1;
 	
-	strcpy( sym->name, name );	
-	strcat( sym->name, "(" );	
-	strcat( sym->name, module );	
-	strcat( sym->name, ")" );	
+	strcpy_s( sym->name, name );	
+	strcat_s( sym->name, "(" );	
+	strcat_s( sym->name, module );	
+	strcat_s( sym->name, ")" );	
 
 }
 
@@ -499,20 +499,20 @@ void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
 				if ( fileSymbol )	{
 					const char* auxSym = (const char*)(latestFileSymbol + 1) ;
 					char tmpFile[ VA_MAX_FILENAME_LEN ] ;
-					strcpy( tmpFile, auxSym ) ;
-					strcpy( pretty_module, tmpFile );
+					strcpy_s( tmpFile, auxSym ) ;
+					strcpy_s( pretty_module, tmpFile );
 					char *p = pretty_module+strlen(pretty_module)-1;
 					// Move p to point to first letter of EXE filename
 					while( (*p!='\\') && (*p!='/') && (*p!=':') )
 						p--;
 					p++;	
 					if ( strlen(p) < 1 ) {
-						strcpy( pretty_module, "<unknown>" );
+						strcpy_s( pretty_module, "<unknown>" );
 					} else {
 						memmove( pretty_module, p, strlen(p)+1 );
 					}
 				} else {
-					strcpy( pretty_module, "" );
+					strcpy_s( pretty_module, "" );
 				}
 
 				Add_Symbol( currentSym->SectionNumber, currentSym->Value, symName, pretty_module );
@@ -535,7 +535,7 @@ void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
 		const char* auxSym = (const char*)(fileSymbol + 1) ;
 
 		if( strcmpi( latestFile, auxSym ) )	{
-			strcpy( latestFile, auxSym ) ;
+			strcpy_s( latestFile, auxSym ) ;
 			//JAS      dumpBuffer.Printf( "  file: %s\r\n", auxSym ) ;    
 		}
 	} else {
@@ -682,7 +682,7 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 
 	// New module
 	if( strcmpi( latestModule, module ) )	{
-		strcpy( latestModule, module );
+		strcpy_s( latestModule, module );
 		//JAS    dumpBuffer.Printf( "Module: %s\r\n", module );
 		MapFileInMemory( module );
 		FindDebugInfo();
@@ -690,14 +690,14 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 
 	char pretty_module[1024];
 
-	strcpy( pretty_module, module );
+	strcpy_s( pretty_module, module );
 	char *p = pretty_module+strlen(pretty_module)-1;
 	// Move p to point to first letter of EXE filename
 	while( (*p!='\\') && (*p!='/') && (*p!=':') )
 		p--;
 	p++;	
 	if ( strlen(p) < 1 ) {
-		strcpy( pretty_module, "<unknown>" );
+		strcpy_s( pretty_module, "<unknown>" );
 	} else {
 		memmove( pretty_module, p, strlen(p)+1 );
 	}
@@ -1127,7 +1127,7 @@ void _cdecl Error( char * filename, int line, const char * format, ... )
 
 	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
 #else
-	strcat(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
+	strcat_s(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 
 	val = MessageBox(NULL, AssertText2, "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
 #endif
@@ -1239,7 +1239,7 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	Dump_to_log = true; 
 
 #else
-	strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
+	strcat_s(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 	result = MessageBox((HWND)os_get_window(), AssertText2, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
 #endif
 
@@ -1538,7 +1538,7 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 		// Found the first empty entry, fill it
 		if(mem_block_list[i].in_use == false)
 		{
-			strcpy(mem_block_list[i].filename, filename);
+			strcpy_s(mem_block_list[i].filename, filename);
 			mem_block_list[i].size = size;
 			mem_block_list[i].magic_num1 = magic1;
 			mem_block_list[i].magic_num2 = magic2;
@@ -1570,7 +1570,7 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 	mem_ptr_list[count].ptr  = ptr;
 	mem_ptr_list[count].line = line;
 	mem_ptr_list[count].size = size;
-	strcpy(mem_ptr_list[count].filename, filename);
+	strcpy_s(mem_ptr_list[count].filename, filename);
 
 	#endif
 }

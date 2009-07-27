@@ -368,7 +368,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
-				strcpy( dest->name, source->name );
+				strcpy_s( dest->name, source->name );
 
 				if ( dest->type == SUBSYSTEM_TURRET ) {
 					int nfp;
@@ -382,7 +382,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 						dest->turret_firing_point[nfp] = source->turret_firing_point[nfp];
 
 					if ( dest->flags & MSS_FLAG_CREWPOINT )
-						strcpy(dest->crewspot, source->crewspot);
+						strcpy_s(dest->crewspot, source->crewspot);
 				}
 				break;
 			}
@@ -403,9 +403,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 	if ( (p = strstr(props, "$name")) != NULL)
 		get_user_prop_value(p+5, subsystemp->name);
 	else
-		strcpy( subsystemp->name, dname );
+		strcpy_s( subsystemp->name, dname );
 
-	strcpy(lcdname, dname);
+	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
 
 	// check the name for its specific type
@@ -420,7 +420,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		if ( (p = strstr(props, "$fov")) != NULL )
 			get_user_prop_value(p+4, buf);			// get the value of the fov
 		else
-			strcpy(buf,"180");
+			strcpy_s(buf,"180");
 		angle = ANG_TO_RAD(atoi(buf))/2.0f;
 		subsystemp->turret_fov = (float)cos(angle);
 		subsystemp->turret_num_firing_points = 0;
@@ -592,7 +592,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
 			set_subsystem_info( subsystemp, props, subobj_name);
-			strcpy(subsystemp->subobj_name, subobj_name);						// copy the object name
+			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
 		}
 	}
@@ -736,13 +736,13 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 		// prep string
 		char hex_str[5];
 		char text[100 + (5 * NUM_BYTES)];
-		strcpy(text, "The following is the correct hex string for the minima and maxima:\n");
+		strcpy_s(text, "The following is the correct hex string for the minima and maxima:\n");
 
 		// append hex values to the string
 		for (int i = 0; i < NUM_BYTES; i++)
 		{
 			sprintf(hex_str, "%02X ", z._byte[i]);
-			strcat(text, hex_str);
+			strcat_s(text, hex_str);
 		}
 
 		// notify the user
@@ -786,7 +786,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	int i,j;
 
 #ifndef NDEBUG
-	strcpy(Global_filename, filename);
+	strcpy_s(Global_filename, filename);
 #endif
 
 	// little test code i used in fred2
@@ -817,16 +817,16 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		memset( &ibuffer_info, 0, sizeof(IBX) );
 
 		// get name for tangent space file
-		strcpy( ibuffer_info.tsb_name, filename );
+		strcpy_s( ibuffer_info.tsb_name, filename );
 		char *pb = strchr( ibuffer_info.tsb_name, '.' );
 		if ( pb ) *pb = 0;
-		strcat( ibuffer_info.tsb_name, NOX(".tsb") );
+		strcat_s( ibuffer_info.tsb_name, NOX(".tsb") );
 
 		// use the same filename as the POF but with an .ibx extension
-		strcpy( ibuffer_info.name, filename );
+		strcpy_s( ibuffer_info.name, filename );
 		pb = strchr( ibuffer_info.name, '.' );
 		if ( pb ) *pb = 0;
-		strcat( ibuffer_info.name, NOX(".ibx") );
+		strcat_s( ibuffer_info.name, NOX(".ibx") );
 
 		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
 
@@ -980,7 +980,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		if ( !ss_fp )	{
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {
-			strcpy(model_filename, filename);
+			strcpy_s(model_filename, filename);
 			ss_warning_shown = 0;
 		}
 	}
@@ -1242,7 +1242,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				if ( pm->submodel[n].name[0] == '\0' ) {
-					strcpy(pm->submodel[n].name, "unknown object name");
+					strcpy_s(pm->submodel[n].name, "unknown object name");
 				}
 
 				bool rotating_submodel_has_subsystem = !(pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT);
@@ -1957,8 +1957,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						// get rid of leading '$' char in name
 						if ( pm->paths[i].parent_name[0] == '$' ) {
 							char tmpbuf[MAX_NAME_LEN];
-							strcpy(tmpbuf, pm->paths[i].parent_name+1);
-							strcpy(pm->paths[i].parent_name, tmpbuf);
+							strcpy_s(tmpbuf, pm->paths[i].parent_name+1);
+							strcpy_s(pm->paths[i].parent_name, tmpbuf);
 						}
 						// store the sub_model index (ie index into pm->submodel) of the parent
 						pm->paths[i].parent_submodel = -1;
@@ -2335,9 +2335,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 #ifndef NDEBUG
 	char busy_text[60] = { '\0' };
 
-	SAFE_STRCAT( busy_text, "** ModelLoad: ", sizeof(busy_text) );
-	SAFE_STRCAT( busy_text, filename, sizeof(busy_text) );
-	SAFE_STRCAT( busy_text, " **", sizeof(busy_text) );
+	strcat_s( busy_text, "** ModelLoad: " );
+	strcat_s( busy_text, filename );
+	strcat_s( busy_text, " **" );
 
 	game_busy(busy_text);
 #endif
@@ -2382,8 +2382,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		int j;
 		char destroyed_name[128];
 
-		strcpy( destroyed_name, pm->submodel[i].name );
-		strcat( destroyed_name, "-destroyed" );
+		strcpy_s( destroyed_name, pm->submodel[i].name );
+		strcat_s( destroyed_name, "-destroyed" );
 		for (j=0; j<pm->n_models; j++ )	{
 			if ( !stricmp( pm->submodel[j].name, destroyed_name ))	{
 				// mprintf(( "Found destroyed model for '%s'\n", pm->submodel[i].name ));
@@ -2396,8 +2396,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		// This debris comes from a destroyed subsystem when ship is still alive
 		char live_debris_name[128];
 
-		strcpy( live_debris_name, "debris-" );
-		strcat( live_debris_name, pm->submodel[i].name );
+		strcpy_s( live_debris_name, "debris-" );
+		strcat_s( live_debris_name, pm->submodel[i].name );
 
 
 		pm->submodel[i].num_live_debris = 0;

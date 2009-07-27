@@ -424,21 +424,21 @@ int Os_reg_inited = 0;
 void os_init_registry_stuff(char *company, char *app, char *version)
 {
 	if(company){
-		strcpy( szCompanyName, company );
+		strcpy_s( szCompanyName, company );
 	} else {
-		strcpy( szCompanyName, Osreg_company_name);
+		strcpy_s( szCompanyName, Osreg_company_name);
 	}
 
 	if(app){
-		strcpy( szAppName, app );
+		strcpy_s( szAppName, app );
 	} else {
-		strcpy( szAppName, Osreg_app_name);
+		strcpy_s( szAppName, Osreg_app_name);
 	}
 
 	if(version){
-		strcpy( szAppVersion, version);
+		strcpy_s( szAppVersion, version);
 	} else {
-		strcpy( szAppVersion, "1.0");
+		strcpy_s( szAppVersion, "1.0");
 	}
 
 	Os_reg_inited = 1;

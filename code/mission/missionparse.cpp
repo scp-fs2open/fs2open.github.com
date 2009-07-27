@@ -411,7 +411,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (optional_string("$Mission Desc:"))
 		stuff_string(pm->mission_desc, F_MULTITEXT, MISSION_DESC_LENGTH);
 	else
-		strcpy(pm->mission_desc, NOX("No description\n"));
+		strcpy_s(pm->mission_desc, NOX("No description\n"));
 
 	pm->game_type = MISSION_TYPE_SINGLE;				// default to single player only
 	if ( optional_string("+Game Type:")) {
@@ -600,8 +600,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	// possible squadron reassignment
-	strcpy(pm->squad_name, "");
-	strcpy(pm->squad_filename, "");
+	strcpy_s(pm->squad_name, "");
+	strcpy_s(pm->squad_filename, "");
 	if(optional_string("+SquadReassignName:")){
 		stuff_string(pm->squad_name, F_NAME, NAME_LENGTH);
 		if(optional_string("+SquadReassignLogo:")){
@@ -610,8 +610,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}	
 	// always clear out squad reassignments if not single player
 	if(Game_mode & GM_MULTIPLAYER){
-		strcpy(pm->squad_name, "");
-		strcpy(pm->squad_filename, "");
+		strcpy_s(pm->squad_name, "");
+		strcpy_s(pm->squad_filename, "");
 	//	mprintf(("Ignoring squadron reassignment in parse_mission_info\n"));
 	}
 	// reassign the player
@@ -659,8 +659,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	int found640=0, found1024=0;
-	strcpy(pm->loading_screen[GR_640],"");
-	strcpy(pm->loading_screen[GR_1024],"");
+	strcpy_s(pm->loading_screen[GR_640],"");
+	strcpy_s(pm->loading_screen[GR_1024],"");
 	//custom mission loading background
 	if (optional_string("$Load Screen 640:"))
 	{
@@ -683,7 +683,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
 	}
 
-	strcpy(pm->skybox_model, "");
+	strcpy_s(pm->skybox_model, "");
 	if (optional_string("$Skybox model:"))
 	{
 		stuff_string(pm->skybox_model, F_NAME, MAX_FILENAME_LEN);
@@ -1033,7 +1033,7 @@ void parse_music(mission *pm, int flags)
 
 	// Goober5000 - if briefing not specified in import, default to BRIEF1
 	if (!stricmp(pm->briefing_music_name, "none") && (flags & MPF_IMPORT_FSM))
-		strcpy(pm->briefing_music_name, "BRIEF1");
+		strcpy_s(pm->briefing_music_name, "BRIEF1");
 
 
 	// Goober5000 - old way of grabbing substitute music, but here for reverse compatibility
@@ -1053,18 +1053,18 @@ void parse_music(mission *pm, int flags)
 			goto done_event_music;
 
 		// set the FS1 equivalent as the substitute
-		strcpy(pm->substitute_event_music_name, "FS1-");
-		strcat(pm->substitute_event_music_name, pm->event_music_name);
+		strcpy_s(pm->substitute_event_music_name, "FS1-");
+		strcat_s(pm->substitute_event_music_name, pm->event_music_name);
 
 		// if we have Marauder, it's in FS2 as Deuteronomy, so we're done
 		if (!stricmp(pm->event_music_name, "7: Marauder") && event_music_get_soundtrack_index("5: Deuteronomy") >= 0)
 		{
-			strcpy(pm->event_music_name, "5: Deuteronomy");
+			strcpy_s(pm->event_music_name, "5: Deuteronomy");
 			goto done_event_music;
 		}
 
 		// search for something with the same track number
-		strcpy(temp, pm->event_music_name);
+		strcpy_s(temp, pm->event_music_name);
 		ch = strchr(temp, ':');
 		if (ch != NULL)
 		{
@@ -1074,7 +1074,7 @@ void parse_music(mission *pm, int flags)
 			{
 				if (!strncmp(temp, Soundtracks[i].name, strlen(temp)))
 				{
-					strcpy(pm->event_music_name, Soundtracks[i].name);
+					strcpy_s(pm->event_music_name, Soundtracks[i].name);
 					goto done_event_music;
 				}
 			}
@@ -1082,7 +1082,7 @@ void parse_music(mission *pm, int flags)
 
 		// last resort: pick a random track out of the 7 FS2 soundtracks
 		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
-		strcpy(pm->event_music_name, Soundtracks[rand() % num].name);
+		strcpy_s(pm->event_music_name, Soundtracks[rand() % num].name);
 
 
 done_event_music:
@@ -1093,13 +1093,13 @@ done_event_music:
 			goto done_briefing_music;
 
 		// set the FS1 equivalent as the substitute
-		strcpy(pm->substitute_briefing_music_name, "FS1-");
-		strcat(pm->substitute_briefing_music_name, pm->briefing_music_name);
+		strcpy_s(pm->substitute_briefing_music_name, "FS1-");
+		strcat_s(pm->substitute_briefing_music_name, pm->briefing_music_name);
 
 		// Choco Mousse is the FS1 title soundtrack, so use Aquitaine in FS2
 		if (!stricmp(pm->briefing_music_name, "Choco Mousse") && event_music_get_spooled_music_index("Aquitaine") >= 0)
 		{
-			strcpy(pm->briefing_music_name, "Aquitaine");
+			strcpy_s(pm->briefing_music_name, "Aquitaine");
 			goto done_briefing_music;
 		}
 
@@ -1109,7 +1109,7 @@ done_event_music:
 
 		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
 		num = (Num_music_files < 7) ? Num_music_files : 7;
-		strcpy(pm->briefing_music_name, Spooled_music[rand() % num].name);
+		strcpy_s(pm->briefing_music_name, Spooled_music[rand() % num].name);
 
 
 done_briefing_music:
@@ -1718,7 +1718,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	shipp->group = p_objp->group;
 	shipp->team = p_objp->team;
-	strcpy(shipp->ship_name, p_objp->name);
+	strcpy_s(shipp->ship_name, p_objp->name);
 	shipp->escort_priority = p_objp->escort_priority;
 	shipp->special_exp_index = p_objp->special_exp_index;
 
@@ -2781,10 +2781,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		}
 
 		// put this information into the Initially_docked array
-		strcpy(Initially_docked[Total_initially_docked].docker, p_objp->name);
-		strcpy(Initially_docked[Total_initially_docked].dockee, docked_with);
-		strcpy(Initially_docked[Total_initially_docked].docker_point, docker_point);
-		strcpy(Initially_docked[Total_initially_docked].dockee_point, dockee_point);
+		strcpy_s(Initially_docked[Total_initially_docked].docker, p_objp->name);
+		strcpy_s(Initially_docked[Total_initially_docked].dockee, docked_with);
+		strcpy_s(Initially_docked[Total_initially_docked].docker_point, docker_point);
+		strcpy_s(Initially_docked[Total_initially_docked].dockee_point, dockee_point);
 		Total_initially_docked++;
 	}
 
@@ -2894,9 +2894,9 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			if (Fred_running)
 			{
 				Assert( Fred_texture_replacements != NULL );
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
+				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
+				strcpy_s(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
 				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = -1;
 				Fred_num_texture_replacements++;
 			}
@@ -4504,16 +4504,16 @@ void parse_messages(mission *pm, int flags)
 	required_string("#Messages");
 
 	// command stuff by Goober5000 ---------------------------------------
-	strcpy(pm->command_sender, DEFAULT_COMMAND);
+	strcpy_s(pm->command_sender, DEFAULT_COMMAND);
 	if (optional_string("$Command Sender:"))
 	{
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 
 		if (*temp == '#')
-			strcpy(pm->command_sender, &temp[1]);
+			strcpy_s(pm->command_sender, &temp[1]);
 		else
-			strcpy(pm->command_sender, temp);
+			strcpy_s(pm->command_sender, temp);
 	}
 
 	pm->command_persona = Default_command_persona;
@@ -4750,7 +4750,7 @@ void parse_bitmaps(mission *pm)
 	Mission_palette = 1;
 
 	// neb2 info
-	strcpy(Neb2_texture_name, "Eraseme3");
+	strcpy_s(Neb2_texture_name, "Eraseme3");
 	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
 	if(optional_string("+Neb2:")){
 		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
@@ -4986,7 +4986,7 @@ void parse_variables()
 						&& !(Campaign.missions[i].saved_variables[j].type & SEXP_VARIABLE_BLOCK))
 					{
 						Sexp_variables[k].type = Campaign.missions[i].saved_variables[j].type;
-						strcpy(Sexp_variables[k].text, Campaign.missions[i].saved_variables[j].text);
+						strcpy_s(Sexp_variables[k].text, Campaign.missions[i].saved_variables[j].text);
 					}
 				}
 			}
@@ -5005,7 +5005,7 @@ void parse_variables()
 					&& !(Player->player_variables[i].type & SEXP_VARIABLE_BLOCK))
 				{
 					Sexp_variables[j].type = Player->player_variables[i].type;
-					strcpy(Sexp_variables[j].text, Player->player_variables[i].text);
+					strcpy_s(Sexp_variables[j].text, Player->player_variables[i].text);
 				}
 			}
 		}
@@ -5093,21 +5093,21 @@ int parse_mission(mission *pm, int flags)
 			}
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
-				strcat(text, "(The current campaign is \"");
-				strcat(text, Campaign.name);
+				strcat_s(text, "(The current campaign is \"");
+				strcat_s(text, Campaign.name);
 			} else {
-				strcat(text, "(The current mission is \"");
-				strcat(text, pm->name);
+				strcat_s(text, "(The current mission is \"");
+				strcat_s(text, pm->name);
 			}
 
-			strcat(text, "\", and the current mod is \"");
+			strcat_s(text, "\", and the current mod is \"");
 
 			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
-				strcat(text, "<retail default> ");
+				strcat_s(text, "<retail default> ");
 			} else {
 				for (char *mod_token = Cmdline_mod; strlen(mod_token) != 0; mod_token += strlen(mod_token) + 1) {
-					strcat(text, mod_token);
-					strcat(text, " ");
+					strcat_s(text, mod_token);
+					strcat_s(text, " ");
 				}
 			}
 
@@ -5386,7 +5386,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 	
 	char *p = strrchr(real_fname, '.');
 	if (p) *p = 0; // remove any extension
-	strcat(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
+	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
 	int rval, filelength;
 
@@ -5511,7 +5511,7 @@ int parse_main(char *mission_name, int flags)
 	lcl_ext_close();
 
 	if (!Fred_running)
-		strcpy(Mission_filename, mission_name);
+		strcpy_s(Mission_filename, mission_name);
 
 	return rval;
 }
@@ -6750,7 +6750,7 @@ int get_parse_name_index(char *name)
 
 	Assert(i < MAX_SHIPS + MAX_WINGS);
 	Assert(strlen(name) < NAME_LENGTH);
-	strcpy(Parse_names[i], name);
+	strcpy_s(Parse_names[i], name);
 	return Num_parse_names++;
 }
 
@@ -6816,7 +6816,7 @@ int get_special_anchor(char *name)
 	if (strnicmp(name, "<any ", 5))
 		return -1;
 
-	strcpy(tmp, name+5);
+	strcpy_s(tmp, name+5);
 	iff_name = strtok(tmp, " >");
 
 	// hack substitute "hostile" for "enemy"
@@ -6891,7 +6891,7 @@ void mission_add_to_arriving_support( object *requester_objp )
 		return;
 	}
 
-	strcpy( Arriving_repair_targets[Num_arriving_repair_targets], Ships[requester_objp->instance].ship_name );
+	strcpy_s( Arriving_repair_targets[Num_arriving_repair_targets], Ships[requester_objp->instance].ship_name );
 	Num_arriving_repair_targets++;
 
 	if ( MULTIPLAYER_MASTER ){
@@ -7162,7 +7162,7 @@ int mission_remove_scheduled_repair( object *objp )
 
 	// ship is found -- compress the array
 	for ( i = index; i < Num_arriving_repair_targets - 1; i++ )
-		strcpy( Arriving_repair_targets[i], Arriving_repair_targets[i+1] );
+		strcpy_s( Arriving_repair_targets[i], Arriving_repair_targets[i+1] );
 
 	Num_arriving_repair_targets--;
 

@@ -232,7 +232,7 @@ int waypoint_path_dlg::update_data(int redraw)
 			UpdateData(FALSE);
 		}
 
-		strcpy(old_name, Waypoint_lists[cur_waypoint_list].name);
+		strcpy_s(old_name, Waypoint_lists[cur_waypoint_list].name);
 		string_copy(Waypoint_lists[cur_waypoint_list].name, m_name, NAME_LENGTH, 1);
 
 		str = (char *) (LPCTSTR) m_name;
@@ -304,7 +304,7 @@ int waypoint_path_dlg::update_data(int redraw)
 		}
 
 
-		strcpy(old_name, jnp->get_name_ptr());
+		strcpy_s(old_name, jnp->get_name_ptr());
 		string_copy(jnp->get_name_ptr(), m_name, NAME_LENGTH, 1);
 
 		if(jumpnode_check_for_duplicates())

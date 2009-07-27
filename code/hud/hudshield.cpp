@@ -143,7 +143,7 @@ ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 		// maybe store
 		Assert(Hud_shield_filename_count < MAX_SHIELD_ICONS);
 		if(Hud_shield_filename_count < MAX_SHIELD_ICONS){
-			strcpy(Hud_shield_filenames[Hud_shield_filename_count++], name);
+			strcpy_s(Hud_shield_filenames[Hud_shield_filename_count++], name);
 		}
 	}
 }*/
@@ -692,7 +692,7 @@ void hud_shield_assign_info(ship_info *sip, char *filename)
 	Assert(Hud_shield_filename_count < MAX_SHIELD_ICONS);
 	if(Hud_shield_filename_count < MAX_SHIELD_ICONS){
 		sip->shield_icon_index = (unsigned char) Hud_shield_filename_count;
-		strcpy(Hud_shield_filenames[Hud_shield_filename_count++], filename);
+		strcpy_s(Hud_shield_filenames[Hud_shield_filename_count++], filename);
 	}
 }
 

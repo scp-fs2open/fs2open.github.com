@@ -59,23 +59,23 @@ void dbugfile_init()
 		path[path_len + 1] = '\0';
 	}
 
- 	strcpy(dbugfile_filename, path);
+ 	strcpy_s(dbugfile_filename, path);
 
 #endif
 
-	strcat(dbugfile_filename, "DBUG-");
-	strcpy(big_buffer, "DBUGFILE Active: ");
+	strcat_s(dbugfile_filename, "DBUG-");
+	strcpy_s(big_buffer, "DBUGFILE Active: ");
 
 #ifdef _WIN32
 	{
 		unsigned long len = 512;
 		GetUserName(temp_buff, &len);
 		
-		strcat(dbugfile_filename, temp_buff);
-		strcat(big_buffer, temp_buff);
+		strcat_s(dbugfile_filename, temp_buff);
+		strcat_s(big_buffer, temp_buff);
 		
-		strcat(dbugfile_filename, "-");
-		strcat(big_buffer, " ");
+		strcat_s(dbugfile_filename, "-");
+		strcat_s(big_buffer, " ");
 	}
 #endif
 
@@ -83,19 +83,19 @@ void dbugfile_init()
 
     // Display operating system-style date and time.
 	_strdate( temp_buff);
-	strcat(dbugfile_filename, "D(");
-	strcat(dbugfile_filename,temp_buff);
-	strcat(big_buffer,temp_buff);
+	strcat_s(dbugfile_filename, "D(");
+	strcat_s(dbugfile_filename,temp_buff);
+	strcat_s(big_buffer,temp_buff);
 
-	strcat(dbugfile_filename, ") T(");
-	strcat(big_buffer, " ");
+	strcat_s(dbugfile_filename, ") T(");
+	strcat_s(big_buffer, " ");
 
     _strtime( temp_buff);
-	strcat(dbugfile_filename,temp_buff);
-	strcat(big_buffer,temp_buff);
+	strcat_s(dbugfile_filename,temp_buff);
+	strcat_s(big_buffer,temp_buff);
 
-	strcat(dbugfile_filename, ").txt");
-	strcat(big_buffer, "\n");
+	strcat_s(dbugfile_filename, ").txt");
+	strcat_s(big_buffer, "\n");
 
 	// Remove invalid slash chars
 	int len = strlen(dbugfile_filename);
@@ -178,7 +178,7 @@ void dbugfile_init()
 	char exe_name[MAX_PATH];
 
 	GetModuleFileName(NULL, exe_name, MAX_PATH);
-	strcat(exe_name, "\n");
+	strcat_s(exe_name, "\n");
 	fwrite(exe_name, sizeof(char) * strlen(exe_name), 1, fp);
 
 
@@ -396,8 +396,8 @@ void dbugfile_print_matrix_3x3(int line, char *file, float *matrix, char *text)
 void dbugfile_print_counter(int line, char *file, int counter_num, char *string)
 {
 	char buffer[1000];
-	strcpy(buffer, string); 
-	strcat(buffer, " %d"); 
+	strcpy_s(buffer, string); 
+	strcat_s(buffer, " %d"); 
 
 	dbugfile_sprintf(line, file, buffer, dbugfile_counters[counter_num]);
 }

@@ -234,7 +234,7 @@ int multi_xfer_send_file(PSNET_SOCKET_RELIABLE who, char *filename, int cfile_fl
 	memset(&temp_entry,0,sizeof(xfer_entry));
 
 	// set the filename
-	strcpy(temp_entry.filename,filename);	
+	strcpy_s(temp_entry.filename,filename);	
 
 	// attempt to open the file
 	temp_entry.file = NULL;
@@ -946,7 +946,7 @@ void multi_xfer_process_header(ubyte *data, PSNET_SOCKET_RELIABLE who, ushort si
 	xe->sig = sig;
 
 	// copy the filename and get the prefixed xfer filename
-	strcpy(xe->filename, filename);
+	strcpy_s(xe->filename, filename);
 	multi_xfer_conv_prefix(xe->filename, xe->ex_filename);
 #ifdef MULTI_XFER_VERBOSE
 	nprintf(("Network","MULTI XFER : converted filename %s to %s\n",xe->filename, xe->ex_filename));
@@ -1160,10 +1160,10 @@ void multi_xfer_conv_prefix(char *filename,char *ex_filename)
 	memset(temp, 0, MAX_FILENAME_LEN+50);
 
 	// copy in the prefix
-	strcpy(temp, MULTI_XFER_FNAME_PREFIX);
+	strcpy_s(temp, MULTI_XFER_FNAME_PREFIX);
 
 	// stick on the original name
-	strcat(temp, filename);
+	strcat_s(temp, filename);
 
 	// copy the whole thing to the outgoing filename
 	strcpy(ex_filename, temp);

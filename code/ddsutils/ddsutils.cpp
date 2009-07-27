@@ -45,10 +45,10 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		Assert(filename != NULL);
 
 		// make sure there is an extension
-		strcpy(real_name, filename);
+		strcpy_s(real_name, filename);
 		char *p = strchr(real_name, '.');
 		if (p) { *p=0; }
-		strcat(real_name, ".dds");
+		strcat_s(real_name, ".dds");
 
 		// try to open the file
 		ddsfile = cfopen(real_name, "rb");
@@ -284,10 +284,10 @@ int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp, int cf_type)
 	Assert(filename != NULL);
 
 	// make sure there is an extension
-	strcpy(real_name, filename);
+	strcpy_s(real_name, filename);
 	char *p = strchr(real_name, '.');
 	if (p) { *p = 0; }
-	strcat(real_name, ".dds");
+	strcat_s(real_name, ".dds");
 
 	// open it up and go to the data section
 	cfp = cfopen(real_name, "rb", CFILE_NORMAL, cf_type);
@@ -356,12 +356,12 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 	} else {
 		Assert( strlen(filename) < MAX_FILENAME_LEN-5 );
 
-		strcpy(real_filename, filename);
+		strcpy_s(real_filename, filename);
 
 		char *p = strchr(real_filename, '.');
 		if (p) { *p = 0; }
 
-		strcat(real_filename, ".dds");
+		strcat_s(real_filename, ".dds");
 	}
 
 	CFILE *image = cfopen( real_filename, "wb", CFILE_NORMAL, CF_TYPE_CACHE );

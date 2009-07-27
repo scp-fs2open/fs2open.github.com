@@ -743,7 +743,7 @@ void hud_config_init_ui()
 
 	HC_select_all = 0;
 
-	strcpy(HC_fname, "");
+	strcpy_s(HC_fname, "");
 }
 
 int hud_config_show_flag_is_set(int i)

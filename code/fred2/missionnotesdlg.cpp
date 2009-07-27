@@ -354,8 +354,8 @@ void CMissionNotesDlg::OnOK()
 
 	// copy squad stuff
 	if(m_squad_name == CString(NO_SQUAD)){
-		strcpy(The_mission.squad_name, "");
-		strcpy(The_mission.squad_filename, "");
+		strcpy_s(The_mission.squad_name, "");
+		strcpy_s(The_mission.squad_filename, "");
 	} else {
 		string_copy(The_mission.squad_name, m_squad_name, NAME_LENGTH);
 		string_copy(The_mission.squad_filename, m_squad_filename, MAX_FILENAME_LEN);
@@ -364,13 +364,13 @@ void CMissionNotesDlg::OnOK()
 	The_mission.ai_profile = &Ai_profiles[m_ai_profile];
 
 	MODIFY(Current_soundtrack_num, m_event_music - 1);
-	strcpy(The_mission.substitute_event_music_name, m_substitute_event_music);
+	strcpy_s(The_mission.substitute_event_music_name, m_substitute_event_music);
 
 	MODIFY(The_mission.command_persona, ((CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA))->GetItemData(m_command_persona));
 	if (m_command_sender.GetAt(0) == '#')
-		strcpy(The_mission.command_sender, m_command_sender.Mid(1));
+		strcpy_s(The_mission.command_sender, m_command_sender.Mid(1));
 	else
-		strcpy(The_mission.command_sender, m_command_sender);
+		strcpy_s(The_mission.command_sender, m_command_sender);
 
 	MODIFY(Mission_all_attack, m_full_war);
 	if (query_modified()){
