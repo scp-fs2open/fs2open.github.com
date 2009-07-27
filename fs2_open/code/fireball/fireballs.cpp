@@ -253,7 +253,7 @@ void fireball_parse_tbl()
 	// we assume that entries in fireball.tbl are in the correct order
 	for (i = 0; i < (int)LOD_checker.size(); i++) {
 		if ( (i < MAX_FIREBALL_TYPES) && (LOD_checker[i].override < 0) ) {
-			strcpy( Fireball_info[i].lod[0].filename, LOD_checker[i].filename );
+			strcpy_s( Fireball_info[i].lod[0].filename, LOD_checker[i].filename );
 			Fireball_info[i].lod_count = LOD_checker[i].num_lods;
 			Num_fireball_types++;
 
@@ -272,7 +272,7 @@ void fireball_parse_tbl()
 	for (i = 0; i < (int)LOD_checker.size(); i++) {
 		// try entry replacement
 		if ( (LOD_checker[i].override >= 0) && (LOD_checker[i].override < Num_fireball_types) ) {
-			strcpy( Fireball_info[LOD_checker[i].override].lod[0].filename, LOD_checker[i].filename );
+			strcpy_s( Fireball_info[LOD_checker[i].override].lod[0].filename, LOD_checker[i].filename );
 			Fireball_info[LOD_checker[i].override].lod_count = LOD_checker[i].num_lods;
 
 			if (LOD_color[i].alpha == 255) {

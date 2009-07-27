@@ -207,15 +207,15 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	entry->type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strcpy(entry->pname, pname);
+		strcpy_s(entry->pname, pname);
 	} else
-		strcpy( entry->pname, EMPTY_LOG_NAME );
+		strcpy_s( entry->pname, EMPTY_LOG_NAME );
 
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strcpy(entry->sname, sname);
+		strcpy_s(entry->sname, sname);
 	} else
-		strcpy( entry->sname, EMPTY_LOG_NAME );
+		strcpy_s( entry->sname, EMPTY_LOG_NAME );
 
 	entry->index = info_index;
 	entry->flags = 0;
@@ -404,11 +404,11 @@ void mission_log_add_entry_multi( int type, char *pname, char *sname, int index,
 	entry->type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strcpy(entry->pname, pname);
+		strcpy_s(entry->pname, pname);
 	}
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strcpy(entry->sname, sname);
+		strcpy_s(entry->sname, sname);
 	}
 	entry->index = index;
 
@@ -700,7 +700,7 @@ void message_log_init_scrollback(int pw)
 				if (entry->index > 1){
 					sprintf(text, XSTR( "Arrived (wave %d)", 407), entry->index);
 				} else {
-					strcpy(text, XSTR( "Arrived", 406));
+					strcpy_s(text, XSTR( "Arrived", 406));
 				}
 				message_log_add_segs(text, LOG_COLOR_NORMAL);
 				break;
@@ -788,9 +788,9 @@ void message_log_init_scrollback(int pw)
 
 				sprintf( text, XSTR( "%s objective ", 419), Goal_type_text(type) );
 				if ( entry->type == LOG_GOAL_SATISFIED )
-					strcat(text, XSTR( "satisfied.", 420));
+					strcat_s(text, XSTR( "satisfied.", 420));
 				else
-					strcat(text, XSTR( "failed.", 421));
+					strcat_s(text, XSTR( "failed.", 421));
 
 				message_log_add_segs(text, LOG_COLOR_BRIGHT, (entry->type == LOG_GOAL_SATISFIED?LOG_FLAG_GOAL_TRUE:LOG_FLAG_GOAL_FAILED) );
 				break;
@@ -859,7 +859,7 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 				}
 			}
 
-			strcpy(buf, seg->text);
+			strcpy_s(buf, seg->text);
 			if (seg->x < ACTION_X)
 				gr_force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
 			else

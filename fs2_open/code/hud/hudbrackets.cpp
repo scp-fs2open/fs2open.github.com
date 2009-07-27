@@ -557,7 +557,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				tinfo_name = XSTR("Debris", 348);
 				break;
 			case OBJ_WEAPON:
-				strcpy(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
+				strcpy_s(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
 				end_string_at_first_hash_symbol(temp_name);
 				tinfo_name = temp_name;
 				break;

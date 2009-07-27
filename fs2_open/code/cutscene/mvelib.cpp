@@ -63,7 +63,7 @@ MVEFILE *mvefile_open(char *filename)
 	char *p = strchr( lower_name, '.' );
 	if ( p ) *p = 0;
 
-	SAFE_STRCAT( lower_name, ".mve", sizeof(lower_name) );
+	strcat_s( lower_name, ".mve" );
 
 	// NOTE: CF_TYPE *must* be ANY to get movies off of the CDs
 	// assume lower case filename for *nix

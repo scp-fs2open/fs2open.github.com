@@ -489,16 +489,6 @@ typedef struct lod_checker {
 } lod_checker;
 
 
-// admittedly this is a bit overkill but it's much safer than the old way of using a plain strcat()
-// x = dest string
-// y = src  string
-// z = max dest string size
-#define SAFE_STRCAT(x, y, z) {	\
-	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
-		strncat((x), (y), (z) - strlen((x)) - 1);	\
-	}	\
-}
-
 // check to see that a passed sting is valid, ie:
 //  - has >0 length
 //  - is not "none"

@@ -280,7 +280,7 @@ DCF(monitor,"Monitors game performace")
 			} else {
 				Monitor_inited = 1;
 
-				strcpy( Monitor_filename, Dc_arg );
+				strcpy_s( Monitor_filename, Dc_arg );
 
 				// Reset them all
 				int i;

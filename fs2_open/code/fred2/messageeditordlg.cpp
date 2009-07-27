@@ -488,10 +488,10 @@ void CMessageEditorDlg::OnNew()
 	if (update(m_cur_msg))
 		return;
 
-	strcpy(Messages[Num_messages].name, "<new message>");
+	strcpy_s(Messages[Num_messages].name, "<new message>");
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->AddString("<new message>");
 
-	strcpy(Messages[Num_messages].message, "<put description here>");
+	strcpy_s(Messages[Num_messages].message, "<put description here>");
 	Messages[Num_messages].avi_info.name = NULL;
 	Messages[Num_messages].wave_info.name = NULL;
 	Messages[Num_messages].persona_index = -1;

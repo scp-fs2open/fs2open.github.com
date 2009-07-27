@@ -1128,7 +1128,7 @@ int CShipEditorDlg::update_data(int redraw)
 		if (z)
 			return z;
 
-		strcpy(old_name, Ships[single_ship].ship_name);
+		strcpy_s(old_name, Ships[single_ship].ship_name);
 		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH, 1);
 		str = Ships[single_ship].ship_name;
 		if (stricmp(old_name, str)) {
@@ -1138,7 +1138,7 @@ int CShipEditorDlg::update_data(int redraw)
 			for (i=0; i<Num_reinforcements; i++)
 				if (!stricmp(old_name, Reinforcements[i].name)) {
 					Assert(strlen(str) < NAME_LENGTH);
-					strcpy(Reinforcements[i].name, str);
+					strcpy_s(Reinforcements[i].name, str);
 				}
 
 			Update_window = 1;
@@ -2028,29 +2028,29 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	ptr->GetWindowText(cstr);
 	if(cstr == CString("<none>")){
 		// zero the entry
-		strcpy(Fred_alt_names[base_ship], "");
+		strcpy_s(Fred_alt_names[base_ship], "");
 		return;
 	}	
 	p = cstr.GetBuffer(0);
 	if(p == NULL){
 		return;
 	}
-	strcpy(str, p);
+	strcpy_s(str, p);
 
 	// otherwise see if it already exists
 	if(mission_parse_lookup_alt(str) >= 0){
-		strcpy(Fred_alt_names[base_ship], str);
+		strcpy_s(Fred_alt_names[base_ship], str);
 		return;
 	}
 
 	// otherwise try and add it
 	if(mission_parse_add_alt(str) >= 0){
-		strcpy(Fred_alt_names[base_ship], str);
+		strcpy_s(Fred_alt_names[base_ship], str);
 		return;
 	}
 
 	// bad - couldn't add
-	strcpy(Fred_alt_names[base_ship], "");
+	strcpy_s(Fred_alt_names[base_ship], "");
 	MessageBox("Couldn't add new alternate type name. Already using too many!");
 }
 
@@ -2111,30 +2111,30 @@ void CShipEditorDlg::ship_callsign_close(int base_ship)
 	ptr->GetWindowText(cstr);
 	if(cstr == CString("<none>")){
 		// zero the entry
-		strcpy(Fred_callsigns[base_ship], "");
+		strcpy_s(Fred_callsigns[base_ship], "");
 		return;
 	}	
 	p = cstr.GetBuffer(0);
 	if(p == NULL){
 		return;
 	}
-	strcpy(str, p);
+	strcpy_s(str, p);
 
 	// otherwise see if it already exists
 	if(mission_parse_lookup_callsign(str) >= 0){
-		strcpy(Fred_callsigns[base_ship], str);
+		strcpy_s(Fred_callsigns[base_ship], str);
 		return;
 	}
 
 	// otherwise try and add it
 	if(mission_parse_add_callsign(str) >= 0){
-		strcpy(Fred_callsigns[base_ship], str);
+		strcpy_s(Fred_callsigns[base_ship], str);
 
 		return;
 	}
 
 	// bad - couldn't add
-	strcpy(Fred_callsigns[base_ship], "");
+	strcpy_s(Fred_callsigns[base_ship], "");
 	MessageBox("Couldn't add new callsign. Already using too many!");
 }
 

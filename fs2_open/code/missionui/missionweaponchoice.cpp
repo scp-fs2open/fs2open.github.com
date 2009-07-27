@@ -823,7 +823,7 @@ void wl_render_overhead_view(float frametime)
 				} else {
 					// high-res
 					char filename[NAME_LENGTH+2] = "2_";
-					strcat(filename, sip->overhead_filename);
+					strcat_s(filename, sip->overhead_filename);
 					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
 				}
 
@@ -835,7 +835,7 @@ void wl_render_overhead_view(float frametime)
 				} else {
 					// high-res
 					char filename[NAME_LENGTH+2] = "2_";
-					strcat(filename, sip->overhead_filename);
+					strcat_s(filename, sip->overhead_filename);
 					wl_ship->overhead_bitmap = bm_load(filename);
 				}
 			}
@@ -1286,21 +1286,21 @@ void wl_load_anim(int weapon_class)
 		// If we are in 1024x768, we first want to append "2_" in front of the filename
 		if (gr_screen.res == GR_1024) {
 			Assert(strlen(Weapon_info[weapon_class].anim_filename) <= 30);
-			strcpy(animation_filename, "2_");
-			strcat(animation_filename, Weapon_info[weapon_class].anim_filename);
+			strcpy_s(animation_filename, "2_");
+			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);
 
 			// now check if file exists
 			// GRR must add a .ANI at the end for detection
-			strcat(animation_filename,".ani");
+			strcat_s(animation_filename,".ani");
 			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 
 			if (icon->wl_anim == NULL) {
 				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
-				strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
+				strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
 				icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 			}
 		} else {
-			strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
+			strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
 			// load the compressed ship animation into memory 
 			// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
 			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
@@ -2551,7 +2551,7 @@ void wl_weapon_desc_start_wipe()
 	Weapon_desc_wipe_done = 0;
 
 	// break title into two lines if too long
-	strcpy(Weapon_desc_lines[0], Weapon_info[Selected_wl_class].title);
+	strcpy_s(Weapon_desc_lines[0], Weapon_info[Selected_wl_class].title);
 	gr_get_string_size(&w, &h, Weapon_info[Selected_wl_class].title, title_len);
 	if (w > Weapon_title_max_width[gr_screen.res]) {
 		// split
@@ -2565,7 +2565,7 @@ void wl_weapon_desc_start_wipe()
 		}
 
 		Weapon_desc_lines[0][currchar_src] = '\0';										// shorten line 0
-		strcpy(Weapon_desc_lines[1], &(Weapon_desc_lines[0][currchar_src+1]));		// copy remainder into line 1
+		strcpy_s(Weapon_desc_lines[1], &(Weapon_desc_lines[0][currchar_src+1]));		// copy remainder into line 1
 	} else {
 		// entire title in line 0, thus line 1 is empty
 		Weapon_desc_lines[1][0] = '\0';
@@ -4332,7 +4332,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 		int j;
 		bool is_duplicate;
 		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
-		strcpy(error_msg, "The following errors were encountered:\n\n");
+		strcpy_s(error_msg, "The following errors were encountered:\n\n");
 
 		// copy all messages
 		for (i = 0; i < (MAX_WING_SLOTS * MAX_SHIP_WEAPONS); i++)
@@ -4357,8 +4357,8 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 
 			// copy message
-			strcat(error_msg, error_messages[i]);
-			strcat(error_msg, "\n");
+			strcat_s(error_msg, error_messages[i]);
+			strcat_s(error_msg, "\n");
 		}
 
 		// remove last endline

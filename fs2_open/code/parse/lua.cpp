@@ -597,13 +597,13 @@ ADE_FUNC(getGoalStatus, l_Cmission, "Goal number (Zero-based)", "Goal status (st
 	switch( Campaign.missions[idx].goals[gidx].status)
 	{
 		case GOAL_FAILED:
-			strcpy(buf, "Failed");
+			strcpy_s(buf, "Failed");
 			break;
 		case GOAL_COMPLETE:
-			strcpy(buf, "Complete");
+			strcpy_s(buf, "Complete");
 			break;
 		case GOAL_INCOMPLETE:
-			strcpy(buf, "Incomplete");
+			strcpy_s(buf, "Incomplete");
 			break;
 		default:
 			Int3();		//????
@@ -656,13 +656,13 @@ ADE_FUNC(getEventStatus, l_Cmission, "Event number (Zero-based)", "Event status 
 	switch( Campaign.missions[idx].goals[eidx].status)
 	{
 		case EVENT_FAILED:
-			strcpy(buf, "Failed");
+			strcpy_s(buf, "Failed");
 			break;
 		case EVENT_SATISFIED:
-			strcpy(buf, "Complete");
+			strcpy_s(buf, "Complete");
 			break;
 		case EVENT_INCOMPLETE:
-			strcpy(buf, "Incomplete");
+			strcpy_s(buf, "Incomplete");
 			break;
 		default:
 			Int3();		//????
@@ -713,9 +713,9 @@ ADE_FUNC(getVariableType, l_Cmission, "Variable number (Zero-based)", "Variable 
 	char buf[NAME_LENGTH];
 
 	if(Campaign.missions[idx].saved_variables[vidx].type & SEXP_VARIABLE_NUMBER)
-		strcpy(buf, "number");
+		strcpy_s(buf, "number");
 	if(Campaign.missions[idx].saved_variables[vidx].type & SEXP_VARIABLE_STRING)
-		strcpy(buf, "string");
+		strcpy_s(buf, "string");
 
 	return ade_set_args(L, "i", Campaign.missions[idx].saved_variables[vidx].variable_name);
 }
@@ -2306,7 +2306,7 @@ struct sexpvar_h
 	char variable_name[TOKEN_LENGTH];
 
 	sexpvar_h(){idx=-1;variable_name[0]='\0';}
-	sexpvar_h(int n_idx){idx = n_idx; strcpy(variable_name, Sexp_variables[n_idx].variable_name);}
+	sexpvar_h(int n_idx){idx = n_idx; strcpy_s(variable_name, Sexp_variables[n_idx].variable_name);}
 	bool IsValid(){
 		return (idx > -1
 				&& idx < MAX_SEXP_VARIABLES
@@ -4469,12 +4469,12 @@ struct waypointlist_h
 	waypointlist_h(waypoint_list *n_wlp){
 		wlp = n_wlp;
 		if(n_wlp != NULL)
-			strcpy(name, wlp->name);
+			strcpy_s(name, wlp->name);
 	}
 	waypointlist_h(char wlname[NAME_LENGTH]) {
 		wlp = NULL;
 		if ( wlname != NULL ) {
-			strcpy(name, wlname);
+			strcpy_s(name, wlname);
 			for ( int i = 0; i < Num_waypoint_lists; i++ ) {
 				if ( !stricmp( Waypoint_lists[i].name, wlname ) ) {
 					wlp = &Waypoint_lists[i];
@@ -9492,7 +9492,7 @@ ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads 
 	{
 		game_level_close();
 		Game_mode &= ~GM_IN_MISSION;
-		strcpy(Game_current_mission_filename, "");
+		strcpy_s(Game_current_mission_filename, "");
 	}
 
 	return ADE_RETURN_NIL;
@@ -10130,16 +10130,16 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 	if(lua_getstack(L, 0, &ar))
 	{
 		lua_getinfo(L, "nl", &ar);
-		strcpy(funcname, "");
+		strcpy_s(funcname, "");
 		if(ar.name != NULL) {
-			strcat(funcname, ar.name);
+			strcat_s(funcname, ar.name);
 		}
 		if(ar.currentline > -1) {
 			char buf[33];
 			sprintf(buf, "%d", ar.currentline);
-			strcat(funcname, " (Line ");
-			strcat(funcname, buf);
-			strcat(funcname, ")");
+			strcat_s(funcname, " (Line ");
+			strcat_s(funcname, buf);
+			strcat_s(funcname, ")");
 		}
 	}
 #endif
@@ -10149,12 +10149,12 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 		if(!Ade_get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)))
 		{
 				if(lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
-					strcpy(funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
+					strcpy_s(funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
 		}
 
 		//WMC - Totally unknown function
 		if(!strlen(funcname)) {
-			strcpy(funcname, "<UNKNOWN>");
+			strcpy_s(funcname, "<UNKNOWN>");
 		}
 	}
 	if(total_args < needed_args) {
@@ -10537,8 +10537,8 @@ int ade_concat_handler(lua_State *L)
 	if(s1 != NULL && s2 != NULL)
 	{
 		char *sf = (char*)vm_malloc((sizeof(s1) + sizeof(s2) + 1) * sizeof(char));
-		strcpy(sf, s1);
-		strcat(sf, s2);
+		strcpy_s(sf, s1);
+		strcat_s(sf, s2);
 
 		lua_pushstring(L, sf);
 		//WMC - Causes crashes. WTF @ vm_ functions

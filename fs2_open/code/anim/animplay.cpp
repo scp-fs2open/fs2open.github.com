@@ -734,12 +734,12 @@ anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 
 	Assert ( real_filename != NULL );
 
-	strcpy( name, real_filename );
+	strcpy_s( name, real_filename );
 	char *p = strchr( name, '.' );
 	if ( p ) {
 		*p = 0;
 	}
-	strcat( name, ".ani" );
+	strcat_s( name, ".ani" );
 
 	ptr = first_anim;
 	while (ptr) {
@@ -761,7 +761,7 @@ anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 		ptr->next = first_anim;
 		first_anim = ptr;
 		Assert(strlen(name) < _MAX_PATH - 1);
-		strcpy(ptr->name, name);
+		strcpy_s(ptr->name, name);
 		ptr->instance_count = 0;
 		ptr->width = 0;
 		ptr->height = 0;
@@ -969,7 +969,7 @@ int anim_write_frames_out(char *filename)
 	int				i,j;
 	ubyte				**row_data;
 
-	strcpy(root_name, filename);
+	strcpy_s(root_name, filename);
 	root_name[strlen(filename)-4] = 0;
 
 	source_anim = anim_load(filename);
@@ -982,9 +982,9 @@ int anim_write_frames_out(char *filename)
 
 	for ( i = 0; i < source_anim->total_frames; i++ ) {
 		anim_get_next_raw_buffer(ai, 0, 0, 16);
-		strcpy(pcxname, root_name);
+		strcpy_s(pcxname, root_name);
 		sprintf(buf,"%04d",i);
-		strcat(pcxname, buf);
+		strcat_s(pcxname, buf);
 
 		for ( j = 0; j < source_anim->height; j++ ) {
 			row_data[j] = &ai->frame[j*source_anim->width];
@@ -1019,12 +1019,12 @@ void anim_display_info(char *real_filename)
 	int				i, uncompressed, compressed, *key_frame_nums=NULL, tmp;
 	char filename[MAX_FILENAME_LEN];
 
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) {
 		*p = 0;
 	}
-	strcat( filename, ".ani" );
+	strcat_s( filename, ".ani" );
 
 	fp = cfopen(filename, "rb");
 	if ( !fp ) {

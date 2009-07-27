@@ -119,7 +119,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	if ((strlen(fname) < 4) || stricmp(fname + strlen(fname) - 4, FS_CAMPAIGN_FILE_EXT)){
-		strcat(fname, FS_CAMPAIGN_FILE_EXT);
+		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
 	}
 	Assert(strlen(fname) < MAX_FILENAME_LEN);
 
@@ -300,8 +300,8 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 	MC_multiplayer = multiplayer;
 
 	memset(wild_card, 0, sizeof(wild_card));
-	strcpy(wild_card, NOX("*"));
-	strcat(wild_card, FS_CAMPAIGN_FILE_EXT);
+	strcpy_s(wild_card, NOX("*"));
+	strcat_s(wild_card, FS_CAMPAIGN_FILE_EXT);
 
 	// if we have already been loaded then free everything and reload
 	if (Num_campaigns != 0)
@@ -469,7 +469,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		// nodes previously used by another campaign.
 		mission_campaign_close();
 
-		strcpy( Campaign.filename, filename );
+		strcpy_s( Campaign.filename, filename );
 
 		// only initialize the sexpression stuff when Fred isn't running.  It'll screw things up major
 		// if it does
@@ -491,7 +491,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		stuff_string( name, F_NAME, NAME_LENGTH );
 		
 		//Store campaign name in the global struct
-		strcpy( Campaign.name, name );
+		strcpy_s( Campaign.name, name );
 
 		required_string( "$Type:" );
 		stuff_string( type, F_NAME, NAME_LENGTH );
@@ -688,7 +688,7 @@ int mission_campaign_load_by_name( char *filename )
 	// make sure to tack on .fsc on the end if its not there already
 	if(strlen(filename) > 0){
 		if(strlen(filename) > 4){
-			strcpy(test,filename+(strlen(filename)-4));
+			strcpy_s(test,filename+(strlen(filename)-4));
 			if(strcmp(test, FS_CAMPAIGN_FILE_EXT)!=0){
 				strcat(filename, FS_CAMPAIGN_FILE_EXT);
 			}
@@ -714,7 +714,7 @@ int mission_campaign_load_by_name( char *filename )
 int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
 {
 	Game_mode |= GM_NORMAL;
-	strcpy(Player->callsign, callsign);
+	strcpy_s(Player->callsign, callsign);
 	return mission_campaign_load_by_name( filename);
 }
 
@@ -787,7 +787,7 @@ int mission_campaign_savefile_save()
 
 	// name the file differently depending on whether we're in single player or multiplayer mode
 	// single player : *.csg
-	strcat( filename, NOX("cs2"));	// use new filename with new format - taylor
+	strcat_s( filename, NOX("cs2"));	// use new filename with new format - taylor
 
 	fp = cfopen(filename,"wb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 
@@ -995,7 +995,7 @@ int campaign_savefile_save(char *pname)
 	else
 		Game_mode |= GM_MULTIPLAYER;
 
-	strcpy(Player->callsign, pname);
+	strcpy_s(Player->callsign, pname);
 	//memcpy(&Campaign, camp, sizeof(campaign));
 	return mission_campaign_savefile_save();
 }
@@ -1043,7 +1043,7 @@ void mission_campaign_savefile_delete_old( char *cfilename)
 
 void campaign_delete_save( char *cfn, char *pname)
 {
-	strcpy(Player->callsign, pname);
+	strcpy_s(Player->callsign, pname);
 	mission_campaign_savefile_delete(cfn);
 }
 
@@ -1074,8 +1074,8 @@ void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi )
 	Get_file_list_filter = filter_save;
 
 	for (i=0; i<num_files; i++) {
-		strcpy(filename, names[i]);
-		strcat(filename, ext);
+		strcpy_s(filename, names[i]);
+		strcat_s(filename, ext);
 		cf_delete(filename, dir_type);
 		vm_free(names[i]);
 	}
@@ -1678,7 +1678,7 @@ void campaign_savefile_load(char *fname, char *pname)
 	}
 	else
 		Game_mode |= GM_MULTIPLAYER;
-	strcpy(Player->callsign, pname);
+	strcpy_s(Player->callsign, pname);
 	mission_campaign_savefile_load(fname);
 }
 
@@ -1772,9 +1772,9 @@ int mission_campaign_eval_next_mission( int store_stats )
 
 			sprintf(name, NOX("Goal #%d"), i);
 			//Warning(LOCATION, "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name);
-			strcpy( mission->goals[i].name, name);
+			strcpy_s( mission->goals[i].name, name);
 		} else
-			strcpy( mission->goals[i].name, Mission_goals[i].name );
+			strcpy_s( mission->goals[i].name, Mission_goals[i].name );
 		Assert ( Mission_goals[i].satisfied != GOAL_INCOMPLETE );		// should be true or false at this point!!!
 		mission->goals[i].status = (char)Mission_goals[i].satisfied;
 	}
@@ -1798,9 +1798,9 @@ int mission_campaign_eval_next_mission( int store_stats )
 
 			sprintf(name, NOX("Event #%d"), i);
 			nprintf(("Warning", "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name));
-			strcpy( mission->events[i].name, name);
+			strcpy_s( mission->events[i].name, name);
 		} else
-			strcpy( mission->events[i].name, Mission_events[i].name );
+			strcpy_s( mission->events[i].name, Mission_events[i].name );
 
 		// getting status for the events is a little different.  If the formula value for the event entry
 		// is -1, then we know the value of the result field will never change.  If the formula is
@@ -1832,8 +1832,8 @@ int mission_campaign_eval_next_mission( int store_stats )
 		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
 		{
 			mission->saved_variables[j].type = Sexp_variables[i].type;
-			strcpy(mission->saved_variables[j].text, Sexp_variables[i].text);
-			strcpy(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
+			strcpy_s(mission->saved_variables[j].text, Sexp_variables[i].text);
+			strcpy_s(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
 			j++;
 		}
 	}
@@ -1955,9 +1955,9 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 			sprintf(goal_name, NOX("Goal #%d"), i);
 			//Warning(LOCATION, "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name);
-			strcpy( mission->goals[i].name, goal_name);
+			strcpy_s( mission->goals[i].name, goal_name);
 		} else
-			strcpy( mission->goals[i].name, Mission_goals[i].name );
+			strcpy_s( mission->goals[i].name, Mission_goals[i].name );
 		Assert ( Mission_goals[i].satisfied != GOAL_INCOMPLETE );		// should be true or false at this point!!!
 		mission->goals[i].status = (char)Mission_goals[i].satisfied;
 	}
@@ -1982,9 +1982,9 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 			sprintf(event_name, NOX("Event #%d"), i);
 			nprintf(("Warning", "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name));
-			strcpy( mission->events[i].name, event_name);
+			strcpy_s( mission->events[i].name, event_name);
 		} else
-			strcpy( mission->events[i].name, Mission_events[i].name );
+			strcpy_s( mission->events[i].name, Mission_events[i].name );
 
 		// getting status for the events is a little different.  If the formula value for the event entry
 		// is -1, then we know the value of the result field will never change.  If the formula is
@@ -2017,8 +2017,8 @@ void mission_campaign_store_goals_and_events_and_variables()
 		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
 		{
 			mission->saved_variables[j].type = Sexp_variables[i].type;
-			strcpy(mission->saved_variables[j].text, Sexp_variables[i].text);
-			strcpy(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
+			strcpy_s(mission->saved_variables[j].text, Sexp_variables[i].text);
+			strcpy_s(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
 			j++;
 		}
 	}
@@ -2316,7 +2316,7 @@ void read_mission_goal_list(int num)
 		memset(Campaign.missions[num].goals, 0, count * sizeof(mgoal));
 
 		for (i=0; i<count; i++){
-			strcpy(Campaign.missions[num].goals[i].name, goals[i]);
+			strcpy_s(Campaign.missions[num].goals[i].name, goals[i]);
 		}
 	}
 		// copy the events
@@ -2327,7 +2327,7 @@ void read_mission_goal_list(int num)
 		memset(Campaign.missions[num].events, 0, event_count * sizeof(mevent));
 
 		for (i = 0; i < event_count; i++ ){
-			strcpy(Campaign.missions[num].events[i].name, events[i]);
+			strcpy_s(Campaign.missions[num].events[i].name, events[i]);
 		}
 	}
 
@@ -2351,7 +2351,7 @@ int mission_campaign_find_mission( char *name )
 
 	// look for an extension on the file.  If no extension, add default ".fsm" onto the
 	// end of the filename
-	strcpy(realname, name );
+	strcpy_s(realname, name );
 	if ( strchr(name, '.') == NULL ){
 		sprintf(realname, NOX("%s%s"), name, FS_MISSION_FILE_EXT );
 	}
@@ -2591,11 +2591,11 @@ void mission_campaign_jump_to_mission(char *name)
 	mission_load_up_campaign();
 
 	// tack the .fs2 onto the input name
-	strcpy(dest_name, name);
+	strcpy_s(dest_name, name);
 	p = strchr(dest_name, '.');
 	if (p != NULL)
 		*p = '\0';
-	strcat(dest_name, ".fs2");
+	strcat_s(dest_name, ".fs2");
 
 	// search for our mission
 	for (i = 0; i < Campaign.num_missions; i++) {
@@ -2679,8 +2679,8 @@ void mission_campaign_save_player_persistent_variables()
 
 			// finally, save this variable
 			Player->player_variables[index].type = Sexp_variables[i].type;
-			strcpy(Player->player_variables[index].text, Sexp_variables[i].text);
-			strcpy(Player->player_variables[index].variable_name, Sexp_variables[i].variable_name);
+			strcpy_s(Player->player_variables[index].text, Sexp_variables[i].text);
+			strcpy_s(Player->player_variables[index].variable_name, Sexp_variables[i].variable_name);
 		}
 	}
 }

@@ -599,7 +599,7 @@ void CMainFrame::OnFredHelp()
 	char buffer[_MAX_PATH];
 
 	// get exe path
-	strcpy(buffer, Fred_exe_dir);
+	strcpy_s(buffer, Fred_exe_dir);
 
 	// strip exe name
 	char *last_slash = strrchr(buffer, '\\');
@@ -610,7 +610,7 @@ void CMainFrame::OnFredHelp()
 	}
 
 	// add rest of path
-	strcat(buffer, FRED_HELP_URL);
+	strcat_s(buffer, FRED_HELP_URL);
 
 	// shell_open url
 	url_launch(buffer);

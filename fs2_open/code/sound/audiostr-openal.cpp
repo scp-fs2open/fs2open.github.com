@@ -455,7 +455,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
 
 	// NOTE: we assume that the extension has already been stripped off if it was supposed to be!!
-	strcpy( filename, pszFilename );
+	strcpy_s( filename, pszFilename );
 
 
 	// if we are supposed to load the file as passed...
@@ -482,7 +482,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 		goto OPEN_ERROR;
 	} else {
 		// set proper filename for later use (assumes that it doesn't already have an extension)
-		SAFE_STRCAT( filename, audio_ext[rc], sizeof(filename) );
+		strcat_s( filename, audio_ext[rc] );
 	}
 
 	m_snd_info.cfp = mmioOpen( fullpath, NULL, MMIO_ALLOCBUF | MMIO_READ );
@@ -1702,7 +1702,7 @@ int audiostream_open( char *filename, int type )
 	}
 
 	// copy filename, since we might modify it
-	strcpy(fname, filename);
+	strcpy_s(fname, filename);
 
 	// we always uncompress to 16 bits
 	Audio_streams[i].m_bits_per_sample_uncompressed = 16;

@@ -172,9 +172,9 @@ void lcl_init(int lang_init)
 
 		if(ret == NULL){
 			Int3();
-			strcpy(lang_string, DEFAULT_LANGUAGE);
+			strcpy_s(lang_string, DEFAULT_LANGUAGE);
 		} else {
-			strcpy(lang_string, ret);
+			strcpy_s(lang_string, ret);
 		}
 
 		// look it up
@@ -235,8 +235,8 @@ void parse_stringstbl(char *filename)
 
 	// move down to the proper section		
 	memset(language_tag, 0, sizeof(language_tag));
-	strcpy(language_tag, "#");
-	strcat(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
+	strcpy_s(language_tag, "#");
+	strcat_s(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
 
 	if ( skip_to_string(language_tag) != 1 )
 		Error(LOCATION, "%s is corrupt", filename);
@@ -483,11 +483,11 @@ int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
 	}
 
 	// add extension
-	SAFE_STRCAT(current_path, Lcl_languages[Lcl_current_lang].lang_ext, path_max);
-	SAFE_STRCAT(current_path, DIR_SEPARATOR_STR, path_max);
+	strcat_s(current_path, path_max, Lcl_languages[Lcl_current_lang].lang_ext);
+	strcat_s(current_path, path_max, DIR_SEPARATOR_STR );
 
 	// copy rest of filename from temp
-	SAFE_STRCAT(current_path, temp, path_max);
+	strcat_s(current_path, path_max, temp);
 
 	delete [] temp;
 	return 1;
@@ -551,14 +551,14 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 	char replace[LCL_NUM_REPLACEMENTS][2][NAME_LENGTH];
 
 	// fill replacements array (this is if we want to add more in the future)
-	strcpy(replace[0][0], "$callsign");
-	strcpy(replace[0][1], Player->callsign);
-	strcpy(replace[1][0], "$rank");
-	strcpy(replace[1][1], Ranks[Player->stats.rank].name);
-	strcpy(replace[2][0], "$quote");
-	strcpy(replace[2][1], "\"");
-	strcpy(replace[3][0], "$semicolon");
-	strcpy(replace[3][1], ";");
+	strcpy_s(replace[0][0], "$callsign");
+	strcpy_s(replace[0][1], Player->callsign);
+	strcpy_s(replace[1][0], "$rank");
+	strcpy_s(replace[1][1], Ranks[Player->stats.rank].name);
+	strcpy_s(replace[2][0], "$quote");
+	strcpy_s(replace[2][1], "\"");
+	strcpy_s(replace[3][0], "$semicolon");
+	strcpy_s(replace[3][1], ";");
 
 	// do all replacements
 	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)
@@ -577,10 +577,10 @@ void lcl_fred_replace_stuff(char *text, unsigned int max_len)
 	char replace[LCL_NUM_FRED_REPLACEMENTS][2][NAME_LENGTH];
 
 	// fill replacements array (this is if we want to add more in the future)
-	strcpy(replace[0][0], "$quote");
-	strcpy(replace[0][1], "\"");
-	strcpy(replace[1][0], "$semicolon");
-	strcpy(replace[1][1], ";");
+	strcpy_s(replace[0][0], "$quote");
+	strcpy_s(replace[0][1], "\"");
+	strcpy_s(replace[1][0], "$semicolon");
+	strcpy_s(replace[1][1], ";");
 
 	// do all replacements
 	for (i = 0; i < LCL_NUM_FRED_REPLACEMENTS; i++)
@@ -958,7 +958,7 @@ int lcl_ext_lookup_sub(char *text, char *out, int id)
 		// scanning for a line of text
 		case TS_SCANNING:
 			// if the first word is #end, we're done with the file altogether
-			strcpy(text_copy, text);
+			strcpy_s(text_copy, text);
 			tok = strtok(text_copy, " \n");
 			if((tok != NULL) && !stricmp(tok, "#end")){
 				return 3;
@@ -1077,11 +1077,11 @@ void lcl_ext_setup_pointers()
 
 	// seek to the currently active language
 	memset(language_string, 0, 128);
-	strcpy(language_string, "#");
+	strcpy_s(language_string, "#");
 	if(!stricmp(DEFAULT_LANGUAGE, Lcl_languages[Lcl_current_lang].lang_name)){
-		strcat(language_string, "default");
+		strcat_s(language_string, "default");
 	} else {
-		strcat(language_string, Lcl_languages[Lcl_current_lang].lang_name);
+		strcat_s(language_string, Lcl_languages[Lcl_current_lang].lang_name);
 	}
 	memset(line, 0, 1024);
 
@@ -1348,14 +1348,14 @@ void lcl_translate_brief_icon_name(char *name)
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy(buf, "Transporter");
-		strcat(buf, pos);
+		strcpy_s(buf, "Transporter");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Jump Node")) != NULL) {
 		pos += 9;		// strlen of "jump node"
-		strcpy(buf, "Sprungknoten");
-		strcat(buf, pos);
+		strcpy_s(buf, "Sprungknoten");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 	
 	} else if (!stricmp(name, "Orion under repair")) {
@@ -1495,14 +1495,14 @@ char buf[128];
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy(buf, "Transporter");
-		strcat(buf, pos);
+		strcpy_s(buf, "Transporter");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Jump Node")) != NULL) {
 		pos += 9;		// strlen of "jump node"
-		strcpy(buf, "W\xEAze\xB3 skokowy");
-		strcat(buf, pos);
+		strcpy_s(buf, "W\xEAze\xB3 skokowy");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if (!stricmp(name, "Orion under repair")) {
@@ -1536,32 +1536,32 @@ void lcl_translate_targetbox_name(char *name)
 	
 	if ((pos = strstr(name, "Sentry")) != NULL) {
 		pos += 6;		// strlen of "sentry"
-		strcpy(buf, "Sperrgesch\x81tz");
-		strcat(buf, pos);
+		strcpy_s(buf, "Sperrgesch\x81tz");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Support")) != NULL) {
 		pos += 7;		// strlen of "support"
-		strcpy(buf, "Versorger");
-		strcat(buf, pos);
+		strcpy_s(buf, "Versorger");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Unknown")) != NULL) {
 		pos += 7;		// strlen of "unknown"
-		strcpy(buf, "Unbekannt");
-		strcat(buf, pos);
+		strcpy_s(buf, "Unbekannt");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Drone")) != NULL) {
 		pos += 5;		// strlen of "drone"
-		strcpy(buf, "Drohne");
-		strcat(buf, pos);
+		strcpy_s(buf, "Drohne");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Jump Node")) != NULL) {
 		pos += 9;		// strlen of "jump node"
-		strcpy(buf, "Sprungknoten");
-		strcat(buf, pos);
+		strcpy_s(buf, "Sprungknoten");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if (!stricmp(name, "Instructor")) {
@@ -1588,32 +1588,32 @@ void lcl_translate_targetbox_name_pl(char *name)
 
 	if ((pos = strstr(name, "Sentry")) != NULL) {
 		pos += 6;		// strlen of "sentry"
-		strcpy(buf, "Stra\xBFnik");
-		strcat(buf, pos);
+		strcpy_s(buf, "Stra\xBFnik");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Support")) != NULL) {
 		pos += 7;		// strlen of "support"
-		strcpy(buf, "Wsparcie");
-		strcat(buf, pos);
+		strcpy_s(buf, "Wsparcie");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Unknown")) != NULL) {
 		pos += 7;		// strlen of "unknown"
-		strcpy(buf, "Nieznany");
-		strcat(buf, pos);
+		strcpy_s(buf, "Nieznany");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Drone")) != NULL) {
 		pos += 5;		// strlen of "drone"
-		strcpy(buf, "Sonda");
-		strcat(buf, pos);
+		strcpy_s(buf, "Sonda");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if ((pos = strstr(name, "Jump Node")) != NULL) {
 		pos += 9;		// strlen of "jump node"
-		strcpy(buf, "W\xEAze\xB3 skokowy");
-		strcat(buf, pos);
+		strcpy_s(buf, "W\xEAze\xB3 skokowy");
+		strcat_s(buf, pos);
 		strcpy(name, buf);
 
 	} else if (!stricmp(name, "Instructor")) {

@@ -625,7 +625,7 @@ void options_multi_add_notify(char *str)
 	// copy the string
 	memset(Om_notify_string,0,255);
 	if(str != NULL){		
-		strcpy(Om_notify_string,str);
+		strcpy_s(Om_notify_string,str);
 	} 		
 
 	// set the timestamp
@@ -1167,7 +1167,7 @@ void options_multi_protocol_load_ip_file()
 			nprintf(("Network","Invalid ip string (%s)\n",line));
 		} else {
 			if(Om_num_ips < MAX_IP_ADDRS-1){
-				strcpy(Om_ip_addrs[Om_num_ips++],line);
+				strcpy_s(Om_ip_addrs[Om_num_ips++],line);
 			}
 		}
 	}
@@ -1282,7 +1282,7 @@ void options_multi_protocol_delete_ip()
 
 		// move down all the other items				
 		for(idx=Om_ip_selected; idx < Om_num_ips; idx++){
-			strcpy(Om_ip_addrs[idx],Om_ip_addrs[idx+1]);
+			strcpy_s(Om_ip_addrs[idx],Om_ip_addrs[idx+1]);
 		}
 
 		// make sure to decrement the starting index
@@ -1338,7 +1338,7 @@ void options_multi_protocol_add_current_ip()
 	Ip_validated_already = 0;
 	if(popup_till_condition(options_multi_verify_ip, XSTR( "Cancel", 387), XSTR( "Verifying ip address", 388)) == 10){
 		if(Om_num_ips < MAX_IP_ADDRS){
-			strcpy(Om_ip_addrs[Om_num_ips],Ip_str);
+			strcpy_s(Om_ip_addrs[Om_num_ips],Ip_str);
 			Om_ip_start = Om_num_ips;
 			Om_num_ips++;
 			
@@ -2089,7 +2089,7 @@ void options_multi_vox_process_player_list()
 			}
 
 			// force fit his callsign
-			strcpy(str,Om_vox_players[idx]->m_player->callsign);
+			strcpy_s(str,Om_vox_players[idx]->m_player->callsign);
 			gr_force_fit_string(str, CALLSIGN_LEN+1, Om_vox_plist_coords[gr_screen.res][2]);
 
 			// blit the callsign

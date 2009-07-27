@@ -301,7 +301,7 @@ int add_avi( char *avi_name )
 	}
 
 	// would have returned if a slot existed.
-	strcpy( extra.name, avi_name );
+	strcpy_s( extra.name, avi_name );
 	extra.num = -1;
 	extra.anim_data = NULL;
 	Message_avis.push_back(extra); 
@@ -322,7 +322,7 @@ int add_wave( char *wave_name )
 			return i;
 	}
 
-	strcpy( extra.name, wave_name );
+	strcpy_s( extra.name, wave_name );
 	extra.num = -1;
 	Message_waves.push_back(extra);
 	Num_message_waves++;
@@ -843,7 +843,7 @@ void message_load_wave(int index, const char *filename)
 
 	game_snd tmp_gs;
 	memset(&tmp_gs, 0, sizeof(game_snd));
-	strcpy( tmp_gs.filename, filename );
+	strcpy_s( tmp_gs.filename, filename );
 	Message_waves[index].num = snd_load( &tmp_gs, 0 );
 
 	if (Message_waves[index].num == -1)
@@ -875,7 +875,7 @@ bool message_play_wave( message_q *q )
 
 	if ( m->wave_info.index >= 0 ) {
 		index = m->wave_info.index;
-		strcpy( filename, Message_waves[index].name );
+		strcpy_s( filename, Message_waves[index].name );
 
 		// Goober5000 - if we're using simulated speech, it should pre-empt the generic beeps
 		if (fsspeech_play_from(FSSPEECH_FROM_INGAME) && message_filename_is_generic(filename))
@@ -897,9 +897,9 @@ bool message_play_wave( message_q *q )
 
 			// prepend the command name, and then the rest of the filename.
 			p++;
-			strcpy( new_filename, COMMAND_WAVE_PREFIX );
-			strcat( new_filename, p );
-			strcpy( filename, new_filename );
+			strcpy_s( new_filename, COMMAND_WAVE_PREFIX );
+			strcat_s( new_filename, p );
+			strcpy_s( filename, new_filename );
 		}
 
 		// load the sound file into memory
@@ -990,7 +990,7 @@ void message_play_anim( message_q *q )
 	anim_info = &Message_avis[m->avi_info.index];
 
 	// get the filename.  Strip off the extension since we won't need it anyway
-	strcpy(ani_name, anim_info->name);
+	strcpy_s(ani_name, anim_info->name);
 	p = strchr(ani_name, '.');			// gets us to the extension
 	if ( p ) {
 		*p = '\0';
@@ -1010,7 +1010,7 @@ void message_play_anim( message_q *q )
 		// so the correct head plays.
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
 			persona_index = The_mission.command_persona;
-			strcpy( ani_name, COMMAND_HEAD_PREFIX );
+			strcpy_s( ani_name, COMMAND_HEAD_PREFIX );
 		}
 
 		// Goober5000 - guard against negative array indexing; this way, if no persona was
@@ -1380,7 +1380,7 @@ void message_queue_process()
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
 	if ( Sound_enabled && (Playing_messages[Num_messages_playing].wave == -1) ) {
-		strcat( buf, NOX("..(no wavefile for voice)"));
+		strcat_s( buf, NOX("..(no wavefile for voice)"));
 		snd_play(&Snds[SND_CUE_VOICE]);
 	}
 #endif
@@ -1459,7 +1459,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	MessageQ[i].builtin_type = builtin_type;
 	MessageQ[i].min_delay_stamp = timestamp(delay);
 	MessageQ[i].group = group;
-	strcpy(MessageQ[i].who_from, who_from);
+	strcpy_s(MessageQ[i].who_from, who_from);
 
 	// Goober5000 - this shouldn't happen, but let's be safe
 	if (MessageQ[i].special_message != NULL)
@@ -1470,7 +1470,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// Goober5000 - replace variables if necessary
-	strcpy(temp_buf, Messages[message_num].message);
+	strcpy_s(temp_buf, Messages[message_num].message);
 	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
@@ -2076,8 +2076,8 @@ void message_pagein_mission_messages()
 bool add_message(char *name, char *message, int persona_index, int multi_team)
 {
 	MissionMessage msg; 
-	strcpy(msg.name, name);
-	strcpy(msg.message, message);
+	strcpy_s(msg.name, name);
+	strcpy_s(msg.message, message);
 	msg.persona_index = persona_index;
 	msg.multi_team = multi_team;
 	msg.avi_info.index = -1;
@@ -2094,7 +2094,7 @@ bool change_message(char *name, char *message, int persona_index, int multi_team
 	{
 		if (!strcmp(Messages[i].name, name)) 
 		{
-			strcpy(Messages[i].message, message);
+			strcpy_s(Messages[i].message, message);
 			Messages[i].persona_index = persona_index;
 			Messages[i].multi_team = multi_team;
 

@@ -246,7 +246,7 @@ void campaign_tree_wnd::OnCpgnFileNew()
 	Campaign.filename[0] = 0;
 	Campaign.num_missions = 0;
 	Campaign.num_players = 0;
-	strcpy(Campaign.name, "Unnamed");
+	strcpy_s(Campaign.name, "Unnamed");
 	Campaign.desc = NULL;
 	Campaign_tree_viewp->free_links();
 	Campaign_tree_formp->initialize();

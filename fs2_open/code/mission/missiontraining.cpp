@@ -205,7 +205,7 @@ void training_obj_display()
 //			gr_set_color_fast(&Color_normal);
 			c = &Color_bright_green;
 		} else {
-			strcpy(buf, Mission_events[z].objective_text);
+			strcpy_s(buf, Mission_events[z].objective_text);
 			if (Mission_events[z].count){
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
@@ -734,7 +734,7 @@ int message_play_training_voice(int index)
 		} else {
 			game_snd tmp_gs;
 			memset(&tmp_gs, 0, sizeof(game_snd));
-			strcpy(tmp_gs.filename, Message_waves[index].name);
+			strcpy_s(tmp_gs.filename, Message_waves[index].name);
 			Message_waves[index].num = snd_load(&tmp_gs, 0);
 			if (Message_waves[index].num < 0) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
@@ -843,7 +843,7 @@ void message_training_queue(char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
-		strcpy(temp_buf, Messages[m].message);
+		strcpy_s(temp_buf, Messages[m].message);
 		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
 			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf);
 

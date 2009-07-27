@@ -424,7 +424,7 @@ void CModifyVariableDlg::validate_data(CString &temp_data, int set_focus)
 	// check length > 0
 	int length  = strlen(temp_data);
 	if (length == 0) {
-		strcpy(message_text, "Invalid  Default Value");
+		strcpy_s(message_text, "Invalid  Default Value");
 		message = true;
 
 	} else if (m_type_number) {
@@ -435,7 +435,7 @@ void CModifyVariableDlg::validate_data(CString &temp_data, int set_focus)
 
 		if ( stricmp(buf, temp_data) ) {
 			message = true;
-			strcpy(message_text, "Invalid  Default Value");
+			strcpy_s(message_text, "Invalid  Default Value");
 		} else {
 			message = false;
 		}
@@ -483,7 +483,7 @@ void CModifyVariableDlg::validate_var_name(int set_focus)
 	// check length > 0
 	int length  = strlen(temp_name);
 	if (length == 0) {
-		strcpy(message_text, "Invalid Variable Name");
+		strcpy_s(message_text, "Invalid Variable Name");
 		message = true;
 	} else {
 
@@ -498,7 +498,7 @@ void CModifyVariableDlg::validate_var_name(int set_focus)
 			// if not a new name and not start name
 			if ( (index != -1) && (index != m_translate_combo_to_sexp[m_combo_last_modified_index]) ) {
 				message = true;
-				strcpy(message_text, "Variable Name already in use");
+				strcpy_s(message_text, "Variable Name already in use");
 			}
 		}
 	}

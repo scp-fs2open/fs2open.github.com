@@ -1521,7 +1521,7 @@ void standalone_main_init()
 	Net_player->flags |= (NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_CONNECTED | NETINFO_FLAG_DO_NETWORKING | NETINFO_FLAG_MISSION_OK);
 	Net_player->state = NETPLAYER_STATE_WAITING;
 	Net_player->m_player = Player;
-	strcpy(Player->callsign, "server");
+	strcpy_s(Player->callsign, "server");
 	Net_player->p_info.addr = Psnet_my_addr;
 	Net_player->s_info.xfer_handle = -1;	
 	Net_player->player_id = multi_get_new_id();	

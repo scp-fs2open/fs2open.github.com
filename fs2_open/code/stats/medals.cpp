@@ -693,7 +693,7 @@ void init_medal_bitmaps()
 			// possibly load a different filename that is specified by the bitmap filename
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
-			strcpy( filename, Medals[idx].bitmap );
+			strcpy_s( filename, Medals[idx].bitmap );
 
 			_splitpath( filename, NULL, NULL, base, NULL );
 

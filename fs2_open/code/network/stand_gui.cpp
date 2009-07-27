@@ -209,7 +209,7 @@ int std_connect_set_connect_count()
 	int idx,count;
 
 	// setup the text string
-	strcpy(str,XSTR("# Connections : ",911));
+	strcpy_s(str,XSTR("# Connections : ",911));
 
 	// determine how many players are actually connected
 	count = 0;
@@ -221,7 +221,7 @@ int std_connect_set_connect_count()
 	
 	// tack on the player count to the end of the string
 	sprintf(val,"%d",count);
-	strcat(str,val);
+	strcat_s(str,val);
 
 	// set the text itself
    ctrl = GetDlgItem(Page_handles[CONNECT_PAGE],(int)MAKEINTRESOURCE(IDC_CON_COUNT));
@@ -335,19 +335,19 @@ void std_connect_update_ping(net_player *p)
 		psnet_addr_to_string(lookup,&p->p_info.addr);
 		
 		// build the string to replace the ping with
-		strcpy(str,lookup); 
-		strcat(str,", "); 
+		strcpy_s(str,lookup); 
+		strcat_s(str,", "); 
 		
 		// chop it off at pings greater than 1 second
 		if(p->s_info.ping.ping_avg > 1000){
-			strcat(str,XSTR("> 1 sec",914));
-			strcpy(sml_ping,XSTR("> 1 sec",914));
+			strcat_s(str,XSTR("> 1 sec",914));
+			strcpy_s(sml_ping,XSTR("> 1 sec",914));
 		}
 		else {
 			sprintf(ping,"%d",p->s_info.ping.ping_avg); 
-			strcat(str,ping);
-			strcat(str,XSTR(" ms",915));
-			strcpy(sml_ping,ping); strcat(sml_ping,XSTR(" ms",915));
+			strcat_s(str,ping);
+			strcat_s(str,XSTR(" ms",915));
+			strcpy_s(sml_ping,ping); strcat_s(sml_ping,XSTR(" ms",915));
 		}
 
 		// set the string
@@ -378,12 +378,12 @@ void std_connect_set_gamename(char *name)
 	if(name == NULL){
 		// if a permanent name exists, use that instead of the default
 		if(strlen(Multi_options_g.std_pname)){
-			strcpy(Netgame.name, Multi_options_g.std_pname);
+			strcpy_s(Netgame.name, Multi_options_g.std_pname);
 		} else {
-			strcpy(Netgame.name,XSTR("Standalone Server",916));
+			strcpy_s(Netgame.name,XSTR("Standalone Server",916));
 		}
 	} else {
-		strcpy(Netgame.name,name);
+		strcpy_s(Netgame.name,name);
 
 		// update fs2netd
 		if (MULTI_IS_TRACKER_GAME) {
@@ -397,7 +397,7 @@ void std_connect_set_gamename(char *name)
 	standalone_do_systray(ST_MODE_UPDATE);
 
 	// update the text control
-	strcpy(buf,Netgame.name);
+	strcpy_s(buf,Netgame.name);
 	Multi_std_namechange_force = 0;
 	SetWindowText(Multi_std_name,buf);
 	Multi_std_namechange_force = 1;
@@ -469,7 +469,7 @@ int std_connect_lindex_to_npindex(int index)
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		// only look at connected players
 		if(MULTI_CONNECTED(Net_players[idx])){
-			strcpy(addr_text,"");
+			strcpy_s(addr_text,"");
 			psnet_addr_to_string(addr_text,&Net_players[idx].p_info.addr);
 
 			// if we found the match
@@ -606,7 +606,7 @@ void std_multi_set_standalone_missiontime(float mission_time)
 	// format the time string and set the text
 	game_format_time(m_time,time_txt);	
 	sprintf(txt,"  :  %.1f", mission_time);
-	strcat(time_txt,txt);
+	strcat_s(time_txt,txt);
 	SetWindowText(Standalone_missiontime,time_txt);
 }
 
@@ -1177,12 +1177,12 @@ void std_pinfo_update_ping(net_player *p)
 	
 	// chop it off at pings greater than 1 second
 	if(p->s_info.ping.ping_avg > 1000){		
-		strcpy(sml_ping,XSTR("> 1 sec",914));
+		strcpy_s(sml_ping,XSTR("> 1 sec",914));
 	}
 	// use the ping itself
 	else {
 		sprintf(sml_ping,"%d",p->s_info.ping.ping_avg); 		
-		strcat(sml_ping,XSTR(" ms",915));
+		strcat_s(sml_ping,XSTR(" ms",915));
 	}
 	
 	SetWindowText(Player_ping_time,sml_ping);
@@ -1823,7 +1823,7 @@ void std_add_chat_text(char *text,int player_index,int add_id)
 			sprintf(format, "%s: %s", Net_players[player_index].m_player->callsign, text);
 		}
 	} else {
-		strcpy(format, text);
+		strcpy_s(format, text);
 	}
 
 	// this thing isn't all that accurate, it typically produces a longer line, but I don't really care :p
@@ -1958,7 +1958,7 @@ void std_add_ban(char *name)
 
 	// otherwise add it
 	memset(Standalone_ban_list[Standalone_ban_count],0,CALLSIGN_LEN+1);
-	strcpy(Standalone_ban_list[Standalone_ban_count++],name);
+	strcpy_s(Standalone_ban_list[Standalone_ban_count++],name);
 }
 
 
@@ -2057,7 +2057,7 @@ void std_build_title_string(char *str)
 #ifdef STANDALONE_ONLY_BUILD
 	memset(temp, 0, 256);
 	sprintf(temp, "   %s %d", "Release", STANDALONE_ONLY_RELEASE_VERSION);
-	strcat(str, temp);
+	strcat_s(str, temp);
 #endif
 }
 

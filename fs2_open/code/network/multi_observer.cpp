@@ -84,7 +84,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	Net_players[player_num].s_info.reliable_buffer_size = 0;
 
 	// callsign and short callsign
-	strcpy(pl->callsign,name);
+	strcpy_s(pl->callsign,name);
 	pilot_set_short_callsign(pl,SHORT_CALLSIGN_PIXEL_W);
 	pl->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;	
 
@@ -139,7 +139,7 @@ void multi_obs_create_observer_client()
 	// make ship hidden from sensors so that this observer cannot target it.  Observers really have two ships
 	// one observer, and one "Player_ship".  Observer needs to ignore the Player_ship.
 	Player_ship->flags |= SF_HIDDEN_FROM_SENSORS;
-	strcpy(Player_ship->ship_name, XSTR("Observer Ship",688));
+	strcpy_s(Player_ship->ship_name, XSTR("Observer Ship",688));
 	Player_ai = &Ai_info[Ships[Objects[pobj_num].instance].ai_index];		
 
 	// configure the hud to be in "observer" mode

@@ -871,7 +871,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Assert(strlen(text) < TOKEN_LENGTH);
 	Assert(type >= 0);
 
-	strcpy(Sexp_nodes[node].text, text);
+	strcpy_s(Sexp_nodes[node].text, text);
 	Sexp_nodes[node].type = type;
 	Sexp_nodes[node].subtype = subtype;
 	Sexp_nodes[node].first = first;
@@ -2989,7 +2989,7 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 static int Sexp_text_overflow_warning = 0;
 
 // speed is not critical, since we're using FRED
-char *sexp_strcat(char *dest, const char *src, int max_len)
+char *sexp_strcat_s(char *dest, const char *src, int max_len)
 {
 	int dest_len = strlen(dest);
 	int src_len = strlen(src);
@@ -3003,9 +3003,9 @@ char *sexp_strcat(char *dest, const char *src, int max_len)
 		if (!Sexp_text_overflow_warning)
 		{
 			char buf[512];
-			strcpy(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
+			strcpy_s(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
 			strncat(buf, dest, 172);
-			strcat(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
+			strcat_s(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
 			mprintf((buf));
 			Error(LOCATION, buf);
 
@@ -3023,14 +3023,14 @@ int build_sexp_string(int cur_node, int level, int mode, int max_len)
 
 	Sexp_build_flag = 0;
 	offset = strlen(Sexp_string);
-	sexp_strcat(Sexp_string, "( ", max_len);
+	sexp_strcat_s(Sexp_string, "( ", max_len);
 	node = cur_node;
 	while (node != -1) {
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			// build text to string
 			build_sexp_text_string(pstr, node, mode);
-			sexp_strcat(Sexp_string, pstr, max_len);
+			sexp_strcat_s(Sexp_string, pstr, max_len);
 
 		} else {
 			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
@@ -3039,7 +3039,7 @@ int build_sexp_string(int cur_node, int level, int mode, int max_len)
 		node = Sexp_nodes[node].rest;
 	}
 
-	sexp_strcat(Sexp_string, ") ", max_len);
+	sexp_strcat_s(Sexp_string, ") ", max_len);
 	len = strlen(Sexp_string) - offset;
 	if (len > 40) {
 		Sexp_string[offset] = 0;
@@ -3055,31 +3055,31 @@ void build_extended_sexp_string(int cur_node, int level, int mode, int max_len)
 	char pstr[128];
 	int i, flag = 0, node;
 
-	sexp_strcat(Sexp_string, "( ", max_len);
+	sexp_strcat_s(Sexp_string, "( ", max_len);
 	node = cur_node;
 	while (node != -1) {
 		if (flag)  // not the first line?
 			for (i=0; i<level + 1; i++)
-				sexp_strcat(Sexp_string, "   ", max_len);
+				sexp_strcat_s(Sexp_string, "   ", max_len);
 
 		flag = 1;
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			build_sexp_text_string(pstr,node, mode);
-			sexp_strcat(Sexp_string, pstr, max_len);
+			sexp_strcat_s(Sexp_string, pstr, max_len);
 
 		} else {
 			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
 		}
 
-		sexp_strcat(Sexp_string, "\n", max_len);
+		sexp_strcat_s(Sexp_string, "\n", max_len);
 		node = Sexp_nodes[node].rest;
 	}
 
 	for (i=0; i<level; i++)
-		sexp_strcat(Sexp_string, "   ", max_len);
+		sexp_strcat_s(Sexp_string, "   ", max_len);
 
-	sexp_strcat(Sexp_string, ")", max_len);
+	sexp_strcat_s(Sexp_string, ")", max_len);
 }
 
 void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
@@ -9327,7 +9327,7 @@ void sexp_add_background_bitmap(int n)
 	starfield_list_entry sle;
 
 	// filename
-	strcpy(sle.filename, CTEXT(n));
+	strcpy_s(sle.filename, CTEXT(n));
 	n = CDR(n);
 
 	// sanity checking
@@ -9415,7 +9415,7 @@ void sexp_add_sun_bitmap(int n)
 	starfield_list_entry sle;
 
 	// filename
-	strcpy(sle.filename, CTEXT(n));
+	strcpy_s(sle.filename, CTEXT(n));
 	n = CDR(n);
 
 	// sanity checking
@@ -9747,13 +9747,13 @@ void sexp_allow_ship(int n)
 		return;
 
 	// get the base name of the ship
-	strcpy(name, CTEXT(n));
+	strcpy_s(name, CTEXT(n));
 	end_string_at_first_hash_symbol(name);
 
 	// add that ship, as well as any # equivalents
 	for (idx = 0; idx < Num_ship_classes; idx++)
 	{
-		strcpy(temp, Ship_info[idx].name);
+		strcpy_s(temp, Ship_info[idx].name);
 		end_string_at_first_hash_symbol(temp);
 
 		// we have a match, so allow this ship
@@ -9772,13 +9772,13 @@ void sexp_allow_weapon(int n)
 		return;
 
 	// get the base name of the weapon
-	strcpy(name, CTEXT(n));
+	strcpy_s(name, CTEXT(n));
 	end_string_at_first_hash_symbol(name);
 
 	// add that weapon, as well as any # equivalents
 	for (idx = 0; idx < Num_weapon_types; idx++)
 	{
-		strcpy(temp, Weapon_info[idx].name);
+		strcpy_s(temp, Weapon_info[idx].name);
 		end_string_at_first_hash_symbol(temp);
 
 		// we have a match, so allow this weapon
@@ -11282,7 +11282,7 @@ void sexp_ship_change_alt_name(int n)
 // Goober5000
 void sexp_set_death_message(int n)
 {
-	strcpy(Player->death_message, CTEXT(n));
+	strcpy_s(Player->death_message, CTEXT(n));
 
 	extern void lcl_replace_stuff(char *text, unsigned int max_len);
 	lcl_replace_stuff(Player->death_message, 256);
@@ -12517,7 +12517,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 			target_sssp = &Subsys_status[new_idx];
 			target_pobjp->subsys_count++;
 
-			strcpy(target_sssp->name, source_ss->system_info->subobj_name);
+			strcpy_s(target_sssp->name, source_ss->system_info->subobj_name);
 		}
 
 		// copy
@@ -13643,7 +13643,7 @@ void sexp_set_support_ship(int n)
 		// if not found, make a new entry
 		if (temp_val < 0)
 		{
-			strcpy(Parse_names[Num_parse_names], CTEXT(n));
+			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
 			temp_val = Num_parse_names;
 			Num_parse_names++;
 		}
@@ -13684,7 +13684,7 @@ void sexp_set_support_ship(int n)
 		// if not found, make a new entry
 		if (temp_val < 0)
 		{
-			strcpy(Parse_names[Num_parse_names], CTEXT(n));
+			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
 			temp_val = Num_parse_names;
 			Num_parse_names++;
 		}
@@ -19305,7 +19305,7 @@ void update_block_names(const char *old_name, const char *new_name)
 	for (i=0; i<MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) {
 			if ( !stricmp(old_name, Sexp_variables[i].variable_name) ) {
-				strcpy(Sexp_variables[i].variable_name, new_name);
+				strcpy_s(Sexp_variables[i].variable_name, new_name);
 			}
 		}
 	}
@@ -19904,8 +19904,8 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 	}
 
 	if (index >= 0) {
-		strcpy(Sexp_variables[index].text, text);
-		strcpy(Sexp_variables[index].variable_name, var_name);
+		strcpy_s(Sexp_variables[index].text, text);
+		strcpy_s(Sexp_variables[index].variable_name, var_name);
 		Sexp_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
 		Sexp_variables[index].type = (type | SEXP_VARIABLE_SET);
 	}
@@ -19922,7 +19922,7 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( !MULTIPLAYER_CLIENT );
 
-	strcpy(Sexp_variables[index].text, text);
+	strcpy_s(Sexp_variables[index].text, text);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
 	// do multi_callback_here
@@ -19952,7 +19952,7 @@ void multi_sexp_modify_variable()
 
 	// set the sexp_variable
 	if ( (variable_index >= 0) && (variable_index < sexp_variable_count()) ) {
-		strcpy(Sexp_variables[variable_index].text, value); 
+		strcpy_s(Sexp_variables[variable_index].text, value); 
 	}	
 }
 
@@ -20009,8 +20009,8 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) );
 
-	strcpy(Sexp_variables[index].text, text);
-	strcpy(Sexp_variables[index].variable_name, var_name);
+	strcpy_s(Sexp_variables[index].text, text);
+	strcpy_s(Sexp_variables[index].variable_name, var_name);
 	Sexp_variables[index].type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
 }
 
@@ -20254,7 +20254,7 @@ int sexp_variable_allocate_block(const char* block_name, int block_type)
 	for (int idx=start; idx<start+num_blocks; idx++) {
 		Assert(Sexp_variables[idx].type == SEXP_VARIABLE_NOT_USED);
 		Sexp_variables[idx].type = SEXP_VARIABLE_BLOCK | block_type;
-		strcpy(Sexp_variables[idx].variable_name, block_name);
+		strcpy_s(Sexp_variables[idx].variable_name, block_name);
 	}
 
 	return start;

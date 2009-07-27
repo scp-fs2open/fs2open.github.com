@@ -148,7 +148,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 		Elements[i].box.top = y - By / 2;
 		Elements[i].box.bottom = Elements[i].box.top + By;
   
-		strcpy(str, Campaign.missions[i].name);
+		strcpy_s(str, Campaign.missions[i].name);
 		str[strlen(str) - 4] = 0;  // strip extension from filename
 		GetTextExtentPoint32(pDC->m_hDC, str, strlen(str), &size);
 		if (size.cx > CELL_TEXT_WIDTH) {

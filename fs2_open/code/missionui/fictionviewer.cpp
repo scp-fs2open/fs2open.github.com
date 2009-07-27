@@ -355,7 +355,7 @@ void fiction_viewer_load(char *filename)
 	}
 
 	// save our filename
-	strcpy(Fiction_viewer_filename, filename);
+	strcpy_s(Fiction_viewer_filename, filename);
 
 	// load up the file
 	CFILE *fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);

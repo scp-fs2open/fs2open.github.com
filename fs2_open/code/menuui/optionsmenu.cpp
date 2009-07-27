@@ -477,7 +477,7 @@ void options_play_voice_clip()
 
 void options_add_notify(char *str)
 {
-	strcpy(Options_notify_string, str);
+	strcpy_s(Options_notify_string, str);
 	Options_notify_stamp = timestamp(OPTIONS_NOTIFY_TIME);
 }
 

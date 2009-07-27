@@ -697,7 +697,7 @@ void os_init_cmdline(char *cmdline)
 
 #ifdef SCP_UNIX
 		// append a space for the os_parse_parms() check
-		strcat(buf, " ");
+		strcat_s(buf, " ");
 #endif
 
 		os_parse_parms(buf);
@@ -730,7 +730,7 @@ void os_init_cmdline(char *cmdline)
 		}
 
 		// append a space for the os_parse_parms() check
-		strcat(buf, " ");
+		strcat_s(buf, " ");
 
 		os_parse_parms(buf);
 		os_validate_parms(buf);

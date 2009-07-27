@@ -639,7 +639,7 @@ THEORAFILE *theora_open(char *filename)
 	char *p = strchr( lower_name, '.' );
 	if ( p ) *p = 0;
 
-	SAFE_STRCAT( lower_name, ".ogg", sizeof(lower_name) );
+	strcat_s( lower_name, ".ogg" );
 
 	// NOTE: Because the .ogg extension is used for both movies and sounds, we have to
 	//       be a bit more specific about our search locations, so we look only in the

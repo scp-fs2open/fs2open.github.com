@@ -408,8 +408,8 @@ bool fs2netd_login()
 			}
 
 			ml_printf("FS2NetD ERROR: Login %s/%s is invalid!", user, passwd);
-			strcpy(error_str, "Login failed!");
-			strcpy(std_error_str, "Login failed!");
+			strcpy_s(error_str, "Login failed!");
+			strcpy_s(std_error_str, "Login failed!");
 			retval = false;
 			break;
 		}
@@ -417,8 +417,8 @@ bool fs2netd_login()
 		// unknown failure fetching pilot data
 		case 2:
 			ml_string("FS2NetD ERROR: UNKNOWN ERROR when fetching pilot data");
-			strcpy(error_str, "An Unknown Error (probably a timeout) occured when trying to retrieve your pilot data.");
-			strcpy(std_error_str, "Unknown Error (timeout?)");
+			strcpy_s(error_str, "An Unknown Error (probably a timeout) occured when trying to retrieve your pilot data.");
+			strcpy_s(std_error_str, "Unknown Error (timeout?)");
 			retval = false;
 			break;
 
@@ -431,30 +431,30 @@ bool fs2netd_login()
 		// success!!  pilot was created
 		case 4:
 			ml_string("FS2NetD MSG: Created New Pilot");
-			strcpy(error_str, "New Pilot has been created.");
-			strcpy(std_error_str, "New Pilot has been created.");
+			strcpy_s(error_str, "New Pilot has been created.");
+			strcpy_s(std_error_str, "New Pilot has been created.");
 			retval = true;
 			break;
 
 		// invalid pilot name
 		case 5:
 			ml_string("FS2NetD ERROR: Invalid Pilot!");
-			strcpy(error_str, "Invalid pilot name - A serious error has occured, Contact the FS2NetD Administrator!");
-			strcpy(std_error_str, "Invalid pilot name!");
+			strcpy_s(error_str, "Invalid pilot name - A serious error has occured, Contact the FS2NetD Administrator!");
+			strcpy_s(std_error_str, "Invalid pilot name!");
 			retval = false;
 			break;
 
 		// the session id was invalid
 		case 6:
 			ml_string("FS2NetD ERROR: Invalid SID!");
-			strcpy(error_str, "Invalid SID - A serious error has occured, Contact the FS2NetD Administrator!");
-			strcpy(std_error_str, "Invalid SID");
+			strcpy_s(error_str, "Invalid SID - A serious error has occured, Contact the FS2NetD Administrator!");
+			strcpy_s(std_error_str, "Invalid SID");
 			retval = false;
 			break;
 
 		default:
 			ml_string("FS2NetD ERROR: Unknown return case for GetPlayerData()");
-			strcpy(error_str, "Unkown return case from GetPlayerData(). Contact the FS2NetD Administrator!");
+			strcpy_s(error_str, "Unkown return case from GetPlayerData(). Contact the FS2NetD Administrator!");
 			retval = false;
 			break;
 	}
@@ -777,13 +777,13 @@ void fs2netd_gameserver_start()
 
 	memset(&Multi_tracker_game_data, 0, sizeof(tracker_game_data));
 
-	strcpy(Multi_tracker_game_data.name, Netgame.name);
-	strcpy(Multi_tracker_game_data.mission_name, Netgame.mission_name);
-	strcpy(Multi_tracker_game_data.title, Netgame.title);
-	strcpy(Multi_tracker_game_data.campaign_name, Netgame.campaign_name);
+	strcpy_s(Multi_tracker_game_data.name, Netgame.name);
+	strcpy_s(Multi_tracker_game_data.mission_name, Netgame.mission_name);
+	strcpy_s(Multi_tracker_game_data.title, Netgame.title);
+	strcpy_s(Multi_tracker_game_data.campaign_name, Netgame.campaign_name);
 
 	if ( strlen(Multi_fs_tracker_channel) ) {
-		strcpy(Multi_tracker_game_data.chat_channel, Multi_fs_tracker_channel);
+		strcpy_s(Multi_tracker_game_data.chat_channel, Multi_fs_tracker_channel);
 	}
 
 	Multi_tracker_game_data.campaign_mode = (ubyte)Netgame.campaign_mode;
@@ -822,9 +822,9 @@ void fs2netd_gameserver_update(bool force)
 		return;
 	}
 
-	strcpy(Multi_tracker_game_data.mission_name, Netgame.mission_name);
-	strcpy(Multi_tracker_game_data.title, Netgame.title);
-	strcpy(Multi_tracker_game_data.campaign_name, Netgame.campaign_name);
+	strcpy_s(Multi_tracker_game_data.mission_name, Netgame.mission_name);
+	strcpy_s(Multi_tracker_game_data.title, Netgame.title);
+	strcpy_s(Multi_tracker_game_data.campaign_name, Netgame.campaign_name);
 
 	Multi_tracker_game_data.campaign_mode = (ubyte)Netgame.campaign_mode;
 	Multi_tracker_game_data.players = (short)multi_num_players();
@@ -901,7 +901,7 @@ bool fs2netd_check_mission(char *mission_name)
 		return 0;
 	}
 
-	strcpy(Chk_mission_name, mission_name);
+	strcpy_s(Chk_mission_name, mission_name);
 	cf_chksum_long(Chk_mission_name, &Chk_mission_crc);
 
 	do_full_packet = true;
@@ -1247,8 +1247,8 @@ int fs2netd_get_valid_missions_do()
 			}
 
 			memset( wild_card, 0, sizeof(wild_card) );
-			strcpy( wild_card, NOX("*") );
-			strcat( wild_card, FS_MISSION_FILE_EXT );
+			strcpy_s( wild_card, NOX("*") );
+			strcat_s( wild_card, FS_MISSION_FILE_EXT );
 
 			idx = count = cf_get_file_list(1024, file_names, CF_TYPE_MISSIONS, wild_card);
 		}
@@ -1624,7 +1624,7 @@ void fs2netd_spew_table_checksums(char *outfile)
 	}
 
 	memset( modname, 0, sizeof(modname) );
-	strcpy( modname, Cmdline_spew_table_crcs );
+	strcpy_s( modname, Cmdline_spew_table_crcs );
 
 	my_time = time(NULL);
 	
