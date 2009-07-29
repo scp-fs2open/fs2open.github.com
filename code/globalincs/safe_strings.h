@@ -28,7 +28,7 @@
 /* Because errno_t is not (yet) standard, we define it here like this */
 typedef int errno_t;
 
-#if !defined( _MSC_VER ) /* These are already present in 2005, 2008 - if you're using anything else, you don't get these */
+#if !defined( _MSC_VER ) && !defined(NO_SAFE_STRINGS) /* These are already present in 2005, 2008 - if you're using anything else, you don't get these */
 
 /* In order to compile safe_strings_test.cpp, you must have this defined on the command line */
 /* #define SAFESTRINGS_TEST_APP */
@@ -40,7 +40,7 @@ typedef int errno_t;
 
 #	ifndef __safe_strings_error_handler
 #		ifdef _DEBUG
-#			define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report", #val, file, line) /* Crash hard here - no better option outside of a cross platform framework */
+#			define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report\nTrying to put into %d byte buffer:\n%s", #val, file, line,sizeInBytes,strSource) /* Crash hard here - no better option outside of a cross platform framework */
 #		else
 #			define __safe_strings_error_handler( val ) 1/0 /* Crash hard here - no better option outside of a cross platform framework */
 #		endif
@@ -98,7 +98,7 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 #endif
 
 /* Safe strings for VS2005+ in debug builds (these give more info than the MS CRT ones) */
-#elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG)
+#elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) && !defined(NO_SAFE_STRINGS)
 
 #ifndef __safe_strings_error_handler
 #define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report", #val, file, line) /* Crash hard here - no better option outside of a cross platform framework */
@@ -124,7 +124,9 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 #define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
 #define strcat_s( ... ) scp_strcat_s( __FILE__, __LINE__, __VA_ARGS__ )
 
-#elif !( defined(_MSC_VER) && _MSC_VER >= 1400 )
+#else
+
+#pragma message("safe_strings disabled - this is not good!")
 
 inline errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
 { 
