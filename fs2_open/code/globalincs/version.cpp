@@ -48,8 +48,8 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 	// grab the last line in file which isn't empty and isn't a comment
 	char buffer[MAX_LINE_LENGTH+1], verbuffer[MAX_LINE_LENGTH+1];
 
-	strcpy_s(verbuffer,"");
-	strcpy_s(buffer,"");
+	verbuffer[0] = verbuffer[MAX_LINE_LENGTH] = '\0';
+	buffer[0] = buffer[MAX_LINE_LENGTH] = '\0';
 	while ( !feof(f) ) {
 		// Read the line into a temporary buffer
 		fgets(buffer, MAX_LINE_LENGTH, f);
@@ -65,7 +65,7 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 		if (buffer[0] == VERSION_FILE_COMMENT_CHAR) continue;
 
 		// Line is a good one, so save it...
-		strcpy_s(verbuffer, buffer);
+		strcpy(verbuffer, buffer);
 	}
 	fclose(f);
 

@@ -7585,8 +7585,8 @@ int main(int argc, char *argv[])
 	memset( argptr, 0, len+1 );
 	
 	for (i = 1; i < argc; i++) {
-		strcat_s(argptr, argv[i]);
-		strcat_s(argptr, " ");
+		strcat(argptr, argv[i]);
+		strcat(argptr, " ");
 	}
 
 	// switch to game_main()
