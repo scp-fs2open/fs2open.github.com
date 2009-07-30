@@ -5350,12 +5350,19 @@ bool weapon_armed(weapon *wp)
 		}
 
 		if(		((wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time))
-			|| ((wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist)))
-			|| ((wip->arm_radius) && (wp->homing_object == NULL
-				|| (wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
-				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))))
+			|| ((wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist))))
 		{
 			return false;
+		}
+		if(wip->arm_radius) {
+			if(wp->homing_object == NULL)
+				return false;
+			if((wp->homing_subsys == NULL) && (vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius))
+				return false;
+			if(wp->homing_object->type == OBJ_SHIP) {
+				if ((wp->homing_subsys != NULL) && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && (vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))
+					return false;
+			}
 		}
 	}
 
