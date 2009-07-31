@@ -64,7 +64,7 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 		if (buffer[0] == VERSION_FILE_COMMENT_CHAR) continue;
 
 		// Line is a good one, so save it...
-		strcpy(verbuffer, buffer);
+		strcpy_s(verbuffer, buffer);
 	}
 	fclose(f);
 
