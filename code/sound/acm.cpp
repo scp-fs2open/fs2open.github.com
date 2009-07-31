@@ -56,8 +56,8 @@ int CALLBACK ACM_enum_callback(HACMDRIVERID hadid, DWORD dwInstance, DWORD fdwSu
     mmr = acmDriverDetails(hadid, &add, 0L);
     if (MMSYSERR_NOERROR != mmr)
     {
-        lstrcpy_s(add.szShortName, szBogus);
-        lstrcpy_s(add.szLongName,  szBogus);
+        lstrcpy(add.szShortName, szBogus);
+        lstrcpy(add.szLongName,  szBogus);
     }
 
     dwPriority = (DWORD)-1L;

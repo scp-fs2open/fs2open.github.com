@@ -5,7 +5,7 @@
  * Maintained by portej05 - contact via PM on www.hard-light.net/forums
  * Why have we got this, what is it for?
  * VC2005+ define some safe string functions which check buffer sizes before doing anything
- * Unfortunately, GCC and MACOS do not provide these functions, therefore, we must!
+ * Unfortunately, GCC (on Linux and Mac OS X) does not yet provide these functions, therefore, we must!
  * (if only to reduce the amount of noise the static analysis tools are spitting out)
  * They are part of ISO/IEC TR 24731 and may find their way into the CRTs at some point, at which
  * point these functions must be removed from the engine.
@@ -18,7 +18,7 @@
  * scp safe_strings are used in VS2005+ DEBUG because they give more info
  */
 
-#if !defined( _MSC_VER ) || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) )
+#if !defined(NO_SAFE_STRINGS) && ( !defined( _MSC_VER ) || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) ))
 
 /* We don't have this here - no standard library stuff included */
 #ifndef NULL

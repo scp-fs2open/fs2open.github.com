@@ -253,8 +253,8 @@ int CFREDDoc::check_undo()
 
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
-	SAFE_strcat_s(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
-	SAFE_strcat_s(name, ".002", (sizeof(name) - 1));
+	strcat_s(name, MISSION_BACKUP_NAME);
+	strcat_s(name, ".002");
 	fp = fopen(name, "r");
 	if (!fp)
 		return 0;
@@ -302,9 +302,9 @@ int CFREDDoc::autoload()
 
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
-	SAFE_strcat_s(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
+	strcat_s(name, MISSION_BACKUP_NAME);
 	strcpy_s(backup_name, name);
-	SAFE_strcat_s(name, ".002", (sizeof(name) - 1));
+	strcat_s(name, ".002");
 	fp = fopen(name, "r");
 	if (!fp)
 		return 0;

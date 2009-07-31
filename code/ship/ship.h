@@ -654,6 +654,8 @@ typedef struct ship {
 	SCP_vector<alt_class> s_alt_classes;	
 
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+
+	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 } ship;
 
 struct ai_target_priority {
@@ -1474,6 +1476,7 @@ void	ship_maybe_ask_for_help(ship *sp);
 void	ship_scream(ship *sp);
 void	ship_maybe_scream(ship *sp);
 void	ship_maybe_tell_about_rearm(ship *sp);
+void	ship_maybe_tell_about_low_ammo(ship *sp);
 void	ship_maybe_lament();
 
 void ship_primary_changed(ship *sp);

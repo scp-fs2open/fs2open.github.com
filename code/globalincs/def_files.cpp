@@ -950,5 +950,10 @@ $use only single fov for turrets:		NO								\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
 																		\n\
+;; a disam or disable goal will protect a ship globally and purge		\n\
+;; standing attack orders globally. If set to NO, only the ship/wing	\n\
+;; given the order to disarm or disable will be affected.				\n\
+$disarm or disable cause global ai goal effects:	YES					\n\
+																		\n\
 #End																	\n\
 ";

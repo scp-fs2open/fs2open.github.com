@@ -43,8 +43,9 @@
 // Goober5000 - okay, this seems really stupid.  If any ship in the mission is assigned a goal
 // in PURGE_GOALS_ALL_SHIPS, *every* other ship will have certain goals purged.  So I added
 // PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
-#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
+#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE)
 #define PURGE_GOALS_ONE_SHIP		(AI_GOAL_IGNORE_NEW)
+#define PURGE_GOALS_DISARM_DISABLE  (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
 
 // goals given from the player to other ships in the game are also handled in this
 // code
@@ -496,7 +497,10 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	ship_obj *sop;
 
 	// only purge goals if a new goal is one of the types in next statement
-	if (!(aigp->ai_mode & PURGE_GOALS_ALL_SHIPS))
+	if (!((aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) || (aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE)))
+		return;
+	
+	if ((aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE) && (!(The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS)))
 		return;
 
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
@@ -1626,12 +1630,14 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// Goober5000 - see note at PURGE_GOALS_ALL_SHIPS... this is bizarre
 	if ((status == SHIP_STATUS_ARRIVED) && !(aigp->flags & AIGF_GOALS_PURGED))
 	{
-		if (aigp->ai_mode & PURGE_GOALS_ALL_SHIPS)
+		if ((aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) ||
+			((aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE) && (The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS)))
 		{
 			ai_goal_purge_all_invalid_goals(aigp);
 			aigp->flags |= AIGF_GOALS_PURGED;
 		}
-		else if (aigp->ai_mode & PURGE_GOALS_ONE_SHIP)
+		else if ((aigp->ai_mode & PURGE_GOALS_ONE_SHIP) ||
+			     ((aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE) && (!(The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS))))
 		{
 			ai_goal_purge_invalid_goals(aigp, aip->goals);
 			aigp->flags |= AIGF_GOALS_PURGED;
@@ -2203,15 +2209,17 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_attack_object( objp, other_obj, NULL);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
-		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
-			if (aip->target_objnum != -1) {
-				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
-				if (!(Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HUGE_SHIP))
-					Objects[aip->target_objnum].flags |= OF_PROTECTED;
-			}
-		} else	//	Just in case this ship had been protected, unprotect it.
-			if (aip->target_objnum != -1)
-				Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
+		if (The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS) {
+			if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
+				if (aip->target_objnum != -1) {
+					//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
+					if (!(Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HUGE_SHIP))
+						Objects[aip->target_objnum].flags |= OF_PROTECTED;
+				}
+			} else	//	Just in case this ship had been protected, unprotect it.
+				if (aip->target_objnum != -1)
+					Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
+		}
 
 		break;
 									  }

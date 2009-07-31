@@ -7585,8 +7585,8 @@ int main(int argc, char *argv[])
 	memset( argptr, 0, len+1 );
 	
 	for (i = 1; i < argc; i++) {
-		strcat_s(argptr, argv[i]);
-		strcat_s(argptr, " ");
+		strcat(argptr, argv[i]);
+		strcat(argptr, " ");
 	}
 
 	// switch to game_main()
@@ -8392,27 +8392,27 @@ void get_version_string(char *str, int max_size)
 	*/
 
 #ifdef INF_BUILD
-	SAFE_strcat_s( str, " Inferno", max_size );
+	strcat_s( str, max_size, " Inferno" );
 #endif
 
 #ifdef FS2_DEMO
-	SAFE_strcat_s( str, " Demo", max_size );
+	strcat_s( str, max_size, " Demo" );
 #endif
 
 #ifndef NDEBUG
-	SAFE_strcat_s( str, " Debug", max_size );
+	strcat_s( str, max_size, " Debug" );
 #endif
 
 	// Lets get some more info in here
 	switch(gr_screen.mode)
 	{
 		case GR_OPENGL:
-			SAFE_strcat_s( str, " OpenGL", max_size );
+			strcat_s( str, max_size, " OpenGL" );
 			break;
 	}
 
 	if (Cmdline_nohtl)
-		SAFE_strcat_s( str, " non-HT&L", max_size );
+		strcat_s( str, max_size, " non-HT&L" );
 
 //XSTR:ON
 	/*

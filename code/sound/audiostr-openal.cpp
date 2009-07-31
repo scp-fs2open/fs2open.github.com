@@ -482,7 +482,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 		goto OPEN_ERROR;
 	} else {
 		// set proper filename for later use (assumes that it doesn't already have an extension)
-		SAFE_strcat_s( filename, audio_ext[rc], sizeof(filename) );
+		strcat_s( filename, audio_ext[rc] );
 	}
 
 	m_snd_info.cfp = mmioOpen( fullpath, NULL, MMIO_ALLOCBUF | MMIO_READ );

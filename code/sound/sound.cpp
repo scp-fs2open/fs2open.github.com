@@ -336,7 +336,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
 
 	// ok, we got it, so set the proper filename for logging purposes
-	SAFE_strcat_s(filename, audio_ext[rc], sizeof(filename));
+	strcat_s(filename, audio_ext[rc]);
 
 
 	// ds_parse_sound() will do a NULL check on fp for us

@@ -13581,8 +13581,81 @@ void ship_maybe_scream(ship *sp)
 	ship_scream(sp);
 }
 
-// maybe tell player that we've requested a support ship
+// maybe tell player that we're running low on ammo
+#define PLAYER_LOW_AMMO_MSG_INTERVAL		250000
 #define PLAYER_REQUEST_REPAIR_MSG_INTERVAL	240000
+#define PLAYER_MAX_LOW_AMMO_MSGS			5
+
+void	ship_maybe_tell_about_low_ammo(ship *sp)
+{
+	weapon_info *wip;
+	int i;
+	ship_weapon *swp;
+	int multi_team_filter = -1;
+
+	// we don't want a ship complaining about low ammo after it has just complained about needing support
+	if (!timestamp_elapsed(Player->request_repair_timestamp))
+		return;
+
+	if (!timestamp_elapsed(Player->allow_ammo_timestamp))
+		return;
+
+	if (Player_ship->team == Iff_traitor)
+		return;
+
+	// Silent ships should remain just that
+	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES) {
+		return;
+	}
+
+	// for now, each ship can only complain about low ammo once a mission to stop it getting repetitive
+	if (sp->ammo_low_complaint_count) {
+		return;
+	}
+
+	if (Player->low_ammo_complaint_count >= PLAYER_MAX_LOW_AMMO_MSGS) {
+		return;
+	}
+
+	swp = &sp->weapons;
+	
+	// stole the code for this from ship_maybe_tell_about_rearm()
+	if (sp->flags & SIF_BALLISTIC_PRIMARIES)
+	{
+		for (i = 0; i < swp->num_primary_banks; i++)
+		{
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				if (swp->primary_bank_start_ammo[i] > 0)
+				{
+					if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
+					{
+						// multiplayer tvt
+						if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
+							multi_team_filter = sp->team;
+						}
+
+						message_send_builtin_to_player(MESSAGE_PRIMARIES_LOW, sp, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
+
+						Player->allow_ammo_timestamp = timestamp(PLAYER_LOW_AMMO_MSG_INTERVAL);
+
+						// better reset this one too
+						Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
+
+						Player->low_ammo_complaint_count++;
+						sp->ammo_low_complaint_count++;
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+
+// maybe tell player that we've requested a support ship
 void ship_maybe_tell_about_rearm(ship *sp)
 {
 	weapon_info *wip;
@@ -13640,7 +13713,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 					{
 						if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
 						{
-							message_type = MESSAGE_PRIMARIES_LOW;
+							message_type = MESSAGE_REARM_PRIMARIES;
 							break;
 						}
 					}

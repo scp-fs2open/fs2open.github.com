@@ -483,11 +483,11 @@ int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
 	}
 
 	// add extension
-	SAFE_strcat_s(current_path, Lcl_languages[Lcl_current_lang].lang_ext, path_max);
-	SAFE_strcat_s(current_path, DIR_SEPARATOR_STR, path_max);
+	strcat_s(current_path, path_max, Lcl_languages[Lcl_current_lang].lang_ext);
+	strcat_s(current_path, path_max, DIR_SEPARATOR_STR );
 
 	// copy rest of filename from temp
-	SAFE_strcat_s(current_path, temp, path_max);
+	strcat_s(current_path, path_max, temp);
 
 	delete [] temp;
 	return 1;

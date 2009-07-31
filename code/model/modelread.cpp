@@ -2335,9 +2335,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 #ifndef NDEBUG
 	char busy_text[60] = { '\0' };
 
-	SAFE_strcat_s( busy_text, "** ModelLoad: ", sizeof(busy_text) );
-	SAFE_strcat_s( busy_text, filename, sizeof(busy_text) );
-	SAFE_strcat_s( busy_text, " **", sizeof(busy_text) );
+	strcat_s( busy_text, "** ModelLoad: " );
+	strcat_s( busy_text, filename );
+	strcat_s( busy_text, " **" );
 
 	game_busy(busy_text);
 #endif

@@ -2157,9 +2157,9 @@ void bm_page_in_stop()
 #ifndef NDEBUG
 					memset(busy_text, 0, sizeof(busy_text));
 
-					SAFE_strcat_s( busy_text, "** BmpMan: ", sizeof(busy_text) );
-					SAFE_strcat_s( busy_text, bm_bitmaps[i].filename, sizeof(busy_text) );
-					SAFE_strcat_s( busy_text, " **", sizeof(busy_text) );
+					strcat_s( busy_text, "** BmpMan: " );
+					strcat_s( busy_text, bm_bitmaps[i].filename );
+					strcat_s( busy_text, " **" );
 
 					game_busy(busy_text);
 #else

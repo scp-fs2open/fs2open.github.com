@@ -979,12 +979,12 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 						strncpy( pack_filename, r->path, max_out );
 
 						if (f->pack_offset < 1) {
-							SAFE_strcat_s( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+							strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-								SAFE_strcat_s( pack_filename, DIR_SEPARATOR_STR, max_out );
+								strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 
-							SAFE_strcat_s( pack_filename, f->name_ext, max_out );
+							strcat_s( pack_filename, max_out, f->name_ext );
 						}
 					}
 
@@ -1008,13 +1008,13 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 
 				if (f->pack_offset < 1) {
 					if ( strlen(Pathtypes[f->pathtype_index].path) ) {
-						SAFE_strcat_s( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+						strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-							SAFE_strcat_s( pack_filename, DIR_SEPARATOR_STR, max_out );
+							strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 					}
 
-					SAFE_strcat_s( pack_filename, f->name_ext, max_out );
+					strcat_s( pack_filename, max_out, f->name_ext );
 				}
 			}
 
@@ -1118,7 +1118,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			if ( p && (strlen(p) > 2) )
 				(*p) = 0;
 
-			SAFE_strcat_s( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
+			strcat_s( filespec, ext_list[cur_ext] );
  
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
@@ -1240,7 +1240,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 		for (i = 0; i < file_list_size; i++) {
 			cf_file *f = file_list_index[i];
 	
-			SAFE_strcat_s( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
+			strcat_s( filespec, ext_list[cur_ext] );
 
 			if (localize) {
 				// create localized filespec
@@ -1260,12 +1260,12 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 							strncpy( pack_filename, r->path, max_out );
 
 							if (f->pack_offset < 1) {
-								SAFE_strcat_s( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+								strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 								if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-									SAFE_strcat_s( pack_filename, DIR_SEPARATOR_STR, max_out );
+									strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 
-								SAFE_strcat_s( pack_filename, f->name_ext, max_out );
+								strcat_s( pack_filename, max_out, f->name_ext );
 							}
 						}
 
@@ -1293,13 +1293,13 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 					if (f->pack_offset < 1) {
 
 						if ( strlen(Pathtypes[f->pathtype_index].path) ) {
-							SAFE_strcat_s( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+							strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-								SAFE_strcat_s( pack_filename, DIR_SEPARATOR_STR, max_out );
+								strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 						}
 
-						SAFE_strcat_s( pack_filename, f->name_ext, max_out );
+						strcat_s( pack_filename, max_out, f->name_ext );
 					}
 				}
 
@@ -1801,26 +1801,26 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 			strncpy(path, root->path, path_max);
 		}
 
-		SAFE_strcat_s(path, Pathtypes[pathtype].path, path_max);
+		strcat_s(path, path_max, Pathtypes[pathtype].path);
 
 		// Don't add slash for root directory
 		if (Pathtypes[pathtype].path[0] != '\0') {
 			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR ) {
-				SAFE_strcat_s(path, DIR_SEPARATOR_STR, path_max);
+				strcat_s(path, path_max, DIR_SEPARATOR_STR);
 			}
 		}
 
 #ifdef INF_BUILD
 		// keep pilot files separated for an Inferno build since they aren't compatible
 		if ( pathtype == CF_TYPE_SINGLE_PLAYERS || pathtype == CF_TYPE_MULTI_PLAYERS ) {
-			SAFE_strcat_s(path, "inferno", path_max);
-			SAFE_strcat_s(path, DIR_SEPARATOR_STR, path_max);
+			strcat_s(path, path_max, "inferno");
+			strcat_s(path, path_max, DIR_SEPARATOR_STR);
 		}
 #endif
 
 		// add filename
 		if (filename) {
-			SAFE_strcat_s(path, filename, path_max);
+			strcat_s(path, path_max, filename);
 
 			// localize filename
 			if (localize) {
