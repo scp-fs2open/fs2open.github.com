@@ -101,7 +101,7 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 #elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) && !defined(NO_SAFE_STRINGS)
 
 #ifndef __safe_strings_error_handler
-#define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report", #val, file, line) /* Crash hard here - no better option outside of a cross platform framework */
+#	define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report\nTrying to put into %d byte buffer:\n%s", #val, file, line,sizeInBytes,strSource) /* Crash hard here - no better option outside of a cross platform framework */
 #endif
 
 extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
