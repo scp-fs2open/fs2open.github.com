@@ -599,6 +599,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
 		else if (!stricmp(NOX("no emp kill"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_NO_EMP_KILL;
+		else if (!stricmp(NOX("untargeted heat seeker"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_UNTARGETED_HEAT_SEEKER;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -956,6 +958,7 @@ void init_weapon_entry(int weap_info_index)
 	generic_anim_init( &wip->thruster_glow );
 	
 	wip->thruster_glow_factor = 1.0f;
+	wip->target_lead_scaler = 0.0f;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -1381,6 +1384,15 @@ int parse_weapon(int subtype, bool replace)
 					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
 				}
 			}
+
+			if (optional_string("+Target Lead Scaler:"))
+			{
+				stuff_float(&wip->target_lead_scaler);
+				if (wip->target_lead_scaler == 0.0f)
+					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
+				else
+					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+			}
 		}
 		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
 		{
@@ -1420,6 +1432,14 @@ int parse_weapon(int subtype, bool replace)
 				{
 					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
 				}
+			}
+			if (optional_string("+Target Lead Scaler:"))
+			{
+				stuff_float(&wip->target_lead_scaler);
+				if (wip->target_lead_scaler == 1.0f)
+					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
+				else
+					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
 			}
 		}
 		else
@@ -3939,8 +3959,13 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
 		//	is what's causing Harbingers to miss the super destroyer. -- MK, 4/15/98
-		if ((wip->wi_flags & WIF_LOCKED_HOMING) && (old_dot > 0.1f) && (time_to_target > 0.1f))
-			vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
+		if ((old_dot > 0.1f) && (time_to_target > 0.1f)) {
+			if (wip->wi_flags2 & WIF2_VARIABLE_LEAD_HOMING) {
+				vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, (0.33f * wip->target_lead_scaler * MIN(time_to_target, 6.0f)));
+			} else if (wip->wi_flags & WIF_LOCKED_HOMING) {
+				vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
+			}
+		}
 
 		//nprintf(("AI", "Dot = %7.3f, dist = %7.3f, time_to = %6.3f, deg/sec = %7.3f\n", old_dot, dist_to_target, time_to_target, angles/flFrametime));
 
@@ -4456,7 +4481,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			} else if ( wip->wi_flags & WIF_HOMING_HEAT ) {
 				//	Make a heat seeking missile try to home.  If the target is outside the view cone, it will
 				//	immediately drop it and try to find one in its view cone.
-				if (target_objnum != -1) {
+				if ((target_objnum != -1) && !(wip->wi_flags2 & WIF2_UNTARGETED_HEAT_SEEKER)) {
 					wp->homing_object = &Objects[target_objnum];
 					weapon_maybe_play_warning(wp);
 				} else
