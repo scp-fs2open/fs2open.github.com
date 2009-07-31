@@ -63,6 +63,8 @@ extern hud_frames Radar_gauge;
 
 extern int radar_iff_color[5][2][4];
 
+extern int radar_target_id_flags;
+
 extern int Cmdline_nohtl;
 
 static const int NUM_ORB_RING_SLICES = 16;
@@ -83,6 +85,7 @@ vec3d vec_extents[]=
 color Orb_color_orange;
 color Orb_color_teal;
 color Orb_color_purple;
+color Orb_crosshairs;
 
 //special view matrix to get the orb rotating the correct way
 static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
@@ -91,8 +94,11 @@ static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
 
 static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -3.0f } } };
 
+vec3d target_position;
+
 // forward declarations
 void draw_radar_blips_orb(int blip_type, int bright, int distort = 0);
+void draw_radar3d_crosshairs( vec3d pnt );
 
 void radar_init_orb()
 {
@@ -141,6 +147,7 @@ void radar_init_orb()
     gr_init_alphacolor(&Orb_color_orange, 192, 96, 32,  192);
     gr_init_alphacolor(&Orb_color_teal,   48, 160, 96,  192);
     gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, 192);
+	gr_init_alphacolor(&Orb_crosshairs,   255, 255,255, 192);
 
 	Blip_mutate_id	= 1;
 
@@ -498,6 +505,14 @@ void radar_orb_draw_contact_htl(vec3d *pnt, int rad)
  
 	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
 	{
+		if (radar_target_id_flags & RTIF_PULSATE) {
+			// use mask to make the darn thing work faster
+			size *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
+		}
+		if (radar_target_id_flags & RTIF_BLINK) {
+			if (Missiontime & 8192)
+				return;
+		}
 		g3_draw_htl_sphere(pnt,size/100.0f);
 	}
 	else
@@ -621,6 +636,7 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 		if (b->flags & BLIP_CURRENT_TARGET)
 		{
 			b->rad = Current_radar_global->Radar_blip_radius_target[gr_screen.res];				
+			target_position = b->position;
 		}
 		else
 		{
@@ -660,6 +676,7 @@ void radar_draw_blips_sorted_orb(int distort)
 {
 	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
 
+	vm_vec_zero(&target_position);
 	// draw dim blips first, then bright blips
 	for (int is_bright = 0; is_bright < 2; is_bright++)
 	{
@@ -669,6 +686,10 @@ void radar_draw_blips_sorted_orb(int distort)
 		draw_radar_blips_orb(BLIP_TYPE_NORMAL_SHIP, is_bright, distort);
 		draw_radar_blips_orb(BLIP_TYPE_BOMB, is_bright, distort);
 		draw_radar_blips_orb(BLIP_TYPE_TAGGED_SHIP, is_bright, distort);
+	}
+
+	if (radar_target_id_flags & RTIF_CROSSHAIRS) {
+		draw_radar3d_crosshairs(target_position);
 	}
 
 	g3_done_instance(false);
@@ -1001,11 +1022,45 @@ void radar_orb_draw_image(vec3d *pnt, int rad, int idx, float mult)
     //modify size according to value from tables
     sizef *= mult;
 
+	// animate the targeted icon - option 1 of highlighting the targets
+	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] ) {
+		if (radar_target_id_flags & RTIF_PULSATE) {
+			// use mask to make the darn thing work faster
+			sizef *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
+		}
+		if (radar_target_id_flags & RTIF_BLINK) {
+			if (Missiontime & 8192)
+				return;
+		}
+		if (radar_target_id_flags & RTIF_ENLARGE) {
+			sizef *= 1.3f;
+		}
+	}
+
     tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
 
     g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
-    if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
-    {
-        g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
-    }
+}
+
+void draw_radar3d_crosshairs( vec3d pnt )
+{
+	int i,j,m;
+	vec3d pnt_end, pnt_start;
+
+	gr_set_color_fast(&Orb_crosshairs);
+
+	for(i = 0; i < 2; i++) {
+		m = (i * 2) - 1;
+		pnt_end = pnt_start = pnt;
+		pnt_start.xyz.x += (float) m*0.05f;
+		pnt_end.xyz.x += (float) m*0.15f;
+		g3_draw_htl_line(&pnt_start, &pnt_end);
+	}
+	for(j = 0; j < 2; j++) {
+		m = (j * 2) - 1;
+		pnt_end = pnt_start = pnt;
+		pnt_start.xyz.y += (float) m*0.05f;
+		pnt_end.xyz.y += (float) m*0.15f;
+		g3_draw_htl_line(&pnt_start, &pnt_end);
+	}
 }
