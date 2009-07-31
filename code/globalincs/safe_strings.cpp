@@ -18,6 +18,12 @@
  * scp safe_strings are used in VS2005+ DEBUG because they give more info
  */
 
+/* The include logic for this code:
+ * if !defined(NO_SAFE_STRINGS) && ( !defined( _MSC_VER ) 
+    || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) ))
+ * If NO_SAFE_STRINGS is not defined and not-VS build or debug VS build for VS2005+
+ */
+
 #if !defined(NO_SAFE_STRINGS) && ( !defined( _MSC_VER ) || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) ))
 
 /* We don't have this here - no standard library stuff included */

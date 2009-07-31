@@ -15,10 +15,14 @@
  *
  */
 
-/* Rules of use:
- * 1) VC2005 & VC2008 define their own, so don't do anything if they're around
- * 2) MacOS and GCC will use safe_strings
- * 3) All others will be redirected to non-safe versions
+/* Include logic:
+ * if !defined( _MSC_VER ) && !defined(NO_SAFE_STRINGS)
+ *   if NO_SAFE_STRINGS is not defined, non-VS builds come here
+ * elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) && !defined(NO_SAFE_STRINGS)
+ *   if VS2005+ and debug and NO_SAFE_STRINGS is not defined
+ * elif defined(_MSC_VER) && _MSC_VER < 1400 || defined(NO_SAFE_STRINGS)
+ *   if VS < 2005 or NO_SAFE_STRINGS
+ * endif
  */
 
 /* errno_t, EINVAL, ERANGE, etc.. */
@@ -124,7 +128,7 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 #define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
 #define strcat_s( ... ) scp_strcat_s( __FILE__, __LINE__, __VA_ARGS__ )
 
-#else
+#elif defined(_MSC_VER) && _MSC_VER < 1400 || defined(NO_SAFE_STRINGS)
 
 #pragma message("safe_strings disabled - this is not good!")
 
