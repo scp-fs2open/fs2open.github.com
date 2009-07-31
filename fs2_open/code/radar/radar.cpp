@@ -63,8 +63,15 @@ extern hud_frames Radar_gauge;
 
 extern int radar_iff_color[5][2][4];
 
+extern int radar_target_id_flags;
+
+int current_target_x, current_target_y;
+
+color radar_crosshairs;
+
 // forward declarations
 void draw_radar_blips_std(int blip_type, int bright, int distort = 0);
+void draw_radar_crosshairs(int x, int y);
 
 void radar_init_std()
 {
@@ -89,6 +96,8 @@ void radar_init_std()
 			}
 		}
 	}
+
+	gr_init_alphacolor( &radar_crosshairs, 255, 255, 255, 196);
 
 	Blip_mutate_id	= 1;
 
@@ -438,6 +447,10 @@ void radar_frame_init_std()
 void radar_draw_circle_std( int x, int y, int rad )
 {
 	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] )	{
+		if (radar_target_id_flags & RTIF_BLINK) {
+			if (Missiontime & 8192)
+				return;
+		}
 		gr_string( Large_blip_offset_x+x, Large_blip_offset_y+y, Large_blip_string );
 	} else {
 		// rad = RADAR_BLIP_RADIUS_NORMAL;
@@ -520,7 +533,9 @@ void draw_radar_blips_std(int blip_type, int bright, int distort)
 		// maybe draw cool blip to indicate current target
 		if (b->flags & BLIP_CURRENT_TARGET)
 		{
-			b->rad = Current_radar_global->Radar_blip_radius_target[gr_screen.res];				
+			b->rad = Current_radar_global->Radar_blip_radius_target[gr_screen.res];
+			current_target_x = b->x;
+			current_target_y = b->y;
 		}
 		else
 		{
@@ -550,6 +565,8 @@ void draw_radar_blips_std(int blip_type, int bright, int distort)
 // input:	distorted	=>		0 (default) to draw normal, 1 to draw distorted 
 void radar_draw_blips_sorted_std(int distort)
 {
+	current_target_x = 0;
+	current_target_y = 0;
 	// draw dim blips first, then bright blips
 	for (int is_bright = 0; is_bright < 2; is_bright++)
 	{
@@ -559,6 +576,10 @@ void radar_draw_blips_sorted_std(int distort)
 		draw_radar_blips_std(BLIP_TYPE_NORMAL_SHIP, is_bright, distort);
 		draw_radar_blips_std(BLIP_TYPE_BOMB, is_bright, distort);
 		draw_radar_blips_std(BLIP_TYPE_TAGGED_SHIP, is_bright, distort);
+	}
+	// draw crosshairs last - if at all.
+	if(radar_target_id_flags & RTIF_CROSSHAIRS) {
+		draw_radar_crosshairs(current_target_x, current_target_y);
 	}
 }
 
@@ -708,6 +729,20 @@ void radar_draw_image_std( int x, int y, int rad, int idx, int size )
 
 	Assert(scalef != 0);
 
+	// animate the targeted icon - option 1 of highlighting the targets
+	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] ) {
+		if (radar_target_id_flags & RTIF_PULSATE) {
+			scalef *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
+		}
+		if (radar_target_id_flags & RTIF_BLINK) {
+			if (Missiontime & 8192)
+				return;
+		}
+		if (radar_target_id_flags & RTIF_ENLARGE) {
+			scalef *= 1.3f;
+		}
+	}
+
 	// setup the scaler
 	blip_scaler.xyz.x = scalef;
 	blip_scaler.xyz.y = scalef;
@@ -730,9 +765,6 @@ void radar_draw_image_std( int x, int y, int rad, int idx, int size )
 	gr_push_scale_matrix(&blip_scaler);
 	gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
 	gr_aabitmap( x, y );
-	//If it is targeted
-	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] )	
-		gr_aabitmap( x, y );
 	gr_pop_scale_matrix();
 
 	gr_screen.clip_bottom = old_bottom;
@@ -740,4 +772,20 @@ void radar_draw_image_std( int x, int y, int rad, int idx, int size )
 
 	gr_screen.clip_right = old_right;
 	gr_screen.clip_right_unscaled = old_right_unscaled;
+}
+
+void draw_radar_crosshairs(int x, int y)
+{
+	int i,j,m;
+
+	gr_set_color_fast(&radar_crosshairs);
+
+	for(i = 0; i < 2; i++) {
+		m = (i * 2) - 1;
+		gr_gradient(x + m*4,y,x + m*8,y,false);
+	}
+	for(j = 0; j < 2; j++) {
+		m = (j * 2) - 1;
+		gr_gradient(x,y + m*4,x,y + m*8,false);
+	}
 }
