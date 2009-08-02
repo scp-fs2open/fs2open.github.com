@@ -160,6 +160,7 @@ private:
 	int					DamageTypeIndex;
 	SCP_vector<int>	Calculations;
 	SCP_vector<float>	Arguments;
+	float				shieldpierce_pct;
 
 public:
 	void clear();
@@ -178,6 +179,7 @@ public:
 	char *GetNamePtr(){return Name;}
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
+	float GetShieldPiercePCT(int damage_type_idx);
 	
 	//Set
 	void ParseData();
@@ -1095,6 +1097,7 @@ typedef struct ship_info {
 	float weapon_model_draw_distance;
 	
 	int armor_type_idx;
+	int shield_armor_type_idx;
 	
 	bool can_glide;
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
