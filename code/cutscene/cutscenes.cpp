@@ -649,14 +649,17 @@ void cutscenes_screen_do_frame()
 	}
 
 	if (Description_index != Selected_line) {
-		char *src;
+		char *src = NULL;
 
 		Description_index = Selected_line;
 		Text_size = 0;
-		src = Cutscenes[Cutscene_list[Description_index]].description;
-		if (src) {
-			Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines, Cutscene_max_text_lines[gr_screen.res]);
-			Assert(Text_size >= 0 && Text_size < Cutscene_max_text_lines[gr_screen.res]);
+		if ( Description_index < Cutscene_list.size( ) &&
+			 Cutscene_list[ Description_index ] < Cutscenes.size( ) ) {
+			src = Cutscenes[Cutscene_list[Description_index]].description;
+			if (src) {
+				Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines, Cutscene_max_text_lines[gr_screen.res]);
+				Assert(Text_size >= 0 && Text_size < Cutscene_max_text_lines[gr_screen.res]);
+			}
 		}
 	}
 
