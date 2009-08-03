@@ -57,7 +57,7 @@ void CFred_mission_save::convert_special_tags_to_retail()
 {
 	int i, team, stage;
 
-	if (Format_fs2_open)
+	if ( Format_fs2_open != FSO_FORMAT_RETAIL)
 		return;
 
 	for (team = 0; team < Num_teams; team++)
@@ -344,7 +344,7 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	// Goober5000
-	if (Format_fs2_open)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT)
 		{
@@ -369,7 +369,7 @@ int CFred_mission_save::save_mission_info()
 		fout(" %d", The_mission.num_respawns);
 	}
 
-	if (!Format_fs2_open)
+	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
 	{
 		if ( optional_string_fred("+Red Alert:"))
 			parse_comments(2);
@@ -379,7 +379,7 @@ int CFred_mission_save::save_mission_info()
 		fout(" %d", (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0);
 	}
 
-	if (!Format_fs2_open)
+	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
 	{
 		if ( optional_string_fred("+Scramble:"))
 			parse_comments(2);
@@ -398,7 +398,7 @@ int CFred_mission_save::save_mission_info()
 	fout(" %d", (The_mission.support_ships.max_support_ships == 0)?1:0 );
 
 	// here be WMCoolmon's hull and subsys repair stuff
-	if (Format_fs2_open)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		if ( optional_string_fred("+Hull Repair Ceiling:")) {
 			parse_comments(2);
@@ -460,7 +460,7 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	// Goober5000 - special wing info
-	if (Format_fs2_open)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		int i;
 		fout("\n");
@@ -506,7 +506,7 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	// Phreak's loading screen stuff
-	if (Format_fs2_open)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		if (strlen(The_mission.loading_screen[GR_640]) > 0)
 		{
@@ -577,7 +577,7 @@ int CFred_mission_save::save_mission_info()
 
 int CFred_mission_save::save_plot_info()
 {
-	if (!Format_fs2_open)
+	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
 	{
 		if (optional_string_fred("#Plot Info"))
 		{
@@ -637,7 +637,7 @@ int CFred_mission_save::save_cutscenes()
 
 	// Let's just assume it has them for now - 
 	if (!(The_mission.cutscenes.empty()) ) {
-		if (Format_fs2_open) {
+		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if (optional_string_fred("#Cutscenes")) {
 				parse_comments(2);
 			}
@@ -699,7 +699,7 @@ int CFred_mission_save::save_fiction()
 {
 	if (mission_has_fiction())
 	{
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (optional_string_fred("#Fiction Viewer"))
 			{
@@ -905,7 +905,7 @@ int CFred_mission_save::save_briefing()
 				parse_comments();
 				fout(" %d", (bi->flags & BI_HIGHLIGHT)?1:0 );
 
-				if (Format_fs2_open)
+				if (Format_fs2_open != FSO_FORMAT_RETAIL)
 				{
 					required_string_fred("$mirror:");
 					parse_comments();
@@ -1038,7 +1038,7 @@ int CFred_mission_save::save_variables()
 			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Sexp_variables[i].variable_name, Sexp_variables[i].text, type);
 
 			// persistent and network variables
-			if (Format_fs2_open)
+			if (Format_fs2_open != FSO_FORMAT_RETAIL)
 			{
 				// Network variable - Karajorma
 				if (Sexp_variables[i].type & SEXP_VARIABLE_NETWORK) {
@@ -1265,7 +1265,7 @@ int CFred_mission_save::save_objects()
 		fout(" %s", Ship_info[Ships[i].ship_info_index].name);
 
 		//alt classes stuff
-		if (Format_fs2_open) {
+		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((int)Ships[i].s_alt_classes.size()) {
 				for (k = 0; k < (int)Ships[i].s_alt_classes.size() ; k++) {
 					// is this a variable?
@@ -1383,7 +1383,7 @@ int CFred_mission_save::save_objects()
 		}
 
 		// Goober5000
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if ((Ships[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Ships[i].arrival_path_mask > 0))
 			{
@@ -1439,7 +1439,7 @@ int CFred_mission_save::save_objects()
 		}
 
 		// Goober5000
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if ((Ships[i].departure_location == DEPART_AT_DOCK_BAY) && (Ships[i].departure_path_mask > 0))
 			{
@@ -1540,7 +1540,7 @@ int CFred_mission_save::save_objects()
 		fout(" )");
 
 		// flags2 added by Goober5000 --------------------------------
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (optional_string_fred("+Flags2:", "$Name:")) {
 				parse_comments();
@@ -1609,7 +1609,7 @@ int CFred_mission_save::save_objects()
 		}
 
 		// Goober5000 ------------------------------------------------
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (Ships[i].special_hitpoint_index != -1) {
 				if (optional_string_fred("+Special Hitpoint index:", "$Name:")) {
@@ -1648,7 +1648,7 @@ int CFred_mission_save::save_objects()
 		if (object_is_docked(&Objects[Ships[i].objnum]))
 		{
 			// possible incompatibility
-			if (!Format_fs2_open && !dock_check_docked_one_on_one(&Objects[Ships[i].objnum]))
+			if ( Format_fs2_open == FSO_FORMAT_RETAIL && !dock_check_docked_one_on_one(&Objects[Ships[i].objnum]))
 			{
 				static bool warned = false;
 				if (!warned)
@@ -1737,7 +1737,7 @@ int CFred_mission_save::save_objects()
 		fout(" %d", Ships[i].score);
 	
 		
-		if (Format_fs2_open && Ships[i].assist_score_pct != 0) {
+		if (Format_fs2_open != FSO_FORMAT_RETAIL && Ships[i].assist_score_pct != 0) {
 			if ( optional_string_fred("+Assist Score Percentage:") ) {
 				parse_comments();
 			} else {
@@ -1836,7 +1836,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 	}
 
 	// Goober5000
-	if (Format_fs2_open && (shipp->special_hitpoint_index != -1))
+	if (Format_fs2_open != FSO_FORMAT_RETAIL && (shipp->special_hitpoint_index != -1))
 	{
 		temp_max_hull_strength = (float) atoi(Sexp_variables[shipp->special_hitpoint_index+HULL_STRENGTH].text);
 	}
@@ -2006,7 +2006,7 @@ int CFred_mission_save::save_wings()
 		fout(" %s", Wings[i].name);
 
 		// squad logo - Goober5000
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (strlen(Wings[i].wing_squad_filename) > 0)
 			{
@@ -2070,7 +2070,7 @@ int CFred_mission_save::save_wings()
 		}
 
 		// Goober5000
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if ((Wings[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Wings[i].arrival_path_mask > 0))
 			{
@@ -2126,7 +2126,7 @@ int CFred_mission_save::save_wings()
 		}
 
 		// Goober5000
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if ((Wings[i].departure_location == DEPART_AT_DOCK_BAY) && (Wings[i].departure_path_mask > 0))
 			{
@@ -2424,7 +2424,7 @@ int CFred_mission_save::save_messages()
 	fout("\t\t;! %d total\n", Num_messages-Num_builtin_messages);
 
 	// Goober5000 - special Command info
-	if (Format_fs2_open)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		if (stricmp(The_mission.command_sender, DEFAULT_COMMAND))
 			fout("\n$Command Sender: %s", The_mission.command_sender);
@@ -3051,7 +3051,7 @@ int CFred_mission_save::save_events()
 
 		fout(" %d", Mission_events[i].repeat_count);
 
-		if (Format_fs2_open && Mission_events[i].trigger_count != 1 ) {
+		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].trigger_count != 1 ) {
 			if ( optional_string_fred("+Trigger Count:", "$Formula:")){
 				parse_comments();
 			} else {
@@ -3611,7 +3611,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 	}	
 
 	// campaign flags - Goober5000
-	if (Format_fs2_open)
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
 	{
 		optional_string_fred("$Flags:");
 		parse_comments();
@@ -3656,7 +3656,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		parse_comments();
 
 		// Goober5000
-		if (Format_fs2_open)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			// don't save Bastion flag
 			fout(" %d", Campaign.missions[m].flags & ~CMISSION_FLAG_BASTION);

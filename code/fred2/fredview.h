@@ -358,8 +358,12 @@ extern int Hide_ship_cues, Hide_wing_cues;
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];
 
-#define FSO_FORMAT_STANDARD				1
-#define FSO_FORMAT_COMPATIBILITY_MODE	2
+enum FSO_FORMAT
+{
+	FSO_FORMAT_RETAIL = 0,
+	FSO_FORMAT_STANDARD = 1,
+	FSO_FORMAT_COMPATIBILITY_MODE = 2
+};
 
 // Goober5000 (currently, FS1 retail not implemented)
 extern int Format_fs2_open;
