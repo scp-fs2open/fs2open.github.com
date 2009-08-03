@@ -18,6 +18,12 @@
  * scp safe_strings are used in VS2005+ DEBUG because they give more info
  */
 
+/* The include logic for this code:
+ * if !defined(NO_SAFE_STRINGS) && ( !defined( _MSC_VER ) 
+    || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) ))
+ * If NO_SAFE_STRINGS is not defined and not-VS build or debug VS build for VS2005+
+ */
+
 #if !defined(NO_SAFE_STRINGS) && ( !defined( _MSC_VER ) || ( defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) ))
 
 /* We don't have this here - no standard library stuff included */
@@ -34,6 +40,8 @@ errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBy
 errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
 #endif
 {
+	char* pDest;
+	const char* pSource;
 	size_t bufferLeft = sizeInBytes;
 	
 	if ( !strDest || !strSource )
@@ -51,9 +59,10 @@ errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
 		return ERANGE;
 	}
 
-	char* p = strDest;
+	pDest = strDest;
+	pSource = strSource;
 	
-	while ((*p++ = *strSource++) != 0 && --bufferLeft > 0);
+	while ((*pDest++ = *pSource++) != 0 && --bufferLeft > 0);
 
 	if ( bufferLeft == 0 )
 	{
@@ -71,7 +80,8 @@ errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBy
 errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource )
 #endif
 {
-	char* p;
+	char* pDest;
+	const char* pSource;
 	size_t bufferLeft = sizeInBytes;
 
 	if ( !strDest || !strSource )
@@ -90,10 +100,11 @@ errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource )
 	}
 
 	/* Find the terminating NULL of the input string */
-	p = strDest;
-	while ( *p )
+	pDest = strDest;
+	pSource = strSource;
+	while ( *pDest )
 	{
-		p++;
+		pDest++;
 		bufferLeft--;
 	}
 
@@ -105,7 +116,7 @@ errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource )
 	}
 
 	/* Concatenate the strings */
-	while ((*p++ = *strSource++) != 0 && --bufferLeft > 0);
+	while ((*pDest++ = *pSource++) != 0 && --bufferLeft > 0);
 
 	if ( bufferLeft == 0 )
 	{

@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 #include "osapi/osregistry.h"
 

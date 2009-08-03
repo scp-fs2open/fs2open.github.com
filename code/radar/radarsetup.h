@@ -91,7 +91,6 @@ struct radar_globals
 
 extern radar_globals Radar_globals[MAX_RADAR_MODES],*Current_radar_global;
 
-
 extern float Radar_farthest_dist;
 extern int Blip_mutate_id;
 

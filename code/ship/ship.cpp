@@ -1911,7 +1911,16 @@ strcpy_s(parse_error_text, temp_error);
 		sip->armor_type_idx = armor_type_get_idx(buf);
 
 		if(sip->armor_type_idx == -1)
-			Warning(LOCATION,"Invalid armor name %s specified in ship class %s", buf, sip->name);
+			Warning(LOCATION,"Invalid armor name %s specified for hull in ship class %s", buf, sip->name);
+	}
+
+	if(optional_string("$Shield Armor Type:"))
+	{
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+		sip->shield_armor_type_idx = armor_type_get_idx(buf);
+
+		if(sip->shield_armor_type_idx == -1)
+			Warning(LOCATION,"Invalid armor name %s specified for shield in ship class %s", buf, sip->name);
 	}
 
 	if (optional_string("$Flags:"))
@@ -15487,6 +15496,32 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx)
 	return damage_applied;
 }
 
+float ArmorType::GetShieldPiercePCT(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0.0f;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->shieldpierce_pct;
+	}
+
+	return 0.0f;
+}
+
 //***********************************Member functions
 
 ArmorType::ArmorType(char* in_name)
@@ -15543,6 +15578,14 @@ void ArmorType::ParseData()
 			}
 		} while(optional_string("+Calculation:"));
 
+		adt.shieldpierce_pct = 0.0f;
+
+		if(optional_string("+Shield Piercing Percentage:")) {
+			stuff_float(&temp_float);
+			CLAMP(temp_float, 0.0f, 1.0f);
+			adt.shieldpierce_pct = temp_float;
+		}
+
 		//If we have calculations in this damage type, add it
 		if(adt.Calculations.size() > 0)
 		{
@@ -15552,7 +15595,6 @@ void ArmorType::ParseData()
 			}
 			DamageTypes.push_back(adt);
 		}
-
 	} while(optional_string("$Damage Type:"));
 }
 

@@ -83,6 +83,8 @@ rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS] =
 	},
 };
 
+int		radar_target_id_flags = 0;
+
 color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
 blip	Blip_bright_list[MAX_BLIP_TYPES];		// linked list of bright blips

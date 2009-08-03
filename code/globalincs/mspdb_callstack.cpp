@@ -246,6 +246,8 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv )
 
 			pdsti->pIDS->OnEntry( addresses[ i ], szModule, szSymbol );
 		}
+
+		SymCleanup( pdsti->hProcess );
 	}
 
 	pdsti->pIDS->OnEnd( );
