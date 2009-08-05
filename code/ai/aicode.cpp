@@ -5560,6 +5560,7 @@ int ai_fire_primary_weapon(object *objp)
 		//Combine factors
 		float burstFireProb = ((0.6f * percentAmmoLeft) + (0.4f * distanceFactor)) * dotToTarget * The_mission.ai_profile->primary_ammo_burst_mult[Game_skill_level];
 
+		//Possibly change values every half-second
 		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 15) > burstFireProb)
 			return 0;
 	}
@@ -6505,9 +6506,9 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 
 		//Sidethrust vector is initially based on the velocity vector representing the ship's current sideways motion.
 		vec2d side_vec;
-		//TODO: Leaving this hardcoded for now, but it might be good to make it configurable at some point. 
+		//NOTE: Leaving this hardcoded for now, but it might be good to make it configurable at some point. 
 		int strafeHoldDirAmount = 3;
-		//Get a random float using some of the more significant chunks of the missiontime as a seed
+		//Get a random float using some of the more significant chunks of the missiontime as a seed (>>16 means it changes every second)
 		//This means that we get the same random values for a little bit.
 		//Using static_rand(shipnum) as a crude hash function to make sure that the seed is different for each ship and direction
 		//The *2 ensures that y and x stay separate.
@@ -8141,9 +8142,6 @@ void ai_chase()
 
 	dot_to_enemy = vm_vec_dot(&Pl_objp->orient.vec.fvec, &predicted_vec_to_enemy);
 	dot_from_enemy= - vm_vec_dot(&En_objp->orient.vec.fvec, &real_vec_to_enemy);
-
-	//Default to glide OFF
-	Pl_objp->phys_info.flags &= ~PF_GLIDING;
 
 	//
 	//	Set turn and acceleration based on submode.
@@ -12829,6 +12827,10 @@ void ai_sentrygun()
 //	Execute behavior given by aip->mode.
 void ai_execute_behavior(ai_info *aip)
 {
+
+	//Default to glide OFF
+	Pl_objp->phys_info.flags &= ~PF_GLIDING;
+
 	switch (aip->mode) {
 	case AIM_CHASE:
 		if (En_objp) {
