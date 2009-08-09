@@ -2066,7 +2066,10 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if ( optional_string("$Pspew:") ) {
-		Assert( wip->wi_flags & WIF_PARTICLE_SPEW );
+		if (!( wip->wi_flags & WIF_PARTICLE_SPEW )) {
+			Warning(LOCATION, "$Pspew specified for weapon %s but this weapon does not have the \"Particle Spew\" weapon flag set. Automatically setting the flag", wip->name); 
+			wip->wi_flags |= WIF_PARTICLE_SPEW;
+		}
 
 		required_string("+Count:");
 		stuff_int(&wip->particle_spew_count);
