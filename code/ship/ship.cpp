@@ -14035,10 +14035,18 @@ void ship_page_in()
 	// Mark any support ship types as used
 	for (i = 0; i < Num_ship_classes; i++)	{
 		if (Ship_info[i].flags & SIF_SUPPORT) {
-			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
+			ship_info *sip = &Ship_info[i];
+			nprintf(( "Paging", "Found support ship '%s'\n", sip->name ));
 			ship_class_used[i]++;
 
-			num_subsystems_needed += Ship_info[i].n_subsystems;
+			num_subsystems_needed += sip->n_subsystems;
+
+			// load the darn model and page in textures
+			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+			if (sip->model_num >= 0) {
+				model_page_in_textures(sip->model_num, i);
+			}
 		}
 	}
 	
