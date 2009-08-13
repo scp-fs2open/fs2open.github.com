@@ -186,7 +186,7 @@ op_sliders Options_sliders[GR_NUM_RESOLUTIONS][NUM_OPTIONS_SLIDERS] = {
 		op_sliders("2_OMB_10",		50,	223,	-1,	-1,	10,	32,	10,
 					  "2_OMB_11",		11,	361,	219,
 					  "2_OMB_09",		9,		7,		219 ),								// sound fx volume slider
-		op_sliders("2_OMB_13",		50,	281,	-1,	-1,	13,	32,	10,
+		op_sliders("2_OMB_13",		50,	279,	-1,	-1,	13,	32,	10,
 					  "2_OMB_14",		14,	361,	275,
 					  "2_OMB_12",		12,	7,		275 ),								// music volume slider
 		op_sliders("2_OMB_16",		50,	335,	-1,	-1,	16,	32,	10,
