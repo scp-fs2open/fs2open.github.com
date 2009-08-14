@@ -1587,7 +1587,7 @@ int game_start_mission()
 	load_mission_load = (uint) time(NULL);
 	if (mission_load(Game_current_mission_filename)) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
-			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
+			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
