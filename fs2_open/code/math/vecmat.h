@@ -22,7 +22,9 @@
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL(v) (((v)->xyz.x == 0.0f) && ((v)->xyz.y == 0.0f) && ((v)->xyz.z == 0.0f))
+#define IS_VEC_NULL(v) ( ( (v)->xyz.x > -1e-16 ) && ( (v)->xyz.x < 1e-16 ) && \
+						 ( (v)->xyz.y > -1e-16 ) && ( (v)->xyz.y < 1e-16 ) && \
+						 ( (v)->xyz.z > -1e-16 ) && ( (v)->xyz.z < 1e-16 ) )
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
