@@ -7788,6 +7788,30 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 	return ade_set_args(L, "b", mouse_status);
 }
 
+//**********LIBRARY: Controls library
+ade_lib l_HUD("HUD", NULL, "hu", "HUD library");
+
+ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "If the HUD is drawn or not")
+{
+	bool to_draw = false;
+
+	if(!ade_get_args(L, "*|b", &to_draw))
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR)
+	{
+		if (to_draw)
+			HUD_draw = 1;
+		else
+			HUD_draw = 0;
+	}
+
+	if (HUD_draw)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 //**********LIBRARY: Graphics
 ade_lib l_Graphics("Graphics", NULL, "gr", "Graphics Library");
 
