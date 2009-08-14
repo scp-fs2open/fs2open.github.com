@@ -422,7 +422,7 @@ int joy_init()
 		}
 	}
 
-	mprintf(("Windoze reported %d joysticks, we found %d\n", n, joy_num_sticks));
+	mprintf(("Windows reported %d joysticks, we found %d\n", n, joy_num_sticks));
 
 #ifdef PRECALIBRATED
 	// Fake a calibration
