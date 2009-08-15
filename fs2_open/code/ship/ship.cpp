@@ -14076,10 +14076,10 @@ void ship_page_in()
 
 		while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
 			for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-				weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
+				weapon_mark_as_used(ptr->weapons.primary_bank_weapons[k]);
 
 			for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-				weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
+				weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[k]);
 
 			ptr = GET_NEXT(ptr);
 		}
