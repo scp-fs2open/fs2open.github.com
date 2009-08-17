@@ -717,7 +717,7 @@ void init_medal_bitmaps()
 			// base now contains the actual medal bitmap filename needed to load
 			// we don't need to pass extension to bm_load anymore, so just use the basename
 			// as is.
-         Medal_bitmaps[idx] = bm_load( filename );
+			Medal_bitmaps[idx] = bm_load((gr_screen.res == GR_1024) ? filename : base);
 			Assert( Medal_bitmaps[idx] != -1 );
 		}
 	}
