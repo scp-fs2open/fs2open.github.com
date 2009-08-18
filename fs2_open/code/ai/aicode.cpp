@@ -543,9 +543,57 @@ void free_ai_stuff()
 		vm_free(Ai_class_names);
 }
 
+//Initialize an AI class's nonrequired values to defaults
+//Boolean overrides are unset, multipliers are initialized to 1.0
+void init_ai_class(ai_class *aicp)
+{
+	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
+	{
+		aicp->ai_cmeasure_fire_chance[i] = 1.0f;
+		aicp->ai_in_range_time[i] = 1.0f;
+		aicp->ai_link_ammo_levels_maybe[i] = 1.0f;
+		aicp->ai_link_ammo_levels_always[i] = 1.0f;
+		aicp->ai_primary_ammo_burst_mult[i] = 1.0f;
+		aicp->ai_link_energy_levels_maybe[i] = 1.0f;
+		aicp->ai_link_energy_levels_always[i] = 1.0f;
+		aicp->ai_predict_position_delay[i] = 1.0f;
+		aicp->ai_shield_manage_delay[i] = 1.0f;
+		aicp->ai_ship_fire_delay_scale_friendly[i] = 1.0f;
+		aicp->ai_ship_fire_delay_scale_hostile[i] = 1.0f;
+		aicp->ai_turn_time_scale[i] = 1.0f;
+		aicp->ai_glide_attack_percent[i] = 1.0f;
+		aicp->ai_circle_strafe_percent[i] = 1.0f;
+		aicp->ai_glide_strafe_percent[i] = 1.0f;
+		aicp->ai_stalemate_time_thresh[i] = 1.0f;
+		aicp->ai_stalemate_dist_thresh[i] = 1.0f;
+		aicp->ai_chance_to_use_missiles_on_plr[i] = 1.0f;
+	}
+	aicp->ai_profile_flags = 0;
+	aicp->ai_profile_flags_set = 0;
+}
+
+void set_aic_flag(ai_class *aicp, char *name, int flag)
+{
+	if (optional_string(name))
+	{
+		bool val;
+		stuff_boolean(&val);
+
+		if (val)
+			aicp->ai_profile_flags |= flag;
+		else
+			aicp->ai_profile_flags &= ~flag;
+
+		aicp->ai_profile_flags_set |= flag;
+	}
+	aicp->ai_profile_flags_set &= ~flag;
+}
+
 void parse_ai_class()
 {
 	ai_class	*aicp = &Ai_classes[Num_ai_classes];
+
+	init_ai_class(aicp);
 
 	required_string("$Name:");
 	stuff_string(aicp->name, F_NAME, NAME_LENGTH);
@@ -563,6 +611,121 @@ void parse_ai_class()
 
 	required_string("$patience:");
 	parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
+
+	//Parse optional values for stuff imported from ai_profiles (these are multipliers)
+	if (optional_string("$AI Countermeasure Firing Chance:"))
+		parse_float_list(aicp->ai_cmeasure_fire_chance, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI In Range Time:"))
+		parse_float_list(aicp->ai_in_range_time, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI Always Links Ammo Weapons:"))
+		parse_float_list(aicp->ai_link_ammo_levels_always, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI Maybe Links Ammo Weapons:"))
+		parse_float_list(aicp->ai_link_ammo_levels_maybe, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Primary Ammo Burst Multiplier:"))
+		parse_float_list(aicp->ai_primary_ammo_burst_mult, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI Always Links Energy Weapons:"))
+		parse_float_list(aicp->ai_link_energy_levels_always, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI Maybe Links Energy Weapons:"))
+		parse_float_list(aicp->ai_link_energy_levels_maybe, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Predict Position Delay:"))
+		parse_float_list(aicp->ai_predict_position_delay, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
+		parse_float_list(aicp->ai_shield_manage_delay, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Friendly AI Fire Delay Scale:"))
+		parse_float_list(aicp->ai_ship_fire_delay_scale_friendly, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Hostile AI Fire Delay Scale:"))
+		parse_float_list(aicp->ai_ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Friendly AI Secondary Fire Delay Scale:"))
+		parse_float_list(aicp->ai_ship_fire_secondary_delay_scale_friendly, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
+		parse_float_list(aicp->ai_ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
+
+	if (optional_string("$AI Turn Time Scale:"))
+		parse_float_list(aicp->ai_turn_time_scale, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Glide Attack Percent:")) {
+		parse_float_list(aicp->ai_glide_attack_percent, NUM_SKILL_LEVELS);
+		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+		//While we're at it, verify the range
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_glide_attack_percent[i] < 0.0f || aicp->ai_glide_attack_percent[i] > 100.0f) {
+				aicp->ai_glide_attack_percent[i] = 0.0f;
+				Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_glide_attack_percent[i]);
+			}
+			aicp->ai_glide_attack_percent[i] /= 100.0;
+		}
+	}
+
+	if (optional_string("$Circle Strafe Percent:")) {
+		parse_float_list(aicp->ai_circle_strafe_percent, NUM_SKILL_LEVELS);
+		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+		//While we're at it, verify the range
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_circle_strafe_percent[i] < 0.0f || aicp->ai_circle_strafe_percent[i] > 100.0f) {
+				aicp->ai_circle_strafe_percent[i] = 0.0f;
+				Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_circle_strafe_percent[i]);
+			}
+			aicp->ai_circle_strafe_percent[i] /= 100.0;
+		}
+	}
+
+	if (optional_string("$Glide Strafe Percent:")) {
+		parse_float_list(aicp->ai_glide_strafe_percent, NUM_SKILL_LEVELS);
+		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+		//While we're at it, verify the range
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_glide_strafe_percent[i] < 0.0f || aicp->ai_glide_strafe_percent[i] > 100.0f) {
+				aicp->ai_glide_strafe_percent[i] = 0.0f;
+				Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_glide_strafe_percent[i]);
+			}
+			aicp->ai_glide_strafe_percent[i] /= 100.0;
+		}
+	}
+
+	if (optional_string("$Stalemate Time Threshold:"))
+		parse_float_list(aicp->ai_stalemate_time_thresh, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Stalemate Distance Threshold:"))
+		parse_float_list(aicp->ai_stalemate_dist_thresh, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
+		parse_float_list(aicp->ai_chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
+
+	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
+
+	set_aic_flag(aicp, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
+
+	set_aic_flag(aicp, "$smart secondary weapon selection:", AIPF_SMART_SECONDARY_WEAPON_SELECTION);
+
+	set_aic_flag(aicp, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT);
+
+	set_aic_flag(aicp, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT);
+
+	set_aic_flag(aicp, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE);
+	
+	set_aic_flag(aicp, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS);
+
+	set_aic_flag(aicp, "$don't insert random turret fire delay:", AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY);
+
+	set_aic_flag(aicp, "$prevent turrets targeting too distant bombs:", AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE);
+
+	set_aic_flag(aicp, "$smart subsystem targeting for turrets:", AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS);
+
+	set_aic_flag(aicp, "$allow turrets target weapons freely:", AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY);
+
+	set_aic_flag(aicp, "$allow vertical dodge:", AIPF_ALLOW_VERTICAL_DODGE);
 }
 
 void reset_ai_class_names()
@@ -1013,7 +1176,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 		if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
 			if (objp->type == OBJ_SHIP){
 				if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)) {
-					turn_time *= The_mission.ai_profile->turn_time_scale[Game_skill_level];
+					turn_time *= Ai_info[Ships[objp->instance].ai_index].ai_turn_time_scale;
 				}
 			}
 		}
@@ -3386,7 +3549,7 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 	} else {
 		*enemy_pos = en_objp->pos;
 
-		aip->next_predict_pos_time = Missiontime + The_mission.ai_profile->predict_position_delay[Game_skill_level];
+		aip->next_predict_pos_time = Missiontime + aip->ai_predict_position_delay;
 		aip->last_predicted_enemy_pos = *enemy_pos;
 	}
 
@@ -4773,7 +4936,7 @@ void evade_weapon()
 			rdot = vm_vec_dot(&Pl_objp->orient.vec.rvec, &vec_from_enemy);
 			udot = vm_vec_dot(&Pl_objp->orient.vec.uvec, &vec_from_enemy);
 
-			if (The_mission.ai_profile->flags & AIPF_ALLOW_VERTICAL_DODGE && abs(udot) > abs(rdot))
+			if (aip->ai_profile_flags & AIPF_ALLOW_VERTICAL_DODGE && abs(udot) > abs(rdot))
 			{
 				if ((udot < -0.5f) || (udot > 0.5f))
 					vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.uvec, -200.0f);
@@ -4899,7 +5062,7 @@ void evade_ship()
 		if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 			afterburners_start(Pl_objp);
 			
-			if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+			if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
 				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
 			} else {				
 				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
@@ -5175,7 +5338,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	}
 
 	//not using the new AI, use the old version of this function instead.
-	if (!(The_mission.ai_profile->flags & AIPF_SMART_PRIMARY_WEAPON_SELECTION))
+	if (!(Ai_info[shipp->ai_index].ai_profile_flags & AIPF_SMART_PRIMARY_WEAPON_SELECTION))
 	{
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
@@ -5425,9 +5588,9 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	// make linking decision based on weapon energy
-	if (energy > The_mission.ai_profile->link_energy_levels_always[Game_skill_level]) {
+	if (energy > aip->ai_link_energy_levels_always) {
 		shipp->flags |= SF_PRIMARY_LINKED;
-	} else if (energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
+	} else if (energy > aip->ai_link_ammo_levels_maybe) {
 		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f) {
 			shipp->flags |= SF_PRIMARY_LINKED;
 		}
@@ -5459,11 +5622,11 @@ void set_primary_weapon_linkage(object *objp)
 		ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
 
 		// link according to defined levels
-		if (ammo_pct > The_mission.ai_profile->link_ammo_levels_always[Game_skill_level])
+		if (ammo_pct > aip->ai_link_ammo_levels_always)
 		{
 			shipp->flags |= SF_PRIMARY_LINKED;
 		}
-		else if (ammo_pct > The_mission.ai_profile->link_ammo_levels_maybe[Game_skill_level])
+		else if (ammo_pct > aip->ai_link_ammo_levels_maybe)
 		{
 			if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
 			{
@@ -5558,7 +5721,7 @@ int ai_fire_primary_weapon(object *objp)
 		dotToTarget = pow(dotToTarget, 4);	//This makes the dot a tiny bit more impactful (otherwise nearly always over 0.98 or so)
 		
 		//Combine factors
-		float burstFireProb = ((0.6f * percentAmmoLeft) + (0.4f * distanceFactor)) * dotToTarget * The_mission.ai_profile->primary_ammo_burst_mult[Game_skill_level];
+		float burstFireProb = ((0.6f * percentAmmoLeft) + (0.4f * distanceFactor)) * dotToTarget * aip->ai_primary_ammo_burst_mult;
 
 		//Possibly change values every half-second
 		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 15) > burstFireProb)
@@ -5678,6 +5841,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	int	i;
 	int	ignore_mask, ignore_mask_without_huge;
 	int	initial_bank;
+	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	initial_bank = swp->current_secondary_bank;
 
@@ -5707,7 +5871,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
-	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0)) {
+	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0)) {
 		ignore_mask |= WIF_HOMING;
 		ignore_mask_without_huge |= WIF_HOMING;
 	}
@@ -5716,7 +5880,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 
 	for (i=0; i<num_weapon_types; i++) {
 		int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-		int ignore_mask_to_use = ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
+		int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
 		if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
 			if (wi_flags & priority1) {
@@ -5728,7 +5892,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 2
-	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0)) {
+	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0)) {
 		ignore_mask |= WIF_HOMING;
 		ignore_mask_without_huge |= WIF_HOMING;
 	}
@@ -5739,7 +5903,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
 				int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-				int ignore_mask_to_use = ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
+				int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
 				if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
 					if (swp->secondary_bank_ammo[i] > 0) {
@@ -5752,7 +5916,6 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 
 
-	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
 	//	If switched banks, force reacquisition of aspect lock.
 	if (swp->current_secondary_bank != initial_bank) {
 		aip->aspect_locked_time = 0.0f;
@@ -5762,7 +5925,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 	// phreak -- rapid dumbfire? let it rip!
-	if ((The_mission.ai_profile->flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
+	if ((aip->ai_profile_flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
 	{	
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
@@ -5873,7 +6036,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 					//	With 5 skill levels, at Very Easy, they fire in 1/7 of every 10 second interval.
 					//	At Easy, 2/7...at Expert, 5/7
 					int t = ((Missiontime /(65536*10)) ^ target_objnum ^ 0x01) % (NUM_SKILL_LEVELS+2);
-					if (t > The_mission.ai_profile->change_to_use_missiles_on_plr[Game_skill_level]) {
+					if (t > Ai_info[Ships[tobjp->instance].ai_index].ai_chance_to_use_missiles_on_plr) {
 						//nprintf(("AI", "Not OK to fire homer at time thing %i\n", t));
 						return 0;
 					}
@@ -6226,7 +6389,7 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 
 	//	Make it take longer for enemies to get player's allies in range based on skill level.
 	if (iff_x_attacks_y(Ships[pobjp->instance].team, Player_ship->team))
-		range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
+		range_time += Ai_info[shipp->ai_index].ai_in_range_time;
 
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
 
@@ -6539,7 +6702,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 						percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 							afterburners_start(Pl_objp);							
-							if (The_mission.ai_profile->flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+							if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
 								float max_ab_vel;
 								float time_to_exhaust_25pct_fuel;
 								float time_to_fly_75pct_of_distance;
@@ -7582,7 +7745,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		if (is_big_ship)
 		{
 			priority1 = WIF_HUGE;
-			priority2 = (The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
+			priority2 = (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
 		} 
 		else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) )
 		{
@@ -7594,7 +7757,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			priority1 = WIF_PUNCTURE;
 			priority2 = WIF_HOMING;
 		}
-		else if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
+		else if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
 			priority1 = 0;								
 			priority2 = 0;
@@ -7616,9 +7779,9 @@ float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip)
 {
 	float t = swip->fire_wait;		//	Base delay for this weapon.
 	if (shipp->team == Player_ship->team) {
-		t *= The_mission.ai_profile->ship_fire_secondary_delay_scale_friendly[Game_skill_level];
+		t *= aip->ai_ship_fire_secondary_delay_scale_friendly;
 	} else {
-		t *= The_mission.ai_profile->ship_fire_secondary_delay_scale_hostile[Game_skill_level];
+		t *= aip->ai_ship_fire_secondary_delay_scale_hostile;
 	}
 
 	t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
@@ -8223,13 +8386,13 @@ void ai_chase()
 		//SUSHI: Alternate stalemate dection method: if nobody has hit each other for a while
 		//(and we've been near that whole time), shake things up somehow
 		//Only do this if stalemate time threshold > 0
-		if (The_mission.ai_profile->stalemate_time_thresh[Game_skill_level] > 0.0f &&
-				Missiontime - aip->last_hit_target_time > fl2f(The_mission.ai_profile->stalemate_time_thresh[Game_skill_level]) && 
-				Missiontime - aip->last_hit_time > fl2f(The_mission.ai_profile->stalemate_time_thresh[Game_skill_level]) &&
-				aip->time_enemy_near > The_mission.ai_profile->stalemate_time_thresh[Game_skill_level] &&
+		if (aip->ai_stalemate_time_thresh > 0.0f &&
+				Missiontime - aip->last_hit_target_time > fl2f(aip->ai_stalemate_time_thresh) && 
+				Missiontime - aip->last_hit_time > fl2f(aip->ai_stalemate_time_thresh) &&
+				aip->time_enemy_near > aip->ai_stalemate_time_thresh &&
 				(dot_to_enemy < 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)))
 		{
-			if ((sip->can_glide == true) && (frand() < The_mission.ai_profile->glide_attack_percent[Game_skill_level])) {
+			if ((sip->can_glide == true) && (frand() < aip->ai_glide_attack_percent)) {
 				//Maybe use glide attack
 				aip->submode = AIS_CHASE_GLIDEATTACK;
 				aip->submode_start_time = Missiontime;
@@ -8276,7 +8439,7 @@ void ai_chase()
 			aip->submode_parm0 = SM_SF_AHEAD;
 		} else if (dist_to_enemy < CIRCLE_STRAFE_DIST + En_objp->radius &&
 			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
-			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < The_mission.ai_profile->circle_strafe_percent[Game_skill_level])) {
+			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_circle_strafe_percent)) {
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;		
@@ -8334,7 +8497,7 @@ void ai_chase()
 		if ((Missiontime - aip->submode_start_time > i2f(5)) || (dist_to_enemy > 300.0f)) {
 			if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.0f) && (dot_from_enemy > 0.5f)) {
 				aip->submode = SM_EVADE_BRAKE;
-			} else if ((Pl_objp->phys_info.speed >= Pl_objp->phys_info.max_vel.xyz.z / 2.0f) && (sip->can_glide == true) && (frand() < The_mission.ai_profile->glide_attack_percent[Game_skill_level])) {
+			} else if ((Pl_objp->phys_info.speed >= Pl_objp->phys_info.max_vel.xyz.z / 2.0f) && (sip->can_glide == true) && (frand() < aip->ai_glide_attack_percent)) {
 				aip->last_attack_time = Missiontime;
 				aip->submode = AIS_CHASE_GLIDEATTACK;
 			} else {
@@ -8388,7 +8551,7 @@ void ai_chase()
 			aip->submode_parm0 = SM_SF_AHEAD;
 		} else if (dist_to_enemy < CIRCLE_STRAFE_DIST + En_objp->radius &&
 			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
-			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < The_mission.ai_profile->circle_strafe_percent[Game_skill_level])) {
+			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_circle_strafe_percent)) {
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;		
@@ -8459,7 +8622,7 @@ void ai_chase()
 			rand_dist = ((Missiontime >> 17) & 0x03) * 100.0f + 200.0f;	//	Some value in 200..500
 			if ((Missiontime - aip->submode_start_time > i2f(5)) || (dist_to_enemy > rand_dist) || (dot_from_enemy < 0.4f)) {
 				//Sometimes use a glide attack instead (if we can)
-				if ((sip->can_glide == true) && (frand() < The_mission.ai_profile->glide_attack_percent[Game_skill_level])) {
+				if ((sip->can_glide == true) && (frand() < aip->ai_glide_attack_percent)) {
 					aip->submode = AIS_CHASE_GLIDEATTACK;
 				}
 				else {
@@ -8554,8 +8717,8 @@ void ai_chase()
 	//Ignore for stealth ships that can't be seen
 	//If we're trying to get away, recent counter
 	//Only do this if stalemate distance threshold > 0
-	if (The_mission.ai_profile->stalemate_dist_thresh[Game_skill_level] > 0.0f &&
-			dist_to_enemy < The_mission.ai_profile->stalemate_dist_thresh[Game_skill_level] && 
+	if (aip->ai_stalemate_dist_thresh > 0.0f &&
+			dist_to_enemy < aip->ai_stalemate_dist_thresh && 
 			aip->submode != SM_GET_AWAY && aip->submode != AIS_CHASE_GLIDEATTACK && aip->submode != SM_FLY_AWAY && 
 			(!(aip->ai_flags & AIF_STEALTH_PURSUIT) || (ai_is_stealth_visible(Pl_objp, En_objp) == STEALTH_VISIBLE)))
 	{
@@ -11886,12 +12049,12 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			//	For ships on player's team, have constant, average chance to fire.
 			//	For enemies, increasing chance with higher skill level.
 			if (shipp->team == Player_ship->team)
-				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
+				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2] * Ai_classes[aip->ai_class].ai_cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
 			else
-				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[Game_skill_level];
+				fire_chance = aip->ai_cmeasure_fire_chance;
 
-			//	Decrease chance to fire at lower ai class.
-			fire_chance *= (float) aip->ai_class/Num_ai_classes;
+			//	Decrease chance to fire at lower ai class
+				fire_chance *= (float) aip->ai_class/Num_ai_classes;
 
 			float r = frand();
 			if (fire_chance < r) {
@@ -12063,7 +12226,7 @@ void ai_balance_shield(object *objp)
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
+			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, delta);
 			else
 				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
@@ -12073,7 +12236,7 @@ void ai_balance_shield(object *objp)
 
 		} else {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
+			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, -delta);
 			else
 				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
@@ -12093,17 +12256,17 @@ void ai_manage_shield(object *objp, ai_info *aip)
 	sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
 	if (timestamp_elapsed(aip->shield_manage_timestamp)) {
-		float		delay;
+		float delay;
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
 		if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
 		{
-			delay = The_mission.ai_profile->shield_manage_delay[Game_skill_level];
+			delay = aip->ai_shield_manage_delay;
 		} 
 		else 
 		{
-			delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2];
+			delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2] * Ai_classes[aip->ai_class].ai_shield_manage_delay[NUM_SKILL_LEVELS/2];
 		}
 
 		//	Scale between 1x and 3x based on ai_class
@@ -14211,10 +14374,8 @@ void init_ai_object(int objnum)
 
 	// End of Things that shouldn't have to get initialized, but initialize them just in case!
 
-	aip->ai_courage = Ai_classes[Ship_info[ship_type].ai_class].ai_courage[Game_skill_level];
-	aip->ai_patience = Ai_classes[Ship_info[ship_type].ai_class].ai_patience[Game_skill_level];
-	aip->ai_evasion = Ai_classes[Ship_info[ship_type].ai_class].ai_evasion[Game_skill_level];
-	aip->ai_accuracy = Ai_classes[Ship_info[ship_type].ai_class].ai_accuracy[Game_skill_level];
+	//Init stuff from ai class and ai profiles
+	init_aip_from_class_and_profile(aip, &Ai_classes[Ship_info[ship_type].ai_class], The_mission.ai_profile);
 
 	if (Num_waypoint_lists > 0) {
 		aip->wp_index = -1;
@@ -14330,6 +14491,61 @@ void init_ai_system()
 	}
 */
 
+}
+
+//Sets the ai_info stuff based on what is in the ai class and the current ai profile
+//Stuff in the ai class will override what is in the ai profile, but only if it is set.
+//Unset per-difficulty-level values are marked with FLT_MIN or INT_MIN
+//Which flags are set is handled by using two flag ints: one with the flag values (TRUE/FALSE), one that
+//just says which flags are set.
+void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile)
+{
+	//ai_class-only stuff
+	aip->ai_courage = aicp->ai_courage[Game_skill_level];
+	aip->ai_patience = aicp->ai_patience[Game_skill_level];
+	aip->ai_evasion = aicp->ai_evasion[Game_skill_level];
+	aip->ai_accuracy = aicp->ai_accuracy[Game_skill_level];
+
+	//Apply multipliers from ai class to ai profiles values
+	aip->ai_cmeasure_fire_chance = profile->cmeasure_fire_chance[Game_skill_level] * aicp->ai_cmeasure_fire_chance[Game_skill_level];
+	aip->ai_in_range_time = profile->in_range_time[Game_skill_level] * aicp->ai_in_range_time[Game_skill_level];
+	aip->ai_link_ammo_levels_maybe = profile->link_ammo_levels_maybe[Game_skill_level] * aicp->ai_link_ammo_levels_maybe[Game_skill_level];
+	aip->ai_link_ammo_levels_always = profile->link_ammo_levels_always[Game_skill_level] * aicp->ai_link_ammo_levels_always[Game_skill_level];
+	aip->ai_primary_ammo_burst_mult = profile->primary_ammo_burst_mult[Game_skill_level] * aicp->ai_primary_ammo_burst_mult[Game_skill_level];
+	aip->ai_link_energy_levels_maybe = profile->link_energy_levels_maybe[Game_skill_level] * aicp->ai_link_energy_levels_maybe[Game_skill_level];
+	aip->ai_link_energy_levels_always = profile->link_energy_levels_always[Game_skill_level] * aicp->ai_link_energy_levels_always[Game_skill_level];
+	aip->ai_predict_position_delay = (fix)(profile->predict_position_delay[Game_skill_level] * aicp->ai_predict_position_delay[Game_skill_level]);
+	aip->ai_shield_manage_delay = profile->shield_manage_delay[Game_skill_level] * aicp->ai_shield_manage_delay[Game_skill_level];
+	aip->ai_ship_fire_delay_scale_friendly = profile->ship_fire_delay_scale_friendly[Game_skill_level] * aicp->ai_ship_fire_delay_scale_friendly[Game_skill_level];
+	aip->ai_ship_fire_delay_scale_hostile = profile->ship_fire_delay_scale_hostile[Game_skill_level] * aicp->ai_ship_fire_delay_scale_hostile[Game_skill_level];
+	aip->ai_ship_fire_secondary_delay_scale_friendly = profile->ship_fire_secondary_delay_scale_friendly[Game_skill_level] * aicp->ai_ship_fire_secondary_delay_scale_friendly[Game_skill_level];
+	aip->ai_ship_fire_secondary_delay_scale_hostile = profile->ship_fire_secondary_delay_scale_hostile[Game_skill_level] * aicp->ai_ship_fire_secondary_delay_scale_hostile[Game_skill_level];
+	aip->ai_turn_time_scale = profile->turn_time_scale[Game_skill_level] * aicp->ai_turn_time_scale[Game_skill_level];
+	aip->ai_glide_attack_percent = profile->glide_attack_percent[Game_skill_level] * aicp->ai_glide_attack_percent[Game_skill_level];
+	aip->ai_circle_strafe_percent = profile->circle_strafe_percent[Game_skill_level] * aicp->ai_circle_strafe_percent[Game_skill_level];
+	aip->ai_glide_strafe_percent = profile->glide_strafe_percent[Game_skill_level] * aicp->ai_glide_strafe_percent[Game_skill_level];
+	aip->ai_stalemate_time_thresh = profile->stalemate_time_thresh[Game_skill_level] * aicp->ai_stalemate_time_thresh[Game_skill_level];
+	aip->ai_stalemate_dist_thresh = profile->stalemate_dist_thresh[Game_skill_level] * aicp->ai_stalemate_dist_thresh[Game_skill_level];
+	aip->ai_chance_to_use_missiles_on_plr = (int)(profile->chance_to_use_missiles_on_plr[Game_skill_level] * aicp->ai_chance_to_use_missiles_on_plr[Game_skill_level]);
+
+	//Set flags (these act as overrides if set)
+	aip->ai_profile_flags = 0;
+	//Scan through every bit in the flag int
+	for (int i = 0; i < 31; i++)
+	{
+		int flag = (1 << i);
+		//If this flag is marked in the AI class as set, copy it from the class
+		if (aicp->ai_profile_flags_set & flag)
+		{
+			if (aicp->ai_profile_flags & flag)
+				aip->ai_profile_flags |= flag;
+		}
+		else	//Otherwise, copy it from the AI profile
+		{
+			if (profile->flags & flag)
+				aip->ai_profile_flags |= flag;
+		}
+	}
 }
 
 void ai_set_default_behavior(object *obj, int classnum)

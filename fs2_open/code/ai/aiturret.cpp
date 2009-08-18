@@ -292,7 +292,7 @@ float longest_turret_weapon_range(ship_weapon *swp)
 
 // return !0 if objp can be considered for a turret target, 0 otherwise
 // input:	objp				=>	object that turret is considering as an enemy
-//				turret_parent	=>	object index for ship that turret sits on
+//				turret_parent	=>	object of ship that turret sits on
 //				turret			=>	turret pointer
 int valid_turret_enemy(object *objp, object *turret_parent)
 {
@@ -339,7 +339,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( (!(wip->wi_flags & WIF_BOMB) && !(The_mission.ai_profile->flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
+		if ( (!(wip->wi_flags & WIF_BOMB) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
 			return 0;
 		}
 
@@ -452,7 +452,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	// check if bomb is homing on the turret parent ship
 	bool check_weapon = true;
 
-	if ((The_mission.ai_profile->flags & AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE) && (dist > eeo->weapon_travel_dist)) {
+	if ((Ai_info[Ships[turret_parent_obj->instance].ai_index].ai_profile_flags & AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE) && (dist > eeo->weapon_travel_dist)) {
 		check_weapon = false;
 	}
 
@@ -752,6 +752,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 
 		for(int i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
 		{
+			ai_info *aip = &Ai_info[Ships[Objects[eeo.turret_parent_objnum].instance].ai_index];
 			switch(turret_subsys->turret_targeting_order[i])
 			{
 				case -1:
@@ -761,7 +762,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 				case 0:
 					//Return if a bomb is found
 					//don't fire anti capital ship turrets at bombs.
-					if ( !((The_mission.ai_profile->flags & AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS) && big_only_flag) )
+					if ( !((aip->ai_profile_flags & AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS) && big_only_flag) )
 					{
 						// Missile_obj_list
 						for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -1091,7 +1092,7 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 		vm_vec_unrotate(&turret_norm, &turret_subsysp->system_info->turret_norm, &objp->orient);
 		float dot_return = vm_vec_dot(&turret_norm, &vector_out);
 
-		if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
+		if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
 			if (dot_return > turret_subsysp->system_info->turret_fov) {
 				// target is in sight and in fov
 				return dot_return;
@@ -1211,7 +1212,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	int idx;
 	float dot_fov_modifier = 0.0f;
 
-	if (The_mission.ai_profile->flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
+	if (Ai_info[shipp->ai_index].ai_profile_flags & AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS) {
 		if (ssp->system_info->turret_fov < 0)
 			dot_fov_modifier = ssp->system_info->turret_fov;
 	}
@@ -1282,32 +1283,32 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
-				wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
+				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
 				wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
 			} else {
-				wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
+				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
 		} else {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
 				if (Ships[aip->shipnum].team == Player_ship->team) {
-					wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
+					wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
 				} else {
-					wait *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level] * 0.5f;
+					wait *= aip->ai_ship_fire_delay_scale_hostile * 0.5f;
 				}	
 				wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
 
 			} else if (wip->wi_flags & WIF_HUGE) {
 				// make huge weapons fire independently of team
-				wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
+				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			} else {
 				// give team friendly an advantage
 				if (Ships[aip->shipnum].team == Player_ship->team) {
-					wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
+					wait *= aip->ai_ship_fire_delay_scale_friendly;
 				} else {
-					wait *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level];
+					wait *= aip->ai_ship_fire_delay_scale_hostile;
 				}	
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
@@ -1484,7 +1485,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 	}
 	//Not useful -WMC
-	else if (!(The_mission.ai_profile->flags & AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY) && last_shot_in_salvo)
+	else if (!(parent_aip->ai_profile_flags & AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY) && last_shot_in_salvo)
 	{
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
