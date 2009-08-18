@@ -585,7 +585,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		} // end if ( Pl_objp->phys_info.speed < 3.0f ) 
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
-		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < The_mission.ai_profile->glide_strafe_percent[Game_skill_level]) {
+		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
 			aip->previous_mode = aip->mode;
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
@@ -1555,7 +1555,7 @@ void ai_big_strafe_position()
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	//Maybe use AIS_STRAFE_GLIDE_ATTACK
-	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < The_mission.ai_profile->glide_strafe_percent[Game_skill_level])) {
+	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < aip->ai_glide_strafe_percent)) {
 		aip->submode = AIS_STRAFE_GLIDE_ATTACK;
 		aip->submode_parm1 = 0;
 	} else {
@@ -1728,7 +1728,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (The_mission.ai_profile->flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
+	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
 		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

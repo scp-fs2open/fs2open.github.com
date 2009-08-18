@@ -8752,9 +8752,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 		if (!(obj->flags & OF_PLAYER_SHIP) ) {
 			if (shipp->team == Ships[Player_obj->instance].team){
-				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
+				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
-				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level];
+				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
 			}
 		}
 
@@ -14995,10 +14995,7 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
 	aip->behavior = AIM_NONE;
-	aip->ai_courage = Ai_classes[new_ai_class].ai_courage[Game_skill_level];
-	aip->ai_patience = Ai_classes[new_ai_class].ai_patience[Game_skill_level];
-	aip->ai_evasion = Ai_classes[new_ai_class].ai_evasion[Game_skill_level];
-	aip->ai_accuracy = Ai_classes[new_ai_class].ai_accuracy[Game_skill_level];
+	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
 	Ship_info[Ships[ship_num].ship_info_index].ai_class = new_ai_class;
 	Ships[ship_num].weapons.ai_class = new_ai_class;

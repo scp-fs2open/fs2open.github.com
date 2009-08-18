@@ -297,7 +297,7 @@ void parse_ai_profiles_tbl(char *filename)
 				parse_float_list(profile->delay_bomb_arm_timer, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
-				parse_int_list(profile->change_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
+				parse_int_list(profile->chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
 
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
