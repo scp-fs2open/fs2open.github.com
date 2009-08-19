@@ -371,7 +371,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		12
-#define MAX_MAN_THRUSTERS	64
+#define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
