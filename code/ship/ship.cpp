@@ -729,6 +729,7 @@ void init_ship_entry(ship_info *sip)
 	sip->subsys_repair_rate = -2.0f;
 	
 	sip->armor_type_idx = -1;
+	sip->shield_armor_type_idx = -1;
 	sip->flags = SIF_DEFAULT_VALUE;
 	sip->flags2 = SIF2_DEFAULT_VALUE;
 	sip->ai_class = 0;
