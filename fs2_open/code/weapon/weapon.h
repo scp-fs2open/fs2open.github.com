@@ -113,6 +113,10 @@ extern int Num_weapon_subtypes;
 #define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
 #define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
 
+// flags for setting burst fire 
+#define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
+#define WBF_RANDOM_LENGTH			(1<<1)		// burst is to fire random length bursts
+
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
@@ -427,7 +431,8 @@ typedef struct weapon_info {
 	int weapon_hitpoints;
 
 	int	burst_shots;
-	int	burst_delay;
+	float burst_delay;
+	int burst_flags;
 
 	// Thruster effects
 	generic_anim	thruster_flame;
