@@ -7775,9 +7775,14 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 }
 
 //	Return time, in seconds, at which this ship can next fire its current secondary weapon.
-float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip)
+float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst)
 {
-	float t = swip->fire_wait;		//	Base delay for this weapon.
+	float t;
+	if (burst) {
+		t = swip->burst_delay;
+	} else {
+		t = swip->fire_wait;		//	Base delay for this weapon.
+	}
 	if (shipp->team == Player_ship->team) {
 		t *= aip->ai_ship_fire_secondary_delay_scale_friendly;
 	} else {
@@ -8826,19 +8831,33 @@ void ai_chase()
 											//	Only if weapon was fired do we specify time until next fire.  If not fired, done in ai_fire_secondary...
 											float t;
 											
-											if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
-												swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
-												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
-											} else {
-												if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-													t = swip->fire_wait;
+											if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+												if (swip->burst_shots > swp->burst_counter[current_bank]) {
+													t = swip->burst_delay;
+													swp->burst_counter[current_bank]++;
 												} else {
-													t = set_secondary_fire_delay(aip, temp_shipp, swip);
+													t = swip->fire_wait;
+													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+													} else {
+														swp->burst_counter[current_bank] = 0;
+													}
 												}
-												//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
-												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
-												swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
+											} else {
+												if (swip->burst_shots > swp->burst_counter[current_bank]) {
+													t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
+													swp->burst_counter[current_bank]++;
+												} else {
+													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
+													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+													} else {
+														swp->burst_counter[current_bank] = 0;
+													}
+												}
 											}
+												//nprintf(("AI", "Next secondary to be fired in %7.3f seconds.\n", t));
+											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 										}
 									} else {
 										swp->next_secondary_fire_stamp[current_bank] = timestamp(250);

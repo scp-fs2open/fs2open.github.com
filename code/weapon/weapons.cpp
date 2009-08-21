@@ -73,6 +73,13 @@ char *Weapon_subtype_names[] = {
 };
 int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
+flag_def_list Burst_fire_flags[] = {
+	{ "fast firing",		WBF_FAST_FIRING,		0 },
+	{ "random length",		WBF_RANDOM_LENGTH,		0 }
+};
+
+int Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list);
+
 weapon_explosions Weapon_explosions;
 
 SCP_vector<lod_checker> LOD_checker;
@@ -951,8 +958,9 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->weapon_hitpoints = 0;
 
-	wip->burst_delay = 1000; // 1 second, just incase its not defined
+	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
+	wip->burst_flags = 0;
 
 	generic_anim_init( &wip->thruster_flame );
 	generic_anim_init( &wip->thruster_glow );
@@ -2172,10 +2180,20 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Burst Shots:")) {
 		stuff_int(&wip->burst_shots);
+		if (wip->burst_shots > 0)
+			wip->burst_shots--;
 	}
 
 	if (optional_string("$Burst Delay:")) {
-		stuff_int(&wip->burst_delay);
+		int temp;
+		stuff_int(&temp);
+		if (temp > 0) {
+			wip->burst_delay = ((float) temp) / 1000.0f;
+		}
+	}
+
+	if (optional_string("$Burst Flags:")) {
+		parse_string_flag_list((int*)&wip->burst_flags, Burst_fire_flags, Num_burst_fire_flags);
 	}
 
 	if (optional_string("$Thruster Flame Effect:")) {
@@ -2203,7 +2221,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	// if burst delay is longer than firewait skip the whole burst fire option
-	if (wip->burst_delay > (int)(wip->fire_wait * 1000.0f))
+	if (wip->burst_delay >= wip->fire_wait)
 		wip->burst_shots = 0;
 
 	return WEAPON_INFO_INDEX(wip);
