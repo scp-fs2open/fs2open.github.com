@@ -84,7 +84,6 @@ typedef struct eval_enemy_obj_struct {
 //	dist = distance from turret to center point of object
 int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, float dist)
 {
-	model_subsystem *tp = ss->system_info;
 	vec3d	v2e;
 	float size_mod;
 	bool  in_fov;
@@ -92,10 +91,7 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 	vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
 	size_mod = objp->radius / (dist + objp->radius);
 
-	if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-		in_fov = turret_adv_fov_test(ss, tvec, &v2e, size_mod);
-	else
-		in_fov = turret_std_fov_test(ss, tvec, &v2e, size_mod);
+	in_fov = turret_fov_test(ss, tvec, &v2e, size_mod);
 
 	if ( in_fov ) {
  		return 1;
@@ -904,10 +900,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 							bool in_fov;
 							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
 
-							if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-								in_fov = turret_adv_fov_test(turret_subsys, tvec, &v2e);
-							else
-								in_fov = turret_std_fov_test(turret_subsys, tvec, &v2e);
+							in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
 							//	MODIFY FOR ATTACKING BIG SHIP
 							// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
 							if (in_fov) {
@@ -1045,11 +1038,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		bool in_fov;
 
-		if (tp->flags & MSS_FLAG_TURRET_ALT_MATH) {
-			in_fov = turret_adv_fov_test(ss, gvec, &v2e);
-		} else {
-			in_fov = turret_std_fov_test(ss, gvec, &v2e);
-		}
+		in_fov = turret_fov_test(ss, gvec, &v2e);
 
 		if (in_fov) {
 			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num,
@@ -1907,10 +1896,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	float dot;
 	bool in_fov;
-	if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-		in_fov = turret_adv_fov_test(ss, &gvec, &v2e);
-	else
-		in_fov = turret_std_fov_test(ss, &gvec, &v2e);
+	in_fov = turret_fov_test(ss, &gvec, &v2e);
 
 	// Ok, the turret is lined up... now line up a particular gun.
 	bool ok_to_fire = false;
@@ -2136,8 +2122,6 @@ bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
 {
 	model_subsystem *tp = ss->system_info;
-	vm_vec_normalize(gvec);
-	vm_vec_normalize(v2e);
 	float dot = vm_vec_dot(v2e, gvec);
 	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
 		vec3d of_dst;
@@ -2147,11 +2131,21 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 			return true;
 		} else {
 			of_dst.xyz.z = 0;
-			vm_vec_normalize(&of_dst);
 			// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
 			if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
 				return true;
 		}
 	}
 	return false;
+}
+
+bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
+{
+	bool in_fov = false;
+	if (ss->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
+		in_fov = turret_adv_fov_test(ss, gvec, v2e, size_mod);
+	else
+		in_fov = turret_std_fov_test(ss, gvec, v2e, size_mod);
+
+	return in_fov;
 }
