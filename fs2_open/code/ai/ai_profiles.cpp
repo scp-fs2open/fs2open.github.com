@@ -359,6 +359,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$disarm or disable cause global ai goal effects:", AIPF_GLOBAL_DISARM_DISABLE_EFFECTS);
 
+			set_flag(profile, "$force beam turrets to use normal fov:", AIPF_FORCE_BEAM_TURRET_FOV);
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 				Mp++;
