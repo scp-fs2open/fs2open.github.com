@@ -784,6 +784,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	int version;
 	int id, len, next_chunk;
 	int i,j;
+	vec3d temp_vec;
 
 #ifndef NDEBUG
 	strcpy_s(Global_filename, filename);
@@ -1506,7 +1507,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->shield.tris = (shield_tri *)vm_malloc(pm->shield.ntris * sizeof(shield_tri) );
 						Assert( pm->shield.tris );
 						for ( i = 0; i < pm->shield.ntris; i++ ) {
-							cfread_vector( &(pm->shield.tris[i].norm), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							pm->shield.tris[i].norm = temp_vec;
 							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
 #ifndef NDEBUG
@@ -1543,7 +1546,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						Assert ( bank->num_slots < MAX_SLOTS );
 						for (j = 0; j < bank->num_slots; j++) {
 							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &(bank->norm[j]), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							bank->norm[j] = temp_vec;
 						}
 					}
 				}
@@ -1563,7 +1568,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						Assert ( bank->num_slots < MAX_SLOTS );
 						for (j = 0; j < bank->num_slots; j++) {
 							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &(bank->norm[j]), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							bank->norm[j] = temp_vec;
 						}
 					}
 				}
@@ -1698,7 +1705,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						glow_point *p = &bank->points[j];
 
 						cfread_vector(&(p->pnt), fp);
-						cfread_vector(&(p->norm), fp);
+						cfread_vector( &temp_vec, fp );
+						vm_vec_normalize_safe(&temp_vec);
+						p->norm = temp_vec;
 						p->radius = cfread_float( fp);
 					}
 				}
@@ -1775,7 +1784,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							glow_point *p = &bank->points[j];
 
 							cfread_vector( &(p->pnt), fp );
-							cfread_vector( &(p->norm), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							p->norm = temp_vec;
 
 							if ( pm->version > 2004 )	{
 								p->radius = cfread_float( fp );
@@ -1807,7 +1818,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							subsystemp = &subsystems[snum];
 
 							if ( parent == subsystemp->subobj_num ) {
-								cfread_vector( &subsystemp->turret_norm, fp );
+								cfread_vector( &temp_vec, fp );
+								vm_vec_normalize_safe(&temp_vec);
+								subsystemp->turret_norm = temp_vec;
 								vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
 
 								n_slots = cfread_int( fp );
@@ -2064,6 +2077,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+
+						vm_vec_normalize_safe(&tempv);
 
 						pm->ins[idx].norm[idx2] = tempv;
 //						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
