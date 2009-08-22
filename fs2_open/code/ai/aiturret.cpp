@@ -1414,12 +1414,14 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			// fire a beam weapon
 			beam_fire(&fire_info);
 
+			turret->flags |= SSF_HAS_FIRED; //set fired flag for scripting -nike
 			return true;
 		}
 		// don't fire swam, but set up swarm info instead
 		else if ((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) {
 			turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
 
+			turret->flags |= SSF_HAS_FIRED;	//set fired flag for scripting -nike
 			return true;
 		}
 		// now do anything else
@@ -1495,6 +1497,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		turret->turret_next_fire_stamp = timestamp((int) wait);
 	}
 
+	turret->flags |= SSF_HAS_FIRED; //set has fired flag for scriptng - nuke
 	return true;
 }
 
