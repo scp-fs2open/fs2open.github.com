@@ -1870,10 +1870,6 @@ int beam_get_model(object *objp)
 		mprintf(("Beam couldn't find a good object model/type!! (%d)\n", objp->type));
 		return -1;
 	}
-
-	// can't happen
-	Int3();
-	return -1;
 }
 
 // start the warmup phase for the beam
@@ -3067,21 +3063,31 @@ int beam_ok_to_fire(beam *b)
 	}
 
 	// if the beam will be firing out of its FOV, power it down
-	vec3d aim_dir, temp;
-	vec3d turret_dir, turret_pos;
+	vec3d aim_dir;
 	vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize(&aim_dir);
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
-	// NEEDS TO - PROBABLY - BE CHANGED INTO USING STD/ADV FOV TESTS
-	/*
-    if (b->subsys->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
-        in_fov = turret_adv_fov_test(b->subsys, &turret_dir, &aim_dir);
-    else
-        in_fov = turret_std_fov_test(b->subsys, &turret_dir, &aim_dir);
-	*/
-	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
-		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
-		return 0;
+
+	if(!(The_mission.ai_profile->flags & AIPF_FORCE_BEAM_TURRET_FOV)) {
+		vec3d turret_dir, turret_pos, temp;
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
+		if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
+			nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+			return 0;
+		}
+	} else {
+		vec3d turret_normal;
+
+		if (b->fighter_beam) {
+			turret_normal = b->objp->orient.vec.fvec;
+			b->subsys->system_info->flags &= ~MSS_FLAG_TURRET_ALT_MATH;
+		} else {
+			vm_vec_unrotate(&turret_normal, &b->subsys->system_info->turret_norm, &b->objp->orient);
+		}
+
+		if(!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {
+			nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+			return 0;
+		}
 	}
 
 	// ok to fire/continue firing
