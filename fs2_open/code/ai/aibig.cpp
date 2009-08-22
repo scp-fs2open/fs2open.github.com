@@ -137,10 +137,7 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 					if (dot > fov)
 						in_fov = true;
 				} else {
-					if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-						in_fov = turret_adv_fov_test(ss, attacker_objp_fvec, &v2p);
-					else
-						in_fov = turret_std_fov_test(ss, attacker_objp_fvec, &v2p);
+					in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
 				}
 
 				if (in_fov) {
