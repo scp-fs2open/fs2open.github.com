@@ -16,6 +16,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "io/trackir.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "mission/missioncampaign.h"
@@ -24,6 +25,7 @@
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "object/object.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
 #include "parse/lua.h"
@@ -3458,6 +3460,40 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 	return ade_set_args(L, "f", Weapon_info[idx].fire_wait);
 }
 
+ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].lifetime = f;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].lifetime);
+}
+
+ADE_VIRTVAR(Range, l_Weaponclass, "number", "Range of weapon in meters", "number", "Weapon Range, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].weapon_range = f;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].weapon_range);
+}
+
 ADE_VIRTVAR(Mass, l_Weaponclass, "number", "Weapon mass", "number", "Weapon mass, or 0 if handle is invalid")
 {
 	int idx;
@@ -3855,6 +3891,18 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	}
 
 	return ade_set_args(L, "o", l_Shields.Set(object_h(objh->objp)));
+}
+
+ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the objects unique numeric signature, or -1 if invalid. useful for creating a metadata sytem")
+{
+	object_h *oh;
+	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
+		return ade_set_error(L, "i", -1);
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "i", -1);
+ 
+	return ade_set_args(L, "i", oh->sig);
 }
 
 ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -5241,6 +5289,22 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem",
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
 }
 
+ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")
+{
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(sso->ss->flags & SSF_HAS_FIRED){
+		sso->ss->flags &= ~SSF_HAS_FIRED;
+		return ADE_RETURN_TRUE;}
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	ship_subsys_h *sso;
@@ -5571,6 +5635,67 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship m
 	return ade_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
+ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves", "number", "Ship current weapon energy reserve level, or 0 if invalid")
+{
+	object_h *objh;
+	float neweng = -1;
+	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && neweng > -1)
+		shipp->weapon_energy = neweng;
+
+	return ade_set_args(L, "f", shipp->weapon_energy);
+}
+
+ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number", "Ship maximum weapon energy reserve level, or 0 if invalid")
+{
+	object_h *objh;
+	float neweng = -1;
+	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
+
+	if(ADE_SETTING_VAR && neweng > -1)
+		sip->max_weapon_reserve = neweng;
+
+	return ade_set_args(L, "f", sip->max_weapon_reserve);
+}
+
+ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigger is pressed or not", "boolean", "True if pressed, false if not, nil if ship handle is invalid")
+{
+	object_h *objh;
+	bool trig = false;
+	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &trig))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+		if(trig)
+			shipp->flags |= SF_TRIGGER_DOWN;
+		else
+			shipp->flags &= ~SF_TRIGGER_DOWN;
+
+	if (shipp->flags & SF_TRIGGER_DOWN)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+
 ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
 	object_h *objh;
@@ -5813,7 +5938,21 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 	return ADE_RETURN_TRUE;
 }
+/*
+ADE_FUNC(getFlags, l_Ship, NULL, "Gets ship flags", "boolean", "State of flag, or nil if handle is invalid")
+{
+	object_h *objh;
+	enum_h *enu = NULL;
 
+	if(!ade_get_args(L, "oo", l_Ship.GetPtr(&objh),l_Enum.GetPtr(&enu)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid() || !enu->IsValid())
+		return ADE_RETURN_NIL;
+
+	//return ade_set_args(L, "b", ship_launch_countermeasure(objh->objp));
+}
+*/
 ADE_FUNC(fireCountermeasure, l_Ship, NULL, "Launches a countermeasure from the ship", "boolean", "Whether countermeasure was launched or not")
 {
 	object_h *objh;
@@ -6235,6 +6374,25 @@ ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "numb
 	}
 
 	return ade_set_args(L, "f", wp->lifeleft);
+}
+
+ADE_VIRTVAR(FlakDetonationRange, l_Weapon, "number", "Range at which flak will detonate (meters)", "number", "Detonation range (meters) or 0 if weapon handle is invalid")
+{
+	object_h *oh=NULL;
+	float rng = -1.0f;
+	if(!ade_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &rng))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && rng >= 0.0f) {
+		wp->det_range = rng;
+	}
+
+	return ade_set_args(L, "f", wp->det_range);
 }
 
 ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Weapon target, or invalid object handle if weapon handle is invalid")
@@ -6729,7 +6887,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objp, ss)));
 }
 
-ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time]",
+ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time, number Zoom deceleration Time]",
 		 "Sets camera FOV"
 		 "<br>FOV is the final field of view, in radians, of the camera."
 		 "<br>Zoom Time is the total time to take zooming in or out."
@@ -6742,7 +6900,7 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Accelerat
 	float time=0.0f;
 	float acc_time=0.0f;
 	float dec_time=0.0f;
-	if(!ade_get_args(L, "o|offf", l_Camera.Get(&cid), &n_fov, &time, &acc_time, &dec_time))
+	if(!ade_get_args(L, "o|ffff", l_Camera.Get(&cid), &n_fov, &time, &acc_time, &dec_time))
 		return ADE_RETURN_NIL;
 	
 	if(!cid.isValid())
@@ -7043,6 +7201,67 @@ ADE_VIRTVAR(Forward, l_Control_Info, "number", "Forward control of the player sh
 
 	return ade_set_args(L, "f", Player->lua_ci.forward);
 }
+
+ADE_VIRTVAR(ForwardCruise, l_Control_Info, "number", "Forward control of the player ship", "number", "Forward")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.forward_cruise_percent = new_ci*100.0f;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.forward_cruise_percent*0.01f);
+}
+
+ADE_VIRTVAR(PrimaryCount, l_Control_Info, "number", "Number of primary weapons that will fire", "number", "Number of weapons to fire, or 0 if handle is invalid")
+{
+	int idx;
+	int new_pri = 0;
+
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_pri))
+		return ade_set_error(L, "i", new_pri);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.fire_primary_count = new_pri;
+	}
+
+	return ade_set_args(L, "i", Player->lua_ci.fire_primary_count);
+}
+
+ADE_VIRTVAR(SecondaryCount, l_Control_Info, "number", "Number of secondary weapons that will fire", "number", "Number of weapons to fire, or 0 if handle is invalid")
+{
+	int idx;
+	int new_sec = 0;
+
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_sec))
+		return ade_set_error(L, "i", new_sec);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.fire_secondary_count = new_sec;
+	}
+
+	return ade_set_args(L, "i", Player->lua_ci.fire_secondary_count);
+}
+
+ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermeasures that will launch", "number", "Number of countermeasures to launch, or 0 if handle is invalid")
+{
+	int idx;
+	int new_cm = 0;
+
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_cm))
+		return ade_set_error(L, "i", new_cm);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.fire_countermeasure_count = new_cm;
+	}
+
+	return ade_set_args(L, "i", Player->lua_ci.fire_countermeasure_count);
+}
+
 
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
@@ -7786,6 +8005,65 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 		mouse_status = true;
 
 	return ade_set_args(L, "b", mouse_status);
+}
+
+//trackir funcs
+ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
+{
+	if(trackir_enabled == 0)
+		return ADE_RETURN_FALSE;
+
+	TrackIR_Query();
+
+	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetPitch());
+}
+
+ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetYaw());
+}
+
+ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetRoll());
+}
+
+ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetX());
+}
+
+ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetY());
+}
+
+ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetZ());
 }
 
 //**********LIBRARY: Controls library
@@ -8986,6 +9264,20 @@ ADE_FUNC(__len, l_HookVar_Globals, NULL, "Number of HookVariables", "number", "N
 
 //**********LIBRARY: Mission
 ade_lib l_Mission("Mission", NULL, "mn", "Mission library");
+
+// for use in creating faster metadata systems, use in conjunction with getSignature()
+ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle of an object from its signature", "object", "Handle of object with signaure, invalid handle if signature is not in use")
+{
+	int sig = -1;
+	int objnum;
+	if(!ade_get_args(L, "i", &sig))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	objnum = obj_get_by_signature(sig);
+
+	return ade_set_object_with_breed(L, objnum);
+}
+
 
 //****SUBLIBRARY: Mission/Asteroids
 ade_lib l_Mission_Asteroids("Asteroids", &l_Mission, NULL, "Asteroids in the mission");

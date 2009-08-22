@@ -195,6 +195,9 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 #define SSF_UNTARGETABLE		(1 << 1)
 #define SSF_NO_SS_TARGETING     (1 << 2)
 
+//nuke
+#define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
+
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
 #define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
