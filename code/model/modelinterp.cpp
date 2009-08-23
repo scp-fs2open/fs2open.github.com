@@ -3131,7 +3131,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// normalize banks, in case of incredibly big normals
 			// VECMAT-ERROR: NULL VEC3D (norm == nul)
-			if ( !IS_VEC_NULL(&gpt->norm) )
+			if ( !IS_VEC_NULL_SQ_SAFE(&gpt->norm) )
 				vm_vec_copy_normalize(&scale_vec, &gpt->norm);
 
 			// adjust for thrust

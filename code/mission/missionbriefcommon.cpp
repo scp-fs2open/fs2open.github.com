@@ -1506,7 +1506,7 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	// calculate camera velocity
 	vm_vec_sub(&Cam_vel, pos, &Current_cam_pos);
 //	vm_vec_scale(&Cam_vel, 1.0f/time_in_seconds);
-	if ( !IS_VEC_NULL(&Cam_vel) ) {
+	if ( !IS_VEC_NULL_SQ_SAFE(&Cam_vel) ) {
 		vm_vec_normalize(&Cam_vel);
 	}
 
@@ -1735,7 +1735,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 					imi->direction = zero_v;
 
 					vm_vec_sub(&imi->direction, &imi->finish, &imi->start);
-					if ( !IS_VEC_NULL(&imi->direction) ) {
+					if ( !IS_VEC_NULL_SQ_SAFE(&imi->direction) ) {
 						vm_vec_normalize(&imi->direction);
 					}
 
