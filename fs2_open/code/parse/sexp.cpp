@@ -5701,7 +5701,7 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 
 	vm_vec_sub(&v_orient, location, &objp->pos);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		Warning(LOCATION, "error in sexp setting ship orientation: can't point to self; quitting...\n");
 		return;
@@ -8331,7 +8331,7 @@ void sexp_warp_effect(int n)
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
 		return;
