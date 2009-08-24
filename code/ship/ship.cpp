@@ -14640,12 +14640,12 @@ float ship_get_exp_outer_rad(object *ship_objp)
 
 int valid_cap_subsys_cargo_list(char *subsys)
 {
-	if (strstr(subsys, "nav")
-		|| strstr(subsys, "comm")
-		|| strstr(subsys, "engine")
-		|| strstr(subsys, "fighter")	// fighter bays
-		|| strstr(subsys, "sensors")
-		|| strstr(subsys, "weapons")) {
+	if (stristr(subsys, "nav")
+		|| stristr(subsys, "comm")
+		|| stristr(subsys, "engine")
+		|| stristr(subsys, "fighter")	// fighter bays
+		|| stristr(subsys, "sensors")
+		|| stristr(subsys, "weapons")) {
 
 		return 1;
 	}
