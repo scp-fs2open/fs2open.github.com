@@ -119,50 +119,14 @@ void init_scoring_element(scoring_struct *s)
 	}
 
 	memset(s, 0, sizeof(scoring_struct));
-	s->score = 0;
+
 	s->rank = RANK_ENSIGN;
-	s->assists = 0;
-	s->kill_count = 0;
-	s->kill_count_ok = 0;
 
-	for (i=0; i<MAX_MEDALS; i++){
-		s->medals[i] = 0;
-	}
+	s->m_medal_earned = -1;		// hasn't earned a medal yet
+	s->m_promotion_earned = -1;
+	s->m_badge_earned = -1;
 
-	for (i=0; i<MAX_SHIP_CLASSES; i++){
-		s->kills[i] = 0;
-		s->m_kills[i] = 0;
-	}
-
-	s->m_kill_count		= 0;
-	s->m_kill_count_ok	= 0;
-
-	s->m_score = 0;
-	s->m_assists = 0;
-   s->p_bonehead_hits=0; s->mp_bonehead_hits=0;
-	s->s_bonehead_hits=0; s->ms_bonehead_hits=0;
-	s->m_bonehead_kills=0;
-	
-	s->bonehead_kills=0;   
-   
-	s->p_shots_fired=0; s->p_shots_hit=0;
-   s->s_shots_fired=0; s->s_shots_hit=0;
-
-   s->mp_shots_fired=0; s->mp_shots_hit=0;
-   s->ms_shots_fired=0; s->ms_shots_hit=0;
-
-	s->m_player_deaths = 0;
-
-   s->flags = 0;	
-
-	s->missions_flown = 0;
-	s->flight_time = 0;
-	s->last_flown = 0;
-	s->last_backup = 0;
-
-	for(i=0; i<MAX_PLAYERS; i++){
-		s->m_dogfight_kills[i] = 0;
-	}
+	s->flags = 0;
 }
 
 #ifndef NDEBUG
@@ -195,7 +159,7 @@ void scoring_level_init( scoring_struct *scp )
 	scp->m_medal_earned = -1;		// hasn't earned a medal yet
 	scp->m_promotion_earned = -1;
 	scp->m_badge_earned = -1;
-   scp->m_score = 0;
+	scp->m_score = 0;
 	scp->m_assists = 0;
 	scp->mp_shots_fired=0;
 	scp->mp_shots_hit = 0;
@@ -206,7 +170,7 @@ void scoring_level_init( scoring_struct *scp )
 	scp->ms_bonehead_hits=0;
 	scp->m_bonehead_kills=0;
 
-   for (i=0; i<MAX_SHIP_CLASSES; i++){
+	for (i=0; i<MAX_SHIP_CLASSES; i++){
 		scp->m_kills[i] = 0;
 		scp->m_okKills[i]=0;
 	}
