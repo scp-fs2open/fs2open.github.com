@@ -269,9 +269,6 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 		if (reply_type > 1) {
 			return (int)reply_type;
 		}
-	
-		// initialize the stats to default values
-		init_scoring_element( &pl->stats );
 
 		PXO_GET_INT( pl->stats.score );				// points
 		PXO_GET_UINT( pl->stats.missions_flown );	// missions
