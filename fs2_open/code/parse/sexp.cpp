@@ -9883,9 +9883,9 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 		{
 			// grab it from the arrival list
 			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
-			if (!p_objp)
-			{
-				Int3();		// guess we'll have to track down allender
+			
+			// ships that have had ship-vanish used on them should be skipped
+			if (!p_objp) {
 				continue;
 			}
 
