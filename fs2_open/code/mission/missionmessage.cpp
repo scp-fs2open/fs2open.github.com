@@ -1658,7 +1658,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				// exist, we will use Terran command
 				m_persona = Messages[i].persona_index;
 				if ( m_persona == -1 ) {
-					mprintf(("Warning:  Message %d has no persona assigned.\n", i));
+					mprintf(("Warning:  Message %s has no persona assigned.\n", Messages[i].name));
 				}
 
 				// get a ship. we allow silenced ships since this is a unique messange and therefore the mission designer 
