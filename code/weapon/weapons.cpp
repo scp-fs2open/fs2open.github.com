@@ -608,6 +608,14 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_NO_EMP_KILL;
 		else if (!stricmp(NOX("untargeted heat seeker"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_UNTARGETED_HEAT_SEEKER;
+		else if (!stricmp(NOX("no radius doubling"), weapon_strings[i])) {
+			if (weaponp->wi_flags & WIF_BOMB) {	
+				weaponp->wi_flags2 |= WIF2_HARD_TARGET_BOMB;
+			}
+			else {
+				Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
+			}
+		}
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
