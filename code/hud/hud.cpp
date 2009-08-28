@@ -1684,17 +1684,7 @@ void hud_show_damage_popup()
 			if (strlen(psub->alt_dmg_sub_name))
 				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
 			else {
-				char r_name[NAME_LENGTH];
-				strcpy_s(r_name, ship_subsys_get_name(pss));
-				char *temp_string = strchr(r_name, '|');
-				if (temp_string == NULL) {
-					hud_subsys_list[num].name = r_name;
-				} else {
-					char show_name[NAME_LENGTH];
-					int n_chars = r_name - temp_string;
-					strncpy(show_name, r_name, n_chars);
-					hud_subsys_list[num].name = show_name;
-				}
+				hud_subsys_list[num].name = ship_subsys_get_name(pss);
 			}
 
 			hud_subsys_list[num].str  = screen_integrity;

@@ -5701,7 +5701,7 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 
 	vm_vec_sub(&v_orient, location, &objp->pos);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		Warning(LOCATION, "error in sexp setting ship orientation: can't point to self; quitting...\n");
 		return;
@@ -8331,7 +8331,7 @@ void sexp_warp_effect(int n)
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
 		return;
@@ -9883,9 +9883,9 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 		{
 			// grab it from the arrival list
 			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
-			if (!p_objp)
-			{
-				Int3();		// guess we'll have to track down allender
+			
+			// ships that have had ship-vanish used on them should be skipped
+			if (!p_objp) {
 				continue;
 			}
 
@@ -17466,6 +17466,71 @@ int get_sexp_main()
 
 	return start_node;
 }
+
+int run_sexp(const char* sexpression)
+{
+	char* oldMp = Mp;
+	int n, i, sexp_val = UNINITIALIZED;
+	char buf[8192];
+
+	strncpy(buf, sexpression, 8192);
+
+	// HACK: ! -> "
+	for (i = 0; i < strlen(buf); i++)
+		if (buf[i] == '!')
+			buf[i]='\"';
+
+	Mp = buf;
+
+	n = get_sexp_main();
+	if (n != -1)
+	{
+		sexp_val = eval_sexp(n);
+		free_sexp2(n);
+	}
+	Mp = oldMp;
+
+	return sexp_val;
+}
+
+DCF(sexpc, "Always runs the given sexp command ")
+{
+	if ( Dc_command )       {
+		if (Dc_command_line != NULL) {
+			int sexp_val = UNINITIALIZED;
+			char buf[8192];
+
+			snprintf(buf, 8191, "( when ( true ) ( %s ) )", Dc_command_line);
+			sexp_val = run_sexp( buf );
+			dc_printf("SEXP '%s' run, sexp_val = %d\n", buf, sexp_val);
+			do {
+				dc_get_arg(ARG_ANY);
+			} while (Dc_arg_type != ARG_NONE);
+		}
+	}
+	if ( Dc_help )  {
+		dc_printf( "Usage: sexpc sexpression\n. Always runs the given sexp as '( when ( true ) ( sexp ) )' .\n" );
+	}
+}
+
+
+DCF(sexp,"Runs the given sexp")
+{
+	if ( Dc_command )       {
+		if (Dc_command_line != NULL) {
+			int sexp_val = UNINITIALIZED;
+			sexp_val = run_sexp( Dc_command_line );
+			dc_printf("SEXP '%s' run, sexp_val = %d\n", Dc_command_line, sexp_val);
+			do {
+				dc_get_arg(ARG_ANY);
+			} while (Dc_arg_type != ARG_NONE);
+		}
+	}
+	if ( Dc_help )  {
+		dc_printf( "Usage: sexp 'sexpression'\n. Runs the given sexp.\n");
+	}
+}
+
 
 void test_sexps()
 {

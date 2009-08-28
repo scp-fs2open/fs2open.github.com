@@ -672,7 +672,7 @@ void nebl_process()
 			vec3d strike = Neb2_cubes[e1][e2][e3].pt;
 
 			// add some flavor to the bolt. mmmmmmmm, lightning
-			if(!IS_VEC_NULL(&Storm->flavor)){			
+			if(!IS_VEC_NULL_SQ_SAFE(&Storm->flavor)){			
 				// start with your basic hot sauce. measure how much you have			
 				vec3d your_basic_hot_sauce;
 				vm_vec_sub(&your_basic_hot_sauce, &strike, &start);

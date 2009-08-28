@@ -1984,7 +1984,7 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 	vec3d v_norm = cur_phys_info->vel;	
 	vec3d v_dir;
 	vm_vec_sub(&v_dir, new_pos, cur_pos);	
-	if(!IS_VEC_NULL(&v_norm) && !IS_VEC_NULL(&v_dir)){
+	if(!IS_VEC_NULL_SQ_SAFE(&v_norm) && !IS_VEC_NULL_SQ_SAFE(&v_dir)){
 		vm_vec_normalize(&v_dir);
 		vm_vec_normalize(&v_norm);	
 		if(vm_vec_dotprod(&v_dir, &v_norm) < 0.0f){

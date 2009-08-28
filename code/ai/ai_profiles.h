@@ -45,6 +45,7 @@
 #define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
 #define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
 #define AIPF_GLOBAL_DISARM_DISABLE_EFFECTS						    (1 << 29)
+#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 30)
 
 #define MAX_AI_PROFILES	5
 
@@ -112,8 +113,8 @@ typedef struct ai_profile_t {
 
 	float delay_bomb_arm_timer[NUM_SKILL_LEVELS];
 
-	// the change (x/7) that ship is allowed to fire missiles at player ship.
-	int change_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+	// the chance (x/7) that ship is allowed to fire missiles at player ship.
+	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 
 } ai_profile_t;
 

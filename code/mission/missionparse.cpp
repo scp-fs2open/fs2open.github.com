@@ -5119,8 +5119,8 @@ int parse_mission(mission *pm, int flags)
 
 
 			// now display the popup
-			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_YES, POPUP_NO, text);
-			if (popup_rval != 0) {
+			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, text);
+			if (popup_rval == 0) {
 				return -2;
 			}
 		}

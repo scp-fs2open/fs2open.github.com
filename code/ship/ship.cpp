@@ -729,6 +729,7 @@ void init_ship_entry(ship_info *sip)
 	sip->subsys_repair_rate = -2.0f;
 	
 	sip->armor_type_idx = -1;
+	sip->shield_armor_type_idx = -1;
 	sip->flags = SIF_DEFAULT_VALUE;
 	sip->flags2 = SIF2_DEFAULT_VALUE;
 	sip->ai_class = 0;
@@ -7408,7 +7409,7 @@ void ship_process_post(object * obj, float frametime)
 
 void ship_set_default_weapons(ship *shipp, ship_info *sip)
 {
-	int			i;
+	int			i, j;
 	polymodel	*pm;
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
@@ -7432,8 +7433,15 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		Assert(pm->n_guns <= MAX_SHIP_PRIMARY_BANKS);
 		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks specified for %s\n", pm->n_guns, sip->num_primary_banks, sip->name);
 		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
-			// Make unspecified weapon for bank be a Light Laser
-			swp->primary_bank_weapons[i] = weapon_info_lookup(NOX("Light Laser"));
+			// Make unspecified weapon for bank be a laser
+			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
+				Assert(Player_weapon_precedence[j] > 0);
+				int weapon_id = Player_weapon_precedence[j];
+				if (Weapon_info[weapon_id].subtype & (WP_LASER || WP_BEAM)) {
+					swp->primary_bank_weapons[i] = weapon_id;
+					break;
+				}
+			}
 			Assert(swp->primary_bank_weapons[i] >= 0);
 		}
 		sip->num_primary_banks = pm->n_guns;
@@ -7448,8 +7456,15 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		Assert(pm->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
 		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks specified for %s\n", pm->n_missiles, sip->num_secondary_banks, sip->name);
 		for ( i = sip->num_secondary_banks; i < pm->n_missiles; i++ ) {
-			// Make unspecified weapon for bank be a Rockeye Missile
-			swp->secondary_bank_weapons[i] = weapon_info_lookup(NOX("Rockeye Missile"));
+			// Make unspecified weapon for bank be a missile
+			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
+				Assert(Player_weapon_precedence[j] > 0);
+				int weapon_id = Player_weapon_precedence[j];
+				if (Weapon_info[weapon_id].subtype & WP_MISSILE) {
+					swp->secondary_bank_weapons[i] = weapon_id;
+					break;
+				}
+			}
 			Assert(swp->secondary_bank_weapons[i] >= 0);
 		}
 		sip->num_secondary_banks = pm->n_missiles;
@@ -8743,18 +8758,21 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
+		bool fast_firing = false;
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-			next_fire_delay = (float) winfo_p->burst_delay;
+			next_fire_delay = (float) winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
+			if (winfo_p->burst_flags & WBF_FAST_FIRING)
+				fast_firing = true;
 		} else {
 			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
 		}
-		if (!(obj->flags & OF_PLAYER_SHIP) ) {
+		if (!((obj->flags & OF_PLAYER_SHIP) || (fast_firing))) {
 			if (shipp->team == Ships[Player_obj->instance].team){
-				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
+				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
-				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level];
+				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
 			}
 		}
 
@@ -8820,13 +8838,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 			
 			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
+				float t;
 				if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-					swp->next_primary_fire_stamp[bank_to_fire] = winfo_p->burst_delay;
+					t = winfo_p->burst_delay;
 					swp->burst_counter[bank_to_fire]++;
 				} else {
-					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)((float) winfo_p->fire_wait * 1000.0f));//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
+					t = winfo_p->fire_wait;//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
 					swp->burst_counter[bank_to_fire] = 0;
 				}
+				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int) (t * 1000.0f));
 				swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 				beam_fire_info fbfire_info;				
 
@@ -9749,13 +9769,16 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		return 1;		//	Note: Missiles didn't get fired, but the frame interval code will fire them.
 	}	
 
+	float t;
+
 	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank]) {
-		swp->next_secondary_fire_stamp[bank] = Weapon_info[weapon].burst_delay;
+		t = Weapon_info[weapon].burst_delay;
 		swp->burst_counter[bank]++;
 	} else {
-		swp->next_secondary_fire_stamp[bank] = timestamp((int)(Weapon_info[weapon].fire_wait * 1000.0f));	// They can fire 5 times a second
+		t = Weapon_info[weapon].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank] = 0;
 	}
+	swp->next_secondary_fire_stamp[bank] = timestamp((int) (t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();
 
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
@@ -14035,10 +14058,18 @@ void ship_page_in()
 	// Mark any support ship types as used
 	for (i = 0; i < Num_ship_classes; i++)	{
 		if (Ship_info[i].flags & SIF_SUPPORT) {
-			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
+			ship_info *sip = &Ship_info[i];
+			nprintf(( "Paging", "Found support ship '%s'\n", sip->name ));
 			ship_class_used[i]++;
 
-			num_subsystems_needed += Ship_info[i].n_subsystems;
+			num_subsystems_needed += sip->n_subsystems;
+
+			// load the darn model and page in textures
+			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+			if (sip->model_num >= 0) {
+				model_page_in_textures(sip->model_num, i);
+			}
 		}
 	}
 	
@@ -14068,10 +14099,10 @@ void ship_page_in()
 
 		while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
 			for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-				weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
+				weapon_mark_as_used(ptr->weapons.primary_bank_weapons[k]);
 
 			for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-				weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
+				weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[k]);
 
 			ptr = GET_NEXT(ptr);
 		}
@@ -14609,12 +14640,12 @@ float ship_get_exp_outer_rad(object *ship_objp)
 
 int valid_cap_subsys_cargo_list(char *subsys)
 {
-	if (strstr(subsys, "nav")
-		|| strstr(subsys, "comm")
-		|| strstr(subsys, "engine")
-		|| strstr(subsys, "fighter")	// fighter bays
-		|| strstr(subsys, "sensors")
-		|| strstr(subsys, "weapons")) {
+	if (stristr(subsys, "nav")
+		|| stristr(subsys, "comm")
+		|| stristr(subsys, "engine")
+		|| stristr(subsys, "fighter")	// fighter bays
+		|| stristr(subsys, "sensors")
+		|| stristr(subsys, "weapons")) {
 
 		return 1;
 	}
@@ -14987,10 +15018,7 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
 	aip->behavior = AIM_NONE;
-	aip->ai_courage = Ai_classes[new_ai_class].ai_courage[Game_skill_level];
-	aip->ai_patience = Ai_classes[new_ai_class].ai_patience[Game_skill_level];
-	aip->ai_evasion = Ai_classes[new_ai_class].ai_evasion[Game_skill_level];
-	aip->ai_accuracy = Ai_classes[new_ai_class].ai_accuracy[Game_skill_level];
+	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
 	Ship_info[Ships[ship_num].ship_info_index].ai_class = new_ai_class;
 	Ships[ship_num].weapons.ai_class = new_ai_class;

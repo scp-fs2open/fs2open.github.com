@@ -1224,7 +1224,7 @@ float find_nearest_point_on_line(vec3d *nearest_point, vec3d *p0, vec3d *p1, vec
 	vm_vec_sub(&norm, p1, p0);
 	vm_vec_sub(&xlated_int_pnt, int_pnt, p0);
 
-	if (IS_VEC_NULL(&norm)) {
+	if (IS_VEC_NULL_SQ_SAFE(&norm)) {
 		*nearest_point = *int_pnt;
 		return 9999.9f;
 	}
@@ -1397,7 +1397,7 @@ void vm_vec_rand_vec_quick(vec3d *rvec)
 	rvec->xyz.y = (frand() - 0.5f) * 2;
 	rvec->xyz.z = (frand() - 0.5f) * 2;
 
-	if (IS_VEC_NULL(rvec))
+	if (IS_VEC_NULL_SQ_SAFE(rvec))
 		rvec->xyz.x = 1.0f;
 
 	vm_vec_normalize_quick(rvec);

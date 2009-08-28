@@ -475,7 +475,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 {
 	Assert( pss != NULL );
 
-	if (pss->current_hits <= 0.0f)
+	if (pss->max_hits > 0 && pss->current_hits <= 0.0f) //allow subobjects with hitpoints disabled -nuke
 		return false;
 
 	model_subsystem *psub = pss->system_info;
@@ -550,8 +550,8 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
+		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke)
+		if ( pss->max_hits > 0 && pss->current_hits <= 0.0f ) 
 			continue;
 
 		// not a triggered animation, skip it
@@ -632,7 +632,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 {
 	Assert( pss != NULL );
 
-	if (pss->current_hits <= 0.0f)
+	if (pss->max_hits > 0 && pss->current_hits <= 0.0f) //allow subobjects with hitpoints disabled -nuke
 		return timestamp();
 
 	model_subsystem *psub = pss->system_info;
@@ -776,8 +776,8 @@ void model_anim_handle_multiplayer(ship *shipp)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
+		// Don't process destroyed objects  (but allow subobjects with hitpoints disabled -nuke)
+		if ( pss->max_hits > 0 && pss->current_hits <= 0.0f ) 
 			continue;
 
 		// not a triggered animation, skip it

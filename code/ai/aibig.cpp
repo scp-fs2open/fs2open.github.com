@@ -137,10 +137,7 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 					if (dot > fov)
 						in_fov = true;
 				} else {
-					if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-						in_fov = turret_adv_fov_test(ss, attacker_objp_fvec, &v2p);
-					else
-						in_fov = turret_std_fov_test(ss, attacker_objp_fvec, &v2p);
+					in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
 				}
 
 				if (in_fov) {
@@ -585,7 +582,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		} // end if ( Pl_objp->phys_info.speed < 3.0f ) 
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
-		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < The_mission.ai_profile->glide_strafe_percent[Game_skill_level]) {
+		if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
 			aip->previous_mode = aip->mode;
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
@@ -665,7 +662,7 @@ void ai_big_chase_ct()
 }
 
 extern void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
-extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip);
+extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst);
 extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
 extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time);
 
@@ -754,19 +751,32 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 								//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
 								//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
 									if (ai_fire_secondary_weapon(Pl_objp)) {
-										if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-											t = swip->fire_wait;
+										if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+											if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												t = swip->burst_delay;
+												swp->burst_counter[current_bank]++;
+											} else {
+												t = swip->fire_wait;
+												if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+													swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+												} else {
+ 													swp->burst_counter[current_bank] = 0;
+												}
+											}
 										} else {
-											t = set_secondary_fire_delay(aip, temp_shipp, swip);
+											if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
+												swp->burst_counter[current_bank]++;
+											} else {
+												t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
+												if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+													swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+												} else {
+													swp->burst_counter[current_bank] = 0;
+												}
+											}
 										}
-
-										if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
-											swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
-											swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
-										} else {
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
-											swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
-										}
+										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 									}
 								//}
 							}
@@ -1555,7 +1565,7 @@ void ai_big_strafe_position()
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	//Maybe use AIS_STRAFE_GLIDE_ATTACK
-	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < The_mission.ai_profile->glide_strafe_percent[Game_skill_level])) {
+	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < aip->ai_glide_strafe_percent)) {
 		aip->submode = AIS_STRAFE_GLIDE_ATTACK;
 		aip->submode_parm1 = 0;
 	} else {
@@ -1728,7 +1738,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (The_mission.ai_profile->flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
+	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
 		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

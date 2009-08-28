@@ -195,6 +195,9 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 #define SSF_UNTARGETABLE		(1 << 1)
 #define SSF_NO_SS_TARGETING     (1 << 2)
 
+//nuke
+#define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
+
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
 #define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
@@ -371,7 +374,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		12
-#define MAX_MAN_THRUSTERS	64
+#define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -1526,6 +1529,7 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 // functions for testing fov.. returns true if fov test is passed.
 bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

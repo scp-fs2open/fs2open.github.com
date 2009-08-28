@@ -1655,8 +1655,13 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
+	
+	int fsaa_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
+	
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
 
-	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, db));
+	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, db, fsaa_samples));
 
 	if (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
 		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError());
@@ -1668,8 +1673,9 @@ int opengl_init_display_device()
 	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
 	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &depth);
 	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &db);
+	SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &fsaa_samples);
 
-	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
+	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d, FSAA: %d\n", r, g, b, depth, db, fsaa_samples));
 
 	SDL_ShowCursor(0);
 

@@ -73,6 +73,13 @@ char *Weapon_subtype_names[] = {
 };
 int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
+flag_def_list Burst_fire_flags[] = {
+	{ "fast firing",		WBF_FAST_FIRING,		0 },
+	{ "random length",		WBF_RANDOM_LENGTH,		0 }
+};
+
+int Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list);
+
 weapon_explosions Weapon_explosions;
 
 SCP_vector<lod_checker> LOD_checker;
@@ -601,6 +608,14 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_NO_EMP_KILL;
 		else if (!stricmp(NOX("untargeted heat seeker"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_UNTARGETED_HEAT_SEEKER;
+		else if (!stricmp(NOX("no radius doubling"), weapon_strings[i])) {
+			if (weaponp->wi_flags & WIF_BOMB) {	
+				weaponp->wi_flags2 |= WIF2_HARD_TARGET_BOMB;
+			}
+			else {
+				Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
+			}
+		}
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -951,8 +966,9 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->weapon_hitpoints = 0;
 
-	wip->burst_delay = 1000; // 1 second, just incase its not defined
+	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
+	wip->burst_flags = 0;
 
 	generic_anim_init( &wip->thruster_flame );
 	generic_anim_init( &wip->thruster_glow );
@@ -2172,10 +2188,20 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Burst Shots:")) {
 		stuff_int(&wip->burst_shots);
+		if (wip->burst_shots > 0)
+			wip->burst_shots--;
 	}
 
 	if (optional_string("$Burst Delay:")) {
-		stuff_int(&wip->burst_delay);
+		int temp;
+		stuff_int(&temp);
+		if (temp > 0) {
+			wip->burst_delay = ((float) temp) / 1000.0f;
+		}
+	}
+
+	if (optional_string("$Burst Flags:")) {
+		parse_string_flag_list((int*)&wip->burst_flags, Burst_fire_flags, Num_burst_fire_flags);
 	}
 
 	if (optional_string("$Thruster Flame Effect:")) {
@@ -2203,7 +2229,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	// if burst delay is longer than firewait skip the whole burst fire option
-	if (wip->burst_delay > (int)(wip->fire_wait * 1000.0f))
+	if (wip->burst_delay >= wip->fire_wait)
 		wip->burst_shots = 0;
 
 	return WEAPON_INFO_INDEX(wip);
@@ -5573,9 +5599,6 @@ void weapons_page_in()
 
 	// for weapons in weaponry pool
 	for (i = 0; i < Num_teams; i++) {
-		for (j = 0; j < Num_weapon_types; j++) {
-			used_weapons[j] = 0;
-		}
 		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
 			used_weapons[Team_data[i].weaponry_pool[j]] += Team_data[i].weaponry_count[j];
 		}

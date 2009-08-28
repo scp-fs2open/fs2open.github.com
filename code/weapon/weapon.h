@@ -94,6 +94,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_NO_EMP_KILL				(1 << 13)	// though weapon has hitpoints it can not be disabled by EMP
 #define WIF2_VARIABLE_LEAD_HOMING		(1 << 14)	// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
 #define WIF2_UNTARGETED_HEAT_SEEKER		(1 << 15)	// forces heat seeker to lose target immeadiately (and acquire a random new one)
+#define WIF2_HARD_TARGET_BOMB			(1 << 16)	// removes the radius doubling effect bombs have for collisions
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -112,6 +113,10 @@ extern int Num_weapon_subtypes;
 #define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
 #define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
 #define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
+
+// flags for setting burst fire 
+#define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
+#define WBF_RANDOM_LENGTH			(1<<1)		// burst is to fire random length bursts
 
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
@@ -427,7 +432,8 @@ typedef struct weapon_info {
 	int weapon_hitpoints;
 
 	int	burst_shots;
-	int	burst_delay;
+	float burst_delay;
+	int burst_flags;
 
 	// Thruster effects
 	generic_anim	thruster_flame;
