@@ -94,6 +94,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_NO_EMP_KILL				(1 << 13)	// though weapon has hitpoints it can not be disabled by EMP
 #define WIF2_VARIABLE_LEAD_HOMING		(1 << 14)	// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
 #define WIF2_UNTARGETED_HEAT_SEEKER		(1 << 15)	// forces heat seeker to lose target immeadiately (and acquire a random new one)
+#define WIF2_HARD_TARGET_BOMB			(1 << 16)	// removes the radius doubling effect bombs have for collisions
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
