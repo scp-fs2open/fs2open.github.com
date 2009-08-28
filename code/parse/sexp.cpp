@@ -17467,6 +17467,71 @@ int get_sexp_main()
 	return start_node;
 }
 
+int run_sexp(const char* sexpression)
+{
+	char* oldMp = Mp;
+	int n, i, sexp_val = UNINITIALIZED;
+	char buf[8192];
+
+	strncpy(buf, sexpression, 8192);
+
+	// HACK: ! -> "
+	for (i = 0; i < strlen(buf); i++)
+		if (buf[i] == '!')
+			buf[i]='\"';
+
+	Mp = buf;
+
+	n = get_sexp_main();
+	if (n != -1)
+	{
+		sexp_val = eval_sexp(n);
+		free_sexp2(n);
+	}
+	Mp = oldMp;
+
+	return sexp_val;
+}
+
+DCF(sexpc, "Always runs the given sexp command ")
+{
+	if ( Dc_command )       {
+		if (Dc_command_line != NULL) {
+			int sexp_val = UNINITIALIZED;
+			char buf[8192];
+
+			snprintf(buf, 8191, "( when ( true ) ( %s ) )", Dc_command_line);
+			sexp_val = run_sexp( buf );
+			dc_printf("SEXP '%s' run, sexp_val = %d\n", buf, sexp_val);
+			do {
+				dc_get_arg(ARG_ANY);
+			} while (Dc_arg_type != ARG_NONE);
+		}
+	}
+	if ( Dc_help )  {
+		dc_printf( "Usage: sexpc sexpression\n. Always runs the given sexp as '( when ( true ) ( sexp ) )' .\n" );
+	}
+}
+
+
+DCF(sexp,"Runs the given sexp")
+{
+	if ( Dc_command )       {
+		if (Dc_command_line != NULL) {
+			int sexp_val = UNINITIALIZED;
+			sexp_val = run_sexp( Dc_command_line );
+			dc_printf("SEXP '%s' run, sexp_val = %d\n", Dc_command_line, sexp_val);
+			do {
+				dc_get_arg(ARG_ANY);
+			} while (Dc_arg_type != ARG_NONE);
+		}
+	}
+	if ( Dc_help )  {
+		dc_printf( "Usage: sexp 'sexpression'\n. Runs the given sexp.\n");
+	}
+}
+
+
 void test_sexps()
 {
 	Mp = Mission_text;

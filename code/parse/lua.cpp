@@ -9278,6 +9278,40 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 	return ade_set_object_with_breed(L, objnum);
 }
 
+ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+{
+	char *s;
+	int r_val;
+
+	if(!ade_get_args(L, "s", &s))
+		return ADE_RETURN_FALSE;
+
+	r_val = run_sexp(s);
+
+	if (r_val == SEXP_TRUE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+{
+	char *s;
+	int r_val;
+	char buf[8192];
+
+	if(!ade_get_args(L, "s", &s))
+		return ADE_RETURN_FALSE;
+
+	snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+
+	r_val = run_sexp(buf);
+
+	if (r_val == SEXP_TRUE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
 
 //****SUBLIBRARY: Mission/Asteroids
 ade_lib l_Mission_Asteroids("Asteroids", &l_Mission, NULL, "Asteroids in the mission");
