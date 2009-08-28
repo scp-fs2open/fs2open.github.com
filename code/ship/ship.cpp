@@ -167,6 +167,12 @@ SCP_vector<ship_type_info> Ship_types;
 
 SCP_vector<ArmorType> Armor_types;
 
+flag_def_list Armor_flags[] = {
+	{ "ignore subsystem armor",		SAF_IGNORE_SS_ARMOR,	0 }
+};
+
+int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
+
 flag_def_list Man_types[] = {
 	{ "Bank right",		MT_BANK_RIGHT,	0 },
 	{ "Bank left",		MT_BANK_LEFT,	0 },
@@ -15652,8 +15658,12 @@ void parse_armor_type()
 	
 	tat = ArmorType(name_buf);
 	
-	//now parse the actual table
+	//now parse the actual table (damage type/armor type pairs)
 	tat.ParseData();
+
+	//rest of the parse data
+	if (optional_string("$Flags:"))
+		parse_string_flag_list((int*)&tat.flags, Armor_flags, Num_armor_flags);
 	
 	//Add it to global armor types
 	Armor_types.push_back(tat);
