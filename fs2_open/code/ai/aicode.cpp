@@ -4783,6 +4783,11 @@ int static_rand_timed(int num, int modulus)
 //	Maybe fire afterburner based on AI class
 int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 {
+	// bail if the ship doesn't even have an afterburner
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_AFTERBURNER) {
+		return 0;
+	}
+
 	if (aip->ai_class == 0)
 		return 0;		//	Lowest level never aburners away
 	else  {
