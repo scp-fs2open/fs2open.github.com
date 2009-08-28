@@ -293,15 +293,59 @@ void opengl_shader_shutdown()
 	}
 }
 
+char *opengl_load_shader(char *filename, int flags, bool main_shdr) {
+		std::string sflags;
+
+		if (main_shdr) {
+			if (flags & SDR_FLAG_DIFFUSE_MAP)
+				sflags += "#define FLAG_DIFFUSE_MAP\n";
+			if (flags & SDR_FLAG_ENV_MAP)
+				sflags += "#define FLAG_ENV_MAP\n";
+			if (flags & SDR_FLAG_FOG)
+				sflags += "#define FLAG_FOG\n";
+			if (flags & SDR_FLAG_GLOW_MAP)
+				sflags += "#define FLAG_GLOW_MAP\n";
+			if (flags & SDR_FLAG_HEIGHT_MAP)
+				sflags += "#define FLAG_HEIGHT_MAP\n";
+			if (flags & SDR_FLAG_LIGHT)
+				sflags += "#define FLAG_LIGHT\n";
+			if (flags & SDR_FLAG_NORMAL_MAP)
+				sflags += "#define FLAG_NORMAL_MAP\n";
+			if (flags & SDR_FLAG_SPEC_MAP)
+				sflags += "#define FLAG_SPEC_MAP\n";
+		}
+
+		const char *shader_flags = sflags.c_str();
+		int flags_len = strlen(shader_flags);
+
+		CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+		
+		if (cf_shader != NULL) {
+			int len = cfilelength(cf_shader);
+			char *shader = (char*) vm_malloc(len + flags_len + 1);
+
+			strcpy(shader, shader_flags);
+			memset(shader + flags_len, 0, len + 1);
+			cfread(shader + flags_len, len + 1, 1, cf_shader);
+			cfclose(cf_shader);
+
+			return shader;
+		} else
+			return NULL;
+}
+
 void opengl_shader_init()
 {
 	char *vert = NULL, *frag = NULL;
-	CFILE *cf_vert = NULL, *cf_frag = NULL;
-	int i, idx, len;
+	int i, idx;
 
 	if ( !Use_GLSL ) {
 		return;
 	}
+
+	// check if main shaders exist
+	bool main_vert = (bool)cf_exists_full("main-v.sdr", CF_TYPE_EFFECTS);
+	bool main_frag = (bool)cf_exists_full("main-f.sdr", CF_TYPE_EFFECTS);
 
 	GL_shader.reserve(Num_shader_files);
 
@@ -309,7 +353,6 @@ void opengl_shader_init()
 		bool in_error = false;
 		opengl_shader_t new_shader;
 		opengl_shader_file_t *shader_file = &GL_shader_file[idx];
-
 
 		if ( !Cmdline_glow && (shader_file->flags & SDR_FLAG_GLOW_MAP) ) {
 			continue;
@@ -331,34 +374,29 @@ void opengl_shader_init()
 			continue;
 		}
 
-		mprintf(("  Compiling shader ->  %s / %s ... \n", shader_file->vert, shader_file->frag));
+		// choose appropriate files
+		char *vert_name;
+		if (main_vert)
+			vert_name = "main-v.sdr";
+		else
+			vert_name = shader_file->vert;
+
+		char *frag_name;
+		if (main_frag)
+			frag_name = "main-f.sdr";
+		else
+			frag_name = shader_file->frag;
+
+		mprintf(("  Compiling shader ->  %s (%s) / %s (%s) ... \n", vert_name, shader_file->vert, frag_name, shader_file->frag));
 
 		// read vertex shader
-		cf_vert = cfopen(shader_file->vert, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
-
-		if (cf_vert != NULL) {
-			len = cfilelength(cf_vert);
-			vert = (char*) vm_malloc(len+1);
-			memset( vert, 0, len+1 );
-			cfread(vert, len+1, 1, cf_vert);
-			cfclose(cf_vert);
-			cf_vert = NULL;
-		} else {
+		if ((vert = opengl_load_shader(vert_name, shader_file->flags, main_vert)) == NULL) {
 			in_error = true;
 			goto Done;
 		}
 
 		// read fragment shader
-		cf_frag = cfopen(shader_file->frag, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
-
-		if (cf_frag != NULL) {
-			len = cfilelength(cf_frag);
-			frag = (char*) vm_malloc(len+1);
-			memset( frag, 0, len+1 );
-			cfread(frag, len+1, 1, cf_frag);
-			cfclose(cf_frag);
-			cf_frag = NULL;
-		} else {
+		if ((frag = opengl_load_shader(frag_name, shader_file->flags, main_frag)) == NULL) {
 			in_error = true;
 			goto Done;
 		}
@@ -389,16 +427,6 @@ void opengl_shader_init()
 		GL_shader.push_back( new_shader );
 
 	Done:
-		if (cf_vert != NULL) {
-			cfclose(cf_vert);
-			cf_vert = NULL;
-		}
-
-		if (cf_frag != NULL) {
-			cfclose(cf_frag);
-			cf_frag = NULL;
-		}
-
 		if (vert != NULL) {
 			vm_free(vert);
 			vert = NULL;
