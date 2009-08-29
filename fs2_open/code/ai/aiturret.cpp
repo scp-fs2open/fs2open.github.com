@@ -1277,10 +1277,12 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
 				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
-				wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				if (aip->ai_class_autoscale)
+					wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
 			} else {
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
-				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				if (aip->ai_class_autoscale)
+					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
 		} else {
 			// flak guns need to fire more rapidly
@@ -1290,12 +1292,14 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 				} else {
 					wait *= aip->ai_ship_fire_delay_scale_hostile * 0.5f;
 				}	
-				wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				if (aip->ai_class_autoscale)
+					wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
 
 			} else if (wip->wi_flags & WIF_HUGE) {
 				// make huge weapons fire independently of team
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
-				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				if (aip->ai_class_autoscale)
+					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			} else {
 				// give team friendly an advantage
 				if (Ships[aip->shipnum].team == Player_ship->team) {
@@ -1303,7 +1307,8 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 				} else {
 					wait *= aip->ai_ship_fire_delay_scale_hostile;
 				}	
-				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				if (aip->ai_class_autoscale)
+					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
 		}
 		// vary wait time +/- 10%

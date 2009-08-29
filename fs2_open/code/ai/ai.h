@@ -175,8 +175,11 @@ typedef struct ai_class {
 	float	ai_evasion[NUM_SKILL_LEVELS];
 	float	ai_courage[NUM_SKILL_LEVELS];
 	float	ai_patience[NUM_SKILL_LEVELS];
-	float	ai_cmeasure_fire_chance[NUM_SKILL_LEVELS];	//SUSHI: These were originally in AI_Profiles, adding the option to override in AI.tbl
-	float	ai_in_range_time[NUM_SKILL_LEVELS];			//Except for the boolean options at the bottom, these all behave as multipliers
+
+	//SUSHI: These were originally in AI_Profiles, adding the option to override in AI.tbl
+	//Except for the boolean options at the bottom, these all behave as multipliers
+	float	ai_cmeasure_fire_chance[NUM_SKILL_LEVELS];	
+	float	ai_in_range_time[NUM_SKILL_LEVELS];			
 	float	ai_link_ammo_levels_maybe[NUM_SKILL_LEVELS];
 	float	ai_link_ammo_levels_always[NUM_SKILL_LEVELS];
 	float	ai_primary_ammo_burst_mult[NUM_SKILL_LEVELS];
@@ -197,6 +200,16 @@ typedef struct ai_class {
 	float	ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 	int		ai_profile_flags;		//Holds the state of flags that are set
 	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
+
+	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
+	//INT_MIN and FLT_MIN represent the "not set" state for which defaults are used instead.
+	//TODO: Copy these into aip
+	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
+	float	ai_shockwave_evade_chance[NUM_SKILL_LEVELS];	
+	float	ai_get_away_chance[NUM_SKILL_LEVELS];	
+	float	ai_secondary_range_mult[NUM_SKILL_LEVELS];
+	bool	ai_class_autoscale;		//Defaults to true, but can be turned off in order to disable extra scaling of some AI behaviors
+									//based on AI class index
 } ai_class;
 
 //	Submode definitions.
@@ -379,8 +392,15 @@ typedef struct ai_info {
 	float		prev_dot_to_goal;					//	dot of fvec to goal last frame, used to see if making progress towards goal.
 	vec3d	goal_point;							//	Used in AIM_SAFETY, AIM_STILL and in circling.
 	vec3d	prev_goal_point;					//	Previous location of goal point, used at least for evading.
-	float		ai_accuracy, ai_evasion, ai_courage, ai_patience;
 	
+	//Values copied from the AI class
+	float	ai_accuracy, ai_evasion, ai_courage, ai_patience;
+	int		ai_aburn_use_factor;		
+	float	ai_shockwave_evade_chance;	
+	float	ai_get_away_chance;	
+	float	ai_secondary_range_mult;
+	bool	ai_class_autoscale;
+
 	//SUSHI: These were originally in AI_Profiles, adding the option to override in AI.tbl
 	float	ai_cmeasure_fire_chance;
 	float	ai_in_range_time;

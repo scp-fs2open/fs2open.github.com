@@ -543,7 +543,7 @@ void free_ai_stuff()
 		vm_free(Ai_class_names);
 }
 
-//Initialize an AI class's nonrequired values to defaults
+//SUSHI: Initialize an AI class's nonrequired values to defaults
 //Boolean overrides are unset, multipliers are initialized to 1.0
 void init_ai_class(ai_class *aicp)
 {
@@ -570,6 +570,17 @@ void init_ai_class(ai_class *aicp)
 	}
 	aicp->ai_profile_flags = 0;
 	aicp->ai_profile_flags_set = 0;
+
+	//AI Class autoscale overrides
+	//INT_MIN and FLT_MIM represent the "not set" state
+	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
+	{
+		aicp->ai_aburn_use_factor[i] = INT_MIN;
+		aicp->ai_shockwave_evade_chance[i] = FLT_MIN;
+		aicp->ai_get_away_chance[i] = FLT_MIN;
+		aicp->ai_secondary_range_mult[i] = FLT_MIN;
+	}
+	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
 }
 
 void set_aic_flag(ai_class *aicp, char *name, int flag)
@@ -611,6 +622,22 @@ void parse_ai_class()
 
 	required_string("$patience:");
 	parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Afterburner Use Factor:"))
+		parse_int_list(aicp->ai_aburn_use_factor, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Shockwave Evade Chances Per Second:"))
+		parse_float_list(aicp->ai_shockwave_evade_chance, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Get Away Chance:"))
+		parse_float_list(aicp->ai_get_away_chance, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Secondary Range Multiplier:"))
+		parse_float_list(aicp->ai_secondary_range_mult, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Autoscale by AI Class Index:"))
+		stuff_boolean(&aicp->ai_class_autoscale);
+
 
 	//Parse optional values for stuff imported from ai_profiles (these are multipliers)
 	if (optional_string("$AI Countermeasure Firing Chance:"))
@@ -655,44 +682,14 @@ void parse_ai_class()
 	if (optional_string("$AI Turn Time Scale:"))
 		parse_float_list(aicp->ai_turn_time_scale, NUM_SKILL_LEVELS);
 
-	if (optional_string("$Glide Attack Percent:")) {
+	if (optional_string("$Glide Attack Percent:")) 
 		parse_float_list(aicp->ai_glide_attack_percent, NUM_SKILL_LEVELS);
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		//While we're at it, verify the range
-		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-			if (aicp->ai_glide_attack_percent[i] < 0.0f || aicp->ai_glide_attack_percent[i] > 100.0f) {
-				aicp->ai_glide_attack_percent[i] = 0.0f;
-				Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_glide_attack_percent[i]);
-			}
-			aicp->ai_glide_attack_percent[i] /= 100.0;
-		}
-	}
 
-	if (optional_string("$Circle Strafe Percent:")) {
+	if (optional_string("$Circle Strafe Percent:")) 
 		parse_float_list(aicp->ai_circle_strafe_percent, NUM_SKILL_LEVELS);
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		//While we're at it, verify the range
-		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-			if (aicp->ai_circle_strafe_percent[i] < 0.0f || aicp->ai_circle_strafe_percent[i] > 100.0f) {
-				aicp->ai_circle_strafe_percent[i] = 0.0f;
-				Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_circle_strafe_percent[i]);
-			}
-			aicp->ai_circle_strafe_percent[i] /= 100.0;
-		}
-	}
 
-	if (optional_string("$Glide Strafe Percent:")) {
+	if (optional_string("$Glide Strafe Percent:")) 
 		parse_float_list(aicp->ai_glide_strafe_percent, NUM_SKILL_LEVELS);
-		//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
-		//While we're at it, verify the range
-		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-			if (aicp->ai_glide_strafe_percent[i] < 0.0f || aicp->ai_glide_strafe_percent[i] > 100.0f) {
-				aicp->ai_glide_strafe_percent[i] = 0.0f;
-				Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_glide_strafe_percent[i]);
-			}
-			aicp->ai_glide_strafe_percent[i] /= 100.0;
-		}
-	}
 
 	if (optional_string("$Stalemate Time Threshold:"))
 		parse_float_list(aicp->ai_stalemate_time_thresh, NUM_SKILL_LEVELS);
@@ -4787,10 +4784,10 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 	if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_AFTERBURNER) {
 		return 0;
 	}
-
-	if (aip->ai_class == 0)
-		return 0;		//	Lowest level never aburners away
-	else  {
+	if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class == 0) {
+		return 0;		//	Lowest level never aburners away (unless ai_aburn_use_factor is specified)
+	} 
+	else {
 		//	Maybe don't afterburner because of a potential collision with the player.
 		//	If not multiplayer, near player and player in front, probably don't afterburner.
 		if (!(Game_mode & GM_MULTIPLAYER)) {
@@ -4813,10 +4810,14 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 			}
 		}
 
-		if (aip->ai_class >= Num_ai_classes-2)
-			return 1;		//	Highest two levels always aburner away.
+		if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class >= Num_ai_classes-2)
+			return 1;		//	Highest two levels always aburner away (unless ai_aburn_use_factor is specified).
 		else {
-			return static_rand_timed(objp-Objects, Num_ai_classes - aip->ai_class);
+			//If ai_aburn_use_factor is not specified, calculate a number based on the AI class. Otherwise, use that value.
+			if (aip->ai_aburn_use_factor == FLT_MIN)
+				return static_rand_timed(objp-Objects, Num_ai_classes - aip->ai_class);
+			else
+				return static_rand_timed(objp-Objects, aip->ai_aburn_use_factor);
 		}
 	}
 }
@@ -7794,7 +7795,9 @@ float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, boo
 		t *= aip->ai_ship_fire_secondary_delay_scale_hostile;
 	}
 
-	t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
+	if (aip->ai_class_autoscale)
+		t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
+
 	t *= frand_range(0.8f, 1.2f);
 
 	//	For the missiles that fire fairly quickly, occasionally add an additional substantial delay.
@@ -8402,18 +8405,22 @@ void ai_chase()
 				aip->time_enemy_near > aip->ai_stalemate_time_thresh &&
 				(dot_to_enemy < 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)))
 		{
-			if ((sip->can_glide == true) && (frand() < aip->ai_glide_attack_percent)) {
-				//Maybe use glide attack
-				aip->submode = AIS_CHASE_GLIDEATTACK;
-				aip->submode_start_time = Missiontime;
-				aip->last_hit_target_time = Missiontime;
-				aip->time_enemy_near = 0.0f;
-			} else if (frand() < (float) 0.5f * (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)) {
-				//Otherwise, possibly try to get away
-				aip->submode = SM_GET_AWAY;
-				aip->submode_start_time = Missiontime;
-				aip->last_hit_target_time = Missiontime;
-				aip->time_enemy_near = 0.0f;
+			//Every second, evaluate whether or not to break stalemate. The more patient the ship, the less likely this is.
+			if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 16) > (aip->ai_patience * .01))
+			{
+				if ((sip->can_glide == true) && (frand() < aip->ai_glide_attack_percent)) {
+					//Maybe use glide attack
+					aip->submode = AIS_CHASE_GLIDEATTACK;
+					aip->submode_start_time = Missiontime;
+					aip->last_hit_target_time = Missiontime;
+					aip->time_enemy_near = 0.0f;
+				} else {
+					//Otherwise, try to get away
+					aip->submode = SM_GET_AWAY;
+					aip->submode_start_time = Missiontime;
+					aip->last_hit_target_time = Missiontime;
+					aip->time_enemy_near = 0.0f;
+				}
 			}
 		}
 
@@ -8476,7 +8483,10 @@ void ai_chase()
 			aip->submode = SM_GET_BEHIND;
 			aip->submode_start_time = Missiontime;
 		} else if ((enemy_sip_flags & SIF_SMALL_SHIP) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
-			if ((Missiontime - aip->last_hit_target_time > i2f(5)) && (frand() < (float) (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS))) {
+			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
+				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
+				: aip->ai_get_away_chance;
+			if ((Missiontime - aip->last_hit_target_time > i2f(5)) && (frand() < get_away_chance)) {
 				aip->submode = SM_GET_AWAY;
 				aip->submode_start_time = Missiontime;
 				aip->last_hit_target_time = Missiontime;
@@ -8568,6 +8578,10 @@ void ai_chase()
 		} else if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.8f) && (enemy_sip_flags & SIF_SMALL_SHIP) && (Missiontime - aip->submode_start_time > i2f(5) )) {
 			aip->ai_flags &= ~AIF_ATTACK_SLOWLY;	//	Just in case, clear here.
 
+			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
+				? (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
+				: aip->ai_get_away_chance;
+
 			switch (myrand() % 5) {
 			case 0:
 				aip->submode = SM_CONTINUOUS_TURN;
@@ -8578,7 +8592,7 @@ void ai_chase()
 				break;
 			case 2:
 			case 3:
-				if (frand() < (float) 0.5f * (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)) {
+				if (frand() < (float) 0.5f * get_away_chance) {
 					aip->submode = SM_GET_AWAY;
 					aip->submode_start_time = Missiontime;
 				} else {
@@ -8801,7 +8815,13 @@ void ai_chase()
 									else if (swip->wi_flags & WIF_BOMB)
 										firing_range = MIN((swip->max_speed * swip->lifetime * 0.75f), swip->weapon_range);
 									else
-										firing_range = MIN((swip->max_speed * swip->lifetime * (Game_skill_level + 1 + aip->ai_class/2)/NUM_SKILL_LEVELS), swip->weapon_range);
+									{
+										float secondary_range_mult = (aip->ai_secondary_range_mult == FLT_MIN)
+											? (Game_skill_level + 1 + aip->ai_class/2)/NUM_SKILL_LEVELS
+											: aip->ai_secondary_range_mult;
+
+										firing_range = MIN((swip->max_speed * swip->lifetime * secondary_range_mult), swip->weapon_range);
+									}
 
 									
 									// reduce firing range in nebula
@@ -12049,7 +12069,8 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 	//	If not on player's team and Skill_level + ai_class is low, never fire a countermeasure.  The ship is too dumb.
 	if (iff_x_attacks_y(Player_ship->team, shipp->team)) {
-		if (Game_skill_level + aip->ai_class < 4){
+		//SUSHI: Only bail if autoscale is on...
+		if (aip->ai_class_autoscale && Game_skill_level + aip->ai_class < 4){
 			return;
 		}
 	}
@@ -12077,7 +12098,8 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			else
 				fire_chance = aip->ai_cmeasure_fire_chance;
 
-			//	Decrease chance to fire at lower ai class
+			//	Decrease chance to fire at lower ai class (SUSHI: Only if autoscale is on)
+			if (aip->ai_class_autoscale)
 				fire_chance *= (float) aip->ai_class/Num_ai_classes;
 
 			float r = frand();
@@ -12293,8 +12315,9 @@ void ai_manage_shield(object *objp, ai_info *aip)
 			delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2] * Ai_classes[aip->ai_class].ai_shield_manage_delay[NUM_SKILL_LEVELS/2];
 		}
 
-		//	Scale between 1x and 3x based on ai_class
-		delay = delay + delay * (float) (3*(Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
+		//	Scale between 1x and 3x based on ai_class (SUSHI: only if autoscale is on)
+		if (aip->ai_class_autoscale)
+			delay = delay + delay * (float) (3*(Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
 
 		// set timestamp
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
@@ -13751,9 +13774,13 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 	}
 
 	//	Don't all react right away.
-	if (!(aip->ai_flags & AIF_AVOID_SHOCKWAVE_STARTED))
-		if (!rand_chance(flFrametime, (float) aip->ai_class/4.0f + 0.25f))	//	Chance to avoid in 1 second is 0.25 + ai_class/4
+	if (!(aip->ai_flags & AIF_AVOID_SHOCKWAVE_STARTED)) {
+		float evadeChance = (aip->ai_shockwave_evade_chance == FLT_MIN) 
+			? ((float) aip->ai_class/4.0f + 0.25f)
+			: aip->ai_shockwave_evade_chance;
+		if (!rand_chance(flFrametime, evadeChance))	//	Chance to avoid in 1 second is 0.25 + ai_class/4
 			return 0;
+	}
 
 	if (!aas_1(objp, aip, &safe_pos)) {
 		aip->ai_flags |= AIF_AVOID_SHOCKWAVE_STARTED;
@@ -14529,6 +14556,12 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	aip->ai_patience = aicp->ai_patience[Game_skill_level];
 	aip->ai_evasion = aicp->ai_evasion[Game_skill_level];
 	aip->ai_accuracy = aicp->ai_accuracy[Game_skill_level];
+
+	aip->ai_aburn_use_factor = aicp->ai_aburn_use_factor[Game_skill_level];		
+	aip->ai_shockwave_evade_chance = aicp->ai_shockwave_evade_chance[Game_skill_level];	
+	aip->ai_get_away_chance = aicp->ai_get_away_chance[Game_skill_level];	
+	aip->ai_secondary_range_mult = aicp->ai_secondary_range_mult[Game_skill_level];
+	aip->ai_class_autoscale = aicp->ai_class_autoscale;
 
 	//Apply multipliers from ai class to ai profiles values
 	aip->ai_cmeasure_fire_chance = profile->cmeasure_fire_chance[Game_skill_level] * aicp->ai_cmeasure_fire_chance[Game_skill_level];
