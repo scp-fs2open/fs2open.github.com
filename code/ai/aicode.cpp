@@ -4781,7 +4781,7 @@ int static_rand_timed(int num, int modulus)
 int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 {
 	// bail if the ship doesn't even have an afterburner
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_AFTERBURNER) {
+	if (!(Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_AFTERBURNER)) {
 		return 0;
 	}
 	if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class == 0) {
@@ -5503,19 +5503,6 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
 		return i_hullfactor_prev_bank;							// Return
 	}
-
-	// Somehow no weapons were found - just take the first one
-	if ( swp->current_primary_bank < 0 ) 
-	{
-		if ( swp->num_primary_banks > 0 ) 
-		{
-			swp->current_primary_bank = 0;
-		}
-	}
-	
-	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
-
-	return swp->current_primary_bank;
 }
 
 //	--------------------------------------------------------------------------
@@ -12677,7 +12664,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	// keep track of my own status as well
 	shipp->bay_doors_need_open = true;
-	shipp->bay_doors_launched_from = bay_path;
+	shipp->bay_doors_launched_from = (ubyte)bay_path;
 	shipp->bay_doors_parent_shipnum = parent_objp->instance;
 
 	// create the path for pl_objp to follow
@@ -12933,7 +12920,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	// keep track of my own status as well
 	shipp->bay_doors_need_open = true;
-	shipp->bay_doors_launched_from = ship_bay_path;
+	shipp->bay_doors_launched_from = (ubyte)ship_bay_path;
 	shipp->bay_doors_parent_shipnum = parent_objp->instance;
 
 	Assert(pm->n_paths > path_index);
