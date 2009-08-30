@@ -5028,7 +5028,7 @@ void multi_create_accept_hit()
 
     if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.mission_time_limit > fl2f(-1.0f)))
     {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
                              XSTR("A time limit is being used in a co-op game.\r\n"
                                   "  Select \'Cancel\' to go back to the mission select screen.\r\n"
                                   "  Select \'Yes\' to continue with this time limit.\r\n"
@@ -5046,7 +5046,7 @@ void multi_create_accept_hit()
 
     if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.kill_limit < 9999))
     {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
                              XSTR("A kill limit is being used in a co-op game.\r\n"
                                   "  Select \'Cancel\' to go back to the mission select screen.\r\n"
                                   "  Select \'Yes\' to continue with this kill limit.\r\n"
