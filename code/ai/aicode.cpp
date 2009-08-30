@@ -268,7 +268,7 @@ float	AI_frametime;
 char** Ai_class_names = NULL;
 
 // globals for dealing with when to fire huge secondary weapons
-#define MAX_HUGE_SECONDARY_INFO	10
+//#define MAX_HUGE_SECONDARY_INFO	10
 
 typedef struct {
 	int team;
@@ -277,7 +277,7 @@ typedef struct {
 	char	*shipname;
 } huge_fire_info;
 
-huge_fire_info Ai_huge_fire_info[MAX_HUGE_SECONDARY_INFO];
+SCP_vector<huge_fire_info> Ai_huge_fire_info;
 
 int Ai_last_arrive_path;	// index of ship_bay path used by last arrival from a fighter bay
 
@@ -336,27 +336,16 @@ int ai_good_time_to_rearm(object *objp)
 // this function is entry point from sexpression code to set internal data for use by ai code.
 void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, char *shipname )
 {
-	int i, index;
+	int index;
+	huge_fire_info new_info; 
 
-	// find an open slot to put this data
-	for (i = 0; i < MAX_HUGE_SECONDARY_INFO; i++)
-	{
-		if (Ai_huge_fire_info[i].weapon_index == -1)
-			break;
-	}
+	new_info.weapon_index = weapon_index;
+	new_info.team = team;
+	new_info.max_fire_count = max_fire_count;
 
-	// have we run out of room?
-	if (i >= MAX_HUGE_SECONDARY_INFO)
-	{
-		Int3();
-		return;
-	}
+	new_info.shipname = ai_get_goal_ship_name( shipname, &index );
 
-	Ai_huge_fire_info[i].weapon_index = weapon_index;
-	Ai_huge_fire_info[i].team = team;
-	Ai_huge_fire_info[i].max_fire_count = max_fire_count;
-
-	Ai_huge_fire_info[i].shipname = ai_get_goal_ship_name( shipname, &index );
+	Ai_huge_fire_info.push_back(new_info);
 }
 
 // function called internally to the ai code to tell whether or not weapon_num can be fired
@@ -377,7 +366,7 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 
 	// get target object's signature and try to find it in the list.
 	target_signature = target_objp->signature;
-	for ( i = 0; i < MAX_HUGE_SECONDARY_INFO; i++ ) {
+	for ( i = 0; i < (int)Ai_huge_fire_info.size(); i++ ) {
 		int ship_index, signature;
 
 		hfi = &Ai_huge_fire_info[i];
@@ -396,7 +385,7 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 	}
 
 	// return -1 if not found
-	if ( i == MAX_HUGE_SECONDARY_INFO )
+	if ( i == (int)Ai_huge_fire_info.size() )
 		return -1;
 
 	// otherwise, we can return the max number of weapons we can fire against target_objps
@@ -407,17 +396,9 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 // function to clear out secondary firing infomration between levels
 void ai_init_secondary_info()
 {
-	int i;
-
 	// clear out the data for dealing with when ai ships can fire huge secondary weapons
-	for (i = 0; i < MAX_HUGE_SECONDARY_INFO; i++ ) {
-		Ai_huge_fire_info[i].weapon_index = -1;
-		Ai_huge_fire_info[i].team = -1;
-		Ai_huge_fire_info[i].max_fire_count = -1;
-		Ai_huge_fire_info[i].shipname = NULL;
-	}
+	Ai_huge_fire_info.clear();
 }
-
 
 //	Garbage collect the Path_points buffer.
 //	Scans all objects, looking for used Path_points records.
