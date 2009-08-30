@@ -1141,9 +1141,12 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	// check dot products		
 	player_eye = pl->s_info.eye_orient.vec.fvec;
 	vm_vec_sub(&obj_dot, &obj->pos, &pl->s_info.eye_pos);
-	vm_vec_normalize(&obj_dot);
-	eye_dot = vm_vec_dot(&obj_dot, &player_eye);		
-	in_cone = (eye_dot >= OO_VIEW_CONE_DOT) ? 1 : 0;		
+	in_cone = 0;
+	if (!(IS_VEC_NULL(&obj_dot))) {
+		vm_vec_normalize(&obj_dot);
+		eye_dot = vm_vec_dot(&obj_dot, &player_eye);		
+		in_cone = (eye_dot >= OO_VIEW_CONE_DOT) ? 1 : 0;
+	}
 							
 	// determine distance (near, medium, far)
 	vm_vec_sub(&obj_dot, &obj->pos, &pl->s_info.eye_pos);
