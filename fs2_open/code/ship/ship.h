@@ -188,7 +188,7 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
-#define SAF_IGNORE_SS_ARMOR		(1 << 0)		// hull armor is applied regardless of the subsystem armor
+#define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
