@@ -104,6 +104,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
 #define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
 #define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
+#define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
