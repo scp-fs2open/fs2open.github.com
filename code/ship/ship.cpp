@@ -225,16 +225,17 @@ flag_def_list Player_orders[] = {
 int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
 flag_def_list Subsystem_flags[] = {
-	{ "untargetable",		MSS_FLAG_UNTARGETABLE,		0 },
-	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE,	0 },
-	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
-	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 },
-	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK,	0 },
-	{ "fixed firingpoints",	MSS_FLAG_TURRET_FIXED_FP,	0 },
-	{ "salvo mode",			MSS_FLAG_TURRET_SALVO,		0 },
-	{ "no subsystem targeting", MSS_FLAG_NO_SS_TARGETING, 0},
-	{ "fire on target",		MSS_FLAG_FIRE_ON_TARGET,	0 },
-	{ "reset when idle", MSS_FLAG_TURRET_RESET_IDLE,   0 }
+	{ "untargetable",			MSS_FLAG_UNTARGETABLE,		0 },
+	{ "carry no damage",		MSS_FLAG_CARRY_NO_DAMAGE,	0 },
+	{ "use multiple guns",		MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
+	{ "fire down normals",		MSS_FLAG_FIRE_ON_NORMAL,	0 },
+	{ "check hull",				MSS_FLAG_TURRET_HULL_CHECK,	0 },
+	{ "fixed firingpoints",		MSS_FLAG_TURRET_FIXED_FP,	0 },
+	{ "salvo mode",				MSS_FLAG_TURRET_SALVO,		0 },
+	{ "no subsystem targeting",	MSS_FLAG_NO_SS_TARGETING,	0 },
+	{ "fire on target",			MSS_FLAG_FIRE_ON_TARGET,	0 },
+	{ "reset when idle",		MSS_FLAG_TURRET_RESET_IDLE,	0 },
+	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);

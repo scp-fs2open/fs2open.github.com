@@ -639,14 +639,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsys->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
-				float subsystem_factor = 0.0f;
-				if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
-					subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsys->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
+					float subsystem_factor = 0.0f;
+					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
+						subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+					}
+					if (subsystem_factor > 0.0f) 
+						damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
+					else
+						damage -= MIN(subsys->current_hits, damage_to_apply);
 				}
-				if (subsystem_factor > 0.0f) 
-					damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
-				else
-					damage -= MIN(subsys->current_hits, damage_to_apply);
 			}
 
 			//Apply armor to damage
