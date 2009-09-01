@@ -4263,6 +4263,7 @@
 					USE_OPENAL,
 					APPLE_APP,
 				);
+				GCC_VERSION = 4.0;
 				GENERATE_PROFILING_CODE = NO;
 				INFOPLIST_FILE = "Info-debug.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
@@ -4298,6 +4299,7 @@
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
+				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -4615,6 +4617,7 @@
 					APPLE_APP,
 					INF_BUILD,
 				);
+				GCC_VERSION = 4.0;
 				GENERATE_PROFILING_CODE = NO;
 				INFOPLIST_FILE = "Info-debug.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
@@ -4912,6 +4915,7 @@
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
+				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
