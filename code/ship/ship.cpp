@@ -2622,6 +2622,7 @@ strcpy_s(parse_error_text, temp_error);
 					sp->target_priority[i] = -1;
 				}
 				sp->optimum_range = 0.0f;
+				sp->favor_current_facing = 0.0f;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -2740,6 +2741,17 @@ strcpy_s(parse_error_text, temp_error);
 
 			if (optional_string("$Turret Optimum Range:"))
 				stuff_float(&sp->optimum_range);
+
+			if (optional_string("$Turret Direction Preference:")) {
+				int temp;
+				stuff_int(&temp);
+				if (temp == 0) {
+					sp->favor_current_facing = 0.0f;
+				} else {
+					CAP(temp, 1, 100);
+					sp->favor_current_facing = 1.0f + (((float) (100 - temp)) / 10.0f);
+				}
+			}
 
 			if (optional_string("$Target Priority:")) {
 				SCP_vector <std::string> tgt_priorities, *tgt_priorities_p;
