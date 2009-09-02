@@ -4795,10 +4795,13 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
 
+	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
+
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
 	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
 		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
+		wp->weapon_max_vel += vm_vec_mag( &parent_objp->phys_info.vel );
 	}
 
 	// create the corkscrew
@@ -5378,7 +5381,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 //1: weapon is destroyed before arm time
 //2: weapon is destroyed before arm distance from ship
 //3: weapon is outside arm radius from target ship
-bool weapon_armed(weapon *wp)
+bool weapon_armed(weapon *wp, bool hit_target)
 {
 	Assert(wp != NULL);
 
@@ -5395,7 +5398,6 @@ bool weapon_armed(weapon *wp)
 	{
 		object *wobj = &Objects[wp->objnum];
 		object *pobj;
-		vec3d spos;
 
 		if(wobj->parent > -1) {
 			pobj = &Objects[wobj->parent];
@@ -5408,15 +5410,11 @@ bool weapon_armed(weapon *wp)
 		{
 			return false;
 		}
-		if(wip->arm_radius) {
+		if(wip->arm_radius && (!hit_target)) {
 			if(wp->homing_object == NULL)
 				return false;
-			if((wp->homing_subsys == NULL) && (vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius))
+			if(vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
 				return false;
-			if(wp->homing_object->type == OBJ_SHIP) {
-				if ((wp->homing_subsys != NULL) && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && (vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))
-					return false;
-			}
 		}
 	}
 
@@ -5447,10 +5445,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	object		*weapon_parent_objp;
 	weapon_info	*wip;
 	weapon *wp;
-
-	//This is an expensive check
-	bool armed_weapon = weapon_armed(&Weapons[num]);
-	// int np_index;
+	bool		hit_target = false;
 
 	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPONS));
 	if((weapon_type < 0) || (weapon_type >= MAX_WEAPONS)){
@@ -5463,6 +5458,15 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	} else {
 		weapon_parent_objp = NULL;
 	}
+
+	// check if the weapon actually hit the intended target
+	if (wp->homing_object != NULL)
+		if (wp->homing_object == other_obj)
+			hit_target = true;
+
+	//This is an expensive check
+	bool armed_weapon = weapon_armed(&Weapons[num], hit_target);
+	// int np_index;
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	// if( ((wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (other_obj == Player_obj) ){

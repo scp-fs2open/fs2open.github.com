@@ -180,6 +180,8 @@ typedef struct weapon {
 	ubyte alpha_backward;		// 1 = move in reverse (ascending in value)
 	float alpha_current;		// the current alpha value
 
+	float weapon_max_vel;		// might just as well store the data here
+
 } weapon;
 
 
