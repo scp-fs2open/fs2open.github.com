@@ -616,6 +616,8 @@ void parse_wi_flags(weapon_info *weaponp)
 				Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
 			}
 		}
+		else if (!stricmp(NOX("no subsystem homing"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_NON_SUBSYS_HOMING;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -3866,7 +3868,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		// world coordinates of that subsystem so the homing missile can seek it out.
 		//	For now, March 7, 1997, MK, heat seeking homing missiles will be able to home on
 		//	any subsystem.  Probably makes sense for them to only home on certain kinds of subsystems.
-		if ( wp->homing_subsys != NULL ) {
+		if ( (wp->homing_subsys != NULL) && !(wip->wi_flags2 & WIF2_NON_SUBSYS_HOMING) ) {
 			get_subsystem_world_pos(hobjp, Weapons[num].homing_subsys, &target_pos);
 			wp->homing_pos = target_pos;	// store the homing position in weapon data
 			Assert( !vm_is_vec_nan(&wp->homing_pos) );
@@ -3910,7 +3912,7 @@ void weapon_home(object *obj, int num, float frame_time)
 						wp->pick_big_attack_point_timestamp = 0;
 					}
 
-					if ( pick_homing_point ) {
+					if ( pick_homing_point && !(wip->wi_flags2 & WIF2_NON_SUBSYS_HOMING) ) {
 						// If *any* player is parent of homing missile, then use position where lock indicator is
 						if ( Objects[obj->parent].flags & OF_PLAYER_SHIP ) {
 							player *pp;
