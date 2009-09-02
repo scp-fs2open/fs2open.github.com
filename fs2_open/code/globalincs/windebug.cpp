@@ -57,7 +57,7 @@ const char *clean_filename( const char *name)
 {
 	const char *p = name+strlen(name)-1;
 	// Move p to point to first letter of EXE filename
-	while( (*p!='\\') && (*p!='/') && (*p!=':') )
+	while( (*p!='\\') && (*p!='/') && (*p!=':') && (p>= name) )
 		p--;
 	p++;	
 
