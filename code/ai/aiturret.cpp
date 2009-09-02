@@ -440,6 +440,13 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 	// modify dist for BIG|HUGE, getting closest point on bbox, if not inside
 	dist = vm_vec_dist_quick(eeo->tpos, &objp->pos) - objp->radius;
+	// if weapon has optimum range set then use it
+	float optimum_range = ss->system_info->optimum_range;
+	if (optimum_range > 0.0f) {
+		if (dist < optimum_range) {
+			dist = (2*optimum_range) - dist;
+		}
+	}
 	if (dist < 0.0f) {
 		dist = 0.0f;
 	}

@@ -194,6 +194,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	// target priority setting for turrets
 	int      target_priority[32];
 	int      num_target_priorities;
+
+	float	optimum_range;
 } model_subsystem;
 
 typedef struct model_special {
