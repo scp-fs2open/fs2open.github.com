@@ -359,7 +359,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
 	ship		*shipp;
 	ship_subsys *ss = eeo->turret_subsys;
-	float dist;
+	float dist, dist_comp;
 
 	// Don't look for bombs when weapon system is not ok
 	if (objp->type == OBJ_WEAPON && !eeo->weapon_system_ok) {
@@ -439,16 +439,30 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	}
 
 	// modify dist for BIG|HUGE, getting closest point on bbox, if not inside
-	dist = vm_vec_dist_quick(eeo->tpos, &objp->pos) - objp->radius;
+	vec3d vec_to_target;
+	vm_vec_sub(&vec_to_target, &objp->pos, eeo->tpos);
+	dist = vm_vec_mag_quick(&vec_to_target) - objp->radius;
+	
+	if (dist < 0.0f) {
+		dist = 0.0f;
+	}
+	
+	dist_comp = dist;
 	// if weapon has optimum range set then use it
 	float optimum_range = ss->system_info->optimum_range;
 	if (optimum_range > 0.0f) {
 		if (dist < optimum_range) {
-			dist = (2*optimum_range) - dist;
+			dist_comp = (2*optimum_range) - dist;
 		}
 	}
-	if (dist < 0.0f) {
-		dist = 0.0f;
+
+	// if turret has been told to prefer targets from the current direction then do so
+	float favor_one_side = ss->system_info->favor_current_facing;
+	if (favor_one_side >= 1.0f) {
+		vm_vec_normalize(&vec_to_target);
+		float dot_to_target = vm_vec_dot(&ss->turret_last_fire_direction, &vec_to_target);
+		dot_to_target = 1.0f - (dot_to_target / favor_one_side);
+		dist_comp *= dot_to_target;
 	}
 
 	// check if object is a bomb attacking the turret parent
@@ -461,17 +475,17 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 	if ((objp->type == OBJ_WEAPON) && check_weapon) {
 		if ( Weapons[objp->instance].homing_object == &Objects[eeo->turret_parent_objnum] ) {
-			if ( dist < eeo->nearest_homing_bomb_dist ) {
+			if ( dist_comp < eeo->nearest_homing_bomb_dist ) {
 				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
-					eeo->nearest_homing_bomb_dist = dist;
+					eeo->nearest_homing_bomb_dist = dist_comp;
 					eeo->nearest_homing_bomb_objnum = OBJ_INDEX(objp);
 				}
 			}
 		// if not homing, check if bomb is flying towards ship
 		} else if ( bomb_headed_towards_ship(objp, &Objects[eeo->turret_parent_objnum]) ) {
-			if ( dist < eeo->nearest_bomb_dist ) {
+			if ( dist_comp < eeo->nearest_bomb_dist ) {
 				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
-					eeo->nearest_bomb_dist = dist;
+					eeo->nearest_bomb_dist = dist_comp;
 					eeo->nearest_bomb_objnum = OBJ_INDEX(objp);
 				}
 			}
@@ -491,7 +505,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		// modify distance based on number of turrets from my ship attacking enemy (add 10% per turret)
 		// dist *= (num_enemies_attacking(OBJ_INDEX(objp))+2)/2;	//	prevents lots of ships from attacking same target
 		int num_att_turrets = num_turrets_attacking(turret_parent_obj, OBJ_INDEX(objp));
-		dist *= (1.0f + 0.1f*num_att_turrets);
+		dist_comp *= (1.0f + 0.1f*num_att_turrets);
 
 		// return if we're over the cap
 //		int max_turrets = 3 + Game_skill_level * Game_skill_level;
@@ -509,26 +523,26 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			active_lethality += Player_lethality_bump[Game_skill_level];
 		}
 
-		dist /= (1.0f + 0.01f*Lethality_range_const*active_lethality);
+		dist_comp /= (1.0f + 0.01f*Lethality_range_const*active_lethality);
 
 		// Make level 2 tagged ships more likely to be targeted
 		if (shipp->level2_tag_left > 0.0f) {
-			dist *= 0.3f;
+			dist_comp *= 0.3f;
 		}
 
 		// check if objp is targeting the turret's ship, or if objp has just hit the turret's ship
 		if ( aip->target_objnum == eeo->turret_parent_objnum || aip->last_objsig_hit == Objects[eeo->turret_parent_objnum].signature ) {
 			// A turret will always target a ship that is attacking itself... self-preservation!
 			if ( aip->targeted_subsys == eeo->turret_subsys ) {
-				dist *= 0.5f;	// highest priority
+				dist_comp *= 0.5f;	// highest priority
 			}
 		}
 
 		// maybe update nearest attacker
-		if ( dist < eeo->nearest_attacker_dist ) {
+		if ( dist_comp < eeo->nearest_attacker_dist ) {
 			if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
 				// nprintf(("AI", "Nearest enemy = %s, dist = %7.3f, dot = %6.3f, fov = %6.3f\n", Ships[objp->instance].ship_name, dist, vm_vec_dot(&v2e, tvec), tp->turret_fov));
-				eeo->nearest_attacker_dist = dist;
+				eeo->nearest_attacker_dist = dist_comp;
 				eeo->nearest_attacker_objnum = OBJ_INDEX(objp);
 			}
 		}
@@ -538,11 +552,11 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	if (objp->type == OBJ_ASTEROID) {
 		if ( eeo->turret_parent_objnum == asteroid_collide_objnum(objp) ) {
 			// give priority to the closest asteroid *impact* (ms intervals)
-			dist *= 0.9f + (0.01f * asteroid_time_to_impact(objp));
+			dist_comp *= 0.9f + (0.01f * asteroid_time_to_impact(objp));
 
-			if (dist < eeo->nearest_dist ) {
+			if (dist_comp < eeo->nearest_dist ) {
 				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
-					eeo->nearest_dist = dist;
+					eeo->nearest_dist = dist_comp;
 					eeo->nearest_objnum = OBJ_INDEX(objp);
 				}
 			}
