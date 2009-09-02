@@ -1004,6 +1004,9 @@ typedef struct ship_info {
 	float			debris_min_rotspeed;
 	float			debris_max_rotspeed;
 	int				debris_damage_type_idx;
+	float			debris_min_hitpoints;
+	float			debris_max_hitpoints;
+	float			debris_damage_mult;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

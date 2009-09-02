@@ -576,6 +576,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->species = Ship_info[shipp->ship_info_index].species;
 	db->next_distance_check = (myrand() % 2000) + 4*DEBRIS_DISTANCE_CHECK_TIME;
 	db->parent_alt_name = shipp->alt_type_index;
+	db->damage_mult = 1.0f;
 
 	for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 		db->arc_timestamp[i] = timestamp(-1);
@@ -639,6 +640,24 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		obj->hull_strength = Ships[source_obj->instance].ship_max_hull_strength/8.0f;
 	} else
 		obj->hull_strength = 10.0f;
+
+	if (hull_flag) {
+		if(sip->debris_min_hitpoints >= 0.0f && sip->debris_max_hitpoints >= 0.0f)
+		{
+			obj->hull_strength = (( sip->debris_max_hitpoints - sip->debris_min_hitpoints ) * frand()) + sip->debris_min_hitpoints;
+		}
+		else if(sip->debris_min_hitpoints >= 0.0f)
+		{
+			if(obj->hull_strength < sip->debris_min_hitpoints)
+				obj->hull_strength = sip->debris_min_hitpoints;
+		}
+		else if(sip->debris_max_hitpoints >= 0.0f)
+		{
+			if(obj->hull_strength > sip->debris_max_hitpoints)
+				obj->hull_strength = sip->debris_max_hitpoints;
+		}
+		db->damage_mult = sip->debris_damage_mult;
+	}
 
 	Num_debris_pieces++;
 

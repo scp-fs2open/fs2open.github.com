@@ -684,6 +684,9 @@ void init_ship_entry(ship_info *sip)
 	sip->debris_min_rotspeed = -1.0f;
 	sip->debris_max_rotspeed = -1.0f;
 	sip->debris_damage_type_idx = -1;
+	sip->debris_max_hitpoints = -1.0f;
+	sip->debris_min_hitpoints = -1.0f;
+	sip->debris_damage_mult = 1.0f;
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -1312,6 +1315,21 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_string(buf, F_NAME, NAME_LENGTH);
 			sip->debris_damage_type_idx = damage_type_add(buf);
 		}
+		if(optional_string("+Min Hitpoints:")) {
+			stuff_float(&sip->debris_min_hitpoints);
+			if(sip->debris_min_hitpoints < 0.0f)
+				Warning(LOCATION, "Debris min hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Max Hitpoints:")) {
+			stuff_float(&sip->debris_max_hitpoints);
+			if(sip->debris_max_hitpoints < 0.0f)
+				Warning(LOCATION, "Debris max hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Damage Multiplier:")) {
+			stuff_float(&sip->debris_damage_mult);
+			if(sip->debris_damage_mult < 0.0f)
+				Warning(LOCATION, "Debris damage multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
@@ -1325,6 +1343,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	if(sip->debris_min_lifetime > sip->debris_max_lifetime && sip->debris_max_lifetime >= 0.0f) {
 		Warning(LOCATION, "Debris min lifetime (%f) on %s '%s' is greater than debris max lifetime (%f), and will be set to debris max lifetime.", sip->debris_min_lifetime, info_type_name, sip->name, sip->debris_max_lifetime);
 		sip->debris_min_lifetime = sip->debris_max_lifetime;
+	}
+	if(sip->debris_min_hitpoints > sip->debris_max_hitpoints && sip->debris_max_hitpoints >= 0.0f) {
+		Warning(LOCATION, "Debris min hitpoints (%f) on %s '%s' is greater than debris max hitpoints (%f), and will be set to debris max hitpoints.", sip->debris_min_hitpoints, info_type_name, sip->name, sip->debris_max_hitpoints);
+		sip->debris_min_hitpoints = sip->debris_max_hitpoints;
 	}
 
 	if(optional_string("$Density:"))
