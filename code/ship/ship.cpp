@@ -167,6 +167,12 @@ SCP_vector<ship_type_info> Ship_types;
 
 SCP_vector<ArmorType> Armor_types;
 
+flag_def_list Armor_flags[] = {
+	{ "ignore subsystem armor",		SAF_IGNORE_SS_ARMOR,	0 }
+};
+
+int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
+
 flag_def_list Man_types[] = {
 	{ "Bank right",		MT_BANK_RIGHT,	0 },
 	{ "Bank left",		MT_BANK_LEFT,	0 },
@@ -219,16 +225,17 @@ flag_def_list Player_orders[] = {
 int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
 flag_def_list Subsystem_flags[] = {
-	{ "untargetable",		MSS_FLAG_UNTARGETABLE,		0 },
-	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE,	0 },
-	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
-	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 },
-	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK,	0 },
-	{ "fixed firingpoints",	MSS_FLAG_TURRET_FIXED_FP,	0 },
-	{ "salvo mode",			MSS_FLAG_TURRET_SALVO,		0 },
-	{ "no subsystem targeting", MSS_FLAG_NO_SS_TARGETING, 0},
-	{ "fire on target",		MSS_FLAG_FIRE_ON_TARGET,	0 },
-	{ "reset when idle", MSS_FLAG_TURRET_RESET_IDLE,   0 }
+	{ "untargetable",			MSS_FLAG_UNTARGETABLE,		0 },
+	{ "carry no damage",		MSS_FLAG_CARRY_NO_DAMAGE,	0 },
+	{ "use multiple guns",		MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
+	{ "fire down normals",		MSS_FLAG_FIRE_ON_NORMAL,	0 },
+	{ "check hull",				MSS_FLAG_TURRET_HULL_CHECK,	0 },
+	{ "fixed firingpoints",		MSS_FLAG_TURRET_FIXED_FP,	0 },
+	{ "salvo mode",				MSS_FLAG_TURRET_SALVO,		0 },
+	{ "no subsystem targeting",	MSS_FLAG_NO_SS_TARGETING,	0 },
+	{ "fire on target",			MSS_FLAG_FIRE_ON_TARGET,	0 },
+	{ "reset when idle",		MSS_FLAG_TURRET_RESET_IDLE,	0 },
+	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -677,6 +684,9 @@ void init_ship_entry(ship_info *sip)
 	sip->debris_min_rotspeed = -1.0f;
 	sip->debris_max_rotspeed = -1.0f;
 	sip->debris_damage_type_idx = -1;
+	sip->debris_max_hitpoints = -1.0f;
+	sip->debris_min_hitpoints = -1.0f;
+	sip->debris_damage_mult = 1.0f;
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -1305,6 +1315,21 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_string(buf, F_NAME, NAME_LENGTH);
 			sip->debris_damage_type_idx = damage_type_add(buf);
 		}
+		if(optional_string("+Min Hitpoints:")) {
+			stuff_float(&sip->debris_min_hitpoints);
+			if(sip->debris_min_hitpoints < 0.0f)
+				Warning(LOCATION, "Debris min hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Max Hitpoints:")) {
+			stuff_float(&sip->debris_max_hitpoints);
+			if(sip->debris_max_hitpoints < 0.0f)
+				Warning(LOCATION, "Debris max hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Damage Multiplier:")) {
+			stuff_float(&sip->debris_damage_mult);
+			if(sip->debris_damage_mult < 0.0f)
+				Warning(LOCATION, "Debris damage multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
@@ -1318,6 +1343,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	if(sip->debris_min_lifetime > sip->debris_max_lifetime && sip->debris_max_lifetime >= 0.0f) {
 		Warning(LOCATION, "Debris min lifetime (%f) on %s '%s' is greater than debris max lifetime (%f), and will be set to debris max lifetime.", sip->debris_min_lifetime, info_type_name, sip->name, sip->debris_max_lifetime);
 		sip->debris_min_lifetime = sip->debris_max_lifetime;
+	}
+	if(sip->debris_min_hitpoints > sip->debris_max_hitpoints && sip->debris_max_hitpoints >= 0.0f) {
+		Warning(LOCATION, "Debris min hitpoints (%f) on %s '%s' is greater than debris max hitpoints (%f), and will be set to debris max hitpoints.", sip->debris_min_hitpoints, info_type_name, sip->name, sip->debris_max_hitpoints);
+		sip->debris_min_hitpoints = sip->debris_max_hitpoints;
 	}
 
 	if(optional_string("$Density:"))
@@ -2592,6 +2621,8 @@ strcpy_s(parse_error_text, temp_error);
 				for (i = 0; i < 32; i++) {
 					sp->target_priority[i] = -1;
 				}
+				sp->optimum_range = 0.0f;
+				sp->favor_current_facing = 0.0f;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -2707,6 +2738,20 @@ strcpy_s(parse_error_text, temp_error);
 
 			if (optional_string("$Turret Reset Delay:"))
 				stuff_int(&sp->turret_reset_delay);
+
+			if (optional_string("$Turret Optimum Range:"))
+				stuff_float(&sp->optimum_range);
+
+			if (optional_string("$Turret Direction Preference:")) {
+				int temp;
+				stuff_int(&temp);
+				if (temp == 0) {
+					sp->favor_current_facing = 0.0f;
+				} else {
+					CAP(temp, 1, 100);
+					sp->favor_current_facing = 1.0f + (((float) (100 - temp)) / 10.0f);
+				}
+			}
 
 			if (optional_string("$Target Priority:")) {
 				SCP_vector <std::string> tgt_priorities, *tgt_priorities_p;
@@ -15652,8 +15697,12 @@ void parse_armor_type()
 	
 	tat = ArmorType(name_buf);
 	
-	//now parse the actual table
+	//now parse the actual table (damage type/armor type pairs)
 	tat.ParseData();
+
+	//rest of the parse data
+	if (optional_string("$Flags:"))
+		parse_string_flag_list((int*)&tat.flags, Armor_flags, Num_armor_flags);
 	
 	//Add it to global armor types
 	Armor_types.push_back(tat);

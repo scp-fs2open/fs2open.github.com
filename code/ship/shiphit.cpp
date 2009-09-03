@@ -534,37 +534,26 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	}
 
 	int dmg_type_idx = -1;
+	int parent_armor_flags = 0;
 
-    if (other_obj)
-    {
-        if(other_obj->type == OBJ_SHOCKWAVE) {
-            dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-        } else if(other_obj->type == OBJ_WEAPON) {
-            dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-        } else if(other_obj->type == OBJ_BEAM) {
-            dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
-        } else if(other_obj->type == OBJ_ASTEROID) {
-            dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
-        } else if(other_obj->type == OBJ_DEBRIS) {
-            dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
-        } else if(other_obj->type == OBJ_SHIP) {
-            dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
-        }
-    }
+	if(Ship_info[ship_p->ship_info_index].armor_type_idx > -1)
+		parent_armor_flags = Armor_types[Ship_info[ship_p->ship_info_index].armor_type_idx].flags;
 
-	//This function is screwy
-	if(count)
+	if (other_obj)
 	{
-		//Change damage to hull based on armor type of closest subsystem
-		if(subsys_list[0].ptr->system_info->armor_type_idx > -1)
-		{
-			damage = Armor_types[subsys_list[0].ptr->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
-			if(hull_should_apply_armor) {
-				*hull_should_apply_armor = false;
-			}
+		if(other_obj->type == OBJ_SHOCKWAVE) {
+			dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+		} else if(other_obj->type == OBJ_WEAPON) {
+			dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+		} else if(other_obj->type == OBJ_BEAM) {
+			dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+		} else if(other_obj->type == OBJ_ASTEROID) {
+			dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+		} else if(other_obj->type == OBJ_DEBRIS) {
+			dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+		} else if(other_obj->type == OBJ_SHIP) {
+			dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 		}
-
-		//Possibly some future feature will be to set different values for the two above things. Should be easy enough
 	}
 
 	//	Now scan the sorted list of subsystems in range.
@@ -594,6 +583,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
 
+		// only do this for the closest affected subsystem
+		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
+			if(subsys->system_info->armor_type_idx > -1)
+			{
+				damage = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
+				if(hull_should_apply_armor) {
+					*hull_should_apply_armor = false;
+				}
+			}
+		}
 		//	HORRIBLE HACK!
 		//	MK, 9/4/99
 		//	When Helios bombs are dual fired against the Juggernaut in sm3-01 (FS2), they often
@@ -640,14 +639,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsys->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
-				float subsystem_factor = 0.0f;
-				if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
-					subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsys->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
+					float subsystem_factor = 0.0f;
+					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
+						subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+					}
+					if (subsystem_factor > 0.0f) 
+						damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
+					else
+						damage -= MIN(subsys->current_hits, damage_to_apply);
 				}
-				if (subsystem_factor > 0.0f) 
-					damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
-				else
-					damage -= MIN(subsys->current_hits, damage_to_apply);
 			}
 
 			//Apply armor to damage
@@ -2032,11 +2033,17 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			
 	// Apply leftover damage to the ship's subsystem and hull.
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
-		int	weapon_info_index;		
+		int	weapon_info_index;
+		int armor_flags = 0;		
 		float pre_subsys = subsystem_damage;
 		bool apply_hull_armor = true;
 
 		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage, &apply_hull_armor);
+
+		if(sip->armor_type_idx != -1)
+		{
+			armor_flags = Armor_types[sip->armor_type_idx].flags;
+		}
 
 		if(subsystem_damage > 0.0f){
 			damage *= (subsystem_damage / pre_subsys);

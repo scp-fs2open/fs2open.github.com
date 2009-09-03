@@ -174,6 +174,7 @@ private:
 	SCP_vector<ArmorDamageType> DamageTypes;
 public:
 	ArmorType(char* in_name);
+	int flags;
 
 	//Get
 	char *GetNamePtr(){return Name;}
@@ -186,6 +187,8 @@ public:
 };
 
 extern SCP_vector<ArmorType> Armor_types;
+
+#define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
@@ -1001,6 +1004,9 @@ typedef struct ship_info {
 	float			debris_min_rotspeed;
 	float			debris_max_rotspeed;
 	int				debris_damage_type_idx;
+	float			debris_min_hitpoints;
+	float			debris_max_hitpoints;
+	float			debris_damage_mult;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
