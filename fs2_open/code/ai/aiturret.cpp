@@ -2125,6 +2125,10 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				}
 
 			}
+			// Wanderer -- sanity check
+			// if timestamp is still at int_max reset the wait to 100 ms instead of locking the turret for the rest of the game
+			if (ss->turret_next_fire_stamp == INT_MAX)
+				ss->turret_next_fire_stamp = timestamp(100);
 		}
 	}
 	else
