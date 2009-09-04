@@ -618,6 +618,8 @@ void parse_wi_flags(weapon_info *weaponp)
 		}
 		else if (!stricmp(NOX("no subsystem homing"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_NON_SUBSYS_HOMING;
+		else if (!stricmp(NOX("no lifeleft penalty"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_NO_LIFE_LOST_IF_MISSED;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -4008,14 +4010,14 @@ void weapon_home(object *obj, int num, float frame_time)
 				find_homing_object(obj, num);
 				return;			//	Maybe found a new homing object.  Return, process more next frame.
 			} else	//	Subtract out life based on how far from target this missile points.
-				if (wip->fov < 0.95f) {
+				if ((wip->fov < 0.95f) && !(wip->wi_flags2 & WIF2_NO_LIFE_LOST_IF_MISSED)) {
 					wp->lifeleft -= flFrametime * (0.95f - old_dot);
 					//Should only happen when time is compressed.
 					//if (flFrametime * (1.0f - old_dot) > 1.0f)
 					//	Int3();
 				}
 		} else if (wip->wi_flags & WIF_LOCKED_HOMING) {	//	subtract life as if max turn is 90 degrees.
-			if (wip->fov < 0.95f)
+			if ((wip->fov < 0.95f) && !(wip->wi_flags2 & WIF2_NO_LIFE_LOST_IF_MISSED))
 				wp->lifeleft -= flFrametime * (0.95f - old_dot);
 		} else {
 			Warning(LOCATION, "Tried to make weapon '%s' home, but found it wasn't aspect-seeking or heat-seeking or a Javelin!", wip->name);
