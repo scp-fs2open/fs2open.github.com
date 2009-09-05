@@ -160,6 +160,7 @@ private:
 	int					DamageTypeIndex;
 	SCP_vector<int>	Calculations;
 	SCP_vector<float>	Arguments;
+	float				shieldpierce_pct;
 
 public:
 	void clear();
@@ -173,17 +174,21 @@ private:
 	SCP_vector<ArmorDamageType> DamageTypes;
 public:
 	ArmorType(char* in_name);
+	int flags;
 
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
+	float GetShieldPiercePCT(int damage_type_idx);
 	
 	//Set
 	void ParseData();
 };
 
 extern SCP_vector<ArmorType> Armor_types;
+
+#define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
@@ -192,6 +197,9 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
 #define SSF_NO_SS_TARGETING     (1 << 2)
+
+//nuke
+#define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
 
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
@@ -359,7 +367,7 @@ typedef struct ship_subsys_info {
 #define SF2_AFTERBURNER_LOCKED				(1<<16)		// KeldorKatarn - This ship can't use its afterburners
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
-
+#define SF2_FORCE_SHIELDS_ON				(1<<20)
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -369,7 +377,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		12
-#define MAX_MAN_THRUSTERS	64
+#define MAX_MAN_THRUSTERS	128
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -628,10 +636,6 @@ typedef struct ship {
 
 	decal_system ship_decal_system;
 
-#ifdef NEW_HUD
-	hud ship_hud;
-#endif
-
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
 	// fighter bay door stuff, parent side
@@ -661,6 +665,8 @@ typedef struct ship {
 	SCP_vector<alt_class> s_alt_classes;	
 
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+
+	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 } ship;
 
 struct ai_target_priority {
@@ -856,6 +862,9 @@ typedef struct ship_type_info {
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
 
+	//Explosions
+	float vaporize_chance;
+
 	//Resources
 	SCP_vector<int> explosion_bitmap_anims;
 
@@ -985,6 +994,7 @@ typedef struct ship_info {
 	int	explosion_propagates;				// If true, then the explosion propagates
 	int	shockwave_count;						// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
+	float vaporize_chance;					
 
 	int ispew_max_particles;						//Temp field until someone works on particles -C
 	int dspew_max_particles;						//Temp field until someone works on particles -C
@@ -997,6 +1007,9 @@ typedef struct ship_info {
 	float			debris_min_rotspeed;
 	float			debris_max_rotspeed;
 	int				debris_damage_type_idx;
+	float			debris_min_hitpoints;
+	float			debris_max_hitpoints;
+	float			debris_damage_mult;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -1080,6 +1093,7 @@ typedef struct ship_info {
 	SCP_vector<thruster_particles> afterburner_thruster_particles;
 
 	// Bobboau's extra thruster stuff
+	thrust_pair			thruster_flame_info;
 	thrust_pair			thruster_glow_info;
 	thrust_pair_bitmap	thruster_secondary_glow_info;
 	thrust_pair_bitmap	thruster_tertiary_glow_info;
@@ -1098,6 +1112,7 @@ typedef struct ship_info {
 	float weapon_model_draw_distance;
 	
 	int armor_type_idx;
+	int shield_armor_type_idx;
 	
 	bool can_glide;
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
@@ -1483,6 +1498,7 @@ void	ship_maybe_ask_for_help(ship *sp);
 void	ship_scream(ship *sp);
 void	ship_maybe_scream(ship *sp);
 void	ship_maybe_tell_about_rearm(ship *sp);
+void	ship_maybe_tell_about_low_ammo(ship *sp);
 void	ship_maybe_lament();
 
 void ship_primary_changed(ship *sp);
@@ -1529,6 +1545,7 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 // functions for testing fov.. returns true if fov test is passed.
 bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

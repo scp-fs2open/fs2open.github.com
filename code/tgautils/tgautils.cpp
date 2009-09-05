@@ -366,14 +366,14 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 	char filename[MAX_FILENAME_LEN];
 
 	if (img_cfp == NULL) {
-		strcpy( filename, real_filename );
+		strcpy_s( filename, real_filename );
 
 		char *p = strchr( filename, '.' );
 
 		if ( p )
 			*p = 0;
 
-		strcat( filename, ".tga" );
+		strcat_s( filename, ".tga" );
 
 		targa_file = cfopen( filename , "rb" );
 
@@ -512,10 +512,10 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	int xfile_offset = 0;
 		
 	// open the file
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
+	strcat_s( filename, ".tga" );
 
 	targa_file = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
 	if ( !targa_file ){
@@ -733,10 +733,10 @@ int targa_write_bitmap(char *real_filename, ubyte *data, ubyte *palette, int w, 
 	int bytes_per_pixel = (bpp >> 3);
 		
 	// open the file
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
+	strcat_s( filename, ".tga" );
 
 	f = cfopen( filename , "wb" );
 	if ( !f ){

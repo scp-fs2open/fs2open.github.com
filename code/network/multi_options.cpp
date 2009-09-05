@@ -70,14 +70,14 @@ void multi_options_read_config()
 
 	Multi_options_g.log = (Cmdline_multi_log) ? 1 : 0;
 	Multi_options_g.datarate_cap = OO_HIGH_RATE_DEFAULT;
-	strcpy(Multi_options_g.user_tracker_ip, "");	
-	strcpy(Multi_options_g.game_tracker_ip, "");
-	strcpy(Multi_options_g.tracker_port, "");
-	strcpy(Multi_options_g.pxo_ip, "");	
-	strcpy(Multi_options_g.pxo_rank_url, "");	
-	strcpy(Multi_options_g.pxo_create_url, "");	
-	strcpy(Multi_options_g.pxo_verify_url, "");	
-	strcpy(Multi_options_g.pxo_banner_url, "");
+	strcpy_s(Multi_options_g.user_tracker_ip, "");	
+	strcpy_s(Multi_options_g.game_tracker_ip, "");
+	strcpy_s(Multi_options_g.tracker_port, "");
+	strcpy_s(Multi_options_g.pxo_ip, "");	
+	strcpy_s(Multi_options_g.pxo_rank_url, "");	
+	strcpy_s(Multi_options_g.pxo_create_url, "");	
+	strcpy_s(Multi_options_g.pxo_verify_url, "");	
+	strcpy_s(Multi_options_g.pxo_banner_url, "");
 
 	// standalone values
 	Multi_options_g.std_max_players = -1;
@@ -201,14 +201,14 @@ void multi_options_read_config()
 			if ( SETTING("+user_server") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.user_tracker_ip, tok);
+					strcpy_s(Multi_options_g.user_tracker_ip, tok);
 				}
 			} else
 			// ip addr of game tracker
 			if ( SETTING("+game_server") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.game_tracker_ip, tok);
+					strcpy_s(Multi_options_g.game_tracker_ip, tok);
 				}
 			} else
 			// port to use for the game/user tracker (FS2NetD)
@@ -222,35 +222,35 @@ void multi_options_read_config()
 			if ( SETTING("+chat_server") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.pxo_ip, tok);
+					strcpy_s(Multi_options_g.pxo_ip, tok);
 				}
 			} else
 			// url of pilot rankings page
 			if ( SETTING("+rank_url") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.pxo_rank_url, tok);
+					strcpy_s(Multi_options_g.pxo_rank_url, tok);
 				}
 			} else
 			// url of pxo account create page
 			if ( SETTING("+create_url") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.pxo_create_url, tok);
+					strcpy_s(Multi_options_g.pxo_create_url, tok);
 				}
 			} else
 			// url of pxo account verify page
 			if ( SETTING("+verify_url") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.pxo_verify_url, tok);
+					strcpy_s(Multi_options_g.pxo_verify_url, tok);
 				}
 			} else
 			// url of pxo banners
 			if ( SETTING("+banner_url") ) {
 				NEXT_TOKEN();
 				if (tok != NULL) {
-					strcpy(Multi_options_g.pxo_banner_url, tok);
+					strcpy_s(Multi_options_g.pxo_banner_url, tok);
 				}
 			} else
 			// set the max datarate for high updates
@@ -269,7 +269,7 @@ void multi_options_read_config()
 					char *ip = strtok(tok, ":");
 
 					if (ip != NULL) {
-						strcpy(Multi_options_proxy, ip);
+						strcpy_s(Multi_options_proxy, ip);
 					}
 
 					ip = strtok(NULL, "");
@@ -277,7 +277,7 @@ void multi_options_read_config()
 					if (ip != NULL) {
 						Multi_options_proxy_port = (ushort)atoi(ip);
 					} else {
-						strcpy(Multi_options_proxy, "");
+						strcpy_s(Multi_options_proxy, "");
 					}
 				}
 			}
@@ -357,7 +357,7 @@ void multi_options_local_load(multi_local_options *options, net_player *pxo_pl)
 
 	// stuff pxo squad info
 	if(pxo_pl != NULL){
-		strcpy(pxo_pl->p_info.pxo_squad_name, Multi_tracker_squad_name);		
+		strcpy_s(pxo_pl->p_info.pxo_squad_name, Multi_tracker_squad_name);		
 	}
 }
 
@@ -631,16 +631,16 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 					Netgame.max_players = max_players;
 				}
 
-				strcpy(Netgame.campaign_name,ng.campaign_name);
+				strcpy_s(Netgame.campaign_name,ng.campaign_name);
 			}
 
 			Netgame.campaign_mode = 1;
 
 			// put brackets around the campaign name
 			if(Game_mode & GM_STANDALONE_SERVER){
-				strcpy(str,"(");
-				strcat(str,Netgame.campaign_name);
-				strcat(str,")");
+				strcpy_s(str,"(");
+				strcat_s(str,Netgame.campaign_name);
+				strcat_s(str,")");
 				std_multi_set_standalone_mission_name(str);
 			}
 		}
@@ -655,8 +655,8 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 					// setting this to -1 will prevent us from being seen on the network
 					Netgame.max_players = -1;				
 				}
-				strcpy(Netgame.mission_name,ng.mission_name);
-				strcpy(Game_current_mission_filename,Netgame.mission_name);				
+				strcpy_s(Netgame.mission_name,ng.mission_name);
+				strcpy_s(Game_current_mission_filename,Netgame.mission_name);				
 			}			
 
 			Netgame.campaign_mode = 0;

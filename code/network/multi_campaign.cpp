@@ -68,7 +68,7 @@ void multi_campaign_start(char *filename)
 	Netgame.campaign_mode = MP_CAMPAIGN;		
 	
 	// set the campaign filename
-	strcpy(Netgame.campaign_name,filename);
+	strcpy_s(Netgame.campaign_name,filename);
 
 	// add the campaign mode flag
 	Game_mode |= GM_CAMPAIGN_MODE;
@@ -81,17 +81,17 @@ void multi_campaign_start(char *filename)
 		mission_campaign_next_mission();
 			
 		// setup various filenames and mission names
-		strcpy(Netgame.mission_name,Campaign.missions[Campaign.current_mission].name);
-		strcpy(Netgame.campaign_name,filename);
-		strcpy(Game_current_mission_filename,Netgame.mission_name);
+		strcpy_s(Netgame.mission_name,Campaign.missions[Campaign.current_mission].name);
+		strcpy_s(Netgame.campaign_name,filename);
+		strcpy_s(Game_current_mission_filename,Netgame.mission_name);
 
 		// if we're the standalone server, set the mission and campaign names
 		if(Game_mode & GM_STANDALONE_SERVER){
 			memset(str,0,255);
-			strcpy(str,Netgame.mission_name);
-			strcat(str," (");
-			strcat(str,Netgame.campaign_name);
-			strcat(str,")");
+			strcpy_s(str,Netgame.mission_name);
+			strcat_s(str," (");
+			strcat_s(str,Netgame.campaign_name);
+			strcat_s(str,")");
 
 			// set the control on the stand_gui
 			std_multi_set_standalone_mission_name(str);
@@ -131,15 +131,15 @@ void multi_campaign_next_mission()
 	// this will eventually be replaced with the real filename of the next mission
 	if(Campaign.current_mission != -1){
 		strncpy(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN);
-		strcpy(Netgame.mission_name,Game_current_mission_filename);			
+		strcpy_s(Netgame.mission_name,Game_current_mission_filename);			
 
 		// if we're the standalone server, set the mission and campaign names
 		if(Game_mode & GM_STANDALONE_SERVER){
 			memset(str,0,255);
-			strcpy(str,Netgame.mission_name);
-			strcat(str," (");
-			strcat(str,Netgame.campaign_name);
-			strcat(str,")");
+			strcpy_s(str,Netgame.mission_name);
+			strcat_s(str," (");
+			strcat_s(str,Netgame.campaign_name);
+			strcat_s(str,")");
 
 			// set the control on the stand_gui
 			std_multi_set_standalone_mission_name(str);
@@ -234,12 +234,12 @@ void multi_campaign_client_store_goals(int mission_num)
 	
 	// copy mission goals into the campaign goals
 	for(idx=0;idx<Num_goals;idx++){
-		strcpy(Campaign.missions[mission_num].goals[idx].name,Mission_goals[idx].name);
+		strcpy_s(Campaign.missions[mission_num].goals[idx].name,Mission_goals[idx].name);
 	}
 
 	// copy mission events into the campaign events
 	for(idx=0;idx<Num_mission_events;idx++){
-		strcpy(Campaign.missions[mission_num].events[idx].name,Mission_events[idx].name);
+		strcpy_s(Campaign.missions[mission_num].events[idx].name,Mission_events[idx].name);
 	}
 }
 

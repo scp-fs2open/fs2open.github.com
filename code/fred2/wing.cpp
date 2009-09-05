@@ -494,7 +494,7 @@ void create_wings_from_objects(void)
 				
 				Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
 				Assert(Wings[wingnum].wave_count < MAX_SHIPS_PER_WING);
-// JEH			strcpy(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
+// JEH			strcpy_s(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
 			}
 
 }

@@ -289,7 +289,7 @@ void event_music_init()
 		// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
 		for (j = 0; j < MAX_PATTERNS; j++)
 		{
-			strcpy(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
+			strcpy_s(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
 		}
 	}
 
@@ -1136,7 +1136,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 
 	//We can apparently still add this pattern, so go ahead and do it.
 	token = strtok( line_buf, NOX(" ,\t"));
-	strcpy(fname, token);
+	strcpy_s(fname, token);
 	while ( token != NULL )
 	{
 		token = strtok( NULL, NOX(" ,\t") );
@@ -1157,7 +1157,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 		count++;
 	}	// end while
 
-	strcpy(Soundtracks[strack_idx].pattern_fnames[pattern_idx], fname);
+	strcpy_s(Soundtracks[strack_idx].pattern_fnames[pattern_idx], fname);
 	return true;
 }
 
@@ -1199,7 +1199,7 @@ void parse_soundtrack()
 		//If we don't have this soundtrack already, create it
 		strack_idx = Num_soundtracks;
 
-		strcpy(Soundtracks[strack_idx].name, namebuf);
+		strcpy_s(Soundtracks[strack_idx].name, namebuf);
 		Soundtracks[strack_idx].num_patterns = 0;
 
 		Num_soundtracks++;
@@ -1336,20 +1336,20 @@ void parse_menumusic()
 	{
 		idx = Num_music_files;
 
-		strcpy( Spooled_music[idx].name, spoolname );
-		strcpy( Spooled_music[idx].filename, "");
+		strcpy_s( Spooled_music[idx].name, spoolname );
+		strcpy_s( Spooled_music[idx].filename, "");
 	}
 
 	if(optional_string("$Filename:"))
 	{
 		stuff_string(fname, F_LNAME, MAX_FILENAME_LEN);
 		if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
-			strcpy( Spooled_music[idx].filename, fname );
+			strcpy_s( Spooled_music[idx].filename, fname );
 		}
 		else
 		{
 			//Clear this
-			strcpy( Spooled_music[idx].filename, "");
+			strcpy_s( Spooled_music[idx].filename, "");
 		}
 	}
 
@@ -1800,8 +1800,8 @@ void event_music_reset_choices()
 	event_music_set_score(SCORE_DEBRIEF_FAIL, "Failure");
 
 	// Goober5000
-	strcpy(The_mission.substitute_briefing_music_name, "None");
-	strcpy(The_mission.substitute_event_music_name, "None");
+	strcpy_s(The_mission.substitute_briefing_music_name, "None");
+	strcpy_s(The_mission.substitute_event_music_name, "None");
 }
 
 void event_music_hostile_ship_destroyed()

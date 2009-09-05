@@ -229,7 +229,7 @@ void dock_add_instance(p_object *objp, char *dockpoint, p_object *other_objp)
 
 	// create item
 	item = (p_dock_instance *) vm_malloc(sizeof(p_dock_instance));
-	strcpy(item->dockpoint_used, dockpoint);
+	strcpy_s(item->dockpoint_used, dockpoint);
 	item->docked_objp = other_objp;
 
 	// prepend item to existing list

@@ -866,7 +866,7 @@ void player_select_delete_pilot()
 	// tack on the full path and the pilot file extension
 	// build up the path name length
 	// make sure we do this based upon whether we're in single or multiplayer mode
-	strcpy( filename, Pilots[Player_select_pilot] );
+	strcpy_s( filename, Pilots[Player_select_pilot] );
 
 	del_rval = delete_pilot_file(filename, (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
 
@@ -933,7 +933,7 @@ int player_select_get_last_pilot_info()
 	if(last_player == NULL){
 		return 0;		
 	} else {
-		strcpy(Player_select_last_pilot,last_player);
+		strcpy_s(Player_select_last_pilot,last_player);
 	}
 
 	// determine if he was a single or multi-player based upon the last character in his callsign
@@ -1213,7 +1213,7 @@ void player_select_process_input(int k)
 			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 		}
 
-		strcpy(Player->callsign, buf);
+		strcpy_s(Player->callsign, buf);
 		init_new_pilot(Player, !Player_select_clone_flag);
 
 		// set him as being a multiplayer pilot if we're in the correct mode
@@ -1264,7 +1264,7 @@ void player_select_display_copyright()
 	int	sx, sy, w;
 	char	Copyright_msg1[256], Copyright_msg2[256];
 	
-//	strcpy(Copyright_msg1, XSTR("Descent: FreeSpace - The Great War, Copyright c 1998, Volition, Inc.", -1));
+//	strcpy_s(Copyright_msg1, XSTR("Descent: FreeSpace - The Great War, Copyright c 1998, Volition, Inc.", -1));
 	gr_set_color_fast(&Color_white);
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
@@ -1346,7 +1346,7 @@ void player_select_eval_very_first_pilot()
 		if((Player_select_num_pilots == 1) && (Player_select_initial_count == 0)){
 			// set up the data
 			Player_select_very_first_pilot = 1;
-			strcpy(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot]);
+			strcpy_s(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot]);
 		}
 	}
 }

@@ -235,6 +235,7 @@ $Fog:																	\n\
 $AI:																	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Sentry Gun										\n\
 $Counts for Alone:		YES												\n\
@@ -253,6 +254,7 @@ $AI:																	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
@@ -269,6 +271,7 @@ $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Cargo											\n\
 $Scannable:				YES												\n\
@@ -281,6 +284,7 @@ $Fog:																	\n\
 	+Compl dist:			500.0										\n\
 $AI:																	\n\
 	+Passive docks:			( \"cargo\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Support											\n\
 $Counts for Alone:		YES												\n\
@@ -305,6 +309,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Active docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 ;;WMC - Stealth ships always have another type, so this isn't used		\n\
 $Name:					Stealth											\n\
@@ -328,6 +333,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Fighter											\n\
 $Counts for Alone:		YES												\n\
@@ -353,6 +359,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Bomber											\n\
 $Counts for Alone:		YES												\n\
@@ -378,6 +385,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 ;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber																																																								\n\
 $Name:					Fighter/bomber									\n\
@@ -403,6 +411,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Transport										\n\
 $Counts for Alone:		YES												\n\
@@ -428,6 +437,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Freighter										\n\
 $Counts for Alone:		YES												\n\
@@ -455,6 +465,7 @@ $AI:																	\n\
 	+Can Form Wing:			YES											\n\
 	+Active docks:			( \"cargo\" )								\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					AWACS											\n\
 $Counts for Alone:		YES												\n\
@@ -480,6 +491,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Gas Miner										\n\
 $Counts for Alone:		YES												\n\
@@ -505,6 +517,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Cruiser											\n\
 $Counts for Alone:		YES												\n\
@@ -530,6 +543,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Corvette										\n\
 $Counts for Alone:		YES												\n\
@@ -555,6 +569,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Capital											\n\
 $Counts for Alone:		YES												\n\
@@ -581,6 +596,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Super Cap										\n\
 $Counts for Alone:		YES												\n\
@@ -605,6 +621,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Drydock											\n\
 $Counts for Alone:		YES												\n\
@@ -627,6 +644,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Knossos Device									\n\
 $Counts for Alone:		YES												\n\
@@ -647,6 +665,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+$Vaporize Percent Chance: 0.0											\n\
 ""\
 #End																	\n\
 ";
@@ -706,6 +725,10 @@ $AI In Range Time: 2, 1.4, 0.75, 0, -1									\n\
 $AI Always Links Ammo Weapons: 95, 80, 60, 40, 20						\n\
 $AI Maybe Links Ammo Weapons: 90, 60, 40, 20, 10						\n\
 																		\n\
+;; Multiplier that modifies the length and frequency of bursts used		\n\
+;; by the AI for ballistic primary weapons								\n\
+$Primary Ammo Burst Multiplier: 0, 0, 0, 0, 0							\n\
+																		\n\
 ;; AI ships will link laser primaries if energy levels are greater		\n\
 ;; than these percents													\n\
 $AI Always Links Energy Weapons: 100, 80, 60, 40, 20					\n\
@@ -751,6 +774,26 @@ $Hostile AI Secondary Fire Delay Scale: 1.4, 1.2, 1.0, 0.8, 0.6			\n\
 																		\n\
 ;; factor applied to time it takes for enemy ships to turn				\n\
 $AI Turn Time Scale: 3, 2.2, 1.6, 1.3, 1								\n\
+																		\n\
+;; Percentage of the time where AI ships will use the glide attack		\n\
+;; when it is an option.												\n\
+$Glide Attack Percent: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; Percentage of the time where AI ships will use circle strafe			\n\
+;; when it is an option.												\n\
+$Circle Strafe Percent: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; Percentage of the time where AI ships will use glide to strafe		\n\
+;; capital ships when it is an option.									\n""\
+$Glide Strafe Percent: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; The amount of time required for the AI to detect 					\n\
+;; (and try to break) dogfight stalemate.								\n\
+$Stalemate Time Threshold: 0, 0, 0, 0, 0								\n\
+																		\n\
+;; The maximum distance the AI and target must be within				\n\
+;; for a dogfight stalemate												\n\
+$Stalemate Distance Threshold: 0, 0, 0, 0, 0							\n\
 																		\n\
 ;; factor applied to the speed at which the player's shields recharge	\n\
 $Player Shield Recharge Scale: 4, 2, 1.5, 1.25, 1						\n\
@@ -903,6 +946,14 @@ $allow turrets target weapons freely: NO								\n\
 ;; if set forces turrets to use only the set turret fov limits and		\n\
 ;; ignore hard coded limits (with 'fire_down_normals' flag)				\n\
 $use only single fov for turrets:		NO								\n\
+																		\n\
+;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
+$allow vertical dodge:	NO												\n\
+																		\n\
+;; a disam or disable goal will protect a ship globally and purge		\n\
+;; standing attack orders globally. If set to NO, only the ship/wing	\n\
+;; given the order to disarm or disable will be affected.				\n\
+$disarm or disable cause global ai goal effects:	YES					\n\
 																		\n\
 #End																	\n\
 ";

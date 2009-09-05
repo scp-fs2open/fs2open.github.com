@@ -43,6 +43,7 @@ typedef struct debris {
 	int		arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  -1 is not used
 	int		arc_frequency;							// Starts at 0, gets bigger
 	char	parent_alt_name;
+	float	damage_mult;
 	
 } debris;
 

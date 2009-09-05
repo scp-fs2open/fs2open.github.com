@@ -119,7 +119,7 @@ Marking_box	marking_box;
 object_orient_pos	rotation_backup[MAX_OBJECTS];
 
 // Goober5000 (currently, FS1 retail not implemented)
-int Format_fs2_open = 1;
+int Format_fs2_open = FSO_FORMAT_STANDARD;
 int Format_fs2_retail = 0;
 int Format_fs1_retail = 0;
 
@@ -4535,7 +4535,7 @@ void CFREDView::OnUpdateFormatFs2OpenComp(CCmdUI* pCmdUI)
 
 void CFREDView::OnFormatFs2Retail() 
 {
-	Format_fs2_open = 0;
+	Format_fs2_open = FSO_FORMAT_RETAIL;
 	Format_fs2_retail = 1;
 	Format_fs1_retail = 0;
 
@@ -4550,7 +4550,7 @@ void CFREDView::OnUpdateFormatFs2Retail(CCmdUI* pCmdUI)
 
 void CFREDView::OnFormatFs1Retail() 
 {
-	Format_fs2_open = 0;
+	Format_fs2_open = FSO_FORMAT_RETAIL;
 	Format_fs2_retail = 0;
 	Format_fs1_retail = 1;
 

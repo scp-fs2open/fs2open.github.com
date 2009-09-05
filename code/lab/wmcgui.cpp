@@ -123,9 +123,9 @@ bool ObjectClassInfoEntry::Parse()
 		}
 
 		//We MUST have the end tag
-		strcpy(buf2, "</");
-		strcat(buf2, buf);
-		strcat(buf2, ">");
+		strcpy_s(buf2, "</");
+		strcat_s(buf2, buf);
+		strcat_s(buf2, ">");
 
 		required_string(buf2);
 		return true;
@@ -203,10 +203,10 @@ void GUISystem::ParseClassInfo(char* filename)
 void ClassInfoEntry::Parse(char* tag, int in_type)
 {
 	char buf[MAX_FILENAME_LEN];
-	strcpy(buf, "+");
-	strcat(buf, tag);
+	strcpy_s(buf, "+");
+	strcat_s(buf, tag);
 	if(in_type != CIE_IMAGE_BORDER)
-		strcat(buf, ":");
+		strcat_s(buf, ":");
 
 	if(optional_string(buf))
 	{
@@ -2937,30 +2937,3 @@ void ImageAnim::Stop()
 	Progress = 0.0f;
 	ElapsedTime = 0.0f;
 }
-#ifdef USE_PYTHON
-//*****************************HUDGauge*******************************
-HUDGauge::HUDGauge(std::string in_name, int x_coord, int y_coord, PyBytecode in_drawfunc, int x_width, int y_height, int in_style)
-:GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
-{
-	Name = in_name;
-
-	DrawFunc = in_drawfunc;
-
-	//Set the type
-	Type = GT_HUDGAUGE;
-}
-
-void HUDGauge::DoDraw(float frametime)
-{
-	if(DrawFunc.Get() != NULL)
-	{
-
-	}
-}
-
-HUDGauge::~HUDGauge()
-{
-	
-}
-
-#endif // USE_PYTHON

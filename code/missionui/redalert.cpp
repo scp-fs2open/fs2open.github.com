@@ -628,7 +628,7 @@ void red_alert_store_wingman_status()
 	Red_alert_num_slots_used = 0;
 
 	// store the mission filename for the red alert precursor mission
-	strcpy(Red_alert_precursor_mission, Game_current_mission_filename);
+	strcpy_s(Red_alert_precursor_mission, Game_current_mission_filename);
 
 	// store status for all existing ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
@@ -652,7 +652,7 @@ void red_alert_store_wingman_status()
 		ras = &Red_alert_wingman_status[Red_alert_num_slots_used];
 		Red_alert_num_slots_used++;
 
-		strcpy(ras->name, shipp->ship_name);
+		strcpy_s(ras->name, shipp->ship_name);
 		ras->hull = Objects[shipp->objnum].hull_strength;
 		ras->ship_class = shipp->ship_info_index;
 		red_alert_store_weapons(ras, &shipp->weapons);
@@ -671,7 +671,7 @@ void red_alert_store_wingman_status()
 			ras = &Red_alert_wingman_status[Red_alert_num_slots_used];
 			Red_alert_num_slots_used++;
 
-			strcpy(ras->name, Ships_exited[idx].ship_name);
+			strcpy_s(ras->name, Ships_exited[idx].ship_name);
 			ras->hull = float(Ships_exited[idx].hull_strength);
 
 			// if a ship has been destroyed or removed manually by the player, then mark it as such ...

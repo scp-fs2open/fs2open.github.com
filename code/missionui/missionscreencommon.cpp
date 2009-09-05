@@ -366,7 +366,7 @@ void common_set_interface_palette(char *filename)
 	if ( (InterfacePaletteBitmap != -1) && !stricmp(filename, buf) )
 		return;  // already set to this palette
 
-	strcpy(buf, filename);
+	strcpy_s(buf, filename);
 
 	// unload the interface bitmap from memory
 	if (InterfacePaletteBitmap != -1) {

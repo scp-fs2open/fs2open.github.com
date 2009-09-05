@@ -104,6 +104,9 @@ int collide_debris_ship( obj_pair * pair )
 				debris_damage = debris_hit_info.impulse/pdebris->phys_info.mass;	// ie, delta velocity of debris
 				debris_damage = (debris_damage > ship_damage) ? debris_damage : ship_damage;
 
+				// modify ship damage by debris damage multiplier
+				ship_damage *= Debris[pdebris->instance].damage_mult;
+
 				// supercaps cap damage at 10-20% max hull ship damage
 				if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
 					float cap_percent_damage = frand_range(0.1f, 0.2f);

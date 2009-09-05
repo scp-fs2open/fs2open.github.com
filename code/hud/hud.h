@@ -45,9 +45,8 @@ extern int HUD_contrast;
 
 
 //Current HUD to use for info -C
-#ifndef NEW_HUD
 extern hud_info* current_hud;
-#endif
+
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
@@ -64,6 +63,14 @@ extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
 // hud macro for maybe flickering all gauges
 #define GR_AABITMAP(a, b, c)						{ int jx, jy; if(emp_should_blit_gauge()) { gr_set_bitmap(a); jx = b; jy = c; emp_hud_jitter(&jx, &jy); gr_aabitmap(jx, jy); } }
 #define GR_AABITMAP_EX(a, b, c, d, e, f, g)	{ int jx, jy; if(emp_should_blit_gauge()) { gr_set_bitmap(a); jx = b; jy = c; emp_hud_jitter(&jx, &jy); gr_aabitmap_ex(jx, jy, d, e, f, g); } }
+
+// radar target identification flags
+#define RTIF_CROSSHAIRS	(1<<0)		// draw crosshairs
+#define RTIF_BLINK		(1<<1)		// make targeted blip blink
+#define RTIF_PULSATE	(1<<2)		// make targeted blips size pulsate
+#define RTIF_ENLARGE	(1<<3)		// make targeted blip appear larger than the other blips
+
+extern int radar_target_id_flags;
 
 extern int HUD_color_red;
 extern int HUD_color_green;

@@ -509,7 +509,7 @@ void main_hall_campaign_cheat()
 
 	// yay
 	if(ret != NULL) {
-		// strcpy(Main_hall_campaign_cheat, ret);		
+		// strcpy_s(Main_hall_campaign_cheat, ret);		
 		mission_campaign_jump_to_mission(ret);
 	}
 }
@@ -648,7 +648,7 @@ void main_hall_init(int main_hall_num)
 */
 	Main_hall_region_linger_stamp = -1;
 
-	strcpy(Main_hall_campaign_cheat, "");
+	strcpy_s(Main_hall_campaign_cheat, "");
 
 	// zero out the door sounds
 	for(idx=0;idx<Main_hall->num_door_sounds;idx++){
@@ -1593,7 +1593,7 @@ void main_hall_handle_random_intercom_sounds()
 // set the notification string with its decay timeout
 void main_hall_set_notify_string(char *str)
 {
-	strcpy(Main_hall_notify_text,str);
+	strcpy_s(Main_hall_notify_text,str);
 	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
 }
 
@@ -1603,7 +1603,7 @@ void main_hall_notify_do()
 	if(Main_hall_notify_stamp != -1){
 	   // if the text time has expired
 		if(timestamp_elapsed(Main_hall_notify_stamp)){
-			strcpy(Main_hall_notify_text,"");
+			strcpy_s(Main_hall_notify_text,"");
 			Main_hall_notify_stamp = -1;
 		} else {
 			int w,h;
@@ -1725,7 +1725,7 @@ void main_hall_process_help_stuff()
 	}
 
 	// otherwise print out the message
-	strcpy(str, XSTR( "Press F1 for help", 371));
+	strcpy_s(str, XSTR( "Press F1 for help", 371));
 	gr_get_string_size(&w, &h, str);
 
 	int y_anim_offset = Main_hall_f1_text_frame;
@@ -1932,12 +1932,12 @@ void main_hall_read_table()
 		Main_hall_defines[GR_1024][hall].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
 
 		// set head anim. hehe
-		strcpy(Main_hall_defines[GR_640][hall].door_anim_name[OPTIONS_REGION], "vhallheads");
-		strcpy(Main_hall_defines[GR_1024][hall].door_anim_name[OPTIONS_REGION], "2_vhallheads");
+		strcpy_s(Main_hall_defines[GR_640][hall].door_anim_name[OPTIONS_REGION], "vhallheads");
+		strcpy_s(Main_hall_defines[GR_1024][hall].door_anim_name[OPTIONS_REGION], "2_vhallheads");
 
 		// set the background
-		strcpy(Main_hall_defines[GR_640][hall].bitmap, "vhallhead");
-		strcpy(Main_hall_defines[GR_1024][hall].bitmap, "2_vhallhead");		
+		strcpy_s(Main_hall_defines[GR_640][hall].bitmap, "vhallhead");
+		strcpy_s(Main_hall_defines[GR_1024][hall].bitmap, "2_vhallhead");		
 	}
 
 	// free up memory from parsing the mainhall tbl

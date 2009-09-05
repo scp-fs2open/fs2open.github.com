@@ -1423,35 +1423,35 @@ int opengl_check_framebuffer()
 
 		switch (status) {
 			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
-				strcpy(err_txt, "Incomplete attachments!");
+				strcpy_s(err_txt, "Incomplete attachments!");
 				break;
 
 			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
-				strcpy(err_txt, "Missing one or more image attachments!");
+				strcpy_s(err_txt, "Missing one or more image attachments!");
 				break;
 
 			case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-				strcpy(err_txt, "Attached images do not have the same width and height!");
+				strcpy_s(err_txt, "Attached images do not have the same width and height!");
 				break;
 
 			case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-				strcpy(err_txt, "Attached images do not have the same internal format!");
+				strcpy_s(err_txt, "Attached images do not have the same internal format!");
 				break;
 
 			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
-				strcpy(err_txt, "Draw buffer attachment point is NONE!");
+				strcpy_s(err_txt, "Draw buffer attachment point is NONE!");
 				break;
 
 			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
-				strcpy(err_txt, "Read buffer attachment point is NONE!");
+				strcpy_s(err_txt, "Read buffer attachment point is NONE!");
 				break;
 
 			case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-				strcpy(err_txt, "Attached images violate current FBO restrictions!");
+				strcpy_s(err_txt, "Attached images violate current FBO restrictions!");
 				break;
 
 			default:
-				strcpy(err_txt, "Unknown error!\n");
+				strcpy_s(err_txt, "Unknown error!\n");
 				break;
 		}
 

@@ -13,6 +13,7 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 
+extern int radar_target_id_flags;
 
 int Num_iffs;
 iff_info Iff_info[MAX_IFFS];
@@ -26,6 +27,14 @@ int *iff_color_brightness = &iff_bright_delta;
 // global only to file
 color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
 
+flag_def_list rti_flags[] = {
+	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
+	{ "blink",				RTIF_BLINK,			0 },
+	{ "pulsate",			RTIF_PULSATE,		0 },
+	{ "enlarge",			RTIF_ENLARGE,		0 }
+};
+
+int Num_rti_flags = sizeof(rti_flags)/sizeof(flag_def_list);
 
 // borrowed from ship.cpp, ship_iff_init_colors
 int iff_get_alpha_value(bool is_bright)
@@ -174,7 +183,7 @@ void iff_init()
 	// init radar blips colour table
 	int iLoop,jLoop,kLoop;
 	int a_bright,a_dim;
-	bool alternate_blip_color;
+	bool alternate_blip_color = false;
 	for (iLoop=0;iLoop<5;iLoop++)
 	{
 		for (jLoop=0;jLoop<2;jLoop++)
@@ -290,6 +299,12 @@ void iff_init()
 		}
 	}
 
+	if (optional_string("$Radar Target ID Flags:")) {
+		parse_string_flag_list((int*)&radar_target_id_flags, rti_flags, Num_rti_flags);
+		if (optional_string("+reset"))
+			radar_target_id_flags = 0;
+	}
+	
 	// begin reading data
 	Num_iffs = 0;
 	while (required_string_either("#End","$IFF Name:"))

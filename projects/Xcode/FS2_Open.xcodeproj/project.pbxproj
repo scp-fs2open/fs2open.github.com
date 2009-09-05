@@ -679,6 +679,10 @@
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
 		914580490FD036ED00788595 /* multi_sexp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914580470FD036ED00788595 /* multi_sexp.cpp */; };
 		9145804A0FD036ED00788595 /* multi_sexp.h in Headers */ = {isa = PBXBuildFile; fileRef = 914580480FD036ED00788595 /* multi_sexp.h */; };
+		F0A86D651000AD6B006CB60B /* vmallocator.h in Headers */ = {isa = PBXBuildFile; fileRef = F0A86D641000AD6B006CB60B /* vmallocator.h */; };
+		F0ED18A1101064C70011978C /* safe_strings_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0ED189E101064C70011978C /* safe_strings_test.cpp */; };
+		F0ED18A2101064C70011978C /* safe_strings.h in Headers */ = {isa = PBXBuildFile; fileRef = F0ED189F101064C70011978C /* safe_strings.h */; };
+		F0ED18A3101064C70011978C /* safe_strings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0ED18A0101064C70011978C /* safe_strings.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -910,8 +914,6 @@
 		3459531708C3D69F003B1351 /* decals.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = decals.h; sourceTree = "<group>"; };
 		3459531908C3D69F003B1351 /* demo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = demo.cpp; sourceTree = "<group>"; };
 		3459531A08C3D69F003B1351 /* demo.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = demo.h; sourceTree = "<group>"; };
-		3459531C08C3D69F003B1351 /* dx8show.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = dx8show.cpp; sourceTree = "<group>"; };
-		3459531D08C3D69F003B1351 /* dx8show.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = dx8show.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
 		3459531F08C3D6A0003B1351 /* strmiids.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = strmiids.lib; sourceTree = "<group>"; };
 		3459532008C3D6A0003B1351 /* vasync.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vasync.h; sourceTree = "<group>"; };
@@ -974,20 +976,6 @@
 		3459536C08C3D6A0003B1351 /* wglext.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wglext.h; sourceTree = "<group>"; };
 		3459536D08C3D6A0003B1351 /* grbatch.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grbatch.cpp; sourceTree = "<group>"; };
 		3459536E08C3D6A0003B1351 /* grbatch.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grbatch.h; sourceTree = "<group>"; };
-		3459536F08C3D6A0003B1351 /* grd3d.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3d.cpp; sourceTree = "<group>"; };
-		3459537008C3D6A0003B1351 /* grd3d.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3d.h; sourceTree = "<group>"; };
-		3459537308C3D6A0003B1351 /* grd3dbmpman.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dbmpman.cpp; sourceTree = "<group>"; };
-		3459537408C3D6A0003B1351 /* grd3dbmpman.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dbmpman.h; sourceTree = "<group>"; };
-		3459537508C3D6A0003B1351 /* grd3dcalls.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dcalls.cpp; sourceTree = "<group>"; };
-		3459537608C3D6A0003B1351 /* grd3dinternal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dinternal.h; sourceTree = "<group>"; };
-		3459537708C3D6A0003B1351 /* grd3dlight.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dlight.cpp; sourceTree = "<group>"; };
-		3459537808C3D6A0003B1351 /* grd3dlight.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dlight.h; sourceTree = "<group>"; };
-		3459537B08C3D6A0003B1351 /* grd3drender.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3drender.cpp; sourceTree = "<group>"; };
-		3459537C08C3D6A0003B1351 /* grd3dsetup.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dsetup.cpp; sourceTree = "<group>"; };
-		3459537D08C3D6A0003B1351 /* grd3dsetup.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dsetup.h; sourceTree = "<group>"; };
-		3459537E08C3D6A0003B1351 /* GrD3DStateBlock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = GrD3DStateBlock.cpp; sourceTree = "<group>"; };
-		3459537F08C3D6A0003B1351 /* GrD3DStateBlock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = GrD3DStateBlock.h; sourceTree = "<group>"; };
-		3459538008C3D6A0003B1351 /* grd3dtexture.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dtexture.cpp; sourceTree = "<group>"; };
 		3459538108C3D6A0003B1351 /* grinternal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grinternal.h; sourceTree = "<group>"; };
 		3459538208C3D6A0003B1351 /* gropengl.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = gropengl.cpp; sourceTree = "<group>"; };
 		3459538308C3D6A0003B1351 /* gropengl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = gropengl.h; sourceTree = "<group>"; };
@@ -1486,8 +1474,8 @@
 		3459580808C3D836003B1351 /* jversion.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = jversion.h; sourceTree = "<group>"; };
 		3459580908C3D836003B1351 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		3459580C08C3D836003B1351 /* transupp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = transupp.h; sourceTree = "<group>"; };
-		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
-		34595A7508C3D8CB003B1351 /* FS2_Open.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FS2_Open.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
 		345A81170B4941F100282E7A /* deadobjectdock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = deadobjectdock.cpp; sourceTree = "<group>"; };
 		345A81180B4941F100282E7A /* deadobjectdock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = deadobjectdock.h; sourceTree = "<group>"; };
@@ -1503,7 +1491,7 @@
 		3468A8DD0991BDE200123C87 /* scripting.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scripting.h; sourceTree = "<group>"; };
 		346C32FB09BD4BBC0022D46E /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Ogg.framework; path = Frameworks/Ogg.framework; sourceTree = "<group>"; };
 		346C32FC09BD4BBC0022D46E /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vorbis.framework; path = Frameworks/Vorbis.framework; sourceTree = "<group>"; };
-		3486EE7C09990CE20092AF2C /* Info-debug.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Info-debug.plist"; sourceTree = "<group>"; };
+		3486EE7C09990CE20092AF2C /* Info-debug.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-debug.plist"; sourceTree = "<group>"; };
 		348808060DA053AC001CAB39 /* linit.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = linit.c; path = ../../lua/linit.c; sourceTree = SOURCE_ROOT; };
 		348808070DA053AC001CAB39 /* loslib.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = loslib.c; path = ../../lua/loslib.c; sourceTree = SOURCE_ROOT; };
 		348808080DA053AC001CAB39 /* lua.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lua.c; path = ../../lua/lua.c; sourceTree = SOURCE_ROOT; };
@@ -1557,6 +1545,10 @@
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
+		F0A86D641000AD6B006CB60B /* vmallocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmallocator.h; sourceTree = "<group>"; };
+		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
+		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
+		F0ED18A0101064C70011978C /* safe_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings.cpp; sourceTree = "<group>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
 		F5A47A9E01A0483001D3D55B /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -1672,7 +1664,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				34595A7508C3D8CB003B1351 /* FS2_Open.app */,
+				34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */,
 				34C71A8208C4147700459F5B /* libcode.a */,
 				34C71A9108C4184200459F5B /* libjpeg.a */,
 				34DCF83408CFA6B900A528A0 /* cfilearchiver */,
@@ -2060,8 +2052,6 @@
 		3459531B08C3D69F003B1351 /* directx */ = {
 			isa = PBXGroup;
 			children = (
-				3459531C08C3D69F003B1351 /* dx8show.cpp */,
-				3459531D08C3D69F003B1351 /* dx8show.h */,
 				3459531E08C3D69F003B1351 /* dxguid.lib */,
 				3459531F08C3D6A0003B1351 /* strmiids.lib */,
 				3459532008C3D6A0003B1351 /* vasync.h */,
@@ -2156,6 +2146,9 @@
 				3459535708C3D6A0003B1351 /* alphacolors.h */,
 				3459535808C3D6A0003B1351 /* crypt.cpp */,
 				3459535908C3D6A0003B1351 /* crypt.h */,
+				F0ED189E101064C70011978C /* safe_strings_test.cpp */,
+				F0ED189F101064C70011978C /* safe_strings.h */,
+				F0ED18A0101064C70011978C /* safe_strings.cpp */,
 				3459535A08C3D6A0003B1351 /* globals.h */,
 				3459535B08C3D6A0003B1351 /* linklist.h */,
 				3459535C08C3D6A0003B1351 /* pstypes.h */,
@@ -2163,6 +2156,7 @@
 				3459535E08C3D6A0003B1351 /* systemvars.h */,
 				3459535F08C3D6A0003B1351 /* version.cpp */,
 				3459536008C3D6A0003B1351 /* version.h */,
+				F0A86D641000AD6B006CB60B /* vmallocator.h */,
 				3459536108C3D6A0003B1351 /* windebug.cpp */,
 			);
 			path = globalincs;
@@ -2181,7 +2175,6 @@
 				3459536708C3D6A0003B1351 /* gl */,
 				3459536D08C3D6A0003B1351 /* grbatch.cpp */,
 				3459536E08C3D6A0003B1351 /* grbatch.h */,
-				34595A7C08C3DA8F003B1351 /* D3D */,
 				3459538108C3D6A0003B1351 /* grinternal.h */,
 				34595A7D08C3DAA2003B1351 /* OpenGL */,
 				3459538E08C3D6A0003B1351 /* grstub.h */,
@@ -3011,27 +3004,6 @@
 			path = ../../libjpeg;
 			sourceTree = SOURCE_ROOT;
 		};
-		34595A7C08C3DA8F003B1351 /* D3D */ = {
-			isa = PBXGroup;
-			children = (
-				3459536F08C3D6A0003B1351 /* grd3d.cpp */,
-				3459537008C3D6A0003B1351 /* grd3d.h */,
-				3459537308C3D6A0003B1351 /* grd3dbmpman.cpp */,
-				3459537408C3D6A0003B1351 /* grd3dbmpman.h */,
-				3459537508C3D6A0003B1351 /* grd3dcalls.cpp */,
-				3459537608C3D6A0003B1351 /* grd3dinternal.h */,
-				3459537708C3D6A0003B1351 /* grd3dlight.cpp */,
-				3459537808C3D6A0003B1351 /* grd3dlight.h */,
-				3459537B08C3D6A0003B1351 /* grd3drender.cpp */,
-				3459537C08C3D6A0003B1351 /* grd3dsetup.cpp */,
-				3459537D08C3D6A0003B1351 /* grd3dsetup.h */,
-				3459537E08C3D6A0003B1351 /* GrD3DStateBlock.cpp */,
-				3459537F08C3D6A0003B1351 /* GrD3DStateBlock.h */,
-				3459538008C3D6A0003B1351 /* grd3dtexture.cpp */,
-			);
-			name = D3D;
-			sourceTree = "<group>";
-		};
 		34595A7D08C3DAA2003B1351 /* OpenGL */ = {
 			isa = PBXGroup;
 			children = (
@@ -3159,6 +3131,8 @@
 				25FB461E0E2E55370089DF93 /* gropenglstate.h in Headers */,
 				25FB46230E2E55500089DF93 /* gropengldraw.h in Headers */,
 				9145804A0FD036ED00788595 /* multi_sexp.h in Headers */,
+				F0A86D651000AD6B006CB60B /* vmallocator.h in Headers */,
+				F0ED18A2101064C70011978C /* safe_strings.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3479,7 +3453,7 @@
 			name = FS2_Open;
 			productInstallPath = "$(HOME)/Applications";
 			productName = FS2_Open;
-			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open.app */;
+			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		34C71A8108C4147700459F5B /* code */ = {
@@ -3590,9 +3564,11 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 34BE723808C940D200673B45 /* Build configuration list for PBXProject "FS2_Open" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 29B97314FDCFA39411CA2CEA /* FS2_Open */;
 			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				3459585008C3D8CB003B1351 /* FS2_Open */,
 				34C71A8108C4147700459F5B /* code */,
@@ -3671,6 +3647,8 @@
 				25FB461F0E2E55370089DF93 /* gropenglshader.cpp in Sources */,
 				25FB46220E2E55500089DF93 /* gropengldraw.cpp in Sources */,
 				914580490FD036ED00788595 /* multi_sexp.cpp in Sources */,
+				F0ED18A1101064C70011978C /* safe_strings_test.cpp in Sources */,
+				F0ED18A3101064C70011978C /* safe_strings.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4154,6 +4132,7 @@
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
 				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
@@ -4172,7 +4151,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/lib";
 				LIBRARY_STYLE = STATIC;
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
 				PREBINDING = NO;
@@ -4273,7 +4251,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.10-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
 				DEAD_CODE_STRIPPING = NO;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_MODEL_TUNING = G5;
@@ -4285,6 +4263,7 @@
 					USE_OPENAL,
 					APPLE_APP,
 				);
+				GCC_VERSION = 4.0;
 				GENERATE_PROFILING_CODE = NO;
 				INFOPLIST_FILE = "Info-debug.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
@@ -4304,7 +4283,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.10-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_DEBUGGING_SYMBOLS = default;
@@ -4320,6 +4299,7 @@
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
+				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -4336,7 +4316,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4350,7 +4330,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4373,7 +4352,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4387,7 +4366,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4410,7 +4388,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4424,7 +4402,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4447,7 +4424,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4461,7 +4438,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4484,7 +4460,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4498,7 +4474,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4521,7 +4496,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4535,7 +4510,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4558,7 +4532,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4572,7 +4546,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4595,7 +4568,7 @@
 				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					SCP_UNIX,
@@ -4609,7 +4582,6 @@
 				);
 				INSTALL_PATH = "$(HOME)/bin";
 				MACOSX_DEPLOYMENT_TARGET = "";
-				OPTIMIZATION_CFLAGS = "-O0";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				OTHER_REZFLAGS = "";
@@ -4632,7 +4604,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.10-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
 				DEAD_CODE_STRIPPING = NO;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_MODEL_TUNING = G5;
@@ -4645,6 +4617,7 @@
 					APPLE_APP,
 					INF_BUILD,
 				);
+				GCC_VERSION = 4.0;
 				GENERATE_PROFILING_CODE = NO;
 				INFOPLIST_FILE = "Info-debug.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
@@ -4925,7 +4898,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.10-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_DEBUGGING_SYMBOLS = default;
@@ -4942,6 +4915,7 @@
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
+				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;

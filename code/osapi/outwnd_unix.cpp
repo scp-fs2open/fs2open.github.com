@@ -24,7 +24,6 @@
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"
 
-#include <vector>
 
 
 void outwnd_print(char *id = NULL, char *tmp = NULL);
@@ -38,10 +37,14 @@ struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
 	bool enabled;
 
-	outwnd_filter_struct() { memset(this, 0, sizeof(outwnd_filter_struct)); }
+	outwnd_filter_struct()
+		: enabled( false )
+	{ 
+		name[ 0 ] = NULL;
+	}
 };
 
-std::vector<outwnd_filter_struct> OutwndFilter;
+SCP_vector<outwnd_filter_struct> OutwndFilter;
 
 int outwnd_filter_loaded = 0;
 

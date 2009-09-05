@@ -173,12 +173,12 @@ void ml_string(char *string, int add_time)
 		timer = time(NULL);
 
 		strftime(time_str, 128, "%m/%d %H:%M:%S~   ", localtime(&timer));
-		strcpy(tmp, time_str);
-		strcat(tmp, string);
+		strcpy_s(tmp, time_str);
+		strcat_s(tmp, string);
 	} else{
-		strcpy(tmp, string);
+		strcpy_s(tmp, string);
 	}
-	strcat(tmp, "\n");
+	strcat_s(tmp, "\n");
 
 	// now print it to the logfile if necessary	
 	cfputs(tmp, Multi_log_out);

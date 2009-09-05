@@ -1268,18 +1268,6 @@ void HUD_render_2d(float frametime)
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		//Custom hud stuff
-#ifdef NEW_HUD
-		//Player_ship->ship_hud.show();
-		//	int i;
-		//	gauge_data* cg;
-		/*	for(i = 0; i < current_hud->num_gauges; i++)
-		{
-		if(current_hud->gauges[i].type == HG_MAINGAUGE)
-		{
-		current_hud->gauges[i].update(current_hud->owner);
-		}
-		}*/
-#else
 		int i;
 		static bool image_ids_set = false;
 		static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
@@ -1330,7 +1318,6 @@ void HUD_render_2d(float frametime)
 			//So we're back to normal
 			hud_set_default_color();
 		}
-#endif
 	}
 
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
@@ -1697,17 +1684,7 @@ void hud_show_damage_popup()
 			if (strlen(psub->alt_dmg_sub_name))
 				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
 			else {
-				char r_name[NAME_LENGTH];
-				strcpy(r_name, ship_subsys_get_name(pss));
-				char *temp_string = strchr(r_name, '|');
-				if (temp_string == NULL) {
-					hud_subsys_list[num].name = r_name;
-				} else {
-					char show_name[NAME_LENGTH];
-					int n_chars = r_name - temp_string;
-					strncpy(show_name, r_name, n_chars);
-					hud_subsys_list[num].name = show_name;
-				}
+				hud_subsys_list[num].name = ship_subsys_get_name(pss);
 			}
 
 			hud_subsys_list[num].str  = screen_integrity;
@@ -1821,7 +1798,7 @@ void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
 	ha->time_elapsed	= 0.0f;
 	ha->sx				= sx;
 	ha->sy				= sy;
-	strcpy(ha->filename, filename);
+	strcpy_s(ha->filename, filename);
 }
 
 // init the members of the hud_frames struct to default values
@@ -1933,7 +1910,7 @@ void hud_start_text_flash(char *txt, int t)
 {
 	// bogus
 	if(txt == NULL){
-		strcpy(Hud_text_flash, "");
+		strcpy_s(Hud_text_flash, "");
 		return;
 	}
 
@@ -3108,18 +3085,6 @@ extern void hudtargetbox_page_in();
 void hud_page_in()
 {
 	int i;
-#ifdef NEW_HUD
-	/*
-	//Page in default hud stuff
-	for(i = 0; i < default_hud.num_gauges; i++)
-	{
-		if(default_hud.gauges[i].type != HG_UNUSED)
-		{
-			default_hud.gauges[i].reset();
-			default_hud.gauges[i].page_in();
-		}
-	}*/
-#endif
 
 	bm_page_in_aabitmap( Kills_gauge.first_frame, Kills_gauge.num_frames );
 	bm_page_in_aabitmap( Head_frame_gauge.first_frame, Head_frame_gauge.num_frames );

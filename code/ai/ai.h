@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+#include "ai/ai_profiles.h"
 
 struct ship_weapon;
 struct ship_subsys;
@@ -174,6 +175,41 @@ typedef struct ai_class {
 	float	ai_evasion[NUM_SKILL_LEVELS];
 	float	ai_courage[NUM_SKILL_LEVELS];
 	float	ai_patience[NUM_SKILL_LEVELS];
+
+	//SUSHI: These were originally in AI_Profiles, adding the option to override in AI.tbl
+	//Except for the boolean options at the bottom, these all behave as multipliers
+	float	ai_cmeasure_fire_chance[NUM_SKILL_LEVELS];	
+	float	ai_in_range_time[NUM_SKILL_LEVELS];			
+	float	ai_link_ammo_levels_maybe[NUM_SKILL_LEVELS];
+	float	ai_link_ammo_levels_always[NUM_SKILL_LEVELS];
+	float	ai_primary_ammo_burst_mult[NUM_SKILL_LEVELS];
+	float	ai_link_energy_levels_maybe[NUM_SKILL_LEVELS];
+	float	ai_link_energy_levels_always[NUM_SKILL_LEVELS];
+	float	ai_predict_position_delay[NUM_SKILL_LEVELS];
+	float	ai_shield_manage_delay[NUM_SKILL_LEVELS];
+	float	ai_ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS];	
+	float	ai_ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
+	float	ai_ship_fire_secondary_delay_scale_friendly[NUM_SKILL_LEVELS];
+	float	ai_ship_fire_secondary_delay_scale_hostile[NUM_SKILL_LEVELS];
+	float	ai_turn_time_scale[NUM_SKILL_LEVELS];
+	float	ai_glide_attack_percent[NUM_SKILL_LEVELS];
+	float	ai_circle_strafe_percent[NUM_SKILL_LEVELS];
+	float	ai_glide_strafe_percent[NUM_SKILL_LEVELS];
+	float	ai_stalemate_time_thresh[NUM_SKILL_LEVELS];
+	float	ai_stalemate_dist_thresh[NUM_SKILL_LEVELS];
+	float	ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+	int		ai_profile_flags;		//Holds the state of flags that are set
+	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
+
+	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
+	//INT_MIN and FLT_MIN represent the "not set" state for which defaults are used instead.
+	//TODO: Copy these into aip
+	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
+	float	ai_shockwave_evade_chance[NUM_SKILL_LEVELS];	
+	float	ai_get_away_chance[NUM_SKILL_LEVELS];	
+	float	ai_secondary_range_mult[NUM_SKILL_LEVELS];
+	bool	ai_class_autoscale;		//Defaults to true, but can be turned off in order to disable extra scaling of some AI behaviors
+									//based on AI class index
 } ai_class;
 
 //	Submode definitions.
@@ -195,6 +231,10 @@ typedef struct ai_class {
 #define	SM_BIG_APPROACH		15		// Big ship approaches another
 #define	SM_BIG_CIRCLE			16		// Big ship flies circle around other big ship to get good angle to go parallel
 #define	SM_BIG_PARALLEL		17		// Big ship flies parallel to another
+
+//SUSHI: Attack submodes (besides those implicitly listed above) 
+#define AIS_CHASE_GLIDEATTACK	18	// Ship uses glide to move in a constant direction while pointing and shooting at target
+#define AIS_CHASE_CIRCLESTRAFE	19	// Attempt a circle-strafe on the target
 
 //	Submodes for docking behavior
 #define	AIS_DOCK_0		21
@@ -222,6 +262,7 @@ typedef struct ai_class {
 #define	AIS_STRAFE_RETREAT1	203	// fly away from attack point
 #define	AIS_STRAFE_RETREAT2	204
 #define	AIS_STRAFE_POSITION	205	// re-position to resume strafing attack
+#define	AIS_STRAFE_GLIDE_ATTACK	206	// SUSHI: Glide strafe atack
 
 #define	WPF_REPEAT				(1 << 0)
 #define	WPF_BACKTRACK			(1 << 1)
@@ -330,6 +371,7 @@ typedef struct ai_info {
 	fix		best_dot_from_time;	// time at which best dot occurred
 	fix		submode_start_time;	// time at which we entered the current submode
 	int		submode_parm0;			//	parameter specific to current submode
+	int		submode_parm1;			//	SUSHI: Another optional parameter
 	fix		next_predict_pos_time;			//	Next time to predict position.
 
 	ai_goal	goals[MAX_AI_GOALS];
@@ -337,7 +379,8 @@ typedef struct ai_info {
 	int		goal_check_time;		// timer used for processing goals for this ai object
 
 	vec3d	last_predicted_enemy_pos;		//	Where he thought enemy was last time.
-	float		time_enemy_in_range;				//	Amount of time enemy continuously in "sight", near crosshair.
+	float	time_enemy_in_range;				//	Amount of time enemy continuously in "sight", near crosshair.
+	float	time_enemy_near;					//	SUSHI: amount of time enemy continuously "near" the player
 	fix		last_attack_time;					//	Missiontime of last time this ship attacked its enemy.
 	fix		last_hit_time;						//	Missiontime of last time this ship was hit by anyone.
 	int		last_hit_quadrant;				//	Shield section of last hit.
@@ -349,7 +392,39 @@ typedef struct ai_info {
 	float		prev_dot_to_goal;					//	dot of fvec to goal last frame, used to see if making progress towards goal.
 	vec3d	goal_point;							//	Used in AIM_SAFETY, AIM_STILL and in circling.
 	vec3d	prev_goal_point;					//	Previous location of goal point, used at least for evading.
-	float		ai_accuracy, ai_evasion, ai_courage, ai_patience;
+	
+	//Values copied from the AI class
+	float	ai_accuracy, ai_evasion, ai_courage, ai_patience;
+	int		ai_aburn_use_factor;		
+	float	ai_shockwave_evade_chance;	
+	float	ai_get_away_chance;	
+	float	ai_secondary_range_mult;
+	bool	ai_class_autoscale;
+
+	//SUSHI: These were originally in AI_Profiles, adding the option to override in AI.tbl
+	float	ai_cmeasure_fire_chance;
+	float	ai_in_range_time;
+	float	ai_link_ammo_levels_maybe;
+	float	ai_link_ammo_levels_always;
+	float	ai_primary_ammo_burst_mult;
+	float	ai_link_energy_levels_maybe;
+	float	ai_link_energy_levels_always;
+	fix		ai_predict_position_delay;
+	float	ai_shield_manage_delay;	
+	float	ai_ship_fire_delay_scale_friendly;
+	float	ai_ship_fire_delay_scale_hostile;
+	float	ai_ship_fire_secondary_delay_scale_friendly;
+	float	ai_ship_fire_secondary_delay_scale_hostile;
+	float	ai_turn_time_scale;
+	float	ai_glide_attack_percent;
+	float	ai_circle_strafe_percent;
+	float	ai_glide_strafe_percent;
+	float	ai_stalemate_time_thresh;
+	float	ai_stalemate_dist_thresh;
+	int		ai_chance_to_use_missiles_on_plr;
+	int		ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
+
+
 	union {
 	float		lead_scale;							//	Amount to lead current opponent by.
 	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
@@ -594,5 +669,8 @@ void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
 void process_subobjects(int objnum);
+
+//SUSHI: Setting ai_info stuff from both ai class and ai profile
+void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);
 
 #endif

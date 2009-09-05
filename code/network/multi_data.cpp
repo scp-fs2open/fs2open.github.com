@@ -267,7 +267,7 @@ void multi_data_send_my_junk()
 	if(ok_to_send){
 		with_ext = cf_add_ext(Net_player->m_player->image_filename, NOX(".pcx"));
 		if(with_ext != NULL){
-			strcpy(Net_player->m_player->image_filename, with_ext);
+			strcpy_s(Net_player->m_player->image_filename, with_ext);
 		}
 
 		// host should put his own pic file in the list now
@@ -314,7 +314,7 @@ void multi_data_send_my_junk()
 	if(ok_to_send){
 		with_ext = cf_add_ext(Net_player->m_player->squad_filename, NOX(".pcx"));
 		if(with_ext != NULL){
-			strcpy(Net_player->m_player->squad_filename,with_ext);
+			strcpy_s(Net_player->m_player->squad_filename,with_ext);
 		}
 
 		// host should put his own pic file in the list now
@@ -397,7 +397,7 @@ int multi_data_add_new(char *filename, int player_index)
 
 	// assign the data
 	memset(&Multi_data[slot], 0, sizeof(np_data));								// clear the slot out
-	strcpy(Multi_data[slot].filename, filename);									// copy the filename
+	strcpy_s(Multi_data[slot].filename, filename);									// copy the filename
 	Multi_data[slot].used = 1;															// set it as being in use
 	Multi_data[slot].player_id = Net_players[player_index].player_id;		// player id of who's sending the file
 	Multi_data[slot].status[player_index] = 2;									// mark his status appropriately

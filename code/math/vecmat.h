@@ -22,7 +22,13 @@
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL(v) (((v)->xyz.x == 0.0f) && ((v)->xyz.y == 0.0f) && ((v)->xyz.z == 0.0f))
+#define IS_VEC_NULL_SQ_SAFE(v) ( ( (v)->xyz.x > -1e-16 ) && ( (v)->xyz.x < 1e-16 ) && \
+								 ( (v)->xyz.y > -1e-16 ) && ( (v)->xyz.y < 1e-16 ) && \
+								 ( (v)->xyz.z > -1e-16 ) && ( (v)->xyz.z < 1e-16 ) )
+
+#define IS_VEC_NULL(v) ( ( (v)->xyz.x > -1e-36 ) && ( (v)->xyz.x < 1e-36 ) && \
+						 ( (v)->xyz.y > -1e-36 ) && ( (v)->xyz.y < 1e-36 ) && \
+						 ( (v)->xyz.z > -1e-36 ) && ( (v)->xyz.z < 1e-36 ) )
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
@@ -506,6 +512,9 @@ void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest,
 
 void vm_vert2vec(vertex *vert, vec3d *vec);
 void vm_vec2vert(vec3d *vec, vertex *vert);
+
+//SUSHI: 2D vector "box" scaling
+void vm_vec_boxscale(vec2d *vec, float scale);
 
 #endif
 

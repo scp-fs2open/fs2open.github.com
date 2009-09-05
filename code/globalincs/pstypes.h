@@ -111,12 +111,13 @@ typedef struct vec3d {
 typedef struct vectora {
 	float	xyz[3];
 } vectora;
-
+*/
 
 typedef struct vec2d {
-	float i,j;
+	float x, y;
 } vec2d;
 
+/*
 // Used for some 2d primitives, like gr_poly
 typedef struct vert2df {
 	float x, y;
@@ -488,16 +489,6 @@ typedef struct lod_checker {
 } lod_checker;
 
 
-// admittedly this is a bit overkill but it's much safer than the old way of using a plain strcat()
-// x = dest string
-// y = src  string
-// z = max dest string size
-#define SAFE_STRCAT(x, y, z) {	\
-	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
-		strncat((x), (y), (z) - strlen((x)) - 1);	\
-	}	\
-}
-
 // check to see that a passed sting is valid, ie:
 //  - has >0 length
 //  - is not "none"
@@ -705,6 +696,24 @@ public:
 	bool isValid();
 };
 
+/* Restrict keyword semantics are different under VC and GCC */
+
+#ifndef NO_RESTRICT_USE
+#	ifdef _MSC_VER
+#		if _MSC_VER >= 1400
+#			define RESTRICT __restrict
+#		else
+#			define RESTRICT
+#		endif
+#	else
+#		define RESTRICT restrict
+#	endif
+#else
+#	define RESTRICT
+#endif
+
 #include "globalincs/vmallocator.h"
+#include "globalincs/safe_strings.h"
+
 
 #endif		// PS_TYPES_H

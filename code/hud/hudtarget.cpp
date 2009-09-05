@@ -1180,7 +1180,6 @@ void hud_init_targeting()
 		}
 		Lead_indicator_gauge_loaded = 1;
 	}
-#ifndef NEW_HUD
 	if (!Aburn_bar_gauge_loaded) {
 		Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
 		if ( Aburn_bar_gauge.first_frame < 0 ) {
@@ -1196,7 +1195,6 @@ void hud_init_targeting()
 		}
 		Wenergy_bar_gauge_loaded = 1;
 	}
-#endif
 	if (!Toggle_gauge_loaded) {
 		Toggle_gauge.first_frame = bm_load_animation(Toggle_fname[gr_screen.res], &Toggle_gauge.num_frames);
 		if ( Toggle_gauge.first_frame < 0 ) {
@@ -2682,7 +2680,7 @@ void hud_target_subsystem_in_reticle()
 		set_targeted_subsys(Player_ai, nearest_subsys, Player_ai->target_objnum);
 		char r_name[NAME_LENGTH];
 		int i;
-		strcpy(r_name, ship_subsys_get_name(Player_ai->targeted_subsys));
+		strcpy_s(r_name, ship_subsys_get_name(Player_ai->targeted_subsys));
 		for (i = 0; r_name[i] > 0; i++) {
 			if (r_name[i] == '|')
 				r_name[i] = ' ';
@@ -4792,7 +4790,6 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 //	Render the HUD afterburner energy gauge
 void hud_show_afterburner_gauge()
 {
-#ifndef NEW_HUD
 	float percent_left;
 	int	clip_h,w,h;	
 
@@ -4824,13 +4821,11 @@ void hud_show_afterburner_gauge()
 	if ( clip_h <= current_hud->Aburn_size[0] ) {		
 		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1]+clip_h + HUD_nose_y,w,h-clip_h,0,clip_h);
 	} 	
-#endif
 }
 
 //	Render the player weapon energy on the HUD
 void hud_show_weapon_energy_gauge()
 {
-#ifndef NEW_HUD
 	int x;
 	bool use_new_gauge = false;
 
@@ -4987,7 +4982,6 @@ void hud_show_weapon_energy_gauge()
 
 		// hud_set_default_color();
 	}
-#endif
 }
 
 // --------------------------------------------------------------------------------------
@@ -5172,7 +5166,7 @@ void hud_show_weapons()
 				GR_AABITMAP(New_weapon.first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
 		}
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5242,9 +5236,9 @@ void hud_show_weapons()
 		
 		// HACK - make Cluster Bomb fit on the HUD.
 		if(!stricmp(wip->name,"cluster bomb")){
-			strcpy(weapon_name, NOX("Cluster"));
+			strcpy_s(weapon_name, NOX("Cluster"));
 		} else {
-			strcpy(weapon_name, wip->name);
+			strcpy_s(weapon_name, wip->name);
 		}
 
 		// get rid of #
@@ -5315,7 +5309,7 @@ void hud_show_weapons()
 		// draw bottom of border
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][1]);
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[0]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[0]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5352,7 +5346,7 @@ void hud_show_weapons()
 		// draw bottom of border
 		GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][2][0], Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][2][1]);
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[0]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[0]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5377,7 +5371,7 @@ void hud_show_weapons()
 			emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], Weapon_pname_coords[gr_screen.res][0][1], EG_WEAPON_P1, "%s", name);					
 		}				
 
-		strcpy(name, Weapon_info[sw->primary_bank_weapons[1]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[1]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}

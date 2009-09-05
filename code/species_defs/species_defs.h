@@ -17,6 +17,7 @@
 #include "graphics/generic.h"
 #include "gamesnd/gamesnd.h"
 #include "mission/missionbriefcommon.h"
+#include "hud/hudparse.h"
 
 // for bitmap thrusters
 typedef struct thrust_pair_bitmap {
@@ -72,12 +73,6 @@ typedef struct species_info {
 	// Bobboau's thruster stuff
 	thrust_pair_bitmap thruster_secondary_glow_info;
 	thrust_pair_bitmap thruster_tertiary_glow_info;
-
-	// if this will not be parsed in species_defs.tbl, move it below the following comment
-#ifdef NEW_HUD
-	hud_info hud;
-#endif
-
 
 	// the members below this comment are not parsed in species_defs.tbl
 

@@ -417,14 +417,14 @@ bool fred_init()
 		Show_iff[i] = true;
 
 	// Goober5000
-	strcpy(Voice_abbrev_briefing, "");
-	strcpy(Voice_abbrev_campaign, "");
-	strcpy(Voice_abbrev_command_briefing, "");
-	strcpy(Voice_abbrev_debriefing, "");
-	strcpy(Voice_abbrev_message, "");
-	strcpy(Voice_abbrev_mission, "");
+	strcpy_s(Voice_abbrev_briefing, "");
+	strcpy_s(Voice_abbrev_campaign, "");
+	strcpy_s(Voice_abbrev_command_briefing, "");
+	strcpy_s(Voice_abbrev_debriefing, "");
+	strcpy_s(Voice_abbrev_message, "");
+	strcpy_s(Voice_abbrev_mission, "");
 	Voice_no_replace_filenames = false;
-	strcpy(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
+	strcpy_s(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
 	Voice_export_selection = 0;
 
 	hud_init_comm_orders();		// Goober5000
@@ -699,7 +699,7 @@ int dup_object(object *objp)
 			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
 				if (Num_reinforcements < MAX_REINFORCEMENTS) {
 					j = Num_reinforcements++;
-					strcpy(Reinforcements[j].name, Ships[n].ship_name);
+					strcpy_s(Reinforcements[j].name, Ships[n].ship_name);
 					Reinforcements[j].type = Reinforcements[i].type;
 					Reinforcements[j].uses = Reinforcements[i].uses;
 				}
@@ -925,7 +925,7 @@ void clear_mission()
 	Asteroid_field.field_debris_type[1] = -1;
 	Asteroid_field.field_debris_type[2] = -1;
 
-	strcpy(Mission_parse_storm_name, "none");
+	strcpy_s(Mission_parse_storm_name, "none");
 
 	obj_init();
 	model_free_all();				// Free all existing models
@@ -968,16 +968,16 @@ void clear_mission()
 	}
 
 	t = CTime::GetCurrentTime();
-	strcpy(The_mission.name, "Untitled");
+	strcpy_s(The_mission.name, "Untitled");
 	strncpy(The_mission.author, str, NAME_LENGTH - 1);
 	The_mission.author[NAME_LENGTH - 1] = 0;
-	strcpy(The_mission.created, t.Format("%x at %X"));
-	strcpy(The_mission.modified, The_mission.created);
-	strcpy(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
-	strcpy(The_mission.mission_desc, "Put mission description here\n");
+	strcpy_s(The_mission.created, t.Format("%x at %X"));
+	strcpy_s(The_mission.modified, The_mission.created);
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
+	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
 	The_mission.game_type = MISSION_TYPE_SINGLE;
-	strcpy(The_mission.squad_name, "");
-	strcpy(The_mission.squad_filename, "");
+	strcpy_s(The_mission.squad_name, "");
+	strcpy_s(The_mission.squad_filename, "");
 	The_mission.num_respawns = 3;
 
 	Player_starts = 0;
@@ -985,8 +985,8 @@ void clear_mission()
 
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
-		strcpy(Fred_alt_names[i], "");
-		strcpy(Fred_callsigns[i], "");
+		strcpy_s(Fred_alt_names[i], "");
+		strcpy_s(Fred_callsigns[i], "");
 	}
 
 	// set up the default ship types for all teams.  For now, this is the same class
@@ -1053,7 +1053,7 @@ void clear_mission()
 	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
-	strcpy(Neb2_texture_name, "");
+	strcpy_s(Neb2_texture_name, "");
 	for(i=0; i<MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
@@ -1067,7 +1067,7 @@ void clear_mission()
 
 	// Goober5000
 	The_mission.command_persona = Default_command_persona;
-	strcpy(The_mission.command_sender, DEFAULT_COMMAND); 
+	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND); 
 
 	// Goober5000: reset ALL mission flags, not just nebula!
 	The_mission.flags = 0;
@@ -1079,15 +1079,15 @@ void clear_mission()
 	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
 
 	char palette_filename[1024];
-	strcpy(palette_filename, "gamepalette1-01");
+	strcpy_s(palette_filename, "gamepalette1-01");
 //	sprintf( palette_filename, "gamepalette%d-%02d", 1, Mission_palette+1 );
 	mprintf(( "Loading palette %s\n", palette_filename ));
 	palette_load_table(palette_filename);
 
-	strcpy(The_mission.loading_screen[GR_640],"");
-	strcpy(The_mission.loading_screen[GR_1024],"");
-	strcpy(The_mission.skybox_model, "");
-	strcpy(The_mission.envmap_name, "");
+	strcpy_s(The_mission.loading_screen[GR_640],"");
+	strcpy_s(The_mission.loading_screen[GR_1024],"");
+	strcpy_s(The_mission.skybox_model, "");
+	strcpy_s(The_mission.envmap_name, "");
 
 	ENVMAP = -1;
 
@@ -1860,7 +1860,7 @@ int set_reinforcement(char *name, int state)
 
 	if (state && (cur == -1) && (Num_reinforcements < MAX_REINFORCEMENTS)) {
 		Assert(strlen(name) < NAME_LENGTH);
-		strcpy(Reinforcements[Num_reinforcements].name, name);
+		strcpy_s(Reinforcements[Num_reinforcements].name, name);
 		Reinforcements[Num_reinforcements].uses = 1;
 		Reinforcements[Num_reinforcements].arrival_delay = 0;
 		memset( Reinforcements[Num_reinforcements].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
@@ -1931,10 +1931,10 @@ int rename_ship(int ship, char *name)
 	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
-			strcpy(Reinforcements[i].name, name);
+			strcpy_s(Reinforcements[i].name, name);
 		}
 
-	strcpy(Ships[ship].ship_name, name);
+	strcpy_s(Ships[ship].ship_name, name);
 	if (ship == cur_ship)
 		Ship_editor_dialog.m_ship_name = _T(name);
 
@@ -1952,7 +1952,7 @@ int invalidate_references(char *name, int type)
 	update_texture_replacements(name, new_name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(name, Reinforcements[i].name)) {
-			strcpy(Reinforcements[i].name, new_name);
+			strcpy_s(Reinforcements[i].name, new_name);
 		}
 
 	return 0;
@@ -2121,7 +2121,7 @@ int reference_handler(char *name, int type, int obj)
 			break;
 
 		case REF_TYPE_PLAYER:
-			strcpy(type_name, name);
+			strcpy_s(type_name, name);
 			break;
 
 		case REF_TYPE_WAYPOINT:
@@ -2612,7 +2612,7 @@ char *reg_read_string( char *section, char *name, char *default_value )
 	static char tmp_string_data[1024];
 	LONG lResult;
 
-	strcpy( keyname, section );
+	strcpy_s( keyname, section );
 
 	lResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,							// Where it is
 											 keyname,								// name of key
@@ -2743,6 +2743,6 @@ void update_texture_replacements(char *old_name, char *new_name)
 	for (i = 0; i < Fred_num_texture_replacements; i++)
 	{
 		if (!stricmp(Fred_texture_replacements[i].ship_name, old_name))
-			strcpy(Fred_texture_replacements[i].ship_name, new_name);
+			strcpy_s(Fred_texture_replacements[i].ship_name, new_name);
 	}
 }

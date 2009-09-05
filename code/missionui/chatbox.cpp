@@ -333,7 +333,7 @@ void chatbox_set_mode(int mode_flags)
 	// set up the display/init variables based upon what mode we chode
 	switch(size){
 	case 0:		
-		strcpy(Chatbox_mask, Chatbox_small_bitmap_mask_fname[gr_screen.res]);
+		strcpy_s(Chatbox_mask, Chatbox_small_bitmap_mask_fname[gr_screen.res]);
 		Chatbox_x1 = Chatbox_small_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_y1 = Chatbox_small_coords[gr_screen.res][CHATBOX_Y_COORD];		
 		Chatbox_icon_x = Chatbox_small_display_coords[gr_screen.res][CHATBOX_X_COORD] - CHATBOX_TEAM_ICON_SPACE;
@@ -349,7 +349,7 @@ void chatbox_set_mode(int mode_flags)
 		break;
 
 	case 1:		
-		strcpy(Chatbox_mask, Chatbox_big_bitmap_mask_fname[gr_screen.res]);
+		strcpy_s(Chatbox_mask, Chatbox_big_bitmap_mask_fname[gr_screen.res]);
 		Chatbox_x1 = Chatbox_big_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_y1 = Chatbox_big_coords[gr_screen.res][CHATBOX_Y_COORD];		
 		Chatbox_icon_x = Chatbox_big_display_coords[gr_screen.res][CHATBOX_X_COORD] - CHATBOX_TEAM_ICON_SPACE;
@@ -458,7 +458,7 @@ void chatbox_autosplit_line()
 			strncpy(temp, msg, target_length);
  			temp[target_length] = ' '; 
  			temp[target_length+1] = '\0'; 
-			strcat(temp, remainder); 
+			strcat_s(temp, remainder); 
 			Chat_inputbox.set_text(temp);
 		}
 		else {
@@ -796,7 +796,7 @@ void chatbox_add_line(char *msg, int pid, int add_id)
 			sprintf(msg_extra, NOX("%s: %s"), Net_players[pid].m_player->short_callsign, msg );
 		}
 	} else {
-		strcpy(msg_extra,msg);
+		strcpy_s(msg_extra,msg);
 	}	
 	Assert(strlen(msg_extra) < (CHATBOX_STRING_LEN - 2));	
 
@@ -1126,7 +1126,7 @@ void chatbox_recall_add(char *string)
 	}
 
 	// copy the new item into spot 0
-	strcpy(Chatbox_recall_lines[0],string);
+	strcpy_s(Chatbox_recall_lines[0],string);
 
 	// increment the recall count if necessary
 	if(Chatbox_recall_count < CHATBOX_MAX_RECALL_LINES){

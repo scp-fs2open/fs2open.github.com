@@ -577,7 +577,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r)
 	fred_disable_htl();
 				
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy(buf, Render_subsys.cur_subsys->system_info->subobj_name);
+	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);
@@ -608,7 +608,7 @@ void display_active_ship_subsystem()
 			{
 				
 				// get subsys name
-				strcpy(buf, Render_subsys.cur_subsys->system_info->subobj_name);
+				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	
 				if (Cmdline_nohtl)
 				{
@@ -1072,12 +1072,12 @@ void display_ship_info()
 
 					} else if (objp->type == OBJ_POINT) {
 						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
-							strcpy(buf, "Camera lookat point");
+							strcpy_s(buf, "Camera lookat point");
 						else
-							strcpy(buf, "Briefing icon");
+							strcpy_s(buf, "Briefing icon");
 
 					} else if (objp->type == OBJ_JUMP_NODE) {
-						strcpy(buf, "Jump Node");
+						strcpy_s(buf, "Jump Node");
 					} else
 						Assert(0);
 				}
@@ -1086,9 +1086,9 @@ void display_ship_info()
 				{
 					sprintf(pos, "(%.0f,%.0f,%.0f)", objp->pos.xyz.x, objp->pos.xyz.y, objp->pos.xyz.z);
 					if (*buf)
-						strcat(buf, "\n");
+						strcat_s(buf, "\n");
 
-					strcat(buf, pos);
+					strcat_s(buf, pos);
 				}
 
 				if (*buf)

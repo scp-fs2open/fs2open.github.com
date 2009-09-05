@@ -1090,9 +1090,9 @@ void debrief_traitor_init()
 
 // DKA 9/13/99	Only 1 traitor msg for FS2
 //		if ( Player->main_hall ) {
-//			strcpy(stagep->voice, NOX("3_"));
+//			strcpy_s(stagep->voice, NOX("3_"));
 //		} else {
-//			strcpy(stagep->voice, NOX("1_"));
+//			strcpy_s(stagep->voice, NOX("1_"));
 //		}
 
 		// Goober5000
@@ -1147,7 +1147,7 @@ void debrief_multi_list_init()
 
 	// switch stats display to this newly selected player
 	set_player_stats(Multi_list[0].net_player_index);
-	strcpy(Debrief_current_callsign, Multi_list[0].callsign);	
+	strcpy_s(Debrief_current_callsign, Multi_list[0].callsign);	
 	Debrief_player = Player;
 }
 
@@ -1200,7 +1200,7 @@ void debrief_multi_list_draw()
 
 				// switch stats display to this newly selected player
 				set_player_stats(Multi_list[idx].net_player_index);
-				strcpy(Debrief_current_callsign, Multi_list[idx].callsign);	
+				strcpy_s(Debrief_current_callsign, Multi_list[idx].callsign);	
 				Debrief_player = Net_players[Multi_list[idx].net_player_index].m_player;				
 				break;
 			}
@@ -1267,9 +1267,9 @@ void debrief_multi_list_draw()
 			}
 		}
 
-		strcpy(str,Multi_list[z].callsign);
+		strcpy_s(str,Multi_list[z].callsign);
 		if(Net_players[Multi_list[z].net_player_index].flags & NETINFO_FLAG_OBSERVER && !(Net_players[Multi_list[z].net_player_index].flags & NETINFO_FLAG_OBS_PLAYER)){
-			strcat(str,XSTR( "(O)", 438));
+			strcat_s(str,XSTR( "(O)", 438));
 		}		
 
 		// bli
@@ -1810,8 +1810,8 @@ void debrief_setup_ship_kill_stats(int stage_num)
 
 		kill_info->num = kill_arr[i];
 
-		strcpy(kill_info->text, Ship_info[i].name);
-		strcat(kill_info->text, NOX(":"));
+		strcpy_s(kill_info->text, Ship_info[i].name);
+		strcat_s(kill_info->text, NOX(":"));
 	}
 
 	Num_text_lines += 2;
@@ -1839,7 +1839,7 @@ void debrief_check_buttons()
 		if ((z >= 0) && (z < Multi_list_size)) {
 			// switch stats display to this newly selected player
 			set_player_stats(Multi_list[z].net_player_index);
-			strcpy(Debrief_current_callsign, Multi_list[z].callsign);
+			strcpy_s(Debrief_current_callsign, Multi_list[z].callsign);
 			Debrief_player = Net_players[Multi_list[z].net_player_index].m_player;
 			Multi_list_select = z;
 			debrief_setup_ship_kill_stats(Current_stage);
@@ -2061,7 +2061,7 @@ void debrief_init()
 //	rank_bitmaps_clear();
 //	rank_bitmaps_load();
 
-	strcpy(Debrief_current_callsign, Player->callsign);
+	strcpy_s(Debrief_current_callsign, Player->callsign);
 	Debrief_player = Player;
 //	Debrief_current_net_player_index = debrief_multi_list[0].net_player_index;
 
@@ -2337,7 +2337,7 @@ void debrief_add_award_text(char *str)
 	int field_width = (Medal_bitmap > 0) ? Debrief_award_text_width[gr_screen.res][DB_WITH_MEDAL] : Debrief_award_text_width[gr_screen.res][DB_WITHOUT_MEDAL];
 
 	// copy in the line
-	strcpy(Debrief_award_text[Debrief_award_text_num_lines], str);	
+	strcpy_s(Debrief_award_text[Debrief_award_text_num_lines], str);	
 
 	// maybe translate for displaying
 	if (Lcl_gr) {
@@ -2570,7 +2570,7 @@ void debrief_do_frame(float frametime)
 
 	// draw the title of the mission
 	gr_set_color_fast(&Color_bright_white);
-	strcpy(buf, The_mission.name);
+	strcpy_s(buf, The_mission.name);
 	gr_force_fit_string(buf, 255, Debrief_title_coords[gr_screen.res][2]);
 	gr_string(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1], buf);	
 
@@ -2691,7 +2691,7 @@ void debrief_rebuild_player_list()
 		if ( MULTI_CONNECTED((*np)) && !MULTI_STANDALONE((*np))){
 			list = &Multi_list[Multi_list_size++];
 			list->net_player_index = i;
-			strcpy(list->callsign, np->m_player->callsign);
+			strcpy_s(list->callsign, np->m_player->callsign);
 			
 			// make sure to leave some room to blit the team indicator
 			gr_force_fit_string(list->callsign, CALLSIGN_LEN - 1, Debrief_list_coords[gr_screen.res][2] - MULTI_LIST_TEAM_OFFSET);

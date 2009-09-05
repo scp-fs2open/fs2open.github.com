@@ -693,7 +693,7 @@ void init_medal_bitmaps()
 			// possibly load a different filename that is specified by the bitmap filename
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
-			strcpy( filename, Medals[idx].bitmap );
+			strcpy_s( filename, Medals[idx].bitmap );
 
 			_splitpath( filename, NULL, NULL, base, NULL );
 
@@ -717,7 +717,7 @@ void init_medal_bitmaps()
 			// base now contains the actual medal bitmap filename needed to load
 			// we don't need to pass extension to bm_load anymore, so just use the basename
 			// as is.
-         Medal_bitmaps[idx] = bm_load( filename );
+			Medal_bitmaps[idx] = bm_load((gr_screen.res == GR_1024) ? filename : base);
 			Assert( Medal_bitmaps[idx] != -1 );
 		}
 	}

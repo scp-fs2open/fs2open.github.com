@@ -492,7 +492,7 @@ int bm_load( char *real_filename )
 	// should keep the game happy while loading only single pcx file which the needs to be present in any case
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "right_bracket";
-		strcpy(filename,standalone_filename);
+		strcpy_s(filename,standalone_filename);
 	}
 
 	// safety catch for strcat...
@@ -518,7 +518,7 @@ int bm_load( char *real_filename )
 		if (rval < 0)
 			return -1;
 
-		strcat(filename, ext_list[rval]);
+		strcat_s(filename, ext_list[rval]);
 		type = type_list[rval];
 	}
 
@@ -783,7 +783,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	// should keep the game happy while loading only single ani file which the needs to be present in any case
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "cursorweb";
-		strcpy(filename,standalone_filename);
+		strcpy_s(filename,standalone_filename);
 	}
 
 	// safety catch for strcat...
@@ -794,7 +794,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	}
 
 	// used later if EFF type
-	strcpy( clean_name, filename );
+	strcpy_s( clean_name, filename );
 
 	// Lets find out what type it is
 	{
@@ -823,7 +823,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		if (rval < 0)
 			return -1;
 
-		strcat(filename, ext_list[rval]);
+		strcat_s(filename, ext_list[rval]);
 		type = type_list[rval];
 	}
 
@@ -850,7 +850,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	else if (type == BM_TYPE_ANI) {
 #ifndef NDEBUG
 		// for debug of ANI sizes
-		strcpy(the_anim.name, real_filename);
+		strcpy_s(the_anim.name, real_filename);
 #endif
 		anim_read_header(&the_anim, img_cfp);
 
@@ -1749,7 +1749,7 @@ int bm_release(int handle, int clear_render_targets)
 			// Fill in bogus structures!
 
 			// For debugging:
-			strcpy( bm_bitmaps[first+i].filename, "IVE_BEEN_RELEASED!" );
+			strcpy_s( bm_bitmaps[first+i].filename, "IVE_BEEN_RELEASED!" );
 			bm_bitmaps[first+i].signature = 0xDEADBEEF;									// a unique signature identifying the data
 			bm_bitmaps[first+i].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
@@ -1772,7 +1772,7 @@ int bm_release(int handle, int clear_render_targets)
 		// Fill in bogus structures!
 
 		// For debugging:
-		strcpy( bm_bitmaps[n].filename, "IVE_BEEN_RELEASED!" );
+		strcpy_s( bm_bitmaps[n].filename, "IVE_BEEN_RELEASED!" );
 		bm_bitmaps[n].signature = 0xDEADBEEF;									// a unique signature identifying the data
 		bm_bitmaps[n].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
@@ -2157,9 +2157,9 @@ void bm_page_in_stop()
 #ifndef NDEBUG
 					memset(busy_text, 0, sizeof(busy_text));
 
-					SAFE_STRCAT( busy_text, "** BmpMan: ", sizeof(busy_text) );
-					SAFE_STRCAT( busy_text, bm_bitmaps[i].filename, sizeof(busy_text) );
-					SAFE_STRCAT( busy_text, " **", sizeof(busy_text) );
+					strcat_s( busy_text, "** BmpMan: " );
+					strcat_s( busy_text, bm_bitmaps[i].filename );
+					strcat_s( busy_text, " **" );
 
 					game_busy(busy_text);
 #else

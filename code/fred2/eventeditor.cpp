@@ -295,7 +295,7 @@ void event_editor::load_tree()
 		
 		m_sig[i] = i;
 		if (!(*m_events[i].name)){
-			strcpy(m_events[i].name, "<Unnamed>");
+			strcpy_s(m_events[i].name, "<Unnamed>");
 		}
 
 		m_events[i].formula = m_event_tree.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
@@ -487,8 +487,8 @@ void event_editor::OnOk()
 	// rename all sexp references to old events
 	for (i=0; i<m_num_events; i++)
 		if (m_sig[i] >= 0) {
-			strcpy(names[0][count], Mission_events[m_sig[i]].name);
-			strcpy(names[1][count], m_events[i].name);
+			strcpy_s(names[0][count], Mission_events[m_sig[i]].name);
+			strcpy_s(names[1][count], m_events[i].name);
 			count++;
 			Mission_events[m_sig[i]].result = 1;
 		}
@@ -498,8 +498,8 @@ void event_editor::OnOk()
 		if (!Mission_events[i].result) {
 			sprintf(buf, "<%s>", Mission_events[i].name);
 			strcpy(buf + NAME_LENGTH - 2, ">");  // force it to be not too long
-			strcpy(names[0][count], Mission_events[i].name);
-			strcpy(names[1][count], buf);
+			strcpy_s(names[0][count], Mission_events[i].name);
+			strcpy_s(names[1][count], buf);
 			count++;
 		}
 
@@ -631,7 +631,7 @@ int event_editor::handler(int code, int node, char *str)
 
 			Assert(i < m_num_events);
 			Assert(strlen(str) < NAME_LENGTH);
-			strcpy(m_events[i].name, str);
+			strcpy_s(m_events[i].name, str);
 			return node;
 
 		default:
@@ -705,7 +705,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	int index;
 	HTREEITEM h;
 
-	strcpy(m_events[num].name, "Event name");
+	strcpy_s(m_events[num].name, "Event name");
 	h = m_event_tree.insert(m_events[num].name, BITMAP_ROOT, BITMAP_ROOT, TVI_ROOT, after);
 
 	m_events[num].repeat_count = 1;
@@ -1192,10 +1192,10 @@ void event_editor::OnNewMsg()
 	MMessage msg; 
 
 	save();
-	strcpy(msg.name, "<new message>");
+	strcpy_s(msg.name, "<new message>");
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->AddString("<new message>");
 
-	strcpy(msg.message, "<put description here>");
+	strcpy_s(msg.message, "<put description here>");
 	msg.avi_info.name = NULL;
 	msg.wave_info.name = NULL;
 	msg.persona_index = -1;

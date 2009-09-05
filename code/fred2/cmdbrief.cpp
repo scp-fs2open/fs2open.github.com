@@ -264,8 +264,8 @@ void cmd_brief_dlg::copy_stage(int from, int to)
 {
 	if ((from < 0) || (from >= Cur_cmd_brief->num_stages)) {
 		Cur_cmd_brief->stage[to].text = strdup("<Text here>");
-		strcpy(Cur_cmd_brief->stage[to].ani_filename, "<default>");
-		strcpy(Cur_cmd_brief->stage[to].wave_filename, "none");
+		strcpy_s(Cur_cmd_brief->stage[to].ani_filename, "<default>");
+		strcpy_s(Cur_cmd_brief->stage[to].wave_filename, "none");
 		return;
 	}
 

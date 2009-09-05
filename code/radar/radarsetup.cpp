@@ -83,6 +83,8 @@ rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS] =
 	},
 };
 
+int		radar_target_id_flags = 0;
+
 color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
 blip	Blip_bright_list[MAX_BLIP_TYPES];		// linked list of bright blips
@@ -137,8 +139,8 @@ void create_radar_global_vars()
 		Radar_globals[i].Radar_coords[1][0]=411;
 		Radar_globals[i].Radar_coords[1][1]=590;
 
-		strcpy(Radar_globals[i].Radar_fname[0],radar_default_filenames[0]);
-		strcpy(Radar_globals[i].Radar_fname[1],radar_default_filenames[1]);
+		strcpy_s(Radar_globals[i].Radar_fname[0],radar_default_filenames[0]);
+		strcpy_s(Radar_globals[i].Radar_fname[1],radar_default_filenames[1]);
 
 		Radar_globals[i].Radar_blip_radius_normal[0]=2;
 		Radar_globals[i].Radar_blip_radius_normal[1]=4;

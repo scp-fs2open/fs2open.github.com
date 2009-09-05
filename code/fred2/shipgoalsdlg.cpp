@@ -865,7 +865,7 @@ int ShipGoalsDlg::verify_orders(int ship)
 		if (ship >= 0)
 			sprintf(buf, "Initial orders error for ship \"%s\"\n\n%s", Ships[ship].ship_name, str);
 		else
-			strcpy(buf, str);
+			strcpy_s(buf, str);
 
 		if (MessageBox(buf, "Error", MB_OKCANCEL | MB_ICONEXCLAMATION) != IDOK)
 			return 1;
@@ -1011,7 +1011,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 
 	*save = 0;
 	if (goalp[item].ship_name)
-		strcpy(save, goalp[item].ship_name);
+		strcpy_s(save, goalp[item].ship_name);
 
 	switch (m_data[item] & TYPE_MASK) {
 		int not_used;

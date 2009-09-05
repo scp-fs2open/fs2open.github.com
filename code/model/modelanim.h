@@ -31,7 +31,7 @@
 #define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
 #define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
 #define TRIGGER_TYPE_TURRET_FIRING			7		//Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTEDturret_animation_position				8		//Triggered exclusively by scripting...maybe SEXPs? -C
+#define TRIGGER_TYPE_SCRIPTED				8		//Triggered exclusively by scripting...maybe SEXPs? -C
 
 #define MAX_TRIGGER_ANIMATION_TYPES			9
 
