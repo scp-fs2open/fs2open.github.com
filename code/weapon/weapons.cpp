@@ -3892,9 +3892,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				}
 			}
 
-			fov = 0.8f;
-			if (wip->fov > 0.8f)
-				fov = wip->fov;
+			fov = -1.0f;
 
 			int pick_homing_point = 0;
 			if ( IS_VEC_NULL(&wp->homing_pos) ) {
