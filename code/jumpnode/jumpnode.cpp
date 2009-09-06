@@ -15,7 +15,6 @@ int Num_jump_nodes = 0;
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "hud/hud.h"
-#include "hud/hudconfig.h"
 #include "globalincs/linklist.h"
 
 linked_list<jump_node> Jump_nodes;
@@ -77,7 +76,7 @@ void jump_node::render(vec3d *pos, vec3d *view_pos)
 			}
 
 	//		nprintf(("Alan","alpha index is: %d\n", alpha_index));
-			gr_set_color_fast(&HUD_config.clr[alpha_index]);
+			gr_set_color_fast(&HUD_color_defaults[alpha_index]);
 //			model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 
 		} else {
