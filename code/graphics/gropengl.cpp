@@ -121,7 +121,7 @@ static GLenum GL_read_format = GL_BGRA;
 
 void opengl_go_fullscreen()
 {
-	if (Cmdline_window || GL_fullscreen || Fred_running)
+	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
 		return;
 
 #ifdef _WIN32
@@ -195,7 +195,7 @@ void opengl_go_fullscreen()
 
 void opengl_go_windowed()
 {
-	if ( !Cmdline_window /*|| GL_windowed*/ || Fred_running )
+	if ( ( !Cmdline_fullscreen_window && !Cmdline_window ) /*|| GL_windowed*/ || Fred_running )
 		return;
 
 #ifdef _WIN32
@@ -256,7 +256,7 @@ void opengl_minimize()
 	Assert( wnd );
 
 	// if we are a window then just show the cursor and bail
-	if (Cmdline_window || GL_windowed) {
+	if ( Cmdline_fullscreen_window || Cmdline_window || GL_windowed) {
 		ClipCursor(NULL);
 		ShowCursor(TRUE);
 		return;
@@ -299,7 +299,7 @@ void opengl_minimize()
 void gr_opengl_activate(int active)
 {
 	if (active) {
-		if (Cmdline_window)
+		if (Cmdline_fullscreen_window||Cmdline_window)
 			opengl_go_windowed();
 		else
 			opengl_go_fullscreen();
@@ -634,7 +634,7 @@ void gr_opengl_cleanup(int minimize)
 
 	if (minimize) {
 #ifdef _WIN32
-		if ( !Cmdline_window ) {
+		if ( !Cmdline_fullscreen_window && !Cmdline_window ) {
 			ChangeDisplaySettings(NULL, 0);
 		}
 #endif
@@ -1646,7 +1646,7 @@ int opengl_init_display_device()
 	}
 
 	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ( (Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
+	if ( (Cmdline_fullscreen_window|| Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 	}
 
@@ -1864,7 +1864,7 @@ bool gr_opengl_init()
 	mprintf(( "  OpenGL Version    : %s\n", ver ));
 	mprintf(( "\n" ));
 
-	if (Cmdline_window) {
+	if (Cmdline_fullscreen_window || Cmdline_window) {
 		opengl_go_windowed();
 	} else {
 		opengl_go_fullscreen();

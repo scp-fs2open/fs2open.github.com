@@ -20,6 +20,7 @@
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
+#include "cmdline/cmdline.h"
 
 #ifdef WIN32
 #define USE_DIRECTINPUT
@@ -68,8 +69,6 @@ int di_init();
 void di_cleanup();
 void mouse_eval_deltas_di();
 #endif
-
-extern int Cmdline_window;
 
 void mouse_force_pos(int x, int y);
 
@@ -126,7 +125,7 @@ void mouse_init()
 	Mouse_y = gr_screen.max_h / 2;
 
 #ifdef USE_DIRECTINPUT
-	if (!di_init() || Cmdline_window)
+	if (!di_init() || Cmdline_window || Cmdline_fullscreen_window)
 		Mouse_mode = MOUSE_MODE_WIN;
 #else
 	Mouse_mode = MOUSE_MODE_WIN;
