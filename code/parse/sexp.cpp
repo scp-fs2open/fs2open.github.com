@@ -15333,9 +15333,9 @@ int sexp_get_fov()
 		return -1;
 	else if(Sexp_fov > 0.0f)
 		// SEXP override has been set
-		return Sexp_fov / (PI/180.0f);
+		return (int) (Sexp_fov / (PI/180.0f));
 	else	
-		return cam->get_fov() / (PI/180.0f);
+		return (int) (cam->get_fov() / (PI/180.0f));
 }
 
 void sexp_reset_fov()
