@@ -780,7 +780,7 @@ void mission_goal_status_change( int goal_num, int new_status)
 			// only do HUD and music is goals are my teams goals.
 			if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team)) ) {
 				hud_add_objective_messsage(type, new_status);
-				if ( !Mission_goals[goal_num].flags & MGF_NO_MUSIC ) {	// maybe play event music
+				if ( !( Mission_goals[goal_num].flags & MGF_NO_MUSIC ) ) {	// maybe play event music
 					event_music_primary_goal_failed();
 				}
 				//HUD_sourced_printf(HUD_SOURCE_FAILED, "%s goal failed at time %6.1f!", Goal_type_text(type), f2fl(Missiontime) );

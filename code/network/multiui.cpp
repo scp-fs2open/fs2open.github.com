@@ -9057,7 +9057,10 @@ void multi_debrief_server_process()
 	if((Multi_debrief_time >= Multi_debrief_resend_time) && !multi_netplayer_state_check3(NETPLAYER_STATE_DEBRIEF, NETPLAYER_STATE_DEBRIEF_ACCEPT, NETPLAYER_STATE_DEBRIEF_REPLAY, 1)){
 		// find all players who are not in the debrief state and hit them with the endgame packet
 		for(idx=0; idx<MAX_PLAYERS; idx++){
-			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && ((Net_players[idx].state != NETPLAYER_STATE_DEBRIEF) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY)) ){
+			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && 
+				( ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY ) ) ){
 				send_endgame_packet(&Net_players[idx]);
 			}
 		}
