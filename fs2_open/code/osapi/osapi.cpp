@@ -692,7 +692,7 @@ void win32_create_window(int width, int height)
 
 	// we don't sicky TOPMOST for windowed mode since we wouldn't be able to bring
 	// the debug window (or anything else) to the true foreground otherwise
-	hwndApp = CreateWindowEx( (Cmdline_window) ? 0 : WS_EX_TOPMOST,
+	hwndApp = CreateWindowEx( (Cmdline_window || Cmdline_fullscreen_window) ? 0 : WS_EX_TOPMOST,
 								szWinClass, szWinTitle,
 								style,   
 								start_x,		// x

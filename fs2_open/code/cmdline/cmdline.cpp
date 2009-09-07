@@ -169,6 +169,7 @@ Flag exe_params[] =
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
+	{ "-fullscreen_window", "Run in fullscreen window",					false,	0,					0,					"Dev Tool",		"", },
 	{ "-res",				"Run at specified resolution",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-res", },
 	{ "-timerbar",			"",											true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-timerbar", },
 	{ "-stats",				"Show statistics",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
@@ -387,6 +388,7 @@ cmdline_parm timerbar_arg("-timerbar", NULL);		// Cmdline_timerbar
 cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_save_render_targets
 cmdline_parm debug_window_arg("-debug_window", NULL);	// Cmdline_debug_window
 cmdline_parm window_arg("-window", NULL);				// Cmdline_window
+cmdline_parm fullscreen_window_arg("-fullscreen_window",NULL);
 cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
 cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 #ifdef SCP_UNIX
@@ -405,6 +407,7 @@ int Cmdline_timerbar = 0;
 int Cmdline_save_render_targets = 0;
 int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
+int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
 int Cmdline_verify_vps = 0;
 #ifdef SCP_UNIX
@@ -1012,6 +1015,15 @@ bool SetCmdlineParams()
 	if(window_arg.found()){
 		Cmdline_window = 1;
 	}
+
+	if ( fullscreen_window_arg.found( ) )
+	{
+#ifdef WIN32
+		Cmdline_fullscreen_window = 1;
+		Cmdline_window = 0; /* Make sure no-one sets both */
+#endif
+	}
+
 	if(res_arg.found()){
 		Cmdline_res = res_arg.str();
 	}
