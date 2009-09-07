@@ -33,24 +33,25 @@ void fsspeech_play_buffer(int type);
 bool fsspeech_play_from(int type);
 bool fsspeech_playing();
 
-#define fsspeech_was_compiled()	(true)
+inline bool fsspeech_was_compiled() { return true; }
 
 #else
 
 // stub functions (c.f. NO_SOUND)
 
-// void functions have no effect and the stubs should not do anything or we get compiler warnings!!! - taylor
-#define fsspeech_init()	(false)
-#define fsspeech_deinit()
-#define fsspeech_play(type, text)
-#define fsspeech_stop()
-#define fsspeech_pause(playing)
-#define fsspeech_start_buffer()
-#define fsspeech_stuff_buffer(text)
-#define fsspeech_play_buffer(type)
-#define fsspeech_play_from(type) (false)
-#define fsspeech_playing() (false)
-#define fsspeech_was_compiled() (false)
+inline bool fsspeech_init() { return false; }
+inline void fsspeech_deinit() {}
+inline void fsspeech_play(int type, char *text) { (type); (text); }
+inline void fsspeech_stop() {}
+inline void fsspeech_pause(bool playing) { (playing); }
+
+inline void fsspeech_start_buffer() {}
+inline void fsspeech_stuff_buffer(char *text) { (text); }
+inline void fsspeech_play_buffer(int type) {}
+
+inline bool fsspeech_play_from(int type) { return false; }
+inline bool fsspeech_playing() { return false; }
+inline bool fsspeech_was_compiled( ) { return false; }
 
 #endif
 
