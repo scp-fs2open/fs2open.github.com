@@ -4098,11 +4098,9 @@ void weapon_process_pre( object *obj, float frame_time)
 	//WMC - Maybe detonate weapon anyway!
 	if(wip->det_radius > 0.0f)
 	{
-		if(wp->homing_object != NULL)
+		if((wp->homing_object != NULL) && (wp->homing_object->type != 0))
 		{
-			vec3d spos;
-			if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
-				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
+			if(vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
 			{
 				weapon_detonate(obj);
 			}
