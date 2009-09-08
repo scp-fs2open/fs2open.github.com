@@ -831,7 +831,7 @@ void ai_big_chase()
 
 	//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
 	if (En_objp->phys_info.speed > 3.0f) {
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
 		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
 		vm_vec_sub2(&enemy_pos, &En_objp->pos);
 	}	else
@@ -1431,7 +1431,7 @@ void ai_big_strafe_glide_attack()
 		afterburners_stop(Pl_objp);
 
 		//Compensate for motion of ship and target
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
 		vm_vec_add2(&target_pos, &predicted_enemy_pos);
 		vm_vec_sub2(&target_pos, &En_objp->pos);
 

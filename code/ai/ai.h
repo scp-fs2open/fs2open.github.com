@@ -198,6 +198,7 @@ typedef struct ai_class {
 	float	ai_stalemate_time_thresh[NUM_SKILL_LEVELS];
 	float	ai_stalemate_dist_thresh[NUM_SKILL_LEVELS];
 	float	ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+	float	ai_max_aim_update_delay[NUM_SKILL_LEVELS];
 	int		ai_profile_flags;		//Holds the state of flags that are set
 	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
 
@@ -374,6 +375,13 @@ typedef struct ai_info {
 	int		submode_parm1;			//	SUSHI: Another optional parameter
 	fix		next_predict_pos_time;			//	Next time to predict position.
 
+	//SUSHI: like last_predicted_enemy_pos, but for aiming (which currently ignores predicted position)
+	//Unlike the predicted position stuff, also takes into account velocity
+	//Only used against small ships
+	fix		next_aim_pos_time;
+	vec3d	last_aim_enemy_pos;
+	vec3d	last_aim_enemy_vel;
+
 	ai_goal	goals[MAX_AI_GOALS];
 	int		active_goal;			//	index of active goal, -1 if none, AI_ACTIVE_GOAL_DYNAMIC if dynamic (runtime-created) goal
 	int		goal_check_time;		// timer used for processing goals for this ai object
@@ -422,6 +430,7 @@ typedef struct ai_info {
 	float	ai_stalemate_time_thresh;
 	float	ai_stalemate_dist_thresh;
 	int		ai_chance_to_use_missiles_on_plr;
+	float	ai_max_aim_update_delay;
 	int		ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
 
 
@@ -637,7 +646,7 @@ extern int ai_fire_secondary_weapon(object *objp, int priority1 = -1, int priori
 extern float ai_get_weapon_dist(ship_weapon *swp);
 extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override);
 extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
-extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *eobjp, ai_info *aip);
+extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip);
 
 extern int is_instructor(object *objp);
 extern int find_enemy(int objnum, float range, int max_attackers);
@@ -673,4 +682,6 @@ void process_subobjects(int objnum);
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);
 
+//SUSHI: Updating AI aim
+void ai_update_aim(ai_info *aip, object* En_Objp);
 #endif
