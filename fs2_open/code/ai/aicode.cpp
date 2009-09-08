@@ -548,6 +548,7 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_stalemate_time_thresh[i] = 1.0f;
 		aicp->ai_stalemate_dist_thresh[i] = 1.0f;
 		aicp->ai_chance_to_use_missiles_on_plr[i] = 1.0f;
+		aicp->ai_max_aim_update_delay[i] = 1.0f;
 	}
 	aicp->ai_profile_flags = 0;
 	aicp->ai_profile_flags_set = 0;
@@ -680,6 +681,9 @@ void parse_ai_class()
 
 	if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
 		parse_float_list(aicp->ai_chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Max Aim Update Delay:"))
+		parse_float_list(aicp->ai_max_aim_update_delay, NUM_SKILL_LEVELS);
 
 	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
@@ -3532,6 +3536,22 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 	}
 
 
+}
+
+//	--------------------------------------------------------------------------
+void ai_update_aim(ai_info *aip, object* En_Objp)
+{
+	if (Missiontime >= aip->next_aim_pos_time)
+	{
+		aip->last_aim_enemy_pos = En_objp->pos;
+		aip->last_aim_enemy_vel = En_objp->phys_info.vel;
+		aip->next_aim_pos_time = Missiontime + fl2f(frand_range(0.0f, aip->ai_max_aim_update_delay));
+	}
+	else
+	{
+		//Update the position based on the velocity (assume no velocity vector change)
+		vm_vec_scale_add2(&aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, flFrametime);
+	}
 }
 
 //	--------------------------------------------------------------------------
@@ -6405,7 +6425,8 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 //	weapon speed and skill level constraints.
 //	Return value in *predicted_enemy_pos.
 //	Also, stuff globals G_predicted_pos, G_collision_time and G_fire_pos.
-void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *eobjp, ai_info *aip)
+//SUSHI: Modified to take in a position and accel value instead of reading it directly from the enemy object
+void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip)
 {
 	float	weapon_speed, range_time;
 	ship	*shipp = &Ships[pobjp->instance];
@@ -6413,7 +6434,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 
 	Assert( eobjp != NULL );
 
-	target_moving_direction = eobjp->phys_info.vel;
+	target_moving_direction = *enemy_vel;
 
 	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
 		vm_vec_sub2(&target_moving_direction, &pobjp->phys_info.vel);
@@ -6435,8 +6456,8 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 	if (aip->time_enemy_in_range < range_time) {
 		float	dist;
 
-		dist = vm_vec_dist_quick(&pobjp->pos, &eobjp->pos);
-		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &target_moving_direction, aip->time_enemy_in_range * dist/weapon_speed);
+		dist = vm_vec_dist_quick(&pobjp->pos, enemy_pos);
+		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &target_moving_direction, aip->time_enemy_in_range * dist/weapon_speed);
 	} else {
 		float	collision_time;
 		vec3d	gun_pos, pnt;
@@ -6451,13 +6472,13 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 		vm_vec_unrotate(&gun_pos, &pnt, &pobjp->orient);
 		vm_vec_add2(&gun_pos, &pobjp->pos);
 
-		collision_time = compute_collision_time(&eobjp->pos, &target_moving_direction, &gun_pos, weapon_speed);
+		collision_time = compute_collision_time(enemy_pos, &target_moving_direction, &gun_pos, weapon_speed);
 
 		if (collision_time == 0.0f) {
 			collision_time = 100.0f;
 		}
 
-		vm_vec_scale_add(predicted_enemy_pos, &eobjp->pos, &target_moving_direction, collision_time);
+		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &target_moving_direction, collision_time);
 
 		// set globals
 		G_collision_time = collision_time;
@@ -6484,9 +6505,9 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 
 	// if stealthy ship, throw his aim off, more when farther away and when dot is small
 	if ( aip->ai_flags & AIF_STEALTH_PURSUIT ) {
-		float dist = vm_vec_dist_quick(&pobjp->pos, &eobjp->pos);
+		float dist = vm_vec_dist_quick(&pobjp->pos, enemy_pos);
 		vec3d temp;
-		vm_vec_sub(&temp, &eobjp->pos, &pobjp->pos);
+		vm_vec_sub(&temp, enemy_pos, &pobjp->pos);
 		vm_vec_normalize_quick(&temp);
 		float dot = vm_vec_dotprod(&temp, &pobjp->orient.vec.fvec);
 		float st_err = 3.0f * (1.4f - dot) * (1.0f + dist / (get_skill_stealth_dist_scaler() * STEALTH_MAX_VIEW_DIST)) * (1 - aip->ai_accuracy);
@@ -8230,6 +8251,9 @@ void ai_chase()
 	time_to_enemy = compute_time_to_enemy(dist_to_enemy, Pl_objp, En_objp);
 	vm_vec_sub(&real_vec_to_enemy, &enemy_pos, &player_pos);
 
+	//Enemy position for the purpose of aiming is already calculated differently, do it explicitly here
+	ai_update_aim(aip, En_objp);
+
 	vm_vec_normalize(&real_vec_to_enemy);
 
 	real_dot_to_enemy = vm_vec_dot(&real_vec_to_enemy, &Pl_objp->orient.vec.fvec);
@@ -8266,17 +8290,17 @@ void ai_chase()
 					predicted_enemy_pos = enemy_pos;
 					predicted_vec_to_enemy = real_vec_to_enemy;
 				} else {
-					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
 					set_target_objnum(aip, -1);
 				}
 				// nprintf(("AI", "Attacking subsystem: rval = %i, pos = %7.3f %7.3f %7.3f\n", rval, predicted_enemy_pos.x, predicted_enemy_pos.y, predicted_enemy_pos.z));
 
 			} else {
-				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
 				// nprintf(("AI", "Attacking subsystem: pos = %7.3f %7.3f %7.3f\n", predicted_enemy_pos.x, predicted_enemy_pos.y, predicted_enemy_pos.z));
 			}
 		} else {
-			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
 		}
 	}
 
@@ -14444,6 +14468,7 @@ void init_ai_object(int objnum)
 	aip->rearm_release_delay = 0;			//	timestamp to delay the separation of docked ships after rearm
 
 	aip->next_predict_pos_time = 0;
+	aip->next_aim_pos_time = 0;
 
 	aip->afterburner_stop_time = 0;
 	aip->last_objsig_hit = -1;				// object signature of the ship most recently hit by aip
@@ -14552,6 +14577,7 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	aip->ai_stalemate_time_thresh = profile->stalemate_time_thresh[Game_skill_level] * aicp->ai_stalemate_time_thresh[Game_skill_level];
 	aip->ai_stalemate_dist_thresh = profile->stalemate_dist_thresh[Game_skill_level] * aicp->ai_stalemate_dist_thresh[Game_skill_level];
 	aip->ai_chance_to_use_missiles_on_plr = (int)(profile->chance_to_use_missiles_on_plr[Game_skill_level] * aicp->ai_chance_to_use_missiles_on_plr[Game_skill_level]);
+	aip->ai_max_aim_update_delay = profile->max_aim_update_delay[Game_skill_level] * aicp->ai_max_aim_update_delay[Game_skill_level];
 
 	//Set flags (these act as overrides if set)
 	aip->ai_profile_flags = 0;
