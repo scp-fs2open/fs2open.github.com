@@ -12,6 +12,8 @@
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "hud/hudbrackets.h"
+#include "hud/hudconfig.h"
+#include "hud/hudgauges.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -8075,6 +8077,40 @@ ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "I
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [number red, number green, number blue, number alpha]", "Color used to draw the gauge", "boolean", "If the operation was successful")
+{
+	int idx = -1; 
+	int r = 0;
+	int g = 0;
+	int b = 0;
+	int a = 0;
+
+	if(!ade_get_args(L, "i|iiii", &idx, &r, &g, &b, &a))
+		return ADE_RETURN_FALSE;
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ADE_RETURN_FALSE;
+
+	gr_init_alphacolor(&HUD_config.clr[idx], r, g, b, a);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getHUDGaugeColor, l_HUD, "number (index number of the gauge)", "Color used to draw the gauge", "number, number, number, number", "Red, green, blue, and alpha of the gauge")
+{
+	int idx = -1;
+
+	if(!ade_get_args(L, "i", &idx))
+		return ADE_RETURN_NIL;
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ADE_RETURN_NIL;
+
+	color c = HUD_config.clr[idx];
+	
+	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);	
 }
 
 //**********LIBRARY: Graphics
