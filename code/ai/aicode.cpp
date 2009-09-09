@@ -6432,7 +6432,8 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 	ship	*shipp = &Ships[pobjp->instance];
 	vec3d	target_moving_direction;
 
-	Assert( eobjp != NULL );
+	Assert( enemy_pos != NULL );
+	Assert( enemy_vel != NULL );
 
 	target_moving_direction = *enemy_vel;
 
