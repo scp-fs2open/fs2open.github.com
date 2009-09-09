@@ -1706,7 +1706,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
-						vm_vec_normalize_safe(&temp_vec);
+						if (IS_VEC_NULL_SQ_SAFE(&temp_vec))
+							vm_vec_normalize(&temp_vec);
+						else
+							vm_vec_zero(&temp_vec);
 						p->norm = temp_vec;
 						p->radius = cfread_float( fp);
 					}
