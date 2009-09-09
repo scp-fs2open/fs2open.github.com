@@ -4584,6 +4584,7 @@ void game_render_post_frame()
 
 	subtitles_do_frame(frametime);
 	game_shade_frame(frametime);
+	subtitles_do_frame_post_shaded(frametime);
 }
 
 #ifndef NDEBUG

@@ -683,7 +683,7 @@ void main_hall_init(int main_hall_num)
 	int mx = Main_hall->door_anim_coords[READY_ROOM_REGION][2];
 	int my = Main_hall->door_anim_coords[READY_ROOM_REGION][3];
 	gr_resize_screen_pos( &mx, &my );
-	mouse_set_pos( mx, my );	
+	//mouse_set_pos( mx, my );	
 
 	Main_hall_inited = 1;
 
