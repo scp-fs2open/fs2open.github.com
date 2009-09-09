@@ -1528,7 +1528,7 @@ void multi_ingame_validate_players()
 			int shipnum, objnum, player_objnum;
 
 			player_objnum = Net_players[i].m_player->objnum;
-			if ( (Objects[player_objnum].type != OBJ_SHIP) || (Objects[player_objnum].type != OBJ_GHOST) ) {
+			if ( (Objects[player_objnum].type != OBJ_SHIP) && (Objects[player_objnum].type != OBJ_GHOST) ) {
 				Int3();
 			}
 

@@ -299,6 +299,9 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
 				parse_int_list(profile->chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Max Aim Update Delay:"))
+				parse_float_list(profile->max_aim_update_delay, NUM_SKILL_LEVELS);
+
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);

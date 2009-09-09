@@ -7266,18 +7266,15 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
-/*
-ADE_FUNC(playGameSound, l_Audio, "Sound filename, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "True if sound was played, false if not (Replaced with a sound instance object in the future)", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played")
+ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	char *s;
+	int idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
 	bool voice_msg = false;
-	if(!ade_get_args(L, "s|ffib", &s, &pan, &vol, &pri, &voice_msg))
+	if(!ade_get_args(L, "i|ffib", &idx, &pan, &vol, &pri, &voice_msg))
 		return ADE_RETURN_NIL;
-
-	int idx = gamesnd_get_by_name(s);
 	
 	if(idx < 0)
 		return ADE_RETURN_FALSE;
@@ -7299,27 +7296,17 @@ ADE_FUNC(playGameSound, l_Audio, "Sound filename, [Panning (-1.0 left to 1.0 rig
 	return ade_set_args(L, "b", idx > -1);
 }
 
-ADE_FUNC(playInterfaceSound, l_Audio, "Sound filename", "True if sound was played, false if not", "Plays a sound from #Interface Sounds in sounds.tbl")
+ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	char *s;
-	if(!ade_get_args(L, "s", &s))
-		return ade_set_error(L, "b", false);
-
 	int idx;
-	for(idx = 0; idx < Num_iface_sounds; idx++)
-	{
-		if(!strextcmp(Snds_iface[idx].filename, s))
-			break;
-	}
-	
-	if(idx == Num_iface_sounds)
-		return ADE_RETURN_FALSE;
+	if(!ade_get_args(L, "i", &idx))
+		return ade_set_error(L, "b", false);
 
 	gamesnd_play_iface(idx);
 
 	return ade_set_args(L, "b", idx > -1);
 }
-*/
+
 /*
 class track_h
 {

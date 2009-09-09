@@ -47,6 +47,7 @@ extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
 extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
+extern int Cmdline_fullscreen_window;
 extern char *Cmdline_res;
 
 
