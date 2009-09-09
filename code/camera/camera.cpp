@@ -613,7 +613,7 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 //*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
-subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width)
+subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width, bool in_post_shaded)
 {
 	// basic init, this always has to be done
 	memset( imageanim, 0, sizeof(imageanim) );
@@ -727,6 +727,8 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 
 	time_displayed = 0.0f;
 	time_displayed_end = 2.0f*fade_time + display_time;
+
+	post_shaded = in_post_shaded;
 }
 
 void subtitle::do_frame(float frametime)
@@ -809,6 +811,8 @@ void subtitle::clone(const subtitle &sub)
 
 	time_displayed = sub.time_displayed;
 	time_displayed_end = sub.time_displayed_end;
+
+	post_shaded = sub.post_shaded;
 }
 
 const subtitle &subtitle::operator=(const subtitle &sub)
@@ -1075,6 +1079,17 @@ void subtitles_do_frame(float frametime)
 	unsigned int i,size=Subtitles.size();
 	for(i = 0; i < size; i++)
 	{
-		Subtitles[i].do_frame(frametime);
+		if ( !Subtitles[i].is_post_shaded( ) )
+			Subtitles[i].do_frame(frametime);
+	}
+}
+
+void subtitles_do_frame_post_shaded(float frametime)
+{
+	unsigned int i,size=Subtitles.size();
+	for(i = 0; i < size; i++)
+	{
+		if ( Subtitles[i].is_post_shaded( ) )
+			Subtitles[i].do_frame(frametime);
 	}
 }
