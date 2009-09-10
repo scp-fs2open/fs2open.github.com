@@ -7522,10 +7522,13 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	}
 
 
+#ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
 	__try {
 #endif
+#endif
 		result = !game_main(szCmdLine);
+#ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
 	} __except( RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread") ) {
 		// Do nothing here - RecordExceptionInfo() has already done
@@ -7534,6 +7537,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		// the __except clause.
 	}
 #endif // _MSC_VER
+#endif
 
 	enableWindowsKey();
 
