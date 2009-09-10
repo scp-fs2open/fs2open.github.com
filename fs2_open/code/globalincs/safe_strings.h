@@ -16,13 +16,7 @@
  */
 
 /* Include logic:
- * if !defined( _MSC_VER ) && !defined(NO_SAFE_STRINGS)
- *   if NO_SAFE_STRINGS is not defined, non-VS builds come here
- * elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) && !defined(NO_SAFE_STRINGS)
- *   if VS2005+ and debug and NO_SAFE_STRINGS is not defined
- * elif defined(_MSC_VER) && _MSC_VER < 1400 || defined(NO_SAFE_STRINGS)
- *   if VS < 2005 or NO_SAFE_STRINGS
- * endif
+ * Used unless we have VC6
  */
 
 /* errno_t, EINVAL, ERANGE, etc.. */
@@ -32,7 +26,7 @@
 /* Because errno_t is not (yet) standard, we define it here like this */
 typedef int errno_t;
 
-#if !defined( _MSC_VER ) && !defined(NO_SAFE_STRINGS) /* These are already present in 2005, 2008 - if you're using anything else, you don't get these */
+#if ( !defined( _MSC_VER ) && !defined(NO_SAFE_STRINGS) ) || defined( _MSC_VER ) && _MSC_VER >= 1400 /*&& !defined(NDEBUG)*/ && !defined(NO_SAFE_STRINGS)
 
 /* In order to compile safe_strings_test.cpp, you must have this defined on the command line */
 /* #define SAFESTRINGS_TEST_APP */
@@ -43,11 +37,7 @@ typedef int errno_t;
 #ifndef SAFESTRINGS_TEST_APP
 
 #	ifndef __safe_strings_error_handler
-#		ifdef _DEBUG
-#			define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report\nTrying to put into %d byte buffer:\n%s", #val, file, line,sizeInBytes,strSource) /* Crash hard here - no better option outside of a cross platform framework */
-#		else
-#			define __safe_strings_error_handler( val ) 1/0 /* Crash hard here - no better option outside of a cross platform framework */
-#		endif
+#		define __safe_strings_error_handler( val ) Error(file, line,"%s: String error. Please Report.\nTrying to put into %d byte buffer:\n%s", #val, sizeInBytes,strSource)
 #	endif
 
 #else
@@ -55,57 +45,6 @@ typedef int errno_t;
 /* For testing only */
 #	define __safe_strings_error_handler( errnoVal ) extern void error_handler( int errnoValue, const char* errnoStr,  const char* file, const char* function, int line );\
 																error_handler( errnoVal, #errnoVal, __FILE__, __FUNCTION__, __LINE__ );
-#endif
-
-#ifdef NDEBUG
-
-extern errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource );
-extern errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSource );
-
-/* Template helpers */
-template< size_t size>
-inline
-errno_t strcpy_s( char (&strDest)[ size ], const char* strSource )
-{
-	return strcpy_s( strDest, size, strSource );
-}
-
-template< size_t size >
-inline
-errno_t strcat_s( char (&strDest)[ size ], const char* strSource )
-{
-	return strcat_s( strDest, size, strSource );
-}
-
-#else
-
-extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
-extern errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
-
-template< size_t size>
-inline
-errno_t scp_strcpy_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
-{
-	return scp_strcpy_s( file, line, strDest, size, strSource );
-}
-
-template< size_t size >
-inline
-errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
-{
-	return scp_strcat_s( file, line, strDest, size, strSource );
-}
-
-#define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
-#define strcat_s( ... ) scp_strcat_s( __FILE__, __LINE__, __VA_ARGS__ )
-
-#endif
-
-/* Safe strings for VS2005+ in debug builds (these give more info than the MS CRT ones) */
-#elif defined( _MSC_VER ) && _MSC_VER >= 1400 && !defined(NDEBUG) && !defined(NO_SAFE_STRINGS)
-
-#ifndef __safe_strings_error_handler
-#	define __safe_strings_error_handler( val ) Assertion(0,"%s: String error @ %s (%d). Please Report\nTrying to put into %d byte buffer:\n%s", #val, file, line,sizeInBytes,strSource) /* Crash hard here - no better option outside of a cross platform framework */
 #endif
 
 extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
