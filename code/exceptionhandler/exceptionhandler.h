@@ -8,7 +8,7 @@
 */
 
 
-
+#ifdef GAME_ERRORLOG_TXT
 
 #ifndef __EXCEPTION_HANDLER_H
 #define __EXCEPTION_HANDLER_H
@@ -69,3 +69,4 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message);
 
 
 #endif // __EXCEPTION_HANDLER_H
+#endif
