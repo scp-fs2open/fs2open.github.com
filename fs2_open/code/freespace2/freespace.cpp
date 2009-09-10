@@ -2415,7 +2415,7 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate && HUD_draw)	{
+	if (Show_framerate /* && HUD_draw*/ )	{
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (frametotal != 0.0f)
