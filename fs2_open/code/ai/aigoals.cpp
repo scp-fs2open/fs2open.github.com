@@ -1046,12 +1046,8 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	/* Sanity check */
 	Assert( Sexp_nodes[ sexp ].first != -1 );
 
-	/* We need a dummy int later on */
-	int dummy = 0;
-
 	/* The bits we're searching for in the goals list */
 	int priority = -1;
-	int priority_node = -1;
 
 	int goalmode = -1;
 	int goalsubmode = -1;

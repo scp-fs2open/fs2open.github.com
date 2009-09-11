@@ -7782,7 +7782,6 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 	if(path == CF_TYPE_INVALID)
 		return ade_set_error(L, "b", false);
 
-	const char *ext_list[] = {".ogg", ".txt", ".*"};
 	if(!check_vps)
 		return ade_set_args(L, "b", cf_exists(n_filename, path) != 0);
 	else
