@@ -110,8 +110,6 @@ void parse_rank_tbl()
 // initialize a nice blank scoring element
 void init_scoring_element(scoring_struct *s)
 {
-	int i;
-
 	if (s == NULL) {
 		Int3();	//	DaveB -- Fix this!
 		// read_pilot_file(char* callsign);
