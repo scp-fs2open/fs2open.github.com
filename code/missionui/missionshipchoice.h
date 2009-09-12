@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -62,7 +62,6 @@ void ship_select_do(float frametime);
 void ship_select_close();
 void ship_select_common_init();
 void ship_select_common_close();
-void ship_stop_animation();
 int ss_get_ship_class(int ship_entry_index);
 int ss_get_selected_ship();
 

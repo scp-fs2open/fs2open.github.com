@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -17,7 +17,7 @@
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS
-// 
+//
 
 // muzzle flash info - read from a table
 typedef struct mflash_blob_info {
@@ -44,7 +44,7 @@ SCP_vector<mflash_info> Mflash_info;
 
 // Stuff for missile trails doesn't need to be saved or restored... or does it?
 /*
-typedef struct mflash {	
+typedef struct mflash {
 	struct	mflash * prev;
 	struct	mflash * next;
 
@@ -61,7 +61,7 @@ mflash Mflash_used_list;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH FUNCTIONS
-// 
+//
 
 void parse_mflash_tbl(char *filename)
 {
@@ -74,7 +74,7 @@ void parse_mflash_tbl(char *filename)
 	}
 
 	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();		
+	reset_parse();
 
 	// header
 	required_string("#Muzzle flash types");
@@ -162,7 +162,7 @@ void mflash_page_in(bool load_all)
 
 		// blobs
 		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, 1);
+			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, NULL, 1);
 			Assert( Mflash_info[i].blobs[idx].anim_id >= 0 );
 			bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
 		}
@@ -214,7 +214,7 @@ void mflash_level_close()
 
 // create a muzzle flash on the guy
 void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type)
-{	
+{
 	// mflash *mflashp;
 	mflash_info *mi;
 	mflash_blob_info *mbi;
@@ -244,15 +244,15 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 
 	// remove trailp from the free list
 	list_remove( &Mflash_free_list, mflashp );
-	
+
 	// insert trailp onto the end of used list
 	list_append( &Mflash_used_list, mflashp );
 
 	// store some stuff
-	mflashp->type = (ubyte)mflash_type;	
+	mflashp->type = (ubyte)mflash_type;
 	*/
 
-	// create the actual animations	
+	// create the actual animations
 	mi = &Mflash_info[mflash_type];
 
 	for (idx = 0; idx < mi->blobs.size(); idx++) {
@@ -275,7 +275,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	}
 
 	// increment counter
-	// Num_mflash++;		
+	// Num_mflash++;
 }
 
 // process muzzle flash stuff
@@ -287,7 +287,7 @@ void mflash_process_all()
 	// if the timestamp has elapsed recycle it
 	mflashp = GET_FIRST(&Mflash_used_list);
 
-	while ( mflashp!=END_OF_LIST(&Mflash_used_list) )	{			
+	while ( mflashp!=END_OF_LIST(&Mflash_used_list) )	{
 		if((mflashp->stamp == -1) || timestamp_elapsed(mflashp->stamp)){
 			// delete it from the list!
 			mflash *next_one = GET_NEXT(mflashp);
@@ -302,9 +302,9 @@ void mflash_process_all()
 			Num_mflash--;
 
 			Assert(Num_mflash >= 0);
-			
-			mflashp = next_one;			
-		} else {	
+
+			mflashp = next_one;
+		} else {
 			mflashp = GET_NEXT(mflashp);
 		}
 	}
@@ -317,7 +317,7 @@ void mflash_render_all()
 
 // lookup type by name
 int mflash_lookup(char *name)
-{	
+{
 	uint idx;
 
 	// look it up
@@ -327,5 +327,5 @@ int mflash_lookup(char *name)
 	}
 
 	// couldn't find it
-	return -1;	
+	return -1;
 }

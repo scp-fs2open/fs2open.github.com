@@ -5971,7 +5971,7 @@ float texture_info::GetTotalTime()
 }
 int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 {
-	this->original_texture = bm_load_either(filename, NULL, NULL, 1, CF_TYPE_MAPS);
+	this->original_texture = bm_load_either(filename, NULL, NULL, NULL, 1, CF_TYPE_MAPS);
 	if(this->original_texture < 0)
 		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani\n", dbg_name, filename));
 	this->ResetTexture();

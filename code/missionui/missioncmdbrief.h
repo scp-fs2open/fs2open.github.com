@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -17,6 +17,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/generic.h"
 
 struct anim;
 struct anim_instance;
@@ -24,9 +25,12 @@ struct anim_instance;
 typedef struct {
 	char *text;  // text to display
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
-	anim *cmd_anim;
-	anim_instance *cmd_anim_instance;
-	int anim_ref;  // potential reference to another index (use it's anim instead of this's)
+	//char tech_anim_filename[MAX_FILENAME_LEN];	//duh
+	//anim* animation;	// ptr to the animation
+	//generic_anim animation;	// animation info
+	//anim *cmd_anim;
+	//anim_instance *cmd_anim_instance;
+	//int anim_ref;  // potential reference to another index (use it's anim instead of this's)
 	char wave_filename[MAX_FILENAME_LEN];
 	int wave;  // instance number of above
 } cmd_brief_stage;

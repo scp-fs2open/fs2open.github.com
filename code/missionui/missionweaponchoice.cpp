@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -259,7 +259,7 @@ static int Wl_bank_coords[GR_NUM_RESOLUTIONS][MAX_SHIP_WEAPONS][2] = {
 	}
 };
 
-static int Wl_bank_count_draw_flags[MAX_SHIP_WEAPONS] = { 
+static int Wl_bank_count_draw_flags[MAX_SHIP_WEAPONS] = {
 	0, 0, 0,			// primaries -- don't draw counts
 	1, 1, 1, 1		// secondaries -- do draw counts
 };
@@ -272,7 +272,7 @@ static int Wl_overhead_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		// GR_640
 		91, 117
-	},			
+	},
 	{
 		// GR_1024
 		156, 183
@@ -326,8 +326,7 @@ typedef struct wl_ship_class_info
 {
 	int				overhead_bitmap;
 	int				model_num;
-	anim			*wl_anim;
-	anim_instance	*wl_anim_instance;
+	generic_anim	animation;
 } wl_ship_class_info;
 
 wl_ship_class_info	Wl_ships[MAX_SHIP_CLASSES];
@@ -338,8 +337,7 @@ typedef struct wl_icon_info
 	int				laser_bmap;
 	int				model_index;
 	int				can_use;
-	anim			*wl_anim;
-	anim_instance	*wl_anim_instance;
+	generic_anim	animation;
 } wl_icon_info;
 
 wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
@@ -357,6 +355,7 @@ static int Hot_wl_slot = -1;					//	Ship slot that mouse is over (0..MAX_WSS_SLO
 static int Hot_weapon_icon = -1;				// Icon number (0-7) which has mouse over it
 static int Hot_weapon_bank = -1;				// index (0-7) for weapon slot on ship that has a droppable icon over it
 static int Hot_weapon_bank_icon = -1;
+static generic_anim Cur_Anim;
 
 static int Wl_mouse_down_on_region = -1;
 
@@ -369,7 +368,7 @@ static int Weapon_desc_wipe_done = 0;
 static float Weapon_desc_wipe_time_elapsed = 0.0f;
 static char Weapon_desc_lines[WEAPON_DESC_MAX_LINES][WEAPON_DESC_MAX_LENGTH];			// 1st 2 lines are title, rest are desc
 
-// maximum width the weapon title can be -- used in the line breaking 
+// maximum width the weapon title can be -- used in the line breaking
 int Weapon_title_max_width[GR_NUM_RESOLUTIONS] = { 200, 320 };
 
 static int Wl_new_weapon_title_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -414,7 +413,7 @@ UI_XSTR Weapon_select_text[GR_NUM_RESOLUTIONS][WEAPON_SELECT_NUM_TEXT] = {
 	{ // GR_640
 		{ "Reset",			1337,		580,	337,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][WL_BUTTON_RESET].button },
 		{ "Lock",			1270,		602,	364,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][WL_BUTTON_MULTI_LOCK].button }
-	}, 
+	},
 	{ // GR_1024
 		{ "Reset",			1337,		938,	546,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][WL_BUTTON_RESET].button },
 		{ "Lock",			1270,		964,	584,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][WL_BUTTON_MULTI_LOCK].button }
@@ -430,7 +429,7 @@ typedef struct carried_icon
 	int weapon_class;		// index Wl_icons[] for carried icon (-1 if carried from bank)
 	int num;					// number of units of weapon
 	int from_bank;			// bank index that icon came from (0..2 primary, 3..6 secondary).  -1 if from list
-	int from_slot;			// ship slot that weapon is part of 
+	int from_slot;			// ship slot that weapon is part of
 	int from_x, from_y;
 } carried_icon;
 
@@ -463,7 +462,7 @@ int wl_icon_being_carried();
 void wl_set_carried_icon(int from_bank, int from_slot, int weapon_class);
 
 
-// Determine hack offset for how to draw fury missile icon. 
+// Determine hack offset for how to draw fury missile icon.
 int wl_fury_missile_offset_hack(int weapon_class, int num_missiles)
 {
 	if ( weapon_class < 0 ) {
@@ -472,7 +471,7 @@ int wl_fury_missile_offset_hack(int weapon_class, int num_missiles)
 
 	if ( num_missiles < 100 ) {
 		return 0 ;
-	} 			
+	}
 
 	if ( !strnicmp(Weapon_info[weapon_class].name, NOX("fury"), 4) ) {
 		return 3;
@@ -525,7 +524,7 @@ int wl_icon_being_carried()
 	return 0;
 }
 
-// Set carried icon data 
+// Set carried icon data
 void wl_set_carried_icon(int from_bank, int from_slot, int weapon_class)
 {
 	int mx,my;
@@ -580,21 +579,27 @@ int wl_get_pilot_subsys_index(p_object *pobjp)
 // Pause the current weapon animation
 void wl_pause_anim()
 {
+	return;
+	/*
 	Assert( Wl_icons != NULL );
 
 	if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
 		anim_pause(Wl_icons[Weapon_anim_class].wl_anim_instance);
 	}
+	*/
 }
 
 // Unpause the current weapon animation
 void wl_unpause_anim()
 {
+	return;
+	/*
 	Assert( Wl_icons != NULL );
 
 	if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
 		anim_unpause(Wl_icons[Weapon_anim_class].wl_anim_instance);
 	}
+	*/
 }
 
 // ---------------------------------------------------------------------------------
@@ -640,7 +645,7 @@ void weapon_button_do(int i)
 				break;
 
 			case WL_BUTTON_MULTI_LOCK:
-				Assert(Game_mode & GM_MULTIPLAYER);				
+				Assert(Game_mode & GM_MULTIPLAYER);
 				// the "lock" button has been pressed
 				multi_ts_lock_pressed();
 
@@ -663,7 +668,7 @@ void weapon_button_do(int i)
 // -------------------------------------------------------------------
 // weapon_check_buttons()
 //
-// Check if any weapons loadout screen buttons have been pressed, and 
+// Check if any weapons loadout screen buttons have been pressed, and
 // call weapon_button_do() if they have.
 //
 void weapon_check_buttons()
@@ -673,7 +678,7 @@ void weapon_check_buttons()
 
 	for ( i = 0; i < NUM_WEAPON_BUTTONS; i++ ) {
 		b = &Buttons[gr_screen.res][i];
-		
+
 		if ( b->button.pressed() ) {
 			weapon_button_do(i);
 		}
@@ -691,7 +696,7 @@ void wl_redraw_pressed_buttons()
 {
 	int			i;
 	wl_buttons	*b;
-	
+
 	common_redraw_pressed_buttons();
 
 	for ( i = 0; i < NUM_WEAPON_BUTTONS; i++ ) {
@@ -721,19 +726,19 @@ void weapon_buttons_init()
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		Buttons[gr_screen.res][WL_BUTTON_RESET].button.hide();
-		Buttons[gr_screen.res][WL_BUTTON_RESET].button.disable();		
+		Buttons[gr_screen.res][WL_BUTTON_RESET].button.disable();
 
 		// if we're not the host of the game (or a team captain in team vs. team mode), disable the lock button
 		if(Netgame.type_flags & NG_TYPE_TEAM){
 			if(!(Net_player->flags & NETINFO_FLAG_TEAM_CAPTAIN)){
-				Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();		
+				Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();
 			}
 		} else {
 			if(!(Net_player->flags & NETINFO_FLAG_GAME_HOST)){
-				Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();				
+				Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();
 			}
 		}
-	} else {		
+	} else {
 		Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.hide();
 		Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();
 	}
@@ -744,7 +749,7 @@ void weapon_buttons_init()
 	}
 
 	Buttons[gr_screen.res][WL_BUTTON_DUMMY].button.hide();
-	Buttons[gr_screen.res][WL_BUTTON_DUMMY].button.disable();	
+	Buttons[gr_screen.res][WL_BUTTON_DUMMY].button.disable();
 }
 
 // ---------------------------------------------------------------------------------
@@ -850,7 +855,7 @@ void wl_render_overhead_view(float frametime)
 			}
 		}
 	}
-		
+
 
 	//Maybe do 2D
 	if(display_type == 0 && wl_ship->overhead_bitmap > -1)
@@ -866,7 +871,7 @@ void wl_render_overhead_view(float frametime)
 			wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 			model_page_in_textures(wl_ship->model_num, ship_class);
 		}
-		
+
 		if (wl_ship->model_num < 0)
 		{
 			mprintf(("Couldn't load model file in missionweaponchoice.cpp\n"));
@@ -898,7 +903,7 @@ void wl_render_overhead_view(float frametime)
 
 				WeapSelectScreenShipRot += PI2 * frametime / rev_rate;
 				while (WeapSelectScreenShipRot > PI2){
-					WeapSelectScreenShipRot -= PI2;	
+					WeapSelectScreenShipRot -= PI2;
 				}
 
 				rot_angles.p = -0.6f;
@@ -926,7 +931,7 @@ void wl_render_overhead_view(float frametime)
 			vec3d light_dir = vmd_zero_vector;
 			light_dir.xyz.x = 0.5;
 			light_dir.xyz.y = 2.0f;
-			light_dir.xyz.z = -2.0f;	
+			light_dir.xyz.z = -2.0f;
 			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
 			// light_filter_reset();
 			light_rotate_all();
@@ -1033,14 +1038,14 @@ void wl_render_overhead_view(float frametime)
 			}
 
 			//Cleanup
-			if (!Cmdline_nohtl) 
+			if (!Cmdline_nohtl)
 			{
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
 			}
 
 			g3_end_frame();
-			
+
 		}
 	}
 
@@ -1225,6 +1230,13 @@ void wl_init_pool(team_data *td)
 	}
 }
 
+// free source anim data if allocated
+void wl_unload_all_anims()
+{
+	if(Cur_Anim.num_frames > 0)
+		generic_anim_unload(&Cur_Anim);
+}
+
 // load the icons for a specific ship class
 void wl_load_icons(int weapon_class)
 {
@@ -1267,140 +1279,6 @@ void wl_load_icons(int weapon_class)
 	}
 }
 
-// Load in a specific weapon animation.  The data is loaded as a memory-mapped file since these animations
-// can be large.
-void wl_load_anim(int weapon_class)
-{
-	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
-	wl_icon_info	*icon;
-	weapon_info *wip = &Weapon_info[weapon_class];
-
-	Assert( Wl_icons != NULL );
-
-	icon = &Wl_icons[weapon_class];
-	Assert( icon->wl_anim == NULL );
-	
-	if(!Cmdline_weapon_choice_3d || wip->render_type == WRT_LASER)
-	{
-		// 1024x768 SUPPORT
-		// If we are in 1024x768, we first want to append "2_" in front of the filename
-		if (gr_screen.res == GR_1024) {
-			Assert(strlen(Weapon_info[weapon_class].anim_filename) <= 30);
-			strcpy_s(animation_filename, "2_");
-			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);
-
-			// now check if file exists
-			// GRR must add a .ANI at the end for detection
-			strcat_s(animation_filename,".ani");
-			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-
-			if (icon->wl_anim == NULL) {
-				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
-				strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
-				icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-			}
-		} else {
-			strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
-			// load the compressed ship animation into memory 
-			// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
-			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-		}
-
-		if ( icon->wl_anim == NULL )
-		{
-			// *If no weapon loadout ani is found, output error instead of just crashing in debug build -Et1
-			// Int3();		// couldn't load anim filename.. get Alan
-
-			//Error( LOCATION, "Couldn't find weapon loadout screen animation '%s'\n", animation_filename );
-
-			//Make sure the model is loaded
-			if(icon->model_index == -1 && wip->render_type != WRT_LASER)
-			{
-				model_load(wip->pofbitmap_name, 0, NULL);
-			}
-		}
-	}
-}
-
-// Load in any weapon animations.  This function assumes that Wl_pool has been inited.
-void wl_load_all_anims()
-{
-	#ifndef DEMO // not for FS2_DEMO
-
-	int i;
-
-	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
-
-	// init anim members for weapon animations
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_icons[i].wl_anim = NULL;
-		Wl_icons[i].wl_anim_instance = NULL;
-	}
-
-	// init anim member for overhead ship animations
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		Wl_ships[i].wl_anim = NULL;
-		Wl_ships[i].wl_anim_instance = NULL;
-	}
-
-	// load up the animations used for weapons (they are memory-mapped)
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_pool[i] > 0 && Weapon_info[i].anim_filename[0] != '\0') {
-			wl_load_anim(i);
-		}
-	}
-
-	#endif
-}
-
-// release any anim instances
-void wl_unload_all_anim_instances()
-{
-	// stop any weapon anim instances
-	int i;
-
-	Assert( Wl_icons != NULL );
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_icons[i].wl_anim_instance != NULL) {
-			anim_release_render_instance(Wl_icons[i].wl_anim_instance);
-			Wl_icons[i].wl_anim_instance = NULL;
-		}
-	}
-
-	// stop any overhead anim instances
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		if ( Wl_ships[i].wl_anim_instance != NULL) {
-			anim_release_render_instance(Wl_ships[i].wl_anim_instance);
-			Wl_ships[i].wl_anim_instance = NULL;
-		}
-	}
-}
-
-// free source anim data if allocated
-void wl_unload_all_anims()
-{
-	int i;
-
-	Assert( Wl_icons != NULL );
-
-	// unload overhead anim instances
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		if ( Wl_ships[i].wl_anim ) {
-			anim_free(Wl_ships[i].wl_anim);
-			Wl_ships[i].wl_anim = NULL;
-		}
-	}
-
-	// unload weapon anim instances
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_icons[i].wl_anim ) {
-			anim_free(Wl_icons[i].wl_anim);
-			Wl_icons[i].wl_anim = NULL;
-		}
-	}
-}
-
 // load all the icons for weapons in the pool
 void wl_load_all_icons()
 {
@@ -1412,8 +1290,7 @@ void wl_load_all_icons()
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		// clear out data
-		Wl_icons[i].wl_anim = NULL;
-		Wl_icons[i].wl_anim_instance = NULL;
+		generic_anim_init(&Wl_icons[i].animation, NULL);
 		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
 			Wl_icons[i].icon_bmaps[j] = -1;
 		}
@@ -1428,7 +1305,7 @@ void wl_load_all_icons()
 	#endif
 }
 
-//	wl_unload_icons() frees the bitmaps used for weapon icons 
+//	wl_unload_icons() frees the bitmaps used for weapon icons
 void wl_unload_icons()
 {
 	int					i,j;
@@ -1454,6 +1331,8 @@ void wl_unload_icons()
 			bm_unload(icon->laser_bmap);
 			icon->laser_bmap = -1;
 		}
+		if(Cur_Anim.num_frames > 0)
+			generic_anim_unload(&Cur_Anim);
 	}
 }
 
@@ -1467,8 +1346,7 @@ void wl_init_ship_class_data()
 		wl_ship = &Wl_ships[i];
 		wl_ship->overhead_bitmap = -1;
 		wl_ship->model_num = -1;
-		wl_ship->wl_anim = NULL;
-		wl_ship->wl_anim_instance = NULL;
+		generic_anim_init(&wl_ship->animation, NULL);
 	}
 }
 
@@ -1492,15 +1370,8 @@ void wl_free_ship_class_data()
 			wl_ship->model_num = -1;
 		}
 
-		// this should actually be freed by wl_unload_all_anims()
-		if ( wl_ship->wl_anim != NULL ) {
-			wl_ship->wl_anim = NULL;
-		}
-
-		// this should actually be freed by wl_unload_all_anim_instances()
-		if ( wl_ship->wl_anim_instance != NULL ) {
-			wl_ship->wl_anim_instance = NULL;
-		}
+		if(wl_ship->animation.num_frames)
+			generic_anim_unload(&wl_ship->animation);
 	}
 }
 
@@ -1562,7 +1433,7 @@ void wl_maybe_reset_selected_weapon_class()
 {
 	int i;
 
-	if ( Selected_wl_class >= 0 ) 
+	if ( Selected_wl_class >= 0 )
 		return;
 
 	Assert( Wss_slots != NULL );
@@ -1600,7 +1471,7 @@ void wl_start_slot_animation(int n)
 	#ifndef DEMO // not for FS2_DEMO
 
 	// don't use ani's
-	// fallback code in wl_render_overhead_view() will 
+	// fallback code in wl_render_overhead_view() will
 	// use the .pcx files
 	// should prolly scrub out the 1e06 lines of dead code this leaves
 	return;
@@ -1616,7 +1487,7 @@ void wl_start_slot_animation(int n)
 	}
 
 	ship_class = Wss_slots[n].ship_class;
-	
+
 	if ( ship_class < 0 ) {
 		Int3();
 		return;
@@ -1629,7 +1500,7 @@ void wl_start_slot_animation(int n)
 		anim_stop_playing(wl_ship->anim_instance);
 		wl_ship->anim_instance = NULL;
 	}
-	
+
 	// maybe we have to load this animation
 	if ( wl_ship->anim == NULL ) {
 		wl_ship->anim = anim_load(Ship_info[ship_class].overhead_filename, CF_TYPE_ANY, 1);
@@ -1775,13 +1646,13 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 
 	if ( ss->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE ) {
 		for ( i=0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
-			wep[i] = ss->primary_banks[i];		
+			wep[i] = ss->primary_banks[i];
 		}
 	}
 
 	if ( ss->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE ) {
 		for ( i=0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
-			wep[i+MAX_SHIP_PRIMARY_BANKS] = ss->secondary_banks[i];	
+			wep[i+MAX_SHIP_PRIMARY_BANKS] = ss->secondary_banks[i];
 		}
 	}
 
@@ -1861,7 +1732,7 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 	}
 
 	// ensure that there aren't any bogus weapons assigned by default
-	wl_cull_illegal_weapons(ship_class, wep, wep_count);	
+	wl_cull_illegal_weapons(ship_class, wep, wep_count);
 }
 
 // function to add a weapon_class to ui lists
@@ -1875,7 +1746,7 @@ void wl_add_index_to_list(int wi_index)
 				break;
 		}
 
-		if ( i == Slist_size ) 
+		if ( i == Slist_size )
 			Slist[Slist_size++] = wi_index;
 
 	} else {
@@ -1884,7 +1755,7 @@ void wl_add_index_to_list(int wi_index)
 				break;
 		}
 
-		if ( i == Plist_size ) 
+		if ( i == Plist_size )
 			Plist[Plist_size++] = wi_index;
 	}
 }
@@ -1908,7 +1779,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 				if ( Wss_num_wings <= 0 ) {
 					wl_add_index_to_list(wi_index);
 				} else {
-	
+
 					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
 						int wep_pool_index, wep_precedence_index, new_wi_index = -1;
@@ -1974,7 +1845,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 // NOTE: it is assumed that Wl_pool[] has been initialized, and Wss_slots[].ship_class is correctly set
 void wl_fill_slots()
 {
-	int i, j;	
+	int i, j;
 	int wep[MAX_SHIP_WEAPONS];
 	int wep_count[MAX_SHIP_WEAPONS];
 
@@ -1994,7 +1865,7 @@ void wl_fill_slots()
 			Wss_slots[i].wep[j] = wep[j];
 			Wss_slots[i].wep_count[j] = wep_count[j];
 		}
-	}	
+	}
 }
 
 // set up the primary and secondary icons lists that hold the weapons the player can choose from
@@ -2030,7 +1901,7 @@ void wl_init_icon_lists()
 void wl_set_team_pointers(int team)
 {
 	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
-	
+
 	Wl_icons = Wl_icons_teams[team];
 }
 
@@ -2038,10 +1909,10 @@ void wl_set_team_pointers(int team)
 void wl_reset_team_pointers()
 {
 	Assert( !Weapon_select_open );
-	
+
 	if ( Weapon_select_open )
 		return;
-	
+
 	Wl_icons = NULL;
 }
 // initialize team specific weapon select data structures
@@ -2054,7 +1925,6 @@ void weapon_select_init_team(int team_num)
 	wl_init_ship_class_data();
 
 	wl_load_all_icons();
-	wl_load_all_anims();
 
 	wl_fill_slots();
 }
@@ -2067,7 +1937,6 @@ void weapon_select_close_team()
 		return;
 
 	wl_unload_icons();
-	wl_unload_all_anim_instances();
 	wl_unload_all_anims();
 }
 
@@ -2085,7 +1954,7 @@ void weapon_select_common_init()
 
 		// re-initialize for me specifically
 		weapon_select_init_team(Common_team);
-	} else {	
+	} else {
 		// initialize for my own team
 		weapon_select_init_team(Common_team);
 	}
@@ -2111,8 +1980,6 @@ void weapon_select_init()
 	if ( Game_mode & GM_MULTIPLAYER )
 		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
 
-	ship_stop_animation();
-	stop_weapon_animation();
 	Weapon_anim_class = -1;
 
 	set_active_ui(&Weapon_ui_window);
@@ -2178,7 +2045,7 @@ void weapon_select_init()
 	// Set up the mask regions
    // initialize the different regions of the menu that will react when the mouse moves over it
 	Num_weapon_select_regions = 0;
-	
+
 	snazzy_menu_add_region(&Weapon_select_region[Num_weapon_select_regions++], "",	COMMON_BRIEFING_REGION,				0);
 	snazzy_menu_add_region(&Weapon_select_region[Num_weapon_select_regions++], "",	COMMON_SS_REGION,						0);
 	snazzy_menu_add_region(&Weapon_select_region[Num_weapon_select_regions++], "",	COMMON_WEAPON_REGION,				0);
@@ -2249,7 +2116,7 @@ void wl_dump_carried_icon()
 		} else {
 			if ( wl_carried_icon_moved() ) {
 				gamesnd_play_iface(SND_ICON_DROP);
-			}			
+			}
 		}
 
 		wl_reset_carried_icon();
@@ -2313,13 +2180,15 @@ void maybe_drop_icon_on_slot(int bank_num)
 			wl_reset_carried_icon();
 		}
 	}
-}		
+}
 
 // ----------------------------------------------------------------
 // wl_check_for_stopped_ship_anims()
 //
 void wl_check_for_stopped_ship_anims()
 {
+	return;
+	/*
 	int i;
 	anim_instance *ai;
 	for ( i = 0; i < Num_ship_classes; i++ ) {
@@ -2330,6 +2199,7 @@ void wl_check_for_stopped_ship_anims()
 			}
 		}
 	}
+	*/
 }
 
 // ---------------------------------------------------------------------------------
@@ -2343,7 +2213,7 @@ void do_mouse_over_list_weapon(int index)
 	if ( index > 3 ) {
 		region_index = ICON_SECONDARY_0 + (index - 4);
 	}
-	
+
 	if ( Wl_mouse_down_on_region != region_index ){
 		return;
 	}
@@ -2358,7 +2228,7 @@ void do_mouse_over_list_weapon(int index)
 //
 // input: index -> bank index on ship (0..6)
 //
-// returns: 
+// returns:
 //          0 -> icon was not dropped on a slot
 //				1 -> icon was dropped on a slot
 int do_mouse_over_ship_weapon(int index)
@@ -2399,10 +2269,10 @@ int do_mouse_over_ship_weapon(int index)
 
 	if ( wl_icon_being_carried() && is_moved ) {
 		if ( Weapon_info[Carried_wl_icon.weapon_class].subtype != WP_MISSILE ) {
-			if ( (index < 3) && (Wss_slots[Selected_wl_slot].wep_count[index] >= 0) ) 
+			if ( (index < 3) && (Wss_slots[Selected_wl_slot].wep_count[index] >= 0) )
 				Hot_weapon_bank = index;
 		} else {
-			if ( index >= 3 && ( Wss_slots[Selected_wl_slot].wep_count[index] >= 0) ) 
+			if ( index >= 3 && ( Wss_slots[Selected_wl_slot].wep_count[index] >= 0) )
 				Hot_weapon_bank = index;
 		}
 	}
@@ -2431,9 +2301,6 @@ void weapon_select_render(float frametime)
 		gr_set_bitmap(Weapon_select_background_bitmap);
 		gr_bitmap(0, 0);
 	}
-
-	anim_render_all(0, frametime);
-	anim_render_all(ON_SHIP_SELECT, frametime);
 }
 
 // draw the weapon description text
@@ -2459,7 +2326,7 @@ void wl_render_weapon_desc(float frametime)
 		// decide which char is last (and bright)
 		int bright_char_index = (int)(Weapon_desc_wipe_time_elapsed * WEAPON_DESC_MAX_LENGTH / WEAPON_DESC_WIPE_TIME);
 		int i, w, h, curr_len;
-		
+
 		// draw weapon title (above weapon anim)
 		for (i=0; i<2; i++) {
 			curr_len = strlen(Weapon_desc_lines[i]);
@@ -2470,7 +2337,7 @@ void wl_render_weapon_desc(float frametime)
 				Weapon_desc_lines[i][bright_char_index] = '\0';
 
 				// draw the strings
-				gr_set_color_fast(&Color_white);			
+				gr_set_color_fast(&Color_white);
 				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(10*i), Weapon_desc_lines[i]);
 
 				// draw the bright letters
@@ -2526,7 +2393,7 @@ void wl_render_weapon_desc(float frametime)
 	} else {
 
 		// draw full version
-		// FIXME - change to use a for loop 
+		// FIXME - change to use a for loop
 		gr_set_color_fast(&Color_white);
 		gr_string(weapon_title_coords[0], weapon_title_coords[1], Weapon_desc_lines[0]);
 		gr_string(weapon_title_coords[0], weapon_title_coords[1] + 10, Weapon_desc_lines[1]);
@@ -2570,7 +2437,7 @@ void wl_weapon_desc_start_wipe()
 		// entire title in line 0, thus line 1 is empty
 		Weapon_desc_lines[1][0] = '\0';
 	}
-	
+
 	// break current description into lines (break at the /n's)
 	currchar_src = 0;
 	if (Weapon_info[Selected_wl_class].desc != NULL) {
@@ -2605,7 +2472,7 @@ void wl_weapon_desc_start_wipe()
 
 
 // ---------------------------------------------------------------------------------
-// weapon_select_do() is called once per frame while in the weapon loadout screen.  
+// weapon_select_do() is called once per frame while in the weapon loadout screen.
 //
 // Calls to common_ functions are made for those functions which are common to the
 // ship select and briefing screens.
@@ -2623,7 +2490,7 @@ void weapon_select_do(float frametime)
 	if ( wl_choice >= 0 ) {
 		if ( snazzy_action == SNAZZY_CLICKED ) {
 			nprintf(("Alan","got one\n"));
-		} 
+		}
 	}
 
 	Hot_wl_slot = -1;
@@ -2632,17 +2499,6 @@ void weapon_select_do(float frametime)
 	Hot_weapon_bank_icon = -1;
 
 	k = common_select_do(frametime);
-	
-	if ( help_overlay_active(WL_OVERLAY) ) {
-		if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
-			anim_pause(Wl_icons[Weapon_anim_class].wl_anim_instance);
-		}
-	}
-	else {
-		if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
-			anim_unpause(Wl_icons[Weapon_anim_class].wl_anim_instance);
-		}
-	}
 
 	// Check common keypresses
 	common_check_keys(k);
@@ -2856,43 +2712,12 @@ void weapon_select_do(float frametime)
 		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
 	}
 
-	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class ) && Wl_icons[Selected_wl_class].wl_anim != NULL) {
-		wl_icon_info *icon;
+	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
 		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
-		if ( Weapon_anim_class != Selected_wl_class ) 
-			start_weapon_animation(Selected_wl_class);	
+		if ( Weapon_anim_class != Selected_wl_class )
+			start_weapon_animation(Selected_wl_class);
 
-		Assert(Weapon_anim_class == Selected_wl_class);
-		icon = &Wl_icons[Selected_wl_class];
-		if ( icon->wl_anim_instance ) {
-			if ( icon->wl_anim_instance->frame_num == icon->wl_anim_instance->stop_at ) {
-				anim_play_struct aps;
-
-				anim_release_render_instance(icon->wl_anim_instance);
-				anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
-
-                if (icon->wl_anim->num_keys > 1)
-                {
-                    if (icon->wl_anim->keys[1].frame_num > icon->wl_anim->keys[0].frame_num)
-                    {
-                        aps.start_at = icon->wl_anim->keys[1].frame_num - 1;
-                    }
-                    else
-                    {
-                        aps.start_at = icon->wl_anim->keys[0].frame_num - 1;
-                    }
-                }
-                else
-                {
-                    aps.start_at = WEAPON_ANIM_LOOP_FRAME - 1;
-                }
-
-				aps.screen_id = ON_WEAPON_SELECT;
-				aps.framerate_independent = 1;
-				aps.skip_frames = 0;
-				icon->wl_anim_instance = anim_play(&aps);
-			}
-		}
+		generic_anim_render(&Cur_Anim, (help_overlay_active(WL_OVERLAY)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1]);
 	}
 	else if(Wl_icons[Selected_wl_class].model_index != -1)
 	{
@@ -2910,12 +2735,10 @@ void weapon_select_do(float frametime)
 			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 	}
 
-	if ( !Background_playing ) {		
+	if ( !Background_playing ) {
 		Weapon_ui_window.draw();
 		wl_redraw_pressed_buttons();
 		draw_wl_icons();
-		anim_render_all(ON_WEAPON_SELECT, frametime);
-		wl_check_for_stopped_ship_anims();
 		wl_render_overhead_view(frametime);
 		wl_draw_ship_weapons(Selected_wl_slot);
 		for ( int i = 0; i < MAX_WING_BLOCKS; i++ ) {
@@ -3000,7 +2823,7 @@ void weapon_select_do(float frametime)
 			diffy = abs(Carried_wl_icon.from_y-my);
 			if ( (diffx > 2) || (diffy > 2) ) {
 				int ship_class = Wss_slots[Selected_wl_slot].ship_class;
-				wl_pause_anim();
+				//wl_pause_anim();
 
 				// might have to get weapon name translation
 				if (Lcl_gr)
@@ -3015,7 +2838,7 @@ void weapon_select_do(float frametime)
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name);
 				}
 
-				wl_unpause_anim();
+				//wl_unpause_anim();
 				wl_dump_carried_icon();
 			}
 		}
@@ -3033,7 +2856,7 @@ void weapon_select_do(float frametime)
 	// should render the chatbox as close to the end as possible so it overlaps all controls
 	if(!Background_playing){
 		// render some extra stuff in multiplayer
-		if(Game_mode & GM_MULTIPLAYER){				
+		if(Game_mode & GM_MULTIPLAYER){
 			// render the chatbox
 			chatbox_render();
 
@@ -3050,17 +2873,17 @@ void weapon_select_do(float frametime)
 
 	// blit help overlay if active
 	help_overlay_maybe_blit(WL_OVERLAY);
-	gr_flip();	
+	gr_flip();
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
 	// the ship model is not in memory
 	if ( Commit_pressed ) {
 		if(Game_mode & GM_MULTIPLAYER){
-			multi_ts_commit_pressed();			
+			multi_ts_commit_pressed();
 		} else {
 			commit_pressed();
-		}		
+		}
 		Commit_pressed = 0;
 	}
 }
@@ -3080,8 +2903,6 @@ void weapon_select_close()
 
 	nprintf(("Alan", "Entering weapon_select_close()\n"));
 
-	stop_weapon_animation();
-
 	// done with the bitmaps, so unlock it
 	bm_unlock(WeaponSelectMaskBitmap);
 
@@ -3093,7 +2914,7 @@ void weapon_select_close()
 	bm_release(WeaponSelectMaskBitmap);
 
 	wl_unload_icons();
-	wl_unload_all_anim_instances();
+	//wl_unload_all_anim_instances();
 	wl_unload_all_anims();
 	// ...must be last...
 	wl_free_ship_class_data();
@@ -3112,7 +2933,7 @@ void weapon_select_close()
 //	wl_render_icon_count()
 //		renders the number next to the weapon icon
 //
-// input:	x,y			=>		x,y screen position OF THE ICON (NOT where u want the text, 
+// input:	x,y			=>		x,y screen position OF THE ICON (NOT where u want the text,
 //										this is calculated to prevent overlapping)
 //				num			=>		the actual count to be printed
 //
@@ -3157,7 +2978,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	if ( icon->icon_bmaps[0] == -1 && icon->model_index == -1 && icon->laser_bmap == -1) {
 		wl_load_icons(index);
 	}
-		
+
 	// assume default bitmap is to be used
 	if(icon->icon_bmaps[0] != -1)
 		bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_NORMAL];	// normal frame
@@ -3166,7 +2987,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 
 	// next check if ship has mouse over it
 	if ( !wl_icon_being_carried() ) {
-		if ( (Hot_weapon_icon > -1 && Hot_weapon_icon == hot_mask) 
+		if ( (Hot_weapon_icon > -1 && Hot_weapon_icon == hot_mask)
 			|| (Hot_weapon_bank_icon > -1 && Hot_weapon_bank_icon == hot_bank_mask))
 		{
 			if(icon->icon_bmaps[0] != -1)
@@ -3337,10 +3158,10 @@ void draw_wl_icons()
 // ------------------------------------------------------------------------
 // wl_pick_icon_from_list()
 //
-// determine if an icon from the scrollable weapon list can be picked up 
+// determine if an icon from the scrollable weapon list can be picked up
 // (for drag and drop).  It calculates the difference in x & y between the icon
 // and the mouse, so we can move the icon with the mouse in a realistic way
-// input: index (0..7) 
+// input: index (0..7)
 void wl_pick_icon_from_list(int index)
 {
 	int weapon_class, mx, my;
@@ -3362,7 +3183,7 @@ void wl_pick_icon_from_list(int index)
 	}
 
 	// there isn't a weapon there at all!
-	if ( weapon_class < 0 ) 
+	if ( weapon_class < 0 )
 		return;
 
 	Assert( Wl_pool != NULL );
@@ -3387,7 +3208,7 @@ void wl_pick_icon_from_list(int index)
 void pick_from_ship_slot(int num)
 {
 	int mx, my, *wep, *wep_count;
-		
+
 	Assert(num < 7);
 
 	if ( Selected_wl_slot == -1 )
@@ -3413,7 +3234,7 @@ void pick_from_ship_slot(int num)
 
 	wl_set_carried_icon(num, Selected_wl_slot, wep[num]);
 	common_flash_button_init();
-			
+
 	mouse_get_pos_unscaled( &mx, &my );
 
 	int x_offset = wl_fury_missile_offset_hack(wep[num], wep_count[num]);
@@ -3430,7 +3251,7 @@ int wl_slots_all_empty(wss_unit *slot)
 	int			i;
 
 	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ ) {
-		if ( (slot->wep_count[i] > 0) && (slot->wep[i] >= 0) ) 
+		if ( (slot->wep_count[i] > 0) && (slot->wep[i] >= 0) )
 			return 0;
 	}
 
@@ -3444,7 +3265,7 @@ int wl_slots_all_empty(wss_unit *slot)
 // Weapon_data[] structure that is filled in during weapon loadout
 //
 // returns: -1	=>	if the playre ship has no weapons
-//				0	=>	function finished without errors	
+//				0	=>	function finished without errors
 int wl_update_ship_weapons(int objnum, wss_unit *slot )
 {
 	ship_info *sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
@@ -3452,7 +3273,7 @@ int wl_update_ship_weapons(int objnum, wss_unit *slot )
 	{
 		return 0;
 	}
-	// AL 11-15-97: Ensure that the player ship hasn't removed all 
+	// AL 11-15-97: Ensure that the player ship hasn't removed all
 	//					 weapons from their ship.  This will cause a warning to appear.
 	if ( objnum == OBJ_INDEX(Player_obj) && Weapon_select_open ) {
 		if ( wl_slots_all_empty(slot) && (sip->num_primary_banks > 0 || sip->num_secondary_banks > 0)) {
@@ -3484,17 +3305,17 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 
 	pilot_index = wl_get_pilot_subsys_index(pobjp);
 
-	if ( pilot_index == -1 ) 
+	if ( pilot_index == -1 )
 		return;
-						
+
 	ss = &Subsys_status[pilot_index];
 
 	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
-		ss->primary_banks[i] = -1;		
+		ss->primary_banks[i] = -1;
 	}
 
 	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
-		ss->secondary_banks[i] = -1;		
+		ss->secondary_banks[i] = -1;
 	}
 
 	j = 0;
@@ -3532,30 +3353,10 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 			// Important: the secondary_ammo[] value is a percentage of max capacity!
 			max_count = wl_calc_missile_fit(slot->wep[sidx], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[j]);
 			ss->secondary_ammo[j] = fl2i( i2fl(slot->wep_count[sidx]) / max_count * 100.0f + 0.5f);
-			
+
 			j++;
 		}
 	}
-}
-
-// ------------------------------------------------------------------------
-// stop_weapon_animation()
-//
-// Stop the current weapon animation from playing.
-//
-void stop_weapon_animation()
-{
-	if (Weapon_anim_class < 0)
-		return;
-
-	if (Wl_icons[Weapon_anim_class].wl_anim_instance == NULL)
-		return;
-
-	if ( anim_playing(Wl_icons[Weapon_anim_class].wl_anim_instance) )
-		anim_release_render_instance(Wl_icons[Weapon_anim_class].wl_anim_instance);
-
-	Wl_icons[Weapon_anim_class].wl_anim_instance = NULL;
-	Weapon_anim_class = -1;
 }
 
 // ------------------------------------------------------------------------
@@ -3563,29 +3364,47 @@ void stop_weapon_animation()
 //
 // Start the current weapon animation from playing.
 //
-void start_weapon_animation(int weapon_class) 
+void start_weapon_animation(int weapon_class)
 {
 	wl_icon_info	*icon;
-	int *weapon_ani_coords;
+	char *p;
+	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 
 	if ( weapon_class < 0 )
 		return;
 
-	if ( weapon_class == Weapon_anim_class ) 
+	if ( weapon_class == Weapon_anim_class )
 		return;
-
-	// get the correct weapon animations coords
-	if (Game_mode & GM_MULTIPLAYER) {
-		weapon_ani_coords = Wl_weapon_ani_coords_multi[gr_screen.res];
-	} else {
-		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
-	}
 
 	icon = &Wl_icons[weapon_class];
 
-	// stop current animation playing
-	if(Weapon_anim_class >= 0)
-		stop_weapon_animation();
+	//load a new animation if it's different to what's already playing
+	if(strcmp(Cur_Anim.filename, Weapon_info[weapon_class].anim_filename) != 0) {
+		//unload the previous anim
+		generic_anim_unload(&Cur_Anim);
+		//load animation here, we now only have one loaded
+		p = strchr( Weapon_info[weapon_class].anim_filename, '.' );
+		if(p)
+			*p = '\0';
+		gamesnd_play_iface(SND_WEAPON_ANIM_START);
+		if (gr_screen.res == GR_1024) {
+			strcpy_s(animation_filename, "2_");
+			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);
+		}
+		else {
+			strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
+		}
+
+		generic_anim_init(&Cur_Anim, animation_filename);
+		if(generic_anim_load(&Cur_Anim) == -1) {
+			//we've failed to load an animation, load an image and treat it like a 1 frame animation
+			Cur_Anim.first_frame = bm_load(Weapon_info[weapon_class].anim_filename);	//if we fail here, the value is still -1
+			if(Cur_Anim.first_frame != -1) {
+				Cur_Anim.num_frames = 1;
+			}
+		}
+		//mprintf(("%d %d %d\n", Cur_Anim.first_frame, Cur_Anim.keyframe, Cur_Anim.num_frames));
+	}
 
 	// start the text wipe
 	wl_weapon_desc_start_wipe();
@@ -3594,30 +3413,6 @@ void start_weapon_animation(int weapon_class)
 
 	if ( Wl_icons[weapon_class].model_index >= 0 )
 		return;
-
-	// see if we need to load in the animation from disk
-	if ( icon->wl_anim == NULL ) {
-		wl_load_anim(weapon_class);
-		/*
-		icon->anim = anim_load(Weapon_info[weapon_class].anim_filename, CF_TYPE_ANY, 1);
-		if ( icon->anim == NULL ) {
-			Int3();	// could not open the weapon animation
-			return;
-		}
-		*/
-	}
-
-	// see if we need to get an instance
-	if ( icon->wl_anim_instance == NULL && icon->wl_anim != NULL) {
-		anim_play_struct aps;
-
-		anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
-		aps.screen_id = ON_WEAPON_SELECT;
-		aps.framerate_independent = 1;
-		aps.skip_frames = 0;
-		icon->wl_anim_instance = anim_play(&aps);
-		gamesnd_play_iface(SND_WEAPON_ANIM_START);
-	}
 }
 
 // reset the weapons loadout to the defaults in the mission
@@ -3756,7 +3551,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 		Int3();	// should not be possible
 		return forced_update;
 	}
-	
+
 	// do nothing if swapping with self
 	if ( from_bank == to_bank ) {
 		*sound=SND_ICON_DROP_ON_WING;
@@ -3777,7 +3572,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 
 	// ensure banks are compatible as far as primary and secondary
 	class_mismatch_flag = (IS_BANK_PRIMARY(from_bank) && IS_BANK_SECONDARY(to_bank)) || (IS_BANK_SECONDARY(from_bank) && IS_BANK_PRIMARY(to_bank));
-	
+
 	// further ensure that restrictions aren't breached
 	if (!class_mismatch_flag) {
 		ship_info *sip = &Ship_info[slot->ship_class];
@@ -3856,7 +3651,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 			// see how much source can give
 			source_can_give = MIN(dest_can_fit, slot->wep_count[from_bank]);
 
-			if ( source_can_give > 0 ) {			
+			if ( source_can_give > 0 ) {
 				slot->wep_count[to_bank] += source_can_give;		// add to dest
 				slot->wep_count[from_bank] -= source_can_give;	// take from source
 				*sound=SND_ICON_DROP_ON_WING;
@@ -3868,7 +3663,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 
 		// case 2b: secondaries are different types
 		if ( slot->wep[from_bank] != slot->wep[to_bank] ) {
-			// swap 'em 
+			// swap 'em
 			wl_swap_weapons(ship_slot, from_bank, to_bank);
 
 			// put back some on list if required
@@ -4063,7 +3858,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 	slot->wep[to_bank] = -1;
 
 	// put weapon on ship from list
-	
+
 	// find how much dest bank can fit
 	if ( to_bank < MAX_SHIP_PRIMARY_BANKS ) {
 		max_fit = 1;
@@ -4085,7 +3880,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 	return 1;
 }
 
-// update any interface data that may be dependent on Wss_slots[] 
+// update any interface data that may be dependent on Wss_slots[]
 void wl_synch_interface()
 {
 }
@@ -4123,16 +3918,16 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	}
 
 	// only play this sound if the move was done locally (by the host in other words)
-	if ( (sound >= 0) && (player_index == -1) && !dont_play_sound) {	
-		gamesnd_play_iface(sound);	
-	}	
+	if ( (sound >= 0) && (player_index == -1) && !dont_play_sound) {
+		gamesnd_play_iface(sound);
+	}
 
 	if ( update ) {
 		if ( MULTIPLAYER_HOST ) {
 			int size;
 			ubyte wss_data[MAX_PACKET_SIZE-20];
 
-			size = store_wss_data(wss_data, MAX_PACKET_SIZE-20,sound,player_index);			
+			size = store_wss_data(wss_data, MAX_PACKET_SIZE-20,sound,player_index);
 			Assert(pl != NULL);
 			send_wss_update_packet(pl->p_info.team,wss_data, size);
 		}
@@ -4142,13 +3937,13 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 
 			// if the pool we're using has changed, synch stuff up
 			if(pl->p_info.team == Net_player->p_info.team){
-				wl_synch_interface();			
+				wl_synch_interface();
 			}
 		} else {
 			wl_synch_interface();
 		}
 	}
-	
+
 	return update;
 }
 
@@ -4179,7 +3974,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 		mode = wss_get_mode(from_bank, from_list, to_bank, to_list, ship_slot);
 		if ( mode >= 0 ) {
 			update = wl_apply(mode, from_bank, from_list, to_bank, to_list, ship_slot, player_index, dont_play_sound);
-		}		
+		}
 
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 			// set the global pointers to the right pools
@@ -4237,7 +4032,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 		cur_wss_slot = cur_wing_block * MAX_WING_SLOTS + cur_wing_slot;
 
 		// get the ship's name and class
-		sip = &Ship_info[Wss_slots[cur_wss_slot].ship_class];	
+		sip = &Ship_info[Wss_slots[cur_wss_slot].ship_class];
 		ss_return_name(cur_wing_block, cur_wing_slot, ship_name);
 
 		// don't process the selected ship

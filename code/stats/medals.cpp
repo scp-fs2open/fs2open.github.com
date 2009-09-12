@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -102,7 +102,7 @@ static int Medals_label_coords[GR_NUM_RESOLUTIONS][3] = {
 };
 
 #define MEDALS_NUM_BUTTONS			1
-#define MEDALS_EXIT					0	
+#define MEDALS_EXIT					0
 ui_button_info Medals_buttons[GR_NUM_RESOLUTIONS][MEDALS_NUM_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("MEB_18",	574,	432,	-1,	-1,	18),
@@ -406,7 +406,7 @@ void medal_main_init(player *pl, int mode)
 	if(Cmdline_gimme_all_medals){
 		//int idx;
 		for(idx=0; idx < MAX_MEDALS; idx++){
-			Medals_player->stats.medals[idx] = 1;		
+			Medals_player->stats.medals[idx] = 1;
 		}
 	}
 #endif
@@ -414,7 +414,7 @@ void medal_main_init(player *pl, int mode)
 	Medals_mode = mode;
 
 	snazzy_menu_init();
-	Medals_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );	
+	Medals_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
 	// create the interface buttons
 	for (idx=0; idx<MEDALS_NUM_BUTTONS; idx++) {
@@ -429,7 +429,7 @@ void medal_main_init(player *pl, int mode)
 
 		// set the hotspot
 		Medals_buttons[gr_screen.res][idx].button.link_hotspot(Medals_buttons[gr_screen.res][idx].hotspot);
-	}	
+	}
 
 	// add all xstrs
 	for (idx=0; idx<MEDALS_NUM_TEXT; idx++) {
@@ -437,10 +437,10 @@ void medal_main_init(player *pl, int mode)
 	}
 
 
-	Init_flags = 0;	
+	Init_flags = 0;
 
 	//init_medal_palette();
-	
+
 	Medals_bitmap = bm_load(Medals_background_filename[gr_screen.res]);
 	if (Medals_bitmap < 0) {
 	   Error(LOCATION, "Error loading medal background bitmap %s", Medals_background_filename[gr_screen.res]);
@@ -450,7 +450,7 @@ void medal_main_init(player *pl, int mode)
 
 	Medals_mask_w = -1;
 	Medals_mask_h = -1;
-      
+
 	Medals_bitmap_mask = bm_load(Medals_mask_filename[gr_screen.res]);
 	if(Medals_bitmap_mask < 0){
 		Error(LOCATION, "Error loading medal mask file %s", Medals_mask_filename[gr_screen.res]);
@@ -467,7 +467,7 @@ void medal_main_init(player *pl, int mode)
 	Medals_window.set_mask_bmap(Medals_mask_filename[gr_screen.res]);
 }
 
-// this is just a hack to display translated names without actually changing the names, 
+// this is just a hack to display translated names without actually changing the names,
 // which would break stuff
 void medals_translate_name(char *name, int max_len)
 {
@@ -514,16 +514,16 @@ void medals_translate_name(char *name, int max_len)
 		strncpy(name, "Fliegerspange", max_len);
 
 	} else if (!strcmp(name, "Ace")) {
-		strncpy(name, "Flieger-As", max_len);	
+		strncpy(name, "Flieger-As", max_len);
 
 	} else if (!strcmp(name, "Double Ace")) {
 		strncpy(name, "Doppel-As ", max_len);
 
 	} else if (!strcmp(name, "Triple Ace")) {
 		strncpy(name, "Dreifach-As ", max_len);
-		
+
 	} else if (!strcmp(name, "SOC Unit Crest")) {
-		strncpy(name, "SEK-Abzeichen ", max_len);	
+		strncpy(name, "SEK-Abzeichen ", max_len);
 	}
 }
 
@@ -546,7 +546,7 @@ void blit_label(char *label, int *coords, int num)
 			sprintf( text, NOX("%s (%d)"), translated_label, num );
 		} else {
 			sprintf( text, "%s", translated_label );
-		}		
+		}
 	} else {
 		// set correct string
 		if ( num > 1 ) {
@@ -577,7 +577,7 @@ int medal_main_do()
 {
    int region,selected, k;
 
-	k = Medals_window.process();	
+	k = Medals_window.process();
 
 	// process an exit command
 	if ((k == KEY_ESC) && (Medals_mode == MM_NORMAL)) {
@@ -593,20 +593,20 @@ int medal_main_do()
 	}
 
 	// check to see if a button was pressed
-	if( (k == (KEY_CTRLED|KEY_ENTER)) || (Medals_buttons[gr_screen.res][MEDALS_EXIT].button.pressed()) ) {	
+	if( (k == (KEY_CTRLED|KEY_ENTER)) || (Medals_buttons[gr_screen.res][MEDALS_EXIT].button.pressed()) ) {
 		gamesnd_play_iface(SND_COMMIT_PRESSED);
 		if(Medals_mode == MM_NORMAL){
 			gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		} else {
 			// any calling popup function will know to close the screen down
 			return 0;
-		}		
+		}
 	}
 
 	// blit medals also takes care of blitting the rank insignia
-	blit_medals(); 
-	blit_callsign();	
-	
+	blit_medals();
+	blit_callsign();
+
 	region = snazzy_menu_do((ubyte*)Medals_mask->data, Medals_mask_w, Medals_mask_h, NUM_MEDAL_REGIONS, Medal_regions, &selected);
 	switch (region) {
 		case ESC_PRESSED:
@@ -626,7 +626,7 @@ int medal_main_do()
 			break;
 
 		default :
-      	if (Player_score->medals[region] > 0){
+		if (Player_score->medals[region] > 0){
 				blit_label(Medals[region].name, &Medal_coords[gr_screen.res][region][0], Player_score->medals[region] );
 			}
 			break;
@@ -689,7 +689,7 @@ void init_medal_bitmaps()
 		if (Player_score->medals[idx] > 0) {
 			int num_medals;
 			char filename[NAME_LENGTH], base[NAME_LENGTH];
-			
+
 			// possibly load a different filename that is specified by the bitmap filename
 			// for this medal.  if the player has > 1 of these types of medals, then determien
 			// which of the possible version to use based on the player's count of this medal
@@ -738,7 +738,7 @@ void init_snazzy_regions()
 
 	// snazzy regions for the medals/ranks, etc.
 	for (idx=0; idx<MAX_MEDALS; idx++) {
-		if (idx == RANK_MEDAL_REGION) 
+		if (idx == RANK_MEDAL_REGION)
 			continue;
 
 		snazzy_menu_add_region(&Medal_regions[idx], "", idx, 0);

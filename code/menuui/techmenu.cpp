@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -72,7 +72,7 @@
 #define NO_MOUSE_OVER_SOUND	(1<<1)
 
 // indicies for coords
-#define SHIP_X_COORD 0 
+#define SHIP_X_COORD 0
 #define SHIP_Y_COORD 1
 #define SHIP_W_COORD 2
 #define SHIP_H_COORD 3
@@ -184,8 +184,8 @@ static techroom_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		techroom_buttons("TDB_12a",609,	323,	-1,	-1,	12,	SHIPS_DATA_MODE, REPEAT),			// next data entry
 		techroom_buttons("TDB_13",	533,	425,	500,	440,	13,	-1),										// help
 		techroom_buttons("TDB_14",	533,	455,	479,	464,	14,	-1),										// options
-		techroom_buttons("TDB_15a",571,	425,	588,	413,	15,	-1),										// exit		
-	}, 
+		techroom_buttons("TDB_15a",571,	425,	588,	413,	15,	-1),										// exit
+	},
 	{	// GR_1024
 		techroom_buttons("2_TDB_04",	649,	614,	717,	630,	4,	-1),										// ship data tab
 		techroom_buttons("2_TDB_05",	646,	669,	717,	687,	5,	-1),										// weapons data tab
@@ -204,8 +204,8 @@ static techroom_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		techroom_buttons("2_TDB_12a",	974,	518,	-1,	-1,	12,	SHIPS_DATA_MODE, REPEAT),		// next data entry
 		techroom_buttons("2_TDB_13",	854,	681,	800,	704,	13,	-1),									// help
 		techroom_buttons("2_TDB_14",	854,	728,	780,	743,	14,	-1),									// options
-		techroom_buttons("2_TDB_15a",	914,	681,	930,	660,	15,	-1),									// exit		
-	}, 
+		techroom_buttons("2_TDB_15a",	914,	681,	930,	660,	15,	-1),									// exit
+	},
 };
 
 static UI_WINDOW Ui_window;
@@ -235,7 +235,7 @@ static int Techroom_ship_modelnum;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 static int Anim_playing_id = -1;
-static anim_instance *Cur_anim_instance = NULL;
+static int anim_done = 0;
 static int Palette_bmp;
 //static int ShipWin01;
 //static int ShipWin02;
@@ -253,7 +253,9 @@ typedef struct {
 	int	index;		// index into the master table that its in (ie Ship_info[])
 	char* name;			// ptr to name string
 	char* desc;			// ptr to description string
-	anim* animation;	// ptr to the animation
+	char tech_anim_filename[MAX_FILENAME_LEN];	//duh
+	//anim* animation;	// ptr to the animation
+	generic_anim animation;	// animation info
 	int	bitmap;		// bitmap handle
 	int	has_anim;	// flag to indicate the presence of an animation for this item
 	int model_num;	// model reference handle
@@ -289,7 +291,6 @@ int Intel_info_size = 0;
 // some prototypes to make you happy
 int techroom_load_ani(anim **animpp, char *name);
 void tech_common_render();
-void techroom_start_anim();
 void tech_scroll_list_up();
 void tech_scroll_list_down();
 
@@ -309,6 +310,36 @@ void techroom_init_desc(char *src, int w)
 
 	Text_size = split_str(src, w, Text_line_size, Text_lines, MAX_TEXT_LINES);
 	Assert(Text_size >= 0 && Text_size < MAX_TEXT_LINES);
+}
+
+void techroom_unload_animation()
+{
+	int i;
+
+	//clear everything, just in case, it will get loaded when needed later
+	if (Weapon_list != NULL) {
+		for (i = 0; i < Weapon_list_size; i++) {
+			if (Weapon_list[i].animation.num_frames != 0) {
+				generic_anim_unload(&Weapon_list[i].animation);
+			}
+
+			if (Weapon_list[i].bitmap >= 0) {
+				bm_release(Weapon_list[i].bitmap);
+				Weapon_list[i].bitmap = -1;
+			}
+		}
+	}
+
+	for (i = 0; i < Intel_list_size; i++) {
+		if (Intel_list[i].animation.num_frames != 0) {
+			generic_anim_unload(&Intel_list[i].animation);
+		}
+
+		if (Intel_list[i].bitmap >= 0) {
+			bm_release(Intel_list[i].bitmap);
+			Intel_list[i].bitmap = -1;
+		}
+	}
 }
 
 void techroom_select_new_entry()
@@ -354,13 +385,22 @@ void techroom_select_new_entry()
 	} else {
 		Techroom_ship_modelnum = -1;
 		Trackball_mode = 0;
+
+		//load animation here, we now only have one loaded
+		generic_anim_init(&Current_list[Cur_entry].animation, Current_list[Cur_entry].tech_anim_filename);
+		anim_done = 0;
+		if(generic_anim_load(&Current_list[Cur_entry].animation) != -1){
+			Current_list[Cur_entry].has_anim = 1;
+		} else {
+			Current_list[Cur_entry].bitmap = bm_load(Current_list[Cur_entry].tech_anim_filename);
+		}
 	}
 
 //	Techroom_ship_rot = PI;
 
 	techroom_init_desc(Current_list[Cur_entry].desc, Tech_desc_coords[gr_screen.res][SHIP_W_COORD]);
 	fsspeech_play(FSSPEECH_FROM_TECHROOM, Current_list[Cur_entry].desc);
-	techroom_start_anim();
+	//techroom_start_anim();
 }
 
 // write out the current description in the bottom window
@@ -413,17 +453,12 @@ void techroom_weapons_render2(float frametime)
 	tech_common_render();
 
 	// render the animation
-	if(Current_list[Cur_entry].animation != NULL)
+	if(Current_list[Cur_entry].animation.num_frames > 0)
 	{
-		// JAS: This code is hacked to allow the animation to use all 256 colors
-		extern int Palman_allow_any_color;
-		Palman_allow_any_color = 1;
-		anim_render_all(0, frametime);
-		Palman_allow_any_color = 0;
+		generic_anim_render(&Current_list[Cur_entry].animation, frametime, Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
 	}
-
 	// if our active item has a bitmap instead of an animation, draw it
-	if((Cur_entry > 0) && (Current_list[Cur_entry].animation == NULL) && (Current_list[Cur_entry].bitmap >= 0)){
+	else if((Cur_entry > 0) && (Current_list[Cur_entry].bitmap >= 0)){
 		gr_set_bitmap(Current_list[Cur_entry].bitmap);
 		gr_bitmap(Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
 	}
@@ -484,7 +519,7 @@ void techroom_ships_render(float frametime)
 {
 	// render all the common stuff
 	tech_common_render();
-	
+
 	if(Cur_entry_index == -1)
 		return;
 
@@ -506,7 +541,7 @@ void techroom_ships_render(float frametime)
 	// rotate the ship as much as required for this frame
 	Techroom_ship_rot += PI2 * frametime / rev_rate;
 	while (Techroom_ship_rot > PI2){
-		Techroom_ship_rot -= PI2;	
+		Techroom_ship_rot -= PI2;
 	}
 
 	// turn off fogging
@@ -539,7 +574,7 @@ void techroom_ships_render(float frametime)
 		vm_rotate_matrix_by_angles(&Techroom_ship_orient, &rot_angles);
 	}
 
-	gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);	
+	gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);
 
 	// render the ship
 	g3_start_frame(1);
@@ -553,7 +588,7 @@ void techroom_ships_render(float frametime)
 	// lighting for techroom
 	light_reset();
 	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;	
+	light_dir.xyz.y = 1.0f;
 	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
 	light_rotate_all();
 	// lighting for techroom
@@ -576,6 +611,9 @@ void techroom_ships_render(float frametime)
 // select previous entry in current list
 void tech_prev_entry()
 {
+	//unload the current animation, we load another one for the new current entry
+	techroom_unload_animation();
+
 	Cur_entry--;
 	if (Cur_entry < 0) {
 		Cur_entry = Current_list_size - 1;
@@ -602,6 +640,9 @@ void tech_prev_entry()
 // select next entry in current list
 void tech_next_entry()
 {
+	//unload the current animation, we load another one for the new current entry
+	techroom_unload_animation();
+
 	Cur_entry++;
 	if (Cur_entry >= Current_list_size) {
 		Cur_entry = 0;
@@ -675,104 +716,34 @@ void tech_scroll_list_down()
 // this doesn't do a thing...
 void tech_ship_scroll_capture()
 {
+	//unload the current animation, we load another one for the new current entry
+	techroom_unload_animation();
+
 	techroom_select_new_entry();
 }
-
-
-// this is obsolete - see techroom_weapons_render2(...)
-//If this is obsolete, why isn't it commented out? -WMC
-/*
-void techroom_weapons_render(float frametime)
-{
-	gr_set_color_fast(&Color_text_normal);
-	techroom_render_desc(Tech_desc_coords[gr_screen.res][0], Tech_desc_coords[gr_screen.res][1], Tech_desc_coords[gr_screen.res][3]);
-
-	{
-		// JAS: This code is hacked to allow the animation to use all 256 colors
-		extern int Palman_allow_any_color;
-		Palman_allow_any_color = 1;
-		anim_render_all(0, frametime);
-		Palman_allow_any_color = 0;
-	}
-
-	// if our active item has a bitmap instead of an animation, draw it
-	if((Cur_entry >= 0) && (Current_list[Cur_entry].animation == NULL) && (Current_list[Cur_entry].bitmap >= 0)){
-		gr_set_bitmap(Current_list[Cur_entry].bitmap);
-		gr_bitmap(Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
-	}
-}*/
 
 void techroom_intel_render(float frametime)
 {
 	tech_common_render();
 
+	if(Current_list[Cur_entry].animation.num_frames > 0)
 	{
-		// JAS: This code is hacked to allow the animation to use all 256 colors
-		extern int Palman_allow_any_color;
-		Palman_allow_any_color = 1;
-		anim_render_all(0, frametime);
-		Palman_allow_any_color = 0;
+		generic_anim_render(&Current_list[Cur_entry].animation, frametime, Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
 	}
-
 	// if our active item has a bitmap instead of an animation, draw it
-	if((Cur_entry >= 0) && (Current_list[Cur_entry].animation == NULL) && (Current_list[Cur_entry].bitmap >= 0)){
+	else if((Cur_entry >= 0) && (Current_list[Cur_entry].animation.num_frames == 0) && (Current_list[Cur_entry].bitmap >= 0)){
 		gr_set_bitmap(Current_list[Cur_entry].bitmap);
 		gr_bitmap(Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
 	}
 }
 
-void techroom_stop_anim(int id)
-{
-	if (Cur_anim_instance && (id != Anim_playing_id)) {
-		anim_stop_playing(Cur_anim_instance);
-		Cur_anim_instance = NULL;
-	}
-}
-
-void techroom_start_anim()
-{
-	int id;
-	anim *animp;
-	anim_play_struct aps;
-
-	if (Cur_entry < 0) {
-		techroom_stop_anim(-1);
-		Anim_playing_id = -1;
-	}
-
-	if (Tab == WEAPONS_DATA_TAB) {
-		id = Cur_entry;
-	} else {
-		id = Cur_entry + 2000;						// this offset is arbitrary?
-	}
-
-	techroom_stop_anim(id);
-
-	// if we actually have an animation
-	if(Current_list[Cur_entry].animation != NULL){
-		animp = Current_list[Cur_entry].animation;	
-
-		if (id != Anim_playing_id) {
-			Anim_playing_id = -1;
-			if (animp) {
-				anim_play_init(&aps, animp, Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
-				aps.looped = 1;
-				Cur_anim_instance = anim_play(&aps);
-				Anim_playing_id = id;
-			}
-
-			if (animp) {
-				memcpy(Palette, animp->palette, 384);
-				gr_set_palette(animp->name, Palette, 1);
-			}
-		}
-	}
-}
-
-
 void techroom_change_tab(int num)
 {
-	int i, multi = 0, mask, mask2, font_height, max_num_entries_viewable;	
+	int i, multi = 0, mask, mask2, font_height, max_num_entries_viewable;
+
+	//unload the current animation, we load another one for the new current entry
+	if(Tab != SHIPS_DATA_TAB)
+		techroom_unload_animation();
 
 	Tab = num;
 	// Assert(Current_list_size >= 0);
@@ -794,7 +765,7 @@ void techroom_change_tab(int num)
 		case SHIPS_DATA_TAB:
 			mask = multi ? SIF_IN_TECH_DATABASE_M : SIF_IN_TECH_DATABASE;
 			mask2 = multi ? SIF2_DEFAULT_IN_TECH_DATABASE_M : SIF2_DEFAULT_IN_TECH_DATABASE;
-			
+
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
 				if (Ship_list == NULL) {
@@ -813,7 +784,7 @@ void techroom_change_tab(int num)
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
 						Ship_list[Ship_list_size].index = i;
-						Ship_list[Ship_list_size].animation = NULL;			// no anim for ships
+						Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
 						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
 						Ship_list[Ship_list_size].name = Ship_info[i].name;
 						Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
@@ -821,7 +792,7 @@ void techroom_change_tab(int num)
 						Ship_list[Ship_list_size].textures_loaded = 0;
 
 						Ship_list_size++;
-					}				
+					}
 				}
 
 				// make sure that at least the default entry is cleared out if we didn't grab anything
@@ -831,7 +802,7 @@ void techroom_change_tab(int num)
 					Ship_list[0].name = NULL;
 					Ship_list[0].bitmap = -1;
 					Ship_list[0].has_anim = 0;
-					Ship_list[0].animation = NULL;
+					Ship_list[0].animation.num_frames = 0;
 					Ship_list[0].model_num = -1;
 					Ship_list[0].textures_loaded = 0;
 				}
@@ -850,7 +821,7 @@ void techroom_change_tab(int num)
 			break;
 
 		case WEAPONS_DATA_TAB:
-				
+
 			// load weapon info & anims if necessary
 			if ( Weapons_loaded == 0 ) {
 				if (Weapon_list == NULL) {
@@ -867,7 +838,7 @@ void techroom_change_tab(int num)
 				for (i=0; i<Num_weapon_types; i++)
 				{
 					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask) || (Weapon_info[i].wi_flags2 & mask2))
-					{ 
+					{
 						//following was commented out to fix the tech room crash bug when modified weapons.tbl is used.  Fix by Phreak, implemented by Sesquipedalian.
 						// note: hack here to exclude dogfight weapons -- don't put weapon in if it has same description as pvs weapon
 						//if ((Weapon_list_size > 0) && (!strcmp(Weapon_info[i].tech_desc, Weapon_list[Weapon_list_size-1].desc))) {
@@ -880,24 +851,17 @@ void techroom_change_tab(int num)
 						Weapon_list[Weapon_list_size].has_anim = 1;
 						Weapon_list[Weapon_list_size].name = Weapon_info[i].tech_title;
 						Weapon_list[Weapon_list_size].bitmap = -1;
-						Weapon_list[Weapon_list_size].animation = NULL;
+						Weapon_list[Weapon_list_size].animation.num_frames = 0;
 						Weapon_list[Weapon_list_size].model_num = -1;
 						Weapon_list[Weapon_list_size].textures_loaded = 0;
 						if (Weapon_list[Weapon_list_size].name[0] == 0) {
 							Weapon_list[Weapon_list_size].name = Weapon_info[i].name;
 						}
-
-						// load the weapon animation
-						if(!techroom_load_ani(&Weapon_list[Weapon_list_size].animation, Weapon_info[i].tech_anim_filename)){
-							Weapon_list[Weapon_list_size].has_anim = 0;
-							Weapon_list[Weapon_list_size].animation = NULL;
-
-							// hmm. try a bitmap instead
-							Weapon_list[Weapon_list_size].bitmap = bm_load(Weapon_info[i].tech_anim_filename);
-						}						
+						// copy the weapon animation filename
+						strncpy(Weapon_list[Weapon_list_size].tech_anim_filename, Weapon_info[i].tech_anim_filename, MAX_FILENAME_LEN - 1);
 
 						Weapon_list_size++;
-					}				
+					}
 				}
 
 				// make sure that at least the default entry is cleared out if we didn't grab anything
@@ -907,7 +871,7 @@ void techroom_change_tab(int num)
 					Weapon_list[0].name = NULL;
 					Weapon_list[0].bitmap = -1;
 					Weapon_list[0].has_anim = 0;
-					Weapon_list[0].animation = NULL;
+					Weapon_list[0].animation.num_frames = 0;
 					Weapon_list[0].model_num = -1;
 					Weapon_list[0].textures_loaded = 0;
 				}
@@ -922,7 +886,6 @@ void techroom_change_tab(int num)
 			max_num_entries_viewable = Tech_list_coords[gr_screen.res][SHIP_H_COORD] / font_height;
 			Tech_slider.set_numberItems(Current_list_size > max_num_entries_viewable ? Current_list_size-max_num_entries_viewable : 0);
 
-			techroom_start_anim();
 			break;
 
 		case INTEL_DATA_TAB:
@@ -937,16 +900,12 @@ void techroom_change_tab(int num)
 						// leave option for no animation if string == "none"
 						if (!strcmp(Intel_info[i].anim_filename, "none")) {
 							Intel_list[Intel_list_size].has_anim = 0;
-							Intel_list[Intel_list_size].animation = NULL;
+							Intel_list[Intel_list_size].animation.num_frames = 0;
 						} else {
 							// try and load as an animation
 							Intel_list[Intel_list_size].has_anim = 0;
 							Intel_list[Intel_list_size].bitmap = -1;
-							if(techroom_load_ani(&Intel_list[Intel_list_size].animation, Intel_info[i].anim_filename)){
-								Intel_list[Intel_list_size].has_anim = 1;							
-							} else {
-								Intel_list[Intel_list_size].bitmap = bm_load(Intel_info[i].anim_filename);
-							}
+							strncpy(Intel_list[Intel_list_size].tech_anim_filename, Intel_info[i].anim_filename, NAME_LENGTH - 1);
 						}
 
 						Intel_list[Intel_list_size].desc = Intel_info[i].desc;
@@ -966,7 +925,7 @@ void techroom_change_tab(int num)
 					Intel_list[0].name = NULL;
 					Intel_list[0].bitmap = -1;
 					Intel_list[0].has_anim = 0;
-					Intel_list[0].animation = NULL;
+					Intel_list[0].animation.num_frames = 0;
 					Intel_list[0].model_num = -1;
 					Intel_list[0].textures_loaded = 0;
 				}
@@ -974,7 +933,7 @@ void techroom_change_tab(int num)
 				Intel_loaded = 1;
 			}
 
-			// index lookup on intel is a pretty pointless, but it keeps everything 
+			// index lookup on intel is a pretty pointless, but it keeps everything
 			// consistent and doesn't really hurt anything
 			Current_list = Intel_list;
 			Current_list_size = Intel_list_size;
@@ -983,7 +942,7 @@ void techroom_change_tab(int num)
 			max_num_entries_viewable = Tech_list_coords[gr_screen.res][SHIP_H_COORD] / font_height;
 			Tech_slider.set_numberItems(Current_list_size > max_num_entries_viewable ? Current_list_size-max_num_entries_viewable : 0);
 
-			techroom_start_anim();
+			//techroom_start_anim();
 			break;
 	}
 
@@ -1029,7 +988,7 @@ int techroom_button_pressed(int num)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
 			return 1;
-#else 
+#else
 			return 0;
 #endif
 
@@ -1098,6 +1057,7 @@ int techroom_load_ani(anim **animpp, char *name)
 			return 0;
 		}
 
+		/*
 		*animpp = anim_load(anim_filename, CF_TYPE_ANY, 1);
 		if ( *animpp ) {
 			return 1;
@@ -1108,6 +1068,8 @@ int techroom_load_ani(anim **animpp, char *name)
 				return 1;
 			}
 		}
+		*/
+		return 1;
 
 		// couldn't load animation, ask user to insert CD (if necessary)
 		// if ( Tech_room_ask_for_cd ) {
@@ -1139,7 +1101,7 @@ void techroom_intel_init()
 		lcl_ext_close();
 		return;
 	}
-	
+
 	read_file_text("species.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
@@ -1212,7 +1174,7 @@ void techroom_init()
 	gr_set_palette(Palette_name, Palette, 1);
 	*/
 
-	// unflag fullneb 
+	// unflag fullneb
 	//WMC - shouldn't need this
 	//The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 
@@ -1259,8 +1221,8 @@ void techroom_init()
 
 	// NK: removed these two text labels on Tech screen update 4/26/99
 //	Ui_window.add_XSTR("Help", 928, Buttons[gr_screen.res][HELP_BUTTON].xt,  Buttons[gr_screen.res][HELP_BUTTON].yt, &Buttons[gr_screen.res][HELP_BUTTON].button, UI_XSTR_COLOR_GREEN);
-//	Ui_window.add_XSTR("Options", 1036, Buttons[gr_screen.res][OPTIONS_BUTTON].xt,  Buttons[gr_screen.res][OPTIONS_BUTTON].yt, &Buttons[gr_screen.res][OPTIONS_BUTTON].button, UI_XSTR_COLOR_GREEN);		
-	Ui_window.add_XSTR("Exit", 1418, Buttons[gr_screen.res][EXIT_BUTTON].xt,  Buttons[gr_screen.res][EXIT_BUTTON].yt, &Buttons[gr_screen.res][EXIT_BUTTON].button, UI_XSTR_COLOR_PINK);		
+//	Ui_window.add_XSTR("Options", 1036, Buttons[gr_screen.res][OPTIONS_BUTTON].xt,  Buttons[gr_screen.res][OPTIONS_BUTTON].yt, &Buttons[gr_screen.res][OPTIONS_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	Ui_window.add_XSTR("Exit", 1418, Buttons[gr_screen.res][EXIT_BUTTON].xt,  Buttons[gr_screen.res][EXIT_BUTTON].yt, &Buttons[gr_screen.res][EXIT_BUTTON].button, UI_XSTR_COLOR_PINK);
 
 	if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
 		Buttons[gr_screen.res][SIMULATOR_TAB].button.disable();
@@ -1301,11 +1263,9 @@ void techroom_init()
 	// setup slider
 	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_classes, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
 
-	Cur_anim_instance = NULL;
-
 	// zero intel anim/bitmap stuff
 	for(idx=0; idx<MAX_INTEL_ENTRIES; idx++){
-		Intel_list[idx].animation = NULL;
+		Intel_list[idx].animation.num_frames = 0;
 		Intel_list[idx].bitmap = -1;
 	}
 
@@ -1318,7 +1278,9 @@ void techroom_lists_reset()
 {
 	int i;
 
-	techroom_stop_anim(-1);
+	//unload the current animation, we load another one for the new current entry
+	if(Tab != SHIPS_DATA_TAB)
+		techroom_unload_animation();
 
 	Current_list = NULL;
 	Current_list_size = 0;
@@ -1335,9 +1297,8 @@ void techroom_lists_reset()
 
 	if (Weapon_list != NULL) {
 		for (i = 0; i < Weapon_list_size; i++) {
-			if (Weapon_list[i].animation != NULL) {
-				anim_free(Weapon_list[i].animation);
-				Weapon_list[i].animation = NULL;
+			if (Weapon_list[i].animation.num_frames != 0) {
+				generic_anim_unload(&Weapon_list[i].animation);
 			}
 
 			if (Weapon_list[i].bitmap >= 0) {
@@ -1354,9 +1315,8 @@ void techroom_lists_reset()
 	Weapons_loaded = 0;
 
 	for (i = 0; i < Intel_list_size; i++) {
-		if (Intel_list[i].animation != NULL) {
-			anim_free(Intel_list[i].animation);
-			Intel_list[i].animation = NULL;
+		if (Intel_list[i].animation.num_frames != 0) {
+			generic_anim_unload(&Intel_list[i].animation);
 		}
 
 		if (Intel_list[i].bitmap >= 0) {
@@ -1409,8 +1369,8 @@ void techroom_close()
 
 void techroom_do_frame(float frametime)
 {
-	
-	int i, k;	
+
+	int i, k;
 
 	// turn off controls when overlay is on
 	if ( help_overlay_active(TECH_ROOM_OVERLAY) ) {
@@ -1488,7 +1448,7 @@ void techroom_do_frame(float frametime)
 			techroom_change_tab(Tab);
 			break;
 
-	}	
+	}
 
 	// check ship model window for activity
 	if (View_window.pressed()) {
@@ -1514,7 +1474,7 @@ void techroom_do_frame(float frametime)
 		if (List_buttons[i].is_mouse_on()) {
 			Select_tease_line = i + List_offset;
 		}
-	
+
 		if (List_buttons[i].pressed()) {
 			Cur_entry = i + List_offset;
 			gamesnd_play_iface(SND_USER_SELECT);

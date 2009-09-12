@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -52,8 +52,9 @@ typedef union bm_extra_info {
 	struct {
 		// Stuff needed for animations
 		int		first_frame;								// used for animations -- points to index of first frame
-		ubyte	num_frames;									// used for animation -- number of frames in the animation
+		int	num_frames;									// used for animation -- number of frames in the animation
 		ubyte	fps;										// used for animation -- frames per second
+		int	keyframe;									// used for animation -- keyframe info
 
 		struct {
 			// stuff for static animations
@@ -100,7 +101,7 @@ typedef struct bitmap_entry	{
 	bitmap	bm;
 
 	// Data for animations and user bitmaps
-	bm_extra_info	info;		
+	bm_extra_info	info;
 
 #ifdef BMPMAN_NDEBUG
 	// bookeeping

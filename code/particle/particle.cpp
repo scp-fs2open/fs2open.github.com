@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -11,7 +11,7 @@
 
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "render/3d.h" 
+#include "render/3d.h"
 #include "bmpman/bmpman.h"
 #include "particle/particle.h"
 #include "object/object.h"
@@ -32,7 +32,7 @@ typedef struct particle {
 	float	radius;				// radius
 	int		type;				// type										// -1 = None
 	uint	optional_data;		// depends on type
-	int		nframes;			// If an ani, how many frames?	
+	int		nframes;			// If an ani, how many frames?
 
 	// new style data
 	float	tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
@@ -76,7 +76,7 @@ void particle_init()
 
 	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
-		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, 0 );
+		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, NULL, 0 );
 	}
 
 	if ( (Anim_bitmap_id_fire > -1) && (PARTICLE_FIRE_batcher == NULL) ) {
@@ -87,7 +87,7 @@ void particle_init()
 
 	// Cough, cough
 	if ( Anim_bitmap_id_smoke == -1 )	{
-		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, 0 );
+		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, NULL, 0 );
 	}
 
 	if ( (Anim_bitmap_id_smoke > -1) && (PARTICLE_SMOKE_batcher == NULL) ) {
@@ -98,7 +98,7 @@ void particle_init()
 
 	// wheeze
 	if ( Anim_bitmap_id_smoke2 == -1 )	{
-		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, 0 );
+		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, NULL, 0 );
 	}
 
 	if ( (Anim_bitmap_id_smoke2 > -1) && (PARTICLE_SMOKE2_batcher == NULL) ) {
@@ -144,14 +144,14 @@ void particle_page_in()
 
 DCF(particles,"Turns particles on/off")
 {
-	if ( Dc_command )	{	
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-		if ( Dc_arg_type & ARG_TRUE )	Particles_enabled = 1;	
-		else if ( Dc_arg_type & ARG_FALSE ) Particles_enabled = 0;	
-		else if ( Dc_arg_type & ARG_NONE ) Particles_enabled ^= 1;	
-	}	
-	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );	
-	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );	
+	if ( Dc_command )	{
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);
+		if ( Dc_arg_type & ARG_TRUE )	Particles_enabled = 1;
+		else if ( Dc_arg_type & ARG_FALSE ) Particles_enabled = 0;
+		else if ( Dc_arg_type & ARG_NONE ) Particles_enabled ^= 1;
+	}
+	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );
+	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );
 
 //	os_config_write_uint( NULL, "UseParticles", Particles_enabled );
 }
@@ -219,7 +219,7 @@ void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int typ
 	pinfo.lifetime = lifetime;
 	pinfo.rad = rad;
 	pinfo.type = type;
-	pinfo.optional_data = optional_data;	
+	pinfo.optional_data = optional_data;
 
 	// setup new data
 	pinfo.tracer_length = -1.0f;
@@ -245,7 +245,7 @@ void particle_move_all(float frametime)
 {
 	particle *p;
 
-	MONITOR_INC( NumParticles, Num_particles );	
+	MONITOR_INC( NumParticles, Num_particles );
 
 	if ( !Particles_enabled )
 		return;
@@ -264,7 +264,7 @@ void particle_move_all(float frametime)
 		}
 
 		p->age += frametime;
-	
+
 		if ( p->age > p->max_life )	{
 			// If it's time expired remove it
 			Particles.erase( Particles.begin() + i );
@@ -284,7 +284,7 @@ void particle_move_all(float frametime)
 		// move as a regular particle
 		else {
 			// Move the particle
-			vm_vec_scale_add2( &p->pos, &p->velocity, frametime );		
+			vm_vec_scale_add2( &p->pos, &p->velocity, frametime );
 		}
 	}
 }
@@ -319,7 +319,7 @@ void particle_render_all()
 	if ( !Particles_enabled )
 		return;
 
-	MONITOR_INC( NumParticlesRend, Num_particles );	
+	MONITOR_INC( NumParticlesRend, Num_particles );
 
 //	int n = 0;
 	int nclipped = 0;
@@ -339,10 +339,10 @@ void particle_render_all()
 		pct_complete = p->age / p->max_life;
 
 		// calculate the alpha to draw at
-		alpha = 1.0f;	
+		alpha = 1.0f;
 
 		// if this is a tracer style particle, calculate tracer vectors
-		if (p->tracer_length > 0.0f) {			
+		if (p->tracer_length > 0.0f) {
 			ts = p->pos;
 			temp = p->velocity;
 			vm_vec_normalize_quick(&temp);
@@ -361,7 +361,7 @@ void particle_render_all()
 
 			flags = g3_rotate_vertex(&pos, &temp);
 
-			if (flags) {				
+			if (flags) {
 				nclipped++;
 				continue;
 			}
@@ -386,16 +386,16 @@ void particle_render_all()
 				g3_transfer_vertex(&pos_htl, &p->pos);
 		}
 
-		switch (p->type) 
+		switch (p->type)
 		{
 			case PARTICLE_DEBUG:				// A red sphere, no optional data required
 				gr_set_color( 255, 0, 0 );
 				g3_draw_sphere_ez( &p->pos, p->radius );
 				break;
 
-			case PARTICLE_BITMAP:		
+			case PARTICLE_BITMAP:
 			case PARTICLE_BITMAP_PERSISTENT:
-			{	// A bitmap, optional data is the bitmap number					
+			{	// A bitmap, optional data is the bitmap number
 				framenum = p->optional_data;
 
 				if ( p->nframes > 1 )	{
@@ -410,7 +410,7 @@ void particle_render_all()
 				}
 
 				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
+				if (p->tracer_length > 0.0f) {
 					batch_add_laser( framenum, &ts, p->radius, &te, p->radius );
 				}
 				// draw as a regular bitmap
@@ -440,7 +440,7 @@ void particle_render_all()
 				PARTICLE_FIRE_batcher[cur_frame].add_allocate(1);
 
 				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
+				if (p->tracer_length > 0.0f) {
 					PARTICLE_FIRE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
 				}
 				// draw as a regular bitmap
@@ -469,7 +469,7 @@ void particle_render_all()
 				PARTICLE_SMOKE_batcher[cur_frame].add_allocate(1);
 
 				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
+				if (p->tracer_length > 0.0f) {
 					PARTICLE_SMOKE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
 				}
 				// draw as a regular bitmap
@@ -501,7 +501,7 @@ void particle_render_all()
 				PARTICLE_SMOKE2_batcher[cur_frame].add_allocate(1);
 
 				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
+				if (p->tracer_length > 0.0f) {
 					PARTICLE_SMOKE2_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
 				}
 				// draw as a regular bitmap
@@ -589,7 +589,7 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 	// Account for detail
 	int percent = get_percent(Detail.num_particles);
 
-	//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000 
+	//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000
 	float min_dist = 125.0f;
 	float dist = vm_vec_dist_quick( &pe->pos, &Eye_position ) / range;
 	if ( dist > min_dist )	{
@@ -605,7 +605,7 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 
 	// How many to emit?
 	n = (rand() % (n2-n1+1)) + n1;
-	
+
 	if ( n < 1 ) return;
 
 
