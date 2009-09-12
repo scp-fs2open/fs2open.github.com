@@ -16,6 +16,8 @@ information after crashes. See exceptionhandler.h for information
 on how to hook it in.
 */
 
+#ifdef GAME_ERRORLOG_TXT
+
 #ifdef _WIN32
 
 #include "globalincs/pstypes.h"
@@ -507,3 +509,4 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 }
 
 #endif // _WIN32
+#endif

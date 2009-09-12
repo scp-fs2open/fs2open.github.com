@@ -142,14 +142,18 @@ private:
 	//When to end it
 	float time_displayed_end;
 
+	bool post_shaded;
 public:
-	subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim = NULL, float in_fade_time = 0.0f, color *in_text_color = NULL, bool center_x = false, bool center_y = false, int in_width = 200);
+	subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, 
+			 char* in_imageanim = NULL, float in_fade_time = 0.0f, color *in_text_color = NULL, 
+			 bool center_x = false, bool center_y = false, int in_width = 200, bool post_shaded=false);
 	~subtitle();
 
     subtitle(const subtitle &sub) { clone(sub); }
     const subtitle &operator=(const subtitle &sub);
 
 	void do_frame(float frametime);
+	bool is_post_shaded( ) { return post_shaded; }
 };
 
 //Some global stuff
@@ -174,5 +178,6 @@ uint cam_get_num();
 void subtitles_init();
 void subtitles_close();
 void subtitles_do_frame(float frametime);
+void subtitles_do_frame_post_shaded(float frametime);
 
 #endif // _CAMERA_H

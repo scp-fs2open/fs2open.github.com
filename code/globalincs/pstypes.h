@@ -178,7 +178,7 @@ typedef struct flag_def_list {
 extern void _cdecl WinAssert(char * text,char *filename, int line);
 void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... );
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
-extern void _cdecl Error( char * filename, int line, const char * format, ... );
+extern void _cdecl Error( const char * filename, int line, const char * format, ... );
 extern void _cdecl Warning( char * filename, int line, const char * format, ... );
 
 extern int Global_warning_count;
@@ -208,29 +208,35 @@ extern int Global_error_count;
 // The code, as with all developement like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
 
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+#	define ASSUME(x) __assume(x)
+#else
+#	define ASSUME(x)
+#endif
+
 // Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
-#	define Assert(x) do {} while (0)
+#	define Assert(x) do { ASSUME(x); } while (0)
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(x, y, ...) do {} while (0)
 #	else
 #		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(x, y, ...) do {} while (0)
+#			define Assertion(x, y, ...) do { ASSUME(x); } while (0)
 #		else 
 #			define Assertion(x, y) do {} while (0)
 #		endif
 #	endif
 #else
 	void gr_activate(int);
-#	define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+#	define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } ASSUME( x ); } while (0)
 
 	// Assertion can only use its proper fuctionality in compilers that support variadic macro
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
 #	else 
 #		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#			define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } ASSUME(x); } while (0)
 #		else // everything else
 #			define Assertion(x, y) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
 #		endif
@@ -239,7 +245,7 @@ extern int Global_error_count;
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
-#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } } while(0)
+#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(0)
 
 
 //#define Int3() _asm { int 3 }

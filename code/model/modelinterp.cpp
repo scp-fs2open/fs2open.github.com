@@ -3763,7 +3763,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 							{
 								float d;
 
-								if ( (gpt->norm.xyz.x == 0.0f) && (gpt->norm.xyz.z == 0.0f) && (gpt->norm.xyz.z == 0.0f) ) {
+								if ( IS_VEC_NULL(&norm) ) {
 									d = 1.0f;	//if given a nul vector then always show it
 								} else {
 									vm_vec_sub(&tempv,&View_position,&pnt);

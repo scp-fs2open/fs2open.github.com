@@ -115,8 +115,7 @@ void iff_init()
 
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
-	int i = 0;
-	int j = 0;
+	int i, j, k;
 	int string_idx;
 
 	int rval;
@@ -181,16 +180,15 @@ void iff_init()
 
 
 	// init radar blips colour table
-	int iLoop,jLoop,kLoop;
 	int a_bright,a_dim;
 	bool alternate_blip_color = false;
-	for (iLoop=0;iLoop<5;iLoop++)
+	for (i=0;i<5;i++)
 	{
-		for (jLoop=0;jLoop<2;jLoop++)
+		for (j=0;j<2;j++)
 		{
-			for (kLoop=0;kLoop<3;kLoop++)
+			for (k=0;k<3;k++)
 			{
-				radar_iff_color[iLoop][jLoop][kLoop] = -1;
+				radar_iff_color[i][j][k] = -1;
 			}
 		}
 	}
@@ -310,7 +308,6 @@ void iff_init()
 	while (required_string_either("#End","$IFF Name:"))
 	{
 		iff_info *iff;
-		int rgb[3];
 		int cur_iff;
 		
 		// make sure we're under the limit
@@ -397,7 +394,8 @@ void iff_init()
 		iff->default_parse_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
-			int i, j = 0;
+			i = 0;
+			j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
 			for (i = 0; i < num_strings; i++)
@@ -420,7 +418,8 @@ void iff_init()
 		iff->default_parse_flags2 = 0;
 		if (optional_string("$Default Ship Flags2:"))
 		{
-			int i, j = 0;
+			i = 0;
+			j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS_2);
 			for (i = 0; i < num_strings; i++)
@@ -463,7 +462,7 @@ void iff_init()
 		iff->attackee_bitmask_all_teams_at_war = 0;
 
 		// clear the observed colors
-		for (int j = 0; j < MAX_IFFS; j++)
+		for (j = 0; j < MAX_IFFS; j++)
 			iff->observed_color_index[j] = -1;
 
 		// resolve the list names

@@ -531,7 +531,7 @@ sexp_oper Operators[] = {
 	{ "get-fov",					OP_CUTSCENES_GET_FOV,					0, 0, },
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
 	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
-	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
+	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 13, },
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
@@ -15370,6 +15370,7 @@ void sexp_show_subtitle(int node)
 	int r=255, g=255, b=255;
 	bool center_x=false, center_y=false;
 	int n = -1;
+	bool post_shaded = false;
 
 	x_pos = eval_num(node);
 
@@ -15387,43 +15388,57 @@ void sexp_show_subtitle(int node)
 	{
 		imageanim = CTEXT(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		fade_time = eval_num(n)/1000.0f; //also in ms
+		n = CDR(n);
+		if(n != -1)
+		{
+			fade_time = eval_num(n)/1000.0f; //also in ms
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-			center_x = true;
+			n = CDR(n);
+			if(n != -1)
+			{
+				if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+					center_x = true;
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-			center_y = true;
-		
-	n = CDR(n);
-	if(n != -1)
-	{
-		width = eval_num(n);
+				n = CDR(n);
+				if(n != -1)
+				{
+					if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+						center_y = true;
+						
+					n = CDR(n);
+					if(n != -1)
+					{
+						width = eval_num(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		r = eval_num(n);
+						n = CDR(n);
+						if(n != -1)
+						{
+							r = eval_num(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		g = eval_num(n);
+							n = CDR(n);
+							if(n != -1)
+							{
+								g = eval_num(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		b = eval_num(n);
-	}}}}}}}}
+								n = CDR(n);
+								if(n != -1)
+								{
+									b = eval_num(n);
+
+									n = CDR(n);
+									if ( n !=-1 )
+									{
+										if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+											post_shaded = true;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	if(r > 255)
 		r = 255;
@@ -15436,7 +15451,7 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, r, g, b, 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, display_time, imageanim, fade_time, &new_color, center_x, center_y, width);
+	subtitle new_subtitle(x_pos, y_pos, text, display_time, imageanim, fade_time, &new_color, center_x, center_y, width, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -19300,6 +19315,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if(argnum < 12)
 				return OPF_POSITIVE;
+			else if(argnum == 12 )
+				return OPF_BOOL;
 
 		//</Cutscenes>
 
@@ -23163,15 +23180,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
 		"\t3:\tText to display\r\n"
 		"\t4:\tTime to be displayed, not including fadein/out\r\n"
-		"\t(optional)\r\n"
-		"\t5:\tImage name\r\n"
-		"\t6:\tFade in time\r\n"
-		"\t7:\tCenter horizontally?\r\n"
-		"\t8:\tCenter vertically?\r\n"
-		"\t9:\tWidth\r\n"
-		"\t10:\tText red component (0-255)\r\n"
-		"\t11:\tText green component (0-255)\r\n"
-		"\t12:\tText blue component (0-255)"
+		"\t(optional) 5:\tImage name\r\n"
+		"\t(optional) 6:\tFade in time\r\n"
+		"\t(optional) 7:\tCenter horizontally?\r\n"
+		"\t(optional) 8:\tCenter vertically?\r\n"
+		"\t(optional) 9:\tWidth\r\n"
+		"\t(optional) 10:\tText red component (0-255)\r\n"
+		"\t(optional) 11:\tText green component (0-255)\r\n"
+		"\t(optional) 12:\tText blue component (0-255)\r\n"
+		"\t(optional) 13:\tDrawn after shading?"
 	},
 
 	{ OP_CUTSCENES_SET_TIME_COMPRESSION, "set-time-compression\r\n"

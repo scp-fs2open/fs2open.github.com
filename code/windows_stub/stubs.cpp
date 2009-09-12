@@ -190,7 +190,7 @@ void Warning( char * filename, int line, const char * format, ... )
 }
 
 // fatal error message
-void Error( char * filename, int line, const char * format, ... )
+void Error( const char * filename, int line, const char * format, ... )
 {
 	Global_error_count++;
 

@@ -757,7 +757,7 @@ void debug_int3(char *file, int line)
 
 #ifdef _WIN32
 #if defined _MSC_VER
-	_asm { int 3 };
+	DebugBreak( );
 #elif defined __GNUC__
 	asm("int $3");
 #else
