@@ -208,11 +208,7 @@ extern int Global_error_count;
 // The code, as with all developement like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
 
-#if defined(_MSC_VER) && _MSC_VER >= 1400
-#	define ASSUME(x) __assume(x)
-#else
-#	define ASSUME(x)
-#endif
+#define ASSUME(x)
 
 // Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
 // the more likely you are to have problems getting it working again.
