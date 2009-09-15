@@ -27,6 +27,7 @@ public:
 	//{{AFX_DATA(CMissionNotesDlg)
 	enum { IDD = IDD_MISSION_NOTES };
 	CSpinButtonCtrl	m_respawn_spin;
+	CSpinButtonCtrl	m_max_respawn_delay_spin;
 	CString	m_created;
 	CString	m_modified;
 	CString	m_mission_notes;
@@ -47,6 +48,7 @@ public:
 	BOOL		m_scramble;
 	BOOL		m_daisy_chained_docking;
 	UINT		m_num_respawns;
+	int			m_max_respawn_delay;
 	int			m_disallow_support;
 	BOOL		m_no_promotion;
 	BOOL		m_no_builtin_msgs;

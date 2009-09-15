@@ -367,6 +367,21 @@ int CFred_mission_save::save_mission_info()
 			fout("\n+Num Respawns:");
 
 		fout(" %d", The_mission.num_respawns);
+
+		if ( Format_fs2_open != FSO_FORMAT_RETAIL ) {
+			if (optional_string_fred("+Max Respawn Time:"))
+				parse_comments(2);
+			else {
+				fso_comment_push(";;FSO 3.6.11;;");
+				fout_version("\n+Max Respawn Time:");
+				fso_comment_pop();
+			}
+
+			fout("%d", The_mission.max_respawn_delay);
+		}
+		else {
+			bypass_comment(";;FSO 3.6.11;; +Max Respawn Time:");
+		}
 	}
 
 	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
