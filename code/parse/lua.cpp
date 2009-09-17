@@ -6236,6 +6236,71 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Force Rotation, number Vertical, number Horizontal, number Forward, boolean Force Movement", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
+{
+	object_h *objh;
+	float arr[6];
+	bool f_rot = false, f_move = false;
+	int t, i;
+	if(!ade_get_args(L, "oifffbfffb", l_Ship.GetPtr(&objh), &t, &arr[0], &arr[1], &arr[2], &f_rot, &arr[3], &arr[4], &arr[5], &f_move))
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
+	control_info *cip = &aip->ai_override_ci;
+
+	aip->ai_override_timestamp = timestamp(t);
+	aip->ai_override_flags = 0;
+
+	if (t < 2)
+		return ADE_RETURN_FALSE;
+
+	for(i = 0; i < 6; i++) {
+		if((arr[i] < -1.0f) || (arr[i] > 1.0f))
+			arr[i] = 0;
+	}
+
+	if(f_rot) {
+		aip->ai_override_flags = AIORF_FULL;
+		cip->heading = arr[0];
+		cip->pitch = arr[1];
+		cip->bank = arr[2];
+	} else {
+		if (arr[0] != 0) {
+			cip->heading = arr[0];
+			aip->ai_override_flags |= AIORF_HEADING;
+		} 
+		if (arr[1] != 0) {
+			cip->pitch = arr[1];
+			aip->ai_override_flags |= AIORF_PITCH;
+		} 
+		if (arr[2] != 0) {
+			cip->bank = arr[2];
+			aip->ai_override_flags |= AIORF_ROLL;
+		} 
+	}
+	if(f_move) {
+		aip->ai_override_flags = AIORF_FULL_LAT;
+		cip->vertical = arr[3];
+		cip->sideways = arr[4];
+		cip->forward = arr[5];
+	} else {
+		if (arr[3] != 0) {
+			cip->vertical = arr[3];
+			aip->ai_override_flags |= AIORF_UP;
+		} 
+		if (arr[4] != 0) {
+			cip->sideways = arr[4];
+			aip->ai_override_flags |= AIORF_SIDEWAYS;
+		} 
+		if (arr[5] != 0) {
+			cip->forward = arr[5];
+			aip->ai_override_flags |= AIORF_FORWARD;
+		} 
+	}
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards]",
 		 "Triggers an animation. Type is the string name of the animation type, "
 		 "Subtype is the subtype number, such as weapon bank #, and Forwards is boolean."
