@@ -64,6 +64,7 @@
 
 #include "autopilot/autopilot.h"
 #include <map>
+#include <limits.h>
 
 
 #pragma optimize("", off)

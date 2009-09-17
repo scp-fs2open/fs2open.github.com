@@ -204,7 +204,6 @@ typedef struct ai_class {
 
 	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
 	//INT_MIN and FLT_MIN represent the "not set" state for which defaults are used instead.
-	//TODO: Copy these into aip
 	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
 	float	ai_shockwave_evade_chance[NUM_SKILL_LEVELS];	
 	float	ai_get_away_chance[NUM_SKILL_LEVELS];	
