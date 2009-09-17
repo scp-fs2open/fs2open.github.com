@@ -14269,6 +14269,55 @@ void create_waypoints()
 	Waypoints_created = 1;
 }
 
+void ai_control_info_check( object *obj, ai_info *aip )
+{
+	if(aip->ai_override_flags == 0)
+		return;
+
+	if(timestamp_elapsed(aip->ai_override_timestamp)) {
+		aip->ai_override_flags = 0;
+	} else {
+		if(aip->ai_override_flags & AIORF_FULL)
+		{
+			AI_ci.pitch = aip->ai_override_ci.pitch;
+			AI_ci.heading = aip->ai_override_ci.heading;
+			AI_ci.bank = aip->ai_override_ci.bank;
+		} else {
+			if(aip->ai_override_flags & AIORF_PITCH)
+			{
+				AI_ci.pitch = aip->ai_override_ci.pitch;
+			}
+			if(aip->ai_override_flags & AIORF_HEADING)
+			{
+				AI_ci.heading = aip->ai_override_ci.heading;
+			}
+			if(aip->ai_override_flags & AIORF_ROLL)
+			{
+				AI_ci.bank = aip->ai_override_ci.bank;
+			}
+		}
+		if(aip->ai_override_flags & AIORF_FULL_LAT)
+		{
+			AI_ci.vertical = aip->ai_override_ci.vertical;
+			AI_ci.sideways = aip->ai_override_ci.sideways;
+			AI_ci.forward = aip->ai_override_ci.forward;
+		} else {
+			if(aip->ai_override_flags & AIORF_UP)
+			{
+				AI_ci.vertical = aip->ai_override_ci.vertical;
+			}
+			if(aip->ai_override_flags & AIORF_SIDEWAYS)
+			{
+				AI_ci.sideways = aip->ai_override_ci.sideways;
+			}
+			if(aip->ai_override_flags & AIORF_FORWARD)
+			{
+				AI_ci.forward = aip->ai_override_ci.forward;
+			}
+		}
+	}
+}
+
 int Last_ai_obj = -1;
 
 void ai_process( object * obj, int ai_index, float frametime )
@@ -14330,6 +14379,10 @@ void ai_process( object * obj, int ai_index, float frametime )
 	default:
 		break;
 	}
+
+	// Wanderer - sexp based override goes here - only if rfc is valid though
+	if (rfc == 1)
+		ai_control_info_check(obj, aip);
 
 	if (rfc == 1) {
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
@@ -14508,6 +14561,8 @@ void init_ai_object(int objnum)
 
 	// set lethality to enemy team
 	aip->lethality = 0.0f;
+	aip->ai_override_flags = 0;
+	memset(&aip->ai_override_ci,0,sizeof(control_info));
 }
 
 void init_ai_objects()

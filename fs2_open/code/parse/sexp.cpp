@@ -442,6 +442,9 @@ sexp_oper Operators[] = {
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
 	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
+	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
+	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
+	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -5809,6 +5812,220 @@ void sexp_set_object_facing(int n, bool facing_object)
 	}
 
 	sexp_set_oswpt_facing(&oswpt1, location, turn_time, bank);
+}
+
+void sexp_set_ship_man(object *objp, int duration, float heading, float pitch, float bank, int force_rotate, float up, float sideways, float forward, int force_control)
+{
+	if (objp->type != OBJ_SHIP)
+		return;
+
+	ship *shipp = &Ships[objp->instance];
+	ai_info	*aip = &Ai_info[shipp->ai_index];
+	
+	aip->ai_override_timestamp = timestamp(duration);
+	aip->ai_override_flags = 0;
+	
+	if (force_rotate) {
+		aip->ai_override_flags |= AIORF_FULL;
+		aip->ai_override_ci.bank = bank;
+		aip->ai_override_ci.pitch = pitch;
+		aip->ai_override_ci.heading = heading;
+	} else {
+		if (bank != 0.0f) {
+			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_ci.bank = bank;
+		}
+		if (pitch != 0.0f) {
+			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_ci.pitch = pitch;
+		}
+		if (heading != 0.0f) {
+			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_ci.heading = heading;
+		}
+	}
+	if (force_control) {
+		aip->ai_override_flags |= AIORF_FULL_LAT;
+		aip->ai_override_ci.vertical = up;
+		aip->ai_override_ci.sideways = sideways;
+		aip->ai_override_ci.forward = forward;
+	} else {
+		if (up != 0.0f) {
+			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_ci.vertical = up;
+		}
+		if (sideways != 0.0f) {
+			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_ci.sideways = sideways;
+		}
+		if (forward != 0.0f) {
+			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_ci.forward = forward;
+		}
+	}
+}
+
+void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, float heading, float pitch, float bank, int force_rotate, float up, float sideways, float forward, int force_control)
+{
+	Assert(oswpt);
+
+	switch (oswpt->type)
+	{
+		case OSWPT_TYPE_TEAM:
+		{
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != GET_LAST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				object *objp = &Objects[so->objnum];
+
+				if (obj_team(objp) == oswpt->team)
+					sexp_set_ship_man(objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			}
+
+			break;
+		}
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+			sexp_set_ship_man(oswpt->objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			break;
+
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt->wingp->current_count; i++)
+			{
+				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
+
+				sexp_set_ship_man(objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			}
+
+			break;
+		}
+	}
+}
+
+void sexp_set_ship_maneuver(int n)
+{
+	float bank = 0, heading = 0, pitch = 0;
+	float up = 0, sideways = 0, forward = 0;
+	int duration = 0, i, temp, force_rotate = 0, force_control = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			heading = ((float) temp)/100.0f;
+		else if (i == 1)
+			pitch = ((float) temp)/100.0f;
+		else
+			bank = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_rotate = is_sexp_true(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			up = ((float) temp)/100.0f;
+		else if (i == 1)
+			sideways = ((float) temp)/100.0f;
+		else
+			forward = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_control = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((bank == 0.0f) && (pitch == 0.0f) && (heading == 0.0f) && (force_rotate == 0) && (up == 0.0f) && (sideways == 0.0f) && (forward == 0.0f) && (force_control == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+}
+
+void sexp_set_ship_rot_maneuver(int n)
+{
+	float bank = 0, heading = 0, pitch = 0;
+	int duration = 0, i, temp, force_rotate = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			heading = ((float) temp)/100.0f;
+		else if (i == 1)
+			pitch = ((float) temp)/100.0f;
+		else
+			bank = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_rotate = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((bank == 0.0f) && (pitch == 0.0f) && (heading == 0.0f) && (force_rotate == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, force_rotate, 0.0f, 0.0f, 0.0f, 0);
+}
+
+void sexp_set_ship_lat_maneuver(int n)
+{
+	float up = 0, sideways = 0, forward = 0;
+	int duration = 0, i, temp, force_control = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			up = ((float) temp)/100.0f;
+		else if (i == 1)
+			sideways = ((float) temp)/100.0f;
+		else
+			forward = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_control = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((up == 0.0f) && (sideways == 0.0f) && (forward == 0.0f) && (force_control == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, 0.0f, 0.0f, 0.0f, 0, up, sideways, forward, force_control);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -16750,6 +16967,21 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SHIP_MANEUVER:
+				sexp_set_ship_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_ROT_MANEUVER:
+				sexp_set_ship_rot_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_LAT_MANEUVER:
+				sexp_set_ship_lat_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// training operators
 			case OP_KEY_PRESSED:
 				sexp_val = sexp_key_pressed(node);
@@ -18016,6 +18248,9 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_POSITION:
 		case OP_SET_OBJECT_FACING:
 		case OP_SET_OBJECT_FACING_OBJECT:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_KAMIKAZE:
@@ -18448,6 +18683,31 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_POSITIVE;
+
+		case OP_SHIP_MANEUVER:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else if (argnum < 5)
+				return OPF_NUMBER;
+			else if (argnum == 5)
+				return OPF_BOOL;
+			else if (argnum < 9)
+				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
+
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else if (argnum < 5)
+				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -20714,6 +20974,9 @@ int get_subcategory(int sexp_id)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
 
 		case OP_CHANGE_SOUNDTRACK:
@@ -21798,6 +22061,40 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: The object to face.\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
 		"\t4: Bank (optional)" },
+
+	// Wanderer
+	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Heading change rate percentage (-100 to 100)\r\n"
+		"\t4: Pitch change rate percentage (-100 to 100)\r\n"
+		"\t5: Banking change rate percentage (-100 to 100)\r\n"
+		"\t6: Force rotations (boolean)\r\n"
+		"\t7: Vertical movement change percentage (-100 to 100)\r\n"
+		"\t8: Sideways movement change percentage (-100 to 100)\r\n"
+		"\t9: Forward movement change percentage (-100 to 100)\r\n"
+		"\t10: Force movements (boolean)\r\n" },
+
+	// Wanderer
+	{ OP_SHIP_ROT_MANEUVER, "ship-rot-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Heading change rate percentage (-100 to 100)\r\n"
+		"\t4: Pitch change rate percentage (-100 to 100)\r\n"
+		"\t5: Banking change rate percentage (-100 to 100)\r\n"
+		"\t6: Force rotations (boolean)\r\n" },
+	
+	// Wanderer
+	{ OP_SHIP_LAT_MANEUVER, "ship-lat-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Vertical movement change percentage (-100 to 100)\r\n"
+		"\t4: Sideways movement change percentage (-100 to 100)\r\n"
+		"\t5: Forward movement change percentage (-100 to 100)\r\n"
+		"\t6: Force movements (boolean)\r\n" },
 
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
