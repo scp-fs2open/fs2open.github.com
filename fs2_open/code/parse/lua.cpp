@@ -5356,6 +5356,42 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	return ade_set_args(L, "b", rtn);
 }
 
+ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
+{
+	ship_subsys_h *sso;
+	float fov, fov_e, fov_y;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	model_subsystem *tp = sso->ss->system_info;
+
+	fov = tp->turret_fov;
+	fov_e = tp->turret_max_fov;
+	fov_y = tp->turret_y_fov;
+
+	return ade_set_args(L, "fff", fov, fov_e, fov_y);
+}
+
+ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
+{
+	ship_subsys_h *sso;
+	matrix m;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+	
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	model_subsystem *tp = sso->ss->system_info;
+
+	m = tp->turret_matrix;
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
+}
+
 //**********HANDLE: shiptextures
 ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
