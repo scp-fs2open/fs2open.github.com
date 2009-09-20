@@ -607,7 +607,6 @@ SOURCE=..\..\code\graphics\grstub.h
 SOURCE=..\..\code\Graphics\Line.h
 # End Source File
 # End Group
-
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""
@@ -1625,14 +1624,6 @@ SOURCE=..\..\code\parse\lua.cpp
 # Begin Source File
 
 SOURCE=..\..\code\parse\lua.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\python.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\python.h
 # End Source File
 # Begin Source File
 
