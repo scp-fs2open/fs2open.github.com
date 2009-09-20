@@ -210,8 +210,6 @@ private:
 	vec3d	fvec;
 	float	radius;
 
-	//Object info
-	float back_len;
 public:
 	WE_Default(object *n_objp, int n_direction);
 
