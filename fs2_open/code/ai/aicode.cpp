@@ -529,7 +529,9 @@ void free_ai_stuff()
 //Boolean overrides are unset, multipliers are initialized to 1.0
 void init_ai_class(ai_class *aicp)
 {
-	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
+	int i;
+
+	for (i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_cmeasure_fire_chance[i] = 1.0f;
 		aicp->ai_in_range_time[i] = 1.0f;
@@ -556,7 +558,7 @@ void init_ai_class(ai_class *aicp)
 
 	//AI Class autoscale overrides
 	//INT_MIN and FLT_MIM represent the "not set" state
-	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
+	for (i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_aburn_use_factor[i] = INT_MIN;
 		aicp->ai_shockwave_evade_chance[i] = FLT_MIN;
