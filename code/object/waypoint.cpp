@@ -7,6 +7,19 @@ waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
 int	Num_waypoint_lists = 0;
 
 //********************FUNCTIONS********************
+// done immediately after mission load; originally found in aicode.cpp
+void create_waypoints()
+{
+	int	i, j, z;
+
+	for (j=0; j<Num_waypoint_lists; j++) {
+		for (i=0; i<Waypoint_lists[j].count; i++) {
+			z = obj_create(OBJ_WAYPOINT, 0, j * 65536 + i, NULL,
+				&Waypoint_lists[j].waypoints[i], 0.0f, OF_RENDERS);
+		}
+	}
+}
+
 int waypoint_query_path_name_duplicate(int list)
 {
 	int i;

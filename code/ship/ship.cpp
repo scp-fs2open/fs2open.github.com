@@ -1366,7 +1366,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	diag_printf ("%s '%s' delta_bank_const -- %7.3f\n", info_type_name, sip->name, sip->delta_bank_const);
 
 	if(optional_string("$Max Velocity:"))
+	{
 		stuff_vector(&sip->max_vel);
+		sip->max_accel = sip->max_vel.xyz.z;
+	}
 
 	// calculate the max speed from max_velocity
 	sip->max_speed = sip->max_vel.xyz.z;
@@ -1388,7 +1391,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	// get the backwards velocity;
 	if(optional_string("$Rear Velocity:"))
+	{
 		stuff_float(&sip->max_rear_vel);
+		sip->min_speed = -sip->max_rear_vel;
+	}
 
 	// get the accelerations
 	if(optional_string("$Forward accel:"))

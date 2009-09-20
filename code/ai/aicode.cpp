@@ -202,7 +202,6 @@ int	Num_ai_classes;
 int Num_alloced_ai_classes;
 
 int	AI_FrameCount = 0;
-int	Ship_info_inited = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
 int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
@@ -1249,22 +1248,6 @@ if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_
 #endif
 
 	pip->rotvel = vel_out;
-}
-
-void init_ship_info()
-{
-	int	i;
-
-	if (Ship_info_inited)
-		return;
-
-	for (i=0; i<Num_ship_classes; i++) {
-		Ship_info[i].min_speed = - Ship_info[i].max_rear_vel;
-		Ship_info[i].max_accel = Ship_info[i].max_vel.xyz.z;
-	}
-
-	Ship_info_inited = 1;
-
 }
 
 //	Set aip->target_objnum to objnum
@@ -14238,8 +14221,6 @@ void ai_frame(int objnum)
 //	validate_mode_submode(aip);
 }
 
-int Waypoints_created = 0;
-
 /* Goober5000 - deprecated; use ship_info_lookup
 //	Find the ship with the name *name in the Ship_info array.
 int find_ship_name(char *name)
@@ -14252,24 +14233,6 @@ int find_ship_name(char *name)
 
 	return -1;
 }*/
-
-void create_waypoints()
-{
-	int	i, j, z;
-
-	// Waypoints_created = 1;
-
-	if (Waypoints_created)
-		return;
-
-	for (j=0; j<Num_waypoint_lists; j++)
-		for (i=0; i<Waypoint_lists[j].count; i++) {
-			z = obj_create(OBJ_WAYPOINT, 0, j * 65536 + i, NULL,
-				&Waypoint_lists[j].waypoints[i], 0.0f, OF_RENDERS);
-		}
-
-	Waypoints_created = 1;
-}
 
 void ai_control_info_check( object *obj, ai_info *aip )
 {
@@ -14339,10 +14302,6 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	Assert( obj->type == OBJ_SHIP );
 	Assert( ai_index >= 0 );
-
-	init_ship_info();
-
-	create_waypoints();
 
 	AI_frametime = frametime;
 	if (obj-Objects <= Last_ai_obj) {
@@ -14477,13 +14436,8 @@ void init_ai_object(int objnum)
 	//Init stuff from ai class and ai profiles
 	init_aip_from_class_and_profile(aip, &Ai_classes[Ship_info[ship_type].ai_class], The_mission.ai_profile);
 
-	if (Num_waypoint_lists > 0) {
-		aip->wp_index = -1;
-		aip->wp_list = -1;
-	} else {
-		aip->wp_index = -1;
-		aip->wp_list = -1;
-	}
+	aip->wp_index = -1;
+	aip->wp_list = -1;
 
 	aip->attacker_objnum = -1;
 	aip->goal_signature = -1;
@@ -14586,7 +14540,6 @@ void init_ai_system()
 	//init_ai_objects();
 
 	Ppfp = Path_points;
-	Waypoints_created = 0;
 
 /*	for (int i=0; i<MAX_IGNORE_OBJECTS; i++) {
 		Ignore_objects[i].objnum = -1;
