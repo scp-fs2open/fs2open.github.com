@@ -344,8 +344,8 @@ void opengl_shader_init()
 	}
 
 	// check if main shaders exist
-	bool main_vert = (bool)cf_exists_full("main-v.sdr", CF_TYPE_EFFECTS);
-	bool main_frag = (bool)cf_exists_full("main-f.sdr", CF_TYPE_EFFECTS);
+	bool main_vert = cf_exists_full("main-v.sdr", CF_TYPE_EFFECTS) != 0;
+	bool main_frag = cf_exists_full("main-f.sdr", CF_TYPE_EFFECTS) != 0;
 
 	GL_shader.reserve(Num_shader_files);
 
