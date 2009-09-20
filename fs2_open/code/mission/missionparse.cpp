@@ -5207,6 +5207,8 @@ void post_process_mission()
 
 	init_ai_system();
 
+	create_waypoints();
+
 	// Goober5000 - this needs to be called only once after parsing of objects and wings is complete
 	// (for individual invalidation, see mission_parse_mark_non_arrival)
 	mission_parse_mark_non_arrivals();
