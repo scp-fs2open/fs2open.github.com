@@ -46,6 +46,7 @@
 #define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
 #define AIPF_GLOBAL_DISARM_DISABLE_EFFECTS						    (1 << 29)
 #define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 30)
+#define AIPF_FIX_AI_CLASS_BUG										(1 << 31)
 
 #define MAX_AI_PROFILES	5
 

@@ -364,6 +364,8 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$force beam turrets to use normal fov:", AIPF_FORCE_BEAM_TURRET_FOV);
 
+			set_flag(profile, "$fix ai class bug:", AIPF_FIX_AI_CLASS_BUG);
+
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
 				Mp++;
