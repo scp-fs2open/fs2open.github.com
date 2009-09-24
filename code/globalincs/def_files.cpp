@@ -959,5 +959,9 @@ $allow vertical dodge:	NO												\n\
 ;; given the order to disarm or disable will be affected.				\n\
 $disarm or disable cause global ai goal effects:	YES					\n\
 																		\n\
+;; Fixes a bug where AI class is not properly set if set in the mission	\n\
+;; This should be YES if you want anything in AI.tbl to mean anything	\n\
+$fix AI class bug:	NO													\n\
+																		\n\
 #End																	\n\
 ";
