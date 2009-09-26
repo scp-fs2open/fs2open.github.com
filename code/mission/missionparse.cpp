@@ -68,6 +68,7 @@
 #include "missionui/fictionviewer.h"
 #include "cmdline/cmdline.h"
 #include "popup/popup.h"
+#include "popup/popupdead.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -483,6 +484,13 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if ( pm->game_type & MISSION_TYPE_MULTI ) {
 		if ( optional_string("+Num Respawns:") ){
 			stuff_int( (int*)&(pm->num_respawns) );
+		}
+	}
+
+	The_mission.max_respawn_delay = -1;
+	if ( pm->game_type & MISSION_TYPE_MULTI ) {
+		if ( optional_string("+Max Respawn Time:") ){
+			stuff_int( &The_mission.max_respawn_delay );
 		}
 	}
 
@@ -1790,6 +1798,9 @@ int parse_create_object_sub(p_object *p_objp)
 
 	aip->ai_class = p_objp->ai_class;
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
+	//Fixes a bug where the AI class attributes were not copied if the AI class was set in the mission.
+	if (The_mission.ai_profile->flags & AIPF_FIX_AI_CLASS_BUG)
+		ship_set_new_ai_class(shipnum, p_objp->ai_class);
 
 	// must reset the number of ai goals when the object is created
 	for (i = 0; i < MAX_AI_GOALS; i++)
@@ -5198,6 +5209,8 @@ void post_process_mission()
 	}
 
 	init_ai_system();
+
+	create_waypoints();
 
 	// Goober5000 - this needs to be called only once after parsing of objects and wings is complete
 	// (for individual invalidation, see mission_parse_mark_non_arrival)

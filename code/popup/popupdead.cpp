@@ -29,6 +29,8 @@
 #include "mission/missioncampaign.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "io/timer.h"
+#include "hud/hudmessage.h"
 
 
 UI_WINDOW	Popupdead_window;
@@ -120,6 +122,8 @@ int Popupdead_multi_type;			// what kind of popup is active for muliplayer
 int Popupdead_skip_active = 0;	// The skip-misison popup is active
 int Popupdead_skip_already_shown = 0;
 
+int Popupdead_timer;
+
 extern int Cmdline_mpnoreturn;
 // Initialize the dead popup data
 void popupdead_start()
@@ -142,6 +146,15 @@ void popupdead_start()
 
 	Popupdead_num_choices = 0;
 	Popupdead_multi_type = -1;
+
+	if ((The_mission.max_respawn_delay >= 0) && ( Game_mode & GM_MULTIPLAYER )) {
+		Popupdead_timer = timestamp(The_mission.max_respawn_delay * 1000); 
+		if (Game_mode & GM_MULTIPLAYER) {
+			if(!(Net_player->flags & NETINFO_FLAG_LIMBO)){
+				HUD_printf("Player will automatically respawn in %d seconds", The_mission.max_respawn_delay); 
+			}
+		}
+	}
 
 	if ( Game_mode & GM_NORMAL ) {
 		// also do a campaign check here?
@@ -509,6 +522,13 @@ int popupdead_do_frame(float frametime)
 	Popupdead_window.draw();
 	popupdead_force_draw_buttons();
 	popupdead_draw_button_text();
+
+	// maybe force the player to respawn if they've taken too long to choose
+	if (( Game_mode & GM_MULTIPLAYER ) && (The_mission.max_respawn_delay >= 0) && (timestamp_elapsed(Popupdead_timer)) && (choice < 0)) {
+		if (( Popupdead_multi_type == POPUPDEAD_RESPAWN_ONLY) || ( Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT)) {
+			Popupdead_choice = POPUPDEAD_DO_RESPAWN; 
+		}
+	}
 
 	return Popupdead_choice;
 }

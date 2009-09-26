@@ -16,6 +16,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 #include "ai/ai_profiles.h"
+#include "physics/physics.h"
 
 struct ship_weapon;
 struct ship_subsys;
@@ -105,6 +106,15 @@ struct object;
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
+// flags for possible ai overrides
+#define AIORF_FULL					(1<<0)	//	Full sexp control
+#define AIORF_ROLL					(1<<1)	//	Sexp forced roll maneuver
+#define AIORF_PITCH					(1<<2)	//	Sexp forced pitch change
+#define AIORF_HEADING				(1<<3)	//	Sexp forced heading change
+#define AIORF_FULL_LAT				(1<<4)	//  full control over up/side/forward movement
+#define AIORF_UP					(1<<5)	//	vertical movement
+#define AIORF_SIDEWAYS				(1<<6)	//	horizontal movement
+#define AIORF_FORWARD				(1<<7)	//	forward movement
 
 // structure for AI goals
 typedef struct ai_goal {
@@ -204,7 +214,6 @@ typedef struct ai_class {
 
 	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
 	//INT_MIN and FLT_MIN represent the "not set" state for which defaults are used instead.
-	//TODO: Copy these into aip
 	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
 	float	ai_shockwave_evade_chance[NUM_SKILL_LEVELS];	
 	float	ai_get_away_chance[NUM_SKILL_LEVELS];	
@@ -517,6 +526,10 @@ typedef struct ai_info {
 	float		artillery_lock_time;				// how long we've been locked onto this guy
 	vec3d	artillery_lock_pos;				// base position of the lock point on (in model's frame of reference)
 	float		lethality;							// measure of how dangerous ship is to enemy BIG|HUGE ships (likelyhood of targeting)
+
+	int		ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
+	control_info	ai_override_ci;		// ai override control info
+	int		ai_override_timestamp;		// mark for when to end the current override
 } ai_info;
 
 #define	MAX_AI_INFO	 MAX_SHIPS
@@ -541,8 +554,6 @@ extern int find_guard_obj(void);
 
 extern ai_info Ai_info[];
 extern ai_info *Player_ai;
-
-extern int Waypoints_created;	// externed since needed for save/restore
 
 extern ai_class *Ai_classes;
 extern char** Ai_class_names;

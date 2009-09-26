@@ -3845,17 +3845,11 @@ int WE_Default::warpStart()
 		portal_objp = &Objects[portal_objnum];
 	}
 
-	back_len = objp->radius;
-	if(pm != NULL)
-	{
-		back_len = -pm->mins.xyz.z;
-	}
-
 	float warpout_speed = 0.0f;
 	float warp_time = 0.0f;
 	if(direction == WD_WARP_IN)
 	{
-		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, back_len );
+		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != NULL) ? -pm->mins.xyz.z : objp->radius );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
@@ -4009,7 +4003,7 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) && (vm_dist_to_plane(&objp->pos, &fvec, &pos) > back_len))
+		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) )
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();

@@ -375,7 +375,7 @@ sexp_oper Operators[] = {
 
 	{ "is-nav-visited",					OP_NAV_IS_VISITED,				1, 1 }, // Kazan
 	{ "distance-to-nav",				OP_NAV_DISTANCE,				1, 1 }, // Kazan
-	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 3 }, //kazan
+	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 4 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
 	{ "del-nav",						OP_NAV_DEL,						1, 1 }, //kazan
 	{ "hide-nav",						OP_NAV_HIDE,					1, 1 }, //kazan
@@ -441,6 +441,10 @@ sexp_oper Operators[] = {
 	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
+	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
+	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
+	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
+	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -5808,6 +5812,220 @@ void sexp_set_object_facing(int n, bool facing_object)
 	}
 
 	sexp_set_oswpt_facing(&oswpt1, location, turn_time, bank);
+}
+
+void sexp_set_ship_man(object *objp, int duration, float heading, float pitch, float bank, int force_rotate, float up, float sideways, float forward, int force_control)
+{
+	if (objp->type != OBJ_SHIP)
+		return;
+
+	ship *shipp = &Ships[objp->instance];
+	ai_info	*aip = &Ai_info[shipp->ai_index];
+	
+	aip->ai_override_timestamp = timestamp(duration);
+	aip->ai_override_flags = 0;
+	
+	if (force_rotate) {
+		aip->ai_override_flags |= AIORF_FULL;
+		aip->ai_override_ci.bank = bank;
+		aip->ai_override_ci.pitch = pitch;
+		aip->ai_override_ci.heading = heading;
+	} else {
+		if (bank != 0.0f) {
+			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_ci.bank = bank;
+		}
+		if (pitch != 0.0f) {
+			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_ci.pitch = pitch;
+		}
+		if (heading != 0.0f) {
+			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_ci.heading = heading;
+		}
+	}
+	if (force_control) {
+		aip->ai_override_flags |= AIORF_FULL_LAT;
+		aip->ai_override_ci.vertical = up;
+		aip->ai_override_ci.sideways = sideways;
+		aip->ai_override_ci.forward = forward;
+	} else {
+		if (up != 0.0f) {
+			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_ci.vertical = up;
+		}
+		if (sideways != 0.0f) {
+			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_ci.sideways = sideways;
+		}
+		if (forward != 0.0f) {
+			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_ci.forward = forward;
+		}
+	}
+}
+
+void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, float heading, float pitch, float bank, int force_rotate, float up, float sideways, float forward, int force_control)
+{
+	Assert(oswpt);
+
+	switch (oswpt->type)
+	{
+		case OSWPT_TYPE_TEAM:
+		{
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != GET_LAST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				object *objp = &Objects[so->objnum];
+
+				if (obj_team(objp) == oswpt->team)
+					sexp_set_ship_man(objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			}
+
+			break;
+		}
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+			sexp_set_ship_man(oswpt->objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			break;
+
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt->wingp->current_count; i++)
+			{
+				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
+
+				sexp_set_ship_man(objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			}
+
+			break;
+		}
+	}
+}
+
+void sexp_set_ship_maneuver(int n)
+{
+	float bank = 0, heading = 0, pitch = 0;
+	float up = 0, sideways = 0, forward = 0;
+	int duration = 0, i, temp, force_rotate = 0, force_control = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			heading = ((float) temp)/100.0f;
+		else if (i == 1)
+			pitch = ((float) temp)/100.0f;
+		else
+			bank = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_rotate = is_sexp_true(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			up = ((float) temp)/100.0f;
+		else if (i == 1)
+			sideways = ((float) temp)/100.0f;
+		else
+			forward = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_control = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((bank == 0.0f) && (pitch == 0.0f) && (heading == 0.0f) && (force_rotate == 0) && (up == 0.0f) && (sideways == 0.0f) && (forward == 0.0f) && (force_control == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+}
+
+void sexp_set_ship_rot_maneuver(int n)
+{
+	float bank = 0, heading = 0, pitch = 0;
+	int duration = 0, i, temp, force_rotate = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			heading = ((float) temp)/100.0f;
+		else if (i == 1)
+			pitch = ((float) temp)/100.0f;
+		else
+			bank = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_rotate = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((bank == 0.0f) && (pitch == 0.0f) && (heading == 0.0f) && (force_rotate == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, force_rotate, 0.0f, 0.0f, 0.0f, 0);
+}
+
+void sexp_set_ship_lat_maneuver(int n)
+{
+	float up = 0, sideways = 0, forward = 0;
+	int duration = 0, i, temp, force_control = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			up = ((float) temp)/100.0f;
+		else if (i == 1)
+			sideways = ((float) temp)/100.0f;
+		else
+			forward = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_control = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((up == 0.0f) && (sideways == 0.0f) && (forward == 0.0f) && (force_control == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, 0.0f, 0.0f, 0.0f, 0, up, sideways, forward, force_control);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -13989,14 +14207,105 @@ void unset_nav_needslink(int node)
 	}
 }
 
+void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
+{	
+	int i;
+	object_ship_wing_point_team oswpt;
+	bool add_for_this_player = true; 
+
+	if (oswpt_name != NULL) {
+		sexp_get_object_ship_wing_point_team(&oswpt, oswpt_name); 
+
+		// we can't assume this nav should be visible to the player any more
+		add_for_this_player = false;
+
+		switch (oswpt.type)
+		{
+			case OSWPT_TYPE_TEAM:
+				if (oswpt.team == Player_ship->team) {
+					add_for_this_player = true; 
+				}
+
+			case OSWPT_TYPE_SHIP:
+				if (oswpt.shipp == Player_ship) {
+					add_for_this_player = true; 
+				}
+
+			case OSWPT_TYPE_WING:
+				for ( i = 0; i < oswpt.wingp->current_count; i++) {
+					if (Ships[oswpt.wingp->ship_index[i]].objnum == Player_ship->objnum) {
+						add_for_this_player = true; 
+					}
+				}
+
+			// for all other oswpt types we simply return
+			default:
+				return;
+		}
+	}
+
+	if (add_for_this_player) {		
+		AddNav_Waypoint(nav, WP_path, vert, 0);
+	}
+}
+
 
 //text: add-nav-waypoint
-//args: 3, Nav Name, Waypoint Path Name, Waypoint Path point
+//args: 4, Nav Name, Waypoint Path Name, Waypoint Path point, ShipWingTeam
 void add_nav_waypoint(int node)
 {
 	char *nav_name = CTEXT(node);
 	char *way_name = CTEXT(CDR(node));
-	int  vert = eval_num(CDR(CDR(node)));
+	int  vert = eval_num(CDR(CDR(node)));	
+	char *oswpt_name;
+
+	node = CDR(CDR(CDR(node)));
+	if (node >=0) {
+		oswpt_name = CTEXT(node); 
+	}
+	else {
+		oswpt_name = NULL;
+	}
+
+	add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
+
+	multi_start_packet();
+	multi_send_string(nav_name);
+	multi_send_string(way_name);
+	multi_send_int(vert);
+
+	if (oswpt_name != NULL) {
+		multi_send_string(oswpt_name);
+	}
+
+	multi_end_packet();
+}
+
+void multi_add_nav_waypoint()
+{
+	char nav_name[TOKEN_LENGTH];
+	char way_name[TOKEN_LENGTH];
+	char oswpt_name[TOKEN_LENGTH];
+	int vert;
+
+	if (!multi_get_string(nav_name)) {
+		return; 
+	}
+	
+	if (!multi_get_string(way_name)) {
+		return;
+	}
+
+	if (!multi_get_int(vert)) {
+		return;
+	}
+
+	if (!multi_get_string(oswpt_name)) {
+		add_nav_waypoint(nav_name, way_name, vert, NULL);		
+	}
+	else {
+		add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
+	}
 
 	AddNav_Waypoint(nav_name, way_name, vert, 0);
 }
@@ -14324,6 +14633,54 @@ void multi_sexp_set_respawns()
 		}
 	}
 }
+
+// helper function for the remove-weapons SEXP
+void actually_remove_weapons(int weapon_info_index)
+{
+	int i; 
+
+	for (i = 0; i<MAX_WEAPONS; i++) {
+		// weapon doesn't match the optional weapon 
+		if ((weapon_info_index > -1) && (Weapons[i].weapon_info_index != weapon_info_index)) {
+			continue;
+		}
+
+		if (Weapons[i].objnum >= 0) {
+			Objects[Weapons[i].objnum].flags |= OF_SHOULD_BE_DEAD;
+		}		
+	}
+}
+
+void sexp_remove_weapons(int node)
+{ 
+	int weapon_info_index = -1;
+
+	// if we have the optional argument, read it in
+	if (node >= 0) {
+		weapon_info_index = weapon_info_lookup(CTEXT(node));
+		if (weapon_info_index == -1) {
+			char *buf = CTEXT(node); 
+			mprintf(("Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission", buf)); 
+		}
+	}
+
+	actually_remove_weapons(weapon_info_index); 
+	
+	// send the information to clients
+	multi_start_packet();
+	multi_send_int(weapon_info_index); 
+	multi_end_packet();
+}
+
+void multi_sexp_remove_weapons()
+{
+	int weapon_info_index = -1; 
+
+	multi_get_int(weapon_info_index);
+	
+	actually_remove_weapons(weapon_info_index); 
+}
+
 
 int sexp_return_player_data(int node, int type)
 {
@@ -16610,6 +16967,21 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SHIP_MANEUVER:
+				sexp_set_ship_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_ROT_MANEUVER:
+				sexp_set_ship_rot_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_LAT_MANEUVER:
+				sexp_set_ship_lat_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// training operators
 			case OP_KEY_PRESSED:
 				sexp_val = sexp_key_pressed(node);
@@ -16749,6 +17121,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SET_RESPAWNS:
 				sexp_set_respawns(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_REMOVE_WEAPONS:
+				sexp_remove_weapons(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -17384,6 +17761,10 @@ void multi_sexp_eval()
 				multi_sexp_set_respawns();
 				break;
 
+			case OP_REMOVE_WEAPONS:
+				multi_sexp_remove_weapons();
+				break;
+
 			case OP_CHANGE_SHIP_CLASS:
 				multi_sexp_change_ship_class();
 				break;
@@ -17427,6 +17808,10 @@ void multi_sexp_eval()
 
 			case OP_MODIFY_VARIABLE:
 				multi_sexp_modify_variable();
+				break;
+
+			case OP_NAV_ADD_WAYPOINT:
+				multi_add_nav_waypoint();
 				break;
 
 			// bad sexp in the packet
@@ -17491,7 +17876,7 @@ int run_sexp(const char* sexpression)
 	strncpy(buf, sexpression, 8192);
 
 	// HACK: ! -> "
-	for (i = 0; i < strlen(buf); i++)
+	for (i = 0; i < (int)strlen(buf); i++)
 		if (buf[i] == '!')
 			buf[i]='\"';
 
@@ -17863,6 +18248,9 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_POSITION:
 		case OP_SET_OBJECT_FACING:
 		case OP_SET_OBJECT_FACING_OBJECT:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_KAMIKAZE:
@@ -17959,6 +18347,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_CHANGE_IFF_COLOR:
+		case OP_REMOVE_WEAPONS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -18154,6 +18543,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
+		case OP_REMOVE_WEAPONS:
+			return OPF_WEAPON_NAME;
+
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 			if (argnum == 0)
 				return OPF_POSITIVE;
@@ -18291,6 +18683,31 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_POSITIVE;
+
+		case OP_SHIP_MANEUVER:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else if (argnum < 5)
+				return OPF_NUMBER;
+			else if (argnum == 5)
+				return OPF_BOOL;
+			else if (argnum < 9)
+				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
+
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else if (argnum < 5)
+				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -19231,8 +19648,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else if (argnum==1)
 				return OPF_WAYPOINT_PATH;
-			else
+			else if (argnum==2)
 				return OPF_POSITIVE;
+			else 
+				return OPF_SHIP_WING_POINT;
 
 		case OP_NAV_ADD_SHIP:		//kazan
 			if (argnum==0)
@@ -20555,6 +20974,9 @@ int get_subcategory(int sexp_id)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
 
 		case OP_CHANGE_SOUNDTRACK:
@@ -20585,6 +21007,7 @@ int get_subcategory(int sexp_id)
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SHIP_COPY_DAMAGE:
+		case OP_REMOVE_WEAPONS:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -20643,6 +21066,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_DEATHS:
 		case OP_RESPAWNS_LEFT:
 		case OP_IS_PLAYER:
+		case OP_SET_RESPAWNS:
 			return STATUS_SUBCATEGORY_MULTIPLAYER;
 
 		case OP_SHIELD_RECHARGE_PCT:
@@ -21638,6 +22062,40 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Turn time in milliseconds (optional)\r\n"
 		"\t4: Bank (optional)" },
 
+	// Wanderer
+	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Heading change rate percentage (-100 to 100)\r\n"
+		"\t4: Pitch change rate percentage (-100 to 100)\r\n"
+		"\t5: Banking change rate percentage (-100 to 100)\r\n"
+		"\t6: Force rotations (boolean)\r\n"
+		"\t7: Vertical movement change percentage (-100 to 100)\r\n"
+		"\t8: Sideways movement change percentage (-100 to 100)\r\n"
+		"\t9: Forward movement change percentage (-100 to 100)\r\n"
+		"\t10: Force movements (boolean)\r\n" },
+
+	// Wanderer
+	{ OP_SHIP_ROT_MANEUVER, "ship-rot-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Heading change rate percentage (-100 to 100)\r\n"
+		"\t4: Pitch change rate percentage (-100 to 100)\r\n"
+		"\t5: Banking change rate percentage (-100 to 100)\r\n"
+		"\t6: Force rotations (boolean)\r\n" },
+	
+	// Wanderer
+	{ OP_SHIP_LAT_MANEUVER, "ship-lat-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Vertical movement change percentage (-100 to 100)\r\n"
+		"\t4: Sideways movement change percentage (-100 to 100)\r\n"
+		"\t5: Forward movement change percentage (-100 to 100)\r\n"
+		"\t6: Force movements (boolean)\r\n" },
+
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
 		"\tTags a ship.  Takes 3 or 8 arguments...\r\n"
@@ -22394,6 +22852,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tReturns the # respawns a player (or AI that could have been a player) has remaining.\r\n"
 		"\tThe ship specified in the first field should be the player start.\r\n"
 		"\tOnly really useful for multiplayer."},
+
+	{ OP_REMOVE_WEAPONS, "remove-weapons\r\n"
+		"\tRemoves all live weapons currently in the game"
+		"\t1: (Optional) Remove only this specific weapon\r\n"},
 
 	{ OP_SET_RESPAWNS, "set-respawns\r\n"
 		"\tSet the # respawns a player (or AI that could have been a player) has used.\r\n"

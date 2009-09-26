@@ -703,6 +703,7 @@ typedef struct mission {
 	int	flags;
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
+	int		max_respawn_delay;									// valid in multiplayer missions -- number of respawns allowed
 	support_ship_info	support_ships;		// Goober5000
 	char	squad_filename[MAX_FILENAME_LEN];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string

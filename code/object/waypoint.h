@@ -26,6 +26,9 @@ extern waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
 extern int Num_waypoint_lists;
 
 //********************FUNCTIONS********************
+//Creates initial waypoints after mission is loaded
+void create_waypoints();
+
 //Attempts to create a waypoint on waypoint_list list. Returns -1 on failure.
 int waypoint_create(vec3d *pos, int list);
 

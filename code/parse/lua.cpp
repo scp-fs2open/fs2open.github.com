@@ -5356,6 +5356,42 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	return ade_set_args(L, "b", rtn);
 }
 
+ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
+{
+	ship_subsys_h *sso;
+	float fov, fov_e, fov_y;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	model_subsystem *tp = sso->ss->system_info;
+
+	fov = tp->turret_fov;
+	fov_e = tp->turret_max_fov;
+	fov_y = tp->turret_y_fov;
+
+	return ade_set_args(L, "fff", fov, fov_e, fov_y);
+}
+
+ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
+{
+	ship_subsys_h *sso;
+	matrix m;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+	
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	model_subsystem *tp = sso->ss->system_info;
+
+	m = tp->turret_matrix;
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
+}
+
 //**********HANDLE: shiptextures
 ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
@@ -6233,6 +6269,71 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	//Fire off the goal
 	ai_add_ship_goal_scripting(ai_mode, ai_submode, (int)(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp->instance].ai_index]);
 
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Force Rotation, number Vertical, number Horizontal, number Forward, boolean Force Movement", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
+{
+	object_h *objh;
+	float arr[6];
+	bool f_rot = false, f_move = false;
+	int t, i;
+	if(!ade_get_args(L, "oifffbfffb", l_Ship.GetPtr(&objh), &t, &arr[0], &arr[1], &arr[2], &f_rot, &arr[3], &arr[4], &arr[5], &f_move))
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
+	control_info *cip = &aip->ai_override_ci;
+
+	aip->ai_override_timestamp = timestamp(t);
+	aip->ai_override_flags = 0;
+
+	if (t < 2)
+		return ADE_RETURN_FALSE;
+
+	for(i = 0; i < 6; i++) {
+		if((arr[i] < -1.0f) || (arr[i] > 1.0f))
+			arr[i] = 0;
+	}
+
+	if(f_rot) {
+		aip->ai_override_flags = AIORF_FULL;
+		cip->heading = arr[0];
+		cip->pitch = arr[1];
+		cip->bank = arr[2];
+	} else {
+		if (arr[0] != 0) {
+			cip->heading = arr[0];
+			aip->ai_override_flags |= AIORF_HEADING;
+		} 
+		if (arr[1] != 0) {
+			cip->pitch = arr[1];
+			aip->ai_override_flags |= AIORF_PITCH;
+		} 
+		if (arr[2] != 0) {
+			cip->bank = arr[2];
+			aip->ai_override_flags |= AIORF_ROLL;
+		} 
+	}
+	if(f_move) {
+		aip->ai_override_flags = AIORF_FULL_LAT;
+		cip->vertical = arr[3];
+		cip->sideways = arr[4];
+		cip->forward = arr[5];
+	} else {
+		if (arr[3] != 0) {
+			cip->vertical = arr[3];
+			aip->ai_override_flags |= AIORF_UP;
+		} 
+		if (arr[4] != 0) {
+			cip->sideways = arr[4];
+			aip->ai_override_flags |= AIORF_SIDEWAYS;
+		} 
+		if (arr[5] != 0) {
+			cip->forward = arr[5];
+			aip->ai_override_flags |= AIORF_FORWARD;
+		} 
+	}
 	return ADE_RETURN_TRUE;
 }
 

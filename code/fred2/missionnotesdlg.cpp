@@ -57,6 +57,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_scramble = FALSE;
 	m_daisy_chained_docking = FALSE;
 	m_num_respawns = 0;
+	m_max_respawn_delay = 0;
 	m_disallow_support = 0;
 	m_no_promotion = FALSE;
 	m_no_builtin_msgs = FALSE;
@@ -83,6 +84,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CMissionNotesDlg)
 	DDX_Control(pDX, IDC_RESPAWN_SPIN, m_respawn_spin);
+	DDX_Control(pDX, IDC_MAX_RESPAWN_DELAY_SPIN, m_max_respawn_delay_spin);
 	DDX_Text(pDX, IDC_CREATED, m_created);
 	DDX_Text(pDX, IDC_MODIFIED, m_modified);
 	DDX_Text(pDX, IDC_MISSION_NOTES, m_mission_notes);
@@ -103,7 +105,9 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SCRAMBLE, m_scramble);
 	DDX_Check(pDX, IDC_ALLOW_DOCK_TREES, m_daisy_chained_docking);
 	DDX_Text(pDX, IDC_RESPAWNS, m_num_respawns);
+	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
 	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 999);
+	DDV_MinMaxUInt(pDX, m_max_respawn_delay, 0, 999);
 	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_MSGS, m_no_builtin_msgs);
@@ -140,7 +144,7 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_CONTRAIL_THRESHOLD_CHECK, OnToggleContrailThreshold)
 	ON_BN_CLICKED(IDC_CUSTOM_WING_NAMES, OnCustomWingNames)
 	//}}AFX_MSG_MAP
-END_MESSAGE_MAP()
+	END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CMissionNotesDlg message handlers
@@ -214,6 +218,7 @@ void CMissionNotesDlg::OnOK()
 
 	MODIFY(The_mission.game_type, new_m_type );
 	MODIFY(The_mission.num_respawns, (int)m_num_respawns );
+	MODIFY(The_mission.max_respawn_delay, (int)m_max_respawn_delay );
 	MODIFY(The_mission.support_ships.max_support_ships, (m_disallow_support) ? 0 : -1);
 	MODIFY(The_mission.support_ships.max_hull_repair_val, m_max_hull_repair_val);
 	MODIFY(The_mission.support_ships.max_subsys_repair_val, m_max_subsys_repair_val);
@@ -519,7 +524,9 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	}
 
 	m_respawn_spin.SetRange(0, 99);
+	m_max_respawn_delay_spin.SetRange(0, 99);
 	m_num_respawns = The_mission.num_respawns;
+	m_max_respawn_delay = The_mission.max_respawn_delay;
 	m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
 	m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
 
@@ -586,6 +593,8 @@ void CMissionNotesDlg::set_types()
 	dogfight->EnableWindow(enable);
 	GetDlgItem(IDC_RESPAWNS)->EnableWindow(enable);
 	GetDlgItem(IDC_RESPAWN_SPIN)->EnableWindow(enable);
+	GetDlgItem(IDC_MAX_RESPAWN_DELAY)->EnableWindow(enable);
+	GetDlgItem(IDC_MAX_RESPAWN_DELAY_SPIN)->EnableWindow(enable);
 }
 
 void CMissionNotesDlg::OnSquadLogo()
@@ -716,4 +725,3 @@ void CMissionNotesDlg::OnCustomWingNames()
 
 	UpdateData(FALSE);	
 }
-
