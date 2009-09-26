@@ -554,8 +554,8 @@ static char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
 
 
 static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
-	"Loading.ani",		// GR_640
-	"2_Loading.ani"		// GR_1024
+	"Loading",		// GR_640
+	"2_Loading"		// GR_1024
 };
 
 #if defined(OEM_BUILD)
@@ -1231,9 +1231,11 @@ void game_load_palette()
 int Game_loading_callback_inited = 0;
 
 int Game_loading_background = -1;
-anim * Game_loading_ani = NULL;
-anim_instance	*Game_loading_ani_instance;
-int Game_loading_frame=-1;
+//static int last_cbitmap = -1;
+//anim * Game_loading_ani = NULL;
+//anim_instance	*Game_loading_ani_instance;
+//int Game_loading_frame=-1;
+generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
@@ -1249,46 +1251,40 @@ extern char Processing_filename[MAX_PATH_LEN];
 static int busy_shader_created = 0;
 shader busy_shader;
 #endif
+static int framenum;
 // This gets called 10x per second and count is the number of times 
 // game_busy() has been called since the current callback function
 // was set.
 void game_loading_callback(int count)
 {	
+	int new_framenum;
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
-	Assert( Game_loading_ani != NULL );
+	Assert( Game_loading_ani.num_frames > 0 );
 
 	int do_flip = 0;
 
-	int framenum = ((Game_loading_ani->total_frames*count) / COUNT_ESTIMATE)+1;
-	if ( framenum > Game_loading_ani->total_frames-1 )	{
-		framenum = Game_loading_ani->total_frames-1;
-	} else if ( framenum < 0 )	{
-		framenum = 0;
+	new_framenum = ((Game_loading_ani.num_frames*count) / COUNT_ESTIMATE)+1;
+	if ( new_framenum > Game_loading_ani.num_frames-1 )	{
+		new_framenum = Game_loading_ani.num_frames-1;
+	} else if ( new_framenum < 0 )	{
+		new_framenum = 0;
 	}
+	//make sure we always run forwards - graphical hack
+	if(new_framenum > framenum)
+		framenum = new_framenum;
 
-	static int last_cbitmap = -1;
-	int cbitmap = -1;
-	while ( Game_loading_frame < framenum )	{
-		Game_loading_frame++;
-		cbitmap = anim_get_next_frame(Game_loading_ani_instance);
-	}
-	
-
-	if ( cbitmap > -1 )	{
+	if ( Game_loading_ani.num_frames > 0 )	{
 		if ( Game_loading_background > -1 )	{
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0);
 		}
 
 		//mprintf(( "Showing frame %d/%d [ Bitmap=%d ]\n", Game_loading_frame ,  Game_loading_ani->total_frames, cbitmap ));
-		gr_set_bitmap( cbitmap );
+		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
 		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 
-		if ( (last_cbitmap > -1) && (last_cbitmap != cbitmap) )
-			bm_release(last_cbitmap);
-	
 		do_flip = 1;
 	}
 
@@ -1303,6 +1299,8 @@ void game_loading_callback(int count)
 	}
 
 	if (Processing_filename[0] != '\0') {
+		/*
+		//do we still need this with the new EFF code?
 		if ( cbitmap == -1 && last_cbitmap >-1 ){
 			if ( Game_loading_background > -1 )	{
 				gr_set_bitmap( Game_loading_background );
@@ -1311,6 +1309,7 @@ void game_loading_callback(int count)
 			gr_set_bitmap( last_cbitmap );
 			gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 		}
+		*/
 
 		gr_set_shader(&busy_shader);
 		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17); // make sure it goes across the entire width
@@ -1359,9 +1358,6 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
-	if (cbitmap != -1)
-		last_cbitmap = cbitmap;
-
 	if (do_flip) {
 		gr_flip();
 	}
@@ -1379,16 +1375,15 @@ void game_loading_callback_init()
 	}
 	//common_set_interface_palette("InterfacePalette");  // set the interface palette
 
-
-	Game_loading_ani = anim_load( Game_loading_ani_fname[gr_screen.res]);
-	Assert( Game_loading_ani != NULL );
-	Game_loading_ani_instance = init_anim_instance(Game_loading_ani, 16);
-	Assert( Game_loading_ani_instance != NULL );
-	Game_loading_frame = -1;
+	strcpy(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
+	generic_anim_init(&Game_loading_ani, Game_loading_ani.filename);
+	generic_anim_load(&Game_loading_ani);
+	Assert( Game_loading_ani.num_frames > 0 );
 
 	Game_loading_callback_inited = 1;
 	Mouse_hidden = 1;
-	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani->total_frames)+1 );	
+	framenum = 0;
+	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani.num_frames)+1 );
 
 
 }
@@ -1414,10 +1409,7 @@ void game_loading_callback_close()
 	real_count = 0;
 #endif
 
-	free_anim_instance(Game_loading_ani_instance);
-	Game_loading_ani_instance = NULL;
-	anim_free(Game_loading_ani);
-	Game_loading_ani = NULL;
+	generic_anim_unload(&Game_loading_ani);
 
 	bm_release( Game_loading_background );
 	common_free_interface_palette();		// restore game palette

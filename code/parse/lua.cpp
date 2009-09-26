@@ -9092,7 +9092,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 
 	idx = bm_load(s);
 	if(idx < 0 && b) {
-		idx = bm_load_animation(s, NULL, NULL, d ? 1 : 0);
+		idx = bm_load_animation(s, NULL, NULL, NULL, d ? 1 : 0);
 	}
 
 	if(idx < 0)

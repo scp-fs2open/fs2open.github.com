@@ -33,6 +33,7 @@
 //#include "network/multi_update.h"
 #include "globalincs/alphacolors.h"
 #include "graphics/2d.h"
+#include "graphics/generic.h"
 #include "io/timer.h"
 #include "inetfile/inetgetfile.h"
 #include "cfile/cfilesystem.h"
@@ -168,8 +169,7 @@ int Multi_pxo_palette = -1;
 #define MULTI_PXO_ANIM_FNAME				"pxologo"
 #define MULTI_PXO_ANIM_X					0
 #define MULTI_PXO_ANIM_Y					4
-anim *Multi_pxo_anim = NULL;
-anim_instance *Multi_pxo_anim_instance = NULL;
+generic_anim Multi_pxo_anim;
 
 // rankings last clicked time
 #define MULTI_PXO_RANK_TIME				(5.0f)	
@@ -1230,14 +1230,16 @@ void multi_pxo_init(int use_last_channel)
 	if (gr_screen.res == GR_1024) {
 		char anim_filename[32] = "2_";
 		strcat_s(anim_filename, MULTI_PXO_ANIM_FNAME);
-		Multi_pxo_anim = anim_load(anim_filename);
+		generic_anim_init(&Multi_pxo_anim, anim_filename);
 
 		// if hi-res is not there, fallback to low
-		if (Multi_pxo_anim == NULL) {
-			Multi_pxo_anim = anim_load(MULTI_PXO_ANIM_FNAME);
+		if (generic_anim_load(&Multi_pxo_anim) == -1) {
+			generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
+			generic_anim_load(&Multi_pxo_anim);
 		}
 	} else {
-		Multi_pxo_anim = anim_load(MULTI_PXO_ANIM_FNAME);
+		generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
+		generic_anim_load(&Multi_pxo_anim);
 	}
 
 	// clear the status text
@@ -1372,11 +1374,8 @@ void multi_pxo_close()
 	Multi_pxo_connected = 0;
 
 	// unload the animation	
-	anim_release_all_instances(GS_STATE_PXO);
-	Multi_pxo_anim_instance = NULL;
-	if(Multi_pxo_anim != NULL){
-		anim_free(Multi_pxo_anim);
-		Multi_pxo_anim = NULL;
+	if(Multi_pxo_anim.num_frames > 0){
+		generic_anim_unload(&Multi_pxo_anim);
 	}
 
 	// unload the palette for this screen
@@ -1400,18 +1399,6 @@ void multi_pxo_do_normal()
 {		
 	int k = Multi_pxo_window.process();
 	
-	// if the animation isn't playing, start it up
-	if ( (Multi_pxo_anim_instance == NULL) && (Multi_pxo_anim != NULL) ) {
-		anim_play_struct aps;
-
-		// fire up the animation
-		anim_play_init(&aps, Multi_pxo_anim, MULTI_PXO_ANIM_X, MULTI_PXO_ANIM_Y);
-		aps.screen_id = GS_STATE_PXO;
-		aps.framerate_independent = 1;				
-		aps.looped = 1;
-		Multi_pxo_anim_instance = anim_play(&aps);				
-	}
-
 	// process any keypresses
 	switch (k)
 	{
@@ -1526,9 +1513,10 @@ void multi_pxo_blit_all()
 	multi_pxo_motd_maybe_blit();
 
 	// if we have a valid animation handle, play it
-	if(Multi_pxo_anim_instance != NULL){
-		anim_render_all(GS_STATE_PXO,flFrametime);
-	}
+	// display the mission start countdown timer (if any)
+	//anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);
+	if(gameseq_get_state() == GS_STATE_PXO && Multi_pxo_anim.num_frames > 0)
+		generic_anim_render(&Multi_pxo_anim, flFrametime, MULTI_PXO_ANIM_X, MULTI_PXO_ANIM_Y);
 }
 
 // process common stuff

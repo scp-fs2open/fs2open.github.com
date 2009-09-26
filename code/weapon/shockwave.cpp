@@ -502,7 +502,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 			return -1;
 		}
 	} else {
-		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, 1 );
+		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, NULL, 1 );
 
 		if ( si->bitmap_id < 0 ) {
 			Shockwave_info.pop_back();

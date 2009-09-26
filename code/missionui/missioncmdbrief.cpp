@@ -189,8 +189,11 @@ static int Cmd_brief_inited = 0;
 static int Voice_good_to_go = 0;
 static int Voice_started_time = 0;
 static int Voice_ended_time;
-static int Anim_playing_id = -1;
-static anim_instance *Cur_anim_instance = NULL;
+//static int Anim_playing_id = -1;
+//static anim_instance *Cur_anim_instance = NULL;
+static generic_anim Cur_Anim;
+static int anim_done = 0;
+
 static int Last_anim_frame_num;
 
 static int Cmd_brief_last_voice;
@@ -301,12 +304,15 @@ void cmd_brief_exit()
 	}
 }
 
+//doesn't actually stop playing ANIs any more, just stops audio
 void cmd_brief_stop_anim(int id)
 {
+	/*
 	if (Cur_anim_instance && (id != Anim_playing_id)) {
 		anim_stop_playing(Cur_anim_instance);
 		Cur_anim_instance = NULL;
 	}
+	*/
 
 	Voice_good_to_go = 0;
 	if (Cmd_brief_last_voice >= 0) {
@@ -317,13 +323,10 @@ void cmd_brief_stop_anim(int id)
 
 void cmd_brief_new_stage(int stage)
 {
-	int i;
-	anim_play_struct aps;
-
+	char *p;
 	if (stage < 0) {
 		cmd_brief_stop_anim(-1);
 		Cur_stage = -1;
-		Anim_playing_id = -1;
 	}
 
 	// If the briefing has no wave to play use simulated speach
@@ -334,33 +337,27 @@ void cmd_brief_new_stage(int stage)
 	Cur_stage = stage;
 	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
 
-	i = Cur_cmd_brief->stage[Cur_stage].anim_ref;
-	if (i < 0)
-		i = Cur_stage;
-
-	cmd_brief_stop_anim(i);
-
-	if (i != Anim_playing_id)
-	{
-		if (Cur_cmd_brief->stage[i].cmd_anim)
-		{
-			// Goober5000
-			int x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - Cur_cmd_brief->stage[i].cmd_anim->width / 2;
-			int y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - Cur_cmd_brief->stage[i].cmd_anim->height / 2;
-
-			anim_play_init(&aps, Cur_cmd_brief->stage[i].cmd_anim, x, y);
-			aps.looped = 1;
-			Cur_anim_instance = anim_play(&aps);
-			Last_anim_frame_num = 0;
+	//load a new animation if it's different to what's already playing
+	if(strcmp(Cur_Anim.filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
+		//unload the previous anim
+		generic_anim_unload(&Cur_Anim);
+		//load animation here, we now only have one loaded
+		p = strchr( Cur_cmd_brief->stage[stage].ani_filename, '.' );
+		if(p)
+			*p = '\0';
+		generic_anim_init(&Cur_Anim, Cur_cmd_brief->stage[stage].ani_filename);
+		anim_done = 0;
+		if(generic_anim_load(&Cur_Anim) == -1) {
+			//we've failed to load an animation, load an image and treat it like a 1 frame animation
+			Cur_Anim.first_frame = bm_load(Cur_cmd_brief->stage[stage].ani_filename);	//if we fail here, the value is still -1
+			if(Cur_Anim.first_frame != -1) {
+				Cur_Anim.num_frames = 1;
 		}
-
-		Anim_playing_id = i;
+	}
 	}
 
-	if (Cur_cmd_brief->stage[i].cmd_anim) {
-		memcpy(Palette, Cur_cmd_brief->stage[i].cmd_anim->palette, 384);
-		gr_set_palette(Cur_cmd_brief->stage[i].ani_filename, Palette, 1);
-	}
+	//resetting the audio here
+	cmd_brief_stop_anim(-1);
 
 	Top_cmd_brief_text_line = 0;
 }
@@ -368,7 +365,7 @@ void cmd_brief_new_stage(int stage)
 void cmd_brief_hold()
 {
 	cmd_brief_stop_anim(-1);
-	Anim_playing_id = -1;
+	//Anim_playing_id = -1;
 }
 
 void cmd_brief_unhold()
@@ -384,10 +381,6 @@ void cmd_brief_pause()
 		return;
 
 	Cmd_brief_paused = 1;
-
-	if (Cur_anim_instance != NULL) {
-		anim_pause(Cur_anim_instance);
-	}
 
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_pause(Cmd_brief_last_voice);
@@ -406,10 +399,6 @@ void cmd_brief_unpause()
 		return;
 
 	Cmd_brief_paused = 0;
-
-	if (Cur_anim_instance != NULL) {
-		anim_unpause(Cur_anim_instance);
-	}
 
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_unpause(Cmd_brief_last_voice);
@@ -510,52 +499,12 @@ void cmd_brief_button_pressed(int n)
 void cmd_brief_ani_wave_init(int index)
 {
 	char *name;
-	int i;
-
-	// first, search and see if anim is already used in another stage
-	for (i=0; i<index; i++) {
-		if (!stricmp(Cur_cmd_brief->stage[i].ani_filename, Cur_cmd_brief->stage[index].ani_filename)) {
-			if (Cur_cmd_brief->stage[i].anim_ref >= 0)
-				Cur_cmd_brief->stage[index].anim_ref = Cur_cmd_brief->stage[i].anim_ref;
-			else
-				Cur_cmd_brief->stage[index].anim_ref = i;
-
-			return;
-		}
-	}
 
 	// this is the first instance of the given anim filename
-	Cur_cmd_brief->stage[index].anim_ref = -1;
 	name = Cur_cmd_brief->stage[index].ani_filename;
 	if (!name[0] || !stricmp(name, NOX("<default>")) || !stricmp(name, NOX("none.ani"))) {
 		name = NOX("CB_default");
 		strcpy_s(Cur_cmd_brief->stage[index].ani_filename, name);
-	}
-
-	int load_attempts = 0;
-	while (1) {
-
-		if ( load_attempts++ > 5 ) {
-			break;
-		}
-
-		Cur_cmd_brief->stage[index].cmd_anim = anim_load(name, CF_TYPE_ANY, 1);
-		if ( Cur_cmd_brief->stage[index].cmd_anim ) {
-			break;
-		}
-
-		// couldn't load animation, ask user to insert CD (if necessary)
-		// if ( Cmd_brief_ask_for_cd ) {
-			// if ( game_do_cd_check() == 0 ) {
-				// Cmd_brief_ask_for_cd = 0;
-				// break;
-			// }
-		// }
-	}
-
-	// check to see if cb anim loaded, if not, try the default one
-	if ( !Cur_cmd_brief->stage[index].cmd_anim ) {
-		Cur_cmd_brief->stage[index].cmd_anim = anim_load(NOX("CB_default"), CF_TYPE_ANY, 1);
 	}
 }
 
@@ -647,7 +596,7 @@ void cmd_brief_init(int team)
 		cmd_brief_ani_wave_init(i);
 
 	cmd_brief_init_voice();
-	Cur_anim_instance = NULL;
+	//Cur_anim_instance = NULL;
 	cmd_brief_new_stage(0);
 	Cmd_brief_paused = 0;
 	Cmd_brief_inited = 1;
@@ -661,14 +610,11 @@ void cmd_brief_close()
 
 	if (Cmd_brief_inited) {
 		cmd_brief_stop_anim(-1);
-		Anim_playing_id = -1;
+		generic_anim_unload(&Cur_Anim);
 		for (i=0; i<Cur_cmd_brief->num_stages; i++) {
 			if (Cur_cmd_brief->stage[i].wave >= 0)
 				audiostream_close_file(Cur_cmd_brief->stage[i].wave, 0);
 
-			if (Cur_cmd_brief->stage[i].anim_ref < 0)
-				if (Cur_cmd_brief->stage[i].cmd_anim)
-					anim_free(Cur_cmd_brief->stage[i].cmd_anim);
 		}
 
 		if (Cmd_brief_background_bitmap >= 0)
@@ -695,7 +641,7 @@ void cmd_brief_close()
 void cmd_brief_do_frame(float frametime)
 {
 	char buf[40];
-	int i, k, w, h;		
+	int i, k, w, h, x, y;
 
 	// if no command briefing exists, skip this screen.
 	if (!Cmd_brief_inited) {
@@ -739,14 +685,9 @@ void cmd_brief_do_frame(float frametime)
 	common_music_do();
 
 	if (cmd_brief_check_stage_done() && Player->auto_advance && (Cur_stage < Cur_cmd_brief->num_stages - 1)){
-//		if (!Cur_anim_instance || (Cur_anim_instance->frame_num < Last_anim_frame_num))
-		if (!Cur_anim_instance || Cur_anim_instance->loop_count){
+		if((Cur_Anim.num_frames <= 1) || Cur_Anim.done_playing) {
 			cmd_brief_new_stage(Cur_stage + 1);
 		}
-	}
-
-	if (Cur_anim_instance){
-		Last_anim_frame_num = Cur_anim_instance->frame_num;
 	}
 
 	GR_MAYBE_CLEAR_RES(Cmd_brief_background_bitmap);
@@ -755,13 +696,11 @@ void cmd_brief_do_frame(float frametime)
 		gr_bitmap(0, 0);
 	} 
 
-	{
-		// JAS: This code is hacked to allow the animation to use all 256 colors
-		extern int Palman_allow_any_color;
-		Palman_allow_any_color = 1;
-		anim_render_all(0, frametime);
-		Palman_allow_any_color = 0;
-	}
+	bm_get_info(Cur_Anim.first_frame, &x, &y, NULL, NULL, NULL);
+	x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - x / 2;
+	y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - y / 2;
+	generic_anim_render(&Cur_Anim, (Cmd_brief_paused) ? 0 : frametime, x, y);
+
 	Ui_window.draw();
 
 	if (!Player->auto_advance){

@@ -196,7 +196,7 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 	}
 
 	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
-		vclips[i].bm = bm_load_animation( vclips[i].name, &vclips[i].nframes, NULL, 1 );
+		vclips[i].bm = bm_load_animation( vclips[i].name, &vclips[i].nframes, NULL, NULL, 1 );
 
 		if ( vclips[i].bm < 0 ) {
 			// try loading it as a single bitmap
@@ -720,7 +720,7 @@ void stars_load_all_bitmaps()
 
 			// maybe didn't load a static image so try for an animated one
 			if (sb->bitmap_id < 0) {
-				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 				if (sb->bitmap_id < 0) {
 					Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", sb->filename);
@@ -738,7 +738,7 @@ void stars_load_all_bitmaps()
 
 			// maybe didn't load a static image so try for an animated one
 			if (sb->bitmap_id < 0) {
-				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 				if (sb->bitmap_id < 0) {
 					Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb->filename);
@@ -752,7 +752,7 @@ void stars_load_all_bitmaps()
 
 			// maybe didn't load a static image so try for an animated one
 			if (sb->glow_bitmap < 0) {
-				sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, 1);
+				sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, NULL, 1);
 
 				if (sb->glow_bitmap < 0) {
 					Warning(LOCATION, "Unable to load sun glow bitmap: '%s'!\n", sb->glow_filename);
@@ -2128,7 +2128,7 @@ void stars_page_in()
 
 				// maybe didn't load a static image so try for an animated one
 				if (sb->bitmap_id < 0) {
-					sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+					sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 					if (sb->bitmap_id < 0) {
 						Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", sb->filename);
@@ -2160,7 +2160,7 @@ void stars_page_in()
 
 				// maybe didn't load a static image so try for an animated one
 				if (sb->bitmap_id < 0) {
-					sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+					sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 					if (sb->bitmap_id < 0) {
 						Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb->filename);
@@ -2174,7 +2174,7 @@ void stars_page_in()
 
 				// maybe didn't load a static image so try for an animated one
 				if (sb->glow_bitmap < 0) {
-					sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, 1);
+					sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, NULL, 1);
 
 					if (sb->glow_bitmap < 0) {
 						Warning(LOCATION, "Unable to load sun glow bitmap: '%s'!\n", sb->glow_filename);
@@ -2224,7 +2224,7 @@ void stars_page_in()
 
 			// maybe didn't load a static image so try for an animated one
 			if (sb->bitmap_id < 0) {
-				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 				if (sb->bitmap_id < 0) {
 					Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", sb->filename);
@@ -2260,7 +2260,7 @@ void stars_page_in()
 
 			// maybe didn't load a static image so try for an animated one
 			if (sb->bitmap_id < 0) {
-				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 				if (sb->bitmap_id < 0) {
 					Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb->filename);
@@ -2274,7 +2274,7 @@ void stars_page_in()
 
 			// maybe didn't load a static image so try for an animated one
 			if (sb->glow_bitmap < 0) {
-				sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, 1);
+				sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, NULL, 1);
 
 				if (sb->glow_bitmap < 0) {
 					Warning(LOCATION, "Unable to load sun glow bitmap: '%s'!\n", sb->glow_filename);
@@ -2435,7 +2435,7 @@ int stars_add_sun_entry(starfield_list_entry *sun)
 
 			// maybe didn't load a static image so try for an animated one
 		if (Sun_bitmaps[idx].bitmap_id < 0) {
-			Sun_bitmaps[idx].bitmap_id = bm_load_animation(Sun_bitmaps[idx].filename, &Sun_bitmaps[idx].n_frames, &Sun_bitmaps[idx].fps, 1);
+			Sun_bitmaps[idx].bitmap_id = bm_load_animation(Sun_bitmaps[idx].filename, &Sun_bitmaps[idx].n_frames, &Sun_bitmaps[idx].fps, NULL, 1);
 
 			if (Sun_bitmaps[idx].bitmap_id < 0) {
 				Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", Sun_bitmaps[idx].filename);
@@ -2449,7 +2449,7 @@ int stars_add_sun_entry(starfield_list_entry *sun)
 
 			// maybe didn't load a static image so try for an animated one
 			if (Sun_bitmaps[idx].glow_bitmap < 0) {
-				Sun_bitmaps[idx].glow_bitmap = bm_load_animation(Sun_bitmaps[idx].glow_filename, &Sun_bitmaps[idx].glow_n_frames, &Sun_bitmaps[idx].glow_fps, 1);
+				Sun_bitmaps[idx].glow_bitmap = bm_load_animation(Sun_bitmaps[idx].glow_filename, &Sun_bitmaps[idx].glow_n_frames, &Sun_bitmaps[idx].glow_fps, NULL, 1);
 
 				if (Sun_bitmaps[idx].glow_bitmap < 0) {
 					Warning(LOCATION, "Unable to load sun glow bitmap: '%s'!\n", Sun_bitmaps[idx].glow_filename);
@@ -2526,7 +2526,7 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 
 		// maybe didn't load a static image so try for an animated one
 		if (Starfield_bitmaps[idx].bitmap_id < 0) {
-			Starfield_bitmaps[idx].bitmap_id = bm_load_animation(Starfield_bitmaps[idx].filename, &Starfield_bitmaps[idx].n_frames, &Starfield_bitmaps[idx].fps, 1);
+			Starfield_bitmaps[idx].bitmap_id = bm_load_animation(Starfield_bitmaps[idx].filename, &Starfield_bitmaps[idx].n_frames, &Starfield_bitmaps[idx].fps, NULL, 1);
 
 			if (Starfield_bitmaps[idx].bitmap_id < 0) {
 				Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", Starfield_bitmaps[idx].filename);

@@ -4129,7 +4129,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	if(strlen(tmp_name))
 	{
 		//Load anim
-		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, NULL, 1);
 		if(anim > -1)
 		{
 			anim_total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
@@ -4139,7 +4139,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 		strncat(tmp_name, "-shockwave", MAX_FILENAME_LEN-1);
 
 		//Load shockwave
-		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, 1);
+		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, NULL, 1);
 		if(shockwave > -1)
 		{
 			shockwave_total_time = fl2i(((float)shockwave_nframes / (float)shockwave_fps) * 1000.0f);
@@ -4492,9 +4492,9 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 
 	//Anim
 	if(direction == WD_WARP_IN)
-		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, NULL, 1);
 	else if(direction == WD_WARP_OUT)
-		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, NULL, 1);
 	else
 		anim = -1;
 
