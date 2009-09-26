@@ -80,14 +80,18 @@ void generic_anim_unload(generic_anim *ga)
 
 void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 {
+	float keytime = 0.0;
+
+	if(ga->keyframe)
+		keytime = (ga->total_time * ((float)ga->keyframe / (float)ga->num_frames));
 	//don't mess with the frame time if we're paused
 	if((ga->direction & GENERIC_ANIM_DIRECTION_PAUSED) == 0) {
 		if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
 			//keep going forwards if we're in a keyframe loop
-			if(ga->keyframe && (ga->current_frame > ga->keyframe)) {
+			if(ga->keyframe && (ga->anim_time > keytime)) {
 				ga->anim_time += frametime;
 				if(ga->anim_time >= ga->total_time) {
-					ga->anim_time = ga->total_time * ga->keyframe / ga->num_frames;
+					ga->anim_time = keytime - 0.001;
 					ga->done_playing = 0;
 				}
 			}
@@ -114,7 +118,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 					//we've played this at least once
 					ga->done_playing = 1;
 					if(ga->keyframe) {
-						ga->anim_time = 0.0;
+						ga->anim_time = keytime;
 					}
 				}
 			}
@@ -124,8 +128,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 	{
 		ga->current_frame = 0;
 		if(ga->done_playing && ga->keyframe) {
-			ga->anim_time = fmod(ga->anim_time, ga->total_time * (ga->num_frames - ga->keyframe) / ga->num_frames);
-			ga->current_frame += ga->keyframe;
+			ga->anim_time = fmod(ga->anim_time - keytime, ga->total_time - keytime) + keytime;
 		}
 		else {
 			ga->anim_time = fmod(ga->anim_time, ga->total_time);
