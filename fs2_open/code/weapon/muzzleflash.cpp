@@ -162,7 +162,7 @@ void mflash_page_in(bool load_all)
 
 		// blobs
 		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, 1);
+			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, NULL, 1);
 			Assert( Mflash_info[i].blobs[idx].anim_id >= 0 );
 			bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
 		}

@@ -128,10 +128,10 @@ int bm_release( int n, int clear_render_targets = 0 );
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number of the first frame and nframes is set.
-extern int bm_load_animation( char * filename, int * nframes = NULL, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
+extern int bm_load_animation( char * filename, int * nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
 
 //Loads either animation (bm_load_animation) or still image (bm_load)
-extern int bm_load_either(char *filename, int *nframes = NULL, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+extern int bm_load_either(char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock

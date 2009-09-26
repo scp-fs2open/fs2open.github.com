@@ -896,7 +896,6 @@ void brief_init()
 
 	common_set_interface_palette("BriefingPalette");
 
-	ship_stop_animation();
 	set_active_ui(&Brief_ui_window);
 	Current_screen = ON_BRIEFING_SELECT;
 	brief_restart_text_wipe();

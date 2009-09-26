@@ -29,6 +29,7 @@
 #include "menuui/playermenu.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/generic.h"
 #include "menuui/fishtank.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
@@ -236,10 +237,11 @@ void main_hall_handle_random_intercom_sounds();
 //
 
 // the misc animations themselves
-anim *Main_hall_misc_anim[MAX_MISC_ANIMATIONS];							
+//anim *Main_hall_misc_anim[MAX_MISC_ANIMATIONS];
+generic_anim Main_hall_misc_anim[MAX_MISC_ANIMATIONS];
 
 // the instance of a given misc animation
-anim_instance *Main_hall_misc_anim_instance[MAX_MISC_ANIMATIONS];	
+//anim_instance *Main_hall_misc_anim_instance[MAX_MISC_ANIMATIONS];
 
 // handle starting, stopping and randomizing misc animations
 void main_hall_handle_misc_anims();									
@@ -258,10 +260,11 @@ void main_hall_render_misc_anims(float frametime);
 #define DOOR_TEXT_Y 450
 
 // the door animations themselves
-anim *Main_hall_door_anim[MAX_DOOR_ANIMATIONS];							
+//anim *Main_hall_door_anim[MAX_DOOR_ANIMATIONS];
+generic_anim Main_hall_door_anim[MAX_DOOR_ANIMATIONS];
 
 // the instance of a given door animation
-anim_instance *Main_hall_door_anim_instance[MAX_DOOR_ANIMATIONS];	
+//anim_instance *Main_hall_door_anim_instance[MAX_DOOR_ANIMATIONS];
 
 // render all playing door animations
 void main_hall_render_door_anims(float frametime);
@@ -592,14 +595,16 @@ void main_hall_init(int main_hall_num)
 
 	// load up the misc animations, and nullify all the delay timestamps for the misc animations	
 	for(idx=0;idx<Main_hall->num_misc_animations;idx++) {
-		Main_hall_misc_anim[idx] = NULL;
-		Main_hall_misc_anim[idx] = anim_load(Main_hall->misc_anim_name[idx]);
-		if(Main_hall_misc_anim[idx] == NULL) {
+		generic_anim_init(&Main_hall_misc_anim[idx], Main_hall->misc_anim_name[idx]);
+		if(generic_anim_load(&Main_hall_misc_anim[idx]) == -1) {
 			nprintf(("General","WARNING!, Could not load misc %s anim in main hall\n",Main_hall->misc_anim_name));
 		}
-
-		// null out the animation instances
-		Main_hall_misc_anim_instance[idx] = NULL;
+		else {
+			//start paused
+			Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+			if(Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_HOLD)
+				Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
+		}
 		
 		// null out the delay timestamps
 		Main_hall->misc_anim_delay[idx][0] = -1;
@@ -607,14 +612,12 @@ void main_hall_init(int main_hall_num)
 
 	// load up the door animations
 	for(idx=0;idx<Main_hall->num_door_animations;idx++) {
-		Main_hall_door_anim[idx] = NULL;
-		Main_hall_door_anim[idx] = anim_load(Main_hall->door_anim_name[idx]);
-		if(Main_hall_door_anim[idx] == NULL){
+		generic_anim_init(&Main_hall_door_anim[idx], Main_hall->door_anim_name[idx]);
+		if(generic_anim_load(&Main_hall_door_anim[idx]) == -1) {
 			nprintf(("General","WARNING!, Could not load door anim %s in main hall\n",Main_hall->door_anim_name[idx]));
 		}
-
-		// null out the animation instances
-		Main_hall_door_anim_instance[idx] = NULL;
+		else
+			Main_hall_door_anim[idx].direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
 	}	
 
 	// load in help overlay bitmap		
@@ -680,10 +683,6 @@ void main_hall_init(int main_hall_num)
 	// set the placement of the mouse cursor (start at the ready room)
 	Main_hall_mouse_region = -1;
 	Main_hall_last_clicked_region = READY_ROOM_REGION;	
-	int mx = Main_hall->door_anim_coords[READY_ROOM_REGION][2];
-	int my = Main_hall->door_anim_coords[READY_ROOM_REGION][3];
-	gr_resize_screen_pos( &mx, &my );
-	//mouse_set_pos( mx, my );	
 
 	Main_hall_inited = 1;
 
@@ -719,10 +718,6 @@ void main_hall_do(float frametime)
 
 	// need to ensure ambient is playing, since it may be stopped by a playing movie
 	main_hall_start_ambient();
-
-	// handle any animation details	
-	main_hall_handle_misc_anims();
-	main_hall_handle_region_anims();
 
 	// handle any random intercom sound details
 	main_hall_handle_random_intercom_sounds();
@@ -1012,7 +1007,9 @@ void main_hall_do(float frametime)
 	main_hall_blit_version();
 
 	// blit ship and weapon table status
+#ifndef NDEBUG
 	main_hall_blit_table_status();
+#endif
 
 	gr_flip();
 
@@ -1074,42 +1071,15 @@ void main_hall_close()
 
 	// free up any (possibly) playing misc animation handles
 	for(idx=0;idx<Main_hall->num_misc_animations;idx++){
-		if(Main_hall_misc_anim_instance[idx]!=NULL){
-			anim_stop_playing(Main_hall_misc_anim_instance[idx]);
-			Main_hall_misc_anim_instance[idx] = NULL;
+		if(Main_hall_misc_anim[idx].num_frames > 0){
+			generic_anim_unload(&Main_hall_misc_anim[idx]);
 		}
 	}
 	
 	// free up any (possibly) playing door animation handles
 	for(idx=0;idx<Main_hall->num_door_animations;idx++){
-		if(Main_hall_door_anim_instance[idx]!=NULL){
-			anim_stop_playing(Main_hall_door_anim_instance[idx]);
-			Main_hall_door_anim_instance[idx] = NULL;
-		}
-	}
-	
-
-	// free up any misc animations/instances	
-	for(idx=0;idx<Main_hall->num_misc_animations;idx++){
-		if((Main_hall_misc_anim_instance[idx]!=NULL) && (anim_playing(Main_hall_misc_anim_instance[idx]))){		
-			Main_hall_misc_anim_instance[idx] = NULL;
-		}
-		if(Main_hall_misc_anim[idx]!=NULL){
-			if(anim_free(Main_hall_misc_anim[idx]) == -1){
-				nprintf(("General","WARNING!, Could not free up misc anim %s in main hall\n",Main_hall->misc_anim_name[idx]));
-			}
-		}	
-	}
-
-	// free up any door animations/instances
-	for(idx=0;idx<Main_hall->num_door_animations;idx++){
-		if((Main_hall_door_anim_instance[idx]!=NULL) && (anim_playing(Main_hall_door_anim_instance[idx]))){
-			Main_hall_door_anim_instance[idx] = NULL;			
-		}
-		if(Main_hall_door_anim[idx]!=NULL){
-			if(anim_free(Main_hall_door_anim[idx]) == -1){
-				nprintf(("General","WARNING!, Could not free up door anim %s in main hall\n",Main_hall->door_anim_name[idx]));
-			}
+		if(Main_hall_door_anim[idx].num_frames > 0){
+			generic_anim_unload(&Main_hall_door_anim[idx]);
 		}		
 	}	
 
@@ -1221,31 +1191,38 @@ void main_hall_stop_music()
 	}
 }
 
-// do any necessary instantiation of misc animations
-void main_hall_handle_misc_anims()
+// render all playing misc animations
+void main_hall_render_misc_anims(float frametime)
 {
 	int idx,s_idx;
-
-	if(Main_hall_frame_skip || Main_hall_paused)
-		return;
-	
-	for(idx=0;idx<Main_hall->num_misc_animations;idx++){
-		// if the anim isn't playing
-		if(Main_hall_misc_anim_instance[idx] == NULL){
+/*
+	// HACKETY HACK HACK - always render misc anim 3 first, if it is playing
+	if(Main_hall_misc_anim_instance[2] != NULL){
+		anim_render_one(GS_STATE_MAIN_MENU,Main_hall_misc_anim_instance[2],frametime);
+	}
+*/
+	// render all other animations
+	for(idx=0;idx<MAX_MISC_ANIMATIONS;idx++){
+/*
+		// skip anim 3, which was previously rendered, if at all
+		if(idx == 2){
+			continue;
+		}
+*/
+		// render it
+		if(Main_hall_misc_anim[idx].num_frames > 0){
+			//animation is paused
+			if(Main_hall_misc_anim[idx].direction & GENERIC_ANIM_DIRECTION_PAUSED) {
 			// if the timestamp is -1, then reset it to some random value (based on MIN and MAX) and continue
 			if(Main_hall->misc_anim_delay[idx][0] == -1){
 				Main_hall->misc_anim_delay[idx][0] = timestamp(Main_hall->misc_anim_delay[idx][1] + 
 					 									      (int)(((float)rand()/(float)RAND_MAX) * (float)(Main_hall->misc_anim_delay[idx][2] - Main_hall->misc_anim_delay[idx][1])));
 
 			// if the timestamp is not -1 and has popped, play the anim and make the timestap -1
-			} else if (timestamp_elapsed(Main_hall->misc_anim_delay[idx][0]) && Main_hall_misc_anim[idx]) {
-				anim_play_struct aps;
-
-				anim_play_init(&aps, Main_hall_misc_anim[idx], Main_hall->misc_anim_coords[idx][0], Main_hall->misc_anim_coords[idx][1]);
-				aps.screen_id = GS_STATE_MAIN_MENU;
-				aps.framerate_independent = 1;
-				
-				Main_hall_misc_anim_instance[idx] = anim_play(&aps);				
+				} else if (timestamp_elapsed(Main_hall->misc_anim_delay[idx][0])) {
+					Main_hall_misc_anim[idx].direction &= ~GENERIC_ANIM_DIRECTION_PAUSED;
+					Main_hall_misc_anim[idx].current_frame = 0;
+					Main_hall_misc_anim[idx].anim_time = 0.0;
 				
 				// kill the timestamp	
 				Main_hall->misc_anim_delay[idx][0] = -1;				
@@ -1256,13 +1233,10 @@ void main_hall_handle_misc_anims()
 				}
 			}
 		} 		
-		// if the anim is playing
 		else {
-			// check to see if any special trigger points have been reached by the animation
-			// since the frame triggers must be in ascending order, we will count down so that we don't trigger too many sounds
 			for(s_idx=Main_hall->misc_anim_special_sounds[idx][0]; s_idx > 0; s_idx--){
 				// if we've passed the trigger point, then play the sound and break out of the loop
-				if((Main_hall_misc_anim_instance[idx]->frame_num >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]){					
+					if((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]){
 					Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
 
 					// if the sound is already playing, then kill it. This is a pretty safe thing to do since we can assume that
@@ -1276,63 +1250,29 @@ void main_hall_handle_misc_anims()
 					break;
 				}
 			}
-
-			// if the animation mode is MISC_ANIM_MODE_HOLD, pause it at the last frame
-			if((Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_HOLD) && (Main_hall_misc_anim_instance[idx]->frame_num == Main_hall_misc_anim_instance[idx]->stop_at)){				
-				anim_pause(Main_hall_misc_anim_instance[idx]);
-				Main_hall_misc_anim_instance[idx]->stop_now = FALSE;
-			}			
-
-			// if the animation mode is MISC_ANIM_MODE_LOOP, check to see if it should be looped
-			if((Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_LOOP) && (Main_hall_misc_anim_instance[idx]->frame_num == Main_hall_misc_anim_instance[idx]->stop_at)){				
-				anim_release_render_instance(Main_hall_misc_anim_instance[idx]);
-
-				// start it playing again
-				anim_play_struct aps;
-
-				anim_play_init(&aps, Main_hall_misc_anim[idx], Main_hall->misc_anim_coords[idx][0], Main_hall->misc_anim_coords[idx][1]);
-				aps.screen_id = GS_STATE_MAIN_MENU;
-				aps.framerate_independent = 1;
-				
-				Main_hall_misc_anim_instance[idx] = anim_play(&aps);				
-				
-				// kill the timestamp	
+				if(Main_hall_misc_anim[idx].current_frame == Main_hall_misc_anim[idx].num_frames - 1) {
 				Main_hall->misc_anim_delay[idx][0] = -1;				
 
+					//this helps the above code reset the timers
+					//MISC_ANIM_MODE_HOLD simply stops on the last frame, so we don't care
+					//MISC_ANIM_MODE_LOOPED just loops so we don't care either
+					if(Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_TIMED) {
+						Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+					}
+					//don't reset sound for MISC_ANIM_MODE_HOLD
+					if(Main_hall->misc_anim_modes[idx] != MISC_ANIM_MODE_HOLD) {
 				// reset the "should be playing" flags
 				for(s_idx=1;s_idx<10;s_idx++){
 					Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
 				}
 			}			
 
-			// cull any misc animations which are marked as done (!is_playing)				
-			if(!anim_playing(Main_hall_misc_anim_instance[idx])){			
-				Main_hall_misc_anim_instance[idx] = NULL;				
 			}
 		}			
-	}	
-}
 
-// render all playing misc animations
-void main_hall_render_misc_anims(float frametime)
-{
-	int idx;
-	
-	// HACKETY HACK HACK - always render misc anim 3 first, if it is playing
-	if(Main_hall_misc_anim_instance[2] != NULL){
-		anim_render_one(GS_STATE_MAIN_MENU,Main_hall_misc_anim_instance[2],frametime);
-	}
-
-	// render all other animations
-	for(idx=0;idx<MAX_MISC_ANIMATIONS;idx++){
-		// skip anim 3, which was previously rendered, if at all
-		if(idx == 2){
-			continue;
-		}
-
-		// render it
-		if(Main_hall_misc_anim_instance[idx] != NULL){
-			anim_render_one(GS_STATE_MAIN_MENU,Main_hall_misc_anim_instance[idx],frametime);
+			if(Main_hall_frame_skip || Main_hall_paused)
+				frametime = 0;
+			generic_anim_render(&Main_hall_misc_anim[idx], frametime, Main_hall->misc_anim_coords[idx][0], Main_hall->misc_anim_coords[idx][1]);
 		}
 	}
 }
@@ -1344,42 +1284,10 @@ void main_hall_render_door_anims(float frametime)
 
 	// render all door animations
 	for(idx=0;idx<MAX_DOOR_ANIMATIONS;idx++){  
-		
-		// render it
-		if(Main_hall_door_anim_instance[idx] != NULL){
-			anim_render_one(GS_STATE_MAIN_MENU,Main_hall_door_anim_instance[idx],frametime);
-		}
-	}
-}
-
-// handle starting, stopping and reversing "door" animations
-void main_hall_handle_region_anims()
-{
-	int idx;
-
-	if(Main_hall_frame_skip)
-		return;
-	
-	// make sure we make any finished door animations NULL
-	for(idx=0;idx<Main_hall->num_door_animations;idx++){
-		if((Main_hall_door_anim_instance[idx] != NULL) && !anim_playing(Main_hall_door_anim_instance[idx])){
-			Main_hall_door_anim_instance[idx] = NULL;
-		}
-	}
-	
-	// go through each region animation
-	for(idx=0;idx<Main_hall->num_door_animations;idx++){
-		// if the instance is not null and the animation is playing
-		if((Main_hall_door_anim_instance[idx] != NULL) && anim_playing(Main_hall_door_anim_instance[idx])){
-			// check to see if we should hold a given door "open"
-			if((Main_hall_mouse_region == idx) && (Main_hall_door_anim_instance[idx]->frame_num == Main_hall_door_anim_instance[idx]->stop_at)){
-				anim_pause(Main_hall_door_anim_instance[idx]);
-				Main_hall_door_anim_instance[idx]->stop_now = FALSE;
-			}
-			// check to see if we should close a door being held open
-			if((Main_hall_mouse_region != idx) && (Main_hall_door_anim_instance[idx]->paused)){
-				anim_unpause(Main_hall_door_anim_instance[idx]);
-			}
+		if(Main_hall_door_anim[idx].num_frames > 0){
+		// first pair : coords of where to play a given door anim
+		// second pair : center of a given door anim in windowed mode
+			generic_anim_render(&Main_hall_door_anim[idx], frametime, Main_hall->door_anim_coords[idx][0], Main_hall->door_anim_coords[idx][1]);
 		}		
 	}	
 }
@@ -1439,22 +1347,20 @@ void main_hall_mouse_release_region(int region)
 		return;
 	}
 
-	// if the animation is currently playing in the forward direction, change direction and be done, otherwise don't do a thing
-	if ( (Main_hall_door_anim_instance[region] != NULL) && anim_playing(Main_hall_door_anim_instance[region]) && (Main_hall_door_anim_instance[region]->direction == ANIM_DIRECT_FORWARD)){
-		anim_reverse_direction(Main_hall_door_anim_instance[region]);
-	}
+	//run backwards and stop at the first frame
+	Main_hall_door_anim[region].direction = GENERIC_ANIM_DIRECTION_BACKWARDS | GENERIC_ANIM_DIRECTION_NOLOOP;
 
 	// check for door sounds, ignoring the OPTIONS_REGION (which isn't a door)
-	if ((Main_hall_door_anim_instance[region] != NULL)) {
+	if ((Main_hall_door_anim[region].num_frames > 0)) {
 		// don't stop the toaster oven or microwave regions from playing all the way through
 		if (Main_hall_door_sound_handles[region] != -1) {
 			snd_stop(Main_hall_door_sound_handles[region]);
 		}
 		Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds[region][1]], Main_hall->door_sound_pan[region]);
 
-		// make sure to set the sound to play from the right spot
+		//TODO: track current frame
 		snd_set_pos(Main_hall_door_sound_handles[region], &Snds_iface[SND_MAIN_HALL_DOOR_CLOSE],
-						(float)(Main_hall_door_anim_instance[region]->start_at - Main_hall_door_anim_instance[region]->frame_num) / (float)Main_hall_door_anim_instance[region]->parent->total_frames, 1);			
+						(float)((Main_hall_door_anim[region].keyframe) ? Main_hall_door_anim[region].keyframe : Main_hall_door_anim[region].num_frames - Main_hall_door_anim[region].current_frame) / (float)Main_hall_door_anim[region].num_frames, 1);
 	}
 }
 
@@ -1465,22 +1371,11 @@ void main_hall_mouse_grab_region(int region)
 		return;
 	}
 
-	// if the animation is not playing, start it playing
-	if ( !Main_hall_door_anim_instance[region] ) {
-		if ( Main_hall_door_anim[region] ) {
-			anim_play_struct aps;
-
-			anim_play_init(&aps, Main_hall_door_anim[region], Main_hall->door_anim_coords[region][0], Main_hall->door_anim_coords[region][1]);
-			aps.screen_id = GS_STATE_MAIN_MENU;
-			aps.framerate_independent = 1;
-
-			Main_hall_door_anim_instance[region] = anim_play(&aps);
-		}
-	} 
-	// otherwise if its playing in the reverse direction, change it to the forward direction
-	else if (Main_hall_door_anim_instance[region]->direction == ANIM_DIRECT_REVERSE) {
-		anim_reverse_direction(Main_hall_door_anim_instance[region]);
-	}
+	//run forwards
+	Main_hall_door_anim[region].direction = GENERIC_ANIM_DIRECTION_FORWARDS;
+	//stay on last frame if we have no keyframe
+	if(!Main_hall_door_anim[region].keyframe)
+		Main_hall_door_anim[region].direction += GENERIC_ANIM_DIRECTION_NOLOOP;
 
 	// check for opening/starting sounds
 	// kill the currently playing sounds if necessary
@@ -1490,9 +1385,9 @@ void main_hall_mouse_grab_region(int region)
 	Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds[region][0]],Main_hall->door_sound_pan[region]);				
 
 	// start the sound playing at the right spot relative to the completion of the animation		
-	if( (Main_hall_door_anim_instance[region] != NULL) && (Main_hall_door_anim_instance[region]->frame_num != -1) ) {			
+	if( (Main_hall_door_anim[region].num_frames > 0) && (Main_hall_door_anim[region].current_frame != -1) ) {
 			snd_set_pos(Main_hall_door_sound_handles[region],&Snds_iface[SND_MAIN_HALL_DOOR_OPEN],
-							(float)Main_hall_door_anim_instance[region]->frame_num / (float)Main_hall_door_anim_instance[region]->parent->total_frames,1);
+							(float)Main_hall_door_anim[region].current_frame / (float)Main_hall_door_anim[region].num_frames,1);
 	}				
 }
 

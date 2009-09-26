@@ -326,8 +326,7 @@ typedef struct wl_ship_class_info
 {
 	int				overhead_bitmap;
 	int				model_num;
-	anim			*wl_anim;
-	anim_instance	*wl_anim_instance;
+	generic_anim	animation;
 } wl_ship_class_info;
 
 wl_ship_class_info	Wl_ships[MAX_SHIP_CLASSES];
@@ -338,8 +337,7 @@ typedef struct wl_icon_info
 	int				laser_bmap;
 	int				model_index;
 	int				can_use;
-	anim			*wl_anim;
-	anim_instance	*wl_anim_instance;
+	generic_anim	animation;
 } wl_icon_info;
 
 wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
@@ -357,6 +355,7 @@ static int Hot_wl_slot = -1;					//	Ship slot that mouse is over (0..MAX_WSS_SLO
 static int Hot_weapon_icon = -1;				// Icon number (0-7) which has mouse over it
 static int Hot_weapon_bank = -1;				// index (0-7) for weapon slot on ship that has a droppable icon over it
 static int Hot_weapon_bank_icon = -1;
+static generic_anim Cur_Anim;
 
 static int Wl_mouse_down_on_region = -1;
 
@@ -580,21 +579,27 @@ int wl_get_pilot_subsys_index(p_object *pobjp)
 // Pause the current weapon animation
 void wl_pause_anim()
 {
+	return;
+	/*
 	Assert( Wl_icons != NULL );
 
 	if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
 		anim_pause(Wl_icons[Weapon_anim_class].wl_anim_instance);
 	}
+	*/
 }
 
 // Unpause the current weapon animation
 void wl_unpause_anim()
 {
+	return;
+	/*
 	Assert( Wl_icons != NULL );
 
 	if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
 		anim_unpause(Wl_icons[Weapon_anim_class].wl_anim_instance);
 	}
+	*/
 }
 
 // ---------------------------------------------------------------------------------
@@ -1225,6 +1230,13 @@ void wl_init_pool(team_data *td)
 	}
 }
 
+// free source anim data if allocated
+void wl_unload_all_anims()
+{
+	if(Cur_Anim.num_frames > 0)
+		generic_anim_unload(&Cur_Anim);
+}
+
 // load the icons for a specific ship class
 void wl_load_icons(int weapon_class)
 {
@@ -1267,140 +1279,6 @@ void wl_load_icons(int weapon_class)
 	}
 }
 
-// Load in a specific weapon animation.  The data is loaded as a memory-mapped file since these animations
-// can be large.
-void wl_load_anim(int weapon_class)
-{
-	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
-	wl_icon_info	*icon;
-	weapon_info *wip = &Weapon_info[weapon_class];
-
-	Assert( Wl_icons != NULL );
-
-	icon = &Wl_icons[weapon_class];
-	Assert( icon->wl_anim == NULL );
-	
-	if(!Cmdline_weapon_choice_3d || wip->render_type == WRT_LASER)
-	{
-		// 1024x768 SUPPORT
-		// If we are in 1024x768, we first want to append "2_" in front of the filename
-		if (gr_screen.res == GR_1024) {
-			Assert(strlen(Weapon_info[weapon_class].anim_filename) <= 30);
-			strcpy_s(animation_filename, "2_");
-			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);
-
-			// now check if file exists
-			// GRR must add a .ANI at the end for detection
-			strcat_s(animation_filename,".ani");
-			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-
-			if (icon->wl_anim == NULL) {
-				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
-				strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
-				icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-			}
-		} else {
-			strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
-			// load the compressed ship animation into memory 
-			// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
-			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-		}
-
-		if ( icon->wl_anim == NULL )
-		{
-			// *If no weapon loadout ani is found, output error instead of just crashing in debug build -Et1
-			// Int3();		// couldn't load anim filename.. get Alan
-
-			//Error( LOCATION, "Couldn't find weapon loadout screen animation '%s'\n", animation_filename );
-
-			//Make sure the model is loaded
-			if(icon->model_index == -1 && wip->render_type != WRT_LASER)
-			{
-				model_load(wip->pofbitmap_name, 0, NULL);
-			}
-		}
-	}
-}
-
-// Load in any weapon animations.  This function assumes that Wl_pool has been inited.
-void wl_load_all_anims()
-{
-	#ifndef DEMO // not for FS2_DEMO
-
-	int i;
-
-	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
-
-	// init anim members for weapon animations
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_icons[i].wl_anim = NULL;
-		Wl_icons[i].wl_anim_instance = NULL;
-	}
-
-	// init anim member for overhead ship animations
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		Wl_ships[i].wl_anim = NULL;
-		Wl_ships[i].wl_anim_instance = NULL;
-	}
-
-	// load up the animations used for weapons (they are memory-mapped)
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_pool[i] > 0 && Weapon_info[i].anim_filename[0] != '\0') {
-			wl_load_anim(i);
-		}
-	}
-
-	#endif
-}
-
-// release any anim instances
-void wl_unload_all_anim_instances()
-{
-	// stop any weapon anim instances
-	int i;
-
-	Assert( Wl_icons != NULL );
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_icons[i].wl_anim_instance != NULL) {
-			anim_release_render_instance(Wl_icons[i].wl_anim_instance);
-			Wl_icons[i].wl_anim_instance = NULL;
-		}
-	}
-
-	// stop any overhead anim instances
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		if ( Wl_ships[i].wl_anim_instance != NULL) {
-			anim_release_render_instance(Wl_ships[i].wl_anim_instance);
-			Wl_ships[i].wl_anim_instance = NULL;
-		}
-	}
-}
-
-// free source anim data if allocated
-void wl_unload_all_anims()
-{
-	int i;
-
-	Assert( Wl_icons != NULL );
-
-	// unload overhead anim instances
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		if ( Wl_ships[i].wl_anim ) {
-			anim_free(Wl_ships[i].wl_anim);
-			Wl_ships[i].wl_anim = NULL;
-		}
-	}
-
-	// unload weapon anim instances
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_icons[i].wl_anim ) {
-			anim_free(Wl_icons[i].wl_anim);
-			Wl_icons[i].wl_anim = NULL;
-		}
-	}
-}
-
 // load all the icons for weapons in the pool
 void wl_load_all_icons()
 {
@@ -1412,8 +1290,7 @@ void wl_load_all_icons()
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		// clear out data
-		Wl_icons[i].wl_anim = NULL;
-		Wl_icons[i].wl_anim_instance = NULL;
+		generic_anim_init(&Wl_icons[i].animation, NULL);
 		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
 			Wl_icons[i].icon_bmaps[j] = -1;
 		}
@@ -1454,6 +1331,8 @@ void wl_unload_icons()
 			bm_unload(icon->laser_bmap);
 			icon->laser_bmap = -1;
 		}
+		if(Cur_Anim.num_frames > 0)
+			generic_anim_unload(&Cur_Anim);
 	}
 }
 
@@ -1467,8 +1346,7 @@ void wl_init_ship_class_data()
 		wl_ship = &Wl_ships[i];
 		wl_ship->overhead_bitmap = -1;
 		wl_ship->model_num = -1;
-		wl_ship->wl_anim = NULL;
-		wl_ship->wl_anim_instance = NULL;
+		generic_anim_init(&wl_ship->animation, NULL);
 	}
 }
 
@@ -1492,15 +1370,8 @@ void wl_free_ship_class_data()
 			wl_ship->model_num = -1;
 		}
 
-		// this should actually be freed by wl_unload_all_anims()
-		if ( wl_ship->wl_anim != NULL ) {
-			wl_ship->wl_anim = NULL;
-		}
-
-		// this should actually be freed by wl_unload_all_anim_instances()
-		if ( wl_ship->wl_anim_instance != NULL ) {
-			wl_ship->wl_anim_instance = NULL;
-		}
+		if(wl_ship->animation.num_frames)
+			generic_anim_unload(&wl_ship->animation);
 	}
 }
 
@@ -2054,7 +1925,6 @@ void weapon_select_init_team(int team_num)
 	wl_init_ship_class_data();
 
 	wl_load_all_icons();
-	wl_load_all_anims();
 
 	wl_fill_slots();
 }
@@ -2067,7 +1937,6 @@ void weapon_select_close_team()
 		return;
 
 	wl_unload_icons();
-	wl_unload_all_anim_instances();
 	wl_unload_all_anims();
 }
 
@@ -2111,8 +1980,6 @@ void weapon_select_init()
 	if ( Game_mode & GM_MULTIPLAYER )
 		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
 
-	ship_stop_animation();
-	stop_weapon_animation();
 	Weapon_anim_class = -1;
 
 	set_active_ui(&Weapon_ui_window);
@@ -2320,6 +2187,8 @@ void maybe_drop_icon_on_slot(int bank_num)
 //
 void wl_check_for_stopped_ship_anims()
 {
+	return;
+	/*
 	int i;
 	anim_instance *ai;
 	for ( i = 0; i < Num_ship_classes; i++ ) {
@@ -2330,6 +2199,7 @@ void wl_check_for_stopped_ship_anims()
 			}
 		}
 	}
+	*/
 }
 
 // ---------------------------------------------------------------------------------
@@ -2431,9 +2301,6 @@ void weapon_select_render(float frametime)
 		gr_set_bitmap(Weapon_select_background_bitmap);
 		gr_bitmap(0, 0);
 	}
-
-	anim_render_all(0, frametime);
-	anim_render_all(ON_SHIP_SELECT, frametime);
 }
 
 // draw the weapon description text
@@ -2633,17 +2500,6 @@ void weapon_select_do(float frametime)
 
 	k = common_select_do(frametime);
 	
-	if ( help_overlay_active(WL_OVERLAY) ) {
-		if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
-			anim_pause(Wl_icons[Weapon_anim_class].wl_anim_instance);
-		}
-	}
-	else {
-		if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
-			anim_unpause(Wl_icons[Weapon_anim_class].wl_anim_instance);
-		}
-	}
-
 	// Check common keypresses
 	common_check_keys(k);
 
@@ -2856,43 +2712,12 @@ void weapon_select_do(float frametime)
 		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
 	}
 
-	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class ) && Wl_icons[Selected_wl_class].wl_anim != NULL) {
-		wl_icon_info *icon;
+	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
 		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
 		if ( Weapon_anim_class != Selected_wl_class ) 
 			start_weapon_animation(Selected_wl_class);	
 
-		Assert(Weapon_anim_class == Selected_wl_class);
-		icon = &Wl_icons[Selected_wl_class];
-		if ( icon->wl_anim_instance ) {
-			if ( icon->wl_anim_instance->frame_num == icon->wl_anim_instance->stop_at ) {
-				anim_play_struct aps;
-
-				anim_release_render_instance(icon->wl_anim_instance);
-				anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
-
-                if (icon->wl_anim->num_keys > 1)
-                {
-                    if (icon->wl_anim->keys[1].frame_num > icon->wl_anim->keys[0].frame_num)
-                    {
-                        aps.start_at = icon->wl_anim->keys[1].frame_num - 1;
-                    }
-                    else
-                    {
-                        aps.start_at = icon->wl_anim->keys[0].frame_num - 1;
-                    }
-                }
-                else
-                {
-                    aps.start_at = WEAPON_ANIM_LOOP_FRAME - 1;
-                }
-
-				aps.screen_id = ON_WEAPON_SELECT;
-				aps.framerate_independent = 1;
-				aps.skip_frames = 0;
-				icon->wl_anim_instance = anim_play(&aps);
-			}
-		}
+		generic_anim_render(&Cur_Anim, (help_overlay_active(WL_OVERLAY)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1]);
 	}
 	else if(Wl_icons[Selected_wl_class].model_index != -1)
 	{
@@ -2914,8 +2739,6 @@ void weapon_select_do(float frametime)
 		Weapon_ui_window.draw();
 		wl_redraw_pressed_buttons();
 		draw_wl_icons();
-		anim_render_all(ON_WEAPON_SELECT, frametime);
-		wl_check_for_stopped_ship_anims();
 		wl_render_overhead_view(frametime);
 		wl_draw_ship_weapons(Selected_wl_slot);
 		for ( int i = 0; i < MAX_WING_BLOCKS; i++ ) {
@@ -3000,7 +2823,7 @@ void weapon_select_do(float frametime)
 			diffy = abs(Carried_wl_icon.from_y-my);
 			if ( (diffx > 2) || (diffy > 2) ) {
 				int ship_class = Wss_slots[Selected_wl_slot].ship_class;
-				wl_pause_anim();
+				//wl_pause_anim();
 
 				// might have to get weapon name translation
 				if (Lcl_gr)
@@ -3015,7 +2838,7 @@ void weapon_select_do(float frametime)
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name);
 				}
 
-				wl_unpause_anim();
+				//wl_unpause_anim();
 				wl_dump_carried_icon();
 			}
 		}
@@ -3080,8 +2903,6 @@ void weapon_select_close()
 
 	nprintf(("Alan", "Entering weapon_select_close()\n"));
 
-	stop_weapon_animation();
-
 	// done with the bitmaps, so unlock it
 	bm_unlock(WeaponSelectMaskBitmap);
 
@@ -3093,7 +2914,7 @@ void weapon_select_close()
 	bm_release(WeaponSelectMaskBitmap);
 
 	wl_unload_icons();
-	wl_unload_all_anim_instances();
+	//wl_unload_all_anim_instances();
 	wl_unload_all_anims();
 	// ...must be last...
 	wl_free_ship_class_data();
@@ -3539,26 +3360,6 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 }
 
 // ------------------------------------------------------------------------
-// stop_weapon_animation()
-//
-// Stop the current weapon animation from playing.
-//
-void stop_weapon_animation()
-{
-	if (Weapon_anim_class < 0)
-		return;
-
-	if (Wl_icons[Weapon_anim_class].wl_anim_instance == NULL)
-		return;
-
-	if ( anim_playing(Wl_icons[Weapon_anim_class].wl_anim_instance) )
-		anim_release_render_instance(Wl_icons[Weapon_anim_class].wl_anim_instance);
-
-	Wl_icons[Weapon_anim_class].wl_anim_instance = NULL;
-	Weapon_anim_class = -1;
-}
-
-// ------------------------------------------------------------------------
 // start_weapon_animation()
 //
 // Start the current weapon animation from playing.
@@ -3566,7 +3367,8 @@ void stop_weapon_animation()
 void start_weapon_animation(int weapon_class) 
 {
 	wl_icon_info	*icon;
-	int *weapon_ani_coords;
+	char *p;
+	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 
 	if ( weapon_class < 0 )
 		return;
@@ -3574,18 +3376,35 @@ void start_weapon_animation(int weapon_class)
 	if ( weapon_class == Weapon_anim_class ) 
 		return;
 
-	// get the correct weapon animations coords
-	if (Game_mode & GM_MULTIPLAYER) {
-		weapon_ani_coords = Wl_weapon_ani_coords_multi[gr_screen.res];
-	} else {
-		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
-	}
-
 	icon = &Wl_icons[weapon_class];
 
-	// stop current animation playing
-	if(Weapon_anim_class >= 0)
-		stop_weapon_animation();
+	//load a new animation if it's different to what's already playing
+	if(strcmp(Cur_Anim.filename, Weapon_info[weapon_class].anim_filename) != 0) {
+		//unload the previous anim
+		generic_anim_unload(&Cur_Anim);
+		//load animation here, we now only have one loaded
+		p = strchr( Weapon_info[weapon_class].anim_filename, '.' );
+		if(p)
+			*p = '\0';
+		gamesnd_play_iface(SND_WEAPON_ANIM_START);
+		if (gr_screen.res == GR_1024) {
+			strcpy_s(animation_filename, "2_");
+			strcat_s(animation_filename, Weapon_info[weapon_class].anim_filename);
+		}
+		else {
+			strcpy_s(animation_filename, Weapon_info[weapon_class].anim_filename);
+		}
+
+		generic_anim_init(&Cur_Anim, animation_filename);
+		if(generic_anim_load(&Cur_Anim) == -1) {
+			//we've failed to load an animation, load an image and treat it like a 1 frame animation
+			Cur_Anim.first_frame = bm_load(Weapon_info[weapon_class].anim_filename);	//if we fail here, the value is still -1
+			if(Cur_Anim.first_frame != -1) {
+				Cur_Anim.num_frames = 1;
+			}
+		}
+		//mprintf(("%d %d %d\n", Cur_Anim.first_frame, Cur_Anim.keyframe, Cur_Anim.num_frames));
+	}
 
 	// start the text wipe
 	wl_weapon_desc_start_wipe();
@@ -3594,30 +3413,6 @@ void start_weapon_animation(int weapon_class)
 
 	if ( Wl_icons[weapon_class].model_index >= 0 )
 		return;
-
-	// see if we need to load in the animation from disk
-	if ( icon->wl_anim == NULL ) {
-		wl_load_anim(weapon_class);
-		/*
-		icon->anim = anim_load(Weapon_info[weapon_class].anim_filename, CF_TYPE_ANY, 1);
-		if ( icon->anim == NULL ) {
-			Int3();	// could not open the weapon animation
-			return;
-		}
-		*/
-	}
-
-	// see if we need to get an instance
-	if ( icon->wl_anim_instance == NULL && icon->wl_anim != NULL) {
-		anim_play_struct aps;
-
-		anim_play_init(&aps, icon->wl_anim, weapon_ani_coords[0], weapon_ani_coords[1]);
-		aps.screen_id = ON_WEAPON_SELECT;
-		aps.framerate_independent = 1;
-		aps.skip_frames = 0;
-		icon->wl_anim_instance = anim_play(&aps);
-		gamesnd_play_iface(SND_WEAPON_ANIM_START);
-	}
 }
 
 // reset the weapons loadout to the defaults in the mission

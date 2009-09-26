@@ -82,8 +82,7 @@ typedef struct ss_icon_info
 	int				icon_bmaps[NUM_ICON_FRAMES];
 	int				current_icon_bitmap;
 	int				model_index;
-	anim			*ss_anim;
-	anim_instance	*ss_anim_instance;
+	generic_anim	ss_anim;
 } ss_icon_info;
 
 typedef struct ss_slot_info
@@ -318,7 +317,6 @@ ss_carry_icon_info Carried_ss_icon;
 // render functions
 void draw_ship_icons();
 void draw_ship_icon_with_number(int screen_offset, int ship_class);
-void stop_ship_animation();
 void start_ship_animation(int ship_class, int play_sound=0);
 
 // pick-up 
@@ -537,8 +535,6 @@ void ss_reset_to_default()
 		Int3();
 		return;
 	}
-
-	stop_ship_animation();
 
 	ss_init_pool(&Team_data[Common_team]);
 	ss_init_units();
@@ -917,24 +913,6 @@ void ss_maybe_drop_icon()
 	}
 }
 
-void ss_anim_pause()
-{
-	Assert( Ss_icons != NULL );
-
-	if ( Selected_ss_class >= 0 && Ss_icons[Selected_ss_class].ss_anim_instance ) {
-		anim_pause(Ss_icons[Selected_ss_class].ss_anim_instance);
-	}
-}
-
-void ss_anim_unpause()
-{
-	Assert( Ss_icons != NULL );
-
-	if ( Selected_ss_class >= 0 && Ss_icons[Selected_ss_class].ss_anim_instance ) {
-		anim_unpause(Ss_icons[Selected_ss_class].ss_anim_instance);
-	}
-}
-
 // maybe flash a button if player hasn't done anything for a while
 void ss_maybe_flash_button()
 {
@@ -947,22 +925,6 @@ void ss_maybe_flash_button()
 		}
 	}
 }
-
-
-// -------------------------------------------------------------------------------------
-// ship_select_render(float frametime)
-//
-void ship_select_render(float frametime)
-{
-	if ( !Background_playing ) {
-		gr_set_bitmap(Ship_select_background_bitmap);
-		gr_bitmap(0, 0);
-	}
-
-	anim_render_all(0, frametime);
-	anim_render_all(ON_SHIP_SELECT, frametime);
-}
-
 
 // blit any active ship information text
 void ship_select_blit_ship_info()
@@ -1283,13 +1245,6 @@ void ship_select_do(float frametime)
 
 	k = common_select_do(frametime);
 
-	if ( help_overlay_active(SS_OVERLAY) ) {
-		ss_anim_pause();
-	}
-	else {
-		ss_anim_unpause();
-	}
-
 	// Check common keypresses
 	common_check_keys(k);
 
@@ -1449,47 +1404,18 @@ void ship_select_do(float frametime)
 
 	Assert( Ss_icons != NULL );
 
-	if(!Cmdline_ship_choice_3d)
-	{
-		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim != NULL) )
-		{
-            ss_icon_info* ssi = &Ss_icons[Selected_ss_class];
-
-			if ( ssi->ss_anim_instance->frame_num == ssi->ss_anim_instance->stop_at ) { 
-				nprintf(("anim", "Frame number = %d, Stop at %d\n", ssi->ss_anim_instance->frame_num, ssi->ss_anim_instance->stop_at));
-				anim_play_struct aps;
-				anim_release_render_instance(ssi->ss_anim_instance);
-				anim_play_init(&aps, ssi->ss_anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
-				
-                if (ssi->ss_anim->num_keys > 1)
-                {
-                    if (ssi->ss_anim->keys[1].frame_num > ssi->ss_anim->keys[0].frame_num)
-                    {
-                        aps.start_at = ssi->ss_anim->keys[1].frame_num - 1;
-                    }
-                    else
-                    {
-                        aps.start_at = ssi->ss_anim->keys[0].frame_num - 1;
-                    }
-                }
-                else
-                {
-                    aps.start_at = SHIP_ANIM_LOOP_FRAME;
-                }
-
-				aps.screen_id = ON_SHIP_SELECT;
-				aps.framerate_independent = 1;
-				aps.skip_frames = 0;
-				Ss_icons[Selected_ss_class].ss_anim_instance = anim_play(&aps);
-			}
-		}
-	}
-
-	ship_select_render(frametime);
 	if ( !Background_playing ) {		
+		gr_set_bitmap(Ship_select_background_bitmap);
+		gr_bitmap(0, 0);
 		Ship_select_ui_window.draw();
 		ship_select_redraw_pressed_buttons();
 		common_render_selected_screen_button();
+	}
+	if(!Cmdline_ship_choice_3d)
+	{
+		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0) ) {
+			generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(SS_OVERLAY)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
+		}
 	}
 
 	// The background transition plays once. Display ship icons after Background done playing
@@ -1554,7 +1480,7 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-	if( Cmdline_ship_choice_3d || ((Ss_icons != NULL) && (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim == NULL)) )
+	if( Cmdline_ship_choice_3d || ((Ss_icons != NULL) && (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)) )
 	{
 		// check we have a valid ship class selected
 		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
@@ -1763,67 +1689,9 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 }
 
 // ------------------------------------------------------------------------
-//	stop_ship_animation() will halt the currently playing ship animation.  The
-// instance will be freed, (but the compressed data is not freed).  The animation
-// will not display after this function is called (even on this frame), since
-// the instance is removed from the anim_render_list.
-void stop_ship_animation()
-{
-	ss_icon_info	*ss_icon;
-
-	if ( Ship_anim_class == -1 ) 
-		return;
-
-	Assert( Ss_icons != NULL );
-
-	ss_icon = &Ss_icons[Ship_anim_class];
-
-	if(ss_icon->ss_anim_instance != NULL)
-	{
-		anim_release_render_instance(ss_icon->ss_anim_instance);
-		ss_icon->ss_anim_instance = NULL;
-	}
-
-	Ship_anim_class = -1;
-}
-
-
-// ------------------------------------------------------------------------
 // this loads an individual animation file
 // it attempts to load a hires version (ie, it attaches a "2_" in front of the
 // filename. if no hires version is available, it defaults to the lowres
-
-anim* ss_load_individual_animation(int ship_class)
-{
-	anim *p_anim;
-	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
-	
-	// 1024x768 SUPPORT
-	// If we are in 1024x768, we first want to append "2_" in front of the filename
-	if (gr_screen.res == GR_1024) {
-		Assert(strlen(Ship_info[ship_class].anim_filename) <= 30);
-		strcpy_s(animation_filename, "2_");
-		strcat_s(animation_filename, Ship_info[ship_class].anim_filename);
-		// now check if file exists
-		// GRR must add a .ANI at the end for detection
-		strcat_s(animation_filename, ".ani");
-		
-		p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-		if (p_anim == NULL) {
-			// failed loading hi-res, revert to low res
-			strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
-			p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-			mprintf(("Ship ANI: Can not find %s, using lowres version instead.\n", animation_filename)); 
-		} else {
-			mprintf(("SHIP ANI: Found hires version of %s\n",animation_filename));
-		}
-	} else {
-		strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
-		p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
-	}
-	
-	return p_anim;
-}
 
 // ------------------------------------------------------------------------
 //	start_ship_animation() will start a ship animation playing, and will 
@@ -1834,6 +1702,8 @@ anim* ss_load_individual_animation(int ship_class)
 void start_ship_animation(int ship_class, int play_sound)
 {
 	ship_info *sip = &Ship_info[ship_class];
+	char *p;
+	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 
 	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
 		if (ship_class < 0) {
@@ -1860,34 +1730,33 @@ void start_ship_animation(int ship_class, int play_sound)
 			return;
 		}
 
-		if (Ship_anim_class >= 0) {
-			stop_ship_animation();
-		}
-
 		ss_icon = &Ss_icons[ship_class];
 
 		// see if we need to load in the animation from disk
-		if (ss_icon->ss_anim == NULL) {
-			ss_icon->ss_anim = ss_load_individual_animation(ship_class);
-
-			if (ss_icon->ss_anim == NULL) {
-				// set Ship_anim_class so that we don't keep running through here
-				// for the same ship, then bail
-				Ship_anim_class = ship_class;
-
-				return;
+		if (ss_icon->ss_anim.num_frames == 0) {
+			//unload the previous anim
+			if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0)
+				generic_anim_unload(&Ss_icons[Ship_anim_class].ss_anim);
+			//load animation here, we now only have one loaded
+			p = strchr(Ship_info[ship_class].anim_filename, '.' );
+			if(p)
+				*p = '\0';
+			if (gr_screen.res == GR_1024) {
+				strcpy_s(animation_filename, "2_");
+				strcat_s(animation_filename, Ship_info[ship_class].anim_filename);
 			}
+			else {
+				strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
 		}
 
-		// see if we need to get an instance
-		if (ss_icon->ss_anim_instance == NULL) {
-			anim_play_struct aps;
-		
-			anim_play_init(&aps, ss_icon->ss_anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
-			aps.screen_id = ON_SHIP_SELECT;
-			aps.framerate_independent = 1;
-			aps.skip_frames = 0;
-			ss_icon->ss_anim_instance = anim_play(&aps);
+			generic_anim_init(&Ss_icons[ship_class].ss_anim, animation_filename);
+			if(generic_anim_load(&Ss_icons[ship_class].ss_anim) == -1) {
+				//we've failed to load an animation, load an image and treat it like a 1 frame animation
+				Ss_icons[ship_class].ss_anim.first_frame = bm_load(Ship_info[ship_class].anim_filename);	//if we fail here, the value is still -1
+				if(Ss_icons[ship_class].ss_anim.first_frame != -1) {
+					Ss_icons[ship_class].ss_anim.num_frames = 1;
+				}
+			}
 		}
 		
 		Ship_anim_class = ship_class;
@@ -1899,46 +1768,15 @@ void start_ship_animation(int ship_class, int play_sound)
 
 }
 
-// ------------------------------------------------------------------------
-//	unload_ship_anims() will free all compressed anims from memory that were
-// loaded for the ship animations.
-//
-//
-void unload_ship_anims()
-{
-	Assert( Ss_icons != NULL );
-
-	for ( int i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		if ( Ss_icons[i].ss_anim ) {
-			anim_free(Ss_icons[i].ss_anim);
-			Ss_icons[i].ss_anim = NULL;
-		}
-	}
-}
-
-// ------------------------------------------------------------------------
-//	unload_ship_anim_instances() will free any active ship animation instances.
-//
-//
-void unload_ship_anim_instances()
-{
-	Assert( Ss_icons != NULL );
-
-	for ( int i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		if ( Ss_icons[i].ss_anim_instance ) {
-			anim_release_render_instance(Ss_icons[i].ss_anim_instance);
-			Ss_icons[i].ss_anim_instance = NULL;
-		}
-	}
-}
-
 void ss_unload_all_anims()
 {
-	// stop any playing anims first
-	unload_ship_anim_instances();
+	Assert( Ss_icons != NULL );
 
-	// now free up any loaded anims
-	unload_ship_anims();
+	for ( int i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+		if ( Ss_icons[i].ss_anim.num_frames ) {
+			generic_anim_unload(&Ss_icons[i].ss_anim);
+		}
+	}
 }
 
 // ------------------------------------------------------------------------
@@ -2531,12 +2369,6 @@ int create_wings()
 	return 0;
 }
 
-void ship_stop_animation()
-{
-	if ( Ship_anim_class >= 0  )
-		stop_ship_animation();
-}
-
 // ----------------------------------------------------------------------------
 // update_player_ship()
 //
@@ -2917,8 +2749,6 @@ void ss_load_all_icons()
 	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		// clear out data
 		Ss_icons[i].current_icon_bitmap = -1;
-		Ss_icons[i].ss_anim = NULL;
-		Ss_icons[i].ss_anim_instance = NULL;
 		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
 			Ss_icons[i].icon_bmaps[j] = -1;
 		}
@@ -2926,44 +2756,6 @@ void ss_load_all_icons()
 
 		if ( Ss_pool[i] >= 0 ) {
 			ss_load_icons(i);
-		}
-	}
-
-	#endif
-}
-
-// Load in a specific ship animation.  The data is loaded as a memory-mapped file since these animations
-// are awfully big.
-void ss_load_anim(int ship_class)
-{
-	ss_icon_info	*icon;
-
-	Assert( Ss_icons != NULL );
-
-	icon = &Ss_icons[ship_class];
-
-	// load the compressed ship animation into memory 
-	// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
-	Assert( icon->ss_anim == NULL );
-	icon->ss_anim = ss_load_individual_animation(ship_class);
-	if ( icon->ss_anim == NULL ) {
-		//Int3();		// couldn't load anim filename.. get Alan
-		//this is fine -WMC
-	}
-}
-
-// Load in any ship animations.  This function assumes that Ss_pool has been inited.
-void ss_load_all_anims()
-{
-	#ifndef DEMO // not for FS2_DEMO
-
-	int i;
-
-	Assert( Ss_pool != NULL );
-
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		if ( Ss_pool[i] > 0 ) {
-			ss_load_anim(i);
 		}
 	}
 
@@ -3259,7 +3051,6 @@ void ship_select_common_init()
 
 	// load the necessary icons/animations
 	ss_load_all_icons();
-	ss_load_all_anims();		// UnknownPlayer : unnecessary due to use of techroom 3D
 
 	ss_reset_selected_ship();
 	ss_reset_carried_icon();

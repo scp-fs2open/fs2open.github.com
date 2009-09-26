@@ -174,7 +174,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 	new_wei.lod_count = 1;
 
 	strcpy_s(new_wei.lod[0].filename, filename);
-	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, 1);
+	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, NULL, 1);
 
 	if (new_wei.lod[0].bitmap_id < 0) {
 		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
@@ -188,7 +188,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 		for (idx = 1; idx < expected_lods; idx++) {
 			sprintf(name_tmp, "%s_%d", filename, idx);
 
-			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, 1);
+			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, NULL, 1);
 
 			if (bitmap_id > 0) {
 				strcpy_s(new_wei.lod[idx].filename, name_tmp);

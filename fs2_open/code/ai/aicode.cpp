@@ -529,7 +529,6 @@ void free_ai_stuff()
 void init_ai_class(ai_class *aicp)
 {
 	int i;
-
 	for (i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_cmeasure_fire_chance[i] = 1.0f;

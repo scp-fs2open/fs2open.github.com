@@ -601,10 +601,10 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// load the web pointer cursor bitmap
 	if (Web_cursor_bitmap < 0) {
-		int nframes;						// used to pass, not really needed (should be 1)
+		//int nframes;						// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 ) {
+		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb")) < 0 ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
 				"\t2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"

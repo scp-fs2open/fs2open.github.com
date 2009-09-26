@@ -2437,7 +2437,7 @@ strcpy_s(parse_error_text, temp_error);
 		{
 			stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
-			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, 1);
+			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, NULL, 1);
 			if(tex_id < 0)
 				tex_id = bm_load(name_tmp);
 			if(tex_id >= 0)
