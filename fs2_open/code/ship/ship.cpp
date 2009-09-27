@@ -15071,7 +15071,6 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 	aip->behavior = AIM_NONE;
 	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
-	Ship_info[Ships[ship_num].ship_info_index].ai_class = new_ai_class;
 	Ships[ship_num].weapons.ai_class = new_ai_class;
 
 	// I think that's everything!
