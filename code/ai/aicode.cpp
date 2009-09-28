@@ -4770,7 +4770,7 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 	if (!(Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_AFTERBURNER)) {
 		return 0;
 	}
-	if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class == 0) {
+	if (aip->ai_aburn_use_factor == INT_MIN && aip->ai_class == 0) {
 		return 0;		//	Lowest level never aburners away (unless ai_aburn_use_factor is specified)
 	} 
 	else {
@@ -4796,11 +4796,11 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 			}
 		}
 
-		if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class >= Num_ai_classes-2)
+		if (aip->ai_aburn_use_factor == INT_MIN && aip->ai_class >= Num_ai_classes-2)
 			return 1;		//	Highest two levels always aburner away (unless ai_aburn_use_factor is specified).
 		else {
 			//If ai_aburn_use_factor is not specified, calculate a number based on the AI class. Otherwise, use that value.
-			if (aip->ai_aburn_use_factor == FLT_MIN)
+			if (aip->ai_aburn_use_factor == INT_MIN)
 				return static_rand_timed(objp-Objects, Num_ai_classes - aip->ai_class);
 			else
 				return static_rand_timed(objp-Objects, aip->ai_aburn_use_factor);
