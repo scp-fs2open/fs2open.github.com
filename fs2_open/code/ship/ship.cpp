@@ -1422,10 +1422,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_float(&sip->glide_cap );
 		if(optional_string("+Glide Accel Mult:"))
 			stuff_float(&sip->glide_accel_mult);
-		if(optional_string("+Use Newtonian Dampening:")) {
+	}
+
+	if(optional_string("$Use Newtonian Dampening:")) {
 			sip->newtonian_damp_override = true;
 			stuff_boolean(&sip->use_newtonian_damp);
-		}
 	}
 
 	if(optional_string("$Autoaim FOV:"))
