@@ -10266,7 +10266,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			hud_support_view_abort();
 
 			// send appropriate messages here
-			if (MULTIPLAYER_MASTER) {
+			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
 				if ( how == REPAIR_INFO_KILLED ){
 					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
 				} else {
@@ -10292,7 +10292,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			
 			hud_support_view_stop();			
 			
-			if (MULTIPLAYER_MASTER) {
+			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
 				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, p_team);
 			}
 		}
