@@ -756,8 +756,10 @@ void debug_int3(char *file, int line)
 	gr_activate(0);
 
 #ifdef _WIN32
-#if defined _MSC_VER
-	DebugBreak( );
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+	__debugbreak( );
+#elif defined(_MSC_VER)
+	_asm int 3;
 #elif defined __GNUC__
 	asm("int $3");
 #else
