@@ -542,6 +542,8 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_shield_manage_delay[i] = 1.0f;
 		aicp->ai_ship_fire_delay_scale_friendly[i] = 1.0f;
 		aicp->ai_ship_fire_delay_scale_hostile[i] = 1.0f;
+		aicp->ai_ship_fire_secondary_delay_scale_friendly[i] = 1.0f;
+		aicp->ai_ship_fire_secondary_delay_scale_hostile[i] = 1.0f;
 		aicp->ai_turn_time_scale[i] = 1.0f;
 		aicp->ai_glide_attack_percent[i] = 1.0f;
 		aicp->ai_circle_strafe_percent[i] = 1.0f;
