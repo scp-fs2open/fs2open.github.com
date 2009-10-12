@@ -223,6 +223,11 @@ typedef struct beam_weapon_info {
 	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam 	
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
+	float beam_width;					// width of the beam (for certain collision checks)
+	int beam_flash_idx;					// idx of the ani used for the beam impact flash
+	float beam_flash_radius;			// radius of the flash
+	int beam_tooling_flame_idx;			// idx of the tooling flame ani
+	float beam_tooling_flame_radius;	// radius of the tooling flame ani
 } beam_weapon_info;
 
 typedef struct spawn_weapon_info 

@@ -910,6 +910,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.beam_shrink_pct = 0.0f;
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
+	wip->b_info.beam_width = -1.0f;
+	wip->b_info.beam_flash_idx = -1;
+	wip->b_info.beam_flash_radius = 0.0f;
+	wip->b_info.beam_tooling_flame_idx = -1;
+	wip->b_info.beam_tooling_flame_radius = 0.0f;
 
 	generic_anim_init(&wip->b_info.beam_glow, NULL);
 	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
@@ -1972,6 +1977,29 @@ int parse_weapon(int subtype, bool replace)
 		
 		if ( optional_string("+Attenuation:") )
 			stuff_float(&wip->b_info.damage_threshold);
+
+		if ( optional_string("+BeamWidth:") )
+			stuff_float(&wip->b_info.beam_width);
+
+		if ( optional_string("+Beam Flash Effect:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if ( VALID_FNAME(fname) )
+				wip->b_info.beam_flash_idx = Weapon_explosions.Load(fname);
+		}
+		
+		if ( optional_string("+Beam Flash Radius:") )
+			stuff_float(&wip->b_info.beam_flash_radius);
+
+		if ( optional_string("+Beam Piercing Effect:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if ( VALID_FNAME(fname) )
+				wip->b_info.beam_tooling_flame_idx = Weapon_explosions.Load(fname);
+		}
+		
+		if ( optional_string("+Beam Piercing Radius:") )
+			stuff_float(&wip->b_info.beam_tooling_flame_radius);
 
 		// beam sections
 		while ( optional_string("$Section:") ) {
