@@ -7396,10 +7396,10 @@ int game_main(char *cmdline)
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
-		multi_spew_pxo_checksums(1024, "mission_crcs.txt");
+		multi_spew_pxo_checksums(1024, "mission_crcs.csv");
 
 		if (Cmdline_spew_table_crcs) {
-			fs2netd_spew_table_checksums("table_crcs.txt");
+			fs2netd_spew_table_checksums("table_crcs.csv");
 		}
 
 		game_shutdown();
@@ -7408,7 +7408,7 @@ int game_main(char *cmdline)
 
 
 	if (Cmdline_spew_table_crcs) {
-		fs2netd_spew_table_checksums("table_crcs.txt");
+		fs2netd_spew_table_checksums("table_crcs.csv");
 		game_shutdown();
 		return 0;
 	}
