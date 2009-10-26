@@ -542,6 +542,8 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_shield_manage_delay[i] = 1.0f;
 		aicp->ai_ship_fire_delay_scale_friendly[i] = 1.0f;
 		aicp->ai_ship_fire_delay_scale_hostile[i] = 1.0f;
+		aicp->ai_ship_fire_secondary_delay_scale_friendly[i] = 1.0f;
+		aicp->ai_ship_fire_secondary_delay_scale_hostile[i] = 1.0f;
 		aicp->ai_turn_time_scale[i] = 1.0f;
 		aicp->ai_glide_attack_percent[i] = 1.0f;
 		aicp->ai_circle_strafe_percent[i] = 1.0f;
@@ -4770,7 +4772,7 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 	if (!(Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_AFTERBURNER)) {
 		return 0;
 	}
-	if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class == 0) {
+	if (aip->ai_aburn_use_factor == INT_MIN && aip->ai_class == 0) {
 		return 0;		//	Lowest level never aburners away (unless ai_aburn_use_factor is specified)
 	} 
 	else {
@@ -4796,11 +4798,11 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 			}
 		}
 
-		if (aip->ai_aburn_use_factor == FLT_MIN && aip->ai_class >= Num_ai_classes-2)
+		if (aip->ai_aburn_use_factor == INT_MIN && aip->ai_class >= Num_ai_classes-2)
 			return 1;		//	Highest two levels always aburner away (unless ai_aburn_use_factor is specified).
 		else {
 			//If ai_aburn_use_factor is not specified, calculate a number based on the AI class. Otherwise, use that value.
-			if (aip->ai_aburn_use_factor == FLT_MIN)
+			if (aip->ai_aburn_use_factor == INT_MIN)
 				return static_rand_timed(objp-Objects, Num_ai_classes - aip->ai_class);
 			else
 				return static_rand_timed(objp-Objects, aip->ai_aburn_use_factor);
@@ -10266,7 +10268,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			hud_support_view_abort();
 
 			// send appropriate messages here
-			if (MULTIPLAYER_MASTER) {
+			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
 				if ( how == REPAIR_INFO_KILLED ){
 					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
 				} else {
@@ -10292,7 +10294,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			
 			hud_support_view_stop();			
 			
-			if (MULTIPLAYER_MASTER) {
+			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
 				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, p_team);
 			}
 		}

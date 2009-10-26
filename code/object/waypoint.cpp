@@ -14,7 +14,7 @@ void create_waypoints()
 
 	for (j=0; j<Num_waypoint_lists; j++) {
 		for (i=0; i<Waypoint_lists[j].count; i++) {
-			z = obj_create(OBJ_WAYPOINT, 0, j * 65536 + i, NULL,
+			z = obj_create(OBJ_WAYPOINT, -1, j * 65536 + i, NULL,
 				&Waypoint_lists[j].waypoints[i], 0.0f, OF_RENDERS);
 		}
 	}

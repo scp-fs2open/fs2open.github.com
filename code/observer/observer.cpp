@@ -50,7 +50,7 @@ int observer_create(matrix *orient, vec3d *pos)
 	}
 	
 	// attempt to create the object
-	objnum = obj_create(OBJ_OBSERVER,0,idx,orient,pos,1.0f,0);
+	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f,0);
 
 	// give the observer Descent style physics
 	Objects[objnum].flags |= OF_PHYSICS;

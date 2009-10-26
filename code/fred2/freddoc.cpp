@@ -383,13 +383,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		}
 	}
 
-	for (i=0; i<Num_waypoint_lists; i++) {
-		wptr = &Waypoint_lists[i];
-		for (j=0; j<wptr->count; j++){
-			ob = obj_create(OBJ_WAYPOINT, -1, i * 65536 + j, NULL, &wptr->waypoints[j], 0.0f, OF_RENDERS);
-		}
-	}
-
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {

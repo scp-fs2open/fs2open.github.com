@@ -1422,10 +1422,11 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_float(&sip->glide_cap );
 		if(optional_string("+Glide Accel Mult:"))
 			stuff_float(&sip->glide_accel_mult);
-		if(optional_string("+Use Newtonian Dampening:")) {
+	}
+
+	if(optional_string("$Use Newtonian Dampening:")) {
 			sip->newtonian_damp_override = true;
 			stuff_boolean(&sip->use_newtonian_damp);
-		}
 	}
 
 	if(optional_string("$Autoaim FOV:"))
@@ -15071,7 +15072,6 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 	aip->behavior = AIM_NONE;
 	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
-	Ship_info[Ships[ship_num].ship_info_index].ai_class = new_ai_class;
 	Ships[ship_num].weapons.ai_class = new_ai_class;
 
 	// I think that's everything!
