@@ -360,6 +360,7 @@ BEGIN
             VALUE "OriginalFilename", "fs2.exe"
             VALUE "ProductName", "FreeSpace 2 Open"
             VALUE "ProductVersion", "3.6.11"
+            VALUE "SpecialBuild", "1"
         END
     END
     BLOCK "VarFileInfo"
