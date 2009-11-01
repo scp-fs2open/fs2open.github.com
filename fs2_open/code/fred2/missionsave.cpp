@@ -124,6 +124,8 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		err = -3;
 //	else if (save_briefing_info())
 //		err = -4;
+	else if (save_fiction())
+		err = -3;
 	else if (save_cutscenes())
 		err = -4;
 	else if (save_cmd_briefs())
@@ -716,18 +718,18 @@ int CFred_mission_save::save_fiction()
 	{
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
+			fout("\n");
+
 			if (optional_string_fred("#Fiction Viewer"))
-			{
-				required_string_fred("$File:");
 				parse_comments();
-				fout(" %s", fiction_file());
-			}
 			else
-			{
-				fout("\n\n");
-				fout("#Fiction Viewer\n\n");
-				fout("$File: %s\n\n", fiction_file());
-			}
+				fout("#Fiction Viewer");
+
+			fout("\n");
+
+			required_string_fred("$File:");
+			parse_comments();
+			fout(" %s", fiction_file());
 		}
 		else
 		{

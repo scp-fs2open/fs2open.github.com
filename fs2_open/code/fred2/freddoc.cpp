@@ -342,7 +342,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	char name[512], *old_name;
 	int i, j, k, ob;
 	int used_pool[MAX_WEAPON_TYPES];
-	waypoint_list *wptr;
 	object *objp;
 
 	Parse_viewer_pos = view_pos;
