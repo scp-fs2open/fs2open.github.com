@@ -106,8 +106,8 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_ALLOW_DOCK_TREES, m_daisy_chained_docking);
 	DDX_Text(pDX, IDC_RESPAWNS, m_num_respawns);
 	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
-	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 999);
-	DDV_MinMaxUInt(pDX, m_max_respawn_delay, 0, 999);
+	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 99);
+	DDV_MinMaxUInt(pDX, m_max_respawn_delay, 0, 99);
 	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_MSGS, m_no_builtin_msgs);
