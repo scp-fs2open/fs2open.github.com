@@ -491,7 +491,6 @@ void player_start_editor::OnSelchangeShipVariablesCombo()
 {
 	// Get the new selection
 	char variable_name[TOKEN_LENGTH]; 
-	char name[255] = "";
 	bool update_static_pool = false; 
 	bool update_dynamic_pool = false; 
 
@@ -655,7 +654,6 @@ void player_start_editor::OnSelchangeWeaponVariablesCombo()
 {
 	// Get the new selection
 	char variable_name[TOKEN_LENGTH]; 
-	char name[255] = "";
 	bool update_static_pool = false; 
 	bool update_dynamic_pool = false; 
 
