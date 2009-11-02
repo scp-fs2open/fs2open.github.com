@@ -379,7 +379,7 @@ int CFred_mission_save::save_mission_info()
 				fso_comment_pop();
 			}
 
-			fout("%d", The_mission.max_respawn_delay);
+			fout(" %d", The_mission.max_respawn_delay);
 		}
 		else {
 			bypass_comment(";;FSO 3.6.11;; +Max Respawn Time:");

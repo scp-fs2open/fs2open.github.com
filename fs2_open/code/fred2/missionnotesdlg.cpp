@@ -57,7 +57,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_scramble = FALSE;
 	m_daisy_chained_docking = FALSE;
 	m_num_respawns = 0;
-	m_max_respawn_delay = 0;
+	m_max_respawn_delay = -1;
 	m_disallow_support = 0;
 	m_no_promotion = FALSE;
 	m_no_builtin_msgs = FALSE;
@@ -107,7 +107,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_RESPAWNS, m_num_respawns);
 	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
 	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 99);
-	DDV_MinMaxUInt(pDX, m_max_respawn_delay, 0, 99);
+	DDV_MinMaxInt(pDX, m_max_respawn_delay, -1, 999);
 	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_MSGS, m_no_builtin_msgs);
@@ -218,7 +218,7 @@ void CMissionNotesDlg::OnOK()
 
 	MODIFY(The_mission.game_type, new_m_type );
 	MODIFY(The_mission.num_respawns, (int)m_num_respawns );
-	MODIFY(The_mission.max_respawn_delay, (int)m_max_respawn_delay );
+	MODIFY(The_mission.max_respawn_delay, m_max_respawn_delay );
 	MODIFY(The_mission.support_ships.max_support_ships, (m_disallow_support) ? 0 : -1);
 	MODIFY(The_mission.support_ships.max_hull_repair_val, m_max_hull_repair_val);
 	MODIFY(The_mission.support_ships.max_subsys_repair_val, m_max_subsys_repair_val);
@@ -524,7 +524,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	}
 
 	m_respawn_spin.SetRange(0, 99);
-	m_max_respawn_delay_spin.SetRange(0, 99);
+	m_max_respawn_delay_spin.SetRange(-1, 999);
 	m_num_respawns = The_mission.num_respawns;
 	m_max_respawn_delay = The_mission.max_respawn_delay;
 	m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;

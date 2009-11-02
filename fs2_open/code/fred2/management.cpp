@@ -979,6 +979,7 @@ void clear_mission()
 	strcpy_s(The_mission.squad_name, "");
 	strcpy_s(The_mission.squad_filename, "");
 	The_mission.num_respawns = 3;
+	The_mission.max_respawn_delay = -1;
 
 	Player_starts = 0;
 	Num_teams = 1;
