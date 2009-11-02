@@ -31,19 +31,24 @@ void generic_anim_init(generic_anim *ga, char *filename)
 
 	ga->first_frame = -1;
 	ga->num_frames = 0;
-	ga->total_time = 1.0f;
-	ga->anim_time = 0.0f;
-	ga->done_playing = 0;
-	ga->direction = GENERIC_ANIM_DIRECTION_FORWARDS;
 	ga->keyframe = 0;
+	ga->keyoffset = 0;
 	ga->current_frame = 0;
-	ga->previous_frame = 0;
+	ga->previous_frame = -1;
+	ga->direction = GENERIC_ANIM_DIRECTION_FORWARDS;
+	ga->done_playing = 0;
+	ga->total_time = 0.0f;
+	ga->anim_time = 0.0f;
+
 	//we only care about the stuff below if we're streaming
+	ga->ani.animation = NULL;
+	ga->ani.instance = NULL;
+	ga->ani.bg_type = 0;
 	ga->type = BM_TYPE_NONE;
 	ga->streaming = 0;
 	ga->buffer = NULL;
-	ga->height = 1;
-	ga->width = 1;
+	ga->height = 0;
+	ga->width = 0;
 	ga->bitmap_id = -1;
 }
 
@@ -86,14 +91,13 @@ int generic_anim_load(generic_anim *ga)
 int generic_anim_stream(generic_anim *ga)
 {
 	CFILE *img_cfp = NULL;
-	int anim_fps = 0, anim_frames = 0, key = 0;
+	int anim_fps = 0;
 	char full_path[MAX_PATH];
 	int size = 0, offset = 0;
 	const int NUM_TYPES = 2;
 	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
 	const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
 	int rval = -1;
-	int fps;
 	int bpp;
 
 	ga->type = BM_TYPE_NONE;
@@ -129,7 +133,7 @@ int generic_anim_stream(generic_anim *ga)
 		strcpy_s(ga->ani.animation->name, ga->filename);
 	#endif
 
-		anim_frames = ga->ani.animation->total_frames;
+		ga->num_frames = ga->ani.animation->total_frames;
 		anim_fps = ga->ani.animation->fps;
 		ga->height = ga->ani.animation->height;
 		ga->width = ga->ani.animation->width;
@@ -141,27 +145,44 @@ int generic_anim_stream(generic_anim *ga)
 		ga->ani.instance->data = ga->ani.animation->data;
 
 		ga->previous_frame = -1;
-
-		//we only care if there are 2 keyframes - first frame, other frame to jump to for ship/weapons
-		//mainhall door anis hav every frame as keyframe, so we don't care
-		//other anis only have the first frame
-		if(ga->ani.animation->num_keys == 2){
-			//some retail anis have their keyframes reversed
-			key = MAX(ga->ani.animation->keys[0].frame_num, ga->ani.animation->keys[1].frame_num);
-		}
 	}
 	else {
 		//placeholder until we get eff streaming working
 		return generic_anim_load(ga);
 	}
 
-	ga->streaming = 1;
-	ga->num_frames = anim_frames;
-	fps = anim_fps;
-	ga->keyframe = key;
+	// keyframe info
+	if (ga->type == BM_TYPE_ANI) {
+		//we only care if there are 2 keyframes - first frame, other frame to jump to for ship/weapons
+		//mainhall door anis hav every frame as keyframe, so we don't care
+		//other anis only have the first frame
+		if(ga->ani.animation->num_keys == 2) {
+			int key1 = ga->ani.animation->keys[0].frame_num;
+			int key2 = ga->ani.animation->keys[1].frame_num;
 
-	Assert(fps != 0);
-	ga->total_time = ga->num_frames / (float)fps;
+			if (key1 < 0 || key1 >= ga->num_frames) key1 = -1;
+			if (key2 < 0 || key2 >= ga->num_frames) key2 = -1;
+
+			// some retail anis have their keyframes reversed
+			// and some have their keyframes out of bounds
+			if (key1 >= 0 && key1 >= key2) {
+				ga->keyframe = ga->ani.animation->keys[0].frame_num;
+				ga->keyoffset = ga->ani.animation->keys[0].offset;
+			}
+			else if (key2 >= 0 && key2 >= key1) {
+				ga->keyframe = ga->ani.animation->keys[1].frame_num;
+				ga->keyoffset = ga->ani.animation->keys[1].offset;
+			}
+		}
+	}
+	else {
+		// EFF not handled yet; code shouldn't get here anyway per above block
+	}
+
+	ga->streaming = 1;
+
+	Assert(anim_fps != 0);
+	ga->total_time = ga->num_frames / (float) anim_fps;
 	ga->done_playing = 0;
 	ga->anim_time = 0.0f;
 
@@ -206,7 +227,6 @@ void generic_render_ani_stream(generic_anim *ga)
 {
 	int i;
 	int bpp = ANI_BPP_CHECK;
-	int offset;
 
 	#ifdef TIMER
 		int start_time = timer_get_fixed_seconds();
@@ -214,12 +234,6 @@ void generic_render_ani_stream(generic_anim *ga)
 
 	if((ga->current_frame == ga->previous_frame))
 		return;
-
-	//dodgy frame skipping code - should eliminate the keyframe stutter
-	if(ga->current_frame - ga->previous_frame > 1) {
-		mprintf(("skipping %d frames!", ga->current_frame - ga->previous_frame - 1));
-		ga->current_frame = ga->previous_frame + 1;
-	}
 
 	#ifdef TIMER
 		mprintf(("=========================\n"));
@@ -248,12 +262,10 @@ void generic_render_ani_stream(generic_anim *ga)
 		if((ga->current_frame == 0) || (ga->current_frame < ga->previous_frame)) {
 			//go back to keyframe if there is one
 			if(ga->keyframe && (ga->current_frame > 0)) {
-				//in case the keyframes are reversed
-				offset = MAX(ga->ani.animation->keys[0].offset, ga->ani.animation->keys[1].offset);
 				if(ga->ani.animation->flags & ANF_STREAMED) {
-					ga->ani.instance->file_offset = ga->ani.animation->file_offset + offset;
+					ga->ani.instance->file_offset = ga->ani.animation->file_offset + ga->keyoffset;
 				} else {
-					ga->ani.instance->data = ga->ani.animation->data + offset;
+					ga->ani.instance->data = ga->ani.animation->data + ga->keyoffset;
 				}
 				ga->previous_frame = ga->keyframe - 1;
 			}

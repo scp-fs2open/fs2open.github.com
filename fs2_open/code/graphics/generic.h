@@ -18,6 +18,7 @@ typedef struct generic_anim {
 	int	first_frame;
 	int	num_frames;
 	int	keyframe;
+	int keyoffset;
 	int current_frame;
 	int previous_frame;
 	unsigned char direction;
@@ -43,29 +44,12 @@ typedef struct generic_anim {
 	int height;
 	int width;
 	int bitmap_id;
-
-	generic_anim()
-		: first_frame(0), num_frames(0), total_time(0.0f), keyframe(0), current_frame(0), previous_frame(-1),
-		  direction(GENERIC_ANIM_DIRECTION_FORWARDS), done_playing(0), anim_time(0.0f), type(0), streaming(0),
-		  buffer(NULL), height(0), width(0), bitmap_id(-1)
-	{
-		filename[ 0 ] = NULL;
-		ani.animation = NULL;
-		ani.instance = NULL;
-		ani.bg_type = 0;
-	}
 } generic_anim;
 
 // Goober5000
 typedef struct generic_bitmap {
 	char filename[MAX_FILENAME_LEN];
 	int bitmap_id;
-
-	generic_bitmap()
-		: bitmap_id(-1)
-	{
-		filename[0] = NULL;
-	}
 } generic_bitmap;
 
 
