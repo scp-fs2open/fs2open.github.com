@@ -53,10 +53,10 @@ typedef struct swarm_info {
 } swarm_info;
 
 
-#define MAX_SWARM_MISSILES	50
+#define MAX_SWARM_MISSILES	100
 swarm_info	Swarm_missiles[MAX_SWARM_MISSILES];
 
-#define MAX_TURRET_SWARM_INFO	50
+#define MAX_TURRET_SWARM_INFO	100
 turret_swarm_info Turret_swarm_info[MAX_TURRET_SWARM_INFO];
 
 int Turret_swarm_validity_next_check_time;
@@ -395,7 +395,7 @@ int turret_swarm_create()
 
 	if ( i >= MAX_TURRET_SWARM_INFO ) {
 		nprintf(("Warning","No more turret swarm info slots are available\n"));
-		Int3();
+//		Int3();
 		return -1;
 	}
 
