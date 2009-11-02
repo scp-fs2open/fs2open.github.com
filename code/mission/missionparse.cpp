@@ -487,7 +487,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
-	The_mission.max_respawn_delay = 0;
+	The_mission.max_respawn_delay = -1;
 	if ( pm->game_type & MISSION_TYPE_MULTI ) {
 		if ( optional_string("+Max Respawn Time:") ){
 			stuff_int( &The_mission.max_respawn_delay );
