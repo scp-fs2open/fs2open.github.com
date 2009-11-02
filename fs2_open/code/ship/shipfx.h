@@ -222,9 +222,9 @@ public:
     int getWarpOrientation(matrix *output);
 };
 
-//********************-----CLASS: WE_BTRL-----********************//
-#define WE_BTRL_NUM_STAGES				2
-class WE_BTRL : public WarpEffect
+//********************-----CLASS: WE_BSG-----********************//
+#define WE_BSG_NUM_STAGES				2
+class WE_BSG : public WarpEffect
 {
 private:
 	//Total data
@@ -236,7 +236,7 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[WE_BTRL_NUM_STAGES];
+	int stage_duration[WE_BSG_NUM_STAGES];
 
 	//anim
 	int anim;
@@ -264,8 +264,8 @@ private:
 	struct game_snd *snd_end_gs;
 
 public:
-	WE_BTRL(object *n_objp, int n_direction);
-	~WE_BTRL();
+	WE_BSG(object *n_objp, int n_direction);
+	~WE_BSG();
 
 	virtual void pageIn();
 

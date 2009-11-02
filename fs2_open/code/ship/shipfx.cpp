@@ -4107,8 +4107,8 @@ int WE_Default::getWarpOrientation(matrix* output)
     return 1;
 }
 
-//********************-----CLASS: WE_BTRL-----********************//
-WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
+//********************-----CLASS: WE_BSG-----********************//
+WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	:WarpEffect(n_objp, n_direction)
 {
 	//Zero animation and such
@@ -4198,7 +4198,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	pos = vmd_zero_vector;
 }
 
-WE_BTRL::~WE_BTRL()
+WE_BSG::~WE_BSG()
 {
 	if(anim > -1)
 		bm_unload(anim);
@@ -4206,7 +4206,7 @@ WE_BTRL::~WE_BTRL()
 		bm_unload(shockwave);
 }
 
-void WE_BTRL::pageIn()
+void WE_BSG::pageIn()
 {
 	if(anim > -1)
 		bm_page_in_texture(anim);
@@ -4214,7 +4214,7 @@ void WE_BTRL::pageIn()
 		bm_page_in_texture(shockwave);
 }
 
-int WE_BTRL::warpStart()
+int WE_BSG::warpStart()
 {
 	if(!WarpEffect::warpStart())
 		return 0;
@@ -4285,7 +4285,7 @@ int WE_BTRL::warpStart()
 
 	stage = 0;
 	int total_duration = 0;
-	for(int i = 0; i < WE_BTRL_NUM_STAGES; i++)
+	for(int i = 0; i < WE_BSG_NUM_STAGES; i++)
 		total_duration += stage_duration[i];
 
 	total_time_start = timestamp();
@@ -4297,7 +4297,7 @@ int WE_BTRL::warpStart()
 	return 1;
 }
 
-int WE_BTRL::warpFrame(float frametime)
+int WE_BSG::warpFrame(float frametime)
 {
 	if(!this->isValid())
 		return 0;
@@ -4305,7 +4305,7 @@ int WE_BTRL::warpFrame(float frametime)
 	while( timestamp_elapsed(stage_time_end ))
 	{
 		stage++;
-		if(stage < WE_BTRL_NUM_STAGES)
+		if(stage < WE_BSG_NUM_STAGES)
 		{
 			stage_time_start = timestamp();
 			stage_time_end = timestamp(stage_duration[stage]);
@@ -4344,7 +4344,7 @@ int WE_BTRL::warpFrame(float frametime)
 	return 1;
 }
 
-int WE_BTRL::warpShipClip()
+int WE_BSG::warpShipClip()
 {
 	if(!this->isValid())
 		return 0;
@@ -4358,7 +4358,7 @@ int WE_BTRL::warpShipClip()
 	return 1;
 }
 
-int WE_BTRL::warpShipRender()
+int WE_BSG::warpShipRender()
 {
 	if(!this->isValid())
 		return 0;
@@ -4412,7 +4412,7 @@ int WE_BTRL::warpShipRender()
 				g3_transfer_vertex(&p, &pos);
 			}
 			gr_set_bitmap(shockwave + shockwave_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			g3_draw_bitmap(&p, 0, objp->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+			g3_draw_bitmap(&p, 0, tube_radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 		}
 	}
 
@@ -4421,7 +4421,7 @@ int WE_BTRL::warpShipRender()
 	return 1;
 }
 
-int WE_BTRL::warpEnd()
+int WE_BSG::warpEnd()
 {
 	if(snd_start > -1)
 		snd_stop(snd_start);
@@ -4433,7 +4433,7 @@ int WE_BTRL::warpEnd()
 
 //WMC - These two functions are used to fool collision detection code
 //And do player warpout
-int WE_BTRL::getWarpPosition(vec3d *output)
+int WE_BSG::getWarpPosition(vec3d *output)
 {
 	if(!this->isValid())
 		return 0;
@@ -4452,7 +4452,7 @@ int WE_BTRL::getWarpPosition(vec3d *output)
 	return 1;
 }
 
-int WE_BTRL::getWarpOrientation(matrix* output)
+int WE_BSG::getWarpOrientation(matrix* output)
 {
     if (!this->isValid())
     {
