@@ -2,6 +2,22 @@
 #include "bmpman/bmpman.h"
 #include "graphics/generic.h"
 #include "graphics/2d.h"
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
+#ifdef _WIN32
+#include <windows.h>	// for MAX_PATH
+#else
+#define MAX_PATH	255
+#endif
+//#define TIMER
+#ifdef TIMER
+#include "io/timer.h"
+#endif
+ 
+//we check background type to avoid messed up colours for ANI
+#define ANI_BPP_CHECK		(ga->ani.bg_type == BM_TYPE_PCX) ? 16 : 32
 
 // Goober5000
 void generic_anim_init(generic_anim *ga, char *filename)
@@ -18,6 +34,17 @@ void generic_anim_init(generic_anim *ga, char *filename)
 	ga->total_time = 1.0f;
 	ga->anim_time = 0.0f;
 	ga->done_playing = 0;
+	ga->direction = GENERIC_ANIM_DIRECTION_FORWARDS;
+	ga->keyframe = 0;
+	ga->current_frame = 0;
+	ga->previous_frame = 0;
+	//we only care about the stuff below if we're streaming
+	ga->type = BM_TYPE_NONE;
+	ga->streaming = 0;
+	ga->buffer = NULL;
+	ga->height = 1;
+	ga->width = 1;
+	ga->bitmap_id = -1;
 }
 
 // Goober5000
@@ -37,7 +64,7 @@ void generic_bitmap_init(generic_bitmap *gb, char *filename)
 // return 0 is successful, otherwise return -1
 int generic_anim_load(generic_anim *ga)
 {
-	int		fps;
+	int fps;
 
 	if ( !VALID_FNAME(ga->filename) )
 		return -1;
@@ -47,6 +74,91 @@ int generic_anim_load(generic_anim *ga)
 
 	if (ga->first_frame < 0)
 		return -1;
+
+	Assert(fps != 0);
+	ga->total_time = ga->num_frames / (float)fps;
+	ga->done_playing = 0;
+	ga->anim_time = 0.0f;
+
+	return 0;
+}
+
+int generic_anim_stream(generic_anim *ga)
+{
+	CFILE *img_cfp = NULL;
+	int anim_fps = 0, anim_frames = 0, key = 0;
+	char full_path[MAX_PATH];
+	int size = 0, offset = 0;
+	const int NUM_TYPES = 2;
+	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
+	const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
+	int rval = -1;
+	int fps;
+	int bpp;
+
+	ga->type = BM_TYPE_NONE;
+
+	rval = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
+
+	// could not be found, or is invalid for some reason
+	if ( (rval < 0) || (rval >= NUM_TYPES) )
+		return -1;
+
+	//make sure we can open it
+	img_cfp = cfopen_special(full_path, "rb", size, offset, CF_TYPE_ANY);
+
+	if (img_cfp == NULL) {
+		return -1;
+	}
+
+	strcat_s(ga->filename, ext_list[rval]);
+	ga->type = type_list[rval];
+	//seek to the end
+	cfseek(img_cfp, 0, CF_SEEK_END);
+
+	cfclose(img_cfp);
+
+	//TODO: add streaming EFF
+	if(ga->type == BM_TYPE_ANI) {
+		bpp = ANI_BPP_CHECK;
+		ga->ani.animation = anim_load(ga->filename, CF_TYPE_ANY, 0);
+		ga->ani.instance = init_anim_instance(ga->ani.animation, bpp);
+
+	#ifndef NDEBUG
+		// for debug of ANI sizes
+		strcpy_s(ga->ani.animation->name, ga->filename);
+	#endif
+
+		anim_frames = ga->ani.animation->total_frames;
+		anim_fps = ga->ani.animation->fps;
+		ga->height = ga->ani.animation->height;
+		ga->width = ga->ani.animation->width;
+		ga->buffer = ga->ani.instance->frame;
+		ga->bitmap_id = bm_create(bpp, ga->width, ga->height, ga->buffer, 0);
+		ga->ani.instance->last_bitmap = -1;
+
+		ga->ani.instance->file_offset = ga->ani.animation->file_offset;
+		ga->ani.instance->data = ga->ani.animation->data;
+
+		ga->previous_frame = -1;
+
+		//we only care if there are 2 keyframes - first frame, other frame to jump to for ship/weapons
+		//mainhall door anis hav every frame as keyframe, so we don't care
+		//other anis only have the first frame
+		if(ga->ani.animation->num_keys == 2){
+			//some retail anis have their keyframes reversed
+			key = MAX(ga->ani.animation->keys[0].frame_num, ga->ani.animation->keys[1].frame_num);
+		}
+	}
+	else {
+		//placeholder until we get eff streaming working
+		return generic_anim_load(ga);
+	}
+
+	ga->streaming = 1;
+	ga->num_frames = anim_frames;
+	fps = anim_fps;
+	ga->keyframe = key;
 
 	Assert(fps != 0);
 	ga->total_time = ga->num_frames / (float)fps;
@@ -71,11 +183,116 @@ int generic_bitmap_load(generic_bitmap *gb)
 
 void generic_anim_unload(generic_anim *ga)
 {
-	int i;
-
-	for(i = ga->first_frame; i < (ga->first_frame + ga->num_frames); i++)
-		bm_unload(i);
+	if(ga->num_frames > 0) {
+		if(ga->streaming) {
+			if(ga->type == BM_TYPE_ANI) {
+				anim_free(ga->ani.animation);
+				free_anim_instance(ga->ani.instance);
+			}
+		}
+		else {
+			//trying to release the first frame will release ALL frames
+			bm_release(ga->first_frame);
+		}
+		if(ga->buffer) {
+			bm_release(ga->bitmap_id);
+		}
+	}
 	generic_anim_init(ga, NULL);
+}
+
+//for timer debug, #define TIMER
+void generic_render_ani_stream(generic_anim *ga)
+{
+	int i;
+	int bpp = ANI_BPP_CHECK;
+	int offset;
+
+	#ifdef TIMER
+		int start_time = timer_get_fixed_seconds();
+	#endif
+
+	if((ga->current_frame == ga->previous_frame))
+		return;
+
+	//dodgy frame skipping code - should eliminate the keyframe stutter
+	if(ga->current_frame - ga->previous_frame > 1) {
+		mprintf(("skipping %d frames!", ga->current_frame - ga->previous_frame - 1));
+		ga->current_frame = ga->previous_frame + 1;
+	}
+
+	#ifdef TIMER
+		mprintf(("=========================\n"));
+		mprintf(("frame: %d\n", ga->current_frame));
+	#endif
+
+	anim_check_for_palette_change(ga->ani.instance);
+	// if we're using bitmap polys
+	BM_SELECT_TEX_FORMAT();
+	if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
+		//grab the keyframe - every frame is a keyframe for ANI
+		if(ga->ani.animation->flags & ANF_STREAMED) {
+			ga->ani.instance->file_offset = ga->ani.animation->file_offset + ga->ani.animation->keys[ga->current_frame].offset;
+		} else {
+			ga->ani.instance->data = ga->ani.animation->data + ga->ani.animation->keys[ga->current_frame].offset;
+		}
+		if(ga->ani.animation->flags & ANF_STREAMED) {
+			ga->ani.instance->file_offset = unpack_frame_from_file(ga->ani.instance, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+		}
+		else {
+			ga->ani.instance->data = unpack_frame(ga->ani.instance, ga->ani.instance->data, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+		}
+	}
+	else {
+		//looping back
+		if((ga->current_frame == 0) || (ga->current_frame < ga->previous_frame)) {
+			//go back to keyframe if there is one
+			if(ga->keyframe && (ga->current_frame > 0)) {
+				//in case the keyframes are reversed
+				offset = MAX(ga->ani.animation->keys[0].offset, ga->ani.animation->keys[1].offset);
+				if(ga->ani.animation->flags & ANF_STREAMED) {
+					ga->ani.instance->file_offset = ga->ani.animation->file_offset + offset;
+				} else {
+					ga->ani.instance->data = ga->ani.animation->data + offset;
+				}
+				ga->previous_frame = ga->keyframe - 1;
+			}
+			//go back to the start
+			else {
+				ga->ani.instance->file_offset = ga->ani.animation->file_offset;
+				ga->ani.instance->data = ga->ani.animation->data;
+				ga->previous_frame = -1;
+			}
+		}
+		#ifdef TIMER
+				mprintf(("proc: %d\n", timer_get_fixed_seconds() - start_time));
+				mprintf(("previous frame: %d\n", ga->previous_frame));
+		#endif
+		for(i = ga->previous_frame + 1; i <= ga->current_frame; i++) {
+			if(ga->ani.animation->flags & ANF_STREAMED) {
+				ga->ani.instance->file_offset = unpack_frame_from_file(ga->ani.instance, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+			}
+			else {
+				ga->ani.instance->data = unpack_frame(ga->ani.instance, ga->ani.instance->data, ga->buffer, ga->width * ga->height, (ga->ani.instance->xlate_pal) ? ga->ani.animation->palette_translation : NULL, 0, bpp);
+			}
+		}
+	}
+	// always go back to screen format
+	BM_SELECT_SCREEN_FORMAT();
+	//we need to use this because performance is worse if we flush the gfx card buffer
+	if ( ga->ani.instance->last_bitmap != -1 ){
+		bm_release(ga->ani.instance->last_bitmap);
+	}
+	ga->bitmap_id = bm_create(bpp, ga->width, ga->height, ga->buffer, 0);
+
+	//in case we want to check that the frame is actually changing
+	//mprintf(("frame crc = %08X\n", cf_add_chksum_long(0, ga->buffer, ga->width * ga->height * (bpp >> 3))));
+	ga->ani.instance->last_bitmap = ga->bitmap_id;
+
+	#ifdef TIMER
+		mprintf(("end: %d\n", timer_get_fixed_seconds() - start_time));
+		mprintf(("=========================\n"));
+	#endif
 }
 
 void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
@@ -91,7 +308,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 			if(ga->keyframe && (ga->anim_time > keytime)) {
 				ga->anim_time += frametime;
 				if(ga->anim_time >= ga->total_time) {
-					ga->anim_time = keytime - 0.001;
+					ga->anim_time = keytime - 0.001f;
 					ga->done_playing = 0;
 				}
 			}
@@ -111,15 +328,11 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 			ga->anim_time += frametime;
 			if(ga->anim_time >= ga->total_time) {
 				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
-					ga->anim_time = ga->total_time - 0.001;		//stop on last frame when playing - if it's equal we jump to the first frame
-					ga->done_playing = 1;
+					ga->anim_time = ga->total_time - 0.001f;		//stop on last frame when playing - if it's equal we jump to the first frame
 				}
 				else if(!ga->done_playing){
 					//we've played this at least once
 					ga->done_playing = 1;
-					if(ga->keyframe) {
-						ga->anim_time = keytime;
-					}
 				}
 			}
 		}
@@ -136,7 +349,18 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 		ga->current_frame += fl2i(ga->anim_time * ga->num_frames / ga->total_time);
 		//sanity check
 		CLAMP(ga->current_frame, 0, ga->num_frames - 1);
-		gr_set_bitmap(ga->first_frame + ga->current_frame);
+		if(ga->streaming) {
+			//handle streaming - render one frame
+			//TODO: add EFF streaming
+			if(ga->type == BM_TYPE_ANI) {
+				generic_render_ani_stream(ga);
+			}
+			gr_set_bitmap(ga->bitmap_id);
+		}
+		else {
+			gr_set_bitmap(ga->first_frame + ga->current_frame);
+		}
+		ga->previous_frame = ga->current_frame;
 		gr_bitmap(x, y);
 	}
 }

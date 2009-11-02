@@ -1231,15 +1231,17 @@ void multi_pxo_init(int use_last_channel)
 		char anim_filename[32] = "2_";
 		strcat_s(anim_filename, MULTI_PXO_ANIM_FNAME);
 		generic_anim_init(&Multi_pxo_anim, anim_filename);
+		Multi_pxo_anim.ani.bg_type = bm_get_type(Multi_pxo_bitmap);
 
 		// if hi-res is not there, fallback to low
-		if (generic_anim_load(&Multi_pxo_anim) == -1) {
+		if (generic_anim_stream(&Multi_pxo_anim) == -1) {
 			generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
-			generic_anim_load(&Multi_pxo_anim);
+			generic_anim_stream(&Multi_pxo_anim);
 		}
 	} else {
 		generic_anim_init(&Multi_pxo_anim, MULTI_PXO_ANIM_FNAME);
-		generic_anim_load(&Multi_pxo_anim);
+		Multi_pxo_anim.ani.bg_type = bm_get_type(Multi_pxo_bitmap);
+		generic_anim_stream(&Multi_pxo_anim);
 	}
 
 	// clear the status text

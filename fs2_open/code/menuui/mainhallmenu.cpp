@@ -521,9 +521,10 @@ void main_hall_campaign_cheat()
 // FUNCTION DEFINITIONS BEGIN
 //
 
-// initialize the main hall proper 
+// initialize the main hall proper
 void main_hall_init(int main_hall_num)
 {
+	ubyte bg_type;
 	if ( Main_hall_inited ) {
 		return;
 	}
@@ -565,9 +566,10 @@ void main_hall_init(int main_hall_num)
 
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);
+	bg_type = bm_get_type(Main_hall_bitmap);
 	if(Main_hall_bitmap < 0){
 		nprintf(("General","WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap));
-	}	
+	}
 
 	// set the interface palette 
 #ifndef HARDWARE_ONLY
@@ -593,10 +595,11 @@ void main_hall_init(int main_hall_num)
 		bm_get_info(Main_hall_mask, &Main_hall_mask_w, &Main_hall_mask_h);
 	}
 
-	// load up the misc animations, and nullify all the delay timestamps for the misc animations	
+	// load up the misc animations, and nullify all the delay timestamps for the misc animations
 	for(idx=0;idx<Main_hall->num_misc_animations;idx++) {
 		generic_anim_init(&Main_hall_misc_anim[idx], Main_hall->misc_anim_name[idx]);
-		if(generic_anim_load(&Main_hall_misc_anim[idx]) == -1) {
+		Main_hall_misc_anim[idx].ani.bg_type = bg_type;
+		if(generic_anim_stream(&Main_hall_misc_anim[idx]) == -1) {
 			nprintf(("General","WARNING!, Could not load misc %s anim in main hall\n",Main_hall->misc_anim_name));
 		}
 		else {
@@ -613,7 +616,8 @@ void main_hall_init(int main_hall_num)
 	// load up the door animations
 	for(idx=0;idx<Main_hall->num_door_animations;idx++) {
 		generic_anim_init(&Main_hall_door_anim[idx], Main_hall->door_anim_name[idx]);
-		if(generic_anim_load(&Main_hall_door_anim[idx]) == -1) {
+		Main_hall_door_anim[idx].ani.bg_type = bg_type;
+		if(generic_anim_stream(&Main_hall_door_anim[idx]) == -1) {
 			nprintf(("General","WARNING!, Could not load door anim %s in main hall\n",Main_hall->door_anim_name[idx]));
 		}
 		else

@@ -766,8 +766,6 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 	const int NUM_TYPES	= 2;
 	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
 	const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
-	ubyte interface_eff = 0;
-
 
 	if ( !bm_inited )
 		bm_init();
@@ -886,8 +884,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 				the_anim.keys[i].frame_num = INTEL_INT( the_anim.keys[i].frame_num );
 				the_anim.keys[i].offset = INTEL_INT( the_anim.keys[i].offset );
 			}
-			//we want the last one, i is now 1 past the end
-			key = the_anim.keys[i - 1].frame_num;
+			//some retail anis have their keyframes reversed
+			key = MAX(the_anim.keys[0].frame_num, the_anim.keys[1].frame_num);
 		}
 	} else {
 		return -1;
@@ -1036,8 +1034,14 @@ int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
-	
+	#ifndef NDEBUG
+	if(bm_bitmaps[bitmapnum].handle != handle) {
+		mprintf(("bm_get_info - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
+	}
+	#endif
+
+	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!
+
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
 		if (w) *w = 0;
 		if (h) *h = 0;
@@ -1084,9 +1088,20 @@ uint bm_get_signature( int handle )
 	return bm_bitmaps[bitmapnum].signature;
 }
 
+//gets the image type
+ubyte bm_get_type(int handle)
+{
+	if ( !bm_inited ) bm_init();
+
+	int bitmapnum = handle % MAX_BITMAPS;
+	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
+
+	return bm_bitmaps[bitmapnum].type;
+}
+
 extern int palman_is_nondarkening(int r,int g, int b);
 static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flags )
-{	
+{
 	int idx;
 
 	// no transparency for 24 bpp images
@@ -1568,6 +1583,12 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
+	#ifndef NDEBUG
+	if(bm_bitmaps[bitmapnum].handle != handle) {
+		mprintf(("bm_lock - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
+	}
+	#endif
+
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
 //	flags &= (~BMP_RLE);
@@ -1673,6 +1694,13 @@ void bm_unlock( int handle )
 	if ( !bm_inited ) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
+
+	#ifndef NDEBUG
+	if(bm_bitmaps[bitmapnum].handle != handle) {
+		mprintf(("bm_unlock - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
+	}
+	#endif
+
 	Assert( bm_bitmaps[bitmapnum].handle == handle );	// INVALID BITMAP HANDLE
 
 	Assert(bitmapnum >= 0 && bitmapnum < MAX_BITMAPS);
@@ -2676,7 +2704,7 @@ int bm_make_render_target( int width, int height, int flags )
 	bm_bitmaps[n].bm.rowsize = (short)w;
 	bm_bitmaps[n].bm.bpp = bpp;
 	bm_bitmaps[n].bm.true_bpp = bpp;
-	bm_bitmaps[n].bm.flags = flags;
+	bm_bitmaps[n].bm.flags = (ubyte)flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;

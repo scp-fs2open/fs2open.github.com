@@ -2712,15 +2712,7 @@ void weapon_select_do(float frametime)
 		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
 	}
 
-	if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
-		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
-		if ( Weapon_anim_class != Selected_wl_class ) 
-			start_weapon_animation(Selected_wl_class);	
-
-		generic_anim_render(&Cur_Anim, (help_overlay_active(WL_OVERLAY)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1]);
-	}
-	else if(Wl_icons[Selected_wl_class].model_index != -1)
-	{
+	if(Wl_icons[Selected_wl_class].model_index != -1) {
 		static float WeapSelectScreenWeapRot = 0.0f;
 		wl_icon_info *sel_icon					= &Wl_icons[Selected_wl_class];
 		draw_model_rotating(sel_icon->model_index,
@@ -2735,7 +2727,15 @@ void weapon_select_do(float frametime)
 			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 	}
 
-	if ( !Background_playing ) {		
+	else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
+		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
+		if ( Weapon_anim_class != Selected_wl_class )
+			start_weapon_animation(Selected_wl_class);
+ 
+		generic_anim_render(&Cur_Anim, (help_overlay_active(WL_OVERLAY)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1]);
+	}
+
+	if ( !Background_playing ) {
 		Weapon_ui_window.draw();
 		wl_redraw_pressed_buttons();
 		draw_wl_icons();
@@ -3396,7 +3396,8 @@ void start_weapon_animation(int weapon_class)
 		}
 
 		generic_anim_init(&Cur_Anim, animation_filename);
-		if(generic_anim_load(&Cur_Anim) == -1) {
+		Cur_Anim.ani.bg_type = bm_get_type(Weapon_select_background_bitmap);
+		if(generic_anim_stream(&Cur_Anim) == -1) {
 			//we've failed to load an animation, load an image and treat it like a 1 frame animation
 			Cur_Anim.first_frame = bm_load(Weapon_info[weapon_class].anim_filename);	//if we fail here, the value is still -1
 			if(Cur_Anim.first_frame != -1) {
