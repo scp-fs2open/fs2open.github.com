@@ -151,7 +151,12 @@ void popupdead_start()
 		Popupdead_timer = timestamp(The_mission.max_respawn_delay * 1000); 
 		if (Game_mode & GM_MULTIPLAYER) {
 			if(!(Net_player->flags & NETINFO_FLAG_LIMBO)){
-				HUD_printf("Player will automatically respawn in %d seconds", The_mission.max_respawn_delay); 
+				if (The_mission.max_respawn_delay) {
+					HUD_printf("Player will automatically respawn in %d seconds", The_mission.max_respawn_delay);
+				}
+				else {
+					HUD_printf("Player will automatically respawn now"); 
+				}
 			}
 		}
 	}
