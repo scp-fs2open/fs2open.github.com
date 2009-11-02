@@ -65,7 +65,7 @@ extern int model_render_flags_size;
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
-#define MAX_SPLIT_PLANE				3				// number of artist specified split planes (used in big ship explosions)
+#define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
 // Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
 // the model_clear_instance, model_set_instance, model_get_instance functions.
