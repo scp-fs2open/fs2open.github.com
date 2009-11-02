@@ -3947,7 +3947,7 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpin_effect = new WE_Default(objp, WD_WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BTRL(objp, WD_WARP_IN);
+			shipp->warpin_effect = new WE_BSG(objp, WD_WARP_IN);
 			break;
 		case WT_SWEEPER:
 			shipp->warpin_effect = new WE_Homeworld(objp, WD_WARP_IN);
@@ -3968,7 +3968,7 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpout_effect = new WE_Default(objp, WD_WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BTRL(objp, WD_WARP_OUT);
+			shipp->warpout_effect = new WE_BSG(objp, WD_WARP_OUT);
 			break;
 		case WT_SWEEPER:
 			shipp->warpout_effect = new WE_Homeworld(objp, WD_WARP_OUT);
