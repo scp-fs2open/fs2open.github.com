@@ -662,6 +662,8 @@ void ship_select_init()
 	help_overlay_set_state(SS_OVERLAY,0);
 
 	if ( Ship_select_open ) {
+		//reset the animation
+		Ship_anim_class = -1;
 		start_ship_animation( Selected_ss_class );
 		common_buttons_maybe_reload(&Ship_select_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
 																				// screen, which can release common button bitmaps.
@@ -735,13 +737,12 @@ void ship_select_init()
 	Ship_select_ui_window.tooltip_handler = ss_tooltip_handler;
 	common_buttons_init(&Ship_select_ui_window);
 	ship_select_buttons_init();
-	start_ship_animation( Selected_ss_class );	
+
+	// init ship selection background bitmap
+	Ship_select_background_bitmap = bm_load(Ship_select_background_fname[gr_screen.res]);
 
 	// init ship selection ship model rendering window
-	
-
-	// init ship selection background bitmpa
-	Ship_select_background_bitmap = bm_load(Ship_select_background_fname[gr_screen.res]);
+	start_ship_animation( Selected_ss_class );
 }
 
 
@@ -1732,33 +1733,31 @@ void start_ship_animation(int ship_class, int play_sound)
 
 		ss_icon = &Ss_icons[ship_class];
 
-		// see if we need to load in the animation from disk
-		if (ss_icon->ss_anim.num_frames == 0) {
-			//unload the previous anim
-			if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0)
-				generic_anim_unload(&Ss_icons[Ship_anim_class].ss_anim);
-			//load animation here, we now only have one loaded
-			p = strchr(Ship_info[ship_class].anim_filename, '.' );
-			if(p)
-				*p = '\0';
-			if (gr_screen.res == GR_1024) {
-				strcpy_s(animation_filename, "2_");
-				strcat_s(animation_filename, Ship_info[ship_class].anim_filename);
-			}
-			else {
-				strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
+		//unload the previous anim
+		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0)
+			generic_anim_unload(&Ss_icons[Ship_anim_class].ss_anim);
+		//load animation here, we now only have one loaded
+		p = strchr(Ship_info[ship_class].anim_filename, '.' );
+		if(p)
+			*p = '\0';
+		if (gr_screen.res == GR_1024) {
+			strcpy_s(animation_filename, "2_");
+			strcat_s(animation_filename, Ship_info[ship_class].anim_filename);
+		}
+		else {
+			strcpy_s(animation_filename, Ship_info[ship_class].anim_filename);
 		}
 
-			generic_anim_init(&Ss_icons[ship_class].ss_anim, animation_filename);
-			if(generic_anim_load(&Ss_icons[ship_class].ss_anim) == -1) {
-				//we've failed to load an animation, load an image and treat it like a 1 frame animation
-				Ss_icons[ship_class].ss_anim.first_frame = bm_load(Ship_info[ship_class].anim_filename);	//if we fail here, the value is still -1
-				if(Ss_icons[ship_class].ss_anim.first_frame != -1) {
-					Ss_icons[ship_class].ss_anim.num_frames = 1;
-				}
+		generic_anim_init(&Ss_icons[ship_class].ss_anim, animation_filename);
+		Ss_icons[ship_class].ss_anim.ani.bg_type = bm_get_type(Ship_select_background_bitmap);
+		if(generic_anim_stream(&Ss_icons[ship_class].ss_anim) == -1) {
+			//we've failed to load an animation, load an image and treat it like a 1 frame animation
+			Ss_icons[ship_class].ss_anim.first_frame = bm_load(Ship_info[ship_class].anim_filename);	//if we fail here, the value is still -1
+			if(Ss_icons[ship_class].ss_anim.first_frame != -1) {
+				Ss_icons[ship_class].ss_anim.num_frames = 1;
 			}
 		}
-		
+
 		Ship_anim_class = ship_class;
 	}
 

@@ -119,12 +119,21 @@ int Tech_desc_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-int Tech_ani_coords[GR_NUM_RESOLUTIONS][2] = {
+/*int Tech_ani_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		196, 115
 	},
 	{ // GR_1024
 		449, 245
+	}
+};*/
+
+int Tech_ani_centre_coords[GR_NUM_RESOLUTIONS][2] = {
+	{ // GR_640
+		416, 215
+	},
+	{ // GR_1024
+		669, 345
 	}
 };
 
@@ -234,14 +243,14 @@ static int Cur_entry_index = -1;		// this is the current entry selected, using m
 static int Techroom_ship_modelnum;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
-static int Anim_playing_id = -1;
-static int anim_done = 0;
+//static int Anim_playing_id = -1;
+//static int anim_done = 0;
 static int Palette_bmp;
 //static int ShipWin01;
 //static int ShipWin02;
 //static int ShipWin03;
 //static int ShipWin04;
-static ubyte Palette[768];
+//static ubyte Palette[768];
 //static char Palette_name[128];  // not used now - taylor
 
 static int Ships_loaded = 0;
@@ -388,8 +397,8 @@ void techroom_select_new_entry()
 
 		//load animation here, we now only have one loaded
 		generic_anim_init(&Current_list[Cur_entry].animation, Current_list[Cur_entry].tech_anim_filename);
-		anim_done = 0;
-		if(generic_anim_load(&Current_list[Cur_entry].animation) != -1){
+		Current_list[Cur_entry].animation.ani.bg_type = bm_get_type(Tech_background_bitmap);
+		if(generic_anim_stream(&Current_list[Cur_entry].animation) != -1){
 			Current_list[Cur_entry].has_anim = 1;
 		} else {
 			Current_list[Cur_entry].bitmap = bm_load(Current_list[Cur_entry].tech_anim_filename);
@@ -446,6 +455,7 @@ void techroom_render_desc(int xo, int yo, int ho)
 
 }
 
+/*
 // new version of weapons
 void techroom_weapons_render2(float frametime)
 {
@@ -462,7 +472,7 @@ void techroom_weapons_render2(float frametime)
 		gr_set_bitmap(Current_list[Cur_entry].bitmap);
 		gr_bitmap(Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
 	}
-}
+}*/
 
 // renders the stuff common to all 3 tech room tabs
 void tech_common_render()
@@ -722,18 +732,32 @@ void tech_ship_scroll_capture()
 	techroom_select_new_entry();
 	}
 
-void techroom_intel_render(float frametime)
+void techroom_anim_render(float frametime)
 {
+	int x, y;
+
+	// render common stuff
 	tech_common_render();
 
+	// render the animation
 	if(Current_list[Cur_entry].animation.num_frames > 0)
 	{
-		generic_anim_render(&Current_list[Cur_entry].animation, frametime, Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
+		//grab dimensions
+		bm_get_info((Current_list[Cur_entry].animation.streaming) ? Current_list[Cur_entry].animation.bitmap_id : Current_list[Cur_entry].animation.first_frame, &x, &y, NULL, NULL, NULL);
+		//get the centre point - adjust
+		x = Tech_ani_centre_coords[gr_screen.res][0] - x / 2;
+		y = Tech_ani_centre_coords[gr_screen.res][1] - y / 2;
+		generic_anim_render(&Current_list[Cur_entry].animation, frametime, x, y);
 	}
 	// if our active item has a bitmap instead of an animation, draw it
-	else if((Cur_entry >= 0) && (Current_list[Cur_entry].animation.num_frames == 0) && (Current_list[Cur_entry].bitmap >= 0)){
+	else if((Cur_entry >= 0) && (Current_list[Cur_entry].bitmap >= 0)){
+		//grab dimensions
+		bm_get_info(Current_list[Cur_entry].bitmap, &x, &y, NULL, NULL, NULL);
+		//get the centre point - adjust
+		x = Tech_ani_centre_coords[gr_screen.res][0] - x / 2;
+		y = Tech_ani_centre_coords[gr_screen.res][1] - y / 2;
 		gr_set_bitmap(Current_list[Cur_entry].bitmap);
-		gr_bitmap(Tech_ani_coords[gr_screen.res][0], Tech_ani_coords[gr_screen.res][1]);
+		gr_bitmap(x, y);
 	}
 }
 
@@ -1269,7 +1293,6 @@ void techroom_init()
 		Intel_list[idx].bitmap = -1;
 	}
 
-	Anim_playing_id = -1;
 	mprintf(("Techroom successfully initialized, now changing tab...\n"));
 	techroom_change_tab(Tab);
 }
@@ -1519,11 +1542,8 @@ void techroom_do_frame(float frametime)
 			break;
 
 		case WEAPONS_DATA_TAB:
-			techroom_weapons_render2(frametime);
-			break;
-
 		case INTEL_DATA_TAB:
-			techroom_intel_render(frametime);
+			techroom_anim_render(frametime);
 			break;
 	}
 

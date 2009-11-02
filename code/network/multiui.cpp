@@ -7875,7 +7875,7 @@ void multi_sync_blit_screen_all()
 
 	// display the mission start countdown timer (if any)
 	//anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);
-	if(gameseq_get_state() == GS_STATE_MULTI_MISSION_SYNC && Multi_sync_countdown_timer > -1.0f)
+	if((gameseq_get_state() == GS_STATE_MULTI_MISSION_SYNC && Multi_sync_countdown_timer > -1.0f) || (Multi_sync_countdown != -1))
 		generic_anim_render(&Multi_sync_countdown_anim, flFrametime, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
 
 
@@ -8229,9 +8229,10 @@ void multi_sync_post_init()
 	}	
 
 	// if I'm not a standalone server, load up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
+	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		generic_anim_init(&Multi_sync_countdown_anim, Multi_sync_countdown_fname[gr_screen.res]);
-		generic_anim_load(&Multi_sync_countdown_anim);
+		Multi_sync_countdown_anim.ani.bg_type = bm_get_type(Multi_sync_bitmap);
+		generic_anim_stream(&Multi_sync_countdown_anim);
 		if(Multi_sync_countdown_anim.num_frames < 1){
 			nprintf(("General","WARNING!, Could not load countdown animation %s!\n",Multi_sync_countdown_fname[gr_screen.res]));
 		}

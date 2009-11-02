@@ -144,6 +144,9 @@ extern bitmap * bm_lock( int bitmapnum, ubyte bpp, ubyte flags );
 // will also change when the bitmap's data changes.
 extern uint bm_get_signature( int bitmapnum);
 
+//gets the image type
+ubyte bm_get_type(int handle);
+
 // Unlocks a bitmap
 extern void bm_unlock( int bitmapnum );
 
