@@ -53,7 +53,7 @@ int movie_find(char *filename, char *out_name)
 	memset( tmp_name, 0, sizeof(tmp_name) );
 
 	// remove extension
-	strcpy( tmp_name, filename );
+	strcpy_s( tmp_name, filename );
 	char *p = strrchr(tmp_name, '.');
 	if ( p ) *p = 0;
 
@@ -92,7 +92,7 @@ bool movie_play(char *name)
 	rc = movie_find(name, full_name);
 
 	if (rc == MOVIE_NONE) {
-		strcpy(full_name, name);
+		strcpy_s(full_name, name);
 		char *p = strrchr(full_name, '.');
 		if ( p ) *p = 0;
 

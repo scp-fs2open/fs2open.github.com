@@ -355,7 +355,7 @@ int sexp_tree::allocate_node()
 	tree_nodes[node].child = -1;
 	tree_nodes[node].next = -1;
 	tree_nodes[node].flags = 0;
-	strcpy(tree_nodes[node].text, "<uninitialized tree node>");
+	strcpy_s(tree_nodes[node].text, "<uninitialized tree node>");
 	tree_nodes[node].handle = NULL;
 
 	total_nodes++;
@@ -451,7 +451,7 @@ void sexp_tree::set_node(int node, int type, char *text)
 		max_length = TOKEN_LENGTH;
 	}
 	Assert(strlen(text) < max_length);
-	strcpy(tree_nodes[node].text, text);
+	strcpy_s(tree_nodes[node].text, text);
 }
 
 void sexp_tree::post_load()
@@ -1602,7 +1602,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			// save old name, since name may be modified
 			char old_name[TOKEN_LENGTH];
-			strcpy(old_name, Sexp_variables[sexp_var_index].variable_name);
+			strcpy_s(old_name, Sexp_variables[sexp_var_index].variable_name);
 
 			// set type
 			int type;
@@ -3861,7 +3861,7 @@ void sexp_tree::update_help(HTREEITEM h)
 					}
 					else
 					{
-						strcpy(buffer, loc);
+						strcpy_s(buffer, loc);
 						display_number = false;
 					}
 				}
@@ -5469,9 +5469,9 @@ void sexp_tree::delete_sexp_tree_variable(const char *var_name)
 
 				// reset text
 				if (tree_nodes[idx].type & SEXPT_NUMBER) {
-					strcpy(replace_text, "number");
+					strcpy_s(replace_text, "number");
 				} else {
-					strcpy(replace_text, "string");
+					strcpy_s(replace_text, "string");
 				}
 
 				// set item_index and replace data
@@ -5559,8 +5559,8 @@ int sexp_tree::get_variable_count(const char *var_name)
 	char compare_name[64];
 
 	// get name to compare
-	strcpy(compare_name, var_name);
-	strcat(compare_name, "(");
+	strcpy_s(compare_name, var_name);
+	strcat_s(compare_name, "(");
 
 	// look for compare name
 	for (idx=0; idx<tree_nodes.size(); idx++) {

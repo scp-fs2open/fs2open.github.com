@@ -427,7 +427,7 @@ void mission_hotkey_maybe_save_sets()
 		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
 			Assert( Num_hotkeys_saved < MAX_HOTKEY_TARGET_ITEMS );
 			hkp->setnum = i;
-			strcpy( hkp->name, Ships[hitem->objp->instance].ship_name );
+			strcpy_s( hkp->name, Ships[hitem->objp->instance].ship_name );
 			hkp++;
 			Num_hotkeys_saved++;
 		}
@@ -1164,7 +1164,7 @@ void mission_hotkey_do_frame(float frametime)
 	// draw the big "F10" in the little box	
 	gr_set_font(FONT2);
 	gr_set_color_fast(&Color_text_normal);
-	strcpy(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
+	strcpy_s(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
 	gr_get_string_size(&w, &h, buf);
 	gr_printf(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], buf);
 
@@ -1247,8 +1247,8 @@ void mission_hotkey_do_frame(float frametime)
 			*buf = 0;
 			for (i=0; i<MAX_KEYED_TARGETS; i++) {
 				if (hotkeys & (1 << i)) {
-					strcat(buf, Scan_code_text[Key_sets[i]]);
-					strcat(buf, ", ");
+					strcat_s(buf, Scan_code_text[Key_sets[i]]);
+					strcat_s(buf, ", ");
 				}
 			}
 
@@ -1260,7 +1260,7 @@ void mission_hotkey_do_frame(float frametime)
 		}
 	
 		// draw ship/wing name
-		strcpy(buf, Hotkey_lines[line].label);
+		strcpy_s(buf, Hotkey_lines[line].label);
 		end_string_at_first_hash_symbol(buf);
 		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
 			// indent

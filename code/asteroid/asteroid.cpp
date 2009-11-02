@@ -1509,7 +1509,7 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 	asteroid_ray_dist = vm_vec_mag_quick(&asteroid_obj->phys_info.desired_vel) * ASTEROID_MIN_COLLIDE_TIME;
 	asteroid_fvec = asteroid_obj->phys_info.desired_vel;	
 
-	if(IS_VEC_NULL(&asteroid_fvec)){
+	if(IS_VEC_NULL_SQ_SAFE(&asteroid_fvec)){
 		terminus = asteroid_obj->pos;
 	} else {
 		vm_vec_normalize(&asteroid_fvec);
@@ -1794,7 +1794,7 @@ void asteroid_parse_tbl()
 
 	if ( VALID_FNAME(impact_ani_file) ) {
 		int num_frames;
-		Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, 1);
+		Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, NULL, 1);
 	}
 
 	required_string("$Impact Explosion Radius:");

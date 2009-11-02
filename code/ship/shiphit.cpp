@@ -224,7 +224,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
 			else {
 				char r_name[NAME_LENGTH];
-				strcpy(r_name, ship_subsys_get_name(subsys));
+				strcpy_s(r_name, ship_subsys_get_name(subsys));
 				for (i = 0; r_name[i] > 0; i++) {
 					if (r_name[i] == '|')
 						r_name[i] = ' ';
@@ -534,37 +534,26 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	}
 
 	int dmg_type_idx = -1;
+	int parent_armor_flags = 0;
 
-    if (other_obj)
-    {
-        if(other_obj->type == OBJ_SHOCKWAVE) {
-            dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-        } else if(other_obj->type == OBJ_WEAPON) {
-            dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-        } else if(other_obj->type == OBJ_BEAM) {
-            dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
-        } else if(other_obj->type == OBJ_ASTEROID) {
-            dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
-        } else if(other_obj->type == OBJ_DEBRIS) {
-            dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
-        } else if(other_obj->type == OBJ_SHIP) {
-            dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
-        }
-    }
+	if(Ship_info[ship_p->ship_info_index].armor_type_idx > -1)
+		parent_armor_flags = Armor_types[Ship_info[ship_p->ship_info_index].armor_type_idx].flags;
 
-	//This function is screwy
-	if(count)
+	if (other_obj)
 	{
-		//Change damage to hull based on armor type of closest subsystem
-		if(subsys_list[0].ptr->system_info->armor_type_idx > -1)
-		{
-			damage = Armor_types[subsys_list[0].ptr->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
-			if(hull_should_apply_armor) {
-				*hull_should_apply_armor = false;
-			}
+		if(other_obj->type == OBJ_SHOCKWAVE) {
+			dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+		} else if(other_obj->type == OBJ_WEAPON) {
+			dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+		} else if(other_obj->type == OBJ_BEAM) {
+			dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+		} else if(other_obj->type == OBJ_ASTEROID) {
+			dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+		} else if(other_obj->type == OBJ_DEBRIS) {
+			dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+		} else if(other_obj->type == OBJ_SHIP) {
+			dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 		}
-
-		//Possibly some future feature will be to set different values for the two above things. Should be easy enough
 	}
 
 	//	Now scan the sorted list of subsystems in range.
@@ -594,6 +583,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
 
+		// only do this for the closest affected subsystem
+		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
+			if(subsys->system_info->armor_type_idx > -1)
+			{
+				damage = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
+				if(hull_should_apply_armor) {
+					*hull_should_apply_armor = false;
+				}
+			}
+		}
 		//	HORRIBLE HACK!
 		//	MK, 9/4/99
 		//	When Helios bombs are dual fired against the Juggernaut in sm3-01 (FS2), they often
@@ -640,7 +639,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsys->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
-				damage -= MIN(subsys->current_hits, damage_to_apply);
+				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsys->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
+					float subsystem_factor = 0.0f;
+					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
+						subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+					}
+					if (subsystem_factor > 0.0f) 
+						damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
+					else
+						damage -= MIN(subsys->current_hits, damage_to_apply);
+				}
 			}
 
 			//Apply armor to damage
@@ -710,12 +718,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
 			if ( pnum != -1 ) {
-				strcpy(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
 			} else {
 				nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
+			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
@@ -734,12 +742,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
 			if ( pnum != -1 ) {
-				strcpy(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
 			} else {
 				nprintf(("Network", "Couldn't find player object of shockwave for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
+			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
@@ -763,12 +771,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 			pnum = multi_find_player_by_object( killer_objp );
 			if ( pnum != -1 ) {
-				strcpy(p->killer_parent_name, Net_players[pnum].m_player->callsign);
+				strcpy_s(p->killer_parent_name, Net_players[pnum].m_player->callsign);
 			} else {
 				nprintf(("Network", "Couldn't find player object for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
+			strcpy_s(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
 			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
@@ -792,12 +800,12 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_objtype = OBJ_BEAM;
 		if(beam_obj != -1){			
 			if((Objects[beam_obj].type == OBJ_SHIP) && (Objects[beam_obj].instance >= 0)){
-				strcpy(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
+				strcpy_s(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
 				end_string_at_first_hash_symbol(p->killer_parent_name);
 			}
 			p->killer_species = Ship_info[Ships[Objects[beam_obj].instance].ship_info_index].species;
 		} else {			
-			strcpy(p->killer_parent_name, "");
+			strcpy_s(p->killer_parent_name, "");
 		}
 		break;
 	
@@ -1540,9 +1548,9 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 				// get first name				
 				np_index = multi_find_player_by_object(ship_obj);				
 				if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-					strcpy(name1, Net_players[np_index].m_player->callsign);
+					strcpy_s(name1, Net_players[np_index].m_player->callsign);
 				} else {
-					strcpy(name1, sp->ship_name);
+					strcpy_s(name1, sp->ship_name);
 				}
 
 				// argh
@@ -1550,13 +1558,13 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 					// second name
 					if(killer_objp == NULL){
-						strcpy(name2, killer_ship_name);
+						strcpy_s(name2, killer_ship_name);
 					} else {
 						np_index = multi_find_player_by_object(killer_objp);
 						if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-							strcpy(name2, Net_players[np_index].m_player->callsign);
+							strcpy_s(name2, Net_players[np_index].m_player->callsign);
 						} else {
-							strcpy(name2, killer_ship_name);
+							strcpy_s(name2, killer_ship_name);
 						}
 					}					
 				}
@@ -1945,7 +1953,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	if ( quadrant >= 0 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
-		int	weapon_info_index;		
+		int	weapon_info_index;
+		bool apply_shield_armor = true;
 
 		weapon_info_index = shiphit_get_damage_weapon(other_obj);
 		if ( weapon_info_index >= 0 ) {
@@ -1958,7 +1967,47 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		}
 
 		if ( damage > 0 ) {
+
+			float piercing_pct = 0.0f;
+			int dmg_type_idx = -1;
+
+			//Do armor stuff
+			if (apply_shield_armor)
+			{
+				if(other_obj_is_weapon) {
+					dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+				} else if(other_obj_is_beam) {
+					dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+				} else if(other_obj_is_shockwave) {
+					dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+				} else if(other_obj_is_asteroid) {
+					dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+				} else if(other_obj_is_debris) {
+					dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+				} else if(other_obj_is_ship) {
+					dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
+				}
+				
+				if(sip->shield_armor_type_idx != -1)
+				{
+					piercing_pct = Armor_types[sip->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
+				}
+			}
+			
 			float pre_shield = damage;
+			float pre_shield_ss = subsystem_damage;
+
+			if (piercing_pct > 0.0f) {
+				damage = pre_shield * (1.0f - piercing_pct);
+			}
+
+			if (apply_shield_armor)
+			{
+				if(sip->shield_armor_type_idx != -1)
+				{
+					damage = Armor_types[sip->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
+				}
+			}
 
 			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
 
@@ -1966,6 +2015,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				subsystem_damage *= (damage / pre_shield);
 			} else {
 				subsystem_damage = 0.0f;
+			}
+
+			if (piercing_pct > 0.0f) {
+				damage += (piercing_pct * pre_shield);
+				subsystem_damage += (piercing_pct * pre_shield_ss);
 			}
 		}
 
@@ -1979,11 +2033,17 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			
 	// Apply leftover damage to the ship's subsystem and hull.
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
-		int	weapon_info_index;		
+		int	weapon_info_index;
+		int armor_flags = 0;		
 		float pre_subsys = subsystem_damage;
 		bool apply_hull_armor = true;
 
 		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage, &apply_hull_armor);
+
+		if(sip->armor_type_idx != -1)
+		{
+			armor_flags = Armor_types[sip->armor_type_idx].flags;
+		}
 
 		if(subsystem_damage > 0.0f){
 			damage *= (subsystem_damage / pre_subsys);
@@ -2235,9 +2295,9 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 				/*char	ship_name[64];
 
 				if (other_obj->parent_type == OBJ_SHIP) {
-					strcpy(ship_name, Ships[Objects[other_obj->parent].instance].ship_name);
+					strcpy_s(ship_name, Ships[Objects[other_obj->parent].instance].ship_name);
 				} else
-					strcpy(ship_name, XSTR("[not a ship]",-1));
+					strcpy_s(ship_name, XSTR("[not a ship]",-1));
 				*/
 				// nprintf(("AI", "Ignoring hit on %s by weapon #%i, parent = %s\n", ship_p->ship_name, other_obj-Objects, ship_name));
 				return;

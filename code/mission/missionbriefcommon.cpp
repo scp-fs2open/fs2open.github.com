@@ -1084,7 +1084,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			else {
 				if (Lcl_gr) {
 					char buf[128];
-					strcpy(buf, bi->label);
+					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name(buf);
 					gr_get_string_size(&w, &h, buf);
 					gr_string(bc - fl2i(w/2.0f), by - h, buf);
@@ -1506,7 +1506,7 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	// calculate camera velocity
 	vm_vec_sub(&Cam_vel, pos, &Current_cam_pos);
 //	vm_vec_scale(&Cam_vel, 1.0f/time_in_seconds);
-	if ( !IS_VEC_NULL(&Cam_vel) ) {
+	if ( !IS_VEC_NULL_SQ_SAFE(&Cam_vel) ) {
 		vm_vec_normalize(&Cam_vel);
 	}
 
@@ -1735,7 +1735,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 					imi->direction = zero_v;
 
 					vm_vec_sub(&imi->direction, &imi->finish, &imi->start);
-					if ( !IS_VEC_NULL(&imi->direction) ) {
+					if ( !IS_VEC_NULL_SQ_SAFE(&imi->direction) ) {
 						vm_vec_normalize(&imi->direction);
 					}
 
@@ -1836,12 +1836,12 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 
 	if (not_objv) {
 		if(Briefing->stages[stage_num].new_text == NULL){
-			strcpy(msg, "");
+			strcpy_s(msg, "");
 		} else {
-			strcpy(msg, Briefing->stages[stage_num].new_text);
+			strcpy_s(msg, Briefing->stages[stage_num].new_text);
 		}
 	} else {
-		strcpy(msg, XSTR( "Please review your objectives for this mission.", 395));
+		strcpy_s(msg, XSTR( "Please review your objectives for this mission.", 395));
 	}
 
 	if (gr_screen.res == GR_640) {

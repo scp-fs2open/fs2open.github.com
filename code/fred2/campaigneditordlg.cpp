@@ -181,7 +181,7 @@ void campaign_editor::load_campaign()
 	load_tree(0);
 
 	if (!strlen(Campaign.filename))
-		strcpy(Campaign.filename, BUILTIN_CAMPAIGN);
+		strcpy_s(Campaign.filename, BUILTIN_CAMPAIGN);
 
 	if (mission_campaign_load(Campaign.filename, NULL, 0)) {
 		MessageBox("Couldn't open Campaign file!", "Error");
@@ -353,9 +353,9 @@ void campaign_editor::load_tree(int save_first)
 			m_num_links++;
 
 			if (Links[i].from == Links[i].to) {
-				strcpy(text, "Repeat mission");
+				strcpy_s(text, "Repeat mission");
 			} else if ( (Links[i].to == -1) && (Links[i].from != -1) ) {
-				strcpy(text, "End of Campaign");
+				strcpy_s(text, "End of Campaign");
 			} else {
 				sprintf(text, "Branch to %s", Campaign.missions[Links[i].to].name);
 			}

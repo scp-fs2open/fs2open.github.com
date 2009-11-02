@@ -137,7 +137,7 @@ void cutscene_mark_viewable(char *filename)
 	Assert(filename!=NULL);
 
 	// strip off extension
-	strcpy( file, filename );
+	strcpy_s( file, filename );
 	char *p = strchr( file, '.' );
 	if ( p ) {
 		*p = 0;
@@ -148,7 +148,7 @@ void cutscene_mark_viewable(char *filename)
 
 	for (i = 0; i < Num_cutscenes; i++ ) {
 		// change the cutscene file name to lower case
-		strcpy(cut_file, Cutscenes[i].filename);
+		strcpy_s(cut_file, Cutscenes[i].filename);
 		strlwr(cut_file);
 
 		// see if the stripped filename matches the cutscene filename
@@ -338,7 +338,7 @@ void cutscenes_screen_play()
 	Assert( (Selected_line >= 0) && (Selected_line < Num_files) );
 	which_cutscene = Cutscene_list[Selected_line];
 
-	strcpy(name, Cutscenes[which_cutscene].filename );
+	strcpy_s(name, Cutscenes[which_cutscene].filename );
 //	full_name = cf_add_ext(name, NOX(".mve"));
 
 	main_hall_stop_music();
@@ -649,14 +649,17 @@ void cutscenes_screen_do_frame()
 	}
 
 	if (Description_index != Selected_line) {
-		char *src;
+		char *src = NULL;
 
 		Description_index = Selected_line;
 		Text_size = 0;
-		src = Cutscenes[Cutscene_list[Description_index]].description;
-		if (src) {
-			Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines, Cutscene_max_text_lines[gr_screen.res]);
-			Assert(Text_size >= 0 && Text_size < Cutscene_max_text_lines[gr_screen.res]);
+		if ( Description_index < Cutscene_list.size( ) &&
+			 Cutscene_list[ Description_index ] < Cutscenes.size( ) ) {
+			src = Cutscenes[Cutscene_list[Description_index]].description;
+			if (src) {
+				Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines, Cutscene_max_text_lines[gr_screen.res]);
+				Assert(Text_size >= 0 && Text_size < Cutscene_max_text_lines[gr_screen.res]);
+			}
 		}
 	}
 

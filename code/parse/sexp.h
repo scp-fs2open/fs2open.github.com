@@ -546,8 +546,12 @@ struct ship_subsys;
 #define OP_SET_SHIELD_ENERGY				(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_AMBIENT_LIGHT				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_CHANGE_IFF_COLOR					(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
-#define OP_TURRET_SUBSYS_TARGET_DISABLE	(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_TURRET_SUBSYS_TARGET_DISABLE		(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_TURRET_SUBSYS_TARGET_ENABLE		(0x00c7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_REMOVE_WEAPONS					(0x00c8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_SHIP_MANEUVER					(0x00c9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer 
+#define OP_SHIP_ROT_MANEUVER				(0x00ca | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_SHIP_LAT_MANEUVER				(0x00cb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -919,6 +923,7 @@ extern int get_operator_const(char *token);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
+extern int run_sexp(const char* sexpression); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int is_sexp_true(int cur_node, int referenced_node = -1);

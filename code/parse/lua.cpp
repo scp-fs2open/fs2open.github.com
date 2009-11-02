@@ -12,10 +12,13 @@
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "hud/hudbrackets.h"
+#include "hud/hudconfig.h"
+#include "hud/hudgauges.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "io/trackir.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "mission/missioncampaign.h"
@@ -24,6 +27,7 @@
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "object/object.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
 #include "parse/lua.h"
@@ -597,13 +601,13 @@ ADE_FUNC(getGoalStatus, l_Cmission, "Goal number (Zero-based)", "Goal status (st
 	switch( Campaign.missions[idx].goals[gidx].status)
 	{
 		case GOAL_FAILED:
-			strcpy(buf, "Failed");
+			strcpy_s(buf, "Failed");
 			break;
 		case GOAL_COMPLETE:
-			strcpy(buf, "Complete");
+			strcpy_s(buf, "Complete");
 			break;
 		case GOAL_INCOMPLETE:
-			strcpy(buf, "Incomplete");
+			strcpy_s(buf, "Incomplete");
 			break;
 		default:
 			Int3();		//????
@@ -656,13 +660,13 @@ ADE_FUNC(getEventStatus, l_Cmission, "Event number (Zero-based)", "Event status 
 	switch( Campaign.missions[idx].goals[eidx].status)
 	{
 		case EVENT_FAILED:
-			strcpy(buf, "Failed");
+			strcpy_s(buf, "Failed");
 			break;
 		case EVENT_SATISFIED:
-			strcpy(buf, "Complete");
+			strcpy_s(buf, "Complete");
 			break;
 		case EVENT_INCOMPLETE:
-			strcpy(buf, "Incomplete");
+			strcpy_s(buf, "Incomplete");
 			break;
 		default:
 			Int3();		//????
@@ -713,9 +717,9 @@ ADE_FUNC(getVariableType, l_Cmission, "Variable number (Zero-based)", "Variable 
 	char buf[NAME_LENGTH];
 
 	if(Campaign.missions[idx].saved_variables[vidx].type & SEXP_VARIABLE_NUMBER)
-		strcpy(buf, "number");
+		strcpy_s(buf, "number");
 	if(Campaign.missions[idx].saved_variables[vidx].type & SEXP_VARIABLE_STRING)
-		strcpy(buf, "string");
+		strcpy_s(buf, "string");
 
 	return ade_set_args(L, "i", Campaign.missions[idx].saved_variables[vidx].variable_name);
 }
@@ -2306,7 +2310,7 @@ struct sexpvar_h
 	char variable_name[TOKEN_LENGTH];
 
 	sexpvar_h(){idx=-1;variable_name[0]='\0';}
-	sexpvar_h(int n_idx){idx = n_idx; strcpy(variable_name, Sexp_variables[n_idx].variable_name);}
+	sexpvar_h(int n_idx){idx = n_idx; strcpy_s(variable_name, Sexp_variables[n_idx].variable_name);}
 	bool IsValid(){
 		return (idx > -1
 				&& idx < MAX_SEXP_VARIABLES
@@ -3458,6 +3462,40 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 	return ade_set_args(L, "f", Weapon_info[idx].fire_wait);
 }
 
+ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].lifetime = f;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].lifetime);
+}
+
+ADE_VIRTVAR(Range, l_Weaponclass, "number", "Range of weapon in meters", "number", "Weapon Range, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].weapon_range = f;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].weapon_range);
+}
+
 ADE_VIRTVAR(Mass, l_Weaponclass, "number", "Weapon mass", "number", "Weapon mass, or 0 if handle is invalid")
 {
 	int idx;
@@ -3855,6 +3893,18 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	}
 
 	return ade_set_args(L, "o", l_Shields.Set(object_h(objh->objp)));
+}
+
+ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "number", "Returns the objects unique numeric signature, or -1 if invalid. useful for creating a metadata sytem")
+{
+	object_h *oh;
+	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
+		return ade_set_error(L, "i", -1);
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "i", -1);
+ 
+	return ade_set_args(L, "i", oh->sig);
 }
 
 ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -4469,12 +4519,12 @@ struct waypointlist_h
 	waypointlist_h(waypoint_list *n_wlp){
 		wlp = n_wlp;
 		if(n_wlp != NULL)
-			strcpy(name, wlp->name);
+			strcpy_s(name, wlp->name);
 	}
 	waypointlist_h(char wlname[NAME_LENGTH]) {
 		wlp = NULL;
 		if ( wlname != NULL ) {
-			strcpy(name, wlname);
+			strcpy_s(name, wlname);
 			for ( int i = 0; i < Num_waypoint_lists; i++ ) {
 				if ( !stricmp( Waypoint_lists[i].name, wlname ) ) {
 					wlp = &Waypoint_lists[i];
@@ -5241,6 +5291,22 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem",
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
 }
 
+ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")
+{
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(sso->ss->flags & SSF_HAS_FIRED){
+		sso->ss->flags &= ~SSF_HAS_FIRED;
+		return ADE_RETURN_TRUE;}
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	ship_subsys_h *sso;
@@ -5288,6 +5354,42 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 
 	return ade_set_args(L, "b", rtn);
+}
+
+ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
+{
+	ship_subsys_h *sso;
+	float fov, fov_e, fov_y;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	model_subsystem *tp = sso->ss->system_info;
+
+	fov = tp->turret_fov;
+	fov_e = tp->turret_max_fov;
+	fov_y = tp->turret_y_fov;
+
+	return ade_set_args(L, "fff", fov, fov_e, fov_y);
+}
+
+ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
+{
+	ship_subsys_h *sso;
+	matrix m;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+	
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	model_subsystem *tp = sso->ss->system_info;
+
+	m = tp->turret_matrix;
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }
 
 //**********HANDLE: shiptextures
@@ -5571,6 +5673,67 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints", "number", "Ship m
 	return ade_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
+ADE_VIRTVAR(WeaponEnergyLeft, l_Ship, "number", "Current weapon energy reserves", "number", "Ship current weapon energy reserve level, or 0 if invalid")
+{
+	object_h *objh;
+	float neweng = -1;
+	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && neweng > -1)
+		shipp->weapon_energy = neweng;
+
+	return ade_set_args(L, "f", shipp->weapon_energy);
+}
+
+ADE_VIRTVAR(WeaponEnergyMax, l_Ship, "number", "Maximum weapon energy", "number", "Ship maximum weapon energy reserve level, or 0 if invalid")
+{
+	object_h *objh;
+	float neweng = -1;
+	if(!ade_get_args(L, "o|f", l_Ship.GetPtr(&objh), &neweng))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
+
+	if(ADE_SETTING_VAR && neweng > -1)
+		sip->max_weapon_reserve = neweng;
+
+	return ade_set_args(L, "f", sip->max_weapon_reserve);
+}
+
+ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigger is pressed or not", "boolean", "True if pressed, false if not, nil if ship handle is invalid")
+{
+	object_h *objh;
+	bool trig = false;
+	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &trig))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+		if(trig)
+			shipp->flags |= SF_TRIGGER_DOWN;
+		else
+			shipp->flags &= ~SF_TRIGGER_DOWN;
+
+	if (shipp->flags & SF_TRIGGER_DOWN)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+
 ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
 	object_h *objh;
@@ -5813,7 +5976,21 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 	return ADE_RETURN_TRUE;
 }
+/*
+ADE_FUNC(getFlags, l_Ship, NULL, "Gets ship flags", "boolean", "State of flag, or nil if handle is invalid")
+{
+	object_h *objh;
+	enum_h *enu = NULL;
 
+	if(!ade_get_args(L, "oo", l_Ship.GetPtr(&objh),l_Enum.GetPtr(&enu)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid() || !enu->IsValid())
+		return ADE_RETURN_NIL;
+
+	//return ade_set_args(L, "b", ship_launch_countermeasure(objh->objp));
+}
+*/
 ADE_FUNC(fireCountermeasure, l_Ship, NULL, "Launches a countermeasure from the ship", "boolean", "Whether countermeasure was launched or not")
 {
 	object_h *objh;
@@ -6095,6 +6272,71 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Force Rotation, number Vertical, number Horizontal, number Forward, boolean Force Movement", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
+{
+	object_h *objh;
+	float arr[6];
+	bool f_rot = false, f_move = false;
+	int t, i;
+	if(!ade_get_args(L, "oifffbfffb", l_Ship.GetPtr(&objh), &t, &arr[0], &arr[1], &arr[2], &f_rot, &arr[3], &arr[4], &arr[5], &f_move))
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
+	control_info *cip = &aip->ai_override_ci;
+
+	aip->ai_override_timestamp = timestamp(t);
+	aip->ai_override_flags = 0;
+
+	if (t < 2)
+		return ADE_RETURN_FALSE;
+
+	for(i = 0; i < 6; i++) {
+		if((arr[i] < -1.0f) || (arr[i] > 1.0f))
+			arr[i] = 0;
+	}
+
+	if(f_rot) {
+		aip->ai_override_flags = AIORF_FULL;
+		cip->heading = arr[0];
+		cip->pitch = arr[1];
+		cip->bank = arr[2];
+	} else {
+		if (arr[0] != 0) {
+			cip->heading = arr[0];
+			aip->ai_override_flags |= AIORF_HEADING;
+		} 
+		if (arr[1] != 0) {
+			cip->pitch = arr[1];
+			aip->ai_override_flags |= AIORF_PITCH;
+		} 
+		if (arr[2] != 0) {
+			cip->bank = arr[2];
+			aip->ai_override_flags |= AIORF_ROLL;
+		} 
+	}
+	if(f_move) {
+		aip->ai_override_flags = AIORF_FULL_LAT;
+		cip->vertical = arr[3];
+		cip->sideways = arr[4];
+		cip->forward = arr[5];
+	} else {
+		if (arr[3] != 0) {
+			cip->vertical = arr[3];
+			aip->ai_override_flags |= AIORF_UP;
+		} 
+		if (arr[4] != 0) {
+			cip->sideways = arr[4];
+			aip->ai_override_flags |= AIORF_SIDEWAYS;
+		} 
+		if (arr[5] != 0) {
+			cip->forward = arr[5];
+			aip->ai_override_flags |= AIORF_FORWARD;
+		} 
+	}
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards]",
 		 "Triggers an animation. Type is the string name of the animation type, "
 		 "Subtype is the subtype number, such as weapon bank #, and Forwards is boolean."
@@ -6235,6 +6477,25 @@ ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "numb
 	}
 
 	return ade_set_args(L, "f", wp->lifeleft);
+}
+
+ADE_VIRTVAR(FlakDetonationRange, l_Weapon, "number", "Range at which flak will detonate (meters)", "number", "Detonation range (meters) or 0 if weapon handle is invalid")
+{
+	object_h *oh=NULL;
+	float rng = -1.0f;
+	if(!ade_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &rng))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && rng >= 0.0f) {
+		wp->det_range = rng;
+	}
+
+	return ade_set_args(L, "f", wp->det_range);
 }
 
 ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Weapon target, or invalid object handle if weapon handle is invalid")
@@ -6729,7 +6990,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "sub
 	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(objp, ss)));
 }
 
-ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time]",
+ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Acceleration Time, number Zoom deceleration Time]",
 		 "Sets camera FOV"
 		 "<br>FOV is the final field of view, in radians, of the camera."
 		 "<br>Zoom Time is the total time to take zooming in or out."
@@ -6742,7 +7003,7 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number Zoom Time, number Zoom Accelerat
 	float time=0.0f;
 	float acc_time=0.0f;
 	float dec_time=0.0f;
-	if(!ade_get_args(L, "o|offf", l_Camera.Get(&cid), &n_fov, &time, &acc_time, &dec_time))
+	if(!ade_get_args(L, "o|ffff", l_Camera.Get(&cid), &n_fov, &time, &acc_time, &dec_time))
 		return ADE_RETURN_NIL;
 	
 	if(!cid.isValid())
@@ -7044,21 +7305,79 @@ ADE_VIRTVAR(Forward, l_Control_Info, "number", "Forward control of the player sh
 	return ade_set_args(L, "f", Player->lua_ci.forward);
 }
 
+ADE_VIRTVAR(ForwardCruise, l_Control_Info, "number", "Forward control of the player ship", "number", "Forward")
+{
+	int idx;
+	float new_ci = 0.0f;
+
+	if(!ade_get_args(L, "o|f", l_Control_Info.Get(&idx), &new_ci))
+		return ade_set_error(L, "f", new_ci);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.forward_cruise_percent = new_ci*100.0f;
+	}
+
+	return ade_set_args(L, "f", Player->lua_ci.forward_cruise_percent*0.01f);
+}
+
+ADE_VIRTVAR(PrimaryCount, l_Control_Info, "number", "Number of primary weapons that will fire", "number", "Number of weapons to fire, or 0 if handle is invalid")
+{
+	int idx;
+	int new_pri = 0;
+
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_pri))
+		return ade_set_error(L, "i", new_pri);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.fire_primary_count = new_pri;
+	}
+
+	return ade_set_args(L, "i", Player->lua_ci.fire_primary_count);
+}
+
+ADE_VIRTVAR(SecondaryCount, l_Control_Info, "number", "Number of secondary weapons that will fire", "number", "Number of weapons to fire, or 0 if handle is invalid")
+{
+	int idx;
+	int new_sec = 0;
+
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_sec))
+		return ade_set_error(L, "i", new_sec);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.fire_secondary_count = new_sec;
+	}
+
+	return ade_set_args(L, "i", Player->lua_ci.fire_secondary_count);
+}
+
+ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermeasures that will launch", "number", "Number of countermeasures to launch, or 0 if handle is invalid")
+{
+	int idx;
+	int new_cm = 0;
+
+	if(!ade_get_args(L, "o|i", l_Control_Info.Get(&idx), &new_cm))
+		return ade_set_error(L, "i", new_cm);
+
+	if(ADE_SETTING_VAR) {
+		Player->lua_ci.fire_countermeasure_count = new_cm;
+	}
+
+	return ade_set_args(L, "i", Player->lua_ci.fire_countermeasure_count);
+}
+
+
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 
-/*
-ADE_FUNC(playGameSound, l_Audio, "Sound filename, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "True if sound was played, false if not (Replaced with a sound instance object in the future)", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played")
+ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	char *s;
+	int idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
 	bool voice_msg = false;
-	if(!ade_get_args(L, "s|ffib", &s, &pan, &vol, &pri, &voice_msg))
+	if(!ade_get_args(L, "i|ffib", &idx, &pan, &vol, &pri, &voice_msg))
 		return ADE_RETURN_NIL;
-
-	int idx = gamesnd_get_by_name(s);
 	
 	if(idx < 0)
 		return ADE_RETURN_FALSE;
@@ -7080,27 +7399,17 @@ ADE_FUNC(playGameSound, l_Audio, "Sound filename, [Panning (-1.0 left to 1.0 rig
 	return ade_set_args(L, "b", idx > -1);
 }
 
-ADE_FUNC(playInterfaceSound, l_Audio, "Sound filename", "True if sound was played, false if not", "Plays a sound from #Interface Sounds in sounds.tbl")
+ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	char *s;
-	if(!ade_get_args(L, "s", &s))
-		return ade_set_error(L, "b", false);
-
 	int idx;
-	for(idx = 0; idx < Num_iface_sounds; idx++)
-	{
-		if(!strextcmp(Snds_iface[idx].filename, s))
-			break;
-	}
-	
-	if(idx == Num_iface_sounds)
-		return ADE_RETURN_FALSE;
+	if(!ade_get_args(L, "i", &idx))
+		return ade_set_error(L, "b", false);
 
 	gamesnd_play_iface(idx);
 
 	return ade_set_args(L, "b", idx > -1);
 }
-*/
+
 /*
 class track_h
 {
@@ -7574,7 +7883,6 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 	if(path == CF_TYPE_INVALID)
 		return ade_set_error(L, "b", false);
 
-	const char *ext_list[] = {".ogg", ".txt", ".*"};
 	if(!check_vps)
 		return ade_set_args(L, "b", cf_exists(n_filename, path) != 0);
 	else
@@ -7786,6 +8094,123 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 		mouse_status = true;
 
 	return ade_set_args(L, "b", mouse_status);
+}
+
+//trackir funcs
+ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
+{
+	if(trackir_enabled == 0)
+		return ADE_RETURN_FALSE;
+
+	TrackIR_Query();
+
+	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetPitch());
+}
+
+ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetYaw());
+}
+
+ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetRoll());
+}
+
+ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetX());
+}
+
+ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetY());
+}
+
+ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
+{
+	if(trackir_enabled == 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", TrackIR_GetZ());
+}
+
+//**********LIBRARY: Controls library
+ade_lib l_HUD("HUD", NULL, "hu", "HUD library");
+
+ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "If the HUD is drawn or not")
+{
+	bool to_draw = false;
+
+	if(!ade_get_args(L, "*|b", &to_draw))
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR)
+	{
+		if (to_draw)
+			HUD_draw = 1;
+		else
+			HUD_draw = 0;
+	}
+
+	if (HUD_draw)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [number red, number green, number blue, number alpha]", "Color used to draw the gauge", "boolean", "If the operation was successful")
+{
+	int idx = -1; 
+	int r = 0;
+	int g = 0;
+	int b = 0;
+	int a = 0;
+
+	if(!ade_get_args(L, "i|iiii", &idx, &r, &g, &b, &a))
+		return ADE_RETURN_FALSE;
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ADE_RETURN_FALSE;
+
+	gr_init_alphacolor(&HUD_config.clr[idx], r, g, b, a);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getHUDGaugeColor, l_HUD, "number (index number of the gauge)", "Color used to draw the gauge", "number, number, number, number", "Red, green, blue, and alpha of the gauge")
+{
+	int idx = -1;
+
+	if(!ade_get_args(L, "i", &idx))
+		return ADE_RETURN_NIL;
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ADE_RETURN_NIL;
+
+	color c = HUD_config.clr[idx];
+	
+	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);	
 }
 
 //**********LIBRARY: Graphics
@@ -8667,7 +9092,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 
 	idx = bm_load(s);
 	if(idx < 0 && b) {
-		idx = bm_load_animation(s, NULL, NULL, d ? 1 : 0);
+		idx = bm_load_animation(s, NULL, NULL, NULL, d ? 1 : 0);
 	}
 
 	if(idx < 0)
@@ -8962,6 +9387,54 @@ ADE_FUNC(__len, l_HookVar_Globals, NULL, "Number of HookVariables", "number", "N
 
 //**********LIBRARY: Mission
 ade_lib l_Mission("Mission", NULL, "mn", "Mission library");
+
+// for use in creating faster metadata systems, use in conjunction with getSignature()
+ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle of an object from its signature", "object", "Handle of object with signaure, invalid handle if signature is not in use")
+{
+	int sig = -1;
+	int objnum;
+	if(!ade_get_args(L, "i", &sig))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	objnum = obj_get_by_signature(sig);
+
+	return ade_set_object_with_breed(L, objnum);
+}
+
+ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+{
+	char *s;
+	int r_val;
+
+	if(!ade_get_args(L, "s", &s))
+		return ADE_RETURN_FALSE;
+
+	r_val = run_sexp(s);
+
+	if (r_val == SEXP_TRUE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+{
+	char *s;
+	int r_val;
+	char buf[8192];
+
+	if(!ade_get_args(L, "s", &s))
+		return ADE_RETURN_FALSE;
+
+	snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+
+	r_val = run_sexp(buf);
+
+	if (r_val == SEXP_TRUE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
 
 //****SUBLIBRARY: Mission/Asteroids
 ade_lib l_Mission_Asteroids("Asteroids", &l_Mission, NULL, "Asteroids in the mission");
@@ -9492,7 +9965,7 @@ ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads 
 	{
 		game_level_close();
 		Game_mode &= ~GM_IN_MISSION;
-		strcpy(Game_current_mission_filename, "");
+		strcpy_s(Game_current_mission_filename, "");
 	}
 
 	return ADE_RETURN_NIL;
@@ -10130,16 +10603,16 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 	if(lua_getstack(L, 0, &ar))
 	{
 		lua_getinfo(L, "nl", &ar);
-		strcpy(funcname, "");
+		strcpy_s(funcname, "");
 		if(ar.name != NULL) {
-			strcat(funcname, ar.name);
+			strcat_s(funcname, ar.name);
 		}
 		if(ar.currentline > -1) {
 			char buf[33];
 			sprintf(buf, "%d", ar.currentline);
-			strcat(funcname, " (Line ");
-			strcat(funcname, buf);
-			strcat(funcname, ")");
+			strcat_s(funcname, " (Line ");
+			strcat_s(funcname, buf);
+			strcat_s(funcname, ")");
 		}
 	}
 #endif
@@ -10149,12 +10622,12 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 		if(!Ade_get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)))
 		{
 				if(lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
-					strcpy(funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
+					strcpy_s(funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
 		}
 
 		//WMC - Totally unknown function
 		if(!strlen(funcname)) {
-			strcpy(funcname, "<UNKNOWN>");
+			strcpy_s(funcname, "<UNKNOWN>");
 		}
 	}
 	if(total_args < needed_args) {
@@ -10537,8 +11010,8 @@ int ade_concat_handler(lua_State *L)
 	if(s1 != NULL && s2 != NULL)
 	{
 		char *sf = (char*)vm_malloc((sizeof(s1) + sizeof(s2) + 1) * sizeof(char));
-		strcpy(sf, s1);
-		strcat(sf, s2);
+		strcpy_s(sf, s1);
+		strcat_s(sf, s2);
 
 		lua_pushstring(L, sf);
 		//WMC - Causes crashes. WTF @ vm_ functions

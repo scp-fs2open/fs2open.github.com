@@ -103,7 +103,7 @@ void load_shield_hit_bitmap()
 
 	for (i = 0; i < Species_info.size(); i++ )	
     {
-		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, 1);
+		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, NULL, 1);
 
         // *This is disabled for TBP    -Et1
 		// Changed to an assert by kazan

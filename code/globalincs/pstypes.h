@@ -178,7 +178,7 @@ typedef struct flag_def_list {
 extern void _cdecl WinAssert(char * text,char *filename, int line);
 void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... );
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
-extern void _cdecl Error( char * filename, int line, const char * format, ... );
+extern void _cdecl Error( const char * filename, int line, const char * format, ... );
 extern void _cdecl Warning( char * filename, int line, const char * format, ... );
 
 extern int Global_warning_count;
@@ -208,29 +208,31 @@ extern int Global_error_count;
 // The code, as with all developement like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
 
+#define ASSUME(x)
+
 // Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
-#	define Assert(x) do {} while (0)
+#	define Assert(x) do { ASSUME(x); } while (0)
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(x, y, ...) do {} while (0)
 #	else
 #		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(x, y, ...) do {} while (0)
+#			define Assertion(x, y, ...) do { ASSUME(x); } while (0)
 #		else 
 #			define Assertion(x, y) do {} while (0)
 #		endif
 #	endif
 #else
 	void gr_activate(int);
-#	define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
+#	define Assert(x) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } ASSUME( x ); } while (0)
 
 	// Assertion can only use its proper fuctionality in compilers that support variadic macro
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
 #	else 
 #		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } } while (0)
+#			define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } ASSUME(x); } while (0)
 #		else // everything else
 #			define Assertion(x, y) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__); } } while (0)
 #		endif
@@ -239,7 +241,7 @@ extern int Global_error_count;
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
-#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } } while(0)
+#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(0)
 
 
 //#define Int3() _asm { int 3 }
@@ -489,16 +491,6 @@ typedef struct lod_checker {
 } lod_checker;
 
 
-// admittedly this is a bit overkill but it's much safer than the old way of using a plain strcat()
-// x = dest string
-// y = src  string
-// z = max dest string size
-#define SAFE_STRCAT(x, y, z) {	\
-	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
-		strncat((x), (y), (z) - strlen((x)) - 1);	\
-	}	\
-}
-
 // check to see that a passed sting is valid, ie:
 //  - has >0 length
 //  - is not "none"
@@ -705,6 +697,22 @@ public:
 	int getSignature();
 	bool isValid();
 };
+
+/* Restrict keyword semantics are different under VC and GCC */
+
+#ifndef NO_RESTRICT_USE
+#	ifdef _MSC_VER
+#		if _MSC_VER >= 1400
+#			define RESTRICT __restrict
+#		else
+#			define RESTRICT
+#		endif
+#	else
+#		define RESTRICT restrict
+#	endif
+#else
+#	define RESTRICT
+#endif
 
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"

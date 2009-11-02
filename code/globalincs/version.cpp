@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 #include "osapi/osregistry.h"
 
@@ -46,10 +47,9 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 	}
 
 	// grab the last line in file which isn't empty and isn't a comment
-	char buffer[MAX_LINE_LENGTH+1], verbuffer[MAX_LINE_LENGTH+1];
+	char buffer[MAX_LINE_LENGTH+1] = {0};
+	char verbuffer[MAX_LINE_LENGTH+1] = {0};
 
-	strcpy(verbuffer,"");
-	strcpy(buffer,"");
 	while ( !feof(f) ) {
 		// Read the line into a temporary buffer
 		fgets(buffer, MAX_LINE_LENGTH, f);
@@ -65,7 +65,7 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 		if (buffer[0] == VERSION_FILE_COMMENT_CHAR) continue;
 
 		// Line is a good one, so save it...
-		strcpy(verbuffer, buffer);
+		strcpy_s(verbuffer, buffer);
 	}
 	fclose(f);
 

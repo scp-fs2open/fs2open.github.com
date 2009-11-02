@@ -315,6 +315,4 @@ bool object_get_gliding(object *objp);
 int obj_get_by_signature(int sig);
 int object_get_model(object *objp);
 
-bool is_valid_objnum(int objnum);
-
 #endif

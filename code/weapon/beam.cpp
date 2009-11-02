@@ -129,6 +129,8 @@ typedef struct beam {
 	int Beam_muzzle_stamp;
 	vec3d local_pnt;
 	int firingpoint;
+
+	float		beam_width;
 } beam;
 
 beam Beams[MAX_BEAMS];				// all beams
@@ -608,6 +610,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->team = (char)firing_ship->team;
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
+	new_item->beam_width = wip->b_info.beam_width;
 
 	// type c is a very special weapon type - binfo has no meaning
 
@@ -1870,10 +1873,6 @@ int beam_get_model(object *objp)
 		mprintf(("Beam couldn't find a good object model/type!! (%d)\n", objp->type));
 		return -1;
 	}
-
-	// can't happen
-	Int3();
-	return -1;
 }
 
 // start the warmup phase for the beam
@@ -2879,13 +2878,82 @@ void beam_handle_collisions(beam *b)
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 
-		// do damage
-		if(do_damage && !physics_paused){
-			// maybe draw an explosion, if we aren't hitting shields
-			if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
-				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
-				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+		// KOMET_EXT -->
+
+		// draw flash, explosion
+		beam_weapon_info bwi = wi->b_info;
+
+		if ((bwi.beam_tooling_flame_radius > 0) || (bwi.beam_flash_radius > 0)) {
+			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
+			float rnd = frand();
+			int do_expl = 0;
+			if((rnd < 0.2f || do_damage) && wi->impact_weapon_expl_index >= 0){
+				do_expl = 1;
 			}
+			float ani_radius;
+			vec3d temp_pos, temp_local_pos;
+				
+			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
+			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
+						
+			if (bwi.beam_flash_radius > 0) {
+				ani_radius = bwi.beam_flash_radius * flash_rad;	
+				if (bwi.beam_flash_idx > -1) {
+					int ani_handle = Weapon_explosions.GetAnim(bwi.beam_flash_idx, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
+					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
+				} else {
+					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_SMOKE, 0, -1, &Objects[target] );
+				}
+			}
+			if(do_expl){
+				ani_radius = 0.7f * wi->impact_explosion_radius * flash_rad;
+				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
+				particle_create( &temp_local_pos, &vmd_zero_vector, 0.0f, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
+			}
+			
+			if (bwi.beam_tooling_flame_radius > 0) {
+				vec3d fvec, inv_fvec;
+				vm_vec_sub(&fvec, &b->last_start, &b->last_shot);
+
+				if(!IS_VEC_NULL(&fvec)){
+					// get beam direction
+					if (beam_will_tool_target(b, &Objects[target])){
+						vm_vec_normalize_quick(&fvec);
+						vm_vec_copy_scale( &inv_fvec, &fvec, -1.0f);
+						
+						// stream of fire for big ships
+						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {
+
+							vec3d expl_vel;
+
+							float flame_size = bwi.beam_tooling_flame_radius * frand_range(0.5f,2.0f);
+							vm_vec_copy_scale( &expl_vel, &fvec, bwi.beam_tooling_flame_radius * frand_range(1.0f, 2.0f));
+							if (bwi.beam_tooling_flame_idx > -1) {
+								int ani_handle = Weapon_explosions.GetAnim(bwi.beam_tooling_flame_idx, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+							} else {
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.3f, flame_size, PARTICLE_SMOKE );
+								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.6f, flame_size, PARTICLE_SMOKE );
+							}
+						}
+					}
+				}
+			}
+			// <-- KOMET_EXT
+		} else {
+			if(do_damage && !physics_paused){
+				// maybe draw an explosion, if we aren't hitting shields
+				if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
+					int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
+					particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+				}
+			}
+		}
+
+		if(do_damage && !physics_paused){
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
@@ -3067,21 +3135,31 @@ int beam_ok_to_fire(beam *b)
 	}
 
 	// if the beam will be firing out of its FOV, power it down
-	vec3d aim_dir, temp;
-	vec3d turret_dir, turret_pos;
+	vec3d aim_dir;
 	vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 	vm_vec_normalize(&aim_dir);
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
-	// NEEDS TO - PROBABLY - BE CHANGED INTO USING STD/ADV FOV TESTS
-	/*
-    if (b->subsys->system_info->flags & MSS_FLAG_TURRET_ALT_MATH)
-        in_fov = turret_adv_fov_test(b->subsys, &turret_dir, &aim_dir);
-    else
-        in_fov = turret_std_fov_test(b->subsys, &turret_dir, &aim_dir);
-	*/
-	if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
-		nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
-		return 0;
+
+	if(!(The_mission.ai_profile->flags & AIPF_FORCE_BEAM_TURRET_FOV)) {
+		vec3d turret_dir, turret_pos, temp;
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, b->fighter_beam);
+		if(vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov){
+			nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+			return 0;
+		}
+	} else {
+		vec3d turret_normal;
+
+		if (b->fighter_beam) {
+			turret_normal = b->objp->orient.vec.fvec;
+			b->subsys->system_info->flags &= ~MSS_FLAG_TURRET_ALT_MATH;
+		} else {
+			vm_vec_unrotate(&turret_normal, &b->subsys->system_info->turret_norm, &b->objp->orient);
+		}
+
+		if(!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {
+			nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+			return 0;
+		}
 	}
 
 	// ok to fire/continue firing
@@ -3100,10 +3178,14 @@ float beam_get_widest(beam *b)
 		return -1.0f;
 	}
 
-	// lookup
-	for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.beam_num_sections; idx++){
-		if(Weapon_info[b->weapon_info_index].b_info.sections[idx].width > widest){
-			widest = Weapon_info[b->weapon_info_index].b_info.sections[idx].width;
+	if (b->beam_width > 0.0f) {
+		widest = b->beam_width;
+	} else {
+		// lookup
+		for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.beam_num_sections; idx++){
+			if(Weapon_info[b->weapon_info_index].b_info.sections[idx].width > widest){
+				widest = Weapon_info[b->weapon_info_index].b_info.sections[idx].width;
+			}
 		}
 	}
 
@@ -3180,14 +3262,20 @@ float beam_get_ship_damage(beam *b, object *objp)
 		return 0.0f;
 	}
 
-	// Bobboau, if you're going to re-implement attenuation, this is how you should do it.
-	//float dist = vm_vec_dist_quick(b->objp->pos, objp->pos);
-	float attenuation = 1.0f; // or scaled by dist
-	//-- Goober5000
+	weapon_info *wip = &Weapon_info[b->weapon_info_index];
+
+	float attenuation = 1.0f;
+
+	if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
+		float dist = vm_vec_dist(&b->last_shot, &b->last_start);
+		float range = b->range;
+		float atten_dist = range * b->damage_threshold;
+		if ((range > dist) && (atten_dist < dist)) {
+			attenuation = (dist - atten_dist) / (range - atten_dist);
+		}
+	}
 
 	float damage = 0.0f;
-
-	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team) && (wip->damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {

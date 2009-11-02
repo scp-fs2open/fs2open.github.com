@@ -59,13 +59,17 @@ int collide_weapon_weapon( obj_pair * pair )
 	//WMC - Here's a reason why...scripting now!
 
 	if (wipA->weapon_hitpoints > 0) {
-		A_radius *= 2;		// Makes bombs easier to hit
+		if (!(wipA->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
+			A_radius *= 2;		// Makes bombs easier to hit
+		}
 		if ( (wipA->lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
 	if (wipB->weapon_hitpoints > 0) {
-		B_radius *= 2;		// Makes bombs easier to hit
+		if (!(wipB->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
+			B_radius *= 2;		// Makes bombs easier to hit
+		}
 		if ( (wipB->lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}

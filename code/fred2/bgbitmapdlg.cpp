@@ -358,7 +358,7 @@ void bg_bitmap_dlg::OnClose()
 		}
 		
 		// get the bitmap name
-		strcpy(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture]);
+		strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture]);
 
 		// init the nebula
 		neb2_level_init();
@@ -366,7 +366,7 @@ void bg_bitmap_dlg::OnClose()
 		The_mission.flags &= ~MISSION_FLAG_FULLNEB;		
 		Nebula_index = m_nebula_index - 1;
 		Neb2_awacs = -1.0f;
-		strcpy(Neb2_texture_name, "");
+		strcpy_s(Neb2_texture_name, "");
 	}
 
 	// check for no ship trails -C
@@ -656,7 +656,7 @@ void bg_bitmap_dlg::sun_data_save_current()
 		UpdateData(TRUE);
 
 		// store the data
-		strcpy(sle->filename, s_name);
+		strcpy_s(sle->filename, s_name);
 		sle->ang.p = (float) fl_radian(s_pitch);
 		sle->ang.b = (float) fl_radian(s_bank);
 		sle->ang.h = (float) fl_radian(s_heading);
@@ -709,7 +709,7 @@ void bg_bitmap_dlg::OnAddSun()
 	sun_data_save_current();
 
 	// select the first sun by default
-	strcpy(sle.filename, stars_get_name_FRED(0, true));
+	strcpy_s(sle.filename, stars_get_name_FRED(0, true));
 
 	sle.ang.p = 0;
 	sle.ang.b = 0;
@@ -820,7 +820,7 @@ void bg_bitmap_dlg::bitmap_data_save_current()
 		UpdateData(TRUE);
 
 		// store the data
-		strcpy(sle->filename, b_name);
+		strcpy_s(sle->filename, b_name);
 		sle->ang.p = (float) fl_radian(b_pitch);
 		sle->ang.b = (float) fl_radian(b_bank);
 		sle->ang.h = (float) fl_radian(b_heading);
@@ -876,7 +876,7 @@ void bg_bitmap_dlg::OnAddBitmap()
 	bitmap_data_save_current();
 
 	// select the first bitmap by default
-	strcpy(sle.filename, stars_get_name_FRED(0, false));
+	strcpy_s(sle.filename, stars_get_name_FRED(0, false));
 
 	sle.ang.p = 0;
 	sle.ang.b = 0;
@@ -1186,7 +1186,7 @@ void bg_bitmap_dlg::OnImportBackground()
 	if (cfd.DoModal() == IDCANCEL)
 		return;
 
-	strcpy(filename, cfd.GetPathName());
+	strcpy_s(filename, cfd.GetPathName());
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("BGBITMAPDLG: Unable to parse '%s'!  Error code = %i.\n", filename, rval));

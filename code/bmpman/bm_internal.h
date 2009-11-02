@@ -52,8 +52,9 @@ typedef union bm_extra_info {
 	struct {
 		// Stuff needed for animations
 		int		first_frame;								// used for animations -- points to index of first frame
-		ubyte	num_frames;									// used for animation -- number of frames in the animation
+		int	num_frames;									// used for animation -- number of frames in the animation
 		ubyte	fps;										// used for animation -- frames per second
+		int	keyframe;									// used for animation -- keyframe info
 
 		struct {
 			// stuff for static animations

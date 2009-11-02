@@ -368,7 +368,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
-				strcpy( dest->name, source->name );
+				strcpy_s( dest->name, source->name );
 
 				if ( dest->type == SUBSYSTEM_TURRET ) {
 					int nfp;
@@ -382,7 +382,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 						dest->turret_firing_point[nfp] = source->turret_firing_point[nfp];
 
 					if ( dest->flags & MSS_FLAG_CREWPOINT )
-						strcpy(dest->crewspot, source->crewspot);
+						strcpy_s(dest->crewspot, source->crewspot);
 				}
 				break;
 			}
@@ -403,9 +403,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 	if ( (p = strstr(props, "$name")) != NULL)
 		get_user_prop_value(p+5, subsystemp->name);
 	else
-		strcpy( subsystemp->name, dname );
+		strcpy_s( subsystemp->name, dname );
 
-	strcpy(lcdname, dname);
+	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
 
 	// check the name for its specific type
@@ -420,7 +420,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		if ( (p = strstr(props, "$fov")) != NULL )
 			get_user_prop_value(p+4, buf);			// get the value of the fov
 		else
-			strcpy(buf,"180");
+			strcpy_s(buf,"180");
 		angle = ANG_TO_RAD(atoi(buf))/2.0f;
 		subsystemp->turret_fov = (float)cos(angle);
 		subsystemp->turret_num_firing_points = 0;
@@ -446,7 +446,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
 	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
-		mprintf(("Potential problem found: Unrecognized type subsystem '%s', believed to be in ship %s\n", dname, Global_filename));
+		mprintf(("Potential problem found: Unrecognized subsystem type '%s', believed to be in ship %s\n", dname, Global_filename));
 	}
 
 	if ( (p = strstr(props, "$triggered:")) != NULL ) {
@@ -592,7 +592,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
 			set_subsystem_info( subsystemp, props, subobj_name);
-			strcpy(subsystemp->subobj_name, subobj_name);						// copy the object name
+			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
 		}
 	}
@@ -605,7 +605,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		ss_warning_shown = 1;
 	} else
 #endif
-		mprintf(("Subsystem %s in ships.tbl not found in model!\n", subobj_name));
+		mprintf(("Subsystem %s in model was not found in ships.tbl!\n", subobj_name));
 
 #ifndef NDEBUG
 	if ( ss_fp )	{
@@ -736,13 +736,13 @@ bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 		// prep string
 		char hex_str[5];
 		char text[100 + (5 * NUM_BYTES)];
-		strcpy(text, "The following is the correct hex string for the minima and maxima:\n");
+		strcpy_s(text, "The following is the correct hex string for the minima and maxima:\n");
 
 		// append hex values to the string
 		for (int i = 0; i < NUM_BYTES; i++)
 		{
 			sprintf(hex_str, "%02X ", z._byte[i]);
-			strcat(text, hex_str);
+			strcat_s(text, hex_str);
 		}
 
 		// notify the user
@@ -784,9 +784,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	int version;
 	int id, len, next_chunk;
 	int i,j;
+	vec3d temp_vec;
 
 #ifndef NDEBUG
-	strcpy(Global_filename, filename);
+	strcpy_s(Global_filename, filename);
 #endif
 
 	// little test code i used in fred2
@@ -817,16 +818,16 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		memset( &ibuffer_info, 0, sizeof(IBX) );
 
 		// get name for tangent space file
-		strcpy( ibuffer_info.tsb_name, filename );
+		strcpy_s( ibuffer_info.tsb_name, filename );
 		char *pb = strchr( ibuffer_info.tsb_name, '.' );
 		if ( pb ) *pb = 0;
-		strcat( ibuffer_info.tsb_name, NOX(".tsb") );
+		strcat_s( ibuffer_info.tsb_name, NOX(".tsb") );
 
 		// use the same filename as the POF but with an .ibx extension
-		strcpy( ibuffer_info.name, filename );
+		strcpy_s( ibuffer_info.name, filename );
 		pb = strchr( ibuffer_info.name, '.' );
 		if ( pb ) *pb = 0;
-		strcat( ibuffer_info.name, NOX(".ibx") );
+		strcat_s( ibuffer_info.name, NOX(".ibx") );
 
 		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
 
@@ -980,7 +981,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		if ( !ss_fp )	{
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {
-			strcpy(model_filename, filename);
+			strcpy_s(model_filename, filename);
 			ss_warning_shown = 0;
 		}
 	}
@@ -1242,7 +1243,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				if ( pm->submodel[n].name[0] == '\0' ) {
-					strcpy(pm->submodel[n].name, "unknown object name");
+					strcpy_s(pm->submodel[n].name, "unknown object name");
 				}
 
 				bool rotating_submodel_has_subsystem = !(pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT);
@@ -1506,7 +1507,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->shield.tris = (shield_tri *)vm_malloc(pm->shield.ntris * sizeof(shield_tri) );
 						Assert( pm->shield.tris );
 						for ( i = 0; i < pm->shield.ntris; i++ ) {
-							cfread_vector( &(pm->shield.tris[i].norm), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							pm->shield.tris[i].norm = temp_vec;
 							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
 #ifndef NDEBUG
@@ -1543,7 +1546,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						Assert ( bank->num_slots < MAX_SLOTS );
 						for (j = 0; j < bank->num_slots; j++) {
 							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &(bank->norm[j]), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							bank->norm[j] = temp_vec;
 						}
 					}
 				}
@@ -1563,7 +1568,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						Assert ( bank->num_slots < MAX_SLOTS );
 						for (j = 0; j < bank->num_slots; j++) {
 							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &(bank->norm[j]), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							bank->norm[j] = temp_vec;
 						}
 					}
 				}
@@ -1698,7 +1705,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						glow_point *p = &bank->points[j];
 
 						cfread_vector(&(p->pnt), fp);
-						cfread_vector(&(p->norm), fp);
+						cfread_vector( &temp_vec, fp );
+						if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
+							vm_vec_normalize(&temp_vec);
+						else
+							vm_vec_zero(&temp_vec);
+						p->norm = temp_vec;
 						p->radius = cfread_float( fp);
 					}
 				}
@@ -1775,7 +1787,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							glow_point *p = &bank->points[j];
 
 							cfread_vector( &(p->pnt), fp );
-							cfread_vector( &(p->norm), fp );
+							cfread_vector( &temp_vec, fp );
+							vm_vec_normalize_safe(&temp_vec);
+							p->norm = temp_vec;
 
 							if ( pm->version > 2004 )	{
 								p->radius = cfread_float( fp );
@@ -1807,7 +1821,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							subsystemp = &subsystems[snum];
 
 							if ( parent == subsystemp->subobj_num ) {
-								cfread_vector( &subsystemp->turret_norm, fp );
+								cfread_vector( &temp_vec, fp );
+								vm_vec_normalize_safe(&temp_vec);
+								subsystemp->turret_norm = temp_vec;
 								vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
 
 								n_slots = cfread_int( fp );
@@ -1957,8 +1973,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						// get rid of leading '$' char in name
 						if ( pm->paths[i].parent_name[0] == '$' ) {
 							char tmpbuf[MAX_NAME_LEN];
-							strcpy(tmpbuf, pm->paths[i].parent_name+1);
-							strcpy(pm->paths[i].parent_name, tmpbuf);
+							strcpy_s(tmpbuf, pm->paths[i].parent_name+1);
+							strcpy_s(pm->paths[i].parent_name, tmpbuf);
 						}
 						// store the sub_model index (ie index into pm->submodel) of the parent
 						pm->paths[i].parent_submodel = -1;
@@ -2064,6 +2080,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+
+						vm_vec_normalize_safe(&tempv);
 
 						pm->ins[idx].norm[idx2] = tempv;
 //						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
@@ -2335,9 +2353,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 #ifndef NDEBUG
 	char busy_text[60] = { '\0' };
 
-	SAFE_STRCAT( busy_text, "** ModelLoad: ", sizeof(busy_text) );
-	SAFE_STRCAT( busy_text, filename, sizeof(busy_text) );
-	SAFE_STRCAT( busy_text, " **", sizeof(busy_text) );
+	strcat_s( busy_text, "** ModelLoad: " );
+	strcat_s( busy_text, filename );
+	strcat_s( busy_text, " **" );
 
 	game_busy(busy_text);
 #endif
@@ -2382,8 +2400,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		int j;
 		char destroyed_name[128];
 
-		strcpy( destroyed_name, pm->submodel[i].name );
-		strcat( destroyed_name, "-destroyed" );
+		strcpy_s( destroyed_name, pm->submodel[i].name );
+		strcat_s( destroyed_name, "-destroyed" );
 		for (j=0; j<pm->n_models; j++ )	{
 			if ( !stricmp( pm->submodel[j].name, destroyed_name ))	{
 				// mprintf(( "Found destroyed model for '%s'\n", pm->submodel[i].name ));
@@ -2396,8 +2414,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		// This debris comes from a destroyed subsystem when ship is still alive
 		char live_debris_name[128];
 
-		strcpy( live_debris_name, "debris-" );
-		strcat( live_debris_name, pm->submodel[i].name );
+		strcpy_s( live_debris_name, "debris-" );
+		strcat_s( live_debris_name, pm->submodel[i].name );
 
 
 		pm->submodel[i].num_live_debris = 0;

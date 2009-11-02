@@ -163,7 +163,7 @@ int cf_get_packfile_count(cf_root *root)
 	packfile_count = 0;
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )
 	{
-		strcpy( filespec, root->path );
+		strcpy_s( filespec, root->path );
 		
 		if(strlen(Pathtypes[i].path))
 		{
@@ -173,10 +173,10 @@ int cf_get_packfile_count(cf_root *root)
 				Warning(LOCATION, "Path '%s' too long to add '%s' safely.", filespec, Pathtypes[i].path);
 				continue;
 			}
-			strcat( filespec, Pathtypes[i].path );
+			strcat_s( filespec, Pathtypes[i].path );
 			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR )
 			{
-				strcat( filespec, DIR_SEPARATOR_STR );
+				strcat_s( filespec, DIR_SEPARATOR_STR );
 			}
 		}
 
@@ -185,7 +185,7 @@ int cf_get_packfile_count(cf_root *root)
 			Warning(LOCATION, "Could not concatenate '*.vp' to filespec; path too long.");
 			continue;
 		}
-		strcat( filespec, "*.vp" );
+		strcat_s( filespec, "*.vp" );
 
 		int find_handle;
 		_finddata_t find;
@@ -207,7 +207,7 @@ int cf_get_packfile_count(cf_root *root)
 			Warning(LOCATION, "Could not concatenate '*.vp' to filespec; path too long.");
 			continue;
 		}
-		strcat( filespec, "*.[vV][pP]" );
+		strcat_s( filespec, "*.[vV][pP]" );
 
 		glob_t globinfo;
 		memset(&globinfo, 0, sizeof(globinfo));
@@ -271,17 +271,17 @@ void cf_build_pack_list( cf_root *root )
 	// now just setup all the root info
 	root_index = 0;
 	for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
-		strcpy( filespec, root->path );
+		strcpy_s( filespec, root->path );
 		
 		if ( strlen(Pathtypes[i].path) ) {
-			strcat( filespec, Pathtypes[i].path );
+			strcat_s( filespec, Pathtypes[i].path );
 
 			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR )
-				strcat( filespec, DIR_SEPARATOR_STR );
+				strcat_s( filespec, DIR_SEPARATOR_STR );
 		}
 
 #if defined _WIN32
-		strcat( filespec, "*.vp" );
+		strcat_s( filespec, "*.vp" );
 
 		int find_handle;
 		_finddata_t find;
@@ -298,15 +298,15 @@ void cf_build_pack_list( cf_root *root )
 					rptr_sort = &temp_roots_sort[root_index++];
 
 					// fill in all the proper info
-					strcpy(rptr_sort->path, root->path);
+					strcpy_s(rptr_sort->path, root->path);
 					
 					if(strlen(Pathtypes[i].path)) {
 
-						strcat(rptr_sort->path, Pathtypes[i].path );
-						strcat(rptr_sort->path, DIR_SEPARATOR_STR);
+						strcat_s(rptr_sort->path, Pathtypes[i].path );
+						strcat_s(rptr_sort->path, DIR_SEPARATOR_STR);
 					}
 					
-					strcat(rptr_sort->path, find.name );
+					strcat_s(rptr_sort->path, find.name );
 					rptr_sort->roottype = CF_ROOTTYPE_PACK;
 					rptr_sort->cf_type = i;
 				}
@@ -316,7 +316,7 @@ void cf_build_pack_list( cf_root *root )
 			_findclose( find_handle );
 		}	
 #elif defined SCP_UNIX
-		strcat( filespec, "*.[vV][pP]" );
+		strcat_s( filespec, "*.[vV][pP]" );
 		glob_t globinfo;
 
 		memset(&globinfo, 0, sizeof(globinfo));
@@ -337,7 +337,7 @@ void cf_build_pack_list( cf_root *root )
 					rptr_sort = &temp_roots_sort[root_index++];
 
 					// fill in all the proper info
-					strcpy(rptr_sort->path, globinfo.gl_pathv[j] );
+					strcpy_s(rptr_sort->path, globinfo.gl_pathv[j] );
 					rptr_sort->roottype = CF_ROOTTYPE_PACK;
 					rptr_sort->cf_type = i;
 				}
@@ -358,7 +358,7 @@ void cf_build_pack_list( cf_root *root )
 	cf_root *new_root;
 	for (i = 0; i < temp_root_count; i++) {
 		new_root = cf_create_root();
-		strcpy( new_root->path, root->path );
+		strcpy_s( new_root->path, root->path );
 
 #ifndef NDEBUG
 		uint chksum = 0;
@@ -368,7 +368,7 @@ void cf_build_pack_list( cf_root *root )
 
 		// mwa -- 4/2/98 put in the next 2 lines because the path name needs to be there
 		// to find the files.
-		strcpy(new_root->path, temp_roots_sort[i].path);		
+		strcpy_s(new_root->path, temp_roots_sort[i].path);		
 		new_root->roottype = CF_ROOTTYPE_PACK;		
 	}
 
@@ -407,7 +407,7 @@ void cf_build_root_list(char *cdrom_dir)
 
 			// do we already have a slash? as in the case of a root directory install
 			if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
-				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+				strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 			}
 
 			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - strlen(root->path) - 1));
@@ -425,7 +425,7 @@ void cf_build_root_list(char *cdrom_dir)
 
 	// do we already have a slash? as in the case of a root directory install
 	if( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
-		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+		strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 	root->roottype = CF_ROOTTYPE_PATH;
 
@@ -460,7 +460,7 @@ void cf_build_root_list(char *cdrom_dir)
 
 			// do we already have a slash? as in the case of a root directory install
 			if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
-				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+				strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 			}
 
 			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - strlen(root->path) - 1));
@@ -477,7 +477,7 @@ void cf_build_root_list(char *cdrom_dir)
 
 	// do we already have a slash? as in the case of a root directory install
 	if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
-		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+		strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 
 	root->roottype = CF_ROOTTYPE_PATH;
@@ -495,7 +495,7 @@ void cf_build_root_list(char *cdrom_dir)
 	// Check the real CD if one...
 	if ( cdrom_dir && (strlen(cdrom_dir) < CF_MAX_PATHNAME_LENGTH) )	{
 		root = cf_create_root();
-		strcpy( root->path, cdrom_dir );
+		strcpy_s( root->path, cdrom_dir );
 		root->roottype = CF_ROOTTYPE_PATH;
 
 		//======================================================
@@ -540,17 +540,17 @@ void cf_search_root_path(int root_index)
 			continue;
 		}
 
-		strcpy( search_path, root->path );
+		strcpy_s( search_path, root->path );
 
 		if(strlen(Pathtypes[i].path)) {
-			strcat( search_path, Pathtypes[i].path );
+			strcat_s( search_path, Pathtypes[i].path );
 			if ( search_path[strlen(search_path)-1] != DIR_SEPARATOR_CHAR ) {
-				strcat( search_path, DIR_SEPARATOR_STR );
+				strcat_s( search_path, DIR_SEPARATOR_STR );
 			}
 		} 
 
 #if defined _WIN32
-		strcat( search_path, "*.*" );
+		strcat_s( search_path, "*.*" );
 
 		int find_handle;
 		_finddata_t find;
@@ -567,7 +567,7 @@ void cf_search_root_path(int root_index)
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
 
-							strcpy( file->name_ext, find.name );
+							strcpy_s( file->name_ext, find.name );
 							file->root_index = root_index;
 							file->pathtype_index = i;
 							file->write_time = find.time_write;
@@ -614,7 +614,7 @@ void cf_search_root_path(int root_index)
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
 
-							strcpy( file->name_ext, dir->d_name );
+							strcpy_s( file->name_ext, dir->d_name );
 							file->root_index = root_index;
 							file->pathtype_index = i;
 
@@ -689,7 +689,7 @@ void cf_search_root_pack(int root_index)
 
 	char search_path[CF_MAX_PATHNAME_LENGTH];
 
-	strcpy( search_path, "" );
+	strcpy_s( search_path, "" );
 	
 	// Go through all the files
 	int i;
@@ -712,9 +712,9 @@ void cf_search_root_pack(int root_index)
 				*p = 0;
 			} else {
 				if ( strlen(search_path) && (search_path[strlen(search_path)-1] != DIR_SEPARATOR_CHAR) ) {
-						strcat( search_path, DIR_SEPARATOR_STR );
+						strcat_s( search_path, DIR_SEPARATOR_STR );
 				}
-				strcat( search_path, find.filename );
+				strcat_s( search_path, find.filename );
 			}
 
 			//mprintf(( "Current dir = '%s'\n", search_path ));
@@ -730,7 +730,7 @@ void cf_search_root_pack(int root_index)
 						if ( is_ext_in_list( Pathtypes[j].extensions, ext ) )	{
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
-							strcpy( file->name_ext, find.filename );
+							strcpy_s( file->name_ext, find.filename );
 							file->root_index = root_index;
 							file->pathtype_index = j;
 							file->write_time = (time_t)find.write_time;
@@ -979,12 +979,12 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 						strncpy( pack_filename, r->path, max_out );
 
 						if (f->pack_offset < 1) {
-							SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+							strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-								SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
+								strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 
-							SAFE_STRCAT( pack_filename, f->name_ext, max_out );
+							strcat_s( pack_filename, max_out, f->name_ext );
 						}
 					}
 
@@ -1008,13 +1008,13 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 
 				if (f->pack_offset < 1) {
 					if ( strlen(Pathtypes[f->pathtype_index].path) ) {
-						SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+						strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-							SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
+							strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 					}
 
-					SAFE_STRCAT( pack_filename, f->name_ext, max_out );
+					strcat_s( pack_filename, max_out, f->name_ext );
 				}
 			}
 
@@ -1118,7 +1118,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			if ( p && (strlen(p) > 2) )
 				(*p) = 0;
 
-			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
+			strcat_s( filespec, ext_list[cur_ext] );
  
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
@@ -1240,7 +1240,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 		for (i = 0; i < file_list_size; i++) {
 			cf_file *f = file_list_index[i];
 	
-			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
+			strcat_s( filespec, ext_list[cur_ext] );
 
 			if (localize) {
 				// create localized filespec
@@ -1260,12 +1260,12 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 							strncpy( pack_filename, r->path, max_out );
 
 							if (f->pack_offset < 1) {
-								SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+								strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 								if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-									SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
+									strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 
-								SAFE_STRCAT( pack_filename, f->name_ext, max_out );
+								strcat_s( pack_filename, max_out, f->name_ext );
 							}
 						}
 
@@ -1293,13 +1293,13 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 					if (f->pack_offset < 1) {
 
 						if ( strlen(Pathtypes[f->pathtype_index].path) ) {
-							SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+							strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
 
 							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
-								SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
+								strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
 						}
 
-						SAFE_STRCAT( pack_filename, f->name_ext, max_out );
+						strcat_s( pack_filename, max_out, f->name_ext );
 					}
 				}
 
@@ -1370,7 +1370,7 @@ int cf_file_already_in_list( int num_files, char **list, char *filename )
 
 	char name_no_extension[MAX_PATH_LEN];
 
-	strcpy(name_no_extension, filename );
+	strcpy_s(name_no_extension, filename );
 	char *p = strrchr( name_no_extension, '.' );
 	if ( p ) *p = 0;
 
@@ -1568,7 +1568,7 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 
 	char name_no_extension[MAX_PATH_LEN];
 
-	strcpy(name_no_extension, filename );
+	strcpy_s(name_no_extension, filename );
 	char *p = strrchr( name_no_extension, '.' );
 	if ( p ) *p = 0;
 
@@ -1801,26 +1801,26 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 			strncpy(path, root->path, path_max);
 		}
 
-		SAFE_STRCAT(path, Pathtypes[pathtype].path, path_max);
+		strcat_s(path, path_max, Pathtypes[pathtype].path);
 
 		// Don't add slash for root directory
 		if (Pathtypes[pathtype].path[0] != '\0') {
 			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR ) {
-				SAFE_STRCAT(path, DIR_SEPARATOR_STR, path_max);
+				strcat_s(path, path_max, DIR_SEPARATOR_STR);
 			}
 		}
 
 #ifdef INF_BUILD
 		// keep pilot files separated for an Inferno build since they aren't compatible
 		if ( pathtype == CF_TYPE_SINGLE_PLAYERS || pathtype == CF_TYPE_MULTI_PLAYERS ) {
-			SAFE_STRCAT(path, "inferno", path_max);
-			SAFE_STRCAT(path, DIR_SEPARATOR_STR, path_max);
+			strcat_s(path, path_max, "inferno");
+			strcat_s(path, path_max, DIR_SEPARATOR_STR);
 		}
 #endif
 
 		// add filename
 		if (filename) {
-			SAFE_STRCAT(path, filename, path_max);
+			strcat_s(path, path_max, filename);
 
 			// localize filename
 			if (localize) {

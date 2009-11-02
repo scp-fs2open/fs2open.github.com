@@ -150,7 +150,7 @@ void multi_common_set_text(char *str,int auto_scroll)
 	if(strlen(str) > MULTI_COMMON_MAX_TEXT){
 		return ;
 	} else {
-		strcpy(Multi_common_all_text,str);
+		strcpy_s(Multi_common_all_text,str);
 	}
 	
 	// split the whole thing up
@@ -169,7 +169,7 @@ void multi_common_add_text(char *str,int auto_scroll)
 	if((strlen(str) + strlen(Multi_common_all_text)) > MULTI_COMMON_MAX_TEXT){
 		return ;
 	} else {
-		strcat(Multi_common_all_text,str);
+		strcat_s(Multi_common_all_text,str);
 	}
 	
 	// split the whole thing up
@@ -249,7 +249,7 @@ int Multi_common_notify_stamp;
 
 void multi_common_notify_init()
 {
-	strcpy(Multi_common_notify_text,"");
+	strcpy_s(Multi_common_notify_text,"");
 	Multi_common_notify_stamp = -1;
 }
 
@@ -257,7 +257,7 @@ void multi_common_notify_init()
 void multi_common_add_notify(char *str)
 {
 	if(str){
-		strcpy(Multi_common_notify_text,str);
+		strcpy_s(Multi_common_notify_text,str);
 		Multi_common_notify_stamp = timestamp(MULTI_COMMON_NOTIFY_TIME);
 	}
 }
@@ -1308,7 +1308,7 @@ void multi_join_display_games()
 
 			// display the connection speed
 			str[0] = '\0';
-			strcpy(str, Multi_join_speed_labels[con_type]);
+			strcpy_s(str, Multi_join_speed_labels[con_type]);
 			gr_set_color_fast(Multi_join_speed_colors[con_type]);
 			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, str);
 
@@ -1322,18 +1322,18 @@ void multi_join_display_games()
 			// display the game name, adding appropriate status chars
 			str[0] = '\0';
 			if(moveup->flags & AG_FLAG_STANDALONE){
-				strcat(str,MJ_CHAR_STANDALONE);
+				strcat_s(str,MJ_CHAR_STANDALONE);
 			}
 			if(moveup->flags & AG_FLAG_CAMPAIGN){
-				strcat(str,MJ_CHAR_CAMPAIGN);
+				strcat_s(str,MJ_CHAR_CAMPAIGN);
 			}
 
 			// tack on the actual server name			
-			strcat(str," ");
-			strcat(str,moveup->name);
+			strcat_s(str," ");
+			strcat_s(str,moveup->name);
 			if(strlen(moveup->mission_name) > 0){
-				strcat(str, " / ");
-				strcat(str,moveup->mission_name);
+				strcat_s(str, " / ");
+				strcat_s(str,moveup->mission_name);
 			} 
 
 			// make sure the string fits in the display area and draw it
@@ -1344,7 +1344,7 @@ void multi_join_display_games()
 			if(moveup->ping.ping_avg > 0){
 				if(moveup->ping.ping_avg > 1000){
 					gr_set_color_fast(&Color_bright_red);
-					strcpy(str,XSTR("> 1 sec",761));
+					strcpy_s(str,XSTR("> 1 sec",761));
 				} else {
 					// set the appropriate ping time color indicator
 					if(moveup->ping.ping_avg > MJ_PING_YELLOW){
@@ -1356,7 +1356,7 @@ void multi_join_display_games()
 					}
 
 					sprintf(str,"%d",moveup->ping.ping_avg);
-					strcat(str,XSTR(" ms",762));  // [[ Milliseconds ]]
+					strcat_s(str,XSTR(" ms",762));  // [[ Milliseconds ]]
 				}
 
 				gr_string(Mj_ping_coords[gr_screen.res][MJ_X_COORD],y_start,str);
@@ -1427,27 +1427,27 @@ void multi_join_blit_game_status(active_game *game, int y)
 	switch( game->flags & AG_FLAG_STATE_MASK ){
 	case AG_FLAG_FORMING:
 		gr_set_color_fast(&Color_bright_green);
-		strcpy(status_text,XSTR("Forming",764));
+		strcpy_s(status_text,XSTR("Forming",764));
 		break;
 	case AG_FLAG_BRIEFING:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Briefing",765));
+		strcpy_s(status_text,XSTR("Briefing",765));
 		break;
 	case AG_FLAG_DEBRIEF:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Debrief",766));
+		strcpy_s(status_text,XSTR("Debrief",766));
 		break;
 	case AG_FLAG_PAUSE:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Paused",767));
+		strcpy_s(status_text,XSTR("Paused",767));
 		break;
 	case AG_FLAG_IN_MISSION:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Playing",768));
+		strcpy_s(status_text,XSTR("Playing",768));
 		break;
 	default:
 		gr_set_color_fast(&Color_bright);
-		strcpy(status_text,XSTR("Unknown",769));
+		strcpy_s(status_text,XSTR("Unknown",769));
 		break;
 	}		
 	gr_get_string_size(&str_w,NULL,status_text);
@@ -1905,12 +1905,12 @@ void multi_join_send_join_request(int as_observer)
 	}	
 		
 	// fill out the join request struct	
-	strcpy(Multi_join_request.callsign,Player->callsign);
+	strcpy_s(Multi_join_request.callsign,Player->callsign);
 	if(strlen(Player->image_filename) > 0){
-		strcpy(Multi_join_request.image_filename, Player->image_filename);
+		strcpy_s(Multi_join_request.image_filename, Player->image_filename);
 	}	
 	if(strlen(Player->squad_filename) > 0){
-		strcpy(Multi_join_request.squad_filename, Player->squad_filename);
+		strcpy_s(Multi_join_request.squad_filename, Player->squad_filename);
 	}
 
 	// tracker id (if any)
@@ -2371,7 +2371,7 @@ void multi_start_game_init()
 	// if starting a netgame, set the name of the game and any other options that are appropriate
 	if ( Cmdline_start_netgame ) {
 		if ( Cmdline_game_name != NULL ) {
-			strcpy( Multi_sg_netgame->name, Cmdline_game_name );
+			strcpy_s( Multi_sg_netgame->name, Cmdline_game_name );
 			Multi_sg_game_name.set_text(Multi_sg_netgame->name);
 		}
 
@@ -2383,7 +2383,7 @@ void multi_start_game_init()
 			Multi_sg_netgame->mode = NG_MODE_RESTRICTED;
 		} else if ( Cmdline_game_password != NULL ) {
 			Multi_sg_netgame->mode = NG_MODE_PASSWORD;
-			strcpy(Multi_sg_netgame->passwd, Cmdline_game_password);
+			strcpy_s(Multi_sg_netgame->passwd, Cmdline_game_password);
 			Multi_sg_game_passwd.set_text(Multi_sg_netgame->passwd);
 		}
 
@@ -2747,9 +2747,9 @@ void multi_sg_init_gamenet()
 	pilot_format_callsign_personal(Player->callsign,out_name);
 	sprintf(buf, XSTR("%s game",782), out_name);  // [[ %s will be a pilot's name ]]
 	if ( strlen(buf) > MAX_GAMENAME_LEN ){
-		strcpy(buf, XSTR("Temporary name",783));
+		strcpy_s(buf, XSTR("Temporary name",783));
 	}
-	strcpy(Multi_sg_netgame->name, buf);
+	strcpy_s(Multi_sg_netgame->name, buf);
 
 	// set the default qos and duration
 	multi_voice_maybe_update_vars(Netgame.options.voice_qos,Netgame.options.voice_record_time);
@@ -2941,7 +2941,7 @@ void multi_sg_rank_build_name(char *in,char *out)
 	char use[100];
 	char *first;
 
-	strcpy(use,in);
+	strcpy_s(use,in);
 	first = strtok(use," ");
 
 	// just copy the string
@@ -4289,9 +4289,9 @@ void multi_create_plist_blit_normal()
 			}			
 			
 			// make sure the string will fit, then display it
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,XSTR("(O)",787));  // [[ Observer ]]
+				strcat_s(str,XSTR("(O)",787));  // [[ Observer ]]
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mc_players_coords[gr_screen.res][MC_W_COORD] - total_offset);
 			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str);
@@ -4362,9 +4362,9 @@ void multi_create_plist_blit_team()
 			}						
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,XSTR("(O)",787));
+				strcat_s(str,XSTR("(O)",787));
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mc_players_coords[gr_screen.res][MC_W_COORD] - total_offset);
 
@@ -4428,9 +4428,9 @@ void multi_create_plist_blit_team()
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,XSTR("(O)",787));
+				strcat_s(str,XSTR("(O)",787));
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mc_players_coords[gr_screen.res][MC_W_COORD] - total_offset);
 
@@ -4524,8 +4524,8 @@ void multi_create_list_load_missions()
 
 			multi_create_info mcip;
 
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, mission_name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, mission_name );
 			mcip.flags = flags;
 			mcip.respawn = m_respawn;
 			mcip.max_players = (ubyte)max_players;
@@ -4616,8 +4616,8 @@ void multi_create_list_load_campaigns()
 		if( flags != CAMPAIGN_TYPE_SINGLE && mission_campaign_get_info(filename,title,&campaign_type,&max_players)) {
 			multi_create_info mcip;
 
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, name );
 			
 			// setup various flags
 			if ( flags == CAMPAIGN_TYPE_MULTI_COOP ){
@@ -4733,7 +4733,7 @@ void multi_create_list_do()
 		multi_create_list_blit_icons(idx, y_start);		
 		
 		// force fit the mission name string
-		strcpy(selected_name, mcip->name);
+		strcpy_s(selected_name, mcip->name);
 		gr_force_fit_string(selected_name, 255, Mc_column1_w[gr_screen.res]);
 		gr_string(Mc_mission_name_x[gr_screen.res], y_start, selected_name);
 
@@ -4742,7 +4742,7 @@ void multi_create_list_do()
 		gr_string(Mc_mission_count_x[gr_screen.res], y_start, selected_name);		
 
 		// force fit the mission filename string
-		strcpy(selected_name, mcip->filename);
+		strcpy_s(selected_name, mcip->filename);
 		gr_force_fit_string(selected_name, 255, Mc_column3_w[gr_screen.res]);
 		gr_string(Mc_mission_fname_x[gr_screen.res], y_start, selected_name);
 
@@ -4831,7 +4831,7 @@ void multi_create_list_select_item(int n)
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
 				
 				Assert(ng->max_players > 0);
-				strcpy(ng->title,The_mission.name);								
+				strcpy_s(ng->title,The_mission.name);								
 
 				// set the information area text
 				multi_common_set_text(The_mission.mission_desc);
@@ -4865,7 +4865,7 @@ void multi_create_list_select_item(int n)
 				// if we successfully got the # of players
 				else {
 					memset(ng->title,0,NAME_LENGTH+1);
-					strcpy(ng->title,title);
+					strcpy_s(ng->title,title);
 					ng->max_players = max_players;					
 				}
 
@@ -5028,7 +5028,7 @@ void multi_create_accept_hit()
 
     if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.mission_time_limit > fl2f(-1.0f)))
     {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
                              XSTR("A time limit is being used in a co-op game.\r\n"
                                   "  Select \'Cancel\' to go back to the mission select screen.\r\n"
                                   "  Select \'Yes\' to continue with this time limit.\r\n"
@@ -5046,7 +5046,7 @@ void multi_create_accept_hit()
 
     if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.kill_limit < 9999))
     {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
+        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
                              XSTR("A kill limit is being used in a co-op game.\r\n"
                                   "  Select \'Cancel\' to go back to the mission select screen.\r\n"
                                   "  Select \'Yes\' to continue with this kill limit.\r\n"
@@ -6872,11 +6872,11 @@ void multi_game_client_setup_do_frame()
 	// blit the mission filename if possible
 	if(Netgame.campaign_mode){
 		if(strlen(Netgame.campaign_name) > 0){			
-			strcpy(mission_text,Netgame.campaign_name);
+			strcpy_s(mission_text,Netgame.campaign_name);
 			
 			if(strlen(Netgame.title) > 0){
-				strcat(mission_text,", ");
-				strcat(mission_text,Netgame.title);
+				strcat_s(mission_text,", ");
+				strcat_s(mission_text,Netgame.title);
 			}
 
 			gr_set_color_fast(&Color_bright_white);
@@ -6884,11 +6884,11 @@ void multi_game_client_setup_do_frame()
 		}								
 	} else {
 		if(strlen(Netgame.mission_name) > 0){			
-			strcpy(mission_text,Netgame.mission_name);
+			strcpy_s(mission_text,Netgame.mission_name);
 
 			if(strlen(Netgame.title) > 0){
-				strcat(mission_text,", ");
-				strcat(mission_text,Netgame.title);
+				strcat_s(mission_text,", ");
+				strcat_s(mission_text,Netgame.title);
 			}			
 
 			gr_set_color_fast(&Color_bright_white);
@@ -7087,9 +7087,9 @@ void multi_jw_plist_blit_normal()
 			}			
 			
 			// make sure the string will fit, then display it
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,"(0)");
+				strcat_s(str,"(0)");
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
 			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str);
@@ -7161,7 +7161,7 @@ void multi_jw_plist_blit_team()
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
 
 			// display him in the correct half of the list depending on his team
@@ -7218,9 +7218,9 @@ void multi_jw_plist_blit_team()
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,"(0)");
+				strcat_s(str,"(0)");
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
 
@@ -7438,8 +7438,7 @@ int Multi_sync_countdown_coords[GR_NUM_RESOLUTIONS][2] = {
 
 //XSTR:ON
 
-anim *Multi_sync_countdown_anim = NULL;
-anim_instance *Multi_sync_countdown_instance = NULL;
+static generic_anim Multi_sync_countdown_anim;
 
 
 // PREBRIEFING STUFF
@@ -7836,10 +7835,10 @@ void multi_sync_blit_screen_all()
 						}
 						// otherwise
 						else {
-							strcpy(txt,XSTR("Mission file xfer",829));
+							strcpy_s(txt,XSTR("Mission file xfer",829));
 						}					
 					} else {
-						strcpy(txt,XSTR("Mission file xfer",829));
+						strcpy_s(txt,XSTR("Mission file xfer",829));
 					}
 				}
 				// clients should display only for themselves (which is the only thing they know)
@@ -7854,12 +7853,12 @@ void multi_sync_blit_screen_all()
 						}
 						// otherwise
 						else {
-							strcpy(txt,XSTR("Mission file xfer",829));
+							strcpy_s(txt,XSTR("Mission file xfer",829));
 						}
 					}
 					// otherwise
 					else {
-						strcpy(txt,XSTR("Mission file xfer",829));
+						strcpy_s(txt,XSTR("Mission file xfer",829));
 					}
 				}
 
@@ -7875,7 +7874,10 @@ void multi_sync_blit_screen_all()
 	}	
 
 	// display the mission start countdown timer (if any)
-	anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);	
+	//anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);
+	if((gameseq_get_state() == GS_STATE_MULTI_MISSION_SYNC && Multi_sync_countdown_timer > -1.0f) || (Multi_sync_countdown != -1))
+		generic_anim_render(&Multi_sync_countdown_anim, flFrametime, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
+
 
 	// process and show the chatbox thingie	
 	chatbox_render();
@@ -8227,11 +8229,11 @@ void multi_sync_post_init()
 	}	
 
 	// if I'm not a standalone server, load up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
-		Multi_sync_countdown_anim = NULL;
-		Multi_sync_countdown_instance = NULL;
-		Multi_sync_countdown_anim = anim_load(Multi_sync_countdown_fname[gr_screen.res]);				
-		if(Multi_sync_countdown_anim == NULL){
+	if(!(Game_mode & GM_STANDALONE_SERVER)){
+		generic_anim_init(&Multi_sync_countdown_anim, Multi_sync_countdown_fname[gr_screen.res]);
+		Multi_sync_countdown_anim.ani.bg_type = bm_get_type(Multi_sync_bitmap);
+		generic_anim_stream(&Multi_sync_countdown_anim);
+		if(Multi_sync_countdown_anim.num_frames < 1){
 			nprintf(("General","WARNING!, Could not load countdown animation %s!\n",Multi_sync_countdown_fname[gr_screen.res]));
 		}
 	}
@@ -8320,17 +8322,6 @@ void multi_sync_post_do()
 			// increment by frametime.
 			Multi_sync_countdown_timer += flFrametime;
 
-			// if the animation is not playing, start it
-			if(!(Game_mode & GM_STANDALONE_SERVER) && (Multi_sync_countdown_instance == NULL) && (Multi_sync_countdown_anim != NULL)){
-				anim_play_struct aps;				
-
-				anim_play_init(&aps, Multi_sync_countdown_anim, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
-				aps.screen_id = GS_STATE_MULTI_MISSION_SYNC;
-				aps.framerate_independent = 1;
-
-				Multi_sync_countdown_instance = anim_play(&aps);
-			}
-
 			// if the next second has expired
 			if( Multi_sync_countdown_timer >= 1.0f ) {
 
@@ -8360,17 +8351,6 @@ void multi_sync_post_do()
 			
 				multi_common_add_text(XSTR("Moving into game\n",842),1);			
 			}
-		}
-	} else {
-		// maybe start the animation countdown 
-		if((Multi_sync_countdown >= 0) && (Multi_sync_countdown_instance == NULL) && (Multi_sync_countdown_anim != NULL)){
-			anim_play_struct aps;				
-
-			anim_play_init(&aps, Multi_sync_countdown_anim, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
-			aps.screen_id = GS_STATE_MULTI_MISSION_SYNC;
-			aps.framerate_independent = 1;
-
-			Multi_sync_countdown_instance = anim_play(&aps);
 		}
 	}
 
@@ -8402,18 +8382,8 @@ void multi_sync_post_close()
 {
 	int idx;
 
-	// if I'm not a standalone server, unload up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
-		// release all rendering animation instances (should only be 1)
-		anim_release_all_instances(GS_STATE_MULTI_MISSION_SYNC);
-		Multi_sync_countdown_instance = NULL;
-
-		// free up the countdown animation
-		if(Multi_sync_countdown_anim != NULL){
-			anim_free(Multi_sync_countdown_anim);
-			Multi_sync_countdown_anim = NULL;
-		}
-	}
+	if(Multi_sync_countdown_anim.num_frames > 0)
+		generic_anim_unload(&Multi_sync_countdown_anim);
 	
 	// all players should reset sequencing
 	for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -8440,7 +8410,7 @@ void multi_sync_display_name(char *name,int index,int np_index)
 	char fit[CALLSIGN_LEN];	
 	
 	// make sure the string actually fits
-	strcpy(fit,name);
+	strcpy_s(fit,name);
 
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -8517,7 +8487,7 @@ void multi_sync_display_status(char *status,int index)
 	char fit[250];
 
 	// make sure the string actually fits
-	strcpy(fit, status);
+	strcpy_s(fit, status);
 	gr_force_fit_string(fit, 250, Ms_status2_coords[gr_screen.res][MS_W_COORD] - 20);
 	gr_set_color_fast(&Color_bright);	
 	gr_string(Ms_status2_coords[gr_screen.res][MS_X_COORD], Ms_status2_coords[gr_screen.res][MS_Y_COORD] + (index * 10), fit);		
@@ -9057,7 +9027,10 @@ void multi_debrief_server_process()
 	if((Multi_debrief_time >= Multi_debrief_resend_time) && !multi_netplayer_state_check3(NETPLAYER_STATE_DEBRIEF, NETPLAYER_STATE_DEBRIEF_ACCEPT, NETPLAYER_STATE_DEBRIEF_REPLAY, 1)){
 		// find all players who are not in the debrief state and hit them with the endgame packet
 		for(idx=0; idx<MAX_PLAYERS; idx++){
-			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && ((Net_players[idx].state != NETPLAYER_STATE_DEBRIEF) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY)) ){
+			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && 
+				( ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY ) ) ){
 				send_endgame_packet(&Net_players[idx]);
 			}
 		}

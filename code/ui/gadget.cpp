@@ -84,18 +84,18 @@ int UI_GADGET::set_bmaps(char *ani_fname, int nframes, int start_frame)
 	m_num_frames = nframes;		
 	for(idx=start_frame; idx<nframes; idx++){
 		// clear the string
-		strcpy(full_name, "");
+		strcpy_s(full_name, "");
 
 		// get the # of digits for this index
 		num_digits = (idx < 10) ? 1 : (idx < 100) ? 2 : (idx < 1000) ? 3 : 4;
 
 		// build the actual filename
-		strcpy(full_name, ani_fname);		
+		strcpy_s(full_name, ani_fname);		
 		for(s_idx=0; s_idx<(4-num_digits); s_idx++){
-			strcat(full_name, NOX("0"));
+			strcat_s(full_name, NOX("0"));
 		}
 		sprintf(tmp, "%d", idx);
-		strcat(full_name, tmp);		
+		strcat_s(full_name, tmp);		
 
 		// try and load the bitmap				
 		bmap_ids[idx] = bm_load(full_name);	

@@ -1169,7 +1169,7 @@ char* psnet_addr_to_string( char * text, net_addr * address )
 {
 
 	if ( Network_status != NETWORK_STATUS_RUNNING )		{
-		strcpy( text, XSTR("[no networking]",910) );
+		strcpy_s( text, XSTR("[no networking]",910) );
 		return text;
 	}
 
@@ -1191,7 +1191,7 @@ char* psnet_addr_to_string( char * text, net_addr * address )
 
 		case NET_TCP:
 			memcpy(&temp_addr.s_addr, address->addr, 4);
-			strcpy( text, inet_ntoa(temp_addr) );
+			strcpy_s( text, inet_ntoa(temp_addr) );
 			break;
 
 		default:
@@ -1216,13 +1216,13 @@ void psnet_string_to_addr( net_addr * address, char * text )
 	in_addr addr;
 
 	if ( Network_status != NETWORK_STATUS_RUNNING ) {
-		strcpy( text, XSTR("[no networking]",910) );
+		strcpy_s( text, XSTR("[no networking]",910) );
 		return;
 	}
 
 	// copy the text string to local storage to look for ports
 	Assert( strlen(text) < 255 );
-	strcpy(str, text);
+	strcpy_s(str, text);
 	c = strrchr(str, ':');
 	port = NULL;
 	if ( c ) {
@@ -2088,7 +2088,7 @@ int psnet_is_valid_numeric_ip(char *ip)
 	int val1,val2,val3,val4;
 
 	// get the first ip value
-	strcpy(copy,ip);
+	strcpy_s(copy,ip);
 	token = strtok(copy,".");
 	if(token == NULL){
 		return 0;
@@ -2158,7 +2158,7 @@ int psnet_is_valid_ip_string( char *ip_string, int allow_port )
 
 	// our addresses may have ports, so make local copy and remove port number
 	Assert( strlen(ip_string) < 255 );
-	strcpy(str, ip_string);
+	strcpy_s(str, ip_string);
 	c = strrchr(str, ':');
 	if ( c ){
 		*c = '\0';

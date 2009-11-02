@@ -315,7 +315,7 @@ void briefing_editor_dlg::update_data(int update)
 	Briefing = save_briefing;
 
 	Mission_music[SCORE_BRIEFING] = m_briefing_music - 1;
-	strcpy(The_mission.substitute_briefing_music_name, m_substitute_briefing_music);
+	strcpy_s(The_mission.substitute_briefing_music_name, m_substitute_briefing_music);
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
 		deconvert_multiline_string(buf3, m_text, MAX_BRIEF_LEN);
@@ -429,10 +429,10 @@ void briefing_editor_dlg::update_data(int update)
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
-					strcpy(iconp->label, buf);
+					strcpy_s(iconp->label, buf);
 			}
 
-			strcpy(ptr->icons[m_last_icon].label, buf);
+			strcpy_s(ptr->icons[m_last_icon].label, buf);
 			if ( m_hilight )
 				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
 			else
@@ -473,10 +473,10 @@ void briefing_editor_dlg::update_data(int update)
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
-					strcpy(iconp->text, buf2);
+					strcpy_s(iconp->text, buf2);
 			}
 
-			strcpy(ptr->icons[m_last_icon].text, buf2);
+			strcpy_s(ptr->icons[m_last_icon].text, buf2);
 */
 		}
 	}
@@ -854,7 +854,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 {
 	if ((from < 0) || (from >= Briefing->num_stages)) {
 		strcpy(Briefing->stages[to].new_text, "<Text here>");
-		strcpy(Briefing->stages[to].voice, "none.wav");
+		strcpy_s(Briefing->stages[to].voice, "none.wav");
 		Briefing->stages[to].camera_pos = view_pos;
 		Briefing->stages[to].camera_orient = view_orient;
 		Briefing->stages[to].camera_time = 500;
@@ -865,7 +865,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 
 	// Copy all the data in the stage structure.
 	strcpy( Briefing->stages[to].new_text, Briefing->stages[from].new_text );
-	strcpy( Briefing->stages[to].voice, Briefing->stages[from].voice );
+	strcpy_s( Briefing->stages[to].voice, Briefing->stages[from].voice );
 	Briefing->stages[to].camera_pos = Briefing->stages[from].camera_pos;
 	Briefing->stages[to].camera_orient = Briefing->stages[from].camera_orient;
 	Briefing->stages[to].camera_time = Briefing->stages[from].camera_time;

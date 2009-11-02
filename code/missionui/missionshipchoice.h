@@ -62,7 +62,6 @@ void ship_select_do(float frametime);
 void ship_select_close();
 void ship_select_common_init();
 void ship_select_common_close();
-void ship_stop_animation();
 int ss_get_ship_class(int ship_entry_index);
 int ss_get_selected_ship();
 

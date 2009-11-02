@@ -1284,6 +1284,9 @@ void player_level_init()
 
 	Player->scream_count = 0;					// number of times player has heard wingman screams this mission
 	Player->allow_scream_timestamp = 1;		// timestamp until next wingman scream is allowed
+	
+	Player->low_ammo_complaint_count = 0;	// number of complaints about low ammo received in this mission
+	Player->allow_ammo_timestamp = 1;		// timestamp until next 'Ammo low' message can be played
 
 	Player->request_repair_timestamp = 1;	// timestamp until next 'requesting repair sir' message can be played
 
@@ -1994,13 +1997,13 @@ void player_display_packlock_view()
 	if ( !(Viewer_mode & (VM_CHASE|VM_EXTERNAL)) ) {
 		switch (padlock_view_index) {
 		case 0:
-			strcpy(str, XSTR( "top view", 101));	break;
+			strcpy_s(str, XSTR( "top view", 101));	break;
 		case 1:
-			strcpy(str, XSTR( "rear view", 102));	break;
+			strcpy_s(str, XSTR( "rear view", 102));	break;
 		case 2:
-			strcpy(str, XSTR( "left view", 103));	break;
+			strcpy_s(str, XSTR( "left view", 103));	break;
 		case 3:
-			strcpy(str, XSTR( "right view", 104));	break;
+			strcpy_s(str, XSTR( "right view", 104));	break;
 			}
 
 		HUD_fixed_printf(0.01f, str);

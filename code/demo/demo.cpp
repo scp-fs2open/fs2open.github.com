@@ -254,7 +254,7 @@ int demo_start_record(char *file)
 	}
 
 	// open the outfile
-	strcpy(full_name, file);
+	strcpy_s(full_name, file);
 	cf_add_ext(full_name, ".fsd");
 	Demo_file = cfopen(full_name, "wb", CFILE_NORMAL, CF_TYPE_DEMOS);
 	if(Demo_file == NULL){
@@ -298,7 +298,7 @@ int demo_start_playback(char *file)
 	}
 
 	// open the outfile
-	strcpy(full_name, file);
+	strcpy_s(full_name, file);
 	cf_add_ext(full_name, ".fsd");
 	Demo_file = cfopen(full_name, "rb", CFILE_NORMAL, CF_TYPE_DEMOS);
 	if(Demo_file == NULL){

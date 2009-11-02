@@ -319,9 +319,9 @@ void multi_pinfo_popup_init(net_player *np)
 
 	// zero bitmap info
 	Mp_pilot.bitmap = -1;
-	strcpy(Mp_pilot.filename, "");
+	strcpy_s(Mp_pilot.filename, "");
 	Mp_squad.bitmap = -1;
-	strcpy(Mp_squad.filename, "");
+	strcpy_s(Mp_squad.filename, "");
 
 	// set the player status
 	multi_pinfo_reset_player(np);	
@@ -478,19 +478,19 @@ void multi_pinfo_blit_pilot_image()
 
 		// if there is no image
 		if(strlen(Mp_pilot.filename) <= 0){
-			strcpy(place_text,XSTR("No/Invalid Image", 1053));
+			strcpy_s(place_text,XSTR("No/Invalid Image", 1053));
 		} 
 		// if the image is xferring
 		else if(multi_xfer_lookup(Mp_pilot.filename)){
-			strcpy(place_text,XSTR("Image Transferring", 691));
+			strcpy_s(place_text,XSTR("Image Transferring", 691));
 		}
 		// if we're not accepting images
 		else if(!(Net_player->p_info.options.flags & MLO_FLAG_ACCEPT_PIX) || !(Netgame.options.flags & MSO_FLAG_ACCEPT_PIX)){
-			strcpy(place_text,XSTR("No Image", 692));
+			strcpy_s(place_text,XSTR("No Image", 692));
 		}
 		// otherwise we wait
 		else {
-			strcpy(place_text,XSTR("Waiting", 690));
+			strcpy_s(place_text,XSTR("Waiting", 690));
 		}		
 
 		// center the text
@@ -524,19 +524,19 @@ void multi_pinfo_blit_squadron_logo()
 
 		// if there is no image
 		if(strlen(p->squad_filename) <= 0){
-			strcpy(place_text,XSTR("No/Invalid Image", 1053));
+			strcpy_s(place_text,XSTR("No/Invalid Image", 1053));
 		} 
 		// if the image is xferring
 		else if(multi_xfer_lookup(p->squad_filename)){
-			strcpy(place_text,XSTR("Image Transferring", 691));
+			strcpy_s(place_text,XSTR("Image Transferring", 691));
 		}
 		// if we're not accepting images
 		else if(!(Net_player->p_info.options.flags & MLO_FLAG_ACCEPT_PIX) || !(Netgame.options.flags & MSO_FLAG_ACCEPT_PIX)){
-			strcpy(place_text,XSTR("No Image", 692));
+			strcpy_s(place_text,XSTR("No Image", 692));
 		}
 		// otherwise we wait
 		else {
-			strcpy(place_text,XSTR("Waiting", 690));
+			strcpy_s(place_text,XSTR("Waiting", 690));
 		}				
 
 		// center the text
@@ -710,19 +710,19 @@ void multi_pinfo_build_stats()
 
 	// last flown	
 	if(sc->last_flown == 0){
-		strcpy(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],XSTR("No missions flown",693));
+		strcpy_s(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],XSTR("No missions flown",693));
 	} else {
 		time_t last_flown_tmp = sc->last_flown;
 		tm *tmr = gmtime(&last_flown_tmp);
 		if(tmr != NULL){
 			strftime(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],MAX_LABEL_TEXT,"%m/%d/%y %H:%M",tmr);
 		} else {
-			strcpy(Multi_pinfo_stats_vals[MPI_LAST_FLOWN], "");			
+			strcpy_s(Multi_pinfo_stats_vals[MPI_LAST_FLOWN], "");			
 		}
 	}	
 
 	// rank
-	strcpy(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
+	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
 
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%d",sc->p_shots_fired);
@@ -818,12 +818,12 @@ void multi_pinfo_reset_player(net_player *np)
 	Multi_pinfo_popup_player = np;
 
 	// unload any old image data if necessary
-	strcpy(Mp_pilot.filename, "");
+	strcpy_s(Mp_pilot.filename, "");
 	if(Mp_pilot.bitmap != -1){
 		bm_release(Mp_pilot.bitmap);
 		Mp_pilot.bitmap = -1;
 	}
-	strcpy(Mp_squad.filename, "");
+	strcpy_s(Mp_squad.filename, "");
 	if(Mp_squad.bitmap != -1){
 		bm_release(Mp_squad.bitmap);
 		Mp_squad.bitmap = -1;
@@ -831,11 +831,11 @@ void multi_pinfo_reset_player(net_player *np)
 	
 	// try and load pilot pic/squad logo
 	if(strlen(np->m_player->image_filename) > 0){
-		strcpy(Mp_pilot.filename, np->m_player->image_filename);
+		strcpy_s(Mp_pilot.filename, np->m_player->image_filename);
 		Mp_pilot.bitmap = bm_load_duplicate(Mp_pilot.filename);
 	}
 	if(strlen(np->m_player->squad_filename) > 0){
-		strcpy(Mp_squad.filename, np->m_player->squad_filename);
+		strcpy_s(Mp_squad.filename, np->m_player->squad_filename);
 		Mp_squad.bitmap = bm_load_duplicate(Mp_squad.filename);
 	}
 

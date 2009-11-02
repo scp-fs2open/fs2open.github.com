@@ -19,6 +19,7 @@
 #include "io/timer.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
+#include "math/staticrand.h"
 
 
 
@@ -38,6 +39,7 @@
 #define	STRAFE_RETREAT_COLLIDE_TIME	2.0		// when anticipated collision time is less than this, begin retreat
 #define	STRAFE_RETREAT_COLLIDE_DIST	100		// when perpendicular distance to *surface* is less than this, begin retreat
 #define	STRAFE_RETREAT_BOX_DIST			300		// distance beyond the bounding box to retreat
+#define STRAFE_MAX_UNHIT_TIME		20		// Maximum amount of time to stay in strafe mode if not hit
 
 #define	EVADE_BOX_BASE_DISTANCE			300		// standard distance to end evade submode
 #define	EVADE_BOX_MIN_DISTANCE			200		// minimun distance to end evade submode, after long time
@@ -50,9 +52,9 @@
 #define	ATTACK_COLLIDE_SLOW_DIST		150		// perpendicular distance to attack surface at which begin slowing down
 #define	ATTACK_COLLIDE_SLOW_TIME		1.5		// anticipated collision time at which to begin slowing down
 
-#define GLIDE_STRAFE_DISTANCE	50.0f	//Distance from the ship to pass when glide strafing
-#define GLIDE_STRAFE_MIN_TIME	2	//Minimum amount of time to stay on one glide strafe approach vector
-#define GLIDE_STRAFE_MAX_TIME	15	//Maximum amount of time for each glide strafe pass
+#define GLIDE_STRAFE_DISTANCE			50.0f	//Distance from the ship to pass when glide strafing
+#define GLIDE_STRAFE_MIN_TIME			2	//Minimum amount of time to stay on one glide strafe approach vector
+#define GLIDE_STRAFE_MAX_TIME			15	//Maximum amount of time for each glide strafe pass
 
 // forward declarations
 void	ai_big_evade_ship();
@@ -135,10 +137,7 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 					if (dot > fov)
 						in_fov = true;
 				} else {
-					if (tp->flags & MSS_FLAG_TURRET_ALT_MATH)
-						in_fov = turret_adv_fov_test(ss, attacker_objp_fvec, &v2p);
-					else
-						in_fov = turret_std_fov_test(ss, attacker_objp_fvec, &v2p);
+					in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
 				}
 
 				if (in_fov) {
@@ -582,6 +581,16 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 
 		} // end if ( Pl_objp->phys_info.speed < 3.0f ) 
 
+		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
+		if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
+			aip->previous_mode = aip->mode;
+			aip->mode = AIM_STRAFE;
+			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
+			aip->submode = AIS_STRAFE_GLIDE_ATTACK;
+			aip->submode_parm1 = 0;
+			aip->submode_start_time = Missiontime;
+		}
+
 		// see if Pl_objp needs to reposition to get a good shot at subsystem which is being attacked
 		if ( ai_big_maybe_follow_subsys_path() ) {
 			return;
@@ -653,7 +662,7 @@ void ai_big_chase_ct()
 }
 
 extern void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
-extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip);
+extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst);
 extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
 extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time);
 
@@ -742,19 +751,32 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 								//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
 								//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
 									if (ai_fire_secondary_weapon(Pl_objp)) {
-										if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-											t = swip->fire_wait;
+										if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+											if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												t = swip->burst_delay;
+												swp->burst_counter[current_bank]++;
+											} else {
+												t = swip->fire_wait;
+												if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+													swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+												} else {
+ 													swp->burst_counter[current_bank] = 0;
+												}
+											}
 										} else {
-											t = set_secondary_fire_delay(aip, temp_shipp, swip);
+											if (swip->burst_shots > swp->burst_counter[current_bank]) {
+												t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
+												swp->burst_counter[current_bank]++;
+											} else {
+												t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
+												if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+													swp->burst_counter[current_bank] = myrand() % swip->burst_shots;
+												} else {
+													swp->burst_counter[current_bank] = 0;
+												}
+											}
 										}
-
-										if (swip->burst_shots > swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]) {
-											swp->next_secondary_fire_stamp[current_bank] = swip->burst_delay;
-											swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS]++;
-										} else {
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
-											swp->burst_counter[current_bank + MAX_SHIP_PRIMARY_BANKS] = 0;
-										}
+										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 									}
 								//}
 							}
@@ -802,9 +824,6 @@ void ai_big_chase()
 
 	enemy_ship_type = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
 
-	//Default to glide OFF
-	Pl_objp->phys_info.flags &= ~PF_GLIDING;
-
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 
 	player_pos = Pl_objp->pos;
@@ -812,7 +831,7 @@ void ai_big_chase()
 
 	//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
 	if (En_objp->phys_info.speed > 3.0f) {
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
 		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
 		vm_vec_sub2(&enemy_pos, &En_objp->pos);
 	}	else
@@ -1302,7 +1321,7 @@ void ai_big_strafe_attack()
 
 	// if haven't been hit in quite a while, leave strafe mode
 	fix long_enough;
-	long_enough = F1_0*20;
+	long_enough = F1_0 * STRAFE_MAX_UNHIT_TIME;
 	if ( (last_hit > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
@@ -1314,7 +1333,6 @@ void ai_big_strafe_attack()
 //1: Accelerating towards the goal point.
 //2: Raining down fire and brimstone on the target.
 //3: Dummy stage used when resetting or exiting the mode
-//TODO: **NOTE** This functionality is still WIP. Expect another commit soon polishing it up.
 void ai_big_strafe_glide_attack()
 {
 	ai_info *aip;
@@ -1345,16 +1363,6 @@ void ai_big_strafe_glide_attack()
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);	
 	target_ship_dist = vm_vec_dist(&target_objp->pos, &Pl_objp->pos);
 
-	//TODO: Maybe retreat if we're too close or collision imminent? (check for imminent collision?)
-	//TODO: Doesn't always trigger for moving targets? (Maybe change the way we get into glide strafe?)
-	//TODO: Somehow deal with the target's motion better? (Don't pick a point that will lead to collision?) (Move the target point based on projected position by the time the AI gets there?)
-	//TODO: Subsytem attacks are a bit wonky? Maybe?
-	//TODO: Don't wig out if target is destroyed.
-	//TODO: Fix problems switching from glide strafe to chase mid-run
-	//TODO: Instead of using the ->radius of the target, use the APPARENT radius from the current point of attack?
-	//TODO: Make sure this scales well for different speeds of attacking ship
-	//TODO: Make sure this scales well for different sizes/speeds of target ship
-
 	//If we haven't chosen the goal point yet, do so now
 	if (aip->submode_parm1 == 0) {
 		//Pick goal point. This should be a random point that passes through the circle whose normal is the vector between attacker and target
@@ -1368,9 +1376,6 @@ void ai_big_strafe_glide_attack()
 		vm_vec_sub2(&tangentPoint, &Pl_objp->pos);
 		vm_vec_scale(&tangentPoint, 1000.0f);
 		vm_vec_add(&aip->goal_point, &tangentPoint, &Pl_objp->pos);
-
-		//TODO: Try several points and pick the one closest to the current target point? Might help vs subsystems.
-
 		aip->submode_parm1 = 1;
 	}
 	if (aip->submode_parm1 == 1) {
@@ -1386,7 +1391,6 @@ void ai_big_strafe_glide_attack()
 		//Keep going until we are too far away.
 		//If we are still on approach but too far away, this will still trigger. This will allow us to reposition the target
 		//point and allow for a "jinking" effect.
-		//TODO: Replace GLIDE_STRAFE_MIN_TIME with the same logic for normal jinking amount based on difficulty level?
 		if (target_ship_dist > (STRAFE_RETREAT_BOX_DIST + target_objp->radius) &&
 			Missiontime - aip->submode_start_time > i2f(GLIDE_STRAFE_MIN_TIME)) {
 			//This checks whether we are moving toward the target or away from it.  If moving towards, we reset the stage so that we
@@ -1427,7 +1431,7 @@ void ai_big_strafe_glide_attack()
 		afterburners_stop(Pl_objp);
 
 		//Compensate for motion of ship and target
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, En_objp, aip);
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
 		vm_vec_add2(&target_pos, &predicted_enemy_pos);
 		vm_vec_sub2(&target_pos, &En_objp->pos);
 
@@ -1437,8 +1441,7 @@ void ai_big_strafe_glide_attack()
 
 	// if haven't been hit in quite a while, leave strafe mode
 	// (same as ai_big_strafe_attack)
-	//TODO: Alternately, have a different criteria for leaving glide strafe?
-	fix long_enough = F1_0*20;
+	fix long_enough = F1_0 * STRAFE_MAX_UNHIT_TIME;
 	if ( (Missiontime - aip->last_hit_time > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
@@ -1562,7 +1565,7 @@ void ai_big_strafe_position()
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	//Maybe use AIS_STRAFE_GLIDE_ATTACK
-	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < The_mission.ai_profile->glide_strafe_percent[Game_skill_level])) {
+	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < aip->ai_glide_strafe_percent)) {
 		aip->submode = AIS_STRAFE_GLIDE_ATTACK;
 		aip->submode_parm1 = 0;
 	} else {
@@ -1593,9 +1596,6 @@ void ai_big_strafe()
 		return;
 	}
 */
-	//Default to glide OFF
-	Pl_objp->phys_info.flags &= ~PF_GLIDING;
-
 	// check if target is still a big ship... if not enter chase mode
 	if ( !(Ship_info[Ships[En_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
 		ai_big_switch_to_chase_mode(aip);
@@ -1738,7 +1738,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (The_mission.ai_profile->flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
+	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
 		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

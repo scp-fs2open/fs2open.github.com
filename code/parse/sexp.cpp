@@ -375,7 +375,7 @@ sexp_oper Operators[] = {
 
 	{ "is-nav-visited",					OP_NAV_IS_VISITED,				1, 1 }, // Kazan
 	{ "distance-to-nav",				OP_NAV_DISTANCE,				1, 1 }, // Kazan
-	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 3 }, //kazan
+	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 4 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
 	{ "del-nav",						OP_NAV_DEL,						1, 1 }, //kazan
 	{ "hide-nav",						OP_NAV_HIDE,					1, 1 }, //kazan
@@ -441,6 +441,10 @@ sexp_oper Operators[] = {
 	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
+	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
+	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
+	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
+	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -531,7 +535,7 @@ sexp_oper Operators[] = {
 	{ "get-fov",					OP_CUTSCENES_GET_FOV,					0, 0, },
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
 	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
-	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 12, },
+	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 13, },
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
@@ -871,7 +875,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Assert(strlen(text) < TOKEN_LENGTH);
 	Assert(type >= 0);
 
-	strcpy(Sexp_nodes[node].text, text);
+	strcpy_s(Sexp_nodes[node].text, text);
 	Sexp_nodes[node].type = type;
 	Sexp_nodes[node].subtype = subtype;
 	Sexp_nodes[node].first = first;
@@ -2989,7 +2993,7 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 static int Sexp_text_overflow_warning = 0;
 
 // speed is not critical, since we're using FRED
-char *sexp_strcat(char *dest, const char *src, int max_len)
+char *sexp_strcat_s(char *dest, const char *src, int max_len)
 {
 	int dest_len = strlen(dest);
 	int src_len = strlen(src);
@@ -3003,9 +3007,9 @@ char *sexp_strcat(char *dest, const char *src, int max_len)
 		if (!Sexp_text_overflow_warning)
 		{
 			char buf[512];
-			strcpy(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
+			strcpy_s(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
 			strncat(buf, dest, 172);
-			strcat(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
+			strcat_s(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
 			mprintf((buf));
 			Error(LOCATION, buf);
 
@@ -3023,14 +3027,14 @@ int build_sexp_string(int cur_node, int level, int mode, int max_len)
 
 	Sexp_build_flag = 0;
 	offset = strlen(Sexp_string);
-	sexp_strcat(Sexp_string, "( ", max_len);
+	sexp_strcat_s(Sexp_string, "( ", max_len);
 	node = cur_node;
 	while (node != -1) {
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			// build text to string
 			build_sexp_text_string(pstr, node, mode);
-			sexp_strcat(Sexp_string, pstr, max_len);
+			sexp_strcat_s(Sexp_string, pstr, max_len);
 
 		} else {
 			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
@@ -3039,7 +3043,7 @@ int build_sexp_string(int cur_node, int level, int mode, int max_len)
 		node = Sexp_nodes[node].rest;
 	}
 
-	sexp_strcat(Sexp_string, ") ", max_len);
+	sexp_strcat_s(Sexp_string, ") ", max_len);
 	len = strlen(Sexp_string) - offset;
 	if (len > 40) {
 		Sexp_string[offset] = 0;
@@ -3055,31 +3059,31 @@ void build_extended_sexp_string(int cur_node, int level, int mode, int max_len)
 	char pstr[128];
 	int i, flag = 0, node;
 
-	sexp_strcat(Sexp_string, "( ", max_len);
+	sexp_strcat_s(Sexp_string, "( ", max_len);
 	node = cur_node;
 	while (node != -1) {
 		if (flag)  // not the first line?
 			for (i=0; i<level + 1; i++)
-				sexp_strcat(Sexp_string, "   ", max_len);
+				sexp_strcat_s(Sexp_string, "   ", max_len);
 
 		flag = 1;
 		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			build_sexp_text_string(pstr,node, mode);
-			sexp_strcat(Sexp_string, pstr, max_len);
+			sexp_strcat_s(Sexp_string, pstr, max_len);
 
 		} else {
 			build_sexp_string(Sexp_nodes[node].first, level + 1, mode, max_len);
 		}
 
-		sexp_strcat(Sexp_string, "\n", max_len);
+		sexp_strcat_s(Sexp_string, "\n", max_len);
 		node = Sexp_nodes[node].rest;
 	}
 
 	for (i=0; i<level; i++)
-		sexp_strcat(Sexp_string, "   ", max_len);
+		sexp_strcat_s(Sexp_string, "   ", max_len);
 
-	sexp_strcat(Sexp_string, ")", max_len);
+	sexp_strcat_s(Sexp_string, ")", max_len);
 }
 
 void convert_sexp_to_string(int cur_node, char *outstr, int mode, int max_len)
@@ -5701,7 +5705,7 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 
 	vm_vec_sub(&v_orient, location, &objp->pos);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		Warning(LOCATION, "error in sexp setting ship orientation: can't point to self; quitting...\n");
 		return;
@@ -5808,6 +5812,220 @@ void sexp_set_object_facing(int n, bool facing_object)
 	}
 
 	sexp_set_oswpt_facing(&oswpt1, location, turn_time, bank);
+}
+
+void sexp_set_ship_man(object *objp, int duration, float heading, float pitch, float bank, int force_rotate, float up, float sideways, float forward, int force_control)
+{
+	if (objp->type != OBJ_SHIP)
+		return;
+
+	ship *shipp = &Ships[objp->instance];
+	ai_info	*aip = &Ai_info[shipp->ai_index];
+	
+	aip->ai_override_timestamp = timestamp(duration);
+	aip->ai_override_flags = 0;
+	
+	if (force_rotate) {
+		aip->ai_override_flags |= AIORF_FULL;
+		aip->ai_override_ci.bank = bank;
+		aip->ai_override_ci.pitch = pitch;
+		aip->ai_override_ci.heading = heading;
+	} else {
+		if (bank != 0.0f) {
+			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_ci.bank = bank;
+		}
+		if (pitch != 0.0f) {
+			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_ci.pitch = pitch;
+		}
+		if (heading != 0.0f) {
+			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_ci.heading = heading;
+		}
+	}
+	if (force_control) {
+		aip->ai_override_flags |= AIORF_FULL_LAT;
+		aip->ai_override_ci.vertical = up;
+		aip->ai_override_ci.sideways = sideways;
+		aip->ai_override_ci.forward = forward;
+	} else {
+		if (up != 0.0f) {
+			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_ci.vertical = up;
+		}
+		if (sideways != 0.0f) {
+			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_ci.sideways = sideways;
+		}
+		if (forward != 0.0f) {
+			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_ci.forward = forward;
+		}
+	}
+}
+
+void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, float heading, float pitch, float bank, int force_rotate, float up, float sideways, float forward, int force_control)
+{
+	Assert(oswpt);
+
+	switch (oswpt->type)
+	{
+		case OSWPT_TYPE_TEAM:
+		{
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != GET_LAST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				object *objp = &Objects[so->objnum];
+
+				if (obj_team(objp) == oswpt->team)
+					sexp_set_ship_man(objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			}
+
+			break;
+		}
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+			sexp_set_ship_man(oswpt->objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			break;
+
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt->wingp->current_count; i++)
+			{
+				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
+
+				sexp_set_ship_man(objp, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+			}
+
+			break;
+		}
+	}
+}
+
+void sexp_set_ship_maneuver(int n)
+{
+	float bank = 0, heading = 0, pitch = 0;
+	float up = 0, sideways = 0, forward = 0;
+	int duration = 0, i, temp, force_rotate = 0, force_control = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			heading = ((float) temp)/100.0f;
+		else if (i == 1)
+			pitch = ((float) temp)/100.0f;
+		else
+			bank = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_rotate = is_sexp_true(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			up = ((float) temp)/100.0f;
+		else if (i == 1)
+			sideways = ((float) temp)/100.0f;
+		else
+			forward = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_control = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((bank == 0.0f) && (pitch == 0.0f) && (heading == 0.0f) && (force_rotate == 0) && (up == 0.0f) && (sideways == 0.0f) && (forward == 0.0f) && (force_control == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, force_rotate, up, sideways, forward, force_control);
+}
+
+void sexp_set_ship_rot_maneuver(int n)
+{
+	float bank = 0, heading = 0, pitch = 0;
+	int duration = 0, i, temp, force_rotate = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			heading = ((float) temp)/100.0f;
+		else if (i == 1)
+			pitch = ((float) temp)/100.0f;
+		else
+			bank = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_rotate = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((bank == 0.0f) && (pitch == 0.0f) && (heading == 0.0f) && (force_rotate == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, force_rotate, 0.0f, 0.0f, 0.0f, 0);
+}
+
+void sexp_set_ship_lat_maneuver(int n)
+{
+	float up = 0, sideways = 0, forward = 0;
+	int duration = 0, i, temp, force_control = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	n = CDR(n);
+	duration = eval_num(n);
+
+	for(i=0;i<3;i++) {
+		n = CDR(n);
+		temp = eval_num(n);
+		if ((temp > 100) || (temp < -100))
+			temp = 0;
+		if (i == 0)
+			up = ((float) temp)/100.0f;
+		else if (i == 1)
+			sideways = ((float) temp)/100.0f;
+		else
+			forward = ((float) temp)/100.0f;
+	}
+
+	n = CDR(n);
+	force_control = is_sexp_true(n);
+
+	if (duration < 2)
+		return;
+
+	if ((up == 0.0f) && (sideways == 0.0f) && (forward == 0.0f) && (force_control == 0))
+		return;
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, 0.0f, 0.0f, 0.0f, 0, up, sideways, forward, force_control);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -8331,7 +8549,7 @@ void sexp_warp_effect(int n)
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
 		return;
@@ -9327,7 +9545,7 @@ void sexp_add_background_bitmap(int n)
 	starfield_list_entry sle;
 
 	// filename
-	strcpy(sle.filename, CTEXT(n));
+	strcpy_s(sle.filename, CTEXT(n));
 	n = CDR(n);
 
 	// sanity checking
@@ -9415,7 +9633,7 @@ void sexp_add_sun_bitmap(int n)
 	starfield_list_entry sle;
 
 	// filename
-	strcpy(sle.filename, CTEXT(n));
+	strcpy_s(sle.filename, CTEXT(n));
 	n = CDR(n);
 
 	// sanity checking
@@ -9747,13 +9965,13 @@ void sexp_allow_ship(int n)
 		return;
 
 	// get the base name of the ship
-	strcpy(name, CTEXT(n));
+	strcpy_s(name, CTEXT(n));
 	end_string_at_first_hash_symbol(name);
 
 	// add that ship, as well as any # equivalents
 	for (idx = 0; idx < Num_ship_classes; idx++)
 	{
-		strcpy(temp, Ship_info[idx].name);
+		strcpy_s(temp, Ship_info[idx].name);
 		end_string_at_first_hash_symbol(temp);
 
 		// we have a match, so allow this ship
@@ -9772,13 +9990,13 @@ void sexp_allow_weapon(int n)
 		return;
 
 	// get the base name of the weapon
-	strcpy(name, CTEXT(n));
+	strcpy_s(name, CTEXT(n));
 	end_string_at_first_hash_symbol(name);
 
 	// add that weapon, as well as any # equivalents
 	for (idx = 0; idx < Num_weapon_types; idx++)
 	{
-		strcpy(temp, Weapon_info[idx].name);
+		strcpy_s(temp, Weapon_info[idx].name);
 		end_string_at_first_hash_symbol(temp);
 
 		// we have a match, so allow this weapon
@@ -9883,9 +10101,9 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 		{
 			// grab it from the arrival list
 			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
-			if (!p_objp)
-			{
-				Int3();		// guess we'll have to track down allender
+			
+			// ships that have had ship-vanish used on them should be skipped
+			if (!p_objp) {
 				continue;
 			}
 
@@ -11282,7 +11500,7 @@ void sexp_ship_change_alt_name(int n)
 // Goober5000
 void sexp_set_death_message(int n)
 {
-	strcpy(Player->death_message, CTEXT(n));
+	strcpy_s(Player->death_message, CTEXT(n));
 
 	extern void lcl_replace_stuff(char *text, unsigned int max_len);
 	lcl_replace_stuff(Player->death_message, 256);
@@ -12517,7 +12735,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 			target_sssp = &Subsys_status[new_idx];
 			target_pobjp->subsys_count++;
 
-			strcpy(target_sssp->name, source_ss->system_info->subobj_name);
+			strcpy_s(target_sssp->name, source_ss->system_info->subobj_name);
 		}
 
 		// copy
@@ -13643,7 +13861,7 @@ void sexp_set_support_ship(int n)
 		// if not found, make a new entry
 		if (temp_val < 0)
 		{
-			strcpy(Parse_names[Num_parse_names], CTEXT(n));
+			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
 			temp_val = Num_parse_names;
 			Num_parse_names++;
 		}
@@ -13684,7 +13902,7 @@ void sexp_set_support_ship(int n)
 		// if not found, make a new entry
 		if (temp_val < 0)
 		{
-			strcpy(Parse_names[Num_parse_names], CTEXT(n));
+			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
 			temp_val = Num_parse_names;
 			Num_parse_names++;
 		}
@@ -13699,7 +13917,7 @@ void sexp_set_support_ship(int n)
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
 	}
-	if (!(Ship_info[temp_val].flags & SIF_SUPPORT))
+	if ((temp_val >= 0) && !(Ship_info[temp_val].flags & SIF_SUPPORT))
 	{
 		Warning(LOCATION, "Ship %s is not a support ship!", Ship_info[temp_val].name);
 		return;
@@ -13989,14 +14207,105 @@ void unset_nav_needslink(int node)
 	}
 }
 
+void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
+{	
+	int i;
+	object_ship_wing_point_team oswpt;
+	bool add_for_this_player = true; 
+
+	if (oswpt_name != NULL) {
+		sexp_get_object_ship_wing_point_team(&oswpt, oswpt_name); 
+
+		// we can't assume this nav should be visible to the player any more
+		add_for_this_player = false;
+
+		switch (oswpt.type)
+		{
+			case OSWPT_TYPE_TEAM:
+				if (oswpt.team == Player_ship->team) {
+					add_for_this_player = true; 
+				}
+
+			case OSWPT_TYPE_SHIP:
+				if (oswpt.shipp == Player_ship) {
+					add_for_this_player = true; 
+				}
+
+			case OSWPT_TYPE_WING:
+				for ( i = 0; i < oswpt.wingp->current_count; i++) {
+					if (Ships[oswpt.wingp->ship_index[i]].objnum == Player_ship->objnum) {
+						add_for_this_player = true; 
+					}
+				}
+
+			// for all other oswpt types we simply return
+			default:
+				return;
+		}
+	}
+
+	if (add_for_this_player) {		
+		AddNav_Waypoint(nav, WP_path, vert, 0);
+	}
+}
+
 
 //text: add-nav-waypoint
-//args: 3, Nav Name, Waypoint Path Name, Waypoint Path point
+//args: 4, Nav Name, Waypoint Path Name, Waypoint Path point, ShipWingTeam
 void add_nav_waypoint(int node)
 {
 	char *nav_name = CTEXT(node);
 	char *way_name = CTEXT(CDR(node));
-	int  vert = eval_num(CDR(CDR(node)));
+	int  vert = eval_num(CDR(CDR(node)));	
+	char *oswpt_name;
+
+	node = CDR(CDR(CDR(node)));
+	if (node >=0) {
+		oswpt_name = CTEXT(node); 
+	}
+	else {
+		oswpt_name = NULL;
+	}
+
+	add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
+
+	multi_start_packet();
+	multi_send_string(nav_name);
+	multi_send_string(way_name);
+	multi_send_int(vert);
+
+	if (oswpt_name != NULL) {
+		multi_send_string(oswpt_name);
+	}
+
+	multi_end_packet();
+}
+
+void multi_sexp_add_nav_waypoint()
+{
+	char nav_name[TOKEN_LENGTH];
+	char way_name[TOKEN_LENGTH];
+	char oswpt_name[TOKEN_LENGTH];
+	int vert;
+
+	if (!multi_get_string(nav_name)) {
+		return; 
+	}
+	
+	if (!multi_get_string(way_name)) {
+		return;
+	}
+
+	if (!multi_get_int(vert)) {
+		return;
+	}
+
+	if (!multi_get_string(oswpt_name)) {
+		add_nav_waypoint(nav_name, way_name, vert, NULL);		
+	}
+	else {
+		add_nav_waypoint(nav_name, way_name, vert, oswpt_name);
+	}
 
 	AddNav_Waypoint(nav_name, way_name, vert, 0);
 }
@@ -14324,6 +14633,54 @@ void multi_sexp_set_respawns()
 		}
 	}
 }
+
+// helper function for the remove-weapons SEXP
+void actually_remove_weapons(int weapon_info_index)
+{
+	int i; 
+
+	for (i = 0; i<MAX_WEAPONS; i++) {
+		// weapon doesn't match the optional weapon 
+		if ((weapon_info_index > -1) && (Weapons[i].weapon_info_index != weapon_info_index)) {
+			continue;
+		}
+
+		if (Weapons[i].objnum >= 0) {
+			Objects[Weapons[i].objnum].flags |= OF_SHOULD_BE_DEAD;
+		}		
+	}
+}
+
+void sexp_remove_weapons(int node)
+{ 
+	int weapon_info_index = -1;
+
+	// if we have the optional argument, read it in
+	if (node >= 0) {
+		weapon_info_index = weapon_info_lookup(CTEXT(node));
+		if (weapon_info_index == -1) {
+			char *buf = CTEXT(node); 
+			mprintf(("Remove-weapons attempted to remove %s. Weapon not found. Remove-weapons will remove all weapons currently in the mission", buf)); 
+		}
+	}
+
+	actually_remove_weapons(weapon_info_index); 
+	
+	// send the information to clients
+	multi_start_packet();
+	multi_send_int(weapon_info_index); 
+	multi_end_packet();
+}
+
+void multi_sexp_remove_weapons()
+{
+	int weapon_info_index = -1; 
+
+	multi_get_int(weapon_info_index);
+	
+	actually_remove_weapons(weapon_info_index); 
+}
+
 
 int sexp_return_player_data(int node, int type)
 {
@@ -14946,10 +15303,48 @@ void sexp_fade_in(int n)
 		Fade_type = FI_NONE;
 		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 	}
+
+	// multiplayer callback
+	multi_start_packet();
+	multi_send_float(delta_time);
+	multi_end_packet();
 }
+
+void multi_sexp_fade_in()
+{
+	float delta_time = 0.0f;
+
+	multi_get_float(delta_time);
+
+	if(delta_time > 0.0f) {
+		Fade_delta_time = delta_time;
+		Fade_type = FI_FADEIN;
+	}
+	else {
+		Fade_type = FI_NONE;
+		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
+	}
+}
+
+void sexp_fade_out(float delta_time, ubyte R, ubyte G, ubyte B) 
+{
+	if(delta_time > 0.0f) {
+		Fade_type = FI_FADEOUT;
+		Fade_delta_time = delta_time;
+	}
+	else
+	{
+		Fade_type = FI_NONE;
+		gr_create_shader(&Viewer_shader, R, G, B, 255);
+	}
+}
+
 void sexp_fade_out(int n)
 {
 	float delta_time = 0.0f;
+	ubyte R = 0;
+	ubyte G = 0;
+	ubyte B = 0;
 
 	if(n != -1)
 	{
@@ -14972,30 +15367,44 @@ void sexp_fade_out(int n)
 				default:
 					gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
 			}
+
+			R = Viewer_shader.r;
+			G = Viewer_shader.g;
+			B = Viewer_shader.b;
 		}
 		else
 		{
 			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
-		}
+		}		
+	}
 
-		if(delta_time > 0.0f)
-		{
-			Fade_type = FI_FADEOUT;
-			Fade_delta_time = delta_time;
-		}
-		else
-		{
-			Fade_type = FI_NONE;
-			gr_create_shader(&Viewer_shader, Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, 255);
-		}
-	}
-	else
-	{
-		gr_create_shader(&Viewer_shader, 0, 0, 0, 255);
-		Fade_type = FI_NONE;
-	}
+	sexp_fade_out(delta_time, R, G, B);
+
+	multi_start_packet();
+	multi_send_float(delta_time);
+	multi_send_int(R);
+	multi_send_int(G);
+	multi_send_int(B);
+	multi_end_packet();
 }
 
+void multi_sexp_fade_out()
+{
+	float delta_time = 0.0f;
+	int R = 0;
+	int G = 0;
+	int B = 0;
+
+	multi_get_float(delta_time);
+	multi_get_int(R);
+	multi_get_int(G);
+	if (!multi_get_int(B)){
+		Int3();	// misformed packet
+		return;
+	}
+
+	sexp_fade_out(delta_time, (ubyte)R, (ubyte)G, (ubyte)B);
+}
 
 camera* sexp_get_set_camera(bool reset = false)
 {
@@ -15333,9 +15742,9 @@ int sexp_get_fov()
 		return -1;
 	else if(Sexp_fov > 0.0f)
 		// SEXP override has been set
-		return Sexp_fov / (PI/180.0f);
+		return (int) (Sexp_fov / (PI/180.0f));
 	else	
-		return cam->get_fov() / (PI/180.0f);
+		return (int) (cam->get_fov() / (PI/180.0f));
 }
 
 void sexp_reset_fov()
@@ -15370,6 +15779,7 @@ void sexp_show_subtitle(int node)
 	int r=255, g=255, b=255;
 	bool center_x=false, center_y=false;
 	int n = -1;
+	bool post_shaded = false;
 
 	x_pos = eval_num(node);
 
@@ -15387,43 +15797,57 @@ void sexp_show_subtitle(int node)
 	{
 		imageanim = CTEXT(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		fade_time = eval_num(n)/1000.0f; //also in ms
+		n = CDR(n);
+		if(n != -1)
+		{
+			fade_time = eval_num(n)/1000.0f; //also in ms
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-			center_x = true;
+			n = CDR(n);
+			if(n != -1)
+			{
+				if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+					center_x = true;
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-			center_y = true;
-		
-	n = CDR(n);
-	if(n != -1)
-	{
-		width = eval_num(n);
+				n = CDR(n);
+				if(n != -1)
+				{
+					if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+						center_y = true;
+						
+					n = CDR(n);
+					if(n != -1)
+					{
+						width = eval_num(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		r = eval_num(n);
+						n = CDR(n);
+						if(n != -1)
+						{
+							r = eval_num(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		g = eval_num(n);
+							n = CDR(n);
+							if(n != -1)
+							{
+								g = eval_num(n);
 
-	n = CDR(n);
-	if(n != -1)
-	{
-		b = eval_num(n);
-	}}}}}}}}
+								n = CDR(n);
+								if(n != -1)
+								{
+									b = eval_num(n);
+
+									n = CDR(n);
+									if ( n !=-1 )
+									{
+										if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+											post_shaded = true;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	if(r > 255)
 		r = 255;
@@ -15436,7 +15860,7 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, r, g, b, 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, display_time, imageanim, fade_time, &new_color, center_x, center_y, width);
+	subtitle new_subtitle(x_pos, y_pos, text, display_time, imageanim, fade_time, &new_color, center_x, center_y, width, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -16595,6 +17019,21 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SHIP_MANEUVER:
+				sexp_set_ship_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_ROT_MANEUVER:
+				sexp_set_ship_rot_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_LAT_MANEUVER:
+				sexp_set_ship_lat_maneuver(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// training operators
 			case OP_KEY_PRESSED:
 				sexp_val = sexp_key_pressed(node);
@@ -16734,6 +17173,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SET_RESPAWNS:
 				sexp_set_respawns(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_REMOVE_WEAPONS:
+				sexp_remove_weapons(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -17369,6 +17813,10 @@ void multi_sexp_eval()
 				multi_sexp_set_respawns();
 				break;
 
+			case OP_REMOVE_WEAPONS:
+				multi_sexp_remove_weapons();
+				break;
+
 			case OP_CHANGE_SHIP_CLASS:
 				multi_sexp_change_ship_class();
 				break;
@@ -17412,6 +17860,18 @@ void multi_sexp_eval()
 
 			case OP_MODIFY_VARIABLE:
 				multi_sexp_modify_variable();
+				break;
+
+			case OP_NAV_ADD_WAYPOINT:
+				multi_sexp_add_nav_waypoint();
+				break;
+
+			case OP_CUTSCENES_FADE_IN:
+				multi_sexp_fade_in();
+				break;
+
+			case OP_CUTSCENES_FADE_OUT:
+				multi_sexp_fade_out();
 				break;
 
 			// bad sexp in the packet
@@ -17466,6 +17926,71 @@ int get_sexp_main()
 
 	return start_node;
 }
+
+int run_sexp(const char* sexpression)
+{
+	char* oldMp = Mp;
+	int n, i, sexp_val = UNINITIALIZED;
+	char buf[8192];
+
+	strncpy(buf, sexpression, 8192);
+
+	// HACK: ! -> "
+	for (i = 0; i < (int)strlen(buf); i++)
+		if (buf[i] == '!')
+			buf[i]='\"';
+
+	Mp = buf;
+
+	n = get_sexp_main();
+	if (n != -1)
+	{
+		sexp_val = eval_sexp(n);
+		free_sexp2(n);
+	}
+	Mp = oldMp;
+
+	return sexp_val;
+}
+
+DCF(sexpc, "Always runs the given sexp command ")
+{
+	if ( Dc_command )       {
+		if (Dc_command_line != NULL) {
+			int sexp_val = UNINITIALIZED;
+			char buf[8192];
+
+			snprintf(buf, 8191, "( when ( true ) ( %s ) )", Dc_command_line);
+			sexp_val = run_sexp( buf );
+			dc_printf("SEXP '%s' run, sexp_val = %d\n", buf, sexp_val);
+			do {
+				dc_get_arg(ARG_ANY);
+			} while (Dc_arg_type != ARG_NONE);
+		}
+	}
+	if ( Dc_help )  {
+		dc_printf( "Usage: sexpc sexpression\n. Always runs the given sexp as '( when ( true ) ( sexp ) )' .\n" );
+	}
+}
+
+
+DCF(sexp,"Runs the given sexp")
+{
+	if ( Dc_command )       {
+		if (Dc_command_line != NULL) {
+			int sexp_val = UNINITIALIZED;
+			sexp_val = run_sexp( Dc_command_line );
+			dc_printf("SEXP '%s' run, sexp_val = %d\n", Dc_command_line, sexp_val);
+			do {
+				dc_get_arg(ARG_ANY);
+			} while (Dc_arg_type != ARG_NONE);
+		}
+	}
+	if ( Dc_help )  {
+		dc_printf( "Usage: sexp 'sexpression'\n. Runs the given sexp.\n");
+	}
+}
+
 
 void test_sexps()
 {
@@ -17783,6 +18308,9 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_POSITION:
 		case OP_SET_OBJECT_FACING:
 		case OP_SET_OBJECT_FACING_OBJECT:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_KAMIKAZE:
@@ -17879,6 +18407,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_CHANGE_IFF_COLOR:
+		case OP_REMOVE_WEAPONS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -18074,6 +18603,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
+		case OP_REMOVE_WEAPONS:
+			return OPF_WEAPON_NAME;
+
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 			if (argnum == 0)
 				return OPF_POSITIVE;
@@ -18211,6 +18743,31 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_POSITIVE;
+
+		case OP_SHIP_MANEUVER:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else if (argnum < 5)
+				return OPF_NUMBER;
+			else if (argnum == 5)
+				return OPF_BOOL;
+			else if (argnum < 9)
+				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
+
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else if (argnum < 5)
+				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -19151,8 +19708,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else if (argnum==1)
 				return OPF_WAYPOINT_PATH;
-			else
+			else if (argnum==2)
 				return OPF_POSITIVE;
+			else 
+				return OPF_SHIP_WING_POINT;
 
 		case OP_NAV_ADD_SHIP:		//kazan
 			if (argnum==0)
@@ -19235,6 +19794,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if(argnum < 12)
 				return OPF_POSITIVE;
+			else if(argnum == 12 )
+				return OPF_BOOL;
 
 		//</Cutscenes>
 
@@ -19305,7 +19866,7 @@ void update_block_names(const char *old_name, const char *new_name)
 	for (i=0; i<MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) {
 			if ( !stricmp(old_name, Sexp_variables[i].variable_name) ) {
-				strcpy(Sexp_variables[i].variable_name, new_name);
+				strcpy_s(Sexp_variables[i].variable_name, new_name);
 			}
 		}
 	}
@@ -19824,7 +20385,6 @@ char *CTEXT(int n)
 		else
 		{
 			// make sure we have an argument to replace it with
-			Assert(!(Sexp_replacement_arguments.empty()));
 			if (Sexp_replacement_arguments.empty())
 				return Sexp_nodes[n].text;
 		}
@@ -19904,8 +20464,8 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 	}
 
 	if (index >= 0) {
-		strcpy(Sexp_variables[index].text, text);
-		strcpy(Sexp_variables[index].variable_name, var_name);
+		strcpy_s(Sexp_variables[index].text, text);
+		strcpy_s(Sexp_variables[index].variable_name, var_name);
 		Sexp_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
 		Sexp_variables[index].type = (type | SEXP_VARIABLE_SET);
 	}
@@ -19922,7 +20482,7 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( !MULTIPLAYER_CLIENT );
 
-	strcpy(Sexp_variables[index].text, text);
+	strcpy_s(Sexp_variables[index].text, text);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
 	// do multi_callback_here
@@ -19952,7 +20512,7 @@ void multi_sexp_modify_variable()
 
 	// set the sexp_variable
 	if ( (variable_index >= 0) && (variable_index < sexp_variable_count()) ) {
-		strcpy(Sexp_variables[variable_index].text, value); 
+		strcpy_s(Sexp_variables[variable_index].text, value); 
 	}	
 }
 
@@ -20009,8 +20569,8 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) );
 
-	strcpy(Sexp_variables[index].text, text);
-	strcpy(Sexp_variables[index].variable_name, var_name);
+	strcpy_s(Sexp_variables[index].text, text);
+	strcpy_s(Sexp_variables[index].variable_name, var_name);
 	Sexp_variables[index].type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
 }
 
@@ -20254,7 +20814,7 @@ int sexp_variable_allocate_block(const char* block_name, int block_type)
 	for (int idx=start; idx<start+num_blocks; idx++) {
 		Assert(Sexp_variables[idx].type == SEXP_VARIABLE_NOT_USED);
 		Sexp_variables[idx].type = SEXP_VARIABLE_BLOCK | block_type;
-		strcpy(Sexp_variables[idx].variable_name, block_name);
+		strcpy_s(Sexp_variables[idx].variable_name, block_name);
 	}
 
 	return start;
@@ -20473,6 +21033,9 @@ int get_subcategory(int sexp_id)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
+		case OP_SHIP_MANEUVER:
+		case OP_SHIP_ROT_MANEUVER:
+		case OP_SHIP_LAT_MANEUVER:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
 
 		case OP_CHANGE_SOUNDTRACK:
@@ -20503,6 +21066,7 @@ int get_subcategory(int sexp_id)
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SHIP_COPY_DAMAGE:
+		case OP_REMOVE_WEAPONS:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -21556,6 +22120,40 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Turn time in milliseconds (optional)\r\n"
 		"\t4: Bank (optional)" },
 
+	// Wanderer
+	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Heading change rate percentage (-100 to 100)\r\n"
+		"\t4: Pitch change rate percentage (-100 to 100)\r\n"
+		"\t5: Banking change rate percentage (-100 to 100)\r\n"
+		"\t6: Force rotations (boolean)\r\n"
+		"\t7: Vertical movement change percentage (-100 to 100)\r\n"
+		"\t8: Sideways movement change percentage (-100 to 100)\r\n"
+		"\t9: Forward movement change percentage (-100 to 100)\r\n"
+		"\t10: Force movements (boolean)\r\n" },
+
+	// Wanderer
+	{ OP_SHIP_ROT_MANEUVER, "ship-rot-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Heading change rate percentage (-100 to 100)\r\n"
+		"\t4: Pitch change rate percentage (-100 to 100)\r\n"
+		"\t5: Banking change rate percentage (-100 to 100)\r\n"
+		"\t6: Force rotations (boolean)\r\n" },
+	
+	// Wanderer
+	{ OP_SHIP_LAT_MANEUVER, "ship-lat-maneuver\r\n"
+		"\tSets ai ship to bank (roll). Takes 3 arguments\r\n"
+		"\t1: The name of an object\r\n"
+		"\t2: Turn time in milliseconds\r\n"
+		"\t3: Vertical movement change percentage (-100 to 100)\r\n"
+		"\t4: Sideways movement change percentage (-100 to 100)\r\n"
+		"\t5: Forward movement change percentage (-100 to 100)\r\n"
+		"\t6: Force movements (boolean)\r\n" },
+
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
 		"\tTags a ship.  Takes 3 or 8 arguments...\r\n"
@@ -22312,6 +22910,10 @@ sexp_help_struct Sexp_help[] = {
 		"\tReturns the # respawns a player (or AI that could have been a player) has remaining.\r\n"
 		"\tThe ship specified in the first field should be the player start.\r\n"
 		"\tOnly really useful for multiplayer."},
+
+	{ OP_REMOVE_WEAPONS, "remove-weapons\r\n"
+		"\tRemoves all live weapons currently in the game"
+		"\t1: (Optional) Remove only this specific weapon\r\n"},
 
 	{ OP_SET_RESPAWNS, "set-respawns\r\n"
 		"\tSet the # respawns a player (or AI that could have been a player) has used.\r\n"
@@ -23098,15 +23700,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
 		"\t3:\tText to display\r\n"
 		"\t4:\tTime to be displayed, not including fadein/out\r\n"
-		"\t(optional)\r\n"
-		"\t5:\tImage name\r\n"
-		"\t6:\tFade in time\r\n"
-		"\t7:\tCenter horizontally?\r\n"
-		"\t8:\tCenter vertically?\r\n"
-		"\t9:\tWidth\r\n"
-		"\t10:\tText red component (0-255)\r\n"
-		"\t11:\tText green component (0-255)\r\n"
-		"\t12:\tText blue component (0-255)"
+		"\t(optional) 5:\tImage name\r\n"
+		"\t(optional) 6:\tFade in time\r\n"
+		"\t(optional) 7:\tCenter horizontally?\r\n"
+		"\t(optional) 8:\tCenter vertically?\r\n"
+		"\t(optional) 9:\tWidth\r\n"
+		"\t(optional) 10:\tText red component (0-255)\r\n"
+		"\t(optional) 11:\tText green component (0-255)\r\n"
+		"\t(optional) 12:\tText blue component (0-255)\r\n"
+		"\t(optional) 13:\tDrawn after shading?"
 	},
 
 	{ OP_CUTSCENES_SET_TIME_COMPRESSION, "set-time-compression\r\n"

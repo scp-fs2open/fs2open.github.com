@@ -3131,7 +3131,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// normalize banks, in case of incredibly big normals
 			// VECMAT-ERROR: NULL VEC3D (norm == nul)
-			if ( !IS_VEC_NULL(&gpt->norm) )
+			if ( !IS_VEC_NULL_SQ_SAFE(&gpt->norm) )
 				vm_vec_copy_normalize(&scale_vec, &gpt->norm);
 
 			// adjust for thrust
@@ -3763,7 +3763,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 							{
 								float d;
 
-								if ( (gpt->norm.xyz.x == 0.0f) && (gpt->norm.xyz.z == 0.0f) && (gpt->norm.xyz.z == 0.0f) ) {
+								if ( IS_VEC_NULL(&norm) ) {
 									d = 1.0f;	//if given a nul vector then always show it
 								} else {
 									vm_vec_sub(&tempv,&View_position,&pnt);
@@ -5971,7 +5971,7 @@ float texture_info::GetTotalTime()
 }
 int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 {
-	this->original_texture = bm_load_either(filename, NULL, NULL, 1, CF_TYPE_MAPS);
+	this->original_texture = bm_load_either(filename, NULL, NULL, NULL, 1, CF_TYPE_MAPS);
 	if(this->original_texture < 0)
 		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani\n", dbg_name, filename));
 	this->ResetTexture();

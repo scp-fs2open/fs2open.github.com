@@ -13,6 +13,7 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 
+extern int radar_target_id_flags;
 
 int Num_iffs;
 iff_info Iff_info[MAX_IFFS];
@@ -26,6 +27,14 @@ int *iff_color_brightness = &iff_bright_delta;
 // global only to file
 color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
 
+flag_def_list rti_flags[] = {
+	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
+	{ "blink",				RTIF_BLINK,			0 },
+	{ "pulsate",			RTIF_PULSATE,		0 },
+	{ "enlarge",			RTIF_ENLARGE,		0 }
+};
+
+int Num_rti_flags = sizeof(rti_flags)/sizeof(flag_def_list);
 
 // borrowed from ship.cpp, ship_iff_init_colors
 int iff_get_alpha_value(bool is_bright)
@@ -106,8 +115,7 @@ void iff_init()
 
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
-	int i = 0;
-	int j = 0;
+	int i, j, k;
 	int string_idx;
 
 	int rval;
@@ -172,16 +180,15 @@ void iff_init()
 
 
 	// init radar blips colour table
-	int iLoop,jLoop,kLoop;
 	int a_bright,a_dim;
-	bool alternate_blip_color;
-	for (iLoop=0;iLoop<5;iLoop++)
+	bool alternate_blip_color = false;
+	for (i=0;i<5;i++)
 	{
-		for (jLoop=0;jLoop<2;jLoop++)
+		for (j=0;j<2;j++)
 		{
-			for (kLoop=0;kLoop<3;kLoop++)
+			for (k=0;k<3;k++)
 			{
-				radar_iff_color[iLoop][jLoop][kLoop] = -1;
+				radar_iff_color[i][j][k] = -1;
 			}
 		}
 	}
@@ -290,12 +297,17 @@ void iff_init()
 		}
 	}
 
+	if (optional_string("$Radar Target ID Flags:")) {
+		parse_string_flag_list((int*)&radar_target_id_flags, rti_flags, Num_rti_flags);
+		if (optional_string("+reset"))
+			radar_target_id_flags = 0;
+	}
+	
 	// begin reading data
 	Num_iffs = 0;
 	while (required_string_either("#End","$IFF Name:"))
 	{
 		iff_info *iff;
-		int rgb[3];
 		int cur_iff;
 		
 		// make sure we're under the limit
@@ -382,7 +394,8 @@ void iff_init()
 		iff->default_parse_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
-			int i, j = 0;
+			i = 0;
+			j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
 			for (i = 0; i < num_strings; i++)
@@ -405,7 +418,8 @@ void iff_init()
 		iff->default_parse_flags2 = 0;
 		if (optional_string("$Default Ship Flags2:"))
 		{
-			int i, j = 0;
+			i = 0;
+			j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS_2);
 			for (i = 0; i < num_strings; i++)
@@ -448,7 +462,7 @@ void iff_init()
 		iff->attackee_bitmask_all_teams_at_war = 0;
 
 		// clear the observed colors
-		for (int j = 0; j < MAX_IFFS; j++)
+		for (j = 0; j < MAX_IFFS; j++)
 			iff->observed_color_index[j] = -1;
 
 		// resolve the list names

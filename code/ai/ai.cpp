@@ -90,7 +90,7 @@ char *ai_get_goal_ship_name(char *name, int *index)
 	Assert(Total_goal_ship_names < MAX_GOAL_SHIP_NAMES);
 	Assert(strlen(name) < NAME_LENGTH - 1);
 	i = Total_goal_ship_names++;
-	strcpy(Goal_ship_names[i], name);
+	strcpy_s(Goal_ship_names[i], name);
 	*index = i;
 	return Goal_ship_names[i];
 }

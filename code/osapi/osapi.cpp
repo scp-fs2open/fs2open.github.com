@@ -139,8 +139,8 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 
-	strcpy( szWinTitle, title );
-	strcpy( szWinClass, wclass );	
+	strcpy_s( szWinTitle, title );
+	strcpy_s( szWinClass, wclass );	
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
 /*
@@ -172,7 +172,7 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 // set the main window title
 void os_set_title( char * title )
 {
-	strcpy( szWinTitle, title );
+	strcpy_s( szWinTitle, title );
 	SetWindowText( hwndApp, szWinTitle );
 }
 
@@ -692,7 +692,7 @@ void win32_create_window(int width, int height)
 
 	// we don't sicky TOPMOST for windowed mode since we wouldn't be able to bring
 	// the debug window (or anything else) to the true foreground otherwise
-	hwndApp = CreateWindowEx( (Cmdline_window) ? 0 : WS_EX_TOPMOST,
+	hwndApp = CreateWindowEx( (Cmdline_window || Cmdline_fullscreen_window) ? 0 : WS_EX_TOPMOST,
 								szWinClass, szWinTitle,
 								style,   
 								start_x,		// x
@@ -756,8 +756,10 @@ void debug_int3(char *file, int line)
 	gr_activate(0);
 
 #ifdef _WIN32
-#if defined _MSC_VER
-	_asm { int 3 };
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+	__debugbreak( );
+#elif defined(_MSC_VER)
+	_asm int 3;
 #elif defined __GNUC__
 	asm("int $3");
 #else

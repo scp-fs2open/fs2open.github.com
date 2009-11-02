@@ -140,7 +140,7 @@ void CMissionGoalsDlg::load_tree()
 		m_goals[i] = Mission_goals[i];
 		m_sig[i] = i;
 		if (!(*m_goals[i].name))
-			strcpy(m_goals[i].name, "<unnamed>");
+			strcpy_s(m_goals[i].name, "<unnamed>");
 
 		m_goals[i].formula = m_goals_tree.load_sub_tree(Mission_goals[i].formula, true, "true");
 	}
@@ -347,8 +347,8 @@ void CMissionGoalsDlg::OnOk()
 	// rename all sexp references to old events
 	for (i=0; i<m_num_goals; i++)
 		if (m_sig[i] >= 0) {
-			strcpy(names[0][count], Mission_goals[m_sig[i]].name);
-			strcpy(names[1][count], m_goals[i].name);
+			strcpy_s(names[0][count], Mission_goals[m_sig[i]].name);
+			strcpy_s(names[1][count], m_goals[i].name);
 			count++;
 			Mission_goals[m_sig[i]].satisfied = 1;
 		}
@@ -358,8 +358,8 @@ void CMissionGoalsDlg::OnOk()
 		if (!Mission_goals[i].satisfied) {
 			sprintf(buf, "<%s>", Mission_goals[i].name);
 			strcpy(buf + NAME_LENGTH - 2, ">");  // force it to be not too long
-			strcpy(names[0][count], Mission_goals[i].name);
-			strcpy(names[1][count], buf);
+			strcpy_s(names[0][count], Mission_goals[i].name);
+			strcpy_s(names[1][count], buf);
 			count++;
 		}
 
@@ -388,8 +388,8 @@ void CMissionGoalsDlg::OnButtonNewGoal()
 	Assert(m_num_goals < MAX_GOALS);
 	m_goals[m_num_goals].type = m_display_goal_types;			// this also marks the goal as valid since bit not set
 	m_sig[m_num_goals] = -1;
-	strcpy(m_goals[m_num_goals].name, "Goal name");
-	strcpy(m_goals[m_num_goals].message, "Mission goal text");
+	strcpy_s(m_goals[m_num_goals].name, "Goal name");
+	strcpy_s(m_goals[m_num_goals].message, "Mission goal text");
 	h = m_goals_tree.insert(m_goals[m_num_goals].name);
 
 	m_goals_tree.item_index = -1;

@@ -252,7 +252,7 @@ int multi_msg_text_process(int k)
 		if(strlen(Multi_msg_text) < MULTI_MSG_MAX_LEN){
 			str[0] = (char)key_to_ascii(k);
 			str[1] = '\0';
-			strcat(Multi_msg_text,str);		
+			strcat_s(Multi_msg_text,str);		
 		}
 		break;
 	}
@@ -356,7 +356,7 @@ int multi_msg_check_command(char *str)
 	}
 
 	// we don't want to modify the original string, which strtok() does
-	strcpy(temp_str, str);
+	strcpy_s(temp_str, str);
 
 	// try and find a command prefix
 	prefix = strtok(temp_str, ":");
@@ -369,7 +369,7 @@ int multi_msg_check_command(char *str)
 		return 0;
 	
 	// store the text as the actual parameter
-	strcpy(param, predicate);
+	strcpy_s(param, predicate);
 	drop_leading_white_space(param);
 
 	// go through all existing commands and see what we can do
@@ -386,7 +386,7 @@ int multi_msg_check_command(char *str)
 	/*
 	// apply the results as a general expression, if we're in message all mode
 	if(Multi_msg_mode == MULTI_MSG_ALL){
-		strcpy(Multi_msg_text,param);
+		strcpy_s(Multi_msg_text,param);
 
 		// send the chat packet
 		send_game_chat_packet(Net_player, Multi_msg_text, MULTI_MSG_EXPR,NULL, prefix);
@@ -468,7 +468,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case ATTACK_TARGET_ITEM :
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Attack %s",700),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -478,7 +478,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case DISABLE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Disable %s",701),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -488,7 +488,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case PROTECT_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Protect %s",702),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -498,7 +498,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case IGNORE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Ignore %s",703),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -508,7 +508,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case DISARM_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Disarm %s",704),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -518,7 +518,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case DISABLE_SUBSYSTEM_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP) && (subsys_type != -1) && (subsys_type != 0)){
 			sprintf(temp_string,XSTR("Disable subsystem %s on %s",705),Multi_msg_subsys_name[subsys_type],Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -526,17 +526,17 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 
 	// form on my wing
 	case FORMATION_ITEM:		
-		strcat(hud_string,XSTR("Form on my wing",706));		
+		strcat_s(hud_string,XSTR("Form on my wing",706));		
 		break;
 
 	// cover me
 	case COVER_ME_ITEM:
-		strcat(hud_string,XSTR("Cover me",707));
+		strcat_s(hud_string,XSTR("Cover me",707));
 		break;
 
 	// engage enemy
 	case ENGAGE_ENEMY_ITEM:
-		strcat(hud_string,XSTR("Engage enemy!",708));
+		strcat_s(hud_string,XSTR("Engage enemy!",708));
 		break;
 
 	default :

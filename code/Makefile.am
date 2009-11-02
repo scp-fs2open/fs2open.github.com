@@ -289,6 +289,9 @@ FS2_SOURCES =	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
 	globalincs/pstypes.h	\
+	globalincs/safe_strings.cpp	\
+	globalincs/safe_strings.h	\
+	globalincs/safe_strings_test.cpp	\
 	globalincs/systemvars.cpp	\
 	globalincs/systemvars.h	\
 	globalincs/version.cpp	\
@@ -748,8 +751,6 @@ endif
 ## Win32-specific sources
 if FS2_OS_WIN32
 WIN32_SOURCES =	\
-	directx/dx8show.cpp	\
-	directx/dx8show.h	\
 	directx/vasync.h	\
 	directx/vd3dtypes.h	\
 	directx/vddraw.h	\
@@ -765,20 +766,6 @@ WIN32_SOURCES =	\
 	graphics/gl/Gl.h	\
 	graphics/gl/Glext.h	\
 	graphics/gl/wglext.h	\
-	graphics/GrD3DStateBlock.cpp	\
-	graphics/GrD3DStateBlock.h	\
-	graphics/grd3d.cpp	\
-	graphics/grd3d.h	\
-	graphics/grd3dcalls.cpp	\
-	graphics/grd3dbmpman.cpp	\
-	graphics/grd3dbmpman.h	\
-	graphics/grd3dinternal.h	\
-	graphics/grd3dlight.cpp	\
-	graphics/grd3dlight.h	\
-	graphics/grd3drender.cpp	\
-	graphics/grd3dsetup.cpp	\
-	graphics/grd3dsetup.h	\
-	graphics/grd3dtexture.cpp	\
 	osapi/monopub.h	\
 	osapi/osapi.cpp	\
 	osapi/osapi.h	\

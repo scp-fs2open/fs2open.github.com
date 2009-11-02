@@ -283,7 +283,7 @@ void multi_df_debrief_do()
 	chatbox_render();
 
 	// draw the mission title
-	strcpy(buf, The_mission.name);
+	strcpy_s(buf, The_mission.name);
 	gr_force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
 	gr_set_color_fast(&Color_bright_white);
 	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf);
@@ -368,7 +368,7 @@ void multi_df_setup_kill_matrix()
 			}
 
 			s->stats = Net_players[idx].m_player->stats;
-			strcpy(s->callsign, Net_players[idx].m_player->callsign);			
+			strcpy_s(s->callsign, Net_players[idx].m_player->callsign);			
 			s->np_index = idx;
 		}
 	}
@@ -398,7 +398,7 @@ void multi_df_blit_kill_matrix()
 	cy = top_y_start;
 	for(idx=0; idx<Multi_df_score_count; idx++){		
 		// force the string to fit nicely
-		strcpy(squashed_string, Multi_df_score[idx].callsign);
+		strcpy_s(squashed_string, Multi_df_score[idx].callsign);
 		gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 		gr_get_string_size(&str_len, NULL, squashed_string);
 
@@ -428,7 +428,7 @@ void multi_df_blit_kill_matrix()
 
 		// draw the name
 		cx = Multi_df_display_coords[gr_screen.res][0];
-		strcpy(squashed_string, Multi_df_score[idx].callsign);
+		strcpy_s(squashed_string, Multi_df_score[idx].callsign);
 		gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 		gr_get_string_size(&str_len, NULL, squashed_string);		
 		Assert(Multi_df_score[idx].np_index >= 0);
@@ -442,7 +442,7 @@ void multi_df_blit_kill_matrix()
 		for(s_idx=0; s_idx<Multi_df_score_count; s_idx++){
 			// stuff the string to be displayed and select the proper display color
 			if(s_idx == idx){
-				strcpy(squashed_string, "-");
+				strcpy_s(squashed_string, "-");
 				gr_set_color_fast(&Color_grey);
 			} else {
 				row_total += multi_df_stuff_kills(squashed_string, idx, s_idx);

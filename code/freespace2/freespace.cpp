@@ -554,8 +554,8 @@ static char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
 
 
 static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
-	"Loading.ani",		// GR_640
-	"2_Loading.ani"		// GR_1024
+	"Loading",		// GR_640
+	"2_Loading"		// GR_1024
 };
 
 #if defined(OEM_BUILD)
@@ -1205,7 +1205,7 @@ void game_load_palette()
 	Assert( Mission_palette <= 98 );
 
 	// if ( The_mission.flags & MISSION_FLAG_SUBSPACE )	{
-		strcpy( palette_filename, NOX("gamepalette-subspace") );
+		strcpy_s( palette_filename, NOX("gamepalette-subspace") );
 	// } else {
 		// sprintf( palette_filename, NOX("gamepalette%d-%02d"), HUD_config.color+1, Mission_palette+1 );
 	// }
@@ -1231,9 +1231,11 @@ void game_load_palette()
 int Game_loading_callback_inited = 0;
 
 int Game_loading_background = -1;
-anim * Game_loading_ani = NULL;
-anim_instance	*Game_loading_ani_instance;
-int Game_loading_frame=-1;
+//static int last_cbitmap = -1;
+//anim * Game_loading_ani = NULL;
+//anim_instance	*Game_loading_ani_instance;
+//int Game_loading_frame=-1;
+generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
@@ -1249,46 +1251,40 @@ extern char Processing_filename[MAX_PATH_LEN];
 static int busy_shader_created = 0;
 shader busy_shader;
 #endif
+static int framenum;
 // This gets called 10x per second and count is the number of times 
 // game_busy() has been called since the current callback function
 // was set.
 void game_loading_callback(int count)
 {	
+	int new_framenum;
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
-	Assert( Game_loading_ani != NULL );
+	Assert( Game_loading_ani.num_frames > 0 );
 
 	int do_flip = 0;
 
-	int framenum = ((Game_loading_ani->total_frames*count) / COUNT_ESTIMATE)+1;
-	if ( framenum > Game_loading_ani->total_frames-1 )	{
-		framenum = Game_loading_ani->total_frames-1;
-	} else if ( framenum < 0 )	{
-		framenum = 0;
+	new_framenum = ((Game_loading_ani.num_frames*count) / COUNT_ESTIMATE)+1;
+	if ( new_framenum > Game_loading_ani.num_frames-1 )	{
+		new_framenum = Game_loading_ani.num_frames-1;
+	} else if ( new_framenum < 0 )	{
+		new_framenum = 0;
 	}
+	//make sure we always run forwards - graphical hack
+	if(new_framenum > framenum)
+		framenum = new_framenum;
 
-	static int last_cbitmap = -1;
-	int cbitmap = -1;
-	while ( Game_loading_frame < framenum )	{
-		Game_loading_frame++;
-		cbitmap = anim_get_next_frame(Game_loading_ani_instance);
-	}
-	
-
-	if ( cbitmap > -1 )	{
+	if ( Game_loading_ani.num_frames > 0 )	{
 		if ( Game_loading_background > -1 )	{
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0);
 		}
 
 		//mprintf(( "Showing frame %d/%d [ Bitmap=%d ]\n", Game_loading_frame ,  Game_loading_ani->total_frames, cbitmap ));
-		gr_set_bitmap( cbitmap );
+		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
 		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 
-		if ( (last_cbitmap > -1) && (last_cbitmap != cbitmap) )
-			bm_release(last_cbitmap);
-	
 		do_flip = 1;
 	}
 
@@ -1303,6 +1299,8 @@ void game_loading_callback(int count)
 	}
 
 	if (Processing_filename[0] != '\0') {
+		/*
+		//do we still need this with the new EFF code?
 		if ( cbitmap == -1 && last_cbitmap >-1 ){
 			if ( Game_loading_background > -1 )	{
 				gr_set_bitmap( Game_loading_background );
@@ -1311,6 +1309,7 @@ void game_loading_callback(int count)
 			gr_set_bitmap( last_cbitmap );
 			gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 		}
+		*/
 
 		gr_set_shader(&busy_shader);
 		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17); // make sure it goes across the entire width
@@ -1359,9 +1358,6 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
-	if (cbitmap != -1)
-		last_cbitmap = cbitmap;
-
 	if (do_flip) {
 		gr_flip();
 	}
@@ -1379,16 +1375,15 @@ void game_loading_callback_init()
 	}
 	//common_set_interface_palette("InterfacePalette");  // set the interface palette
 
-
-	Game_loading_ani = anim_load( Game_loading_ani_fname[gr_screen.res]);
-	Assert( Game_loading_ani != NULL );
-	Game_loading_ani_instance = init_anim_instance(Game_loading_ani, 16);
-	Assert( Game_loading_ani_instance != NULL );
-	Game_loading_frame = -1;
+	strcpy(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
+	generic_anim_init(&Game_loading_ani, Game_loading_ani.filename);
+	generic_anim_load(&Game_loading_ani);
+	Assert( Game_loading_ani.num_frames > 0 );
 
 	Game_loading_callback_inited = 1;
 	Mouse_hidden = 1;
-	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani->total_frames)+1 );	
+	framenum = 0;
+	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani.num_frames)+1 );
 
 
 }
@@ -1414,10 +1409,7 @@ void game_loading_callback_close()
 	real_count = 0;
 #endif
 
-	free_anim_instance(Game_loading_ani_instance);
-	Game_loading_ani_instance = NULL;
-	anim_free(Game_loading_ani);
-	Game_loading_ani = NULL;
+	generic_anim_unload(&Game_loading_ani);
 
 	bm_release( Game_loading_background );
 	common_free_interface_palette();		// restore game palette
@@ -1587,7 +1579,7 @@ int game_start_mission()
 	load_mission_load = (uint) time(NULL);
 	if (mission_load(Game_current_mission_filename)) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
-			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
+			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
@@ -1964,8 +1956,8 @@ void game_init()
 #else
 	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
 #endif
-	strcat(whee, DIR_SEPARATOR_STR);
-	strcat(whee, EXE_FNAME);
+	strcat_s(whee, DIR_SEPARATOR_STR);
+	strcat_s(whee, EXE_FNAME);
 
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
@@ -2168,25 +2160,25 @@ void game_init()
 	ptr = os_config_read_string(NOX("PXO"),NOX("Login"),NULL);
 	if(ptr == NULL){
 		nprintf(("Network","Error reading in PXO login data\n"));
-		strcpy(Multi_tracker_login,"");
+		strcpy_s(Multi_tracker_login,"");
 	} else {		
-		strcpy(Multi_tracker_login,ptr);
+		strcpy_s(Multi_tracker_login,ptr);
 	}
 	ptr = os_config_read_string(NOX("PXO"),NOX("Password"),NULL);
 	if(ptr == NULL){		
 		nprintf(("Network","Error reading PXO password\n"));
-		strcpy(Multi_tracker_passwd,"");
+		strcpy_s(Multi_tracker_passwd,"");
 	} else {		
-		strcpy(Multi_tracker_passwd,ptr);
+		strcpy_s(Multi_tracker_passwd,ptr);
 	}	
 
 	// pxo squad name and password
 	ptr = os_config_read_string(NOX("PXO"),NOX("SquadName"),NULL);
 	if(ptr == NULL){
 		nprintf(("Network","Error reading in PXO squad name\n"));
-		strcpy(Multi_tracker_squad_name, "");
+		strcpy_s(Multi_tracker_squad_name, "");
 	} else {		
-		strcpy(Multi_tracker_squad_name, ptr);
+		strcpy_s(Multi_tracker_squad_name, ptr);
 	}
 
 	// If less than 48MB of RAM, use low memory model.
@@ -2415,7 +2407,7 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate && HUD_draw)	{
+	if (Show_framerate /* && HUD_draw*/ )	{
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (frametotal != 0.0f)
@@ -3190,14 +3182,14 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				strcpy(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
 				break;
 			case OBJ_WEAPON:
-				strcpy(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
+				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 			case OBJ_JUMP_NODE: {
-				strcpy(view_target_name, XSTR( "jump node", 184));
+				strcpy_s(view_target_name, XSTR( "jump node", 184));
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 				}
@@ -4584,6 +4576,7 @@ void game_render_post_frame()
 
 	subtitles_do_frame(frametime);
 	game_shade_frame(frametime);
+	subtitles_do_frame_post_shaded(frametime);
 }
 
 #ifndef NDEBUG
@@ -6344,7 +6337,7 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			if(Cmdline_start_mission) {
-				strcpy(Game_current_mission_filename, Cmdline_start_mission);
+				strcpy_s(Game_current_mission_filename, Cmdline_start_mission);
 				mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
  				gameseq_post_event(GS_EVENT_START_GAME);
 				// This stops the mission from loading again when you go back to the hall
@@ -7165,11 +7158,11 @@ void game_maybe_update_launcher(char *exe_dir)
 	char src_filename[MAX_PATH];
 	char dest_filename[MAX_PATH];
 
-	strcpy(src_filename, exe_dir);
-	strcat(src_filename, NOX("\\update\\freespace.exe"));
+	strcpy_s(src_filename, exe_dir);
+	strcat_s(src_filename, NOX("\\update\\freespace.exe"));
 
-	strcpy(dest_filename, exe_dir);
-	strcat(dest_filename, NOX("\\freespace.exe"));
+	strcpy_s(dest_filename, exe_dir);
+	strcat_s(dest_filename, NOX("\\freespace.exe"));
 
 	// see if src_filename exists
 	FILE *fp;
@@ -7192,8 +7185,8 @@ void game_maybe_update_launcher(char *exe_dir)
 
 	// safe to assume directory is empty, since freespace.exe should only be the file ever in the update dir
 	char update_dir[MAX_PATH];
-	strcpy(update_dir, exe_dir);
-	strcat(update_dir, NOX("\\update"));
+	strcpy_s(update_dir, exe_dir);
+	strcat_s(update_dir, NOX("\\update"));
 	RemoveDirectory(update_dir);
 }
 #endif // no launcher
@@ -7403,10 +7396,10 @@ int game_main(char *cmdline)
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
-		multi_spew_pxo_checksums(1024, "mission_crcs.txt");
+		multi_spew_pxo_checksums(1024, "mission_crcs.csv");
 
 		if (Cmdline_spew_table_crcs) {
-			fs2netd_spew_table_checksums("table_crcs.txt");
+			fs2netd_spew_table_checksums("table_crcs.csv");
 		}
 
 		game_shutdown();
@@ -7415,7 +7408,7 @@ int game_main(char *cmdline)
 
 
 	if (Cmdline_spew_table_crcs) {
-		fs2netd_spew_table_checksums("table_crcs.txt");
+		fs2netd_spew_table_checksums("table_crcs.csv");
 		game_shutdown();
 		return 0;
 	}
@@ -7521,10 +7514,13 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	}
 
 
+#ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
 	__try {
 #endif
+#endif
 		result = !game_main(szCmdLine);
+#ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
 	} __except( RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread") ) {
 		// Do nothing here - RecordExceptionInfo() has already done
@@ -7533,6 +7529,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		// the __except clause.
 	}
 #endif // _MSC_VER
+#endif
 
 	enableWindowsKey();
 
@@ -7630,10 +7627,10 @@ void game_launch_launcher_on_exit()
 	_getcwd(original_path, 1023);
 
 	// set up command line
-	strcpy(cmd_line, original_path);
-	strcat(cmd_line, DIR_SEPARATOR_STR);
-	strcat(cmd_line, LAUNCHER_FNAME);
-	strcat(cmd_line, " -straight_to_update");		
+	strcpy_s(cmd_line, original_path);
+	strcat_s(cmd_line, DIR_SEPARATOR_STR);
+	strcat_s(cmd_line, LAUNCHER_FNAME);
+	strcat_s(cmd_line, " -straight_to_update");		
 
 	BOOL ret = CreateProcess(	NULL,									// pointer to name of executable module 
 										cmd_line,							// pointer to command line string
@@ -8084,31 +8081,31 @@ void game_show_event_debug(float frametime)
 			while (i--)
 				buf[i] = ' ';
 
-			strcat(buf, Sexp_nodes[z & 0x7fff].text);
+			strcat_s(buf, Sexp_nodes[z & 0x7fff].text);
 			switch (Sexp_nodes[z & 0x7fff].value) {
 				case SEXP_TRUE:
-					strcat(buf, NOX(" (True)"));
+					strcat_s(buf, NOX(" (True)"));
 					break;
 
 				case SEXP_FALSE:
-					strcat(buf, NOX(" (False)"));
+					strcat_s(buf, NOX(" (False)"));
 					break;
 
 				case SEXP_KNOWN_TRUE:
-					strcat(buf, NOX(" (Always true)"));
+					strcat_s(buf, NOX(" (Always true)"));
 					break;
 
 				case SEXP_KNOWN_FALSE:
-					strcat(buf, NOX(" (Always false)"));
+					strcat_s(buf, NOX(" (Always false)"));
 					break;
 
 				case SEXP_CANT_EVAL:
-					strcat(buf, NOX(" (Can't eval)"));
+					strcat_s(buf, NOX(" (Can't eval)"));
 					break;
 
 				case SEXP_NAN:
 				case SEXP_NAN_FOREVER:
-					strcat(buf, NOX(" (Not a number)"));
+					strcat_s(buf, NOX(" (Not a number)"));
 					break;
 			}
 		}
@@ -8340,7 +8337,7 @@ void game_format_time(fix m_time,char *time_str)
 		sprintf(time_str,XSTR( "%d:", 201),hours);
 		// if there are less than 10 minutes, print a leading 0
 		if(minutes < 10){
-			strcpy(tmp,NOX("0"));
+			strcpy_s(tmp,NOX("0"));
 			strcat(time_str,tmp);
 		}		
 	}	
@@ -8355,7 +8352,7 @@ void game_format_time(fix m_time,char *time_str)
 
 	// print the seconds
 	if(seconds < 10){
-		strcpy(tmp,NOX("0"));
+		strcpy_s(tmp,NOX("0"));
 		strcat(time_str,tmp);
 	} 
 	sprintf(tmp,"%d",seconds);
@@ -8383,36 +8380,36 @@ void get_version_string(char *str, int max_size)
 	if (rcs_name_len > 11)
 	{
 		char buffer[100];
-		strcpy(buffer, RCS_Name + 7);
+		strcpy_s(buffer, RCS_Name + 7);
 		buffer[rcs_name_len-9] = 0;
 
-		SAFE_STRCAT( str, " ", max_size );
-		SAFE_STRCAT( str, buffer, max_size );
+		SAFE_strcat_s( str, " ", max_size );
+		SAFE_strcat_s( str, buffer, max_size );
 	}
 	*/
 
 #ifdef INF_BUILD
-	SAFE_STRCAT( str, " Inferno", max_size );
+	strcat_s( str, max_size, " Inferno" );
 #endif
 
 #ifdef FS2_DEMO
-	SAFE_STRCAT( str, " Demo", max_size );
+	strcat_s( str, max_size, " Demo" );
 #endif
 
 #ifndef NDEBUG
-	SAFE_STRCAT( str, " Debug", max_size );
+	strcat_s( str, max_size, " Debug" );
 #endif
 
 	// Lets get some more info in here
 	switch(gr_screen.mode)
 	{
 		case GR_OPENGL:
-			SAFE_STRCAT( str, " OpenGL", max_size );
+			strcat_s( str, max_size, " OpenGL" );
 			break;
 	}
 
 	if (Cmdline_nohtl)
-		SAFE_STRCAT( str, " non-HT&L", max_size );
+		strcat_s( str, max_size, " non-HT&L" );
 
 //XSTR:ON
 	/*
@@ -8845,8 +8842,8 @@ uint game_get_cd_used_space(char *path)
 	HANDLE find_handle;
 
 	// recurse through all files and directories
-	strcpy(use_path, path);
-	strcat(use_path, "*.*");
+	strcpy_s(use_path, path);
+	strcat_s(use_path, "*.*");
 	find_handle = FindFirstFile(use_path, &find);
 
 	// bogus
@@ -8859,9 +8856,9 @@ uint game_get_cd_used_space(char *path)
 		// subdirectory. make sure to ignore . and ..
 		if((find.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && stricmp(find.cFileName, ".") && stricmp(find.cFileName, "..")){
 			// subsearch
-			strcpy(sub_path, path);
-			strcat(sub_path, find.cFileName);
-			strcat(sub_path, DIR_SEPARATOR_STR);
+			strcpy_s(sub_path, path);
+			strcat_s(sub_path, find.cFileName);
+			strcat_s(sub_path, DIR_SEPARATOR_STR);
 			total += game_get_cd_used_space(sub_path);	
 		} else {
 			total += (uint)find.nFileSizeLow;
@@ -8921,8 +8918,8 @@ int find_freespace_cd(char *volume_name)
 				char full_check[512] = "";
 
 				// look for setup.exe
-				strcpy(full_check, path);
-				strcat(full_check, "setup.exe");				
+				strcpy_s(full_check, path);
+				strcat_s(full_check, "setup.exe");				
 				find_handle = _findfirst(full_check, &find);
 				if(find_handle != -1){
 					volume1_present = 1;				
@@ -8930,8 +8927,8 @@ int find_freespace_cd(char *volume_name)
 				}
 
 				// look for intro.mve
-				strcpy(full_check, path);
-				strcat(full_check, "intro.mve");				
+				strcpy_s(full_check, path);
+				strcat_s(full_check, "intro.mve");				
 				find_handle = _findfirst(full_check, &find);
 				if(find_handle != -1){
 					volume2_present = 1;
@@ -8939,8 +8936,8 @@ int find_freespace_cd(char *volume_name)
 				}				
 
 				// look for endpart1.mve
-				strcpy(full_check, path);
-				strcat(full_check, "endpart1.mve");				
+				strcpy_s(full_check, path);
+				strcat_s(full_check, "endpart1.mve");				
 				find_handle = _findfirst(full_check, &find);
 				if(find_handle != -1){
 					volume3_present = 1;
@@ -9018,7 +9015,7 @@ int set_cdrom_path(int drive_num)
 
 	if (drive_num < 0) {			//no CD
 //		#ifndef NDEBUG
-//		strcpy(CDROM_dir,"j:\\FreeSpaceCD\\");				//set directory
+//		strcpy_s(CDROM_dir,"j:\\FreeSpaceCD\\");				//set directory
 //		rval = 1;
 //		#else
 		memset(Game_CDROM_dir, 0, sizeof(Game_CDROM_dir));
@@ -9102,9 +9099,9 @@ int game_cd_changed()
 	
 	Last_cd_label_found = found;
 	if ( found )	{
-		strcpy( Last_cd_label, label );
+		strcpy_s( Last_cd_label, label );
 	} else {
-		strcpy( Last_cd_label, "" );
+		strcpy_s( Last_cd_label, "" );
 	}
 
 	return changed;
@@ -9554,8 +9551,8 @@ void game_title_screen_display()
 
 	//Get the find string
 	_getcwd(current_dir, 256);
-	strcat(current_dir, DIR_SEPARATOR_STR);
-	strcat(current_dir, "*.pcx");
+	strcat_s(current_dir, DIR_SEPARATOR_STR);
+	strcat_s(current_dir, "*.pcx");
 
 	//Let the search begin!
 	find_handle = _findfirst(current_dir, &find);
@@ -9574,7 +9571,7 @@ void game_title_screen_display()
 				if(stricmp(find.name, Game_logo_screen_fname[gr_screen.res])
 					&& stricmp(find.name, Game_title_screen_fname[gr_screen.res]))
 				{
-					strcpy(Splash_screens[i], find.name);
+					strcpy_s(Splash_screens[i], find.name);
 					i++;
 				}
 

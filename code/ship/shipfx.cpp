@@ -96,21 +96,28 @@ void shipfx_subsystem_mabye_create_live_debris(object *ship_obj, ship *ship_p, s
 	angles zero_angs = {0.0f, 0.0f, 0.0f};
 
 	// make sure the axis point is set
-	if ( !sii->axis_set ) {
-		model_init_submodel_axis_pt(sii, pm->id, submodel_num);
-	}
-
-	// get the rotvel
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
-	void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj);
-	model_get_rotating_submodel_axis(&model_axis, &world_axis, pm->id, submodel_num, ship_obj);
-	vm_vec_copy_scale(&rotvel, &world_axis, sii->cur_turn_rate);
-
-	model_find_world_point(&world_axis_pt, &sii->pt_on_axis, pm->id, submodel_num, &ship_obj->orient, &ship_obj->pos);
-
 	matrix m_rot;	// rotation for debris orient about axis
-	vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&sii->angs), &model_axis);
 
+	if(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT) {
+		if ( !sii->axis_set ) {
+			model_init_submodel_axis_pt(sii, pm->id, submodel_num);
+		}
+
+		// get the rotvel
+		void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj);
+		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm->id, submodel_num, ship_obj);
+		vm_vec_copy_scale(&rotvel, &world_axis, sii->cur_turn_rate);
+
+		model_find_world_point(&world_axis_pt, &sii->pt_on_axis, pm->id, submodel_num, &ship_obj->orient, &ship_obj->pos);
+
+		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&sii->angs), &model_axis);
+	} else {
+		//fix to allow non rotating submodels to use live debris
+		vm_vec_zero(&rotvel);
+		vm_set_identity(&m_rot);
+		vm_vec_zero(&world_axis_pt);
+	}
 
 	// create live debris pieces
 	for (i=0; i<num_live_debris; i++) {
@@ -3332,11 +3339,6 @@ float shipfx_calc_visibility(object *obj, vec3d *view_pt)
 		float alpha = (10.0f/17.0f) - ((.46875f/17.0f) * factor);
 		return alpha;	
 	}
-	
-	//this can't happen !!
-	Int3();
-	return 1.0f;
-
 }
 
 void shipfx_cloak_frame(ship *shipp, float frametime)
@@ -3843,17 +3845,11 @@ int WE_Default::warpStart()
 		portal_objp = &Objects[portal_objnum];
 	}
 
-	back_len = objp->radius;
-	if(pm != NULL)
-	{
-		back_len = -pm->mins.xyz.z;
-	}
-
 	float warpout_speed = 0.0f;
 	float warp_time = 0.0f;
 	if(direction == WD_WARP_IN)
 	{
-		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, back_len );
+		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != NULL) ? -pm->mins.xyz.z : objp->radius );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
@@ -4007,7 +4003,7 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) && (vm_dist_to_plane(&objp->pos, &fvec, &pos) > back_len))
+		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) )
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();
@@ -4133,7 +4129,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	if(strlen(tmp_name))
 	{
 		//Load anim
-		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, NULL, 1);
 		if(anim > -1)
 		{
 			anim_total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
@@ -4143,7 +4139,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 		strncat(tmp_name, "-shockwave", MAX_FILENAME_LEN-1);
 
 		//Load shockwave
-		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, 1);
+		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, NULL, 1);
 		if(shockwave > -1)
 		{
 			shockwave_total_time = fl2i(((float)shockwave_nframes / (float)shockwave_fps) * 1000.0f);
@@ -4496,9 +4492,9 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 
 	//Anim
 	if(direction == WD_WARP_IN)
-		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, NULL, 1);
 	else if(direction == WD_WARP_OUT)
-		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, NULL, 1);
 	else
 		anim = -1;
 

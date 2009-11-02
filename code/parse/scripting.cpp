@@ -651,7 +651,7 @@ int script_state::LoadBm(char *name)
 
 	if(idx > -1) {
 		id.handle = idx;
-		strcpy(id.fname, name);
+		strcpy_s(id.fname, name);
 		ScriptImages.push_back(id);
 	}
 
@@ -906,24 +906,23 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 		return false;
 	}
 
-	char *s = new char[strlen(string) + 8];
+	size_t s_bufSize = strlen(string) + 8;
+	char *s = new char[ s_bufSize ];
 	if(string[0] != '[')
 	{
 		if(rtn != NULL)
 		{
-			strcpy(s, "return ");
-			strcat(s, string);
+			strcpy_s(s, s_bufSize, "return ");
+			strcat_s(s, s_bufSize, string);
 		}
 		else
 		{
-			strcpy(s, string);
-			s[strlen(s)] = '\0';
+			strcpy_s(s, s_bufSize, string);
 		}
-		s[strlen(s)] = '\0';
 	}
 	else
 	{
-		strcpy(s, string+1);
+		strcpy_s(s, s_bufSize, string+1);
 		s[strlen(s)-1] = '\0';
 	}
 
@@ -1070,13 +1069,13 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//Assume lua
 		*out_lang = SC_LUA;
 
-		strcpy(buf, "return ");
+		strcpy_s(buf, "return ");
 
 		//Stuff it
 		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf) - strlen(buf));
 
 		//Add ending
-		strcat(buf, "\n");
+		strcat_s(buf, "\n");
 
 		int len = strlen(buf);
 
@@ -1116,9 +1115,10 @@ script_hook script_state::ParseChunk(char* debug_str)
 
 	if(optional_string("+Override:"))
 	{
-		char *debug_str_over = (char*)vm_malloc(strlen(debug_str) + 10);
-		strcpy(debug_str_over, debug_str);
-		strcat(debug_str_over, " override");
+		size_t bufSize = strlen(debug_str) + 10;
+		char *debug_str_over = (char*)vm_malloc(bufSize);
+		strcpy_s(debug_str_over, bufSize, debug_str);
+		strcat_s(debug_str_over, bufSize, " override");
 		ParseChunkSub(&rval.o_language, &rval.o_index, debug_str_over);
 		vm_free(debug_str_over);
 	}

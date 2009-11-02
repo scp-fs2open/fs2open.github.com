@@ -269,9 +269,6 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 		if (reply_type > 1) {
 			return (int)reply_type;
 		}
-	
-		// initialize the stats to default values
-		init_scoring_element( &pl->stats );
 
 		PXO_GET_INT( pl->stats.score );				// points
 		PXO_GET_UINT( pl->stats.missions_flown );	// missions
@@ -688,7 +685,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 {
 	int buffer_size, buffer_offset;
 	bool my_packet = false;
-	char buffer[1024];
+	char buffer[4096];
 	uint i;
 	ushort num_tables = 0;
 

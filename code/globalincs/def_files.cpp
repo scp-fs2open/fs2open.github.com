@@ -406,7 +406,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player Orders:			( \"attack ship\" \"disable ship\" \"disarm ship\" \"guard ship\" \"ignore ship\" \"ignore ship (new)\" \"form on wing\" \"cover me\" \"attack any\" \"depart\" \"disable subsys\" )		\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device device\" )																\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )																\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -432,7 +432,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"dock\" \"depart\" )		\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device device\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -784,7 +784,7 @@ $Glide Attack Percent: 0, 0, 0, 0, 0									\n\
 $Circle Strafe Percent: 0, 0, 0, 0, 0									\n\
 																		\n\
 ;; Percentage of the time where AI ships will use glide to strafe		\n\
-;; capital ships when it is an option.									\n\
+;; capital ships when it is an option.									\n""\
 $Glide Strafe Percent: 0, 0, 0, 0, 0									\n\
 																		\n\
 ;; The amount of time required for the AI to detect 					\n\
@@ -832,6 +832,10 @@ $Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n\
 ;; Chance AI has to fire missiles at player is (value + 1) / 7 in every	\n\
 ;; 10 second interval													\n""\
 $Chance AI Has to Fire Missiles at Player:	0, 1, 2, 3, 4				\n\
+																		\n\
+;; The maximum amount of delay allowed before the AI will update its	\n\
+;; aim. Applies for small ships vs small ships							\n\
+$Max Aim Update Delay: 0, 0, 0, 0, 0									\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
@@ -949,6 +953,15 @@ $use only single fov for turrets:		NO								\n\
 																		\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
+																		\n\
+;; a disam or disable goal will protect a ship globally and purge		\n\
+;; standing attack orders globally. If set to NO, only the ship/wing	\n\
+;; given the order to disarm or disable will be affected.				\n\
+$disarm or disable cause global ai goal effects:	YES					\n\
+																		\n\
+;; Fixes a bug where AI class is not properly set if set in the mission	\n\
+;; This should be YES if you want anything in AI.tbl to mean anything	\n\
+$fix AI class bug:	NO													\n\
 																		\n\
 #End																	\n\
 ";

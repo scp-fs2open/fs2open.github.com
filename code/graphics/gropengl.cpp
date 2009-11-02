@@ -121,7 +121,7 @@ static GLenum GL_read_format = GL_BGRA;
 
 void opengl_go_fullscreen()
 {
-	if (Cmdline_window || GL_fullscreen || Fred_running)
+	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
 		return;
 
 #ifdef _WIN32
@@ -195,7 +195,7 @@ void opengl_go_fullscreen()
 
 void opengl_go_windowed()
 {
-	if ( !Cmdline_window /*|| GL_windowed*/ || Fred_running )
+	if ( ( !Cmdline_fullscreen_window && !Cmdline_window ) /*|| GL_windowed*/ || Fred_running )
 		return;
 
 #ifdef _WIN32
@@ -256,7 +256,7 @@ void opengl_minimize()
 	Assert( wnd );
 
 	// if we are a window then just show the cursor and bail
-	if (Cmdline_window || GL_windowed) {
+	if ( Cmdline_fullscreen_window || Cmdline_window || GL_windowed) {
 		ClipCursor(NULL);
 		ShowCursor(TRUE);
 		return;
@@ -299,7 +299,7 @@ void opengl_minimize()
 void gr_opengl_activate(int active)
 {
 	if (active) {
-		if (Cmdline_window)
+		if (Cmdline_fullscreen_window||Cmdline_window)
 			opengl_go_windowed();
 		else
 			opengl_go_fullscreen();
@@ -498,11 +498,11 @@ void gr_opengl_print_screen(char *filename)
 	_mkdir( tmp );
 #else
 	_getcwd( tmp, MAX_PATH_LEN-1 );
-	strcat( tmp, "\\screenshots\\" );
+	strcat_s( tmp, "\\screenshots\\" );
 	_mkdir( tmp );
 
-	strcat( tmp, filename );
-	strcat( tmp, ".tga" );
+	strcat_s( tmp, filename );
+	strcat_s( tmp, ".tga" );
 #endif
 
 	FILE *fout = fopen(tmp, "wb");
@@ -634,7 +634,7 @@ void gr_opengl_cleanup(int minimize)
 
 	if (minimize) {
 #ifdef _WIN32
-		if ( !Cmdline_window ) {
+		if ( !Cmdline_fullscreen_window && !Cmdline_window ) {
 			ChangeDisplaySettings(NULL, 0);
 		}
 #endif
@@ -1322,7 +1322,9 @@ void opengl_set_vsync(int status)
 	}
 
 #if defined(__APPLE__)
-	CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, (long*)&status);
+	// GLInt on 10.6 is an actual int now, instead of a long
+	// This will need further testing once Snow Leopard 10.6 goes RTM
+	CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, (GLint*)&status);
 #elif defined(_WIN32)
 	vwglSwapIntervalEXT(status);
 #else
@@ -1644,7 +1646,7 @@ int opengl_init_display_device()
 	}
 
 	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ( (Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
+	if ( (Cmdline_fullscreen_window|| Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 	}
 
@@ -1653,8 +1655,13 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
+	
+	int fsaa_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
+	
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
 
-	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, db));
+	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, db, fsaa_samples));
 
 	if (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
 		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError());
@@ -1666,8 +1673,9 @@ int opengl_init_display_device()
 	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
 	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &depth);
 	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &db);
+	SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &fsaa_samples);
 
-	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
+	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d, FSAA: %d\n", r, g, b, depth, db, fsaa_samples));
 
 	SDL_ShowCursor(0);
 
@@ -1856,7 +1864,7 @@ bool gr_opengl_init()
 	mprintf(( "  OpenGL Version    : %s\n", ver ));
 	mprintf(( "\n" ));
 
-	if (Cmdline_window) {
+	if (Cmdline_fullscreen_window || Cmdline_window) {
 		opengl_go_windowed();
 	} else {
 		opengl_go_fullscreen();

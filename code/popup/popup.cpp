@@ -1091,7 +1091,7 @@ char *popup_input(int flags, char *caption, int max_output_len)
 
 	// get msg text
 	Assert(caption != NULL);
-	strcpy(Popup_info.raw_text, caption);	
+	strcpy_s(Popup_info.raw_text, caption);	
 	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
 
 	// set input text length
