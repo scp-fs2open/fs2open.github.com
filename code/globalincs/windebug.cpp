@@ -1648,9 +1648,6 @@ void unregister_malloc(char *filename, int size, void *ptr)
 		}
 	}
 
-	// This should never happen
-	Assert(f < MAX_MEM_POINTERS);
-
 #endif
 
 	for(int i = 0; i < MAX_MEM_MODULES; i++)
