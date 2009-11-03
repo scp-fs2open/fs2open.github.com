@@ -439,35 +439,35 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 
 	if(cgp->Parent != NULL && cgp->Parent->InfoEntry != NULL)
 	{
-		ociep = &cgp->Parent->InfoEntry->Subentries[0];
 		len = cgp->Parent->InfoEntry->Subentries.size();
 
 		for(i = 0; i < len; i++)
 		{
-			if(ociep[i].Name == cgp->Name)
-				return &ociep[i];
+			if(cgp->Parent->InfoEntry->Subentries[i].Name == cgp->Name)
+				return &cgp->Parent->InfoEntry->Subentries[i];
 		}
 
 		for(i = 0; i < len; i++)
 		{
-			if(ociep[i].Name.size() == 0 && ociep[i].Object == cgp->Type)
-				return &ociep[i];
+			if( cgp->Parent->InfoEntry->Subentries[i].Name.size() == 0 && 
+				cgp->Parent->InfoEntry->Subentries[i].Object == cgp->Type )
+				return &cgp->Parent->InfoEntry->Subentries[i];
 		}
 	}
 	else if(cgp->Parent == NULL && ScreenClassInfo != NULL)
 	{
-		ociep = &ScreenClassInfo->Entries[0];
 		len = ScreenClassInfo->Entries.size();
 		for(i = 0; i < len; i++)
 		{
-			if(ociep[i].Name == cgp->Name)
-				return &ociep[i];
+			if(ScreenClassInfo->Entries[i].Name == cgp->Name)
+				return &ScreenClassInfo->Entries[i];
 		}
 
 		for(i = 0; i < len; i++)
 		{
-			if(ociep[i].Name.size() == 0 && ociep[i].Object == cgp->Type)
-				return &ociep[i];
+			if(	ScreenClassInfo->Entries[i].Name.size() == 0 && 
+				ScreenClassInfo->Entries[i].Object == cgp->Type )
+				return &ScreenClassInfo->Entries[i];
 		}
 	}
 
@@ -475,19 +475,19 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 	//or every single window to look the same.
 	if(OwnerSystem != NULL)
 	{
-		ociep = &OwnerSystem->GetClassInfo()->Entries[0];
 		len = OwnerSystem->GetClassInfo()->Entries.size();
 
 		for(i = 0; i < len; i++)
 		{
-			if(ociep[i].Name == cgp->Name)
-				return &ociep[i];
+			if(OwnerSystem->GetClassInfo()->Entries[i].Name == cgp->Name)
+				return &OwnerSystem->GetClassInfo()->Entries[i];
 		}
 
 		for(i = 0; i < len; i++)
 		{
-			if(ociep[i].Name.size() == 0 && ociep[i].Object == cgp->Type)
-				return &ociep[i];
+			if( OwnerSystem->GetClassInfo()->Entries[i].Name.size() == 0 && 
+				OwnerSystem->GetClassInfo()->Entries[i].Object == cgp->Type)
+				return &OwnerSystem->GetClassInfo()->Entries[i];
 		}
 	}
 
