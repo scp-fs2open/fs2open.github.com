@@ -13917,7 +13917,7 @@ void sexp_set_support_ship(int n)
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
 	}
-	if (!(Ship_info[temp_val].flags & SIF_SUPPORT))
+	if ((temp_val >= 0) && !(Ship_info[temp_val].flags & SIF_SUPPORT))
 	{
 		Warning(LOCATION, "Ship %s is not a support ship!", Ship_info[temp_val].name);
 		return;
@@ -14281,7 +14281,7 @@ void add_nav_waypoint(int node)
 	multi_end_packet();
 }
 
-void multi_add_nav_waypoint()
+void multi_sexp_add_nav_waypoint()
 {
 	char nav_name[TOKEN_LENGTH];
 	char way_name[TOKEN_LENGTH];
@@ -15303,10 +15303,48 @@ void sexp_fade_in(int n)
 		Fade_type = FI_NONE;
 		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 	}
+
+	// multiplayer callback
+	multi_start_packet();
+	multi_send_float(delta_time);
+	multi_end_packet();
 }
+
+void multi_sexp_fade_in()
+{
+	float delta_time = 0.0f;
+
+	multi_get_float(delta_time);
+
+	if(delta_time > 0.0f) {
+		Fade_delta_time = delta_time;
+		Fade_type = FI_FADEIN;
+	}
+	else {
+		Fade_type = FI_NONE;
+		gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
+	}
+}
+
+void sexp_fade_out(float delta_time, ubyte R, ubyte G, ubyte B) 
+{
+	if(delta_time > 0.0f) {
+		Fade_type = FI_FADEOUT;
+		Fade_delta_time = delta_time;
+	}
+	else
+	{
+		Fade_type = FI_NONE;
+		gr_create_shader(&Viewer_shader, R, G, B, 255);
+	}
+}
+
 void sexp_fade_out(int n)
 {
 	float delta_time = 0.0f;
+	ubyte R = 0;
+	ubyte G = 0;
+	ubyte B = 0;
 
 	if(n != -1)
 	{
@@ -15329,30 +15367,44 @@ void sexp_fade_out(int n)
 				default:
 					gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
 			}
+
+			R = Viewer_shader.r;
+			G = Viewer_shader.g;
+			B = Viewer_shader.b;
 		}
 		else
 		{
 			gr_create_shader(&Viewer_shader, 0, 0, 0, Viewer_shader.c);
-		}
+		}		
+	}
 
-		if(delta_time > 0.0f)
-		{
-			Fade_type = FI_FADEOUT;
-			Fade_delta_time = delta_time;
-		}
-		else
-		{
-			Fade_type = FI_NONE;
-			gr_create_shader(&Viewer_shader, Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, 255);
-		}
-	}
-	else
-	{
-		gr_create_shader(&Viewer_shader, 0, 0, 0, 255);
-		Fade_type = FI_NONE;
-	}
+	sexp_fade_out(delta_time, R, G, B);
+
+	multi_start_packet();
+	multi_send_float(delta_time);
+	multi_send_int(R);
+	multi_send_int(G);
+	multi_send_int(B);
+	multi_end_packet();
 }
 
+void multi_sexp_fade_out()
+{
+	float delta_time = 0.0f;
+	int R = 0;
+	int G = 0;
+	int B = 0;
+
+	multi_get_float(delta_time);
+	multi_get_int(R);
+	multi_get_int(G);
+	if (!multi_get_int(B)){
+		Int3();	// misformed packet
+		return;
+	}
+
+	sexp_fade_out(delta_time, (ubyte)R, (ubyte)G, (ubyte)B);
+}
 
 camera* sexp_get_set_camera(bool reset = false)
 {
@@ -17811,7 +17863,15 @@ void multi_sexp_eval()
 				break;
 
 			case OP_NAV_ADD_WAYPOINT:
-				multi_add_nav_waypoint();
+				multi_sexp_add_nav_waypoint();
+				break;
+
+			case OP_CUTSCENES_FADE_IN:
+				multi_sexp_fade_in();
+				break;
+
+			case OP_CUTSCENES_FADE_OUT:
+				multi_sexp_fade_out();
 				break;
 
 			// bad sexp in the packet
@@ -20325,7 +20385,6 @@ char *CTEXT(int n)
 		else
 		{
 			// make sure we have an argument to replace it with
-			Assert(!(Sexp_replacement_arguments.empty()));
 			if (Sexp_replacement_arguments.empty())
 				return Sexp_nodes[n].text;
 		}
@@ -21066,7 +21125,6 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_DEATHS:
 		case OP_RESPAWNS_LEFT:
 		case OP_IS_PLAYER:
-		case OP_SET_RESPAWNS:
 			return STATUS_SUBCATEGORY_MULTIPLAYER;
 
 		case OP_SHIELD_RECHARGE_PCT:

@@ -605,7 +605,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		ss_warning_shown = 1;
 	} else
 #endif
-		mprintf(("Subsystem %s in ships.tbl not found in model!\n", subobj_name));
+		mprintf(("Subsystem %s in model was not found in ships.tbl!\n", subobj_name));
 
 #ifndef NDEBUG
 	if ( ss_fp )	{

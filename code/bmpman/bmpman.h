@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
 
@@ -95,7 +95,7 @@ extern int bm_texture_ram;
 // number.
 int bm_load(char * filename);
 
-// special load function. basically allows you to load a bitmap which already exists (by filename).
+// special load function. basically allows you to load a bitmap which already exists (by filename). 
 // this is useful because in some cases we need to have a bitmap which is locked in screen format
 // _and_ texture format, such as pilot pics and squad logos
 int bm_load_duplicate(char *filename);
@@ -105,8 +105,8 @@ int bm_load_duplicate(char *filename);
 // block of data.  The data can be in the following formats:
 // 8 bpp (mapped into game palette)
 // 32 bpp
-// On success, it returns the bitmap number.  You cannot
-// free that RAM until bm_release is called on that bitmap.
+// On success, it returns the bitmap number.  You cannot 
+// free that RAM until bm_release is called on that bitmap.  
 // See example at bottom of this file
 int bm_create( int bpp, int w, int h, void *data = NULL, int flags = 0);
 
@@ -119,7 +119,7 @@ int bm_unload( int n, int clear_render_targets = 0 );
 // load_count so it's safe to use in relation to bm_release() and in gr_*_texture functions
 int bm_unload_fast( int n, int clear_render_targets = 0 );
 
-// Frees up a bitmap's data, and it's slot, so bitmap
+// Frees up a bitmap's data, and it's slot, so bitmap 
 // number 'n' cannot be used anymore, and bm_load or
 // bm_create might reuse the slot.
 int bm_release( int n, int clear_render_targets = 0 );
@@ -135,14 +135,17 @@ extern int bm_load_either(char *filename, int *nframes = NULL, int *fps = NULL, 
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock
-// a bitmap when you need it!  This will convert it into the
+// a bitmap when you need it!  This will convert it into the 
 // appropriate format also.
 extern bitmap * bm_lock( int bitmapnum, ubyte bpp, ubyte flags );
 
-// The signature is a field that gets filled in with
+// The signature is a field that gets filled in with 
 // a unique signature for each bitmap.  The signature for each bitmap
 // will also change when the bitmap's data changes.
 extern uint bm_get_signature( int bitmapnum);
+
+//gets the image type
+ubyte bm_get_type(int handle);
 
 // Unlocks a bitmap
 extern void bm_unlock( int bitmapnum );
@@ -155,7 +158,7 @@ extern int bm_is_valid(int handle);
 int bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL );
 
 // get filename
-extern void bm_get_filename(int bitmapnum, char *filename);
+extern void bm_get_filename(int bitmapnum, char *filename);	 
 
 // resyncs all the bitmap palette
 extern void bm_update();
@@ -176,9 +179,9 @@ void bm_gfx_get_pixel( int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *
 // nnew = number of bytes of bitmaps locked this frame that weren't locked last frame
 void bm_get_frame_usage(int *ntotal, int *nnew);
 
-/*
+/* 
  * Example on using bm_create
- *
+ * 
 	{
 		static int test_inited = 0;
 		static int test_bmp;
@@ -243,7 +246,7 @@ void bm_page_in_aabitmap( int bitmapnum, int num_frames=1 );
 // unload a texture that was paged in
 int bm_page_out( int handle );
 
-//
+// 
 // Mode: 0 = High memory
 //       1 = Low memory ( every other frame of ani's)
 //       2 = Debug low memory ( only use first frame of each ani )

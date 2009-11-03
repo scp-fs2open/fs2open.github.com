@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
 
@@ -340,20 +340,22 @@ void cmd_brief_new_stage(int stage)
 	//load a new animation if it's different to what's already playing
 	if(strcmp(Cur_Anim.filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
 		//unload the previous anim
-		generic_anim_unload(&Cur_Anim);
+		if(Cur_Anim.num_frames > 0)
+			generic_anim_unload(&Cur_Anim);
 		//load animation here, we now only have one loaded
 		p = strchr( Cur_cmd_brief->stage[stage].ani_filename, '.' );
 		if(p)
 			*p = '\0';
 		generic_anim_init(&Cur_Anim, Cur_cmd_brief->stage[stage].ani_filename);
 		anim_done = 0;
-		if(generic_anim_load(&Cur_Anim) == -1) {
+		Cur_Anim.ani.bg_type = bm_get_type(Cmd_brief_background_bitmap);
+		if(generic_anim_stream(&Cur_Anim) == -1) {
 			//we've failed to load an animation, load an image and treat it like a 1 frame animation
 			Cur_Anim.first_frame = bm_load(Cur_cmd_brief->stage[stage].ani_filename);	//if we fail here, the value is still -1
 			if(Cur_Anim.first_frame != -1) {
 				Cur_Anim.num_frames = 1;
-			}
 		}
+	}
 	}
 
 	//resetting the audio here
@@ -588,7 +590,7 @@ void cmd_brief_init(int team)
 		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_SCROLL_DOWN].button.set_hotkey(KEY_DOWN);
 	}
 
-	// load in help overlay bitmap
+	// load in help overlay bitmap	
 	help_overlay_load(CMD_BRIEF_OVERLAY);
 	help_overlay_set_state(CMD_BRIEF_OVERLAY,0);
 
@@ -694,12 +696,14 @@ void cmd_brief_do_frame(float frametime)
 	if (Cmd_brief_background_bitmap >= 0) {
 		gr_set_bitmap(Cmd_brief_background_bitmap);
 		gr_bitmap(0, 0);
-	}
+	} 
 
-	bm_get_info(Cur_Anim.first_frame, &x, &y, NULL, NULL, NULL);
-	x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - x / 2;
-	y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - y / 2;
-	generic_anim_render(&Cur_Anim, (Cmd_brief_paused) ? 0 : frametime, x, y);
+	if(Cur_Anim.num_frames > 0) {
+		bm_get_info((Cur_Anim.streaming) ? Cur_Anim.bitmap_id : Cur_Anim.first_frame, &x, &y, NULL, NULL, NULL);
+		x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - x / 2;
+		y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - y / 2;
+		generic_anim_render(&Cur_Anim, (Cmd_brief_paused) ? 0 : frametime, x, y);
+	}
 
 	Ui_window.draw();
 
