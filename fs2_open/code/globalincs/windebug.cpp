@@ -1514,7 +1514,6 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 	}
 
 	char *temp = strrchr(filename, '\\');
-
 	if(temp)
 		filename = temp + 1;
 
@@ -1622,7 +1621,13 @@ void memblockinfo_output_memleak()
 void unregister_malloc(char *filename, int size, void *ptr)
 {
 	// calculate magic numbers
-	int magic1, magic2, len = strlen(filename);
+	int magic1, magic2, len;
+	
+	char *temp = strrchr(filename, '\\');
+	if(temp)
+		filename = temp + 1;
+
+	len = strlen(filename);
 
 	magic1 = magic2 = 0;
 
