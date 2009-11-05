@@ -525,33 +525,33 @@ void free_ai_stuff()
 }
 
 //SUSHI: Initialize an AI class's nonrequired values to defaults
-//Boolean overrides are unset, multipliers are initialized to 1.0
+//Boolean overrides are unset, others initialized to FLT_MIN or INT_MIN (used as the "not set" state)
 void init_ai_class(ai_class *aicp)
 {
 	int i;
 	for (i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
-		aicp->ai_cmeasure_fire_chance[i] = 1.0f;
-		aicp->ai_in_range_time[i] = 1.0f;
-		aicp->ai_link_ammo_levels_maybe[i] = 1.0f;
-		aicp->ai_link_ammo_levels_always[i] = 1.0f;
-		aicp->ai_primary_ammo_burst_mult[i] = 1.0f;
-		aicp->ai_link_energy_levels_maybe[i] = 1.0f;
-		aicp->ai_link_energy_levels_always[i] = 1.0f;
-		aicp->ai_predict_position_delay[i] = 1.0f;
-		aicp->ai_shield_manage_delay[i] = 1.0f;
-		aicp->ai_ship_fire_delay_scale_friendly[i] = 1.0f;
-		aicp->ai_ship_fire_delay_scale_hostile[i] = 1.0f;
-		aicp->ai_ship_fire_secondary_delay_scale_friendly[i] = 1.0f;
-		aicp->ai_ship_fire_secondary_delay_scale_hostile[i] = 1.0f;
-		aicp->ai_turn_time_scale[i] = 1.0f;
-		aicp->ai_glide_attack_percent[i] = 1.0f;
-		aicp->ai_circle_strafe_percent[i] = 1.0f;
-		aicp->ai_glide_strafe_percent[i] = 1.0f;
-		aicp->ai_stalemate_time_thresh[i] = 1.0f;
-		aicp->ai_stalemate_dist_thresh[i] = 1.0f;
-		aicp->ai_chance_to_use_missiles_on_plr[i] = 1.0f;
-		aicp->ai_max_aim_update_delay[i] = 1.0f;
+		aicp->ai_cmeasure_fire_chance[i] = FLT_MIN;
+		aicp->ai_in_range_time[i] = FLT_MIN;
+		aicp->ai_link_ammo_levels_maybe[i] = FLT_MIN;
+		aicp->ai_link_ammo_levels_always[i] = FLT_MIN;
+		aicp->ai_primary_ammo_burst_mult[i] = FLT_MIN;
+		aicp->ai_link_energy_levels_maybe[i] = FLT_MIN;
+		aicp->ai_link_energy_levels_always[i] = FLT_MIN;
+		aicp->ai_predict_position_delay[i] = INT_MIN;
+		aicp->ai_shield_manage_delay[i] = FLT_MIN;
+		aicp->ai_ship_fire_delay_scale_friendly[i] = FLT_MIN;
+		aicp->ai_ship_fire_delay_scale_hostile[i] = FLT_MIN;
+		aicp->ai_ship_fire_secondary_delay_scale_friendly[i] = FLT_MIN;
+		aicp->ai_ship_fire_secondary_delay_scale_hostile[i] = FLT_MIN;
+		aicp->ai_turn_time_scale[i] = FLT_MIN;
+		aicp->ai_glide_attack_percent[i] = FLT_MIN;
+		aicp->ai_circle_strafe_percent[i] = FLT_MIN;
+		aicp->ai_glide_strafe_percent[i] = FLT_MIN;
+		aicp->ai_stalemate_time_thresh[i] = FLT_MIN;
+		aicp->ai_stalemate_dist_thresh[i] = FLT_MIN;
+		aicp->ai_chance_to_use_missiles_on_plr[i] = INT_MIN;
+		aicp->ai_max_aim_update_delay[i] = FLT_MIN;
 	}
 	aicp->ai_profile_flags = 0;
 	aicp->ai_profile_flags_set = 0;
@@ -624,7 +624,7 @@ void parse_ai_class()
 		stuff_boolean(&aicp->ai_class_autoscale);
 
 
-	//Parse optional values for stuff imported from ai_profiles (these are multipliers)
+	//Parse optional values for stuff imported from ai_profiles
 	if (optional_string("$AI Countermeasure Firing Chance:"))
 		parse_float_list(aicp->ai_cmeasure_fire_chance, NUM_SKILL_LEVELS);
 
@@ -646,8 +646,14 @@ void parse_ai_class()
 	if (optional_string("$AI Maybe Links Energy Weapons:"))
 		parse_float_list(aicp->ai_link_energy_levels_maybe, NUM_SKILL_LEVELS);
 
-	if (optional_string("$Predict Position Delay:"))
-		parse_float_list(aicp->ai_predict_position_delay, NUM_SKILL_LEVELS);
+	// represented in fractions of F1_0
+	if (optional_string("$Predict Position Delay:")) {
+		int iLoop;
+		float temp_list[NUM_SKILL_LEVELS];
+		parse_float_list(temp_list, NUM_SKILL_LEVELS);
+		for (iLoop = 0; iLoop < NUM_SKILL_LEVELS; iLoop++)
+			aicp->ai_predict_position_delay[iLoop] = fl2f(temp_list[iLoop]);
+	}
 
 	if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
 		parse_float_list(aicp->ai_shield_manage_delay, NUM_SKILL_LEVELS);
@@ -683,7 +689,7 @@ void parse_ai_class()
 		parse_float_list(aicp->ai_stalemate_dist_thresh, NUM_SKILL_LEVELS);
 
 	if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
-		parse_float_list(aicp->ai_chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
+		parse_int_list(aicp->ai_chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
 
 	if (optional_string("$Max Aim Update Delay:"))
 		parse_float_list(aicp->ai_max_aim_update_delay, NUM_SKILL_LEVELS);
@@ -14569,28 +14575,50 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	aip->ai_secondary_range_mult = aicp->ai_secondary_range_mult[Game_skill_level];
 	aip->ai_class_autoscale = aicp->ai_class_autoscale;
 
-	//Apply multipliers from ai class to ai profiles values
-	aip->ai_cmeasure_fire_chance = profile->cmeasure_fire_chance[Game_skill_level] * aicp->ai_cmeasure_fire_chance[Game_skill_level];
-	aip->ai_in_range_time = profile->in_range_time[Game_skill_level] * aicp->ai_in_range_time[Game_skill_level];
-	aip->ai_link_ammo_levels_maybe = profile->link_ammo_levels_maybe[Game_skill_level] * aicp->ai_link_ammo_levels_maybe[Game_skill_level];
-	aip->ai_link_ammo_levels_always = profile->link_ammo_levels_always[Game_skill_level] * aicp->ai_link_ammo_levels_always[Game_skill_level];
-	aip->ai_primary_ammo_burst_mult = profile->primary_ammo_burst_mult[Game_skill_level] * aicp->ai_primary_ammo_burst_mult[Game_skill_level];
-	aip->ai_link_energy_levels_maybe = profile->link_energy_levels_maybe[Game_skill_level] * aicp->ai_link_energy_levels_maybe[Game_skill_level];
-	aip->ai_link_energy_levels_always = profile->link_energy_levels_always[Game_skill_level] * aicp->ai_link_energy_levels_always[Game_skill_level];
-	aip->ai_predict_position_delay = (fix)(profile->predict_position_delay[Game_skill_level] * aicp->ai_predict_position_delay[Game_skill_level]);
-	aip->ai_shield_manage_delay = profile->shield_manage_delay[Game_skill_level] * aicp->ai_shield_manage_delay[Game_skill_level];
-	aip->ai_ship_fire_delay_scale_friendly = profile->ship_fire_delay_scale_friendly[Game_skill_level] * aicp->ai_ship_fire_delay_scale_friendly[Game_skill_level];
-	aip->ai_ship_fire_delay_scale_hostile = profile->ship_fire_delay_scale_hostile[Game_skill_level] * aicp->ai_ship_fire_delay_scale_hostile[Game_skill_level];
-	aip->ai_ship_fire_secondary_delay_scale_friendly = profile->ship_fire_secondary_delay_scale_friendly[Game_skill_level] * aicp->ai_ship_fire_secondary_delay_scale_friendly[Game_skill_level];
-	aip->ai_ship_fire_secondary_delay_scale_hostile = profile->ship_fire_secondary_delay_scale_hostile[Game_skill_level] * aicp->ai_ship_fire_secondary_delay_scale_hostile[Game_skill_level];
-	aip->ai_turn_time_scale = profile->turn_time_scale[Game_skill_level] * aicp->ai_turn_time_scale[Game_skill_level];
-	aip->ai_glide_attack_percent = profile->glide_attack_percent[Game_skill_level] * aicp->ai_glide_attack_percent[Game_skill_level];
-	aip->ai_circle_strafe_percent = profile->circle_strafe_percent[Game_skill_level] * aicp->ai_circle_strafe_percent[Game_skill_level];
-	aip->ai_glide_strafe_percent = profile->glide_strafe_percent[Game_skill_level] * aicp->ai_glide_strafe_percent[Game_skill_level];
-	aip->ai_stalemate_time_thresh = profile->stalemate_time_thresh[Game_skill_level] * aicp->ai_stalemate_time_thresh[Game_skill_level];
-	aip->ai_stalemate_dist_thresh = profile->stalemate_dist_thresh[Game_skill_level] * aicp->ai_stalemate_dist_thresh[Game_skill_level];
-	aip->ai_chance_to_use_missiles_on_plr = (int)(profile->chance_to_use_missiles_on_plr[Game_skill_level] * aicp->ai_chance_to_use_missiles_on_plr[Game_skill_level]);
-	aip->ai_max_aim_update_delay = profile->max_aim_update_delay[Game_skill_level] * aicp->ai_max_aim_update_delay[Game_skill_level];
+	//Apply overrides from ai class to ai profiles values
+	//Only override values which were explicitly set in the AI class
+	aip->ai_cmeasure_fire_chance = (aicp->ai_cmeasure_fire_chance[Game_skill_level] == FLT_MIN) ? 
+		profile->cmeasure_fire_chance[Game_skill_level] : aicp->ai_cmeasure_fire_chance[Game_skill_level];
+	aip->ai_in_range_time = (aicp->ai_in_range_time[Game_skill_level] == FLT_MIN) ? 
+		profile->in_range_time[Game_skill_level] : aicp->ai_in_range_time[Game_skill_level];
+	aip->ai_link_ammo_levels_maybe = (aicp->ai_link_ammo_levels_maybe[Game_skill_level] == FLT_MIN) ? 
+		profile->link_ammo_levels_maybe[Game_skill_level] : aicp->ai_link_ammo_levels_maybe[Game_skill_level];
+	aip->ai_link_ammo_levels_always = (aicp->ai_link_ammo_levels_always[Game_skill_level] == FLT_MIN) ? 
+		profile->link_ammo_levels_always[Game_skill_level] : aicp->ai_link_ammo_levels_always[Game_skill_level];
+	aip->ai_primary_ammo_burst_mult = (aicp->ai_primary_ammo_burst_mult[Game_skill_level] == FLT_MIN) ? 
+		profile->primary_ammo_burst_mult[Game_skill_level] : aicp->ai_primary_ammo_burst_mult[Game_skill_level];
+	aip->ai_link_energy_levels_maybe = (aicp->ai_link_energy_levels_maybe[Game_skill_level] == FLT_MIN) ? 
+		profile->link_energy_levels_maybe[Game_skill_level] : aicp->ai_link_energy_levels_maybe[Game_skill_level];
+	aip->ai_link_energy_levels_always = (aicp->ai_link_energy_levels_always[Game_skill_level] == FLT_MIN) ? 
+		profile->link_energy_levels_always[Game_skill_level] : aicp->ai_link_energy_levels_always[Game_skill_level];
+	aip->ai_predict_position_delay = (aicp->ai_predict_position_delay[Game_skill_level] == INT_MIN) ? 
+		profile->predict_position_delay[Game_skill_level] : aicp->ai_predict_position_delay[Game_skill_level];
+	aip->ai_shield_manage_delay = (aicp->ai_shield_manage_delay[Game_skill_level] == FLT_MIN) ? 
+		profile->shield_manage_delay[Game_skill_level] : aicp->ai_shield_manage_delay[Game_skill_level];
+	aip->ai_ship_fire_delay_scale_friendly = (aicp->ai_ship_fire_delay_scale_friendly[Game_skill_level] == FLT_MIN) ? 
+		profile->ship_fire_delay_scale_friendly[Game_skill_level] : aicp->ai_ship_fire_delay_scale_friendly[Game_skill_level];
+	aip->ai_ship_fire_delay_scale_hostile = (aicp->ai_ship_fire_delay_scale_hostile[Game_skill_level] == FLT_MIN) ? 
+		profile->ship_fire_delay_scale_hostile[Game_skill_level] : aicp->ai_ship_fire_delay_scale_hostile[Game_skill_level];
+	aip->ai_ship_fire_secondary_delay_scale_friendly = (aicp->ai_ship_fire_secondary_delay_scale_friendly[Game_skill_level] == FLT_MIN) ? 
+		profile->ship_fire_secondary_delay_scale_friendly[Game_skill_level] : aicp->ai_ship_fire_secondary_delay_scale_friendly[Game_skill_level];
+	aip->ai_ship_fire_secondary_delay_scale_hostile = (aicp->ai_ship_fire_secondary_delay_scale_hostile[Game_skill_level] == FLT_MIN) ? 
+		profile->ship_fire_secondary_delay_scale_hostile[Game_skill_level] : aicp->ai_ship_fire_secondary_delay_scale_hostile[Game_skill_level];
+	aip->ai_turn_time_scale = (aicp->ai_turn_time_scale[Game_skill_level] == FLT_MIN) ? 
+		profile->turn_time_scale[Game_skill_level] : aicp->ai_turn_time_scale[Game_skill_level];
+	aip->ai_glide_attack_percent = (aicp->ai_glide_attack_percent[Game_skill_level] == FLT_MIN) ? 
+		profile->glide_attack_percent[Game_skill_level] : aicp->ai_glide_attack_percent[Game_skill_level];
+	aip->ai_circle_strafe_percent = (aicp->ai_circle_strafe_percent[Game_skill_level] == FLT_MIN) ? 
+		profile->circle_strafe_percent[Game_skill_level] : aicp->ai_circle_strafe_percent[Game_skill_level];
+	aip->ai_glide_strafe_percent = (aicp->ai_glide_strafe_percent[Game_skill_level] == FLT_MIN) ? 
+		profile->glide_strafe_percent[Game_skill_level] : aicp->ai_glide_strafe_percent[Game_skill_level];
+	aip->ai_stalemate_time_thresh = (aicp->ai_stalemate_time_thresh[Game_skill_level] == FLT_MIN) ? 
+		profile->stalemate_time_thresh[Game_skill_level] : aicp->ai_stalemate_time_thresh[Game_skill_level];
+	aip->ai_stalemate_dist_thresh = (aicp->ai_stalemate_dist_thresh[Game_skill_level] == FLT_MIN) ? 
+		profile->stalemate_dist_thresh[Game_skill_level] : aicp->ai_stalemate_dist_thresh[Game_skill_level];
+	aip->ai_chance_to_use_missiles_on_plr = (aicp->ai_chance_to_use_missiles_on_plr[Game_skill_level] == INT_MIN) ? 
+		profile->chance_to_use_missiles_on_plr[Game_skill_level] : aicp->ai_chance_to_use_missiles_on_plr[Game_skill_level];
+	aip->ai_max_aim_update_delay = (aicp->ai_max_aim_update_delay[Game_skill_level] == FLT_MIN) ? 
+		profile->max_aim_update_delay[Game_skill_level] : aicp->ai_max_aim_update_delay[Game_skill_level];
 
 	//Set flags (these act as overrides if set)
 	aip->ai_profile_flags = 0;

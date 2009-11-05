@@ -187,7 +187,7 @@ typedef struct ai_class {
 	float	ai_patience[NUM_SKILL_LEVELS];
 
 	//SUSHI: These were originally in AI_Profiles, adding the option to override in AI.tbl
-	//Except for the boolean options at the bottom, these all behave as multipliers
+	//INT_MIN and FLT_MIN represent the "not set" state for which defaults are used instead.
 	float	ai_cmeasure_fire_chance[NUM_SKILL_LEVELS];	
 	float	ai_in_range_time[NUM_SKILL_LEVELS];			
 	float	ai_link_ammo_levels_maybe[NUM_SKILL_LEVELS];
@@ -195,7 +195,7 @@ typedef struct ai_class {
 	float	ai_primary_ammo_burst_mult[NUM_SKILL_LEVELS];
 	float	ai_link_energy_levels_maybe[NUM_SKILL_LEVELS];
 	float	ai_link_energy_levels_always[NUM_SKILL_LEVELS];
-	float	ai_predict_position_delay[NUM_SKILL_LEVELS];
+	fix		ai_predict_position_delay[NUM_SKILL_LEVELS];
 	float	ai_shield_manage_delay[NUM_SKILL_LEVELS];
 	float	ai_ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS];	
 	float	ai_ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
@@ -207,13 +207,12 @@ typedef struct ai_class {
 	float	ai_glide_strafe_percent[NUM_SKILL_LEVELS];
 	float	ai_stalemate_time_thresh[NUM_SKILL_LEVELS];
 	float	ai_stalemate_dist_thresh[NUM_SKILL_LEVELS];
-	float	ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+	int		ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 	float	ai_max_aim_update_delay[NUM_SKILL_LEVELS];
 	int		ai_profile_flags;		//Holds the state of flags that are set
 	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
 
 	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
-	//INT_MIN and FLT_MIN represent the "not set" state for which defaults are used instead.
 	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
 	float	ai_shockwave_evade_chance[NUM_SKILL_LEVELS];	
 	float	ai_get_away_chance[NUM_SKILL_LEVELS];	
