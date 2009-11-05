@@ -1418,8 +1418,8 @@ void ai_big_strafe_glide_attack()
 		accelerate_ship(aip, 1.0f);
 		//Use afterburners if we have them and are pointed the right way
 		if (dot_to_goal > 0.99f) {
-		afterburners_start(Pl_objp);
-		aip->afterburner_stop_time = Missiontime + 3*F1_0;
+			afterburners_start(Pl_objp);
+			aip->afterburner_stop_time = Missiontime + 3*F1_0;
 		}
 
 		turn_towards_point(Pl_objp, &aip->goal_point, NULL, 0.0f);
