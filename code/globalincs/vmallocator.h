@@ -4,6 +4,8 @@
 /* SCP_vm_allocator - maintained by portej05 (i.e. please don't patch this one yourself!) */
 
 #include <vector>
+#include <map>
+#include <string>
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 || !defined(_MSC_VER)
 
@@ -87,8 +89,35 @@ public:
 template< typename T >
 class SCP_vector : public std::vector< T, SCP_vm_allocator< T > > { };
 
+typedef std::basic_string<char, std::char_traits<char>, SCP_vm_allocator<char> > SCP_string;
+
+typedef std::basic_stringstream<char, std::char_traits<char>, SCP_vm_allocator<char> > SCP_stringstream;
+
+template< typename T, typename U >
+class SCP_map : public std::map<T, U, std::less<T>, SCP_vm_allocator<std::pair<const T, U> > > { };
+
+template< typename T, typename U >
+class SCP_multimap : public std::multimap<T, U, std::less<T>, SCP_vm_allocator<std::pair<const T, U> > > { };
+
+template <class T1, class T2>
+bool operator==(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw()
+{
+	return true;
+}
+
+template <class T1, class T2>
+bool operator!=(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw()
+{
+	return false;
+}
+
+
 #else
 
+#define SCP_string std::string
+#define SCP_stringstream std::stringstream
+#define SCP_map std::map
+#define SCP_multimap std::multimap
 #define SCP_vector std::vector
 
 #endif
