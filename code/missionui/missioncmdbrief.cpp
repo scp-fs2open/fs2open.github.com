@@ -192,6 +192,7 @@ static int Voice_ended_time;
 //static int Anim_playing_id = -1;
 //static anim_instance *Cur_anim_instance = NULL;
 static generic_anim Cur_Anim;
+static char *Cur_anim_filename = "~~~~";
 static int anim_done = 0;
 
 static int Last_anim_frame_num;
@@ -324,6 +325,8 @@ void cmd_brief_stop_anim(int id)
 void cmd_brief_new_stage(int stage)
 {
 	char *p;
+	char filename[NAME_LENGTH];
+
 	if (stage < 0) {
 		cmd_brief_stop_anim(-1);
 		Cur_stage = -1;
@@ -337,25 +340,64 @@ void cmd_brief_new_stage(int stage)
 	Cur_stage = stage;
 	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
 
-	//load a new animation if it's different to what's already playing
-	if(strcmp(Cur_Anim.filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
-		//unload the previous anim
-		if(Cur_Anim.num_frames > 0)
-			generic_anim_unload(&Cur_Anim);
-		//load animation here, we now only have one loaded
-		p = strchr( Cur_cmd_brief->stage[stage].ani_filename, '.' );
-		if(p)
-			*p = '\0';
-		generic_anim_init(&Cur_Anim, Cur_cmd_brief->stage[stage].ani_filename);
+	// load a new animation if it's different to what's already playing
+	if (strcmp(Cur_anim_filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
+		// set stuff up
+		int stream_result = -1;
+		int bg_type = bm_get_type(Cmd_brief_background_bitmap);
 		anim_done = 0;
-		Cur_Anim.ani.bg_type = bm_get_type(Cmd_brief_background_bitmap);
-		if(generic_anim_stream(&Cur_Anim) == -1) {
-			//we've failed to load an animation, load an image and treat it like a 1 frame animation
+
+		// unload the previous anim
+		if(Cur_Anim.num_frames > 0) {
+			generic_anim_unload(&Cur_Anim);
+		}
+
+		// save new filename
+		Cur_anim_filename = Cur_cmd_brief->stage[stage].ani_filename;
+
+		// hi-res support
+		if (gr_screen.res == GR_1024) {
+			// attempt to load a hi-res animation
+			memset(filename, 0, NAME_LENGTH);
+			strcpy_s(filename, "2_");
+			strncat(filename, Cur_anim_filename, NAME_LENGTH - 3);
+
+			// remove extension
+			p = strchr(filename, '.');
+			if(p) {
+				*p = '\0';
+			}
+
+			// attempt to stream the hi-res ani
+			generic_anim_init(&Cur_Anim, filename);
+			Cur_Anim.ani.bg_type = bg_type;
+			stream_result = generic_anim_stream(&Cur_Anim);
+		}
+
+		// we failed to stream hi-res, or we aren't running in hi-res, so try low-res
+		if (stream_result < 0) {
+			strcpy_s(filename, Cur_anim_filename);
+
+			// remove extension
+			p = strchr(filename, '.');
+			if(p) {
+				*p = '\0';
+			}
+
+			// attempt to stream the low-res ani
+			generic_anim_init(&Cur_Anim, filename);
+			Cur_Anim.ani.bg_type = bg_type;
+			stream_result = generic_anim_stream(&Cur_Anim);
+		}
+
+		// we've failed to load any animation
+		if (stream_result < 0) {
+			// load an image and treat it like a 1 frame animation
 			Cur_Anim.first_frame = bm_load(Cur_cmd_brief->stage[stage].ani_filename);	//if we fail here, the value is still -1
 			if(Cur_Anim.first_frame != -1) {
 				Cur_Anim.num_frames = 1;
+			}
 		}
-	}
 	}
 
 	//resetting the audio here
@@ -618,6 +660,9 @@ void cmd_brief_close()
 				audiostream_close_file(Cur_cmd_brief->stage[i].wave, 0);
 
 		}
+
+		// so that the same ani will reload properly upon return
+		Cur_anim_filename = "~~~~";
 
 		if (Cmd_brief_background_bitmap >= 0)
 			bm_release(Cmd_brief_background_bitmap);
