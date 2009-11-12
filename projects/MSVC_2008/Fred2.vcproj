@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -180,7 +180,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -288,7 +288,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -396,7 +396,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;_SSE2;"
 				Culture="1033"
 			/>
 			<Tool
@@ -504,7 +504,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -612,7 +612,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;_SSE2;"
 				Culture="1033"
 			/>
 			<Tool
@@ -725,7 +725,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -838,7 +838,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -952,7 +952,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -1066,7 +1066,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2;"
 				Culture="1033"
 			/>
 			<Tool
@@ -1180,7 +1180,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -1294,7 +1294,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2;"
 				Culture="1033"
 			/>
 			<Tool

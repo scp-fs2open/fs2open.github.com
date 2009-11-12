@@ -23547,8 +23547,8 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	// Karajora
-	{ OP_SECONDARY_FIRED_SINCE, "primary-fired-since\r\n"
-		"\tReturns true if the primary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+	{ OP_SECONDARY_FIRED_SINCE, "secondary-fired-since\r\n"
+		"\tReturns true if the secondary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number\r\n"
 		"\t3:\tDelay (in millieconds)\r\n"

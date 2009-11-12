@@ -71,8 +71,19 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
+/* VS2008 can support stuff that these builds can't */
+
+#if !defined(_VC08)
+ /* Non-VS2008 builds get one of two icons */
+ // To Do: Add Debug versions
 IDR_MAINFRAME           ICON                    "res\\FRED.ico"
 IDR_FREDTYPE            ICON                    "res\\FREDDoc.ico"
+#else
+ /* VS2008 builds get cool icons */
+ // To Do: Add the rest (Debug and SSE2 varients)
+IDR_MAINFRAME           ICON                    "res\\V_FRED.ico"
+IDR_FREDTYPE            ICON                    "res\\FREDDoc.ico"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2002,8 +2013,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,6,11,5622
- PRODUCTVERSION 3,6,11,5622
+ FILEVERSION 3,6,11,0000
+ PRODUCTVERSION 3,6,11,0000
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2020,7 +2031,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Volition Inc."
             VALUE "FileDescription", "Fred 2 Open"
-            VALUE "FileVersion", "3.6.11.5622"
+            VALUE "FileVersion", "3.6.11.0000"
             VALUE "InternalName", "Fred 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fred2.exe"

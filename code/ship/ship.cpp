@@ -564,7 +564,7 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
-	"BTRL",
+	"Galactica",
 	"Homeworld",
 	"Hyperspace",
 };
