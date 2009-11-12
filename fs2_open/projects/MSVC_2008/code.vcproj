@@ -472,7 +472,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../oggvorbis/include;../../lua;../../openal/include;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"

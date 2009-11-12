@@ -52,7 +52,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../oggvorbis/include;../../lua;../../openal/include;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG; _VC08"
 				Culture="1033"
 			/>
 			<Tool
@@ -301,7 +301,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -418,7 +418,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -535,7 +535,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;"
 				Culture="1033"
 			/>
 			<Tool
@@ -651,7 +651,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_VC08;_SSE2"
 				Culture="1033"
 			/>
 			<Tool
