@@ -2502,9 +2502,8 @@ strcpy_s(parse_error_text, temp_error);
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
-		SCP_vector <std::string> target_group_strings, *target_group_string_p;
-		target_group_string_p = &target_group_strings;
-		int num_strings = stuff_string_list(target_group_string_p);
+		SCP_vector<SCP_string> target_group_strings;
+		int num_strings = stuff_string_list(target_group_strings);
 		int num_groups = Ai_tp_list.size();
 		int k;
 		bool override_strings = false;
@@ -2761,9 +2760,8 @@ strcpy_s(parse_error_text, temp_error);
 			}
 
 			if (optional_string("$Target Priority:")) {
-				SCP_vector <std::string> tgt_priorities, *tgt_priorities_p;
-				tgt_priorities_p = &tgt_priorities;
-				int num_strings = stuff_string_list(tgt_priorities_p);
+				SCP_vector <SCP_string> tgt_priorities;
+				int num_strings = stuff_string_list(tgt_priorities);
 				sp->num_target_priorities = 0;
 
 				if (num_strings > 32)
@@ -3071,7 +3069,6 @@ void parse_ship_type()
 	else
 	{
 		stp = &stp_buf;
-		memset( stp, 0, sizeof(ship_type_info) );
 		strcpy_s(stp->name, name_buf);
 	}
 
@@ -3098,9 +3095,8 @@ void parse_ship_type()
 
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
-		SCP_vector <std::string> target_group_strings, *target_group_string_p;
-		target_group_string_p = &target_group_strings;
-		int num_strings = stuff_string_list(target_group_string_p);
+		SCP_vector <SCP_string> target_group_strings;
+		int num_strings = stuff_string_list(target_group_strings);
 		int num_groups = Ai_tp_list.size();
 		int i, j;
 		bool override_strings = false;
@@ -3211,7 +3207,7 @@ void parse_ship_type()
 		}
 
 		if(optional_string("+Actively Pursues:")) {
-			stuff_string_list(&stp->ai_actively_pursues_temp);
+			stuff_string_list(stp->ai_actively_pursues_temp);
 		}
 
 		if(optional_string("+Guards attack this:")) {
@@ -15765,8 +15761,7 @@ void parse_ai_target_priorities()
 {
 	int i, j, num_strings;
 	int n_entries = Ai_tp_list.size();
-	SCP_vector <std::string> temp_strings, *temp_strings_p;
-	temp_strings_p = &temp_strings;
+	SCP_vector <SCP_string> temp_strings;
 
 	bool first_time = false;
 	int already_exists = -1;
@@ -15801,7 +15796,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for(i = 0; i < num_strings; i++) {
 			for(j = 0; j < MAX_WEAPON_TYPES ; j++) {
@@ -15814,7 +15809,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Object Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
@@ -15827,7 +15822,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Ship Class Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
@@ -15844,7 +15839,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_weapon_flags; j++) {

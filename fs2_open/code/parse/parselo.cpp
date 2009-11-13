@@ -2127,9 +2127,10 @@ int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size)
 	return num_strings;
 }
 
-int stuff_string_list(SCP_vector<std::string> *slp)
+int stuff_string_list(SCP_vector<SCP_string>& slp)
 {
-	(*slp).clear();
+	//_asm int 3;
+	slp.clear();
 
 	ignore_white_space();
 
@@ -2151,13 +2152,13 @@ int stuff_string_list(SCP_vector<std::string> *slp)
 		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
 
 		get_string( buf );
-		(*slp).push_back(std::string(buf));
+		slp.push_back(SCP_string(buf));
 		ignore_white_space();
 	}
 
 	Mp++;
 
-	return (*slp).size();
+	return slp.size();
 }
 
 // Stuffs a list of strings

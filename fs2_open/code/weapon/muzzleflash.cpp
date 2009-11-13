@@ -26,7 +26,29 @@ typedef struct mflash_blob_info {
 	float offset;
 	float radius;
 
-	mflash_blob_info() { memset(this, 0, sizeof(mflash_blob_info)); anim_id = -1; };
+	mflash_blob_info( const mflash_blob_info& mbi )
+	{
+		strcpy_s( name, mbi.name );
+		anim_id = mbi.anim_id;
+		offset = mbi.offset;
+		radius = mbi.radius;
+	}
+
+	mflash_blob_info() :
+		anim_id( -1 ),
+		offset( 0.0 ),
+		radius( 0.0 )
+	{ 
+		name[ 0 ] = '\0';
+	}
+
+	void operator=( const mflash_blob_info& r )
+	{
+		strcpy_s( name, r.name );
+		anim_id = r.anim_id;
+		offset = r.offset;
+		radius = r.radius;
+	}
 } mflash_blob_info;
 
 typedef struct mflash_info {
@@ -34,7 +56,25 @@ typedef struct mflash_info {
 	int	 used_this_level;
 	SCP_vector<mflash_blob_info> blobs;
 
-	mflash_info() { memset(this, 0, sizeof(mflash_info)); };
+	mflash_info() 
+		: used_this_level( 0 )
+	{ 
+		name[ 0 ] = '\0';
+	}
+
+	mflash_info( const mflash_info& mi )
+	{
+		strcpy_s( name, mi.name );
+		used_this_level = mi.used_this_level;
+		blobs = mi.blobs;
+	}
+
+	void operator=( const mflash_info& r )
+	{
+		strcpy_s( name, r.name );
+		used_this_level = r.used_this_level;
+		blobs = r.blobs;
+	}
 } mflash_info;
 
 SCP_vector<mflash_info> Mflash_info;
