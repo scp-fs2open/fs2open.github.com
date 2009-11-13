@@ -1111,7 +1111,7 @@ int CShipEditorDlg::update_data(int redraw)
 
 			Assert(i < Wings[wing].wave_count);
 			sprintf(old_name, "%s %d", Wings[wing].name, i + 1);
-			if (stricmp(old_name, m_ship_name)) {
+			if (strcmp(old_name, m_ship_name)) {
 				if (bypass_errors)
 					return 0;
 
@@ -1131,12 +1131,12 @@ int CShipEditorDlg::update_data(int redraw)
 		strcpy_s(old_name, Ships[single_ship].ship_name);
 		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH, 1);
 		str = Ships[single_ship].ship_name;
-		if (stricmp(old_name, str)) {
+		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(REF_TYPE_SHIP, old_name, str);
 			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
-				if (!stricmp(old_name, Reinforcements[i].name)) {
+				if (!strcmp(old_name, Reinforcements[i].name)) {
 					Assert(strlen(str) < NAME_LENGTH);
 					strcpy_s(Reinforcements[i].name, str);
 				}
