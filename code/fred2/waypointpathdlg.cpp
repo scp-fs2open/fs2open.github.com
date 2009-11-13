@@ -236,7 +236,7 @@ int waypoint_path_dlg::update_data(int redraw)
 		string_copy(Waypoint_lists[cur_waypoint_list].name, m_name, NAME_LENGTH, 1);
 
 		str = (char *) (LPCTSTR) m_name;
-		if (stricmp(old_name, str)) {
+		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(REF_TYPE_WAYPOINT, old_name, str);
 			update_texture_replacements(old_name, str);
@@ -326,7 +326,7 @@ int waypoint_path_dlg::update_data(int redraw)
 		}
 		
 		str = (char *) (LPCTSTR) m_name;
-		if (stricmp(old_name, str)) {
+		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 		}
 		

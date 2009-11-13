@@ -19865,7 +19865,7 @@ void update_block_names(const char *old_name, const char *new_name)
 
 	for (i=0; i<MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) {
-			if ( !stricmp(old_name, Sexp_variables[i].variable_name) ) {
+			if ( !strcmp(old_name, Sexp_variables[i].variable_name) ) {
 				strcpy_s(Sexp_variables[i].variable_name, new_name);
 			}
 		}
