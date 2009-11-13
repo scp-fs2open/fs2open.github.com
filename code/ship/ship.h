@@ -866,7 +866,18 @@ typedef struct ship_type_info {
 	SCP_vector<int> explosion_bitmap_anims;
 
 	//Regen values - need to be converted after all types have loaded
-	SCP_vector<std::string> ai_actively_pursues_temp;
+	SCP_vector<SCP_string> ai_actively_pursues_temp;
+
+	ship_type_info( )
+		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),
+		  debris_max_speed( 0.f ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
+		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_bools( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  vaporize_chance( 0.f )
+
+	{
+		name[ 0 ] = '\0';
+	}
 } ship_type_info;
 
 extern SCP_vector<ship_type_info> Ship_types;
