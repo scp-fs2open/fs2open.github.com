@@ -648,12 +648,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 	{
 		stuff_string_list(TVT_wing_names, MAX_TVT_WINGS);
 	}
-
-	// minimal error checking
-	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
-	{
-		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
-	}
 	// end of wing stuff -------------------------------------------------
 
 
@@ -4261,6 +4255,11 @@ void post_process_ships_wings()
 	// ----------------- at this point the ships have been created -----------------
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
 
+	// error checking for custom wings
+	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
+	{
+		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+	}
 
 	// Goober5000 - for FRED, the ships are initialized after the wings, so we must now tell the wings
 	// where their ships are
