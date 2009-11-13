@@ -1006,7 +1006,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	pm->version = version;
 	Assert( strlen(filename) < FILESPEC_LENGTH );
-	strncpy(pm->filename, filename, FILESPEC_LENGTH);
+	strcpy_s(pm->filename, filename);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
@@ -1050,7 +1050,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				
 				pm->submodel = (bsp_info *)vm_malloc( sizeof(bsp_info)*pm->n_models );
 				Assert(pm->submodel != NULL );
-				memset( pm->submodel, 0, sizeof(bsp_info)*pm->n_models );
+				for ( i = 0; i < pm->n_models; i++ )
+				{
+					/* HACK: This is an almighty hack because it is late at night and I don't want to screw up a vm_free */
+					new ( &( pm->submodel[ i ].buffer ) ) SCP_vector<buffer_data>( );
+					pm->submodel[ i ].Reset( );
+				}
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -2188,8 +2193,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
 	char tmp_name[MAX_FILENAME_LEN];
-	memset(tmp_name, 0, MAX_FILENAME_LEN);
-	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+	strcpy_s(tmp_name, file);
 	strlwr(tmp_name);
 
 	texture_map *tmap = &pm->maps[i];
@@ -2232,9 +2236,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	else
 	{
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-glow" );
 		strlwr(tmp_name);
 
 		tglow->LoadTexture(tmp_name, pm->filename);
@@ -2249,9 +2252,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	else
 	{
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-shine");
 		strlwr(tmp_name);
 
 		tspec->LoadTexture(tmp_name, pm->filename);
@@ -2266,18 +2268,16 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		tnorm->clear();
 		theight->clear();
 	} else {
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-normal", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-normal");
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
 
 		// try to get a height map too
 		if ( Cmdline_height && (tnorm->GetTexture() > 0) ) {
-			memset(tmp_name, 0, MAX_FILENAME_LEN);
-			strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-			strncat(tmp_name, "-height", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+			strcpy_s(tmp_name, file);
+			strcat_s(tmp_name, "-height");
 			strlwr(tmp_name);
 
 			theight->LoadTexture(tmp_name, pm->filename);

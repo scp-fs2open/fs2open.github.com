@@ -491,7 +491,7 @@ char *drop_extra_chars(char *str)
 void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 {
 	char buffer[1024];
-	memset(buffer, 0, 1024);
+	memset( buffer, 0, sizeof( buffer ) );
 	char *dest = buffer;
 	char *saved_args = NULL;
 
@@ -527,13 +527,13 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 
 		if (saved_args != NULL) {
 			// saved args go first, then new arg
-			strcpy(parm->args, saved_args);
+			strcpy_s(parm->args, size, saved_args);
 			// add a separator too, so that we can tell the args apart
-			strcat(parm->args, ",");
+			strcat_s(parm->args, size, ",");
 			// now the new arg
-			strcat(parm->args, buffer);
+			strcat_s(parm->args, size, buffer);
 		} else {
-			strcpy(parm->args, buffer);
+			strcpy_s(parm->args, size, buffer);
 		}
 	}
 
@@ -1072,8 +1072,7 @@ bool SetCmdlineParams()
 		// Ok - mod stacking support
 		int len = strlen(Cmdline_mod);
 		char *modlist = new char[len+2];
-		memset(modlist, 0, len+2);
-		strcpy(modlist, Cmdline_mod);
+		strcpy_s(modlist, len+2, Cmdline_mod);
 
 		//modlist[len]= '\0'; // double null termination at the end
 
@@ -1397,12 +1396,11 @@ int fred2_parse_cmdline(int argc, char *argv[])
 			arglen += argc + 2; // leave room for the separators
 		cmdline = new char [arglen+1];
 		i = 1;
-		memset(cmdline, 0, arglen+1); // clear it out
 
-		strcpy(cmdline, argv[i]);
+		strcpy_s(cmdline, arglen+1, argv[i]);
 		for (i=2; i < argc;  i++) {
-			strcat(cmdline, " ");
-			strcat(cmdline, argv[i]);
+			strcat_s(cmdline, arglen+1, " ");
+			strcat_s(cmdline, arglen+1, argv[i]);
 		}
 		os_init_cmdline(cmdline);
 		delete [] cmdline;

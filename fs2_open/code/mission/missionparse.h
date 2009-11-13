@@ -727,7 +727,47 @@ typedef struct mission {
 	// Goober5000
 	ai_profile_t *ai_profile;
 
-	SCP_vector<mission_cutscene> cutscenes; 
+	SCP_vector<mission_cutscene> cutscenes;
+
+	void Reset( )
+	{
+		int i = 0;
+		name[ 0 ] = '\0';
+		author[ 0 ] = '\0';
+		version = 0.;
+		created[ 0 ] = '\0';
+		modified[ 0 ] = '\0';
+		notes[ 0 ] = '\0';
+		mission_desc[ 0 ] = '\0';
+		game_type = 0;
+		flags = 0;
+		num_players = 0;
+		num_respawns = 0;
+		max_respawn_delay = 0;
+		memset( &support_ships, 0, sizeof( support_ships ) );
+		squad_filename[ 0 ] = '\0';
+		squad_name[ 0 ] = '\0';
+		for ( i = 0; i < GR_NUM_RESOLUTIONS; i++ )
+			loading_screen[ i ][ 0 ] = '\0';
+		skybox_model[ 0 ] = '\0';
+		envmap_name[ 0 ] = '\0';
+		skybox_flags = 0;
+		contrail_threshold = 0;
+		ambient_light_level = 0;
+		command_persona = 0;
+		command_sender[ 0 ] = '\0';
+		event_music_name[ 0 ] = '\0';
+		briefing_music_name[ 0 ] = '\0';
+		substitute_event_music_name[ 0 ] = '\0';
+		substitute_briefing_music_name[ 0 ] = '\0';
+		ai_profile = NULL;
+		cutscenes.clear( );
+	}
+
+	mission( )
+	{
+		Reset( );
+	}
 } mission;
 
 // cargo defines
@@ -846,8 +886,13 @@ typedef struct texture_replace {
 	int new_texture_id;
 
 	texture_replace( )
-		: new_texture_id( -1 )
 	{
+		Reset( );
+	}
+
+	void Reset( )
+	{
+		new_texture_id = -1;
 		ship_name[ 0 ] = NULL;
 		old_texture[ 0 ] = NULL;
 		new_texture[ 0 ] = NULL;
@@ -946,6 +991,93 @@ typedef struct p_object {
 	SCP_vector<alt_class> alt_classes;	
 
 	int alt_iff_color[MAX_IFFS][MAX_IFFS];
+
+	void Reset( )
+	{
+		int i = 0;
+
+		name[ 0 ] = '\0';
+
+		next = NULL;
+		prev = NULL;
+
+		memset( &pos, 0, sizeof( pos ) );
+		memset( &orient, 0, sizeof( orient ) );
+		ship_class = 0;
+		team = 0;
+		behavior = 0;
+		ai_goals = 0;
+		cargo1 = 0;
+
+		status_count = 0;
+		for ( i = 0; i < MAX_OBJECT_STATUS; i++ )
+		{
+			status_type[ i ] = 0;
+			status[ i ] = 0;
+			target[ i ] = 0;
+		}
+
+		subsys_index = 0;
+		subsys_count = 0;
+		initial_velocity = 0;
+		initial_hull = 0;
+		initial_shields = 0;
+		arrival_location = 0;
+		arrival_distance = 0;
+		arrival_anchor = 0;
+		arrival_path_mask = 0;
+		arrival_cue = 0;
+		arrival_delay = 0;
+		departure_location = 0;
+		departure_anchor = 0;
+		departure_path_mask = 0;
+		departure_cue = 0;
+		departure_delay = 0;
+
+		misc[ 0 ] = '\0';
+
+		wingnum = 0;
+		pos_in_wing = 0;
+
+		flags = 0;
+		flags2 = 0;
+		escort_priority = 0;
+		ai_class = 0;
+		hotkey = 0;
+		score = 0;
+		assist_score_pct = 0.;
+		orders_accepted = 0;
+		dock_list = NULL;
+		created_object = NULL;
+		group = 0;
+		persona_index = 0;
+		kamikaze_damage = 0.;
+		special_exp_index = 0;
+		special_hitpoint_index = 0;
+		net_signature = 0;
+		destroy_before_mission_time = 0;
+
+		wing_status_wing_index = 0;
+		wing_status_wing_pos = 0;
+
+		respawn_count = 0;
+		respawn_priority = 0;
+
+		alt_type_index = 0;
+		callsign_index = 0;
+
+		ship_max_hull_strength = 0.;
+		ship_max_shield_strength = 0.;
+
+		num_texture_replacements = 0;
+		
+		for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ )
+			replacement_textures[ i ].Reset( );
+
+		alt_classes.clear( );	
+
+		memset( alt_iff_color, 0, sizeof( alt_iff_color ) );
+	}
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special

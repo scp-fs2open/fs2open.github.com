@@ -4622,7 +4622,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// if the table has set an name copy it
 		if (strlen(ship_system->system_info->alt_sub_name) > 0) {
-			strncpy(ship_system->sub_name, ship_system->system_info->alt_sub_name, NAME_LENGTH-1);
+			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
 		else {
 			memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
