@@ -708,7 +708,16 @@ typedef struct exited_ship {
 	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
 	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
-	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
+	exited_ship()
+		: team( 0 ), flags( 0 ), time( 0 ), hull_strength( 0 ),
+		  time_cargo_revealed( 0 ), cargo1( 0 )
+	{ 
+		ship_name[ 0 ] = '\0';
+		obj_signature = -1;
+		ship_class = -1; 
+		memset( damage_ship, 0, sizeof( damage_ship ) );
+		memset( damage_ship_id, 0, sizeof( damage_ship_id ) );
+	}
 } exited_ship;
 
 extern SCP_vector<exited_ship> Ships_exited;
@@ -918,7 +927,16 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
-	man_thruster(){memset(this, 0, sizeof(man_thruster));tex_id=-1;start_snd=-1;loop_snd=-1;stop_snd=-1;}
+	man_thruster()
+		: use_flags( 0 ), tex_nframes( 0 ), tex_fps( 0 ), length( 0. ), radius( 0. )
+	{
+		tex_id=-1;
+		start_snd=-1;
+		loop_snd=-1;
+		stop_snd=-1;
+		memset( &pos, 0, sizeof( vec3d ) );
+		memset( &norm, 0, sizeof( vec3d ) );
+	}
 } man_thruster;
 
 //Warp type defines

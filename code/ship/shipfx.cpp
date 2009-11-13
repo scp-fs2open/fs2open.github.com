@@ -4121,9 +4121,9 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	char tmp_name[MAX_FILENAME_LEN];
 	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	if(direction == WD_WARP_IN)
-		strncpy(tmp_name, sip->warpin_anim, MAX_FILENAME_LEN-1);
+		strcpy_s( tmp_name, sip->warpin_anim );
 	else if(direction == WD_WARP_OUT)
-		strncpy(tmp_name, sip->warpout_anim, MAX_FILENAME_LEN-1);
+		strcpy_s( tmp_name, sip->warpout_anim );
 	strlwr(tmp_name);
 
 	if(strlen(tmp_name))

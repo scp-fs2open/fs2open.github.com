@@ -5032,7 +5032,7 @@ int parse_mission(mission *pm, int flags)
 	Player_starts = Num_cargo = Num_waypoint_lists = Num_goals = Num_wings = 0;
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
-	memset( &Player_start_pobject, 0, sizeof(Player_start_pobject) );
+	Player_start_pobject.Reset( );
 	clear_texture_replacements();
 
 	// initialize the initially_docked array.
@@ -5430,7 +5430,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 		}
 
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
-		memset( mission_p, 0, sizeof(mission) );
+		mission_p->Reset( );
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
 	} while (0);
@@ -5514,7 +5514,7 @@ int parse_main(char *mission_name, int flags)
 			read_file_text(mission_name, CF_TYPE_MISSIONS);
 		}
 
-		memset(&The_mission, 0, sizeof(The_mission));
+		The_mission.Reset( );
 		rval = parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 	} while (0);
