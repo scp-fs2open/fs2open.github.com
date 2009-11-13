@@ -390,7 +390,7 @@ IDB_GOAL_FAIL           BITMAP  DISCARDABLE     "goal_fail.bmp"
 // remains consistent on all systems.
 /* VS2008 can support stuff that these builds can't */
 
-#if !defined(_VC08)
+#ifndef _VC08
  /* Non-VS2008 builds get one of two icons */
  #ifdef _DEBUG
   IDI_APP_ICON            ICON    DISCARDABLE     "dbg_icon.ico"
