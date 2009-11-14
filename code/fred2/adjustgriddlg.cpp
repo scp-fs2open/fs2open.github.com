@@ -79,9 +79,9 @@ BOOL adjust_grid_dlg::OnInitDialog()
 		GetDlgItem(IDC_EDIT_Z)->EnableWindow(FALSE);
 	}
 
-	m_spinx.SetRange((short)99999, (short)-99999);
-	m_spiny.SetRange((short)99999, (short)-99999);
-	m_spinz.SetRange((short)99999, (short)-99999);
+	m_spinx.SetRange(SHRT_MIN, SHRT_MAX);
+	m_spiny.SetRange(SHRT_MIN, SHRT_MAX);
+	m_spinz.SetRange(SHRT_MIN, SHRT_MAX);
 	return TRUE;
 }
 
