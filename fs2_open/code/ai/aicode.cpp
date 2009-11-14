@@ -5057,15 +5057,17 @@ void evade_ship()
 	} else
 		accelerate_ship(aip, (float) (Game_skill_level+2) / (NUM_SKILL_LEVELS+1));
 
-	if ((Missiontime - aip->submode_start_time > F1_0/2) && (sip->afterburner_fuel_capacity > 0.0f)) {
-		float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
-		if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
-			afterburners_start(Pl_objp);
+	if (ai_maybe_fire_afterburner(Pl_objp, aip)){
+		if ((Missiontime - aip->submode_start_time > F1_0/2) && (sip->afterburner_fuel_capacity > 0.0f)) {
+			float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+			if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
+				afterburners_start(Pl_objp);
 			
-			if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
-				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
-			} else {				
-				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+				if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+					aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
+				} else {				
+					aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+				}
 			}
 		}
 	}
@@ -13788,7 +13790,7 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 	else {
 		accelerate_ship(aip, 1.0f + dot_to_goal);
 		if (dot_to_goal > 0.2f) {
-			if (!(objp->phys_info.flags & PF_AFTERBURNER_ON )) {
+			if (ai_maybe_fire_afterburner(Pl_objp, aip) && !(objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 				afterburners_start(objp);
 				aip->afterburner_stop_time = Missiontime + 2*F1_0;
 			}
