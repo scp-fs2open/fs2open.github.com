@@ -164,6 +164,7 @@ sexp_oper Operators[] = {
 	{ "percent-ships-disabled",			OP_PERCENT_SHIPS_DISABLED,			2, INT_MAX,	},
 	{ "percent-ships-disarmed",			OP_PERCENT_SHIPS_DISARMED,			2, INT_MAX,	},
 	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,			2, INT_MAX,	},
+	{ "percent-ships-arrived",			OP_PERCENT_SHIPS_ARRIVED,			2, INT_MAX,	},
 	{ "depart-node-delay",					OP_DEPART_NODE_DELAY,				3, INT_MAX, },	
 	{ "destroyed-or-departed-delay",		OP_DESTROYED_DEPARTED_DELAY,		2, INT_MAX, },	
 
@@ -6240,7 +6241,7 @@ int sexp_get_damage_caused(int node)
 // function which returns true if the percentage of ships (and ships in wings) departed is at
 // least the percentage given.  what determine if we should check destroyed or departed status
 // Goober5000 - added disarm and disable
-int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
+int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 {
 	int percent;
 	int total, count;
@@ -6266,8 +6267,10 @@ int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 				count += Wings[wingnum].total_departed;
 			else if ( what == OP_PERCENT_SHIPS_DESTROYED )
 				count += Wings[wingnum].total_destroyed;
+			else if ( what == OP_PERCENT_SHIPS_ARRIVED )
+				count += Wings[wingnum].total_arrived_count;
 			else
-				Error(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
+				Error(LOCATION, "Invalid status check '%d' for wing '%s' in sexp_percent_ships_arrive_depart_destroy_disarm_disable", what, name);
 		} else {
 			// must be a ship, so increment the total by 1, then determine if this ship has departed
 			total++;
@@ -6282,6 +6285,9 @@ int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 					count++;
 			} else if ( what == OP_PERCENT_SHIPS_DISARMED ) {
 				if ( mission_log_get_time(LOG_SHIP_DISARMED, name, NULL, NULL) )
+					count++;
+			} else if ( what == OP_PERCENT_SHIPS_ARRIVED ) {
+				if ( mission_log_get_time(LOG_SHIP_ARRIVED, name, NULL, NULL) )
 					count++;
 			} else
 				Error("Invalid status check '%d' for ship '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
@@ -16424,11 +16430,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_damage_caused(node);
 				break;
 
+			case OP_PERCENT_SHIPS_ARRIVED:
 			case OP_PERCENT_SHIPS_DEPARTED:
 			case OP_PERCENT_SHIPS_DESTROYED:
 			case OP_PERCENT_SHIPS_DISARMED:
 			case OP_PERCENT_SHIPS_DISABLED:
-				sexp_val = sexp_percent_ships_depart_destroy_disarm_disable(node, op_num);
+				sexp_val = sexp_percent_ships_arrive_depart_destroy_disarm_disable(node, op_num);
 				break;
 
 			case OP_DEPART_NODE_DELAY:
@@ -18086,6 +18093,7 @@ int query_operator_return_type(int op)
 		case OP_PERCENT_SHIPS_DESTROYED:
 		case OP_PERCENT_SHIPS_DISARMED:
 		case OP_PERCENT_SHIPS_DISABLED:
+		case OP_PERCENT_SHIPS_ARRIVED:
 		case OP_DEPART_NODE_DELAY:
 		case OP_DESTROYED_DEPARTED_DELAY:
 		case OP_SPECIAL_CHECK:
@@ -19300,6 +19308,7 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_PERCENT_SHIPS_ARRIVED:
 		case OP_PERCENT_SHIPS_DEPARTED:
 		case OP_PERCENT_SHIPS_DESTROYED:
 			if ( argnum == 0 ){
@@ -22720,6 +22729,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the message displayed when the specified players are killed.  Takes 1 or more arguments...\r\n"
 		"\t1:\tThe message\r\n"
 		"\tRest:\tThe players for whom this message is displayed (optional) (currently not implemented)" },
+
+	{ OP_PERCENT_SHIPS_ARRIVED, "percent-ships-arrived\r\n"
+		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
+		"which have arrived is greater or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to arrive.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPercentge of arriving ships at which this function will return true.\r\n"
+		"\t2+:\tList of ships/wings whose arrival status should be determined." },
 
 	{ OP_PERCENT_SHIPS_DEPARTED, "percent-ships-departed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
