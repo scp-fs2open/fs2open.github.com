@@ -432,7 +432,7 @@ void team_visibility_update()
 
 
 // Determine is ship is visible by team
-// Goober5000 - now accounts for friendly stealth invisible and primitive sensors
+// Goober5000 - now accounts for primitive sensors
 int ship_is_visible_by_team(object *target, ship *viewer)
 {
 	Assert(target);
@@ -448,16 +448,6 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	// not visible if out of range
 	if ((Hud_max_targeting_range > 0) && (vm_vec_dist_quick(&target->pos, &Objects[viewer->objnum].pos) > Hud_max_targeting_range))
 		return 0;
-
-	// friendly stealthed ships are not visible if they have the friendly-stealth-invisible flag set
-	if (target_shipp->team == viewer->team)
-	{
-		if (target_shipp->flags2 & SF2_STEALTH)
-		{
-			if (target_shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS)
-				return 0;
-		}
-	}
 
 	// now evaluate this the old way
 	int ship_num = target->instance;
