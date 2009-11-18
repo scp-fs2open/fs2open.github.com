@@ -3092,6 +3092,27 @@ stristr_continue_outer_loop:
 }
 
 // Goober5000
+bool can_construe_as_integer(char *text)
+{
+	// trivial case; evaluates to 0
+	if (*text == '\0')
+		return true;
+
+	// number sign or digit for first char
+	if ((*text != '+') && (*text != '-') && !isdigit(*text))
+		return false;
+
+	// check digits for rest
+	for (char *p = text + 1; *p != '\0'; p++)
+	{
+		if (!isdigit(*p))
+			return false;
+	}
+
+	return true;
+}
+
+// Goober5000
 bool end_string_at_first_hash_symbol(char *src)
 {
 	char *p;

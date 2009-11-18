@@ -196,6 +196,9 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
 
+// Goober5000 (ditto)
+extern bool can_construe_as_integer(char *text);
+
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);
 
