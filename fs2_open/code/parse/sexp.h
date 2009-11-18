@@ -553,6 +553,8 @@ struct ship_subsys;
 #define OP_SHIP_MANEUVER					(0x00c9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer 
 #define OP_SHIP_ROT_MANEUVER				(0x00ca | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_SHIP_LAT_MANEUVER				(0x00cb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_GET_VARIABLE_BY_INDEX			(0x00cc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SET_VARIABLE_BY_INDEX			(0x00cd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -956,7 +958,6 @@ int query_node_in_sexp(int node, int sexp);
 void flush_sexp_tree(int node);
 
 // sexp_variable
-void sexp_modify_variable(int);
 void sexp_modify_variable(char *text, int index, bool sexp_callback = true);
 int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *temp_name);
