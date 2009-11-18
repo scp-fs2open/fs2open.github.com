@@ -403,6 +403,7 @@ sexp_oper Operators[] = {
 	{ "tech-reset-to-default",		OP_TECH_RESET_TO_DEFAULT,		0, 0 },	// Goober5000
 	{ "change-player-score",		OP_CHANGE_PLAYER_SCORE,			2, INT_MAX },	// Karajorma
 	{ "change-team-score",			OP_CHANGE_TEAM_SCORE,			2, 2 },			// Karajorma
+	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
 
 	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
 	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
@@ -441,7 +442,6 @@ sexp_oper Operators[] = {
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
 	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
-	{ "set-respawns",			OP_SET_RESPAWNS,			2, INT_MAX },	// Karajorma
 	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
 	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
 	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
@@ -20964,7 +20964,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_AFTERBURNER_ENERGY: 
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
-
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
 		case OP_SHIP_INVULNERABLE:
@@ -21023,6 +21022,7 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_RESET_TO_DEFAULT:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
+		case OP_SET_RESPAWNS:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
@@ -21134,7 +21134,10 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_DEATHS:
 		case OP_RESPAWNS_LEFT:
 		case OP_IS_PLAYER:
-			return STATUS_SUBCATEGORY_MULTIPLAYER;
+		case OP_NUM_SHIPS_IN_BATTLE:
+		case OP_NUM_SHIPS_IN_WING:
+		case OP_LAST_ORDER_TIME:
+			return STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG;
 
 		case OP_SHIELD_RECHARGE_PCT:
 		case OP_ENGINE_RECHARGE_PCT:
@@ -21162,6 +21165,12 @@ int get_subcategory(int sexp_id)
 		case OP_IS_SHIP_VISIBLE:
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
+		case OP_IS_IFF:
+		case OP_IS_AI_CLASS:
+		case OP_IS_SHIP_CLASS:
+		case OP_IS_SHIP_TYPE:
+		case OP_CURRENT_SPEED:
+		case OP_GET_THROTTLE_SPEED:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_SHIELDS_LEFT:
@@ -21177,6 +21186,7 @@ int get_subcategory(int sexp_id)
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
 		case OP_NUM_WITHIN_BOX:
+		case OP_SPECIAL_WARP_DISTANCE:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
 			
 		case OP_WAS_PROMOTION_GRANTED:
@@ -21186,6 +21196,7 @@ int get_subcategory(int sexp_id)
 		case OP_NUM_TYPE_KILLS:
 		case OP_NUM_CLASS_KILLS:
 		case OP_SHIP_SCORE:
+		case OP_SKILL_LEVEL_AT_LEAST:
 			return STATUS_SUBCATEGORY_KILLS_AND_SCORING;
 
 		default:
@@ -23897,10 +23908,10 @@ op_menu_struct op_submenu[] =
 	{	"Hud",							CHANGE_SUBCATEGORY_HUD								},
 	{	"Cutscenes",					CHANGE_SUBCATEGORY_CUTSCENES						},
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
-	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
 	{	"Backgrounds and Nebula",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},
-	{	"Multiplayer",					STATUS_SUBCATEGORY_MULTIPLAYER						},
-	{	"Weapons, Shields, and Engines",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
+	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
+	{	"Multiplayer and Mission Config",	STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG	},
+	{	"Weapons, Shields, and Engines",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS	},
 	{	"Cargo",						STATUS_SUBCATEGORY_CARGO							},
 	{	"Ship Status",					STATUS_SUBCATEGORY_SHIP_STATUS						},
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
