@@ -2803,6 +2803,11 @@ void game_set_view_clip(float frametime)
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
 
+		// Ensure that the bars are black
+		gr_set_color(0,0,0);
+		gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+
 		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 		// J.S. I've changed my ways!! See the new "no constants" code!!!
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
@@ -3818,11 +3823,6 @@ camid game_render_frame_setup()
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
 
-	if(!Time_compression_locked)
-		game_set_view_clip(flFrametime);
-	else
-		game_set_view_clip(flRealframetime);
-
 	return Main_camera;
 }
 
@@ -3832,6 +3832,8 @@ extern void ai_debug_render_stuff();
 
 int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect )
+
+void clip_frame_view();
 
 // Does everything needed to render a frame
 void game_render_frame( camid cid )
@@ -3885,6 +3887,8 @@ void game_render_frame( camid cid )
 			Env_cubemap_drawn = true;
 		}
 	}
+	gr_zbuffer_clear(TRUE);
+	clip_frame_view();
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
@@ -4545,9 +4549,9 @@ void bars_do_frame(float frametime)
 			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
 
 		//Set rectangles
-		//gr_set_color(0,0,0);
-		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		gr_set_color(0,0,0);
+		gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		//Set clipping
 		gr_reset_clip();
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
@@ -4556,11 +4560,27 @@ void bars_do_frame(float frametime)
 	{
 		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
 
-		//gr_set_color(0,0,0);
-		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		gr_set_color(0,0,0);
+		gr_rect(0, 0, gr_screen.max_w, yborder, false);
+		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
 		gr_reset_clip();
 		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+	}
+}
+
+void clip_frame_view() {
+	if(!Time_compression_locked) {
+		// Player is dead
+		game_set_view_clip(flFrametime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
+	} else {
+		// Player is dead
+		game_set_view_clip(flRealframetime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
 	}
 }
 
@@ -4707,9 +4727,6 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
-
-			// WMC's cutscene bars function
-			bars_do_frame(Time_compression_locked ? flRealframetime : flFrametime);
 
 			game_render_frame( cid );
 

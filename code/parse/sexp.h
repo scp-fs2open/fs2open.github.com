@@ -187,7 +187,7 @@ struct ship_subsys;
 #define CHANGE_SUBCATEGORY_CUTSCENES						(0x000b | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x000c | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			(0x000d | OP_CATEGORY_CHANGE)
-#define STATUS_SUBCATEGORY_MULTIPLAYER						(0x000e | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_MULTIPLAYER_AND_MISSION_CONFIG	(0x000e | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		(0x000f | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_CARGO							(0x0010 | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_SHIP_STATUS						(0x0011 | OP_CATEGORY_STATUS)
@@ -249,6 +249,7 @@ struct ship_subsys;
 #define	OP_DESTROYED_DEPARTED_DELAY			(0x000d | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)
 #define OP_PERCENT_SHIPS_DISARMED			(0x000e | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PERCENT_SHIPS_DISABLED			(0x000f | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PERCENT_SHIPS_ARRIVED			(0x0010 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)	// FUBAR-BDHR
 
 #define	OP_TIME_SHIP_DESTROYED				(0x0000 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_SHIP_ARRIVED				(0x0001 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
@@ -552,6 +553,8 @@ struct ship_subsys;
 #define OP_SHIP_MANEUVER					(0x00c9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer 
 #define OP_SHIP_ROT_MANEUVER				(0x00ca | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_SHIP_LAT_MANEUVER				(0x00cb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_GET_VARIABLE_BY_INDEX			(0x00cc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SET_VARIABLE_BY_INDEX			(0x00cd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -955,7 +958,6 @@ int query_node_in_sexp(int node, int sexp);
 void flush_sexp_tree(int node);
 
 // sexp_variable
-void sexp_modify_variable(int);
 void sexp_modify_variable(char *text, int index, bool sexp_callback = true);
 int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *temp_name);

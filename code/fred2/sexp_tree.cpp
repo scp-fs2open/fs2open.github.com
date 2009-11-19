@@ -2375,6 +2375,14 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
 				}
 			}
+			else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX)) {
+				if (i == 0) {
+					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
+				}
+				else {					
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+				}
+			}
 			else
 			{
 				item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));

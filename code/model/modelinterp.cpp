@@ -2375,6 +2375,8 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	model_do_dumb_rotation(model_num);
 
+	if (flags & MR_FORCE_CLAMP)
+		gr_screen.gf_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 
 	int time = timestamp();
 	for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
@@ -2478,6 +2480,9 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
+
+	if (flags & MR_FORCE_CLAMP)
+		gr_screen.gf_set_texture_addressing(TMAP_ADDRESS_WRAP);
 }
 
 /*

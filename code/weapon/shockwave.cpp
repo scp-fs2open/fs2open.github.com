@@ -33,7 +33,13 @@ typedef struct shockwave_info
 	int	num_frames;
 	int	fps;
 
-	shockwave_info() { memset(this, 0, sizeof(shockwave_info)); bitmap_id = -1; model_id = -1; }
+	shockwave_info()
+		: num_frames( 0 ), fps( 0 )
+	{ 
+		filename[ 0 ] = '\0';
+		bitmap_id = -1; 
+		model_id = -1; 
+	}
 } shockwave_info;
 
 typedef struct shockwave {

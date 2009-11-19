@@ -435,7 +435,6 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 {
 	size_t len;
 	uint i;
-	ObjectClassInfoEntry *ociep;
 
 	if(cgp->Parent != NULL && cgp->Parent->InfoEntry != NULL)
 	{

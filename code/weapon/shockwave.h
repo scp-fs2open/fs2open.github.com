@@ -40,7 +40,16 @@ typedef struct shockwave_create_info {
 
 	void load();
 
-	shockwave_create_info() { memset(this, 0, sizeof(shockwave_create_info)); damage_type_idx = -1; }
+	shockwave_create_info()
+		: inner_rad( 0.f ), outer_rad( 0.f ), damage( 0.f ), blast( 0.f )		  
+	{ 
+		name[ 0 ] = '\0';
+		pof_name[ 0 ] = '\0';
+		damage_type_idx = -1;
+		rot_angles.b = 0.;
+		rot_angles.h = 0.;
+		rot_angles.p = 0.;
+	}
 } shockwave_create_info;
 
 void shockwave_close();

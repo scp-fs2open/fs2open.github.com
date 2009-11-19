@@ -3870,37 +3870,25 @@ int WE_Default::warpStart()
 	}
 
 	int warp_objnum = -1;
-	if(direction == WD_WARP_OUT)
+	if (direction == WD_WARP_OUT)
 	{
 		// maybe special warpout
-		if (portal_objp != NULL) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
-		} else if(Cmdline_tbp) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
-		} else {
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
-		}
-	}
-	else if(direction == WD_WARP_IN)
-	{
-		// start the warp-in effect here ------------------------------------------------------------
-		if (portal_objp != NULL)
-		{
-			// make sure that the warp effect will always have a forward orient facing the exit direction of the warpin ship - taylor
-			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
-			if ( ((knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f)) ||
-				((knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f)) )
-			{
-				knossos_orient.vec.uvec.xyz.y = -knossos_orient.vec.uvec.xyz.y;
-				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
-			}
+		int fireball_type = ((portal_objp != NULL) || Cmdline_tbp) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 0, NULL, warp_time, shipp->ship_info_index, &knossos_orient, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
-		}
-		else
-		{
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
-		}
+		// create fireball
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
+	}
+	else if (direction == WD_WARP_IN)
+	{
+		// maybe special warpin
+		int fireball_type = (portal_objp != NULL) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+
+		// create fireball
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
+	}
+	else
+	{
+		Int3();
 	}
 
 	//WMC - bail
@@ -4121,9 +4109,9 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	char tmp_name[MAX_FILENAME_LEN];
 	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	if(direction == WD_WARP_IN)
-		strncpy(tmp_name, sip->warpin_anim, MAX_FILENAME_LEN-1);
+		strcpy_s( tmp_name, sip->warpin_anim );
 	else if(direction == WD_WARP_OUT)
-		strncpy(tmp_name, sip->warpout_anim, MAX_FILENAME_LEN-1);
+		strcpy_s( tmp_name, sip->warpout_anim );
 	strlwr(tmp_name);
 
 	if(strlen(tmp_name))
