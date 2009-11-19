@@ -71,6 +71,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_sky_flag_3 = The_mission.skybox_flags & MR_NO_ZBUFFER ? 1 : 0;
 	m_sky_flag_4 = The_mission.skybox_flags & MR_NO_CULL ? 1 : 0;
 	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
+	m_sky_flag_6 = The_mission.skybox_flags & MR_FORCE_CLAMP ? 1 : 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -128,6 +129,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_ZBUFF, m_sky_flag_3);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_CULL, m_sky_flag_4);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_GLOW, m_sky_flag_5);
+	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
 	//}}AFX_DATA_MAP
 }
 
@@ -414,6 +416,9 @@ void bg_bitmap_dlg::OnClose()
 	}
 	if(m_sky_flag_5) {
 		The_mission.skybox_flags |= MR_NO_GLOWMAPS;
+	}
+	if(m_sky_flag_6) {
+		The_mission.skybox_flags |= MR_FORCE_CLAMP;
 	}
 
 	// close sun data
