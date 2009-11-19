@@ -2803,14 +2803,16 @@ void game_set_view_clip(float frametime)
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
 
-		// Ensure that the bars are black
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-
-		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
-		// J.S. I've changed my ways!! See the new "no constants" code!!!
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		if (g3_in_frame() == 0) {
+			// Ensure that the bars are black
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
+			// J.S. I've changed my ways!! See the new "no constants" code!!!
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		}	
 	}
 	else {
 		// Set the clip region for normal view
@@ -4548,23 +4550,29 @@ void bars_do_frame(float frametime)
 		else
 			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
 
-		//Set rectangles
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//Set clipping
-		gr_reset_clip();
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+		if (g3_in_frame() == 0) {
+			//Set rectangles
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			//Set clipping
+			gr_reset_clip();
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+		}
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
 
-		gr_set_color(0,0,0);
-		gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		gr_reset_clip();
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+		if (g3_in_frame() == 0) {
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			gr_reset_clip();
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+		}
 	}
 }
 
@@ -4727,6 +4735,8 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
+
+			clip_frame_view();
 
 			game_render_frame( cid );
 
