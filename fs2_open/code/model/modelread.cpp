@@ -44,7 +44,8 @@ flag_def_list model_render_flags[] =
 	{"transparent",		MR_ALL_XPARENT},
 	{"no Zbuffer",		MR_NO_ZBUFFER},
 	{"no cull",			MR_NO_CULL},
-	{"no glowmaps",		MR_NO_GLOWMAPS}
+	{"no glowmaps",		MR_NO_GLOWMAPS},
+	{"force clamp",		MR_FORCE_CLAMP},
 };
   	 
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
