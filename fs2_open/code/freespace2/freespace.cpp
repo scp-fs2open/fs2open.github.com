@@ -3823,11 +3823,6 @@ camid game_render_frame_setup()
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
 
-	if(!Time_compression_locked)
-		game_set_view_clip(flFrametime);
-	else
-		game_set_view_clip(flRealframetime);
-
 	return Main_camera;
 }
 
@@ -3837,6 +3832,8 @@ extern void ai_debug_render_stuff();
 
 int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect )
+
+void clip_frame_view();
 
 // Does everything needed to render a frame
 void game_render_frame( camid cid )
@@ -3890,6 +3887,8 @@ void game_render_frame( camid cid )
 			Env_cubemap_drawn = true;
 		}
 	}
+	gr_zbuffer_clear(TRUE);
+	clip_frame_view();
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
@@ -4569,6 +4568,22 @@ void bars_do_frame(float frametime)
 	}
 }
 
+void clip_frame_view() {
+	if(!Time_compression_locked) {
+		// Player is dead
+		game_set_view_clip(flFrametime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
+	} else {
+		// Player is dead
+		game_set_view_clip(flRealframetime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
+	}
+}
+
 //WMC - This does stuff like fading in and out and subtitles. Special FX?
 //Basically stuff you need rendered after everything else (including HUD)
 void game_render_post_frame()
@@ -4712,9 +4727,6 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
-
-			// WMC's cutscene bars function
-			bars_do_frame(Time_compression_locked ? flRealframetime : flFrametime);
 
 			game_render_frame( cid );
 
