@@ -2474,8 +2474,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				// some SEXPs demand a number variable
-				if ((argnum == 8 && !stricmp(Operators[op].text, "add-background-bitmap")) || 
-					(argnum == 5 && !stricmp(Operators[op].text, "add-sun-bitmap"))) {
+				if ((argnum == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
+					(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
+				{
 					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
 						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
 				}
