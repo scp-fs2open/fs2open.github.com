@@ -753,7 +753,15 @@ void sexp_tree::right_clicked(int mode)
 						// Goober5000 - given the above, we have to figure out what type this stands for
 						if (op_type == OPF_AMBIGUOUS)
 						{
-							type = tree_nodes[first_arg].type;
+							int modify_type = get_modify_variable_type(parent);
+							if (modify_type == OPF_NUMBER) {
+								type = SEXPT_NUMBER;
+							} else if (modify_type == OPF_AMBIGUOUS) {
+								type = SEXPT_STRING;
+							} else {
+								Int3();
+								type = tree_nodes[first_arg].type;
+							}
 						}
 						
 						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
@@ -1109,7 +1117,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			// modify string or number if (modify_variable)
-			if ( !stricmp(Operators[op].text, "modify-variable") ) {
+			if ( Operators[op].value == OP_MODIFY_VARIABLE || Operators[op].value == OP_SET_VARIABLE_BY_INDEX ) {
 				int modify_type = get_modify_variable_type(parent);
 
 				if (modify_type == OPF_NUMBER) {
@@ -2171,9 +2179,9 @@ int sexp_tree::add_default_operator(int op, int argnum)
 		//if ( !stricmp(Operators[op].text, "modify-variable") ) {
 		if ( query_operator_argument_type(op, argnum) == OPF_VARIABLE_NAME)
 		{
-			if ((argnum == 0 && !stricmp(Operators[op].text, "modify-variable")) ||
-				(argnum == 8 && !stricmp(Operators[op].text, "add-background-bitmap")) ||
-				(argnum == 5 && !stricmp(Operators[op].text, "add-sun-bitmap")))
+			if ((argnum == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
+				(argnum == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
+				(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
 			{
 
 				int sexp_var_index = get_index_sexp_variable_name(item.text);
@@ -3090,18 +3098,28 @@ void get_variable_name_from_sexp_tree_node_text(const char *text, char *var_name
 
 int sexp_tree::get_modify_variable_type(int parent)
 {
-	Assert(parent != -1);
+	Assert(parent >= 0);
 	int sexp_var_index = -1;
+	int op_const = get_operator_const(tree_nodes[parent].text);
 
-	if ( !stricmp(tree_nodes[parent].text, "modify-variable") ) {
-		Assert(tree_nodes[parent].child != -1);
+	if ( op_const == OP_MODIFY_VARIABLE ) {
+		Assert(tree_nodes[parent].child >= 0);
 		sexp_var_index = get_tree_name_to_sexp_variable_index(tree_nodes[tree_nodes[parent].child].text);
-		Assert(sexp_var_index != -1);
+		Assert(sexp_var_index >= 0);
+	} else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
+		Assert(tree_nodes[parent].child != -1);
+		if (can_construe_as_integer(tree_nodes[tree_nodes[parent].child].text)) {
+			sexp_var_index = atoi(tree_nodes[tree_nodes[parent].child].text);
+			Assert(sexp_var_index >= 0);
+		}
 	} else {
 		Int3();  // should not be called otherwise
 	}
 
-	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
+	if (sexp_var_index < 0 || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
+		// assume number so that we can allow tree display of number operators
+		return OPF_NUMBER;
+	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
 		return OPF_NUMBER;
 	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
 		return OPF_AMBIGUOUS;
@@ -3156,9 +3174,10 @@ void sexp_tree::verify_and_fix_arguments(int node)
 				char default_variable_text[TOKEN_LENGTH];
 				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
 					// special case for SEXPs which can modify a variable 
-					if ( (!stricmp(Operators[op].text, "modify-variable")) ||
-						 ((!stricmp(Operators[op].text, "add-background-bitmap")) && (arg_num == 8)) ||
-						 ((!stricmp(Operators[op].text, "add-sun-bitmap")) && (arg_num == 5))	){
+					if ((arg_num == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
+						(arg_num == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
+						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
+					{
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
