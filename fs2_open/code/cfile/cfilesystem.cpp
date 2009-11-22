@@ -155,7 +155,7 @@ cf_root *cf_create_root()
 // return the # of packfiles which exist
 int cf_get_packfile_count(cf_root *root)
 {
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
 	int i;
 	int packfile_count;
 
@@ -163,34 +163,24 @@ int cf_get_packfile_count(cf_root *root)
 	packfile_count = 0;
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )
 	{
-		strcpy_s( filespec, root->path );
+		filespec = root->path;
 		
 		if(strlen(Pathtypes[i].path))
 		{
-			if(strlen(filespec) + strlen(Pathtypes[i].path) + strlen(DIR_SEPARATOR_STR)
-				>= sizeof(filespec))
+			filespec += Pathtypes[ i ].path;
+			if ( filespec[ filespec.length( ) - 1 ] != DIR_SEPARATOR_CHAR )
 			{
-				Warning(LOCATION, "Path '%s' too long to add '%s' safely.", filespec, Pathtypes[i].path);
-				continue;
-			}
-			strcat_s( filespec, Pathtypes[i].path );
-			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR )
-			{
-				strcat_s( filespec, DIR_SEPARATOR_STR );
+				filespec += DIR_SEPARATOR_STR;
 			}
 		}
 
 #if defined _WIN32
-		if(strlen(filespec) + 4 >= sizeof(filespec)) {
-			Warning(LOCATION, "Could not concatenate '*.vp' to filespec; path too long.");
-			continue;
-		}
-		strcat_s( filespec, "*.vp" );
+		filespec += "*.vp";
 
 		int find_handle;
 		_finddata_t find;
 		
-		find_handle = _findfirst( filespec, &find );
+		find_handle = _findfirst( filespec.c_str( ), &find );
 
  		if (find_handle != -1) {
 			do {
@@ -203,15 +193,11 @@ int cf_get_packfile_count(cf_root *root)
 			_findclose( find_handle );
 		}	
 #elif defined SCP_UNIX
-		if(strlen(filespec) + 10 >= sizeof(filespec)) {
-			Warning(LOCATION, "Could not concatenate '*.vp' to filespec; path too long.");
-			continue;
-		}
-		strcat_s( filespec, "*.[vV][pP]" );
+		filespec += "*.[vV][pP]";
 
 		glob_t globinfo;
 		memset(&globinfo, 0, sizeof(globinfo));
-		int status = glob(filespec, 0, NULL, &globinfo);
+		int status = glob(filespec.c_str( ), 0, NULL, &globinfo);
 		if (status == 0) {
 			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
 				// Determine if this is a regular file
