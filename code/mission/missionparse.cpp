@@ -1510,29 +1510,28 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 {
 	object *objp = p_objp->created_object;
 	ship *shipp = &Ships[objp->instance];
-	object *knossos_objp;
+	object *knossos_objp = NULL;
 
 	// Assume no valid knossos device
 	shipp->special_warp_objnum = -1;
 
 	// find knossos device
-	int found = FALSE;
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
-		knossos_objp = &Objects[so->objnum];
+		object *ship_objp = &Objects[so->objnum];
 
-		if (Ship_info[Ships[knossos_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
+		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
 		{
 			// be close to the right device (allow multiple knossoses)
-			if ( vm_vec_dist_quick(&knossos_objp->pos, &p_objp->pos) < 2.0f*(knossos_objp->radius + objp->radius) )
+			if ( vm_vec_dist_quick(&ship_objp->pos, &p_objp->pos) < 2.0f*(ship_objp->radius + objp->radius) )
 			{
-				found = TRUE;
+				knossos_objp = ship_objp;
 				break;
 			}
 		}
 	}
 
-	if (!found)
+	if (knossos_objp == NULL)
 		return;
 
 	// set ship special_warp_objnum
