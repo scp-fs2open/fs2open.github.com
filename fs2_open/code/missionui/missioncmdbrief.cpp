@@ -344,7 +344,7 @@ void cmd_brief_new_stage(int stage)
 	if (strcmp(Cur_anim_filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
 		// set stuff up
 		int stream_result = -1;
-		int bg_type = bm_get_type(Cmd_brief_background_bitmap);
+		ubyte bg_type = bm_get_type(Cmd_brief_background_bitmap);
 		anim_done = 0;
 
 		// unload the previous anim
