@@ -215,7 +215,7 @@ sexp_oper Operators[] = {
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
-	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
+	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	INT_MAX},	//phreak modified by FUBAR
 	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
 	{ "is-player",					OP_IS_PLAYER,				2,	INT_MAX},	// Karajorma
 	{ "num-players",				OP_NUM_PLAYERS,				0, 0, },
@@ -1602,6 +1602,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			case OPF_SHIP_WING:
 			case OPF_SHIP_WING_POINT:
+			case OPF_SHIP_WING_TEAM:
 			case OPF_SHIP_WING_POINT_OR_NONE:
 			case OPF_ORDER_RECIPIENT:
 				if ( type2 != SEXP_ATOM_STRING ){
@@ -1615,8 +1616,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				// none is okay for _or_none
-				if (type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
-				{
+				if (type == OPF_SHIP_WING_POINT_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))	{
+					break;
+				}
+
+				// IFFs are fine for ship_wing_team
+				if (type == OPF_SHIP_WING_TEAM && iff_lookup(CTEXT(node)) >= 0)	{
 					break;
 				}
 
@@ -3015,10 +3020,13 @@ char *sexp_strcat_s(char *dest, const char *src, int max_len)
 	{
 		if (!Sexp_text_overflow_warning)
 		{
-			char buf[512];
+			char buf[640];
 			strcpy_s(buf, "SEXP OVERFLOW: The sexp starting with the following text...\n\n");
 			strncat(buf, dest, 172);
 			strcat_s(buf, "\n\n...is too long!  The sexp has been truncated accordingly and is probably no longer correct.  Please fix this sexp using a text editor.\n\n(Please note that future sexp overflows will fail silently, and this warning will not be displayed again until you restart FRED.)\n");
+			strcat_s(buf, "...sexp truncated on or near:  ");
+			strncat(buf, src, 40);
+			strcat_s(buf, "\n\n");
 			mprintf((buf));
 			Error(LOCATION, buf);
 
@@ -3873,29 +3881,44 @@ int sexp_num_ships_in_battle(int n)
 	int count=0;
 	ship_obj	*so;
 	ship		*shipp;
+	object_ship_wing_point_team oswpt1;
+	if ( n == -1) {
+    	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		    shipp=&Ships[Objects[so->objnum].instance];
+		    count++;
+	    }
 
-	if (n != -1)
-	{
-		team = iff_lookup(CTEXT(n));
+	    return count;
 	}
 
-	// iterate through all ships
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
-	{
-		shipp=&Ships[Objects[so->objnum].instance];
+	while (n != -1) {
+	sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
 
-		// merging of team and non-team sexps
-		if (team != -1)
-		{
-			if (shipp->team == team)
-			{
-				count++;
-			}
-		}
-		else
-		{
-			count++;
-		}
+	    switch (oswpt1.type){
+			// Should use OSWPT_TYPE_TEAM but can't in order to keep compatibility with the existing SEXP
+ 		    case OSWPT_TYPE_NONE:
+			  team = iff_lookup(CTEXT(n));
+			  if (team >= 0) {
+				  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+					  shipp=&Ships[Objects[so->objnum].instance];
+					  if (shipp->team == team) {
+						 count++;
+					  }
+				  }
+			  }
+			  break;
+
+  		    case OSWPT_TYPE_SHIP:
+			  count++;
+			  break;
+
+		    case OSWPT_TYPE_WING:
+		      int wingnum;
+		      wingnum = wing_name_lookup( CTEXT(n), 0 );
+			  count += Wings[wingnum].current_count;
+			  break;
+	    }	
+        n = CDR (n) ; 
 	}
 
 	return count;
@@ -19698,8 +19721,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NOT_KAMIKAZE:
 			return OPF_SHIP_WING;
 
-		case OP_NUM_SHIPS_IN_BATTLE:
-			return OPF_IFF;
+		case OP_NUM_SHIPS_IN_BATTLE:	//phreak modified by FUBAR
+			return OPF_SHIP_WING_TEAM;
 
 		case OP_NUM_SHIPS_IN_WING:	// Karajorma	
 			return OPF_WING;
@@ -23647,8 +23670,8 @@ sexp_help_struct Sexp_help[] = {
 
 	//phreak
 	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
-		"\tReturns the number of ships in battle or the number of ships in battle for a given team.  Takes 1 argument...\r\n"
-		"\t1:\tTeam to query (optional)"
+		"\tReturns the number of ships in battle or the number of ships in battle out of a list of teams, wings, and ships.  Takes 1 or more arguments...\r\n"
+		"\t(all):\tTeams, Wings, and Ships to query (optional)"
 	},
 
 	// Karajorma
