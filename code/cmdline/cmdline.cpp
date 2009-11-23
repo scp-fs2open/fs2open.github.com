@@ -1072,6 +1072,7 @@ bool SetCmdlineParams()
 		// Ok - mod stacking support
 		int len = strlen(Cmdline_mod);
 		char *modlist = new char[len+2];
+		memset( modlist, 0, len + 2 );
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
 		//modlist[len]= '\0'; // double null termination at the end
