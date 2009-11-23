@@ -439,8 +439,6 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	Assert(viewer);
 	Assert(target->type == OBJ_SHIP);
 
-	ship *target_shipp = &Ships[target->instance];
-
 	// not visible if viewer has primitive sensors
 	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
 		return 0;
