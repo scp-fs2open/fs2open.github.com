@@ -9,14 +9,13 @@
 #include "globalincs/pstypes.h"
 #include "object/parseobjectdock.h"
 #include "mission/missionparse.h"
-#include "math/bitarray.h"
 
 
 
 
 // helper prototypes
 
-void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), ubyte *visited_bitstring);
+void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), bool *visited_bitstring);
 void dock_dock_docked_children_tree(p_object *objp, p_object *parent_objp);
 
 
@@ -115,10 +114,10 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 	else
 	{
 		// create a bit array to mark the objects we check
-		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Parse_objects.size()));
+		bool *visited_bitstring = (bool *) malloc( Parse_objects.size() * sizeof(bool) );
 
 		// clear it
-		memset(visited_bitstring, 0, calculate_num_bytes(Parse_objects.size()));
+		memset(visited_bitstring, 0, Parse_objects.size() * sizeof(bool) );
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
@@ -129,14 +128,14 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 	}
 }
 
-void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), ubyte *visited_bitstring)
+void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), bool *visited_bitstring)
 {
 	// make sure we haven't visited this object already
-	if (get_bit(visited_bitstring, POBJ_INDEX(objp)))
+	if ( visited_bitstring[ POBJ_INDEX(objp)] )
 		return;
 
 	// mark as visited
-	set_bit(visited_bitstring, POBJ_INDEX(objp));
+	visited_bitstring[ POBJ_INDEX(objp) ] = true;
 
 	// call the function for this object, and return if instructed
 	function(objp, infop);
