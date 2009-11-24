@@ -107,6 +107,7 @@ struct ship_subsys;
 #define OPF_SUBSYS_OR_GENERIC	62		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
 #define OPF_SHIP_WING_POINT_OR_NONE	63	// WMC - Ship, wing, point or none
 #define OPF_ORDER_RECIPIENT		64		// Karajorma - since orders can go to All Fighters as well as a ship or wing
+#define OPF_SHIP_WING_TEAM		65		// Karajorma - Ship, wing or an IFF
 
 
 // Operand return types

@@ -378,7 +378,7 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		gr_screen.custom_size = true;
 	}
 
-	if ( (width >= 1024) && (height >= 768) ) {
+	if ( (width >= 1024) && (height >= 600) ) {
 		res = GR_1024;
 	} else {
 		res = GR_640;
