@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
 # Nightly build script version 1.4.2
+# 1.4.3 - fix a move issue, use the config name for the folder and not the config string
 # 1.4.2 - fix some more issues with the export method
 # 1.4.1 - just a bit more cleanup
 # 1.4 - performs a local export before compiling for clean working dir, also checks Linux build output for error
@@ -247,7 +248,7 @@ sub compile
 			print "Building " . $_ . " failed, see output for more information.\n";
 			return 0;
 		}
-		push(@filenames, move_and_rename($BUILD_CONFIGS{$_}));
+		push(@filenames, move_and_rename($_));
 	}
 	
 	chdir($currentdir);
