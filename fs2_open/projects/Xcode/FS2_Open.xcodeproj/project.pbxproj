@@ -4302,6 +4302,7 @@
 				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
+				PRODUCT_NAME = FS2_Open;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = "-Wno-char-subscripts";
@@ -4621,7 +4622,7 @@
 				GENERATE_PROFILING_CODE = NO;
 				INFOPLIST_FILE = "Info-debug.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PRODUCT_NAME = "FS2_Open (debug)";
+				PRODUCT_NAME = "FS2_Open-Inferno (debug)";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				STRIP_INSTALLED_PRODUCT = NO;
 				UNSTRIPPED_PRODUCT = YES;
@@ -4918,6 +4919,7 @@
 				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
+				PRODUCT_NAME = "FS2_Open-Inferno";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = "-Wno-char-subscripts";
@@ -4944,7 +4946,6 @@
 					"-lSystemStubs",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = FS2_Open;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};
