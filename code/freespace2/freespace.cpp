@@ -1561,6 +1561,12 @@ int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
+	// clear post processing settings
+	gr_screen.gf_set_default_post_process();
+
+	// clear shader manager cache
+	gr_clear_shaders_cache();
+
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) )
@@ -2194,6 +2200,8 @@ void game_init()
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
 
+	gr_screen.gf_post_process_init();
+
 	//WMC - Initialize my new GUI system
 	//This may seem scary, but it should take up 0 processing time and very little memory
 	//as long as it's not being used.
@@ -2812,7 +2820,7 @@ void game_set_view_clip(float frametime)
 			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 			// J.S. I've changed my ways!! See the new "no constants" code!!!
 			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
-		}	
+		}
 	}
 	else {
 		// Set the clip region for normal view
@@ -3840,6 +3848,7 @@ void clip_frame_view();
 // Does everything needed to render a frame
 void game_render_frame( camid cid )
 {
+
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3890,6 +3899,9 @@ void game_render_frame( camid cid )
 		}
 	}
 	gr_zbuffer_clear(TRUE);
+
+	gr_screen.gf_post_process_before();
+
 	clip_frame_view();
 
 #ifndef DYN_CLIP_DIST
@@ -3940,6 +3952,7 @@ void game_render_frame( camid cid )
 	//This is so we can change the minimum clipping distance without messing everything up.
 	if(draw_viewer_last && Viewer_obj)
 	{
+		gr_screen.gf_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
 	}
@@ -3967,10 +3980,13 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
 	{
+		gr_screen.gf_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 	//================ END OF 3D RENDERING STUFF ====================
+
+	gr_screen.gf_post_process_after();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){

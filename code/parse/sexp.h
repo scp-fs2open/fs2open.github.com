@@ -108,6 +108,7 @@ struct ship_subsys;
 #define OPF_SHIP_WING_POINT_OR_NONE	63	// WMC - Ship, wing, point or none
 #define OPF_ORDER_RECIPIENT		64		// Karajorma - since orders can go to All Fighters as well as a ship or wing
 #define OPF_SHIP_WING_TEAM		65		// Karajorma - Ship, wing or an IFF
+#define OPF_POST_EFFECT			66		// Hery - type of post-processing effect
 
 
 // Operand return types
@@ -542,6 +543,7 @@ struct ship_subsys;
 #define OP_CUTSCENES_SET_CAMERA_TARGET		(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // WMC
 #define OP_LOCK_AFTERBURNER					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
 #define OP_UNLOCK_AFTERBURNER				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // KeldorKatarn
+
 #define OP_SET_RESPAWNS						(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_AFTERBURNER_ENERGY			(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_WEAPON_ENERGY				(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
@@ -556,6 +558,7 @@ struct ship_subsys;
 #define OP_SHIP_LAT_MANEUVER				(0x00cb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_GET_VARIABLE_BY_INDEX			(0x00cc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SET_VARIABLE_BY_INDEX			(0x00cd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SET_POST_EFFECT					(0x00ce | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Hery
 
 /* made obsolete by Goober5000
 // debugging sexpressions
