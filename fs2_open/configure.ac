@@ -211,9 +211,17 @@ if test "$fs2_debug" = "yes" ; then
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_d"])
+		else
+			AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+		fi
 	else
-		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["fs2_open_INF_d"])
+		else
+			AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+		fi
 	fi
 else
 	AC_DEFINE([NDEBUG])
@@ -221,9 +229,17 @@ else
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_r"])
+		else
+			AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+		fi
 	else
-		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["fs2_open_INF_r"])
+		else
+			AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+		fi
 	fi
 fi
 
