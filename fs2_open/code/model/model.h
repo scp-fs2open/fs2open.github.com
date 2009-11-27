@@ -312,6 +312,7 @@ typedef struct bsp_info {
 	bool	no_collisions; // for $no_collisions property - kazan
 	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
 
 	float		dumb_turn_rate;
 
@@ -343,6 +344,7 @@ typedef struct bsp_info {
 		no_collisions = false;
 		nocollide_this_only = false;
 		collide_invisible = false;
+		force_turret_normal = false;
 		dumb_turn_rate = 0.f;
 		bsp_data = NULL;
 		rad = 0.f;

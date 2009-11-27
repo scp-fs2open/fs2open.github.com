@@ -1398,6 +1398,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						orient->vec.fvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
 
+						pm->submodel[n].force_turret_normal = true;
+
 						vm_vec_normalize(&orient->vec.uvec);
 						vm_vec_normalize(&orient->vec.fvec);
 
@@ -3359,6 +3361,9 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	offset_base_h = -PI_2;
 	offset_barrel_h = -PI_2;
 #endif
+
+	if (base->force_turret_normal == true)
+		turret->turret_norm = base->orientation.vec.uvec;
 
 	model_clear_instance(model_num);
 	base->angs.h = offset_base_h;
