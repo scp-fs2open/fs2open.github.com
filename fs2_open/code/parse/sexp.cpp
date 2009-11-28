@@ -3892,7 +3892,7 @@ int sexp_num_ships_in_battle(int n)
 	}
 
 	while (n != -1) {
-	sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
+		sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
 
 	    switch (oswpt1.type){
 			// Should use OSWPT_TYPE_TEAM but can't in order to keep compatibility with the existing SEXP
@@ -3917,8 +3917,9 @@ int sexp_num_ships_in_battle(int n)
 		      wingnum = wing_name_lookup( CTEXT(n), 0 );
 			  count += Wings[wingnum].current_count;
 			  break;
-	    }	
-        n = CDR (n) ; 
+	    }
+
+        n = CDR(n); 
 	}
 
 	return count;
@@ -10415,15 +10416,15 @@ void sexp_set_persona (int node)
 	}
 
 	// now loop through the list of ships
-	while (node >= 0) {
+	for ( ; node >= 0; node = CDR(node) ) {
 		sindex = ship_name_lookup( CTEXT(node) );
 
 		if (sindex < 0) {
-			return;
+			continue;
 		}
 
 		if (Ships[sindex].objnum < 0) {
-			return;
+			continue;
 		}
 
 		Ships[sindex].persona_index = persona_index; 
@@ -10431,8 +10432,6 @@ void sexp_set_persona (int node)
 		if (MULTIPLAYER_MASTER) {
 			multi_send_ship(sindex); 
 		}
-
-		node = CDR(node); 
 	}
 
 	if (MULTIPLAYER_MASTER) {
@@ -11051,15 +11050,15 @@ void sexp_ships_bomb_targetable(int n, int targetable)
 }
 
 // Goober5000
-void sexp_ship_guardian_threshold(int num)
+void sexp_ship_guardian_threshold(int node)
 {
 	char *ship_name;
 	int ship_num, threshold;
 	int n = -1;
 
-	threshold = eval_num(num);
+	threshold = eval_num(node);
 
-	n = CDR(num);
+	n = CDR(node);
 
 	// for all ships
 	for ( ; n != -1; n = CDR(n) ) {
@@ -13045,20 +13044,16 @@ void sexp_beam_free(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag it as beam free :)
 		turret->weapons.flags |= SW_FLAG_BEAM_FREE;
 		turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -13066,18 +13061,17 @@ void sexp_beam_free_all(int node)
 {
 	ship_subsys *subsys;
 	int sindex;
-	int n = node;
 
-	while (n >= 0) {
+	for (int n = node; n >= 0; n = CDR(n)) {
 		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(node) );
+		sindex = ship_name_lookup( CTEXT(n) );
 
 		if (sindex < 0) {
-			return;
+			continue;
 		}
 
 		if (Ships[sindex].objnum < 0) {
-			return;
+			continue;
 		}
 
 		// free all beam weapons
@@ -13093,8 +13087,6 @@ void sexp_beam_free_all(int node)
 			// next item
 			subsys = GET_NEXT(subsys);
 		}
-
-		n = CDR(n);
 	}
 }
 
@@ -13113,19 +13105,15 @@ void sexp_beam_lock(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag it as not beam free
 		turret->weapons.flags &= ~(SW_FLAG_BEAM_FREE);
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -13133,21 +13121,20 @@ void sexp_beam_lock_all(int node)
 {
 	ship_subsys *subsys;
 	int sindex;
-	int n = node;
 
-	while (n >= 0) {
+	for (int n = node; n >= 0; n = CDR(n)) {
 		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(node) );
+		sindex = ship_name_lookup( CTEXT(n) );
 
 		if (sindex < 0) {
-			return;
+			continue;
 		}
 
 		if (Ships[sindex].objnum < 0) {
-			return;
+			continue;
 		}
 
-		// free all beam weapons
+		// lock all beam weapons
 		subsys = GET_FIRST(&Ships[sindex].subsys_list);
 
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
@@ -13158,9 +13145,7 @@ void sexp_beam_lock_all(int node)
 
 			// next item
 			subsys = GET_NEXT(subsys);
-		}		
-
-		n = CDR(n);
+		}
 	}
 }
 
@@ -13179,20 +13164,16 @@ void sexp_turret_free(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag turret as no longer locked :)
 		turret->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
 		turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -13200,18 +13181,17 @@ void sexp_turret_free_all(int node)
 {
 	ship_subsys *subsys;
 	int sindex;
-	int n = node;
 
-	while (n >= 0) {
+	for (int n = node; n >= 0; n = CDR(n)) {
 		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(node) );
+		sindex = ship_name_lookup( CTEXT(n) );
 
 		if (sindex < 0) {
-			return;
+			continue;
 		}
 
 		if (Ships[sindex].objnum < 0) {
-			return;
+			continue;
 		}
 
 		// free all turrets
@@ -13227,8 +13207,6 @@ void sexp_turret_free_all(int node)
 			// next item
 			subsys = GET_NEXT(subsys);
 		}
-
-		n = CDR(n);
 	}
 }
 
@@ -13247,19 +13225,15 @@ void sexp_turret_lock(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag turret as locked
 		turret->weapons.flags |= SW_FLAG_TURRET_LOCK;
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -13267,18 +13241,17 @@ void sexp_turret_lock_all(int node)
 {
 	ship_subsys *subsys;
 	int sindex;
-	int n = node;
 
-	while (n >= 0) {
+	for (int n = node; n >= 0; n = CDR(n)) {
 		// get the firing ship
-		sindex = ship_name_lookup( CTEXT(node) );
+		sindex = ship_name_lookup( CTEXT(n) );
 
 		if (sindex < 0) {
-			return;
+			continue;
 		}
 
 		if (Ships[sindex].objnum < 0) {
-			return;
+			continue;
 		}
 
 		// lock all turrets
@@ -13293,8 +13266,6 @@ void sexp_turret_lock_all(int node)
 			// next item
 			subsys = GET_NEXT(subsys);
 		}
-
-		n = CDR(n);
 	}
 }
 
@@ -13550,19 +13521,15 @@ void sexp_turret_subsystem_targeting_disable(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag the turret
 		turret->flags |= SSF_NO_SS_TARGETING;
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -13581,46 +13548,41 @@ void sexp_turret_subsystem_targeting_enable(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(turret == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// remove the flag from the turret
 		turret->flags &= ~(SSF_NO_SS_TARGETING);
-
-		// next
-		node = CDR(node);
 	}
 }
 
 // Goober5000
-void sexp_set_subsys_rotation_lock(int node, int locked)
+void sexp_set_subsys_rotation_lock_free(int node, int locked)
 {
 	int ship_num;		
 	ship_subsys *rotate;
 
 	// get the ship
 	ship_num = ship_name_lookup(CTEXT(node));
-
-	if(ship_num < 0)
+	if (ship_num < 0)
 		return;
 	
-	if(Ships[ship_num].objnum < 0)
+	if (Ships[ship_num].objnum < 0)
 		return;
 
 	node = CDR(node);
 
 	// loop for all specified subsystems
-	while (node != -1)
+	for ( ; node >= 0; node = CDR(node) )
 	{
 		// get the rotating subsystem
 		rotate = ship_get_subsys(&Ships[ship_num], CTEXT(node));
-		if(rotate == NULL)
-			return;
+		if (rotate == NULL)
+			continue;
 
 		// set rotate or not, depending on flag
 		if (locked) {
@@ -13638,9 +13600,6 @@ void sexp_set_subsys_rotation_lock(int node, int locked)
 				rotate->subsys_snd_flags |= SSSF_ROTATE;
 			}
 		}
-
-		// iterate
-		node = CDR(node);
 	}
 }
 
@@ -13652,30 +13611,26 @@ void sexp_reverse_rotating_subsystem(int node)
 
 	// get the ship
 	ship_num = ship_name_lookup(CTEXT(node));
-
-	if(ship_num < 0)
+	if (ship_num < 0)
 		return;
 	
-	if(Ships[ship_num].objnum < 0)
+	if (Ships[ship_num].objnum < 0)
 		return;
 
 	node = CDR(node);
 
 	// loop for all specified subsystems
-	while (node != -1)
+	for ( ; node >= 0; node = CDR(node) )
 	{
 		// get the rotating subsystem
 		rotate = ship_get_subsys(&Ships[ship_num], CTEXT(node));
-		if(rotate == NULL)
-			return;
+		if (rotate == NULL)
+			continue;
 
 		// switch direction of rotation
 		rotate->system_info->turn_rate *= -1.0f;
 		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
 		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
-
-		// iterate
-		node = CDR(node);
 	}
 }
 
@@ -13688,16 +13643,15 @@ void sexp_rotating_subsys_set_turn_time(int node)
 
 	// get the ship
 	ship_num = ship_name_lookup(CTEXT(node));
-
-	if(ship_num < 0)
+	if (ship_num < 0)
 		return;
 	
-	if(Ships[ship_num].objnum < 0)
+	if (Ships[ship_num].objnum < 0)
 		return;
 
 	// get the rotating subsystem
 	rotate = ship_get_subsys(&Ships[ship_num], CTEXT(CDR(node)));
-	if(rotate == NULL)
+	if (rotate == NULL)
 		return;
 
 	// get and set the turn time
@@ -13726,19 +13680,15 @@ void sexp_turret_tagged_specific(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(subsys == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag turret as slaved to tag
 		subsys->weapons.flags |= SW_FLAG_TAGGED_ONLY;
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -13757,19 +13707,15 @@ void sexp_turret_tagged_clear_specific(int node)
 	}
 
 	node = CDR(node);
-	while(node != -1){
+	for ( ; node >= 0; node = CDR(node) ) {
 		// get the subsystem
 		subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));
 		if(subsys == NULL){
-			node = CDR(node);
 			continue;
 		}
 
 		// flag turret as slaved to tag
 		subsys->weapons.flags &= (~SW_FLAG_TAGGED_ONLY);
-
-		// next
-		node = CDR(node);
 	}
 }
 
@@ -17450,7 +17396,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_LOCK_ROTATING_SUBSYSTEM:
 			case OP_FREE_ROTATING_SUBSYSTEM:
-				sexp_set_subsys_rotation_lock(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
+				sexp_set_subsys_rotation_lock_free(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
 				sexp_val = SEXP_TRUE;
 				break;
 
