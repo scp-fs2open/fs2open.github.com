@@ -1,6 +1,8 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.4.2
+# Nightly build script version 1.5.0
+# 1.5.0 - Big update to allow for building more configs and grouping them into different archives, all in the same post.
+# 1.4.4 - Grab the VC2008 pdb files by changing the regex in the config
 # 1.4.3 - fix a move issue, use the config name for the folder and not the config string
 # 1.4.2 - fix some more issues with the export method
 # 1.4.1 - just a bit more cleanup
@@ -42,7 +44,9 @@ my $DATE = $year . $mon . $mday;
 my @filenames;
 my $oldrevision;
 my $revision;
-my @archive;
+my %archives;
+my %md5s;
+my @archiveslist;
 my $exportpath;
 
 if(updatesvn() != 1)
@@ -73,9 +77,13 @@ if(compile() != 1)
 print "Compiling completed\n";
 # Code was compiled and updated, move the built files somewhere for archiving
 rmtree($exportpath);
-@archive = archive(@filenames);
-upload(@archive);
-post(@archive);
+
+foreach (keys (%archives))
+{
+	upload($archives{$_}, $md5s{$_});
+}
+
+post();
 
 
 #############SUBROUTINES################
@@ -184,8 +192,14 @@ sub compile
 	my $command;
 	my $cleancmd;
 	my $currentdir;
+	my $group;
+	my %CONFIG_NAMES;
+	my %CONFIG_STRINGS;
 	my %BUILD_CONFIGS;
-	@BUILD_CONFIGS{split(/~/, $CONFIG->{$OS}->{config_names})} = split(/~/, $CONFIG->{$OS}->{config_strings});
+	@CONFIG_NAMES{split(/~/, $CONFIG->{$OS}->{config_groups})} = split(/::/, $CONFIG->{$OS}->{config_names});
+	@CONFIG_STRINGS{split(/~/, $CONFIG->{$OS}->{config_groups})} = split(/::/, $CONFIG->{$OS}->{config_strings});
+
+#	@BUILD_CONFIGS{split(/~/, $CONFIG->{$OS}->{config_names})} = split(/~/, $CONFIG->{$OS}->{config_strings});
 	
 	$currentdir = cwd();
 
@@ -205,50 +219,59 @@ sub compile
 		}
 	}
 	
-	foreach (keys (%BUILD_CONFIGS))
+	foreach $group (keys (%CONFIG_NAMES))
 	{
-		print "Building " . $_ . "...\n";
+		@filenames = ();
+		%BUILD_CONFIGS = ();
+		@BUILD_CONFIGS{split(/~/, $CONFIG_NAMES{$group})} = split(/~/, $CONFIG_STRINGS{$group});
 		
-		if($OS eq "WIN") {
-			if($CONFIG->{$OS}->{compiler} eq "MSVC2008") {
-				$command = $CONFIG->{$OS}->{build_program_path} . " /nocolor /nologo /rebuild Freespace2.sln " . $BUILD_CONFIGS{$_};
+		foreach(keys (%BUILD_CONFIGS))
+		{
+			print "Building " . $_ . "...\n";
+			
+			if($OS eq "WIN") {
+				if($CONFIG->{$OS}->{compiler} eq "MSVC2008") {
+					$command = $CONFIG->{$OS}->{build_program_path} . " /nocolor /nologo /rebuild Freespace2.sln " . $BUILD_CONFIGS{$_};
+				}
+				elsif($CONFIG->{$OS}->{compiler} eq "MSVC6") {
+					$command = $CONFIG->{$OS}->{build_program_path} . " Freespace2.dsw /MAKE \"Freespace2 - " . $BUILD_CONFIGS{$_} . "\" /MAKE \"Fred2 - " . $BUILD_CONFIGS{$_} . "\" /REBUILD";
+				}
+				else {
+					# Compiler flag not set correctly
+					print "Unrecognized compiler setting, must be one of:  MSVC2008 MSVC6\n";
+					return 0;
+				}
 			}
-			elsif($CONFIG->{$OS}->{compiler} eq "MSVC6") {
-				$command = $CONFIG->{$OS}->{build_program_path} . " Freespace2.dsw /MAKE \"Freespace2 - " . $BUILD_CONFIGS{$_} . "\" /MAKE \"Fred2 - " . $BUILD_CONFIGS{$_} . "\" /REBUILD";
+			elsif($OS eq "OSX") {
+				$command = $CONFIG->{$OS}->{build_program_path} . " -project FS2_Open.xcodeproj -configuration " . $BUILD_CONFIGS{$_} . " clean build";
+			}
+			elsif($OS eq "LINUX") {
+				$command = "./autogen.sh " . $BUILD_CONFIGS{$_} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " clean 2>&1 && " . $CONFIG->{$OS}->{build_program_path};
 			}
 			else {
-				# Compiler flag not set correctly
-				print "Unrecognized compiler setting, must be one of:  MSVC2008 MSVC6\n";
+				# How the fuck did you get this far with an unrecognized OS
+				print "Unrecognized OS detected.\n";
 				return 0;
 			}
-		}
-		elsif($OS eq "OSX") {
-			$command = $CONFIG->{$OS}->{build_program_path} . " -project FS2_Open.xcodeproj -configuration " . $BUILD_CONFIGS{$_} . " clean build";
-		}
-		elsif($OS eq "LINUX") {
-			$command = "./autogen.sh " . $BUILD_CONFIGS{$_} . " 2>&1 && " . $CONFIG->{$OS}->{build_program_path} . " clean 2>&1 && " . $CONFIG->{$OS}->{build_program_path};
-		}
-		else {
-			# How the fuck did you get this far with an unrecognized OS
-			print "Unrecognized OS detected.\n";
-			return 0;
+			
+			$command = $command . " 2>&1";
+#			print $command . "\n";
+			$output = `$command`;
+			
+			push(@outputlist, $output);
+			
+#			print $output . "\n";
+			# TODO:  Check @outputlist for actual changes, or if it just exited without doing anything
+			if(($OS eq "OSX" && $output =~ / BUILD FAILED /) || 
+				($OS eq "WIN" && !($output =~ /0 Projects failed/)) || 
+				($OS eq "LINUX" && $output =~ / Error 1\n$/)) {
+				print "Building " . $_ . " failed, see output for more information.\n";
+				return 0;
+			}
+			push(@filenames, move_and_rename($_));
 		}
 		
-		$command = $command . " 2>&1";
-#		print $command . "\n";
-		$output = `$command`;
-		
-		push(@outputlist, $output);
-		
-#		print $output . "\n";
-		# TODO:  Check @outputlist for actual changes, or if it just exited without doing anything
-		if(($OS eq "OSX" && $output =~ / BUILD FAILED /) || 
-			($OS eq "WIN" && !($output =~ /0 Projects failed/)) || 
-			($OS eq "LINUX" && $output =~ / Error 1\n$/)) {
-			print "Building " . $_ . " failed, see output for more information.\n";
-			return 0;
-		}
-		push(@filenames, move_and_rename($_));
+		($archives{$group}, $md5s{$group}) = archive($group, @filenames);
 	}
 	
 	chdir($currentdir);
@@ -263,10 +286,12 @@ sub move_and_rename
 	my $basename;
 	my $newname;
 	my $command;
+	my $foundext;
 	my @returnfiles = ();
 	my $currentdir = cwd();
 	my $this_build_drop = $CONFIG->{$OS}->{build_drop};
 	my $ext = $CONFIG->{$OS}->{build_extension};
+	$this_build_drop =~ s/##PROJECT##/$CONFIG->{$OS}->{project}/;
 	$this_build_drop =~ s/##CONFIG##/$configname/;
 	$this_build_drop =~ s/##EXPORTPATH##/$exportpath/;
 	
@@ -308,18 +333,20 @@ sub move_and_rename
 	
 	foreach (@files)
 	{
+		$foundext = "";
 		$oldname = $_;
 		$basename = $oldname;
 		if($ext ne "")
 		{
-			$basename =~ s/${ext}$//;
+			$basename =~ s/(${ext})$//;
+			$foundext = $1;
 		}
 		
 		$newname = $basename . "-" . $DATE . "_r" . $revision;
 		
-		if($ext ne "")
+		if($foundext ne "")
 		{
-			$newname .= $ext;
+			$newname .= $foundext;
 		}
 		
 		push(@returnfiles, $newname);
@@ -332,6 +359,7 @@ sub move_and_rename
 
 sub archive
 {
+	my $group = shift;
 	my @filenames = @_;
 	my $args = "";
 	my $command;
@@ -365,7 +393,7 @@ sub archive
 		print "Empty arguments for archiving, terminating...\n";
 	}
 	
-	$basename = "fso-" . $OS . "-" . $DATE . "_r" . $revision;
+	$basename = "fso-" . $OS . "-" . $group . "-" . $DATE . "_r" . $revision;
 	$archivename = $basename . $CONFIG->{$OS}->{archive_ext};
 	$command = $CONFIG->{$OS}->{path_to_archiver} . " " . $CONFIG->{$OS}->{archiver_args} . " " . $archivename . $args;
 	
@@ -429,12 +457,13 @@ sub upload
 
 sub post
 {
-	# Make a post on the forums to the download
-	my ($archivename, $md5name) = @_;
 	my $subject;
 	my $message;
 	my $logoutput;
 	my $logcommand;
+	my $archivename;
+	my $md5name;
+
 	my $startrevision = $oldrevision + 1;
 	
 	print "In the post function, submitting post to builds area...\n";
@@ -446,10 +475,18 @@ sub post
 	$subject = "Nightly (" . $CONFIG->{$OS}->{os_name} . "): " . $mday . " " . $monthword . " " . $year . " - Revision " . $revision;
 	# Set up the message
 	$message = "Here is the nightly for " . $CONFIG->{$OS}->{os_name} . " on " . $mday . " " . $monthword . " " . $year . " - Revision " . $revision . "\n\n";
-	$message .= "[url=".$CONFIG->{general}->{download_path}.$OS."/".$archivename."]".$archivename."[/url]\n";
-	$message .= "[url=".$CONFIG->{general}->{download_path}.$OS."/".$md5name."]MD5Sum[/url]\n";
-	$message .= "\n";
 	
+	# Make a post on the forums to the download
+	foreach (keys (%archives))
+	{
+		$archivename = $archives{$_};
+		$md5name = $md5s{$_};
+		$message .= "Group: " . $_ . "\n";
+		$message .= "[url=".$CONFIG->{general}->{download_path}.$OS."/".$archivename."]".$archivename."[/url]\n";
+		$message .= "[url=".$CONFIG->{general}->{download_path}.$OS."/".$md5name."]MD5Sum[/url]\n";
+		$message .= "\n";
+	}
+		
 	$message .= "[code]\n";
 	$message .= $logoutput . "\n";
 	$message .= "[/code]\n\n";
