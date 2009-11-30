@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.5.0
+# Nightly build script version 1.5.1
+# 1.5.1 - Fix problems with VS2008, to allow spaces in config names.
 # 1.5.0 - Big update to allow for building more configs and grouping them into different archives, all in the same post.
 # 1.4.4 - Grab the VC2008 pdb files by changing the regex in the config
 # 1.4.3 - fix a move issue, use the config name for the folder and not the config string
@@ -231,7 +232,7 @@ sub compile
 			
 			if($OS eq "WIN") {
 				if($CONFIG->{$OS}->{compiler} eq "MSVC2008") {
-					$command = $CONFIG->{$OS}->{build_program_path} . " /nocolor /nologo /rebuild Freespace2.sln " . $BUILD_CONFIGS{$_};
+					$command = $CONFIG->{$OS}->{build_program_path} . " /nocolor /nologo /rebuild Freespace2.sln \"" . $BUILD_CONFIGS{$_} . "\"";
 				}
 				elsif($CONFIG->{$OS}->{compiler} eq "MSVC6") {
 					$command = $CONFIG->{$OS}->{build_program_path} . " Freespace2.dsw /MAKE \"Freespace2 - " . $BUILD_CONFIGS{$_} . "\" /MAKE \"Fred2 - " . $BUILD_CONFIGS{$_} . "\" /REBUILD";
