@@ -828,6 +828,9 @@ extern int modelstats_num_sortnorms;
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
 
+// Gets and sets turret rotation matrix
+extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
+
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
 extern void submodel_rotate(model_subsystem *psub, submodel_instance_info * sii);

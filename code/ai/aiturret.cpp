@@ -1686,6 +1686,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	
 	//aip = &Ai_info[Ships[objp->instance].ai_index];
+	// Wanderer - make sure turrets already have all the data
+	if ( !(tp->flags & MSS_FLAG_TURRET_MATRIX) )
+	{
+		if (!(tp->turret_gun_sobj == tp->subobj_num))
+		{
+			model_make_turret_matrix(Ship_info[shipp->ship_info_index].model_num, tp );
+		}
+	}
 
 	// Use the turret info for all guns, not one gun in particular.
 	vec3d	 gvec, gpos;
