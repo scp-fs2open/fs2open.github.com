@@ -13,6 +13,7 @@
 #ifdef _WIN32
  #include <direct.h>
  #include <io.h>
+ #include <windows.h>
 #ifndef _MINGW
  #include <crtdbg.h>
 #endif // !_MINGW
@@ -46,6 +47,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "globalincs/mspdb_callstack.h"
 #include "graphics/font.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
@@ -7540,6 +7542,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		}
 	}
 
+	SCP_mspdbcs_Initialise( );
 
 #ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
@@ -7557,6 +7560,8 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	}
 #endif // _MSC_VER
 #endif
+
+	SCP_mspdbcs_Cleanup( );
 
 	enableWindowsKey();
 

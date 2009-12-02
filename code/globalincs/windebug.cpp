@@ -128,6 +128,11 @@ const char* Separator = "-------------------------------------------------------
 class SCP_DebugCallStack : public SCP_IDumpHandler
 {
 public:
+	virtual bool ResolveSymbols( )
+	{
+		return true;
+	}
+
 	virtual void OnBegin( )
 	{
 	}
