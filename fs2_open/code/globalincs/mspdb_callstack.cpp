@@ -24,6 +24,8 @@ BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs
 LPVOID __stdcall SCP_mspdbcs_FunctionTableAccess( HANDLE hProcess, DWORD64 dwPCAddress );
 DWORD64 __stdcall SCP_mspdbcs_GetModuleBase( HANDLE hProcess, DWORD64 returnAddress );
 DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv );
+void SCP_mspdbcs_Initialise( );
+void SCP_mspdbcs_Cleanup( );
 
 BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs_SDumpStackSymbolInfo& siSymbol )
 {
@@ -174,64 +176,66 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv )
 	/* Retrieve the context (processor state) of the suspended thread */
 	GetThreadContext( pdsti->hThread, &context );
 
-	/* Initialise symbol handling */
-	if ( SymInitialize( pdsti->hProcess, NULL, TRUE ) )
-	{
-		/* Set name decoration handling */
-		DWORD dw = SymGetOptions( );
-		dw = dw & ~SYMOPT_UNDNAME;
-		SymSetOptions( dw );
+	/* Set name decoration handling */
+	DWORD dw = SymGetOptions( );
+	dw = dw & ~SYMOPT_UNDNAME;
+	SymSetOptions( dw );
 
-		/* Initialise the stackframe */
-		STACKFRAME64 stackFrame;
-		memset( &stackFrame, 0, sizeof( STACKFRAME ) );
-		stackFrame.AddrPC.Mode = AddrModeFlat;
-		stackFrame.AddrFrame.Mode = AddrModeFlat;
-		stackFrame.AddrStack.Mode = AddrModeFlat;
-		stackFrame.AddrReturn.Mode = AddrModeFlat;
-		stackFrame.AddrBStore.Mode = AddrModeFlat;
+	/* Initialise the stackframe */
+	STACKFRAME64 stackFrame;
+	memset( &stackFrame, 0, sizeof( STACKFRAME ) );
+	stackFrame.AddrPC.Mode = AddrModeFlat;
+	stackFrame.AddrFrame.Mode = AddrModeFlat;
+	stackFrame.AddrStack.Mode = AddrModeFlat;
+	stackFrame.AddrReturn.Mode = AddrModeFlat;
+	stackFrame.AddrBStore.Mode = AddrModeFlat;
 
-		DWORD dwMachType;
+	DWORD dwMachType;
 
-		/* Determine the machine type based on the compilation.
-		 * Initialise stackFrame accordingly
-		 * We will only handle the types of _M_IX86 or _M_AMD64
-		 * We're not intending to be compatible with IA64 or any other architectures
-		 *  under windows
-		 */
+	/* Determine the machine type based on the compilation.
+	 * Initialise stackFrame accordingly
+	 * We will only handle the types of _M_IX86 or _M_AMD64
+	 * We're not intending to be compatible with IA64 or any other architectures
+	 *  under windows
+	 */
 #if defined(_M_IX86)
-		dwMachType = IMAGE_FILE_MACHINE_I386;
-		stackFrame.AddrPC.Offset = context.Eip;
-		stackFrame.AddrStack.Offset = context.Esp;
-		stackFrame.AddrFrame.Offset = context.Ebp;
+	dwMachType = IMAGE_FILE_MACHINE_I386;
+	stackFrame.AddrPC.Offset = context.Eip;
+	stackFrame.AddrStack.Offset = context.Esp;
+	stackFrame.AddrFrame.Offset = context.Ebp;
 #elif defined(_M_AMD64)
-		dwMachType = IMAGE_FILE_MACHINE_AMD64;
-		stackFrame.AddrPC.Offset = context.Rip;
-		stackFrame.AddrStack = context.Rsp;
+	dwMachType = IMAGE_FILE_MACHINE_AMD64;
+	stackFrame.AddrPC.Offset = context.Rip;
+	stackFrame.AddrStack = context.Rsp;
 #else
 #		error UNKNOWN ARCHITECTURE
 #endif
 
-		/* All the discovered addresses will be stored in an array */
-		SCP_vector< void* > addresses;
+	/* All the discovered addresses will be stored in an array */
+	SCP_vector< void* > addresses;
 
-		/* Walk the stack */
-		for ( int currFrame = 0; currFrame < SCP_MSPDBCS_MAX_STACK_FRAMES; currFrame++ )
+	/* Walk the stack */
+	for ( int currFrame = 0; currFrame < SCP_MSPDBCS_MAX_STACK_FRAMES; currFrame++ )
+	{
+		if ( !StackWalk64( dwMachType, pdsti->hProcess, pdsti->hThread,
+						   &stackFrame, &context, NULL,
+						   SCP_mspdbcs_FunctionTableAccess, SCP_mspdbcs_GetModuleBase, NULL ) )
 		{
-			if ( !StackWalk64( dwMachType, pdsti->hProcess, pdsti->hThread,
-							   &stackFrame, &context, NULL,
-							   SCP_mspdbcs_FunctionTableAccess, SCP_mspdbcs_GetModuleBase, NULL ) )
-			{
-				break; /* No more stack frames to walk */
-			}
-
-			/* Found a useful address? */
-			if ( stackFrame.AddrPC.Offset != 0 )
-			{
-				addresses.push_back( (void*)(DWORD_PTR)stackFrame.AddrPC.Offset );
-			}
+			break; /* No more stack frames to walk */
 		}
 
+		/* Found a useful address? */
+		if ( stackFrame.AddrPC.Offset != 0 )
+		{
+			if ( pdsti->pIDS->ResolveSymbols( ) )
+				addresses.push_back( (void*)(DWORD_PTR)stackFrame.AddrPC.Offset );
+			else
+				pdsti->pIDS->OnEntry( (void*)(DWORD_PTR)stackFrame.AddrPC.Offset, NULL, NULL );
+		}
+	}
+
+	if ( pdsti->pIDS->ResolveSymbols( ) )
+	{
 		/* Dump the stack information that we have */
 		for ( size_t i = 0; i < addresses.size( ); i++ )
 		{
@@ -247,8 +251,6 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv )
 
 			pdsti->pIDS->OnEntry( addresses[ i ], szModule, szSymbol );
 		}
-
-		SymCleanup( pdsti->hProcess );
 	}
 
 	pdsti->pIDS->OnEnd( );
@@ -266,6 +268,14 @@ HRESULT SCP_DumpStack( SCP_IDumpHandler* pIDH )
 	/* Retrieve pseudo handles to the current thread and process */
 	HANDLE hPseudoThread = GetCurrentThread( );	
 	HANDLE hPseudoProcess = GetCurrentProcess( );
+
+	/* This will fail if SymInitialize hasn't been called, so 
+	 *  this protects against uninitialised state */
+	if ( !SymRefreshModuleList( hPseudoProcess ) )
+	{
+		mprintf( ("Could not refresh module list %x\n", HRESULT_FROM_WIN32( GetLastError( ) ) ) );
+		return E_UNEXPECTED;
+	}
 
 	/* Retrieve the real handle of this thread */
 	HANDLE hThread = NULL;
@@ -291,6 +301,25 @@ HRESULT SCP_DumpStack( SCP_IDumpHandler* pIDH )
 
 	CloseHandle( workerThread );
 	return S_OK;
+}
+
+void SCP_mspdbcs_Initialise( )
+{
+#ifdef PDB_DEBUGGING
+	HANDLE hPseudoProcess = GetCurrentProcess( );
+	if ( !SymInitialize( hPseudoProcess, NULL, TRUE ) )
+	{
+		mprintf( ("Could not initialise symbols - callstacks will fail: %x\n", HRESULT_FROM_WIN32( GetLastError( ) ) ) );
+	}
+#endif
+}
+
+void SCP_mspdbcs_Cleanup( )
+{
+#ifdef PDB_DEBUGGING
+	HANDLE hPseudoProcess = GetCurrentProcess( );
+	SymCleanup( hPseudoProcess );
+#endif
 }
 
 #endif // PDB_DEBUGGING
