@@ -7415,6 +7415,8 @@ int game_main(char *cmdline)
 		nprintf(("Network", "Standalone running"));
 	}
 #endif
+	if ( !Is_standalone )
+		disableWindowsKey( );
 
 
 	init_cdrom();
@@ -7489,6 +7491,9 @@ int game_main(char *cmdline)
 
 	game_shutdown();
 
+	if ( !Is_standalone )
+		enableWindowsKey( );
+
 	return 0;
 }
 
@@ -7520,8 +7525,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 #endif
 
 	DBUGFILE_INIT();
-
-	disableWindowsKey();
 
 	//=====================================================
 	// Make sure we're running in the right directory.
@@ -7562,8 +7565,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 #endif
 
 	SCP_mspdbcs_Cleanup( );
-
-	enableWindowsKey();
 
 	DBUGFILE_DEINIT();
 
