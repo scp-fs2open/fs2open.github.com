@@ -27,6 +27,8 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv );
 void SCP_mspdbcs_Initialise( );
 void SCP_mspdbcs_Cleanup( );
 
+static bool SCP_mspdbcs_initialised = false;
+
 BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs_SDumpStackSymbolInfo& siSymbol )
 {
 	BOOL retVal = TRUE;
@@ -271,9 +273,9 @@ HRESULT SCP_DumpStack( SCP_IDumpHandler* pIDH )
 
 	/* This will fail if SymInitialize hasn't been called, so 
 	 *  this protects against uninitialised state */
-	if ( !SymRefreshModuleList( hPseudoProcess ) )
+	if ( !SCP_mspdbcs_initialised )
 	{
-		mprintf( ("Could not refresh module list %x\n", HRESULT_FROM_WIN32( GetLastError( ) ) ) );
+		mprintf( ("Symbols not initialised\n") );
 		return E_UNEXPECTED;
 	}
 
@@ -311,6 +313,8 @@ void SCP_mspdbcs_Initialise( )
 	{
 		mprintf( ("Could not initialise symbols - callstacks will fail: %x\n", HRESULT_FROM_WIN32( GetLastError( ) ) ) );
 	}
+	else
+		SCP_mspdbcs_initialised = true;
 #endif
 }
 
