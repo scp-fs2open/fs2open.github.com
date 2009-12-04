@@ -305,6 +305,8 @@ HRESULT SCP_DumpStack( SCP_IDumpHandler* pIDH )
 	return S_OK;
 }
 
+#endif // PDB_DEBUGGING
+
 void SCP_mspdbcs_Initialise( )
 {
 #ifdef PDB_DEBUGGING
@@ -325,5 +327,3 @@ void SCP_mspdbcs_Cleanup( )
 	SymCleanup( hPseudoProcess );
 #endif
 }
-
-#endif // PDB_DEBUGGING
