@@ -3191,7 +3191,11 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+					strcpy_s(view_target_name, "targeted ship");
+				} else {
+					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				}
 				break;
 			case OBJ_WEAPON:
 				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
