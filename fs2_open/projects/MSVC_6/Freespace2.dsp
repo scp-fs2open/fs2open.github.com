@@ -94,7 +94,7 @@ LINK32=link.exe
 InputPath=.\Debug\fs2_open_trunk_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/fs2_open_trunk_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy /y $(InputPath) "$(FS2PATH)/fs2_open_trunk_d.exe"
 
 # End Custom Build
