@@ -3118,8 +3118,16 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 	// get active rotation time this frame
 	int end_stamp = timestamp();
-	float rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
-	Assert(rotation_time >= 0);
+	// just to make sure this issue wont pop up again... might cause odd jerking in some extremely odd situations
+	// but given that those issues would require the timer to be reseted in any case it probably wont hurt
+	float rotation_time;
+	if ((end_stamp - sii->step_zero_timestamp) < 0) {
+		sii->step_zero_timestamp = end_stamp;
+		rotation_time = 0.0f;
+	} else {
+		rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
+	}
+	//Assert(rotation_time >= 0);
 
 	// save last angles
 	sii->prev_angs = sii->angs;
