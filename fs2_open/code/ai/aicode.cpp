@@ -1649,6 +1649,15 @@ void get_tangent_point(vec3d *goal_point, object *objp, vec3d *point, float radi
 
 	vm_vec_normalized_dir(&vec_to_point, point, &objp->pos);
 	vm_vec_crossprod(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
+	
+	while (IS_VEC_NULL(&up_vec)) {
+		vec3d	rnd_vec;
+
+		vm_vec_rand_vec_quick(&rnd_vec);
+		vm_vec_add2(&rnd_vec, &objp->orient.vec.fvec);
+		vm_vec_crossprod(&up_vec, &vec_to_point, &rnd_vec);
+	}
+
 	vm_vec_crossprod(&perp_vec, &vec_to_point, &up_vec);
 	vm_vec_normalize(&perp_vec);
 
