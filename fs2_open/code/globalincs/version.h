@@ -40,6 +40,7 @@
 #define FS_VERSION_MAJOR 3					// major version
 #define FS_VERSION_MINOR 6					// increase by 1 for minor revs
 #define FS_VERSION_BUILD 11					// bugfix release
+#define FS_VERSION_REVIS 1111				// SVN revision
 
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"

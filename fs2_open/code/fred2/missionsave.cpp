@@ -2602,10 +2602,17 @@ void CFred_mission_save::parse_comments(int newlines)
 				// check for a FSO version comment, but if we can't understand it then
 				// just handle it as a regular comment
 				if ( (raw_ptr[1] == ';') && (raw_ptr[2] == 'F') && (raw_ptr[3] == 'S') && (raw_ptr[4] == 'O') ) {
-					int major, minor, build;
-					int s_num = sscanf(raw_ptr+6, "%d.%d.%d;;", &major, &minor, &build);
+					int major, minor, build, revis;
+					int s_num = scan_fso_version_string(raw_ptr, &major, &minor, &build, &revis);
+					
+					// hack for releases
+					if (FS_VERSION_REVIS < 1000) {
+						s_num = 3;
+					}
 
 					if ( (s_num == 3) && (major <= FS_VERSION_MAJOR) && (minor <= FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD) ) {
+						state = 3;
+					} else if ( (s_num == 4) && (major <= FS_VERSION_MAJOR) && (minor <= FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD) && (revis <= FS_VERSION_REVIS) ) {
 						state = 3;
 					} else {
 						state = 4;
@@ -3853,17 +3860,24 @@ void CFred_mission_save::fso_comment_push(char *ver)
 
 	std::string before = fso_ver_comment.back();
 
-	int major, minor, build;
-	int in_major, in_minor, in_build;
-	int elem = 0;
+	int major, minor, build, revis;
+	int in_major, in_minor, in_build, in_revis;
+	int elem1, elem2;
 
-	elem = sscanf( fso_ver_comment.back().c_str(), ";;FSO %d.%d.%d;;", &major, &minor, &build );
-	Assert( elem == 3 );
+	elem1 = scan_fso_version_string( fso_ver_comment.back().c_str(), &major, &minor, &build, &revis );
+	elem2 = scan_fso_version_string( ver, &in_major, &in_minor, &in_build, &in_revis );
+	
+	// check consistency
+	if (elem1 == 3 && elem2 == 4 || elem1 == 4 && elem2 == 3) {
+		elem1 = elem2 = 3;
+	} else if ((elem1 >= 3 && elem2 >= 3) && (revis < 1000 || in_revis < 1000)) {
+		elem1 = elem2 = 3;
+	}
 
-	elem = sscanf( ver, ";;FSO %d.%d.%d;;", &in_major, &in_minor, &in_build );
-	Assert( elem == 3 );
-
-	if ( (major > in_major) || (minor > in_minor) || (build > in_build) ) {
+	if ( (elem1 == 3) && ((major > in_major) || (minor > in_minor) || (build > in_build)) ) {
+		// the push'd version is older than our current version, so just push a copy of the previous version
+		fso_ver_comment.push_back( before );
+	} else if ( (elem1 == 4) && ((major > in_major) || (minor > in_minor) || (build > in_build) || (revis > in_revis)) ) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
 		fso_ver_comment.push_back( before );
 	} else {
