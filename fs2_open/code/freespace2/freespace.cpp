@@ -7419,8 +7419,11 @@ int game_main(char *cmdline)
 		nprintf(("Network", "Standalone running"));
 	}
 #endif
+
+#ifdef _WIN32
 	if ( !Is_standalone )
 		disableWindowsKey( );
+#endif
 
 
 	init_cdrom();
@@ -7495,8 +7498,10 @@ int game_main(char *cmdline)
 
 	game_shutdown();
 
+#ifdef _WIN32
 	if ( !Is_standalone )
 		enableWindowsKey( );
+#endif
 
 	return 0;
 }
