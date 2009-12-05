@@ -197,7 +197,7 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 extern char *stristr(const char *str, const char *substr);
 
 // Goober5000 (ditto)
-extern bool can_construe_as_integer(char *text);
+extern bool can_construe_as_integer(const char *text);
 
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);
@@ -210,6 +210,9 @@ extern void backspace(char *src);
 
 // Goober5000 - prints a properly comma-separated integer to a string
 extern void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four_digits);
+
+// Goober5000
+extern int scan_fso_version_string(const char *text, int *major, int *minor, int *build, int *revis);
 
 inline void parse_advance(int s){Mp+=s;}
 

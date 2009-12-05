@@ -629,7 +629,11 @@ void os_validate_parms(char *cmdline)
 #else
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {
-					printf("FS2 Open: The Source Code Project, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					if (FS_VERSION_REVIS == 0) {
+						printf("FreeSpace 2 Open, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					} else {
+						printf("FreeSpace 2 Open, version %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
+					}
 					printf("Website: http://scp.indiegames.us\n");
 					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
 					printf("Usage: fs2_open [options]\n");

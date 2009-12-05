@@ -21,6 +21,7 @@
 //
 
 // Defines
+// NB: for compatibility reasons, this must not include the SVN revision
 #define VER(major, minor, build) (100*100*major+100*minor+build)
 #define MAX_LINE_LENGTH 512
 
@@ -35,6 +36,9 @@
 // 1 if same version
 // 2 if higher version
 // fills in user version and latest version values if non-NULL
+//
+// NB: since this function is only used for multiplayer (in multi_update.cpp - and actually commented out), and since multiplayer
+// doesn't care about SVN revisions, this function doesn't need to check the SVN revision
 int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, int *l_major, int *l_minor, int *l_build)
 {	
 	int usr_major, usr_minor, usr_build;

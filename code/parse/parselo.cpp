@@ -3092,7 +3092,7 @@ stristr_continue_outer_loop:
 }
 
 // Goober5000
-bool can_construe_as_integer(char *text)
+bool can_construe_as_integer(const char *text)
 {
 	// trivial case; evaluates to 0
 	if (*text == '\0')
@@ -3103,7 +3103,8 @@ bool can_construe_as_integer(char *text)
 		return false;
 
 	// check digits for rest
-	for (char *p = text + 1; *p != '\0'; p++)
+	// (why on earth do we need a const cast here?  text isn't the pointer being modified!)
+	for (char *p = const_cast<char*>(text) + 1; *p != '\0'; p++)
 	{
 		if (!isdigit(*p))
 			return false;
@@ -3306,6 +3307,35 @@ void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four
 		new_pos++;
 	}
 	buf[new_pos] = '\0';
+}
+
+// Goober5000
+// there's probably a better way to do this, but this way works and is clear and short
+int scan_fso_version_string(const char *text, int *major, int *minor, int *build, int *revis)
+{
+	int val;
+
+	val = sscanf(text, ";;FSO %i.%i.%i.%i;;", major, minor, build, revis);
+	if (val == 4)
+		return val;
+
+	*revis = 0;
+	val = sscanf(text, ";;FSO %i.%i.%i;;", major, minor, build);
+	if (val == 3)
+		return val;
+
+	*build = *revis = 0;
+	val = sscanf(text, ";;FSO %i.%i;;", major, minor);
+	if (val == 2)
+		return val;
+
+	*minor = *build = *revis = 0;
+	val = sscanf(text, ";;FSO %i;;", major);
+	if (val == 1)
+		return val;
+
+	*major = *minor = *build = *revis = 0;
+	return 0;
 }
 
 // Goober5000 - ugh, I can't see why they didn't just use stuff_*_list for these;
