@@ -83,6 +83,25 @@ void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem
 void model_set_bay_path_nums(polymodel *pm);
 
 
+// Goober5000 - see SUBSYSTEM_X in model.h
+// NOTE: Each subsystem must match up with its #define, or there will be problems
+char *Subsystem_types[SUBSYSTEM_MAX] =
+{
+	"None",
+	"Engines",
+	"Turrets",
+	"Radar",
+	"Navigation",
+	"Communications",
+	"Weapons",
+	"Sensors",
+	"Solar panels",
+	"Gas collection",
+	"Activation",
+	"Unknown"
+};
+
+
 //WMC - For general compatibility stuff.
 //Note that the order of the items in this list
 //determine the order that they are tried in ai_goal_fixup_dockpoints
