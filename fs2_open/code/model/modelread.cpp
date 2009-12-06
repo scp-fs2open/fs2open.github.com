@@ -1259,7 +1259,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
-
 				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
 					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
@@ -1287,6 +1286,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
 					}
+				}
+
+				// adding a warning if rotation is specified without movement axis.
+				if ((pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) && (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE)){
+					Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 				}
 
 /*				if ( strstr(props, "$nontargetable")!= NULL ) {
