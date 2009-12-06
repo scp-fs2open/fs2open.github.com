@@ -196,6 +196,8 @@ sexp_oper Operators[] = {
 	{ "shields-left",						OP_SHIELDS_LEFT,					1, 1,			},
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 3, },
+	{ "hits-left-subsystem-generic",	OP_HITS_LEFT_SUBSYSTEM_GENERIC,		2,	2,	},	// Goober5000
+	{ "hits-left-subsystem-specific",	OP_HITS_LEFT_SUBSYSTEM_SPECIFIC,	2,	2,	},	// Goober5000
 	{ "sim-hits-left",						OP_SIM_HITS_LEFT,					1, 1, }, // Turey
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
@@ -1769,7 +1771,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				break;
 			}
-			// return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
+			return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
+
+			case OPF_SUBSYSTEM_TYPE:
+				for (i = 0; i < SUBSYSTEM_MAX; i++)
+				{
+					if (!stricmp(CTEXT(node), Subsystem_types[i]))
+						break;
+				}
+
+				if (i == SUBSYSTEM_MAX)
+					return SEXP_CHECK_INVALID_SUBSYS_TYPE;
+
+				break;
 
 			case OPF_POINT:
 				if (type2 != SEXP_ATOM_STRING)
@@ -5069,7 +5083,8 @@ int sexp_team_score(int node)
 }
 
 
-// function to return the remaining hits left on a subsystem as a percentage of thw whole.
+// function to return the remaining hits left on a subsystem as a percentage of the whole.
+// Goober5000 - this sexp is DEPRECATED because it works just like the new hits-left-substem-generic
 int sexp_hits_left_subsystem(int n)
 {
 	int shipnum, percent, type, single_subsystem = 0;
@@ -5126,6 +5141,88 @@ int sexp_hits_left_subsystem(int n)
 		}
 	}
 	return SEXP_NAN;			// if for some strange reason, the type field of the subsystem is bogus
+}
+
+// Goober5000
+int sexp_hits_left_subsystem_generic(int node)
+{
+	int i, ship_num, subsys_type;
+	char *ship_name, *subsys_type_name;
+
+	ship_name = CTEXT(node);
+	subsys_type_name = CTEXT(CDR(node));
+	
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL)) {
+		return SEXP_NAN_FOREVER;
+	}
+
+	ship_num = ship_name_lookup(ship_name);
+	if (ship_num < 0) {
+		return SEXP_NAN;
+	}
+
+	// find subsystem type
+	subsys_type = -1;
+	for (i = 0; i < SUBSYSTEM_MAX; i++)
+	{
+		if (!stricmp(subsys_type_name, Subsystem_types[i]))
+			subsys_type = i;
+	}
+
+	// error checking
+	if (subsys_type < 0) {
+		Warning(LOCATION, "Subsystem type '%s' not recognized in hits-left-subsystem-generic!", subsys_type_name);
+		return SEXP_NAN_FOREVER;
+	} else if (subsys_type == SUBSYSTEM_NONE) {
+		// as you wish...?
+		return 0;
+	} else if (subsys_type == SUBSYSTEM_UNKNOWN) {
+		Warning(LOCATION, "Cannot use SUBSYSTEM_UNKNOWN in hits-left-subsystem-generic!");
+		return SEXP_NAN_FOREVER;
+	}
+
+	// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
+	// we are returning the sum of the hits on the 3 engines)
+	return fl2i((ship_get_subsystem_strength(&Ships[ship_num], subsys_type) * 100.0f) + 0.5f);
+}
+
+// Goober5000
+int sexp_hits_left_subsystem_specific(int node)
+{
+	int ship_num;
+	char *ship_name, *subsys_name;
+	ship_subsys *ss;
+
+	ship_name = CTEXT(node);
+	subsys_name = CTEXT(CDR(node));
+	
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL)) {
+		return SEXP_NAN_FOREVER;
+	}
+
+	ship_num = ship_name_lookup(ship_name);
+	if (ship_num < 0) {
+		return SEXP_NAN;
+	}
+
+	// loop through all subsystems
+	ss = GET_FIRST( &Ships[ship_num].subsys_list );
+	while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) ) {
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name) ) {
+			// return as a percentage the hits remaining on this subsystem only
+			return fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
+		}
+
+		ss = GET_NEXT( ss );
+	}
+
+	// we reached end of ship subsys list without finding subsys_name
+	if (ship_class_unchanged(ship_num)) {
+		Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+	}
+	return SEXP_NAN;
 }
 
 int sexp_determine_team(char *subj)
@@ -16342,6 +16439,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_hits_left_subsystem(node);
 				break;
 
+			case OP_HITS_LEFT_SUBSYSTEM_GENERIC:
+				sexp_val = sexp_hits_left_subsystem_generic(node);
+				break;
+
+			case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
+				sexp_val = sexp_hits_left_subsystem_specific(node);
+				break;
+
 			case OP_SIM_HITS_LEFT:
 				sexp_val = sexp_sim_hits_left(node);
 				break;
@@ -18134,6 +18239,8 @@ int query_operator_return_type(int op)
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_HITS_LEFT_SUBSYSTEM_GENERIC:
+		case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
 		case OP_SIM_HITS_LEFT:
 		case OP_DISTANCE:
 		case OP_DISTANCE_SUBSYSTEM:
@@ -18813,6 +18920,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			else 
 				return OPF_BOOL;
+
+		case OP_HITS_LEFT_SUBSYSTEM_GENERIC:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM_TYPE;
+
+		case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_SUBSYSTEM;
 
 		case OP_DISTANCE_SUBSYSTEM:
 			if (argnum == 0)
@@ -20210,6 +20329,9 @@ char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SUBSYS:
 			return "Invalid subsystem name";
 
+		case SEXP_CHECK_INVALID_SUBSYS_TYPE:
+			return "Invalid subsystem type";
+
 		case SEXP_CHECK_INVALID_IFF:
 			return "Invalid team name";
 
@@ -21295,6 +21417,8 @@ int get_subcategory(int sexp_id)
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_HITS_LEFT_SUBSYSTEM_GENERIC:
+		case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
 		case OP_SIM_HITS_LEFT:
 		case OP_GET_DAMAGE_CAUSED:
 			return STATUS_SUBCATEGORY_DAMAGE;
@@ -21825,13 +21949,38 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship to check." },
 
-	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (Status operator)\r\n"
-		"\tReturns the current level of the specified ship's subsystem integrity as a percentage\r\n"
-		"of the damage done to all subsystems of the same type.\r\n\r\n"
-		"Returns a numeric value.  Takes 2 arguments...\r\n"
+	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (status operator, deprecated)\r\n"
+		"\tReturns the current level of the specified ship's subsystem integrity as a percentage of the damage done to *all "
+		"subsystems of the same type*.  This operator provides the same functionality as the new hits-left-subsystem-generic "
+		"operator, except that it gets the subsystem type in a very misleading way.  Common consensus among SCP programmers is "
+		"that this operator was intended to behave like hits-left-subsystem-specific but was programmed incorrectly.  As such, "
+		"this operator is deprecated.  Mission designers are strongly encouraged to use hits-left-subsystem-specific rather than "
+		"the optional boolean parameter.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of ship to check.\r\n"
 		"\t2:\tName of subsystem on ship to check.\r\n"
-		"\t3:\t(Optional) True/False. When set to true only the subsystem supplied will be tested." },
+		"\t3:\t(Optional) True/False. When set to true only the subsystem supplied will be tested; when set to false (the default), "
+		"all subsystems of that type will be tested." },
+
+	{ OP_HITS_LEFT_SUBSYSTEM_GENERIC, "hits-left-subsystem-generic (status operator)\r\n"
+		"\tReturns the current level of integrity of a generic subsystem type, as a percentage.  A \"generic subsystem type\" "
+		"is a subsystem *category*, (for example, Engines), that includes one or more *individual* subsystems (for example, engine01, "
+		"engine02, and engine03) on a ship.\r\n\r\nThis is the way FreeSpace tests certain subsystem thresholds internally; for "
+		"example, if the integrity of all engine subsystems (that is, the combined strength of all engines divided by the maximum "
+		"total strength of all engines) is less than 30%, the player cannot warp out.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to check\r\n"
+		"\t2:\tName of subsystem type to check\r\n" },
+
+	{ OP_HITS_LEFT_SUBSYSTEM_SPECIFIC, "hits-left-subsystem-specific (status operator)\r\n"
+		"\tReturns the current level of integrity of a specific subsystem, as a percentage.\r\n\r\n(If you were looking for the old "
+		"hits-left-subsystem operator, this is almost certainly the operator you want.  The hits-left-subsystem operator "
+		"suffers from a serious design flaw that causes it to behave like hits-left-subsystem-generic.  As such it has been deprecated "
+		"and will not appear in the operator list; it can only be used if you type it in manually.  Old missions using hits-left-subsystem "
+		"will still work, but mission designers are strongly encouraged to use the new operators instead.)\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to check\r\n"
+		"\t2:\tName of subsystem to check\r\n" },
 
 	{ OP_SIM_HITS_LEFT, "Simulated Hits left (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's simulated hull as a percentage.\r\n\r\n"

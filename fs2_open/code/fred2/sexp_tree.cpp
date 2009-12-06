@@ -853,9 +853,10 @@ void sexp_tree::right_clicked(int mode)
 				{
 					if (op_menu[j].id == (Operators[i].value & OP_CATEGORY_MASK))
 					{
-// Commented out by Goober5000 to allow these sexps to be selectable
-/*#ifdef NDEBUG
 						switch (Operators[i].value) {
+// Commented out by Goober5000 to allow these operators to be selectable
+/*#ifdef NDEBUG
+							// various campaign operators
 							case OP_WAS_PROMOTION_GRANTED:
 							case OP_WAS_MEDAL_GRANTED:
 							case OP_GRANT_PROMOTION:
@@ -864,9 +865,13 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_WEAPON:
 							case OP_TECH_ADD_INTEL:
 							case OP_TECH_RESET_TO_DEFAULT:
-								j = Num_op_menus;  // don't allow these operators in final release
-						}
 #endif*/
+							// unlike the above operators, this one is deprecated 
+							case OP_HITS_LEFT_SUBSYSTEM:
+								j = Num_op_menus;	// don't allow these operators to be visible
+								break;
+						}
+
 						if (j < Num_op_menus) {
 							add_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
 							replace_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
@@ -885,9 +890,31 @@ void sexp_tree::right_clicked(int mode)
 				{
 					if (op_submenu[j].id == subcategory_id)
 					{
-						add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
-						replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
-						insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text);
+						switch (Operators[i].value) {
+// Commented out by Goober5000 to allow these operators to be selectable
+/*#ifdef NDEBUG
+							// various campaign operators
+							case OP_WAS_PROMOTION_GRANTED:
+							case OP_WAS_MEDAL_GRANTED:
+							case OP_GRANT_PROMOTION:
+							case OP_GRANT_MEDAL:
+							case OP_TECH_ADD_SHIP:
+							case OP_TECH_ADD_WEAPON:
+							case OP_TECH_ADD_INTEL:
+							case OP_TECH_RESET_TO_DEFAULT:
+#endif*/
+							// unlike the above operators, this one is deprecated 
+							case OP_HITS_LEFT_SUBSYSTEM:
+								j = Num_submenus;	// don't allow these operators to be visible
+								break;
+						}
+
+						if (j < Num_submenus) {
+							add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
+							replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
+							insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text);
+						}
+
 						break;	// only 1 subcategory valid
 					}
 				}
@@ -2468,6 +2495,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<name of subsystem>";
 			break;
 
+		case OPF_SUBSYSTEM_TYPE:
+			str = Subsystem_types[SUBSYSTEM_NONE];
+			break;
+
 		case OPF_POINT:
 			str = "<waypoint>";
 			break;
@@ -2562,6 +2593,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SUBSYSTEM:		
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_SUBSYSTEM_TYPE:
 		case OPF_DOCKER_POINT:
 		case OPF_DOCKEE_POINT:
 		case OPF_AI_GOAL:
@@ -4046,6 +4078,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_subsystem(parent_node, arg_index);
 			break;
 
+		case OPF_SUBSYSTEM_TYPE:
+			list = get_listing_opf_subsystem_type(parent_node);
+			break;
+
 		case OPF_POINT:
 			list = get_listing_opf_point();
 			break;
@@ -4725,6 +4761,52 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if(special_subsys == OPS_STRENGTH){
 		head.add_data(SEXP_HULL_STRING);
 		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
+{
+	int i, child, shipnum, num_added = 0;
+	sexp_list_item head;
+	ship_subsys *subsys;
+
+	// first child node
+	child = tree_nodes[parent_node].child;
+	Assert(child >= 0);
+
+	// now find the ship
+	shipnum = ship_name_lookup(tree_nodes[child].text, 1);
+	if (shipnum < 0) {
+		return head.next;
+	}
+
+	// add all relevant subsystem types
+	for (i = 0; i < SUBSYSTEM_MAX; i++) {
+		// don't allow these two
+		if (i == SUBSYSTEM_NONE || i == SUBSYSTEM_UNKNOWN)
+			continue;
+
+		// loop through all ship subsystems
+		subsys = GET_FIRST(&Ships[shipnum].subsys_list);
+		while (subsys != END_OF_LIST(&Ships[shipnum].subsys_list)) {
+			// check if this subsystem is of this type
+			if (i == ai_get_subsystem_type( subsys->system_info->subobj_name )) {
+				// subsystem type is applicable, so add it
+				head.add_data(Subsystem_types[i]);
+				num_added++;
+				break;
+			}
+
+			// next subsystem
+			subsys = GET_NEXT(subsys);
+		}
+	}
+
+	// if no subsystem types, go ahead and add NONE (even though it won't be checked)
+	if (num_added == 0) {
+		head.add_data(Subsystem_types[SUBSYSTEM_NONE]);
 	}
 
 	return head.next;

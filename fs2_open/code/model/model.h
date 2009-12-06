@@ -60,8 +60,10 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_GAS_COLLECT		9
 #define SUBSYSTEM_ACTIVATION		10
 #define SUBSYSTEM_UNKNOWN			11
-
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
+
+// Goober5000
+extern char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
