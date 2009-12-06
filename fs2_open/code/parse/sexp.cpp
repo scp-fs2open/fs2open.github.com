@@ -10198,64 +10198,63 @@ void multi_sexp_deal_with_ship_flag()
 	multi_get_int(p_object_flag2); 
 	multi_get_bool(set_it);
  
-	// if any of the above failed so will this one
-	if (!multi_get_bool(ship_arrived)) {
-		Int3(); 
-		return;
-	}
+	// if any of the above failed so will this loop
+	while (multi_get_bool(ship_arrived)) 
+	{
 
-	if (ship_arrived) {
-		multi_get_ship(shipp); 
-		if (shipp != NULL) {
-			if (set_it) {
-				Objects[shipp->objnum].flags |= object_flag;
-				// Objects[shipp->objnum].flags2 |= object_flag2;
-				shipp->flags |= ship_flag;
-				shipp->flags2 |= ship_flag2;
-			}
-			else {
-				Objects[shipp->objnum].flags &= ~object_flag;
-				// Objects[shipp->objnum].flags2 &= ~object_flag2;
-				shipp->flags &= ~ship_flag;
-				shipp->flags2 &= ~ship_flag2;
-			}
-		}
-
-		// deal with side effects of these flags
-		if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
-			if (set_it) {
-				Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
-			}
-		}
-
-		if (ship_flag2 == SF2_STEALTH && !set_it) {
-			if (shipp->flags & SF_ESCORT) {
-				hud_add_ship_to_escort(shipp->objnum, 1);
-			}			
-		}
-		if ((ship_flag2 == SF2_FRIENDLY_STEALTH_INVIS) || (ship_flag == SF_HIDDEN_FROM_SENSORS)) {
-			if (set_it) {
-				if (Player_ai->target_objnum == shipp->objnum) {
-					hud_cease_targeting(); 
+		if (ship_arrived) {
+			multi_get_ship(shipp); 
+			if (shipp != NULL) {
+				if (set_it) {
+					Objects[shipp->objnum].flags |= object_flag;
+					// Objects[shipp->objnum].flags2 |= object_flag2;
+					shipp->flags |= ship_flag;
+					shipp->flags2 |= ship_flag2;
+				}
+				else {
+					Objects[shipp->objnum].flags &= ~object_flag;
+					// Objects[shipp->objnum].flags2 &= ~object_flag2;
+					shipp->flags &= ~ship_flag;
+					shipp->flags2 &= ~ship_flag2;
 				}
 			}
-			else {
+
+			// deal with side effects of these flags
+			if (ship_flag2 == SF2_AFTERBURNER_LOCKED) {
+				if (set_it) {
+					Objects[shipp->objnum].phys_info.flags &= ~PF_AFTERBURNER_ON;
+				}
+			}
+
+			if (ship_flag2 == SF2_STEALTH && !set_it) {
 				if (shipp->flags & SF_ESCORT) {
-				hud_add_ship_to_escort(shipp->objnum, 1);
-				}		
+					hud_add_ship_to_escort(shipp->objnum, 1);
+				}			
+			}
+			if ((ship_flag2 == SF2_FRIENDLY_STEALTH_INVIS) || (ship_flag == SF_HIDDEN_FROM_SENSORS)) {
+				if (set_it) {
+					if (Player_ai->target_objnum == shipp->objnum) {
+						hud_cease_targeting(); 
+					}
+				}
+				else {
+					if (shipp->flags & SF_ESCORT) {
+					hud_add_ship_to_escort(shipp->objnum, 1);
+					}		
+				}
 			}
 		}
-	}
-	else {
-		multi_get_parse_object(pobjp); 
-		if (pobjp != NULL) {
-			if (set_it) {
-				pobjp->flags |= p_object_flag;
-				pobjp->flags2 |= p_object_flag2;
-			}
-			else {
-				pobjp->flags &= ~p_object_flag;
-				pobjp->flags2 &= ~p_object_flag2;
+		else {
+			multi_get_parse_object(pobjp); 
+			if (pobjp != NULL) {
+				if (set_it) {
+					pobjp->flags |= p_object_flag;
+					pobjp->flags2 |= p_object_flag2;
+				}
+				else {
+					pobjp->flags &= ~p_object_flag;
+					pobjp->flags2 &= ~p_object_flag2;
+				}
 			}
 		}
 	}
