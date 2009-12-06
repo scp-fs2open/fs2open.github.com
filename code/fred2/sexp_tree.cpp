@@ -4792,7 +4792,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
 		subsys = GET_FIRST(&Ships[shipnum].subsys_list);
 		while (subsys != END_OF_LIST(&Ships[shipnum].subsys_list)) {
 			// check if this subsystem is of this type
-			if (i == ai_get_subsystem_type( subsys->system_info->subobj_name )) {
+			if (i == subsys->system_info->type) {
 				// subsystem type is applicable, so add it
 				head.add_data(Subsystem_types[i]);
 				num_added++;

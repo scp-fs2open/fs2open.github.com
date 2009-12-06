@@ -14720,22 +14720,20 @@ int ship_get_turret_type(ship_subsys *subsys)
 
 ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 {
-	ship_subsys *lookup;
-
 	// sanity checks
-	if((shipp == NULL) || (subsys_name == NULL)){
+	if ((shipp == NULL) || (subsys_name == NULL)) {
 		return NULL;
 	}
 
-	lookup = GET_FIRST(&shipp->subsys_list);
-	while(lookup != END_OF_LIST(&shipp->subsys_list)){
-		// turret
-		if(!subsystem_stricmp(lookup->system_info->subobj_name, subsys_name)){
-			return lookup;
+	ship_subsys *ss = GET_FIRST(&shipp->subsys_list);
+	while (ss != END_OF_LIST(&shipp->subsys_list)) {
+		// check subsystem name
+		if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
+			return ss;
 		}
 
 		// next
-		lookup = GET_NEXT(lookup);
+		ss = GET_NEXT(ss);
 	}
 
 	// didn't find it

@@ -454,9 +454,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_NAVIGATION;
 	} else if ( strstr(lcdname, "communication") )  {
 		subsystemp->type = SUBSYSTEM_COMMUNICATION;
-	} else if ( strstr(lcdname, "weapons") ) {
+	} else if ( strstr(lcdname, "weapon") ) {
 		subsystemp->type = SUBSYSTEM_WEAPONS;
-	} else if ( strstr(lcdname, "sensors") ) {
+	} else if ( strstr(lcdname, "sensor") ) {
 		subsystemp->type = SUBSYSTEM_SENSORS;
 	} else if ( strstr(lcdname, "solar") ) {
 		subsystemp->type = SUBSYSTEM_SOLAR;
