@@ -691,7 +691,7 @@ bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
 
 //Karajorma
-bool is_generic_subsys(char *subsy_name);
+int get_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
 void multi_sexp_modify_variable();
 
@@ -5104,7 +5104,12 @@ int sexp_hits_left_subsystem(int n)
 	}
 
 	subsys_name = CTEXT(CDR(n));
-	type = ai_get_subsystem_type( subsys_name );
+	ship_subsys *ss = ship_get_subsys(&Ships[shipnum], subsys_name);
+	if (ss != NULL)
+		type = ss->system_info->type;
+	else
+		type = SUBSYSTEM_NONE;
+
 	if ( (type >= 0) && (type < SUBSYSTEM_MAX) ) {
 		// check for the optional argument
 		n = CDDR(n); 
@@ -5115,18 +5120,11 @@ int sexp_hits_left_subsystem(int n)
 		// if the third option is present or if this is an unknown subsystem type we only want to find the percentage of the 
 		// named subsystem
 		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
-			// find the ship subsystem by searching ship's subsys_list
-			ship_subsys *ss;
-			ss = GET_FIRST( &Ships[shipnum].subsys_list );
-			while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) ) {
-
-				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
-					percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
-					return percent;
-				}
-
-				ss = GET_NEXT( ss );
+			if (ss != NULL) {
+				percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
+				return percent;
 			}
+
 			// we reached end of ship subsys list without finding subsys_name
 			if (ship_class_unchanged(shipnum)) {
 				Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
@@ -5207,15 +5205,11 @@ int sexp_hits_left_subsystem_specific(int node)
 		return SEXP_NAN;
 	}
 
-	// loop through all subsystems
-	ss = GET_FIRST( &Ships[ship_num].subsys_list );
-	while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) ) {
-		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name) ) {
-			// return as a percentage the hits remaining on this subsystem only
-			return fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
-		}
-
-		ss = GET_NEXT( ss );
+	// find subsystem
+	ss = ship_get_subsys(&Ships[ship_num], subsys_name);
+	if (ss != NULL) {
+		// return as a percentage the hits remaining on this subsystem only
+		return fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
 	}
 
 	// we reached end of ship subsys list without finding subsys_name
@@ -5413,27 +5407,20 @@ bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *su
 	Assert(subsys_name);
 	Assert(subsys_world_pos);
 
-	ship_subsys *ss;
-
 	if(shipnum < 0)
 	{
 		Error(LOCATION, "Error - nonexistent ship.\n");
 	}
 
-	// find the ship subsystem by searching ship's subsys_list
-	ss = GET_FIRST( &Ships[shipnum].subsys_list );
-	while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
+	// find the ship subsystem
+	ship_subsys *ss = ship_get_subsys(&Ships[shipnum], subsys_name);
+	if (ss != NULL)
 	{
-		// if we found the subsystem
-		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
-		{
-			// find world position of subsystem on this object (the ship)
-			get_subsystem_world_pos(&Objects[Ships[shipnum].objnum], ss, subsys_world_pos);
-			return true;
-		}
-
-		ss = GET_NEXT( ss );
+		// find world position of subsystem on this object (the ship)
+		get_subsystem_world_pos(&Objects[Ships[shipnum].objnum], ss, subsys_world_pos);
+		return true;
 	}
+
 	// we reached end of ship subsys list without finding subsys_name 
 	if (ship_class_unchanged(shipnum)) {
 		// this ship should have had the subsystem named as it shouldn't have changed class
@@ -6662,28 +6649,16 @@ int sexp_is_cargo_known( int n, int check_delay )
 
 void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix *time_revealed)
 {
-	int subsys_set = 0;
-	ship_subsys *ss;
-
-	// find the ship subsystem by searching ship's subsys_list
-	ss = GET_FIRST( &Ships[shipnum].subsys_list );
-	while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
+	// find the ship subsystem
+	ship_subsys *ss = ship_get_subsys(&Ships[shipnum], subsys_name);
+	if (ss != NULL)
 	{
-		// if we found the subsystem
-		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
-		{
-			// set the flags
-			*known = (ss->flags & SSF_CARGO_REVEALED);
-			*time_revealed = ss->time_subsys_cargo_revealed;
-
-			subsys_set = 1;
-		}
-
-		ss = GET_NEXT( ss );
+		// set the flags
+		*known = (ss->flags & SSF_CARGO_REVEALED);
+		*time_revealed = ss->time_subsys_cargo_revealed;
 	}
-
 	// if we didn't find the subsystem, the ship hasn't arrived yet
-	if (!subsys_set)
+	else
 	{
 		*known = -1;
 		*time_revealed = 0;
@@ -6805,7 +6780,7 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 void sexp_set_scanned_unscanned(int n, int flag)
 {
 	char *ship_name, *subsys_name;
-	int shipnum, subsys_set;
+	int shipnum;
 	ship_subsys *ss;
 
 	// get ship name
@@ -6844,29 +6819,20 @@ void sexp_set_scanned_unscanned(int n, int flag)
 	while (n != -1)
 	{
 		subsys_name = CTEXT(n);
-		subsys_set = 0;
 
-		// find the ship subsystem by searching ship's subsys_list
-		ss = GET_FIRST( &Ships[shipnum].subsys_list );
-		while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
+		// find the ship subsystem
+		ss = ship_get_subsys(&Ships[shipnum], subsys_name);
+		if (ss != NULL)
 		{
-			// if we found the subsystem
-			if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
-			{
-				// do it for the subsystem
-				if (flag)
-					ship_do_cap_subsys_cargo_revealed(&Ships[shipnum], ss);
-				else
-					ship_do_cap_subsys_cargo_hidden(&Ships[shipnum], ss);
-
-				subsys_set = 1;
-			}
-
-			ss = GET_NEXT( ss );
+			// do it for the subsystem
+			if (flag)
+				ship_do_cap_subsys_cargo_revealed(&Ships[shipnum], ss);
+			else
+				ship_do_cap_subsys_cargo_hidden(&Ships[shipnum], ss);
 		}
 
 		// if we didn't find the subsystem -- bad
-		if (!subsys_set && ship_class_unchanged(shipnum)) {
+		if (ss == NULL && ship_class_unchanged(shipnum)) {
 			Error(LOCATION, "Couldn't find subsystem '%s' on ship '%s' in sexp_set_scanned_unscanned", subsys_name, ship_name);
 		}
 
@@ -7886,7 +7852,7 @@ int sexp_is_ship_type(int n)
 int sexp_is_ai_class(int n)
 {
 	char *ship_name, *subsystem;
-	int i, ship_num, ai_class, class_to_test;
+	int i, ship_num, ai_class;
 
 	Assert ( n >= 0 );
 
@@ -7920,25 +7886,16 @@ int sexp_is_ai_class(int n)
 		for ( ; n != -1; n = CDR(n) )
 		{
 			subsystem = CTEXT(n);
-			class_to_test = -1;
 
-			// find the ship subsystem by searching ship's subsys_list
-			ss = GET_FIRST( &Ships[ship_num].subsys_list );
-			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+			// find the ship subsystem
+			// if it doesn't match, or subsys isn't found, return false immediately
+			ss = ship_get_subsys(&Ships[ship_num], subsystem);
+			if (ss != NULL)
 			{
-				// if we found the subsystem
-				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
-				{
-					// get ai class
-					class_to_test = ss->weapons.ai_class;
-					break;
-				}
-
-				ss = GET_NEXT( ss );
+				if (ss->weapons.ai_class != ai_class)
+					return SEXP_FALSE;
 			}
-
-			// if no match (or nothing to match), return false immediately
-			if ((class_to_test < 0) || (ai_class != class_to_test))
+			else
 				return SEXP_FALSE;
 		}
 
@@ -8957,11 +8914,11 @@ void sexp_end_campaign(int n)
 void sexp_sabotage_subsystem(int n)
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index, subsys_type;
+	int	percentage, shipnum, index, generic_type;
 	float sabotage_hits;
 	ship	*shipp;
 	ship_subsys *ss = NULL, *ss_start;
-	bool is_generic, do_loop = true;
+	bool do_loop = true;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
@@ -9003,17 +8960,16 @@ void sexp_sabotage_subsystem(int n)
 		return;
 	}
 
-	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	is_generic = is_generic_subsys(subsystem);
-	subsys_type = ai_get_subsystem_type(subsystem);
+	// now find the given subsystem on the ship.  This could be a generic type like <All Engines>
+	generic_type = get_generic_subsys(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (is_generic) {
+		if (generic_type) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
-				if (subsys_type == ss_start->system_info->type) {
+				if (generic_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -9060,11 +9016,11 @@ void sexp_sabotage_subsystem(int n)
 void sexp_repair_subsystem(int n)
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
+	int	percentage, shipnum, index, do_submodel_repair, generic_type;
 	float repair_hits;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
-	bool generic, do_loop = true;
+	bool do_loop = true;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
@@ -9110,16 +9066,15 @@ void sexp_repair_subsystem(int n)
 	}
 
 	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic = is_generic_subsys(subsystem);
-	subsys_type = ai_get_subsystem_type(subsystem);
+	generic_type = get_generic_subsys(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (generic) {
+		if (generic_type) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
-				if (subsys_type == ss_start->system_info->type) {
+				if (generic_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -9166,10 +9121,9 @@ void sexp_repair_subsystem(int n)
 void sexp_set_subsystem_strength(int n)
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index, do_submodel_repair, subsys_type;
+	int	percentage, shipnum, index, do_submodel_repair, generic_type;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
-	bool generic_subsys; 
 	bool do_loop = true;
 
 	shipname = CTEXT(n);
@@ -9224,16 +9178,15 @@ void sexp_set_subsystem_strength(int n)
 	}
 
 	// now find the given subsystem on the ship.This could be a generic type like <All Engines>
-	generic_subsys = is_generic_subsys(subsystem);
-	subsys_type = ai_get_subsystem_type(subsystem);
+	generic_type = get_generic_subsys(subsystem);
 	ss_start = GET_FIRST(&shipp->subsys_list); 
 
 	while (do_loop) {
-		if (generic_subsys) {
+		if (generic_type) {
 			// loop until we find a subsystem of that type
 			for ( ; ss_start != END_OF_LIST(&Ships[shipnum].subsys_list); ss_start = GET_NEXT(ss_start)) {
 				ss = NULL;
-				if (subsys_type == ss_start->system_info->type) {
+				if (generic_type == ss_start->system_info->type) {
 					ss = ss_start;
 					ss_start = GET_NEXT(ss_start);
 					break;
@@ -9323,21 +9276,12 @@ int sexp_is_cargo(int n)
 	{
 		if (subsystem)
 		{
-			ship_subsys *ss;
-
-			// find the ship subsystem by searching ship's subsys_list
-			ss = GET_FIRST( &Ships[ship_num].subsys_list );
-			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+			// find the ship subsystem
+			ship_subsys *ss = ship_get_subsys(&Ships[ship_num], subsystem);
+			if (ss != NULL)
 			{
-				// if we found the subsystem
-				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
-				{
-					// set cargo
-					cargo_index = ss->subsys_cargo_name;
-					break;
-				}
-
-				ss = GET_NEXT( ss );
+				// set cargo
+				cargo_index = ss->subsys_cargo_name;
 			}
 		}
 		else
@@ -11040,10 +10984,10 @@ void sexp_ship_subsys_untargetable(int n, int untargetable)
 		subsys = CTEXT(n);
 
 		// deal with generic subsystem names
-		if (is_generic_subsys(subsys)) { 
-			int subsys_type = ai_get_subsystem_type(subsys);
+		int generic_type = get_generic_subsys(subsys);
+		if (generic_type) {
 			for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
-				if (subsys_type == ss->system_info->type) {
+				if (generic_type == ss->system_info->type) {
 					if (untargetable)
 						ss->flags |= SSF_UNTARGETABLE;
 					else
@@ -11208,14 +11152,14 @@ void sexp_ship_subsys_guardian_threshold(int num)
 		hull_name = CTEXT(n);
 
 		if (hull_name != NULL) {
+			int generic_type = get_generic_subsys(hull_name);
 			if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
 				Ships[ship_num].ship_guardian_threshold = threshold;
 			}
-			else if (is_generic_subsys(hull_name)) {
-				subsys_type = ai_get_subsystem_type(hull_name);
+			else if (generic_type) {
 				// search through all subsystems
 				for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
-					if (subsys_type == ss->system_info->type) {
+					if (generic_type == ss->system_info->type) {
 						ss->subsys_guardian_threshold = threshold;
 					}
 				}
@@ -11412,9 +11356,8 @@ void sexp_weapon_create(int n)
 	if (n >= 0)
 	{
 		if (target_objnum >= 0)
-		{
 			targeted_ss = ship_get_subsys(&Ships[Objects[target_objnum].instance], CTEXT(n));
-		}
+
 		n = CDR(n);
 	}
 
@@ -13681,7 +13624,8 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 			continue;
 
 		// set rotate or not, depending on flag
-		if (locked) {
+		if (locked)
+		{
 			rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
 			if (rotate->subsys_snd_flags & SSSF_ROTATE)
 			{
@@ -13689,9 +13633,11 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 				rotate->subsys_snd_flags &= ~SSSF_ROTATE;
 			}
 		}
-		else {
+		else
+		{
 			rotate->system_info->flags |= MSS_FLAG_ROTATES;
-			if (rotate->system_info->rotation_snd != -1) {
+			if (rotate->system_info->rotation_snd >= 0)
+			{
 				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
 				rotate->subsys_snd_flags |= SSSF_ROTATE;
 			}
@@ -16079,14 +16025,17 @@ int sexp_script_eval(int node, int return_type)
 	return r;
 }
 
-//Karajorma - Returns true if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
-bool is_generic_subsys(char *subsys_name) 
+//Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
+int get_generic_subsys(char *subsys_name) 
 {
-	if (!strcmp(subsys_name, SEXP_ALL_ENGINES_STRING) || !strcmp(subsys_name, SEXP_ALL_TURRETS_STRING)) {
-		return true;
+	if (!strcmp(subsys_name, SEXP_ALL_ENGINES_STRING)) {
+		return SUBSYSTEM_ENGINE;
+	} else if (!strcmp(subsys_name, SEXP_ALL_TURRETS_STRING)) {
+		return SUBSYSTEM_TURRET;
 	}
 
-	return false;
+	Assert(SUBSYSTEM_NONE == 0);
+	return SUBSYSTEM_NONE;
 }
 
 // Karajorma - returns false if the ship class has changed since the mission was parsed in
