@@ -1815,9 +1815,12 @@ void shipfx_emit_spark( int n, int sn )
         
         if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
         {
-            // if in front of warp plane, don't create.
-            create_spark = 0;
-        }
+			if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
+				create_spark = 0;
+		} else {
+			if (shipp->flags & SF_DEPART_WARP)
+				create_spark = 0;
+		}
 	}
 
 	if ( create_spark )	{
