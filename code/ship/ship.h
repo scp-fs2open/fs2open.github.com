@@ -1676,4 +1676,6 @@ int armor_type_get_idx(char* name);
 
 void armor_init();
 
+int thruster_glow_anim_load(generic_anim *ga);
+
 #endif
