@@ -473,7 +473,7 @@ int weapon_info_lookup(char *name)
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp)
+void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 {
 	//Make sure we HAVE flags :p
 	if(!optional_string("$Flags:"))
@@ -486,8 +486,8 @@ void parse_wi_flags(weapon_info *weaponp)
 
 	if (optional_string("+override")) {
 		// reseting the flag values if set to override the existing flags
-		weaponp->wi_flags = WIF_DEFAULT_VALUE;
-		weaponp->wi_flags2 = WIF2_DEFAULT_VALUE;
+		weaponp->wi_flags = wi_flags;
+		weaponp->wi_flags2 = wi_flags2;
 	}
 	
 	for (int i=0; i<num_strings; i++) {
@@ -999,6 +999,8 @@ int parse_weapon(int subtype, bool replace)
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found  = true;
+	int wi_flags = WIF_DEFAULT_VALUE;
+	int wi_flags2 = WIF2_DEFAULT_VALUE;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -1359,6 +1361,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
+				wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
 			{
@@ -1370,6 +1373,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+				wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("JAVELIN")))
 			{
@@ -1381,6 +1385,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
+				wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
 			}
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
@@ -1415,8 +1420,10 @@ int parse_weapon(int subtype, bool replace)
 				stuff_float(&wip->target_lead_scaler);
 				if (wip->target_lead_scaler == 0.0f)
 					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
-				else
+				else {
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+				}
 			}
 		}
 		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
@@ -1463,8 +1470,10 @@ int parse_weapon(int subtype, bool replace)
 				stuff_float(&wip->target_lead_scaler);
 				if (wip->target_lead_scaler == 1.0f)
 					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
-				else
+				else {
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+				}
 			}
 		}
 		else
@@ -1485,6 +1494,7 @@ int parse_weapon(int subtype, bool replace)
 
 		// flag as being a swarm weapon
 		wip->wi_flags |= WIF_SWARM;
+		wi_flags |= WIF_SWARM;
 	}
 
 	// *Swarm wait token    -Et1
@@ -1573,7 +1583,7 @@ int parse_weapon(int subtype, bool replace)
 
 	}
 
-	parse_wi_flags(wip);
+	parse_wi_flags(wip, wi_flags, wi_flags2);
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
