@@ -3904,6 +3904,8 @@ void game_render_frame( camid cid )
 	gr_zbuffer_clear(TRUE);
 	clip_frame_view();
 
+	neb2_set_frame_backg();
+
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
