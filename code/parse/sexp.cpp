@@ -1769,9 +1769,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 
-				break;
+				return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
 			}
-			return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
 
 			case OPF_SUBSYSTEM_TYPE:
 				for (i = 0; i < SUBSYSTEM_MAX; i++)
@@ -11122,7 +11121,7 @@ void sexp_ship_guardian_threshold(int node)
 void sexp_ship_subsys_guardian_threshold(int num)
 {
 	char *ship_name, *hull_name;
-	int ship_num, threshold, subsys_type = SUBSYSTEM_UNKNOWN;;
+	int ship_num, threshold;
 	ship_subsys *ss;
 	int n = -1;
 
