@@ -325,6 +325,7 @@ sexp_oper Operators[] = {
 	{ "set-weapon-energy",			OP_SET_WEAPON_ENERGY,			2, INT_MAX },		// Karajorma
 	{ "set-shield-energy",			OP_SET_SHIELD_ENERGY,			2, INT_MAX },		// Karajorma
 	{ "set-ambient-light",			OP_SET_AMBIENT_LIGHT,			3, 3 },				// Karajorma
+	{ "set-post-effect",			OP_SET_POST_EFFECT,				2, 2 },				// Hery
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -2516,6 +2517,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_NEBULA_POOF:
+				break;
+
+			case OPF_POST_EFFECT:
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
 				break;
 
 			default:
@@ -12962,6 +12970,18 @@ void multi_sexp_set_ambient_light()
 	}
 }
 
+void sexp_set_post_effect(int node) {
+	Assert(node > -1);
+
+	SCP_string effect = CTEXT(node);
+	node = CDR(node);
+	int amount = eval_num(node);
+	if (amount < 0 || amount > 100)
+		amount = 0;
+
+	gr_set_post_effect(effect, amount);
+}
+
 // taylor - load and set a skybox model
 void sexp_set_skybox_model(int n)
 {
@@ -17513,6 +17533,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_POST_EFFECT:
+				sexp_set_post_effect(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_PRIMARY_FIRED_SINCE:
 			case OP_SECONDARY_FIRED_SINCE:
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
@@ -18456,6 +18481,7 @@ int query_operator_return_type(int op)
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_SET_POST_EFFECT:
 		case OP_CHANGE_IFF_COLOR:
 		case OP_REMOVE_WEAPONS:
 			return OPR_NULL;
@@ -19648,10 +19674,15 @@ int query_operator_argument_type(int op, int argnum)
 			else {
 				return OPF_SHIP;
 			}
-			
+
 		case OP_SET_AMBIENT_LIGHT:
 			return OPF_POSITIVE;
-
+			
+		case OP_SET_POST_EFFECT:
+			if (argnum == 0)
+				return OPF_POST_EFFECT;
+			else
+				return OPF_POSITIVE;
 
 		case OP_CHANGE_SUBSYSTEM_NAME:
 			if (argnum == 0) {
@@ -21276,6 +21307,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_SET_POST_EFFECT:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_HUD_DISABLE:
@@ -23700,6 +23732,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Red (0 - 255).\r\n"
 		"\t2: Green (0 - 255).\r\n"
 		"\t3: Blue (0 - 255)."
+	},
+
+	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
+		"\tConfigures post-processing effect\r\n"
+		"\tTakes 2 arguments\r\n"
+		"\t1: Effect type\r\n"
+		"\t2: Effect intensity (0 - 100)."
 	},
 
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"

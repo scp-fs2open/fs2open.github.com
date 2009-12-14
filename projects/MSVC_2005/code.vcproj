@@ -1906,6 +1906,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\code\graphics\gropenglpostprocessing.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\code\graphics\gropenglshader.h"
 						>
 					</File>
@@ -2024,6 +2028,10 @@
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\gropenglpostprocessing.cpp"
+						>
 					</File>
 					<File
 						RelativePath="..\..\code\graphics\gropenglshader.cpp"

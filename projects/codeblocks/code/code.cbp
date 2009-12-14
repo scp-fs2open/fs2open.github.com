@@ -395,6 +395,12 @@
 		<Unit filename="../../../code/graphics/gropengllight.h">
 			<Option virtualFolder="graphics/OpenGL Headers/" />
 		</Unit>
+		<Unit filename="../../../code/graphics/gropenglpostprocessing.cpp">
+			<Option virtualFolder="graphics/OpenGL Sources/" />
+		</Unit>
+		<Unit filename="../../../code/graphics/gropenglpostprocessing.h">
+			<Option virtualFolder="graphics/OpenGL Headers/" />
+		</Unit>
 		<Unit filename="../../../code/graphics/gropenglshader.cpp">
 			<Option virtualFolder="graphics/OpenGL Sources/" />
 		</Unit>

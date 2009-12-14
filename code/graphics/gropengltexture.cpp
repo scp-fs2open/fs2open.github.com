@@ -27,6 +27,7 @@
 #include "ddsutils/ddsutils.h"
 #include "math/vecmat.h"
 
+/* Legacy code */
 
 static tcache_slot_opengl *Textures = NULL;
 static int *Tex_used_this_frame = NULL;
@@ -1860,3 +1861,141 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 //
 // End of GL_EXT_framebuffer_object stuff
 // -----------------------------------------------------------------------------
+
+/* New code */
+
+namespace opengl {
+	texture *texture::create(int w, int h) {
+		return create(w, h, fmt_color);
+	}
+
+	texture *texture::create(int w, int h, format fmt) {
+		Assert(w > 0 && h > 0);
+
+		texture *t = new texture;
+		t->width = w;
+		t->height = h;
+
+		glGenTextures(1, &t->tex);
+		Verify(t->tex);
+
+		glBindTexture(GL_TEXTURE_2D, t->tex);
+		switch (fmt) {
+			case (fmt_color) :
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, t->width, t->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+				break;
+			case (fmt_depth) :
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, t->width, t->height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+				break;
+			default:
+				mprintf(("Unknown texture format: 0x%x", fmt));
+				Int3();
+		}
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		vglGenerateMipmapEXT(GL_TEXTURE_2D);
+
+		return t;
+	}
+
+	texture::~texture() {
+		if (tex)
+			glDeleteTextures(1, &tex);
+	}
+
+	SCP_multimap <std::pair<int, int>, texture*> texture_pool::pool;
+
+	render_buffer::render_buffer(int w, int h) : width(w), height(h) {
+		Assert(w > 0 && h > 0);
+
+		vglGenRenderbuffersEXT(1, &rb);
+		Verify(rb);
+
+		vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rb);
+		vglRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, width, height);
+	}
+
+	SCP_multimap <std::pair<int, int>, render_buffer*> render_buffer::pool;
+
+	SCP_multimap <std::pair<int, int>, render_target*> render_target::pool;
+
+	render_target::render_target(int w, int h) : width(w), height(h), depth_t(NULL), depth_rb(NULL), use_rb(false) {
+		Assert(w > 0 && h > 0);
+
+		// Create frame buffer
+		vglGenFramebuffersEXT(1, &target);
+		Verify(target);
+
+		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, target);
+		current = this;
+
+		use_depth_rb();
+	}
+
+	render_target *render_target::current = NULL;
+
+	render_target::~render_target() {
+		if (target)
+			vglDeleteFramebuffersEXT(1, &target);
+	}
+
+	void render_target::apply() const {
+		if (current != this)
+			vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, target);
+
+		glViewport(0, 0, width, height);
+		current = const_cast<render_target*>(this);
+	}
+
+	void render_target::apply_default() {
+		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+		current = NULL;
+	}
+
+	void render_target::attach_texture(unsigned int slot, const texture *tex) {
+		Assert(current == this);
+
+		Assert(tex);
+		Assert(slot < 15);
+
+		tex->bind();
+		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT + slot, GL_TEXTURE_2D, tex->get_id(), 0);
+
+		Assert(check_status());
+	}
+
+	bool render_target::check_status() {
+		Assert(current == this);
+
+		GLenum status = vglCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+		if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
+			mprintf(("Could not initialize FBO (%dx%d): %d\n", width, height, status));
+			return false;
+		} else
+			return true;
+	}
+
+	void render_target::draw_texture() {
+		glDisable(GL_DEPTH_TEST);
+		glBegin(GL_QUADS);
+
+		glTexCoord2f(0, 0);
+		glVertex3f(-1, -1, 0);
+
+		glTexCoord2f(1, 0);
+		glVertex3f(1, -1, 0);
+
+		glTexCoord2f(1, 1);
+		glVertex3f(1, 1, 0);
+
+		glTexCoord2f(0, 1);
+		glVertex3f(-1, 1, 0);
+
+		glEnd();
+		glEnable(GL_DEPTH_TEST);
+	}
+}

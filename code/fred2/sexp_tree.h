@@ -255,6 +255,7 @@ public:
 	sexp_list_item *get_listing_opf_turret_target_order();
 	sexp_list_item *get_listing_opf_persona();
 	// ---------------------------------------------------------
+	sexp_list_item *get_listing_opf_post_effect();
 
 	int m_mode;
 	int item_index;
