@@ -1769,7 +1769,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 
-				return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
+				break;
 			}
 
 			case OPF_SUBSYSTEM_TYPE:
