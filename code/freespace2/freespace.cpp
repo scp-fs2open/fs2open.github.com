@@ -13,6 +13,7 @@
 #ifdef _WIN32
  #include <direct.h>
  #include <io.h>
+ #include <windows.h>
 #ifndef _MINGW
  #include <crtdbg.h>
 #endif // !_MINGW
@@ -46,6 +47,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "globalincs/mspdb_callstack.h"
 #include "graphics/font.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
@@ -1942,7 +1944,13 @@ void game_init()
 
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+		mprintf(("FreeSpace version: %i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR));
+	} else if (FS_VERSION_REVIS == 0) {
+		mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	} else {
+		mprintf(("FreeSpace version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
+	}
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -3197,7 +3205,11 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+					strcpy_s(view_target_name, "targeted ship");
+				} else {
+					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				}
 				break;
 			case OBJ_WEAPON:
 				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
@@ -3903,6 +3915,8 @@ void game_render_frame( camid cid )
 	gr_screen.gf_post_process_before();
 
 	clip_frame_view();
+
+	neb2_set_frame_backg();
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
@@ -7430,6 +7444,11 @@ int game_main(char *cmdline)
 	}
 #endif
 
+#ifdef _WIN32
+	if ( !Is_standalone )
+		disableWindowsKey( );
+#endif
+
 
 	init_cdrom();
 
@@ -7503,6 +7522,11 @@ int game_main(char *cmdline)
 
 	game_shutdown();
 
+#ifdef _WIN32
+	if ( !Is_standalone )
+		enableWindowsKey( );
+#endif
+
 	return 0;
 }
 
@@ -7535,8 +7559,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	DBUGFILE_INIT();
 
-	disableWindowsKey();
-
 	//=====================================================
 	// Make sure we're running in the right directory.
 	char exe_dir[1024];
@@ -7556,6 +7578,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		}
 	}
 
+	SCP_mspdbcs_Initialise( );
 
 #ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
@@ -7574,7 +7597,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 #endif // _MSC_VER
 #endif
 
-	enableWindowsKey();
+	SCP_mspdbcs_Cleanup( );
 
 	DBUGFILE_DEINIT();
 
@@ -8408,28 +8431,13 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	if ( FS_VERSION_BUILD == 0 ) {
-		sprintf(str,"FreeSpace 2 Open v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+		sprintf(str, "FreeSpace 2 Open v%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	} else if (FS_VERSION_REVIS == 0) {
+		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 	} else {
-		sprintf(str,"FreeSpace 2 Open v%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 	}
-
-	/*
-	// Goober5000 - although this is cool, it's a bit redundant
-
-	// append the CVS "release" version in the $Name variable, but
-	// only do this if it's been tagged
-	int rcs_name_len = strlen(RCS_Name);
-	if (rcs_name_len > 11)
-	{
-		char buffer[100];
-		strcpy_s(buffer, RCS_Name + 7);
-		buffer[rcs_name_len-9] = 0;
-
-		SAFE_strcat_s( str, " ", max_size );
-		SAFE_strcat_s( str, buffer, max_size );
-	}
-	*/
 
 #ifdef INF_BUILD
 	strcat_s( str, max_size, " Inferno" );

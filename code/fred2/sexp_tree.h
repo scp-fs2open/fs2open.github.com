@@ -199,6 +199,7 @@ public:
 	sexp_list_item *get_listing_opf_ship(int parent_node = -1);
 	sexp_list_item *get_listing_opf_wing();
 	sexp_list_item *get_listing_opf_subsystem(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_subsystem_type(int parent_node);
 	sexp_list_item *get_listing_opf_point();
 	sexp_list_item *get_listing_opf_iff();
 	sexp_list_item *get_listing_opf_ai_goal(int parent_node);

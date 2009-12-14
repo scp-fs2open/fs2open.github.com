@@ -83,6 +83,25 @@ void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem
 void model_set_bay_path_nums(polymodel *pm);
 
 
+// Goober5000 - see SUBSYSTEM_X in model.h
+// NOTE: Each subsystem must match up with its #define, or there will be problems
+char *Subsystem_types[SUBSYSTEM_MAX] =
+{
+	"None",
+	"Engines",
+	"Turrets",
+	"Radar",
+	"Navigation",
+	"Communications",
+	"Weapons",
+	"Sensors",
+	"Solar panels",
+	"Gas collection",
+	"Activation",
+	"Unknown"
+};
+
+
 //WMC - For general compatibility stuff.
 //Note that the order of the items in this list
 //determine the order that they are tried in ai_goal_fixup_dockpoints
@@ -435,9 +454,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_NAVIGATION;
 	} else if ( strstr(lcdname, "communication") )  {
 		subsystemp->type = SUBSYSTEM_COMMUNICATION;
-	} else if ( strstr(lcdname, "weapons") ) {
+	} else if ( strstr(lcdname, "weapon") ) {
 		subsystemp->type = SUBSYSTEM_WEAPONS;
-	} else if ( strstr(lcdname, "sensors") ) {
+	} else if ( strstr(lcdname, "sensor") ) {
 		subsystemp->type = SUBSYSTEM_SENSORS;
 	} else if ( strstr(lcdname, "solar") ) {
 		subsystemp->type = SUBSYSTEM_SOLAR;
@@ -1240,7 +1259,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
-
 				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
 					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
@@ -1268,6 +1286,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
 					}
+				}
+
+				// adding a warning if rotation is specified without movement axis.
+				if ((pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) && (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE)){
+					Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 				}
 
 /*				if ( strstr(props, "$nontargetable")!= NULL ) {
@@ -1397,6 +1420,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 
 						orient->vec.fvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
+
+						pm->submodel[n].force_turret_normal = true;
 
 						vm_vec_normalize(&orient->vec.uvec);
 						vm_vec_normalize(&orient->vec.fvec);
@@ -3116,8 +3141,16 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 	// get active rotation time this frame
 	int end_stamp = timestamp();
-	float rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
-	Assert(rotation_time >= 0);
+	// just to make sure this issue wont pop up again... might cause odd jerking in some extremely odd situations
+	// but given that those issues would require the timer to be reseted in any case it probably wont hurt
+	float rotation_time;
+	if ((end_stamp - sii->step_zero_timestamp) < 0) {
+		sii->step_zero_timestamp = end_stamp;
+		rotation_time = 0.0f;
+	} else {
+		rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
+	}
+	//Assert(rotation_time >= 0);
 
 	// save last angles
 	sii->prev_angs = sii->angs;
@@ -3359,6 +3392,9 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	offset_base_h = -PI_2;
 	offset_barrel_h = -PI_2;
 #endif
+
+	if (base->force_turret_normal == true)
+		turret->turret_norm = base->orientation.vec.uvec;
 
 	model_clear_instance(model_num);
 	base->angs.h = offset_base_h;

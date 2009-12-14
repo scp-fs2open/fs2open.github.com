@@ -60,8 +60,10 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_GAS_COLLECT		9
 #define SUBSYSTEM_ACTIVATION		10
 #define SUBSYSTEM_UNKNOWN			11
-
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
+
+// Goober5000
+extern char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
@@ -312,6 +314,7 @@ typedef struct bsp_info {
 	bool	no_collisions; // for $no_collisions property - kazan
 	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
 
 	float		dumb_turn_rate;
 
@@ -343,6 +346,7 @@ typedef struct bsp_info {
 		no_collisions = false;
 		nocollide_this_only = false;
 		collide_invisible = false;
+		force_turret_normal = false;
 		dumb_turn_rate = 0.f;
 		bsp_data = NULL;
 		rad = 0.f;
@@ -825,6 +829,9 @@ extern int modelstats_num_sortnorms;
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
+
+// Gets and sets turret rotation matrix
+extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.

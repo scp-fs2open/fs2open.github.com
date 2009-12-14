@@ -127,14 +127,14 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug\fs2_open_trunk_d.exe" /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT BASE LINK32 /pdb:none /incremental:no
-# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug_Inferno\fs2_open_trunk_d_INF.exe" /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug_Inferno\fs2_open_trunk_INF_d.exe" /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none /incremental:no
 # Begin Custom Build - Copying build...
-InputPath=.\Debug_Inferno\fs2_open_trunk_d_INF.exe
+InputPath=.\Debug_Inferno\fs2_open_trunk_INF_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_d_INF.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy /y $(InputPath) "$(FS2PATH)/fs2_open_trunk_d_INF.exe"
+"$(FS2PATH)/fs2_open_trunk_INF_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy /y $(InputPath) "$(FS2PATH)/fs2_open_trunk_INF_d.exe"
 
 # End Custom Build
 
@@ -164,14 +164,14 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fs2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT BASE LINK32 /pdb:none /debug
-# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release_Inferno/fs2_open_trunk_r_INF.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release_Inferno/fs2_open_trunk_INF_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /libpath:"../../speech/lib/i386" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none /debug
 # Begin Custom Build - Copying build...
-InputPath=.\Release_Inferno\fs2_open_trunk_r_INF.exe
+InputPath=.\Release_Inferno\fs2_open_trunk_INF_r.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_r_INF.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy /y $(InputPath) "$(FS2PATH)/fs2_open_trunk_r_INF.exe"
+"$(FS2PATH)/fs2_open_trunk_INF_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy /y $(InputPath) "$(FS2PATH)/fs2_open_trunk_INF_r.exe"
 
 # End Custom Build
 

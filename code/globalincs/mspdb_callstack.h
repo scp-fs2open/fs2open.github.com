@@ -12,8 +12,13 @@
  * SCP_IDumpHandler - implement this in order to receive symbols from DumpStack
  */
 
-#if !defined(_MSPDB_CALLSTACK_H_INCLUDED_) && defined(PDB_DEBUGGING)
+#ifndef _MSPDB_CALLSTACK_H_INCLUDED_
 #define _MSPDB_CALLSTACK_H_INCLUDED_
+
+#if defined(PDB_DEBUGGING)
+
+/* Must have windows.h */
+#include <windows.h>
 
 #ifndef PURE
 #	define PURE = 0
@@ -27,6 +32,7 @@
 class SCP_IDumpHandler abstract
 {
 public:
+	virtual bool ResolveSymbols( ) PURE;
 	virtual void OnBegin( ) PURE;
 	virtual void OnEntry( void* address, const char* module, const char* symbol ) PURE;
 	virtual void OnError( const char* error ) PURE;
@@ -60,5 +66,11 @@ extern BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_
 extern LPVOID __stdcall SCP_mspdbcs_FunctionTableAccess( HANDLE hProcess, DWORD64 dwPCAddress );
 extern DWORD64 __stdcall SCP_mspdbcs_GetModuleBase( HANDLE hProcess, DWORD64 returnAddress );
 extern DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv );
+
+#endif // PDB_DEBUGGING
+
+/* Initialisation */
+extern void SCP_mspdbcs_Initialise( );
+extern void SCP_mspdbcs_Cleanup( );
 
 #endif // _MSPDB_CALLSTACK_H_INCLUDED_

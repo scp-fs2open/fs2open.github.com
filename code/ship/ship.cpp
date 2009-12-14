@@ -2231,15 +2231,19 @@ strcpy_s(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 1:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 	
-		if ( VALID_FNAME(name_tmp) )
-			generic_anim_init( &sip->thruster_glow_info.normal, name_tmp );
+		if ( VALID_FNAME(name_tmp) ) {
+			strcpy_s(sip->thruster_glow_info.normal.filename, name_tmp);
+			thruster_glow_anim_load( &sip->thruster_glow_info.normal );
+		}
 	}
 
 	if ( optional_string("$Thruster Bitmap 1a:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( VALID_FNAME(name_tmp) )
-			generic_anim_init( &sip->thruster_glow_info.afterburn, name_tmp );
+		if ( VALID_FNAME(name_tmp) ) {
+			strcpy_s(sip->thruster_glow_info.afterburn.filename, name_tmp);
+			thruster_glow_anim_load( &sip->thruster_glow_info.afterburn );
+		}
 	}
 
 	if ( optional_string("$Thruster01 Radius factor:") ) {
@@ -6618,7 +6622,7 @@ int thruster_glow_anim_load(generic_anim *ga)
 	ga->first_frame = bm_load(ga->filename);
 	if (ga->first_frame < 0)
 	{
-		Warning(LOCATION, "Couldn't load thruster glow animation '%s'", ga->filename);
+		Warning(LOCATION, "Couldn't load thruster glow animation '%s'\nPrimary glow type effect does not accept .EFF or .ANI effects", ga->filename);
 		return -1;
 	}
 	ga->num_frames = NOISE_NUM_FRAMES;
@@ -14720,22 +14724,20 @@ int ship_get_turret_type(ship_subsys *subsys)
 
 ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 {
-	ship_subsys *lookup;
-
 	// sanity checks
-	if((shipp == NULL) || (subsys_name == NULL)){
+	if ((shipp == NULL) || (subsys_name == NULL)) {
 		return NULL;
 	}
 
-	lookup = GET_FIRST(&shipp->subsys_list);
-	while(lookup != END_OF_LIST(&shipp->subsys_list)){
-		// turret
-		if(!subsystem_stricmp(lookup->system_info->subobj_name, subsys_name)){
-			return lookup;
+	ship_subsys *ss = GET_FIRST(&shipp->subsys_list);
+	while (ss != END_OF_LIST(&shipp->subsys_list)) {
+		// check subsystem name
+		if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
+			return ss;
 		}
 
 		// next
-		lookup = GET_NEXT(lookup);
+		ss = GET_NEXT(ss);
 	}
 
 	// didn't find it

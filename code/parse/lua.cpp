@@ -6048,6 +6048,20 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 	return ade_set_args(L, "f", time_s);
 }
 
+ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "True if successful, otherwise false or nil")
+{
+	object_h *objh = NULL;
+	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+	if(!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	//The actual clearing of the goals
+	ai_clear_ship_goals( &Ai_info[Ships[objh->objp->instance].ai_index]);
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0]", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;

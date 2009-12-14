@@ -295,14 +295,15 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 				}
 			case CHC_VERSION:
 				{
+					// Goober5000: I'm going to assume scripting doesn't care about SVN revision
 					char buf[32];
-					sprintf(buf, "%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 					if(stricmp(buf, scp->data.name))
 					{
 						//In case some people are lazy and say "3.7" instead of "3.7.0" or something
 						if(FS_VERSION_BUILD == 0)
 						{
-							sprintf(buf, "%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+							sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 							if(stricmp(buf, scp->data.name))
 								return false;
 						}
@@ -842,10 +843,25 @@ int script_state::OutputMeta(char *filename)
 		return 0; 
 	}
 
-	fprintf(fp, "<html>\n<head>\n\t<title>Script output: %d.%d.%d (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-	fputs("<body>", fp);
-	fprintf(fp,"\t<h1>Script Output - Build %d.%d.%d (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-	
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0)
+	{
+		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
+	}
+	else if (FS_VERSION_REVIS == 0)
+	{
+		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
+	}
+	else
+	{
+		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
+	}
+		
 	//Scripting languages links
 	fputs("<dl>", fp);
 
