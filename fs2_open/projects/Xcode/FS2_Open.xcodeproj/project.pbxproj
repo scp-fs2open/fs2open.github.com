@@ -4946,6 +4946,7 @@
 					"-lSystemStubs",
 				);
 				PREBINDING = NO;
+				PRODUCT_NAME = FS2_Open;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};

@@ -727,6 +727,10 @@
 						RelativePath="..\..\code\graphics\gropengllight.h">
 					</File>
 					<File
+						RelativePath="..\..\code\graphics\gropenglpostprocessing.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\code\graphics\gropenglshader.h">
 					</File>
 					<File
@@ -756,6 +760,10 @@
 					</File>
 					<File
 						RelativePath="..\..\code\graphics\gropengllight.cpp">
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\gropenglpostprocessing.cpp"
+						>
 					</File>
 					<File
 						RelativePath="..\..\code\graphics\gropenglshader.cpp">

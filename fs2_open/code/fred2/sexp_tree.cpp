@@ -42,6 +42,7 @@
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
+#include "graphics/gropenglshader.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -2628,6 +2629,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_NEBULA_STORM_TYPE:
 		case OPF_NEBULA_POOF:
 		case OPF_TURRET_TARGET_ORDER:
+		case OPF_POST_EFFECT:
 			return 1;
 
 		case OPF_SHIP:
@@ -4302,6 +4304,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_persona();
 			break;
 
+		case OPF_POST_EFFECT:
+			list = get_listing_opf_post_effect();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5570,6 +5576,18 @@ sexp_list_item *sexp_tree::get_listing_opf_turret_target_order()
 
 	for (i=0; i<NUM_TURRET_ORDER_TYPES; i++)
 		head.add_data(Turret_target_order_names[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_post_effect()
+{
+	unsigned int i;
+	sexp_list_item head;
+
+	SCP_vector<opengl::post_effect> &ppe_names = opengl::post_shader::get_effects();
+	for (i=0; i < ppe_names.size(); i++)
+		head.add_data(const_cast<char*>(ppe_names[i].name.c_str()));
 
 	return head.next;
 }

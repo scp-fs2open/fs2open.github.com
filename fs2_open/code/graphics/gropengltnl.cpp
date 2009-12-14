@@ -377,7 +377,6 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	float u_scale, v_scale;
 	int render_pass = 0;
 	int shader_flags = 0;
-	int sdr_index = -1;
 	int r, g, b, a, tmap_type;
 
 	int end = ((n_prim * 3) - 1);
@@ -433,23 +432,13 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 		}
 	}
 
-	if (shader_flags == GL_last_shader_flags) {
-		sdr_index = GL_last_shader_index;
-	} else {
-		sdr_index = opengl_shader_get_index(shader_flags);
+	opengl::shader_manager::get()->apply_main_shader(shader_flags);
+	opengl::shader *sdr = opengl::shader_manager::get()->get_main_shader();
 
-		if (sdr_index < 0) {
-			opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
-			return;
-		}
-
-		GL_last_shader_flags = shader_flags;
-		GL_last_shader_index = sdr_index;
+	if (!sdr) {
+		opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
+		return;
 	}
-
-	Assert( sdr_index >= 0 );
-
-	opengl_shader_set_current( &GL_shader[sdr_index] );
 
 	render_pass = 0;
 
@@ -459,11 +448,11 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	opengl_init_arrays(vbp);
 
 	int n_lights = MIN(Num_active_gl_lights, GL_max_lights) - 1;
-	vglUniform1iARB( opengl_shader_get_uniform("n_lights"), n_lights );
+	sdr->set_uniform(opengl::main_shader::n_lights, n_lights);
 
 	// base texture
 	if (shader_flags & SDR_FLAG_DIFFUSE_MAP) {
-		vglUniform1iARB( opengl_shader_get_uniform("sBasemap"), render_pass );
+		sdr->set_uniform(opengl::main_shader::sBasemap, render_pass);
 
 		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 	
@@ -471,7 +460,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	}
 
 	if (shader_flags & SDR_FLAG_GLOW_MAP) {
-		vglUniform1iARB( opengl_shader_get_uniform("sGlowmap"), render_pass );
+		sdr->set_uniform(opengl::main_shader::sGlowmap, render_pass);
 
 		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -479,7 +468,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	}
 
 	if (shader_flags & SDR_FLAG_SPEC_MAP) {
-		vglUniform1iARB( opengl_shader_get_uniform("sSpecmap"), render_pass );
+		sdr->set_uniform(opengl::main_shader::sSpecmap, render_pass);
 
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -489,9 +478,9 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 			// 0 == env with non-alpha specmap, 1 == env with alpha specmap
 			int alpha_spec = bm_has_alpha_channel(SPECMAP);
 
-			vglUniform1iARB( opengl_shader_get_uniform("alpha_spec"), alpha_spec );
-			vglUniformMatrix4fvARB( opengl_shader_get_uniform("envMatrix"), 1, GL_FALSE, &GL_env_texture_matrix[0] );
-			vglUniform1iARB( opengl_shader_get_uniform("sEnvmap"), render_pass );
+			sdr->set_uniform(opengl::main_shader::alpha_spec, alpha_spec);
+			sdr->set_uniformMatrix4f(opengl::main_shader::envMatrix, &GL_env_texture_matrix[0]);
+			sdr->set_uniform(opengl::main_shader::sEnvmap, render_pass);
 	
 			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 	
@@ -502,14 +491,14 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	}
 
 	if (shader_flags & SDR_FLAG_NORMAL_MAP) {
-		vglUniform1iARB( opengl_shader_get_uniform("sNormalmap"), render_pass );
+		sdr->set_uniform(opengl::main_shader::sNormalmap, render_pass);
 
 		gr_opengl_tcache_set(NORMMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		render_pass++; // bump!
 
 		if (shader_flags & SDR_FLAG_HEIGHT_MAP) {
-			vglUniform1iARB( opengl_shader_get_uniform("sHeightmap"), render_pass );
+			sdr->set_uniform(opengl::main_shader::sHeightmap, render_pass);
 
 			gr_opengl_tcache_set(HEIGHTMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -541,7 +530,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 */
 
 	// make sure everthing gets turned back off
-	opengl_shader_set_current();
+	opengl::shader_manager::get()->apply_fixed_pipeline();
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 	GL_state.Texture.DisableAll();
 	vglClientActiveTextureARB(GL_TEXTURE1_ARB);

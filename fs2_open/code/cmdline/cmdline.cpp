@@ -117,6 +117,7 @@ Flag exe_params[] =
 	{ "-missile_lighting",	"Apply Lighting to Missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 	{ "-normal",			"Enable normal maps",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
+	{ "-post_process",		"Enable post processing",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -260,6 +261,8 @@ cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive
 cmdline_parm normal_arg("-normal", NULL);				// Cmdline_normal  -- enable normal mapping
 cmdline_parm height_arg("-height", NULL);			// Cmdline_height  -- enable support for parallax mapping
 cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL);
+cmdline_parm postprocess_arg("-post_process", NULL);
+cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -278,6 +281,8 @@ int Cmdline_no_emissive = 0;
 int Cmdline_normal = 0;
 int Cmdline_height = 0;
 int Cmdline_enable_3d_shockwave = 0;
+int Cmdline_postprocess = 0;
+int Cmdline_bloom_intensity = 75;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1381,6 +1386,16 @@ bool SetCmdlineParams()
 	if ( enable_3d_shockwave_arg.found() )
 	{
 		Cmdline_enable_3d_shockwave = 1;
+	}
+
+	if ( postprocess_arg.found() )
+	{
+		Cmdline_postprocess = 1;
+	}
+
+	if ( bloom_intensity_arg.found() )
+	{
+		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
 	}
 
 	return true; 
