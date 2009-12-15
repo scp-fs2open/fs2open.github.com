@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		25FB46190E2E537F0089DF93 /* gropenglshader.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB46180E2E537F0089DF93 /* gropenglshader.h */; };
 		25FB461D0E2E55370089DF93 /* gropenglstate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB461A0E2E55370089DF93 /* gropenglstate.cpp */; };
+		25FB461D0E2E55370089DF94 /* gropenglpostprocessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB461A0E2E55370089DF94 /* gropenglpostprocessing.cpp */; };
+		25FB461E0E2E55370089DF94 /* gropenglpostprocessing.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB461B0E2E55370089DF94 /* gropenglpostprocessing.h */; };
 		25FB461E0E2E55370089DF93 /* gropenglstate.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB461B0E2E55370089DF93 /* gropenglstate.h */; };
 		25FB461F0E2E55370089DF93 /* gropenglshader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB461C0E2E55370089DF93 /* gropenglshader.cpp */; };
 		25FB46220E2E55500089DF93 /* gropengldraw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB46200E2E55500089DF93 /* gropengldraw.cpp */; };
@@ -796,6 +798,8 @@
 		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		25FB46180E2E537F0089DF93 /* gropenglshader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gropenglshader.h; sourceTree = "<group>"; };
+		25FB461A0E2E55370089DF94 /* gropenglpostprocessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gropenglpostprocessing.cpp; sourceTree = "<group>"; };
+    25FB461B0E2E55370089DF94 /* gropenglpostprocessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gropenglpostprocessing.h; sourceTree = "<group>"; };
 		25FB461A0E2E55370089DF93 /* gropenglstate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gropenglstate.cpp; sourceTree = "<group>"; };
 		25FB461B0E2E55370089DF93 /* gropenglstate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gropenglstate.h; sourceTree = "<group>"; };
 		25FB461C0E2E55370089DF93 /* gropenglshader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gropenglshader.cpp; sourceTree = "<group>"; };
@@ -3009,6 +3013,8 @@
 			children = (
 				25FB46200E2E55500089DF93 /* gropengldraw.cpp */,
 				25FB46210E2E55500089DF93 /* gropengldraw.h */,
+				25FB461A0E2E55370089DF94 /* gropenglpostprocessing.cpp */,
+				25FB461B0E2E55370089DF94 /* gropenglpostprocessing.h */,
 				25FB461A0E2E55370089DF93 /* gropenglstate.cpp */,
 				25FB461B0E2E55370089DF93 /* gropenglstate.h */,
 				25FB461C0E2E55370089DF93 /* gropenglshader.cpp */,
@@ -3129,6 +3135,7 @@
 				3459587008C3D8CB003B1351 /* levelpaging.h in Headers */,
 				25FB46190E2E537F0089DF93 /* gropenglshader.h in Headers */,
 				25FB461E0E2E55370089DF93 /* gropenglstate.h in Headers */,
+				25FB461E0E2E55370089DF94 /* gropenglpostprocessing.h in Headers */,
 				25FB46230E2E55500089DF93 /* gropengldraw.h in Headers */,
 				9145804A0FD036ED00788595 /* multi_sexp.h in Headers */,
 				F0A86D651000AD6B006CB60B /* vmallocator.h in Headers */,
@@ -3644,6 +3651,7 @@
 				3459596B08C3D8CB003B1351 /* freespace.cpp in Sources */,
 				3459596C08C3D8CB003B1351 /* levelpaging.cpp in Sources */,
 				25FB461D0E2E55370089DF93 /* gropenglstate.cpp in Sources */,
+				25FB461D0E2E55370089DF94 /* gropenglpostprocessing.cpp in Sources */,
 				25FB461F0E2E55370089DF93 /* gropenglshader.cpp in Sources */,
 				25FB46220E2E55500089DF93 /* gropengldraw.cpp in Sources */,
 				914580490FD036ED00788595 /* multi_sexp.cpp in Sources */,
@@ -4946,7 +4954,7 @@
 					"-lSystemStubs",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = FS2_Open;
+				PRODUCT_NAME = "FS2_Open-Inferno";
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};
