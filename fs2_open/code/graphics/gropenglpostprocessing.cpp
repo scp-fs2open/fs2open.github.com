@@ -93,9 +93,9 @@ void bloom::set_uniforms(post_shader *sdr) {
 	// We need different settings in nebula missions. This hack will do this, until
 	// configuration manager is fully implemented.
 	if (Neb2_render_mode == NEB2_RENDER_NONE)
-		sdr->set_uniform(post_shader::bloom, intensity, min(config::get_integer(config::bloom_int), 200) / 100.0f);
+		sdr->set_uniform(post_shader::bloom, intensity, MIN(config::get_integer(config::bloom_int), 200) / 100.0f);
 	else
-		sdr->set_uniform(post_shader::bloom, intensity, min(config::get_integer(config::bloom_int), 200) / 3 / 100.0f);
+		sdr->set_uniform(post_shader::bloom, intensity, MIN(config::get_integer(config::bloom_int), 200) / 3 / 100.0f);
 }
 
 #ifdef DEPTH_OF_FIELD
