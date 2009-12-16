@@ -97,6 +97,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_HARD_TARGET_BOMB			(1 << 16)	// removes the radius doubling effect bombs have for collisions
 #define WIF2_NON_SUBSYS_HOMING			(1 << 17)	// spreads fired missiles around the target ships hull
 #define WIF2_NO_LIFE_LOST_IF_MISSED		(1 << 18)	// prevents game from shortening the lifeleft of the missed but still homing missiles
+#define WIF2_CUSTOM_SEEKER_STR			(1 << 19)	// sets the game to use custom seeker strengths instead of default values
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)

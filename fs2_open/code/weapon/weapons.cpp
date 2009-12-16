@@ -1407,12 +1407,19 @@ int parse_weapon(int subtype, bool replace)
 			if (optional_string("+Seeker Strength:"))
 			{
 				//heat default seeker strength is 3
-				wip->seeker_strength = 3;
 				stuff_float(&wip->seeker_strength);
+				wip->wi_flags2 |= WIF2_CUSTOM_SEEKER_STR;
 				if (wip->seeker_strength <= 0)
 				{
-					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					wip->seeker_strength = 3.0f;
+					wip->wi_flags2 &= ~WIF2_CUSTOM_SEEKER_STR;
 				}
+			}
+			else
+			{
+				if(!(wip->wi_flags2 & WIF2_CUSTOM_SEEKER_STR))
+					wip->seeker_strength = 3.0f;
 			}
 
 			if (optional_string("+Target Lead Scaler:"))
@@ -1458,12 +1465,19 @@ int parse_weapon(int subtype, bool replace)
 			if (optional_string("+Seeker Strength:"))
 			{
 				//aspect default seeker strength is 2
-				wip->seeker_strength = 2;
 				stuff_float(&wip->seeker_strength);
+				wip->wi_flags2 |= WIF2_CUSTOM_SEEKER_STR;
 				if (wip->seeker_strength <= 0)
 				{
-					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					wip->seeker_strength = 2.0f;
+					wip->wi_flags2 &= ~WIF2_CUSTOM_SEEKER_STR;
 				}
+			} 
+			else
+			{
+				if(!(wip->wi_flags2 & WIF2_CUSTOM_SEEKER_STR))
+					wip->seeker_strength = 2.0f;
 			}
 			if (optional_string("+Target Lead Scaler:"))
 			{
