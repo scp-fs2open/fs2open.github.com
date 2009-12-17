@@ -451,6 +451,8 @@ typedef struct weapon_info {
 	float			thruster_glow_factor;
 
 	float			target_lead_scaler;
+	int				targeting_priorities[32];
+	int				num_targeting_priorities;
 } weapon_info;
 
 // Data structure to track the active missiles

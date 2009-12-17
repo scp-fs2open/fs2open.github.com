@@ -684,6 +684,7 @@ struct ai_target_priority {
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
+void parse_weapon_targeting_priorities();
 ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful

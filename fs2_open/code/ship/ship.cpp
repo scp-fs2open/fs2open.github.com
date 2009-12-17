@@ -3314,6 +3314,14 @@ void parse_shiptype_tbl(char *filename)
 		required_string("#End");
 	}
 
+	if (optional_string("#Weapon Targeting Priorities"))
+	{
+		while (required_string_either("#End", "$Name:"))
+			parse_weapon_targeting_priorities();
+
+		required_string("#End");
+	}
+
 	if (optional_string("#Ship Types"))
 	{
 		while (required_string_either("#End", "$Name:"))
@@ -15881,4 +15889,53 @@ ai_target_priority init_ai_target_priorities()
 
 	//return the initialized
 	return temp_priority;
+}
+
+void parse_weapon_targeting_priorities()
+{
+	char tempname[NAME_LENGTH];
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+	if (optional_string("$Name:")) {
+		stuff_string(tempname, F_NAME, NAME_LENGTH);
+		
+		for(k = 0; k < MAX_WEAPON_TYPES ; k++) {
+			if ( !stricmp(Weapon_info[k].name, tempname) ) {
+				// found weapon, yay!
+				// reset the list
+
+				weapon_info *wip = &Weapon_info[k];
+				
+				wip->num_targeting_priorities = 0;
+
+				if (optional_string("+Target Priority:")) {
+					SCP_vector <SCP_string> tgt_priorities;
+					int num_strings = stuff_string_list(tgt_priorities);
+
+					if (num_strings > 32)
+						num_strings = 32;
+
+					int num_groups = Ai_tp_list.size();
+
+					for(i = 0; i < num_strings; i++) {
+						for(j = 0; j < num_groups; j++) {
+							if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
+								wip->targeting_priorities[i] = j;
+								wip->num_targeting_priorities++;
+								break;
+							}
+						}
+						if(j == num_groups)
+							Warning(LOCATION, "Unrecognized string '%s' found when setting weapon targeting priorities.\n", tgt_priorities[i].c_str());
+					}
+				}
+				// no need to keep searching for more
+				break;
+			}
+		}
+		if(k == MAX_WEAPON_TYPES)
+			Warning(LOCATION, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
+	}
 }
