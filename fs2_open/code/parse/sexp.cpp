@@ -364,6 +364,9 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-specific",			OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
+	{ "turret-set-direction-preference",	OP_TURRET_SET_DIRECTION_PREFERENCE,		3, INT_MAX},	//FUBAR
+	{ "turret-set-optimum-range",			OP_TURRET_SET_OPTIMUM_RANGE,			3, INT_MAX},	//FUBAR
+	{ "turret-set-target-priorities",			OP_TURRET_SET_TARGET_PRIORITIES,	3, INT_MAX},	//FUBAR
 	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
 	{ "ship-turret-target-order",			OP_SHIP_TURRET_TARGET_ORDER,		1, 1+NUM_TURRET_ORDER_TYPES},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE, 2, INT_MAX	},
@@ -1325,7 +1328,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
-	int var_index = -1; 
+	int var_index = -1;
+	size_t st;
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
@@ -2439,6 +2443,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if ( i == NUM_TURRET_ORDER_TYPES )
+					return SEXP_CHECK_INVALID_INTEL_NAME;
+				
+				break;
+	
+			case OPF_TARGET_PRIORITIES:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+	
+				for(st = 0; st < Ai_tp_list.size(); st++) {
+					if ( !stricmp(CTEXT(node), Ai_tp_list[st].name) )
+						break;
+				}
+
+				if ( st == Ai_tp_list.size() )
 					return SEXP_CHECK_INVALID_INTEL_NAME;
 				
 				break;
@@ -13514,6 +13532,139 @@ void sexp_turret_set_target_order(int node)
 		oindex++;
 	}
 }
+void sexp_turret_set_direction_preference(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//store direction preference
+	int dirpref = eval_num(CDR(node));
+
+	//Set range
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// set the range
+		if(dirpref < 0)
+			turret->optimum_range = turret->system_info->optimum_range;
+		else
+			if (dirpref == 0) {
+				turret->favor_current_facing = 0.0f;
+			} else {
+				CAP(dirpref, 1, 100);
+				turret->favor_current_facing = 1.0f + (((float) (100 - dirpref)) / 10.0f);
+			}
+		
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_set_optimum_range(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//store range
+	float range = (float)eval_num(CDR(node));
+
+	//Set range
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// set the range
+		if(range < 0)
+			turret->optimum_range = turret->system_info->optimum_range;
+		else
+			turret->optimum_range = range;
+		
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_set_target_priorities(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	int i;
+	int j;
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//Get turret subsys
+	node = CDR(node);
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if(turret == NULL){
+		return;
+	}
+
+	//Reset or new list
+	node = CDR(node);   
+	if(!(is_sexp_true(node))) {	//Reset
+		turret->num_target_priorities = turret->system_info->num_target_priorities;
+		for (j = 0; j < 32; j++) {
+			turret->target_priority[j] = turret->system_info->target_priority[j];
+		}
+	}
+	else {					//New List
+		node = CDR(node);
+		//clear the list
+		turret->num_target_priorities = 0;
+		for (i = 0; i < 32; i++) {
+			turret->target_priority[i] = -1;
+		}
+		int num_groups = Ai_tp_list.size();
+		// set the target priorities
+		while(node != -1){
+			if(turret->num_target_priorities < 32){
+				for(j = 0; j < num_groups; j++) {
+					if ( !stricmp(Ai_tp_list[j].name, CTEXT(node)))  {
+							turret->target_priority[turret->num_target_priorities] = j;
+							turret->num_target_priorities++;
+					}
+				}
+			}
+		// next
+		node = CDR(node);
+		}
+	}
+}
 
 void sexp_ship_turret_target_order(int node)
 {	
@@ -17299,6 +17450,21 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_change_weapon(node);
 				break;
 
+			case OP_TURRET_SET_DIRECTION_PREFERENCE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_direction_preference(node);
+				break;
+
+			case OP_TURRET_SET_OPTIMUM_RANGE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_optimum_range(node);
+				break;
+
+			case OP_TURRET_SET_TARGET_PRIORITIES:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_target_priorities(node);
+				break;
+
 			case OP_TURRET_SET_TARGET_ORDER:
 				sexp_val = SEXP_TRUE;
 				sexp_turret_set_target_order(node);
@@ -18344,6 +18510,9 @@ int query_operator_return_type(int op)
 		case OP_TURRET_LOCK:
 		case OP_TURRET_LOCK_ALL:
 		case OP_TURRET_CHANGE_WEAPON:
+		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+		case OP_TURRET_SET_OPTIMUM_RANGE:
+		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
@@ -19521,6 +19690,35 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WEAPON_NAME;
 			} else if(argnum > 2) {
 				return OPF_POSITIVE;
+			}
+
+		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_NUMBER;
+			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_OPTIMUM_RANGE:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_NUMBER;
+			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_TARGET_PRIORITIES:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_SUBSYSTEM;
+			} else if(argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				return OPF_TARGET_PRIORITIES;
 			}
 
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -21222,6 +21420,9 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_TURRET_CHANGE_WEAPON:
+		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+		case OP_TURRET_SET_OPTIMUM_RANGE:
+		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
@@ -23265,6 +23466,25 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Weapon to set slot to\r\n"
 		"\t4: Primary slot (or 0 to use secondary)\r\n"
 		"\t5: Secondary slot (or 0 to use primary)"},
+
+	{ OP_TURRET_SET_DIRECTION_PREFERENCE, "turret-set-direction-preference\r\n"
+		"\tSets specified ship turrets direction preference to the specified value\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\t2: Preference to set, 0 to disable, or negative to reset to default\r\n"
+		"\trest: Turrets to set\r\n"},
+
+	{ OP_TURRET_SET_OPTIMUM_RANGE, "turret-set-optimum-range\r\n"
+		"\tSets specified ship turrets optimum range to the specified value\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\t2: Priority to set, 0 to disable, or negative to reset to default\r\n"
+		"\trest: Turrets to set\r\n"},
+
+	{ OP_TURRET_SET_TARGET_PRIORITIES, "turret-set-target-priorities\r\n"
+		"\tSets target priorities for the specified ship turret\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret to set\r\n"
+		"\t3: True = Set new list, False = Reset to turret default\r\n"
+		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
 
 	{ OP_TURRET_SET_TARGET_ORDER, "turret-set-target-order\r\n"
 		"\tSets targeting order of a given turret\r\n"

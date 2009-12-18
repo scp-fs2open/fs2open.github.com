@@ -240,6 +240,8 @@ typedef	struct ship_subsys {
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
 	float	turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
 	int		turret_targeting_order[NUM_TURRET_ORDER_TYPES];	//Order that turrets target different types of things.
+	float	optimum_range;					        
+	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret

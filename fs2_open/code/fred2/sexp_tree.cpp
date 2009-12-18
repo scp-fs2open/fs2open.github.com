@@ -2630,6 +2630,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_NEBULA_POOF:
 		case OPF_TURRET_TARGET_ORDER:
 		case OPF_POST_EFFECT:
+		case OPF_TARGET_PRIORITIES:
 			return 1;
 
 		case OPF_SHIP:
@@ -4300,6 +4301,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_turret_target_order();
 			break;
 
+		case OPF_TARGET_PRIORITIES:
+			list = get_listing_opf_turret_target_priorities();
+			break;
+
 		case OPF_PERSONA:
 			list = get_listing_opf_persona();
 			break;
@@ -5588,6 +5593,19 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 	SCP_vector<opengl::post_effect> &ppe_names = opengl::post_shader::get_effects();
 	for (i=0; i < ppe_names.size(); i++)
 		head.add_data(const_cast<char*>(ppe_names[i].name.c_str()));
+
+	return head.next;
+}
+
+
+sexp_list_item *sexp_tree::get_listing_opf_turret_target_priorities()
+{
+	size_t t;
+	sexp_list_item head;
+	
+	for(t = 0; t < Ai_tp_list.size(); t++) {
+		head.add_data(Ai_tp_list[t].name);
+	}
 
 	return head.next;
 }

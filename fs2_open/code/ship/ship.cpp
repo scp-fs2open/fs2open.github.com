@@ -4686,7 +4686,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			//WMC - Set targeting order to default.
 			ship_system->turret_targeting_order[j] = j;
 		}
-
+		ship_system->optimum_range = model_system->optimum_range;
+		ship_system->favor_current_facing = model_system->favor_current_facing;
 		ship_system->subsys_cargo_name = -1;
 		ship_system->time_subsys_cargo_revealed = 0;
 		
