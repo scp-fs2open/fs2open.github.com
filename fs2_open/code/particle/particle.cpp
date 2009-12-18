@@ -40,10 +40,13 @@ typedef struct particle {
 	int		attached_sig;		// to check for dead/nonexistent objects
 	ubyte	reverse;			// play any animations in reverse
 	int		particle_index;		// used to keep particle offset in dynamic array for orient usage
+
+	int alive; /* portej05 - render this particle? */
 } particle;
 
 int Num_particles = 0;
 static SCP_vector<particle> Particles;
+static SCP_queue<size_t> NextParticle;
 int Next_particle = 0;
 
 int Anim_bitmap_id_fire = -1;
@@ -73,6 +76,12 @@ void particle_init()
 	Next_particle = 0;
 
 	Particles.clear();
+	
+	/* Empty the next particle queue */
+	while ( NextParticle.size( ) != 0 )
+	{
+		NextParticle.pop( );
+	}
 
 	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
@@ -188,7 +197,8 @@ void particle_create( particle_info *pinfo )
 	new_particle.attached_objnum = pinfo->attached_objnum;
 	new_particle.attached_sig = pinfo->attached_sig;
 	new_particle.reverse = pinfo->reverse;
-	new_particle.particle_index = (int)Particles.size();
+	new_particle.alive = 1;
+	//new_particle.particle_index = (int)Particles.size();
 
 	if ( (new_particle.type == PARTICLE_BITMAP) || (new_particle.type == PARTICLE_BITMAP_PERSISTENT) )	{
 		int fps;
@@ -201,7 +211,17 @@ void particle_create( particle_info *pinfo )
 		new_particle.nframes = 1;
 	}
 
-	Particles.push_back( new_particle );
+	if ( NextParticle.size( ) != 0 )
+	{
+		new_particle.particle_index = NextParticle.front( );
+		Particles[ NextParticle.front( ) ] = new_particle;
+		NextParticle.pop( );
+	}
+	else
+	{
+		new_particle.particle_index = (int)Particles.size( );
+		Particles.push_back( new_particle );
+	}
 }
 
 void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data, float tracer_length, object *objp, bool reverse )
@@ -258,8 +278,10 @@ void particle_move_all(float frametime)
 
 		// bogus attached objnum
 		if (p->attached_objnum >= MAX_OBJECTS) {
-			Particles.erase( Particles.begin() + i );
-			part_size--;
+			p->alive = 0;
+			NextParticle.push( i );
+			//Particles.erase( Particles.begin() + i );
+			//part_size--;
 			continue;
 		}
 
@@ -267,8 +289,10 @@ void particle_move_all(float frametime)
 	
 		if ( p->age > p->max_life )	{
 			// If it's time expired remove it
-			Particles.erase( Particles.begin() + i );
-			part_size--;
+			p->alive = 0;
+			NextParticle.push( i );
+			//Particles.erase( Particles.begin() + i );
+			//part_size--;
 			continue;
 		}
 
@@ -276,8 +300,10 @@ void particle_move_all(float frametime)
 		if (p->attached_objnum >= 0) {
 			// if the signature has changed, kill it
 			if (p->attached_sig != Objects[p->attached_objnum].signature) {
-				Particles.erase( Particles.begin() + i );
-				part_size--;
+				p->alive = 0;
+				NextParticle.push( i );
+				//Particles.erase( Particles.begin() + i );
+				//part_size--;
 				continue;
 			}
 		}
@@ -300,6 +326,10 @@ void particle_kill_all()
 	Num_particles_hwm = 0;
 
 	Particles.clear();
+	while( NextParticle.size( ) != 0 )
+	{
+		NextParticle.pop( );
+	}
 }
 
 MONITOR( NumParticlesRend )
@@ -329,6 +359,8 @@ void particle_render_all()
 
 	for (i = 0; i < part_size; i++) {
 		p = &Particles[i];
+		if ( !p->alive )
+			continue; /* Move to next particle */
 
 	//	n++;
 
