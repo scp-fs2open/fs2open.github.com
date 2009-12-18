@@ -111,6 +111,7 @@ struct ship_subsys;
 #define OPF_SUBSYSTEM_TYPE		66		// Goober5000 - a generic subsystem type (navigation, engines, etc.) rather than a specific subsystem
 #define OPF_POST_EFFECT			67		// Hery - type of post-processing effect
 #define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
+#define OPF_ARMOR_TYPES			69		// FUBAR - Armor type or <none>
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -568,6 +569,8 @@ struct ship_subsys;
 #define OP_TURRET_SET_OPTIMUM_RANGE			(0x00cf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 #define OP_TURRET_SET_DIRECTION_PREFERENCE	(0x00d0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 #define OP_TURRET_SET_TARGET_PRIORITIES		(0x00d1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_SET_ARMOR_TYPE					(0x00d2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+
 /* made obsolete by Goober5000
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
@@ -670,6 +673,7 @@ struct ship_subsys;
 #define SEXP_ALL_TURRETS_STRING		"<all turrets>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
+#define SEXP_SHIELD_STRING			"Shields"
 
 // macros for accessing sexpression atoms
 #define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)

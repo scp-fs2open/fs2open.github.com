@@ -221,6 +221,7 @@ typedef	struct ship_subsys {
 	int flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
+	int armor_type_idx;				// FUBAR
 
 	// turret info
 	//Important -WMC
@@ -666,6 +667,8 @@ typedef struct ship {
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
+	int armor_type_idx;
+	int shield_armor_type_idx;
 } ship;
 
 struct ai_target_priority {
