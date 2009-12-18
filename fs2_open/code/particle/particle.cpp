@@ -276,6 +276,9 @@ void particle_move_all(float frametime)
 	for (uint i = 0; i < part_size; i++) {
 		p = &Particles[i];
 
+		if (!p->alive)
+			continue;
+
 		// bogus attached objnum
 		if (p->attached_objnum >= MAX_OBJECTS) {
 			p->alive = 0;
