@@ -110,7 +110,7 @@ struct ship_subsys;
 #define OPF_SHIP_WING_TEAM		65		// Karajorma - Ship, wing or an IFF
 #define OPF_SUBSYSTEM_TYPE		66		// Goober5000 - a generic subsystem type (navigation, engines, etc.) rather than a specific subsystem
 #define OPF_POST_EFFECT			67		// Hery - type of post-processing effect
-
+#define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -565,7 +565,9 @@ struct ship_subsys;
 #define OP_GET_VARIABLE_BY_INDEX			(0x00cc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SET_VARIABLE_BY_INDEX			(0x00cd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SET_POST_EFFECT					(0x00ce | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Hery
-
+#define OP_TURRET_SET_OPTIMUM_RANGE			(0x00cf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_TURRET_SET_DIRECTION_PREFERENCE	(0x00d0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_TURRET_SET_TARGET_PRIORITIES		(0x00d1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 /* made obsolete by Goober5000
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)

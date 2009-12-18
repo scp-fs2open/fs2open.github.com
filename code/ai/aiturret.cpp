@@ -449,7 +449,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	
 	dist_comp = dist;
 	// if weapon has optimum range set then use it
-	float optimum_range = ss->system_info->optimum_range;
+	float optimum_range = ss->optimum_range;
 	if (optimum_range > 0.0f) {
 		if (dist < optimum_range) {
 			dist_comp = (2*optimum_range) - dist;
@@ -457,7 +457,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	}
 
 	// if turret has been told to prefer targets from the current direction then do so
-	float favor_one_side = ss->system_info->favor_current_facing;
+	float favor_one_side = ss->favor_current_facing;
 	if (favor_one_side >= 1.0f) {
 		vm_vec_normalize(&vec_to_target);
 		float dot_to_target = vm_vec_dot(&ss->turret_last_fire_direction, &vec_to_target);
