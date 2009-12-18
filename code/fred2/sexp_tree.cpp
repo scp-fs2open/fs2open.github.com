@@ -2631,6 +2631,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_TURRET_TARGET_ORDER:
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
+		case OPF_ARMOR_TYPES:
 			return 1;
 
 		case OPF_SHIP:
@@ -4305,6 +4306,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_turret_target_priorities();
 			break;
 
+		case OPF_ARMOR_TYPES:
+			list = get_listing_opf_armor_types();
+			break;
+
 		case OPF_PERSONA:
 			list = get_listing_opf_persona();
 			break;
@@ -4616,6 +4621,7 @@ sexp_list_item *sexp_tree::get_listing_opf_wing()
 #define OPS_BEAM_TURRET		3
 #define OPS_AWACS				4
 #define OPS_ROTATE			5
+#define OPS_ARMOR			6
 sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_index)
 {
 	int op, child, sh;
@@ -4641,6 +4647,11 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_SABOTAGE_SUBSYSTEM:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 			special_subsys = OPS_STRENGTH;
+			break;
+
+		// Armor types need Hull and Shields but not Simulated Hull
+		case OP_SET_ARMOR_TYPE:
+			special_subsys = OPS_ARMOR;
 			break;
 
 		// awacs subsystems
@@ -4772,6 +4783,11 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if(special_subsys == OPS_STRENGTH){
 		head.add_data(SEXP_HULL_STRING);
 		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+	// if setting armor type we only need Hull and Shields
+	if(special_subsys == OPS_ARMOR){
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SHIELD_STRING);
 	}
 
 	return head.next;
@@ -5589,7 +5605,6 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 {
 	unsigned int i;
 	sexp_list_item head;
-
 	SCP_vector<opengl::post_effect> &ppe_names = opengl::post_shader::get_effects();
 	for (i=0; i < ppe_names.size(); i++)
 		head.add_data(const_cast<char*>(ppe_names[i].name.c_str()));
@@ -5610,6 +5625,16 @@ sexp_list_item *sexp_tree::get_listing_opf_turret_target_priorities()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_armor_types()
+{
+	size_t t;
+	sexp_list_item head;
+	head.add_data(SEXP_NONE_STRING);
+	for (t=0; t<Armor_types.size(); t++)
+		head.add_data(Armor_types[t].GetNamePtr());
+
+	return head.next;
+}
 
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type

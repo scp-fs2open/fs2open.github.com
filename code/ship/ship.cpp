@@ -4431,6 +4431,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 			shipp->ship_iff_color[i][j] = -1;
 		}
 	}
+	shipp->armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->armor_type_idx;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -4670,7 +4672,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		ship_system->subsys_guardian_threshold = 0;
-
+		ship_system->armor_type_idx = model_system->armor_type_idx;
 		ship_system->turret_next_fire_stamp = timestamp(0);
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;

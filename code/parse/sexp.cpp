@@ -349,6 +349,7 @@ sexp_oper Operators[] = {
 	{ "fix-warp",					OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
 	{ "allow-warp",					OP_WARP_ALLOWED,				1, INT_MAX, },
+	{ "set-armor-type",				OP_SET_ARMOR_TYPE,				4, INT_MAX, },  // FUBAR
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
@@ -1737,8 +1738,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				// check for the special "hull" value
-				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) ) {
+				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) || (Operators[op].value == OP_SET_ARMOR_TYPE)) {
 					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
+						break;
+					}
+				}
+				// check for special "shields" value for armor types
+				if (Operators[op].value == OP_SET_ARMOR_TYPE) {
+					if ( !stricmp( CTEXT(node), SEXP_SHIELD_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
 						break;
 					}
 				}
@@ -2443,6 +2450,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if ( i == NUM_TURRET_ORDER_TYPES )
+					return SEXP_CHECK_INVALID_INTEL_NAME;
+				
+				break;
+
+			case OPF_ARMOR_TYPES:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (!stricmp(CTEXT(node), SEXP_NONE_STRING))
+					break;
+
+				for (st = 0; st < Armor_types.size(); st++ ) {
+					if ( !stricmp(CTEXT(node), Armor_types[st].GetNamePtr()) )
+						break;
+				}
+
+				if ( st == Armor_types.size() )
 					return SEXP_CHECK_INVALID_INTEL_NAME;
 				
 				break;
@@ -13487,6 +13511,82 @@ void sexp_turret_change_weapon(int node)
 	}
 }
 
+void sexp_set_armor_type(int node)
+{	
+	int sindex;
+	int armor, rset; 
+	size_t t;
+	ship_subsys *ss = NULL;
+	ship *shipp = NULL;
+	ship_info *sip = NULL;
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+	shipp = &Ships[sindex];
+
+	// set or reset
+	node = CDR(node);
+	rset = is_sexp_true(node);
+
+	// get armor
+	node = CDR(node);
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+		armor = -1;
+	else {
+		for(t = 0; t < Armor_types.size(); t++) 
+		{
+			if ( !stricmp(Armor_types[t].GetNamePtr(), CTEXT(node)))  
+				break;
+		}
+		if (t == Armor_types.size()) 
+			return;
+		armor = (int)t;
+	}
+	
+	//Set armor
+	while(node != -1){
+		if (!stricmp(SEXP_HULL_STRING, CTEXT(node)))
+		{
+			// we are setting the ship itself
+			if (!rset)
+				shipp->armor_type_idx = sip[shipp->objnum].armor_type_idx;
+			else
+				shipp->armor_type_idx = armor;
+		}
+		else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node)))
+		{
+			// we are setting the ships shields
+			if (!rset)
+				shipp->shield_armor_type_idx = sip[shipp->objnum].shield_armor_type_idx;
+			else
+				shipp->shield_armor_type_idx = armor;
+		}
+		else 
+		{
+			// get the subsystem
+			ss = ship_get_subsys(&Ships[sindex], CTEXT(node));
+			if(ss == NULL){
+				node = CDR(node);
+				continue;
+			}
+		
+			// set the range
+			if (!rset)
+				ss->armor_type_idx = ss->system_info->armor_type_idx;
+			else
+				ss->armor_type_idx = armor;
+		}
+		// next
+		node = CDR(node);
+	}
+}
+
 void sexp_turret_set_target_order(int node)
 {	
 	int sindex;
@@ -17470,6 +17570,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_set_target_order(node);
 				break;
 
+			case OP_SET_ARMOR_TYPE:
+				sexp_val = SEXP_TRUE;
+				sexp_set_armor_type(node);
+				break;
+
 			case OP_SHIP_TURRET_TARGET_ORDER:
 				sexp_val = SEXP_TRUE;
 				sexp_ship_turret_target_order(node);
@@ -18514,6 +18619,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_OPTIMUM_RANGE:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
+		case OP_SET_ARMOR_TYPE:
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
@@ -19719,6 +19825,17 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			} else {
 				return OPF_TARGET_PRIORITIES;
+			}
+
+		case OP_SET_ARMOR_TYPE:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_BOOL;
+			} else if(argnum == 2) {
+				return OPF_ARMOR_TYPES;
+			} else {
+				return OPF_SUBSYSTEM;
 			}
 
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -21404,6 +21521,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
+		case OP_SET_ARMOR_TYPE:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -23485,6 +23603,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Turret to set\r\n"
 		"\t3: True = Set new list, False = Reset to turret default\r\n"
 		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
+
+	{ OP_SET_ARMOR_TYPE, "set-armor-type\r\n"
+		"\tSets the armor type for a ship or subsystem\r\n"
+		"\t1: Ship subsystem is on\r\n"
+		"\t2: Set = true/Reset to defualt = false\r\n"
+		"\t3: Armor type to set or <none>\r\n"
+		"\trest: Subsystems to set (hull for ship, shield for shields)\r\n"},
 
 	{ OP_TURRET_SET_TARGET_ORDER, "turret-set-target-order\r\n"
 		"\tSets targeting order of a given turret\r\n"
