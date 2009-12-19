@@ -250,7 +250,7 @@ int text_file::get_cfile_type(txt_file_type ftype) {
 
 using namespace opengl;
 
-opengl::shader::shader(resources::text_file *vert, resources::text_file *frag) : shader_program(0), last_texture(0) {
+opengl::shader::shader(resources::text_file *vert, resources::text_file *frag) : last_texture(0), shader_program(0) {
 	vertex_shader = vert->read();
 	fragment_shader = frag->read();
 
@@ -313,7 +313,7 @@ bool opengl::shader::compile_link() {
 	return true;
 }
 
-GLint opengl::shader::compile_object(const GLcharARB *shader_source, GLenum shader_type) {
+GLhandleARB opengl::shader::compile_object(const GLcharARB *shader_source, GLenum shader_type) {
 	GLhandleARB shader_object = 0;
 	GLint status = 0;
 
@@ -381,17 +381,17 @@ GLhandleARB opengl::shader::link_objects(GLhandleARB vertex_object, GLhandleARB 
 	return shader_object;
 }
 
-SCP_string opengl::shader::check_info_log(GLint shader_object) {
+SCP_string opengl::shader::check_info_log(GLhandleARB shader_object) {
 	GLint length = 0;
 	vglGetObjectParameterivARB(shader_object, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
 
-	char *log = (char*)vm_malloc(length + 1);
+	char *log = new char[length + 1];
 	memset(log, 0, length + 1);
 
 	vglGetInfoLogARB(shader_object, length, 0, log);
 
 	SCP_string str = log;
-	vm_free(log);
+	delete []log;
 
 	return str;
 }
@@ -425,37 +425,37 @@ void opengl::shader::apply() {
 	state = applied;
 }
 
-GLint opengl::shader::get_uniform_location(int name) {
+GLint opengl::shader::get_uniform_location(unsigned int name) {
 	// get uniform location from vector
-	if (uniforms.size() > (unsigned int)name || uniforms[name] >= 0)
+	if (uniforms.size() > name || uniforms[name] >= 0)
 		return uniforms[name];
 	else {
-		mprintf(("WARNING: Unable to get shader uniform location for \"%s\"!\n", get_uniform_names()[name]));
+		mprintf(("WARNING: Unable to get shader uniform location for \"%s\"!\n", get_uniform_names()[name].c_str()));
 		return -1;
 	}
 }
 
-void opengl::shader::set_uniform(int name, GLint value) {
+void opengl::shader::set_uniform(unsigned int name, GLint value) {
 	Assert(state == applied);
 
-	GLint uniform_location;
-	if ((uniform_location = get_uniform_location(name)) >= 0)
+	GLint uniform_location = get_uniform_location(name);
+	if (uniform_location >= 0)
 		vglUniform1iARB(uniform_location, value);
 }
 
-void opengl::shader::set_uniform(int name, GLfloat value) {
+void opengl::shader::set_uniform(unsigned int name, GLfloat value) {
 	Assert(state == applied);
 
-	GLint uniform_location;
-	if ((uniform_location = get_uniform_location(name)) >= 0)
+	GLint uniform_location = get_uniform_location(name);
+	if (uniform_location >= 0)
 		vglUniform1fARB(uniform_location, value);
 }
 
-void opengl::shader::set_uniformMatrix4f(int name, GLfloat *matrix) {
+void opengl::shader::set_uniformMatrix4f(unsigned int name, GLfloat *matrix) {
 	Assert(state == applied);
 
-	GLint uniform_location;
-	if ((uniform_location = get_uniform_location(name)) >= 0)
+	GLint uniform_location = get_uniform_location(name);
+	if (uniform_location >= 0)
 		vglUniformMatrix4fvARB(uniform_location, 1, GL_FALSE, matrix);
 }
 
@@ -475,7 +475,7 @@ const char *opengl::main_shader::uniform_names[] = {
 SCP_vector<SCP_string> main_shader::uninames;
 
 SCP_vector<SCP_string> &main_shader::get_uniform_names() {
-	for (int i = 0; i < sizeof(uniform_names) / sizeof(const char*); i++)
+	for (unsigned int i = 0; i < sizeof(uniform_names) / sizeof(const char*); i++)
 		uninames.push_back(uniform_names[i]);
 
 	return uninames;
