@@ -154,25 +154,25 @@ namespace opengl {
 		 * @param id uniform variable id
 		 * @param value integer value
 		 */
-		void set_uniform(int id, int value);
+		void set_uniform(unsigned int id, GLint value);
 
 		/** Set uniform variables.
 		 * @param id uniform variable id
 		 * @param value float value
 		 */
-		void set_uniform(int id, float value);
+		void set_uniform(unsigned int id, GLfloat value);
 
 		/** Set uniform variables.
 		 * @param id uniform variable id
 		 * @param matrix matrix
 		 */
-		void set_uniformMatrix4f(int id, float *matrix);
+		void set_uniformMatrix4f(unsigned int id, GLfloat *matrix);
 
 		/** Set %texture.
 		 * @param id uniform id
 		 * @param tex texture instance
 		 */
-		void set_texture(int id, const texture *tex) {
+		void set_texture(unsigned int id, const texture *tex) {
 			vglActiveTextureARB(GL_TEXTURE0_ARB + last_texture);
 			tex->bind();
 			set_uniform(id, last_texture);
@@ -204,7 +204,7 @@ namespace opengl {
 		 * @param id uniform variable ID
 		 * @return uniform variable location
 		 */
-		inline GLint get_uniform_location(int id);
+		inline GLint get_uniform_location(unsigned int id);
 
 		/** Compile object.
 		 * This member function compiles given GLSL source code, performs all require error
@@ -214,7 +214,7 @@ namespace opengl {
 		 * @param shader_type type of %shader program (fragment or vertex)
 		 * @return OpenGL name of compiled object
 		 */
-		GLint compile_object(const GLcharARB *shader_source, GLenum shader_type);
+		GLhandleARB compile_object(const GLcharARB *shader_source, GLenum shader_type);
 
 		/** Link fragment and vertex programs.
 		 * This member function links two given compiled objects, performs all require error
@@ -233,7 +233,7 @@ namespace opengl {
 		 * @param shader_object OpenGL shader object
 		 * @return error log
 		 */
-		SCP_string check_info_log(GLint shader_object);
+		SCP_string check_info_log(GLhandleARB shader_object);
 	};
 
 	/** Main shader.
@@ -325,7 +325,7 @@ namespace opengl {
 		 * @param id uniform variable id
 		 * @param value integer value
 		 */
-		void set_uniform(int uni, float value) {
+		void set_uniform(unsigned int uni, GLfloat value) {
 			shader::set_uniform(uni, value);
 		}
 
@@ -334,7 +334,7 @@ namespace opengl {
 		 * @param id uniform variable id
 		 * @param value integer value
 		 */
-		void set_uniform(unsigned int cls, int uni, float value) {
+		void set_uniform(unsigned int cls, unsigned int uni, GLfloat value) {
 			Assert(cls < unif_classes.size());
 
 			shader::set_uniform(unif_classes[cls] + uni, value);
@@ -344,7 +344,7 @@ namespace opengl {
 		 * @param id uniform id
 		 * @param tex texture instance
 		 */
-		void set_texture(int x, const opengl::texture *t) {
+		void set_texture(unsigned int x, const opengl::texture *t) {
 			shader::set_texture(x, t);
 		}
 
@@ -353,7 +353,7 @@ namespace opengl {
 		 * @param id uniform id
 		 * @param tex texture instance
 		 */
-		void set_texture(unsigned int cls, int uni, const opengl::texture *tex) {
+		void set_texture(unsigned int cls, unsigned int uni, const opengl::texture *tex) {
 			Assert(cls < unif_classes.size());
 
 			shader::set_texture(unif_classes[cls] + uni, tex);
@@ -383,7 +383,7 @@ namespace opengl {
 	 */
 	class special_shader : public shader {
 	private:
-		SCP_vector<unsigned int> passes;
+		SCP_vector<GLhandleARB> passes;
 		unsigned int in_pass;
 		unsigned int flags_id;
 
