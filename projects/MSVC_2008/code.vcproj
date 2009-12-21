@@ -2707,10 +2707,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\sound\acm.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\sound\acm.h"
 				>
 			</File>
@@ -2764,18 +2760,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\sound\grammar.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\midifile.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\midifile.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\midiseq.h"
 				>
 			</File>
 			<File
@@ -2928,18 +2912,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\sound\voicerec.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\winmidi.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\winmidi.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\winmidi_base.cpp"
 				>
 			</File>
 			<Filter
