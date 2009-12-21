@@ -345,44 +345,48 @@ void CMainFrame::OnClose()
 
 void CMainFrame::init_tools()
 {
-	static int count = 0;
 	int i;
 	//int highest_terran_index;
 	//char ship_name[256];
 	//int ship_index;
 
-	Assert(count < 2);
+	// some bizarre Volition check:
+	static int count = 0;
+	count++;
+	if (count == 1) {
+		return;
+	} else if (count >= 3) {
+		Warning(LOCATION, "CMainFrame::init_tools was called more than twice!  Trace out and fix.");
+		return;
+	}
 
-	// add 
-	if (count++) {
-		for (i=0; i<Num_ship_classes; i++){
-			// don't add the pirate ship
-			if(Ship_info[i].flags & SIF_NO_FRED){
-				m_new_ship_type_combo_box.AddString("");
-				continue;
-			}
-
-			m_new_ship_type_combo_box.AddString(Ship_info[i].name);
+	for (i=0; i<Num_ship_classes; i++){
+		// don't add the pirate ship
+		if(Ship_info[i].flags & SIF_NO_FRED){
+			m_new_ship_type_combo_box.AddString("");
+			continue;
 		}
 
-//		m_new_ship_type_combo_box.AddString("Player Start");		
-		m_new_ship_type_combo_box.AddString("Jump Node");
-		m_new_ship_type_combo_box.AddString("Waypoint");		
+		m_new_ship_type_combo_box.AddString(Ship_info[i].name);
+	}
 
-		/*
-		// now we want to sort special ships (mission disk) ----------------------
-		highest_terran_index = 0;
-		memset(ship_name, 0, 256);
-		while(m_new_ship_type_combo_box.GetLBText(highest_terran_index, ship_name) != CB_ERR){
-			ship_index = ship_info_lookup(ship_name);
-			if((ship_index < 0) || (ship_index >= Num_ship_classes) || (Ship_info[ship_index].species != 0)){
-				break;
-			}
-			highest_terran_index++;
-		}		
-		*/
-		m_new_ship_type_combo_box.SetCurSel(0);
-	}  
+//	m_new_ship_type_combo_box.AddString("Player Start");		
+	m_new_ship_type_combo_box.AddString("Jump Node");
+	m_new_ship_type_combo_box.AddString("Waypoint");		
+
+	/*
+	// now we want to sort special ships (mission disk) ----------------------
+	highest_terran_index = 0;
+	memset(ship_name, 0, 256);
+	while(m_new_ship_type_combo_box.GetLBText(highest_terran_index, ship_name) != CB_ERR){
+		ship_index = ship_info_lookup(ship_name);
+		if((ship_index < 0) || (ship_index >= Num_ship_classes) || (Ship_info[ship_index].species != 0)){
+			break;
+		}
+		highest_terran_index++;
+	}		
+	*/
+	m_new_ship_type_combo_box.SetCurSel(0);
 }
 
 void CMainFrame::OnNewShipTypeChange()
