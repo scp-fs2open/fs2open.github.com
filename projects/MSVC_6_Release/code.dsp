@@ -393,7 +393,6 @@ SOURCE=..\..\code\debugconsole\timerbar.h
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
-
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vasync.h
@@ -626,7 +625,6 @@ SOURCE=..\..\code\graphics\grstub.h
 SOURCE=..\..\code\Graphics\Line.h
 # End Source File
 # End Group
-
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""
@@ -730,6 +728,14 @@ SOURCE=..\..\code\graphics\grbatch.h
 # Begin Source File
 
 SOURCE=..\..\code\Graphics\GrInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.h
 # End Source File
 # Begin Source File
 
@@ -1793,11 +1799,7 @@ SOURCE="..\..\code\sound\acm-openal.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\acm.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\acm.h
+SOURCE=..\..\code\sound\acm.h
 # End Source File
 # Begin Source File
 
@@ -1849,19 +1851,8 @@ SOURCE=..\..\code\sound\fsspeech.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\midifile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midiseq.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\sound\phrases.xml
+
 # Begin Custom Build
 InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
@@ -1918,18 +1909,6 @@ SOURCE=..\..\code\sound\voicerec.cpp
 # Begin Source File
 
 SOURCE=..\..\code\sound\voicerec.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\winmidi_base.cpp
 # End Source File
 # End Group
 # Begin Group "Starfield"
