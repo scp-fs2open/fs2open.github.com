@@ -53,6 +53,9 @@ namespace resources {
 	};
 }
 
+// We do need better matrices support
+typedef GLfloat *matrix4x4;
+
 namespace opengl {
 	/** Configuration manager (stub).
 	 * @todo Redesign this class.
@@ -154,19 +157,19 @@ namespace opengl {
 		 * @param id uniform variable id
 		 * @param value integer value
 		 */
-		void set_uniform(unsigned int id, GLint value);
+		void set_uniform(unsigned int id, int value);
 
 		/** Set uniform variables.
 		 * @param id uniform variable id
 		 * @param value float value
 		 */
-		void set_uniform(unsigned int id, GLfloat value);
+		void set_uniform(unsigned int id, float value);
 
 		/** Set uniform variables.
 		 * @param id uniform variable id
 		 * @param matrix matrix
 		 */
-		void set_uniformMatrix4f(unsigned int id, GLfloat *matrix);
+		void set_uniformMatrix4f(unsigned int id, matrix4x4 matrix);
 
 		/** Set %texture.
 		 * @param id uniform id
@@ -325,7 +328,7 @@ namespace opengl {
 		 * @param id uniform variable id
 		 * @param value integer value
 		 */
-		void set_uniform(unsigned int uni, GLfloat value) {
+		void set_uniform(unsigned int uni, float value) {
 			shader::set_uniform(uni, value);
 		}
 
@@ -334,7 +337,7 @@ namespace opengl {
 		 * @param id uniform variable id
 		 * @param value integer value
 		 */
-		void set_uniform(unsigned int cls, unsigned int uni, GLfloat value) {
+		void set_uniform(unsigned int cls, unsigned int uni, float value) {
 			Assert(cls < unif_classes.size());
 
 			shader::set_uniform(unif_classes[cls] + uni, value);
@@ -344,8 +347,8 @@ namespace opengl {
 		 * @param id uniform id
 		 * @param tex texture instance
 		 */
-		void set_texture(unsigned int x, const opengl::texture *t) {
-			shader::set_texture(x, t);
+		void set_texture(unsigned int id, const opengl::texture *tex) {
+			shader::set_texture(id, tex);
 		}
 
 		/** Set %texture.

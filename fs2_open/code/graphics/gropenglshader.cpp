@@ -435,12 +435,12 @@ GLint opengl::shader::get_uniform_location(unsigned int name) {
 	}
 }
 
-void opengl::shader::set_uniform(unsigned int name, GLint value) {
+void opengl::shader::set_uniform(unsigned int name, int value) {
 	Assert(state == applied);
 
 	GLint uniform_location = get_uniform_location(name);
 	if (uniform_location >= 0)
-		vglUniform1iARB(uniform_location, value);
+		vglUniform1iARB(uniform_location, static_cast<GLint>(value));
 }
 
 void opengl::shader::set_uniform(unsigned int name, GLfloat value) {
@@ -448,10 +448,10 @@ void opengl::shader::set_uniform(unsigned int name, GLfloat value) {
 
 	GLint uniform_location = get_uniform_location(name);
 	if (uniform_location >= 0)
-		vglUniform1fARB(uniform_location, value);
+		vglUniform1fARB(uniform_location, static_cast<GLfloat>(value));
 }
 
-void opengl::shader::set_uniformMatrix4f(unsigned int name, GLfloat *matrix) {
+void opengl::shader::set_uniformMatrix4f(unsigned int name, matrix4x4 matrix) {
 	Assert(state == applied);
 
 	GLint uniform_location = get_uniform_location(name);
