@@ -1769,7 +1769,7 @@ int bm_release(int handle, int clear_render_targets)
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
 
-	if ( !clear_render_targets && (be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC) ) {
+	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
 		nprintf(("BmpMan", "Tried to release a render target!\n"));
 		return 0;
 	}
