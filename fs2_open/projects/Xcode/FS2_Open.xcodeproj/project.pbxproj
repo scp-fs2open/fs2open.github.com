@@ -802,8 +802,6 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		3419B219091016C700DC7D47 /* iff_defs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iff_defs.cpp; sourceTree = "<group>"; };
 		3419B21A091016C700DC7D47 /* iff_defs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iff_defs.h; sourceTree = "<group>"; };
-		342AC37509BE18F700A666B6 /* configure.ac */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = configure.ac; path = ../../configure.ac; sourceTree = SOURCE_ROOT; };
-		342AC37609BE190B00A666B6 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = Makefile.am; path = ../../Makefile.am; sourceTree = SOURCE_ROOT; };
 		344BA942095A59BF00B9D97D /* ai_profiles.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = ai_profiles.cpp; sourceTree = "<group>"; };
 		344BA943095A59BF00B9D97D /* ai_profiles.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ai_profiles.h; sourceTree = "<group>"; };
 		344BA94A095A59F700B9D97D /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -857,7 +855,6 @@
 		344BA98A095A5B6F00B9D97D /* lvm.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lvm.h; path = ../../lua/lvm.h; sourceTree = SOURCE_ROOT; };
 		344BA98B095A5B6F00B9D97D /* lzio.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lzio.c; path = ../../lua/lzio.c; sourceTree = SOURCE_ROOT; };
 		344BA98C095A5B6F00B9D97D /* lzio.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lzio.h; path = ../../lua/lzio.h; sourceTree = SOURCE_ROOT; };
-		344BA98D095A5B6F00B9D97D /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = Makefile.am; path = ../../lua/Makefile.am; sourceTree = SOURCE_ROOT; };
 		345952CF08C3D69F003B1351 /* ai.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = ai.cpp; sourceTree = "<group>"; };
 		345952D008C3D69F003B1351 /* ai.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ai.h; sourceTree = "<group>"; };
 		345952D108C3D69F003B1351 /* aibig.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aibig.cpp; sourceTree = "<group>"; };
@@ -1063,7 +1060,6 @@
 		345953E508C3D6A0003B1351 /* fhash.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fhash.h; sourceTree = "<group>"; };
 		345953E608C3D6A0003B1351 /* localize.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = localize.cpp; sourceTree = "<group>"; };
 		345953E708C3D6A0003B1351 /* localize.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = localize.h; sourceTree = "<group>"; };
-		345953E808C3D6A0003B1351 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		345953EC08C3D6A0003B1351 /* fix.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = fix.cpp; sourceTree = "<group>"; };
 		345953ED08C3D6A0003B1351 /* fix.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fix.h; sourceTree = "<group>"; };
 		345953EE08C3D6A0003B1351 /* floating.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = floating.cpp; sourceTree = "<group>"; };
@@ -1461,7 +1457,6 @@
 		3459580608C3D836003B1351 /* jquant2.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = jquant2.c; sourceTree = "<group>"; };
 		3459580708C3D836003B1351 /* jutils.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = jutils.c; sourceTree = "<group>"; };
 		3459580808C3D836003B1351 /* jversion.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = jversion.h; sourceTree = "<group>"; };
-		3459580908C3D836003B1351 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		3459580C08C3D836003B1351 /* transupp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = transupp.h; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
 		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1682,8 +1677,6 @@
 		29B97315FDCFA39411CA2CEA /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				342AC37609BE190B00A666B6 /* Makefile.am */,
-				342AC37509BE18F700A666B6 /* configure.ac */,
 				345952CC08C3D69F003B1351 /* code */,
 				345957CB08C3D836003B1351 /* libjpeg */,
 				344BA9C1095A5B7A00B9D97D /* lua */,
@@ -1777,7 +1770,6 @@
 				344BA98A095A5B6F00B9D97D /* lvm.h */,
 				344BA98B095A5B6F00B9D97D /* lzio.c */,
 				344BA98C095A5B6F00B9D97D /* lzio.h */,
-				344BA98D095A5B6F00B9D97D /* Makefile.am */,
 			);
 			name = lua;
 			sourceTree = "<group>";
@@ -1823,7 +1815,6 @@
 				345953DB08C3D6A0003B1351 /* lab */,
 				345953E008C3D6A0003B1351 /* lighting */,
 				345953E308C3D6A0003B1351 /* localization */,
-				345953E808C3D6A0003B1351 /* Makefile.am */,
 				345953EA08C3D6A0003B1351 /* math */,
 				345953F808C3D6A0003B1351 /* menuui */,
 				3459541308C3D6A0003B1351 /* mission */,
@@ -2978,7 +2969,6 @@
 				3459580608C3D836003B1351 /* jquant2.c */,
 				3459580708C3D836003B1351 /* jutils.c */,
 				3459580808C3D836003B1351 /* jversion.h */,
-				3459580908C3D836003B1351 /* Makefile.am */,
 				3459580C08C3D836003B1351 /* transupp.h */,
 			);
 			name = libjpeg;
