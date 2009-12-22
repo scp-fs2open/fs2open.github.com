@@ -315,6 +315,8 @@ FS2_SOURCES =	\
 	graphics/gropenglextension.h	\
 	graphics/gropengllight.cpp	\
 	graphics/gropengllight.h	\
+	graphics/gropenglpostprocessing.cpp	\
+	graphics/gropenglpostprocessing.h	\
 	graphics/gropenglshader.cpp	\
 	graphics/gropenglshader.h	\
 	graphics/gropenglstate.cpp	\
@@ -395,7 +397,6 @@ FS2_SOURCES =	\
 	localization/fhash.h	\
 	localization/localize.cpp	\
 	localization/localize.h	\
-	math/bitarray.h	\
 	math/fix.cpp	\
 	math/fix.h	\
 	math/floating.cpp	\
@@ -718,7 +719,6 @@ SOUND_SOURCES =	\
 	sound/audiostr.cpp	\
 	sound/audiostr.h	\
 	sound/acm-openal.cpp	\
-	sound/acm.cpp	\
 	sound/acm.h	\
 	sound/ds.cpp	\
 	sound/ds.h	\
@@ -726,18 +726,12 @@ SOUND_SOURCES =	\
 	sound/ds3d.h	\
 	sound/dscap.cpp	\
 	sound/dscap.h	\
-	sound/midifile.cpp	\
-	sound/midifile.h	\
-	sound/midiseq.h	\
 	sound/rbaudio.cpp	\
 	sound/rbaudio.h	\
 	sound/rtvoice.cpp	\
 	sound/rtvoice.h	\
 	sound/sound.cpp	\
 	sound/sound.h	\
-	sound/winmidi.cpp	\
-	sound/winmidi.h	\
-	sound/winmidi_base.cpp	\
 	vcodec/codec1.cpp	\
 	vcodec/codec1.h	\
 	sound/fsspeech.cpp	\
