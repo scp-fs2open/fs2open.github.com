@@ -191,7 +191,7 @@ AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
 
-EXTRA_PROGRAMS = fs2_open_r fs2_open_d wxFRED2_r wxFRED2_d
+EXTRA_PROGRAMS = fs2_open_r fs2_open_d wxFRED2_r wxFRED2_d fs2_open_INF_r fs2_open_INF_d wxFRED2_INF_r wxFRED2_INF_d
 
 ###############################################################################
 ##
@@ -809,8 +809,16 @@ fs2_open_d_SOURCES =	\
 fs2_open_r_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
+fs2_open_INF_d_SOURCES =	\
+	${FS2OPEN_SOURCES}
+
+fs2_open_INF_r_SOURCES =	\
+	${FS2OPEN_SOURCES}
+
 fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
 fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
+fs2_open_INF_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
+fs2_open_INF_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
 
 ##
 ## End MAIN binary
@@ -836,8 +844,16 @@ wxFRED2_d_SOURCES = \
 wxFRED2_r_SOURCES =	\
 	${wxFRED_SOURCES}
 
+wxFRED2_INF_d_SOURCES = \
+	${wxFRED_SOURCES}
+
+wxFRED2_INF_r_SOURCES =	\
+	${wxFRED_SOURCES}
+
 wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
 wxFRED2_r_LDADD = libcode.a ../libjpeg/libjpeg.a
+wxFRED2_INF_d_LDADD = libcode.a ../libjpeg/libjpeg.a
+wxFRED2_INF_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 
 ##
 ## End wxFRED2 binary
