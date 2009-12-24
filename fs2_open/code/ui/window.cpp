@@ -153,7 +153,7 @@ void UI_WINDOW::create( int _x, int _y, int _w, int _h, int _flags )
 	ignore_gadgets = 0;
 	use_hack_to_get_around_stupid_problem_flag = 0;
 
-	f_id = gr_init_font("font01.vf");
+	f_id = FONT1;
 
 	if (_x < 0)
 		_x = 0;
