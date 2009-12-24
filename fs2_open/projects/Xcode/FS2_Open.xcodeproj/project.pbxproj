@@ -99,7 +99,6 @@
 		346C330309BD4C150022D46E /* Ogg.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 346C32FB09BD4BBC0022D46E /* Ogg.framework */; };
 		346C330409BD4C150022D46E /* SDL.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 34C7188B08C40DEB00459F5B /* SDL.framework */; };
 		346C330509BD4C150022D46E /* Vorbis.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 346C32FC09BD4BBC0022D46E /* Vorbis.framework */; };
-		3486EE80099AA02A0092AF2C /* Info-debug.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3486EE7C09990CE20092AF2C /* Info-debug.plist */; };
 		3488080B0DA053AC001CAB39 /* linit.c in Sources */ = {isa = PBXBuildFile; fileRef = 348808060DA053AC001CAB39 /* linit.c */; };
 		3488080C0DA053AC001CAB39 /* loslib.c in Sources */ = {isa = PBXBuildFile; fileRef = 348808070DA053AC001CAB39 /* loslib.c */; };
 		3488080D0DA053AC001CAB39 /* lua.c in Sources */ = {isa = PBXBuildFile; fileRef = 348808080DA053AC001CAB39 /* lua.c */; };
@@ -1475,7 +1474,6 @@
 		3468A8DD0991BDE200123C87 /* scripting.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scripting.h; sourceTree = "<group>"; };
 		346C32FB09BD4BBC0022D46E /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Ogg.framework; path = Frameworks/Ogg.framework; sourceTree = "<group>"; };
 		346C32FC09BD4BBC0022D46E /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vorbis.framework; path = Frameworks/Vorbis.framework; sourceTree = "<group>"; };
-		3486EE7C09990CE20092AF2C /* Info-debug.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Info-debug.plist"; sourceTree = "<group>"; };
 		348808060DA053AC001CAB39 /* linit.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = linit.c; path = ../../lua/linit.c; sourceTree = SOURCE_ROOT; };
 		348808070DA053AC001CAB39 /* loslib.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = loslib.c; path = ../../lua/loslib.c; sourceTree = SOURCE_ROOT; };
 		348808080DA053AC001CAB39 /* lua.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lua.c; path = ../../lua/lua.c; sourceTree = SOURCE_ROOT; };
@@ -1668,8 +1666,6 @@
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
-				34595A7408C3D8CB003B1351 /* Info.plist */,
-				3486EE7C09990CE20092AF2C /* Info-debug.plist */,
 			);
 			name = FS2_Open;
 			sourceTree = "<group>";
@@ -1688,6 +1684,7 @@
 			isa = PBXGroup;
 			children = (
 				34AE377808DE33320071A09C /* FS2_Open.icns */,
+				34595A7408C3D8CB003B1351 /* Info.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 			);
 			name = Resources;
@@ -3560,7 +3557,6 @@
 				3459594908C3D8CB003B1351 /* InfoPlist.strings in Resources */,
 				34AE377908DE33320071A09C /* FS2_Open.icns in Resources */,
 				3468A9120991CA0800123C87 /* Info.plist in Resources */,
-				3486EE80099AA02A0092AF2C /* Info-debug.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4233,7 +4229,9 @@
 				);
 				GCC_VERSION = 4.0;
 				GENERATE_PROFILING_CODE = NO;
-				INFOPLIST_FILE = "Info-debug.plist";
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = PLIST_DEBUG;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				PRODUCT_NAME = "FS2_Open (debug)";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -4269,6 +4267,7 @@
 				GCC_UNROLL_LOOPS = YES;
 				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				PRODUCT_NAME = FS2_Open;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -4588,7 +4587,12 @@
 				);
 				GCC_VERSION = 4.0;
 				GENERATE_PROFILING_CODE = NO;
-				INFOPLIST_FILE = "Info-debug.plist";
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = (
+					PLIST_INFERNO,
+					PLIST_DEBUG,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				PRODUCT_NAME = "FS2_Open-Inferno (debug)";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
@@ -4886,6 +4890,8 @@
 				GCC_UNROLL_LOOPS = YES;
 				GCC_VERSION = 4.0;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = PLIST_INFERNO;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				PRODUCT_NAME = "FS2_Open-Inferno";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;

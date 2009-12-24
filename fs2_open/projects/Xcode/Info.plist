@@ -5,7 +5,19 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
+#ifdef PLIST_INFERNO
+	#ifdef PLIST_DEBUG
+	<string>FS2_Open-Inferno (debug)</string>
+	#else
+	<string>FS2_Open-Inferno</string>
+	#endif
+#else
+	#ifdef PLIST_DEBUG
+	<string>FS2_Open (debug)</string>
+	#else
 	<string>FS2_Open</string>
+	#endif
+#endif
 	<key>CFBundleIconFile</key>
 	<string>FS2_Open</string>
 	<key>CFBundleInfoDictionaryVersion</key>
