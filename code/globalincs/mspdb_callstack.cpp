@@ -28,6 +28,7 @@ void SCP_mspdbcs_Initialise( );
 void SCP_mspdbcs_Cleanup( );
 
 static bool SCP_mspdbcs_initialised = false;
+static CRITICAL_SECTION SCP_mspdbcs_cs;
 
 BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs_SDumpStackSymbolInfo& siSymbol )
 {
@@ -271,14 +272,6 @@ HRESULT SCP_DumpStack( SCP_IDumpHandler* pIDH )
 	HANDLE hPseudoThread = GetCurrentThread( );	
 	HANDLE hPseudoProcess = GetCurrentProcess( );
 
-	/* This will fail if SymInitialize hasn't been called, so 
-	 *  this protects against uninitialised state */
-	if ( !SCP_mspdbcs_initialised )
-	{
-		mprintf( ("Symbols not initialised\n") );
-		return E_UNEXPECTED;
-	}
-
 	/* Retrieve the real handle of this thread */
 	HANDLE hThread = NULL;
 	if ( !DuplicateHandle( hPseudoProcess, hPseudoThread, /* Source process and thread */
@@ -292,9 +285,23 @@ HRESULT SCP_DumpStack( SCP_IDumpHandler* pIDH )
 	info.hProcess = hPseudoProcess;
 	info.hThread = hThread;
 	info.pIDS = pIDH;
+	
+	/* Calls to dbghelp.dll must be synchronised :( */
+	EnterCriticalSection( &SCP_mspdbcs_cs );
+
+	/* This will fail if SymInitialize hasn't been called, so 
+	 *  this protects against uninitialised state */
+	if ( !SCP_mspdbcs_initialised )
+	{
+		LeaveCriticalSection( &SCP_mspdbcs_cs );
+		mprintf( ("Symbols not initialised\n") );
+		return E_UNEXPECTED;
+	}
 
 	HANDLE workerThread = CreateThread( NULL, 0, SCP_mspdbcs_DumpStackThread,
 										&info, 0, &dwID );
+
+	LeaveCriticalSection( &SCP_mspdbcs_cs );
 
 	if ( workerThread == NULL )
 		return HRESULT_FROM_WIN32( GetLastError( ) ); /* Bugger */
@@ -316,13 +323,26 @@ void SCP_mspdbcs_Initialise( )
 		mprintf( ("Could not initialise symbols - callstacks will fail: %x\n", HRESULT_FROM_WIN32( GetLastError( ) ) ) );
 	}
 	else
+	{
+		InitializeCriticalSection( &SCP_mspdbcs_cs );
 		SCP_mspdbcs_initialised = true;
+	}
 #endif
 }
 
 void SCP_mspdbcs_Cleanup( )
 {
 #ifdef PDB_DEBUGGING
+	/* We enter the critical section to synchronise the check of
+	 *  SCP_mspdbcs_initialised. Failure to do that could cause
+	 *  SymCleanup to be called before SCP_dump_stack is finished
+	 */
+	EnterCriticalSection( &SCP_mspdbcs_cs );
+	SCP_mspdbcs_initialised = false; /* stop problems at end of execution */
+	LeaveCriticalSection( &SCP_mspdbcs_cs );
+
+	DeleteCriticalSection( &SCP_mspdbcs_cs );
+
 	HANDLE hPseudoProcess = GetCurrentProcess( );
 	SymCleanup( hPseudoProcess );
 #endif
