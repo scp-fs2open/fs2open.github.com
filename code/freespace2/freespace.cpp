@@ -1564,7 +1564,8 @@ int game_start_mission()
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
 	// clear post processing settings
-	gr_screen.gf_set_default_post_process();
+	if(!Is_standalone)
+		gr_screen.gf_set_default_post_process();
 
 	// clear shader manager cache
 	gr_clear_shaders_cache();
@@ -2208,7 +2209,8 @@ void game_init()
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
 
-	gr_screen.gf_post_process_init();
+	if(!Is_standalone)
+		gr_screen.gf_post_process_init();
 
 	//WMC - Initialize my new GUI system
 	//This may seem scary, but it should take up 0 processing time and very little memory
