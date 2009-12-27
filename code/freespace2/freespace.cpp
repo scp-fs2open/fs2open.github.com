@@ -3918,7 +3918,7 @@ void game_render_frame( camid cid )
 
 	clip_frame_view();
 
-	neb2_set_frame_backg();
+	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
