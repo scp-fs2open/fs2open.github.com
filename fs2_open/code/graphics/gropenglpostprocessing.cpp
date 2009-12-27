@@ -450,6 +450,8 @@ void gr_opengl_post_process_init() {
 
 	opengl::post_processing::create();
 
+	opengl::simple_effects::restore_defaults();
+
 	opengl::render_target::apply_default();
 }
 
