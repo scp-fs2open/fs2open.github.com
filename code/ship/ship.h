@@ -1078,6 +1078,10 @@ typedef struct ship_info {
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
 
+	float	sup_hull_repair_rate;
+	float	sup_shield_repair_rate;
+	float	sup_subsys_repair_rate;
+
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
