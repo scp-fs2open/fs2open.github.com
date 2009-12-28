@@ -4,7 +4,7 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 
-#ifdef WIN32
+#if defined( WIN32 ) && defined( TRACKIR_BUILD )
  #include <windows.h>
 
  #define TIR_APIENTRY __stdcall
@@ -20,7 +20,8 @@ extern int trackir_enabled;
 extern "C" {
 #endif
 
-#ifdef WIN32 // HWND doesn't exist outside of Windows
+#if defined( WIN32 ) && defined( TRACKIR_BUILD )
+	// HWND doesn't exist outside of Windows
  int TIR_APIENTRY TrackIR_Init(HWND FS2_Window);
 #endif
 

@@ -11,7 +11,8 @@ int trackir_enabled;
 
 void initialize_trackir()
 {
-#ifdef WIN32
+#if defined( WIN32 ) && defined( TRACKIR_BUILD )
+	Int3( );
 	if(!TrackIR_Init((HWND)os_get_window()))
 	{
 		trackir_enabled = 1;
@@ -21,7 +22,7 @@ void initialize_trackir()
 	trackir_enabled = 0;
 }
 
-#ifndef WIN32
+#if !defined( WIN32 ) || !defined( TRACKIR_BUILD )
 
 int TrackIR_Query()
 {
