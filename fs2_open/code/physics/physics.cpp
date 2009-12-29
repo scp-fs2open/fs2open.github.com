@@ -46,7 +46,7 @@
 
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
 float velocity_ramp (float v_in, float v_goal, float time_const, float t);
-float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult);
+float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult, float t);
 
 void physics_init( physics_info * pi )
 {
@@ -680,9 +680,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 		pi->prev_ramp_vel.xyz.z = velocity_ramp( pi->prev_ramp_vel.xyz.z, goal_vel.xyz.z, ramp_time_const, sim_time);
 
-
-		// this translates local desired velocities to world velocities
-
 		if ( pi->flags & PF_GLIDING ) {
 			pi->desired_vel = pi->vel;
 
@@ -726,22 +723,26 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 			//The glide_ramp function uses (basically) the same math as the velocity ramp so that thruster power is consistent
 			//Only ramp if the glide cap is positive
-			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, glide_ramp(local_vel.xyz.x, goal_vel.xyz.x, pi->slide_accel_time_const, pi->glide_accel_mult));
-			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, glide_ramp(local_vel.xyz.y, goal_vel.xyz.y, pi->slide_accel_time_const, pi->glide_accel_mult));
+			float xVal = glide_ramp(local_vel.xyz.x, goal_vel.xyz.x, pi->slide_accel_time_const, pi->glide_accel_mult, sim_time);
+			float yVal = glide_ramp(local_vel.xyz.y, goal_vel.xyz.y, pi->slide_accel_time_const, pi->glide_accel_mult, sim_time);
 			float zVal = 0.0;
 			if (pi->flags & PF_AFTERBURNER_ON) 
-				zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->afterburner_forward_accel_time_const, pi->glide_accel_mult);
+				zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->afterburner_forward_accel_time_const, pi->glide_accel_mult, sim_time);
 			else {
 				if (goal_vel.xyz.z >= 0.0f)
-					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_accel_time_const, pi->glide_accel_mult);
+					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_accel_time_const, pi->glide_accel_mult, sim_time);
 				else
-					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_decel_time_const, pi->glide_accel_mult);
+					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_decel_time_const, pi->glide_accel_mult, sim_time);
 			}
-			//Hack for some degree of compatibility if $use newtonian damping is off
-			if (!pi->use_newtonian_damp) {
-				zVal *= 0.05f;
-			}
+
+			//Compensate for effect of dampening: normal flight cheats here, so /we make up for it this way so glide acts the same way
+			xVal *= pi->side_slip_time_const / sim_time;
+			yVal *= pi->side_slip_time_const / sim_time;
+			if (pi->use_newtonian_damp) zVal *= pi->side_slip_time_const / sim_time;
+
 			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, zVal);
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, xVal);
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, yVal);
 
 			if ( curGlideCap >= 0.0f ) {	// so if negative, don't bother with speed cap
 				float currentmag = vm_vec_mag(&pi->desired_vel);
@@ -752,6 +753,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 		else
 		{
+			// this translates local desired velocities to world velocities
 			vm_vec_zero(&pi->desired_vel);
 			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
 			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
@@ -885,9 +887,9 @@ float velocity_ramp (float v_in, float v_goal, float ramp_time_const, float t)
 }
 
 //Handles thrust values when gliding. Purposefully similar to velocity_ramp in order to yeild a similar "feel" in
-//terms of thruster accels
+//terms of thruster accels (as much as possible)
 //This is all in the local frame of reference for a single movement axis
-float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult)
+float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult, float t)
 {
 	if (v_goal == 0.0f) {
 		return 0.0f;
@@ -911,7 +913,7 @@ float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_m
 	}
 	
 	//Calculate the (decayed) thrust
-	float decay_factor = (ramp_time_const > 0.0f) ? (1.0f - (float)exp(-1 / ramp_time_const)) : 1.0f;
+	float decay_factor = (ramp_time_const > 0.0f) ? (1.0f - (float)exp(-t / ramp_time_const)) : 1.0f;
 	return delta_v * decay_factor;
 }
 
