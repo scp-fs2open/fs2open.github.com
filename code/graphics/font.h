@@ -68,7 +68,7 @@ extern font *Current_font;
 #define FONT3				2				// font03.vf
 
 // extern definitions for basic font functions
-extern void gr_stuff_first_font(char *first_font);
+extern void gr_stuff_first_font(char *first_font, size_t first_font_size);
 extern int gr_get_current_fontnum();
 extern int gr_get_fontnum(char *filename);
 extern void gr_set_font(int fontnum);

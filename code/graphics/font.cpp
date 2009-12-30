@@ -717,7 +717,7 @@ void gr_set_font(int fontnum)
 	}
 }
 
-void parse_fonts_tbl(char *only_parse_first_font)
+void parse_fonts_tbl(char *only_parse_first_font, size_t only_parse_first_font_size)
 {
 	int rval;
 	char *filename;
@@ -758,7 +758,7 @@ void parse_fonts_tbl(char *only_parse_first_font)
 
 		// if we only need the first font, copy it and bail
 		if (only_parse_first_font != NULL) {
-			strcpy_s(only_parse_first_font, font_filename);
+			strcpy_s(only_parse_first_font, only_parse_first_font_size, font_filename);
 			return;
 		}
 
@@ -778,13 +778,13 @@ void parse_fonts_tbl(char *only_parse_first_font)
 	}
 }
 
-void gr_stuff_first_font(char *first_font)
+void gr_stuff_first_font(char *first_font, size_t first_font_size )
 {
-	parse_fonts_tbl(first_font);
+	parse_fonts_tbl( first_font, first_font_size );
 }
 
 void gr_font_init()
 {
-	parse_fonts_tbl(NULL);
+	parse_fonts_tbl( NULL, 0 );
 	gr_set_font(0);
 }
