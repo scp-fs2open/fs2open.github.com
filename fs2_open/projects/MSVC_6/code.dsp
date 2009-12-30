@@ -1749,10 +1749,6 @@ SOURCE="..\..\code\sound\acm-openal.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\acm.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Sound\acm.h
 # End Source File
 # Begin Source File
@@ -1802,14 +1798,6 @@ SOURCE=..\..\code\sound\fsspeech.cpp
 # Begin Source File
 
 SOURCE=..\..\code\sound\fsspeech.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.h
 # End Source File
 # Begin Source File
 
@@ -1882,18 +1870,6 @@ SOURCE=..\..\code\sound\voicerec.cpp
 # Begin Source File
 
 SOURCE=..\..\code\sound\voicerec.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\winmidi_base.cpp
 # End Source File
 # End Group
 # Begin Group "Starfield"
