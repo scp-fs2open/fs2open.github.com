@@ -8325,7 +8325,7 @@ ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
 		gr_set_font(newfn);
 	}
 
-	int fn = FONT_INDEX(Current_font);
+	int fn = gr_get_current_fontnum();
 
 	if(fn < 0 || fn > Num_fonts)
 		return ade_set_error(L, "o", l_Font.Set(-1));

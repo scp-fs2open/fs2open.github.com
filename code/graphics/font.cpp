@@ -26,6 +26,7 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/def_files.h"
 
 
 
@@ -564,8 +565,9 @@ int gr_create_font(char * typeface)
 		fnt++;
 	}
 
-	if ( fontnum==MAX_FONTS )	{
-		Error( LOCATION, "Too many fonts!\nSee John, or change MAX_FONTS in Graphics\\Font.h\n" );
+	if ( fontnum == MAX_FONTS )	{
+		Warning( LOCATION, "Too many fonts!\nSee John, or change MAX_FONTS in Graphics\\Font.h\n" );
+		return -1;
 	}
 
 	if ( fontnum == Num_fonts )	{
@@ -682,6 +684,15 @@ int gr_create_font(char * typeface)
 	return fontnum;
 }
 
+int gr_get_current_fontnum()
+{
+	if (Current_font == NULL) {
+		return -1;
+	} else {
+		return (Current_font - &Fonts[0]);
+	}
+}
+
 int gr_get_fontnum(char *filename)
 {
 	int i;
@@ -706,24 +717,74 @@ void gr_set_font(int fontnum)
 	}
 }
 
-void gr_font_init()
+void parse_fonts_tbl(char *only_parse_first_font)
 {
-	gr_init_font( NOX("font01.vf") );
-	gr_init_font( NOX("font02.vf") );
-	gr_init_font( NOX("font03.vf") );
+	int rval;
+	char *filename;
+	
+	// choose file name
+	// (this can be done within the function, as opposed to being passed as a parameter,
+	// because fonts.tbl doesn't have a modular counterpart)
+	if ( cf_exists_full("fonts.tbl", CF_TYPE_TABLES) ) {
+		filename = "fonts.tbl";
+	} else {
+		filename = NULL;
+	}
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default fonts.tbl>"), rval));
+		return;
+	}
+
+	if (filename != NULL) {
+		read_file_text(filename, CF_TYPE_TABLES);
+	} else {
+		read_file_text_from_array(defaults_get_file("fonts.tbl"));
+	}
+
+	reset_parse();		
+
+
+	// start parsing
+	required_string("#Fonts");
+
+	// read fonts
+	while (required_string_either("#End","$Font:")) {
+		char font_filename[MAX_FILENAME_LEN];
+
+		// grab font
+		required_string("$Font:");
+		stuff_string(font_filename, F_NAME, MAX_FILENAME_LEN);
+
+		// if we only need the first font, copy it and bail
+		if (only_parse_first_font != NULL) {
+			strcpy_s(only_parse_first_font, font_filename);
+			return;
+		}
+
+		// create font
+		int font_id = gr_create_font(font_filename);
+		if (font_id < 0) {
+			Warning(LOCATION, "Could not create font from typeface '%s'!", font_filename);
+		}
+	}
+
+	// done parsing
+	required_string("#End");
+
+	// double check
+	if (Num_fonts < 3) {
+		Error(LOCATION, "There must be at least three fonts in %s!", (filename) ? filename : NOX("<default fonts.tbl>"));
+	}
 }
 
-// Returns -1 if couldn't init font, otherwise returns the
-// font id number.
-int gr_init_font(char * typeface)
+void gr_stuff_first_font(char *first_font)
 {
-	int Loaded_fontnum;
+	parse_fonts_tbl(first_font);
+}
 
-	Loaded_fontnum = gr_create_font(typeface);
-
-	Assert( Loaded_fontnum > -1 );
-
-	gr_set_font( Loaded_fontnum );
-
-	return Loaded_fontnum;
+void gr_font_init()
+{
+	parse_fonts_tbl(NULL);
+	gr_set_font(0);
 }

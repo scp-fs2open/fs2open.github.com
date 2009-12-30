@@ -93,10 +93,14 @@ int Fiction_viewer_text_max_lines[GR_NUM_RESOLUTIONS] =
 
 static UI_WINDOW Fiction_viewer_window;
 static UI_SLIDER2 Fiction_viewer_slider;
-static int Fiction_viewer_bitmap;
+static int Fiction_viewer_bitmap = -1;
 static int Fiction_viewer_inited = 0;
 
+static int Fiction_viewer_old_fontnum = -1;
+static int Fiction_viewer_fontnum = -1;
+
 static char Fiction_viewer_filename[MAX_FILENAME_LEN];
+static char Fiction_viewer_font_filename[MAX_FILENAME_LEN];
 static char *Fiction_viewer_text = NULL;
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -195,6 +199,17 @@ void fiction_viewer_init()
 		return;
 	}
 
+	// save old font and set new one
+	if (Fiction_viewer_fontnum >= 0)
+	{
+		Fiction_viewer_old_fontnum = gr_get_current_fontnum();
+		gr_set_font(Fiction_viewer_fontnum);
+	}
+	else
+	{
+		Fiction_viewer_old_fontnum = -1;
+	}
+
 	// window
 	Fiction_viewer_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Fiction_viewer_window.set_mask_bmap(Fiction_viewer_screen_mask[gr_screen.res]);	
@@ -246,13 +261,17 @@ void fiction_viewer_close()
 	// free the fiction
 	fiction_viewer_reset();
 
+	// destroy the window
+	Fiction_viewer_window.destroy();
+
+	// restore the old font
+	if (Fiction_viewer_old_fontnum >= 0)
+		gr_set_font(Fiction_viewer_old_fontnum);
+
 	// free the bitmap
 	if (Fiction_viewer_bitmap >= 0)
 		bm_release(Fiction_viewer_bitmap);
 	Fiction_viewer_bitmap = -1;
-
-	// destroy the window
-	Fiction_viewer_window.destroy();
 
 	// maybe stop music
 	if (Mission_music[SCORE_FICTION_VIEWER] != Mission_music[SCORE_BRIEFING])
@@ -334,6 +353,11 @@ char *fiction_file()
 	return Fiction_viewer_filename;
 }
 
+char *fiction_font()
+{
+	return Fiction_viewer_font_filename;
+}
+
 void fiction_viewer_reset()
 {
 	if (Fiction_viewer_text != NULL)
@@ -343,7 +367,7 @@ void fiction_viewer_reset()
 	Top_fiction_viewer_text_line = 0;
 }
 
-void fiction_viewer_load(char *filename)
+void fiction_viewer_load(char *filename, char *font_filename)
 {
 	int file_length;
 
@@ -357,7 +381,14 @@ void fiction_viewer_load(char *filename)
 	// save our filename
 	strcpy_s(Fiction_viewer_filename, filename);
 
-	// load up the file
+	// see if we have a matching font
+	Fiction_viewer_fontnum = gr_get_fontnum(font_filename);
+	if (Fiction_viewer_fontnum >= 0)
+		strcpy_s(Fiction_viewer_font_filename, font_filename);
+	else
+		strcpy_s(Fiction_viewer_font_filename, "");
+
+	// load up the text
 	CFILE *fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
 	if (fp == NULL)
 	{

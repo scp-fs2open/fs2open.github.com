@@ -727,9 +727,22 @@ int CFred_mission_save::save_fiction()
 
 			fout("\n");
 
+			// save file
 			required_string_fred("$File:");
 			parse_comments();
 			fout(" %s", fiction_file());
+
+			// save font
+			if (strlen(fiction_font()) > 0)
+			{
+				if (optional_string_fred("$Font:"))
+					parse_comments();
+				else
+					fout("$Font:");
+				fout(" %s", fiction_font());
+			}
+			else
+				optional_string_fred("$Font:");
 		}
 		else
 		{
