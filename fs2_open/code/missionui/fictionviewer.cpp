@@ -211,7 +211,7 @@ void fiction_viewer_init()
 	}
 
 	// window
-	Fiction_viewer_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+	Fiction_viewer_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0, Fiction_viewer_fontnum);
 	Fiction_viewer_window.set_mask_bmap(Fiction_viewer_screen_mask[gr_screen.res]);	
 
 	// add the buttons

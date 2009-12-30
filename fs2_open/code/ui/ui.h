@@ -642,7 +642,7 @@ public:
 	void set_mask_bmap(char *fname);
 	void set_mask_bmap(int bmap, char *name);
 	void set_foreground_bmap(char *fname);
-	void create( int x, int y, int w, int h, int flags );
+	void create( int x, int y, int w, int h, int flags, int f_id = -1 );
 	int process( int key_in = -1,int process_mouse = 1);
 	void draw();
 	void draw_tooltip();
