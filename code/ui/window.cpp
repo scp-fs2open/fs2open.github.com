@@ -140,20 +140,20 @@ void UI_WINDOW::set_foreground_bmap(char *fname)
 }
 
 
-void UI_WINDOW::create( int _x, int _y, int _w, int _h, int _flags )
+void UI_WINDOW::create( int _x, int _y, int _w, int _h, int _flags, int _f_id )
 {
 	x = _x;
 	y = _y;
 	w = _w;
 	h = _h;
 	flags = _flags;
+	f_id = (_f_id >= 0 && _f_id < Num_fonts) ? _f_id : FONT1;
+
 	first_gadget = NULL;
 	selected_gadget = NULL;
 	tooltip_handler = NULL;  // pointer to function to handle custom tooltips
 	ignore_gadgets = 0;
 	use_hack_to_get_around_stupid_problem_flag = 0;
-
-	f_id = FONT1;
 
 	if (_x < 0)
 		_x = 0;
