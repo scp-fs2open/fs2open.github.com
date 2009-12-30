@@ -9390,7 +9390,7 @@ int detect_lang()
 		return -1;
 
 	// try and open the file to verify
-	gr_stuff_first_font(first_font);
+	gr_stuff_first_font(first_font, sizeof(first_font));
 	CFILE *detect = cfopen(first_font, "rb");
 
 	// will use default setting if something went wrong
