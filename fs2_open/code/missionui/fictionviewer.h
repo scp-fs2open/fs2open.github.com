@@ -17,7 +17,8 @@ void fiction_viewer_do_frame(float frametime);
 // fiction stuff
 int mission_has_fiction();
 char *fiction_file();
+char *fiction_font();
 void fiction_viewer_reset();
-void fiction_viewer_load(char *filename);
+void fiction_viewer_load(char *filename, char *font_filename);
 
 #endif

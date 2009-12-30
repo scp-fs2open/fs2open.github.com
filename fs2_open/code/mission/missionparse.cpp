@@ -1146,6 +1146,7 @@ done_briefing_music:
 void parse_fiction(mission *pm)
 {
 	char filename[MAX_FILENAME_LEN];
+	char font_filename[MAX_FILENAME_LEN];
 
 	fiction_viewer_reset();
 
@@ -1155,7 +1156,13 @@ void parse_fiction(mission *pm)
 	required_string("$File:");
 	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
 
-	fiction_viewer_load(filename);
+	if (optional_string("$Font:")) {
+		stuff_string(font_filename, F_FILESPEC, MAX_FILENAME_LEN);
+	} else {
+		strcpy_s(font_filename, "");
+	}
+
+	fiction_viewer_load(filename, font_filename);
 }
 
 void parse_cmd_brief(mission *pm)
