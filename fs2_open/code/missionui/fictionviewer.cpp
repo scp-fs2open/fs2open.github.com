@@ -86,10 +86,7 @@ int Fiction_viewer_text_coordinates[GR_NUM_RESOLUTIONS][4] =
 };
 
 int Top_fiction_viewer_text_line = 0;
-int Fiction_viewer_text_max_lines[GR_NUM_RESOLUTIONS] =
-{
-	38, 61
-};
+int Fiction_viewer_text_max_lines = 0;
 
 static UI_WINDOW Fiction_viewer_window;
 static UI_SLIDER2 Fiction_viewer_slider;
@@ -134,7 +131,7 @@ void fiction_viewer_scroll_up()
 void fiction_viewer_scroll_down()
 {
 	Top_fiction_viewer_text_line++;
-	if ((Num_brief_text_lines[0] - Top_fiction_viewer_text_line) < Fiction_viewer_text_max_lines[gr_screen.res])
+	if ((Num_brief_text_lines[0] - Top_fiction_viewer_text_line) < Fiction_viewer_text_max_lines)
 	{
 		Top_fiction_viewer_text_line--;
 		gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -210,6 +207,9 @@ void fiction_viewer_init()
 		Fiction_viewer_old_fontnum = -1;
 	}
 
+	// calculate text area lines from font
+	Fiction_viewer_text_max_lines = Fiction_viewer_text_coordinates[gr_screen.res][3] / gr_get_font_height();
+
 	// window
 	Fiction_viewer_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0, Fiction_viewer_fontnum);
 	Fiction_viewer_window.set_mask_bmap(Fiction_viewer_screen_mask[gr_screen.res]);	
@@ -235,14 +235,14 @@ void fiction_viewer_init()
 	brief_color_text_init(Fiction_viewer_text, Fiction_viewer_text_coordinates[gr_screen.res][2], 0, 0);
 
 	// if the story is going to overflow the screen, add a slider
-	if (Num_brief_text_lines[0] > Fiction_viewer_text_max_lines[gr_screen.res])
+	if (Num_brief_text_lines[0] > Fiction_viewer_text_max_lines)
 	{
 		Fiction_viewer_slider.create(&Fiction_viewer_window,
 			Fiction_viewer_slider_coordinates[gr_screen.res][0],
 			Fiction_viewer_slider_coordinates[gr_screen.res][1],
 			Fiction_viewer_slider_coordinates[gr_screen.res][2],
 			Fiction_viewer_slider_coordinates[gr_screen.res][3],
-			Num_brief_text_lines[0] - Fiction_viewer_text_max_lines[gr_screen.res],
+			Num_brief_text_lines[0] - Fiction_viewer_text_max_lines,
 			Fiction_viewer_slider_filename[gr_screen.res],
 			&fiction_viewer_scroll_up,
 			&fiction_viewer_scroll_down,
@@ -327,7 +327,7 @@ void fiction_viewer_do_frame(float frametime)
 	brief_render_text(Top_fiction_viewer_text_line, Fiction_viewer_text_coordinates[gr_screen.res][0], Fiction_viewer_text_coordinates[gr_screen.res][1], Fiction_viewer_text_coordinates[gr_screen.res][3], frametime);
 
 	// maybe output the "more" indicator
-	if ((Fiction_viewer_text_max_lines[gr_screen.res] + Top_fiction_viewer_text_line) < Num_brief_text_lines[0])
+	if ((Fiction_viewer_text_max_lines + Top_fiction_viewer_text_line) < Num_brief_text_lines[0])
 	{
 		// can be scrolled down
 		int more_txt_x = Fiction_viewer_text_coordinates[gr_screen.res][0] + (Fiction_viewer_text_coordinates[gr_screen.res][2]/2) - 10;
