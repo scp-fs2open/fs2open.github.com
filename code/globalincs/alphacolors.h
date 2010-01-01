@@ -39,15 +39,16 @@
 
 #define Color_bright Color_bright_blue
 #define Color_normal Color_white
-extern color Color_black, Color_grey, Color_blue, Color_bright_blue, Color_violet_gray;
-extern color Color_green, Color_bright_green, Color_bright_white, Color_white;
-extern color Color_red, Color_bright_red, Color_yellow, Color_bright_yellow, Color_dim_red;
+extern color Color_blue, Color_bright_blue, Color_green, Color_bright_green;
+extern color Color_black, Color_grey, Color_silver, Color_white, Color_bright_white;
+extern color Color_violet_gray, Color_violet, Color_pink, Color_light_pink;
+extern color Color_dim_red, Color_red, Color_bright_red, Color_yellow, Color_bright_yellow;
 
 extern color Color_ui_light_green, Color_ui_green;
 extern color Color_ui_light_pink, Color_ui_pink;
 
 // netplayer colors
-extern color *Color_netplayer[12];
+extern color *Color_netplayer[20];
 
 // -----------------------------------------------------------------------------------
 // ALPHA FUNCTIONS
