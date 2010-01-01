@@ -1560,9 +1560,8 @@ ubyte brief_return_color_index(char c)
  		case 'y':
  			return BRIEF_TEXT_YELLOW;
  
-		default:	
-			Int3();	// unsupported meta-code
-			break;
+		default:	//Zacam: Changed fron an Int3() in order to provide better feedback while still allowing play.
+			Warning(LOCATION, "Unrecognized or undefined case character: '$%c' used in Briefing in mission: '%s'. Tell Zacam.", c, Mission_filename);
 	} // end switch
 
 	return BRIEF_TEXT_WHITE;
