@@ -187,16 +187,27 @@ typedef SCP_vector<colored_char> briefing_line;
 typedef SCP_vector<briefing_line> briefing_stream; 
 static briefing_stream Colored_stream[MAX_TEXT_STREAMS];
 
-#define MAX_BRIEF_TEXT_COLORS			9
-#define BRIEF_TEXT_WHITE				0
+#define MAX_BRIEF_TEXT_COLORS		20
+#define BRIEF_TEXT_WHITE			0
 #define BRIEF_TEXT_BRIGHT_WHITE		1
-#define BRIEF_TEXT_RED					2
-#define BRIEF_TEXT_GREEN				3
-#define BRIEF_TEXT_YELLOW				4
-#define BRIEF_TEXT_BLUE					5
-#define BRIEF_TEXT_FRIENDLY				6
-#define BRIEF_TEXT_HOSTILE				7
-#define BRIEF_TEXT_NEUTRAL				8
+#define BRIEF_TEXT_RED				2
+#define BRIEF_TEXT_GREEN			3
+#define BRIEF_TEXT_YELLOW			4
+#define BRIEF_TEXT_BLUE				5
+#define BRIEF_TEXT_FRIENDLY			6
+#define BRIEF_TEXT_HOSTILE			7
+#define BRIEF_TEXT_NEUTRAL			8
+#define BRIEF_TEXT_BRIGHT_BLUE		9
+#define BRIEF_TEXT_BRIGHT_GREEN		10
+#define BRIEF_TEXT_BRIGHT_RED		11
+#define BRIEF_TEXT_BRIGHT_YELLOW	12
+#define BRIEF_TEXT_BLACK			13
+#define BRIEF_TEXT_GREY				14
+#define BRIEF_TEXT_SILVER			15
+#define BRIEF_TEXT_VIOLET_GRAY		16
+#define BRIEF_TEXT_VIOLET			17
+#define BRIEF_TEXT_PINK				18
+#define BRIEF_TEXT_LIGHT_PINK		19
 
 color Brief_color_red, Brief_color_green, Brief_color_legacy_neutral;
 
@@ -211,6 +222,17 @@ color *Brief_text_colors[MAX_BRIEF_TEXT_COLORS] =
 	&Brief_color_green,
 	&Brief_color_red,
 	&Brief_color_legacy_neutral,
+	&Color_bright_blue,
+	&Color_bright_green,
+	&Color_bright_red,
+	&Color_bright_yellow,
+	&Color_black,
+	&Color_grey,
+	&Color_silver,
+	&Color_violet_gray,
+	&Color_violet,
+	&Color_pink,
+	&Color_light_pink,
 };
 
 #define BRIGHTEN_LEAD	2
@@ -1554,11 +1576,48 @@ ubyte brief_return_color_index(char c)
 		case 'b':
 			return BRIEF_TEXT_BLUE;
 
+//The following added by Zacam for expanded BRIEF colors
  		case 'w':
  			return BRIEF_TEXT_WHITE;
- 
+
  		case 'y':
  			return BRIEF_TEXT_YELLOW;
+
+		case 'W':
+			return BRIEF_TEXT_BRIGHT_WHITE;
+
+		case 'B':
+			return BRIEF_TEXT_BRIGHT_BLUE;
+
+		case 'G':
+			return BRIEF_TEXT_BRIGHT_GREEN;
+
+		case 'R':
+			return BRIEF_TEXT_BRIGHT_RED;
+
+		case 'Y':
+			return BRIEF_TEXT_BRIGHT_YELLOW;
+
+		case 'k':
+			return BRIEF_TEXT_BLACK;
+
+		case 'e':
+			return BRIEF_TEXT_GREY;
+
+		case 'E':
+			return BRIEF_TEXT_SILVER;
+
+		case 'v':
+			return BRIEF_TEXT_VIOLET_GRAY;
+
+		case 'V':
+			return BRIEF_TEXT_VIOLET;
+
+		case 'p':
+			return BRIEF_TEXT_PINK;
+
+		case 'P':
+			return BRIEF_TEXT_LIGHT_PINK;
  
 		default:	//Zacam: Changed fron an Int3() in order to provide better feedback while still allowing play.
 			Warning(LOCATION, "Unrecognized or undefined case character: '$%c' used in Briefing in mission: '%s'. Tell Zacam.", c, Mission_filename);
