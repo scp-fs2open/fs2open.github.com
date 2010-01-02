@@ -1195,7 +1195,7 @@ void send_autopilot_msg(char *msg, char *snd)
 	}
 
 	if (strlen(msg) != 0 && strcmp(msg, "none"))
-		message_training_queue("autopilot builtin message", timestamp(0), 5); // display message for five seconds
+		message_training_add_to_queue("autopilot builtin message", timestamp(0), 5); // display message for five seconds
 }
 
 // ********************************************************************************************

@@ -795,7 +795,7 @@ void message_training_setup(int m, int length, char *special_message)
 } */
 
 // add a message to the queue to be sent later.
-void message_training_queue(char *text, int timestamp, int length)
+void message_training_add_to_queue(char *text, int timestamp, int length)
 {
 	Training_Message training_message;
 	int m;
