@@ -18,7 +18,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h"
+#include "ExternalDLL/trackirpublic.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "mission/missioncampaign.h"
@@ -8113,60 +8113,60 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 //trackir funcs
 ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ADE_RETURN_FALSE;
 
-	TrackIR_Query();
+	gTirDll_TrackIR.Query( );
 
 	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetPitch());
+	return ade_set_args( L, "f", gTirDll_TrackIR.GetPitch( ) );
 }
 
 ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetYaw());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetYaw());
 }
 
 ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetRoll());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetRoll());
 }
 
 ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetX());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetX());
 }
 
 ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetY());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetY());
 }
 
 ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetZ());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetZ());
 }
 
 //**********LIBRARY: Controls library

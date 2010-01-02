@@ -64,7 +64,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h" // header file for the TrackIR routines (Swifty)
+#include "ExternalDLL/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -346,6 +346,9 @@ int Player_died_popup_wait = -1;
 int Multi_ping_timestamp = -1;
 
 int Default_env_map = -1;
+
+/* The TrackIR Interface */
+TrackIRDLL gTirDll_TrackIR;
 
 // builtin mission list stuff
 #ifdef FS2_DEMO
@@ -7456,7 +7459,11 @@ int game_main(char *cmdline)
 
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	initialize_trackir(); 
+	int trackIrInitResult = gTirDll_TrackIR.Init( (HWND)os_get_window( ) );
+	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
+	{
+		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
+	}
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
@@ -7723,11 +7730,7 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-#ifdef _WIN32
-	timeEndPeriod(1);
-	if(trackir_enabled) // Safely shutdown the user's TrackIR unit if he has one (Swifty)
-		TrackIR_ShutDown();
-#endif
+	gTirDll_TrackIR.Close( );
 
 
 	fsspeech_deinit();
