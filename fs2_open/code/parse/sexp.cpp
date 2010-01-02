@@ -11983,9 +11983,9 @@ void sexp_send_training_message(int node)
 	}
 
 	if ((Mission_events[Event_index].repeat_count > 1) || (CDR(node) < 0)){
-		message_training_queue(CTEXT(node), timestamp(delay), t);
+		message_training_add_to_queue(CTEXT(node), timestamp(delay), t);
 	} else {
-		message_training_queue(CTEXT(CDR(node)), timestamp(delay), t);
+		message_training_add_to_queue(CTEXT(CDR(node)), timestamp(delay), t);
 	}
 
 //	if (Training_msg_method)
