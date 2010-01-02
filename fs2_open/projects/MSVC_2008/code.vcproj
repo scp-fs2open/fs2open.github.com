@@ -1870,14 +1870,6 @@
 				RelativePath="..\..\code\io\timer.h"
 				>
 			</File>
-			<File
-				RelativePath="..\..\code\io\trackir.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\io\trackir.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="JumpNode"
@@ -3624,6 +3616,18 @@
 			</File>
 			<File
 				RelativePath="..\..\code\vcodec\codec1.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="ExternalDLL"
+			>
+			<File
+				RelativePath="..\..\code\ExternalDLL\externalcode.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ExternalDLL\trackirpublic.h"
 				>
 			</File>
 		</Filter>
