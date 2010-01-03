@@ -671,6 +671,10 @@
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
 		914580490FD036ED00788595 /* multi_sexp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914580470FD036ED00788595 /* multi_sexp.cpp */; };
 		9145804A0FD036ED00788595 /* multi_sexp.h in Headers */ = {isa = PBXBuildFile; fileRef = 914580480FD036ED00788595 /* multi_sexp.h */; };
+		F04FB77B10F09E1E00DAF094 /* externalcode.h in Headers */ = {isa = PBXBuildFile; fileRef = F04FB77910F09E1E00DAF094 /* externalcode.h */; };
+		F04FB77C10F09E1E00DAF094 /* trackirpublic.h in Headers */ = {isa = PBXBuildFile; fileRef = F04FB77A10F09E1E00DAF094 /* trackirpublic.h */; };
+		F04FB77D10F09E1E00DAF094 /* externalcode.h in Headers */ = {isa = PBXBuildFile; fileRef = F04FB77910F09E1E00DAF094 /* externalcode.h */; };
+		F04FB77E10F09E1E00DAF094 /* trackirpublic.h in Headers */ = {isa = PBXBuildFile; fileRef = F04FB77A10F09E1E00DAF094 /* trackirpublic.h */; };
 		F0A86D651000AD6B006CB60B /* vmallocator.h in Headers */ = {isa = PBXBuildFile; fileRef = F0A86D641000AD6B006CB60B /* vmallocator.h */; };
 		F0ED18A1101064C70011978C /* safe_strings_test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0ED189E101064C70011978C /* safe_strings_test.cpp */; };
 		F0ED18A2101064C70011978C /* safe_strings.h in Headers */ = {isa = PBXBuildFile; fileRef = F0ED189F101064C70011978C /* safe_strings.h */; };
@@ -1523,6 +1527,8 @@
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
+		F04FB77910F09E1E00DAF094 /* externalcode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = externalcode.h; sourceTree = "<group>"; };
+		F04FB77A10F09E1E00DAF094 /* trackirpublic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = trackirpublic.h; sourceTree = "<group>"; };
 		F0A86D641000AD6B006CB60B /* vmallocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmallocator.h; sourceTree = "<group>"; };
 		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
 		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
@@ -1791,6 +1797,7 @@
 				3459531808C3D69F003B1351 /* demo */,
 				3459531B08C3D69F003B1351 /* directx */,
 				3459532B08C3D6A0003B1351 /* exceptionhandler */,
+				F04FB77810F09E1E00DAF094 /* ExternalDLL */,
 				3459532E08C3D6A0003B1351 /* fireball */,
 				3459533208C3D6A0003B1351 /* freespace2 */,
 				3488081E0DA05403001CAB39 /* fs2netd */,
@@ -3051,6 +3058,15 @@
 			path = scramble;
 			sourceTree = "<group>";
 		};
+		F04FB77810F09E1E00DAF094 /* ExternalDLL */ = {
+			isa = PBXGroup;
+			children = (
+				F04FB77910F09E1E00DAF094 /* externalcode.h */,
+				F04FB77A10F09E1E00DAF094 /* trackirpublic.h */,
+			);
+			path = ExternalDLL;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -3098,6 +3114,8 @@
 				9145804A0FD036ED00788595 /* multi_sexp.h in Headers */,
 				F0A86D651000AD6B006CB60B /* vmallocator.h in Headers */,
 				F0ED18A2101064C70011978C /* safe_strings.h in Headers */,
+				F04FB77B10F09E1E00DAF094 /* externalcode.h in Headers */,
+				F04FB77C10F09E1E00DAF094 /* trackirpublic.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3345,6 +3363,8 @@
 				3488083F0DA0552C001CAB39 /* fictionviewer.h in Headers */,
 				348808540DA06E31001CAB39 /* objectshield.h in Headers */,
 				348808560DA06E31001CAB39 /* waypoint.h in Headers */,
+				F04FB77D10F09E1E00DAF094 /* externalcode.h in Headers */,
+				F04FB77E10F09E1E00DAF094 /* trackirpublic.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
