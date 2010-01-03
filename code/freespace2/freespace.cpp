@@ -347,9 +347,6 @@ int Multi_ping_timestamp = -1;
 
 int Default_env_map = -1;
 
-/* The TrackIR Interface */
-TrackIRDLL gTirDll_TrackIR;
-
 // builtin mission list stuff
 #ifdef FS2_DEMO
 	int Game_builtin_mission_count = 6;

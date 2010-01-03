@@ -13,7 +13,9 @@ class SCP_ExternalCode
 {
 public:
 	SCP_ExternalCode( )
+#ifdef _WIN32
 		: m_dll( NULL )
+#endif
 	{
 	}
 
@@ -50,7 +52,9 @@ protected:
 		return NULL;
 	}
 private:
+#ifdef _WIN32
 	HMODULE m_dll;
+#endif
 };
 
 /* These are available if you're compiling an external DLL
