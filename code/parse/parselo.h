@@ -80,6 +80,7 @@ extern char *get_pointer_to_first_hash_symbol(char *src);
 
 // white space
 extern int is_white_space(char ch);
+extern int is_gray_space(char ch);
 extern void ignore_white_space();
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
