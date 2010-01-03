@@ -118,8 +118,6 @@
 		3488083B0DA054F1001CAB39 /* modelanim.h in Headers */ = {isa = PBXBuildFile; fileRef = 3488083A0DA054F1001CAB39 /* modelanim.h */; };
 		3488083E0DA0552C001CAB39 /* fictionviewer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3488083C0DA0552C001CAB39 /* fictionviewer.cpp */; };
 		3488083F0DA0552C001CAB39 /* fictionviewer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3488083D0DA0552C001CAB39 /* fictionviewer.h */; };
-		348808420DA05550001CAB39 /* trackir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 348808400DA05550001CAB39 /* trackir.cpp */; };
-		348808430DA05550001CAB39 /* trackir.h in Headers */ = {isa = PBXBuildFile; fileRef = 348808410DA05550001CAB39 /* trackir.h */; };
 		348808530DA06E31001CAB39 /* objectshield.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3488084F0DA06E31001CAB39 /* objectshield.cpp */; };
 		348808540DA06E31001CAB39 /* objectshield.h in Headers */ = {isa = PBXBuildFile; fileRef = 348808500DA06E31001CAB39 /* objectshield.h */; };
 		348808550DA06E31001CAB39 /* waypoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 348808510DA06E31001CAB39 /* waypoint.cpp */; };
@@ -1457,7 +1455,7 @@
 		3459580708C3D836003B1351 /* jutils.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = jutils.c; sourceTree = "<group>"; };
 		3459580808C3D836003B1351 /* jversion.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = jversion.h; sourceTree = "<group>"; };
 		3459580C08C3D836003B1351 /* transupp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = transupp.h; sourceTree = "<group>"; };
-		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
+		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
 		345A81170B4941F100282E7A /* deadobjectdock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = deadobjectdock.cpp; sourceTree = "<group>"; };
@@ -1493,8 +1491,6 @@
 		3488083A0DA054F1001CAB39 /* modelanim.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = modelanim.h; sourceTree = "<group>"; };
 		3488083C0DA0552C001CAB39 /* fictionviewer.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = fictionviewer.cpp; sourceTree = "<group>"; };
 		3488083D0DA0552C001CAB39 /* fictionviewer.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fictionviewer.h; sourceTree = "<group>"; };
-		348808400DA05550001CAB39 /* trackir.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = trackir.cpp; sourceTree = "<group>"; };
-		348808410DA05550001CAB39 /* trackir.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = trackir.h; sourceTree = "<group>"; };
 		3488084F0DA06E31001CAB39 /* objectshield.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = objectshield.cpp; sourceTree = "<group>"; };
 		348808500DA06E31001CAB39 /* objectshield.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = objectshield.h; sourceTree = "<group>"; };
 		348808510DA06E31001CAB39 /* waypoint.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = waypoint.cpp; sourceTree = "<group>"; };
@@ -2250,8 +2246,6 @@
 				345953CF08C3D6A0003B1351 /* swff_lib.cpp */,
 				345953D008C3D6A0003B1351 /* timer.cpp */,
 				345953D108C3D6A0003B1351 /* timer.h */,
-				348808400DA05550001CAB39 /* trackir.cpp */,
-				348808410DA05550001CAB39 /* trackir.h */,
 			);
 			path = io;
 			sourceTree = "<group>";
@@ -3349,7 +3343,6 @@
 				348808340DA05488001CAB39 /* multi_pxo.h in Headers */,
 				3488083B0DA054F1001CAB39 /* modelanim.h in Headers */,
 				3488083F0DA0552C001CAB39 /* fictionviewer.h in Headers */,
-				348808430DA05550001CAB39 /* trackir.h in Headers */,
 				348808540DA06E31001CAB39 /* objectshield.h in Headers */,
 				348808560DA06E31001CAB39 /* waypoint.h in Headers */,
 			);
@@ -3880,7 +3873,6 @@
 				348808310DA05488001CAB39 /* chat_api.cpp in Sources */,
 				348808330DA05488001CAB39 /* multi_pxo.cpp in Sources */,
 				3488083E0DA0552C001CAB39 /* fictionviewer.cpp in Sources */,
-				348808420DA05550001CAB39 /* trackir.cpp in Sources */,
 				348808530DA06E31001CAB39 /* objectshield.cpp in Sources */,
 				348808550DA06E31001CAB39 /* waypoint.cpp in Sources */,
 				348808570DA06E5E001CAB39 /* inetgetfile.cpp in Sources */,
