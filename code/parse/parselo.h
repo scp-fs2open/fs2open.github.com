@@ -80,14 +80,14 @@ extern char *get_pointer_to_first_hash_symbol(char *src);
 
 // white space
 extern int is_white_space(char ch);
-extern int is_gray_space(char ch);
 extern void ignore_white_space();
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
 
 // gray space
-void ignore_gray_space();
+extern int is_gray_space(char ch);
+extern void ignore_gray_space();
 
 // error
 extern int get_line_num();
