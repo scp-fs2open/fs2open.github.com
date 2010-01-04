@@ -330,7 +330,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 			int i;
 
 			// if all were destroyed, then don't do this debug code.
-			if ( Wings[index].total_destroyed == Wings[index].total_arrived_count ){
+			if ( (Wings[index].total_destroyed + Wings[index].total_vanished) == Wings[index].total_arrived_count ){
 				break;
 			}
 
