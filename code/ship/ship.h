@@ -954,6 +954,7 @@ typedef struct man_thruster {
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
+	char		alt_name[NAME_LENGTH];			// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table

@@ -250,6 +250,7 @@ extern weapon Weapons[MAX_WEAPONS];
 
 typedef struct weapon_info {
 	char	name[NAME_LENGTH];				// name of this weapon
+	char	alt_name[NAME_LENGTH];			// alt name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
 	int	subtype;								// one of the WP_* macros above

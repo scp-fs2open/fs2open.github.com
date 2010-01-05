@@ -5166,7 +5166,7 @@ void hud_show_weapons()
 				GR_AABITMAP(New_weapon.first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
 		}
 
-		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5238,7 +5238,7 @@ void hud_show_weapons()
 		if(!stricmp(wip->name,"cluster bomb")){
 			strcpy_s(weapon_name, NOX("Cluster"));
 		} else {
-			strcpy_s(weapon_name, wip->name);
+			strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
 		}
 
 		// get rid of #
@@ -6222,7 +6222,7 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 
 	// maybe get ship class
 	if (!*ship_class_text) {
-		strcpy(ship_class_text, Ship_info[shipp->ship_info_index].name);
+		strcpy(ship_class_text, (Ship_info[shipp->ship_info_index].alt_name[0]) ? Ship_info[shipp->ship_info_index].alt_name : Ship_info[shipp->ship_info_index].name);
 	}
 
 	// handle hash symbol

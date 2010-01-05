@@ -810,7 +810,7 @@ void techroom_change_tab(int num)
 						Ship_list[Ship_list_size].index = i;
 						Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
 						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
-						Ship_list[Ship_list_size].name = Ship_info[i].name;
+						Ship_list[Ship_list_size].name = (Ship_info[i].alt_name[0]) ? Ship_info[i].alt_name : Ship_info[i].name;
 						Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
 						Ship_list[Ship_list_size].model_num = -1;
 						Ship_list[Ship_list_size].textures_loaded = 0;
