@@ -106,17 +106,6 @@ namespace opengl {
 		 */
 		void set_uniforms(post_shader *sdr);
 
-		/** Cut off dark parts and blur %texture.
-		 * High-pass filter is applied to the %texture and the result is blurred by
-		 * two pass Gaussian blur implementation with fixed kernel. Blurring is performed
-		 * on downscaled textures to improve algorithm performance. Additionally, downscaling
-		 * factor varies blur intensity since the kernel is fixed.
-		 * @param tex texture to be blurred
-		 * @param downscale downscaling factor
-		 * @return output texture
-		 */
-		texture *blur(texture *tex, int downscale);
-
 		/** Get a list of uniform variables used by %bloom.
 		 * The names of uniform variables are appended to the given list.
 		 */
@@ -124,6 +113,26 @@ namespace opengl {
 			uniforms.push_back("bloomed");
 			uniforms.push_back("bloom_intensity");
 		}
+
+	protected:
+		/** Blur %texture.
+		 * %Texture is blurred by a two pass Gaussian blur implementation with fixed kernel.
+		 * Blurring is performed on downscaled textures to improve algorithm performance.
+		 * Additionally, downscaling factor varies blur intensity since the kernel is fixed.
+		 * @param tex texture to be blurred
+		 * @param downscale downscaling factor
+		 * @return output texture
+		 */
+		texture *blur(texture *tex, int downscale);
+
+		/** Cut off dark parts of downscaled %texture
+		 * High-pass filter is applied to the downscaled %texture. Since bilinear filter is
+		 * used downscaling factors higher than 2 may cause visible artifacts.
+		 * @param tex input texture
+		 * @param downscale downscaling factor
+		 * @return output texture
+		 */
+		texture *high_pass(texture *tex, int downscale);
 
 	private:
 		/** @c blur-f.sdr and @c brightpass-f.sdr uniforms IDs */
