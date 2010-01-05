@@ -4741,6 +4741,8 @@ int WE_Hyperspace::warpStart()
 	{
 		shipp->flags |= SF_ARRIVING_STAGE_2;
 		objp->phys_info.flags |= PF_WARP_IN;
+		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
+		objp->flags &= ~OF_PHYSICS;
 	}
 	else if(direction == WD_WARP_OUT)
 	{
@@ -4764,6 +4766,8 @@ int WE_Hyperspace::warpFrame(float frametime)
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
+		objp->phys_info.vel.xyz.z = 0.0f;
+		objp->flags |= OF_PHYSICS;
 		this->warpEnd();
 	}
 	else
