@@ -381,6 +381,9 @@ int collide_ship_weapon( obj_pair * pair )
 			return 0;
 	}
 
+	if (reject_due_collision_groups(ship, weapon))
+		return 0;
+
 	// Cull lasers within big ship spheres by casting a vector forward for (1) exit sphere or (2) lifetime of laser
 	// If it does hit, don't check the pair until about 200 ms before collision.  
 	// If it does not hit and is within error tolerance, cull the pair.
