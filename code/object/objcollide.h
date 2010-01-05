@@ -136,4 +136,6 @@ void collide_ship_ship_sounds_init();
 
 int get_ship_quadrant_from_global(vec3d *global_pos, object *objp);
 
+int reject_due_collision_groups(object *A, object *B);
+
 #endif
