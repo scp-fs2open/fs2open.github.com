@@ -85,7 +85,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\fs2_open_3_6_11d.exe"
 				LinkIncremental="2"
@@ -196,7 +196,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\fs2_open_3_6_11d_INF.exe"
 				LinkIncremental="2"
@@ -309,7 +309,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\fs2_open_3_6_11d_INF_SSE.exe"
 				LinkIncremental="2"
@@ -422,7 +422,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\fs2_open_3_6_11d_INF_SSE2.exe"
 				LinkIncremental="2"
@@ -535,7 +535,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\fs2_open_3_6_11d_sse.exe"
 				LinkIncremental="2"
@@ -648,7 +648,7 @@
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
 				OutputFile="$(OutDir)\fs2_open_3_6_11d_sse2.exe"
 				LinkIncremental="2"
@@ -763,7 +763,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fs2_open_3_6_11r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -879,7 +879,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fs2_open_3_6_11r_INF.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -996,7 +996,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fs2_open_3_6_11r_INF_SSE.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -1113,7 +1113,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fs2_open_3_6_11r_INF_SSE2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -1230,7 +1230,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fs2_open_3_6_11r_sse.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -1346,7 +1346,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fs2_open_3_6_11r_sse2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

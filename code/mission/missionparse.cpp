@@ -1146,6 +1146,7 @@ done_briefing_music:
 void parse_fiction(mission *pm)
 {
 	char filename[MAX_FILENAME_LEN];
+	char font_filename[MAX_FILENAME_LEN];
 
 	fiction_viewer_reset();
 
@@ -1155,7 +1156,13 @@ void parse_fiction(mission *pm)
 	required_string("$File:");
 	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
 
-	fiction_viewer_load(filename);
+	if (optional_string("$Font:")) {
+		stuff_string(font_filename, F_FILESPEC, MAX_FILENAME_LEN);
+	} else {
+		strcpy_s(font_filename, "");
+	}
+
+	fiction_viewer_load(filename, font_filename);
 }
 
 void parse_cmd_brief(mission *pm)
@@ -5098,7 +5105,7 @@ int parse_mission(mission *pm, int flags)
 				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 			}
 			else {
-				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_loadout_classes, (Num_unknown_loadout_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d weapon class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_loadout_classes, (Num_unknown_loadout_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 			}
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
@@ -5466,7 +5473,7 @@ int parse_main(char *mission_name, int flags)
 	// reset parse error stuff
 	Num_unknown_ship_classes = 0;
 	Num_unknown_weapon_classes = 0;
-	Num_unknown_loadout_classes =0;
+	Num_unknown_loadout_classes = 0;
 
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;

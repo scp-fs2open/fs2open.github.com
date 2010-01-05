@@ -737,6 +737,10 @@ void init_ship_entry(ship_info *sip)
 	sip->hull_repair_rate = 0.0f;
 	//-2 represents not set, in which case the default is used for the ship (if it is small)
 	sip->subsys_repair_rate = -2.0f;
+
+	sip->sup_hull_repair_rate = 0.15f;
+	sip->sup_shield_repair_rate = 0.20f;
+	sip->sup_subsys_repair_rate = 0.15f;
 	
 	sip->armor_type_idx = -1;
 	sip->shield_armor_type_idx = -1;
@@ -1891,6 +1895,14 @@ strcpy_s(parse_error_text, temp_error);
 	else if (first_time)
 		sip->max_shield_regen_per_second = 0.02f;
 
+	// Support ship hull shield rate - if allowed
+	if(optional_string("$Support Shield Repair Rate:"))
+	{
+		stuff_float(&sip->sup_shield_repair_rate);
+		sip->sup_shield_repair_rate *= 0.01f;
+		CLAMP(sip->sup_shield_repair_rate, 0.0f, 1.0f);
+	}
+
 	// Goober5000
 	if (optional_string("$Weapon Regeneration Rate:"))
 		stuff_float(&sip->max_weapon_regen_per_second);
@@ -1929,6 +1941,14 @@ strcpy_s(parse_error_text, temp_error);
 			sip->hull_repair_rate = -1.0f;
 	}
 
+	// Support ship hull repair rate - if allowed
+	if(optional_string("$Support Hull Repair Rate:"))
+	{
+		stuff_float(&sip->sup_hull_repair_rate);
+		sip->sup_hull_repair_rate *= 0.01f;
+		CLAMP(sip->sup_hull_repair_rate, 0.0f, 1.0f);
+	}
+
 	//Subsys rep rate
 	if(optional_string("$Subsystem Repair Rate:"))
 	{
@@ -1941,7 +1961,15 @@ strcpy_s(parse_error_text, temp_error);
 		else if(sip->subsys_repair_rate < -1.0f)
 			sip->subsys_repair_rate = -1.0f;
 	}
-	
+
+	// Support ship hull repair rate
+	if(optional_string("$Support Subsystem Repair Rate:"))
+	{
+		stuff_float(&sip->sup_subsys_repair_rate);
+		sip->sup_subsys_repair_rate *= 0.01f;
+		CLAMP(sip->sup_subsys_repair_rate, 0.0f, 1.0f);
+	}
+
 	if(optional_string("$Armor Type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -3314,6 +3342,14 @@ void parse_shiptype_tbl(char *filename)
 		required_string("#End");
 	}
 
+	if (optional_string("#Weapon Targeting Priorities"))
+	{
+		while (required_string_either("#End", "$Name:"))
+			parse_weapon_targeting_priorities();
+
+		required_string("#End");
+	}
+
 	if (optional_string("#Ship Types"))
 	{
 		while (required_string_either("#End", "$Name:"))
@@ -4423,6 +4459,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 			shipp->ship_iff_color[i][j] = -1;
 		}
 	}
+	shipp->armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->armor_type_idx;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -4662,7 +4700,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		ship_system->subsys_guardian_threshold = 0;
-
+		ship_system->armor_type_idx = model_system->armor_type_idx;
 		ship_system->turret_next_fire_stamp = timestamp(0);
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
@@ -4678,7 +4716,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			//WMC - Set targeting order to default.
 			ship_system->turret_targeting_order[j] = j;
 		}
-
+		ship_system->optimum_range = model_system->optimum_range;
+		ship_system->favor_current_facing = model_system->favor_current_facing;
 		ship_system->subsys_cargo_name = -1;
 		ship_system->time_subsys_cargo_revealed = 0;
 		
@@ -11216,13 +11255,14 @@ float ship_calculate_rearm_duration( object *objp )
 	sip = &Ship_info[sp->ship_info_index];
 
 	//find out time to repair shields
-	shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * SHIELD_REPAIR_RATE);
+	if(sip->sup_shield_repair_rate > 0.0f)
+		shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	//calculate hull_repair_time;
-	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength))
+	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
 	{
-		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * HULL_REPAIR_RATE);
+		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * sip->sup_hull_repair_rate);
 	}
 
 	//caluclate subsystem repair time
@@ -11230,9 +11270,9 @@ float ship_calculate_rearm_duration( object *objp )
 	while (ssp != END_OF_LIST(&sp->subsys_list))
 	{
 		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
-		if (max_subsys_repair > ssp->current_hits) 
+		if ((max_subsys_repair > ssp->current_hits) && (sip->sup_hull_repair_rate > 0.0f))
 		{
-			subsys_rep_time += (max_subsys_repair - ssp->current_hits) / (ssp->max_hits * HULL_REPAIR_RATE);
+			subsys_rep_time += (max_subsys_repair - ssp->current_hits) / (ssp->max_hits * sip->sup_subsys_repair_rate);
 		}
 
 		ssp = GET_NEXT( ssp );
@@ -11357,7 +11397,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
-			shield_str += shipp->ship_max_shield_strength * frametime * SHIELD_REPAIR_RATE;
+			shield_str += shipp->ship_max_shield_strength * frametime * sip->sup_shield_repair_rate;
 			if ( shield_str > shipp->ship_max_shield_strength ) {
 				 shield_str = shipp->ship_max_shield_strength;
 			}
@@ -11368,7 +11408,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// Repair the ship integrity (subsystems + hull).  This works by applying the repair points
 	// to the subsystems.  Ships integrity is stored is objp->hull_strength, so that always is 
 	// incremented by repair_allocated
-	repair_allocated = shipp->ship_max_hull_strength * frametime * HULL_REPAIR_RATE;
+	repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_hull_repair_rate;
 
 
 //	AL 11-24-97: remove increase to hull integrity
@@ -11395,6 +11435,16 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			objp->hull_strength = shipp->ship_max_hull_strength;
 			repair_allocated -= ( shipp->ship_max_hull_strength - objp->hull_strength);
 		}
+	}
+
+	// figure out repairs for subsystems
+	if(repair_allocated > 0) {
+		if(sip->sup_subsys_repair_rate == 0.0f)
+			repair_allocated = 0.0f;
+		else if(sip->sup_hull_repair_rate == 0.0f)
+			repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_subsys_repair_rate;
+		else if(!(sip->sup_hull_repair_rate == sip->sup_subsys_repair_rate))
+			repair_allocated = repair_allocated * sip->sup_subsys_repair_rate / sip->sup_hull_repair_rate;
 	}
 
 	// check the subsystems of the ship.
@@ -11606,11 +11656,22 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	} else {
 		if ( shield_get_strength(objp) >= shipp->ship_max_shield_strength ) 
 			shields_full = 1;
+		if (sip->sup_shield_repair_rate == 0.0f)
+			shields_full = 1;
+	}
+
+	int hull_ok = 0;
+	if(objp->hull_strength >= max_hull_repair)
+		hull_ok = 1;
+
+	if(sip->sup_hull_repair_rate == 0.0f) {
+		subsys_all_ok = 1;
+		hull_ok = 1;
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
 //	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == shipp->ship_max_hull_strength)&&(shields_full) ) {
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength >= max_hull_repair) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && hull_ok ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
 	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
@@ -15881,4 +15942,53 @@ ai_target_priority init_ai_target_priorities()
 
 	//return the initialized
 	return temp_priority;
+}
+
+void parse_weapon_targeting_priorities()
+{
+	char tempname[NAME_LENGTH];
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+	if (optional_string("$Name:")) {
+		stuff_string(tempname, F_NAME, NAME_LENGTH);
+		
+		for(k = 0; k < MAX_WEAPON_TYPES ; k++) {
+			if ( !stricmp(Weapon_info[k].name, tempname) ) {
+				// found weapon, yay!
+				// reset the list
+
+				weapon_info *wip = &Weapon_info[k];
+				
+				wip->num_targeting_priorities = 0;
+
+				if (optional_string("+Target Priority:")) {
+					SCP_vector <SCP_string> tgt_priorities;
+					int num_strings = stuff_string_list(tgt_priorities);
+
+					if (num_strings > 32)
+						num_strings = 32;
+
+					int num_groups = Ai_tp_list.size();
+
+					for(i = 0; i < num_strings; i++) {
+						for(j = 0; j < num_groups; j++) {
+							if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
+								wip->targeting_priorities[i] = j;
+								wip->num_targeting_priorities++;
+								break;
+							}
+						}
+						if(j == num_groups)
+							Warning(LOCATION, "Unrecognized string '%s' found when setting weapon targeting priorities.\n", tgt_priorities[i].c_str());
+					}
+				}
+				// no need to keep searching for more
+				break;
+			}
+		}
+		if(k == MAX_WEAPON_TYPES)
+			Warning(LOCATION, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
+	}
 }

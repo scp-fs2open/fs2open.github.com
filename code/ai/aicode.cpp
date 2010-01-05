@@ -8814,7 +8814,7 @@ void ai_chase()
 									else
 									{
 										float secondary_range_mult = (aip->ai_secondary_range_mult == FLT_MIN)
-											? (Game_skill_level + 1 + aip->ai_class/2)/NUM_SKILL_LEVELS
+											? (Game_skill_level + 1 + (3 * aip->ai_class/(Num_ai_classes - 1)))/NUM_SKILL_LEVELS
 											: aip->ai_secondary_range_mult;
 
 										firing_range = MIN((swip->max_speed * swip->lifetime * secondary_range_mult), swip->weapon_range);

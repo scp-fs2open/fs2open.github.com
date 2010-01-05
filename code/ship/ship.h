@@ -221,6 +221,7 @@ typedef	struct ship_subsys {
 	int flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
+	int armor_type_idx;				// FUBAR
 
 	// turret info
 	//Important -WMC
@@ -240,6 +241,8 @@ typedef	struct ship_subsys {
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
 	float	turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
 	int		turret_targeting_order[NUM_TURRET_ORDER_TYPES];	//Order that turrets target different types of things.
+	float	optimum_range;					        
+	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
@@ -664,6 +667,8 @@ typedef struct ship {
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
+	int armor_type_idx;
+	int shield_armor_type_idx;
 } ship;
 
 struct ai_target_priority {
@@ -684,6 +689,7 @@ struct ai_target_priority {
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
+void parse_weapon_targeting_priorities();
 ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -1071,6 +1077,10 @@ typedef struct ship_info {
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
+
+	float	sup_hull_repair_rate;
+	float	sup_shield_repair_rate;
+	float	sup_subsys_repair_rate;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 

@@ -603,6 +603,10 @@ SOURCE=..\..\code\graphics\gropengllight.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\graphics\gropenglpostprocessing.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\graphics\gropenglshader.h
 # End Source File
 # Begin Source File
@@ -640,6 +644,10 @@ SOURCE=..\..\code\graphics\gropenglextension.cpp
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.cpp
 # End Source File
 # Begin Source File
 
@@ -1741,10 +1749,6 @@ SOURCE="..\..\code\sound\acm-openal.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\acm.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Sound\acm.h
 # End Source File
 # Begin Source File
@@ -1797,21 +1801,18 @@ SOURCE=..\..\code\sound\fsspeech.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\midifile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Sound\midiseq.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\sound\phrases.xml
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -1826,6 +1827,9 @@ BuildCmds= \
 "$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -1866,18 +1870,6 @@ SOURCE=..\..\code\sound\voicerec.cpp
 # Begin Source File
 
 SOURCE=..\..\code\sound\voicerec.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\winmidi_base.cpp
 # End Source File
 # End Group
 # Begin Group "Starfield"

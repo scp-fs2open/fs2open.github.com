@@ -17,7 +17,7 @@ extern int Training_failure;
 void training_mission_init();
 void training_mission_shutdown();
 void training_check_objectives();
-void message_training_queue(char *text, int timestamp, int length = -1);
+void message_training_add_to_queue(char *text, int timestamp, int length = -1);
 void message_training_setup(int num, int length = -1);
 void message_training_display();
 void message_translate_tokens(char *buf, char *text);

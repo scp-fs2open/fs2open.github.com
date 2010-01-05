@@ -470,23 +470,6 @@ void neb2_level_close()
 	}
 }
 
-void neb2_set_frame_backg() {
-	ubyte tr = gr_screen.current_clear_color.red;  
-	ubyte tg = gr_screen.current_clear_color.green;
-	ubyte tb = gr_screen.current_clear_color.blue; 
-
-	neb2_get_fog_color(
-		&gr_screen.current_clear_color.red,
-		&gr_screen.current_clear_color.green,
-		&gr_screen.current_clear_color.blue);
-	
-	gr_clear();
-	
-	gr_screen.current_clear_color.red   = tr;
-	gr_screen.current_clear_color.green = tg;
-	gr_screen.current_clear_color.blue  = tb;
-}
-
 // call before beginning all rendering
 void neb2_render_setup(camid cid)
 {
@@ -502,7 +485,20 @@ void neb2_render_setup(camid cid)
 	if (Neb2_render_mode == NEB2_RENDER_HTL) {
 		// RT The background needs to be the same colour as the fog and this seems
 		// to be the ideal place to do it
-		neb2_set_frame_backg();
+		ubyte tr = gr_screen.current_clear_color.red;  
+		ubyte tg = gr_screen.current_clear_color.green;
+		ubyte tb = gr_screen.current_clear_color.blue; 
+
+		neb2_get_fog_color(
+			&gr_screen.current_clear_color.red,
+			&gr_screen.current_clear_color.green,
+			&gr_screen.current_clear_color.blue);
+		
+		gr_clear();
+		
+		gr_screen.current_clear_color.red   = tr;
+		gr_screen.current_clear_color.green = tg;
+		gr_screen.current_clear_color.blue  = tb;
 
 		return;	 
 	}

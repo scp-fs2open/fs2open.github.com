@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <queue>
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 || !defined(_MSC_VER)
 
@@ -99,6 +100,9 @@ class SCP_map : public std::map<T, U, std::less<T>, SCP_vm_allocator<std::pair<c
 template< typename T, typename U >
 class SCP_multimap : public std::multimap<T, U, std::less<T>, SCP_vm_allocator<std::pair<const T, U> > > { };
 
+template< typename T >
+class SCP_queue : public std::queue< T, std::deque< T, SCP_vm_allocator< T > > > { };
+
 template <class T1, class T2>
 bool operator==(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw()
 {
@@ -118,6 +122,7 @@ bool operator!=(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw(
 #define SCP_stringstream std::stringstream
 #define SCP_map std::map
 #define SCP_multimap std::multimap
+#define SCP_queue std::queue
 #define SCP_vector std::vector
 
 #endif

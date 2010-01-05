@@ -86,7 +86,8 @@ extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
 
 // gray space
-void ignore_gray_space();
+extern int is_gray_space(char ch);
+extern void ignore_gray_space();
 
 // error
 extern int get_line_num();

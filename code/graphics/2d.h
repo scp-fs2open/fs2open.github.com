@@ -483,13 +483,6 @@ bool gr_resize_screen_pos(int *x, int *y);
 bool gr_unsize_screen_posf(float *x, float *y);
 bool gr_resize_screen_posf(float *x, float *y);
 
-// Returns -1 if couldn't init font, otherwise returns the
-// font id number.  If you call this twice with the same typeface,
-// it will return the same font number both times.  This font is
-// then set to be the current font, and default font if none is 
-// yet specified.
-int gr_init_font( char * typeface );
-
 // Does formatted printing.  This calls gr_string after formatting,
 // so if you don't need to format the string, then call gr_string
 // directly.

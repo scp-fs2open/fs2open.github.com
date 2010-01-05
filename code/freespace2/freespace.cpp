@@ -64,7 +64,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h" // header file for the TrackIR routines (Swifty)
+#include "ExternalDLL/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -1564,7 +1564,8 @@ int game_start_mission()
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
 	// clear post processing settings
-	gr_screen.gf_set_default_post_process();
+	if(!Is_standalone)
+		gr_screen.gf_set_default_post_process();
 
 	// clear shader manager cache
 	gr_clear_shaders_cache();
@@ -2208,7 +2209,8 @@ void game_init()
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
 
-	gr_screen.gf_post_process_init();
+	if(!Is_standalone)
+		gr_screen.gf_post_process_init();
 
 	//WMC - Initialize my new GUI system
 	//This may seem scary, but it should take up 0 processing time and very little memory
@@ -3916,7 +3918,7 @@ void game_render_frame( camid cid )
 
 	clip_frame_view();
 
-	neb2_set_frame_backg();
+	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
@@ -7454,7 +7456,11 @@ int game_main(char *cmdline)
 
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	initialize_trackir(); 
+	int trackIrInitResult = gTirDll_TrackIR.Init( (HWND)os_get_window( ) );
+	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
+	{
+		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
+	}
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
@@ -7721,11 +7727,7 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-#ifdef _WIN32
-	timeEndPeriod(1);
-	if(trackir_enabled) // Safely shutdown the user's TrackIR unit if he has one (Swifty)
-		TrackIR_ShutDown();
-#endif
+	gTirDll_TrackIR.Close( );
 
 
 	fsspeech_deinit();
@@ -9381,13 +9383,15 @@ int detect_lang()
 {
 	uint file_checksum;
 	int idx;
+	char first_font[MAX_FILENAME_LEN];
 
 	// if the reg is set then let lcl_init() figure out what to do
 	if (os_config_read_string( NULL, NOX("Language"), NULL ) != NULL)
 		return -1;
 
 	// try and open the file to verify
-	CFILE *detect = cfopen("font01.vf", "rb");
+	gr_stuff_first_font(first_font, sizeof(first_font));
+	CFILE *detect = cfopen(first_font, "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)
