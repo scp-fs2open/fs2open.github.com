@@ -953,14 +953,6 @@ SOURCE=..\..\code\Io\Timer.cpp
 
 SOURCE=..\..\code\Io\Timer.h
 # End Source File
-# Begin Source File
-
-SOURCE=..\..\code\io\trackir.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\io\trackir.h
-# End Source File
 # End Group
 # Begin Group "JumpNode"
 
@@ -2609,6 +2601,22 @@ SOURCE=..\..\code\fs2netd\tcp_socket.cpp
 # Begin Source File
 
 SOURCE=..\..\code\fs2netd\tcp_socket.h
+# End Source File
+# End Group
+# Begin Group "ExternalDLL"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\ExternalDLL\externalcode.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ExternalDLL\trackirglobal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ExternalDLL\trackirpublic.h
 # End Source File
 # End Group
 # End Target
