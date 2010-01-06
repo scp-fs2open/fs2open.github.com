@@ -164,6 +164,18 @@ SOURCE=..\..\code\Asteroid\Asteroid.cpp
 SOURCE=..\..\code\Asteroid\Asteroid.h
 # End Source File
 # End Group
+# Begin Group "Autopilot"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Autopilot\Autopilot.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Autopilot\Autopilot.h
+# End Source File
+# End Group
 # Begin Group "Bmpman"
 
 # PROP Default_Filter ""
@@ -222,6 +234,18 @@ SOURCE=..\..\code\CFile\CfileSystem.cpp
 # Begin Source File
 
 SOURCE=..\..\code\CFile\CfileSystem.h
+# End Source File
+# End Group
+# Begin Group "Cmdline"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Cmdline\cmdline.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Cmdline\cmdline.h
 # End Source File
 # End Group
 # Begin Group "CMeasure"
@@ -304,6 +328,18 @@ SOURCE=..\..\code\cutscene\oggplayer.cpp
 SOURCE=..\..\code\cutscene\oggplayer.h
 # End Source File
 # End Group
+# Begin Group "ddsutils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\ddsutils\ddsutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ddsutils\ddsutils.h
+# End Source File
+# End Group
 # Begin Group "Debris"
 
 # PROP Default_Filter ""
@@ -338,6 +374,30 @@ SOURCE=..\..\code\debugconsole\timerbar.cpp
 # Begin Source File
 
 SOURCE=..\..\code\debugconsole\timerbar.h
+# End Source File
+# End Group
+# Begin Group "Decals"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\decals\decals.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\decals\decals.h
+# End Source File
+# End Group
+# Begin Group "Demo"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Demo\Demo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Demo\Demo.h
 # End Source File
 # End Group
 # Begin Group "DirectX"
@@ -388,6 +448,34 @@ SOURCE=..\..\code\directx\strmiids.lib
 SOURCE=..\..\code\directx\dxguid.lib
 # End Source File
 # End Group
+# Begin Group "ExceptionHandler"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.h
+# End Source File
+# End Group
+# Begin Group "external_dll"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\externalcode.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\trackirglobal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\trackirpublic.h
+# End Source File
+# End Group
 # Begin Group "Fireball"
 
 # PROP Default_Filter ""
@@ -402,6 +490,38 @@ SOURCE=..\..\code\Fireball\FireBalls.h
 # Begin Source File
 
 SOURCE=..\..\code\Fireball\WarpInEffect.cpp
+# End Source File
+# End Group
+# Begin Group "fs2netd"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\protocol.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.h
 # End Source File
 # End Group
 # Begin Group "GameHelp"
@@ -836,6 +956,46 @@ SOURCE=..\..\code\Hud\HUDWingmanStatus.cpp
 SOURCE=..\..\code\Hud\HUDWingmanStatus.h
 # End Source File
 # End Group
+# Begin Group "iff_defs"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\iff_defs\iff_defs.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\iff_defs\iff_defs.h
+# End Source File
+# End Group
+# Begin Group "InetFile"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\CFtp.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\CFtp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\Chttpget.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\Chttpget.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\inetgetfile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\inetgetfile.h
+# End Source File
+# End Group
 # Begin Group "Io"
 
 # PROP Default_Filter ""
@@ -903,13 +1063,17 @@ SOURCE=..\..\code\Io\Timer.cpp
 
 SOURCE=..\..\code\Io\Timer.h
 # End Source File
+# End Group
+# Begin Group "jpgutils"
+
+# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\io\trackir.cpp
+SOURCE=..\..\code\jpgutils\jpgutils.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\io\trackir.h
+SOURCE=..\..\code\jpgutils\jpgutils.h
 # End Source File
 # End Group
 # Begin Group "JumpNode"
@@ -954,6 +1118,26 @@ SOURCE=..\..\code\Lighting\Lighting.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Lighting\Lighting.h
+# End Source File
+# End Group
+# Begin Group "Localization"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Localization\fhash.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Localization\fhash.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Localization\localize.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Localization\localize.h
 # End Source File
 # End Group
 # Begin Group "Math"
@@ -1334,6 +1518,294 @@ SOURCE=..\..\code\Model\ModelRead.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Model\ModelsInc.h
+# End Source File
+# End Group
+# Begin Group "Nebula"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\Neb.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\Neb.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\NebLightning.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Nebula\NebLightning.h
+# End Source File
+# End Group
+# Begin Group "Network"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\network\chat_api.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\chat_api.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\Multi.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\Multi.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_campaign.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_campaign.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_data.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_data.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_dogfight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_dogfight.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_endgame.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_endgame.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_ingame.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_ingame.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_kick.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_kick.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_log.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_log.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_obj.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_obj.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_observer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_observer.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_oo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_oo.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_options.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_options.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_pause.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_pause.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_pinfo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_pinfo.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_ping.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_ping.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_pmsg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_pmsg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_pxo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_pxo.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_rate.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_rate.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_respawn.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_respawn.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_sexp.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_sexp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_team.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_team.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_update.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_update.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_voice.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_voice.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_xfer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multi_xfer.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multilag.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multilag.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiMsgs.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\multimsgs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiTeamSelect.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiTeamSelect.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiUI.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiUI.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiUtil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\MultiUtil.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\PsNet.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\PsNet.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\Psnet2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\Psnet2.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\stand_gui.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Network\stand_gui.h
 # End Source File
 # End Group
 # Begin Group "Object"
@@ -1872,6 +2344,18 @@ SOURCE=..\..\code\sound\voicerec.cpp
 SOURCE=..\..\code\sound\voicerec.h
 # End Source File
 # End Group
+# Begin Group "Species_Defs"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\species_defs\species_defs.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\species_defs\species_defs.h
+# End Source File
+# End Group
 # Begin Group "Starfield"
 
 # PROP Default_Filter ""
@@ -1926,6 +2410,18 @@ SOURCE=..\..\code\Stats\Stats.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Stats\Stats.h
+# End Source File
+# End Group
+# Begin Group "TgaUtils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\TgaUtils\TgaUtils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\TgaUtils\TgaUtils.h
 # End Source File
 # End Group
 # Begin Group "Ui"
@@ -2082,494 +2578,6 @@ SOURCE=..\..\code\Weapon\Weapon.h
 # Begin Source File
 
 SOURCE=..\..\code\Weapon\Weapons.cpp
-# End Source File
-# End Group
-# Begin Group "Nebula"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\Neb.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\Neb.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\NebLightning.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Nebula\NebLightning.h
-# End Source File
-# End Group
-# Begin Group "Localization"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Localization\fhash.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Localization\fhash.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Localization\localize.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Localization\localize.h
-# End Source File
-# End Group
-# Begin Group "TgaUtils"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\TgaUtils\TgaUtils.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\TgaUtils\TgaUtils.h
-# End Source File
-# End Group
-# Begin Group "Demo"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Demo\Demo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Demo\Demo.h
-# End Source File
-# End Group
-# Begin Group "InetFile"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\CFtp.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\CFtp.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\Chttpget.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\Chttpget.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\inetgetfile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\inetgetfile.h
-# End Source File
-# End Group
-# Begin Group "ExceptionHandler"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.h
-# End Source File
-# End Group
-# Begin Group "Network"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\network\chat_api.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\network\chat_api.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\Multi.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\Multi.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_campaign.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_campaign.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_data.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_data.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_dogfight.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_dogfight.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_endgame.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_endgame.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_ingame.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_ingame.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_kick.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_kick.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_log.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_log.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_obj.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_obj.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_observer.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_observer.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_oo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_oo.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_options.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_options.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_pause.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_pause.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_pinfo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_pinfo.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_ping.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_ping.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_pmsg.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_pmsg.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\network\multi_pxo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\network\multi_pxo.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_rate.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_rate.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_respawn.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_respawn.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\network\multi_sexp.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\network\multi_sexp.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_team.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_team.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_update.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_update.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_voice.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_voice.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_xfer.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_xfer.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multilag.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multilag.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiMsgs.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multimsgs.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiTeamSelect.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiTeamSelect.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiUI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiUI.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiUtil.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\MultiUtil.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\PsNet.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\PsNet.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\Psnet2.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\Psnet2.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\stand_gui.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\stand_gui.h
-# End Source File
-# End Group
-# Begin Group "Decals"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\decals\decals.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\decals\decals.h
-# End Source File
-# End Group
-# Begin Group "ddsutils"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\ddsutils\ddsutils.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ddsutils\ddsutils.h
-# End Source File
-# End Group
-# Begin Group "Cmdline"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Cmdline\cmdline.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Cmdline\cmdline.h
-# End Source File
-# End Group
-# Begin Group "Species_Defs"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\species_defs\species_defs.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\species_defs\species_defs.h
-# End Source File
-# End Group
-# Begin Group "jpgutils"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\jpgutils\jpgutils.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\jpgutils\jpgutils.h
-# End Source File
-# End Group
-# Begin Group "Autopilot"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Autopilot\Autopilot.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Autopilot\Autopilot.h
-# End Source File
-# End Group
-# Begin Group "iff_defs"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\iff_defs\iff_defs.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\iff_defs\iff_defs.h
-# End Source File
-# End Group
-# Begin Group "fs2netd"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\fs2netd_client.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\fs2netd_client.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\protocol.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\tcp_client.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\tcp_client.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\tcp_socket.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2netd\tcp_socket.h
 # End Source File
 # End Group
 # End Target
