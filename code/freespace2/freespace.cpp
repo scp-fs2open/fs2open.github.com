@@ -64,7 +64,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "ExternalDLL/trackirpublic.h" // header file for the TrackIR routines (Swifty)
+#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized

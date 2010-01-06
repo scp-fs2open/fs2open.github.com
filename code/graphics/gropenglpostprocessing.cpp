@@ -9,26 +9,24 @@ using namespace opengl;
 
 bool post_effect::changed = true;
 
-texture *bloom::blur(texture *image, int size) {
+texture *bloom::high_pass(texture *image, int size) {
 	Assert(image);
 	Assert(size != 0);
 
 	// Acquire render target
 	opengl::render_target *target;
 
-	target = render_target::acquire(gr_screen.max_w / size, gr_screen.max_h / size);
+	target = render_target::acquire(image->get_width() / size, image->get_width() / size);
 
 	Assert(target);
 
 	// Acquire two textures
-	texture *texture0 = texture_pool::acquire(target->get_width(), target->get_height());
-	texture *texture1 = texture_pool::acquire(target->get_width(), target->get_height());
+	texture *tex = texture_pool::acquire(target->get_width(), target->get_height());
 
-	Assert(texture0);
-	Assert(texture1);
+	Assert(tex);
 
 	target->apply();
-	target->attach_texture(texture1);
+	target->attach_texture(tex);
 	target->clear(render_target::clr_color);
 	// Apply bright pass filter
 	special_shader *bright_sdr = shader_manager::get()->apply_special_shader(special_shader::bright_pass);
@@ -40,6 +38,30 @@ texture *bloom::blur(texture *image, int size) {
 
 	render_target::draw_texture();
 
+	render_target::release(target);
+	return tex;
+}
+
+texture *bloom::blur(texture *image, int size) {
+	Assert(image);
+	Assert(size != 0);
+
+	// Acquire render target
+	opengl::render_target *target;
+
+	target = render_target::acquire(image->get_width() / size, image->get_width() / size);
+
+	Assert(target);
+
+	// Acquire two textures
+	texture *texture0 = texture_pool::acquire(target->get_width(), target->get_height());
+	texture *texture1 = texture_pool::acquire(target->get_width(), target->get_height());
+
+	Assert(texture0);
+	Assert(texture1);
+
+	target->apply();
+
 	// Blur
 	special_shader *blur_sdr = shader_manager::get()->apply_special_shader(special_shader::blur);
 	if (!blur_sdr)
@@ -49,7 +71,7 @@ texture *bloom::blur(texture *image, int size) {
 		target->attach_texture(!pass ? texture0 : texture1);
 		target->clear(render_target::clr_color);
 		blur_sdr->start_pass(pass);
-		blur_sdr->set_texture(b_texture, !pass ? texture1 : texture0);
+		blur_sdr->set_texture(b_texture, !pass ? image : texture0);
 		if (pass % 2 == 0)
 			blur_sdr->set_uniform(blur_size, target->get_width() * 1.0f);
 		else
@@ -68,7 +90,9 @@ bool bloom::begin(texture *pp_img) {
 	Assert(pp_img);
 
 	if (config::get_integer(config::bloom_int)) {
-		blurred = blur(pp_img, 4);
+		texture *temp = high_pass(pp_img, 2);
+		blurred = blur(temp, 2);
+		texture_pool::release(temp);
 
 		return blurred != NULL;
 	} else
@@ -349,6 +373,7 @@ void post_processing::after() {
 	glGetIntegerv(GL_TEXTURE_BINDING_2D, &tex1);
 	vglActiveTextureARB(GL_TEXTURE2_ARB);
 	glGetIntegerv(GL_TEXTURE_BINDING_2D, &tex2);
+	vglActiveTextureARB(GL_TEXTURE0_ARB);
 
 	render_target::release(target);
 

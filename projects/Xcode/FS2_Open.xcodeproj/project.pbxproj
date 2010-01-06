@@ -3064,7 +3064,7 @@
 				F04FB77910F09E1E00DAF094 /* externalcode.h */,
 				F04FB77A10F09E1E00DAF094 /* trackirpublic.h */,
 			);
-			path = ExternalDLL;
+			path = external_dll;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
