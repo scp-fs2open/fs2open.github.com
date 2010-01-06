@@ -1797,7 +1797,7 @@
 				3459531808C3D69F003B1351 /* demo */,
 				3459531B08C3D69F003B1351 /* directx */,
 				3459532B08C3D6A0003B1351 /* exceptionhandler */,
-				F04FB77810F09E1E00DAF094 /* ExternalDLL */,
+				F04FB77810F09E1E00DAF094 /* external_dll */,
 				3459532E08C3D6A0003B1351 /* fireball */,
 				3459533208C3D6A0003B1351 /* freespace2 */,
 				3488081E0DA05403001CAB39 /* fs2netd */,
@@ -3058,7 +3058,7 @@
 			path = scramble;
 			sourceTree = "<group>";
 		};
-		F04FB77810F09E1E00DAF094 /* ExternalDLL */ = {
+		F04FB77810F09E1E00DAF094 /* external_dll */ = {
 			isa = PBXGroup;
 			children = (
 				F04FB77910F09E1E00DAF094 /* externalcode.h */,
