@@ -82,11 +82,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -188,11 +188,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11d_INF.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -296,11 +296,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11d_INF_SSE.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -404,11 +404,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11d_INF_SSE2.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -512,11 +512,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11d_sse.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -620,11 +620,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11d_sse2.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -733,11 +733,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -846,11 +846,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11r_INF.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -960,11 +960,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11r_INF_SSE.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -1074,11 +1074,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11r_INF_SSE2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -1188,11 +1188,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11r_sse.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
@@ -1302,11 +1302,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="$(OutDir)\fred2_open_3_6_11r_sse2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;../../trackir/lib;"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;"
 				EnableUAC="false"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
