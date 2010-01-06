@@ -3623,15 +3623,15 @@
 			Name="ExternalDLL"
 			>
 			<File
-				RelativePath="..\..\code\ExternalDLL\externalcode.h"
+				RelativePath="..\..\code\external_dll\externalcode.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\ExternalDLL\trackirglobal.cpp"
+				RelativePath="..\..\code\external_dll\trackirglobal.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\ExternalDLL\trackirpublic.h"
+				RelativePath="..\..\code\external_dll\trackirpublic.h"
 				>
 			</File>
 		</Filter>

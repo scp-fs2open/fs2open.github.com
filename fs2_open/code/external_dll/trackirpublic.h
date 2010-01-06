@@ -1,7 +1,7 @@
 #ifndef TRACKIRPUBLIC_H_INCLUDED_
 #define TRACKIRPUBLIC_H_INCLUDED_
 
-#include "ExternalDLL/externalcode.h"
+#include "external_dll/externalcode.h"
 
 #define TRACKIRBRIDGEDLLNAME "scptrackir.dll"
 
