@@ -15,7 +15,7 @@
 #include "io/joy_ff.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "ExternalDLL/trackirpublic.h"
+#include "external_dll/trackirpublic.h"
 #include "object/object.h"
 #include "hud/hud.h"
 #include "hud/hudtargetbox.h"
