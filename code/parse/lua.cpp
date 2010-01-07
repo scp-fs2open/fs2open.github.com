@@ -3946,6 +3946,61 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 	return ade_set_args(L, "i", objh->objp->collision_group_id);
 }
 
+ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector Position", "World collision point (local if boolean is set to true), nil if no collisions")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	int model_num = -1, temp = 0;
+	vec3d *v3a, *v3b;
+	bool local = false;
+	if(!ade_get_args(L, "ooo|b", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+
+	switch(obj->type) {
+		case OBJ_SHIP:
+			model_num = Ship_info[Ships[obj->instance].ship_info_index].model_num;
+			break;
+		case OBJ_WEAPON:
+			model_num = Weapon_info[Weapons[obj->instance].weapon_info_index].model_num;
+			break;
+		case OBJ_DEBRIS:
+			model_num = Debris[obj->instance].model_num;
+			break;
+		case OBJ_ASTEROID:
+			temp = Asteroids[obj->instance].asteroid_subtype;
+			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].model_num[temp];
+			break;
+		default:
+			return ADE_RETURN_NIL;
+	}
+
+	if (model_num < 0)
+		ADE_RETURN_NIL;
+
+	mc_info hull_check;
+
+	hull_check.model_num = model_num;
+	hull_check.orient = &obj->orient;
+	hull_check.pos = &obj->pos;
+	hull_check.p0 = v3a;
+	hull_check.p1 = v3b;
+	hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
+
+	if ( model_collide(&hull_check) ) {
+		ADE_RETURN_NIL;
+	}
+	
+	if (local)
+		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
+	else
+		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point_world));
+}
+
 //**********HANDLE: Asteroid
 ade_obj<object_h> l_Asteroid("asteroid", "Asteroid handle", &l_Object);
 
