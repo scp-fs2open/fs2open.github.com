@@ -264,6 +264,9 @@ FS2_SOURCES =	\
 	demo/demo.h	\
 	exceptionhandler/exceptionhandler.cpp	\
 	exceptionhandler/exceptionhandler.h	\
+	external_dll/externalcode.h		\
+	external_dll/trackirglobal.cpp	\
+	external_dll/trackirglobal.h	\
 	fireball/fireballs.cpp	\
 	fireball/fireballs.h	\
 	fireball/warpineffect.cpp	\
@@ -381,8 +384,6 @@ FS2_SOURCES =	\
 	io/mouse.h	\
 	io/timer.cpp	\
 	io/timer.h	\
-	io/trackir.cpp	\
-	io/trackir.h	\
 	jpgutils/jpgutils.cpp	\
 	jpgutils/jpgutils.h	\
 	jumpnode/jumpnode.cpp	\
