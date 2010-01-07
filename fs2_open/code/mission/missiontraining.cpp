@@ -47,6 +47,7 @@
 #define TRAINING_OBJ_LINES				50		// number of lines to track in objective list
 #define TRAINING_OBJ_DISPLAY_LINES	5		// only display this many lines on screen max
 #define MAX_TRAINING_MESSAGE_MODS			20
+#define TRAINING_MESSAGE_QUEUE_MAX			40
 
 #define TRAINING_OBJ_STATUS_UNKNOWN		(1 << 28)	// directive status is unknown
 #define TRAINING_OBJ_STATUS_KNOWN		(1 << 29)	// directive status is known (satisfied or failed)
@@ -68,7 +69,7 @@ typedef struct {
 	int timestamp;
 	int length;
 	char *special_message;
-} Training_Message;
+} training_message_queue;
 
 char Training_buf[TRAINING_MESSAGE_LENGTH];
 char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
@@ -82,9 +83,10 @@ int Training_voice_type;
 int Training_voice_handle;
 int Training_flag = 0;
 int Training_failure = 0;
+int Training_message_queue_count = 0;
 int Training_bind_warning = -1;  // Missiontime at which we last gave warning
 int Training_message_visible;
-SCP_vector<Training_Message> Training_Message_Queue;
+training_message_queue Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX];
 
 // coordinates for training messages
 int Training_message_window_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -298,10 +300,14 @@ void training_mission_init()
 
 	Assert(!Training_num_lines);
 	Training_obj_num_lines = 0;
+	Training_message_queue_count = 0;
 	Training_failure = 0;
 	for (i=0; i<TRAINING_OBJ_LINES; i++)
 		Training_obj_lines[i] = -1;
 
+	// Goober5000
+	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
+		Training_message_queue[i].special_message = NULL;
 
 	if ( !Directive_frames_loaded ) {
 		for ( i = 0; i < NUM_DIRECTIVE_GAUGES; i++ ) {
@@ -546,6 +552,8 @@ void training_check_objectives()
 // called to do cleanup when leaving a mission
 void training_mission_shutdown()
 {
+	int i;
+
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
 			audiostream_close_file(Training_voice_handle, 0);
@@ -555,7 +563,15 @@ void training_mission_shutdown()
 		}
 	}
 
-	Training_Message_Queue.clear();
+	// Goober5000
+	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
+	{
+		if (Training_message_queue[i].special_message != NULL)
+		{
+			vm_free(Training_message_queue[i].special_message);
+			Training_message_queue[i].special_message = NULL;
+		}
+	}
 
 	Training_voice = -1;
 	Training_num_lines = Training_obj_num_lines = 0;
@@ -746,7 +762,7 @@ int message_play_training_voice(int index)
 	return Training_voice;
 }
 
-// one time initializations done when we want to display a new training message.  This does
+// one time initializations done when we want to display a new training mission.  This does
 // all the processing and setup required to actually display it, including starting the
 // voice file playing
 void message_training_setup(int m, int length, char *special_message)
@@ -795,40 +811,62 @@ void message_training_setup(int m, int length, char *special_message)
 } */
 
 // add a message to the queue to be sent later.
-void message_training_add_to_queue(char *text, int timestamp, int length)
+void message_training_queue(char *text, int timestamp, int length)
 {
-	Training_Message training_message;
 	int m;
 	char temp_buf[TRAINING_MESSAGE_LENGTH];
 
-	if (!stricmp(text, NOX("none"))) {
-		m = -1;
-	} else {
-		for (m=0; m<Num_messages; m++)
-			if (!stricmp(text, Messages[m].name))
-				break;
+	Assert(Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX);
+	if (Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX) {
+		if (!stricmp(text, NOX("none"))) {
+			m = -1;
+		} else {
+			for (m=0; m<Num_messages; m++)
+				if (!stricmp(text, Messages[m].name))
+					break;
 
-		Assert(m < Num_messages);
-		if (m >= Num_messages)
-			return;
+			Assert(m < Num_messages);
+			if (m >= Num_messages)
+				return;
+		}
+
+		Training_message_queue[Training_message_queue_count].num = m;
+		Training_message_queue[Training_message_queue_count].timestamp = timestamp;
+		Training_message_queue[Training_message_queue_count].length = length;
+
+		// Goober5000 - this shouldn't happen, but let's be safe
+		if (Training_message_queue[Training_message_queue_count].special_message != NULL)
+		{
+			Int3();
+			vm_free(Training_message_queue[Training_message_queue_count].special_message);
+			Training_message_queue[Training_message_queue_count].special_message = NULL;
+		}
+
+		// Goober5000 - replace variables if necessary
+		strcpy_s(temp_buf, Messages[m].message);
+		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
+			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf);
+
+		Training_message_queue_count++;
 	}
-
-	training_message.num = m;
-	training_message.timestamp = timestamp;
-	training_message.length = length;
-
-	// Echelon9 - replace variables if necessary
-	strcpy_s(temp_buf, Messages[m].message);
-	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
-		training_message.special_message = vm_strdup(temp_buf);
-
-	Training_Message_Queue.push_back(training_message); 
 }
 
-// Echelon9 - removes current message from the queue
+// Goober5000 - removes current message from the queue
 void message_training_remove_from_queue(int idx)
 {	
-	Training_Message_Queue.erase(Training_Message_Queue.begin()+idx);
+	Training_message_queue[idx].length = -1;
+	Training_message_queue[idx].num = -1;
+	Training_message_queue[idx].timestamp = -1;
+
+	if (Training_message_queue[idx].special_message != NULL)
+	{
+		vm_free(Training_message_queue[idx].special_message);
+		Training_message_queue[idx].special_message = NULL;
+	}
+
+	for (int j=idx+1; j<Training_message_queue_count; j++)
+		Training_message_queue[j - 1] = Training_message_queue[j];
+	Training_message_queue_count--;
 }
 
 // check the training message queue to see if we should play a new message yet or not.
@@ -850,9 +888,9 @@ void message_training_queue_check()
 	if (Training_failure)
 		return;
 
-	for (i = 0; i < (int)Training_Message_Queue.size(); i++) {
-		if (timestamp_elapsed(Training_Message_Queue[i].timestamp)) {
-			message_training_setup(Training_Message_Queue[i].num, Training_Message_Queue[i].length, Training_Message_Queue[i].special_message);
+	for (i=0; i<Training_message_queue_count; i++) {
+		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
+			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
 
 			// remove this message from the queue now.
 			message_training_remove_from_queue(i);
