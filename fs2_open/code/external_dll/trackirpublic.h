@@ -2,6 +2,7 @@
 #define TRACKIRPUBLIC_H_INCLUDED_
 
 #include "external_dll/externalcode.h"
+#include "globalincs/pstypes.h"
 
 #define TRACKIRBRIDGEDLLNAME "scptrackir.dll"
 
@@ -19,11 +20,6 @@
 /* Exported functions */
 /* HWND comes from externalcode.h */
 /* These are function pointer prototypes provided for library loading */
-
-/* Pseudo fix for this */
-#ifndef _WIN32
-typedef void* HWND;
-#endif
 
 /* Only one function doesn't return an int or a float */
 typedef int ( SCP_EXT_CALLCONV *SCPTRACKIR_PFINIT )( HWND );
