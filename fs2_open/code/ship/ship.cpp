@@ -8082,6 +8082,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip;
 	ship_info	*sip_orig;
 	ship			*sp;
+	ship_weapon *swp;
 	object		*objp;
 	p_object	*p_objp;
 	float hull_pct, shield_pct;
@@ -8090,6 +8091,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
+	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 
@@ -8290,6 +8292,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}//end AB trails -Bobboau
+
+	// Chief1983: Make sure that when changing to a new ship with secondaries, you switch to bank 0.  They still won't 
+	// fire if the SF2_SECONDARIES_LOCKED flag is on as this should have carried over.
+	if ( swp->num_secondary_banks > 0 && swp->current_secondary_bank == -1 ){
+		swp->current_secondary_bank = 0;
+	}
 
 /*
 	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
