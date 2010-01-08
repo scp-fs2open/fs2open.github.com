@@ -1,6 +1,8 @@
 #ifndef __MISC_H__
 #define __MISC_H__
 
+#include <stdio.h>
+
 enum
 {
 	// First 6 flags must remain set they are
@@ -43,7 +45,6 @@ const char *get_filename_from_path(const char *path);
 void remove_file_from_path(const char *path);
 bool is_whitespace(char ch);
 void trim(char *str);
-void trim(CString str);
 
 FILE *ini_open_for_write(const char *filepath, bool append, const char *comment);
 void ini_write_type(FILE *fp, const char *type);

@@ -1,4 +1,5 @@
 
+#include "misc.h"
 #include "stdafx.h"
 #include <sys/stat.h>
 #include <direct.h>
@@ -7,7 +8,6 @@
 #include "iniparser/dictionary.h"
 
 
-#include "misc.h"
 #include "launcher_settings.h"
 
 
@@ -161,15 +161,6 @@ void trim(char *str)
 
 		free(temp);
 	}
-}
-
-/**
- * Remove whitespace surrounding a string, in-place.
- */
-void trim(CString str)
-{
-	str.TrimLeft();
-	str.TrimRight();
 }
 
 FILE *ini_open_for_write(const char *filepath, bool append, const char *comment)

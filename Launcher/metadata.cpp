@@ -1,15 +1,7 @@
+#include <stddef.h>
 #include "metadata.h"
+#include "misc.h"
 
-
-
-typedef struct
-{
-	char *exe_name;
-	char *company;
-	char *regname;
-	int   flags;
-
-} ExeType;				  
 
 char *exe_types_string[MAX_EXE_TYPES + 2] = 
 {
@@ -32,20 +24,6 @@ ExeType exe_types[MAX_EXE_TYPES + 2] =
 	// Insert new exe data here and in exe_types_string
 	"CUSTOM DON'T CHANGE", NULL, NULL,					FLAG_MULTI | FLAG_SCP,
 };
-
-const int FLAG_TYPE_LEN = 16;
-
-typedef struct
-{
-	char  name[20];				// The actual flag
-	char  desc[40];				// The text that will appear in the launcher
-	bool  fso_only;				// true if this is a fs2_open only feature
-	int   on_flags;				// Easy flag which will turn this feature on
-	int   off_flags;			// Easy flag which will turn this feature off
-	char  type[FLAG_TYPE_LEN];	// Launcher uses this to put flags under different headings
-	char  web_url[256];			// Link to documentation of feature (please use wiki or somewhere constant)
-
-} Flag;
 
 Flag retail_params_FS2[] = {
 	{ "-32bit",			"Enable D3D 32-bit mode",			false,	0,	2,	"Graphics",		"", },

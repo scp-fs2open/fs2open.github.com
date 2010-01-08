@@ -11,6 +11,7 @@
 #include "win32func.h"
 #include "misc.h"
 #include "launcher_settings.h"
+#include "metadata.h"
 #include "mod_settings.h"
 
 #include "iniparser/iniparser.h"
@@ -28,11 +29,6 @@ static char THIS_FILE[] = __FILE__;
 int num_eflags = 0;
 int num_params = 0;
 
-typedef struct
-{
-	char name[32];
-
-} EasyFlag;
 
 EasyFlag *easy_flags  = NULL;
 Flag	 *exe_params  = NULL;
@@ -226,7 +222,8 @@ void CTabCommLine::OnChangeCustomParam()
 	// get trimmed list of params
 	CString custom_params;
 	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params);
-	trim(custom_params);
+	custom_params.TrimLeft();
+	custom_params.TrimRight();
 	ModSettings::set_custom_parameters(custom_params);
 
 	UpdateCommandLine();	
