@@ -1,6 +1,8 @@
 #ifndef EXTERNALCODE_H_INCLUDED_
 #define EXTERNALCODE_H_INCLUDED_
 
+#include "globalincs/pstypes.h"
+
 /* We must have windows.h anywhere SCP_ExternalCode is used under windows */
 #ifdef _WIN32
 #include <windows.h>

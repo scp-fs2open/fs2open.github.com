@@ -2446,7 +2446,7 @@ int CFREDView::global_error_check()
 					}
 				}
 
-				if (!count){
+				if (!count && Ships[i].weapons.num_secondary_banks > 0){
 					if (error("Player \"%s\" has no secondary weapons.  Should have at least 1", Ships[i].ship_name)){
 						return 1;
 					}
