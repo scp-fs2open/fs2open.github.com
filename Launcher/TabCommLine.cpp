@@ -24,94 +24,15 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-typedef struct
-{
-	char *exe_name;
-	char *company;
-	char *regname;
-	int   flags;
 
-} ExeType;				  
-
-char *exe_types_string[MAX_EXE_TYPES + 2] = 
-{
-	"Official FreeSpace 2",     
-	"Official FreeSpace 2 Demo",
-	"Official FreeSpace 1"
-	"No valid exe selected",
-	"Custom exe (assuming fs2_open exe)",
-	// Insert new exe data here and in exe_types
-};
-
-// This array stored specific information about the various exe's the launcher may be asked to deal with
-ExeType exe_types[MAX_EXE_TYPES + 2] = 
-{
-//	exe name	   size     Reg dir 1	Reg dir 2			Flags
-	"FS2.exe",     "Volition", "FreeSpace2",		FLAG_MULTI | FLAG_D3D5 | FLAG_FS2 | FLAG_3DFX, 
-	"FS2Demo.exe", "Volition", "FreeSpace2Demo",	FLAG_MULTI | FLAG_D3D5 | FLAG_FS2 | FLAG_3DFX, 
-	"FS.exe",	   "Volition", "FreeSpace", 		FLAG_MULTI | FLAG_D3D5 | FLAG_FS1 | FLAG_3DFX | FLAG_SFT,	
-	"Placeholder", NULL,		NULL,				0,
-	// Insert new exe data here and in exe_types_string
-	"CUSTOM DON'T CHANGE", NULL, NULL,					FLAG_MULTI | FLAG_SCP,
-};
+int num_eflags = 0;
+int num_params = 0;
 
 typedef struct
 {
 	char name[32];
 
 } EasyFlag;
-
-const int FLAG_TYPE_LEN = 16;
-
-typedef struct
-{
-	char  name[20];				// The actual flag
-	char  desc[40];				// The text that will appear in the launcher
-	bool  fso_only;				// true if this is a fs2_open only feature
-	int   on_flags;				// Easy flag which will turn this feature on
-	int   off_flags;			// Easy flag which will turn this feature off
-	char  type[FLAG_TYPE_LEN];	// Launcher uses this to put flags under different headings
-	char  web_url[256];			// Link to documentation of feature (please use wiki or somewhere constant)
-
-} Flag;
-
-Flag retail_params_FS2[] = {
-	{ "-32bit",			"Enable D3D 32-bit mode",			false,	0,	2,	"Graphics",		"", },
-
-	{ "-nosound",		"Disable sound and music",			false,	0,	2,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
-	{ "-nomusic",		"Disable music",					false,	0,	2,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
-
-	{ "-standalone",	"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
-	{ "-startgame",		"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
-	{ "-closed",		"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
-	{ "-restricted",	"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
-	{ "-multilog",		"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
-	{ "-clientdamage",	"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
-
-	{ "-oldfire",		"",									false,	0,	2,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
-
-	{ "-coords",		"Show coordinates",					false,	0,	2,	"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
-	{ "-pofspew",		"",									false,	0,	2,	"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pofspew", }
-};
-
-int Num_retail_params_FS2 = sizeof(retail_params_FS2) / sizeof(Flag);
-
-Flag retail_params_FS1[] = {
-	{ "-nosound",		"Disable sound and music",			false,	0,	2,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
-	{ "-nomusic",		"Disable music",					false,	0,	2,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
-
-	{ "-standalone",	"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
-	{ "-startgame",		"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
-	{ "-closed",		"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
-	{ "-restricted",	"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
-	{ "-multilog",		"",									false,	0,	2,	"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
-};
-
-int Num_retail_params_FS1 = sizeof(retail_params_FS1) / sizeof(Flag);
-
-
-int num_eflags = 0;
-int num_params = 0;
 
 EasyFlag *easy_flags  = NULL;
 Flag	 *exe_params  = NULL;
@@ -121,6 +42,7 @@ bool	 *flag_states = NULL;
 #define MAX_CUSTOM_PARAM_SIZE	1200
 
 char command_line[MAX_CMDLINE_SIZE]   = "";
+
 
 /////////////////////////////////////////////////////////////////////////////
 // CTabCommLine dialog
@@ -175,6 +97,14 @@ BOOL CTabCommLine::OnInitDialog()
 	m_flag_list.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT);
  	m_flag_list.InsertColumn(0, "Flag", LVCFMT_LEFT, 200);
 	return TRUE;  
+}
+
+/**
+ * @return CString - string holding command line (may be empty)
+ */
+CString CTabCommLine::GetCommandLine()
+{
+	return CString(command_line);
 }
 
 /**
@@ -241,46 +171,19 @@ done_with_command_line:
 }
 
 /**
- * When the flag list is changed, call this function, then UpdateCommandLine.
- */
-void CTabCommLine::UpdateStandardParameters()
+ * When the flag states array has been changed, call this to update the GUI.
+  */
+void CTabCommLine::RefreshFlagList()
 {
-	// build list of params
-	char standard_params[MAX_CMDLINE_SIZE];
-	strcpy(standard_params, "");
-	for (int i = 0; i < num_params; i++)
+	int num_flags = m_flag_list.GetItemCount();
+
+	for(int i = 0; i < num_flags; i++)
 	{
-		if (flag_states[i])
-		{
-			strcat(standard_params, exe_params[i].name);		
-			strcat(standard_params, " ");		
-		}
+		int index = m_flag_list.GetItemData(i);
+		m_flag_list.SetCheck(i, flag_states[index]);
 	}
-	trim(standard_params);
-	ModSettings::set_standard_parameters(standard_params);
-}
 
-/**
- * When the custom parameter edit box is typed into reflect this change in the
- * final command line box
- */
-void CTabCommLine::OnChangeCustomParam() 
-{
-	// get trimmed list of params
-	CString custom_params;
-	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params);
-	trim(custom_params);
-	ModSettings::set_custom_parameters(custom_params);
-
-	UpdateCommandLine();	
-}
-
-/**
- * @return CString - string holding command line (may be empty)
- */
-CString CTabCommLine::GetCommandLine()
-{
-	return CString(command_line);
+	CLauncherDlg::Redraw();
 }
 
 /**
@@ -298,9 +201,46 @@ void CTabCommLine::OnItemchangedFlagList(NMHDR* pNMHDR, LRESULT* pResult)
  	int index			= m_flag_list.GetItemData(pNMListView->iItem);
  	flag_states[index]	= (m_flag_list.GetCheck(pNMListView->iItem) != 0);
 
-	UpdateStandardParameters();
+	// build list of params
+	char standard_params[MAX_CMDLINE_SIZE];
+	strcpy(standard_params, "");
+	for (int i = 0; i < num_params; i++)
+	{
+		if (flag_states[i])
+		{
+			strcat(standard_params, exe_params[i].name);		
+			strcat(standard_params, " ");		
+		}
+	}
+	trim(standard_params);
+	ModSettings::set_standard_parameters(standard_params);
 
 	UpdateCommandLine();
+}
+
+/**
+ * This is called when something is typed in the custom parameter edit box
+ */
+void CTabCommLine::OnChangeCustomParam() 
+{
+	// get trimmed list of params
+	CString custom_params;
+	GetDlgItem(IDC_CUSTOM_PARAM)->GetWindowText(custom_params);
+	trim(custom_params);
+	ModSettings::set_custom_parameters(custom_params);
+
+	UpdateCommandLine();	
+}
+
+/**
+ * @return - EXE_TYPE_NONE, EXE_TYPE_CUSTOM or if recognised exe it returns the flag list.
+ */
+int CTabCommLine::GetEXEFlags()
+{
+	if(LauncherSettings::get_exe_type() == EXE_TYPE_NONE) 
+		return 0;
+
+	return exe_types[LauncherSettings::get_exe_type()].flags;
 }
 
 /**
@@ -350,50 +290,6 @@ void CTabCommLine::SelectRegPathAndExeType()
 	LauncherSettings::set_reg_path(reg_path, exe_type);
 }
 
-void CTabCommLine::ConstructFlagListRetail()
-{
-	int i, count = 0;
-	char last_word[FLAG_TYPE_LEN] = "";
-
-	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
-		num_params = Num_retail_params_FS1;
-	else
-		num_params = Num_retail_params_FS2;
-
-	exe_params  = (Flag *) malloc(sizeof(Flag) * num_params);
-	flag_states = (bool *) malloc(sizeof(bool) * num_params);
-
-	if ( (exe_params == NULL) || (flag_states == NULL) )
-	{
-		MessageBox("Memory allocation failure!");
-		return;
-	}
-
-	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
-		memcpy( exe_params, retail_params_FS1, sizeof(Flag) * num_params );
-	else
-		memcpy( exe_params, retail_params_FS2, sizeof(Flag) * num_params );
-
-	memset( flag_states, 0, sizeof(bool) * num_params );
-
-	// setup flag types
-	m_flag_type_list.ResetContent();
-	m_flag_type_list.EnableWindow(TRUE);
-
-	for (i = 0; i < num_params; i++) {
-		if ( strcmp(exe_params[i].type, last_word) ) {
-			m_flag_type_list.InsertString(count, exe_params[i].type);
-			strcpy(last_word, exe_params[i].type);
-			count++;
-		}
-	}
-
-	m_flag_type_list.SetCurSel(0);
-}
-
-/**
- *
- */
 void CTabCommLine::ConstructFlagList()
 {
 	int k;
@@ -535,6 +431,47 @@ void CTabCommLine::ConstructFlagList()
 	ConstructFlagListInternal();
 }
 
+void CTabCommLine::ConstructFlagListRetail()
+{
+	int i, count = 0;
+	char last_word[FLAG_TYPE_LEN] = "";
+
+	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
+		num_params = Num_retail_params_FS1;
+	else
+		num_params = Num_retail_params_FS2;
+
+	exe_params  = (Flag *) malloc(sizeof(Flag) * num_params);
+	flag_states = (bool *) malloc(sizeof(bool) * num_params);
+
+	if ( (exe_params == NULL) || (flag_states == NULL) )
+	{
+		MessageBox("Memory allocation failure!");
+		return;
+	}
+
+	if ( exe_types[LauncherSettings::get_exe_type()].flags & FLAG_FS1 )
+		memcpy( exe_params, retail_params_FS1, sizeof(Flag) * num_params );
+	else
+		memcpy( exe_params, retail_params_FS2, sizeof(Flag) * num_params );
+
+	memset( flag_states, 0, sizeof(bool) * num_params );
+
+	// setup flag types
+	m_flag_type_list.ResetContent();
+	m_flag_type_list.EnableWindow(TRUE);
+
+	for (i = 0; i < num_params; i++) {
+		if ( strcmp(exe_params[i].type, last_word) ) {
+			m_flag_type_list.InsertString(count, exe_params[i].type);
+			strcpy(last_word, exe_params[i].type);
+			count++;
+		}
+	}
+
+	m_flag_type_list.SetCurSel(0);
+}
+
 void CTabCommLine::ConstructFlagListInternal()
 {
 	int type_index = m_flag_type_list.GetCurSel();
@@ -579,53 +516,29 @@ void CTabCommLine::ConstructFlagListInternal()
 	m_flag_gen_in_process = false;
 }
 
-/**
- * @return - EXE_TYPE_NONE, EXE_TYPE_CUSTOM or if recognised exe it returns the flag list.
- */
-int CTabCommLine::GetEXEFlags()
-{
-	if(LauncherSettings::get_exe_type() == EXE_TYPE_NONE) 
-		return 0;
-
-	return exe_types[LauncherSettings::get_exe_type()].flags;
-}
-
-=== YARR ===
-
 void CTabCommLine::LoadSettings()
 {
-	char custom_param[MAX_CUSTOM_PARAM_SIZE] = "";
+	ModSettings::load_user();
+	PopulateFlagStates();
 
-	// a non-retail exe will grab options from the launcher ini
-	if (LauncherSettings::get_exe_type() == EXE_TYPE_CUSTOM) {
-		ModSettings::load_custom();
+	RefreshFlagList();
+	GetDlgItem(IDC_CUSTOM_PARAM)->SetWindowText(ModSettings::get_custom_parameters());
 
-		if (GetFlags() & FLAG_MOD) {
-			SetModParam(LauncherSettings::get_active_mod());
-		}
+	UpdateCommandLine();
+}
 
-		strcpy(custom_param, ModSettings::get_cmdline_options());
-	}
-	// a retail exe will just grab options from the game cfg
-	else {
-		FILE *fp = NULL;
-		char path_buffer[MAX_PATH];
+void CTabCommLine::PopulateFlagStates()
+{
+	char *new_standard_params = strdup(ModSettings::get_standard_parameters());
+	char *new_custom_params = strdup(ModSettings::get_custom_parameters());
 
-		check_cfg_file(path_buffer);
+	// tokenize the standard parameters and copy them to 
+	
+	for (int i = 0; i < num_params; i++)
+	{
+		exe_params[i].name, 
 
-		fp = fopen(path_buffer, "rt");
-			
-		if (fp) {
-			fgets(custom_param, sizeof(custom_param) - 1, fp);
-			fclose(fp);
-			fp = NULL;
-		}
-	}
-
-	char *end_string_here = NULL;
-	char *found_str = NULL;
-	size_t get_new_offset = 0;
-
+}
 	// Seperate custom flags from standard one
 	for(int i = 0; i < num_params; i++) {
 		// while going through the cmdline make sure to grab only the option that we
@@ -659,11 +572,7 @@ void CTabCommLine::LoadSettings()
 		}
 	}
 
-	GetDlgItem(IDC_CUSTOM_PARAM)->SetWindowText(custom_param);
 
-	UpdateFlagList();
-	UpdateCommandLine();
-}
 
 /**
  * Save command line to settings.ini file.
@@ -671,23 +580,6 @@ void CTabCommLine::LoadSettings()
 void CTabCommLine::SaveSettings()
 {
 	ModSettings::save_user();
-}
-
-void CTabCommLine::SetModParam(char *path)
-{
-	if(path == NULL)
-	{
-		return;
-	}
-
-	char absolute_path[MAX_PATH];
-	strcpy(absolute_path, LauncherSettings::get_exe_pathonly());
-	strcat(absolute_path, "\\");
-	strcat(absolute_path, path);
-
-   	tab_mod.SetMOD(absolute_path);
-	UpdateCommandLine();
-	return;
 }
 
 // User has selected new easy select type
@@ -707,7 +599,7 @@ void CTabCommLine::OnSelchangeFlagSetup()
 			flag_states[i] = false;
 	}
 
-   	UpdateFlagList();
+   	RefreshFlagList();
    	UpdateCommandLine();
 }
 
@@ -715,20 +607,7 @@ void CTabCommLine::OnSelchangeFlagSetup()
 void CTabCommLine::OnSelchangeFlagType() 
 {
   	ConstructFlagListInternal();
-	UpdateFlagList();
-}
-
-void CTabCommLine::UpdateFlagList()
-{
-	int num_flags = m_flag_list.GetItemCount();
-
-	for(int i = 0; i < num_flags; i++)
-	{
-		int index = m_flag_list.GetItemData(i);
-		m_flag_list.SetCheck(i, flag_states[index]);
-	}
-
-	CLauncherDlg::Redraw();
+	RefreshFlagList();
 }
 
 // User has double clicked flag

@@ -333,7 +333,7 @@ void CLauncherDlg::OnCancel()
  */
 void CLauncherDlg::OnApply() 
 {
-	int flags = tab_comm_line.GetFlags(); 
+	int flags = tab_comm_line.GetEXEFlags(); 
 
 	// Save Command line settings
 	tab_comm_line.SaveSettings();
@@ -519,7 +519,7 @@ void CLauncherDlg::NewExeSet(char *exe_path)
 	GetDlgItem(IDC_RUN)->EnableWindow( LauncherSettings::is_exe_path_valid() );
 	GetDlgItem(IDC_PATH)->SetWindowText(LauncherSettings::get_exe_filepath());	
 
-	tab_video.Update(LauncherSettings::get_exe_type(), tab_comm_line.GetFlags());
+	tab_video.Update(LauncherSettings::get_exe_type(), tab_comm_line.GetEXEFlags());
 
 	// is this necessary? - G5K
 	// tab_comm_line.LoadSettings(LauncherSettings::get_reg_path());
@@ -529,7 +529,7 @@ void CLauncherDlg::NewExeSet(char *exe_path)
 		tab_dialogs[i] = NULL;
 	}
 
-	int flags = tab_comm_line.GetFlags();
+	int flags = tab_comm_line.GetEXEFlags();
 	if(LauncherSettings::get_exe_type() == EXE_TYPE_CUSTOM || flags & FLAG_FS2)
 	{
 		tab_video.LoadSettings(flags);	

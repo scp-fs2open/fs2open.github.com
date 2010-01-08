@@ -25,12 +25,11 @@ public:
 
 	void SelectRegPathAndExeType();
 
-	void UpdateFlagList();
+	void RefreshFlagList();
 	int GetEXEFlags();
 
 	CString GetCommandLine();
 	void UpdateCommandLine();
-	void UpdateStandardParameters();
 
 // Dialog Data
 	//{{AFX_DATA(CTabCommLine)

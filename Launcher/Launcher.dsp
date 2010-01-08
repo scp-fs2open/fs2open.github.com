@@ -190,6 +190,10 @@ SOURCE=.\LauncherDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\metadata.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\misc.cpp
 # End Source File
 # Begin Source File
@@ -240,6 +244,10 @@ SOURCE=.\launcher_settings.h
 # Begin Source File
 
 SOURCE=.\LauncherDlg.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\metadata.h
 # End Source File
 # Begin Source File
 
