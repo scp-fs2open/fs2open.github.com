@@ -1,0 +1,80 @@
+<project name="fsoinstaller" default="run" basedir=".">
+
+  <property name="projectname" value="FreeSpace Open Installer"/>
+  <property name="projectversion" value="v1.1.0"/>
+  <property name="mainclass" value="com.fsoinstaller.main.FreeSpaceOpenInstaller"/>
+
+  <property name="build" value="build"/>
+  <property name="dist" value="dist"/>
+  <property name="lib" value="lib"/>
+  <property name="javadoc" value="docs/api"/>
+  <property name="src" value="src"/>
+
+  <path id="build.class.path">
+    <fileset dir="${lib}">
+      <include name="**/*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="runtime.class.path">
+    <fileset dir="${lib}">
+      <include name="**/*.jar"/>
+    </fileset>
+    <pathelement path="${build}"/>
+    <pathelement path="."/>
+  </path>
+
+  <target name="clean">
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${build}"/>
+    <javac classpathref="build.class.path" debug="on" srcdir="${src}" destdir="${build}"/>
+  </target>
+
+  <target name="run" depends="compile">
+    <java classpathref="runtime.class.path" classname="${mainclass}" fork="true"/>
+  </target>
+
+  <target name="jar" depends="compile">
+    <mkdir dir="${dist}"/>
+    
+    <!-- put library jar contents in build folder, since we want to deploy a single jar -->
+    <unzip dest="${build}" overwrite="false">
+      <patternset>
+        <exclude name="**/META-INF"/>
+        <exclude name="**/*.MF"/>
+      </patternset>
+      <fileset dir="${lib}">
+        <include name="**/*.jar"/>
+      </fileset>
+    </unzip>
+
+    <!-- jar it up -->
+    <jar jarfile="${dist}/FreeSpaceOpenInstaller.jar">
+      <fileset dir="${build}" excludes="**/svn*"/>
+      <fileset dir="${src}" excludes="**/svn*"/>
+      <manifest>
+        <attribute name="Main-Class" value="${mainclass}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="javadoc" depends="compile">
+    <delete dir="${javadoc}"/>
+    <javadoc packagenames="com.fsoinstaller.*"
+        sourcepath="${src}"
+        defaultexcludes="yes"
+        destdir="${javadoc}"
+        author="true"
+        version="true"
+        use="true"
+        linksource="true"
+        windowtitle="${projectname} ${projectversion}">
+      <doctitle><![CDATA[<h1>${projectname} ${projectversion}<br>API Specification</h1>]]></doctitle>
+    </javadoc>
+  </target>
+
+</project>
