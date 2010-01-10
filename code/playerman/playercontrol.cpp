@@ -906,11 +906,11 @@ void read_player_controls(object *objp, float frametime)
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
 
-			if ( lua_game_control == LGC_STEERING ) {
+			if ( lua_game_control & LGC_STEERING ) {
 				// make sure to copy the control before reseting it
 				Player->lua_ci = Player->ci;
 				copy_control_info(&(Player->ci), NULL);
-			} else if ( lua_game_control == LGC_FULL ) {
+			} else if ( lua_game_control & LGC_FULL ) {
 				control_info temp;
 				// first copy over the new values, then reset
 				temp = Player->ci;
