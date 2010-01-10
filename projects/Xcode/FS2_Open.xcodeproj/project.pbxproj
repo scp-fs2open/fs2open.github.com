@@ -4235,7 +4235,6 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
-					NO_DIRECT3D,
 					USE_OPENAL,
 					APPLE_APP,
 				);
@@ -4271,7 +4270,6 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
 					SCP_UNIX,
-					NO_DIRECT3D,
 					USE_OPENAL,
 					APPLE_APP,
 				);
@@ -4592,7 +4590,6 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					SCP_UNIX,
-					NO_DIRECT3D,
 					USE_OPENAL,
 					APPLE_APP,
 					INF_BUILD,
@@ -4894,7 +4891,6 @@
 					INF_BUILD,
 					NDEBUG,
 					SCP_UNIX,
-					NO_DIRECT3D,
 					USE_OPENAL,
 					APPLE_APP,
 				);
