@@ -221,6 +221,7 @@ typedef	struct ship_subsys {
 	int flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
+	int armor_type_idx;				// FUBAR
 
 	// turret info
 	//Important -WMC
@@ -240,6 +241,8 @@ typedef	struct ship_subsys {
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
 	float	turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
 	int		turret_targeting_order[NUM_TURRET_ORDER_TYPES];	//Order that turrets target different types of things.
+	float	optimum_range;					        
+	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
@@ -667,6 +670,8 @@ typedef struct ship {
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
+	int armor_type_idx;
+	int shield_armor_type_idx;
 } ship;
 
 struct ai_target_priority {
@@ -687,6 +692,7 @@ struct ai_target_priority {
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
+void parse_weapon_targeting_priorities();
 ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -711,7 +717,16 @@ typedef struct exited_ship {
 	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
 	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
-	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
+	exited_ship()
+		: team( 0 ), flags( 0 ), time( 0 ), hull_strength( 0 ),
+		  time_cargo_revealed( 0 ), cargo1( 0 )
+	{ 
+		ship_name[ 0 ] = '\0';
+		obj_signature = -1;
+		ship_class = -1; 
+		memset( damage_ship, 0, sizeof( damage_ship ) );
+		memset( damage_ship_id, 0, sizeof( damage_ship_id ) );
+	}
 } exited_ship;
 
 extern SCP_vector<exited_ship> Ships_exited;
@@ -869,7 +884,18 @@ typedef struct ship_type_info {
 	SCP_vector<int> explosion_bitmap_anims;
 
 	//Regen values - need to be converted after all types have loaded
-	SCP_vector<std::string> ai_actively_pursues_temp;
+	SCP_vector<SCP_string> ai_actively_pursues_temp;
+
+	ship_type_info( )
+		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),
+		  debris_max_speed( 0.f ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
+		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_bools( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  vaporize_chance( 0.f )
+
+	{
+		name[ 0 ] = '\0';
+	}
 } ship_type_info;
 
 extern SCP_vector<ship_type_info> Ship_types;
@@ -910,7 +936,16 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
-	man_thruster(){memset(this, 0, sizeof(man_thruster));tex_id=-1;start_snd=-1;loop_snd=-1;stop_snd=-1;}
+	man_thruster()
+		: use_flags( 0 ), tex_nframes( 0 ), tex_fps( 0 ), length( 0. ), radius( 0. )
+	{
+		tex_id=-1;
+		start_snd=-1;
+		loop_snd=-1;
+		stop_snd=-1;
+		memset( &pos, 0, sizeof( vec3d ) );
+		memset( &norm, 0, sizeof( vec3d ) );
+	}
 } man_thruster;
 
 //Warp type defines
@@ -1048,6 +1083,10 @@ typedef struct ship_info {
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
+
+	float	sup_hull_repair_rate;
+	float	sup_shield_repair_rate;
+	float	sup_subsys_repair_rate;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 
@@ -1656,5 +1695,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2);
 int armor_type_get_idx(char* name);
 
 void armor_init();
+
+int thruster_glow_anim_load(generic_anim *ga);
 
 #endif

@@ -7438,8 +7438,7 @@ int Multi_sync_countdown_coords[GR_NUM_RESOLUTIONS][2] = {
 
 //XSTR:ON
 
-anim *Multi_sync_countdown_anim = NULL;
-anim_instance *Multi_sync_countdown_instance = NULL;
+static generic_anim Multi_sync_countdown_anim;
 
 
 // PREBRIEFING STUFF
@@ -7875,7 +7874,10 @@ void multi_sync_blit_screen_all()
 	}	
 
 	// display the mission start countdown timer (if any)
-	anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);	
+	//anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);
+	if((gameseq_get_state() == GS_STATE_MULTI_MISSION_SYNC && Multi_sync_countdown_timer > -1.0f) || (Multi_sync_countdown != -1))
+		generic_anim_render(&Multi_sync_countdown_anim, flFrametime, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
+
 
 	// process and show the chatbox thingie	
 	chatbox_render();
@@ -8227,11 +8229,11 @@ void multi_sync_post_init()
 	}	
 
 	// if I'm not a standalone server, load up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
-		Multi_sync_countdown_anim = NULL;
-		Multi_sync_countdown_instance = NULL;
-		Multi_sync_countdown_anim = anim_load(Multi_sync_countdown_fname[gr_screen.res]);				
-		if(Multi_sync_countdown_anim == NULL){
+	if(!(Game_mode & GM_STANDALONE_SERVER)){
+		generic_anim_init(&Multi_sync_countdown_anim, Multi_sync_countdown_fname[gr_screen.res]);
+		Multi_sync_countdown_anim.ani.bg_type = bm_get_type(Multi_sync_bitmap);
+		generic_anim_stream(&Multi_sync_countdown_anim);
+		if(Multi_sync_countdown_anim.num_frames < 1){
 			nprintf(("General","WARNING!, Could not load countdown animation %s!\n",Multi_sync_countdown_fname[gr_screen.res]));
 		}
 	}
@@ -8320,17 +8322,6 @@ void multi_sync_post_do()
 			// increment by frametime.
 			Multi_sync_countdown_timer += flFrametime;
 
-			// if the animation is not playing, start it
-			if(!(Game_mode & GM_STANDALONE_SERVER) && (Multi_sync_countdown_instance == NULL) && (Multi_sync_countdown_anim != NULL)){
-				anim_play_struct aps;				
-
-				anim_play_init(&aps, Multi_sync_countdown_anim, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
-				aps.screen_id = GS_STATE_MULTI_MISSION_SYNC;
-				aps.framerate_independent = 1;
-
-				Multi_sync_countdown_instance = anim_play(&aps);
-			}
-
 			// if the next second has expired
 			if( Multi_sync_countdown_timer >= 1.0f ) {
 
@@ -8360,17 +8351,6 @@ void multi_sync_post_do()
 			
 				multi_common_add_text(XSTR("Moving into game\n",842),1);			
 			}
-		}
-	} else {
-		// maybe start the animation countdown 
-		if((Multi_sync_countdown >= 0) && (Multi_sync_countdown_instance == NULL) && (Multi_sync_countdown_anim != NULL)){
-			anim_play_struct aps;				
-
-			anim_play_init(&aps, Multi_sync_countdown_anim, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
-			aps.screen_id = GS_STATE_MULTI_MISSION_SYNC;
-			aps.framerate_independent = 1;
-
-			Multi_sync_countdown_instance = anim_play(&aps);
 		}
 	}
 
@@ -8402,18 +8382,8 @@ void multi_sync_post_close()
 {
 	int idx;
 
-	// if I'm not a standalone server, unload up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
-		// release all rendering animation instances (should only be 1)
-		anim_release_all_instances(GS_STATE_MULTI_MISSION_SYNC);
-		Multi_sync_countdown_instance = NULL;
-
-		// free up the countdown animation
-		if(Multi_sync_countdown_anim != NULL){
-			anim_free(Multi_sync_countdown_anim);
-			Multi_sync_countdown_anim = NULL;
-		}
-	}
+	if(Multi_sync_countdown_anim.num_frames > 0)
+		generic_anim_unload(&Multi_sync_countdown_anim);
 	
 	// all players should reset sequencing
 	for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -9057,7 +9027,10 @@ void multi_debrief_server_process()
 	if((Multi_debrief_time >= Multi_debrief_resend_time) && !multi_netplayer_state_check3(NETPLAYER_STATE_DEBRIEF, NETPLAYER_STATE_DEBRIEF_ACCEPT, NETPLAYER_STATE_DEBRIEF_REPLAY, 1)){
 		// find all players who are not in the debrief state and hit them with the endgame packet
 		for(idx=0; idx<MAX_PLAYERS; idx++){
-			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && ((Net_players[idx].state != NETPLAYER_STATE_DEBRIEF) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY)) ){
+			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && 
+				( ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY ) ) ){
 				send_endgame_packet(&Net_players[idx]);
 			}
 		}

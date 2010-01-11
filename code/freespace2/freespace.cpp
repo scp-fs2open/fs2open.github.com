@@ -13,6 +13,7 @@
 #ifdef _WIN32
  #include <direct.h>
  #include <io.h>
+ #include <windows.h>
 #ifndef _MINGW
  #include <crtdbg.h>
 #endif // !_MINGW
@@ -46,6 +47,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "globalincs/mspdb_callstack.h"
 #include "graphics/font.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
@@ -62,7 +64,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h" // header file for the TrackIR routines (Swifty)
+#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -554,8 +556,8 @@ static char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
 
 
 static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
-	"Loading.ani",		// GR_640
-	"2_Loading.ani"		// GR_1024
+	"Loading",		// GR_640
+	"2_Loading"		// GR_1024
 };
 
 #if defined(OEM_BUILD)
@@ -1231,9 +1233,11 @@ void game_load_palette()
 int Game_loading_callback_inited = 0;
 
 int Game_loading_background = -1;
-anim * Game_loading_ani = NULL;
-anim_instance	*Game_loading_ani_instance;
-int Game_loading_frame=-1;
+//static int last_cbitmap = -1;
+//anim * Game_loading_ani = NULL;
+//anim_instance	*Game_loading_ani_instance;
+//int Game_loading_frame=-1;
+generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
@@ -1249,46 +1253,40 @@ extern char Processing_filename[MAX_PATH_LEN];
 static int busy_shader_created = 0;
 shader busy_shader;
 #endif
+static int framenum;
 // This gets called 10x per second and count is the number of times 
 // game_busy() has been called since the current callback function
 // was set.
 void game_loading_callback(int count)
 {	
+	int new_framenum;
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
-	Assert( Game_loading_ani != NULL );
+	Assert( Game_loading_ani.num_frames > 0 );
 
 	int do_flip = 0;
 
-	int framenum = ((Game_loading_ani->total_frames*count) / COUNT_ESTIMATE)+1;
-	if ( framenum > Game_loading_ani->total_frames-1 )	{
-		framenum = Game_loading_ani->total_frames-1;
-	} else if ( framenum < 0 )	{
-		framenum = 0;
+	new_framenum = ((Game_loading_ani.num_frames*count) / COUNT_ESTIMATE)+1;
+	if ( new_framenum > Game_loading_ani.num_frames-1 )	{
+		new_framenum = Game_loading_ani.num_frames-1;
+	} else if ( new_framenum < 0 )	{
+		new_framenum = 0;
 	}
+	//make sure we always run forwards - graphical hack
+	if(new_framenum > framenum)
+		framenum = new_framenum;
 
-	static int last_cbitmap = -1;
-	int cbitmap = -1;
-	while ( Game_loading_frame < framenum )	{
-		Game_loading_frame++;
-		cbitmap = anim_get_next_frame(Game_loading_ani_instance);
-	}
-	
-
-	if ( cbitmap > -1 )	{
+	if ( Game_loading_ani.num_frames > 0 )	{
 		if ( Game_loading_background > -1 )	{
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0);
 		}
 
 		//mprintf(( "Showing frame %d/%d [ Bitmap=%d ]\n", Game_loading_frame ,  Game_loading_ani->total_frames, cbitmap ));
-		gr_set_bitmap( cbitmap );
+		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
 		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 
-		if ( (last_cbitmap > -1) && (last_cbitmap != cbitmap) )
-			bm_release(last_cbitmap);
-	
 		do_flip = 1;
 	}
 
@@ -1303,6 +1301,8 @@ void game_loading_callback(int count)
 	}
 
 	if (Processing_filename[0] != '\0') {
+		/*
+		//do we still need this with the new EFF code?
 		if ( cbitmap == -1 && last_cbitmap >-1 ){
 			if ( Game_loading_background > -1 )	{
 				gr_set_bitmap( Game_loading_background );
@@ -1311,6 +1311,7 @@ void game_loading_callback(int count)
 			gr_set_bitmap( last_cbitmap );
 			gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 		}
+		*/
 
 		gr_set_shader(&busy_shader);
 		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17); // make sure it goes across the entire width
@@ -1359,9 +1360,6 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
-	if (cbitmap != -1)
-		last_cbitmap = cbitmap;
-
 	if (do_flip) {
 		gr_flip();
 	}
@@ -1379,16 +1377,15 @@ void game_loading_callback_init()
 	}
 	//common_set_interface_palette("InterfacePalette");  // set the interface palette
 
-
-	Game_loading_ani = anim_load( Game_loading_ani_fname[gr_screen.res]);
-	Assert( Game_loading_ani != NULL );
-	Game_loading_ani_instance = init_anim_instance(Game_loading_ani, 16);
-	Assert( Game_loading_ani_instance != NULL );
-	Game_loading_frame = -1;
+	strcpy(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
+	generic_anim_init(&Game_loading_ani, Game_loading_ani.filename);
+	generic_anim_load(&Game_loading_ani);
+	Assert( Game_loading_ani.num_frames > 0 );
 
 	Game_loading_callback_inited = 1;
 	Mouse_hidden = 1;
-	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani->total_frames)+1 );	
+	framenum = 0;
+	game_busy_callback( game_loading_callback, (COUNT_ESTIMATE/Game_loading_ani.num_frames)+1 );
 
 
 }
@@ -1414,10 +1411,7 @@ void game_loading_callback_close()
 	real_count = 0;
 #endif
 
-	free_anim_instance(Game_loading_ani_instance);
-	Game_loading_ani_instance = NULL;
-	anim_free(Game_loading_ani);
-	Game_loading_ani = NULL;
+	generic_anim_unload(&Game_loading_ani);
 
 	bm_release( Game_loading_background );
 	common_free_interface_palette();		// restore game palette
@@ -1568,6 +1562,13 @@ void game_post_level_init()
 int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
+
+	// clear post processing settings
+	if(!Is_standalone)
+		gr_screen.gf_set_default_post_process();
+
+	// clear shader manager cache
+	gr_clear_shaders_cache();
 
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
@@ -1944,7 +1945,13 @@ void game_init()
 
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+		mprintf(("FreeSpace version: %i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR));
+	} else if (FS_VERSION_REVIS == 0) {
+		mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	} else {
+		mprintf(("FreeSpace version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
+	}
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -2202,6 +2209,9 @@ void game_init()
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
 
+	if(!Is_standalone)
+		gr_screen.gf_post_process_init();
+
 	//WMC - Initialize my new GUI system
 	//This may seem scary, but it should take up 0 processing time and very little memory
 	//as long as it's not being used.
@@ -2415,7 +2425,7 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate && HUD_draw)	{
+	if (Show_framerate /* && HUD_draw*/ )	{
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (frametotal != 0.0f)
@@ -2811,9 +2821,16 @@ void game_set_view_clip(float frametime)
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
 
-		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
-		// J.S. I've changed my ways!! See the new "no constants" code!!!
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		if (g3_in_frame() == 0) {
+			// Ensure that the bars are black
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
+			// J.S. I've changed my ways!! See the new "no constants" code!!!
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		}
 	}
 	else {
 		// Set the clip region for normal view
@@ -3190,7 +3207,11 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+					strcpy_s(view_target_name, "targeted ship");
+				} else {
+					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				}
 				break;
 			case OBJ_WEAPON:
 				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
@@ -3826,11 +3847,6 @@ camid game_render_frame_setup()
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
 
-	if(!Time_compression_locked)
-		game_set_view_clip(flFrametime);
-	else
-		game_set_view_clip(flRealframetime);
-
 	return Main_camera;
 }
 
@@ -3841,9 +3857,12 @@ extern void ai_debug_render_stuff();
 int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect )
 
+void clip_frame_view();
+
 // Does everything needed to render a frame
 void game_render_frame( camid cid )
 {
+
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3893,6 +3912,13 @@ void game_render_frame( camid cid )
 			Env_cubemap_drawn = true;
 		}
 	}
+	gr_zbuffer_clear(TRUE);
+
+	gr_screen.gf_post_process_before();
+
+	clip_frame_view();
+
+	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
@@ -3942,6 +3968,7 @@ void game_render_frame( camid cid )
 	//This is so we can change the minimum clipping distance without messing everything up.
 	if(draw_viewer_last && Viewer_obj)
 	{
+		gr_screen.gf_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
 	}
@@ -3969,10 +3996,13 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
 	{
+		gr_screen.gf_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 	//================ END OF 3D RENDERING STUFF ====================
+
+	gr_screen.gf_post_process_after();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
@@ -4552,23 +4582,45 @@ void bars_do_frame(float frametime)
 		else
 			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
 
-		//Set rectangles
-		//gr_set_color(0,0,0);
-		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//Set clipping
-		gr_reset_clip();
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+		if (g3_in_frame() == 0) {
+			//Set rectangles
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			//Set clipping
+			gr_reset_clip();
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+		}
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
 
-		//gr_set_color(0,0,0);
-		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		gr_reset_clip();
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+		if (g3_in_frame() == 0) {
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			gr_reset_clip();
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+		}
+	}
+}
+
+void clip_frame_view() {
+	if(!Time_compression_locked) {
+		// Player is dead
+		game_set_view_clip(flFrametime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
+	} else {
+		// Player is dead
+		game_set_view_clip(flRealframetime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
 	}
 }
 
@@ -4584,6 +4636,7 @@ void game_render_post_frame()
 
 	subtitles_do_frame(frametime);
 	game_shade_frame(frametime);
+	subtitles_do_frame_post_shaded(frametime);
 }
 
 #ifndef NDEBUG
@@ -4715,8 +4768,7 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
 
-			// WMC's cutscene bars function
-			bars_do_frame(Time_compression_locked ? flRealframetime : flFrametime);
+			clip_frame_view();
 
 			game_render_frame( cid );
 
@@ -7394,19 +7446,28 @@ int game_main(char *cmdline)
 	}
 #endif
 
+#ifdef _WIN32
+	if ( !Is_standalone )
+		disableWindowsKey( );
+#endif
+
 
 	init_cdrom();
 
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	initialize_trackir(); 
+	int trackIrInitResult = gTirDll_TrackIR.Init( (HWND)os_get_window( ) );
+	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
+	{
+		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
+	}
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
-		multi_spew_pxo_checksums(1024, "mission_crcs.txt");
+		multi_spew_pxo_checksums(1024, "mission_crcs.csv");
 
 		if (Cmdline_spew_table_crcs) {
-			fs2netd_spew_table_checksums("table_crcs.txt");
+			fs2netd_spew_table_checksums("table_crcs.csv");
 		}
 
 		game_shutdown();
@@ -7415,7 +7476,7 @@ int game_main(char *cmdline)
 
 
 	if (Cmdline_spew_table_crcs) {
-		fs2netd_spew_table_checksums("table_crcs.txt");
+		fs2netd_spew_table_checksums("table_crcs.csv");
 		game_shutdown();
 		return 0;
 	}
@@ -7467,6 +7528,11 @@ int game_main(char *cmdline)
 
 	game_shutdown();
 
+#ifdef _WIN32
+	if ( !Is_standalone )
+		enableWindowsKey( );
+#endif
+
 	return 0;
 }
 
@@ -7499,8 +7565,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	DBUGFILE_INIT();
 
-	disableWindowsKey();
-
 	//=====================================================
 	// Make sure we're running in the right directory.
 	char exe_dir[1024];
@@ -7520,11 +7584,15 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		}
 	}
 
+	SCP_mspdbcs_Initialise( );
 
+#ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
 	__try {
 #endif
+#endif
 		result = !game_main(szCmdLine);
+#ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
 	} __except( RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread") ) {
 		// Do nothing here - RecordExceptionInfo() has already done
@@ -7533,8 +7601,9 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		// the __except clause.
 	}
 #endif // _MSC_VER
+#endif
 
-	enableWindowsKey();
+	SCP_mspdbcs_Cleanup( );
 
 	DBUGFILE_DEINIT();
 
@@ -7658,11 +7727,7 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-#ifdef _WIN32
-	timeEndPeriod(1);
-	if(trackir_enabled) // Safely shutdown the user's TrackIR unit if he has one (Swifty)
-		TrackIR_ShutDown();
-#endif
+	gTirDll_TrackIR.Close( );
 
 
 	fsspeech_deinit();
@@ -8368,28 +8433,13 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	if ( FS_VERSION_BUILD == 0 ) {
-		sprintf(str,"FreeSpace 2 Open v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+		sprintf(str, "FreeSpace 2 Open v%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	} else if (FS_VERSION_REVIS == 0) {
+		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 	} else {
-		sprintf(str,"FreeSpace 2 Open v%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 	}
-
-	/*
-	// Goober5000 - although this is cool, it's a bit redundant
-
-	// append the CVS "release" version in the $Name variable, but
-	// only do this if it's been tagged
-	int rcs_name_len = strlen(RCS_Name);
-	if (rcs_name_len > 11)
-	{
-		char buffer[100];
-		strcpy_s(buffer, RCS_Name + 7);
-		buffer[rcs_name_len-9] = 0;
-
-		SAFE_strcat_s( str, " ", max_size );
-		SAFE_strcat_s( str, buffer, max_size );
-	}
-	*/
 
 #ifdef INF_BUILD
 	strcat_s( str, max_size, " Inferno" );
@@ -9333,13 +9383,15 @@ int detect_lang()
 {
 	uint file_checksum;
 	int idx;
+	char first_font[MAX_FILENAME_LEN];
 
 	// if the reg is set then let lcl_init() figure out what to do
 	if (os_config_read_string( NULL, NOX("Language"), NULL ) != NULL)
 		return -1;
 
 	// try and open the file to verify
-	CFILE *detect = cfopen("font01.vf", "rb");
+	gr_stuff_first_font(first_font, sizeof(first_font));
+	CFILE *detect = cfopen(first_font, "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)

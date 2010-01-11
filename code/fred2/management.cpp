@@ -83,7 +83,6 @@ int bypass_update = 0;
 int Default_player_model = 0;
 int Update_ship = 0;
 int Update_wing = 0;
-int Fred_font;
 
 char Fred_exe_dir[512] = "";
 char Fred_base_dir[512] = "";
@@ -394,7 +393,7 @@ bool fred_init()
 
 	DBUGFILE_OUTPUT_0("About to init everything");
 	gr_font_init();					// loads up all fonts  
-//	Fred_font = gr_init_font("font01.vf");
+
 	gr_set_gamma(3.0f);
 
 	sprintf(palette_filename, "gamepalette%d-%02d", 1, 1);
@@ -979,6 +978,7 @@ void clear_mission()
 	strcpy_s(The_mission.squad_name, "");
 	strcpy_s(The_mission.squad_filename, "");
 	The_mission.num_respawns = 3;
+	The_mission.max_respawn_delay = -1;
 
 	Player_starts = 0;
 	Num_teams = 1;

@@ -33,7 +33,13 @@ typedef struct shockwave_info
 	int	num_frames;
 	int	fps;
 
-	shockwave_info() { memset(this, 0, sizeof(shockwave_info)); bitmap_id = -1; model_id = -1; }
+	shockwave_info()
+		: num_frames( 0 ), fps( 0 )
+	{ 
+		filename[ 0 ] = '\0';
+		bitmap_id = -1; 
+		model_id = -1; 
+	}
 } shockwave_info;
 
 typedef struct shockwave {
@@ -502,7 +508,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 			return -1;
 		}
 	} else {
-		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, 1 );
+		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, NULL, 1 );
 
 		if ( si->bitmap_id < 0 ) {
 			Shockwave_info.pop_back();

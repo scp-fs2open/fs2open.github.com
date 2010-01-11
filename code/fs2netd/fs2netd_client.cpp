@@ -1610,8 +1610,10 @@ void fs2netd_spew_table_checksums(char *outfile)
 	char full_name[MAX_PATH_LEN];
 	int count, idx;
 	FILE *out = NULL;
-	char modname[128];
-	time_t my_time = 0;
+	char description[512] = { 0 };
+	char filename[65] = { 0 };
+	size_t offset = 0;
+	char *p = NULL;
 
 	if ( Table_valid_status.empty() ) {
 		return;
@@ -1626,29 +1628,45 @@ void fs2netd_spew_table_checksums(char *outfile)
 		return;
 	}
 
-	memset( modname, 0, sizeof(modname) );
-	strcpy_s( modname, Cmdline_spew_table_crcs );
+	p = Cmdline_spew_table_crcs;
 
-	my_time = time(NULL);
-	
-	fprintf(out, "--  Table CRCs generated on %s \n", ctime(&my_time));
+	while (*p && (offset < sizeof(description))) {
+		if (*p == '"') {
+			description[offset++] = '"';
+			description[offset++] = '"';
+		} else {
+			description[offset++] = *p;
+		}
 
-	fprintf(out, "LOCK TABLES `fstables` WRITE;\n");
-	fprintf(out, "INSERT INTO `fstables` VALUES ");
+		p++;
+	}
+
+	// header
+	fprintf(out, "filename,CRC32,description\r\n");
 
 	count = (int)Table_valid_status.size();
 
 	// do all the checksums
 	for (idx = 0; idx < count; idx++) {
-		if (idx == 0) {
-			fprintf(out, "('%s',%u,'%s')", Table_valid_status[idx].name, Table_valid_status[idx].crc32, modname);
-		} else {
-			fprintf(out, ",('%s',%u,'%s')", Table_valid_status[idx].name, Table_valid_status[idx].crc32, modname);
+		offset = 0;
+		p = Table_valid_status[idx].name;
+
+		while (*p && (offset < sizeof(filename))) {
+			if (*p == '"') {
+				filename[offset++] = '"';
+				filename[offset++] = '"';
+			} else {
+				filename[offset++] = *p;
+			}
+
+			p++;
 		}
+
+		filename[offset] = '\0';
+
+		fprintf(out, "\"%s\",%u,\"%s\"\r\n", filename, Table_valid_status[idx].crc32, description);
 	}
 
-	fprintf(out, ";\n");
-	fprintf(out, "UNLOCK TABLES;\n");
-
+	fflush(out);
 	fclose(out);
 }

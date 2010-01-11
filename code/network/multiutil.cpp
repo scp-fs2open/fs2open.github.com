@@ -3300,8 +3300,11 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 	int count = 0, idx;
 	uint checksum;
 	FILE *out;
-	char modname[128];
-	time_t my_time = 0;
+	char description[512] = { 0 };
+	char filename[65] = { 0 };
+	char gametype[32] = { 0 };
+	size_t offset = 0;
+	char *p = NULL;
 
 	// allocate filename space	
 	file_names = (char**)malloc(sizeof(char*) * max_files);
@@ -3323,32 +3326,67 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 		if (out == NULL)
 			goto Done;
 
-		memset( modname, 0, sizeof(modname) );
-		strcpy_s( modname, Cmdline_spew_mission_crcs );
+		p = Cmdline_spew_mission_crcs;
 
-		my_time = time(NULL);
+		while (*p && (offset < sizeof(description))) {
+			if (*p == '"') {
+				description[offset++] = '"';
+				description[offset++] = '"';
+			} else {
+				description[offset++] = *p;
+			}
 
-		fprintf(out, "--  Mission CRCs generated on %s \n", ctime(&my_time));
+			p++;
+		}
 
-		fprintf(out, "LOCK TABLES `missions` WRITE;\n");
-		fprintf(out, "INSERT INTO `missions` VALUES ");
+		// header
+		fprintf(out, "filename,CRC32,mission type,max players,description\r\n");
 
 		// do all the checksums
 		for (idx = 0; idx < count; idx++) {
 			memset( full_name, 0, sizeof(full_name) );			
 			strcpy_s( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
 
-			if ( cf_chksum_long(full_name, &checksum) ) {
-				if (idx == 0)
-					fprintf(out, "('%s',%u,NULL,NULL,NULL,'%s')", full_name, checksum, modname);
-				else
-					fprintf(out, ",('%s',%u,NULL,NULL,NULL,'%s')", full_name, checksum, modname);
+			if ( !cf_chksum_long(full_name, &checksum) ) {
+				continue;
 			}
+
+			if (get_mission_info(full_name)) {
+				continue;
+			}
+
+			if ( !(The_mission.game_type & MISSION_TYPE_MULTI) ) {
+				continue;
+			}
+
+			offset = 0;
+			p = full_name;
+
+			while (*p && (offset < sizeof(filename))) {
+				if (*p == '"') {
+					filename[offset++] = '"';
+					filename[offset++] = '"';
+				} else {
+					filename[offset++] = *p;
+				}
+
+				p++;
+			}
+
+			filename[offset] = '\0';
+
+			if (IS_MISSION_MULTI_DOGFIGHT) {
+				strcpy_s(gametype, "dogfight");
+			} else if (IS_MISSION_MULTI_COOP) {
+				strcpy_s(gametype, "coop");
+			} else if (IS_MISSION_MULTI_TEAMS) {
+				strcpy_s(gametype, "TvT");
+			}
+
+			fprintf(out, "\"%s\",%u,\"%s\",%d,\"%s\"\r\n", filename, checksum, gametype, The_mission.num_players, description);
 		}
 
-		fprintf(out, ";\n");
-		fprintf(out, "UNLOCK TABLES;\n");
-
+		fflush(out);
 		fclose(out);
 
 Done:

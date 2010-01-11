@@ -42,6 +42,7 @@
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
+#include "graphics/gropenglshader.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -753,7 +754,15 @@ void sexp_tree::right_clicked(int mode)
 						// Goober5000 - given the above, we have to figure out what type this stands for
 						if (op_type == OPF_AMBIGUOUS)
 						{
-							type = tree_nodes[first_arg].type;
+							int modify_type = get_modify_variable_type(parent);
+							if (modify_type == OPF_NUMBER) {
+								type = SEXPT_NUMBER;
+							} else if (modify_type == OPF_AMBIGUOUS) {
+								type = SEXPT_STRING;
+							} else {
+								Int3();
+								type = tree_nodes[first_arg].type;
+							}
 						}
 						
 						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
@@ -845,9 +854,10 @@ void sexp_tree::right_clicked(int mode)
 				{
 					if (op_menu[j].id == (Operators[i].value & OP_CATEGORY_MASK))
 					{
-// Commented out by Goober5000 to allow these sexps to be selectable
-/*#ifdef NDEBUG
 						switch (Operators[i].value) {
+// Commented out by Goober5000 to allow these operators to be selectable
+/*#ifdef NDEBUG
+							// various campaign operators
 							case OP_WAS_PROMOTION_GRANTED:
 							case OP_WAS_MEDAL_GRANTED:
 							case OP_GRANT_PROMOTION:
@@ -856,9 +866,13 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_WEAPON:
 							case OP_TECH_ADD_INTEL:
 							case OP_TECH_RESET_TO_DEFAULT:
-								j = Num_op_menus;  // don't allow these operators in final release
-						}
 #endif*/
+							// unlike the above operators, this one is deprecated 
+							case OP_HITS_LEFT_SUBSYSTEM:
+								j = Num_op_menus;	// don't allow these operators to be visible
+								break;
+						}
+
 						if (j < Num_op_menus) {
 							add_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
 							replace_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
@@ -877,9 +891,31 @@ void sexp_tree::right_clicked(int mode)
 				{
 					if (op_submenu[j].id == subcategory_id)
 					{
-						add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
-						replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
-						insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text);
+						switch (Operators[i].value) {
+// Commented out by Goober5000 to allow these operators to be selectable
+/*#ifdef NDEBUG
+							// various campaign operators
+							case OP_WAS_PROMOTION_GRANTED:
+							case OP_WAS_MEDAL_GRANTED:
+							case OP_GRANT_PROMOTION:
+							case OP_GRANT_MEDAL:
+							case OP_TECH_ADD_SHIP:
+							case OP_TECH_ADD_WEAPON:
+							case OP_TECH_ADD_INTEL:
+							case OP_TECH_RESET_TO_DEFAULT:
+#endif*/
+							// unlike the above operators, this one is deprecated 
+							case OP_HITS_LEFT_SUBSYSTEM:
+								j = Num_submenus;	// don't allow these operators to be visible
+								break;
+						}
+
+						if (j < Num_submenus) {
+							add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
+							replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
+							insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text);
+						}
+
 						break;	// only 1 subcategory valid
 					}
 				}
@@ -1109,7 +1145,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			// modify string or number if (modify_variable)
-			if ( !stricmp(Operators[op].text, "modify-variable") ) {
+			if ( Operators[op].value == OP_MODIFY_VARIABLE || Operators[op].value == OP_SET_VARIABLE_BY_INDEX ) {
 				int modify_type = get_modify_variable_type(parent);
 
 				if (modify_type == OPF_NUMBER) {
@@ -2171,9 +2207,9 @@ int sexp_tree::add_default_operator(int op, int argnum)
 		//if ( !stricmp(Operators[op].text, "modify-variable") ) {
 		if ( query_operator_argument_type(op, argnum) == OPF_VARIABLE_NAME)
 		{
-			if ((argnum == 0 && !stricmp(Operators[op].text, "modify-variable")) ||
-				(argnum == 8 && !stricmp(Operators[op].text, "add-background-bitmap")) ||
-				(argnum == 5 && !stricmp(Operators[op].text, "add-sun-bitmap")))
+			if ((argnum == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
+				(argnum == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
+				(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
 			{
 
 				int sexp_var_index = get_index_sexp_variable_name(item.text);
@@ -2375,6 +2411,14 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
 				}
 			}
+			else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX)) {
+				if (i == 0) {
+					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
+				}
+				else {					
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+				}
+			}
 			else
 			{
 				item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
@@ -2419,6 +2463,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
+		case OPF_SHIP_WING_TEAM:
 			str = "<name of ship here>";
 			break;
 
@@ -2449,6 +2494,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 		case OPF_ROTATING_SUBSYSTEM:
 		case OPF_SUBSYS_OR_GENERIC:
 			str = "<name of subsystem>";
+			break;
+
+		case OPF_SUBSYSTEM_TYPE:
+			str = Subsystem_types[SUBSYSTEM_NONE];
 			break;
 
 		case OPF_POINT:
@@ -2545,6 +2594,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SUBSYSTEM:		
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_SUBSYSTEM_TYPE:
 		case OPF_DOCKER_POINT:
 		case OPF_DOCKEE_POINT:
 		case OPF_AI_GOAL:
@@ -2579,12 +2629,16 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_NEBULA_STORM_TYPE:
 		case OPF_NEBULA_POOF:
 		case OPF_TURRET_TARGET_ORDER:
+		case OPF_POST_EFFECT:
+		case OPF_TARGET_PRIORITIES:
+		case OPF_ARMOR_TYPES:
 			return 1;
 
 		case OPF_SHIP:
 		case OPF_SHIP_WING:
 		case OPF_SHIP_POINT:
 		case OPF_SHIP_WING_POINT:
+		case OPF_SHIP_WING_TEAM:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
@@ -3082,18 +3136,28 @@ void get_variable_name_from_sexp_tree_node_text(const char *text, char *var_name
 
 int sexp_tree::get_modify_variable_type(int parent)
 {
-	Assert(parent != -1);
+	Assert(parent >= 0);
 	int sexp_var_index = -1;
+	int op_const = get_operator_const(tree_nodes[parent].text);
 
-	if ( !stricmp(tree_nodes[parent].text, "modify-variable") ) {
-		Assert(tree_nodes[parent].child != -1);
+	if ( op_const == OP_MODIFY_VARIABLE ) {
+		Assert(tree_nodes[parent].child >= 0);
 		sexp_var_index = get_tree_name_to_sexp_variable_index(tree_nodes[tree_nodes[parent].child].text);
-		Assert(sexp_var_index != -1);
+		Assert(sexp_var_index >= 0);
+	} else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
+		Assert(tree_nodes[parent].child != -1);
+		if (can_construe_as_integer(tree_nodes[tree_nodes[parent].child].text)) {
+			sexp_var_index = atoi(tree_nodes[tree_nodes[parent].child].text);
+			Assert(sexp_var_index >= 0);
+		}
 	} else {
 		Int3();  // should not be called otherwise
 	}
 
-	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
+	if (sexp_var_index < 0 || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
+		// assume number so that we can allow tree display of number operators
+		return OPF_NUMBER;
+	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
 		return OPF_NUMBER;
 	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
 		return OPF_AMBIGUOUS;
@@ -3148,9 +3212,10 @@ void sexp_tree::verify_and_fix_arguments(int node)
 				char default_variable_text[TOKEN_LENGTH];
 				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
 					// special case for SEXPs which can modify a variable 
-					if ( (!stricmp(Operators[op].text, "modify-variable")) ||
-						 ((!stricmp(Operators[op].text, "add-background-bitmap")) && (arg_num == 8)) ||
-						 ((!stricmp(Operators[op].text, "add-sun-bitmap")) && (arg_num == 5))	){
+					if ((arg_num == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
+						(arg_num == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
+						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
+					{
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
@@ -4017,6 +4082,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_subsystem(parent_node, arg_index);
 			break;
 
+		case OPF_SUBSYSTEM_TYPE:
+			list = get_listing_opf_subsystem_type(parent_node);
+			break;
+
 		case OPF_POINT:
 			list = get_listing_opf_point();
 			break;
@@ -4111,6 +4180,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_SHIP_WING_POINT:
 			list = get_listing_opf_ship_wing_point();
+			break;
+
+		case OPF_SHIP_WING_TEAM:
+			list = get_listing_opf_ship_wing_team();
 			break;
 
 		case OPF_SHIP_WING_POINT_OR_NONE:
@@ -4229,8 +4302,20 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_turret_target_order();
 			break;
 
+		case OPF_TARGET_PRIORITIES:
+			list = get_listing_opf_turret_target_priorities();
+			break;
+
+		case OPF_ARMOR_TYPES:
+			list = get_listing_opf_armor_types();
+			break;
+
 		case OPF_PERSONA:
 			list = get_listing_opf_persona();
+			break;
+
+		case OPF_POST_EFFECT:
+			list = get_listing_opf_post_effect();
 			break;
 
 		default:
@@ -4536,6 +4621,7 @@ sexp_list_item *sexp_tree::get_listing_opf_wing()
 #define OPS_BEAM_TURRET		3
 #define OPS_AWACS				4
 #define OPS_ROTATE			5
+#define OPS_ARMOR			6
 sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_index)
 {
 	int op, child, sh;
@@ -4561,6 +4647,11 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_SABOTAGE_SUBSYSTEM:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 			special_subsys = OPS_STRENGTH;
+			break;
+
+		// Armor types need Hull and Shields but not Simulated Hull
+		case OP_SET_ARMOR_TYPE:
+			special_subsys = OPS_ARMOR;
 			break;
 
 		// awacs subsystems
@@ -4692,6 +4783,57 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if(special_subsys == OPS_STRENGTH){
 		head.add_data(SEXP_HULL_STRING);
 		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+	// if setting armor type we only need Hull and Shields
+	if(special_subsys == OPS_ARMOR){
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SHIELD_STRING);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
+{
+	int i, child, shipnum, num_added = 0;
+	sexp_list_item head;
+	ship_subsys *subsys;
+
+	// first child node
+	child = tree_nodes[parent_node].child;
+	Assert(child >= 0);
+
+	// now find the ship
+	shipnum = ship_name_lookup(tree_nodes[child].text, 1);
+	if (shipnum < 0) {
+		return head.next;
+	}
+
+	// add all relevant subsystem types
+	for (i = 0; i < SUBSYSTEM_MAX; i++) {
+		// don't allow these two
+		if (i == SUBSYSTEM_NONE || i == SUBSYSTEM_UNKNOWN)
+			continue;
+
+		// loop through all ship subsystems
+		subsys = GET_FIRST(&Ships[shipnum].subsys_list);
+		while (subsys != END_OF_LIST(&Ships[shipnum].subsys_list)) {
+			// check if this subsystem is of this type
+			if (i == subsys->system_info->type) {
+				// subsystem type is applicable, so add it
+				head.add_data(Subsystem_types[i]);
+				num_added++;
+				break;
+			}
+
+			// next subsystem
+			subsys = GET_NEXT(subsys);
+		}
+	}
+
+	// if no subsystem types, go ahead and add NONE (even though it won't be checked)
+	if (num_added == 0) {
+		head.add_data(Subsystem_types[SUBSYSTEM_NONE]);
 	}
 
 	return head.next;
@@ -5040,6 +5182,21 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
 	head.add_list(get_listing_opf_point());
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_wing_team()
+{
+	int i;
+	sexp_list_item head;
+
+	for (i=0; i<Num_iffs; i++) {
+		head.add_data(Iff_info[i].iff_name);
+	}
+	
+	head.add_list(get_listing_opf_ship());
+	head.add_list(get_listing_opf_wing());
+
 	return head.next;
 }
 
@@ -5444,6 +5601,40 @@ sexp_list_item *sexp_tree::get_listing_opf_turret_target_order()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_post_effect()
+{
+	unsigned int i;
+	sexp_list_item head;
+	SCP_vector<opengl::post_effect> &ppe_names = opengl::post_shader::get_effects();
+	for (i=0; i < ppe_names.size(); i++)
+		head.add_data(const_cast<char*>(ppe_names[i].name.c_str()));
+
+	return head.next;
+}
+
+
+sexp_list_item *sexp_tree::get_listing_opf_turret_target_priorities()
+{
+	size_t t;
+	sexp_list_item head;
+	
+	for(t = 0; t < Ai_tp_list.size(); t++) {
+		head.add_data(Ai_tp_list[t].name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_armor_types()
+{
+	size_t t;
+	sexp_list_item head;
+	head.add_data(SEXP_NONE_STRING);
+	for (t=0; t<Armor_types.size(); t++)
+		head.add_data(Armor_types[t].GetNamePtr());
+
+	return head.next;
+}
 
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type

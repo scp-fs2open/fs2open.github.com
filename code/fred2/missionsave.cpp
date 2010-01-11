@@ -124,6 +124,8 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		err = -3;
 //	else if (save_briefing_info())
 //		err = -4;
+	else if (save_fiction())
+		err = -3;
 	else if (save_cutscenes())
 		err = -4;
 	else if (save_cmd_briefs())
@@ -367,6 +369,21 @@ int CFred_mission_save::save_mission_info()
 			fout("\n+Num Respawns:");
 
 		fout(" %d", The_mission.num_respawns);
+
+		if ( Format_fs2_open != FSO_FORMAT_RETAIL ) {
+			if (optional_string_fred("+Max Respawn Time:"))
+				parse_comments(2);
+			else {
+				fso_comment_push(";;FSO 3.6.11;;");
+				fout_version("\n+Max Respawn Time:");
+				fso_comment_pop();
+			}
+
+			fout(" %d", The_mission.max_respawn_delay);
+		}
+		else {
+			bypass_comment(";;FSO 3.6.11;; +Max Respawn Time:");
+		}
 	}
 
 	if ( Format_fs2_open == FSO_FORMAT_RETAIL )
@@ -701,18 +718,31 @@ int CFred_mission_save::save_fiction()
 	{
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
+			fout("\n");
+
 			if (optional_string_fred("#Fiction Viewer"))
-			{
-				required_string_fred("$File:");
 				parse_comments();
-				fout(" %s", fiction_file());
+			else
+				fout("#Fiction Viewer");
+
+			fout("\n");
+
+			// save file
+			required_string_fred("$File:");
+			parse_comments();
+			fout(" %s", fiction_file());
+
+			// save font
+			if (strlen(fiction_font()) > 0)
+			{
+				if (optional_string_fred("$Font:"))
+					parse_comments();
+				else
+					fout("$Font:");
+				fout(" %s", fiction_font());
 			}
 			else
-			{
-				fout("\n\n");
-				fout("#Fiction Viewer\n\n");
-				fout("$File: %s\n\n", fiction_file());
-			}
+				optional_string_fred("$Font:");
 		}
 		else
 		{
@@ -2585,10 +2615,17 @@ void CFred_mission_save::parse_comments(int newlines)
 				// check for a FSO version comment, but if we can't understand it then
 				// just handle it as a regular comment
 				if ( (raw_ptr[1] == ';') && (raw_ptr[2] == 'F') && (raw_ptr[3] == 'S') && (raw_ptr[4] == 'O') ) {
-					int major, minor, build;
-					int s_num = sscanf(raw_ptr+6, "%d.%d.%d;;", &major, &minor, &build);
+					int major, minor, build, revis;
+					int s_num = scan_fso_version_string(raw_ptr, &major, &minor, &build, &revis);
+					
+					// hack for releases
+					if (FS_VERSION_REVIS < 1000) {
+						s_num = 3;
+					}
 
 					if ( (s_num == 3) && (major <= FS_VERSION_MAJOR) && (minor <= FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD) ) {
+						state = 3;
+					} else if ( (s_num == 4) && (major <= FS_VERSION_MAJOR) && (minor <= FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD) && (revis <= FS_VERSION_REVIS) ) {
 						state = 3;
 					} else {
 						state = 4;
@@ -3836,17 +3873,24 @@ void CFred_mission_save::fso_comment_push(char *ver)
 
 	std::string before = fso_ver_comment.back();
 
-	int major, minor, build;
-	int in_major, in_minor, in_build;
-	int elem = 0;
+	int major, minor, build, revis;
+	int in_major, in_minor, in_build, in_revis;
+	int elem1, elem2;
 
-	elem = sscanf( fso_ver_comment.back().c_str(), ";;FSO %d.%d.%d;;", &major, &minor, &build );
-	Assert( elem == 3 );
+	elem1 = scan_fso_version_string( fso_ver_comment.back().c_str(), &major, &minor, &build, &revis );
+	elem2 = scan_fso_version_string( ver, &in_major, &in_minor, &in_build, &in_revis );
+	
+	// check consistency
+	if (elem1 == 3 && elem2 == 4 || elem1 == 4 && elem2 == 3) {
+		elem1 = elem2 = 3;
+	} else if ((elem1 >= 3 && elem2 >= 3) && (revis < 1000 || in_revis < 1000)) {
+		elem1 = elem2 = 3;
+	}
 
-	elem = sscanf( ver, ";;FSO %d.%d.%d;;", &in_major, &in_minor, &in_build );
-	Assert( elem == 3 );
-
-	if ( (major > in_major) || (minor > in_minor) || (build > in_build) ) {
+	if ( (elem1 == 3) && ((major > in_major) || (minor > in_minor) || (build > in_build)) ) {
+		// the push'd version is older than our current version, so just push a copy of the previous version
+		fso_ver_comment.push_back( before );
+	} else if ( (elem1 == 4) && ((major > in_major) || (minor > in_minor) || (build > in_build) || (revis > in_revis)) ) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
 		fso_ver_comment.push_back( before );
 	} else {

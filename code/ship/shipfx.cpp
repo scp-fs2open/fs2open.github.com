@@ -240,6 +240,11 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 	ship *shipp = &Ships[ship_obj->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
+	// no subsystems -> no live debris.
+	if (Ship_info[shipp->ship_info_index].n_subsystems == 0) {
+		return;
+	}
+
 	int live_debris_submodel = -1;
 	for (int idx=0; idx<pm->num_debris_objects; idx++) {
 		if (pm->submodel[pm->debris_objects[idx]].is_live_debris) {
@@ -267,15 +272,17 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 
 				Assert (pss != NULL);
 				if (pss != NULL) {
-					vec3d exp_center, tmp = ZERO_VECTOR;
-					model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_obj->orient, &ship_obj->pos );
+					if (pss->system_info != NULL) {
+						vec3d exp_center, tmp = ZERO_VECTOR;
+						model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_obj->orient, &ship_obj->pos );
 
-					// if not blown off, blow it off
-					shipfx_subsystem_mabye_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
+						// if not blown off, blow it off
+						shipfx_subsystem_mabye_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
 
-					// now set subsystem as blown off, so we only get one copy
-					pm->submodel[parent].blown_off = 1;
-					set_ship_submodel_as_blown_off(&Ships[ship_obj->instance], pss->system_info->subobj_name);
+						// now set subsystem as blown off, so we only get one copy
+						pm->submodel[parent].blown_off = 1;
+						set_ship_submodel_as_blown_off(&Ships[ship_obj->instance], pss->system_info->subobj_name);
+					}
 				}
 			}
 		}
@@ -1815,9 +1822,12 @@ void shipfx_emit_spark( int n, int sn )
         
         if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
         {
-            // if in front of warp plane, don't create.
-            create_spark = 0;
-        }
+			if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
+				create_spark = 0;
+		} else {
+			if (shipp->flags & SF_DEPART_WARP)
+				create_spark = 0;
+		}
 	}
 
 	if ( create_spark )	{
@@ -3845,17 +3855,11 @@ int WE_Default::warpStart()
 		portal_objp = &Objects[portal_objnum];
 	}
 
-	back_len = objp->radius;
-	if(pm != NULL)
-	{
-		back_len = -pm->mins.xyz.z;
-	}
-
 	float warpout_speed = 0.0f;
 	float warp_time = 0.0f;
 	if(direction == WD_WARP_IN)
 	{
-		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, back_len );
+		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != NULL) ? -pm->mins.xyz.z : objp->radius );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
@@ -3876,37 +3880,25 @@ int WE_Default::warpStart()
 	}
 
 	int warp_objnum = -1;
-	if(direction == WD_WARP_OUT)
+	if (direction == WD_WARP_OUT)
 	{
 		// maybe special warpout
-		if (portal_objp != NULL) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
-		} else if(Cmdline_tbp) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
-		} else {
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
-		}
-	}
-	else if(direction == WD_WARP_IN)
-	{
-		// start the warp-in effect here ------------------------------------------------------------
-		if (portal_objp != NULL)
-		{
-			// make sure that the warp effect will always have a forward orient facing the exit direction of the warpin ship - taylor
-			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
-			if ( ((knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f)) ||
-				((knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f)) )
-			{
-				knossos_orient.vec.uvec.xyz.y = -knossos_orient.vec.uvec.xyz.y;
-				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
-			}
+		int fireball_type = ((portal_objp != NULL) || Cmdline_tbp) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 0, NULL, warp_time, shipp->ship_info_index, &knossos_orient, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
-		}
-		else
-		{
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
-		}
+		// create fireball
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
+	}
+	else if (direction == WD_WARP_IN)
+	{
+		// maybe special warpin
+		int fireball_type = (portal_objp != NULL) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+
+		// create fireball
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
+	}
+	else
+	{
+		Int3();
 	}
 
 	//WMC - bail
@@ -4009,7 +4001,7 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) && (vm_dist_to_plane(&objp->pos, &fvec, &pos) > back_len))
+		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) )
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();
@@ -4113,8 +4105,8 @@ int WE_Default::getWarpOrientation(matrix* output)
     return 1;
 }
 
-//********************-----CLASS: WE_BTRL-----********************//
-WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
+//********************-----CLASS: WE_BSG-----********************//
+WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	:WarpEffect(n_objp, n_direction)
 {
 	//Zero animation and such
@@ -4127,15 +4119,15 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	char tmp_name[MAX_FILENAME_LEN];
 	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	if(direction == WD_WARP_IN)
-		strncpy(tmp_name, sip->warpin_anim, MAX_FILENAME_LEN-1);
+		strcpy_s( tmp_name, sip->warpin_anim );
 	else if(direction == WD_WARP_OUT)
-		strncpy(tmp_name, sip->warpout_anim, MAX_FILENAME_LEN-1);
+		strcpy_s( tmp_name, sip->warpout_anim );
 	strlwr(tmp_name);
 
 	if(strlen(tmp_name))
 	{
 		//Load anim
-		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, NULL, 1);
 		if(anim > -1)
 		{
 			anim_total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
@@ -4145,7 +4137,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 		strncat(tmp_name, "-shockwave", MAX_FILENAME_LEN-1);
 
 		//Load shockwave
-		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, 1);
+		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, NULL, 1);
 		if(shockwave > -1)
 		{
 			shockwave_total_time = fl2i(((float)shockwave_nframes / (float)shockwave_fps) * 1000.0f);
@@ -4204,7 +4196,7 @@ WE_BTRL::WE_BTRL(object *n_objp, int n_direction)
 	pos = vmd_zero_vector;
 }
 
-WE_BTRL::~WE_BTRL()
+WE_BSG::~WE_BSG()
 {
 	if(anim > -1)
 		bm_unload(anim);
@@ -4212,7 +4204,7 @@ WE_BTRL::~WE_BTRL()
 		bm_unload(shockwave);
 }
 
-void WE_BTRL::pageIn()
+void WE_BSG::pageIn()
 {
 	if(anim > -1)
 		bm_page_in_texture(anim);
@@ -4220,7 +4212,7 @@ void WE_BTRL::pageIn()
 		bm_page_in_texture(shockwave);
 }
 
-int WE_BTRL::warpStart()
+int WE_BSG::warpStart()
 {
 	if(!WarpEffect::warpStart())
 		return 0;
@@ -4291,7 +4283,7 @@ int WE_BTRL::warpStart()
 
 	stage = 0;
 	int total_duration = 0;
-	for(int i = 0; i < WE_BTRL_NUM_STAGES; i++)
+	for(int i = 0; i < WE_BSG_NUM_STAGES; i++)
 		total_duration += stage_duration[i];
 
 	total_time_start = timestamp();
@@ -4303,7 +4295,7 @@ int WE_BTRL::warpStart()
 	return 1;
 }
 
-int WE_BTRL::warpFrame(float frametime)
+int WE_BSG::warpFrame(float frametime)
 {
 	if(!this->isValid())
 		return 0;
@@ -4311,7 +4303,7 @@ int WE_BTRL::warpFrame(float frametime)
 	while( timestamp_elapsed(stage_time_end ))
 	{
 		stage++;
-		if(stage < WE_BTRL_NUM_STAGES)
+		if(stage < WE_BSG_NUM_STAGES)
 		{
 			stage_time_start = timestamp();
 			stage_time_end = timestamp(stage_duration[stage]);
@@ -4350,7 +4342,7 @@ int WE_BTRL::warpFrame(float frametime)
 	return 1;
 }
 
-int WE_BTRL::warpShipClip()
+int WE_BSG::warpShipClip()
 {
 	if(!this->isValid())
 		return 0;
@@ -4364,7 +4356,7 @@ int WE_BTRL::warpShipClip()
 	return 1;
 }
 
-int WE_BTRL::warpShipRender()
+int WE_BSG::warpShipRender()
 {
 	if(!this->isValid())
 		return 0;
@@ -4418,7 +4410,7 @@ int WE_BTRL::warpShipRender()
 				g3_transfer_vertex(&p, &pos);
 			}
 			gr_set_bitmap(shockwave + shockwave_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			g3_draw_bitmap(&p, 0, objp->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+			g3_draw_bitmap(&p, 0, tube_radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 		}
 	}
 
@@ -4427,7 +4419,7 @@ int WE_BTRL::warpShipRender()
 	return 1;
 }
 
-int WE_BTRL::warpEnd()
+int WE_BSG::warpEnd()
 {
 	if(snd_start > -1)
 		snd_stop(snd_start);
@@ -4439,7 +4431,7 @@ int WE_BTRL::warpEnd()
 
 //WMC - These two functions are used to fool collision detection code
 //And do player warpout
-int WE_BTRL::getWarpPosition(vec3d *output)
+int WE_BSG::getWarpPosition(vec3d *output)
 {
 	if(!this->isValid())
 		return 0;
@@ -4458,7 +4450,7 @@ int WE_BTRL::getWarpPosition(vec3d *output)
 	return 1;
 }
 
-int WE_BTRL::getWarpOrientation(matrix* output)
+int WE_BSG::getWarpOrientation(matrix* output)
 {
     if (!this->isValid())
     {
@@ -4498,9 +4490,9 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 
 	//Anim
 	if(direction == WD_WARP_IN)
-		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, NULL, 1);
 	else if(direction == WD_WARP_OUT)
-		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, 1);
+		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, NULL, 1);
 	else
 		anim = -1;
 
@@ -4756,6 +4748,8 @@ int WE_Hyperspace::warpStart()
 	{
 		shipp->flags |= SF_ARRIVING_STAGE_2;
 		objp->phys_info.flags |= PF_WARP_IN;
+		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
+		objp->flags &= ~OF_PHYSICS;
 	}
 	else if(direction == WD_WARP_OUT)
 	{
@@ -4779,6 +4773,8 @@ int WE_Hyperspace::warpFrame(float frametime)
 	if(timestamp_elapsed(total_time_end))
 	{
 		objp->pos = pos_final;
+		objp->phys_info.vel.xyz.z = 0.0f;
+		objp->flags |= OF_PHYSICS;
 		this->warpEnd();
 	}
 	else

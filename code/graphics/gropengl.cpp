@@ -121,7 +121,7 @@ static GLenum GL_read_format = GL_BGRA;
 
 void opengl_go_fullscreen()
 {
-	if (Cmdline_window || GL_fullscreen || Fred_running)
+	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
 		return;
 
 #ifdef _WIN32
@@ -195,7 +195,7 @@ void opengl_go_fullscreen()
 
 void opengl_go_windowed()
 {
-	if ( !Cmdline_window /*|| GL_windowed*/ || Fred_running )
+	if ( ( !Cmdline_fullscreen_window && !Cmdline_window ) /*|| GL_windowed*/ || Fred_running )
 		return;
 
 #ifdef _WIN32
@@ -256,7 +256,7 @@ void opengl_minimize()
 	Assert( wnd );
 
 	// if we are a window then just show the cursor and bail
-	if (Cmdline_window || GL_windowed) {
+	if ( Cmdline_fullscreen_window || Cmdline_window || GL_windowed) {
 		ClipCursor(NULL);
 		ShowCursor(TRUE);
 		return;
@@ -299,7 +299,7 @@ void opengl_minimize()
 void gr_opengl_activate(int active)
 {
 	if (active) {
-		if (Cmdline_window)
+		if (Cmdline_fullscreen_window||Cmdline_window)
 			opengl_go_windowed();
 		else
 			opengl_go_fullscreen();
@@ -634,7 +634,7 @@ void gr_opengl_cleanup(int minimize)
 
 	if (minimize) {
 #ifdef _WIN32
-		if ( !Cmdline_window ) {
+		if ( !Cmdline_fullscreen_window && !Cmdline_window ) {
 			ChangeDisplaySettings(NULL, 0);
 		}
 #endif
@@ -1357,6 +1357,8 @@ void opengl_setup_viewport()
 // NOTE: This should only ever be called through os_cleanup(), or when switching video APIs
 void gr_opengl_shutdown()
 {
+	gr_opengl_post_process_release();
+
 	if (GL_cursor_pbo) {
 		vglDeleteBuffersARB(1, &GL_cursor_pbo);
 		GL_cursor_pbo = 0;
@@ -1370,7 +1372,7 @@ void gr_opengl_shutdown()
 	opengl_tcache_shutdown();
 	opengl_light_shutdown();
 	opengl_tnl_shutdown();
-	opengl_shader_shutdown();
+	opengl::shader_manager::destroy();
 
 	GL_initted = false;
 
@@ -1646,7 +1648,7 @@ int opengl_init_display_device()
 	}
 
 	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ( (Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
+	if ( (Cmdline_fullscreen_window|| Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
 		SDL_WM_GrabInput(SDL_GRAB_ON);
 	}
 
@@ -1793,6 +1795,14 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
 
+	gr_screen.gf_set_post_effect			= gr_opengl_set_post_effect;
+	gr_screen.gf_set_default_post_process	= gr_opengl_set_default_post_process;
+
+	gr_screen.gf_post_process_init		= gr_opengl_post_process_init;
+	gr_screen.gf_post_process_before	= gr_opengl_post_process_before;
+	gr_screen.gf_post_process_after		= gr_opengl_post_process_after;
+	gr_screen.gf_save_zbuffer			= gr_opengl_save_zbuffer;
+
 	gr_screen.gf_start_clip_plane	= gr_opengl_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
 
@@ -1864,7 +1874,7 @@ bool gr_opengl_init()
 	mprintf(( "  OpenGL Version    : %s\n", ver ));
 	mprintf(( "\n" ));
 
-	if (Cmdline_window) {
+	if (Cmdline_fullscreen_window || Cmdline_window) {
 		opengl_go_windowed();
 	} else {
 		opengl_go_fullscreen();
@@ -1886,7 +1896,7 @@ bool gr_opengl_init()
 	opengl_tnl_init();
 
 	// setup default shaders, and shader related items
-	opengl_shader_init();
+	opengl::shader_manager::create();
 
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );

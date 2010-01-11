@@ -136,22 +136,6 @@ LIB32=link.exe -lib
 # Begin Source File
 
 SOURCE=..\..\code\ai\ai.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -168,22 +152,6 @@ SOURCE=..\..\code\ai\ai_profiles.h
 # Begin Source File
 
 SOURCE=..\..\code\ai\AiBig.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -192,42 +160,10 @@ SOURCE=..\..\code\ai\AiBig.h
 # Begin Source File
 
 SOURCE=..\..\code\ai\AiCode.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\ai\AiGoals.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -457,7 +393,6 @@ SOURCE=..\..\code\debugconsole\timerbar.h
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
-
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vasync.h
@@ -608,6 +543,14 @@ SOURCE=..\..\code\GlobalIncs\LinkList.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\mspdb_callstack.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\mspdb_callstack.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\GlobalIncs\PsTypes.h
 # End Source File
 # Begin Source File
@@ -637,6 +580,10 @@ SOURCE=..\..\code\GlobalIncs\version.cpp
 # Begin Source File
 
 SOURCE=..\..\code\GlobalIncs\version.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\vmallocator.h
 # End Source File
 # Begin Source File
 
@@ -678,7 +625,6 @@ SOURCE=..\..\code\graphics\grstub.h
 SOURCE=..\..\code\Graphics\Line.h
 # End Source File
 # End Group
-
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""
@@ -782,6 +728,14 @@ SOURCE=..\..\code\graphics\grbatch.h
 # Begin Source File
 
 SOURCE=..\..\code\Graphics\GrInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.h
 # End Source File
 # Begin Source File
 
@@ -1057,10 +1011,6 @@ SOURCE=..\..\code\Lighting\Lighting.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\math\bitarray.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Math\Fix.cpp
 # End Source File
 # Begin Source File
@@ -1214,22 +1164,6 @@ SOURCE=..\..\code\MenuUI\TrainingMenu.h
 # Begin Source File
 
 SOURCE=..\..\code\Mission\MissionBriefCommon.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1314,22 +1248,6 @@ SOURCE=..\..\code\Mission\MissionTraining.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\Chatbox.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1346,22 +1264,6 @@ SOURCE=..\..\code\missionui\fictionviewer.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionBrief.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1370,22 +1272,6 @@ SOURCE=..\..\code\MissionUI\MissionBrief.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionCmdBrief.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1394,22 +1280,6 @@ SOURCE=..\..\code\MissionUI\MissionCmdBrief.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionDebrief.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1426,22 +1296,6 @@ SOURCE=..\..\code\MissionUI\MissionLoopBrief.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionPause.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1450,22 +1304,6 @@ SOURCE=..\..\code\MissionUI\MissionPause.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionRecommend.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1474,22 +1312,6 @@ SOURCE=..\..\code\MissionUI\MissionRecommend.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionScreenCommon.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1498,22 +1320,6 @@ SOURCE=..\..\code\MissionUI\MissionScreenCommon.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionShipChoice.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1530,22 +1336,6 @@ SOURCE=..\..\code\MissionUI\MissionStats.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionWeaponChoice.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1554,22 +1344,6 @@ SOURCE=..\..\code\MissionUI\MissionWeaponChoice.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\RedAlert.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1950,22 +1724,6 @@ SOURCE=..\..\code\Render\3dSetup.cpp
 # Begin Source File
 
 SOURCE=..\..\code\ship\Afterburner.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1974,22 +1732,6 @@ SOURCE=..\..\code\ship\Afterburner.h
 # Begin Source File
 
 SOURCE=..\..\code\ship\AWACS.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1998,42 +1740,10 @@ SOURCE=..\..\code\ship\AWACS.h
 # Begin Source File
 
 SOURCE=..\..\code\ship\Shield.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\ship\Ship.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -2042,22 +1752,6 @@ SOURCE=..\..\code\ship\Ship.h
 # Begin Source File
 
 SOURCE=..\..\code\ship\ShipContrails.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -2066,22 +1760,6 @@ SOURCE=..\..\code\ship\ShipContrails.h
 # Begin Source File
 
 SOURCE=..\..\code\ship\ShipFX.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -2090,22 +1768,6 @@ SOURCE=..\..\code\ship\ShipFX.h
 # Begin Source File
 
 SOURCE=..\..\code\ship\ShipHit.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -2137,11 +1799,7 @@ SOURCE="..\..\code\sound\acm-openal.cpp"
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\acm.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\acm.h
+SOURCE=..\..\code\sound\acm.h
 # End Source File
 # Begin Source File
 
@@ -2193,22 +1851,8 @@ SOURCE=..\..\code\sound\fsspeech.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\midifile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midiseq.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\sound\phrases.xml
 
-!IF  "$(CFG)" == "code - Win32 Release"
-
 # Begin Custom Build
 InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
@@ -2225,66 +1869,6 @@ BuildCmds= \
 "$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-# Begin Custom Build
-InputDir=..\..\code\sound
-InputPath=..\..\code\sound\phrases.xml
-InputName=phrases
-
-BuildCmds= \
-	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
-	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
-
-"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-# Begin Custom Build
-InputDir=..\..\code\sound
-InputPath=..\..\code\sound\phrases.xml
-InputName=phrases
-
-BuildCmds= \
-	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
-	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
-
-"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# Begin Custom Build
-InputDir=..\..\code\sound
-InputPath=..\..\code\sound\phrases.xml
-InputName=phrases
-
-BuildCmds= \
-	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
-	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
-
-"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -2325,18 +1909,6 @@ SOURCE=..\..\code\sound\voicerec.cpp
 # Begin Source File
 
 SOURCE=..\..\code\sound\voicerec.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\winmidi_base.cpp
 # End Source File
 # End Group
 # Begin Group "Starfield"
@@ -2565,22 +2137,6 @@ SOURCE=..\..\code\Nebula\Neb.h
 # Begin Source File
 
 SOURCE=..\..\code\Nebula\NebLightning.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
-
-# ADD BASE CPP /Od
-# ADD CPP /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 

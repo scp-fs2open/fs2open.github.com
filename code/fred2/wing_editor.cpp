@@ -630,12 +630,12 @@ int wing_editor::update_data(int redraw)
 		bypass_errors = 0;
 		modified = 0;
 		str = Wings[cur_wing].name;
-		if (stricmp(old_name, str)) {
+		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
 			ai_update_goal_references(REF_TYPE_WING, old_name, str);
 			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
-				if (!stricmp(old_name, Reinforcements[i].name)) {
+				if (!strcmp(old_name, Reinforcements[i].name)) {
 					Assert(strlen(str) < NAME_LENGTH);
 					strcpy_s(Reinforcements[i].name, str);
 				}

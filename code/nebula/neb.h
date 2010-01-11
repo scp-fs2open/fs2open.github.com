@@ -140,5 +140,4 @@ void neb2_get_backg_color(int *r, int *g, int *b);
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b);
 
-
 #endif

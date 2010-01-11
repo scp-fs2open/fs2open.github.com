@@ -20,7 +20,7 @@ struct object;
 struct polymodel;
 struct collision_info_struct;
 
-#define	MAX_ASTEROIDS			256
+#define	MAX_ASTEROIDS			512
 
 #define NUM_DEBRIS_SIZES	3
 #define	NUM_DEBRIS_POFS		3				// Number of POFs per debris size

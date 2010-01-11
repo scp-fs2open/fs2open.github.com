@@ -124,7 +124,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 		return;
 	}
 
-	uint arg = 1;
+//	uint arg = 1;
 //	ioctlsocket( m_DataSock, FIONBIO, &arg );
 
 	char *pURL = URL;

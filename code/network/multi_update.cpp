@@ -137,9 +137,9 @@ int multi_update_error_verifying()
 // and 2 if the "shutdown" event was posted
 int multi_update_gobaby()
 {			
-	char msg[512] = "";
+	//char msg[512] = "";
 	//int ret_code;
-	int my_code = MULTI_UPDATE_MAIN_MENU;
+	//int my_code = MULTI_UPDATE_MAIN_MENU;
 
 
 	// we just assume that everything is up to date

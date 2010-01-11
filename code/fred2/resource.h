@@ -949,7 +949,9 @@
 #define IDC_RESPAWN_SPIN                1485
 #define IDC_STEALTH                     1485
 #define IDC_ALWAYS_DEATH_SCREAM         1486
+#define IDC_MAX_RESPAWN_DELAY           1486
 #define IDC_NAV_CARRY                   1487
+#define IDC_MAX_RESPAWN_DELAY_SPIN      1487
 #define IDC_NAV_NEEDSLINK               1488
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491
@@ -1117,6 +1119,7 @@
 #define IDC_SKY_FLAG_NO_ZBUFF           1611
 #define IDC_SKY_FLAG_NO_CULL            1612
 #define IDC_SKY_FLAG_NO_GLOW            1613
+#define IDC_SKY_FLAG_CLAMP				1614
 #define IDC_TURRETS_LOCKED              1615
 #define IDC_AFTERBURNER_LOCKED          1616
 #define IDC_FORCE_SHIELDS               1617

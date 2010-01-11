@@ -16,7 +16,7 @@ typedef struct def_file
 {
 	char* filename;
 	char *contents;
-}def_file;
+} def_file;
 
 //:PART 1:
 //**********
@@ -25,6 +25,7 @@ extern char *Default_iff_table;
 extern char *Default_shiptypes_table;
 extern char *Default_ai_profiles_table;
 extern char *Default_autopilot_table;
+extern char *Default_fonts_table;
 //**********
 
 //:PART 2:
@@ -36,6 +37,7 @@ def_file Default_files[] =
 	{ "objecttypes.tbl",		Default_shiptypes_table },
 	{ "ai_profiles.tbl",		Default_ai_profiles_table },
 	{ "autopilot.tbl",			Default_autopilot_table },
+	{ "fonts.tbl",				Default_fonts_table },
 };
 
 static int Num_default_files = sizeof(Default_files) / sizeof(def_file);
@@ -63,33 +65,6 @@ char *defaults_get_file(char *filename)
 // This is the default table.
 // Please note that the {\n\}s should be removed from the end of each line
 // if you intend to use this to format your own table.
-
-char *Default_autopilot_table = "\
-#Autopilot																\n\
-																		\n\
-$Link Distance: 1000													\n\
-																		\n\
-$No Nav Selected:														\n\
-	+Msg: Cannot engage autopilot, no navpoint selected.				\n\
-	+Snd File: none														\n\
-$Gliding:																\n\
-	+Msg: Cannot engage autopilot while gliding.						\n\
-	+Snd File: none														\n\
-$Too Close:																\n\
-	+Msg: Cannot engage autopilot: waypoint too close.					\n\
-	+Snd File: none														\n\
-$Hostiles:																\n\
-	+Msg: Cannot engage autopilot: hostile craft near.					\n\
-	+Snd File: none														\n\
-$Linked:																\n\
-	+Msg: Autopilot Linked												\n\
-	+Snd File: none														\n\
-$Hazard:																\n\
-	+Msg: Cannot engage autopilot: Hazard Near							\n\
-	+Snd File: none														\n\
-																		\n\
-#END";
-
 
 char *Default_species_table = "\
 																		\n\
@@ -406,7 +381,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player Orders:			( \"attack ship\" \"disable ship\" \"disarm ship\" \"guard ship\" \"ignore ship\" \"ignore ship (new)\" \"form on wing\" \"cover me\" \"attack any\" \"depart\" \"disable subsys\" )		\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device device\" )																\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )																\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -432,7 +407,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"dock\" \"depart\" )		\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device device\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -833,6 +808,10 @@ $Delay Before Allowing Bombs to Be Shot Down: 1.5, 1.5, 1.5, 1.5, 1.5	\n\
 ;; 10 second interval													\n""\
 $Chance AI Has to Fire Missiles at Player:	0, 1, 2, 3, 4				\n\
 																		\n\
+;; The maximum amount of delay allowed before the AI will update its	\n\
+;; aim. Applies for small ships vs small ships							\n\
+$Max Aim Update Delay: 0, 0, 0, 0, 0									\n\
+																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
 																		\n\
@@ -954,6 +933,59 @@ $allow vertical dodge:	NO												\n\
 ;; standing attack orders globally. If set to NO, only the ship/wing	\n\
 ;; given the order to disarm or disable will be affected.				\n\
 $disarm or disable cause global ai goal effects:	YES					\n\
+																		\n\
+;; Fixes a bug where AI class is not properly set if set in the mission	\n\
+;; This should be YES if you want anything in AI.tbl to mean anything	\n\
+$fix AI class bug:	NO													\n\
+																		\n\
+#End																	\n\
+";
+
+//=========================================================================
+
+// This is the default table.
+// Please note that the {\n\}s should be removed from the end of each line
+// if you intend to use this to format your own table.
+
+char *Default_autopilot_table = "\
+#Autopilot																\n\
+																		\n\
+$Link Distance: 1000													\n\
+																		\n\
+$No Nav Selected:														\n\
+	+Msg: Cannot engage autopilot, no navpoint selected.				\n\
+	+Snd File: none														\n\
+$Gliding:																\n\
+	+Msg: Cannot engage autopilot while gliding.						\n\
+	+Snd File: none														\n\
+$Too Close:																\n\
+	+Msg: Cannot engage autopilot: waypoint too close.					\n\
+	+Snd File: none														\n\
+$Hostiles:																\n\
+	+Msg: Cannot engage autopilot: hostile craft near.					\n\
+	+Snd File: none														\n\
+$Linked:																\n\
+	+Msg: Autopilot Linked												\n\
+	+Snd File: none														\n\
+$Hazard:																\n\
+	+Msg: Cannot engage autopilot: Hazard Near							\n\
+	+Snd File: none														\n\
+																		\n\
+#END																	\n\
+";
+
+//=========================================================================
+
+// This is the default table.
+// Please note that the {\n\}s should be removed from the end of each line
+// if you intend to use this to format your own table.
+
+char *Default_fonts_table = "\
+#Fonts																	\n\
+																		\n\
+$Font: font01.vf														\n\
+$Font: font02.vf														\n\
+$Font: font03.vf														\n\
 																		\n\
 #End																	\n\
 ";

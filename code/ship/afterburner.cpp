@@ -87,6 +87,13 @@ void afterburners_start(object *objp)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 	
+    // When the ship has no afterburner, leave without doing anything.
+    // Caller should have tested ship equipment before deciding to start afterburners.
+	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+        nprintf(("Warning","Ship type %s does not have afterburner capability\n", sip->name));
+		return;
+	}
+
 	// bail if afterburners are locked
 	if (shipp->flags2 & SF2_AFTERBURNER_LOCKED)	{
 		return;
@@ -113,11 +120,7 @@ void afterburners_start(object *objp)
 	//boosters take precedence
 	if (objp->phys_info.flags & PF_BOOSTER_ON)
 		return;	
-	
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
-		return;
-	}
-
+	    
 	// Check if there is enough afterburner fuel
 	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) && !MULTIPLAYER_CLIENT ) {
 		if ( objp == Player_obj ) {

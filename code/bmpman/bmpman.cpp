@@ -668,9 +668,9 @@ static int find_block_of(int n)
 	return -1;
 }
 
-int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, ubyte *type)
+int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type)
 {
-	int frames = 0, fps = 30, rval;
+	int frames = 0, fps = 30, keyframe = 0, rval;
 	char ext[8];
 	ubyte c_type = BM_TYPE_NONE;
 	char file_text[50];
@@ -701,6 +701,9 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 
 	if (optional_string( "$FPS:" ))
 		stuff_int(&fps);
+
+	if (optional_string( "$Keyframe:" ))
+		stuff_int(&keyframe);
 
 	// done with EFF so unpause parsing so whatever can continue
 	unpause_parse();
@@ -733,6 +736,9 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	if (nfps)
 		*nfps = fps;
 
+	if (key)
+		*key = keyframe;
+
 	return 0;
 }
 
@@ -745,19 +751,21 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 //
 // returns:		bitmap number of first frame in the animation
 //
-int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop_frames, int dir_type)
+int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
 {
 	int	i, n;
 	anim	the_anim;
 	CFILE	*img_cfp = NULL;
 	char filename[MAX_FILENAME_LEN];
 	int reduced = 0;
-	int anim_fps = 0, anim_frames = 0;
+	int anim_fps = 0, anim_frames = 0, key = 0;
 	int anim_width = 0, anim_height = 0;
 	ubyte type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
-
+	const int NUM_TYPES	= 2;
+	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
+	const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
 
 	if ( !bm_inited )
 		bm_init();
@@ -769,6 +777,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	if (fps)
 		*fps = 0;
 
+	if (keyframe)
+		*keyframe = 0;
 
 	memset( filename, 0, MAX_FILENAME_LEN );
 	strncpy( filename, real_filename, MAX_FILENAME_LEN-1 );
@@ -798,9 +808,6 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 	// Lets find out what type it is
 	{
-		const int NUM_TYPES	= 2;
-		const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
-		const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
 		int handle = -1;
 
 		// do a search for any previously loaded files (looks at filename only)
@@ -814,6 +821,9 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 			if (fps)
 				*fps = bm_bitmaps[n].info.ani.fps;
 	
+			if (keyframe)
+				*keyframe = bm_bitmaps[n].info.ani.keyframe;
+
 			return handle;
 		}
 
@@ -839,7 +849,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 	// it's an effect file, any readable image type with eff being txt
 	if (type == BM_TYPE_EFF) {
-		if ( bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &eff_type) != 0 ) {
+		if ( bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type) != 0 ) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
 			return -1;
 		} else {
@@ -860,6 +870,23 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		anim_height = the_anim.height;
 		bpp = 8;
 		img_size = (anim_width * anim_height * bpp);
+		//we only care if there are 2 keyframes - first frame, other frame to jump to for ship/weapons
+		//mainhall door anis hav every frame as keyframe, so we don't care
+		//other anis only have the first frame
+		if(the_anim.num_keys == 2){
+			the_anim.keys = (key_frame*)vm_malloc(sizeof(key_frame) * the_anim.num_keys);
+			Assert(the_anim.keys != NULL);
+
+			for(i=0;i<the_anim.num_keys;i++){
+				the_anim.keys[i].frame_num = 0;
+				cfread(&the_anim.keys[i].frame_num, 2, 1, img_cfp);
+				cfread(&the_anim.keys[i].offset, 4, 1, img_cfp);
+				the_anim.keys[i].frame_num = INTEL_INT( the_anim.keys[i].frame_num );
+				the_anim.keys[i].offset = INTEL_INT( the_anim.keys[i].offset );
+			}
+			//some retail anis have their keyframes reversed
+			key = MAX(the_anim.keys[0].frame_num, the_anim.keys[1].frame_num);
+		}
 	} else {
 		return -1;
 	}
@@ -891,8 +918,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		memset( &bm_bitmaps[n+i], 0, sizeof(bitmap_entry) );
 	
 		if (type == BM_TYPE_EFF) {
-			sprintf(bm_bitmaps[n+i].info.ani.eff.filename, "%s_%.4d", clean_name, i);
 			bm_bitmaps[n+i].info.ani.eff.type = eff_type;
+			sprintf(bm_bitmaps[n+i].info.ani.eff.filename, "%s_%.4d", clean_name, i);
 
 			// gr_bm_load() returns non-0 on failure
 			if ( gr_bm_load(eff_type, n+i, bm_bitmaps[n+i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size) ) {
@@ -913,7 +940,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 				// update all previous frames with the new count
 				for (i=0; i<anim_frames; i++)
-					bm_bitmaps[n+i].info.ani.num_frames = (ubyte)anim_frames;
+					bm_bitmaps[n+i].info.ani.num_frames = anim_frames;
 
 				break;
 			}
@@ -924,8 +951,9 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		}
 
 		bm_bitmaps[n+i].info.ani.first_frame = n;
-		bm_bitmaps[n+i].info.ani.num_frames = (ubyte)anim_frames;
+		bm_bitmaps[n+i].info.ani.num_frames = anim_frames;
 		bm_bitmaps[n+i].info.ani.fps = (ubyte)anim_fps;
+		bm_bitmaps[n+i].info.ani.keyframe = key;
 		bm_bitmaps[n+i].bm.w = short(anim_width);
 		bm_bitmaps[n+i].bm.rowsize = short(anim_width);
 		bm_bitmaps[n+i].bm.h = short(anim_height);
@@ -968,16 +996,19 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	if (img_cfp != NULL)
 		cfclose(img_cfp);
 
+	if (keyframe)
+		*keyframe = key;
+
 	return bm_bitmaps[n].handle;
 }
 
-int bm_load_either(char *filename, int *nframes, int *fps, int can_drop_frames, int dir_type)
+int bm_load_either(char *filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type)
 {
 	if(nframes != NULL)
 		*nframes = 0;
 	if(fps != NULL)
 		*fps = 0;
-	int tidx = bm_load_animation(filename, nframes, fps, can_drop_frames, dir_type);
+	int tidx = bm_load_animation(filename, nframes, fps, keyframe, can_drop_frames, dir_type);
 	if(tidx == -1)
 	{
 		tidx = bm_load(filename);
@@ -1003,8 +1034,14 @@ int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
-	
+	#ifndef NDEBUG
+	if(bm_bitmaps[bitmapnum].handle != handle) {
+		mprintf(("bm_get_info - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
+	}
+	#endif
+
+	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!
+
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
 		if (w) *w = 0;
 		if (h) *h = 0;
@@ -1051,9 +1088,20 @@ uint bm_get_signature( int handle )
 	return bm_bitmaps[bitmapnum].signature;
 }
 
+//gets the image type
+ubyte bm_get_type(int handle)
+{
+	if ( !bm_inited ) bm_init();
+
+	int bitmapnum = handle % MAX_BITMAPS;
+	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
+
+	return bm_bitmaps[bitmapnum].type;
+}
+
 extern int palman_is_nondarkening(int r,int g, int b);
 static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flags )
-{	
+{
 	int idx;
 
 	// no transparency for 24 bpp images
@@ -1535,6 +1583,12 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
+	#ifndef NDEBUG
+	if(bm_bitmaps[bitmapnum].handle != handle) {
+		mprintf(("bm_lock - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
+	}
+	#endif
+
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
 //	flags &= (~BMP_RLE);
@@ -1640,6 +1694,13 @@ void bm_unlock( int handle )
 	if ( !bm_inited ) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
+
+	#ifndef NDEBUG
+	if(bm_bitmaps[bitmapnum].handle != handle) {
+		mprintf(("bm_unlock - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
+	}
+	#endif
+
 	Assert( bm_bitmaps[bitmapnum].handle == handle );	// INVALID BITMAP HANDLE
 
 	Assert(bitmapnum >= 0 && bitmapnum < MAX_BITMAPS);
@@ -1708,7 +1769,7 @@ int bm_release(int handle, int clear_render_targets)
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
 
-	if ( !clear_render_targets && (be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC) ) {
+	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
 		nprintf(("BmpMan", "Tried to release a render target!\n"));
 		return 0;
 	}
@@ -2643,7 +2704,7 @@ int bm_make_render_target( int width, int height, int flags )
 	bm_bitmaps[n].bm.rowsize = (short)w;
 	bm_bitmaps[n].bm.bpp = bpp;
 	bm_bitmaps[n].bm.true_bpp = bpp;
-	bm_bitmaps[n].bm.flags = flags;
+	bm_bitmaps[n].bm.flags = (ubyte)flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;

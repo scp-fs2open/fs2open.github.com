@@ -174,7 +174,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 	new_wei.lod_count = 1;
 
 	strcpy_s(new_wei.lod[0].filename, filename);
-	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, 1);
+	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, NULL, 1);
 
 	if (new_wei.lod[0].bitmap_id < 0) {
 		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
@@ -188,7 +188,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 		for (idx = 1; idx < expected_lods; idx++) {
 			sprintf(name_tmp, "%s_%d", filename, idx);
 
-			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, 1);
+			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, NULL, 1);
 
 			if (bitmap_id > 0) {
 				strcpy_s(new_wei.lod[idx].filename, name_tmp);
@@ -473,7 +473,7 @@ int weapon_info_lookup(char *name)
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp)
+void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 {
 	//Make sure we HAVE flags :p
 	if(!optional_string("$Flags:"))
@@ -486,8 +486,8 @@ void parse_wi_flags(weapon_info *weaponp)
 
 	if (optional_string("+override")) {
 		// reseting the flag values if set to override the existing flags
-		weaponp->wi_flags = WIF_DEFAULT_VALUE;
-		weaponp->wi_flags2 = WIF2_DEFAULT_VALUE;
+		weaponp->wi_flags = wi_flags;
+		weaponp->wi_flags2 = wi_flags2;
 	}
 	
 	for (int i=0; i<num_strings; i++) {
@@ -910,6 +910,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.beam_shrink_pct = 0.0f;
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
+	wip->b_info.beam_width = -1.0f;
+	wip->b_info.beam_flash_idx = -1;
+	wip->b_info.beam_flash_radius = 0.0f;
+	wip->b_info.beam_tooling_flame_idx = -1;
+	wip->b_info.beam_tooling_flame_radius = 0.0f;
 
 	generic_anim_init(&wip->b_info.beam_glow, NULL);
 	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
@@ -998,6 +1003,8 @@ int parse_weapon(int subtype, bool replace)
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found  = true;
+	int wi_flags = WIF_DEFAULT_VALUE;
+	int wi_flags2 = WIF2_DEFAULT_VALUE;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -1358,6 +1365,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
+				wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
 			{
@@ -1369,6 +1377,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+				wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("JAVELIN")))
 			{
@@ -1380,6 +1389,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
+				wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
 			}
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
@@ -1401,12 +1411,19 @@ int parse_weapon(int subtype, bool replace)
 			if (optional_string("+Seeker Strength:"))
 			{
 				//heat default seeker strength is 3
-				wip->seeker_strength = 3;
 				stuff_float(&wip->seeker_strength);
+				wip->wi_flags2 |= WIF2_CUSTOM_SEEKER_STR;
 				if (wip->seeker_strength <= 0)
 				{
-					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					wip->seeker_strength = 3.0f;
+					wip->wi_flags2 &= ~WIF2_CUSTOM_SEEKER_STR;
 				}
+			}
+			else
+			{
+				if(!(wip->wi_flags2 & WIF2_CUSTOM_SEEKER_STR))
+					wip->seeker_strength = 3.0f;
 			}
 
 			if (optional_string("+Target Lead Scaler:"))
@@ -1414,8 +1431,10 @@ int parse_weapon(int subtype, bool replace)
 				stuff_float(&wip->target_lead_scaler);
 				if (wip->target_lead_scaler == 0.0f)
 					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
-				else
+				else {
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+				}
 			}
 		}
 		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
@@ -1450,20 +1469,29 @@ int parse_weapon(int subtype, bool replace)
 			if (optional_string("+Seeker Strength:"))
 			{
 				//aspect default seeker strength is 2
-				wip->seeker_strength = 2;
 				stuff_float(&wip->seeker_strength);
+				wip->wi_flags2 |= WIF2_CUSTOM_SEEKER_STR;
 				if (wip->seeker_strength <= 0)
 				{
-					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					wip->seeker_strength = 2.0f;
+					wip->wi_flags2 &= ~WIF2_CUSTOM_SEEKER_STR;
 				}
+			} 
+			else
+			{
+				if(!(wip->wi_flags2 & WIF2_CUSTOM_SEEKER_STR))
+					wip->seeker_strength = 2.0f;
 			}
 			if (optional_string("+Target Lead Scaler:"))
 			{
 				stuff_float(&wip->target_lead_scaler);
 				if (wip->target_lead_scaler == 1.0f)
 					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
-				else
+				else {
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+				}
 			}
 		}
 		else
@@ -1484,6 +1512,7 @@ int parse_weapon(int subtype, bool replace)
 
 		// flag as being a swarm weapon
 		wip->wi_flags |= WIF_SWARM;
+		wi_flags |= WIF_SWARM;
 	}
 
 	// *Swarm wait token    -Et1
@@ -1572,7 +1601,7 @@ int parse_weapon(int subtype, bool replace)
 
 	}
 
-	parse_wi_flags(wip);
+	parse_wi_flags(wip, wi_flags, wi_flags2);
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
@@ -1979,6 +2008,29 @@ int parse_weapon(int subtype, bool replace)
 		
 		if ( optional_string("+Attenuation:") )
 			stuff_float(&wip->b_info.damage_threshold);
+
+		if ( optional_string("+BeamWidth:") )
+			stuff_float(&wip->b_info.beam_width);
+
+		if ( optional_string("+Beam Flash Effect:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if ( VALID_FNAME(fname) )
+				wip->b_info.beam_flash_idx = Weapon_explosions.Load(fname);
+		}
+		
+		if ( optional_string("+Beam Flash Radius:") )
+			stuff_float(&wip->b_info.beam_flash_radius);
+
+		if ( optional_string("+Beam Piercing Effect:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if ( VALID_FNAME(fname) )
+				wip->b_info.beam_tooling_flame_idx = Weapon_explosions.Load(fname);
+		}
+		
+		if ( optional_string("+Beam Piercing Radius:") )
+			stuff_float(&wip->b_info.beam_tooling_flame_radius);
 
 		// beam sections
 		while ( optional_string("$Section:") ) {
@@ -3899,9 +3951,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				}
 			}
 
-			fov = 0.8f;
-			if (wip->fov > 0.8f)
-				fov = wip->fov;
+			fov = -1.0f;
 
 			int pick_homing_point = 0;
 			if ( IS_VEC_NULL(&wp->homing_pos) ) {
@@ -4107,11 +4157,9 @@ void weapon_process_pre( object *obj, float frame_time)
 	//WMC - Maybe detonate weapon anyway!
 	if(wip->det_radius > 0.0f)
 	{
-		if(wp->homing_object != NULL)
+		if((wp->homing_object != NULL) && (wp->homing_object->type != 0))
 		{
-			vec3d spos;
-			if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
-				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
+			if(vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
 			{
 				weapon_detonate(obj);
 			}

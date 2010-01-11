@@ -196,17 +196,17 @@ void game_busy(char *filename)
 
 #ifndef NDEBUG
 
-#define MAX_MONITORS 64
+#define MAX_VARIABLE_MONITORS 64
 
 static int Num_monitors = 0;
-static monitor *Monitor[MAX_MONITORS];
+static monitor *Monitor[MAX_VARIABLE_MONITORS];
 
 monitor::monitor( char *_name )
 {
 	int i;
 
-	if ( Num_monitors >= MAX_MONITORS )	{
-		Int3();			// Too many monitor variables!! Increase MAX_MONITORS!!
+	if ( Num_monitors >= MAX_VARIABLE_MONITORS )	{
+		Int3();			// Too many monitor variables!! Increase MAX_VARIABLE_MONITORS!!
 		return;
 	}
 

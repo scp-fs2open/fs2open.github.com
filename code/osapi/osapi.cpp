@@ -377,7 +377,8 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
 #endif
 
-			disableWindowsKey();
+			if ( !Is_standalone )
+				disableWindowsKey();
 
             if (!Cmdline_window)
             {
@@ -396,7 +397,8 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
 
-			enableWindowsKey();
+			if ( !Is_standalone )
+				enableWindowsKey();
 
             if (!Cmdline_window)
             {
@@ -540,7 +542,8 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 			key_lost_focus();
             mouse_lost_focus();
-			gr_activate(0);
+			if ( !Is_standalone )
+				gr_activate(0);
 			break;
 		}
 
@@ -551,7 +554,8 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 			key_got_focus();
             mouse_got_focus();
-			gr_activate(1);
+			if ( !Is_standalone )
+				gr_activate(1);
 			break;
 		}
 
@@ -692,7 +696,7 @@ void win32_create_window(int width, int height)
 
 	// we don't sicky TOPMOST for windowed mode since we wouldn't be able to bring
 	// the debug window (or anything else) to the true foreground otherwise
-	hwndApp = CreateWindowEx( (Cmdline_window) ? 0 : WS_EX_TOPMOST,
+	hwndApp = CreateWindowEx( (Cmdline_window || Cmdline_fullscreen_window) ? 0 : WS_EX_TOPMOST,
 								szWinClass, szWinTitle,
 								style,   
 								start_x,		// x
@@ -756,8 +760,10 @@ void debug_int3(char *file, int line)
 	gr_activate(0);
 
 #ifdef _WIN32
-#if defined _MSC_VER
-	_asm { int 3 };
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+	__debugbreak( );
+#elif defined(_MSC_VER)
+	_asm int 3;
 #elif defined __GNUC__
 	asm("int $3");
 #else

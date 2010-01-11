@@ -1480,7 +1480,7 @@ void render_frame()
 
 	g3_start_frame(1);  // ** Accounted for
 	// 1 means use zbuffering
-// RT FONT	gr_set_font(Fred_font);
+
 	gr_set_font(FONT1);
 	light_reset();
 

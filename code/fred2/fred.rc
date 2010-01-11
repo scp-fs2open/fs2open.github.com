@@ -71,8 +71,19 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
+/* VS2008 can support stuff that these builds can't */
+
+#if !defined(_VC08)
+ /* Non-VS2008 builds get one of two icons */
+ // To Do: Add Debug versions
 IDR_MAINFRAME           ICON                    "res\\FRED.ico"
 IDR_FREDTYPE            ICON                    "res\\FREDDoc.ico"
+#else
+ /* VS2008 builds get cool icons */
+ // To Do: Add the rest (Debug and SSE2 varients)
+IDR_MAINFRAME           ICON                    "res\\V_FRED.ico"
+IDR_FREDTYPE            ICON                    "res\\FREDDoc.ico"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -622,7 +633,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.10 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.11 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
@@ -782,9 +793,10 @@ BEGIN
     LTEXT           "Warning : Orders with a priority above 89 may be higher priority than those given by the player.",IDC_STATIC,60,183,307,11
 END
 
-IDD_MISSION_NOTES DIALOG  0, 0, 479, 327
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_MISSION_NOTES DIALOGEX 0, 0, 479, 349
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Mission Specs"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     RTEXT           "Title",IDC_STATIC,7,10,29,8
     EDITTEXT        IDC_MISSION_TITLE,41,7,109,14,ES_AUTOHSCROLL
@@ -803,17 +815,17 @@ BEGIN
     LTEXT           "Max Respawns",IDC_STATIC,8,97,52,8
     EDITTEXT        IDC_RESPAWNS,86,94,50,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin1",IDC_RESPAWN_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,94,11,14
-    PUSHBUTTON      "Custom Wing Names",IDC_CUSTOM_WING_NAMES,10,115,128,14
-    GROUPBOX        "Squadron Reassign",IDC_STATIC,2,136,148,44
-    LTEXT           "Name",IDC_STATIC,14,147,28,8
-    EDITTEXT        IDC_SQUAD_NAME,48,147,98,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "Logo",IDC_SQUAD_LOGO_BUTTON,8,161,31,14
-    EDITTEXT        IDC_SQUAD_LOGO,48,161,98,14,ES_AUTOHSCROLL | ES_READONLY
-    GROUPBOX        "Loading Screen",IDC_STATIC,2,185,148,46
-    PUSHBUTTON      "640x480",IDC_LOADING_SCREEN_BUTTON640,7,197,40,14
-    EDITTEXT        IDC_LOADING_SCREEN640,47,197,97,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "1024x768",IDC_LOADING_SCREEN_BUTTON1024,7,213,40,16
-    EDITTEXT        IDC_LOADING_SCREEN1024,47,213,97,16,ES_AUTOHSCROLL
+    PUSHBUTTON      "Custom Wing Names",IDC_CUSTOM_WING_NAMES,9,143,128,14
+    GROUPBOX        "Squadron Reassign",IDC_STATIC,1,164,148,44
+    LTEXT           "Name",IDC_STATIC,13,175,28,8
+    EDITTEXT        IDC_SQUAD_NAME,47,175,98,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Logo",IDC_SQUAD_LOGO_BUTTON,7,189,31,14
+    EDITTEXT        IDC_SQUAD_LOGO,47,189,98,14,ES_AUTOHSCROLL | ES_READONLY
+    GROUPBOX        "Loading Screen",IDC_STATIC,1,213,148,46
+    PUSHBUTTON      "640x480",IDC_LOADING_SCREEN_BUTTON640,7,225,40,14
+    EDITTEXT        IDC_LOADING_SCREEN640,47,225,97,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "1024x768",IDC_LOADING_SCREEN_BUTTON1024,7,241,40,16
+    EDITTEXT        IDC_LOADING_SCREEN1024,47,241,97,16,ES_AUTOHSCROLL
     GROUPBOX        "Support Ships",IDC_STATIC,160,6,152,71
     CONTROL         "Disallow Support Ships",IDC_SUPPORT_ALLOWED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,164,16,95,10
     CONTROL         "Support Ships Repair Hull",IDC_SUPPORT_REPAIRS_HULL,
@@ -865,12 +877,15 @@ BEGIN
     CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,123,10
     LTEXT           "AI Profile",IDC_STATIC,320,229,32,8
     COMBOBOX        IDC_AI_PROFILE,378,226,93,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Mission Description",IDC_STATIC,4,238,62,8
-    EDITTEXT        IDC_MISSION_DESC,4,250,471,29,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
-    RTEXT           "Designer Notes",IDC_STATIC,2,284,50,8
-    EDITTEXT        IDC_MISSION_NOTES,3,294,472,29,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
+    LTEXT           "Mission Description",IDC_STATIC,4,260,62,8
+    EDITTEXT        IDC_MISSION_DESC,4,272,471,29,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
+    RTEXT           "Designer Notes",IDC_STATIC,2,306,50,8
+    EDITTEXT        IDC_MISSION_NOTES,3,316,472,29,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
     DEFPUSHBUTTON   "OK",IDOK,368,0,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,424,0,50,14
+    LTEXT           "Max Respawn Delay",IDC_STATIC,7,113,78,12
+    EDITTEXT        IDC_MAX_RESPAWN_DELAY,86,112,50,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_MAX_RESPAWN_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,112,11,14
 END
 
 IDD_PREFERENCES DIALOG  0, 0, 333, 81
@@ -1363,6 +1378,7 @@ BEGIN
     PUSHBUTTON      "Skybox Model",IDC_SKYBOX_MODEL,228,268,78,14
     CONTROL         "No Lighting",IDC_SKY_FLAG_NO_LIGHTING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,296,52,10
     CONTROL         "Transparent",IDC_SKY_FLAG_XPARENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,297,296,54,10
+	CONTROL			"Force clamp",IDC_SKY_FLAG_CLAMP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,351,296,54,10
     CONTROL         "No Z-Buffer",IDC_SKY_FLAG_NO_ZBUFF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,239,309,53,10
     CONTROL         "No Cull",IDC_SKY_FLAG_NO_CULL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,297,309,39,10
     CONTROL         "No Glowmaps",IDC_SKY_FLAG_NO_GLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,351,309,60,10
@@ -1998,8 +2014,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 3,6,11,0000
+ PRODUCTVERSION 3,6,11,0000
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2015,13 +2031,13 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Volition Inc."
-            VALUE "FileDescription", "Fred2_open 3.6.10"
-            VALUE "FileVersion", "3.6.10"
-            VALUE "InternalName", "FRED"
+            VALUE "FileDescription", "Fred 2 Open"
+            VALUE "FileVersion", "3.6.11.0000"
+            VALUE "InternalName", "Fred 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
-            VALUE "OriginalFilename", "FRED.EXE"
-            VALUE "ProductName", "FreeSpace"
-            VALUE "ProductVersion", "3.6.10"
+            VALUE "OriginalFilename", "fred2.exe"
+            VALUE "ProductName", "Fred 2 Open"
+            VALUE "ProductVersion", "3.6.11"
         END
     END
     BLOCK "VarFileInfo"
@@ -2075,7 +2091,7 @@ BEGIN
     IDD_MISSION_NOTES, DIALOG
     BEGIN
         RIGHTMARGIN, 475
-        BOTTOMMARGIN, 323
+        BOTTOMMARGIN, 345
     END
 
     IDD_PREFERENCES, DIALOG
@@ -2573,7 +2589,7 @@ IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
 
 STRINGTABLE 
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.6.10 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 3.6.11 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE 

@@ -536,8 +536,8 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	int dmg_type_idx = -1;
 	int parent_armor_flags = 0;
 
-	if(Ship_info[ship_p->ship_info_index].armor_type_idx > -1)
-		parent_armor_flags = Armor_types[Ship_info[ship_p->ship_info_index].armor_type_idx].flags;
+	if(ship_p->armor_type_idx > -1)
+		parent_armor_flags = Armor_types[ship_p->armor_type_idx].flags;
 
 	if (other_obj)
 	{
@@ -585,9 +585,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 		// only do this for the closest affected subsystem
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
-			if(subsys->system_info->armor_type_idx > -1)
+			if(subsys->armor_type_idx > -1)
 			{
-				damage = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
+				damage = Armor_types[subsys->armor_type_idx].GetDamage(damage, dmg_type_idx);
 				if(hull_should_apply_armor) {
 					*hull_should_apply_armor = false;
 				}
@@ -652,8 +652,8 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			}
 
 			//Apply armor to damage
-			if (subsys->system_info->armor_type_idx >= 0) {
-				damage_to_apply = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
+			if (subsys->armor_type_idx >= 0) {
+				damage_to_apply = Armor_types[subsys->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
 			}
 
 			subsys->current_hits -= damage_to_apply;
@@ -1988,9 +1988,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 					dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 				}
 				
-				if(sip->shield_armor_type_idx != -1)
+				if(shipp->shield_armor_type_idx != -1)
 				{
-					piercing_pct = Armor_types[sip->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
+					piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(dmg_type_idx);
 				}
 			}
 			
@@ -2003,9 +2003,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 
 			if (apply_shield_armor)
 			{
-				if(sip->shield_armor_type_idx != -1)
+				if(shipp->shield_armor_type_idx != -1)
 				{
-					damage = Armor_types[sip->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
+					damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx);
 				}
 			}
 
@@ -2040,9 +2040,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 
 		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage, &apply_hull_armor);
 
-		if(sip->armor_type_idx != -1)
+		if(shipp->armor_type_idx != -1)
 		{
-			armor_flags = Armor_types[sip->armor_type_idx].flags;
+			armor_flags = Armor_types[shipp->armor_type_idx].flags;
 		}
 
 		if(subsystem_damage > 0.0f){
@@ -2069,9 +2069,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 			}
 			
-			if(sip->armor_type_idx != -1)
+			if(shipp->armor_type_idx != -1)
 			{
-				damage = Armor_types[sip->armor_type_idx].GetDamage(damage, dmg_type_idx);
+				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx);
 			}
 		}
 

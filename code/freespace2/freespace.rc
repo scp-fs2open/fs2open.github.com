@@ -336,8 +336,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 3,6,11,0000
+ PRODUCTVERSION 3,6,11,0000
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -352,14 +352,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Volition Inc.\0"
-            VALUE "FileDescription", "FreeSpace\0"
-            VALUE "FileVersion", "1.03.01\0"
-            VALUE "InternalName", "FreeSpace\0"
-            VALUE "LegalCopyright", "Copyright © 1998\0"
-            VALUE "OriginalFilename", "fs.exe\0"
-            VALUE "ProductName", "FreeSpace\0"
-            VALUE "ProductVersion", "1.03.01\0"
+            VALUE "CompanyName", "Volition Inc."
+            VALUE "FileDescription", "FreeSpace 2 Open"
+            VALUE "FileVersion", "3.6.11.0000"
+            VALUE "InternalName", "FreeSpace 2 Open"
+            VALUE "LegalCopyright", "Copyright © 1998"
+            VALUE "OriginalFilename", "fs2.exe"
+            VALUE "ProductName", "FreeSpace 2 Open"
+            VALUE "ProductVersion", "3.6.11"
         END
     END
     BLOCK "VarFileInfo"
@@ -386,11 +386,34 @@ IDB_GOAL_FAIL           BITMAP  DISCARDABLE     "goal_fail.bmp"
 //
 // Icon
 //
-
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_APP_ICON            ICON    DISCARDABLE     "app_icon.ico"
-IDI_APP_ICON_GLOW       ICON    DISCARDABLE     "app_icon_glow.ico"
+/* VS2008 can support stuff that these builds can't */
+
+#ifndef _VC08
+ /* Non-VS2008 builds get one of two icons */
+ #ifdef _DEBUG
+  IDI_APP_ICON            ICON    DISCARDABLE     "dbg_icon.ico"
+ #else
+  IDI_APP_ICON            ICON    DISCARDABLE     "app_icon.ico"
+ #endif
+#else
+ /* VS2008 builds get cool icons */
+ #ifdef _DEBUG
+  #ifdef _SSE2
+   IDI_APP_ICON            ICON    DISCARDABLE     "V_sse-d.ico"
+  #else
+   IDI_APP_ICON            ICON    DISCARDABLE     "V_debug.ico"
+  #endif
+ #else
+  #ifdef _SSE2
+   IDI_APP_ICON            ICON    DISCARDABLE     "V_sse.ico"
+  #else
+   IDI_APP_ICON            ICON    DISCARDABLE     "V_app.ico"
+  #endif
+ #endif
+#endif
+
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

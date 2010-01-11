@@ -342,7 +342,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	char name[512], *old_name;
 	int i, j, k, ob;
 	int used_pool[MAX_WEAPON_TYPES];
-	waypoint_list *wptr;
 	object *objp;
 
 	Parse_viewer_pos = view_pos;
@@ -383,13 +382,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		}
 	}
 
-	for (i=0; i<Num_waypoint_lists; i++) {
-		wptr = &Waypoint_lists[i];
-		for (j=0; j<wptr->count; j++){
-			ob = obj_create(OBJ_WAYPOINT, -1, i * 65536 + j, NULL, &wptr->waypoints[j], 0.0f, OF_RENDERS);
-		}
-	}
-
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
@@ -420,7 +412,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k=0; k<Num_reinforcements; k++)
-						if (!stricmp(old_name, Reinforcements[k].name)) {
+						if (!strcmp(old_name, Reinforcements[k].name)) {
 							Assert(strlen(name) < NAME_LENGTH);
 							strcpy_s(Reinforcements[k].name, name);
 						}

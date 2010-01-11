@@ -47,6 +47,7 @@ extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
 extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
+extern int Cmdline_fullscreen_window;
 extern char *Cmdline_res;
 
 
@@ -73,6 +74,8 @@ extern int Cmdline_spec;
 extern int Cmdline_normal;
 extern int Cmdline_height;
 extern int Cmdline_enable_3d_shockwave;
+extern int Cmdline_postprocess;
+extern int Cmdline_bloom_intensity;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
