@@ -131,7 +131,8 @@ int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
 
-	cfclose(png_file);
+	if(png_file)
+		cfclose(png_file);
 
 	return PNG_ERROR_NONE;
 }
