@@ -582,10 +582,12 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 	model_subsystem *subsystemp;
 
 	if ( slist==NULL ) {
+#ifndef NDEBUG
 		if (!ss_warning_shown) {
 			mprintf(("No subsystems found for model \"%s\".\n", model_get(model_num)->filename));
 			ss_warning_shown = 1;
 		}
+#endif
 		return;			// For TestCode, POFView, etc don't bother
 	}
 	
