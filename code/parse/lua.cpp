@@ -6217,7 +6217,11 @@ ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Num
 	if(!objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", ship_fire_primary(objh->objp, 0));
+	int i = 0;
+	i += ship_fire_primary(objh->objp, 0);
+	i += ship_fire_primary(objh->objp, 1);
+
+	return ade_set_args(L, "i", i);
 }
 
 ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", "Number of secondary banks fired")
