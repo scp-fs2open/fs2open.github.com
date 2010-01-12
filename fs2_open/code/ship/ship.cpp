@@ -663,6 +663,7 @@ void init_ship_entry(ship_info *sip)
 	sip->warpout_player_speed = 0.0f;
 	
 	sip->explosion_propagates = 0;
+	sip->big_exp_visual_rad = -1.0f;
 	sip->vaporize_chance = 0;
 	sip->shockwave_count = 1;
 	sip->explosion_bitmap_anims.clear();
@@ -1594,6 +1595,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Expl Propagates:")){
 		stuff_boolean(&sip->explosion_propagates);
+	}
+
+	if(optional_string("$Expl Visual Rad:")){
+		stuff_float(&sip->big_exp_visual_rad);
 	}
 
 	if(optional_string("$Vaporize Percent Chance:")){
@@ -6520,6 +6525,10 @@ void ship_dying_frame(object *objp, int ship_num)
 					big_rad = objp->radius * 1.2f;
 					default_fireball_type = FIREBALL_EXPLOSION_LARGE1;
 				}
+				//SUSHI: Option to override radius of big fireball
+				if (Ship_info[shipp->ship_info_index].big_exp_visual_rad >= 0)
+					big_rad = Ship_info[shipp->ship_info_index].big_exp_visual_rad;
+
 				fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
 					fireball_type = default_fireball_type;
