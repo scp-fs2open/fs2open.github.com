@@ -2603,20 +2603,20 @@ SOURCE=..\..\code\fs2netd\tcp_socket.cpp
 SOURCE=..\..\code\fs2netd\tcp_socket.h
 # End Source File
 # End Group
-# Begin Group "ExternalDLL"
+# Begin Group "external_dll"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\ExternalDLL\externalcode.h
+SOURCE=..\..\code\external_dll\externalcode.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ExternalDLL\trackirglobal.cpp
+SOURCE=..\..\code\external_dll\trackirglobal.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ExternalDLL\trackirpublic.h
+SOURCE=..\..\code\external_dll\trackirpublic.h
 # End Source File
 # End Group
 # Begin Group "pngutils"

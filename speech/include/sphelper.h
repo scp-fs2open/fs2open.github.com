@@ -766,7 +766,7 @@ inline HRESULT SpFindBestToken(
     HRESULT hr = S_OK;
     
     const WCHAR *pszVendorPreferred = L"VendorPreferred";
-    const ulLenVendorPreferred = wcslen(pszVendorPreferred);
+    const ULONG ulLenVendorPreferred = wcslen(pszVendorPreferred);
 
     // append VendorPreferred to the end of pszOptAttribs to force this preference
     ULONG ulLen = pszOptAttribs ? wcslen(pszOptAttribs) + ulLenVendorPreferred + 1 : ulLenVendorPreferred;
@@ -1415,7 +1415,7 @@ public:
     WAVEFORMATEX  * m_pCoMemWaveFormatEx; 
 
 
-    static CoMemCopyWFEX(const WAVEFORMATEX * pSrc, WAVEFORMATEX ** ppCoMemWFEX)
+    static HRESULT CoMemCopyWFEX(const WAVEFORMATEX * pSrc, WAVEFORMATEX ** ppCoMemWFEX)
     {
         ULONG cb = sizeof(WAVEFORMATEX) + pSrc->cbSize;
         *ppCoMemWFEX = (WAVEFORMATEX *)::CoTaskMemAlloc(cb);
@@ -2369,7 +2369,8 @@ public:
     {
         // Search for the first NULL and return pointer to the char past it.
         SPDBG_ASSERT(eEventId == SPEI_PROPERTY_STRING_CHANGE);
-        for (const WCHAR * psz = (const WCHAR *)lParam; *psz; psz++) {}
+        const WCHAR *psz;
+        for (psz = (const WCHAR *)lParam; *psz; psz++) {}
         return psz + 1;
     }
     SPINTERFERENCE Interference() const
@@ -2556,7 +2557,7 @@ inline HRESULT CreatePhraseFromWordArray(const WCHAR ** ppWords, ULONG cWords,
         ::CoTaskMemFree(pStringPtrArray);
         return E_OUTOFMEMORY;
     }
-    SPPHONEID* pphoneId = dsPhoneId;
+    SPPHONEID* pphoneId = (SPPHONEID*)((WCHAR *)dsPhoneId);
 
     SPPHRASE Phrase;
     memset(&Phrase, 0, sizeof(Phrase));
@@ -2630,7 +2631,7 @@ inline HRESULT CreatePhraseFromWordArray(const WCHAR ** ppWords, ULONG cWords,
                 if (SUCCEEDED(hr))
                 {
                     pPhraseElement[i].pszPronunciation = pphoneId;
-                    pphoneId += wcslen(pphoneId) + 1;
+                    pphoneId += wcslen((const wchar_t *)pphoneId) + 1;
                 }
             }
         }

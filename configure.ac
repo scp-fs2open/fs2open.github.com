@@ -360,6 +360,9 @@ if test "$fs2_os_win32" = "yes" ; then
 	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
 fi
 
+dnl libpng
+FS2_LDFLAGS="$FS2_LDFLAGS -lpng"
+
 dnl OpenGL libs and CFLAGS
 if test "$fs2_os_win32" = "yes" ; then
 	if test "x$fs2_ogl_libs" != "x" ; then

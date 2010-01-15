@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include <setjmp.h>
 
-#include "../../libpng/png.h"
+#include "png.h"
 
 #include "globalincs/pstypes.h"
 #include "pngutils/pngutils.h"
