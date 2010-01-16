@@ -7701,6 +7701,41 @@ ADE_FUNC(getButtonControlNumber, l_Control_Info, "string", "Gives the number of 
 	return ade_set_error(L, "i", -1);
 }
 
+ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button polling for lua", "boolean", "If the all button polling is enabled or not")
+{
+	bool p;
+	int idx;
+
+	if(!ade_get_args(L, "o|b", l_Control_Info.Get(&idx), &p))
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		if (p)
+			lua_game_control |= LGC_B_POLL_ALL;
+		else
+			lua_game_control &= ~LGC_B_POLL_ALL;
+	}
+
+	if (lua_game_control & LGC_B_POLL_ALL)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+
+	if(!(lua_game_control & LGC_B_POLL_ALL))
+		return ADE_RETURN_NIL;
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi_full.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
+
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
 

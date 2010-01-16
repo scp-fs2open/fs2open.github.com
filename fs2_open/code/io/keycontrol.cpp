@@ -1372,6 +1372,17 @@ void process_player_ship_keys(int k)
 		} else	{
 			process_set_of_keys(masked_k, Dead_key_set_size, Dead_key_set);
 		}
+		if (lua_game_control & LGC_B_POLL_ALL) {
+			// first clear all
+			button_info_clear(&Player->lua_bi_full);
+
+			// then check the keys.
+			int i;
+			for(i = 0; i < CCFG_MAX; i++) {
+				if (check_control(i, masked_k))
+					button_info_set(&Player->lua_bi_full, i);
+			}
+		}
 	} else {
 
 	}
