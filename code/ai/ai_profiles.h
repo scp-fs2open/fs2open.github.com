@@ -13,6 +13,9 @@
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 
+// flag int defines
+#define AIP_FLAG		1
+#define AIP_FLAG2		2
 
 // flags
 #define AIPF_SMART_SHIELD_MANAGEMENT								(1 << 0)
@@ -48,6 +51,9 @@
 #define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 30)
 #define AIPF_FIX_AI_CLASS_BUG										(1 << 31)
 
+// flags2
+#define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
+
 #define MAX_AI_PROFILES	5
 
 typedef struct ai_profile_t {
@@ -55,6 +61,7 @@ typedef struct ai_profile_t {
 	char profile_name[NAME_LENGTH];
 
 	int flags;
+	int flags2;
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
