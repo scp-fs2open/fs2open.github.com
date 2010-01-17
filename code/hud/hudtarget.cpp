@@ -1339,8 +1339,9 @@ void hud_target_common(int team_mask, int next_flag)
 			continue;
 
 		if (A->type == OBJ_WEAPON) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) )
-				continue;
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) )
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+					continue;
 
 			if (Weapons[A->instance].lssm_stage == 3)
 				continue;
@@ -1473,8 +1474,10 @@ void hud_target_missile(object *source_obj, int next_flag)
 		wip = &Weapon_info[wp->weapon_info_index];
 
 		// only allow targeting of bombs
-		if ( !(wip->wi_flags & WIF_BOMB) ) {
-			continue;
+		if ( !(wip->wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(wip->wi_flags & WIF_BOMB) ) {
+				continue;
+			}
 		}
 
 		if (wp->lssm_stage==3){
@@ -2480,8 +2483,10 @@ void hud_target_in_reticle_new()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
-				continue;
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+					continue;
+				}
 			}
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
@@ -2523,17 +2528,32 @@ void hud_target_in_reticle_new()
 			Int3();	//	Illegal object type.
 		}
 
-		model_clear_instance( mc.model_num );
-		mc.orient = &A->orient;										// The object's orient
-		mc.pos = &A->pos;												// The object's position
-		mc.p0 = &Eye_position;										// Point 1 of ray to check
-		mc.p1 = &terminus;											// Point 2 of ray to check
-		mc.flags = MC_CHECK_MODEL;	// | MC_ONLY_BOUND_BOX;		// check the model, but only its bounding box
+		if (mc.model_num == -1) {
+			// so just check distance of a point
+			vec3d temp_v;
+			float angle;
+			vm_vec_sub(&temp_v, &A->pos, &Eye_position);
+			vm_vec_normalize(&temp_v);
+			angle = vm_vec_dot(&Player_obj->orient.vec.fvec, &temp_v);
+			if (angle > 0.99f) {
+				dist = vm_vec_mag_squared(&temp_v);
+				hud_reticle_list_update(A, dist, 0);				
+			}
 
-		model_collide(&mc);
-		if ( mc.num_hits ) {
-			dist = vm_vec_dist_squared(&mc.hit_point_world, &Eye_position);
-			hud_reticle_list_update(A, dist, 0);
+		} else {
+
+			model_clear_instance( mc.model_num );
+			mc.orient = &A->orient;										// The object's orient
+			mc.pos = &A->pos;												// The object's position
+			mc.p0 = &Eye_position;										// Point 1 of ray to check
+			mc.p1 = &terminus;											// Point 2 of ray to check
+			mc.flags = MC_CHECK_MODEL;	// | MC_ONLY_BOUND_BOX;		// check the model, but only its bounding box
+
+			model_collide(&mc);
+			if ( mc.num_hits ) {
+				dist = vm_vec_dist_squared(&mc.hit_point_world, &Eye_position);
+				hud_reticle_list_update(A, dist, 0);
+			}
 		}
 	}	// end for (go to next object)
 
@@ -2566,10 +2586,12 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
-				continue;
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ){
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+					continue;
+				}
 			}
-
+			
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
 			}
@@ -3483,9 +3505,18 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			break;
 
 		case OBJ_WEAPON:
-			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
+			//Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if (modelnum != -1)
+				bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			else {
+				vertex vtx;
+				g3_rotate_vertex(&vtx,&targetp->pos);
+				g3_project_vertex(&vtx);
+				x1 = x2 = (int) vtx.sx;
+				y1 = y2 = (int) vtx.sy;
+			}
+
 			break;
 
 		case OBJ_ASTEROID:
@@ -3975,8 +4006,10 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+				return;
+			}
 		}
 	}
 
@@ -4224,8 +4257,10 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+				return;
+			}
 		}
 	}
 
