@@ -1025,7 +1025,8 @@ typedef struct ship_info {
 	// ship explosion info
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
-	int	shockwave_count;						// the # of total shockwaves
+	float big_exp_visual_rad;				//SUSHI: The visual size of the main explosion
+	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
 	float vaporize_chance;					
 

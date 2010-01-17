@@ -15106,9 +15106,17 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		if ( hit_objp->parent_sig != Objects[hit_objp->parent].signature ){
 			return;
 		}
+		
+		hitter_objnum = hit_objp->parent;
+		Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
+		objp_hitter = &Objects[hitter_objnum];
 
+		// lets not check hits by ghosts any further either
+		if(objp_hitter->type & OBJ_GHOST)
+			return;
+		
 		//	Hit by a protected ship, don't attack it.
-		if (Objects[hit_objp->parent].flags & OF_PROTECTED) {
+		if (objp_hitter->flags & OF_PROTECTED) {
 			if ((Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && (aip->target_objnum == -1)) {
 				if (aip->mode == AIM_CHASE) {
 					if (aip->submode != SM_EVADE_WEAPON) {
@@ -15130,9 +15138,6 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 			return;
 		}
 
-		hitter_objnum = hit_objp->parent;
-		Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
-		objp_hitter = &Objects[hitter_objnum];
 		maybe_process_friendly_hit(objp_hitter, objp_ship, hit_objp);		//	Deal with player's friendly fire.
 
 		ship_maybe_ask_for_help(shipp);

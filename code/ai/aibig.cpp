@@ -132,8 +132,8 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 				dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
 				bool in_fov = false;
 
+				dot = vm_vec_dot(&v2p, attacker_objp_fvec);
 				if (tp == NULL) {
-					dot = vm_vec_dot(&v2p, attacker_objp_fvec);
 					if (dot > fov)
 						in_fov = true;
 				} else {

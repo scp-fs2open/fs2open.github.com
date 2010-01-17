@@ -61,9 +61,15 @@ struct campaign_info;
 #define PCM_SUPERNOVA			4	// supernova. lock everything to where it is.
 
 // 'lua game control' settings
-#define LGC_NORMAL				0	// normal controls
-#define LGC_STEERING			1	// allow lua to fully override steering controls
-#define LGC_FULL				2	// allow lua to fully override controls
+#define LGC_NORMAL				(1<<0)	// normal controls
+#define LGC_STEERING			(1<<1)	// allow lua to fully override steering controls
+#define LGC_FULL				(1<<2)	// allow lua to fully override controls
+
+#define LGC_B_NORMAL			(1<<3)	// allow lua to keep recording button commands
+#define LGC_B_OVERRIDE			(1<<4)	// allow lua to override current button commands
+#define LGC_B_ADDITIVE			(1<<5)	// allow lua add current lua button commands to current commands
+
+#define LGC_B_POLL_ALL			(1<<6)	// tell game code to pass all button commands to lua.
 
 // number of times dude can fail a mission in a session before 
 // having the opportunity to skip it
@@ -198,6 +204,8 @@ typedef struct player {
 	char death_message[256];								// Goober5000
 
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
+	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls).
+	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
 } player;
 
 extern player Players[MAX_PLAYERS];

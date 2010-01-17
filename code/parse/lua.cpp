@@ -753,7 +753,7 @@ ADE_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 51; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 54; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -905,11 +905,143 @@ static flag_def_list Enumerations[] = {
 
 	#define LE_LUA_FULL_CONTROLS			50
 	{		"LUA_FULL_CONTROLS",			LE_LUA_FULL_CONTROLS,			0},
+
+	#define LE_NORMAL_BUTTON_CONTROLS		51
+	{		"NORMAL_BUTTON_CONTROLS",		LE_NORMAL_BUTTON_CONTROLS,		0},
+
+	#define LE_LUA_ADDITIVE_BUTTON_CONTROL	52
+	{		"LUA_ADDITIVE_BUTTON_CONTROL",	LE_LUA_ADDITIVE_BUTTON_CONTROL,	0},
+
+	#define LE_LUA_OVERRIDE_BUTTON_CONTROL	53
+	{		"LUA_OVERRIDE_BUTTON_CONTROL",	LE_LUA_OVERRIDE_BUTTON_CONTROL,	0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
 
 static uint Num_enumerations = sizeof(Enumerations) / sizeof(flag_def_list);
+
+flag_def_list plr_commands[] = {
+	{	"TARGET_NEXT",							TARGET_NEXT,							0	},
+	{	"TARGET_PREV",							TARGET_PREV,							0	},
+	{	"TARGET_NEXT_CLOSEST_HOSTILE",			TARGET_NEXT_CLOSEST_HOSTILE,			0	},
+	{	"TARGET_PREV_CLOSEST_HOSTILE",			TARGET_PREV_CLOSEST_HOSTILE,			0	},
+	{	"TOGGLE_AUTO_TARGETING",				TOGGLE_AUTO_TARGETING,					0	},
+	{	"TARGET_NEXT_CLOSEST_FRIENDLY",			TARGET_NEXT_CLOSEST_FRIENDLY,			0	},
+	{	"TARGET_PREV_CLOSEST_FRIENDLY",			TARGET_PREV_CLOSEST_FRIENDLY,			0	},
+	{	"TARGET_SHIP_IN_RETICLE",				TARGET_SHIP_IN_RETICLE,					0	},
+	{	"TARGET_CLOSEST_SHIP_ATTACKING_TARGET",	TARGET_CLOSEST_SHIP_ATTACKING_TARGET,	0	},
+	{	"TARGET_LAST_TRANMISSION_SENDER",		TARGET_LAST_TRANMISSION_SENDER,			0	},
+	{	"STOP_TARGETING_SHIP",					STOP_TARGETING_SHIP,					0	},
+	{	"TARGET_SUBOBJECT_IN_RETICLE",			TARGET_SUBOBJECT_IN_RETICLE,			0	},
+	{	"TARGET_NEXT_SUBOBJECT",				TARGET_NEXT_SUBOBJECT,					0	},
+	{	"TARGET_PREV_SUBOBJECT",				TARGET_PREV_SUBOBJECT,					0	},
+	{	"STOP_TARGETING_SUBSYSTEM",				STOP_TARGETING_SUBSYSTEM,				0	},
+	{	"MATCH_TARGET_SPEED",					MATCH_TARGET_SPEED,						0	},
+	{	"TOGGLE_AUTO_MATCH_TARGET_SPEED",		TOGGLE_AUTO_MATCH_TARGET_SPEED,			0	},
+	{	"FIRE_PRIMARY",							FIRE_PRIMARY,							0	},
+	{	"FIRE_SECONDARY",						FIRE_SECONDARY,							0	},
+	{	"CYCLE_NEXT_PRIMARY",					CYCLE_NEXT_PRIMARY,						0	},
+	{	"CYCLE_PREV_PRIMARY",					CYCLE_PREV_PRIMARY,						0	},
+	{	"CYCLE_SECONDARY",						CYCLE_SECONDARY,						0	},
+	{	"CYCLE_NUM_MISSLES",					CYCLE_NUM_MISSLES,						0	},
+	{	"LAUNCH_COUNTERMEASURE",				LAUNCH_COUNTERMEASURE,					0	},
+	{	"FORWARD_THRUST",						FORWARD_THRUST,							0	},
+	{	"REVERSE_THRUST",						REVERSE_THRUST,							0	},
+	{	"BANK_LEFT",							BANK_LEFT,								0	},
+	{	"BANK_RIGHT",							BANK_RIGHT,								0	},
+	{	"PITCH_FORWARD",						PITCH_FORWARD,							0	},
+	{	"PITCH_BACK",							PITCH_BACK,								0	},
+	{	"YAW_LEFT",								YAW_LEFT,								0	},
+	{	"YAW_RIGHT",							YAW_RIGHT,								0	},
+	{	"ZERO_THROTTLE",						ZERO_THROTTLE,							1	},
+	{	"MAX_THROTTLE",							MAX_THROTTLE,							1	},
+	{	"ONE_THIRD_THROTTLE",					ONE_THIRD_THROTTLE,						1	},
+	{	"TWO_THIRDS_THROTTLE",					TWO_THIRDS_THROTTLE,					1	},
+	{	"PLUS_5_PERCENT_THROTTLE",				PLUS_5_PERCENT_THROTTLE,				1	},
+	{	"MINUS_5_PERCENT_THROTTLE",				MINUS_5_PERCENT_THROTTLE,				1	},
+	{	"ATTACK_MESSAGE",						ATTACK_MESSAGE,							1	},
+	{	"DISARM_MESSAGE",						DISARM_MESSAGE,							1	},
+	{	"DISABLE_MESSAGE",						DISABLE_MESSAGE,						1	},
+	{	"ATTACK_SUBSYSTEM_MESSAGE",				ATTACK_SUBSYSTEM_MESSAGE,				1	},
+	{	"CAPTURE_MESSAGE",						CAPTURE_MESSAGE,						1	},
+	{	"ENGAGE_MESSAGE",						ENGAGE_MESSAGE,							1	},
+	{	"FORM_MESSAGE",							FORM_MESSAGE,							1	},
+	{	"IGNORE_MESSAGE",						IGNORE_MESSAGE,							1	},
+	{	"PROTECT_MESSAGE",						PROTECT_MESSAGE,						1	},
+	{	"COVER_MESSAGE",						COVER_MESSAGE,							1	},
+	{	"WARP_MESSAGE",							WARP_MESSAGE,							1	},
+	{	"REARM_MESSAGE",						REARM_MESSAGE,							1	},
+	{	"TARGET_CLOSEST_SHIP_ATTACKING_SELF",	TARGET_CLOSEST_SHIP_ATTACKING_SELF,		1	},
+	{	"VIEW_CHASE",							VIEW_CHASE,								1	},
+	{	"VIEW_EXTERNAL",						VIEW_EXTERNAL,							1	},
+	{	"VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK",		VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK,		1	},
+	{	"VIEW_SLEW",							VIEW_SLEW,								1	},
+	{	"VIEW_OTHER_SHIP",						VIEW_OTHER_SHIP,						1	},
+	{	"VIEW_DIST_INCREASE",					VIEW_DIST_INCREASE,						1	},
+	{	"VIEW_DIST_DECREASE",					VIEW_DIST_DECREASE,						1	},
+	{	"VIEW_CENTER",							VIEW_CENTER,							1	},
+	{	"PADLOCK_UP",							PADLOCK_UP,								1	},
+	{	"PADLOCK_DOWN",							PADLOCK_DOWN,							1	},
+	{	"PADLOCK_LEFT",							PADLOCK_LEFT,							1	},
+	{	"PADLOCK_RIGHT",						PADLOCK_RIGHT,							1	},
+	{	"RADAR_RANGE_CYCLE",					RADAR_RANGE_CYCLE,						1	},
+	{	"SQUADMSG_MENU",						SQUADMSG_MENU,							2	},
+	{	"SHOW_GOALS",							SHOW_GOALS,								2	},
+	{	"END_MISSION",							END_MISSION,							2	},
+	{	"TARGET_TARGETS_TARGET",				TARGET_TARGETS_TARGET,					2	},
+	{	"AFTERBURNER",							AFTERBURNER,							2	},
+	{	"INCREASE_WEAPON",						INCREASE_WEAPON,						2	},
+	{	"DECREASE_WEAPON",						DECREASE_WEAPON,						2	},
+	{	"INCREASE_SHIELD",						INCREASE_SHIELD,						2	},
+	{	"DECREASE_SHIELD",						DECREASE_SHIELD,						2	},
+	{	"INCREASE_ENGINE",						INCREASE_ENGINE,						2	},
+	{	"DECREASE_ENGINE",						DECREASE_ENGINE,						2	},
+	{	"ETS_EQUALIZE",							ETS_EQUALIZE,							2	},
+	{	"SHIELD_EQUALIZE",						SHIELD_EQUALIZE,						2	},
+	{	"SHIELD_XFER_TOP",						SHIELD_XFER_TOP,						2	},
+	{	"SHIELD_XFER_BOTTOM",					SHIELD_XFER_BOTTOM,						2	},
+	{	"SHIELD_XFER_LEFT",						SHIELD_XFER_LEFT,						2	},
+	{	"SHIELD_XFER_RIGHT",					SHIELD_XFER_RIGHT,						2	},
+	{	"XFER_SHIELD",							XFER_SHIELD,							2	},
+	{	"XFER_LASER",							XFER_LASER,								2	},
+	{	"GLIDE_WHEN_PRESSED",					GLIDE_WHEN_PRESSED,						2	},
+	{	"BANK_WHEN_PRESSED",					BANK_WHEN_PRESSED,						2	},
+	{	"SHOW_NAVMAP",							SHOW_NAVMAP,							2	},
+	{	"ADD_REMOVE_ESCORT",					ADD_REMOVE_ESCORT,						2	},
+	{	"ESCORT_CLEAR",							ESCORT_CLEAR,							2	},
+	{	"TARGET_NEXT_ESCORT_SHIP",				TARGET_NEXT_ESCORT_SHIP,				2	},
+	{	"TARGET_CLOSEST_REPAIR_SHIP",			TARGET_CLOSEST_REPAIR_SHIP,				2	},
+	{	"TARGET_NEXT_UNINSPECTED_CARGO",		TARGET_NEXT_UNINSPECTED_CARGO,			2	},
+	{	"TARGET_PREV_UNINSPECTED_CARGO",		TARGET_PREV_UNINSPECTED_CARGO,			2	},
+	{	"TARGET_NEWEST_SHIP",					TARGET_NEWEST_SHIP,						2	},
+	{	"TARGET_NEXT_LIVE_TURRET",				TARGET_NEXT_LIVE_TURRET,				2	},
+	{	"TARGET_PREV_LIVE_TURRET",				TARGET_PREV_LIVE_TURRET,				2	},
+	{	"TARGET_NEXT_BOMB",						TARGET_NEXT_BOMB,						2	},
+	{	"TARGET_PREV_BOMB",						TARGET_PREV_BOMB,						3	},
+	{	"MULTI_MESSAGE_ALL",					MULTI_MESSAGE_ALL,						3	},
+	{	"MULTI_MESSAGE_FRIENDLY",				MULTI_MESSAGE_FRIENDLY,					3	},
+	{	"MULTI_MESSAGE_HOSTILE",				MULTI_MESSAGE_HOSTILE,					3	},
+	{	"MULTI_MESSAGE_TARGET",					MULTI_MESSAGE_TARGET,					3	},
+	{	"MULTI_OBSERVER_ZOOM_TO",				MULTI_OBSERVER_ZOOM_TO,					3	},
+	{	"TIME_SPEED_UP",						TIME_SPEED_UP,							3	},
+	{	"TIME_SLOW_DOWN",						TIME_SLOW_DOWN,							3	},
+	{	"TOGGLE_HUD_CONTRAST",					TOGGLE_HUD_CONTRAST,					3	},
+	{	"MULTI_TOGGLE_NETINFO",					MULTI_TOGGLE_NETINFO,					3	},
+	{	"MULTI_SELF_DESTRUCT",					MULTI_SELF_DESTRUCT,					3	},
+	{	"TOGGLE_HUD",							TOGGLE_HUD,								3	},
+	{	"RIGHT_SLIDE_THRUST",					RIGHT_SLIDE_THRUST,						3	},
+	{	"LEFT_SLIDE_THRUST",					LEFT_SLIDE_THRUST,						3	},
+	{	"UP_SLIDE_THRUST",						UP_SLIDE_THRUST,						3	},
+	{	"DOWN_SLIDE_THRUST",					DOWN_SLIDE_THRUST,						3	},
+	{	"HUD_TARGETBOX_TOGGLE_WIREFRAME",		HUD_TARGETBOX_TOGGLE_WIREFRAME,			3	},
+	{	"VIEW_TOPDOWN",							VIEW_TOPDOWN,							3	},
+	{	"VIEW_TRACK_TARGET",					VIEW_TRACK_TARGET,						3	},
+	{	"AUTO_PILOT_TOGGLE",					AUTO_PILOT_TOGGLE,						3	},
+	{	"NAV_CYCLE",							NAV_CYCLE,								3	},
+	{	"TOGGLE_GLIDING",						TOGGLE_GLIDING,							3	},
+};
+
+int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
 
 struct enum_h {
 	int index;
@@ -6085,7 +6217,11 @@ ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Num
 	if(!objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", ship_fire_primary(objh->objp, 0));
+	int i = 0;
+	i += ship_fire_primary(objh->objp, 0);
+	i += ship_fire_primary(objh->objp, 1);
+
+	return ade_set_args(L, "i", i);
 }
 
 ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", "Number of secondary banks fired")
@@ -6766,7 +6902,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	if(!ade_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
-	if(sdx < 1 || sdx < Wings[wdx].current_count) {
+	if(sdx < 1 || sdx > Wings[wdx].current_count) {
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 	}
 
@@ -6778,6 +6914,15 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	}
 
 	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
+}
+
+ADE_FUNC(__len, l_Wing, NULL, "Number of wings in mission", "number", "Number of wings in mission")
+{
+	int wdx;
+	if(!ade_get_args(L, "o", l_Wing.Get(&wdx)))
+		return ade_set_error(L, "i", NULL);
+
+	return ade_set_args(L, "i", Wings[wdx].current_count);
 }
 //**********HANDLE: Player
 ade_obj<int> l_Player("player", "Player handle");
@@ -7452,6 +7597,144 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 	return ade_set_args(L, "i", Player->lua_ci.fire_countermeasure_count);
 }
 
+ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button control info", NULL, NULL)
+{
+	button_info_clear(&Player->lua_bi);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getButtonInfo, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
+
+ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+	
+	for(i=0;i<4;i++)
+		bi_status[i] = 0;
+
+	if(!ade_get_args(L, "|iiii", &bi_status[0], &bi_status[1], &bi_status[2], &bi_status[3]))
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR) {
+		for(i=0;i<4;i++)
+			Player->lua_bi.status[i] = bi_status[i];
+	}
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
+
+ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to lua button control data, if number is -1 it tries to use the string", NULL, NULL)
+{
+	int index;
+	char *buf = NULL;
+
+	if(!ade_get_args(L, "i|s", &index, &buf))
+		return ADE_RETURN_NIL;
+
+	if(index != -1) {
+		// Process the number
+		if (index > (4 * 32))
+			return ADE_RETURN_NIL;
+
+		int a, b;
+		a = index / 32;
+		b = index % 32;
+
+		// now add the processed bit
+		Player->lua_bi.status[a] |= (1<<b);
+	} else if (buf != NULL) {
+		int i;
+		for(i=0; i<num_plr_commands; i++) {
+			if(!(strcmp(buf, plr_commands[i].name))) {
+				int a;
+				a = plr_commands[i].def / 32;
+				Player->lua_bi.status[plr_commands[i].var] |= (1<<a);
+				break;
+			}
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getButtonControlName, l_Control_Info, "number", "Gives the name of the command corresponding with the given number", "string", "Name of the command")
+{
+	int index;
+
+	if(!ade_get_args(L, "i", &index))
+		return ade_set_error(L, "s", "");
+
+	if((index < 0) || (index > num_plr_commands))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", plr_commands[index].name);
+}
+
+ADE_FUNC(getButtonControlNumber, l_Control_Info, "string", "Gives the number of the command corresponding with the given string", "number", "Number of the command")
+{
+	int i;
+	char *buf;
+
+	if(!ade_get_args(L, "s", &buf))
+		return ade_set_error(L, "i", -1);
+
+	for(i = 0; i < num_plr_commands; i++) {
+		if (!(strcmp(buf, plr_commands[i].name))) {
+			return ade_set_args(L, "i", plr_commands[i].def);
+		}
+	}
+
+	return ade_set_error(L, "i", -1);
+}
+
+ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button polling for lua", "boolean", "If the all button polling is enabled or not")
+{
+	bool p;
+	int idx;
+
+	if(!ade_get_args(L, "o|b", l_Control_Info.Get(&idx), &p))
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		if (p)
+			lua_game_control |= LGC_B_POLL_ALL;
+		else
+			lua_game_control &= ~LGC_B_POLL_ALL;
+	}
+
+	if (lua_game_control & LGC_B_POLL_ALL)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+
+	if(!(lua_game_control & LGC_B_POLL_ALL))
+		return ADE_RETURN_NIL;
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi_full.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
 
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
@@ -7620,28 +7903,61 @@ ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the cu
 {
 	enum_h *e = NULL;
 	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
-		switch (lua_game_control) {
-			case LGC_NORMAL:
-				return ade_set_args(L, "s", "NORMAL");
-			case LGC_STEERING:
-				return ade_set_args(L, "s", "STEERING");
-			case LGC_FULL:
-				return ade_set_args(L, "s", "FULL");
-			default:
-				return ade_set_error(L, "s", "");
-		}
+		if (lua_game_control & LGC_NORMAL)
+			return ade_set_args(L, "s", "NORMAL");
+		else if (lua_game_control & LGC_STEERING)
+			return ade_set_args(L, "s", "STEERING");
+		else if (lua_game_control & LGC_FULL)
+			return ade_set_args(L, "s", "FULL");
+		else
+			return ade_set_error(L, "s", "");
 	}
 
 	switch (e->index) {
 		case LE_NORMAL_CONTROLS:
-			lua_game_control = LGC_NORMAL;
+			lua_game_control |= LGC_NORMAL;
+			lua_game_control &= ~(LGC_STEERING|LGC_FULL);
 			return ade_set_args(L, "s", "NORMAL CONTROLS");
 		case LE_LUA_STEERING_CONTROLS:
-			lua_game_control = LGC_STEERING;
+			lua_game_control |= LGC_STEERING;
+			lua_game_control &= ~(LGC_NORMAL|LGC_FULL);
 			return ade_set_args(L, "s", "LUA STEERING CONTROLS");
 		case LE_LUA_FULL_CONTROLS:
-			lua_game_control = LGC_FULL;
+			lua_game_control |= LGC_FULL;
+			lua_game_control &= ~(LGC_STEERING|LGC_NORMAL);
 			return ade_set_args(L, "s", "LUA FULL CONTROLS");
+		default:
+			return ade_set_error(L, "s", "");
+	}
+}
+
+ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+{
+	enum_h *e = NULL;
+	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
+		if (lua_game_control & LGC_B_NORMAL)
+			return ade_set_args(L, "s", "NORMAL");
+		else if (lua_game_control & LGC_B_OVERRIDE)
+			return ade_set_args(L, "s", "OVERRIDE");
+		else if (lua_game_control & LGC_B_ADDITIVE)
+			return ade_set_args(L, "s", "ADDITIVE");
+		else
+			return ade_set_error(L, "s", "");
+	}
+
+	switch (e->index) {
+		case LE_NORMAL_BUTTON_CONTROLS:
+			lua_game_control |= LGC_B_NORMAL;
+			lua_game_control &= ~(LGC_B_ADDITIVE|LGC_B_OVERRIDE);
+			return ade_set_args(L, "s", "NORMAL BUTTON CONTROL");
+		case LE_LUA_ADDITIVE_BUTTON_CONTROL:
+			lua_game_control |= LGC_B_ADDITIVE;
+			lua_game_control &= ~(LGC_B_NORMAL|LGC_B_OVERRIDE);
+			return ade_set_args(L, "s", "LUA OVERRIDE BUTTON CONTROL");
+		case LE_LUA_OVERRIDE_BUTTON_CONTROL:
+			lua_game_control |= LGC_B_OVERRIDE;
+			lua_game_control &= ~(LGC_B_ADDITIVE|LGC_B_NORMAL);
+			return ade_set_args(L, "s", "LUA ADDITIVE BUTTON CONTROL");
 		default:
 			return ade_set_error(L, "s", "");
 	}
@@ -9843,7 +10159,7 @@ ade_lib l_Mission_Wings("Wings", &l_Mission, NULL, NULL);
 ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
 	char *name;
-	if(!ade_get_args(L, "s", &name))
+	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
 	int idx = wing_name_lookup(name);
@@ -9853,6 +10169,8 @@ ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the missi
 		idx = atoi(name);
 		if(idx < 1 || idx > Num_wings)
 			return ade_set_error(L, "o", l_Wing.Set(-1));
+
+		idx--;	//Lua->FS2
 	}
 
 	return ade_set_args(L, "o", l_Wing.Set(idx));
@@ -10078,6 +10396,7 @@ ADE_FUNC(renderFrame, l_Mission, NULL, "Renders mission frame, but does not move
 
 	return ADE_RETURN_TRUE;
 }
+
 /*
 ADE_FUNC(getDirectiveByName, l_Mission, "Name, [Whether to include unborn directives]", "event handle",
 		 "Gets directive by its name."

@@ -620,6 +620,12 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_NON_SUBSYS_HOMING;
 		else if (!stricmp(NOX("no lifeleft penalty"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_NO_LIFE_LOST_IF_MISSED;
+		else if (!stricmp(NOX("can be targeted"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CAN_BE_TARGETED;
+		else if (!stricmp(NOX("show on radar"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SHOWN_ON_RADAR;
+		else if (!stricmp(NOX("show friendly on radar"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SHOW_FRIENDLY;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -4294,7 +4300,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// plot homing missiles on the radar
-	if (wip->wi_flags & WIF_HOMING) {
+	if ((wip->wi_flags & WIF_BOMB) || (wip->wi_flags2 & WIF2_SHOWN_ON_RADAR)) {
 		if ( hud_gauge_active(HUD_RADAR) ) {
 			radar_plot_object( obj );
 		}

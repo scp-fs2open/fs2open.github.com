@@ -240,6 +240,11 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 	ship *shipp = &Ships[ship_obj->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
+	// no subsystems -> no live debris.
+	if (Ship_info[shipp->ship_info_index].n_subsystems == 0) {
+		return;
+	}
+
 	int live_debris_submodel = -1;
 	for (int idx=0; idx<pm->num_debris_objects; idx++) {
 		if (pm->submodel[pm->debris_objects[idx]].is_live_debris) {
@@ -267,15 +272,17 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 
 				Assert (pss != NULL);
 				if (pss != NULL) {
-					vec3d exp_center, tmp = ZERO_VECTOR;
-					model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_obj->orient, &ship_obj->pos );
+					if (pss->system_info != NULL) {
+						vec3d exp_center, tmp = ZERO_VECTOR;
+						model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_obj->orient, &ship_obj->pos );
 
-					// if not blown off, blow it off
-					shipfx_subsystem_mabye_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
+						// if not blown off, blow it off
+						shipfx_subsystem_mabye_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
 
-					// now set subsystem as blown off, so we only get one copy
-					pm->submodel[parent].blown_off = 1;
-					set_ship_submodel_as_blown_off(&Ships[ship_obj->instance], pss->system_info->subobj_name);
+						// now set subsystem as blown off, so we only get one copy
+						pm->submodel[parent].blown_off = 1;
+						set_ship_submodel_as_blown_off(&Ships[ship_obj->instance], pss->system_info->subobj_name);
+					}
 				}
 			}
 		}

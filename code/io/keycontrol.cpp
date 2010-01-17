@@ -1372,6 +1372,17 @@ void process_player_ship_keys(int k)
 		} else	{
 			process_set_of_keys(masked_k, Dead_key_set_size, Dead_key_set);
 		}
+		if (lua_game_control & LGC_B_POLL_ALL) {
+			// first clear all
+			button_info_clear(&Player->lua_bi_full);
+
+			// then check the keys.
+			int i;
+			for(i = 0; i < CCFG_MAX; i++) {
+				if (check_control(i, masked_k))
+					button_info_set(&Player->lua_bi_full, i);
+			}
+		}
 	} else {
 
 	}
@@ -1716,6 +1727,23 @@ void game_process_keys()
 		
 	}
 	while (k);
+
+	// lua button command override goes here!!
+	if (lua_game_control & LGC_B_OVERRIDE) {
+		button_info temp = Player->bi;
+		Player->bi = Player->lua_bi;
+		Player->lua_bi = temp;
+	} else if (lua_game_control & LGC_B_ADDITIVE) {
+		// add the lua commands to current commands 
+		int i;
+		for (i=0; i<NUM_BUTTON_FIELDS; i++)
+			Player->bi.status[i] |= Player->lua_bi.status[i];
+		Player->lua_bi = Player->bi;		
+	} else {
+		// just copy over the values
+		Player->lua_bi = Player->bi;
+	}
+	// there.. wasnt that bad hack was it?
 
 	button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
 }
