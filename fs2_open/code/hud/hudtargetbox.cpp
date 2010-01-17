@@ -1286,6 +1286,9 @@ void hud_render_target_weapon(object *target_objp)
 	wp = &Weapons[target_objp->instance];
 	target_wip = &Weapon_info[wp->weapon_info_index];
 
+	if (target_wip->model_num == -1)
+		return;
+
 	is_homing = FALSE;
 	if ( target_wip->wi_flags & WIF_HOMING && wp->homing_object != &obj_used_list )
 		is_homing = TRUE;
