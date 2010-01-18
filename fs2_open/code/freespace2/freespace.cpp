@@ -6574,9 +6574,6 @@ void game_enter_state( int old_state, int new_state )
 			}			
 			player_restore_target_and_weapon_link_prefs();
 
-			//Set the current hud
-			set_current_hud(Player_ship->ship_info_index);
-
 			Game_mode |= GM_IN_MISSION;
 
 #ifndef NDEBUG
