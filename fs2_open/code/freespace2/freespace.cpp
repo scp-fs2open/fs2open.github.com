@@ -3748,11 +3748,11 @@ camid game_render_frame_setup()
 								
 				
 
-				if ( Viewer_obj->phys_info.speed < 0.1 )
-					move_dir = Viewer_obj->orient.vec.fvec;
+				if ( Viewer_obj->phys_info.speed < 62.5f )
+					move_dir = Viewer_obj->phys_info.vel;
 				else {
 					move_dir = Viewer_obj->phys_info.vel;
-					vm_vec_normalize(&move_dir);
+					vm_vec_scale(&move_dir, (62.5f/Viewer_obj->phys_info.speed));
 				}
 
 				//create a better 3rd person view if this is the player ship
@@ -3762,14 +3762,16 @@ camid game_render_frame_setup()
 					vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec,1000.0f);
 					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -2.25f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, .625f * Viewer_obj->radius);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.125f * Viewer_obj->radius);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.625f * Viewer_obj->radius);
 					vm_vec_sub(&tmp_dir, &aim_pt, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
 				else
 				{
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.5f * Viewer_obj->radius);
 					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
 					vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
