@@ -22,6 +22,7 @@
 
 //Global stuffs
 hud_info *current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
+bool Custom_gauge_images_loaded = false;
 hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_CLASSES];
 extern int ships_inited; //Need this
@@ -67,7 +68,6 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 //Number of gauges
 int Num_gauge_types = 17;
 int Num_custom_gauges = 0;
-
 
 static void load_hud_defaults(hud_info *hud)
 {
@@ -298,6 +298,8 @@ static void parse_resolution(hud_info* dest_hud)
 			stuff_coords(dest_hud, cg);
 		}
 	}
+
+	dest_hud->loaded = true;
 }
 
 static void parse_resolution_gauges(hud_info* dest_hud)
@@ -579,9 +581,16 @@ void parse_hud_gauges_tbl(char *filename)
 			{
 				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
+					// Copy defaults
+					if(!dest_hud->loaded && default_hud.loaded)
 					{
-						if(parse_resolution_start(dest_hud, rval))
+						memcpy(dest_hud, &default_hud, sizeof(hud_info));
+						dest_hud->loaded = false;
+					}
+
+					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
+					{
+						if(parse_resolution_start(dest_hud, rval - 1))
 						{
 							parse_resolution(dest_hud);
 						}
@@ -602,9 +611,16 @@ void parse_hud_gauges_tbl(char *filename)
 			{
 				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
+					// Copy defaults
+					if(!dest_hud->loaded && default_hud.loaded)
 					{
-						if(parse_resolution_start(dest_hud, rval))
+						memcpy(dest_hud, &default_hud, sizeof(hud_info));
+						dest_hud->loaded = false;
+					}
+
+					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
+					{
+						if(parse_resolution_start(dest_hud, rval - 1))
 						{
 							parse_resolution_gauges(dest_hud);
 						}
@@ -667,9 +683,10 @@ void set_current_hud(int player_ship_num)
 	else
 	{
 		memcpy(&real_current_hud, &default_hud, sizeof(hud_info));
-	}
+	}	
 
-	current_hud = &real_current_hud;
+	current_hud = &real_current_hud;	
+	Custom_gauge_images_loaded = false;
 }
 
 /* - not POD so GCC won't take it for offsetof - taylor
