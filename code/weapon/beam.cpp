@@ -2821,6 +2821,7 @@ void beam_handle_collisions(beam *b)
 	for(idx=0; idx<b->f_collision_count; idx++){	
 		int model_num = -1;
 		int do_damage = 0;
+		int draw_effects = 1;
 		int first_hit = 1;
 		int target = b->f_collisions[idx].c_objnum;
 
@@ -2833,6 +2834,15 @@ void beam_handle_collisions(beam *b)
 		model_num = beam_get_model(&Objects[target]);
 		if(model_num < 0){
 			continue;
+		}
+
+		if (wi->wi_flags & WIF_HUGE) {
+			if (Objects[target].type & OBJ_SHIP) {
+				ship_type_info *sti;
+				sti = ship_get_type_info(&Objects[target]);
+				if (sti->weapon_bools & STI_WEAP_NO_HUGE_IMPACT_EFF)
+					draw_effects = 0;
+			}
 		}
 
 		// add lighting
@@ -2883,7 +2893,7 @@ void beam_handle_collisions(beam *b)
 		// draw flash, explosion
 		beam_weapon_info bwi = wi->b_info;
 
-		if ((bwi.beam_tooling_flame_radius > 0) || (bwi.beam_flash_radius > 0)) {
+		if (draw_effects && ((bwi.beam_tooling_flame_radius > 0) || (bwi.beam_flash_radius > 0))) {
 			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
 			float rnd = frand();
 			int do_expl = 0;
@@ -2944,7 +2954,7 @@ void beam_handle_collisions(beam *b)
 			}
 			// <-- KOMET_EXT
 		} else {
-			if(do_damage && !physics_paused){
+			if(draw_effects && do_damage && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
 					int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);

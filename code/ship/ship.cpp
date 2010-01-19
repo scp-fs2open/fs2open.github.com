@@ -3210,6 +3210,10 @@ void parse_ship_type()
 			stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
 		}
 
+	if(optional_string("$No Huge Beam Impact Effects:")) {
+		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
+	}
+
 	if(optional_string("$Fog:"))
 	{
 		if(optional_string("+Start dist:")) {
@@ -14026,6 +14030,17 @@ int ship_get_by_signature(int signature)
 
 	// couldn't find the ship
 	return -1;
+}
+
+ship_type_info *ship_get_type_info(object *objp)
+{
+	Assert(objp != NULL);
+	Assert(objp->type == OBJ_SHIP);
+	Assert(objp->instance > -1);
+	Assert(Ships[objp->instance].ship_info_index > -1);
+	Assert(Ship_info[Ships[objp->instance].ship_info_index].class_type > -1);
+
+	return &Ship_types[Ship_info[Ships[objp->instance].ship_info_index].class_type];
 }
 
 // function which gets called when the cargo of a ship is revealed.  Happens at two different locations
