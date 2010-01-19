@@ -836,6 +836,7 @@ typedef struct thruster_particles {
 #define STI_TURRET_TGT_SHIP_TGT			(1<<3)
 
 #define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
+#define STI_WEAP_NO_HUGE_IMPACT_EFF		(1<<1)
 
 #define STI_AI_ACCEPT_PLAYER_ORDERS		(1<<0)
 #define STI_AI_AUTO_ATTACKS				(1<<1)
@@ -1537,6 +1538,9 @@ void ship_secondary_changed(ship *sp);
 // get the Ship_info flags for a given ship
 int ship_get_SIF(ship *shipp);
 int ship_get_SIF(int sh);
+
+// get the ship type info (objecttypes.tbl)
+ship_type_info *ship_get_type_info(object *objp);
 
 extern void ship_do_cargo_revealed( ship *shipp, int from_network = 0 );
 extern void ship_do_cargo_hidden( ship *shipp, int from_network = 0 );
