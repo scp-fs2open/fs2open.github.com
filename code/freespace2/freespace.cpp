@@ -3762,17 +3762,17 @@ camid game_render_frame_setup()
 					vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec,1000.0f);
 					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.125f * Viewer_obj->radius);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.625f * Viewer_obj->radius);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.125f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.625f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
 					vm_vec_sub(&tmp_dir, &aim_pt, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
 				else
 				{
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.5f * Viewer_obj->radius);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.5f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
 					vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
