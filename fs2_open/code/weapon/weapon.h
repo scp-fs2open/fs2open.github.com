@@ -228,10 +228,6 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
-	int beam_flash_idx;					// idx of the ani used for the beam impact flash
-	float beam_flash_radius;			// radius of the flash
-	int beam_tooling_flame_idx;			// idx of the tooling flame ani
-	float beam_tooling_flame_radius;	// radius of the tooling flame ani
 } beam_weapon_info;
 
 typedef struct spawn_weapon_info 
@@ -350,6 +346,15 @@ typedef struct weapon_info {
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
+
+	int piercing_impact_weapon_expl_index;
+	float piercing_impact_explosion_radius;
+	int piercing_impact_particle_count;
+	float piercing_impact_particle_life;
+	float piercing_impact_particle_velocity;
+	float piercing_impact_particle_back_velocity;
+	float piercing_impact_particle_variance;
+	float piercing_impact_draw_modifier;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect

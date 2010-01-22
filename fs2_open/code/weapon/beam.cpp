@@ -2891,9 +2891,7 @@ void beam_handle_collisions(beam *b)
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		beam_weapon_info bwi = wi->b_info;
-
-		if (draw_effects && ((bwi.beam_tooling_flame_radius > 0) || (bwi.beam_flash_radius > 0))) {
+		if (draw_effects && ((wi->piercing_impact_explosion_radius > 0) || (wi->dinky_impact_explosion_radius > 0))) {
 			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
 			float rnd = frand();
 			int do_expl = 0;
@@ -2906,10 +2904,10 @@ void beam_handle_collisions(beam *b)
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
 						
-			if (bwi.beam_flash_radius > 0) {
-				ani_radius = bwi.beam_flash_radius * flash_rad;	
-				if (bwi.beam_flash_idx > -1) {
-					int ani_handle = Weapon_explosions.GetAnim(bwi.beam_flash_idx, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
+			if (wi->dinky_impact_explosion_radius > 0) {
+				ani_radius = wi->dinky_impact_explosion_radius * flash_rad;	
+				if (wi->dinky_impact_weapon_expl_index > -1) {
+					int ani_handle = Weapon_explosions.GetAnim(wi->dinky_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 				} else {
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_SMOKE, 0, -1, &Objects[target] );
@@ -2921,32 +2919,48 @@ void beam_handle_collisions(beam *b)
 				particle_create( &temp_local_pos, &vmd_zero_vector, 0.0f, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 			}
 			
-			if (bwi.beam_tooling_flame_radius > 0) {
-				vec3d fvec, inv_fvec;
-				vm_vec_sub(&fvec, &b->last_start, &b->last_shot);
+			if (wi->piercing_impact_explosion_radius > 0) {
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
 				if(!IS_VEC_NULL(&fvec)){
 					// get beam direction
 					if (beam_will_tool_target(b, &Objects[target])){
 						vm_vec_normalize_quick(&fvec);
-						vm_vec_copy_scale( &inv_fvec, &fvec, -1.0f);
 						
 						// stream of fire for big ships
 						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {
 
-							vec3d expl_vel;
+							vec3d expl_vel, expl_splash_vel;
 
-							float flame_size = bwi.beam_tooling_flame_radius * frand_range(0.5f,2.0f);
-							vm_vec_copy_scale( &expl_vel, &fvec, bwi.beam_tooling_flame_radius * frand_range(1.0f, 2.0f));
-							if (bwi.beam_tooling_flame_idx > -1) {
-								int ani_handle = Weapon_explosions.GetAnim(bwi.beam_tooling_flame_idx, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
+							float flame_size = wi->piercing_impact_explosion_radius * frand_range(0.5f,2.0f);
+							float base_v, back_v;
+							vec3d rnd_vec;
+
+							vm_vec_rand_vec_quick(&rnd_vec);
+
+							if (wi->piercing_impact_particle_velocity != 0.0f)
+								base_v = wi->piercing_impact_particle_velocity;
+							else
+								base_v = wi->piercing_impact_explosion_radius;
+
+							if (wi->piercing_impact_particle_back_velocity != 0.0f)
+								back_v = wi->piercing_impact_particle_back_velocity;
+							else
+								back_v = base_v * (-0.2f);
+
+							vm_vec_copy_scale( &expl_vel, &fvec, base_v * frand_range(1.0f, 2.0f));
+							vm_vec_copy_scale( &expl_splash_vel, &fvec, back_v * frand_range(1.0f, 2.0f));
+							vm_vec_scale_add2( &expl_vel, &rnd_vec, base_v * wi->piercing_impact_particle_variance);
+							vm_vec_scale_add2( &expl_splash_vel, &rnd_vec, back_v * wi->piercing_impact_particle_variance);
+
+							if (wi->piercing_impact_weapon_expl_index > -1) {
+								int ani_handle = Weapon_explosions.GetAnim(wi->piercing_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
 								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
-								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
 							} else {
 								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.3f, flame_size, PARTICLE_SMOKE );
-								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.6f, flame_size, PARTICLE_SMOKE );
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.6f, flame_size, PARTICLE_SMOKE );
 							}
 						}
 					}

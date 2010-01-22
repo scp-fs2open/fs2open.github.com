@@ -864,8 +864,17 @@ void init_weapon_entry(int weap_info_index)
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
 
-	wip->dinky_impact_explosion_radius = 1.0f;
+	wip->dinky_impact_explosion_radius = 0.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
+
+	wip->piercing_impact_explosion_radius = 0.0f;
+	wip->piercing_impact_particle_count = 0;
+	wip->piercing_impact_particle_life = 0.0f;
+	wip->piercing_impact_particle_velocity = 0.0f;
+	wip->piercing_impact_weapon_expl_index = -1;
+	wip->piercing_impact_particle_back_velocity = 0.0f;
+	wip->piercing_impact_particle_variance = 0.0f;
+	wip->piercing_impact_draw_modifier = 1.0f;
 
 	wip->muzzle_flash = -1;
 
@@ -917,10 +926,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
 	wip->b_info.beam_width = -1.0f;
-	wip->b_info.beam_flash_idx = -1;
-	wip->b_info.beam_flash_radius = 0.0f;
-	wip->b_info.beam_tooling_flame_idx = -1;
-	wip->b_info.beam_tooling_flame_radius = 0.0f;
 
 	generic_anim_init(&wip->b_info.beam_glow, NULL);
 	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
@@ -1735,6 +1740,34 @@ int parse_weapon(int subtype, bool replace)
 	else if (first_time)
 		wip->dinky_impact_explosion_radius = wip->impact_explosion_radius;
 
+	if ( optional_string("$Piercing Impact Explosion:") ) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			wip->piercing_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+	}
+
+	if ( optional_string("$Piercing Impact Radius:") )
+		stuff_float(&wip->piercing_impact_explosion_radius);
+
+	if ( optional_string("$Piercing Impact Velocity:") )
+		stuff_float(&wip->piercing_impact_particle_velocity);
+
+	if ( optional_string("$Piercing Impact Splash Velocity:") )
+		stuff_float(&wip->piercing_impact_particle_back_velocity);
+
+	if ( optional_string("$Piercing Impact Variance:") )
+		stuff_float(&wip->piercing_impact_particle_variance);
+
+	if ( optional_string("$Piercing Impact Life:") )
+		stuff_float(&wip->piercing_impact_particle_life);
+
+	if ( optional_string("$Piercing Impact Particles:") )
+		stuff_int(&wip->piercing_impact_particle_count);
+
+	if ( optional_string("$Piercing Impact Draw Modifier:") )
+		stuff_float(&wip->piercing_impact_draw_modifier);
+
 	// muzzle flash
 	if ( optional_string("$Muzzleflash:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -2015,21 +2048,30 @@ int parse_weapon(int subtype, bool replace)
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
 			if ( VALID_FNAME(fname) )
-				wip->b_info.beam_flash_idx = Weapon_explosions.Load(fname);
+				wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(fname);
 		}
 		
 		if ( optional_string("+Beam Flash Radius:") )
-			stuff_float(&wip->b_info.beam_flash_radius);
+			stuff_float(&wip->dinky_impact_explosion_radius);
 
 		if ( optional_string("+Beam Piercing Effect:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
 			if ( VALID_FNAME(fname) )
-				wip->b_info.beam_tooling_flame_idx = Weapon_explosions.Load(fname);
+				wip->piercing_impact_weapon_expl_index = Weapon_explosions.Load(fname);
 		}
 		
 		if ( optional_string("+Beam Piercing Radius:") )
-			stuff_float(&wip->b_info.beam_tooling_flame_radius);
+			stuff_float(&wip->piercing_impact_explosion_radius);
+
+		if ( optional_string("+Beam Piercing Effect Velocity:") )
+			stuff_float(&wip->piercing_impact_particle_velocity);
+
+		if ( optional_string("+Beam Piercing Splash Effect Velocity:") )
+			stuff_float(&wip->piercing_impact_particle_back_velocity);
+
+		if ( optional_string("+Beam Piercing Effect Variance:") )
+			stuff_float(&wip->piercing_impact_particle_variance);
 
 		// beam sections
 		while ( optional_string("$Section:") ) {
@@ -5543,6 +5585,55 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 
+	if(wip->piercing_impact_weapon_expl_index > -1 && armed_weapon) {
+		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
+
+			int ok_to_draw = 1;
+
+			if (other_obj->type == OBJ_SHIP) {
+				float hull_pct = other_obj->hull_strength / Ships[other_obj->instance].ship_max_hull_strength;
+
+				float draw_limit = wip->piercing_impact_draw_modifier * Ship_info[Ships[other_obj->instance].ship_info_index].piercing_damage_draw_limit;
+				
+				if (hull_pct > draw_limit)
+					ok_to_draw = 0;
+			}
+
+			if (ok_to_draw) {
+				particle_emitter pe;
+				vec3d null_v;
+
+				vm_vec_zero(&null_v);
+				expl_ani_handle = Weapon_explosions.GetAnim(wip->piercing_impact_weapon_expl_index, hitpos, wip->piercing_impact_explosion_radius);
+
+				pe.max_vel = 2.0f * wip->piercing_impact_particle_velocity;
+				pe.min_vel = 0.5f * wip->piercing_impact_particle_velocity;
+				pe.max_life = 2.0f * wip->piercing_impact_particle_life;
+				pe.min_life = 0.25f * wip->piercing_impact_particle_life;
+				pe.num_high = 2 * wip->piercing_impact_particle_count;
+				pe.num_low =  wip->piercing_impact_particle_count / 2;
+				pe.pos = weapon_obj->pos;
+				pe.normal = weapon_obj->last_orient.vec.fvec;
+				pe.normal_variance = wip->piercing_impact_particle_variance;
+				pe.max_rad = 2.0f * wip->piercing_impact_explosion_radius;
+				pe.min_rad = 0.5f * wip->piercing_impact_explosion_radius;
+				pe.vel = null_v;
+
+				particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
+
+				if (wip->piercing_impact_particle_back_velocity != 0.0f) {
+
+					pe.max_vel = 2.0f * wip->piercing_impact_particle_back_velocity;
+					pe.min_vel = 0.5f * wip->piercing_impact_particle_back_velocity;
+					pe.num_high /= 2;
+					pe.num_low /= 2;
+
+					particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
+				}
+			}
+		}
+	}
+
 	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
 
 	//Set shockwaves flag
@@ -5748,6 +5839,7 @@ void weapons_page_in()
 		//Explosions
 		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
 		Weapon_explosions.PageIn(wip->dinky_impact_weapon_expl_index);
+		Weapon_explosions.PageIn(wip->piercing_impact_weapon_expl_index);
 
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id > -1) )
