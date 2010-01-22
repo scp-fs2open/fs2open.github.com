@@ -836,6 +836,7 @@ void init_ship_entry(ship_info *sip)
 	}
 	
 	sip->emp_resistance_mod = 0.0f;
+	sip->piercing_damage_draw_limit = 0.10f;
 }
 
 // function to parse the information for a specific ship type.	
@@ -2573,6 +2574,12 @@ strcpy_s(parse_error_text, temp_error);
 		stuff_float(&sip->emp_resistance_mod);
 	}
 	
+	if (optional_string("$Piercing Damage Draw Limit:")) {
+		float tempf;
+		stuff_float(&tempf);
+		sip->piercing_damage_draw_limit = tempf / 100.0f;
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems

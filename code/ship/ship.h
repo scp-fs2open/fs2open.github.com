@@ -1176,6 +1176,8 @@ typedef struct ship_info {
 	vec3d convergence_offset;
 
 	float emp_resistance_mod;
+
+	float piercing_damage_draw_limit;
 } ship_info;
 
 extern int Num_wings;
