@@ -294,7 +294,6 @@ static void parse_resolution(hud_info* dest_hud)
 		cg = &gauges[i];
 		if(cg->parent == NULL && strlen(cg->fieldname))
 		{
-
 			stuff_coords(dest_hud, cg);
 		}
 	}
@@ -306,7 +305,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 {
 	char gaugename[NAME_LENGTH];
 	gauge_info *cg, *parent;
-	while(!required_string_3("$Gauge:","$Resolution:","#End"))
+	while(!required_string_4("$Gauge:", "$Default:", "$Resolution:", "#End"))
 	{
 		required_string("$Gauge:");
 		stuff_string(gaugename, F_NAME, NAME_LENGTH);
@@ -316,14 +315,19 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 		for(int i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
-			if(!parent)
+			
+			if(!parent && !strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
 			{
-				if(!strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
-				{
-					parent = cg;
-				}
+				parent = cg;
+				break;
 			}
-			else if(parent == cg->parent)
+		}
+
+		for(int i = 0; i < Num_gauge_types; i++)
+		{
+			cg = &gauges[i];
+			
+			if(parent == cg->parent)
 			{
 				stuff_coords(dest_hud, cg);
 			}
@@ -380,16 +384,26 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 	if(str_token == 1)
 	{
 		required_string("$Default:");
-		if(!dest_hud->loaded)
+		stuff_int_list(buffer, 2, RAW_INTEGER_TYPE);
+
+		if(buffer[0] == 0 || buffer == 0)
 		{
-			stuff_int_list(dest_hud->resolution, 2, RAW_INTEGER_TYPE);
-			if(dest_hud->resolution[0] == 0 || dest_hud->resolution == 0)
-			{
-				dest_hud->resolution[0] = gr_screen.max_w;
-				dest_hud->resolution[1] = gr_screen.max_h;
-			}
-			return dest_hud;
+			buffer[0] = gr_screen.max_w;
+			buffer[1] = gr_screen.max_h;
 		}
+		
+		// In case of a second $Default: declaration (in a tbm or a ship gauge perhaps),
+		// check if it declares the same resolution as before. If not, reload defaults.
+		if(dest_hud->loaded && (buffer[0] != dest_hud->resolution[0]) || (buffer[1] != dest_hud->resolution[1]))
+		{
+			load_hud_defaults(dest_hud);
+		}
+		
+		//Set the resolution
+		memcpy(dest_hud->resolution, buffer, sizeof(buffer));
+		dest_hud->loaded = false;
+		
+		return dest_hud;
 	}
 	else
 	{
@@ -398,18 +412,14 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 
 		if ( (buffer[0] == gr_screen.max_w_unscaled) && (buffer[1] == gr_screen.max_h_unscaled) )
 		{
-			//Get the ship HUD ready w/ defaults
-			if(default_hud.loaded)
+			if(dest_hud->loaded)
 			{
-				memcpy(dest_hud, &default_hud, sizeof(hud_info));
-				//It's not really loaded
-				dest_hud->loaded = false;
+				load_hud_defaults(dest_hud);
 			}
-			else
-			{
-				//Set the resolution
-				memcpy(dest_hud->resolution, buffer, sizeof(buffer));
-			}
+			
+			//Set the resolution
+			memcpy(dest_hud->resolution, buffer, sizeof(buffer));
+			dest_hud->loaded = false;
 
 			return dest_hud;
 		}
@@ -585,7 +595,6 @@ void parse_hud_gauges_tbl(char *filename)
 					if(!dest_hud->loaded && default_hud.loaded)
 					{
 						memcpy(dest_hud, &default_hud, sizeof(hud_info));
-						dest_hud->loaded = false;
 					}
 
 					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
@@ -615,7 +624,6 @@ void parse_hud_gauges_tbl(char *filename)
 					if(!dest_hud->loaded && default_hud.loaded)
 					{
 						memcpy(dest_hud, &default_hud, sizeof(hud_info));
-						dest_hud->loaded = false;
 					}
 
 					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
