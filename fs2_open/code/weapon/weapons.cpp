@@ -5528,7 +5528,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
 // This function is called when a weapon hits something (or, in the case of
 // missiles explodes for any particular reason)
 //
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -5585,7 +5585,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 
-	if(wip->piercing_impact_weapon_expl_index > -1 && armed_weapon) {
+	if((other_obj != NULL) && (quadrant == -1) && (wip->piercing_impact_weapon_expl_index > -1 && armed_weapon)) {
 		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
