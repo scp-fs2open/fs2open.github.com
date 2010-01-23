@@ -452,6 +452,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
 	new_item->firingpoint = fire_info->turret->turret_next_fire_pos;
+	new_item->beam_width = wip->b_info.beam_width;
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_secion_frame[i] = 0.0f;
@@ -2891,7 +2892,7 @@ void beam_handle_collisions(beam *b)
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		if (draw_effects && ((wi->piercing_impact_explosion_radius > 0) || (wi->dinky_impact_explosion_radius > 0))) {
+		if (draw_effects && ((wi->piercing_impact_explosion_radius > 0) || (wi->flash_impact_explosion_radius > 0))) {
 			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
 			float rnd = frand();
 			int do_expl = 0;
@@ -2904,10 +2905,10 @@ void beam_handle_collisions(beam *b)
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
 						
-			if (wi->dinky_impact_explosion_radius > 0) {
-				ani_radius = wi->dinky_impact_explosion_radius * flash_rad;	
-				if (wi->dinky_impact_weapon_expl_index > -1) {
-					int ani_handle = Weapon_explosions.GetAnim(wi->dinky_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
+			if (wi->flash_impact_explosion_radius > 0) {
+				ani_radius = wi->flash_impact_explosion_radius * flash_rad;	
+				if (wi->flash_impact_weapon_expl_index > -1) {
+					int ani_handle = Weapon_explosions.GetAnim(wi->flash_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 				} else {
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_SMOKE, 0, -1, &Objects[target] );
