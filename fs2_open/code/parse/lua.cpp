@@ -9897,7 +9897,7 @@ ade_lib l_Mission_EscortShips("EscortShips", &l_Mission, NULL, NULL);
 ADE_INDEXER(l_Mission_EscortShips, "number Index", "Gets escort ship at specified index on escort list", "ship", "Specified ship, or invalid ship handle if invalid index")
 {
 	int idx;
-	if(!ade_get_args(L, "i", &idx))
+	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
 	if(idx < 1 || idx > hud_escort_num_ships_on_list())
