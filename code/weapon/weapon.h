@@ -347,6 +347,9 @@ typedef struct weapon_info {
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
 
+	int flash_impact_weapon_expl_index;
+	float flash_impact_explosion_radius;
+
 	int piercing_impact_weapon_expl_index;
 	float piercing_impact_explosion_radius;
 	int piercing_impact_particle_count;

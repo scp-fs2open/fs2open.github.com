@@ -864,8 +864,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
 
-	wip->dinky_impact_explosion_radius = 0.0f;
+	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
+
+	wip->flash_impact_weapon_expl_index = -1;
+	wip->flash_impact_explosion_radius = 0.0f;
 
 	wip->piercing_impact_explosion_radius = 0.0f;
 	wip->piercing_impact_particle_count = 0;
@@ -2048,11 +2051,11 @@ int parse_weapon(int subtype, bool replace)
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
 			if ( VALID_FNAME(fname) )
-				wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+				wip->flash_impact_weapon_expl_index = Weapon_explosions.Load(fname);
 		}
 		
 		if ( optional_string("+Beam Flash Radius:") )
-			stuff_float(&wip->dinky_impact_explosion_radius);
+			stuff_float(&wip->flash_impact_explosion_radius);
 
 		if ( optional_string("+Beam Piercing Effect:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -5839,6 +5842,7 @@ void weapons_page_in()
 		//Explosions
 		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
 		Weapon_explosions.PageIn(wip->dinky_impact_weapon_expl_index);
+		Weapon_explosions.PageIn(wip->flash_impact_weapon_expl_index);
 		Weapon_explosions.PageIn(wip->piercing_impact_weapon_expl_index);
 
 		// trail bitmaps
