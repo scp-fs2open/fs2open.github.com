@@ -170,15 +170,11 @@ static void calculate_gauges(hud_info* dest_hud)
 /****************************************************************************************************/
 /* You shouldn't have to modify anything past here to add gauges */
 /****************************************************************************************************/
-//This doesn't belong in parse_lo, it's not really that low.
-static int size_temp[2];
-static float percentage_temp[2];
 int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 {
-	//Speed up calculations
-	static hud_info* factor_for_hud;
-	static float resize_factor[2];
-	float fl_buffer[2];
+	// Speed up calculations
+	float percentage_temp[2];
+	int size_temp[2];
 	bool size_defined = false;
 
 	if(required)
@@ -190,54 +186,39 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 		return 0;
 	}
 
-	//stuff_int_list(HUD_INT(dest_hud, i), 2, RAW_INTEGER_TYPE);
-	stuff_float_list(fl_buffer, 2);
-	if(!cg->parent)
-	{
-		factor_for_hud = NULL;
-		resize_factor[0] = 1;
-		resize_factor[1] = 1;
-	}
-	else if(dest_hud != factor_for_hud)
-	{
-		resize_factor[0] = (float)gr_screen.max_w / (float)dest_hud->resolution[0];
-		resize_factor[1] = (float)gr_screen.max_h / (float)dest_hud->resolution[1];
-	}
-	//Resize to current res
-	HUD_INT(dest_hud, cg->coord_dest)[0] = fl2i(fl_buffer[0] * resize_factor[0]);
-	HUD_INT(dest_hud, cg->coord_dest)[1] = fl2i(fl_buffer[1] * resize_factor[1]);
+	stuff_int_list(HUD_INT(dest_hud, cg->coord_dest), 2, RAW_INTEGER_TYPE);
 
 	if(optional_string("+Size:"))
 	{
 		stuff_int_list(size_temp, 2, RAW_INTEGER_TYPE);
+		
 		if(cg->size_dest)
 		{
 			HUD_INT(dest_hud, cg->size_dest)[0] = size_temp[0];
 			HUD_INT(dest_hud, cg->size_dest)[1] = size_temp[1];
+			
+			size_defined = true;
 		}
-		
-		//For %
-		size_defined = false;
 	}
 
 	if(optional_string("+Percentage:"))
 	{
 		stuff_float_list(percentage_temp, 2);
-		percentage_temp[0] *= (gr_screen.max_w / 100.0f);
-		percentage_temp[1] *= (gr_screen.max_h / 100.0f);
+		percentage_temp[0] *= (dest_hud->resolution[0] / 100.0f);
+		percentage_temp[1] *= (dest_hud->resolution[1] / 100.0f);
 
-		//Bool true, size defined
-		if(!size_defined)
+		if(size_defined)
 		{
 			if(percentage_temp[0])
 			{
-				percentage_temp[0] -= size_temp[0] / 2;
+				percentage_temp[0] -= fl2i(size_temp[0] / 2.0f);
 			}
 			if(percentage_temp[1])
 			{
-				percentage_temp[1] -= size_temp[1] / 2;
+				percentage_temp[1] -= fl2i(size_temp[1] / 2.0f);
 			}
 		}
+
 		HUD_INT(dest_hud, cg->coord_dest)[0] += fl2i(percentage_temp[0]);
 		HUD_INT(dest_hud, cg->coord_dest)[1] += fl2i(percentage_temp[1]);
 	}
