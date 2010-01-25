@@ -888,10 +888,10 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 		dest_ci->sideways = src_ci->sideways;
 		dest_ci->bank = src_ci->bank;
 		dest_ci->forward = src_ci->forward;
-		dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+		/*dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
 		dest_ci->fire_countermeasure_count = src_ci->fire_countermeasure_count;
 		dest_ci->fire_secondary_count = src_ci->fire_countermeasure_count;
-		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;
+		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;*/
 	}
 }
 
