@@ -20,6 +20,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name liblua
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpng
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -91,6 +94,33 @@ Package=<4>
 ###############################################################################
 
 Project: "liblua"=.\liblua.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libpng"=.\libpng.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name zlib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "zlib"=.\zlib.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
