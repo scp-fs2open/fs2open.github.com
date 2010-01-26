@@ -1665,39 +1665,7 @@ void model_draw_bay_paths(int model_num)
 			}
 		}
 	}	
-}	
-/*
-// struct that holds the indicies into path information associated with a fighter bay on a capital ship
-// NOTE: Fighter bay paths are identified by the path_name $bayN (where N is numbered from 1).
-//			Capital ships only have ONE fighter bay on the entire ship
-#define MAX_SHIP_BAY_PATHS		32
-typedef struct ship_bay {
-	int	num_paths;							// how many paths are associated with the model's fighter bay
-	int	paths[MAX_SHIP_BAY_PATHS];		// index into polymodel->paths[] array
-	int	arrive_flags;	// bitfield, set to 1 when that path number is reserved for an arrival
-	int	depart_flags;	// bitfield, set to 1 when that path number is reserved for a departure
-} ship_bay;
-
-  typedef struct mp_vert {
-	vec3d		pos;				// xyz coordinates of vertex in object's frame of reference
-	int			nturrets;		// number of turrets guarding this vertex
-	int			*turret_ids;	// array of indices into ship_subsys linked list (can't index using [] though)
-	float			radius;			// How far the closest obstruction is from this vertex
-} mp_vert;
-
-typedef struct model_path {
-	char			name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
-	char			parent_name[MAX_NAME_LEN];			// parent name of submodel that path is linked to in POF
-	int			parent_submodel;
-	int			nverts;
-	mp_vert		*verts;
-	int			goal;			// Which of the verts is the one closest to the goal of this path
-	int			type;			// What this path takes you to... See MP_TYPE_??? defines above for details
-	int			value;		// This depends on the type.
-									// For MP_TYPE_UNUSED, this means nothing.
-									// For MP_TYPE_SUBSYS, this is the subsystem number this path takes you to.
-} model_path;
-*/
+}
 
 void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth, color *outside_color, bool init_halfway )
 {
