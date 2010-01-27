@@ -584,8 +584,8 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	}
 
 	if ( db->is_hull )	{
-		// Only make 1/2 of the pieces have arcs
-		if ( myrand() < RAND_MAX_2 ) {
+		// Percent of debris pieces with arcs controlled via table (default 50%)
+		if (frand() < sip->debris_arc_percent) {
 			db->arc_frequency = 1000;
 		} else {
 			db->arc_frequency = 0;

@@ -190,6 +190,10 @@ extern SCP_vector<ArmorType> Armor_types;
 
 #define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
 
+//SUSHI: Damage lightning types. SLT = Ship Lighting Type.
+#define SLT_NONE	0
+#define SLT_DEFAULT	1
+
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
@@ -1044,6 +1048,7 @@ typedef struct ship_info {
 	float			debris_min_hitpoints;
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
+	float			debris_arc_percent;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -1178,6 +1183,8 @@ typedef struct ship_info {
 	float emp_resistance_mod;
 
 	float piercing_damage_draw_limit;
+
+	int damage_lightning_type;
 } ship_info;
 
 extern int Num_wings;

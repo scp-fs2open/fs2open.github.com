@@ -583,6 +583,24 @@ int warptype_match(char *p)
 	return -1;
 }
 
+char *Lightning_types[] = {
+	"None",
+	"Default",
+};
+
+int Num_lightning_types = sizeof(Lightning_types)/sizeof(char*);
+
+int lightningtype_match(char *p)
+{
+	int i;
+	for(i = 0; i < Num_lightning_types; i++)
+	{
+		if(!stricmp(Lightning_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
 
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
@@ -688,6 +706,7 @@ void init_ship_entry(ship_info *sip)
 	sip->debris_max_hitpoints = -1.0f;
 	sip->debris_min_hitpoints = -1.0f;
 	sip->debris_damage_mult = 1.0f;
+	sip->debris_arc_percent = 0.5f;
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -837,6 +856,7 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->emp_resistance_mod = 0.0f;
 	sip->piercing_damage_draw_limit = 0.10f;
+	sip->damage_lightning_type = SLT_DEFAULT;
 }
 
 // function to parse the information for a specific ship type.	
@@ -1258,6 +1278,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_boolean(&bogus_bool);
 	}
 
+	if(optional_string("$Damage Lightning Type:"))
+	{
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+		j = lightningtype_match(buf);
+		if(j >= 0) {
+			sip->damage_lightning_type = j;
+		} else {
+			Warning(LOCATION, "Invalid lightning type '%s' specified for ship '%s'", buf, sip->name);
+			sip->damage_lightning_type = SLT_DEFAULT;
+		}
+	}
+
 	if(optional_string("$Impact:"))
 	{
 		if(optional_string("+Damage Type:"))
@@ -1336,6 +1368,16 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			if(sip->debris_damage_mult < 0.0f)
 				Warning(LOCATION, "Debris damage multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
 		}
+		if(optional_string("+Lightning Arc Percent:")) {
+			stuff_float(&sip->debris_arc_percent);
+			if(sip->debris_arc_percent < 0.0f || sip->debris_arc_percent > 100.0f) {
+				Warning(LOCATION, "Lightning Arc Percent on %s '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", info_type_name, sip->name, sip->debris_arc_percent);
+				sip->debris_arc_percent = 50.0;
+			}
+			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+			sip->debris_arc_percent /= 100.0;
+		}
+		
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
