@@ -357,7 +357,6 @@ typedef struct weapon_info {
 	float piercing_impact_particle_velocity;
 	float piercing_impact_particle_back_velocity;
 	float piercing_impact_particle_variance;
-	float piercing_impact_draw_modifier;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect

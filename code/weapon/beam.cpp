@@ -2926,7 +2926,37 @@ void beam_handle_collisions(beam *b)
 
 				if(!IS_VEC_NULL(&fvec)){
 					// get beam direction
-					if (beam_will_tool_target(b, &Objects[target])){
+
+					int ok_to_draw = 0;
+					
+					if (beam_will_tool_target(b, &Objects[target])) {
+						ok_to_draw = 1;
+					} else {
+						ok_to_draw = 0;
+
+						if (Objects[target].type == OBJ_SHIP) {
+							float draw_limit, hull_pct;
+							int dmg_type_idx, piercing_type;
+
+							ship *shipp = &Ships[Objects[target].instance];
+
+							hull_pct = Objects[target].hull_strength / shipp->ship_max_hull_strength;
+							dmg_type_idx = wi->damage_type_idx;
+							draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
+							
+							if (shipp->armor_type_idx != -1) {
+								piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
+								if (piercing_type == SADTF_PIERCING_DEFAULT) {
+									draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+								}
+							}
+
+							if (hull_pct <= draw_limit)
+								ok_to_draw = 1;
+						}
+					}
+
+					if (ok_to_draw){
 						vm_vec_normalize_quick(&fvec);
 						
 						// stream of fire for big ships

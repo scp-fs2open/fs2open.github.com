@@ -4518,7 +4518,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		}
 	}
 	shipp->armor_type_idx = sip->armor_type_idx;
-	shipp->shield_armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -15573,6 +15573,30 @@ void ArmorDamageType::clear()
 	Arguments.clear();
 }
 
+//************
+// Wanderer - beam piercing type
+//************
+
+flag_def_list	PiercingTypes[] = {
+	{	"none",		SADTF_PIERCING_NONE,		0},
+	{	"default",	SADTF_PIERCING_DEFAULT,		0},
+};
+
+const int Num_piercing_effect_types = sizeof(PiercingTypes)/sizeof(flag_def_list);
+
+int piercing_type_get(char *str)
+{
+	int i;
+	for(i = 0; i < Num_piercing_effect_types; i++)
+	{
+		if(!stricmp(PiercingTypes[i].name, str))
+			return PiercingTypes[i].def;
+	}
+
+	// default to none
+	return SADTF_PIERCING_NONE;
+}
+
 //**************************************************************
 //WMC - All the extra armor crap
 
@@ -15741,6 +15765,58 @@ float ArmorType::GetShieldPiercePCT(int damage_type_idx)
 	return 0.0f;
 }
 
+int ArmorType::GetPiercingType(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->piercing_type;
+	}
+
+	return 0;
+}
+
+float ArmorType::GetPiercingLimit(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0.0f;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->piercing_start_pct;
+	}
+
+	return 0.0f;
+}
+
 //***********************************Member functions
 
 ArmorType::ArmorType(char* in_name)
@@ -15803,6 +15879,21 @@ void ArmorType::ParseData()
 			stuff_float(&temp_float);
 			CLAMP(temp_float, 0.0f, 1.0f);
 			adt.shieldpierce_pct = temp_float;
+		}
+
+		adt.piercing_start_pct = 0.1f;
+		adt.piercing_type = -1;
+
+		if(optional_string("+Weapon Piercing Effect Start Limit:")) {
+			stuff_float(&temp_float);
+			CLAMP(temp_float, 0.0f, 100.0f); 
+			temp_float /= 100.0f;
+			adt.piercing_start_pct = temp_float;
+		}
+
+		if(optional_string("+Weapon Piercing Type:")) {
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			adt.piercing_type = piercing_type_get(buf);
 		}
 
 		//If we have calculations in this damage type, add it
