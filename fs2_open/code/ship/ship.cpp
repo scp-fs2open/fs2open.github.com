@@ -15580,6 +15580,7 @@ void ArmorDamageType::clear()
 flag_def_list	PiercingTypes[] = {
 	{	"none",		SADTF_PIERCING_NONE,		0},
 	{	"default",	SADTF_PIERCING_DEFAULT,		0},
+	{	"retail",	SADTF_PIERCING_RETAIL,		0},
 };
 
 const int Num_piercing_effect_types = sizeof(PiercingTypes)/sizeof(flag_def_list);
@@ -15593,8 +15594,8 @@ int piercing_type_get(char *str)
 			return PiercingTypes[i].def;
 	}
 
-	// default to none
-	return SADTF_PIERCING_NONE;
+	// default to retail
+	return SADTF_PIERCING_RETAIL;
 }
 
 //**************************************************************
