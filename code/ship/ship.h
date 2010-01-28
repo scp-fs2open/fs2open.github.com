@@ -196,8 +196,9 @@ extern SCP_vector<ArmorType> Armor_types;
 
 #define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
 
-#define SADTF_PIERCING_NONE			0
-#define SADTF_PIERCING_DEFAULT		1
+#define SADTF_PIERCING_NONE			0				// no piercing effects, no beam tooling
+#define SADTF_PIERCING_DEFAULT		1				// piercing effects, beam tooling
+#define SADTF_PIERCING_RETAIL		2				// no piercing effects, beam tooling
 
 //SUSHI: Damage lightning types. SLT = Ship Lighting Type.
 #define SLT_NONE	0

@@ -2931,6 +2931,16 @@ void beam_handle_collisions(beam *b)
 					
 					if (beam_will_tool_target(b, &Objects[target])) {
 						ok_to_draw = 1;
+
+						if (Objects[target].type == OBJ_SHIP) {
+							ship *shipp = &Ships[Objects[target].instance];
+														
+							if (shipp->armor_type_idx != -1) {
+								if (Armor_types[shipp->armor_type_idx].GetPiercingType(wi->damage_type_idx) == SADTF_PIERCING_RETAIL) {
+									ok_to_draw = 0;
+								}
+							}
+						}
 					} else {
 						ok_to_draw = 0;
 
@@ -2948,10 +2958,12 @@ void beam_handle_collisions(beam *b)
 								piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
 								if (piercing_type == SADTF_PIERCING_DEFAULT) {
 									draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+								} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
+									draw_limit = -1.0f;
 								}
 							}
 
-							if (hull_pct <= draw_limit)
+							if ((draw_limit != -1.0f) && (hull_pct <= draw_limit))
 								ok_to_draw = 1;
 						}
 					}
@@ -3348,7 +3360,7 @@ int beam_will_tool_target(beam *b, object *objp)
 {
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 	float total_strength, damage_in_a_few_seconds;
-
+	
 	// sanity
 	if(objp == NULL){
 		return 0;
@@ -3360,6 +3372,14 @@ int beam_will_tool_target(beam *b, object *objp)
 	}
 	if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
 		return 0;
+	}
+	
+	ship *shipp = &Ships[objp->instance];
+
+	if (shipp->armor_type_idx != -1) {
+		if (Armor_types[shipp->armor_type_idx].GetPiercingType(wip->damage_type_idx) == SADTF_PIERCING_NONE) {
+			return 0;
+		}
 	}
 
 	// calculate total strength, factoring in shield

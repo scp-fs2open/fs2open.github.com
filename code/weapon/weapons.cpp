@@ -5603,6 +5603,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 					piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
 					if (piercing_type == SADTF_PIERCING_DEFAULT) {
 						draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+					} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
+						ok_to_draw = 0;
 					}
 				}
 
