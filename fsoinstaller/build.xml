@@ -1,7 +1,7 @@
 <project name="fsoinstaller" default="run" basedir=".">
 
   <property name="projectname" value="FreeSpace Open Installer"/>
-  <property name="projectversion" value="v1.1.0"/>
+  <property name="projectversion" value="v2.0.0"/>
   <property name="mainclass" value="com.fsoinstaller.main.FreeSpaceOpenInstaller"/>
 
   <property name="build" value="build"/>
