@@ -162,6 +162,10 @@ private:
 	SCP_vector<float>	Arguments;
 	float				shieldpierce_pct;
 
+	// piercing effect data
+	float				piercing_start_pct;
+	int					piercing_type;
+
 public:
 	void clear();
 };
@@ -181,6 +185,8 @@ public:
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
 	float GetShieldPiercePCT(int damage_type_idx);
+	int GetPiercingType(int damage_type_idx);
+	float GetPiercingLimit(int damage_type_idx);
 	
 	//Set
 	void ParseData();
@@ -189,6 +195,9 @@ public:
 extern SCP_vector<ArmorType> Armor_types;
 
 #define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
+
+#define SADTF_PIERCING_NONE			0
+#define SADTF_PIERCING_DEFAULT		1
 
 //SUSHI: Damage lightning types. SLT = Ship Lighting Type.
 #define SLT_NONE	0

@@ -877,7 +877,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->piercing_impact_weapon_expl_index = -1;
 	wip->piercing_impact_particle_back_velocity = 0.0f;
 	wip->piercing_impact_particle_variance = 0.0f;
-	wip->piercing_impact_draw_modifier = 1.0f;
 
 	wip->muzzle_flash = -1;
 
@@ -1767,9 +1766,6 @@ int parse_weapon(int subtype, bool replace)
 
 	if ( optional_string("$Piercing Impact Particles:") )
 		stuff_int(&wip->piercing_impact_particle_count);
-
-	if ( optional_string("$Piercing Impact Draw Modifier:") )
-		stuff_float(&wip->piercing_impact_draw_modifier);
 
 	// muzzle flash
 	if ( optional_string("$Muzzleflash:") ) {
@@ -5594,10 +5590,22 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			int ok_to_draw = 1;
 
 			if (other_obj->type == OBJ_SHIP) {
-				float hull_pct = other_obj->hull_strength / Ships[other_obj->instance].ship_max_hull_strength;
+				float draw_limit, hull_pct;
+				int dmg_type_idx, piercing_type;
 
-				float draw_limit = wip->piercing_impact_draw_modifier * Ship_info[Ships[other_obj->instance].ship_info_index].piercing_damage_draw_limit;
+				ship *shipp = &Ships[other_obj->instance];
+
+				hull_pct = other_obj->hull_strength / shipp->ship_max_hull_strength;
+				dmg_type_idx = wip->damage_type_idx;
+				draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
 				
+				if (shipp->armor_type_idx != -1) {
+					piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
+					if (piercing_type == SADTF_PIERCING_DEFAULT) {
+						draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+					}
+				}
+
 				if (hull_pct > draw_limit)
 					ok_to_draw = 0;
 			}
