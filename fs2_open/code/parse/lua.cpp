@@ -6203,6 +6203,29 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 	return ADE_RETURN_TRUE;
 }
+
+ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has already happened", "number", "Returns 1 if first explosion timestamp is passed, 2 if second is passed, 0 otherwise")
+{
+	object_h *shiph;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "i", 0);
+
+	if(!shiph->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	if (shipp->flags & SF_DYING) {
+		if (shipp->final_death_time == 0) {
+			return ade_set_args(L, "i", 2);
+		}		
+		if (shipp->pre_death_explosion_happened == 1) {
+			return ade_set_args(L, "i", 1);
+		}
+	}
+
+	return ade_set_args(L, "i", 0);
+}
 /*
 ADE_FUNC(getFlags, l_Ship, NULL, "Gets ship flags", "boolean", "State of flag, or nil if handle is invalid")
 {
