@@ -4712,6 +4712,28 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	return ade_set_args(L, "b", true);
 }
 
+ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the model used for this shipclass is loaded or not and optionally loads the model, which might be a slow operation.", "boolean", "If the model is loaded or not") 
+{
+	int idx;
+	bool load_check = false;
+	if(!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &load_check))
+		return ADE_RETURN_FALSE;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (sip == NULL)
+		return ADE_RETURN_FALSE;
+
+	if(load_check){
+		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);	
+	}
+
+	if (sip->model_num > -1)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 //**********HANDLE: Waypoint
 ade_obj<object_h> l_Waypoint("waypoint", "waypoint handle", &l_Object);
 
@@ -9188,7 +9210,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation - Use with extreme care, may not work properly in all scripting hooks.", "int", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -9216,9 +9238,14 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	matrix cam_orient;
 
 	camid cid = cam_get_current();
-	cid.getCamera()->get_info(&cam_pos, &cam_orient);
+	camera *cam = cid.getCamera();
 
-	g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+	if (cam != NULL) {
+		cam->get_info(&cam_pos, &cam_orient);
+		g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+	} else {
+		g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
+	}
 
 	if (!Cmdline_nohtl) {
 		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -9239,6 +9266,39 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+
+	return ade_set_args(L, "i", 0);
+}
+
+// Wanderer
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, integer Flags", "Draws the given model with the specified position and orientation - Use with extreme care, designer to operate properly only in On Object Render hook.", "int", "Zero if successful, otherwise an integer error code")
+{
+	model_h *mdl = NULL;
+	vec3d *v = &vmd_zero_vector;
+	matrix_h *mh = NULL;
+	int flags = MR_NORMAL;
+	if(!ade_get_args(L, "ooo|i", l_Model.GetPtr(&mdl), l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh), &flags))
+		return ade_set_args(L, "i", 1);
+
+	if(mdl == NULL)
+		return ade_set_args(L, "i", 2);
+
+	polymodel *pm = mdl->Get();
+
+	if (pm == NULL)
+		return ade_set_args(L, "i", 3);
+
+	int model_num = pm->id;
+
+	if(model_num < 0)
+		return ade_set_args(L, "i", 3);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Draw the ship!!
+	model_clear_instance(model_num);
+	model_render(model_num, orient, v, flags);
 
 	return ade_set_args(L, "i", 0);
 }
@@ -9665,6 +9725,22 @@ ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flas
 	gr_flash(r,g,b);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not setup subsystem data, DO NOT USE FOR LOADING SHIP MODELS", "model", "Handle to a model")
+{
+	char *s;
+	int model_num = -1;
+
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	if (strlen(s) == 0)
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	model_num = model_load(s, 0, NULL);
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
 
 
