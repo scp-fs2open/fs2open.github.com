@@ -4841,9 +4841,13 @@ void game_frame(int paused)
 				game_render_hud_3d(cid);
 			}
 
+
 			Script_system.SetHookObject("Self", Viewer_obj);
-			Script_system.RunBytecode(Script_hudhook);
-			Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			if (!hud_disabled_except_messages() && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
+			{
+				Script_system.RunBytecode(Script_hudhook);
+				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			}
 			Script_system.RemHookVar("Self");
 
 			gr_reset_clip();
