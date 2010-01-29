@@ -292,8 +292,9 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 		stuff_string(gaugename, F_NAME, NAME_LENGTH);
 
 		parent = NULL;
+		int i = 0;
 
-		for(int i = 0; i < Num_gauge_types; i++)
+		for(i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
 			
@@ -304,7 +305,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 			}
 		}
 
-		for(int i = 0; i < Num_gauge_types; i++)
+		for(i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
 			
