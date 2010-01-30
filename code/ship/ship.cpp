@@ -777,6 +777,7 @@ void init_ship_entry(ship_info *sip)
 	sip->afterburner_fuel_capacity = 0.0f;
 	sip->afterburner_burn_rate = 0.0f;
 	sip->afterburner_recover_rate = 0.0f;
+	sip->afterburner_max_reverse_vel = 0.0f;
 
 	generic_bitmap_init(&sip->afterburner_trail, NULL);
 	sip->afterburner_trail_width_factor = 1.0f;
@@ -2152,6 +2153,14 @@ strcpy_s(parse_error_text, temp_error);
 
 		if(optional_string("+Aburn For accel:")) {
 			stuff_float(&sip->afterburner_forward_accel);
+		}
+
+		// SparK: added reverse burner capability
+		if(optional_string("+Aburn Max Reverse Vel:")) {
+			stuff_float(&sip->afterburner_max_reverse_vel);
+		}
+		if(optional_string("+Aburn Rev accel:")) {
+			stuff_float(&sip->afterburner_reverse_accel);
 		}
 
 		if(optional_string("+Aburn Fuel:")) {
@@ -3990,6 +3999,10 @@ void physics_ship_init(object *objp)
 	pi->heading = 0.0f;
 //	pi->accel = 0.0f;
 	vm_set_identity(&pi->last_rotmat);
+
+	//SparK: setting the reverse burners
+	pi->afterburner_max_reverse_vel = sinfo->afterburner_max_reverse_vel;
+	pi->afterburner_reverse_accel = sinfo->afterburner_reverse_accel;
 }
 
 //Function to get the type of the given ship as a string

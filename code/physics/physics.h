@@ -89,6 +89,8 @@ typedef struct physics_info {
 	float	glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity (so that something can't accelerate to ridiculous speeds... unless allowed to)
 	float	glide_accel_mult;	//SUSHI: The acceleration multiplier for glide mode. A value < 0 means use glide ramping instead
 	bool use_newtonian_damp;	//SUSHI: Whether or not to use newtonian dampening
+	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
+	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating

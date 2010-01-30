@@ -1075,6 +1075,9 @@ typedef struct ship_info {
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
+	//SparK: reverse afterburner
+	float		afterburner_max_reverse_vel;
+	float		afterburner_reverse_accel;
 
 	int		cmeasure_type;						// Type of countermeasures this ship carries
 	int		cmeasure_max;						//	Number of charges of countermeasures this ship can hold.
