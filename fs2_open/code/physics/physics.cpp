@@ -542,8 +542,12 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->bank > 1.0f ) ci->bank = 1.0f;
 	else if (ci->bank < -1.0f ) ci->bank = -1.0f;
 
-	if ( pi->flags & PF_AFTERBURNER_ON )
-		ci->forward = 1.0f;
+	if ( pi->flags & PF_AFTERBURNER_ON ){
+		//SparK: modifield to accept reverse burners
+		if (!(pi->afterburner_max_reverse_vel > 0.0f)){
+			ci->forward = 1.0f;
+		}
+	}
 
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
@@ -570,7 +574,10 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;
 		goal_vel.xyz.y = ci->vertical*pi->afterburner_max_vel.xyz.y;
-		goal_vel.xyz.z = ci->forward* pi->afterburner_max_vel.xyz.z;
+		if(ci->forward < 0.0f)
+			goal_vel.xyz.z = ci->forward* pi->afterburner_max_reverse_vel;
+		else
+			goal_vel.xyz.z = ci->forward* pi->afterburner_max_vel.xyz.z;
 	}
 	else if ( pi->flags & PF_BOOSTER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->booster_max_vel.xyz.x;
@@ -583,7 +590,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.xyz.z < -pi->max_rear_vel )
+	if ( goal_vel.xyz.z < -pi->max_rear_vel && !(pi->flags & PF_AFTERBURNER_ON) )
 		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
@@ -668,8 +675,10 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 				ramp_time_const = pi->forward_decel_time_const;
 			}
 		} else if ( goal_vel.xyz.z < 0.0f ) {
-			ramp_time_const = pi->forward_decel_time_const;
-			// hmm, maybe a reverse_accel_time_const would be a good idea to implement in the future...
+			if ( pi->flags & PF_AFTERBURNER_ON )
+				ramp_time_const = pi->afterburner_reverse_accel;
+			else
+				ramp_time_const = pi->forward_decel_time_const;
 		} else {
 			ramp_time_const = pi->forward_decel_time_const;
 		}
