@@ -19,8 +19,8 @@ CFG=code - Win32 Debug
 !MESSAGE 
 !MESSAGE "code - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "code - Win32 Debug" (based on "Win32 (x86) Static Library")
-!MESSAGE "code - Win32 Debug Inferno" (based on "Win32 (x86) Static Library")
 !MESSAGE "code - Win32 Release Inferno" (based on "Win32 (x86) Static Library")
+!MESSAGE "code - Win32 Debug Inferno" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -76,29 +76,6 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
 
-!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 1
-# PROP BASE Output_Dir "code___Win32_Debug_Inferno"
-# PROP BASE Intermediate_Dir "code___Win32_Debug_Inferno"
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 1
-# PROP Output_Dir "Debug_Inferno"
-# PROP Intermediate_Dir "Debug_Inferno"
-# PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
-# ADD BASE RSC /l 0x409 /d "_DEBUG"
-# ADD RSC /l 0x409 /d "_DEBUG"
-BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo /o"Debug\Profile\code.bsc" "Debug\Profile\*.sbr"
-# ADD BSC32 /nologo /o"Debug_Inferno\Profile\code.bsc" "Debug\Profile\*.sbr"
-LIB32=link.exe -lib
-# ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo
-
 !ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
 # PROP BASE Use_MFC 0
@@ -122,14 +99,37 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
 
+!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 1
+# PROP BASE Output_Dir "code___Win32_Debug_Inferno"
+# PROP BASE Intermediate_Dir "code___Win32_Debug_Inferno"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 1
+# PROP Output_Dir "Debug_Inferno"
+# PROP Intermediate_Dir "Debug_Inferno"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD BASE RSC /l 0x409 /d "_DEBUG"
+# ADD RSC /l 0x409 /d "_DEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo /o"Debug\Profile\code.bsc" "Debug\Profile\*.sbr"
+# ADD BSC32 /nologo /o"Debug_Inferno\Profile\code.bsc" "Debug\Profile\*.sbr"
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo
+
 !ENDIF 
 
 # Begin Target
 
 # Name "code - Win32 Release"
 # Name "code - Win32 Debug"
-# Name "code - Win32 Debug Inferno"
 # Name "code - Win32 Release Inferno"
+# Name "code - Win32 Debug Inferno"
 # Begin Group "AI"
 
 # PROP Default_Filter ""
@@ -1853,8 +1853,10 @@ SOURCE=..\..\code\sound\fsspeech.h
 
 SOURCE=..\..\code\sound\phrases.xml
 
+!IF  "$(CFG)" == "code - Win32 Release"
+
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -1869,6 +1871,66 @@ BuildCmds= \
 "$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+# Begin Custom Build
+InputDir=..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
+
+# Begin Custom Build
+InputDir=..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# Begin Custom Build
+InputDir=..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF
+
 # End Source File
 # Begin Source File
 
