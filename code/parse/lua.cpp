@@ -4112,7 +4112,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	if (model_num < 0)
-		ADE_RETURN_NIL;
+		return ADE_RETURN_NIL;
 
 	mc_info hull_check;
 
@@ -4123,8 +4123,8 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	hull_check.p1 = v3b;
 	hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
 
-	if ( model_collide(&hull_check) ) {
-		ADE_RETURN_NIL;
+	if ( !model_collide(&hull_check) ) {
+		return ADE_RETURN_NIL;
 	}
 	
 	if (local)
