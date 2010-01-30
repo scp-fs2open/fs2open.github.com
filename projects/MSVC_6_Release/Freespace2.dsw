@@ -44,6 +44,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name liblua
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpng
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -64,6 +67,9 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name liblua
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpng
     End Project Dependency
 }}}
 
