@@ -953,14 +953,6 @@ SOURCE=..\..\code\Io\Timer.cpp
 
 SOURCE=..\..\code\Io\Timer.h
 # End Source File
-# Begin Source File
-
-SOURCE=..\..\code\io\trackir.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\io\trackir.h
-# End Source File
 # End Group
 # Begin Group "JumpNode"
 
@@ -1856,7 +1848,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=..\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -1875,7 +1867,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=..\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -1894,7 +1886,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
 # Begin Custom Build
-InputDir=..\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -1913,7 +1905,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
 
 # Begin Custom Build
-InputDir=..\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2671,6 +2663,22 @@ SOURCE=..\..\code\fs2netd\tcp_socket.cpp
 # Begin Source File
 
 SOURCE=..\..\code\fs2netd\tcp_socket.h
+# End Source File
+# End Group
+# Begin Group "external_dll"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\externalcode.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\trackirglobal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\trackirpublic.h
 # End Source File
 # End Group
 # End Target
