@@ -1083,6 +1083,10 @@ int parse_weapon(int subtype, bool replace)
 		strcpy_s(wip->name, fname);
 		Num_weapon_types++;
 	}
+
+	if(optional_string("$Alt name:"))
+		stuff_string(wip->alt_name, F_NAME, NAME_LENGTH);
+
 	//Set subtype
 	if(optional_string("$Subtype:"))
 	{

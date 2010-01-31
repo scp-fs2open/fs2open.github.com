@@ -1507,12 +1507,12 @@ void multi_ts_blit_ship_info()
 	// blit the ship class (name)
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Class",739));
-	if(strlen(sip->name)){
+	if(strlen((sip->alt_name[0]) ? sip->alt_name : sip->name)){
 		gr_set_color_fast(&Color_bright);
 
 		// Goober5000
 		char temp[NAME_LENGTH];
-		strcpy_s(temp, sip->name);
+		strcpy_s(temp, (sip->alt_name[0]) ? sip->alt_name : sip->name);
 		end_string_at_first_hash_symbol(temp);
 
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, temp);

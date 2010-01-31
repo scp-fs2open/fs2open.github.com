@@ -617,6 +617,7 @@ void init_ship_entry(ship_info *sip)
 	int i,j;
 	
 	sip->name[0] = '\0';
+	sip->alt_name[0] = '\0';
 	sprintf(sip->short_name, "ShipClass%d", (sip - Ship_info));
 	sip->species = 0;
 	sip->class_type = -1;
@@ -1082,7 +1083,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	else {
 		info_type_name = "Ship Template";
 	}	
-	
+
+	if(optional_string("$Alt name:"))
+		stuff_string(sip->alt_name, F_NAME, NAME_LENGTH);
+
 	if(optional_string("$Short name:"))
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
