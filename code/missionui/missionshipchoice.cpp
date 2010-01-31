@@ -954,12 +954,12 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Class",739));
 	y_start += 10;
-	if(strlen(sip->name)){
+	if(strlen((sip->alt_name[0]) ? sip->alt_name : sip->name)){
 		gr_set_color_fast(text);
 
 		// Goober5000
 		char temp[NAME_LENGTH];
-		strcpy_s(temp, sip->name);
+		strcpy_s(temp, (sip->alt_name[0]) ? sip->alt_name : sip->name);
 		end_string_at_first_hash_symbol(temp);
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, temp);

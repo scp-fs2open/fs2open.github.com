@@ -2792,10 +2792,11 @@ void weapon_select_do(float frametime)
 				{
 					//Draw the weapon name, crappy last-ditch effort to not crash.
 					int half_x, half_y;
-					gr_get_string_size(&half_x, &half_y, Weapon_info[Carried_wl_icon.weapon_class].name);
+					char *print_name = (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0]) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name;
+					gr_get_string_size(&half_x, &half_y, print_name);
 					half_x = sx +((56 - half_x) / 2);
 					half_y = sy +((24 - half_y) / 2);
-					gr_string(half_x, half_y, Weapon_info[Carried_wl_icon.weapon_class].name);
+					gr_string(half_x, half_y, print_name);
 				}
 			}
 		}
@@ -2829,13 +2830,13 @@ void weapon_select_do(float frametime)
 				if (Lcl_gr)
 				{
 					char display_name[NAME_LENGTH];
-					strncpy(display_name, Weapon_info[Carried_wl_icon.weapon_class].name, NAME_LENGTH);
+					strncpy(display_name, (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0]) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name, NAME_LENGTH);
 					lcl_translate_wep_name(display_name);
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), Ship_info[ship_class].name, display_name);
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].name[0]) ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, display_name);
 				}
 				else
 				{
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name);
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].name[0]) ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name);
 				}
 
 				//wl_unpause_anim();
@@ -3042,10 +3043,11 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		{
 			//Draw the weapon name, crappy last-ditch effort to not crash.
 			int half_x, half_y;
-			gr_get_string_size(&half_x, &half_y, Weapon_info[index].name);
+			char *print_name = (Weapon_info[index].alt_name[0]) ? Weapon_info[index].alt_name : Weapon_info[index].name;
+			gr_get_string_size(&half_x, &half_y, print_name);
 			half_x = x +((56 - half_x) / 2);
 			half_y = y +((24 - half_y) / 2);
-			gr_string(half_x, half_y, Weapon_info[index].name);
+			gr_string(half_x, half_y, print_name);
 		}
 	}
 
@@ -3584,7 +3586,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 				char display_name[NAME_LENGTH];
 				char txt[100];
 
-				strncpy(display_name, Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
+				strncpy(display_name, (Weapon_info[slot->wep[from_bank]].alt_name[0]) ? Weapon_info[slot->wep[from_bank]].alt_name : Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
 
 				// might have to get weapon name translation
 				if (Lcl_gr) {
@@ -3834,7 +3836,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 			char display_name[NAME_LENGTH];
 			char txt[100];
 
-			strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
+			strncpy(display_name, (Weapon_info[from_list].alt_name[0]) ? Weapon_info[from_list].alt_name : Weapon_info[from_list].name, NAME_LENGTH);
 
 			// might have to get weapon name translation
 			if (Lcl_gr) {
@@ -4073,13 +4075,13 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// maybe localize
 			if (Lcl_gr)
 			{
-				strncpy(buf, Weapon_info[weapon_type_to_add].name, NAME_LENGTH);
+				strncpy(buf, (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, NAME_LENGTH);
 				lcl_translate_wep_name(buf);
 				wep_display_name = buf;
 			}
 			else
 			{
-				wep_display_name = Weapon_info[weapon_type_to_add].name;
+				wep_display_name = (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name;
 			}
 
 			// make sure this ship can accept this weapon
@@ -4112,7 +4114,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// bank left unfilled or partially filled
 			if ((result == 0) || (result == 2))
 			{
-				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), Weapon_info[weapon_type_to_add].name, ship_name);
+				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, ship_name);
 				error_flag = true;
 				continue;
 			}
