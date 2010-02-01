@@ -46,7 +46,7 @@ typedef struct cscrew_info {
 	vec3d last_corkscrew_pos;							// last position along the corkscrew
 } cscrew_info;
 
-#define MAX_CORKSCREW_MISSILES	100
+#define MAX_CORKSCREW_MISSILES	200
 cscrew_info	Corkscrew_missiles[MAX_CORKSCREW_MISSILES];
 
 // ------------------------------------------------------------------
