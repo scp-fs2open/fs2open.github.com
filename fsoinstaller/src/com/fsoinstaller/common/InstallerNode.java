@@ -1,7 +1,6 @@
 
 package com.fsoinstaller.common;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +16,7 @@ public class InstallerNode
 
 	protected final List<RenamePair> renameList;
 	protected final List<String> deleteList;
-	protected final List<String> installList;
-	protected final List<URI> rootURLList;
+	protected final List<InstallUnit> installList;
 
 	protected final List<InstallerNode> children;
 
@@ -35,8 +33,7 @@ public class InstallerNode
 
 		this.renameList = new ArrayList<RenamePair>();
 		this.deleteList = new ArrayList<String>();
-		this.installList = new ArrayList<String>();
-		this.rootURLList = new ArrayList<URI>();
+		this.installList = new ArrayList<InstallUnit>();
 
 		this.children = new ArrayList<InstallerNode>();
 	}
@@ -104,14 +101,9 @@ public class InstallerNode
 		return Collections.unmodifiableList(deleteList);
 	}
 
-	public List<String> getInstallList()
+	public List<InstallUnit> getInstallList()
 	{
 		return Collections.unmodifiableList(installList);
-	}
-
-	public List<URI> getRootURLList()
-	{
-		return Collections.unmodifiableList(rootURLList);
 	}
 
 	public List<InstallerNode> getChildren()
@@ -145,30 +137,17 @@ public class InstallerNode
 		deleteList.remove(deleteItem);
 	}
 
-	public void addInstall(String installItem)
+	public void addInstall(InstallUnit installUnit)
 	{
-		if (installItem == null)
-			throw new NullPointerException("Cannot add a null install item!");
+		if (installUnit == null)
+			throw new NullPointerException("Cannot add a null install unit!");
 
-		installList.add(installItem);
+		installList.add(installUnit);
 	}
 
-	public void removeInstall(String installItem)
+	public void removeInstall(InstallUnit installUnit)
 	{
-		installList.remove(installItem);
-	}
-
-	public void addRootURL(URI rootURL)
-	{
-		if (rootURL == null)
-			throw new NullPointerException("Cannot add a null root URL!");
-
-		rootURLList.add(rootURL);
-	}
-
-	public void removeRootURL(URI rootURL)
-	{
-		rootURLList.remove(rootURL);
+		installList.remove(installUnit);
 	}
 
 	public void addChild(InstallerNode installerNode)
@@ -248,38 +227,53 @@ public class InstallerNode
 
 			this.to = to;
 		}
+	}
 
-		@Override
-		public boolean equals(Object object)
+	public static class InstallUnit
+	{
+		private List<BaseURL> baseURLList;
+		private List<String> fileList;
+
+		public InstallUnit()
 		{
-			if (this == object)
-				return true;
-			if (object == null)
-				return false;
-			if (getClass() != object.getClass())
-				return false;
-			RenamePair other = (RenamePair) object;
-			return to.equals(other.to) && from.equals(other.from);
+			this.baseURLList = new ArrayList<BaseURL>();
+			this.fileList = new ArrayList<String>();
 		}
 
-		@Override
-		public int hashCode()
+		public List<BaseURL> getBaseURLList()
 		{
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + from.hashCode();
-			result = prime * result + to.hashCode();
-			return result;
+			return Collections.unmodifiableList(baseURLList);
 		}
 
-		@Override
-		public String toString()
+		public List<String> getFileList()
 		{
-			StringBuilder builder = new StringBuilder();
-			builder.append(from);
-			builder.append("->");
-			builder.append(to);
-			return builder.toString();
+			return Collections.unmodifiableList(fileList);
+		}
+
+		public void addBaseURL(BaseURL baseURL)
+		{
+			if (baseURL == null)
+				throw new NullPointerException("Cannot add a null base URL!");
+
+			baseURLList.add(baseURL);
+		}
+
+		public void removeBaseURL(BaseURL baseURL)
+		{
+			baseURLList.remove(baseURL);
+		}
+
+		public void addFile(String file)
+		{
+			if (file == null)
+				throw new NullPointerException("Cannot add a null file!");
+
+			fileList.add(file);
+		}
+
+		public void removeFile(String file)
+		{
+			fileList.remove(file);
 		}
 	}
 }

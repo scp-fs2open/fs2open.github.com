@@ -4,8 +4,6 @@ package com.fsoinstaller.common;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -20,13 +18,13 @@ public class InstallerNodeFactory
 
 	public static InstallerNode readNode(Reader reader) throws InstallerNodeParseException, IOException
 	{
-		// skip strings until NAME is reached
+		// skip strings until NAME or EOF is reached
 		Object object;
 		while (true)
 		{
 			object = readStringOrToken(reader);
 			if (object == null)
-				throw new InstallerNodeParseException("End of reader reached before '" + InstallerNodeToken.NAME + "' found!");
+				return null;
 			else if (object == InstallerNodeToken.NAME)
 				break;
 			else if (object instanceof InstallerNodeToken)
@@ -42,21 +40,20 @@ public class InstallerNodeFactory
 		InstallerNode node = new InstallerNode(readString(reader));
 
 		// populate this node
-		Object object;
+		Object object = null;
+		InstallerNode.InstallUnit currentInstallUnit = null;
 		while (true)
 		{
 			object = readStringOrToken(reader);
-
 			if (object == null)
-			{
 				throw new InstallerNodeParseException("End of reader reached before parsing completed!");
-			}
+
 			// child node
-			else if (object == InstallerNodeToken.NAME)
+			if (object == InstallerNodeToken.NAME)
 			{
 				node.addChild(readNodeSub(reader));
 			}
-			// done with the node
+			// end of a node
 			else if (object == InstallerNodeToken.END)
 			{
 				break;
@@ -64,19 +61,38 @@ public class InstallerNodeFactory
 			// handle a token
 			else if (object instanceof InstallerNodeToken)
 			{
-				handleToken(reader, (InstallerNodeToken) object, node);
+				// each separate URL/string combo requires a new install unit
+				if (object == InstallerNodeToken.URL || object == InstallerNodeToken.MULTIURL)
+				{
+					currentInstallUnit = new InstallerNode.InstallUnit();
+					node.addInstall(currentInstallUnit);
+				}
+				// any other token resets it
+				else
+				{
+					currentInstallUnit = null;
+				}
+
+				handleToken(reader, (InstallerNodeToken) object, node, currentInstallUnit);
 			}
 			// an unannotated string means something we install
-			else
+			else if (!((String) object).isEmpty())
 			{
-				node.addInstall((String) object);
+				// so create it if necessary
+				if (currentInstallUnit == null)
+				{
+					currentInstallUnit = new InstallerNode.InstallUnit();
+					node.addInstall(currentInstallUnit);
+				}
+
+				currentInstallUnit.addFile((String) object);
 			}
 		}
 
 		return node;
 	}
 
-	private static void handleToken(Reader reader, InstallerNodeToken token, InstallerNode node) throws InstallerNodeParseException, IOException
+	private static void handleToken(Reader reader, InstallerNodeToken token, InstallerNode node, InstallerNode.InstallUnit currentInstallUnit) throws InstallerNodeParseException, IOException
 	{
 		switch (token)
 		{
@@ -97,22 +113,15 @@ public class InstallerNodeFactory
 
 			case MULTIURL:
 				List<String> strings = readStringsUntilEndToken(reader, InstallerNodeToken.ENDMULTI);
-				String curURL = null;
 				try
 				{
 					Iterator<String> ii = strings.iterator();
 					while (ii.hasNext())
-					{
-						curURL = ii.next();
-						URI urlToAdd = new URI(curURL);
-						if (!validateURL(urlToAdd))
-							throw new InstallerNodeParseException("The URL '" + curURL + "' must use the HTTP protocol and must point to a folder, not a file!");
-						node.addRootURL(urlToAdd);
-					}
+						currentInstallUnit.addBaseURL(new BaseURL(ii.next()));
 				}
-				catch (URISyntaxException urise)
+				catch (InvalidBaseURLException ibue)
 				{
-					throw new InstallerNodeParseException("Syntax error in URL '" + curURL + "'!", urise);
+					throw new InstallerNodeParseException(ibue.getMessage(), ibue);
 				}
 				break;
 
@@ -128,17 +137,14 @@ public class InstallerNodeFactory
 				break;
 
 			case URL:
-				String singleURL = readString(reader);
+				String string = readString(reader);
 				try
 				{
-					URI urlToAdd = new URI(singleURL);
-					if (!validateURL(urlToAdd))
-						throw new InstallerNodeParseException("The URL '" + singleURL + "' must use the HTTP protocol and must point to a folder, not a file!");
-					node.addRootURL(urlToAdd);
+					currentInstallUnit.addBaseURL(new BaseURL(string));
 				}
-				catch (URISyntaxException urise)
+				catch (InvalidBaseURLException ibue)
 				{
-					throw new InstallerNodeParseException("Syntax error in URL '" + singleURL + "'!", urise);
+					throw new InstallerNodeParseException(ibue.getMessage(), ibue);
 				}
 				break;
 
@@ -159,14 +165,6 @@ public class InstallerNodeFactory
 			default:
 				throw new Error("Unhandled token '" + token + "'!");
 		}
-	}
-
-	/**
-	 * Ensure that we use HTTP and that we are pointing to a folder, not a file.
-	 */
-	public static boolean validateURL(URI theURL)
-	{
-		// TODO
 	}
 
 	private static String readString(Reader reader) throws InstallerNodeParseException, IOException
@@ -273,18 +271,23 @@ public class InstallerNodeFactory
 		for (InstallerNode.RenamePair pair: node.getRenameList())
 			writeLine(indent, writer, InstallerNodeToken.RENAME, pair.getFrom(), pair.getTo());
 
-		if (node.getRootURLList().size() == 1)
-			writeLine(indent, writer, InstallerNodeToken.URL, node.getRootURLList().get(0).toString());
-		else if (node.getRootURLList().size() > 1)
+		for (InstallerNode.InstallUnit unit: node.getInstallList())
 		{
-			writeLine(indent, writer, InstallerNodeToken.MULTIURL);
-			for (URI rootURL: node.getRootURLList())
-				writeLine(indent, writer, rootURL.toString());
-			writeLine(indent, writer, InstallerNodeToken.ENDMULTI);
-		}
+			// first URLs
+			if (unit.getBaseURLList().size() == 1)
+				writeLine(indent, writer, InstallerNodeToken.URL, unit.getBaseURLList().get(0).toString());
+			else if (unit.getBaseURLList().size() > 1)
+			{
+				writeLine(indent, writer, InstallerNodeToken.MULTIURL);
+				for (BaseURL baseURL: unit.getBaseURLList())
+					writeLine(indent, writer, baseURL.toString());
+				writeLine(indent, writer, InstallerNodeToken.ENDMULTI);
+			}
 
-		for (String install: node.getInstallList())
-			writeLine(indent, writer, install);
+			// then install items
+			for (String install: unit.getFileList())
+				writeLine(indent, writer, install);
+		}
 
 		if (!node.getChildren().isEmpty())
 		{
