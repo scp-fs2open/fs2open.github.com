@@ -67,7 +67,7 @@
 #include <direct.h>
 #include "cmdline/cmdline.h"
 
-#define MAX_DOCKS 50
+#define MAX_DOCKS 1000
 
 #define UNKNOWN_USER		"Unknown"
 
