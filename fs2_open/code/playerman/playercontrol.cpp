@@ -587,7 +587,16 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward_cruise_percent = 100.0f;
 			override_analog_throttle = 1;
 		}
-		
+
+		// AL 12-29-97: If afterburner key is down, player should have full forward thrust (even if afterburners run out)
+		if ( check_control(AFTERBURNER) ) {
+			ci->forward = 1.0f;
+		}
+
+		if ( check_control(REVERSE_THRUST) && check_control(AFTERBURNER) ) {
+			ci->forward = -pi->max_rear_vel * 1.0f;
+		}
+
 		/*if (Player_ship->boost_pod_engaged)
 			ci->forward = 1.0f;*/
 
