@@ -32,9 +32,9 @@ void ShipSpecialHitpoints::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(ShipSpecialHitpoints)
 	DDX_Check(pDX, IDC_ENABLE_SPECIAL_HITPOINTS, m_special_hitpoints_enabled);
 	DDX_Text(pDX, IDC_SPECIAL_SHIELDS, m_shields);
-	DDV_MinMaxInt(pDX, m_shields, 0, 10000);
+	DDV_MinMaxInt(pDX, m_shields, 0, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_HULL, m_hull);
-	DDV_MinMaxInt(pDX, m_hull, 10, 1000000);
+	DDV_MinMaxInt(pDX, m_hull, 10, INT_MAX);
 	//}}AFX_DATA_MAP
 }
 
