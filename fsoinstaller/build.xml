@@ -44,8 +44,8 @@
     <!-- put library jar contents in build folder, since we want to deploy a single jar -->
     <unzip dest="${build}" overwrite="false">
       <patternset>
-        <exclude name="**/META-INF"/>
-        <exclude name="**/*.MF"/>
+        <exclude name="META-INF/**"/>
+        <exclude name="**/*.txt"/>
       </patternset>
       <fileset dir="${lib}">
         <include name="**/*.jar"/>
