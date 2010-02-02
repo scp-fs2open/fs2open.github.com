@@ -6,8 +6,9 @@
 
   <property name="build" value="build"/>
   <property name="dist" value="dist"/>
-  <property name="lib" value="lib"/>
+  <property name="docs" value="docs"/>
   <property name="javadoc" value="docs/api"/>
+  <property name="lib" value="lib"/>
   <property name="src" value="src"/>
 
   <path id="build.class.path">
@@ -56,6 +57,7 @@
     <jar jarfile="${dist}/FreeSpaceOpenInstaller.jar">
       <fileset dir="${build}" excludes="**/svn*"/>
       <fileset dir="${src}" excludes="**/svn*"/>
+      <fileset dir="${docs}" includes="*.txt"/>
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
       </manifest>
