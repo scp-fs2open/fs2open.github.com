@@ -1,5 +1,5 @@
 
-package com.fsoinstaller.util;
+package com.fsoinstaller.internet;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -53,7 +53,7 @@ public class Downloader
 			logger.debug("Checking if the file is up to date...");
 			if (file.exists() && (totalBytes > 0) && (file.length() == totalBytes))
 			{
-				fireNoDownloadNecessary(new DownloadEvent(this, file.getName(), 0, totalBytes));
+				fireNoDownloadNecessary(this, file.getName(), 0, totalBytes);
 				return true;
 			}
 
@@ -74,7 +74,7 @@ public class Downloader
 		catch (IOException ioe)
 		{
 			logger.error("An exception was thrown during download!", ioe);
-			fireDownloadFailed(new DownloadEvent(this, file.getName(), 0, totalBytes));
+			fireDownloadFailed(this, file.getName(), 0, totalBytes);
 
 			return false;
 		}
@@ -132,7 +132,7 @@ public class Downloader
 				logger.debug("Checking if the file is up to date...");
 				if (file.exists() && (totalBytes > 0) && (file.length() == totalBytes))
 				{
-					fireNoDownloadNecessary(new DownloadEvent(this, file.getName(), 0, totalBytes));
+					fireNoDownloadNecessary(this, file.getName(), 0, totalBytes);
 					zipInputStream.closeEntry();
 					continue;
 				}
@@ -158,7 +158,7 @@ public class Downloader
 		catch (IOException ioe)
 		{
 			logger.error("An exception was thrown during download!", ioe);
-			fireDownloadFailed(new DownloadEvent(this, currentEntry, 0, totalBytes));
+			fireDownloadFailed(this, currentEntry, 0, totalBytes);
 
 			return false;
 		}
@@ -198,7 +198,7 @@ public class Downloader
 		long totalBytesWritten = 0;
 
 		logger.debug("Downloading...");
-		fireAboutToStart(new DownloadEvent(this, downloadName, totalBytesWritten, downloadTotalSize));
+		fireAboutToStart(this, downloadName, totalBytesWritten, downloadTotalSize);
 
 		int bytesRead = 0;
 		while ((bytesRead = inputStream.read(buffer)) != -1)
@@ -206,11 +206,11 @@ public class Downloader
 			outputStream.write(buffer, 0, bytesRead);
 			totalBytesWritten += bytesRead;
 
-			fireProgressReport(new DownloadEvent(this, downloadName, totalBytesWritten, downloadTotalSize));
+			fireProgressReport(this, downloadName, totalBytesWritten, downloadTotalSize);
 		}
 
 		logger.debug("Download complete");
-		fireDownloadComplete(new DownloadEvent(this, downloadName, totalBytesWritten, downloadTotalSize));
+		fireDownloadComplete(this, downloadName, totalBytesWritten, downloadTotalSize);
 	}
 
 	public void addDownloadListener(DownloadListener listener)
@@ -223,33 +223,73 @@ public class Downloader
 		downloadListeners.remove(listener);
 	}
 
-	protected void fireNoDownloadNecessary(DownloadEvent event)
+	protected void fireNoDownloadNecessary(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
+		DownloadEvent event = null;
 		for (DownloadListener listener: downloadListeners)
+		{
+			// lazy instantiation of the event
+			if (event == null)
+				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+			
+			// fire it
 			listener.downloadNotNecessary(event);
+		}
 	}
 
-	protected void fireAboutToStart(DownloadEvent event)
+	protected void fireAboutToStart(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
+		DownloadEvent event = null;
 		for (DownloadListener listener: downloadListeners)
+		{
+			// lazy instantiation of the event
+			if (event == null)
+				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+			
+			// fire it
 			listener.downloadAboutToStart(event);
+		}
 	}
 
-	protected void fireProgressReport(DownloadEvent event)
+	protected void fireProgressReport(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
+		DownloadEvent event = null;
 		for (DownloadListener listener: downloadListeners)
+		{
+			// lazy instantiation of the event
+			if (event == null)
+				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+			
+			// fire it
 			listener.downloadProgressReport(event);
+		}
 	}
 
-	protected void fireDownloadComplete(DownloadEvent event)
+	protected void fireDownloadComplete(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
+		DownloadEvent event = null;
 		for (DownloadListener listener: downloadListeners)
+		{
+			// lazy instantiation of the event
+			if (event == null)
+				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+			
+			// fire it
 			listener.downloadComplete(event);
+		}
 	}
 
-	protected void fireDownloadFailed(DownloadEvent event)
+	protected void fireDownloadFailed(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
+		DownloadEvent event = null;
 		for (DownloadListener listener: downloadListeners)
+		{
+			// lazy instantiation of the event
+			if (event == null)
+				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+			
+			// fire it
 			listener.downloadFailed(event);
+		}
 	}
 }

@@ -1,5 +1,5 @@
 
-package com.fsoinstaller.util;
+package com.fsoinstaller.internet;
 
 import java.util.EventObject;
 
