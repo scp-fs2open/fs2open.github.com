@@ -10784,7 +10784,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 {
 	particle_info pi;
 	pi.type = PARTICLE_DEBUG;
-	pi.optional_data = 0;
+	pi.optional_data = -1;
 	pi.tracer_length = 1.0f;
 	pi.attached_objnum = -1;
 	pi.attached_sig = -1;
@@ -10823,7 +10823,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 
 	if(objh != NULL && objh->IsValid())
 	{
-		pi.attached_objnum = (short)OBJ_INDEX(objh->objp);
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig = objh->objp->signature;
 	}
 
