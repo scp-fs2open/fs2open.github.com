@@ -693,7 +693,7 @@ struct ai_target_priority {
 	SCP_vector <int> ship_class;
 	SCP_vector <int> weapon_class;
 
-	int obj_flags;
+	unsigned int obj_flags;
 	int sif_flags;
 	int sif2_flags;
 	int wif_flags;
@@ -1029,8 +1029,8 @@ typedef struct ship_info {
 
 	float		warpout_player_speed;
 
-	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
-	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
+	int		flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam
+	int		flags2;							//	See SIF2_xxxx - added by Goober5000, changed by Zacam
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
