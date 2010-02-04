@@ -7752,7 +7752,7 @@ void ship_make_create_time_unique(ship *shipp)
 
 			if ( compare_shipp->create_time == new_create_time )
 			{
-				if(sanity_counter == 0 && last_smctu_initial_time == shipp->create_time)
+				if((unsigned int)sanity_counter == 0 && (unsigned int)last_smctu_initial_time == shipp->create_time)
 				{
 					//WMC: If we're creating a whole bunch of ships at once, we can
 					//shortcut this process by looking at the last call to this function
