@@ -1851,7 +1851,6 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	Assert(ship_obj->instance >= 0);
 	Assert(ship_obj->type == OBJ_SHIP);
 	shipp = &Ships[ship_obj->instance];
-	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_obj, other_obj, &damage);
