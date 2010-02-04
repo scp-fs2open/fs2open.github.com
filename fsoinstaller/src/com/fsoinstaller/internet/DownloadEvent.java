@@ -22,6 +22,11 @@ package com.fsoinstaller.internet;
 import java.util.EventObject;
 
 
+/**
+ * An event for reporting progress during file downloads.
+ * 
+ * @author Goober5000
+ */
 public class DownloadEvent extends EventObject
 {
 	protected String downloadName;

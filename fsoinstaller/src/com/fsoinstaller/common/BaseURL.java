@@ -25,6 +25,27 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 
+/**
+ * Data structure for holding a URL that a particular installation document
+ * might refer to. This offers a number of advantages over using the standard
+ * Java URL class:
+ * <ol>
+ * <li>The actual construction of a java.net.URL object can be deferred until
+ * the time a download is initiated. The URL class uses host name resolution in
+ * a number of odd places, most infamously in <tt>equals()</tt>, which can
+ * cause a thread to block for internet access when such access is not strictly
+ * necessary.</li>
+ * <li>URLs can be checked for syntax and correctness upon construction rather
+ * than upon first use. The installer requires that a URL point to a directory,
+ * not a file; and it only supports the HTTP protocol. Additionally, navigating
+ * from the desktop to a URL requires that the URL be absolute. All of these
+ * preconditions are enforced by the constructor.</li>
+ * <li>Internally, BaseURL uses java.net.URI for its data representation. This
+ * class is somewhat friendlier and easier to use than java.net.URL.</li>
+ * </ol>
+ * 
+ * @author Goober5000
+ */
 public class BaseURL
 {
 	protected URI baseURL;
@@ -36,7 +57,7 @@ public class BaseURL
 
 		try
 		{
-			this.baseURL = new URI(baseURL);
+			this.baseURL = (new URI(baseURL)).normalize();
 		}
 		catch (URISyntaxException urise)
 		{
@@ -65,7 +86,7 @@ public class BaseURL
 			return false;
 
 		// check path
-		if (!theURL.normalize().getPath().endsWith("/"))
+		if (!theURL.getPath().endsWith("/"))
 			return false;
 
 		// check absolute
@@ -75,11 +96,18 @@ public class BaseURL
 		return true;
 	}
 
+	/**
+	 * Converts the BaseURL to a URL, ready for internet access.
+	 */
 	public URL toURL() throws MalformedURLException
 	{
 		return new URL(baseURL.toString());
 	}
 
+	/**
+	 * Converts the BaseURL to a URL that points to a specific file within the
+	 * BaseURL's directory.
+	 */
 	public URL toURL(String fileName) throws MalformedURLException
 	{
 		return new URL(baseURL.toString() + fileName);

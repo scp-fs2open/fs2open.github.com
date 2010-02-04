@@ -19,6 +19,11 @@
 
 package com.fsoinstaller.common;
 
+/**
+ * Thrown when an InstallerNode cannot be constructed from the supplied input.
+ * 
+ * @author Goober5000
+ */
 public class InstallerNodeParseException extends Exception
 {
 	public InstallerNodeParseException()

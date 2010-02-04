@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.Adler32;
@@ -39,47 +40,56 @@ import java.util.zip.ZipInputStream;
 import org.apache.log4j.Logger;
 
 
+/**
+ * A utility for downloading installation files from the Internet, either
+ * directly or from within a compressed archive. Rewritten from a similar class
+ * originally created by Turey.
+ * <p>
+ * This class should be thread-safe. For the most part, it is also immutable.
+ * 
+ * @author Turey
+ * @author Goober5000
+ */
 public class Downloader
 {
 	private static final Logger logger = Logger.getLogger(Downloader.class);
 
 	protected static final int BUFFER_SIZE = 2048;
 
-	protected List<DownloadListener> downloadListeners;
+	protected final List<DownloadListener> downloadListeners;
+	protected final Connector connector;
 
-	public Downloader()
+	public Downloader(Connector connector)
 	{
-		downloadListeners = new LinkedList<DownloadListener>();
+		this.connector = connector;
+		this.downloadListeners = Collections.synchronizedList(new LinkedList<DownloadListener>());
 	}
 
-	public boolean download(String sourceAddress, String destinationFile)
+	public boolean download(URL sourceURL, File destinationFile)
 	{
-		logger.info("Downloading from " + sourceAddress + " to local file " + destinationFile);
+		logger.info("Downloading from " + sourceURL + " to local file " + destinationFile);
 
-		File file = new File(destinationFile);
 		long totalBytes = 0;
 		InputStream inputStream = null;
 		OutputStream outputStream = null;
 		try
 		{
-			URL url = new URL(sourceAddress);
-
 			logger.debug("Opening connection...");
-			URLConnection connection = InternetUtil.getConnection(url);
+			URLConnection connection = connector.openConnection(sourceURL);
 			totalBytes = connection.getContentLength();
 
 			logger.debug("Checking if the file is up to date...");
-			if (file.exists() && (totalBytes > 0) && (file.length() == totalBytes))
+			if (destinationFile.exists() && (totalBytes > 0) && (destinationFile.length() == totalBytes))
 			{
-				fireNoDownloadNecessary(this, file.getName(), 0, totalBytes);
+				fireNoDownloadNecessary(this, destinationFile.getName(), 0, totalBytes);
 				return true;
 			}
 
 			logger.debug("Opening input and output streams...");
 			inputStream = connection.getInputStream();
-			outputStream = openOutputStream(file);
+			outputStream = openOutputStream(destinationFile);
 
-			actuallyDownload(inputStream, outputStream, file.getName(), totalBytes);
+			actuallyDownload(inputStream, outputStream, destinationFile.getName(), totalBytes);
 
 			logger.debug("Closing input and output streams...");
 			outputStream.close();
@@ -92,7 +102,7 @@ public class Downloader
 		catch (IOException ioe)
 		{
 			logger.error("An exception was thrown during download!", ioe);
-			fireDownloadFailed(this, file.getName(), 0, totalBytes);
+			fireDownloadFailed(this, destinationFile.getName(), 0, totalBytes);
 
 			return false;
 		}
@@ -112,9 +122,9 @@ public class Downloader
 		}
 	}
 
-	public boolean downloadZip(String sourceAddress, String destinationPath)
+	public boolean downloadFromArchive(URL sourceURL, File destinationDirectory)
 	{
-		logger.info("Downloading and extracting from " + sourceAddress + " to local destination " + destinationPath);
+		logger.info("Downloading and extracting from " + sourceURL + " to local directory " + destinationDirectory);
 
 		String currentEntry = "";
 		long totalBytes = 0;
@@ -122,14 +132,15 @@ public class Downloader
 		OutputStream outputStream = null;
 		try
 		{
-			URL url = new URL(sourceAddress);
-
 			logger.debug("Opening connection...");
-			URLConnection connection = InternetUtil.getConnection(url);
+			URLConnection connection = connector.openConnection(sourceURL);
 
 			logger.debug("Opening input stream...");
 			CheckedInputStream checksum = new CheckedInputStream(connection.getInputStream(), new Adler32());
 			zipInputStream = new ZipInputStream(new BufferedInputStream(checksum));
+
+			// TODO: determine archive type?
+			todo();
 
 			ZipEntry entry;
 			while ((entry = zipInputStream.getNextEntry()) != null)
@@ -138,25 +149,25 @@ public class Downloader
 				totalBytes = entry.getSize();
 
 				logger.debug("Checking entry '" + currentEntry + "'");
-				File file = new File(destinationPath + currentEntry);
+				File destinationFile = new File(destinationDirectory, currentEntry);
 
 				if (entry.isDirectory())
 				{
-					file.mkdir();
+					destinationFile.mkdir();
 					zipInputStream.closeEntry();
 					continue;
 				}
 
 				logger.debug("Checking if the file is up to date...");
-				if (file.exists() && (totalBytes > 0) && (file.length() == totalBytes))
+				if (destinationFile.exists() && (totalBytes > 0) && (destinationFile.length() == totalBytes))
 				{
-					fireNoDownloadNecessary(this, file.getName(), 0, totalBytes);
+					fireNoDownloadNecessary(this, destinationFile.getName(), 0, totalBytes);
 					zipInputStream.closeEntry();
 					continue;
 				}
 
 				logger.debug("Opening output stream...");
-				outputStream = openOutputStream(file);
+				outputStream = openOutputStream(destinationFile);
 
 				actuallyDownload(zipInputStream, outputStream, currentEntry, totalBytes);
 
@@ -204,7 +215,7 @@ public class Downloader
 		}
 		catch (FileNotFoundException fnfe)
 		{
-			logger.trace("local file not found; creating it");
+			logger.debug("local file not found; creating it");
 			file.createNewFile();
 			return new BufferedOutputStream(new FileOutputStream(file));
 		}
@@ -243,71 +254,86 @@ public class Downloader
 
 	protected void fireNoDownloadNecessary(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
-		DownloadEvent event = null;
-		for (DownloadListener listener: downloadListeners)
+		synchronized (downloadListeners)
 		{
-			// lazy instantiation of the event
-			if (event == null)
-				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
-			
-			// fire it
-			listener.downloadNotNecessary(event);
+			DownloadEvent event = null;
+			for (DownloadListener listener: downloadListeners)
+			{
+				// lazy instantiation of the event
+				if (event == null)
+					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+
+				// fire it
+				listener.downloadNotNecessary(event);
+			}
 		}
 	}
 
 	protected void fireAboutToStart(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
-		DownloadEvent event = null;
-		for (DownloadListener listener: downloadListeners)
+		synchronized (downloadListeners)
 		{
-			// lazy instantiation of the event
-			if (event == null)
-				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
-			
-			// fire it
-			listener.downloadAboutToStart(event);
+			DownloadEvent event = null;
+			for (DownloadListener listener: downloadListeners)
+			{
+				// lazy instantiation of the event
+				if (event == null)
+					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+
+				// fire it
+				listener.downloadAboutToStart(event);
+			}
 		}
 	}
 
 	protected void fireProgressReport(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
-		DownloadEvent event = null;
-		for (DownloadListener listener: downloadListeners)
+		synchronized (downloadListeners)
 		{
-			// lazy instantiation of the event
-			if (event == null)
-				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
-			
-			// fire it
-			listener.downloadProgressReport(event);
+			DownloadEvent event = null;
+			for (DownloadListener listener: downloadListeners)
+			{
+				// lazy instantiation of the event
+				if (event == null)
+					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+
+				// fire it
+				listener.downloadProgressReport(event);
+			}
 		}
 	}
 
 	protected void fireDownloadComplete(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
-		DownloadEvent event = null;
-		for (DownloadListener listener: downloadListeners)
+		synchronized (downloadListeners)
 		{
-			// lazy instantiation of the event
-			if (event == null)
-				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
-			
-			// fire it
-			listener.downloadComplete(event);
+			DownloadEvent event = null;
+			for (DownloadListener listener: downloadListeners)
+			{
+				// lazy instantiation of the event
+				if (event == null)
+					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+
+				// fire it
+				listener.downloadComplete(event);
+			}
 		}
 	}
 
 	protected void fireDownloadFailed(Object source, String downloadName, long downloadedBytes, long totalBytes)
 	{
-		DownloadEvent event = null;
-		for (DownloadListener listener: downloadListeners)
+		synchronized (downloadListeners)
 		{
-			// lazy instantiation of the event
-			if (event == null)
-				event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
-			
-			// fire it
-			listener.downloadFailed(event);
+			DownloadEvent event = null;
+			for (DownloadListener listener: downloadListeners)
+			{
+				// lazy instantiation of the event
+				if (event == null)
+					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+
+				// fire it
+				listener.downloadFailed(event);
+			}
 		}
 	}
 }

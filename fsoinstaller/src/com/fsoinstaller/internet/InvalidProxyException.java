@@ -17,33 +17,31 @@
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-package com.fsoinstaller.common;
+package com.fsoinstaller.internet;
 
 /**
- * Thrown when the application tries to construct a BaseURL without satisfying
- * its preconditions.
+ * Thrown when the supplied information cannot be used to construct a proxy.
  * 
- * @see com.fsoinstaller.common.BaseURL
  * @author Goober5000
  */
-public class InvalidBaseURLException extends Exception
+public class InvalidProxyException extends Exception
 {
-	public InvalidBaseURLException()
+	public InvalidProxyException()
 	{
 		super();
 	}
 
-	public InvalidBaseURLException(String message, Throwable cause)
+	public InvalidProxyException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 
-	public InvalidBaseURLException(String message)
+	public InvalidProxyException(String message)
 	{
 		super(message);
 	}
 
-	public InvalidBaseURLException(Throwable cause)
+	public InvalidProxyException(Throwable cause)
 	{
 		super(cause);
 	}

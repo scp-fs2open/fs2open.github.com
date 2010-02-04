@@ -22,6 +22,12 @@ package com.fsoinstaller.internet;
 import java.util.EventListener;
 
 
+/**
+ * A listener for various events that might happen during, or because of, a file
+ * download.
+ * 
+ * @author Goober5000
+ */
 public interface DownloadListener extends EventListener
 {
 	public void downloadNotNecessary(DownloadEvent event);
