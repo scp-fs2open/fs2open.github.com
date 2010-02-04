@@ -538,7 +538,7 @@ int hud_escort_set_gauge_color(int index, int team)
 
 
 	// Goober5000 - now base this on team color
-	gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
+	gr_set_color_fast(iff_get_color_by_team_and_object(team, seen_from_team, is_bright, &Objects[Escort_ships[index].objnum]));
 
 
 	// Goober5000 - an alternative; same as original but incorporating teams for non-friendlies
