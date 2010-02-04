@@ -60,7 +60,7 @@ class opengl_texture_state
 		GLboolean shader_mode;
 
 		opengl_texture_unit *units;
-		GLint num_texture_units;
+		GLuint num_texture_units;
 
 
 	public:
@@ -69,7 +69,7 @@ class opengl_texture_state
 
 		gr_texture_source Current_texture_source;
 
-		void init(GLint n_units);
+		void init(GLuint n_units);
 
 		GLboolean TexgenS(GLint state = -1);
 		GLboolean TexgenT(GLint state = -1);

@@ -26,13 +26,13 @@ opengl_texture_state::~opengl_texture_state()
 	}
 }
 
-void opengl_texture_state::init(GLint n_units)
+void opengl_texture_state::init(GLuint n_units)
 {
 	Assert( n_units > 0 );
 	units = (opengl_texture_unit*) vm_malloc(n_units * sizeof(opengl_texture_unit));
 	num_texture_units = n_units;
 
-	for (int i = 0; i < num_texture_units; i++) {
+	for (unsigned int i = 0; i < num_texture_units; i++) {
 		units[i].active = GL_FALSE;
 		units[i].enabled = GL_FALSE;
 
@@ -212,7 +212,7 @@ void opengl_texture_state::SetTarget(GLenum tex_target)
 
 void opengl_texture_state::SetActiveUnit(GLuint id)
 {
-	if (id >= (uint)num_texture_units) {
+	if (id >= num_texture_units) {
 		Int3();
 		id = 0;
 	}
@@ -257,7 +257,7 @@ void opengl_texture_state::Disable(bool force)
 
 void opengl_texture_state::DisableAll()
 {
-	for (int i = 0; i < num_texture_units; i++) {
+	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (units[i].active) {
 			SetActiveUnit(i);
 			Disable(true);
@@ -278,7 +278,7 @@ void opengl_texture_state::Delete(GLuint tex_id)
 
 	GLuint atu_save = active_texture_unit;
 
-	for (int i = 0; i < num_texture_units; i++) {
+	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (units[i].texture_id == tex_id) {
 			SetActiveUnit(i);
 			Disable();
