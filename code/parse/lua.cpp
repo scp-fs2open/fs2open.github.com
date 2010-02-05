@@ -1843,11 +1843,11 @@ ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model file
 	return ade_set_args(L, "s", pm->filename);
 }
 
-ADE_VIRTVAR(Mass, l_Model, "number", "Model radius (Used for collision and culling detection)", "number", "Model radius, or 0 if the model handle is invalid")
+ADE_VIRTVAR(Mass, l_Model, "number", "Model mass", "number", "Model mass, or 0 if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	float nm = 0.0f;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &nm))
+	if(!ade_get_args(L, "o|f", l_Model.GetPtr(&mdl), &nm))
 		return ade_set_error(L, "f", 0.0f);
 
 	polymodel *pm = mdl->Get();
@@ -1866,7 +1866,7 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 {
 	model_h *mdl = NULL;
 	matrix_h *mh = NULL;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), l_Matrix.GetPtr(&mh)))
+	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	polymodel *pm = mdl->Get();
@@ -1874,8 +1874,8 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	matrix *mtx = mh->GetMatrix();
-	if(ADE_SETTING_VAR) {
+	if(ADE_SETTING_VAR && mh != NULL) {
+		matrix *mtx = mh->GetMatrix();
 		memcpy(&pm->moment_of_inertia, mtx, sizeof(*mtx));
 	}
 
@@ -1886,7 +1886,7 @@ ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culli
 {
 	model_h *mdl = NULL;
 	float nr = 0.0f;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &nr))
+	if(!ade_get_args(L, "o|f", l_Model.GetPtr(&mdl), &nr))
 		return ade_set_error(L, "f", 0.0f);
 
 	polymodel *pm = mdl->Get();
