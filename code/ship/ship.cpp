@@ -15864,10 +15864,10 @@ void ArmorType::ParseData()
 		//Clear the struct and set the index
 		adt.clear();
 		adt.DamageTypeIndex = damage_type_add(buf);
+		bool no_content = true;
 
 		//Get calculation and argument
-		required_string("+Calculation:");
-		do
+		while (optional_string("+Calculation:")) 
 		{
 			//+Calculation
 			stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -15888,8 +15888,9 @@ void ArmorType::ParseData()
 				required_string("+Value:");
 				stuff_float(&temp_float);
 				adt.Arguments.push_back(temp_float);
+				no_content = false;
 			}
-		} while(optional_string("+Calculation:"));
+		}
 
 		adt.shieldpierce_pct = 0.0f;
 
@@ -15897,6 +15898,7 @@ void ArmorType::ParseData()
 			stuff_float(&temp_float);
 			CLAMP(temp_float, 0.0f, 1.0f);
 			adt.shieldpierce_pct = temp_float;
+			no_content = false;
 		}
 
 		adt.piercing_start_pct = 0.1f;
@@ -15907,15 +15909,17 @@ void ArmorType::ParseData()
 			CLAMP(temp_float, 0.0f, 100.0f); 
 			temp_float /= 100.0f;
 			adt.piercing_start_pct = temp_float;
+			no_content = false;
 		}
 
 		if(optional_string("+Weapon Piercing Type:")) {
 			stuff_string(buf, F_NAME, NAME_LENGTH);
 			adt.piercing_type = piercing_type_get(buf);
+			no_content = false;
 		}
 
 		//If we have calculations in this damage type, add it
-		if(adt.Calculations.size() > 0)
+		if(!no_content)
 		{
 			if(adt.Calculations.size() != adt.Arguments.size())
 			{
