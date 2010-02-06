@@ -1667,93 +1667,125 @@ void model_draw_bay_paths(int model_num)
 	}	
 }
 
-void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth, color *outside_color, bool init_halfway )
+
+static const int MAX_ARC_SEGMENT_POINTS = 50;
+int Num_arc_segment_points = 0;
+vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
+
+extern int g3_draw_rod(int num_points, vec3d *vecs, float width, uint tmap_flags);
+
+void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
 {
-	static color halfway_color;
 	float d = vm_vec_dist_quick( v1, v2 );
+	const float scaler = 0.30f;
 
-	if(init_halfway)
-	{
-		gr_init_alphacolor(&halfway_color,
-							outside_color->red + (255 - outside_color->red)/2,
-							outside_color->green + (255-outside_color->green)/2,
-							outside_color->blue + (255-outside_color->blue)/2,
-							255);
-	}
+	if ( (d < scaler) || (depth > 4) ) {
+		// the real limit appears to be 33, so we should never hit this unless the code changes
+		Assert( Num_arc_segment_points < MAX_ARC_SEGMENT_POINTS );
 
-	if ( d < 0.30f || (depth>4) )	{
-		vertex p1, p2;
-		g3_rotate_vertex( &p1, v1 );
-		g3_rotate_vertex( &p2, v2 );
-
-		//g3_draw_rod( v1, 0.2f, v2, 0.2f, NULL, 0);
-		gr_set_color_fast(outside_color);
-		g3_draw_rod( v1, 0.6f, v2, 0.6f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-		gr_set_color_fast(&halfway_color);
-		g3_draw_rod( v1, 0.45f, v2, 0.45f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-		gr_set_color(255,255,255);
-		g3_draw_rod( v1, 0.3f, v2, 0.3f, NULL, TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-	//	g3_draw_line( &p1, &p2 );
+		memcpy( &Arc_segment_points[Num_arc_segment_points++], v2, sizeof(vec3d) );
 	} else {
 		// divide in half
 		vec3d tmp;
 		vm_vec_avg( &tmp, v1, v2 );
 	
-		float scaler = 0.30f;
-		tmp.xyz.x += (frand()-0.5f)*d*scaler;
-		tmp.xyz.y += (frand()-0.5f)*d*scaler;
-		tmp.xyz.z += (frand()-0.5f)*d*scaler;
-		
-		interp_render_arc_segment( v1, &tmp, depth+1, outside_color, false );
-		interp_render_arc_segment( &tmp, v2, depth+1, outside_color, false );
+		tmp.xyz.x += (frand() - 0.5f) * d * scaler;
+		tmp.xyz.y += (frand() - 0.5f) * d * scaler;
+		tmp.xyz.z += (frand() - 0.5f) * d * scaler;
+
+		// add additional point
+		interp_render_arc_segment( v1, &tmp, depth+1 );
+		interp_render_arc_segment( &tmp, v2, depth+1 );
 	}
+}
+
+void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width)
+{
+	Num_arc_segment_points = 0;
+
+	// need need to add the first point
+	memcpy( &Arc_segment_points[Num_arc_segment_points++], v1, sizeof(vec3d) );
+
+	// this should fill in all of the middle, and the last, points
+	interp_render_arc_segment(v1, v2, 0);
+
+	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
+
+	int mode = gr_zbuffer_set(GR_ZBUFF_READ);
+
+	// use primary color for fist pass
+	Assert( primary );
+	gr_set_color_fast(primary);
+
+	g3_draw_rod(Num_arc_segment_points, Arc_segment_points, arc_width, tmap_flags);
+
+	if (secondary) {
+		// now render again with a secondary center color
+		gr_set_color_fast(secondary);
+
+		g3_draw_rod(Num_arc_segment_points, Arc_segment_points, arc_width * 0.33f, tmap_flags);
+	}
+
+	gr_zbuffer_set(mode);
 }
 
 int Interp_lightning = 1;
 DCF_BOOL( Arcs, Interp_lightning )
 
-int AR = 64;
-int AG = 64;
-int AB = 5;
-int AR2 = 128;
-int AG2 = 128;
-int AB2 = 10;
+const int AR = 64;
+const int AG = 64;
+const int AB = 5;
+const int AR2 = 128;
+const int AG2 = 128;
+const int AB2 = 10;
+
 void interp_render_lightning( polymodel *pm, bsp_info * sm )
 {
+	int i;
+	float width = 0.9f;
+	color primary, secondary;
+
 	Assert( sm->num_arcs > 0 );
 
-	int i;
-
-	if ( Interp_flags & MR_SHOW_OUTLINE_PRESET )	{
+	if (Interp_flags & MR_SHOW_OUTLINE_PRESET) {
 		return;
 	}
 
-	if (!Interp_lightning) return;
+	if ( !Interp_lightning ) {
+		return;
+	}
 
-	color outside_arc_color;
+	// try and scale the size a bit so that it looks equally well on smaller vessels
+	if (pm->rad < 500.0f) {
+		width *= (pm->rad * 0.01f);
 
-//	if ( keyd_pressed[KEY_LSHIFT] ) return;
-//	if ( rad < 3.0f ) return;	
-	
+		if (width < 0.2f)
+			width = 0.2f;
+	}
+
 	for (i=0; i<sm->num_arcs; i++ )	{
 		// pick a color based upon arc type
 		switch(sm->arc_type[i]){
 		// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
-				gr_init_alphacolor(&outside_arc_color, 64, 64, 255, 255 );
+				gr_init_color(&primary, 64, 64, 255);
 			} else {
-				gr_init_alphacolor(&outside_arc_color, 128, 128, 255, 255 );
+				gr_init_color(&primary, 128, 128, 255);
 			}
+
+			gr_init_color(&secondary, 200, 200, 255);
 			break;
 
 		// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( (rand()>>4) & 1 )	{
-				gr_init_alphacolor(&outside_arc_color, AR, AG, AB, 255 );
+				gr_init_color(&primary, AR, AG, AB);
 			} else {
-				gr_init_alphacolor(&outside_arc_color, AR2, AG2, AB2, 255 );
+				gr_init_color(&primary, AR2, AG2, AB2);
 			}
+
+			gr_init_color(&secondary, 255, 255, 10);
 			break;
 
 		default:
@@ -1761,7 +1793,7 @@ void interp_render_lightning( polymodel *pm, bsp_info * sm )
 		}
 
 		// render the actual arc segment
-		interp_render_arc_segment( &sm->arc_pts[i][0], &sm->arc_pts[i][1], 0, &outside_arc_color, true );
+		interp_render_arc( &sm->arc_pts[i][0], &sm->arc_pts[i][1], &primary, &secondary, width );
 	}
 }
 
