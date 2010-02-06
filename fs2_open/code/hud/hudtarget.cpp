@@ -1179,15 +1179,15 @@ void hud_init_targeting()
 		Lead_indicator_gauge_loaded = 1;
 	}
 
-	Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
-	if ( Aburn_bar_gauge.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Aburn_fname);
-	}
+		Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
+		if ( Aburn_bar_gauge.first_frame < 0 ) {
+			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Aburn_fname);
+		}
 
-	Wenergy_bar_gauge.first_frame = bm_load_animation(current_hud->Wenergy_fname, &Wenergy_bar_gauge.num_frames);
-	if ( Wenergy_bar_gauge.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Wenergy_fname);
-	}
+		Wenergy_bar_gauge.first_frame = bm_load_animation(current_hud->Wenergy_fname, &Wenergy_bar_gauge.num_frames);
+		if ( Wenergy_bar_gauge.first_frame < 0 ) {
+			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Wenergy_fname);
+		}
 
 	if (!Toggle_gauge_loaded) {
 		Toggle_gauge.first_frame = bm_load_animation(Toggle_fname[gr_screen.res], &Toggle_gauge.num_frames);

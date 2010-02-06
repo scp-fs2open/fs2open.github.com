@@ -31,6 +31,7 @@
 #include "ship/ship.h"
 #include "ddsutils/ddsutils.h"
 #include "cfile/cfile.h"
+#include "pngutils/pngutils.h"
 #include "jpgutils/jpgutils.h"
 #include "parse/parselo.h"
 
@@ -504,9 +505,9 @@ int bm_load( char *real_filename )
 
 	// Lets find out what type it is
 	{
-		const int NUM_TYPES	= 4;
-		const ubyte type_list[NUM_TYPES] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX };
-		const char *ext_list[NUM_TYPES] = { ".dds", ".tga", ".jpg", ".pcx" };
+		const int NUM_TYPES	= 5;
+		const ubyte type_list[NUM_TYPES] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
+		const char *ext_list[NUM_TYPES] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
 
 		// see if it's already loaded (checks for any type with filename)
 		if ( bm_load_sub_fast(filename, &handle) )
@@ -619,6 +620,9 @@ DCF(bm_frag,"Shows BmpMan fragmentation")
 				gr_set_color(255,0,0);
 				break;
 			case BM_TYPE_USER:
+			case BM_TYPE_TGA:
+			case BM_TYPE_PNG:
+			case BM_TYPE_DDS:
 				gr_set_color(0,255,0);
 				break;
 			case BM_TYPE_ANI:
@@ -712,6 +716,8 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 		c_type = BM_TYPE_DDS;
 	} else if (!stricmp(NOX("tga"), ext)) {
 		c_type = BM_TYPE_TGA;
+	} else if (!stricmp(NOX("png"), ext)) {
+		c_type = BM_TYPE_PNG;
 	} else if (!stricmp(NOX("jpg"), ext)) {
 		c_type = BM_TYPE_JPG;
 	} else if (!stricmp(NOX("pcx"), ext)) {
@@ -1511,6 +1517,55 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	bmp->flags = 0;
 
 	if (error != DDS_ERROR_NONE) {
+		bm_free_data( bitmapnum );
+		return;
+	}
+
+#ifdef BMPMAN_NDEBUG
+	Assert( be->data_size > 0 );
+#endif
+}
+
+// lock a PNG file
+void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
+{
+	ubyte *data = NULL;
+	//assume 32 bit - libpng should expand everything
+	int d_size;
+	int png_error = PNG_ERROR_INVALID;
+	char filename[MAX_FILENAME_LEN];
+	//int size = bmp->w * bmp->h * d_size;
+
+	// Unload any existing data
+	bm_free_data( bitmapnum );
+
+	// should never try to make an aabitmap out of a png
+	Assert(!(flags & BMP_AABITMAP));
+
+	// allocate bitmap data
+	Assert( bmp->w * bmp->h > 0 );
+
+	//if it's not 32-bit, we expand when we read it
+	bmp->bpp = 32;
+	d_size = bmp->bpp >> 3;
+	//we waste memory if it turns out to be 24-bit, but the way this whole thing works is dodgy anyway
+	data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * d_size);
+	if (data == NULL)
+		return;
+	memset( data, 0, bmp->w * bmp->h * d_size);
+	bmp->data = (ptr_u)data;
+	bmp->palette = NULL;
+
+	Assert( &be->bm == bmp );
+
+	// make sure we are using the correct filename in the case of an EFF.
+	// this will populate filename[] whether it's EFF or not
+	EFF_FILENAME_CHECK;
+
+	//bmp->bpp gets set correctly in here after reading into memory
+	png_error = png_read_bitmap( filename, data, &bmp->bpp, d_size, be->dir_type );
+
+	if ( png_error != PNG_ERROR_NONE )	{
 		bm_free_data( bitmapnum );
 		return;
 	}

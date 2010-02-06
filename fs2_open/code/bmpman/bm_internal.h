@@ -30,17 +30,18 @@
 #define BM_TYPE_PCX				2
 #define BM_TYPE_TGA				3		// 16 or 32 bit targa
 #define BM_TYPE_DDS				4		// generic identifier for DDS
-#define BM_TYPE_JPG				5		// 32 bit jpeg
-#define BM_TYPE_ANI				6		// in-house ANI format
-#define BM_TYPE_EFF				7		// specifies any type of animated image, the EFF itself is just text
+#define BM_TYPE_PNG				5		// PNG
+#define BM_TYPE_JPG				6		// 32 bit jpeg
+#define BM_TYPE_ANI				7		// in-house ANI format
+#define BM_TYPE_EFF				8		// specifies any type of animated image, the EFF itself is just text
 // c-type types		( used in: bm_bitmaps[i].c_type )
-#define BM_TYPE_DXT1			8		// 24 bit with switchable alpha		(compressed)
-#define BM_TYPE_DXT3			9		// 32 bit with 4 bit alpha			(compressed)
-#define BM_TYPE_DXT5			10		// 32 bit with 8 bit alpha			(compressed)
-#define BM_TYPE_CUBEMAP_DDS		11		// generic DDS cubemap	(uncompressed cubemap surface)
-#define BM_TYPE_CUBEMAP_DXT1	12		// 24-bit cubemap		(compressed cubemap surface)
-#define BM_TYPE_CUBEMAP_DXT3	13		// 32-bit cubemap		(compressed cubemap surface)
-#define BM_TYPE_CUBEMAP_DXT5	14		// 32-bit cubemap		(compressed cubemap surface)
+#define BM_TYPE_DXT1			9		// 24 bit with switchable alpha		(compressed)
+#define BM_TYPE_DXT3			10		// 32 bit with 4 bit alpha			(compressed)
+#define BM_TYPE_DXT5			11		// 32 bit with 8 bit alpha			(compressed)
+#define BM_TYPE_CUBEMAP_DDS		12		// generic DDS cubemap	(uncompressed cubemap surface)
+#define BM_TYPE_CUBEMAP_DXT1	13		// 24-bit cubemap		(compressed cubemap surface)
+#define BM_TYPE_CUBEMAP_DXT3	14		// 32-bit cubemap		(compressed cubemap surface)
+#define BM_TYPE_CUBEMAP_DXT5	15		// 32-bit cubemap		(compressed cubemap surface)
 // special types	( used in: bm_bitmaps[i].type )
 #define BM_TYPE_RENDER_TARGET_STATIC	16		// 24/32 bit setup internally as a static render target
 #define BM_TYPE_RENDER_TARGET_DYNAMIC	17		// 24/32 bit setup internally as a dynamic render target
@@ -118,6 +119,7 @@ extern bitmap_entry bm_bitmaps[MAX_BITMAPS];
 // image specific lock functions
 void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
+void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );

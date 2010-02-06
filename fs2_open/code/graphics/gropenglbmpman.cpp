@@ -13,6 +13,7 @@
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
+#include "pngutils/pngutils.h"
 #include "jpgutils/jpgutils.h"
 #include "pcxutils/pcxutils.h"
 #include "graphics/gropengltexture.h"
@@ -143,6 +144,14 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 			return -1;
 		}
 	}
+	// if its a png file
+ 	else if (type == BM_TYPE_PNG) {
+ 		int png_error=png_read_header( filename, img_cfp, w, h, bpp, NULL );
+ 		if ( png_error != PNG_ERROR_NONE ) {
+ 			mprintf(( "png: Couldn't open '%s'\n", filename ));
+ 			return -1;
+ 		}
+ 	}
 	// if its a jpg file
 	else if (type == BM_TYPE_JPG) {
 		int jpg_error=jpeg_read_header( filename, img_cfp, w, h, bpp, NULL );
@@ -303,6 +312,7 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 	Assert( (be->type == BM_TYPE_PCX) ||
 			(be->type == BM_TYPE_TGA) ||
+			(be->type == BM_TYPE_PNG) ||
 			(be->type == BM_TYPE_JPG) );
 
 	Assert( !(flags & BMP_AABITMAP) );
@@ -330,6 +340,8 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 		error_code = pcx_read_bitmap( be->filename, data, NULL, byte_size );
 	} else if (be->type == BM_TYPE_TGA) {
 		error_code = targa_read_bitmap( be->filename, data, NULL, byte_size );
+ 	} else if (be->type == BM_TYPE_PNG) {
+ 		error_code = png_read_bitmap( be->filename, data, NULL, byte_size );
 	} else if (be->type == BM_TYPE_JPG) {
 		error_code = jpeg_read_bitmap( be->filename, data, NULL, byte_size );
 	} else {
@@ -473,6 +485,11 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 
 				bm_lock_tga( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
+
+ 			case BM_TYPE_PNG:
+ 				//libpng handles compression with zlib
+ 				bm_lock_png( handle, bitmapnum, be, bmp, true_bpp, flags );
+ 				break;
 
 			case BM_TYPE_JPG:
 				if (try_compress) {
