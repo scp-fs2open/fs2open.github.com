@@ -2001,6 +2001,83 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 	return g3_draw_poly(4,ptlist,tmap_flags);
 }
 
+#define MAX_ROD_VECS	100
+int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
+{
+	vec3d uvec, fvec, rvec;
+	vec3d vecs[2];
+	vertex pts[MAX_ROD_VECS];
+	vertex *ptlist[MAX_ROD_VECS];
+	int i, nv = 0;
+
+	Assert( num_points >= 2 );
+	Assert( (num_points * 2) <= MAX_ROD_VECS );
+
+
+	for (i = 0; i < num_points; i++) {
+		vm_vec_sub(&fvec, &View_position, &pvecs[i]);
+		vm_vec_normalize_safe(&fvec);
+
+		int first = i+1;
+		int second = i-1;
+
+		if (i == 0) {
+			first = 1;
+			second = 0;
+		} else if (i == num_points-1) {
+			first = i;
+		}
+
+		vm_vec_sub(&rvec, &pvecs[first], &pvecs[second]);
+		vm_vec_normalize_safe(&rvec);
+
+		vm_vec_crossprod(&uvec, &rvec, &fvec);
+
+		vm_vec_scale_add(&vecs[0], &pvecs[i], &uvec, width * 0.5f);
+		vm_vec_scale_add(&vecs[1], &pvecs[i], &uvec, -width * 0.5f);
+
+
+		if (nv > MAX_ROD_VECS-2) {
+			Warning(LOCATION, "Hit high-water mark (%i) in g3_draw_rod()!!\n", MAX_ROD_VECS);
+			break;
+		}
+
+		ptlist[nv] = &pts[nv];
+		ptlist[nv+1] = &pts[nv+1];
+
+		if (Cmdline_nohtl) {
+			g3_rotate_vertex( &pts[nv], &vecs[0] );
+			g3_rotate_vertex( &pts[nv+1], &vecs[1] );
+		} else {
+			g3_transfer_vertex( &pts[nv], &vecs[0] );
+			g3_transfer_vertex( &pts[nv+1], &vecs[1] );
+		}
+
+		ptlist[nv]->u = 1.0f;
+		ptlist[nv]->v = i2fl(i);
+		ptlist[nv]->r = gr_screen.current_color.red;
+		ptlist[nv]->g = gr_screen.current_color.green;
+		ptlist[nv]->b = gr_screen.current_color.blue;
+		ptlist[nv]->a = gr_screen.current_color.alpha;
+
+		ptlist[nv+1]->u = 0.0f;
+		ptlist[nv+1]->v = i2fl(i);
+		ptlist[nv+1]->r = gr_screen.current_color.red;
+		ptlist[nv+1]->g = gr_screen.current_color.green;
+		ptlist[nv+1]->b = gr_screen.current_color.blue;
+		ptlist[nv+1]->a = gr_screen.current_color.alpha;
+
+		nv += 2;
+	}
+
+	// we should always have at least 4 verts, and there should always be an even number
+	Assert( (nv >= 4) && !(nv % 2) );
+
+	int rc = g3_draw_poly(nv, ptlist, tmap_flags);
+
+	return rc;
+}
+
 // draw a perspective bitmap based on angles and radius
 vec3d g3_square[4] = {
 	{ { { -1.0f, -1.0f, 20.0f } } },
