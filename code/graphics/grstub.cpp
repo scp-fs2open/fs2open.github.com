@@ -5,6 +5,7 @@
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
+#include "pngutils/pngutils.h"
 #include "jpgutils/jpgutils.h"
 #include "pcxutils/pcxutils.h"
 #include "globalincs/systemvars.h"
@@ -441,6 +442,14 @@ int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, i
 			return -1;
 		}
 	}
+ 	// if its a png file
+ 	else if (type == BM_TYPE_PNG) {
+ 		int png_error=png_read_header( filename, img_cfp, w, h, bpp, NULL );
+ 		if ( png_error != PNG_ERROR_NONE ) {
+ 			mprintf(( "png: Couldn't open '%s'\n", filename ));
+ 			return -1;
+ 		}
+ 	}
 	// if its a jpg file
 	else if (type == BM_TYPE_JPG) {
 		int jpg_error=jpeg_read_header( filename, img_cfp, w, h, bpp, NULL );
@@ -519,6 +528,10 @@ int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte 
 			case BM_TYPE_TGA:
 				bm_lock_tga( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
+
+ 			case BM_TYPE_PNG:
+ 				bm_lock_png( handle, bitmapnum, be, bmp, bmp->true_bpp, flags );
+ 				break;
 
 			case BM_TYPE_JPG:
 				bm_lock_jpg( handle, bitmapnum, be, bmp, bmp->true_bpp, flags );

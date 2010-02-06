@@ -19,6 +19,7 @@
 #include "pcxutils/pcxutils.h"
 #include "tgautils/tgautils.h"
 #include "jpgutils/jpgutils.h"
+#include "pngutils/pngutils.h"
 #include "ddsutils/ddsutils.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"

@@ -595,6 +595,8 @@ FS2_SOURCES =	\
 	particle/particle.h	\
 	pcxutils/pcxutils.cpp	\
 	pcxutils/pcxutils.h	\
+	pngutils/pngutils.cpp	\
+	pngutils/pngutils.h	\
 	physics/physics.cpp	\
 	physics/physics.h	\
 	playerman/managepilot.cpp	\
