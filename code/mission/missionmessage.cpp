@@ -1700,7 +1700,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){
-				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1);
+				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay);
 			}			
 
 			return;		// all done with displaying		
