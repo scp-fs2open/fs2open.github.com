@@ -1519,7 +1519,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #ifndef NDEBUG
 	nprintf(("Network","Attempting to affect player object.\n"));
 #endif
-	for (; idx < 12; idx++)
+	for (; idx < MAX_PLAYERS; idx++)
 	{
 		if( changedobj == &(Objects[Net_players[idx].m_player->objnum]) ) {
 			break;
@@ -1528,7 +1528,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #ifndef NDEBUG
 	nprintf(("Network","Index for changed object found: [%d].\n",idx));
 #endif
-	if( idx >= 12 ) {
+	if( idx >= MAX_PLAYERS ) {
 		return;
 	}
 	// build the header

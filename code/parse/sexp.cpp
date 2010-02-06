@@ -5813,8 +5813,8 @@ void sexp_set_object_position(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
-			// Tell the player that they've moved.
-			if( Game_mode & GM_MULTIPLAYER ) {
+			// Tell the player (if this is a client) that they've moved.
+			if (( Game_mode & GM_MULTIPLAYER ) && (oswpt.objp->flags & OF_PLAYER_SHIP) && (oswpt.objp != Player_obj) ){
 				multi_oo_send_changed_object(oswpt.objp);
 			}
 			return;
@@ -5882,8 +5882,8 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 
 	// set orientation -----------------------------
 	objp->orient = m_orient;
-	// Tell the player that they've moved.
-	if( Game_mode & GM_MULTIPLAYER ) {
+	// Tell the player (assuming it's a client) that they've moved.
+	if (( Game_mode & GM_MULTIPLAYER ) && (objp->flags & OF_PLAYER_SHIP) && (objp != Player_obj) ){
 		multi_oo_send_changed_object(objp);
 	}
 }
@@ -24180,7 +24180,7 @@ sexp_help_struct Sexp_help[] = {
 	//WMC
 	{ OP_CURRENT_SPEED, "current-speed\r\n"
 		"\tReturns the speed of the given object. Takes 1 argument...\r\n"
-		"\t1:\tHUD gauge to be modified"
+		"\t1:\tName of the object"
 	},
 
 	// Karajora
