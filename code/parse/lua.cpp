@@ -1843,11 +1843,11 @@ ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model file
 	return ade_set_args(L, "s", pm->filename);
 }
 
-ADE_VIRTVAR(Mass, l_Model, "number", "Model radius (Used for collision and culling detection)", "number", "Model radius, or 0 if the model handle is invalid")
+ADE_VIRTVAR(Mass, l_Model, "number", "Model mass", "number", "Model mass, or 0 if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	float nm = 0.0f;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &nm))
+	if(!ade_get_args(L, "o|f", l_Model.GetPtr(&mdl), &nm))
 		return ade_set_error(L, "f", 0.0f);
 
 	polymodel *pm = mdl->Get();
@@ -1866,7 +1866,7 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 {
 	model_h *mdl = NULL;
 	matrix_h *mh = NULL;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), l_Matrix.GetPtr(&mh)))
+	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	polymodel *pm = mdl->Get();
@@ -1874,8 +1874,8 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	matrix *mtx = mh->GetMatrix();
-	if(ADE_SETTING_VAR) {
+	if(ADE_SETTING_VAR && mh != NULL) {
+		matrix *mtx = mh->GetMatrix();
 		memcpy(&pm->moment_of_inertia, mtx, sizeof(*mtx));
 	}
 
@@ -1886,7 +1886,7 @@ ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culli
 {
 	model_h *mdl = NULL;
 	float nr = 0.0f;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &nr))
+	if(!ade_get_args(L, "o|f", l_Model.GetPtr(&mdl), &nr))
 		return ade_set_error(L, "f", 0.0f);
 
 	polymodel *pm = mdl->Get();
@@ -4112,7 +4112,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	if (model_num < 0)
-		ADE_RETURN_NIL;
+		return ADE_RETURN_NIL;
 
 	mc_info hull_check;
 
@@ -4123,8 +4123,8 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	hull_check.p1 = v3b;
 	hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
 
-	if ( model_collide(&hull_check) ) {
-		ADE_RETURN_NIL;
+	if ( !model_collide(&hull_check) ) {
+		return ADE_RETURN_NIL;
 	}
 	
 	if (local)
@@ -4710,6 +4710,28 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	gr_reset_clip();
 
 	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the model used for this shipclass is loaded or not and optionally loads the model, which might be a slow operation.", "boolean", "If the model is loaded or not") 
+{
+	int idx;
+	bool load_check = false;
+	if(!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &load_check))
+		return ADE_RETURN_FALSE;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (sip == NULL)
+		return ADE_RETURN_FALSE;
+
+	if(load_check){
+		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);	
+	}
+
+	if (sip->model_num > -1)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 //**********HANDLE: Waypoint
@@ -6180,6 +6202,29 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has already happened", "number", "Returns 1 if first explosion timestamp is passed, 2 if second is passed, 0 otherwise")
+{
+	object_h *shiph;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "i", 0);
+
+	if(!shiph->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	if (shipp->flags & SF_DYING) {
+		if (shipp->final_death_time == 0) {
+			return ade_set_args(L, "i", 2);
+		}		
+		if (shipp->pre_death_explosion_happened == 1) {
+			return ade_set_args(L, "i", 1);
+		}
+	}
+
+	return ade_set_args(L, "i", 0);
 }
 /*
 ADE_FUNC(getFlags, l_Ship, NULL, "Gets ship flags", "boolean", "State of flag, or nil if handle is invalid")
@@ -9188,7 +9233,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation - Use with extreme care, may not work properly in all scripting hooks.", "int", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -9216,9 +9261,14 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	matrix cam_orient;
 
 	camid cid = cam_get_current();
-	cid.getCamera()->get_info(&cam_pos, &cam_orient);
+	camera *cam = cid.getCamera();
 
-	g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+	if (cam != NULL) {
+		cam->get_info(&cam_pos, &cam_orient);
+		g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+	} else {
+		g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
+	}
 
 	if (!Cmdline_nohtl) {
 		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -9239,6 +9289,39 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+
+	return ade_set_args(L, "i", 0);
+}
+
+// Wanderer
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, integer Flags", "Draws the given model with the specified position and orientation - Use with extreme care, designer to operate properly only in On Object Render hook.", "int", "Zero if successful, otherwise an integer error code")
+{
+	model_h *mdl = NULL;
+	vec3d *v = &vmd_zero_vector;
+	matrix_h *mh = NULL;
+	int flags = MR_NORMAL;
+	if(!ade_get_args(L, "ooo|i", l_Model.GetPtr(&mdl), l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh), &flags))
+		return ade_set_args(L, "i", 1);
+
+	if(mdl == NULL)
+		return ade_set_args(L, "i", 2);
+
+	polymodel *pm = mdl->Get();
+
+	if (pm == NULL)
+		return ade_set_args(L, "i", 3);
+
+	int model_num = pm->id;
+
+	if(model_num < 0)
+		return ade_set_args(L, "i", 3);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Draw the ship!!
+	model_clear_instance(model_num);
+	model_render(model_num, orient, v, flags);
 
 	return ade_set_args(L, "i", 0);
 }
@@ -9667,6 +9750,22 @@ ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flas
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not setup subsystem data, DO NOT USE FOR LOADING SHIP MODELS", "model", "Handle to a model")
+{
+	char *s;
+	int model_num = -1;
+
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	if (strlen(s) == 0)
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	model_num = model_load(s, 0, NULL);
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
+}
+
 
 //**********LIBRARY: Scripting Variables
 ade_lib l_HookVar("HookVariables", NULL, "hv", "Hook variables repository");
@@ -9897,7 +9996,7 @@ ade_lib l_Mission_EscortShips("EscortShips", &l_Mission, NULL, NULL);
 ADE_INDEXER(l_Mission_EscortShips, "number Index", "Gets escort ship at specified index on escort list", "ship", "Specified ship, or invalid ship handle if invalid index")
 {
 	int idx;
-	if(!ade_get_args(L, "i", &idx))
+	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
 	if(idx < 1 || idx > hud_escort_num_ships_on_list())
@@ -10685,7 +10784,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 {
 	particle_info pi;
 	pi.type = PARTICLE_DEBUG;
-	pi.optional_data = 0;
+	pi.optional_data = -1;
 	pi.tracer_length = 1.0f;
 	pi.attached_objnum = -1;
 	pi.attached_sig = -1;
@@ -10724,7 +10823,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 
 	if(objh != NULL && objh->IsValid())
 	{
-		pi.attached_objnum = (short)OBJ_INDEX(objh->objp);
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig = objh->objp->signature;
 	}
 

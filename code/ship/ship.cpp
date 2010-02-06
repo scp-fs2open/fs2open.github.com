@@ -583,6 +583,24 @@ int warptype_match(char *p)
 	return -1;
 }
 
+char *Lightning_types[] = {
+	"None",
+	"Default",
+};
+
+int Num_lightning_types = sizeof(Lightning_types)/sizeof(char*);
+
+int lightningtype_match(char *p)
+{
+	int i;
+	for(i = 0; i < Num_lightning_types; i++)
+	{
+		if(!stricmp(Lightning_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
 
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
@@ -689,6 +707,7 @@ void init_ship_entry(ship_info *sip)
 	sip->debris_max_hitpoints = -1.0f;
 	sip->debris_min_hitpoints = -1.0f;
 	sip->debris_damage_mult = 1.0f;
+	sip->debris_arc_percent = 0.5f;
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -759,6 +778,7 @@ void init_ship_entry(ship_info *sip)
 	sip->afterburner_fuel_capacity = 0.0f;
 	sip->afterburner_burn_rate = 0.0f;
 	sip->afterburner_recover_rate = 0.0f;
+	sip->afterburner_max_reverse_vel = 0.0f;
 
 	generic_bitmap_init(&sip->afterburner_trail, NULL);
 	sip->afterburner_trail_width_factor = 1.0f;
@@ -837,6 +857,8 @@ void init_ship_entry(ship_info *sip)
 	}
 	
 	sip->emp_resistance_mod = 0.0f;
+	sip->piercing_damage_draw_limit = 0.10f;
+	sip->damage_lightning_type = SLT_DEFAULT;
 }
 
 // function to parse the information for a specific ship type.	
@@ -1261,6 +1283,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_boolean(&bogus_bool);
 	}
 
+	if(optional_string("$Damage Lightning Type:"))
+	{
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+		j = lightningtype_match(buf);
+		if(j >= 0) {
+			sip->damage_lightning_type = j;
+		} else {
+			Warning(LOCATION, "Invalid lightning type '%s' specified for ship '%s'", buf, sip->name);
+			sip->damage_lightning_type = SLT_DEFAULT;
+		}
+	}
+
 	if(optional_string("$Impact:"))
 	{
 		if(optional_string("+Damage Type:"))
@@ -1339,6 +1373,16 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			if(sip->debris_damage_mult < 0.0f)
 				Warning(LOCATION, "Debris damage multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
 		}
+		if(optional_string("+Lightning Arc Percent:")) {
+			stuff_float(&sip->debris_arc_percent);
+			if(sip->debris_arc_percent < 0.0f || sip->debris_arc_percent > 100.0f) {
+				Warning(LOCATION, "Lightning Arc Percent on %s '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", info_type_name, sip->name, sip->debris_arc_percent);
+				sip->debris_arc_percent = 50.0;
+			}
+			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+			sip->debris_arc_percent /= 100.0;
+		}
+		
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
@@ -2115,6 +2159,14 @@ strcpy_s(parse_error_text, temp_error);
 			stuff_float(&sip->afterburner_forward_accel);
 		}
 
+		// SparK: added reverse burner capability
+		if(optional_string("+Aburn Max Reverse Vel:")) {
+			stuff_float(&sip->afterburner_max_reverse_vel);
+		}
+		if(optional_string("+Aburn Rev accel:")) {
+			stuff_float(&sip->afterburner_reverse_accel);
+		}
+
 		if(optional_string("+Aburn Fuel:")) {
 			stuff_float(&sip->afterburner_fuel_capacity);
 		}
@@ -2577,6 +2629,12 @@ strcpy_s(parse_error_text, temp_error);
 		stuff_float(&sip->emp_resistance_mod);
 	}
 	
+	if (optional_string("$Piercing Damage Draw Limit:")) {
+		float tempf;
+		stuff_float(&tempf);
+		sip->piercing_damage_draw_limit = tempf / 100.0f;
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
@@ -3213,6 +3271,10 @@ void parse_ship_type()
 	if(optional_string("$Beams Easily Hit:")) {
 			stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
 		}
+
+	if(optional_string("$No Huge Beam Impact Effects:")) {
+		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
+	}
 
 	if(optional_string("$Fog:"))
 	{
@@ -3941,6 +4003,10 @@ void physics_ship_init(object *objp)
 	pi->heading = 0.0f;
 //	pi->accel = 0.0f;
 	vm_set_identity(&pi->last_rotmat);
+
+	//SparK: setting the reverse burners
+	pi->afterburner_max_reverse_vel = sinfo->afterburner_max_reverse_vel;
+	pi->afterburner_reverse_accel = sinfo->afterburner_reverse_accel;
 }
 
 //Function to get the type of the given ship as a string
@@ -4469,7 +4535,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		}
 	}
 	shipp->armor_type_idx = sip->armor_type_idx;
-	shipp->shield_armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -7686,7 +7752,7 @@ void ship_make_create_time_unique(ship *shipp)
 
 			if ( compare_shipp->create_time == new_create_time )
 			{
-				if(sanity_counter == 0 && last_smctu_initial_time == shipp->create_time)
+				if((unsigned int)sanity_counter == 0 && (unsigned int)last_smctu_initial_time == shipp->create_time)
 				{
 					//WMC: If we're creating a whole bunch of ships at once, we can
 					//shortcut this process by looking at the last call to this function
@@ -14032,6 +14098,17 @@ int ship_get_by_signature(int signature)
 	return -1;
 }
 
+ship_type_info *ship_get_type_info(object *objp)
+{
+	Assert(objp != NULL);
+	Assert(objp->type == OBJ_SHIP);
+	Assert(objp->instance > -1);
+	Assert(Ships[objp->instance].ship_info_index > -1);
+	Assert(Ship_info[Ships[objp->instance].ship_info_index].class_type > -1);
+
+	return &Ship_types[Ship_info[Ships[objp->instance].ship_info_index].class_type];
+}
+
 // function which gets called when the cargo of a ship is revealed.  Happens at two different locations
 // (at least when this function was written), one for the player, and one for AI ships.  Need to send stuff
 // to clients in multiplayer game.
@@ -15513,6 +15590,31 @@ void ArmorDamageType::clear()
 	Arguments.clear();
 }
 
+//************
+// Wanderer - beam piercing type
+//************
+
+flag_def_list	PiercingTypes[] = {
+	{	"none",		SADTF_PIERCING_NONE,		0},
+	{	"default",	SADTF_PIERCING_DEFAULT,		0},
+	{	"retail",	SADTF_PIERCING_RETAIL,		0},
+};
+
+const int Num_piercing_effect_types = sizeof(PiercingTypes)/sizeof(flag_def_list);
+
+int piercing_type_get(char *str)
+{
+	int i;
+	for(i = 0; i < Num_piercing_effect_types; i++)
+	{
+		if(!stricmp(PiercingTypes[i].name, str))
+			return PiercingTypes[i].def;
+	}
+
+	// default to retail
+	return SADTF_PIERCING_RETAIL;
+}
+
 //**************************************************************
 //WMC - All the extra armor crap
 
@@ -15681,6 +15783,58 @@ float ArmorType::GetShieldPiercePCT(int damage_type_idx)
 	return 0.0f;
 }
 
+int ArmorType::GetPiercingType(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->piercing_type;
+	}
+
+	return 0;
+}
+
+float ArmorType::GetPiercingLimit(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0.0f;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->piercing_start_pct;
+	}
+
+	return 0.0f;
+}
+
 //***********************************Member functions
 
 ArmorType::ArmorType(char* in_name)
@@ -15710,10 +15864,10 @@ void ArmorType::ParseData()
 		//Clear the struct and set the index
 		adt.clear();
 		adt.DamageTypeIndex = damage_type_add(buf);
+		bool no_content = true;
 
 		//Get calculation and argument
-		required_string("+Calculation:");
-		do
+		while (optional_string("+Calculation:")) 
 		{
 			//+Calculation
 			stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -15734,8 +15888,9 @@ void ArmorType::ParseData()
 				required_string("+Value:");
 				stuff_float(&temp_float);
 				adt.Arguments.push_back(temp_float);
+				no_content = false;
 			}
-		} while(optional_string("+Calculation:"));
+		}
 
 		adt.shieldpierce_pct = 0.0f;
 
@@ -15743,10 +15898,28 @@ void ArmorType::ParseData()
 			stuff_float(&temp_float);
 			CLAMP(temp_float, 0.0f, 1.0f);
 			adt.shieldpierce_pct = temp_float;
+			no_content = false;
+		}
+
+		adt.piercing_start_pct = 0.1f;
+		adt.piercing_type = -1;
+
+		if(optional_string("+Weapon Piercing Effect Start Limit:")) {
+			stuff_float(&temp_float);
+			CLAMP(temp_float, 0.0f, 100.0f); 
+			temp_float /= 100.0f;
+			adt.piercing_start_pct = temp_float;
+			no_content = false;
+		}
+
+		if(optional_string("+Weapon Piercing Type:")) {
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			adt.piercing_type = piercing_type_get(buf);
+			no_content = false;
 		}
 
 		//If we have calculations in this damage type, add it
-		if(adt.Calculations.size() > 0)
+		if(!no_content)
 		{
 			if(adt.Calculations.size() != adt.Arguments.size())
 			{

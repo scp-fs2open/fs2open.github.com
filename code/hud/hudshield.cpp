@@ -155,24 +155,21 @@ void hud_shield_level_init()
 
 	hud_shield_hit_reset(1);	// reset for the player
 
-	if ( Hud_shield_inited ) {
-		return;
-	}	
-
-	for ( i = 0; i < MAX_SHIELD_ICONS; i++ ) {
-		Shield_gauges[i].first_frame = -1;
-		Shield_gauges[i].num_frames  = 0;
-	}
-
-	Hud_shield_inited = 1;
-	if ( !Shield_mini_loaded ) {
-		Shield_mini_gauge.first_frame = bm_load_animation(current_hud->Shield_mini_fname, &Shield_mini_gauge.num_frames);
-		if ( Shield_mini_gauge.first_frame == -1 ) {
-			Warning(LOCATION, "Could not load in the HUD shield ani: Shield_mini_fname\n");
-			return;
+	if ( !Hud_shield_inited ) {
+		for ( i = 0; i < MAX_SHIELD_ICONS; i++ ) {
+			Shield_gauges[i].first_frame = -1;
+			Shield_gauges[i].num_frames  = 0;
 		}
-		Shield_mini_loaded = 1;
+
+		Hud_shield_inited = 1;
 	}
+	
+	Shield_mini_gauge.first_frame = bm_load_animation(current_hud->Shield_mini_fname, &Shield_mini_gauge.num_frames);
+	if ( Shield_mini_gauge.first_frame == -1 ) {
+		Warning(LOCATION, "Could not load in the HUD shield ani: Shield_mini_fname\n");
+		return;
+	}
+	Shield_mini_loaded = 1;
 }
 
 int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)

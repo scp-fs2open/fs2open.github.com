@@ -593,6 +593,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward = 1.0f;
 		}
 
+		if ( check_control(REVERSE_THRUST) && check_control(AFTERBURNER) ) {
+			ci->forward = -pi->max_rear_vel * 1.0f;
+		}
+
 		/*if (Player_ship->boost_pod_engaged)
 			ci->forward = 1.0f;*/
 
@@ -888,10 +892,10 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 		dest_ci->sideways = src_ci->sideways;
 		dest_ci->bank = src_ci->bank;
 		dest_ci->forward = src_ci->forward;
-		dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+		/*dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
 		dest_ci->fire_countermeasure_count = src_ci->fire_countermeasure_count;
 		dest_ci->fire_secondary_count = src_ci->fire_countermeasure_count;
-		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;
+		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;*/
 	}
 }
 

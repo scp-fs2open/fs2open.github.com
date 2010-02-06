@@ -72,6 +72,8 @@
 // Externals not related to the HUD code itself
 extern float View_zoom;
 
+extern bool Custom_gauge_images_loaded;
+
 // This is used to prevent drawing of hud (and pause popup)
 
 // globals that will control the color of the HUD gauges
@@ -637,6 +639,7 @@ void hud_init_mission_time_gauge()
 //
 void HUD_init()
 {
+	set_current_hud(Player_ship->ship_info_index);	
 	HUD_init_colors();
 	hud_init_msg_window();
 	hud_init_targeting();
@@ -1269,9 +1272,8 @@ void HUD_render_2d(float frametime)
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		//Custom hud stuff
 		int i;
-		static bool image_ids_set = false;
 		static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
-		if(!image_ids_set)
+		if(!Custom_gauge_images_loaded)
 		{
 			for(i = 0; i < Num_custom_gauges; i++)
 			{
@@ -1292,7 +1294,7 @@ void HUD_render_2d(float frametime)
 					image_ids[i].first_frame = -1;
 				}
 			}
-			image_ids_set = true;
+			Custom_gauge_images_loaded = true;
 		}
 
 		//Display the gauges

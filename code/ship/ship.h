@@ -162,6 +162,10 @@ private:
 	SCP_vector<float>	Arguments;
 	float				shieldpierce_pct;
 
+	// piercing effect data
+	float				piercing_start_pct;
+	int					piercing_type;
+
 public:
 	void clear();
 };
@@ -181,6 +185,8 @@ public:
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
 	float GetShieldPiercePCT(int damage_type_idx);
+	int GetPiercingType(int damage_type_idx);
+	float GetPiercingLimit(int damage_type_idx);
 	
 	//Set
 	void ParseData();
@@ -189,6 +195,14 @@ public:
 extern SCP_vector<ArmorType> Armor_types;
 
 #define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
+
+#define SADTF_PIERCING_NONE			0				// no piercing effects, no beam tooling
+#define SADTF_PIERCING_DEFAULT		1				// piercing effects, beam tooling
+#define SADTF_PIERCING_RETAIL		2				// no piercing effects, beam tooling
+
+//SUSHI: Damage lightning types. SLT = Ship Lighting Type.
+#define SLT_NONE	0
+#define SLT_DEFAULT	1
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
@@ -679,7 +693,7 @@ struct ai_target_priority {
 	SCP_vector <int> ship_class;
 	SCP_vector <int> weapon_class;
 
-	int obj_flags;
+	unsigned int obj_flags;
 	int sif_flags;
 	int sif2_flags;
 	int wif_flags;
@@ -836,6 +850,7 @@ typedef struct thruster_particles {
 #define STI_TURRET_TGT_SHIP_TGT			(1<<3)
 
 #define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
+#define STI_WEAP_NO_HUGE_IMPACT_EFF		(1<<1)
 
 #define STI_AI_ACCEPT_PLAYER_ORDERS		(1<<0)
 #define STI_AI_AUTO_ATTACKS				(1<<1)
@@ -1014,8 +1029,8 @@ typedef struct ship_info {
 
 	float		warpout_player_speed;
 
-	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
-	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
+	int		flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam
+	int		flags2;							//	See SIF2_xxxx - added by Goober5000, changed by Zacam
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
@@ -1044,6 +1059,7 @@ typedef struct ship_info {
 	float			debris_min_hitpoints;
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
+	float			debris_arc_percent;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -1060,6 +1076,9 @@ typedef struct ship_info {
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
+	//SparK: reverse afterburner
+	float		afterburner_max_reverse_vel;
+	float		afterburner_reverse_accel;
 
 	int		cmeasure_type;						// Type of countermeasures this ship carries
 	int		cmeasure_max;						//	Number of charges of countermeasures this ship can hold.
@@ -1176,6 +1195,10 @@ typedef struct ship_info {
 	vec3d convergence_offset;
 
 	float emp_resistance_mod;
+
+	float piercing_damage_draw_limit;
+
+	int damage_lightning_type;
 } ship_info;
 
 extern int Num_wings;
@@ -1538,6 +1561,9 @@ void ship_secondary_changed(ship *sp);
 // get the Ship_info flags for a given ship
 int ship_get_SIF(ship *shipp);
 int ship_get_SIF(int sh);
+
+// get the ship type info (objecttypes.tbl)
+ship_type_info *ship_get_type_info(object *objp);
 
 extern void ship_do_cargo_revealed( ship *shipp, int from_network = 0 );
 extern void ship_do_cargo_hidden( ship *shipp, int from_network = 0 );

@@ -153,7 +153,7 @@ extern debris_vclip *Debris_vclips;
 
 //XSTR:OFF
 debris_vclip Debris_vclips_normal[MAX_DEBRIS_VCLIPS] = { { -1, -1, "debris01" }, { -1, -1, "debris02" }, { -1, -1, "debris03" }, { -1, -1, "debris04" } };
-debris_vclip Debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" } };
+debris_vclip Debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "nebdeb01" }, { -1, -1, "nebdeb02" }, { -1, -1, "nebdeb03" }, { -1, -1, "nebdeb04" } };
 debris_vclip *Debris_vclips = Debris_vclips_normal;
 //XSTR:ON
 

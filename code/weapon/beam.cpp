@@ -452,6 +452,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
 	new_item->firingpoint = fire_info->turret->turret_next_fire_pos;
+	new_item->beam_width = wip->b_info.beam_width;
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_secion_frame[i] = 0.0f;
@@ -2821,6 +2822,7 @@ void beam_handle_collisions(beam *b)
 	for(idx=0; idx<b->f_collision_count; idx++){	
 		int model_num = -1;
 		int do_damage = 0;
+		int draw_effects = 1;
 		int first_hit = 1;
 		int target = b->f_collisions[idx].c_objnum;
 
@@ -2833,6 +2835,15 @@ void beam_handle_collisions(beam *b)
 		model_num = beam_get_model(&Objects[target]);
 		if(model_num < 0){
 			continue;
+		}
+
+		if (wi->wi_flags & WIF_HUGE) {
+			if (Objects[target].type & OBJ_SHIP) {
+				ship_type_info *sti;
+				sti = ship_get_type_info(&Objects[target]);
+				if (sti->weapon_bools & STI_WEAP_NO_HUGE_IMPACT_EFF)
+					draw_effects = 0;
+			}
 		}
 
 		// add lighting
@@ -2881,9 +2892,7 @@ void beam_handle_collisions(beam *b)
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		beam_weapon_info bwi = wi->b_info;
-
-		if ((bwi.beam_tooling_flame_radius > 0) || (bwi.beam_flash_radius > 0)) {
+		if (draw_effects && ((wi->piercing_impact_explosion_radius > 0) || (wi->flash_impact_explosion_radius > 0))) {
 			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
 			float rnd = frand();
 			int do_expl = 0;
@@ -2896,10 +2905,10 @@ void beam_handle_collisions(beam *b)
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
 						
-			if (bwi.beam_flash_radius > 0) {
-				ani_radius = bwi.beam_flash_radius * flash_rad;	
-				if (bwi.beam_flash_idx > -1) {
-					int ani_handle = Weapon_explosions.GetAnim(bwi.beam_flash_idx, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
+			if (wi->flash_impact_explosion_radius > 0) {
+				ani_radius = wi->flash_impact_explosion_radius * flash_rad;	
+				if (wi->flash_impact_weapon_expl_index > -1) {
+					int ani_handle = Weapon_explosions.GetAnim(wi->flash_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 				} else {
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_SMOKE, 0, -1, &Objects[target] );
@@ -2911,32 +2920,90 @@ void beam_handle_collisions(beam *b)
 				particle_create( &temp_local_pos, &vmd_zero_vector, 0.0f, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 			}
 			
-			if (bwi.beam_tooling_flame_radius > 0) {
-				vec3d fvec, inv_fvec;
-				vm_vec_sub(&fvec, &b->last_start, &b->last_shot);
+			if (wi->piercing_impact_explosion_radius > 0) {
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
 				if(!IS_VEC_NULL(&fvec)){
 					// get beam direction
-					if (beam_will_tool_target(b, &Objects[target])){
+
+					int ok_to_draw = 0;
+					
+					if (beam_will_tool_target(b, &Objects[target])) {
+						ok_to_draw = 1;
+
+						if (Objects[target].type == OBJ_SHIP) {
+							ship *shipp = &Ships[Objects[target].instance];
+														
+							if (shipp->armor_type_idx != -1) {
+								if (Armor_types[shipp->armor_type_idx].GetPiercingType(wi->damage_type_idx) == SADTF_PIERCING_RETAIL) {
+									ok_to_draw = 0;
+								}
+							}
+						}
+					} else {
+						ok_to_draw = 0;
+
+						if (Objects[target].type == OBJ_SHIP) {
+							float draw_limit, hull_pct;
+							int dmg_type_idx, piercing_type;
+
+							ship *shipp = &Ships[Objects[target].instance];
+
+							hull_pct = Objects[target].hull_strength / shipp->ship_max_hull_strength;
+							dmg_type_idx = wi->damage_type_idx;
+							draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
+							
+							if (shipp->armor_type_idx != -1) {
+								piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
+								if (piercing_type == SADTF_PIERCING_DEFAULT) {
+									draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+								} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
+									draw_limit = -1.0f;
+								}
+							}
+
+							if ((draw_limit != -1.0f) && (hull_pct <= draw_limit))
+								ok_to_draw = 1;
+						}
+					}
+
+					if (ok_to_draw){
 						vm_vec_normalize_quick(&fvec);
-						vm_vec_copy_scale( &inv_fvec, &fvec, -1.0f);
 						
 						// stream of fire for big ships
 						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {
 
-							vec3d expl_vel;
+							vec3d expl_vel, expl_splash_vel;
 
-							float flame_size = bwi.beam_tooling_flame_radius * frand_range(0.5f,2.0f);
-							vm_vec_copy_scale( &expl_vel, &fvec, bwi.beam_tooling_flame_radius * frand_range(1.0f, 2.0f));
-							if (bwi.beam_tooling_flame_idx > -1) {
-								int ani_handle = Weapon_explosions.GetAnim(bwi.beam_tooling_flame_idx, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
+							float flame_size = wi->piercing_impact_explosion_radius * frand_range(0.5f,2.0f);
+							float base_v, back_v;
+							vec3d rnd_vec;
+
+							vm_vec_rand_vec_quick(&rnd_vec);
+
+							if (wi->piercing_impact_particle_velocity != 0.0f)
+								base_v = wi->piercing_impact_particle_velocity;
+							else
+								base_v = wi->piercing_impact_explosion_radius;
+
+							if (wi->piercing_impact_particle_back_velocity != 0.0f)
+								back_v = wi->piercing_impact_particle_back_velocity;
+							else
+								back_v = base_v * (-0.2f);
+
+							vm_vec_copy_scale( &expl_vel, &fvec, base_v * frand_range(1.0f, 2.0f));
+							vm_vec_copy_scale( &expl_splash_vel, &fvec, back_v * frand_range(1.0f, 2.0f));
+							vm_vec_scale_add2( &expl_vel, &rnd_vec, base_v * wi->piercing_impact_particle_variance);
+							vm_vec_scale_add2( &expl_splash_vel, &rnd_vec, back_v * wi->piercing_impact_particle_variance);
+
+							if (wi->piercing_impact_weapon_expl_index > -1) {
+								int ani_handle = Weapon_explosions.GetAnim(wi->piercing_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
 								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
-								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
 							} else {
 								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.3f, flame_size, PARTICLE_SMOKE );
-								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.6f, flame_size, PARTICLE_SMOKE );
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.6f, flame_size, PARTICLE_SMOKE );
 							}
 						}
 					}
@@ -2944,7 +3011,7 @@ void beam_handle_collisions(beam *b)
 			}
 			// <-- KOMET_EXT
 		} else {
-			if(do_damage && !physics_paused){
+			if(draw_effects && do_damage && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
 					int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
@@ -3305,6 +3372,14 @@ int beam_will_tool_target(beam *b, object *objp)
 	}
 	if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
 		return 0;
+	}
+
+	ship *shipp = &Ships[objp->instance];
+
+	if (shipp->armor_type_idx != -1) {
+		if (Armor_types[shipp->armor_type_idx].GetPiercingType(wip->damage_type_idx) == SADTF_PIERCING_NONE) {
+			return 0;
+		}
 	}
 
 	// calculate total strength, factoring in shield

@@ -71,7 +71,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	vec3d force;		
 
 	// Apply hit & damage & stuff to weapon
-	weapon_hit(weapon_obj, ship_obj,  world_hitpos);
+	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
 
 	damage = wip->damage;
 

@@ -470,7 +470,8 @@ typedef struct dock_bay {
 // struct that holds the indicies into path information associated with a fighter bay on a capital ship
 // NOTE: Fighter bay paths are identified by the path_name $bayN (where N is numbered from 1).
 //			Capital ships only have ONE fighter bay on the entire ship
-#define MAX_SHIP_BAY_PATHS		10
+// NOTE: MAX_SHIP_BAY_PATHS cannot be bumped higher than 31 without rewriting the arrival/departure flag logic.
+#define MAX_SHIP_BAY_PATHS		31
 typedef struct ship_bay {
 	int	num_paths;							// how many paths are associated with the model's fighter bay
 	int	path_indexes[MAX_SHIP_BAY_PATHS];	// index into polymodel->paths[] array

@@ -2655,6 +2655,10 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		should_arc = 0;
 	}
 
+	// SUSHI: If the lightning type is NONE, we can skip this
+	if (Ship_info[shipp->ship_info_index].damage_lightning_type == SLT_NONE)
+		should_arc = 0;
+
 	// we should draw an arc
 	if( shipp->emp_intensity > 0.0f){
 		should_arc = 1;

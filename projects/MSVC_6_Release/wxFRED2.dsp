@@ -19,8 +19,8 @@ CFG=wxFRED2 - Win32 Debug
 !MESSAGE 
 !MESSAGE "wxFRED2 - Win32 Release" (based on "Win32 (x86) Application")
 !MESSAGE "wxFRED2 - Win32 Debug" (based on "Win32 (x86) Application")
-!MESSAGE "wxFRED2 - Win32 Debug Inferno" (based on "Win32 (x86) Application")
 !MESSAGE "wxFRED2 - Win32 Release Inferno" (based on "Win32 (x86) Application")
+!MESSAGE "wxFRED2 - Win32 Debug Inferno" (based on "Win32 (x86) Application")
 !MESSAGE 
 
 # Begin Project
@@ -118,51 +118,6 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug Inferno"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 1
-# PROP BASE Output_Dir "wxFRED2___Win32_Debug_Inferno"
-# PROP BASE Intermediate_Dir "wxFRED2___Win32_Debug_Inferno"
-# PROP BASE Ignore_Export_Lib 0
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 1
-# PROP Output_Dir "Debug_Inferno"
-# PROP Intermediate_Dir "Debug_Inferno\Profile\wxfred2"
-# PROP Ignore_Export_Lib 0
-# PROP Target_Dir ""
-# ADD BASE CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "INF_BUILD" /U "NDEBUG" /FR /YX /FD /GZ /c
-# ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
-# ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
-# ADD BASE RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "_DEBUG"
-# ADD RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "_DEBUG"
-BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo /o"Debug/Profile/wxFRED2.bsc" "Debug\Profile\*.sbr"
-# ADD BSC32 /nologo /o"Debug_Inferno/Profile/wxFRED2.bsc" "Debug\Profile\*.sbr"
-LINK32=link.exe
-# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"Debug/wxfred2_open_trunk_d.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
-# SUBTRACT BASE LINK32 /nodefaultlib
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"Debug_Inferno/wxfred2_open_trunk_d_INF.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
-# SUBTRACT LINK32 /nodefaultlib
-# Begin Custom Build - Copying build...
-ProjDir=.
-InputPath=.\Debug_Inferno\wxfred2_open_trunk_d_INF.exe
-SOURCE="$(InputPath)"
-
-BuildCmds= \
-	copy $(InputPath) "$(FS2PATH)/wxfred2_open_trunk_d_INF.exe" \
-	copy "$(ProjDir)\..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc" \
-	
-
-"$(FS2PATH)/wxfred2_open_trunk_d_INF.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"$(FS2PATH)\wxfred.xrc" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Release Inferno"
 
 # PROP BASE Use_MFC 0
@@ -210,14 +165,59 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
+!ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug Inferno"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 1
+# PROP BASE Output_Dir "wxFRED2___Win32_Debug_Inferno"
+# PROP BASE Intermediate_Dir "wxFRED2___Win32_Debug_Inferno"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 1
+# PROP Output_Dir "Debug_Inferno"
+# PROP Intermediate_Dir "Debug_Inferno\Profile\wxfred2"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /I "$(WXWIN)/lib/vc_lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "INF_BUILD" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "_DEBUG"
+# ADD RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "_DEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo /o"Debug/Profile/wxFRED2.bsc" "Debug\Profile\*.sbr"
+# ADD BSC32 /nologo /o"Debug_Inferno/Profile/wxFRED2.bsc" "Debug\Profile\*.sbr"
+LINK32=link.exe
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"Debug/wxfred2_open_trunk_d.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
+# SUBTRACT BASE LINK32 /nodefaultlib
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"Debug_Inferno/wxfred2_open_trunk_d_INF.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
+# SUBTRACT LINK32 /nodefaultlib
+# Begin Custom Build - Copying build...
+ProjDir=.
+InputPath=.\Debug_Inferno\wxfred2_open_trunk_d_INF.exe
+SOURCE="$(InputPath)"
+
+BuildCmds= \
+	copy $(InputPath) "$(FS2PATH)/wxfred2_open_trunk_d_INF.exe" \
+	copy "$(ProjDir)\..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc" \
+	
+
+"$(FS2PATH)/wxfred2_open_trunk_d_INF.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(FS2PATH)\wxfred.xrc" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
 !ENDIF 
 
 # Begin Target
 
 # Name "wxFRED2 - Win32 Release"
 # Name "wxFRED2 - Win32 Debug"
-# Name "wxFRED2 - Win32 Debug Inferno"
 # Name "wxFRED2 - Win32 Release Inferno"
+# Name "wxFRED2 - Win32 Debug Inferno"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -454,7 +454,7 @@ InputName=wxfred
 
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug Inferno"
+!ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Release Inferno"
 
 # Begin Custom Build - Compiling XRC resources...
 InputDir=..\..\code\wxfred2
@@ -466,7 +466,7 @@ InputName=wxfred
 
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Release Inferno"
+!ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug Inferno"
 
 # Begin Custom Build - Compiling XRC resources...
 InputDir=..\..\code\wxfred2

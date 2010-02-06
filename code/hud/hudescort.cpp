@@ -52,7 +52,6 @@ int				Max_escort_ships = 3;
 
 
 hud_frames Escort_gauges[NUM_ESCORT_FRAMES];
-int Escort_gauges_loaded = 0;
 
 //int Escort_gauge_y[MAX_ESCORT_SHIPS] = { 219, 230, 241 };
 
@@ -153,21 +152,17 @@ void hud_escort_init()
 {
 	int i;
 
-	if ( !Escort_gauges_loaded ) {
-		for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
-			if ( strlen(current_hud->Escort_filename[i]) ) {
-				Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
+	for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
+		if ( strlen(current_hud->Escort_filename[i]) ) {
+			Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
 
-				if (Escort_gauges[i].first_frame == -1) {
-					Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
-					return;
-				}
-			} else {
-				Escort_gauges[i].first_frame = -1;
+			if (Escort_gauges[i].first_frame == -1) {
+				Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
+				return;
 			}
+		} else {
+			Escort_gauges[i].first_frame = -1;
 		}
-
-		Escort_gauges_loaded = 1;
 	}
 
 	Last_target_index = -1;
@@ -543,7 +538,7 @@ int hud_escort_set_gauge_color(int index, int team)
 
 
 	// Goober5000 - now base this on team color
-	gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
+	gr_set_color_fast(iff_get_color_by_team_and_object(team, seen_from_team, is_bright, &Objects[Escort_ships[index].objnum]));
 
 
 	// Goober5000 - an alternative; same as original but incorporating teams for non-friendlies

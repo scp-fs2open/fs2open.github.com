@@ -22,6 +22,7 @@
 
 //Global stuffs
 hud_info *current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
+bool Custom_gauge_images_loaded = false;
 hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_CLASSES];
 extern int ships_inited; //Need this
@@ -67,7 +68,6 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 //Number of gauges
 int Num_gauge_types = 17;
 int Num_custom_gauges = 0;
-
 
 static void load_hud_defaults(hud_info *hud)
 {
@@ -170,15 +170,11 @@ static void calculate_gauges(hud_info* dest_hud)
 /****************************************************************************************************/
 /* You shouldn't have to modify anything past here to add gauges */
 /****************************************************************************************************/
-//This doesn't belong in parse_lo, it's not really that low.
-static int size_temp[2];
-static float percentage_temp[2];
 int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 {
-	//Speed up calculations
-	static hud_info* factor_for_hud;
-	static float resize_factor[2];
-	float fl_buffer[2];
+	// Speed up calculations
+	float percentage_temp[2];
+	int size_temp[2];
 	bool size_defined = false;
 
 	if(required)
@@ -190,54 +186,39 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 		return 0;
 	}
 
-	//stuff_int_list(HUD_INT(dest_hud, i), 2, RAW_INTEGER_TYPE);
-	stuff_float_list(fl_buffer, 2);
-	if(!cg->parent)
-	{
-		factor_for_hud = NULL;
-		resize_factor[0] = 1;
-		resize_factor[1] = 1;
-	}
-	else if(dest_hud != factor_for_hud)
-	{
-		resize_factor[0] = (float)gr_screen.max_w / (float)dest_hud->resolution[0];
-		resize_factor[1] = (float)gr_screen.max_h / (float)dest_hud->resolution[1];
-	}
-	//Resize to current res
-	HUD_INT(dest_hud, cg->coord_dest)[0] = fl2i(fl_buffer[0] * resize_factor[0]);
-	HUD_INT(dest_hud, cg->coord_dest)[1] = fl2i(fl_buffer[1] * resize_factor[1]);
+	stuff_int_list(HUD_INT(dest_hud, cg->coord_dest), 2, RAW_INTEGER_TYPE);
 
 	if(optional_string("+Size:"))
 	{
 		stuff_int_list(size_temp, 2, RAW_INTEGER_TYPE);
+
 		if(cg->size_dest)
 		{
 			HUD_INT(dest_hud, cg->size_dest)[0] = size_temp[0];
 			HUD_INT(dest_hud, cg->size_dest)[1] = size_temp[1];
+
+			size_defined = true;
 		}
-		
-		//For %
-		size_defined = false;
 	}
 
 	if(optional_string("+Percentage:"))
 	{
 		stuff_float_list(percentage_temp, 2);
-		percentage_temp[0] *= (gr_screen.max_w / 100.0f);
-		percentage_temp[1] *= (gr_screen.max_h / 100.0f);
+		percentage_temp[0] *= (dest_hud->resolution[0] / 100.0f);
+		percentage_temp[1] *= (dest_hud->resolution[1] / 100.0f);
 
-		//Bool true, size defined
-		if(!size_defined)
+		if(size_defined)
 		{
 			if(percentage_temp[0])
 			{
-				percentage_temp[0] -= size_temp[0] / 2;
+				percentage_temp[0] -= fl2i(size_temp[0] / 2.0f);
 			}
 			if(percentage_temp[1])
 			{
-				percentage_temp[1] -= size_temp[1] / 2;
+				percentage_temp[1] -= fl2i(size_temp[1] / 2.0f);
 			}
 		}
+
 		HUD_INT(dest_hud, cg->coord_dest)[0] += fl2i(percentage_temp[0]);
 		HUD_INT(dest_hud, cg->coord_dest)[1] += fl2i(percentage_temp[1]);
 	}
@@ -294,34 +275,41 @@ static void parse_resolution(hud_info* dest_hud)
 		cg = &gauges[i];
 		if(cg->parent == NULL && strlen(cg->fieldname))
 		{
-
 			stuff_coords(dest_hud, cg);
 		}
 	}
+
+	dest_hud->loaded = true;
 }
 
 static void parse_resolution_gauges(hud_info* dest_hud)
 {
 	char gaugename[NAME_LENGTH];
 	gauge_info *cg, *parent;
-	while(!required_string_3("$Gauge:","$Resolution:","#End"))
+	while(!required_string_4("$Gauge:", "$Default:", "$Resolution:", "#End"))
 	{
 		required_string("$Gauge:");
 		stuff_string(gaugename, F_NAME, NAME_LENGTH);
 
 		parent = NULL;
+		int i = 0;
 
-		for(int i = 0; i < Num_gauge_types; i++)
+		for(i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
-			if(!parent)
+
+			if(!parent && !strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
 			{
-				if(!strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
-				{
-					parent = cg;
-				}
+				parent = cg;
+				break;
 			}
-			else if(parent == cg->parent)
+		}
+
+		for(i = 0; i < Num_gauge_types; i++)
+		{
+			cg = &gauges[i];
+			
+			if(parent == cg->parent)
 			{
 				stuff_coords(dest_hud, cg);
 			}
@@ -378,16 +366,26 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 	if(str_token == 1)
 	{
 		required_string("$Default:");
-		if(!dest_hud->loaded)
+		stuff_int_list(buffer, 2, RAW_INTEGER_TYPE);
+
+		if(buffer[0] == 0 || buffer == 0)
 		{
-			stuff_int_list(dest_hud->resolution, 2, RAW_INTEGER_TYPE);
-			if(dest_hud->resolution[0] == 0 || dest_hud->resolution == 0)
-			{
-				dest_hud->resolution[0] = gr_screen.max_w;
-				dest_hud->resolution[1] = gr_screen.max_h;
-			}
-			return dest_hud;
+			buffer[0] = gr_screen.max_w;
+			buffer[1] = gr_screen.max_h;
 		}
+
+		// In case of a second $Default: declaration (in a tbm or a ship gauge perhaps),
+		// check if it declares the same resolution as before. If not, reload defaults.
+		if(dest_hud->loaded && (buffer[0] != dest_hud->resolution[0]) || (buffer[1] != dest_hud->resolution[1]))
+		{
+			load_hud_defaults(dest_hud);
+		}
+
+		//Set the resolution
+		memcpy(dest_hud->resolution, buffer, sizeof(buffer));
+		dest_hud->loaded = false;
+
+		return dest_hud;
 	}
 	else
 	{
@@ -396,18 +394,14 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 
 		if ( (buffer[0] == gr_screen.max_w_unscaled) && (buffer[1] == gr_screen.max_h_unscaled) )
 		{
-			//Get the ship HUD ready w/ defaults
-			if(default_hud.loaded)
+			if(dest_hud->loaded)
 			{
-				memcpy(dest_hud, &default_hud, sizeof(hud_info));
-				//It's not really loaded
-				dest_hud->loaded = false;
+				load_hud_defaults(dest_hud);
 			}
-			else
-			{
-				//Set the resolution
-				memcpy(dest_hud->resolution, buffer, sizeof(buffer));
-			}
+
+			//Set the resolution
+			memcpy(dest_hud->resolution, buffer, sizeof(buffer));
+			dest_hud->loaded = false;
 
 			return dest_hud;
 		}
@@ -579,9 +573,15 @@ void parse_hud_gauges_tbl(char *filename)
 			{
 				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
+					// Copy defaults
+					if(!dest_hud->loaded && default_hud.loaded)
 					{
-						if(parse_resolution_start(dest_hud, rval))
+						memcpy(dest_hud, &default_hud, sizeof(hud_info));
+					}
+
+					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
+					{
+						if(parse_resolution_start(dest_hud, rval - 1))
 						{
 							parse_resolution(dest_hud);
 						}
@@ -602,9 +602,15 @@ void parse_hud_gauges_tbl(char *filename)
 			{
 				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
+					// Copy defaults
+					if(!dest_hud->loaded && default_hud.loaded)
 					{
-						if(parse_resolution_start(dest_hud, rval))
+						memcpy(dest_hud, &default_hud, sizeof(hud_info));
+					}
+
+					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
+					{
+						if(parse_resolution_start(dest_hud, rval - 1))
 						{
 							parse_resolution_gauges(dest_hud);
 						}
@@ -670,6 +676,7 @@ void set_current_hud(int player_ship_num)
 	}
 
 	current_hud = &real_current_hud;
+	Custom_gauge_images_loaded = false;
 }
 
 /* - not POD so GCC won't take it for offsetof - taylor

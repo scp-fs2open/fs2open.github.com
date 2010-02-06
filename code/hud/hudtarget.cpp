@@ -192,8 +192,6 @@ char Lead_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
 //				3	=>		gun energy light
 hud_frames Aburn_bar_gauge;
 hud_frames Wenergy_bar_gauge;
-int Aburn_bar_gauge_loaded = 0;
-int Wenergy_bar_gauge_loaded = 0;
 /*int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		439, 318
@@ -1180,21 +1178,17 @@ void hud_init_targeting()
 		}
 		Lead_indicator_gauge_loaded = 1;
 	}
-	if (!Aburn_bar_gauge_loaded) {
+
 		Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
 		if ( Aburn_bar_gauge.first_frame < 0 ) {
 			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Aburn_fname);
 		}
-		Aburn_bar_gauge_loaded = 1;
-	}
 
-	if (!Wenergy_bar_gauge_loaded) {
 		Wenergy_bar_gauge.first_frame = bm_load_animation(current_hud->Wenergy_fname, &Wenergy_bar_gauge.num_frames);
 		if ( Wenergy_bar_gauge.first_frame < 0 ) {
 			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Wenergy_fname);
 		}
-		Wenergy_bar_gauge_loaded = 1;
-	}
+
 	if (!Toggle_gauge_loaded) {
 		Toggle_gauge.first_frame = bm_load_animation(Toggle_fname[gr_screen.res], &Toggle_gauge.num_frames);
 		if ( Toggle_gauge.first_frame < 0 ) {
