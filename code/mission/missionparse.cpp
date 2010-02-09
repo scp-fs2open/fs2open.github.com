@@ -902,6 +902,9 @@ void parse_cutscenes(mission *pm)
 			if (optional_string("$Debriefing Cutscene:")) {
 				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
 			}
+			if (optional_string("$Campaign End Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
+			}
 		}
 	}
 }
