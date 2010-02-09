@@ -626,6 +626,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_SHOWN_ON_RADAR;
 		else if (!stricmp(NOX("show friendly on radar"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_SHOW_FRIENDLY;
+		else if (!stricmp(NOX("capital+"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CAPITAL_PLUS;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
