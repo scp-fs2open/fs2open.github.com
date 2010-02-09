@@ -2504,7 +2504,7 @@ void mission_campaign_end_do()
 			movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
 		}
 	} else {
-		// TODO: might want to provide the option to play custom cutscenes
+		common_maybe_play_cutscene(MOVIE_END_CAMPAIGN);
 	}
 
 #ifdef FS2_DEMO
