@@ -5395,6 +5395,23 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		// ##UnknownPlayer## - removed.
 	}
 
+	if ( Ship_info[Ships[other_objp->instance].ship_info_index].flags & ( SIF_BIG_SHIP | SIF_HUGE_SHIP)) 
+	{
+		//Check if we have a capital+ weapon on board
+		for (int i = 0; i < swp->num_primary_banks; i++)
+		{
+			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			{
+				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS)
+				{
+					swp->current_primary_bank = i;
+					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
+					return i;
+				}
+			}
+		}
+	}
+
 	float enemy_remaining_shield = get_shield_pct(other_objp);
 
 	// Is the target shielded by say only 5%?
@@ -5409,7 +5426,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				if (((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev) && (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS) && !( Ship_info[Ships[other_objp->instance].ship_info_index].flags & ( SIF_BIG_SHIP | SIF_HUGE_SHIP))) )
 				{
 					// This weapon is the new candidate
 					i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
@@ -5433,7 +5450,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			bank_index = swp->current_primary_bank;
 
-			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE_SHIELDS) 
+			if ((Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE_SHIELDS) && !(Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_CAPITAL_PLUS)&& !( Ship_info[Ships[other_objp->instance].ship_info_index].flags & ( SIF_BIG_SHIP | SIF_HUGE_SHIP)))
 			{
 				return swp->current_primary_bank;
 			}
@@ -5446,7 +5463,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			if (weapon_info_index > -1)
 			{
-				if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) 
+				if ((Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS)&& !( Ship_info[Ships[other_objp->instance].ship_info_index].flags & ( SIF_BIG_SHIP | SIF_HUGE_SHIP))) 
 				{
 					swp->current_primary_bank = i;
 					return i;
@@ -5467,7 +5484,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
+				if (((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev ) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS)&& !( Ship_info[Ships[other_objp->instance].ship_info_index].flags & ( SIF_BIG_SHIP | SIF_HUGE_SHIP)))
 				{
 					// This weapon is the new candidate
 					i_hullfactor_prev = ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait));
@@ -5493,7 +5510,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
+				if (((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev ) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS)&& !( Ship_info[Ships[other_objp->instance].ship_info_index].flags & ( SIF_BIG_SHIP | SIF_HUGE_SHIP)))
 				{
 					// This weapon is the new candidate
 					i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );

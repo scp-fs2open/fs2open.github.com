@@ -332,7 +332,8 @@ flag_def_list ai_tgt_weapon_flags[] = {
 	{ "aspect seeking",		WIF_HOMING_ASPECT,		0 },
 	{ "engine seeking",		WIF_HOMING_JAVELIN,		0 },
 	{ "pierce shields",		WIF2_PIERCE_SHIELDS,	1 },
-	{ "local ssm",			WIF2_LOCAL_SSM,			1 }
+	{ "local ssm",			WIF2_LOCAL_SSM,			1 },
+	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
 };
 
 int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
