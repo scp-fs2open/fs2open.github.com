@@ -988,9 +988,11 @@ void LuaDebugPrint(lua_Debug &ar)
 	dumpBuffer.Printf( "Source:\t\t%s\r\n",  ar.source);
 	dumpBuffer.Printf( "Short source:\t%s\r\n",  ar.short_src);
 	dumpBuffer.Printf( "Current line:\t%d\r\n",  ar.currentline);
+	dumpBuffer.Printf( "- Function line:\t%d\r\n", (ar.linedefined ? (1 + ar.currentline - ar.linedefined) : 0));
 }
 
 extern lua_Debug Ade_debug_info;
+extern char debug_stack[4][32];
 void LuaError(struct lua_State *L, char *format, ...)
 {
 	int val;
@@ -1046,6 +1048,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 		dumpBuffer.Printf("(No stack debug info)\r\n");
 	}
 */
+//	TEST CODE
+
 	dumpBuffer.Printf(Separator);
 	dumpBuffer.Printf( "ADE Debug:" );
 	dumpBuffer.Printf( "\r\n" );
@@ -1058,8 +1062,12 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	AssertText2[0] = '\0';
 	dumpBuffer.Printf(Separator);
-	dumpBuffer.Printf("LUA Stack:");
-	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf("LUA Stack:\r\n");
+	int i;
+	for (i = 0; i < 4; i++) {
+		if (debug_stack[i][0] != '\0')
+			dumpBuffer.Printf("\t%s\r\n", debug_stack[i]);
+	}
 	dumpBuffer.Printf(Separator);
 	ade_stackdump(L, AssertText2);
 	dumpBuffer.Printf( AssertText2 );

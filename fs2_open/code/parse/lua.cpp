@@ -10903,18 +10903,54 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx)
 // *************************Housekeeping*************************
 //WMC - The miraculous lines of code that make Lua debugging worth something.
 lua_Debug Ade_debug_info;
+char debug_stack[4][32];
 
-void ade_debug_line(lua_State *L, lua_Debug *ar)
+void ade_debug_call(lua_State *L, lua_Debug *ar)
 {
 	Assert(L != NULL);
 	Assert(ar != NULL);
+	lua_getstack(L, 1, ar);
+	//lua_getfield(L, LUA_GLOBALSINDEX, "f");
 	lua_getinfo(L, "nSlu", ar);
 	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
+
+	int n;
+	for (n = 0; n < 4; n++) {
+		debug_stack[n][0] = '\0';
+	}
+
+	for (n = 0; n < 4; n++) {
+		if (lua_getstack(L,n+1, ar) == NULL)
+			break;
+		lua_getinfo(L,"n", ar);
+		if (ar->name == NULL)
+			break;
+		strcpy_s(debug_stack[n],ar->name);
+	}
 }
 
 void ade_debug_ret(lua_State *L, lua_Debug *ar)
 {
-	//WMC - So Lua isn't mean and uses ade_debug_line for returns
+	Assert(L != NULL);
+	Assert(ar != NULL);
+	lua_getstack(L, 1, ar);
+	//lua_getfield(L, LUA_GLOBALSINDEX, "f");
+	lua_getinfo(L, "nSlu", ar);
+	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
+
+	int n;
+	for (n = 0; n < 4; n++) {
+		debug_stack[n][0] = '\0';
+	}
+
+	for (n = 0; n < 4; n++) {
+		if (lua_getstack(L,n+1, ar) == NULL)
+			break;
+		lua_getinfo(L,"n", ar);
+		if (ar->name == NULL)
+			break;
+		strcpy_s(debug_stack[n],ar->name);
+	}
 }
 
 //WMC - because the behavior of the return keyword
@@ -10968,7 +11004,8 @@ int script_state::CreateLuaState()
 
 	//*****SET DEBUG HOOKS
 #ifndef NDEBUG
-	lua_sethook(L, ade_debug_line, LUA_MASKLINE, 0);
+	//lua_sethook(L, ade_debug_ret, LUA_MASKLINE, 0);
+	//lua_sethook(L, ade_debug_call, LUA_MASKCALL, 0);
 	lua_sethook(L, ade_debug_ret, LUA_MASKRET, 0);
 #endif
 
