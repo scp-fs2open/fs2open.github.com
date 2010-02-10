@@ -3359,7 +3359,7 @@ float beam_get_ship_damage(beam *b, object *objp)
 int beam_will_tool_target(beam *b, object *objp)
 {
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
-	float total_strength, damage_in_a_few_seconds;
+	float total_strength, damage_in_a_few_seconds, hp_limit, hp_pct;
 	
 	// sanity
 	if(objp == NULL){
@@ -3375,15 +3375,21 @@ int beam_will_tool_target(beam *b, object *objp)
 	}
 	
 	ship *shipp = &Ships[objp->instance];
+	total_strength = objp->hull_strength;
 
 	if (shipp->armor_type_idx != -1) {
 		if (Armor_types[shipp->armor_type_idx].GetPiercingType(wip->damage_type_idx) == SADTF_PIERCING_NONE) {
 			return 0;
 		}
+		hp_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(wip->damage_type_idx);
+		if (hp_limit > 0.0f) {
+			hp_pct = total_strength / shipp->ship_max_hull_strength;
+			if (hp_limit >= hp_pct)
+				return 1;
+		}
 	}
 
 	// calculate total strength, factoring in shield
-	total_strength = objp->hull_strength;
 	if (!(wip->wi_flags2 & WIF2_PIERCE_SHIELDS))
 		total_strength += shield_get_strength(objp);
 
