@@ -15300,7 +15300,7 @@ int sexp_is_primary_selected(int node)
 	}
 
 	// is this the bank currently selected
-	if(bank == shipp->weapons.current_primary_bank){
+	if( (bank == shipp->weapons.current_primary_bank) || (shipp->flags & SF_PRIMARY_LINKED) ){
 		return SEXP_TRUE;
 	}
 
