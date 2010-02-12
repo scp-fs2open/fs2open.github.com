@@ -53,17 +53,17 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 	{ NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, 0, 0, -1, -1 },
 
 	//Mini-gauges
-	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-//	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			489, 208, 869, 331,			0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_entry_last),		"$Last Ship:",				0, 11, 0, 11,		0, HUD_VAR(Escort_filename[2]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_name),			"$Ship Name:",				3, 0, 4, 0,			0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_integrity),		"$Ship Hull:",				128, 0, 116, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_status),			"$Ship Status:",			-12, 0, -11, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 }
+	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+//	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			3,  2, 4,  1,	    0, 0, 0, 0, 0, 0, 0, 0,        -1 },
+	{ &gauges[6],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_entry_last),		"$Last Ship:",				0, 11, 0, 11,		0, HUD_VAR(Escort_filename[2]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_name),			"$Ship Name:",				3, 0, 4, 0,			0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_integrity),		"$Ship Hull:",				128, 0, 116, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_status),			"$Ship Status:",			-12, 0, -11, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 }
 };
 
 //Number of gauges
@@ -598,8 +598,6 @@ void parse_hud_gauges_tbl(char *filename)
 		required_string("#End");
 	}
 
-	calculate_gauges(&default_hud);
-
 	if(ships_inited)
 	{
 		//Parse main ship gauges
@@ -668,6 +666,8 @@ void parse_hud_gauges_tbl(char *filename)
 			}
 		}
 	}
+
+	calculate_gauges(&default_hud);
 
 	// close localization
 	lcl_ext_close();
