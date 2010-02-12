@@ -1988,6 +1988,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
+				if (!stricmp(CTEXT(node), "<species support ship class>"))
+					break;
+
 				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
@@ -14207,7 +14210,7 @@ void sexp_set_support_ship(int n)
 	// get ship class
 	n = CDR(n);
 	temp_val = ship_info_lookup(CTEXT(n));
-	if ((temp_val < 0) && (stricmp(CTEXT(n), "<any support ship class>")))
+	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>")) || (stricmp(CTEXT(n), "<any support ship class>")) ))
 	{
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
