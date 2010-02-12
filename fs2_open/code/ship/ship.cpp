@@ -11806,11 +11806,6 @@ object *ship_find_repair_ship( object *requester_obj )
 	Assert(requester_obj->type == OBJ_SHIP);
 	Assert((requester_obj->instance >= 0) && (requester_obj->instance < MAX_OBJECTS));
 
-	// if support ships are not allowed, then no support ship can repair!
-	if ( !is_support_allowed(requester_obj) ) {
-		return NULL;
-	}
-
 	num_support_ships = 0;
 	num_available_support_ships = 0;
 
@@ -14679,7 +14674,8 @@ int is_support_allowed(object *objp)
 	// restricted number allowed
 	if (The_mission.support_ships.max_support_ships > 0)
 	{
-		if (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships)
+		// if all the allowed ships have been used up and there are no support ships currently in the mission - can't rearm
+		if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships) && (ship_find_repair_ship(objp) == NULL))
 			return 0;
 	}
 
