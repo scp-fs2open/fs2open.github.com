@@ -4881,7 +4881,7 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 	int i;
 	sexp_list_item head;
 
-	head.add_data("<any support ship class>");
+	head.add_data("<species support ship class>");
 
 	for (i=0; i<Num_ship_classes; i++)
 	{
