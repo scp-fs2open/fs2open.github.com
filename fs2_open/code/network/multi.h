@@ -62,9 +62,9 @@ struct player;
 // revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
 // STANDALONE_ONLY
 #ifdef INF_BUILD
-#define MULTI_FS_SERVER_VERSION							146
+#define MULTI_FS_SERVER_VERSION							147
 #else 
-#define MULTI_FS_SERVER_VERSION							46
+#define MULTI_FS_SERVER_VERSION							47
 #endif
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
