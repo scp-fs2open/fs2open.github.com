@@ -5771,6 +5771,18 @@ int sexp_get_object_coordinate(int n, int axis)
 	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
 }
 
+void set_object_for_clients(object *objp)
+{
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		return;
+	}
+
+	// Tell the player (if this is a client) that they've moved.
+	if ((objp->flags & OF_PLAYER_SHIP) && (objp != Player_obj) ){
+		multi_oo_send_changed_object(objp);
+	}
+}
+
 void sexp_set_object_position(int n) 
 {
 	vec3d target_vec, orig_leader_vec;
@@ -5796,6 +5808,7 @@ void sexp_set_object_position(int n)
 			// move the first one first
 			orig_leader_vec = oswpt.objp->pos;
 			oswpt.objp->pos = target_vec;
+			set_object_for_clients(oswpt.objp);
 
 			// move everything on the team
 			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
@@ -5806,6 +5819,7 @@ void sexp_set_object_position(int n)
 				{
 					vm_vec_sub2(&objp->pos, &orig_leader_vec);
 					vm_vec_add2(&objp->pos, &target_vec);
+					set_object_for_clients(objp);
 				}
 			}
 
@@ -5816,10 +5830,7 @@ void sexp_set_object_position(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
-			// Tell the player (if this is a client) that they've moved.
-			if (( Game_mode & GM_MULTIPLAYER ) && (oswpt.objp->flags & OF_PLAYER_SHIP) && (oswpt.objp != Player_obj) ){
-				multi_oo_send_changed_object(oswpt.objp);
-			}
+			set_object_for_clients(oswpt.objp);
 			return;
 		}
 
@@ -5828,6 +5839,7 @@ void sexp_set_object_position(int n)
 			// move the wing leader first
 			orig_leader_vec = oswpt.objp->pos;
 			oswpt.objp->pos = target_vec;
+			set_object_for_clients(oswpt.objp);
 
 			// move everything in the wing
 			for (int i = 0; i < oswpt.wingp->current_count; i++)
@@ -5838,6 +5850,7 @@ void sexp_set_object_position(int n)
 				{
 					vm_vec_sub2(&objp->pos, &orig_leader_vec);
 					vm_vec_add2(&objp->pos, &target_vec);
+					set_object_for_clients(objp);
 				}
 			}
 
@@ -5886,9 +5899,7 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 	// set orientation -----------------------------
 	objp->orient = m_orient;
 	// Tell the player (assuming it's a client) that they've moved.
-	if (( Game_mode & GM_MULTIPLAYER ) && (objp->flags & OF_PLAYER_SHIP) && (objp != Player_obj) ){
-		multi_oo_send_changed_object(objp);
-	}
+	set_object_for_clients(objp);
 }
 
 // Goober5000
