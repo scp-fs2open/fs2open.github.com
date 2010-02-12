@@ -71,6 +71,8 @@ typedef struct hud_info
 	hud_info( )
 		: loaded( false )
 	{
+		int i;
+
 		memset( resolution, 0, sizeof( resolution ) );
 		memset( Player_shield_coords, 0, sizeof( Player_shield_coords ) );
 		memset( Target_shield_coords, 0, sizeof( Target_shield_coords ) );
@@ -102,8 +104,11 @@ typedef struct hud_info
 		memset( custom_gauge_frames, 0, sizeof( custom_gauge_frames ) );
 		memset( custom_gauge_text, 0, sizeof( custom_gauge_text ) );
 		memset( custom_gauge_colors, 0, sizeof( custom_gauge_colors ) );
-		memset( custom_gauge_color_parents, 0, sizeof( custom_gauge_color_parents ) );
 		memset( custom_gauge_moveflags, 0, sizeof( custom_gauge_moveflags ) );
+
+		for (i = 0; i < MAX_CUSTOM_HUD_GAUGES; ++i) {
+			custom_gauge_color_parents[i] = -1;
+		}
 	}
 } hud_info;
 
