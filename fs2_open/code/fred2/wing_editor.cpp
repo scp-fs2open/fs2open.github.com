@@ -22,6 +22,7 @@
 #include "jumpnode/jumpnode.h"
 #include "cfile/cfile.h"
 #include "restrictpaths.h"
+#include "iff_defs/iff_defs.h"
 
 #define ID_WING_MENU 9000
 
@@ -569,7 +570,7 @@ int wing_editor::update_data(int redraw)
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->type == OBJ_SHIP) {
+			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 				if (!stricmp(m_wing_name, Ships[ptr->instance].ship_name)) {
 					if (bypass_errors)
 						return 1;
@@ -589,7 +590,43 @@ int wing_editor::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
+		for (i=0; i<Num_iffs; i++) {
+			if (!stricmp(m_wing_name, Iff_info[i].iff_name)) 
+			{
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This wing name is already being used by a team.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_wing_name = _T(Wings[cur_wing].name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(m_wing_name, Ai_tp_list[i].name)) 
+			{
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This wing name is already being used by a target priority group.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_wing_name = _T(Wings[cur_wing].name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for (i=0; i<MAX_WAYPOINT_LISTS; i++) {
 			if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_wing_name)) {
 				if (bypass_errors)
 					return 1;
@@ -604,22 +641,38 @@ int wing_editor::update_data(int redraw)
 				m_wing_name = _T(Wings[cur_wing].name);
 				UpdateData(FALSE);
 			}
+		}
 
-			if(jumpnode_get_by_name(m_wing_name) != NULL)
-			{
-				if (bypass_errors)
-					return 1;
+		if(jumpnode_get_by_name(m_wing_name) != NULL)
+		{
+			if (bypass_errors)
+				return 1;
 
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by a jump node\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			bypass_errors = 1;
+			z = MessageBox("This wing name is already being used by a jump node\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
-				if (z == IDCANCEL)
-					return -1;
+			if (z == IDCANCEL)
+				return -1;
 
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
+			m_wing_name = _T(Wings[cur_wing].name);
+			UpdateData(FALSE);
+		}
+
+		if (!stricmp(m_wing_name.Left(1), "<")) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("Wing names not allowed to begin with <\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_wing_name = _T(Wings[cur_wing].name);
+			UpdateData(FALSE);
+		}
 
 		strcpy_s(old_name, Wings[cur_wing].name);
 		string_copy(Wings[cur_wing].name, m_wing_name, NAME_LENGTH, 1);

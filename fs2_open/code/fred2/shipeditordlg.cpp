@@ -1053,7 +1053,7 @@ int CShipEditorDlg::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<MAX_WINGS; i++)
+		for (i=0; i<MAX_WINGS; i++) {
 			if (Wings[i].wave_count && !stricmp(Wings[i].name, m_ship_name)) {
 				if (bypass_errors)
 					return 1;
@@ -1068,6 +1068,42 @@ int CShipEditorDlg::update_data(int redraw)
 				m_ship_name = _T(Ships[single_ship].ship_name);
 				UpdateData(FALSE);
 			}
+		}
+
+		for (i=0; i<Num_iffs; i++) {
+			if (!stricmp(m_ship_name, Iff_info[i].iff_name)) {
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This ship name is already being used by a team.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_ship_name = _T(Ships[single_ship].ship_name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(m_ship_name, Ai_tp_list[i].name)) 
+			{
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This ship name is already being used by a target priority group.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_ship_name = _T(Ships[single_ship].ship_name);
+				UpdateData(FALSE);
+			}
+		}
 
 		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
 			if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_ship_name)) {
@@ -1085,7 +1121,7 @@ int CShipEditorDlg::update_data(int redraw)
 				UpdateData(FALSE);
 			}
 
-			if(jumpnode_get_by_name(m_ship_name) != NULL)
+		if(jumpnode_get_by_name(m_ship_name) != NULL)
 		{
 			if (bypass_errors)
 				return 1;
@@ -1097,6 +1133,21 @@ int CShipEditorDlg::update_data(int redraw)
 
 			if (z == IDCANCEL)
 			return -1;
+
+			m_ship_name = _T(Ships[single_ship].ship_name);
+			UpdateData(FALSE);
+		}
+		
+		if (!stricmp(m_ship_name.Left(1), "<")) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("Ship names not allowed to begin with <\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
 
 			m_ship_name = _T(Ships[single_ship].ship_name);
 			UpdateData(FALSE);
