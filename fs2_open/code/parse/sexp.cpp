@@ -8591,9 +8591,11 @@ void sexp_explosion_effect(int n)
 						ship_apply_global_damage( objp, NULL, &origin, t_damage );
 						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
-						vm_vec_copy_normalize( &force, &vec_ship_to_impact );
-						vm_vec_scale( &force, (float)max_blast );
-						ship_apply_whack( &force, &vec_ship_to_impact, objp );
+						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
+							vm_vec_copy_normalize( &force, &vec_ship_to_impact );
+							vm_vec_scale( &force, (float)max_blast );
+							ship_apply_whack( &force, &vec_ship_to_impact, objp );
+						}
 						break;
 
 					case OBJ_ASTEROID:
