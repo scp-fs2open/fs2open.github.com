@@ -4485,7 +4485,6 @@
 					_DEBUG,
 					SCP_UNIX,
 					USE_OPENAL,
-					NO_DIRECT3D,
 					APPLE_APP,
 				);
 				HEADER_SEARCH_PATHS = (
@@ -5025,8 +5024,8 @@
 					_DEBUG,
 					SCP_UNIX,
 					USE_OPENAL,
-					NO_DIRECT3D,
 					APPLE_APP,
+					INF_BUILD,
 				);
 				HEADER_SEARCH_PATHS = (
 					../../code,
@@ -5255,11 +5254,11 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					INF_BUILD,
 					NDEBUG,
 					SCP_UNIX,
 					USE_OPENAL,
 					APPLE_APP,
+					INF_BUILD,
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
@@ -5309,6 +5308,13 @@
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					APPLE_APP,
+					INF_BUILD,
+				);
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/Ogg.framework/Headers,
