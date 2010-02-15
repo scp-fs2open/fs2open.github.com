@@ -4444,7 +4444,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
-	shipp->special_warp_objnum = -1;
+	shipp->special_warpin_objnum = -1;
+	shipp->special_warpout_objnum = -1;
 
 	polymodel *pm = model_get(sip->model_num);
 

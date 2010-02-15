@@ -73,7 +73,7 @@ void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
 
 // Check if subsystem has live debris and create
 // DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
-void shipfx_subsystem_mabye_create_live_debris(object *ship_obj, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
+void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
 {
 	// initializations
 	polymodel *pm = model_get(Ship_info[ship_p->ship_info_index].model_num);
@@ -277,7 +277,7 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 						model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_obj->orient, &ship_obj->pos );
 
 						// if not blown off, blow it off
-						shipfx_subsystem_mabye_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
+						shipfx_subsystem_maybe_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
 
 						// now set subsystem as blown off, so we only get one copy
 						pm->submodel[parent].blown_off = 1;
@@ -317,7 +317,7 @@ void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys
 
 	// create live debris objects, if any
 	// TODO:  some MULITPLAYER implcations here!!
-	shipfx_subsystem_mabye_create_live_debris(ship_obj, ship_p, subsys, exp_center, 1.0f);
+	shipfx_subsystem_maybe_create_live_debris(ship_obj, ship_p, subsys, exp_center, 1.0f);
 	
 	int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
 	if(fireball_type < 0) {
@@ -610,17 +610,17 @@ void shipfx_warpin_start( object *objp )
 	// maybe special warpin
 	if(sip->warpin_type == WT_DEFAULT)
 	{
-		// VALIDATE special_warp_objnum
-		if (shipp->special_warp_objnum >= 0)
+		// VALIDATE special_warpin_objnum
+		if (shipp->special_warpin_objnum >= 0)
 		{
-			if (!shipfx_special_warp_objnum_valid(shipp->special_warp_objnum))
+			if (!shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
 			{
-				shipp->special_warp_objnum = -1;
+				shipp->special_warpin_objnum = -1;
 			}
 		}
 
 		// only move warp effect pos if not special warp in.
-		if (shipp->special_warp_objnum >= 0)
+		if (shipp->special_warpin_objnum >= 0)
 		{
 			Assert(!(Game_mode & GM_MULTIPLAYER));
 			polymodel *pm;
@@ -642,13 +642,13 @@ void shipfx_warpin_start( object *objp )
 		effect_radius = shipfx_calculate_effect_radius(objp, WD_WARP_IN);
 
 		int warp_objnum = -1;
-		if (shipp->special_warp_objnum >= 0)
+		if (shipp->special_warpin_objnum >= 0)
 		{
 			// cap radius to size of knossos
-			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
+			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warpin_objnum].radius);
 
 			// make sure that the warp effect will always have a forward orient facing the exit direction of the warpin ship - taylor
-			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
+			matrix knossos_orient = Objects[shipp->special_warpin_objnum].orient;
 			if ( (knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f) ||
 				(knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f) )
 			{
@@ -656,7 +656,7 @@ void shipfx_warpin_start( object *objp )
 				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
 			}
 
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index, &knossos_orient);
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, shipp->special_warpin_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index, &knossos_orient);
 		}
 		else
 		{
@@ -672,7 +672,7 @@ void shipfx_warpin_start( object *objp )
 		}
 
 		// maybe negate if special warp effect
-		if (shipp->special_warp_objnum >= 0)
+		if (shipp->special_warpin_objnum >= 0)
 		{
 			if (vm_vec_dotprod(&shipp->warp_effect_fvec, &objp->orient.vec.fvec) < 0)
 			{
@@ -862,7 +862,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 
 	// find special warp ship reference
 	valid_reference_ship = FALSE;
-	ref_objnum = Ships[objp->instance].special_warp_objnum;
+	ref_objnum = Ships[objp->instance].special_warpout_objnum;
 
 
 
@@ -941,7 +941,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	// If we're warping through the knossos, do something different.
-	if (shipp->special_warp_objnum >= 0) {
+	if (shipp->special_warpout_objnum >= 0) {
 		if (compute_special_warpout_stuff(objp, speed, warp_time, warp_pos) != -1) {
 			return;
 		} else {
@@ -1106,10 +1106,10 @@ void shipfx_warpout_start( object *objp )
 		effect_radius = shipfx_calculate_effect_radius(objp, WD_WARP_IN);
 
 		// maybe special warpout
-		if (shipp->special_warp_objnum >= 0) {
+		if (shipp->special_warpout_objnum >= 0) {
 			// cap radius to size of knossos
-			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warpout_objnum].radius);
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, shipp->special_warpout_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 		} else {
 
 			// * For now, all the effects flag does is to use our orange effect when warping out    -Et1
@@ -1129,7 +1129,7 @@ void shipfx_warpout_start( object *objp )
 
 		shipp->warp_effect_fvec = Objects[warp_objnum].orient.vec.fvec;
 		// maybe negate if special warp effect
-		if (shipp->special_warp_objnum >= 0) {
+		if (shipp->special_warpout_objnum >= 0) {
 			if (vm_vec_dotprod(&shipp->warp_effect_fvec, &objp->orient.vec.fvec) > 0) {
 				vm_vec_negate(&shipp->warp_effect_fvec);
 			}
@@ -3851,10 +3851,17 @@ int WE_Default::warpStart()
 	{
 		HUD_printf(NOX("Subspace drive engaged"));
 	}
+
+	int portal_objnum;
+	if (direction == WD_WARP_IN)
+		portal_objnum = shipp->special_warpin_objnum;
+	else if (direction == WD_WARP_OUT)
+		portal_objnum = shipp->special_warpout_objnum;
+	else
+		portal_objnum = -1;
+
 	portal_objp = NULL;
-	int portal_objnum = shipp->special_warp_objnum;
-	polymodel *pm = model_get(sip->model_num);
-	if(portal_objnum > -1 && shipfx_special_warp_objnum_valid(portal_objnum))
+	if(portal_objnum >= 0 && shipfx_special_warp_objnum_valid(portal_objnum))
 	{
 		portal_objp = &Objects[portal_objnum];
 	}
@@ -3863,6 +3870,7 @@ int WE_Default::warpStart()
 	float warp_time = 0.0f;
 	if(direction == WD_WARP_IN)
 	{
+		polymodel *pm = model_get(sip->model_num);
 		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != NULL) ? -pm->mins.xyz.z : objp->radius );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 

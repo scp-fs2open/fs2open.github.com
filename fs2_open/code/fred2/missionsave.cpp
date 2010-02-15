@@ -1555,7 +1555,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"beam-protect-ship\"");
 		if (Ships[i].ship_guardian_threshold != 0)
 			fout(" \"guardian\"");
-		if (objp->flags & OF_SPECIAL_WARP)
+		if (objp->flags & OF_SPECIAL_WARPIN)
 			fout(" \"special-warp\"");
 		if (Ships[i].flags & SF_VAPORIZE)
 			fout(" \"vaporize\"");

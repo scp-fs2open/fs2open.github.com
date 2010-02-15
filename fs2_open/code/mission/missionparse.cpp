@@ -1523,7 +1523,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	object *knossos_objp = NULL;
 
 	// Assume no valid knossos device
-	shipp->special_warp_objnum = -1;
+	shipp->special_warpin_objnum = -1;
 
 	// find knossos device
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
@@ -1544,8 +1544,8 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	if (knossos_objp == NULL)
 		return;
 
-	// set ship special_warp_objnum
-	shipp->special_warp_objnum = OBJ_INDEX(knossos_objp);
+	// set ship special_warpin_objnum
+	shipp->special_warpin_objnum = OBJ_INDEX(knossos_objp);
 
 	// position self for warp on plane of device
 	vec3d new_point;
@@ -1905,7 +1905,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	if (p_objp->flags & P_KNOSSOS_WARP_IN)
 	{
-		Objects[objnum].flags |= OF_SPECIAL_WARP;
+		Objects[objnum].flags |= OF_SPECIAL_WARPIN;
 		Knossos_warp_ani_used = 1;
 	}
 
