@@ -10568,7 +10568,7 @@ int wing_lookup(char *name)
 {
    int idx;
 	for(idx=0;idx<Num_wings;idx++)
-		if(strcmp(Wings[idx].name,name)==0)
+		if(stricmp(Wings[idx].name,name)==0)
 		   return idx;
 
 	return -1;
