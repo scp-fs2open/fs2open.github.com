@@ -57,7 +57,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_ESCORT, m_escort);
 	DDX_Control(pDX, IDC_DESTROY_CHECK, m_destroy);
 	DDX_Control(pDX, IDC_CARGO_KNOWN, m_cargo_known);
-	DDX_Control(pDX, IDC_SPECIAL_WARP, m_special_warp);	
+	DDX_Control(pDX, IDC_SPECIAL_WARPIN, m_special_warpin);	
 	DDX_Control(pDX, IDC_DESTROY_SPIN, m_destroy_spin);	
 	DDX_Control(pDX, IDC_DISABLE_BUILTIN_SHIP, m_disable_messages);
 	DDX_Control(pDX, IDC_NO_DEATH_SCREAM, m_no_death_scream);
@@ -145,7 +145,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
-	int special_warp = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
+	int special_warpin = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
 	int no_death_scream = 0, always_death_scream = 0;
 	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0, set_class_dynamically = 0;
 
@@ -164,7 +164,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					first = 0;
 					scannable = (shipp->flags & SF_SCANNABLE) ? 1 : 0;
 					red_alert_carry = (shipp->flags & SF_RED_ALERT_STORE_STATUS) ? 1 : 0;
-					special_warp = (objp->flags & OF_SPECIAL_WARP) ? 1 : 0;
+					special_warpin = (objp->flags & OF_SPECIAL_WARPIN) ? 1 : 0;
 					protect_ship = (objp->flags & OF_PROTECTED) ? 1 : 0;
 					beam_protect_ship = (objp->flags & OF_BEAM_PROTECTED) ? 1 : 0;
 					invulnerable = (objp->flags & OF_INVULNERABLE) ? 1 : 0;
@@ -217,7 +217,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 
 					scannable = tristate_set( shipp->flags & SF_SCANNABLE, scannable );
 					red_alert_carry = tristate_set( shipp->flags & SF_RED_ALERT_STORE_STATUS, red_alert_carry );
-					special_warp = tristate_set( objp->flags & OF_SPECIAL_WARP, special_warp );
+					special_warpin = tristate_set( objp->flags & OF_SPECIAL_WARPIN, special_warpin );
 					protect_ship = tristate_set(objp->flags & OF_PROTECTED, protect_ship);
 					beam_protect_ship = tristate_set(objp->flags & OF_BEAM_PROTECTED, beam_protect_ship);
 					invulnerable = tristate_set(objp->flags & OF_INVULNERABLE, invulnerable);
@@ -297,7 +297,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_kamikaze.SetCheck(kamikaze);
 	m_no_dynamic.SetCheck(no_dynamic);
 	m_red_alert_carry.SetCheck(red_alert_carry);
-	m_special_warp.SetCheck(special_warp);
+	m_special_warpin.SetCheck(special_warpin);
 	m_disable_messages.SetCheck(disable_messages);
 	m_set_class_dynamically.SetCheck(set_class_dynamically);
 	m_no_death_scream.SetCheck(no_death_scream);
@@ -651,19 +651,19 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
-	switch (m_special_warp.GetCheck()) {
+	switch (m_special_warpin.GetCheck()) {
 		case 1:
-			if ( !(objp->flags & OF_SPECIAL_WARP) )
+			if ( !(objp->flags & OF_SPECIAL_WARPIN) )
 				set_modified();
 
-			objp->flags |= OF_SPECIAL_WARP;
+			objp->flags |= OF_SPECIAL_WARPIN;
 			break;
 
 		case 0:
-			if ( (objp->flags & OF_SPECIAL_WARP) )
+			if ( (objp->flags & OF_SPECIAL_WARPIN) )
 				set_modified();
 
-			objp->flags &= (~OF_SPECIAL_WARP);
+			objp->flags &= (~OF_SPECIAL_WARPIN);
 			break;
 	}
 

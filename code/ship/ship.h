@@ -610,8 +610,9 @@ typedef struct ship {
 	// AWACS warning flag
 	ubyte	awacs_warning_flag;
 
-	// Special warpout objnum (warpout at knossos)
-	int special_warp_objnum;
+	// Special warp objnum (warping at knossos)
+	int special_warpin_objnum;
+	int special_warpout_objnum;
 
 	ship_subsys fighter_beam_turret_data;		//a fake subsystem that pretends to be a turret for fighter beams
 	model_subsystem beam_sys_info;

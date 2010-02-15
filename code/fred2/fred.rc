@@ -2270,7 +2270,7 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,165,17,85,10
     CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",
                     BS_3STATE | WS_TABSTOP,165,27,77,10
-    CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
+    CONTROL         "Special Warpin",IDC_SPECIAL_WARPIN,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,165,37,59,10
     CONTROL         "Targetable as Bomb",IDC_TARGETABLE_AS_BOMB,"Button",
                     BS_3STATE | WS_TABSTOP,165,47,79,10

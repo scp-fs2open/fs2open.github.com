@@ -4648,19 +4648,19 @@ int sexp_special_warp_dist( int n)
 	}
 
 	// check that ship has warpout_objnum
-	if (Ships[shipnum].special_warp_objnum == -1) {
+	if (Ships[shipnum].special_warpout_objnum < 0) {
 		return SEXP_NAN;
 	}
 	
-	Assert( (Ships[shipnum].special_warp_objnum >= 0) && (Ships[shipnum].special_warp_objnum < MAX_OBJECTS));
-	if ( (Ships[shipnum].special_warp_objnum < 0) && (Ships[shipnum].special_warp_objnum >= MAX_OBJECTS) ) {
+	Assert( (Ships[shipnum].special_warpout_objnum >= 0) && (Ships[shipnum].special_warpout_objnum < MAX_OBJECTS));
+	if ( (Ships[shipnum].special_warpout_objnum < 0) && (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
 		return SEXP_NAN;
 	}
 
 	// check the special warpout device is valid
 	int valid = FALSE;
 	object *ship_objp = &Objects[Ships[shipnum].objnum];
-	object *warp_objp = &Objects[Ships[shipnum].special_warp_objnum];
+	object *warp_objp = &Objects[Ships[shipnum].special_warpout_objnum];
 	if (warp_objp->type == OBJ_SHIP) {
 		if (Ship_info[Ships[warp_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
 			valid = TRUE;
@@ -6608,7 +6608,7 @@ int sexp_special_warpout_name( int node )
 	}
 
 	// set special warpout objnum
-	Ships[shipnum].special_warp_objnum = Ships[knossos_shipnum].objnum;
+	Ships[shipnum].special_warpout_objnum = Ships[knossos_shipnum].objnum;
 	return SEXP_FALSE;
 }
 

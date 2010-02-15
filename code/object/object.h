@@ -113,7 +113,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_WAS_RENDERED				(1<<10)	// Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
 #define OF_NOT_IN_COLL				(1<<11)	// object has not been added to collision list
 #define OF_BEAM_PROTECTED			(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
-#define OF_SPECIAL_WARP				(1<<13)	// Object has special warp-in enabled.
+#define OF_SPECIAL_WARPIN			(1<<13)	// Object has special warp-in enabled.
 #define OF_DOCKED_ALREADY_HANDLED	(1<<14)	// Goober5000 - a docked object that we already moved
 #define OF_TARGETABLE_AS_BOMB		(1<<15)
 

@@ -1018,7 +1018,7 @@
 #define IDC_STATS_TEXT                  1537
 #define IDC_SUBTYPE1                    1538
 #define IDC_SUBTYPE2                    1539
-#define IDC_SPECIAL_WARP                1539
+#define IDC_SPECIAL_WARPIN              1539
 #define IDC_SUBTYPE3                    1540
 #define IDC_LOOP_BRIEF_ANIM             1540
 #define IDC_LOOP_BRIEF_SOUND            1541
