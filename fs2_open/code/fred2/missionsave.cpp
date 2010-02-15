@@ -718,12 +718,10 @@ int CFred_mission_save::save_fiction()
 	{
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			fout("\n");
-
 			if (optional_string_fred("#Fiction Viewer"))
 				parse_comments();
 			else
-				fout("#Fiction Viewer");
+				fout("\n\n#Fiction Viewer");
 
 			fout("\n");
 
@@ -738,7 +736,7 @@ int CFred_mission_save::save_fiction()
 				if (optional_string_fred("$Font:"))
 					parse_comments();
 				else
-					fout("$Font:");
+					fout("\n$Font:");
 				fout(" %s", fiction_font());
 			}
 			else
@@ -3528,6 +3526,46 @@ int CFred_mission_save::save_music()
 
 	// avoid keeping the old one around
 	bypass_comment(";;FSO 3.6.8;; $Substitute Music:");
+
+	// old stuff
+	if (Mission_music[SCORE_DEBRIEF_SUCCESS] != event_music_get_spooled_music_index("Success")) {
+		if (optional_string_fred("$Debriefing Success Music:")) {
+			parse_comments(1);
+		} else {
+			fout("\n$Debriefing Success Music:");
+		}
+		fout(" %s", Mission_music[SCORE_DEBRIEF_SUCCESS] < 0 ? "None" : Spooled_music[Mission_music[SCORE_DEBRIEF_SUCCESS]].name);
+	}
+	if (Mission_music[SCORE_DEBRIEF_AVERAGE] != event_music_get_spooled_music_index("Average")) {
+		if (optional_string_fred("$Debriefing Average Music:")) {
+			parse_comments(1);
+		} else {
+			fout("\n$Debriefing Average Music:");
+		}
+		fout(" %s", Mission_music[SCORE_DEBRIEF_AVERAGE] < 0 ? "None" : Spooled_music[Mission_music[SCORE_DEBRIEF_AVERAGE]].name);
+	}
+	if (Mission_music[SCORE_DEBRIEF_FAIL] != event_music_get_spooled_music_index("Failure")) {
+		if (optional_string_fred("$Debriefing Fail Music:")) {
+			parse_comments(1);
+		} else {
+			fout("\n$Debriefing Fail Music:");
+		}
+		fout(" %s", Mission_music[SCORE_DEBRIEF_FAIL] < 0 ? "None" : Spooled_music[Mission_music[SCORE_DEBRIEF_FAIL]].name);
+	}
+
+	// Goober5000 - save using the special comment prefix
+	if (mission_has_fiction() && Mission_music[SCORE_FICTION_VIEWER] >= 0) {
+		if (optional_string_fred("$Fiction Viewer Music:")) {
+			parse_comments(1);
+			fout(" %s", Spooled_music[Mission_music[SCORE_FICTION_VIEWER]].name);
+		} else {
+			fso_comment_push(";;FSO 3.6.11;;");
+			fout_version("\n$Fiction Viewer Music: %s", Spooled_music[Mission_music[SCORE_FICTION_VIEWER]].name);
+			fso_comment_pop();
+		}
+	} else {
+		bypass_comment(";;FSO 3.6.11;; $Fiction Viewer Music:");
+	}
 
 	fso_comment_pop(true);
 

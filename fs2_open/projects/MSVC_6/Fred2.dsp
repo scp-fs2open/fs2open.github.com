@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fred2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fred2_open_trunk_r.exe" /libpath:"Release" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
 InputPath=.\Release\fred2_open_trunk_r.exe
@@ -88,7 +88,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib trackir.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug/fred2_open_trunk_d.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /libpath:"../../trackir/lib" /MAPINFO:EXPORTS /MAPINFO:LINES
+# ADD LINK32 Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"Debug/fred2_open_trunk_d.exe" /pdbtype:sept /libpath:"Debug" /libpath:"../../oggvorbis/lib" /libpath:"../../openal/libs/win32" /libpath:"../../openal/libs/win64" /MAPINFO:EXPORTS /MAPINFO:LINES
 # SUBTRACT LINK32 /pdb:none
 # Begin Custom Build - Copying build...
 InputPath=.\Debug\fred2_open_trunk_d.exe
@@ -179,6 +179,10 @@ SOURCE=..\..\code\fred2\DumpStats.cpp
 # Begin Source File
 
 SOURCE=..\..\code\fred2\EventEditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fred2\FictionViewerDlg.cpp
 # End Source File
 # Begin Source File
 
@@ -435,6 +439,10 @@ SOURCE=..\..\code\fred2\editor.h
 # Begin Source File
 
 SOURCE=..\..\code\fred2\EventEditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fred2\FictionViewerDlg.h
 # End Source File
 # Begin Source File
 
