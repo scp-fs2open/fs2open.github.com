@@ -266,7 +266,7 @@ namespace opengl {
 		/** Flags indicating which buffers are to be cleared. */
 		enum clr_buffers {
 			clr_color = GL_COLOR_BUFFER_BIT, /**< clear back buffer */
-			clr_depth = GL_DEPTH_BUFFER_BIT, /**< clear depth buffer */
+			clr_depth = GL_DEPTH_BUFFER_BIT /**< clear depth buffer */
 		};
 
 		/** Clear buffers of the default rendering target.
