@@ -1423,6 +1423,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\FictionViewerDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\folderdlg.cpp"
 				>
 			</File>
@@ -1677,6 +1681,10 @@
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\eventeditor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\FictionViewerDlg.h"
 				>
 			</File>
 			<File
