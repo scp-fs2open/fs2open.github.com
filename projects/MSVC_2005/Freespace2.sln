@@ -1,0 +1,117 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Freespace2", "Freespace2.vcproj", "{345E7147-BB7B-4247-B51B-5169B3B494DB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7CB3701E-F723-424B-82D5-2F7AA4169498} = {7CB3701E-F723-424B-82D5-2F7AA4169498}
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75} = {3842E37A-A368-401A-BDEA-721DEE9A3F75}
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54} = {6207CDCE-DCFA-4314-ADC4-39E9735C9E54}
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C} = {657053AB-34C4-4BEB-AA3B-0D54967BE88C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Fred2", "Fred2.vcproj", "{434E4D48-3078-406D-871F-E69869AA487E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7CB3701E-F723-424B-82D5-2F7AA4169498} = {7CB3701E-F723-424B-82D5-2F7AA4169498}
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75} = {3842E37A-A368-401A-BDEA-721DEE9A3F75}
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54} = {6207CDCE-DCFA-4314-ADC4-39E9735C9E54}
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C} = {657053AB-34C4-4BEB-AA3B-0D54967BE88C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wxFRED2", "wxFRED2.vcproj", "{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7CB3701E-F723-424B-82D5-2F7AA4169498} = {7CB3701E-F723-424B-82D5-2F7AA4169498}
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75} = {3842E37A-A368-401A-BDEA-721DEE9A3F75}
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54} = {6207CDCE-DCFA-4314-ADC4-39E9735C9E54}
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C} = {657053AB-34C4-4BEB-AA3B-0D54967BE88C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "code", "code.vcproj", "{7CB3701E-F723-424B-82D5-2F7AA4169498}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libjpeg", "libjpeg.vcproj", "{3842E37A-A368-401A-BDEA-721DEE9A3F75}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liblua", "liblua.vcproj", "{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpng", "libpng.vcproj", "{657053AB-34C4-4BEB-AA3B-0D54967BE88C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD} = {90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "zlib.vcproj", "{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Inferno|Win32 = Debug Inferno|Win32
+		Debug|Win32 = Debug|Win32
+		Release Inferno|Win32 = Release Inferno|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Debug|Win32.Build.0 = Debug|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Release|Win32.ActiveCfg = Release|Win32
+		{345E7147-BB7B-4247-B51B-5169B3B494DB}.Release|Win32.Build.0 = Release|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Debug|Win32.Build.0 = Debug|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Release|Win32.ActiveCfg = Release|Win32
+		{434E4D48-3078-406D-871F-E69869AA487E}.Release|Win32.Build.0 = Release|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Debug|Win32.Build.0 = Debug|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Release|Win32.ActiveCfg = Release|Win32
+		{8FD30EFB-CEB2-4CBD-B6D3-C3B2C97B9F90}.Release|Win32.Build.0 = Release|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Debug|Win32.Build.0 = Debug|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Release|Win32.ActiveCfg = Release|Win32
+		{7CB3701E-F723-424B-82D5-2F7AA4169498}.Release|Win32.Build.0 = Release|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Debug|Win32.Build.0 = Debug|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Release|Win32.ActiveCfg = Release|Win32
+		{3842E37A-A368-401A-BDEA-721DEE9A3F75}.Release|Win32.Build.0 = Release|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Debug|Win32.Build.0 = Debug|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Release|Win32.ActiveCfg = Release|Win32
+		{6207CDCE-DCFA-4314-ADC4-39E9735C9E54}.Release|Win32.Build.0 = Release|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Debug|Win32.Build.0 = Debug|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Release|Win32.ActiveCfg = Release|Win32
+		{657053AB-34C4-4BEB-AA3B-0D54967BE88C}.Release|Win32.Build.0 = Release|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Debug Inferno|Win32.ActiveCfg = Debug Inferno|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Debug Inferno|Win32.Build.0 = Debug Inferno|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Debug|Win32.Build.0 = Debug|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Release Inferno|Win32.ActiveCfg = Release Inferno|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Release Inferno|Win32.Build.0 = Release Inferno|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Release|Win32.ActiveCfg = Release|Win32
+		{90F2EEE7-F92D-4DDD-B9EA-22EB6889B9AD}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
