@@ -72,6 +72,8 @@
 // Externals not related to the HUD code itself
 extern float View_zoom;
 
+extern bool Custom_gauge_images_loaded;
+
 // This is used to prevent drawing of hud (and pause popup)
 
 // globals that will control the color of the HUD gauges
@@ -637,6 +639,7 @@ void hud_init_mission_time_gauge()
 //
 void HUD_init()
 {
+	set_current_hud(Player_ship->ship_info_index);	
 	HUD_init_colors();
 	hud_init_msg_window();
 	hud_init_targeting();
@@ -1269,9 +1272,8 @@ void HUD_render_2d(float frametime)
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		//Custom hud stuff
 		int i;
-		static bool image_ids_set = false;
 		static hud_frames image_ids[MAX_CUSTOM_HUD_GAUGES];
-		if(!image_ids_set)
+		if(!Custom_gauge_images_loaded)
 		{
 			for(i = 0; i < Num_custom_gauges; i++)
 			{
@@ -1292,18 +1294,30 @@ void HUD_render_2d(float frametime)
 					image_ids[i].first_frame = -1;
 				}
 			}
-			image_ids_set = true;
+			Custom_gauge_images_loaded = true;
 		}
 
 		//Display the gauges
 		for(i = 0; i < Num_custom_gauges; i++)
 		{
-			if(current_hud->custom_gauge_colors[i].red != 0 || current_hud->custom_gauge_colors[i].green != 0 || current_hud->custom_gauge_colors[i].blue != 0)
+			color* gauge_color;
+
+			// Inherit color if color parent is specified.
+			if (current_hud->custom_gauge_color_parents[i] >=0 && current_hud->custom_gauge_color_parents[i] < NUM_HUD_GAUGES)
+ 			{
+				gauge_color = &HUD_config.clr[current_hud->custom_gauge_color_parents[i]];
+			}
+			else
+			{
+				gauge_color = &current_hud->custom_gauge_colors[i];
+			}
+
+			if(gauge_color->red != 0 || gauge_color->green != 0 || gauge_color->blue != 0)
 			{
 				//No custom alpha gauge color...
-				gr_init_alphacolor(&current_hud->custom_gauge_colors[i], current_hud->custom_gauge_colors[i].red, current_hud->custom_gauge_colors[i].green, current_hud->custom_gauge_colors[i].blue, (HUD_color_alpha+1)*16);
+				gr_init_alphacolor(gauge_color, gauge_color->red, gauge_color->green, gauge_color->blue, (HUD_color_alpha+1)*16);
 
-				gr_set_color_fast(&current_hud->custom_gauge_colors[i]);
+				gr_set_color_fast(gauge_color);
 			}
 			if(strlen(current_hud->custom_gauge_text[i]))
 			{
@@ -1312,7 +1326,14 @@ void HUD_render_2d(float frametime)
 			}
 			if(image_ids[i].first_frame != -1)
 			{
-				GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+				if (current_hud->custom_gauge_moveflags[i])
+				{
+					GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0] + HUD_nose_x, current_hud->custom_gauge_coords[i][1] + HUD_nose_y);
+				}
+				else
+				{
+					GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+				}
 			}
 
 			//So we're back to normal

@@ -192,8 +192,6 @@ char Lead_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
 //				3	=>		gun energy light
 hud_frames Aburn_bar_gauge;
 hud_frames Wenergy_bar_gauge;
-int Aburn_bar_gauge_loaded = 0;
-int Wenergy_bar_gauge_loaded = 0;
 /*int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		439, 318
@@ -1180,21 +1178,17 @@ void hud_init_targeting()
 		}
 		Lead_indicator_gauge_loaded = 1;
 	}
-	if (!Aburn_bar_gauge_loaded) {
+
 		Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
 		if ( Aburn_bar_gauge.first_frame < 0 ) {
 			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Aburn_fname);
 		}
-		Aburn_bar_gauge_loaded = 1;
-	}
 
-	if (!Wenergy_bar_gauge_loaded) {
 		Wenergy_bar_gauge.first_frame = bm_load_animation(current_hud->Wenergy_fname, &Wenergy_bar_gauge.num_frames);
 		if ( Wenergy_bar_gauge.first_frame < 0 ) {
 			Warning(LOCATION,"Cannot load hud ani: %s\n", current_hud->Wenergy_fname);
 		}
-		Wenergy_bar_gauge_loaded = 1;
-	}
+
 	if (!Toggle_gauge_loaded) {
 		Toggle_gauge.first_frame = bm_load_animation(Toggle_fname[gr_screen.res], &Toggle_gauge.num_frames);
 		if ( Toggle_gauge.first_frame < 0 ) {
@@ -1339,8 +1333,9 @@ void hud_target_common(int team_mask, int next_flag)
 			continue;
 
 		if (A->type == OBJ_WEAPON) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) )
-				continue;
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) )
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+					continue;
 
 			if (Weapons[A->instance].lssm_stage == 3)
 				continue;
@@ -1473,8 +1468,10 @@ void hud_target_missile(object *source_obj, int next_flag)
 		wip = &Weapon_info[wp->weapon_info_index];
 
 		// only allow targeting of bombs
-		if ( !(wip->wi_flags & WIF_BOMB) ) {
-			continue;
+		if ( !(wip->wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(wip->wi_flags & WIF_BOMB) ) {
+				continue;
+			}
 		}
 
 		if (wp->lssm_stage==3){
@@ -2480,8 +2477,10 @@ void hud_target_in_reticle_new()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
-				continue;
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+					continue;
+				}
 			}
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
@@ -2523,17 +2522,32 @@ void hud_target_in_reticle_new()
 			Int3();	//	Illegal object type.
 		}
 
-		model_clear_instance( mc.model_num );
-		mc.orient = &A->orient;										// The object's orient
-		mc.pos = &A->pos;												// The object's position
-		mc.p0 = &Eye_position;										// Point 1 of ray to check
-		mc.p1 = &terminus;											// Point 2 of ray to check
-		mc.flags = MC_CHECK_MODEL;	// | MC_ONLY_BOUND_BOX;		// check the model, but only its bounding box
+		if (mc.model_num == -1) {
+			// so just check distance of a point
+			vec3d temp_v;
+			float angle;
+			vm_vec_sub(&temp_v, &A->pos, &Eye_position);
+			vm_vec_normalize(&temp_v);
+			angle = vm_vec_dot(&Player_obj->orient.vec.fvec, &temp_v);
+			if (angle > 0.99f) {
+				dist = vm_vec_mag_squared(&temp_v);
+				hud_reticle_list_update(A, dist, 0);				
+			}
 
-		model_collide(&mc);
-		if ( mc.num_hits ) {
-			dist = vm_vec_dist_squared(&mc.hit_point_world, &Eye_position);
-			hud_reticle_list_update(A, dist, 0);
+		} else {
+
+			model_clear_instance( mc.model_num );
+			mc.orient = &A->orient;										// The object's orient
+			mc.pos = &A->pos;												// The object's position
+			mc.p0 = &Eye_position;										// Point 1 of ray to check
+			mc.p1 = &terminus;											// Point 2 of ray to check
+			mc.flags = MC_CHECK_MODEL;	// | MC_ONLY_BOUND_BOX;		// check the model, but only its bounding box
+
+			model_collide(&mc);
+			if ( mc.num_hits ) {
+				dist = vm_vec_dist_squared(&mc.hit_point_world, &Eye_position);
+				hud_reticle_list_update(A, dist, 0);
+			}
 		}
 	}	// end for (go to next object)
 
@@ -2566,10 +2580,12 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
-				continue;
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ){
+				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+					continue;
+				}
 			}
-
+			
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
 			}
@@ -3483,9 +3499,18 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			break;
 
 		case OBJ_WEAPON:
-			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
+			//Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if (modelnum != -1)
+				bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			else {
+				vertex vtx;
+				g3_rotate_vertex(&vtx,&targetp->pos);
+				g3_project_vertex(&vtx);
+				x1 = x2 = (int) vtx.sx;
+				y1 = y2 = (int) vtx.sy;
+			}
+
 			break;
 
 		case OBJ_ASTEROID:
@@ -3975,8 +4000,10 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+				return;
+			}
 		}
 	}
 
@@ -4224,8 +4251,10 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+				return;
+			}
 		}
 	}
 
@@ -4792,6 +4821,7 @@ void hud_show_afterburner_gauge()
 {
 	float percent_left;
 	int	clip_h,w,h;	
+	int nose_offset_x = 0, nose_offset_y = 0;
 
 	if ( Aburn_bar_gauge.first_frame == -1 ){
 		return;
@@ -4813,13 +4843,19 @@ void hud_show_afterburner_gauge()
 	clip_h = fl2i( (1.0f - percent_left) * current_hud->Aburn_size[0] + 0.5f );
 
 	bm_get_info(Aburn_bar_gauge.first_frame,&w,&h);
+
+	if (current_hud->Aburn_move_flag)
+	{
+		nose_offset_x = HUD_nose_x;
+		nose_offset_y = HUD_nose_y;
+	}
 	
 	if ( clip_h > 0) {
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1] + HUD_nose_y,w,clip_h,0,0);		
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0] + nose_offset_x, current_hud->Aburn_coords[1] + nose_offset_y,w,clip_h,0,0);
 	}
 
 	if ( clip_h <= current_hud->Aburn_size[0] ) {		
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1]+clip_h + HUD_nose_y,w,h-clip_h,0,clip_h);
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0] + nose_offset_x, current_hud->Aburn_coords[1]+clip_h + nose_offset_y,w,h-clip_h,0,clip_h);
 	} 	
 }
 
@@ -4828,6 +4864,7 @@ void hud_show_weapon_energy_gauge()
 {
 	int x;
 	bool use_new_gauge = false;
+	int nose_offset_x = 0, nose_offset_y = 0;
 
 	// Goober5000 - only check for the new gauge in case of command line + a ballistic-capable ship
 	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
@@ -4841,6 +4878,12 @@ void hud_show_weapon_energy_gauge()
 			}
 		}
 	}
+ 
+	if (current_hud->Aburn_move_flag)
+	{
+		nose_offset_x = HUD_nose_x;
+		nose_offset_y = HUD_nose_y;
+	}
 
 	if(use_new_gauge)
 	{
@@ -4848,8 +4891,8 @@ void hud_show_weapon_energy_gauge()
 		int y;
 		int max_w = 100;
 		float remaining;
-		currentx = current_hud->Wenergy_coords[0] + 10;
-		currenty = current_hud->Wenergy_coords[1];
+		currentx = current_hud->Wenergy_coords[0] + 10 + nose_offset_x;
+		currenty = current_hud->Wenergy_coords[1] + nose_offset_y;
 		if(gr_screen.max_w_unscaled == 640) {
 			max_w = 60;
 		}
@@ -4951,7 +4994,7 @@ void hud_show_weapon_energy_gauge()
 			sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
 			hud_num_make_mono(buf);
 		//	gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
-			gr_string(current_hud->Wenergy_text_coords[0] + HUD_nose_x, current_hud->Wenergy_text_coords[1] + HUD_nose_y, buf);
+			gr_string(current_hud->Wenergy_text_coords[0] + nose_offset_x, current_hud->Wenergy_text_coords[1] + nose_offset_y, buf);
 		}
 
 		hud_set_gauge_color(HUD_WEAPONS_ENERGY);
@@ -4973,11 +5016,11 @@ void hud_show_weapon_energy_gauge()
 		bm_get_info(Wenergy_bar_gauge.first_frame+2,&w,&h);
 		
 		if ( clip_h > 0 ) {
-			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0] + HUD_nose_x, current_hud->Wenergy_coords[1] + HUD_nose_y, w,clip_h,0,0);		
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0] + nose_offset_x, current_hud->Wenergy_coords[1] + nose_offset_y, w,clip_h,0,0);
 		}
 
 		if ( clip_h <= current_hud->Wenergy_size[0] ) {
-			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0] + HUD_nose_x, current_hud->Wenergy_coords[1] + clip_h + HUD_nose_y, w,h-clip_h,0,clip_h);		
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0] + nose_offset_x, current_hud->Wenergy_coords[1] + clip_h + nose_offset_y, w,h-clip_h,0,clip_h);		
 		}
 
 		// hud_set_default_color();
@@ -5166,7 +5209,7 @@ void hud_show_weapons()
 				GR_AABITMAP(New_weapon.first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
 		}
 
-		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
 		}
@@ -5238,7 +5281,7 @@ void hud_show_weapons()
 		if(!stricmp(wip->name,"cluster bomb")){
 			strcpy_s(weapon_name, NOX("Cluster"));
 		} else {
-			strcpy_s(weapon_name, wip->name);
+			strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
 		}
 
 		// get rid of #
@@ -6222,7 +6265,7 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 
 	// maybe get ship class
 	if (!*ship_class_text) {
-		strcpy(ship_class_text, Ship_info[shipp->ship_info_index].name);
+		strcpy(ship_class_text, (Ship_info[shipp->ship_info_index].alt_name[0]) ? Ship_info[shipp->ship_info_index].alt_name : Ship_info[shipp->ship_info_index].name);
 	}
 
 	// handle hash symbol

@@ -389,37 +389,6 @@ void ai_mission_goal_complete( ai_info *aip )
 
 }
 
-int ai_get_subsystem_type( char *subsystem )
-{
-	if ( strstr(subsystem, "engine") ) {
-		return SUBSYSTEM_ENGINE;
-	} else if ( strstr(subsystem, "radar") ) {
-		return SUBSYSTEM_RADAR;
-	} else if ( strstr(subsystem, "turret") ) {
-		return SUBSYSTEM_TURRET;
-	} else if ( strstr(subsystem, "navigation") ) {
-		return SUBSYSTEM_NAVIGATION;
-	} else if ( !strnicmp(subsystem, NOX("communication"), 13) ) {
-		return SUBSYSTEM_COMMUNICATION;
-	} else if ( !strnicmp(subsystem, NOX("weapons"), 7) )  {
-		return SUBSYSTEM_WEAPONS;
-	} else if ( !strnicmp(subsystem, NOX("sensors"), 7) )  {
-		return SUBSYSTEM_SENSORS;
-	} else if ( !strnicmp(subsystem, NOX("solar"), 5) )  {
-		return SUBSYSTEM_SOLAR;
-	} else if ( !strnicmp(subsystem, NOX("gas"), 3) )  {
-		return SUBSYSTEM_GAS_COLLECT;
-	} else if ( !strnicmp(subsystem, NOX("activator"), 9) )  {
-		return SUBSYSTEM_ACTIVATION;
-	} else {									// If unrecognized type, set to engine so artist can continue working...
-		if (!Fred_running) {
-//			Int3();							// illegal subsystem type -- find allender
-		}
-
-		return SUBSYSTEM_UNKNOWN;
-	}
-}
-
 // function to prune out goals which are no longer valid, based on a goal pointer passed in.
 // for instance, if we get passed a goal of "disable X", then any goals in the given goal array
 // which are destroy, etc, should get removed.  goal list is the list of goals to purge.  It is

@@ -86,7 +86,8 @@ extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
 
 // gray space
-void ignore_gray_space();
+extern int is_gray_space(char ch);
+extern void ignore_gray_space();
 
 // error
 extern int get_line_num();
@@ -130,7 +131,7 @@ extern int stuff_float_optional(float *f);
 extern void stuff_int(int *i);
 extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
-extern int stuff_string_list(SCP_vector<std::string> *slp);
+extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
@@ -196,6 +197,9 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
 
+// Goober5000 (ditto)
+extern bool can_construe_as_integer(const char *text);
+
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);
 
@@ -207,6 +211,9 @@ extern void backspace(char *src);
 
 // Goober5000 - prints a properly comma-separated integer to a string
 extern void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four_digits);
+
+// Goober5000
+extern int scan_fso_version_string(const char *text, int *major, int *minor, int *build, int *revis);
 
 inline void parse_advance(int s){Mp+=s;}
 

@@ -18,7 +18,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h"
+#include "external_dll/trackirpublic.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "mission/missioncampaign.h"
@@ -753,7 +753,7 @@ ADE_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 51; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 54; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -905,11 +905,143 @@ static flag_def_list Enumerations[] = {
 
 	#define LE_LUA_FULL_CONTROLS			50
 	{		"LUA_FULL_CONTROLS",			LE_LUA_FULL_CONTROLS,			0},
+
+	#define LE_NORMAL_BUTTON_CONTROLS		51
+	{		"NORMAL_BUTTON_CONTROLS",		LE_NORMAL_BUTTON_CONTROLS,		0},
+
+	#define LE_LUA_ADDITIVE_BUTTON_CONTROL	52
+	{		"LUA_ADDITIVE_BUTTON_CONTROL",	LE_LUA_ADDITIVE_BUTTON_CONTROL,	0},
+
+	#define LE_LUA_OVERRIDE_BUTTON_CONTROL	53
+	{		"LUA_OVERRIDE_BUTTON_CONTROL",	LE_LUA_OVERRIDE_BUTTON_CONTROL,	0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
 
 static uint Num_enumerations = sizeof(Enumerations) / sizeof(flag_def_list);
+
+flag_def_list plr_commands[] = {
+	{	"TARGET_NEXT",							TARGET_NEXT,							0	},
+	{	"TARGET_PREV",							TARGET_PREV,							0	},
+	{	"TARGET_NEXT_CLOSEST_HOSTILE",			TARGET_NEXT_CLOSEST_HOSTILE,			0	},
+	{	"TARGET_PREV_CLOSEST_HOSTILE",			TARGET_PREV_CLOSEST_HOSTILE,			0	},
+	{	"TOGGLE_AUTO_TARGETING",				TOGGLE_AUTO_TARGETING,					0	},
+	{	"TARGET_NEXT_CLOSEST_FRIENDLY",			TARGET_NEXT_CLOSEST_FRIENDLY,			0	},
+	{	"TARGET_PREV_CLOSEST_FRIENDLY",			TARGET_PREV_CLOSEST_FRIENDLY,			0	},
+	{	"TARGET_SHIP_IN_RETICLE",				TARGET_SHIP_IN_RETICLE,					0	},
+	{	"TARGET_CLOSEST_SHIP_ATTACKING_TARGET",	TARGET_CLOSEST_SHIP_ATTACKING_TARGET,	0	},
+	{	"TARGET_LAST_TRANMISSION_SENDER",		TARGET_LAST_TRANMISSION_SENDER,			0	},
+	{	"STOP_TARGETING_SHIP",					STOP_TARGETING_SHIP,					0	},
+	{	"TARGET_SUBOBJECT_IN_RETICLE",			TARGET_SUBOBJECT_IN_RETICLE,			0	},
+	{	"TARGET_NEXT_SUBOBJECT",				TARGET_NEXT_SUBOBJECT,					0	},
+	{	"TARGET_PREV_SUBOBJECT",				TARGET_PREV_SUBOBJECT,					0	},
+	{	"STOP_TARGETING_SUBSYSTEM",				STOP_TARGETING_SUBSYSTEM,				0	},
+	{	"MATCH_TARGET_SPEED",					MATCH_TARGET_SPEED,						0	},
+	{	"TOGGLE_AUTO_MATCH_TARGET_SPEED",		TOGGLE_AUTO_MATCH_TARGET_SPEED,			0	},
+	{	"FIRE_PRIMARY",							FIRE_PRIMARY,							0	},
+	{	"FIRE_SECONDARY",						FIRE_SECONDARY,							0	},
+	{	"CYCLE_NEXT_PRIMARY",					CYCLE_NEXT_PRIMARY,						0	},
+	{	"CYCLE_PREV_PRIMARY",					CYCLE_PREV_PRIMARY,						0	},
+	{	"CYCLE_SECONDARY",						CYCLE_SECONDARY,						0	},
+	{	"CYCLE_NUM_MISSLES",					CYCLE_NUM_MISSLES,						0	},
+	{	"LAUNCH_COUNTERMEASURE",				LAUNCH_COUNTERMEASURE,					0	},
+	{	"FORWARD_THRUST",						FORWARD_THRUST,							0	},
+	{	"REVERSE_THRUST",						REVERSE_THRUST,							0	},
+	{	"BANK_LEFT",							BANK_LEFT,								0	},
+	{	"BANK_RIGHT",							BANK_RIGHT,								0	},
+	{	"PITCH_FORWARD",						PITCH_FORWARD,							0	},
+	{	"PITCH_BACK",							PITCH_BACK,								0	},
+	{	"YAW_LEFT",								YAW_LEFT,								0	},
+	{	"YAW_RIGHT",							YAW_RIGHT,								0	},
+	{	"ZERO_THROTTLE",						ZERO_THROTTLE,							1	},
+	{	"MAX_THROTTLE",							MAX_THROTTLE,							1	},
+	{	"ONE_THIRD_THROTTLE",					ONE_THIRD_THROTTLE,						1	},
+	{	"TWO_THIRDS_THROTTLE",					TWO_THIRDS_THROTTLE,					1	},
+	{	"PLUS_5_PERCENT_THROTTLE",				PLUS_5_PERCENT_THROTTLE,				1	},
+	{	"MINUS_5_PERCENT_THROTTLE",				MINUS_5_PERCENT_THROTTLE,				1	},
+	{	"ATTACK_MESSAGE",						ATTACK_MESSAGE,							1	},
+	{	"DISARM_MESSAGE",						DISARM_MESSAGE,							1	},
+	{	"DISABLE_MESSAGE",						DISABLE_MESSAGE,						1	},
+	{	"ATTACK_SUBSYSTEM_MESSAGE",				ATTACK_SUBSYSTEM_MESSAGE,				1	},
+	{	"CAPTURE_MESSAGE",						CAPTURE_MESSAGE,						1	},
+	{	"ENGAGE_MESSAGE",						ENGAGE_MESSAGE,							1	},
+	{	"FORM_MESSAGE",							FORM_MESSAGE,							1	},
+	{	"IGNORE_MESSAGE",						IGNORE_MESSAGE,							1	},
+	{	"PROTECT_MESSAGE",						PROTECT_MESSAGE,						1	},
+	{	"COVER_MESSAGE",						COVER_MESSAGE,							1	},
+	{	"WARP_MESSAGE",							WARP_MESSAGE,							1	},
+	{	"REARM_MESSAGE",						REARM_MESSAGE,							1	},
+	{	"TARGET_CLOSEST_SHIP_ATTACKING_SELF",	TARGET_CLOSEST_SHIP_ATTACKING_SELF,		1	},
+	{	"VIEW_CHASE",							VIEW_CHASE,								1	},
+	{	"VIEW_EXTERNAL",						VIEW_EXTERNAL,							1	},
+	{	"VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK",		VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK,		1	},
+	{	"VIEW_SLEW",							VIEW_SLEW,								1	},
+	{	"VIEW_OTHER_SHIP",						VIEW_OTHER_SHIP,						1	},
+	{	"VIEW_DIST_INCREASE",					VIEW_DIST_INCREASE,						1	},
+	{	"VIEW_DIST_DECREASE",					VIEW_DIST_DECREASE,						1	},
+	{	"VIEW_CENTER",							VIEW_CENTER,							1	},
+	{	"PADLOCK_UP",							PADLOCK_UP,								1	},
+	{	"PADLOCK_DOWN",							PADLOCK_DOWN,							1	},
+	{	"PADLOCK_LEFT",							PADLOCK_LEFT,							1	},
+	{	"PADLOCK_RIGHT",						PADLOCK_RIGHT,							1	},
+	{	"RADAR_RANGE_CYCLE",					RADAR_RANGE_CYCLE,						1	},
+	{	"SQUADMSG_MENU",						SQUADMSG_MENU,							2	},
+	{	"SHOW_GOALS",							SHOW_GOALS,								2	},
+	{	"END_MISSION",							END_MISSION,							2	},
+	{	"TARGET_TARGETS_TARGET",				TARGET_TARGETS_TARGET,					2	},
+	{	"AFTERBURNER",							AFTERBURNER,							2	},
+	{	"INCREASE_WEAPON",						INCREASE_WEAPON,						2	},
+	{	"DECREASE_WEAPON",						DECREASE_WEAPON,						2	},
+	{	"INCREASE_SHIELD",						INCREASE_SHIELD,						2	},
+	{	"DECREASE_SHIELD",						DECREASE_SHIELD,						2	},
+	{	"INCREASE_ENGINE",						INCREASE_ENGINE,						2	},
+	{	"DECREASE_ENGINE",						DECREASE_ENGINE,						2	},
+	{	"ETS_EQUALIZE",							ETS_EQUALIZE,							2	},
+	{	"SHIELD_EQUALIZE",						SHIELD_EQUALIZE,						2	},
+	{	"SHIELD_XFER_TOP",						SHIELD_XFER_TOP,						2	},
+	{	"SHIELD_XFER_BOTTOM",					SHIELD_XFER_BOTTOM,						2	},
+	{	"SHIELD_XFER_LEFT",						SHIELD_XFER_LEFT,						2	},
+	{	"SHIELD_XFER_RIGHT",					SHIELD_XFER_RIGHT,						2	},
+	{	"XFER_SHIELD",							XFER_SHIELD,							2	},
+	{	"XFER_LASER",							XFER_LASER,								2	},
+	{	"GLIDE_WHEN_PRESSED",					GLIDE_WHEN_PRESSED,						2	},
+	{	"BANK_WHEN_PRESSED",					BANK_WHEN_PRESSED,						2	},
+	{	"SHOW_NAVMAP",							SHOW_NAVMAP,							2	},
+	{	"ADD_REMOVE_ESCORT",					ADD_REMOVE_ESCORT,						2	},
+	{	"ESCORT_CLEAR",							ESCORT_CLEAR,							2	},
+	{	"TARGET_NEXT_ESCORT_SHIP",				TARGET_NEXT_ESCORT_SHIP,				2	},
+	{	"TARGET_CLOSEST_REPAIR_SHIP",			TARGET_CLOSEST_REPAIR_SHIP,				2	},
+	{	"TARGET_NEXT_UNINSPECTED_CARGO",		TARGET_NEXT_UNINSPECTED_CARGO,			2	},
+	{	"TARGET_PREV_UNINSPECTED_CARGO",		TARGET_PREV_UNINSPECTED_CARGO,			2	},
+	{	"TARGET_NEWEST_SHIP",					TARGET_NEWEST_SHIP,						2	},
+	{	"TARGET_NEXT_LIVE_TURRET",				TARGET_NEXT_LIVE_TURRET,				2	},
+	{	"TARGET_PREV_LIVE_TURRET",				TARGET_PREV_LIVE_TURRET,				2	},
+	{	"TARGET_NEXT_BOMB",						TARGET_NEXT_BOMB,						2	},
+	{	"TARGET_PREV_BOMB",						TARGET_PREV_BOMB,						3	},
+	{	"MULTI_MESSAGE_ALL",					MULTI_MESSAGE_ALL,						3	},
+	{	"MULTI_MESSAGE_FRIENDLY",				MULTI_MESSAGE_FRIENDLY,					3	},
+	{	"MULTI_MESSAGE_HOSTILE",				MULTI_MESSAGE_HOSTILE,					3	},
+	{	"MULTI_MESSAGE_TARGET",					MULTI_MESSAGE_TARGET,					3	},
+	{	"MULTI_OBSERVER_ZOOM_TO",				MULTI_OBSERVER_ZOOM_TO,					3	},
+	{	"TIME_SPEED_UP",						TIME_SPEED_UP,							3	},
+	{	"TIME_SLOW_DOWN",						TIME_SLOW_DOWN,							3	},
+	{	"TOGGLE_HUD_CONTRAST",					TOGGLE_HUD_CONTRAST,					3	},
+	{	"MULTI_TOGGLE_NETINFO",					MULTI_TOGGLE_NETINFO,					3	},
+	{	"MULTI_SELF_DESTRUCT",					MULTI_SELF_DESTRUCT,					3	},
+	{	"TOGGLE_HUD",							TOGGLE_HUD,								3	},
+	{	"RIGHT_SLIDE_THRUST",					RIGHT_SLIDE_THRUST,						3	},
+	{	"LEFT_SLIDE_THRUST",					LEFT_SLIDE_THRUST,						3	},
+	{	"UP_SLIDE_THRUST",						UP_SLIDE_THRUST,						3	},
+	{	"DOWN_SLIDE_THRUST",					DOWN_SLIDE_THRUST,						3	},
+	{	"HUD_TARGETBOX_TOGGLE_WIREFRAME",		HUD_TARGETBOX_TOGGLE_WIREFRAME,			3	},
+	{	"VIEW_TOPDOWN",							VIEW_TOPDOWN,							3	},
+	{	"VIEW_TRACK_TARGET",					VIEW_TRACK_TARGET,						3	},
+	{	"AUTO_PILOT_TOGGLE",					AUTO_PILOT_TOGGLE,						3	},
+	{	"NAV_CYCLE",							NAV_CYCLE,								3	},
+	{	"TOGGLE_GLIDING",						TOGGLE_GLIDING,							3	},
+};
+
+int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
 
 struct enum_h {
 	int index;
@@ -1711,11 +1843,11 @@ ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model file
 	return ade_set_args(L, "s", pm->filename);
 }
 
-ADE_VIRTVAR(Mass, l_Model, "number", "Model radius (Used for collision and culling detection)", "number", "Model radius, or 0 if the model handle is invalid")
+ADE_VIRTVAR(Mass, l_Model, "number", "Model mass", "number", "Model mass, or 0 if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	float nm = 0.0f;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &nm))
+	if(!ade_get_args(L, "o|f", l_Model.GetPtr(&mdl), &nm))
 		return ade_set_error(L, "f", 0.0f);
 
 	polymodel *pm = mdl->Get();
@@ -1734,7 +1866,7 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 {
 	model_h *mdl = NULL;
 	matrix_h *mh = NULL;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), l_Matrix.GetPtr(&mh)))
+	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	polymodel *pm = mdl->Get();
@@ -1742,8 +1874,8 @@ ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia", 
 	if(pm == NULL)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	matrix *mtx = mh->GetMatrix();
-	if(ADE_SETTING_VAR) {
+	if(ADE_SETTING_VAR && mh != NULL) {
+		matrix *mtx = mh->GetMatrix();
 		memcpy(&pm->moment_of_inertia, mtx, sizeof(*mtx));
 	}
 
@@ -1754,7 +1886,7 @@ ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culli
 {
 	model_h *mdl = NULL;
 	float nr = 0.0f;
-	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &nr))
+	if(!ade_get_args(L, "o|f", l_Model.GetPtr(&mdl), &nr))
 		return ade_set_error(L, "f", 0.0f);
 
 	polymodel *pm = mdl->Get();
@@ -3928,6 +4060,79 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature")
+{
+	object_h *objh = NULL;
+	int id = 0;
+	if(!ade_get_args(L, "o|i", l_Object.GetPtr(&objh), &id))
+		return ade_set_error(L, "i", 0);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	//Set collision group data
+	if(ADE_SETTING_VAR) {
+		objh->objp->collision_group_id = id;
+	}
+
+	return ade_set_args(L, "i", objh->objp->collision_group_id);
+}
+
+ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector Position", "World collision point (local if boolean is set to true), nil if no collisions")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	int model_num = -1, temp = 0;
+	vec3d *v3a, *v3b;
+	bool local = false;
+	if(!ade_get_args(L, "ooo|b", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+
+	switch(obj->type) {
+		case OBJ_SHIP:
+			model_num = Ship_info[Ships[obj->instance].ship_info_index].model_num;
+			break;
+		case OBJ_WEAPON:
+			model_num = Weapon_info[Weapons[obj->instance].weapon_info_index].model_num;
+			break;
+		case OBJ_DEBRIS:
+			model_num = Debris[obj->instance].model_num;
+			break;
+		case OBJ_ASTEROID:
+			temp = Asteroids[obj->instance].asteroid_subtype;
+			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].model_num[temp];
+			break;
+		default:
+			return ADE_RETURN_NIL;
+	}
+
+	if (model_num < 0)
+		return ADE_RETURN_NIL;
+
+	mc_info hull_check;
+
+	hull_check.model_num = model_num;
+	hull_check.orient = &obj->orient;
+	hull_check.pos = &obj->pos;
+	hull_check.p0 = v3a;
+	hull_check.p1 = v3b;
+	hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
+
+	if ( !model_collide(&hull_check) ) {
+		return ADE_RETURN_NIL;
+	}
+	
+	if (local)
+		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
+	else
+		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point_world));
+}
+
 //**********HANDLE: Asteroid
 ade_obj<object_h> l_Asteroid("asteroid", "Asteroid handle", &l_Object);
 
@@ -4505,6 +4710,28 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	gr_reset_clip();
 
 	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the model used for this shipclass is loaded or not and optionally loads the model, which might be a slow operation.", "boolean", "If the model is loaded or not") 
+{
+	int idx;
+	bool load_check = false;
+	if(!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &load_check))
+		return ADE_RETURN_FALSE;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (sip == NULL)
+		return ADE_RETURN_FALSE;
+
+	if(load_check){
+		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);	
+	}
+
+	if (sip->model_num > -1)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 //**********HANDLE: Waypoint
@@ -5976,6 +6203,29 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 	return ADE_RETURN_TRUE;
 }
+
+ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has already happened", "number", "Returns 1 if first explosion timestamp is passed, 2 if second is passed, 0 otherwise")
+{
+	object_h *shiph;
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "i", 0);
+
+	if(!shiph->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	if (shipp->flags & SF_DYING) {
+		if (shipp->final_death_time == 0) {
+			return ade_set_args(L, "i", 2);
+		}		
+		if (shipp->pre_death_explosion_happened == 1) {
+			return ade_set_args(L, "i", 1);
+		}
+	}
+
+	return ade_set_args(L, "i", 0);
+}
 /*
 ADE_FUNC(getFlags, l_Ship, NULL, "Gets ship flags", "boolean", "State of flag, or nil if handle is invalid")
 {
@@ -6012,7 +6262,11 @@ ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Num
 	if(!objh->IsValid())
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", ship_fire_primary(objh->objp, 0));
+	int i = 0;
+	i += ship_fire_primary(objh->objp, 0);
+	i += ship_fire_primary(objh->objp, 1);
+
+	return ade_set_args(L, "i", i);
 }
 
 ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", "Number of secondary banks fired")
@@ -6046,6 +6300,20 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 	float time_s = (float)time_ms * 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
+}
+
+ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "True if successful, otherwise false or nil")
+{
+	object_h *objh = NULL;
+	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+	if(!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	//The actual clearing of the goals
+	ai_clear_ship_goals( &Ai_info[Ships[objh->objp->instance].ai_index]);
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0]", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
@@ -6679,7 +6947,7 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	if(!ade_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
-	if(sdx < 1 || sdx < Wings[wdx].current_count) {
+	if(sdx < 1 || sdx > Wings[wdx].current_count) {
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 	}
 
@@ -6691,6 +6959,15 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	}
 
 	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
+}
+
+ADE_FUNC(__len, l_Wing, NULL, "Number of wings in mission", "number", "Number of wings in mission")
+{
+	int wdx;
+	if(!ade_get_args(L, "o", l_Wing.Get(&wdx)))
+		return ade_set_error(L, "i", NULL);
+
+	return ade_set_args(L, "i", Wings[wdx].current_count);
 }
 //**********HANDLE: Player
 ade_obj<int> l_Player("player", "Player handle");
@@ -7365,6 +7642,144 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 	return ade_set_args(L, "i", Player->lua_ci.fire_countermeasure_count);
 }
 
+ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button control info", NULL, NULL)
+{
+	button_info_clear(&Player->lua_bi);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getButtonInfo, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
+
+ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+	
+	for(i=0;i<4;i++)
+		bi_status[i] = 0;
+
+	if(!ade_get_args(L, "|iiii", &bi_status[0], &bi_status[1], &bi_status[2], &bi_status[3]))
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR) {
+		for(i=0;i<4;i++)
+			Player->lua_bi.status[i] = bi_status[i];
+	}
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
+
+ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to lua button control data, if number is -1 it tries to use the string", NULL, NULL)
+{
+	int index;
+	char *buf = NULL;
+
+	if(!ade_get_args(L, "i|s", &index, &buf))
+		return ADE_RETURN_NIL;
+
+	if(index != -1) {
+		// Process the number
+		if (index > (4 * 32))
+			return ADE_RETURN_NIL;
+
+		int a, b;
+		a = index / 32;
+		b = index % 32;
+
+		// now add the processed bit
+		Player->lua_bi.status[a] |= (1<<b);
+	} else if (buf != NULL) {
+		int i;
+		for(i=0; i<num_plr_commands; i++) {
+			if(!(strcmp(buf, plr_commands[i].name))) {
+				int a;
+				a = plr_commands[i].def / 32;
+				Player->lua_bi.status[plr_commands[i].var] |= (1<<a);
+				break;
+			}
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getButtonControlName, l_Control_Info, "number", "Gives the name of the command corresponding with the given number", "string", "Name of the command")
+{
+	int index;
+
+	if(!ade_get_args(L, "i", &index))
+		return ade_set_error(L, "s", "");
+
+	if((index < 0) || (index > num_plr_commands))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", plr_commands[index].name);
+}
+
+ADE_FUNC(getButtonControlNumber, l_Control_Info, "string", "Gives the number of the command corresponding with the given string", "number", "Number of the command")
+{
+	int i;
+	char *buf;
+
+	if(!ade_get_args(L, "s", &buf))
+		return ade_set_error(L, "i", -1);
+
+	for(i = 0; i < num_plr_commands; i++) {
+		if (!(strcmp(buf, plr_commands[i].name))) {
+			return ade_set_args(L, "i", plr_commands[i].def);
+		}
+	}
+
+	return ade_set_error(L, "i", -1);
+}
+
+ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button polling for lua", "boolean", "If the all button polling is enabled or not")
+{
+	bool p;
+	int idx;
+
+	if(!ade_get_args(L, "o|b", l_Control_Info.Get(&idx), &p))
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		if (p)
+			lua_game_control |= LGC_B_POLL_ALL;
+		else
+			lua_game_control &= ~LGC_B_POLL_ALL;
+	}
+
+	if (lua_game_control & LGC_B_POLL_ALL)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields containing the button info", "number, number, number,number", "Four bitfields")
+{
+	int i;
+	int bi_status[4];
+
+	if(!(lua_game_control & LGC_B_POLL_ALL))
+		return ADE_RETURN_NIL;
+
+	for(i=0;i<4;i++)
+		bi_status[i] = Player->lua_bi_full.status[i];
+
+	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
+}
 
 //**********LIBRARY: Audio
 ade_lib l_Audio("Audio", NULL, "ad", "Sound/Music Library");
@@ -7533,28 +7948,61 @@ ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the cu
 {
 	enum_h *e = NULL;
 	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
-		switch (lua_game_control) {
-			case LGC_NORMAL:
-				return ade_set_args(L, "s", "NORMAL");
-			case LGC_STEERING:
-				return ade_set_args(L, "s", "STEERING");
-			case LGC_FULL:
-				return ade_set_args(L, "s", "FULL");
-			default:
-				return ade_set_error(L, "s", "");
-		}
+		if (lua_game_control & LGC_NORMAL)
+			return ade_set_args(L, "s", "NORMAL");
+		else if (lua_game_control & LGC_STEERING)
+			return ade_set_args(L, "s", "STEERING");
+		else if (lua_game_control & LGC_FULL)
+			return ade_set_args(L, "s", "FULL");
+		else
+			return ade_set_error(L, "s", "");
 	}
 
 	switch (e->index) {
 		case LE_NORMAL_CONTROLS:
-			lua_game_control = LGC_NORMAL;
+			lua_game_control |= LGC_NORMAL;
+			lua_game_control &= ~(LGC_STEERING|LGC_FULL);
 			return ade_set_args(L, "s", "NORMAL CONTROLS");
 		case LE_LUA_STEERING_CONTROLS:
-			lua_game_control = LGC_STEERING;
+			lua_game_control |= LGC_STEERING;
+			lua_game_control &= ~(LGC_NORMAL|LGC_FULL);
 			return ade_set_args(L, "s", "LUA STEERING CONTROLS");
 		case LE_LUA_FULL_CONTROLS:
-			lua_game_control = LGC_FULL;
+			lua_game_control |= LGC_FULL;
+			lua_game_control &= ~(LGC_STEERING|LGC_NORMAL);
 			return ade_set_args(L, "s", "LUA FULL CONTROLS");
+		default:
+			return ade_set_error(L, "s", "");
+	}
+}
+
+ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
+{
+	enum_h *e = NULL;
+	if (!(ade_get_args(L, "|o", l_Enum.GetPtr(&e)))) {
+		if (lua_game_control & LGC_B_NORMAL)
+			return ade_set_args(L, "s", "NORMAL");
+		else if (lua_game_control & LGC_B_OVERRIDE)
+			return ade_set_args(L, "s", "OVERRIDE");
+		else if (lua_game_control & LGC_B_ADDITIVE)
+			return ade_set_args(L, "s", "ADDITIVE");
+		else
+			return ade_set_error(L, "s", "");
+	}
+
+	switch (e->index) {
+		case LE_NORMAL_BUTTON_CONTROLS:
+			lua_game_control |= LGC_B_NORMAL;
+			lua_game_control &= ~(LGC_B_ADDITIVE|LGC_B_OVERRIDE);
+			return ade_set_args(L, "s", "NORMAL BUTTON CONTROL");
+		case LE_LUA_ADDITIVE_BUTTON_CONTROL:
+			lua_game_control |= LGC_B_ADDITIVE;
+			lua_game_control &= ~(LGC_B_NORMAL|LGC_B_OVERRIDE);
+			return ade_set_args(L, "s", "LUA OVERRIDE BUTTON CONTROL");
+		case LE_LUA_OVERRIDE_BUTTON_CONTROL:
+			lua_game_control |= LGC_B_OVERRIDE;
+			lua_game_control &= ~(LGC_B_ADDITIVE|LGC_B_NORMAL);
+			return ade_set_args(L, "s", "LUA ADDITIVE BUTTON CONTROL");
 		default:
 			return ade_set_error(L, "s", "");
 	}
@@ -8099,60 +8547,60 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 //trackir funcs
 ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ADE_RETURN_FALSE;
 
-	TrackIR_Query();
+	gTirDll_TrackIR.Query( );
 
 	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetPitch());
+	return ade_set_args( L, "f", gTirDll_TrackIR.GetPitch( ) );
 }
 
 ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetYaw());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetYaw());
 }
 
 ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetRoll());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetRoll());
 }
 
 ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetX());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetX());
 }
 
 ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetY());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetY());
 }
 
 ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
 {
-	if(trackir_enabled == 0)
+	if( !gTirDll_TrackIR.Enabled( ) )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", TrackIR_GetZ());
+	return ade_set_args(L, "f", gTirDll_TrackIR.GetZ());
 }
 
 //**********LIBRARY: Controls library
@@ -8311,7 +8759,7 @@ ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
 		gr_set_font(newfn);
 	}
 
-	int fn = FONT_INDEX(Current_font);
+	int fn = gr_get_current_fontnum();
 
 	if(fn < 0 || fn > Num_fonts)
 		return ade_set_error(L, "o", l_Font.Set(-1));
@@ -8785,7 +9233,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
-ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given model with the specified position and orientation - Use with extreme care, may not work properly in all scripting hooks.", "int", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -8813,9 +9261,14 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	matrix cam_orient;
 
 	camid cid = cam_get_current();
-	cid.getCamera()->get_info(&cam_pos, &cam_orient);
+	camera *cam = cid.getCamera();
 
-	g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+	if (cam != NULL) {
+		cam->get_info(&cam_pos, &cam_orient);
+		g3_set_view_matrix(&cam_pos, &cam_orient, View_zoom);
+	} else {
+		g3_set_view_matrix(&Eye_position, &Eye_matrix, View_zoom);
+	}
 
 	if (!Cmdline_nohtl) {
 		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -8836,6 +9289,39 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+
+	return ade_set_args(L, "i", 0);
+}
+
+// Wanderer
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, integer Flags", "Draws the given model with the specified position and orientation - Use with extreme care, designer to operate properly only in On Object Render hook.", "int", "Zero if successful, otherwise an integer error code")
+{
+	model_h *mdl = NULL;
+	vec3d *v = &vmd_zero_vector;
+	matrix_h *mh = NULL;
+	int flags = MR_NORMAL;
+	if(!ade_get_args(L, "ooo|i", l_Model.GetPtr(&mdl), l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh), &flags))
+		return ade_set_args(L, "i", 1);
+
+	if(mdl == NULL)
+		return ade_set_args(L, "i", 2);
+
+	polymodel *pm = mdl->Get();
+
+	if (pm == NULL)
+		return ade_set_args(L, "i", 3);
+
+	int model_num = pm->id;
+
+	if(model_num < 0)
+		return ade_set_args(L, "i", 3);
+
+	//Handle angles
+	matrix *orient = mh->GetMatrix();
+
+	//Draw the ship!!
+	model_clear_instance(model_num);
+	model_render(model_num, orient, v, flags);
 
 	return ade_set_args(L, "i", 0);
 }
@@ -9264,6 +9750,22 @@ ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flas
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not setup subsystem data, DO NOT USE FOR LOADING SHIP MODELS", "model", "Handle to a model")
+{
+	char *s;
+	int model_num = -1;
+
+	if(!ade_get_args(L, "s", &s))
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	if (strlen(s) == 0)
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	model_num = model_load(s, 0, NULL);
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
+}
+
 
 //**********LIBRARY: Scripting Variables
 ade_lib l_HookVar("HookVariables", NULL, "hv", "Hook variables repository");
@@ -9494,7 +9996,7 @@ ade_lib l_Mission_EscortShips("EscortShips", &l_Mission, NULL, NULL);
 ADE_INDEXER(l_Mission_EscortShips, "number Index", "Gets escort ship at specified index on escort list", "ship", "Specified ship, or invalid ship handle if invalid index")
 {
 	int idx;
-	if(!ade_get_args(L, "i", &idx))
+	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
 	if(idx < 1 || idx > hud_escort_num_ships_on_list())
@@ -9756,7 +10258,7 @@ ade_lib l_Mission_Wings("Wings", &l_Mission, NULL, NULL);
 ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
 	char *name;
-	if(!ade_get_args(L, "s", &name))
+	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
 	int idx = wing_name_lookup(name);
@@ -9766,6 +10268,8 @@ ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the missi
 		idx = atoi(name);
 		if(idx < 1 || idx > Num_wings)
 			return ade_set_error(L, "o", l_Wing.Set(-1));
+
+		idx--;	//Lua->FS2
 	}
 
 	return ade_set_args(L, "o", l_Wing.Set(idx));
@@ -9944,6 +10448,10 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "b", false);
 
+	// clear post processing settings
+	if(!Is_standalone)
+		gr_screen.gf_set_default_post_process();
+
 	//NOW do the loading stuff
 	game_stop_time();
 	get_mission_info(s, &The_mission, false);
@@ -9987,6 +10495,7 @@ ADE_FUNC(renderFrame, l_Mission, NULL, "Renders mission frame, but does not move
 
 	return ADE_RETURN_TRUE;
 }
+
 /*
 ADE_FUNC(getDirectiveByName, l_Mission, "Name, [Whether to include unborn directives]", "event handle",
 		 "Gets directive by its name."
@@ -10079,6 +10588,89 @@ ADE_FUNC(isKeyPressed, l_Keyboard, "Letter", "True if key is pressed, false if n
 	else
 		return ADE_RETURN_FALSE;
 }*/
+
+//**********LIBRARY: Bitwise Ops
+ade_lib l_BitOps("BitOps", NULL, "bit", "Bitwise Operations library");
+
+ADE_FUNC(AND, l_BitOps, "number, number", "Values for which bitwise boolean AND operation is performed", "number", "Result of the AND operation")
+{
+	int a, b, c;
+	if(!ade_get_args(L, "ii", &a,&b))
+		return ade_set_error(L, "i", 0);
+
+	c = (a & b);
+
+	return ade_set_args(L, "i", c);
+}
+
+ADE_FUNC(OR, l_BitOps, "number, number", "Values for which bitwise boolean OR operation is performed", "number", "Result of the OR operation")
+{
+	int a, b, c;
+	if(!ade_get_args(L, "ii", &a,&b))
+		return ade_set_error(L, "i", 0);
+
+	c = (a | b);
+
+	return ade_set_args(L, "i", c);
+}
+
+ADE_FUNC(XOR, l_BitOps, "number, number", "Values for which bitwise boolean XOR operation is performed", "number", "Result of the XOR operation")
+{
+	int a, b, c;
+	if(!ade_get_args(L, "ii", &a,&b))
+		return ade_set_error(L, "i", 0);
+
+	c = (a ^ b);
+
+	return ade_set_args(L, "i", c);
+}
+
+ADE_FUNC(toggleBit, l_BitOps, "number, number (bit)", "Toggles the value of the set bit in the given number for 32 bit integer", "number", "Result of the operation")
+{
+	int a, b, c;
+	if(!ade_get_args(L, "ii", &a,&b))
+		return ade_set_error(L, "i", 0);
+
+	if (!((b >= 0) && (b < 32)))
+		return ade_set_error(L, "i", 0);
+
+	if(a & (1<<b))
+		c = (a & !(1<<b));
+	else
+		c = (a | (1<<b));
+
+	return ade_set_args(L, "i", c);
+}
+
+ADE_FUNC(checkBit, l_BitOps, "number, number (bit)", "Checks the value of the set bit in the given number for 32 bit integer", "boolean", "Was the bit true of false")
+{
+	int a, b;
+	if(!ade_get_args(L, "ii", &a,&b))
+		return ade_set_error(L, "i", 0);
+
+	if (!((b >= 0) && (b < 32)))
+		return ade_set_error(L, "i", 0);
+
+	if(a & (1<<b))
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(addBit, l_BitOps, "number, number (bit)", "Performs inclusive or (OR) operation on the set bit of the value", "number", "Result of the operation")
+{
+	int a, b, c;
+	if(!ade_get_args(L, "ii", &a,&b))
+		return ade_set_error(L, "i", 0);
+
+	if (!((b >= 0) && (b < 32)))
+		return ade_set_error(L, "i", 0);
+
+	c = (a | (1<<b));
+
+	return ade_set_args(L, "i", c);
+}
+
 
 //**********LIBRARY: Tables
 ade_lib l_Tables("Tables", NULL, "tb", "Tables library");
@@ -10192,7 +10784,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 {
 	particle_info pi;
 	pi.type = PARTICLE_DEBUG;
-	pi.optional_data = 0;
+	pi.optional_data = -1;
 	pi.tracer_length = 1.0f;
 	pi.attached_objnum = -1;
 	pi.attached_sig = -1;
@@ -10231,7 +10823,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 
 	if(objh != NULL && objh->IsValid())
 	{
-		pi.attached_objnum = (short)OBJ_INDEX(objh->objp);
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
 		pi.attached_sig = objh->objp->signature;
 	}
 
@@ -10311,18 +10903,54 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx)
 // *************************Housekeeping*************************
 //WMC - The miraculous lines of code that make Lua debugging worth something.
 lua_Debug Ade_debug_info;
+char debug_stack[4][32];
 
-void ade_debug_line(lua_State *L, lua_Debug *ar)
+void ade_debug_call(lua_State *L, lua_Debug *ar)
 {
 	Assert(L != NULL);
 	Assert(ar != NULL);
+	lua_getstack(L, 1, ar);
+	//lua_getfield(L, LUA_GLOBALSINDEX, "f");
 	lua_getinfo(L, "nSlu", ar);
 	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
+
+	int n;
+	for (n = 0; n < 4; n++) {
+		debug_stack[n][0] = '\0';
+	}
+
+	for (n = 0; n < 4; n++) {
+		if (lua_getstack(L,n+1, ar) == NULL)
+			break;
+		lua_getinfo(L,"n", ar);
+		if (ar->name == NULL)
+			break;
+		strcpy_s(debug_stack[n],ar->name);
+	}
 }
 
 void ade_debug_ret(lua_State *L, lua_Debug *ar)
 {
-	//WMC - So Lua isn't mean and uses ade_debug_line for returns
+	Assert(L != NULL);
+	Assert(ar != NULL);
+	lua_getstack(L, 1, ar);
+	//lua_getfield(L, LUA_GLOBALSINDEX, "f");
+	lua_getinfo(L, "nSlu", ar);
+	memcpy(&Ade_debug_info, ar, sizeof(lua_Debug));
+
+	int n;
+	for (n = 0; n < 4; n++) {
+		debug_stack[n][0] = '\0';
+	}
+
+	for (n = 0; n < 4; n++) {
+		if (lua_getstack(L,n+1, ar) == NULL)
+			break;
+		lua_getinfo(L,"n", ar);
+		if (ar->name == NULL)
+			break;
+		strcpy_s(debug_stack[n],ar->name);
+	}
 }
 
 //WMC - because the behavior of the return keyword
@@ -10376,7 +11004,8 @@ int script_state::CreateLuaState()
 
 	//*****SET DEBUG HOOKS
 #ifndef NDEBUG
-	lua_sethook(L, ade_debug_line, LUA_MASKLINE, 0);
+	//lua_sethook(L, ade_debug_ret, LUA_MASKLINE, 0);
+	//lua_sethook(L, ade_debug_call, LUA_MASKCALL, 0);
 	lua_sethook(L, ade_debug_ret, LUA_MASKRET, 0);
 #endif
 

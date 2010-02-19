@@ -13,6 +13,7 @@
 #ifdef _WIN32
  #include <direct.h>
  #include <io.h>
+ #include <windows.h>
 #ifndef _MINGW
  #include <crtdbg.h>
 #endif // !_MINGW
@@ -46,6 +47,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "globalincs/mspdb_callstack.h"
 #include "graphics/font.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
@@ -62,7 +64,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h" // header file for the TrackIR routines (Swifty)
+#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -1561,6 +1563,13 @@ int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
+	// clear post processing settings
+	if(!Is_standalone)
+		gr_screen.gf_set_default_post_process();
+
+	// clear shader manager cache
+	gr_clear_shaders_cache();
+
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) )
@@ -1936,7 +1945,13 @@ void game_init()
 
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+		mprintf(("FreeSpace version: %i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR));
+	} else if (FS_VERSION_REVIS == 0) {
+		mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+	} else {
+		mprintf(("FreeSpace version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
+	}
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -2193,6 +2208,9 @@ void game_init()
 		mprintf(( "Using high memory settings...\n" ));
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
+
+	if(!Is_standalone)
+		gr_screen.gf_post_process_init();
 
 	//WMC - Initialize my new GUI system
 	//This may seem scary, but it should take up 0 processing time and very little memory
@@ -2803,9 +2821,16 @@ void game_set_view_clip(float frametime)
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
 
-		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
-		// J.S. I've changed my ways!! See the new "no constants" code!!!
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		if (g3_in_frame() == 0) {
+			// Ensure that the bars are black
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
+			// J.S. I've changed my ways!! See the new "no constants" code!!!
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		}
 	}
 	else {
 		// Set the clip region for normal view
@@ -3182,7 +3207,11 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+					strcpy_s(view_target_name, "targeted ship");
+				} else {
+					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+				}
 				break;
 			case OBJ_WEAPON:
 				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
@@ -3719,11 +3748,11 @@ camid game_render_frame_setup()
 								
 				
 
-				if ( Viewer_obj->phys_info.speed < 0.1 )
-					move_dir = Viewer_obj->orient.vec.fvec;
+				if ( Viewer_obj->phys_info.speed < 62.5f )
+					move_dir = Viewer_obj->phys_info.vel;
 				else {
 					move_dir = Viewer_obj->phys_info.vel;
-					vm_vec_normalize(&move_dir);
+					vm_vec_scale(&move_dir, (62.5f/Viewer_obj->phys_info.speed));
 				}
 
 				//create a better 3rd person view if this is the player ship
@@ -3733,15 +3762,17 @@ camid game_render_frame_setup()
 					vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec,1000.0f);
 					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -2.25f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, .625f * Viewer_obj->radius);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.125f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.625f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
 					vm_vec_sub(&tmp_dir, &aim_pt, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
 				else
 				{
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -3.0f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius);
+					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.fvec, -2.5f * Viewer_obj->radius - Viewer_chase_info.distance);
+					vm_vec_scale_add2(&eye_pos, &Viewer_obj->orient.vec.uvec, 0.75f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
 					vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
 					vm_vec_normalize(&tmp_dir);
 				}
@@ -3818,11 +3849,6 @@ camid game_render_frame_setup()
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
 
-	if(!Time_compression_locked)
-		game_set_view_clip(flFrametime);
-	else
-		game_set_view_clip(flRealframetime);
-
 	return Main_camera;
 }
 
@@ -3833,9 +3859,12 @@ extern void ai_debug_render_stuff();
 int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect )
 
+void clip_frame_view();
+
 // Does everything needed to render a frame
 void game_render_frame( camid cid )
 {
+
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3885,6 +3914,13 @@ void game_render_frame( camid cid )
 			Env_cubemap_drawn = true;
 		}
 	}
+	gr_zbuffer_clear(TRUE);
+
+	gr_screen.gf_post_process_before();
+
+	clip_frame_view();
+
+	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
@@ -3934,6 +3970,7 @@ void game_render_frame( camid cid )
 	//This is so we can change the minimum clipping distance without messing everything up.
 	if(draw_viewer_last && Viewer_obj)
 	{
+		gr_screen.gf_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
 	}
@@ -3961,10 +3998,13 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
 	{
+		gr_screen.gf_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 	//================ END OF 3D RENDERING STUFF ====================
+
+	gr_screen.gf_post_process_after();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
@@ -4295,7 +4335,7 @@ void game_simulation_frame()
 		message_maybe_distort();				// maybe distort incoming message if comms damaged
 		player_repair_frame(flFrametime);	//	AI objects get repaired in ai_process, called from move code...deal with player.
 		player_process_pending_praise();		// maybe send off a delayed praise message to the player
-		player_maybe_play_all_alone_msg();	// mabye tell the player he is all alone	
+		player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
 	}
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
@@ -4544,23 +4584,45 @@ void bars_do_frame(float frametime)
 		else
 			yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR - fl2i(Cutscene_bars_progress*(gr_screen.max_h/CUTSCENE_BAR_DIVISOR));
 
-		//Set rectangles
-		//gr_set_color(0,0,0);
-		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		//Set clipping
-		gr_reset_clip();
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+		if (g3_in_frame() == 0) {
+			//Set rectangles
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			//Set clipping
+			gr_reset_clip();
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );
+		}
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/CUTSCENE_BAR_DIVISOR;
 
-		//gr_set_color(0,0,0);
-		//gr_rect(0, 0, gr_screen.max_w, yborder, false);
-		//gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
-		gr_reset_clip();
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+		if (g3_in_frame() == 0) {
+			gr_set_color(0,0,0);
+			gr_rect(0, 0, gr_screen.max_w, yborder, false);
+			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, false);
+		} else {
+			gr_reset_clip();
+			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - (yborder*2), false );
+		}
+	}
+}
+
+void clip_frame_view() {
+	if(!Time_compression_locked) {
+		// Player is dead
+		game_set_view_clip(flFrametime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
+	} else {
+		// Player is dead
+		game_set_view_clip(flRealframetime);
+
+		// Cutscene bars
+		bars_do_frame(flRealframetime);
 	}
 }
 
@@ -4708,8 +4770,7 @@ void game_frame(int paused)
 			DEBUG_GET_TIME( render3_time1 )
 			camid cid = game_render_frame_setup();
 
-			// WMC's cutscene bars function
-			bars_do_frame(Time_compression_locked ? flRealframetime : flFrametime);
+			clip_frame_view();
 
 			game_render_frame( cid );
 
@@ -4780,9 +4841,13 @@ void game_frame(int paused)
 				game_render_hud_3d(cid);
 			}
 
+
 			Script_system.SetHookObject("Self", Viewer_obj);
-			Script_system.RunBytecode(Script_hudhook);
-			Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			if (!hud_disabled_except_messages() && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
+			{
+				Script_system.RunBytecode(Script_hudhook);
+				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			}
 			Script_system.RemHookVar("Self");
 
 			gr_reset_clip();
@@ -6513,9 +6578,6 @@ void game_enter_state( int old_state, int new_state )
 			}			
 			player_restore_target_and_weapon_link_prefs();
 
-			//Set the current hud
-			set_current_hud(Player_ship->ship_info_index);
-
 			Game_mode |= GM_IN_MISSION;
 
 #ifndef NDEBUG
@@ -7387,12 +7449,21 @@ int game_main(char *cmdline)
 	}
 #endif
 
+#ifdef _WIN32
+	if ( !Is_standalone )
+		disableWindowsKey( );
+#endif
+
 
 	init_cdrom();
 
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	initialize_trackir(); 
+	int trackIrInitResult = gTirDll_TrackIR.Init( (HWND)os_get_window( ) );
+	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
+	{
+		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
+	}
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
@@ -7460,6 +7531,11 @@ int game_main(char *cmdline)
 
 	game_shutdown();
 
+#ifdef _WIN32
+	if ( !Is_standalone )
+		enableWindowsKey( );
+#endif
+
 	return 0;
 }
 
@@ -7492,8 +7568,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	DBUGFILE_INIT();
 
-	disableWindowsKey();
-
 	//=====================================================
 	// Make sure we're running in the right directory.
 	char exe_dir[1024];
@@ -7513,6 +7587,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		}
 	}
 
+	SCP_mspdbcs_Initialise( );
 
 #ifdef GAME_ERRORLOG_TXT
 #ifdef _MSC_VER
@@ -7531,7 +7606,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 #endif // _MSC_VER
 #endif
 
-	enableWindowsKey();
+	SCP_mspdbcs_Cleanup( );
 
 	DBUGFILE_DEINIT();
 
@@ -7655,11 +7730,7 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-#ifdef _WIN32
-	timeEndPeriod(1);
-	if(trackir_enabled) // Safely shutdown the user's TrackIR unit if he has one (Swifty)
-		TrackIR_ShutDown();
-#endif
+	gTirDll_TrackIR.Close( );
 
 
 	fsspeech_deinit();
@@ -8365,28 +8436,13 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	if ( FS_VERSION_BUILD == 0 ) {
-		sprintf(str,"FreeSpace 2 Open v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) {
+		sprintf(str, "FreeSpace 2 Open v%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	} else if (FS_VERSION_REVIS == 0) {
+		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 	} else {
-		sprintf(str,"FreeSpace 2 Open v%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 	}
-
-	/*
-	// Goober5000 - although this is cool, it's a bit redundant
-
-	// append the CVS "release" version in the $Name variable, but
-	// only do this if it's been tagged
-	int rcs_name_len = strlen(RCS_Name);
-	if (rcs_name_len > 11)
-	{
-		char buffer[100];
-		strcpy_s(buffer, RCS_Name + 7);
-		buffer[rcs_name_len-9] = 0;
-
-		SAFE_strcat_s( str, " ", max_size );
-		SAFE_strcat_s( str, buffer, max_size );
-	}
-	*/
 
 #ifdef INF_BUILD
 	strcat_s( str, max_size, " Inferno" );
@@ -9330,13 +9386,15 @@ int detect_lang()
 {
 	uint file_checksum;
 	int idx;
+	char first_font[MAX_FILENAME_LEN];
 
 	// if the reg is set then let lcl_init() figure out what to do
 	if (os_config_read_string( NULL, NOX("Language"), NULL ) != NULL)
 		return -1;
 
 	// try and open the file to verify
-	CFILE *detect = cfopen("font01.vf", "rb");
+	gr_stuff_first_font(first_font, sizeof(first_font));
+	CFILE *detect = cfopen(first_font, "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)

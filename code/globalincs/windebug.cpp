@@ -128,6 +128,11 @@ const char* Separator = "-------------------------------------------------------
 class SCP_DebugCallStack : public SCP_IDumpHandler
 {
 public:
+	virtual bool ResolveSymbols( )
+	{
+		return true;
+	}
+
 	virtual void OnBegin( )
 	{
 	}
@@ -983,9 +988,11 @@ void LuaDebugPrint(lua_Debug &ar)
 	dumpBuffer.Printf( "Source:\t\t%s\r\n",  ar.source);
 	dumpBuffer.Printf( "Short source:\t%s\r\n",  ar.short_src);
 	dumpBuffer.Printf( "Current line:\t%d\r\n",  ar.currentline);
+	dumpBuffer.Printf( "- Function line:\t%d\r\n", (ar.linedefined ? (1 + ar.currentline - ar.linedefined) : 0));
 }
 
 extern lua_Debug Ade_debug_info;
+extern char debug_stack[4][32];
 void LuaError(struct lua_State *L, char *format, ...)
 {
 	int val;
@@ -1041,6 +1048,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 		dumpBuffer.Printf("(No stack debug info)\r\n");
 	}
 */
+//	TEST CODE
+
 	dumpBuffer.Printf(Separator);
 	dumpBuffer.Printf( "ADE Debug:" );
 	dumpBuffer.Printf( "\r\n" );
@@ -1053,8 +1062,12 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	AssertText2[0] = '\0';
 	dumpBuffer.Printf(Separator);
-	dumpBuffer.Printf("LUA Stack:");
-	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf("LUA Stack:\r\n");
+	int i;
+	for (i = 0; i < 4; i++) {
+		if (debug_stack[i][0] != '\0')
+			dumpBuffer.Printf("\t%s\r\n", debug_stack[i]);
+	}
 	dumpBuffer.Printf(Separator);
 	ade_stackdump(L, AssertText2);
 	dumpBuffer.Printf( AssertText2 );
@@ -1396,24 +1409,8 @@ void windebug_memwatch_init()
 
 #endif
 
-
-//**************************************
-// WARNING - ENABLE THIS FEATURE AT YOUR 
-// OWN RISK - IT CAUSES GAURANTEED CRASHING
-// Warned by: Kazan
-// Featured Implemented by: Unknown
-//#define NEW_MALLOC
-//**************************************
-
-
 int Watch_malloc = 0;
 DCF_BOOL(watch_malloc, Watch_malloc )
-
-
-HANDLE Heap = 0;
-
-#define HEAP_FLAG HEAP_NO_SERIALIZE
-// #define HEAP_FLAG	HEAP_GENERATE_EXCEPTIONS
 
 // Returns 0 if not enough RAM.
 int vm_init(int min_heap_size)
@@ -1422,12 +1419,6 @@ int vm_init(int min_heap_size)
 	TotalRam = 0;
 	#endif
 
-	#ifdef NEW_MALLOC
-		Heap = HeapCreate( HEAP_FLAG, min_heap_size, 0 );
-		if ( Heap == NULL )	{
-			return 0;
-		}
-	#endif
 	return 1;
 }
 
@@ -1514,7 +1505,6 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 	}
 
 	char *temp = strrchr(filename, '\\');
-
 	if(temp)
 		filename = temp + 1;
 
@@ -1622,7 +1612,13 @@ void memblockinfo_output_memleak()
 void unregister_malloc(char *filename, int size, void *ptr)
 {
 	// calculate magic numbers
-	int magic1, magic2, len = strlen(filename);
+	int magic1, magic2, len;
+	
+	char *temp = strrchr(filename, '\\');
+	if(temp)
+		filename = temp + 1;
+
+	len = strlen(filename);
 
 	magic1 = magic2 = 0;
 
@@ -1647,9 +1643,6 @@ void unregister_malloc(char *filename, int size, void *ptr)
 			break;
 		}
 	}
-
-	// This should never happen
-	Assert(f < MAX_MEM_POINTERS);
 
 #endif
 
@@ -1676,7 +1669,6 @@ void *_vm_malloc( int size, int quiet )
 {
 	void *ptr = NULL;
 
-#ifndef NEW_MALLOC
 	ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
 
 	if (ptr == NULL)
@@ -1696,37 +1688,6 @@ void *_vm_malloc( int size, int quiet )
 		register_malloc(size, filename, line, ptr);
 #endif
 	return ptr;
-#else
- 
-
-	ptr = HeapAlloc(Heap, HEAP_FLAG, size );
-
-
-	if ( ptr == NULL )	{
-		mprintf(( "HeapAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
-
-		if (quiet) {
-			return NULL;
-		}
-
-		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
-				"virtual memory size, or installing more physical RAM.\n");
-
-	}
-	#ifndef NDEBUG
-		int actual_size = HeapSize(Heap, HEAP_FLAG, ptr);
-		if ( Watch_malloc )	{
-			mprintf(( "Malloc %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
-		}
-		TotalRam += actual_size;
-
-	if(Cmdline_show_mem_usage)
-		register_malloc(actual_size, filename, line, ptr);
-
-	#endif
-#endif
-
-	return ptr;
 }
 
 #ifndef NDEBUG
@@ -1743,7 +1704,7 @@ char *_vm_strdup( const char *ptr )
 	if (!dst)
 		return NULL;
 
-	strcpy( dst, ptr );
+	strcpy_s( dst, len + 1, ptr );
 	return dst;
 }
 
@@ -1793,19 +1754,7 @@ void _vm_free( void *ptr )
 		unregister_malloc(filename, nSize, ptr);
 #endif
 
-#ifndef NEW_MALLOC
 	_free_dbg(ptr,_NORMAL_BLOCK);
-
-#else
-	int actual_size = HeapSize(Heap, HEAP_FLAG, ptr);
-	if ( Watch_malloc )	{
-		mprintf(( "Free %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
-	}
-	TotalRam -= actual_size;
-
-	HeapFree( Heap, HEAP_FLAG, ptr );
-	HeapCompact(Heap, HEAP_FLAG);
-#endif
 }
 
 void vm_free_all()
@@ -1824,9 +1773,6 @@ void *_vm_realloc( void *ptr, int size, int quiet )
 
 	void *ret_ptr = NULL;
 
-#ifndef NEW_MALLOC
-
-	
 #ifndef NDEBUG
 	// Unregistered the previous allocation
 	_CrtMemBlockHeader *phd = pHdr(ptr);
@@ -1858,49 +1804,4 @@ void *_vm_realloc( void *ptr, int size, int quiet )
 		register_malloc(size, filename, line, ret_ptr);
 #endif
 	return ret_ptr;
-	
-
-#else
-
-	ret_ptr = HeapReAlloc(Heap, HEAP_FLAG, ptr, size);
-
-	if (ret_ptr == NULL) {
-		mprintf(( "HeapReAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
-
-		if (quiet && (size > 0) && (ptr != NULL)) {
-			// realloc doesn't touch the original ptr in the case of failure so we could still use it
-			return NULL;
-		}
-
-		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
-			"virtual memory size, or installing more physical RAM.\n");
-	}
-
-	// do a size check now since we need to know if we got what was asked for
-	int actual_size = HeapSize(Heap, HEAP_FLAG, ret_ptr);
-
-	if (actual_size < size) {
-		mprintf(( "HeapReAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
-
-		Error(LOCATION, "The required ammount of memory cannot be allocated.\n"
-			"Try closing down other applications, increasing your\n"
-			"virtual memory size, or installing more physical RAM.\n");
-
-		vm_free(ret_ptr);
-
-		return NULL;
-	}
-
-	#ifndef NDEBUG
-		if ( Watch_malloc )	{
-			mprintf(( "ReAlloc %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
-		}
-		TotalRam += actual_size;
-
-	if(Cmdline_show_mem_usage)
-		register_malloc(actual_size, filename, line, ret_ptr);
-
-	#endif
-	return ret_ptr;
-#endif
 }

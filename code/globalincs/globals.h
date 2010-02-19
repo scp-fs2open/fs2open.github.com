@@ -84,7 +84,7 @@
 
 // from weapon.h
 // upped 5/6/98 from 200 - DB
-#define MAX_WEAPONS	350
+#define MAX_WEAPONS	700
 
 #ifdef INF_BUILD
 #define MAX_WEAPON_TYPES				300
@@ -118,7 +118,7 @@
 extern int Num_medals;
 
 // object.h
-#define MAX_OBJECTS			1000		
+#define MAX_OBJECTS			2000		
 
 // from lighting.cpp
 #define MAX_LIGHTS 256

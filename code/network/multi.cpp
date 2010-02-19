@@ -1496,7 +1496,7 @@ void standalone_main_init()
 	Netgame.security = 0;
 	Netgame.server_addr = Psnet_my_addr;
 
-	memset(&The_mission,0,sizeof(The_mission));
+	The_mission.Reset( );
 		
 	// reinitialize all systems	
 	multi_level_init();	

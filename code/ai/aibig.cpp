@@ -132,8 +132,8 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 				dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
 				bool in_fov = false;
 
+				dot = vm_vec_dot(&v2p, attacker_objp_fvec);
 				if (tp == NULL) {
-					dot = vm_vec_dot(&v2p, attacker_objp_fvec);
 					if (dot > fov)
 						in_fov = true;
 				} else {
@@ -1417,9 +1417,9 @@ void ai_big_strafe_glide_attack()
 	if (aip->submode_parm1 == 1) {
 		accelerate_ship(aip, 1.0f);
 		//Use afterburners if we have them and are pointed the right way
-		if (dot_to_goal > 0.99f) {
-		afterburners_start(Pl_objp);
-		aip->afterburner_stop_time = Missiontime + 3*F1_0;
+		if (dot_to_goal > 0.99f && ai_maybe_fire_afterburner(Pl_objp, aip)) {
+			afterburners_start(Pl_objp);
+			aip->afterburner_stop_time = Missiontime + 3*F1_0;
 		}
 
 		turn_towards_point(Pl_objp, &aip->goal_point, NULL, 0.0f);

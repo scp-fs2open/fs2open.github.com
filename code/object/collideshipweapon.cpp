@@ -71,7 +71,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	vec3d force;		
 
 	// Apply hit & damage & stuff to weapon
-	weapon_hit(weapon_obj, ship_obj,  world_hitpos);
+	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
 
 	damage = wip->damage;
 
@@ -380,6 +380,9 @@ int collide_ship_weapon( obj_pair * pair )
 		if ( ship == Player_obj )
 			return 0;
 	}
+
+	if (reject_due_collision_groups(ship, weapon))
+		return 0;
 
 	// Cull lasers within big ship spheres by casting a vector forward for (1) exit sphere or (2) lifetime of laser
 	// If it does hit, don't check the pair until about 200 ms before collision.  

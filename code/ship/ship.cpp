@@ -332,7 +332,8 @@ flag_def_list ai_tgt_weapon_flags[] = {
 	{ "aspect seeking",		WIF_HOMING_ASPECT,		0 },
 	{ "engine seeking",		WIF_HOMING_JAVELIN,		0 },
 	{ "pierce shields",		WIF2_PIERCE_SHIELDS,	1 },
-	{ "local ssm",			WIF2_LOCAL_SSM,			1 }
+	{ "local ssm",			WIF2_LOCAL_SSM,			1 },
+	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
 };
 
 int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -564,7 +565,7 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
-	"BTRL",
+	"Galactica",
 	"Homeworld",
 	"Hyperspace",
 };
@@ -583,6 +584,24 @@ int warptype_match(char *p)
 	return -1;
 }
 
+char *Lightning_types[] = {
+	"None",
+	"Default",
+};
+
+int Num_lightning_types = sizeof(Lightning_types)/sizeof(char*);
+
+int lightningtype_match(char *p)
+{
+	int i;
+	for(i = 0; i < Num_lightning_types; i++)
+	{
+		if(!stricmp(Lightning_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
 
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
@@ -599,6 +618,7 @@ void init_ship_entry(ship_info *sip)
 	int i,j;
 	
 	sip->name[0] = '\0';
+	sip->alt_name[0] = '\0';
 	sprintf(sip->short_name, "ShipClass%d", (sip - Ship_info));
 	sip->species = 0;
 	sip->class_type = -1;
@@ -663,6 +683,7 @@ void init_ship_entry(ship_info *sip)
 	sip->warpout_player_speed = 0.0f;
 	
 	sip->explosion_propagates = 0;
+	sip->big_exp_visual_rad = -1.0f;
 	sip->vaporize_chance = 0;
 	sip->shockwave_count = 1;
 	sip->explosion_bitmap_anims.clear();
@@ -687,6 +708,7 @@ void init_ship_entry(ship_info *sip)
 	sip->debris_max_hitpoints = -1.0f;
 	sip->debris_min_hitpoints = -1.0f;
 	sip->debris_damage_mult = 1.0f;
+	sip->debris_arc_percent = 0.5f;
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -737,6 +759,10 @@ void init_ship_entry(ship_info *sip)
 	sip->hull_repair_rate = 0.0f;
 	//-2 represents not set, in which case the default is used for the ship (if it is small)
 	sip->subsys_repair_rate = -2.0f;
+
+	sip->sup_hull_repair_rate = 0.15f;
+	sip->sup_shield_repair_rate = 0.20f;
+	sip->sup_subsys_repair_rate = 0.15f;
 	
 	sip->armor_type_idx = -1;
 	sip->shield_armor_type_idx = -1;
@@ -753,6 +779,7 @@ void init_ship_entry(ship_info *sip)
 	sip->afterburner_fuel_capacity = 0.0f;
 	sip->afterburner_burn_rate = 0.0f;
 	sip->afterburner_recover_rate = 0.0f;
+	sip->afterburner_max_reverse_vel = 0.0f;
 
 	generic_bitmap_init(&sip->afterburner_trail, NULL);
 	sip->afterburner_trail_width_factor = 1.0f;
@@ -831,6 +858,8 @@ void init_ship_entry(ship_info *sip)
 	}
 	
 	sip->emp_resistance_mod = 0.0f;
+	sip->piercing_damage_draw_limit = 0.10f;
+	sip->damage_lightning_type = SLT_DEFAULT;
 }
 
 // function to parse the information for a specific ship type.	
@@ -1055,7 +1084,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	else {
 		info_type_name = "Ship Template";
 	}	
-	
+
+	if(optional_string("$Alt name:"))
+		stuff_string(sip->alt_name, F_NAME, NAME_LENGTH);
+
 	if(optional_string("$Short name:"))
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
@@ -1252,6 +1284,18 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_boolean(&bogus_bool);
 	}
 
+	if(optional_string("$Damage Lightning Type:"))
+	{
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+		j = lightningtype_match(buf);
+		if(j >= 0) {
+			sip->damage_lightning_type = j;
+		} else {
+			Warning(LOCATION, "Invalid lightning type '%s' specified for ship '%s'", buf, sip->name);
+			sip->damage_lightning_type = SLT_DEFAULT;
+		}
+	}
+
 	if(optional_string("$Impact:"))
 	{
 		if(optional_string("+Damage Type:"))
@@ -1330,6 +1374,16 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			if(sip->debris_damage_mult < 0.0f)
 				Warning(LOCATION, "Debris damage multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
 		}
+		if(optional_string("+Lightning Arc Percent:")) {
+			stuff_float(&sip->debris_arc_percent);
+			if(sip->debris_arc_percent < 0.0f || sip->debris_arc_percent > 100.0f) {
+				Warning(LOCATION, "Lightning Arc Percent on %s '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", info_type_name, sip->name, sip->debris_arc_percent);
+				sip->debris_arc_percent = 50.0;
+			}
+			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+			sip->debris_arc_percent /= 100.0;
+		}
+		
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
@@ -1590,6 +1644,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Expl Propagates:")){
 		stuff_boolean(&sip->explosion_propagates);
+	}
+
+	if(optional_string("$Expl Visual Rad:")){
+		stuff_float(&sip->big_exp_visual_rad);
 	}
 
 	if(optional_string("$Vaporize Percent Chance:")){
@@ -1891,6 +1949,14 @@ strcpy_s(parse_error_text, temp_error);
 	else if (first_time)
 		sip->max_shield_regen_per_second = 0.02f;
 
+	// Support ship hull shield rate - if allowed
+	if(optional_string("$Support Shield Repair Rate:"))
+	{
+		stuff_float(&sip->sup_shield_repair_rate);
+		sip->sup_shield_repair_rate *= 0.01f;
+		CLAMP(sip->sup_shield_repair_rate, 0.0f, 1.0f);
+	}
+
 	// Goober5000
 	if (optional_string("$Weapon Regeneration Rate:"))
 		stuff_float(&sip->max_weapon_regen_per_second);
@@ -1929,6 +1995,14 @@ strcpy_s(parse_error_text, temp_error);
 			sip->hull_repair_rate = -1.0f;
 	}
 
+	// Support ship hull repair rate - if allowed
+	if(optional_string("$Support Hull Repair Rate:"))
+	{
+		stuff_float(&sip->sup_hull_repair_rate);
+		sip->sup_hull_repair_rate *= 0.01f;
+		CLAMP(sip->sup_hull_repair_rate, 0.0f, 1.0f);
+	}
+
 	//Subsys rep rate
 	if(optional_string("$Subsystem Repair Rate:"))
 	{
@@ -1941,7 +2015,15 @@ strcpy_s(parse_error_text, temp_error);
 		else if(sip->subsys_repair_rate < -1.0f)
 			sip->subsys_repair_rate = -1.0f;
 	}
-	
+
+	// Support ship hull repair rate
+	if(optional_string("$Support Subsystem Repair Rate:"))
+	{
+		stuff_float(&sip->sup_subsys_repair_rate);
+		sip->sup_subsys_repair_rate *= 0.01f;
+		CLAMP(sip->sup_subsys_repair_rate, 0.0f, 1.0f);
+	}
+
 	if(optional_string("$Armor Type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -2076,6 +2158,14 @@ strcpy_s(parse_error_text, temp_error);
 
 		if(optional_string("+Aburn For accel:")) {
 			stuff_float(&sip->afterburner_forward_accel);
+		}
+
+		// SparK: added reverse burner capability
+		if(optional_string("+Aburn Max Reverse Vel:")) {
+			stuff_float(&sip->afterburner_max_reverse_vel);
+		}
+		if(optional_string("+Aburn Rev accel:")) {
+			stuff_float(&sip->afterburner_reverse_accel);
 		}
 
 		if(optional_string("+Aburn Fuel:")) {
@@ -2231,15 +2321,19 @@ strcpy_s(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 1:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 	
-		if ( VALID_FNAME(name_tmp) )
-			generic_anim_init( &sip->thruster_glow_info.normal, name_tmp );
+		if ( VALID_FNAME(name_tmp) ) {
+			strcpy_s(sip->thruster_glow_info.normal.filename, name_tmp);
+			thruster_glow_anim_load( &sip->thruster_glow_info.normal );
+		}
 	}
 
 	if ( optional_string("$Thruster Bitmap 1a:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( VALID_FNAME(name_tmp) )
-			generic_anim_init( &sip->thruster_glow_info.afterburn, name_tmp );
+		if ( VALID_FNAME(name_tmp) ) {
+			strcpy_s(sip->thruster_glow_info.afterburn.filename, name_tmp);
+			thruster_glow_anim_load( &sip->thruster_glow_info.afterburn );
+		}
 	}
 
 	if ( optional_string("$Thruster01 Radius factor:") ) {
@@ -2502,9 +2596,8 @@ strcpy_s(parse_error_text, temp_error);
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
-		SCP_vector <std::string> target_group_strings, *target_group_string_p;
-		target_group_string_p = &target_group_strings;
-		int num_strings = stuff_string_list(target_group_string_p);
+		SCP_vector<SCP_string> target_group_strings;
+		int num_strings = stuff_string_list(target_group_strings);
 		int num_groups = Ai_tp_list.size();
 		int k;
 		bool override_strings = false;
@@ -2537,6 +2630,12 @@ strcpy_s(parse_error_text, temp_error);
 		stuff_float(&sip->emp_resistance_mod);
 	}
 	
+	if (optional_string("$Piercing Damage Draw Limit:")) {
+		float tempf;
+		stuff_float(&tempf);
+		sip->piercing_damage_draw_limit = tempf / 100.0f;
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
@@ -2761,9 +2860,8 @@ strcpy_s(parse_error_text, temp_error);
 			}
 
 			if (optional_string("$Target Priority:")) {
-				SCP_vector <std::string> tgt_priorities, *tgt_priorities_p;
-				tgt_priorities_p = &tgt_priorities;
-				int num_strings = stuff_string_list(tgt_priorities_p);
+				SCP_vector <SCP_string> tgt_priorities;
+				int num_strings = stuff_string_list(tgt_priorities);
 				sp->num_target_priorities = 0;
 
 				if (num_strings > 32)
@@ -3071,7 +3169,6 @@ void parse_ship_type()
 	else
 	{
 		stp = &stp_buf;
-		memset( stp, 0, sizeof(ship_type_info) );
 		strcpy_s(stp->name, name_buf);
 	}
 
@@ -3098,9 +3195,8 @@ void parse_ship_type()
 
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
-		SCP_vector <std::string> target_group_strings, *target_group_string_p;
-		target_group_string_p = &target_group_strings;
-		int num_strings = stuff_string_list(target_group_string_p);
+		SCP_vector <SCP_string> target_group_strings;
+		int num_strings = stuff_string_list(target_group_strings);
 		int num_groups = Ai_tp_list.size();
 		int i, j;
 		bool override_strings = false;
@@ -3177,6 +3273,10 @@ void parse_ship_type()
 			stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
 		}
 
+	if(optional_string("$No Huge Beam Impact Effects:")) {
+		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
+	}
+
 	if(optional_string("$Fog:"))
 	{
 		if(optional_string("+Start dist:")) {
@@ -3211,7 +3311,7 @@ void parse_ship_type()
 		}
 
 		if(optional_string("+Actively Pursues:")) {
-			stuff_string_list(&stp->ai_actively_pursues_temp);
+			stuff_string_list(stp->ai_actively_pursues_temp);
 		}
 
 		if(optional_string("+Guards attack this:")) {
@@ -3310,6 +3410,14 @@ void parse_shiptype_tbl(char *filename)
 	{
 		while (required_string_either("#End", "$Name:"))
 			parse_ai_target_priorities();
+
+		required_string("#End");
+	}
+
+	if (optional_string("#Weapon Targeting Priorities"))
+	{
+		while (required_string_either("#End", "$Name:"))
+			parse_weapon_targeting_priorities();
 
 		required_string("#End");
 	}
@@ -3896,6 +4004,10 @@ void physics_ship_init(object *objp)
 	pi->heading = 0.0f;
 //	pi->accel = 0.0f;
 	vm_set_identity(&pi->last_rotmat);
+
+	//SparK: setting the reverse burners
+	pi->afterburner_max_reverse_vel = sinfo->afterburner_max_reverse_vel;
+	pi->afterburner_reverse_accel = sinfo->afterburner_reverse_accel;
 }
 
 //Function to get the type of the given ship as a string
@@ -3947,7 +4059,7 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpin_effect = new WE_Default(objp, WD_WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BTRL(objp, WD_WARP_IN);
+			shipp->warpin_effect = new WE_BSG(objp, WD_WARP_IN);
 			break;
 		case WT_SWEEPER:
 			shipp->warpin_effect = new WE_Homeworld(objp, WD_WARP_IN);
@@ -3968,7 +4080,7 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpout_effect = new WE_Default(objp, WD_WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BTRL(objp, WD_WARP_OUT);
+			shipp->warpout_effect = new WE_BSG(objp, WD_WARP_OUT);
 			break;
 		case WT_SWEEPER:
 			shipp->warpout_effect = new WE_Homeworld(objp, WD_WARP_OUT);
@@ -4332,7 +4444,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
-	shipp->special_warp_objnum = -1;
+	shipp->special_warpin_objnum = -1;
+	shipp->special_warpout_objnum = -1;
 
 	polymodel *pm = model_get(sip->model_num);
 
@@ -4423,6 +4536,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 			shipp->ship_iff_color[i][j] = -1;
 		}
 	}
+	shipp->armor_type_idx = sip->armor_type_idx;
+	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -4626,7 +4741,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// if the table has set an name copy it
 		if (strlen(ship_system->system_info->alt_sub_name) > 0) {
-			strncpy(ship_system->sub_name, ship_system->system_info->alt_sub_name, NAME_LENGTH-1);
+			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
 		else {
 			memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
@@ -4662,7 +4777,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		ship_system->subsys_guardian_threshold = 0;
-
+		ship_system->armor_type_idx = model_system->armor_type_idx;
 		ship_system->turret_next_fire_stamp = timestamp(0);
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
@@ -4678,7 +4793,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			//WMC - Set targeting order to default.
 			ship_system->turret_targeting_order[j] = j;
 		}
-
+		ship_system->optimum_range = model_system->optimum_range;
+		ship_system->favor_current_facing = model_system->favor_current_facing;
 		ship_system->subsys_cargo_name = -1;
 		ship_system->time_subsys_cargo_revealed = 0;
 		
@@ -6481,6 +6597,10 @@ void ship_dying_frame(object *objp, int ship_num)
 					big_rad = objp->radius * 1.2f;
 					default_fireball_type = FIREBALL_EXPLOSION_LARGE1;
 				}
+				//SUSHI: Option to override radius of big fireball
+				if (Ship_info[shipp->ship_info_index].big_exp_visual_rad >= 0)
+					big_rad = Ship_info[shipp->ship_info_index].big_exp_visual_rad;
+
 				fireball_type = fireball_ship_explosion_type(sip);
 				if(fireball_type < 0) {
 					fireball_type = default_fireball_type;
@@ -6622,7 +6742,7 @@ int thruster_glow_anim_load(generic_anim *ga)
 	ga->first_frame = bm_load(ga->filename);
 	if (ga->first_frame < 0)
 	{
-		Warning(LOCATION, "Couldn't load thruster glow animation '%s'", ga->filename);
+		Warning(LOCATION, "Couldn't load thruster glow animation '%s'\nPrimary glow type effect does not accept .EFF or .ANI effects", ga->filename);
 		return -1;
 	}
 	ga->num_frames = NOISE_NUM_FRAMES;
@@ -7634,7 +7754,7 @@ void ship_make_create_time_unique(ship *shipp)
 
 			if ( compare_shipp->create_time == new_create_time )
 			{
-				if(sanity_counter == 0 && last_smctu_initial_time == shipp->create_time)
+				if((unsigned int)sanity_counter == 0 && (unsigned int)last_smctu_initial_time == shipp->create_time)
 				{
 					//WMC: If we're creating a whole bunch of ships at once, we can
 					//shortcut this process by looking at the last call to this function
@@ -8043,6 +8163,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip;
 	ship_info	*sip_orig;
 	ship			*sp;
+	ship_weapon *swp;
 	object		*objp;
 	p_object	*p_objp;
 	float hull_pct, shield_pct;
@@ -8051,6 +8172,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
+	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 
@@ -8251,6 +8373,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}//end AB trails -Bobboau
+
+	// Chief1983: Make sure that when changing to a new ship with secondaries, you switch to bank 0.  They still won't 
+	// fire if the SF2_SECONDARIES_LOCKED flag is on as this should have carried over.
+	if ( swp->num_secondary_banks > 0 && swp->current_secondary_bank == -1 ){
+		swp->current_secondary_bank = 0;
+	}
 
 /*
 	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
@@ -10440,7 +10568,7 @@ int wing_lookup(char *name)
 {
    int idx;
 	for(idx=0;idx<Num_wings;idx++)
-		if(strcmp(Wings[idx].name,name)==0)
+		if(stricmp(Wings[idx].name,name)==0)
 		   return idx;
 
 	return -1;
@@ -11216,13 +11344,14 @@ float ship_calculate_rearm_duration( object *objp )
 	sip = &Ship_info[sp->ship_info_index];
 
 	//find out time to repair shields
-	shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * SHIELD_REPAIR_RATE);
+	if(sip->sup_shield_repair_rate > 0.0f)
+		shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	//calculate hull_repair_time;
-	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength))
+	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
 	{
-		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * HULL_REPAIR_RATE);
+		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * sip->sup_hull_repair_rate);
 	}
 
 	//caluclate subsystem repair time
@@ -11230,9 +11359,9 @@ float ship_calculate_rearm_duration( object *objp )
 	while (ssp != END_OF_LIST(&sp->subsys_list))
 	{
 		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
-		if (max_subsys_repair > ssp->current_hits) 
+		if ((max_subsys_repair > ssp->current_hits) && (sip->sup_hull_repair_rate > 0.0f))
 		{
-			subsys_rep_time += (max_subsys_repair - ssp->current_hits) / (ssp->max_hits * HULL_REPAIR_RATE);
+			subsys_rep_time += (max_subsys_repair - ssp->current_hits) / (ssp->max_hits * sip->sup_subsys_repair_rate);
 		}
 
 		ssp = GET_NEXT( ssp );
@@ -11357,7 +11486,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
-			shield_str += shipp->ship_max_shield_strength * frametime * SHIELD_REPAIR_RATE;
+			shield_str += shipp->ship_max_shield_strength * frametime * sip->sup_shield_repair_rate;
 			if ( shield_str > shipp->ship_max_shield_strength ) {
 				 shield_str = shipp->ship_max_shield_strength;
 			}
@@ -11368,7 +11497,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// Repair the ship integrity (subsystems + hull).  This works by applying the repair points
 	// to the subsystems.  Ships integrity is stored is objp->hull_strength, so that always is 
 	// incremented by repair_allocated
-	repair_allocated = shipp->ship_max_hull_strength * frametime * HULL_REPAIR_RATE;
+	repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_hull_repair_rate;
 
 
 //	AL 11-24-97: remove increase to hull integrity
@@ -11395,6 +11524,16 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			objp->hull_strength = shipp->ship_max_hull_strength;
 			repair_allocated -= ( shipp->ship_max_hull_strength - objp->hull_strength);
 		}
+	}
+
+	// figure out repairs for subsystems
+	if(repair_allocated > 0) {
+		if(sip->sup_subsys_repair_rate == 0.0f)
+			repair_allocated = 0.0f;
+		else if(sip->sup_hull_repair_rate == 0.0f)
+			repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_subsys_repair_rate;
+		else if(!(sip->sup_hull_repair_rate == sip->sup_subsys_repair_rate))
+			repair_allocated = repair_allocated * sip->sup_subsys_repair_rate / sip->sup_hull_repair_rate;
 	}
 
 	// check the subsystems of the ship.
@@ -11606,11 +11745,22 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	} else {
 		if ( shield_get_strength(objp) >= shipp->ship_max_shield_strength ) 
 			shields_full = 1;
+		if (sip->sup_shield_repair_rate == 0.0f)
+			shields_full = 1;
+	}
+
+	int hull_ok = 0;
+	if(objp->hull_strength >= max_hull_repair)
+		hull_ok = 1;
+
+	if(sip->sup_hull_repair_rate == 0.0f) {
+		subsys_all_ok = 1;
+		hull_ok = 1;
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
 //	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == shipp->ship_max_hull_strength)&&(shields_full) ) {
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength >= max_hull_repair) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && hull_ok ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
 	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
@@ -11656,11 +11806,6 @@ object *ship_find_repair_ship( object *requester_obj )
 
 	Assert(requester_obj->type == OBJ_SHIP);
 	Assert((requester_obj->instance >= 0) && (requester_obj->instance < MAX_OBJECTS));
-
-	// if support ships are not allowed, then no support ship can repair!
-	if ( !is_support_allowed(requester_obj) ) {
-		return NULL;
-	}
 
 	num_support_ships = 0;
 	num_available_support_ships = 0;
@@ -13950,6 +14095,17 @@ int ship_get_by_signature(int signature)
 	return -1;
 }
 
+ship_type_info *ship_get_type_info(object *objp)
+{
+	Assert(objp != NULL);
+	Assert(objp->type == OBJ_SHIP);
+	Assert(objp->instance > -1);
+	Assert(Ships[objp->instance].ship_info_index > -1);
+	Assert(Ship_info[Ships[objp->instance].ship_info_index].class_type > -1);
+
+	return &Ship_types[Ship_info[Ships[objp->instance].ship_info_index].class_type];
+}
+
 // function which gets called when the cargo of a ship is revealed.  Happens at two different locations
 // (at least when this function was written), one for the player, and one for AI ships.  Need to send stuff
 // to clients in multiplayer game.
@@ -14519,7 +14675,8 @@ int is_support_allowed(object *objp)
 	// restricted number allowed
 	if (The_mission.support_ships.max_support_ships > 0)
 	{
-		if (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships)
+		// if all the allowed ships have been used up and there are no support ships currently in the mission - can't rearm
+		if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships) && (ship_find_repair_ship(objp) == NULL))
 			return 0;
 	}
 
@@ -14724,22 +14881,20 @@ int ship_get_turret_type(ship_subsys *subsys)
 
 ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 {
-	ship_subsys *lookup;
-
 	// sanity checks
-	if((shipp == NULL) || (subsys_name == NULL)){
+	if ((shipp == NULL) || (subsys_name == NULL)) {
 		return NULL;
 	}
 
-	lookup = GET_FIRST(&shipp->subsys_list);
-	while(lookup != END_OF_LIST(&shipp->subsys_list)){
-		// turret
-		if(!subsystem_stricmp(lookup->system_info->subobj_name, subsys_name)){
-			return lookup;
+	ship_subsys *ss = GET_FIRST(&shipp->subsys_list);
+	while (ss != END_OF_LIST(&shipp->subsys_list)) {
+		// check subsystem name
+		if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
+			return ss;
 		}
 
 		// next
-		lookup = GET_NEXT(lookup);
+		ss = GET_NEXT(ss);
 	}
 
 	// didn't find it
@@ -15433,6 +15588,31 @@ void ArmorDamageType::clear()
 	Arguments.clear();
 }
 
+//************
+// Wanderer - beam piercing type
+//************
+
+flag_def_list	PiercingTypes[] = {
+	{	"none",		SADTF_PIERCING_NONE,		0},
+	{	"default",	SADTF_PIERCING_DEFAULT,		0},
+	{	"retail",	SADTF_PIERCING_RETAIL,		0},
+};
+
+const int Num_piercing_effect_types = sizeof(PiercingTypes)/sizeof(flag_def_list);
+
+int piercing_type_get(char *str)
+{
+	int i;
+	for(i = 0; i < Num_piercing_effect_types; i++)
+	{
+		if(!stricmp(PiercingTypes[i].name, str))
+			return PiercingTypes[i].def;
+	}
+
+	// default to retail
+	return SADTF_PIERCING_RETAIL;
+}
+
 //**************************************************************
 //WMC - All the extra armor crap
 
@@ -15601,6 +15781,58 @@ float ArmorType::GetShieldPiercePCT(int damage_type_idx)
 	return 0.0f;
 }
 
+int ArmorType::GetPiercingType(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->piercing_type;
+	}
+
+	return 0;
+}
+
+float ArmorType::GetPiercingLimit(int damage_type_idx)
+{
+	if(damage_type_idx < 0)
+		return 0.0f;
+
+	//Initialize vars
+	uint i,num;
+	ArmorDamageType *adtp = NULL;
+
+	//Find the entry in the weapon that corresponds to the given weapon damage type
+	num = DamageTypes.size();
+	for(i = 0; i < num; i++)
+	{
+		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
+		{
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+	if(adtp != NULL){
+		return adtp->piercing_start_pct;
+	}
+
+	return 0.0f;
+}
+
 //***********************************Member functions
 
 ArmorType::ArmorType(char* in_name)
@@ -15630,10 +15862,10 @@ void ArmorType::ParseData()
 		//Clear the struct and set the index
 		adt.clear();
 		adt.DamageTypeIndex = damage_type_add(buf);
+		bool no_content = true;
 
 		//Get calculation and argument
-		required_string("+Calculation:");
-		do
+		while (optional_string("+Calculation:")) 
 		{
 			//+Calculation
 			stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -15654,8 +15886,9 @@ void ArmorType::ParseData()
 				required_string("+Value:");
 				stuff_float(&temp_float);
 				adt.Arguments.push_back(temp_float);
+				no_content = false;
 			}
-		} while(optional_string("+Calculation:"));
+		}
 
 		adt.shieldpierce_pct = 0.0f;
 
@@ -15663,10 +15896,28 @@ void ArmorType::ParseData()
 			stuff_float(&temp_float);
 			CLAMP(temp_float, 0.0f, 1.0f);
 			adt.shieldpierce_pct = temp_float;
+			no_content = false;
+		}
+
+		adt.piercing_start_pct = 0.1f;
+		adt.piercing_type = -1;
+
+		if(optional_string("+Weapon Piercing Effect Start Limit:")) {
+			stuff_float(&temp_float);
+			CLAMP(temp_float, 0.0f, 100.0f); 
+			temp_float /= 100.0f;
+			adt.piercing_start_pct = temp_float;
+			no_content = false;
+		}
+
+		if(optional_string("+Weapon Piercing Type:")) {
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			adt.piercing_type = piercing_type_get(buf);
+			no_content = false;
 		}
 
 		//If we have calculations in this damage type, add it
-		if(adt.Calculations.size() > 0)
+		if(!no_content)
 		{
 			if(adt.Calculations.size() != adt.Arguments.size())
 			{
@@ -15765,8 +16016,7 @@ void parse_ai_target_priorities()
 {
 	int i, j, num_strings;
 	int n_entries = Ai_tp_list.size();
-	SCP_vector <std::string> temp_strings, *temp_strings_p;
-	temp_strings_p = &temp_strings;
+	SCP_vector <SCP_string> temp_strings;
 
 	bool first_time = false;
 	int already_exists = -1;
@@ -15801,7 +16051,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for(i = 0; i < num_strings; i++) {
 			for(j = 0; j < MAX_WEAPON_TYPES ; j++) {
@@ -15814,7 +16064,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Object Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
@@ -15827,7 +16077,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Ship Class Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
@@ -15844,7 +16094,7 @@ void parse_ai_target_priorities()
 
 	if (optional_string("+Weapon Class Flags:") ) {
 		temp_strings.clear();
-		num_strings = stuff_string_list(temp_strings_p);
+		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
 			for (j = 0; j < num_ai_tgt_weapon_flags; j++) {
@@ -15884,4 +16134,53 @@ ai_target_priority init_ai_target_priorities()
 
 	//return the initialized
 	return temp_priority;
+}
+
+void parse_weapon_targeting_priorities()
+{
+	char tempname[NAME_LENGTH];
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+	if (optional_string("$Name:")) {
+		stuff_string(tempname, F_NAME, NAME_LENGTH);
+		
+		for(k = 0; k < MAX_WEAPON_TYPES ; k++) {
+			if ( !stricmp(Weapon_info[k].name, tempname) ) {
+				// found weapon, yay!
+				// reset the list
+
+				weapon_info *wip = &Weapon_info[k];
+				
+				wip->num_targeting_priorities = 0;
+
+				if (optional_string("+Target Priority:")) {
+					SCP_vector <SCP_string> tgt_priorities;
+					int num_strings = stuff_string_list(tgt_priorities);
+
+					if (num_strings > 32)
+						num_strings = 32;
+
+					int num_groups = Ai_tp_list.size();
+
+					for(i = 0; i < num_strings; i++) {
+						for(j = 0; j < num_groups; j++) {
+							if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
+								wip->targeting_priorities[i] = j;
+								wip->num_targeting_priorities++;
+								break;
+							}
+						}
+						if(j == num_groups)
+							Warning(LOCATION, "Unrecognized string '%s' found when setting weapon targeting priorities.\n", tgt_priorities[i].c_str());
+					}
+				}
+				// no need to keep searching for more
+				break;
+			}
+		}
+		if(k == MAX_WEAPON_TYPES)
+			Warning(LOCATION, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
+	}
 }

@@ -199,6 +199,7 @@ public:
 	sexp_list_item *get_listing_opf_ship(int parent_node = -1);
 	sexp_list_item *get_listing_opf_wing();
 	sexp_list_item *get_listing_opf_subsystem(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_subsystem_type(int parent_node);
 	sexp_list_item *get_listing_opf_point();
 	sexp_list_item *get_listing_opf_iff();
 	sexp_list_item *get_listing_opf_ai_goal(int parent_node);
@@ -210,6 +211,7 @@ public:
 	sexp_list_item *get_listing_opf_waypoint_path();
 	sexp_list_item *get_listing_opf_ship_point();
 	sexp_list_item *get_listing_opf_ship_wing_point();
+	sexp_list_item *get_listing_opf_ship_wing_team();
 	sexp_list_item *get_listing_opf_ship_wing_point_or_none();
 	sexp_list_item *get_listing_opf_mission_name();
 	sexp_list_item *get_listing_opf_goal_name(int parent_node);
@@ -251,8 +253,11 @@ public:
 	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
+	sexp_list_item *get_listing_opf_armor_types();
+	sexp_list_item *get_listing_opf_turret_target_priorities();
 	sexp_list_item *get_listing_opf_persona();
 	// ---------------------------------------------------------
+	sexp_list_item *get_listing_opf_post_effect();
 
 	int m_mode;
 	int item_index;

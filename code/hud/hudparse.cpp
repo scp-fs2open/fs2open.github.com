@@ -22,9 +22,11 @@
 
 //Global stuffs
 hud_info *current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
+bool Custom_gauge_images_loaded = false;
 hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_CLASSES];
 extern int ships_inited; //Need this
+extern char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH];
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 
@@ -42,32 +44,31 @@ int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 #define HUD_VAR(a) offsetof(hud_info, a)
 
 gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
-	{ NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Shield_mini_coords),	"$Shield Mini:",			305, 291, 497, 470, 0, HUD_VAR(Shield_mini_fname), 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size), HUD_VAR(Aburn_fname), 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size), HUD_VAR(Wenergy_fname), 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Wenergy_text_coords),	"$Weapons Energy Text:",	439, 318, 708, 509, 0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, -1, -1 },
+	{ NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Shield_mini_coords),	"$Shield Mini:",			305, 291, 497, 470, 0, HUD_VAR(Shield_mini_fname), 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size), HUD_VAR(Aburn_fname), 0, 0, 0, 0, HUD_VAR(Aburn_move_flag), -1, -1 },
+	{ NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size), HUD_VAR(Wenergy_fname), 0, 0, 0, 0, HUD_VAR(Wenergy_move_flag), -1, -1 },
+	{ NULL,			HUD_VAR(Wenergy_text_coords),	"$Weapons Energy Text:",	439, 318, 708, 509, 0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, 0, 0, -1, -1 },
 
 	//Mini-gauges
-	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, -1, -1 },
-//	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			489, 208, 869, 331,			0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_entry_last),		"$Last Ship:",				0, 11, 0, 11,		0, HUD_VAR(Escort_filename[2]), 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_name),			"$Ship Name:",				3, 0, 4, 0,			0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_integrity),		"$Ship Hull:",				128, 0, 116, 0,		0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[5],	HUD_VAR(Escort_status),			"$Ship Status:",			-12, 0, -11, 0,		0, 0, 0, 0, 0, HG_NOADD, -1 }
+	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+//	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			3,  2, 4,  1,	    0, 0, 0, 0, 0, 0, 0, 0,        -1 },
+	{ &gauges[6],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_entry_last),		"$Last Ship:",				0, 11, 0, 11,		0, HUD_VAR(Escort_filename[2]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_name),			"$Ship Name:",				3, 0, 4, 0,			0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_integrity),		"$Ship Hull:",				128, 0, 116, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_status),			"$Ship Status:",			-12, 0, -11, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 }
 };
 
 //Number of gauges
 int Num_gauge_types = 17;
 int Num_custom_gauges = 0;
-
 
 static void load_hud_defaults(hud_info *hud)
 {
@@ -102,6 +103,10 @@ static void load_hud_defaults(hud_info *hud)
 		hud->resolution[1] = 768;
 		/**************************************************/
 	}
+
+	// Pan View Move Flag defaults
+	hud->Aburn_move_flag = true;
+	hud->Wenergy_move_flag = true;
 
 	//Neither
 	strcpy_s(hud->Shield_mini_fname, "targhit1");
@@ -170,15 +175,11 @@ static void calculate_gauges(hud_info* dest_hud)
 /****************************************************************************************************/
 /* You shouldn't have to modify anything past here to add gauges */
 /****************************************************************************************************/
-//This doesn't belong in parse_lo, it's not really that low.
-static int size_temp[2];
-static float percentage_temp[2];
 int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 {
-	//Speed up calculations
-	static hud_info* factor_for_hud;
-	static float resize_factor[2];
-	float fl_buffer[2];
+	// Speed up calculations
+	float percentage_temp[2];
+	int size_temp[2];
 	bool size_defined = false;
 
 	if(required)
@@ -190,54 +191,39 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 		return 0;
 	}
 
-	//stuff_int_list(HUD_INT(dest_hud, i), 2, RAW_INTEGER_TYPE);
-	stuff_float_list(fl_buffer, 2);
-	if(!cg->parent)
-	{
-		factor_for_hud = NULL;
-		resize_factor[0] = 1;
-		resize_factor[1] = 1;
-	}
-	else if(dest_hud != factor_for_hud)
-	{
-		resize_factor[0] = (float)gr_screen.max_w / (float)dest_hud->resolution[0];
-		resize_factor[1] = (float)gr_screen.max_h / (float)dest_hud->resolution[1];
-	}
-	//Resize to current res
-	HUD_INT(dest_hud, cg->coord_dest)[0] = fl2i(fl_buffer[0] * resize_factor[0]);
-	HUD_INT(dest_hud, cg->coord_dest)[1] = fl2i(fl_buffer[1] * resize_factor[1]);
+	stuff_int_list(HUD_INT(dest_hud, cg->coord_dest), 2, RAW_INTEGER_TYPE);
 
 	if(optional_string("+Size:"))
 	{
 		stuff_int_list(size_temp, 2, RAW_INTEGER_TYPE);
+		
 		if(cg->size_dest)
 		{
 			HUD_INT(dest_hud, cg->size_dest)[0] = size_temp[0];
 			HUD_INT(dest_hud, cg->size_dest)[1] = size_temp[1];
+			
+			size_defined = true;
 		}
-		
-		//For %
-		size_defined = false;
 	}
 
 	if(optional_string("+Percentage:"))
 	{
 		stuff_float_list(percentage_temp, 2);
-		percentage_temp[0] *= (gr_screen.max_w / 100.0f);
-		percentage_temp[1] *= (gr_screen.max_h / 100.0f);
+		percentage_temp[0] *= (dest_hud->resolution[0] / 100.0f);
+		percentage_temp[1] *= (dest_hud->resolution[1] / 100.0f);
 
-		//Bool true, size defined
-		if(!size_defined)
+		if(size_defined)
 		{
 			if(percentage_temp[0])
 			{
-				percentage_temp[0] -= size_temp[0] / 2;
+				percentage_temp[0] -= fl2i(size_temp[0] / 2.0f);
 			}
 			if(percentage_temp[1])
 			{
-				percentage_temp[1] -= size_temp[1] / 2;
+				percentage_temp[1] -= fl2i(size_temp[1] / 2.0f);
 			}
 		}
+
 		HUD_INT(dest_hud, cg->coord_dest)[0] += fl2i(percentage_temp[0]);
 		HUD_INT(dest_hud, cg->coord_dest)[1] += fl2i(percentage_temp[1]);
 	}
@@ -281,6 +267,35 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 			stuff_ubyte(&junk_byte);
 		}
 	}
+	if(optional_string("+Inherit Color from:"))
+	{
+		*HUD_INT(dest_hud, cg->color_parent_dest) = -1;
+		stuff_string(buffer, F_NAME, NAME_LENGTH);
+		
+		if(cg->color_parent_dest)
+		{
+			for (int idx = 0; idx < NUM_HUD_GAUGES; idx++)
+			{
+				if (stricmp(buffer, Hud_Gauge_Names[idx]) == 0)
+				{
+					*HUD_INT(dest_hud, cg->color_parent_dest) = idx;
+					break;
+				}
+			}
+		}
+	}
+	if(optional_string("+Move in Pan View:"))
+	{
+		if(cg->moveflag_dest)
+		{
+			stuff_boolean(HUD_BOOL(dest_hud, cg->moveflag_dest));
+		}
+		else
+		{
+			bool junk_bool;
+			stuff_boolean(&junk_bool);
+		}
+	}
 	return 1;
 }
 
@@ -294,34 +309,41 @@ static void parse_resolution(hud_info* dest_hud)
 		cg = &gauges[i];
 		if(cg->parent == NULL && strlen(cg->fieldname))
 		{
-
 			stuff_coords(dest_hud, cg);
 		}
 	}
+
+	dest_hud->loaded = true;
 }
 
 static void parse_resolution_gauges(hud_info* dest_hud)
 {
 	char gaugename[NAME_LENGTH];
 	gauge_info *cg, *parent;
-	while(!required_string_3("$Gauge:","$Resolution:","#End"))
+	while(!required_string_4("$Gauge:", "$Default:", "$Resolution:", "#End"))
 	{
 		required_string("$Gauge:");
 		stuff_string(gaugename, F_NAME, NAME_LENGTH);
 
 		parent = NULL;
+		int i = 0;
 
-		for(int i = 0; i < Num_gauge_types; i++)
+		for(i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
-			if(!parent)
+			
+			if(!parent && !strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
 			{
-				if(!strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
-				{
-					parent = cg;
-				}
+				parent = cg;
+				break;
 			}
-			else if(parent == cg->parent)
+		}
+
+		for(i = 0; i < Num_gauge_types; i++)
+		{
+			cg = &gauges[i];
+			
+			if(parent == cg->parent)
 			{
 				stuff_coords(dest_hud, cg);
 			}
@@ -378,16 +400,26 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 	if(str_token == 1)
 	{
 		required_string("$Default:");
-		if(!dest_hud->loaded)
+		stuff_int_list(buffer, 2, RAW_INTEGER_TYPE);
+
+		if(buffer[0] == 0 || buffer == 0)
 		{
-			stuff_int_list(dest_hud->resolution, 2, RAW_INTEGER_TYPE);
-			if(dest_hud->resolution[0] == 0 || dest_hud->resolution == 0)
-			{
-				dest_hud->resolution[0] = gr_screen.max_w;
-				dest_hud->resolution[1] = gr_screen.max_h;
-			}
-			return dest_hud;
+			buffer[0] = gr_screen.max_w;
+			buffer[1] = gr_screen.max_h;
 		}
+		
+		// In case of a second $Default: declaration (in a tbm or a ship gauge perhaps),
+		// check if it declares the same resolution as before. If not, reload defaults.
+		if(dest_hud->loaded && (buffer[0] != dest_hud->resolution[0]) || (buffer[1] != dest_hud->resolution[1]))
+		{
+			load_hud_defaults(dest_hud);
+		}
+		
+		//Set the resolution
+		memcpy(dest_hud->resolution, buffer, sizeof(buffer));
+		dest_hud->loaded = false;
+		
+		return dest_hud;
 	}
 	else
 	{
@@ -396,18 +428,14 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 
 		if ( (buffer[0] == gr_screen.max_w_unscaled) && (buffer[1] == gr_screen.max_h_unscaled) )
 		{
-			//Get the ship HUD ready w/ defaults
-			if(default_hud.loaded)
+			if(dest_hud->loaded)
 			{
-				memcpy(dest_hud, &default_hud, sizeof(hud_info));
-				//It's not really loaded
-				dest_hud->loaded = false;
+				load_hud_defaults(dest_hud);
 			}
-			else
-			{
-				//Set the resolution
-				memcpy(dest_hud->resolution, buffer, sizeof(buffer));
-			}
+			
+			//Set the resolution
+			memcpy(dest_hud->resolution, buffer, sizeof(buffer));
+			dest_hud->loaded = false;
 
 			return dest_hud;
 		}
@@ -432,6 +460,8 @@ void parse_custom_gauge()
 		cg->frame_dest = HUD_VAR(custom_gauge_frames[0]) + (Num_custom_gauges * sizeof(int));
 		cg->text_dest = HUD_VAR(custom_gauge_text[0]) + (Num_custom_gauges * (NAME_LENGTH * sizeof(char)));
 		cg->color_dest = HUD_VAR(custom_gauge_colors[0]) + (Num_custom_gauges * sizeof(color));
+		cg->color_parent_dest = HUD_VAR(custom_gauge_color_parents[0]) + (Num_custom_gauges * sizeof(int));
+		cg->moveflag_dest = HUD_VAR(custom_gauge_moveflags[0]) + (Num_custom_gauges * sizeof(bool));
 
 		required_string("$Name:");
 		//Gotta make this a token
@@ -568,8 +598,6 @@ void parse_hud_gauges_tbl(char *filename)
 		required_string("#End");
 	}
 
-	calculate_gauges(&default_hud);
-
 	if(ships_inited)
 	{
 		//Parse main ship gauges
@@ -579,9 +607,15 @@ void parse_hud_gauges_tbl(char *filename)
 			{
 				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
+					// Copy defaults
+					if(!dest_hud->loaded && default_hud.loaded)
 					{
-						if(parse_resolution_start(dest_hud, rval))
+						memcpy(dest_hud, &default_hud, sizeof(hud_info));
+					}
+
+					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
+					{
+						if(parse_resolution_start(dest_hud, rval - 1))
 						{
 							parse_resolution(dest_hud);
 						}
@@ -602,9 +636,15 @@ void parse_hud_gauges_tbl(char *filename)
 			{
 				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
+					// Copy defaults
+					if(!dest_hud->loaded && default_hud.loaded)
 					{
-						if(parse_resolution_start(dest_hud, rval))
+						memcpy(dest_hud, &default_hud, sizeof(hud_info));
+					}
+
+					while(rval = required_string_4("#End", "$Ship:", "$Default:", "$Resolution:"), rval > 1)
+					{
+						if(parse_resolution_start(dest_hud, rval - 1))
 						{
 							parse_resolution_gauges(dest_hud);
 						}
@@ -626,6 +666,8 @@ void parse_hud_gauges_tbl(char *filename)
 			}
 		}
 	}
+
+	calculate_gauges(&default_hud);
 
 	// close localization
 	lcl_ext_close();
@@ -667,9 +709,10 @@ void set_current_hud(int player_ship_num)
 	else
 	{
 		memcpy(&real_current_hud, &default_hud, sizeof(hud_info));
-	}
+	}	
 
-	current_hud = &real_current_hud;
+	current_hud = &real_current_hud;	
+	Custom_gauge_images_loaded = false;
 }
 
 /* - not POD so GCC won't take it for offsetof - taylor

@@ -222,7 +222,7 @@ void ShipSpecialDamage::update_ship(int shipnum)
 			set_modified();
 
 			// free block
-			sexp_variable_block_free(shipp->ship_name, Ships[m_ship_num].special_exp_index, SEXP_VARIABLE_BLOCK |SEXP_VARIABLE_BLOCK_EXP);
+			sexp_variable_block_free(shipp->ship_name, Ships[m_ship_num].special_exp_index, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP);
 
 			// set index to no exp block
 			shipp->special_exp_index = -1;

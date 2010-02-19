@@ -412,7 +412,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k=0; k<Num_reinforcements; k++)
-						if (!stricmp(old_name, Reinforcements[k].name)) {
+						if (!strcmp(old_name, Reinforcements[k].name)) {
 							Assert(strlen(name) < NAME_LENGTH);
 							strcpy_s(Reinforcements[k].name, name);
 						}

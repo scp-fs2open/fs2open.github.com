@@ -1638,6 +1638,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("No Lighting", Lab_model_flags, MR_NO_LIGHTING);
 	ADD_RENDER_FLAG("No Z-Buffer", Lab_model_flags, MR_NO_ZBUFFER);
 	ADD_RENDER_FLAG("No Culling", Lab_model_flags, MR_NO_CULL);
+	ADD_RENDER_FLAG("Force Clamp", Lab_model_flags, MR_FORCE_CLAMP);
 	ADD_RENDER_FLAG("Show Full Detail", Lab_model_flags, MR_FULL_DETAIL);
 	ADD_RENDER_FLAG("Show Pivots", Lab_model_flags, MR_SHOW_PIVOTS);
 	ADD_RENDER_FLAG("Show Paths", Lab_model_flags, MR_SHOW_PATHS);

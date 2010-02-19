@@ -162,6 +162,10 @@ private:
 	SCP_vector<float>	Arguments;
 	float				shieldpierce_pct;
 
+	// piercing effect data
+	float				piercing_start_pct;
+	int					piercing_type;
+
 public:
 	void clear();
 };
@@ -181,6 +185,8 @@ public:
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
 	float GetShieldPiercePCT(int damage_type_idx);
+	int GetPiercingType(int damage_type_idx);
+	float GetPiercingLimit(int damage_type_idx);
 	
 	//Set
 	void ParseData();
@@ -189,6 +195,14 @@ public:
 extern SCP_vector<ArmorType> Armor_types;
 
 #define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
+
+#define SADTF_PIERCING_NONE			0				// no piercing effects, no beam tooling
+#define SADTF_PIERCING_DEFAULT		1				// piercing effects, beam tooling
+#define SADTF_PIERCING_RETAIL		2				// no piercing effects, beam tooling
+
+//SUSHI: Damage lightning types. SLT = Ship Lighting Type.
+#define SLT_NONE	0
+#define SLT_DEFAULT	1
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
@@ -221,6 +235,7 @@ typedef	struct ship_subsys {
 	int flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
+	int armor_type_idx;				// FUBAR
 
 	// turret info
 	//Important -WMC
@@ -240,6 +255,8 @@ typedef	struct ship_subsys {
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
 	float	turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
 	int		turret_targeting_order[NUM_TURRET_ORDER_TYPES];	//Order that turrets target different types of things.
+	float	optimum_range;					        
+	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
@@ -593,8 +610,9 @@ typedef struct ship {
 	// AWACS warning flag
 	ubyte	awacs_warning_flag;
 
-	// Special warpout objnum (warpout at knossos)
-	int special_warp_objnum;
+	// Special warp objnum (warping at knossos)
+	int special_warpin_objnum;
+	int special_warpout_objnum;
 
 	ship_subsys fighter_beam_turret_data;		//a fake subsystem that pretends to be a turret for fighter beams
 	model_subsystem beam_sys_info;
@@ -664,6 +682,8 @@ typedef struct ship {
 	int ship_iff_color[MAX_IFFS][MAX_IFFS];
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
+	int armor_type_idx;
+	int shield_armor_type_idx;
 } ship;
 
 struct ai_target_priority {
@@ -674,7 +694,7 @@ struct ai_target_priority {
 	SCP_vector <int> ship_class;
 	SCP_vector <int> weapon_class;
 
-	int obj_flags;
+	unsigned int obj_flags;
 	int sif_flags;
 	int sif2_flags;
 	int wif_flags;
@@ -684,6 +704,7 @@ struct ai_target_priority {
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
+void parse_weapon_targeting_priorities();
 ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
@@ -708,7 +729,16 @@ typedef struct exited_ship {
 	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
 	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
-	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
+	exited_ship()
+		: team( 0 ), flags( 0 ), time( 0 ), hull_strength( 0 ),
+		  time_cargo_revealed( 0 ), cargo1( 0 )
+	{ 
+		ship_name[ 0 ] = '\0';
+		obj_signature = -1;
+		ship_class = -1; 
+		memset( damage_ship, 0, sizeof( damage_ship ) );
+		memset( damage_ship_id, 0, sizeof( damage_ship_id ) );
+	}
 } exited_ship;
 
 extern SCP_vector<exited_ship> Ships_exited;
@@ -821,6 +851,7 @@ typedef struct thruster_particles {
 #define STI_TURRET_TGT_SHIP_TGT			(1<<3)
 
 #define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
+#define STI_WEAP_NO_HUGE_IMPACT_EFF		(1<<1)
 
 #define STI_AI_ACCEPT_PLAYER_ORDERS		(1<<0)
 #define STI_AI_AUTO_ATTACKS				(1<<1)
@@ -866,7 +897,18 @@ typedef struct ship_type_info {
 	SCP_vector<int> explosion_bitmap_anims;
 
 	//Regen values - need to be converted after all types have loaded
-	SCP_vector<std::string> ai_actively_pursues_temp;
+	SCP_vector<SCP_string> ai_actively_pursues_temp;
+
+	ship_type_info( )
+		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),
+		  debris_max_speed( 0.f ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
+		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_bools( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  vaporize_chance( 0.f )
+
+	{
+		name[ 0 ] = '\0';
+	}
 } ship_type_info;
 
 extern SCP_vector<ship_type_info> Ship_types;
@@ -907,7 +949,16 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
-	man_thruster(){memset(this, 0, sizeof(man_thruster));tex_id=-1;start_snd=-1;loop_snd=-1;stop_snd=-1;}
+	man_thruster()
+		: use_flags( 0 ), tex_nframes( 0 ), tex_fps( 0 ), length( 0. ), radius( 0. )
+	{
+		tex_id=-1;
+		start_snd=-1;
+		loop_snd=-1;
+		stop_snd=-1;
+		memset( &pos, 0, sizeof( vec3d ) );
+		memset( &norm, 0, sizeof( vec3d ) );
+	}
 } man_thruster;
 
 //Warp type defines
@@ -919,6 +970,7 @@ typedef struct man_thruster {
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
+	char		alt_name[NAME_LENGTH];			// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
@@ -978,8 +1030,8 @@ typedef struct ship_info {
 
 	float		warpout_player_speed;
 
-	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
-	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
+	int		flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam
+	int		flags2;							//	See SIF2_xxxx - added by Goober5000, changed by Zacam
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
@@ -989,7 +1041,8 @@ typedef struct ship_info {
 	// ship explosion info
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
-	int	shockwave_count;						// the # of total shockwaves
+	float big_exp_visual_rad;				//SUSHI: The visual size of the main explosion
+	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
 	float vaporize_chance;					
 
@@ -1007,6 +1060,7 @@ typedef struct ship_info {
 	float			debris_min_hitpoints;
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
+	float			debris_arc_percent;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -1023,6 +1077,9 @@ typedef struct ship_info {
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
+	//SparK: reverse afterburner
+	float		afterburner_max_reverse_vel;
+	float		afterburner_reverse_accel;
 
 	int		cmeasure_type;						// Type of countermeasures this ship carries
 	int		cmeasure_max;						//	Number of charges of countermeasures this ship can hold.
@@ -1042,6 +1099,10 @@ typedef struct ship_info {
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
+
+	float	sup_hull_repair_rate;
+	float	sup_shield_repair_rate;
+	float	sup_subsys_repair_rate;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 
@@ -1135,6 +1196,10 @@ typedef struct ship_info {
 	vec3d convergence_offset;
 
 	float emp_resistance_mod;
+
+	float piercing_damage_draw_limit;
+
+	int damage_lightning_type;
 } ship_info;
 
 extern int Num_wings;
@@ -1498,6 +1563,9 @@ void ship_secondary_changed(ship *sp);
 int ship_get_SIF(ship *shipp);
 int ship_get_SIF(int sh);
 
+// get the ship type info (objecttypes.tbl)
+ship_type_info *ship_get_type_info(object *objp);
+
 extern void ship_do_cargo_revealed( ship *shipp, int from_network = 0 );
 extern void ship_do_cargo_hidden( ship *shipp, int from_network = 0 );
 extern void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network = 0);
@@ -1646,5 +1714,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2);
 int armor_type_get_idx(char* name);
 
 void armor_init();
+
+int thruster_glow_anim_load(generic_anim *ga);
 
 #endif

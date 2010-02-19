@@ -44,7 +44,8 @@ flag_def_list model_render_flags[] =
 	{"transparent",		MR_ALL_XPARENT},
 	{"no Zbuffer",		MR_NO_ZBUFFER},
 	{"no cull",			MR_NO_CULL},
-	{"no glowmaps",		MR_NO_GLOWMAPS}
+	{"no glowmaps",		MR_NO_GLOWMAPS},
+	{"force clamp",		MR_FORCE_CLAMP},
 };
   	 
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
@@ -80,6 +81,25 @@ static int Model_signature = 0;
 void generate_vertex_buffers(bsp_info*, polymodel*);
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
 void model_set_bay_path_nums(polymodel *pm);
+
+
+// Goober5000 - see SUBSYSTEM_X in model.h
+// NOTE: Each subsystem must match up with its #define, or there will be problems
+char *Subsystem_types[SUBSYSTEM_MAX] =
+{
+	"None",
+	"Engines",
+	"Turrets",
+	"Radar",
+	"Navigation",
+	"Communications",
+	"Weapons",
+	"Sensors",
+	"Solar panels",
+	"Gas collection",
+	"Activation",
+	"Unknown"
+};
 
 
 //WMC - For general compatibility stuff.
@@ -434,9 +454,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_NAVIGATION;
 	} else if ( strstr(lcdname, "communication") )  {
 		subsystemp->type = SUBSYSTEM_COMMUNICATION;
-	} else if ( strstr(lcdname, "weapons") ) {
+	} else if ( strstr(lcdname, "weapon") ) {
 		subsystemp->type = SUBSYSTEM_WEAPONS;
-	} else if ( strstr(lcdname, "sensors") ) {
+	} else if ( strstr(lcdname, "sensor") ) {
 		subsystemp->type = SUBSYSTEM_SENSORS;
 	} else if ( strstr(lcdname, "solar") ) {
 		subsystemp->type = SUBSYSTEM_SOLAR;
@@ -561,7 +581,15 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 	int i;
 	model_subsystem *subsystemp;
 
-	if ( slist==NULL ) return;			// For TestCode, POFView, etc don't bother
+	if ( slist==NULL ) {
+#ifndef NDEBUG
+		if (!ss_warning_shown) {
+			mprintf(("No subsystems found for model \"%s\".\n", model_get(model_num)->filename));
+			ss_warning_shown = 1;
+		}
+#endif
+		return;			// For TestCode, POFView, etc don't bother
+	}
 	
 	// try to find the name of the subsystem passed here on the list of subsystems currently on the
 	// ship.  Assign the values only when the right subsystem is found
@@ -601,6 +629,9 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 	if ( !ss_warning_shown) {
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
+		// Lets still give a comment about it and not just erase it
+		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
+		mprintf(("Subsystem %s in model was not found in ships.tbl!\n", subobj_name));
 //		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname);
 		ss_warning_shown = 1;
 	} else
@@ -1006,7 +1037,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	pm->version = version;
 	Assert( strlen(filename) < FILESPEC_LENGTH );
-	strncpy(pm->filename, filename, FILESPEC_LENGTH);
+	strcpy_s(pm->filename, filename);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
@@ -1050,7 +1081,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				
 				pm->submodel = (bsp_info *)vm_malloc( sizeof(bsp_info)*pm->n_models );
 				Assert(pm->submodel != NULL );
-				memset( pm->submodel, 0, sizeof(bsp_info)*pm->n_models );
+				for ( i = 0; i < pm->n_models; i++ )
+				{
+					/* HACK: This is an almighty hack because it is late at night and I don't want to screw up a vm_free */
+					new ( &( pm->submodel[ i ].buffer ) ) SCP_vector<buffer_data>( );
+					pm->submodel[ i ].Reset( );
+				}
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -1234,7 +1270,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
-
 				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){ //Iyojj skybox 4
 					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
@@ -1262,6 +1297,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
 					}
+				}
+
+				// adding a warning if rotation is specified without movement axis.
+				if ((pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) && (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE)){
+					Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 				}
 
 /*				if ( strstr(props, "$nontargetable")!= NULL ) {
@@ -1391,6 +1431,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 
 						orient->vec.fvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
+
+						pm->submodel[n].force_turret_normal = true;
 
 						vm_vec_normalize(&orient->vec.uvec);
 						vm_vec_normalize(&orient->vec.fvec);
@@ -2188,8 +2230,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
 	char tmp_name[MAX_FILENAME_LEN];
-	memset(tmp_name, 0, MAX_FILENAME_LEN);
-	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+	strcpy_s(tmp_name, file);
 	strlwr(tmp_name);
 
 	texture_map *tmap = &pm->maps[i];
@@ -2232,9 +2273,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	else
 	{
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-glow" );
 		strlwr(tmp_name);
 
 		tglow->LoadTexture(tmp_name, pm->filename);
@@ -2249,9 +2289,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	else
 	{
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-shine");
 		strlwr(tmp_name);
 
 		tspec->LoadTexture(tmp_name, pm->filename);
@@ -2266,18 +2305,16 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		tnorm->clear();
 		theight->clear();
 	} else {
-		memset(tmp_name, 0, MAX_FILENAME_LEN);
-		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-		strncat(tmp_name, "-normal", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-normal");
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
 
 		// try to get a height map too
 		if ( Cmdline_height && (tnorm->GetTexture() > 0) ) {
-			memset(tmp_name, 0, MAX_FILENAME_LEN);
-			strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
-			strncat(tmp_name, "-height", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+			strcpy_s(tmp_name, file);
+			strcat_s(tmp_name, "-height");
 			strlwr(tmp_name);
 
 			theight->LoadTexture(tmp_name, pm->filename);
@@ -3115,8 +3152,16 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 	// get active rotation time this frame
 	int end_stamp = timestamp();
-	float rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
-	Assert(rotation_time >= 0);
+	// just to make sure this issue wont pop up again... might cause odd jerking in some extremely odd situations
+	// but given that those issues would require the timer to be reseted in any case it probably wont hurt
+	float rotation_time;
+	if ((end_stamp - sii->step_zero_timestamp) < 0) {
+		sii->step_zero_timestamp = end_stamp;
+		rotation_time = 0.0f;
+	} else {
+		rotation_time = 0.001f * (end_stamp - sii->step_zero_timestamp);
+	}
+	//Assert(rotation_time >= 0);
 
 	// save last angles
 	sii->prev_angs = sii->angs;
@@ -3358,6 +3403,9 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	offset_base_h = -PI_2;
 	offset_barrel_h = -PI_2;
 #endif
+
+	if (base->force_turret_normal == true)
+		turret->turret_norm = base->orientation.vec.uvec;
 
 	model_clear_instance(model_num);
 	base->angs.h = offset_base_h;

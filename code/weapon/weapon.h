@@ -97,6 +97,11 @@ extern int Num_weapon_subtypes;
 #define WIF2_HARD_TARGET_BOMB			(1 << 16)	// removes the radius doubling effect bombs have for collisions
 #define WIF2_NON_SUBSYS_HOMING			(1 << 17)	// spreads fired missiles around the target ships hull
 #define WIF2_NO_LIFE_LOST_IF_MISSED		(1 << 18)	// prevents game from shortening the lifeleft of the missed but still homing missiles
+#define WIF2_CUSTOM_SEEKER_STR			(1 << 19)	// sets the game to use custom seeker strengths instead of default values
+#define WIF2_CAN_BE_TARGETED			(1 << 20)	// allows non-bomb weapons to be targeted
+#define WIF2_SHOWN_ON_RADAR				(1 << 21)	// allows non-bombs be visible on radar
+#define WIF2_SHOW_FRIENDLY				(1 << 22)	// allows friendly weapon radar dots be drawn
+#define WIF2_CAPITAL_PLUS				(1 << 23)   // AI will not use this weapon on fighters or bombers
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -224,10 +229,6 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
-	int beam_flash_idx;					// idx of the ani used for the beam impact flash
-	float beam_flash_radius;			// radius of the flash
-	int beam_tooling_flame_idx;			// idx of the tooling flame ani
-	float beam_tooling_flame_radius;	// radius of the tooling flame ani
 } beam_weapon_info;
 
 typedef struct spawn_weapon_info 
@@ -249,6 +250,7 @@ extern weapon Weapons[MAX_WEAPONS];
 
 typedef struct weapon_info {
 	char	name[NAME_LENGTH];				// name of this weapon
+	char	alt_name[NAME_LENGTH];			// alt name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
 	int	subtype;								// one of the WP_* macros above
@@ -346,6 +348,17 @@ typedef struct weapon_info {
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
+
+	int flash_impact_weapon_expl_index;
+	float flash_impact_explosion_radius;
+
+	int piercing_impact_weapon_expl_index;
+	float piercing_impact_explosion_radius;
+	int piercing_impact_particle_count;
+	float piercing_impact_particle_life;
+	float piercing_impact_particle_velocity;
+	float piercing_impact_particle_back_velocity;
+	float piercing_impact_particle_variance;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect
@@ -450,6 +463,8 @@ typedef struct weapon_info {
 	float			thruster_glow_factor;
 
 	float			target_lead_scaler;
+	int				targeting_priorities[32];
+	int				num_targeting_priorities;
 } weapon_info;
 
 // Data structure to track the active missiles
@@ -542,7 +557,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 void weapon_maybe_spew_particle(object *obj);
 
 
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos );
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1 );
 int weapon_name_lookup(char *name);
 int cmeasure_name_lookup(char *name);
 void spawn_child_weapons( object *objp );

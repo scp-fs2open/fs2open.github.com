@@ -82,6 +82,7 @@ public:
 	int m_sky_flag_3;
 	int m_sky_flag_4;
 	int m_sky_flag_5;
+	int m_sky_flag_6;
 	CString m_skybox_model;
 	CString m_envmap;
 	//}}AFX_DATA

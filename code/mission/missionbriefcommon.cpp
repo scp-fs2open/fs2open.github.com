@@ -187,16 +187,27 @@ typedef SCP_vector<colored_char> briefing_line;
 typedef SCP_vector<briefing_line> briefing_stream; 
 static briefing_stream Colored_stream[MAX_TEXT_STREAMS];
 
-#define MAX_BRIEF_TEXT_COLORS			9
-#define BRIEF_TEXT_WHITE				0
+#define MAX_BRIEF_TEXT_COLORS		20
+#define BRIEF_TEXT_WHITE			0
 #define BRIEF_TEXT_BRIGHT_WHITE		1
-#define BRIEF_TEXT_RED					2
-#define BRIEF_TEXT_GREEN				3
-#define BRIEF_TEXT_YELLOW				4
-#define BRIEF_TEXT_BLUE					5
-#define BRIEF_TEXT_FRIENDLY				6
-#define BRIEF_TEXT_HOSTILE				7
-#define BRIEF_TEXT_NEUTRAL				8
+#define BRIEF_TEXT_RED				2
+#define BRIEF_TEXT_GREEN			3
+#define BRIEF_TEXT_YELLOW			4
+#define BRIEF_TEXT_BLUE				5
+#define BRIEF_TEXT_FRIENDLY			6
+#define BRIEF_TEXT_HOSTILE			7
+#define BRIEF_TEXT_NEUTRAL			8
+#define BRIEF_TEXT_BRIGHT_BLUE		9
+#define BRIEF_TEXT_BRIGHT_GREEN		10
+#define BRIEF_TEXT_BRIGHT_RED		11
+#define BRIEF_TEXT_BRIGHT_YELLOW	12
+#define BRIEF_TEXT_BLACK			13
+#define BRIEF_TEXT_GREY				14
+#define BRIEF_TEXT_SILVER			15
+#define BRIEF_TEXT_VIOLET_GRAY		16
+#define BRIEF_TEXT_VIOLET			17
+#define BRIEF_TEXT_PINK				18
+#define BRIEF_TEXT_LIGHT_PINK		19
 
 color Brief_color_red, Brief_color_green, Brief_color_legacy_neutral;
 
@@ -211,6 +222,17 @@ color *Brief_text_colors[MAX_BRIEF_TEXT_COLORS] =
 	&Brief_color_green,
 	&Brief_color_red,
 	&Brief_color_legacy_neutral,
+	&Color_bright_blue,
+	&Color_bright_green,
+	&Color_bright_red,
+	&Color_bright_yellow,
+	&Color_black,
+	&Color_grey,
+	&Color_silver,
+	&Color_violet_gray,
+	&Color_violet,
+	&Color_pink,
+	&Color_light_pink,
 };
 
 #define BRIGHTEN_LEAD	2
@@ -1253,98 +1275,94 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 // Render a line of text for the briefings.  Lines are drawn in as a wipe, with leading bright
 // white characters.  Have to jump through some hoops since we support colored words.  This means
 // that we need to process the line one character at a time.
+//
+// @param line_num number of the line of the briefing page to be drawn
+// @x     horizontal position where the text is drawn
+// @y     vertical position where the text is drawn
+// @instance index of Colored_stream of the text page to display
 void brief_render_line(int line_num, int x, int y, int instance)
 {
-	int len, count, next, truncate_len, last_color, offset, w, h, bright_len, i;
-	char line[MAX_BRIEF_LINE_LEN];
-	SCP_vector<colored_char> *src; 
+	Assert( 0<=instance && instance < (sizeof(Colored_stream)/sizeof(*Colored_stream)) );
 
-	src = &Colored_stream[instance].at(line_num);
-	len = src->size();
+	SCP_vector<colored_char> *src = &Colored_stream[instance].at(line_num);
 
-	if (len == 0){
+	// empty strings do not have to be drawn
+	int src_len = src->size();
+	if (src_len == 0){
 		return;
 	}
-
-	truncate_len = fl2i(Brief_text_wipe_time_elapsed / BRIEF_TEXT_WIPE_TIME * Max_briefing_line_len);
-	if (truncate_len > len){
-		truncate_len = len;
+	// truncate_len is the number of characters currently displayed including the bright white characters
+	int truncate_len = fl2i(Brief_text_wipe_time_elapsed / BRIEF_TEXT_WIPE_TIME * Max_briefing_line_len);
+	if (truncate_len > src_len){
+		truncate_len = src_len;
 	}
-
-	bright_len = 0;
-	if (truncate_len < len) {
+	// truncate_len is going to be the number of characters displayed with normal intensity
+	// bright_len is the additional characters displayed with high intensity
+	// bright_len+truncate_len<len chars are displayed
+	int bright_len = 0;
+	if (truncate_len < src_len) {
 		if (truncate_len <= BRIGHTEN_LEAD) {
 			bright_len = truncate_len;
 			truncate_len = 0;
-
 		} else {
 			bright_len = BRIGHTEN_LEAD;
 			truncate_len -= BRIGHTEN_LEAD; 
 		}
 	}
-
-	offset = 0;
-	count  = 0;
-	next	 = 0;
-
+	int char_seq_pos=0; //Cursor position into the following character sequence
+	char char_seq[MAX_BRIEF_LINE_LEN];	
+	int offset = 0; //offset is the horizontal position of the screen where strings are drawn
 	gr_set_color_fast(&Color_white);
-	last_color = BRIEF_TEXT_WHITE;
-	for (i=0; i<truncate_len; i++) {
-		if (count >= truncate_len){
-			break;
-		}
 
-		line[next] = src->at(count).letter;
-
-		if (is_white_space(line[next])) {
-			// end of word reached, blit it
-			line[next + 1] = 0;
-			gr_string(x + offset, y, line);
-			gr_get_string_size(&w, &h, line);
-			offset += w;
-			next = 0;
-
-			// reset color
-			if (last_color != BRIEF_TEXT_WHITE) {
-				brief_set_text_color(BRIEF_TEXT_WHITE);
-				last_color = BRIEF_TEXT_WHITE;
+	// PART1: Draw the the briefing line part with normal intensity and word colors.
+	// The following algorithm builds a character sequence of color 'last_color' into 'line' buffer.
+	// When the color changes, the buffer is drawn and reset.
+	{
+		int last_color = src->at(0).color;    
+		for (int current_pos=0; current_pos<truncate_len; current_pos++) {
+			colored_char &current_char=src->at(current_pos);		
+			//when the current color changes, the accumulated character sequence is drawn.
+			if (current_char.color != last_color){
+				//add a 0 terminal character to make line a valid C string
+				Assert(char_seq_pos<sizeof(char_seq));
+				char_seq[char_seq_pos] = 0;         
+				{	// Draw coloured text, and increment cariage position
+					int w=0,h=0;
+					brief_set_text_color(last_color);        
+					gr_string(x + offset, y, char_seq);
+					gr_get_string_size(&w, &h, char_seq);
+					offset += w;
+				}
+				//clear char buffer
+				char_seq_pos = 0;
+				last_color = current_char.color;
 			}
-
-			count++;
-			continue;
+			Assert(char_seq_pos<sizeof(char_seq));
+			char_seq[char_seq_pos++] = current_char.letter;		
 		}
-
-		if (src->at(count).color != last_color) {
-			brief_set_text_color(src->at(count).color);
-			last_color = src->at(count).color;
+		// Draw the final chunk of acumulated characters
+		// Add a 0 terminal character to make line a valid C string
+		Assert(char_seq_pos<sizeof(char_seq));
+		char_seq[char_seq_pos] = 0;
+        {	// Draw coloured text, and increment cariage position
+			int w=0,h=0;
+			brief_set_text_color(last_color);        
+			gr_string(x + offset, y, char_seq);
+			gr_get_string_size(&w, &h, char_seq);
+			offset += w;
 		}
+	}
 
-		count++;
-		next++;
-	}	// end for
-
-	line[next] = 0;
-	gr_string(x + offset, y, line);
-
-
-	// draw leading portion of the line bright white
-	if (bright_len) {
-
+	{	// PART2: Draw leading bright white characters
+		char_seq_pos = 0;
+		for( int current_pos = truncate_len; current_pos<truncate_len + bright_len; current_pos++){		
+			Assert(char_seq_pos<sizeof(char_seq));
+			char_seq[char_seq_pos++] = src->at(current_pos).letter;
+		}
+		Assert(char_seq_pos<sizeof(char_seq));
+		char_seq[char_seq_pos] = 0;
 		gr_set_color_fast(&Color_bright_white);
-		for (i=0; i<truncate_len+bright_len; i++) {
-			line[i] = src->at(i).letter;
-		}
-
-		line[i] = 0;
-
-
-		if ( truncate_len > 0 )	{
-			int width_dim, height_dim;
-			gr_get_string_size(&width_dim, &height_dim, line, truncate_len );
-			gr_string(x+width_dim, y, &line[truncate_len]);
-		} else {
-			gr_string(x, y, line);
-		}
+		gr_string(x + offset, y, char_seq);    
 	}
 }
 
@@ -1554,15 +1572,54 @@ ubyte brief_return_color_index(char c)
 		case 'b':
 			return BRIEF_TEXT_BLUE;
 
+//The following added by Zacam for expanded BRIEF colors
  		case 'w':
  			return BRIEF_TEXT_WHITE;
- 
+
  		case 'y':
  			return BRIEF_TEXT_YELLOW;
- 
-		default:	
-			Int3();	// unsupported meta-code
-			break;
+
+		case 'W':
+			return BRIEF_TEXT_BRIGHT_WHITE;
+
+		case 'B':
+			return BRIEF_TEXT_BRIGHT_BLUE;
+
+		case 'G':
+			return BRIEF_TEXT_BRIGHT_GREEN;
+
+		case 'R':
+			return BRIEF_TEXT_BRIGHT_RED;
+
+		case 'Y':
+			return BRIEF_TEXT_BRIGHT_YELLOW;
+
+		case 'k':
+			return BRIEF_TEXT_BLACK;
+
+		case 'e':
+			return BRIEF_TEXT_GREY;
+
+		case 'E':
+			return BRIEF_TEXT_SILVER;
+
+		case 'v':
+			return BRIEF_TEXT_VIOLET_GRAY;
+
+		case 'V':
+			return BRIEF_TEXT_VIOLET;
+
+		case 'p':
+			return BRIEF_TEXT_PINK;
+
+		case 'P':
+			return BRIEF_TEXT_LIGHT_PINK;
+
+		case '|':	//This is not a duplicate, but a Non-Breaking Space case. Do not remove.
+			return BRIEF_TEXT_WHITE;
+
+		default:	//Zacam: Changed fron an Int3() in order to provide better feedback while still allowing play.
+			Warning(LOCATION, "Unrecognized or undefined case character: '$%c' used in Briefing in mission: '%s'. Tell Zacam.", c, Mission_filename);
 	} // end switch
 
 	return BRIEF_TEXT_WHITE;
@@ -1574,51 +1631,68 @@ void brief_set_text_color(int color_index)
 	gr_set_color_fast(Brief_text_colors[color_index]);
 }
 
-// Set up the Colored_text array.
-// input:		index		=>		Index into Brief_text[] for source text.
-//					instance	=>		Which instance of Colored_text[] to use.  
-//										Value is 0 unless multiple text streams are required.
+// Returns true when a character is a word separator.
+// @param character is the character to be analysed
+// @return true when the given character is a word separator, and false when the caracter is part of a word.
+bool is_a_word_separator(char character){
+	return character<=33					//  2 characters including (space) and !
+		|| (35<=character && character<=38)	//  4 characters #$%&
+		|| (42<=character && character<=44)	//  3 characters *+,
+		|| (character == 47)				//  1 character  /
+		|| (59<=character && character<=64)	//  6 characters ;<=>?@
+		|| (91<=character && character<=95)	//  5 characters [\]^_
+		|| (123<=character&&character<=127);//  5 characters {|}~
+}
+
+// Builds a vector of colored characters from a string containing color markups
+// and stores it to Colored_stream table.
+// A color markup is made of a minimum of three characters: 
+//   '$' + a char standing for a color + contigous multiple spaces (chars \t \n and ' ')
+// The markup is completely removed from the resulting character sequence.
+// @param src a not null pointer to a C string terminated by a /0 char.
+// @param instance index into Colored_stream where the result should be placed.
+//	  			   Value is 0 unless multiple text streams are required.
+// @return number of character of the resulting sequence.
 int brief_text_colorize(char *src, int instance)
 {
-	int len, i, skip_to_next_word = 0;
-	colored_char dest; 
-	briefing_line dest_line; 
+	Assert(src);
+	Assert( 0<=instance && instance < (sizeof(Colored_stream)/sizeof(*Colored_stream)) );
 
-	ubyte active_color_index = BRIEF_TEXT_WHITE;
+	briefing_line dest_line; //the resulting vector of colored character
+	ubyte active_color_index = BRIEF_TEXT_WHITE; //the current drawing color
 
-	len = strlen(src);
-	for (i=0; i<len; i++) {
-		if (skip_to_next_word) {
-			if (is_white_space(src[i])) {
-				skip_to_next_word = 0;
-			}
+	int src_len = strlen(src);
+	for (int i=0; i<src_len; i++) {
+		// Is the character a color markup?
+		// text markup consists of a '$' plus a character plus an optional space
+		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) ) {
+			i++;   //Consume the $ character
+			active_color_index = brief_return_color_index(src[i]);
+			i++; // Consume the color identifier and focus on the white character (if any)
+ 
+			// Skip every whitespace until the next word is reached
+			while ( (i < src_len) && is_white_space(src[i]) )
+				i++;
 
+			//The next character is not a whitespace, let's process it as usual
+			//(subtract 1 because the for loop will add it again)
+			i--;
 			continue;
-		}
+ 		}
 
-		if ( src[i] == BRIEF_META_CHAR && is_white_space(src[i + 2]) ) {
-			active_color_index = brief_return_color_index(src[i + 1]);
-			skip_to_next_word = 1;
-			continue;
-		}
-
-		if (is_white_space(src[i])) {
+		// When the word is terminated reset color to white
+		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) )) {
 			active_color_index = BRIEF_TEXT_WHITE;
 		}
 
+		// Append the character to the result structure
+		colored_char dest;
 		dest.letter = src[i];
 		dest.color = active_color_index;
-
-		dest_line.push_back(dest); 
-	} // end for
-
-	// null terminate the line
-	dest.letter = 0;
-	dest.color = BRIEF_TEXT_WHITE; 
-	dest_line.push_back(dest);
-	Colored_stream[instance].push_back(dest_line); 
-	Colored_stream[instance].size();
-	return len;
+		dest_line.push_back(dest);
+	} 
+	Colored_stream[instance].push_back(dest_line); 	
+	return dest_line.size();
 }
 
 // ------------------------------------------------------------------------------------

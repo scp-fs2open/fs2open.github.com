@@ -117,6 +117,7 @@ Flag exe_params[] =
 	{ "-missile_lighting",	"Apply Lighting to Missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 	{ "-normal",			"Enable normal maps",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
+	{ "-post_process",		"Enable post processing",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -260,6 +261,8 @@ cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive
 cmdline_parm normal_arg("-normal", NULL);				// Cmdline_normal  -- enable normal mapping
 cmdline_parm height_arg("-height", NULL);			// Cmdline_height  -- enable support for parallax mapping
 cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL);
+cmdline_parm postprocess_arg("-post_process", NULL);
+cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -278,6 +281,8 @@ int Cmdline_no_emissive = 0;
 int Cmdline_normal = 0;
 int Cmdline_height = 0;
 int Cmdline_enable_3d_shockwave = 0;
+int Cmdline_postprocess = 0;
+int Cmdline_bloom_intensity = 75;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -491,7 +496,7 @@ char *drop_extra_chars(char *str)
 void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 {
 	char buffer[1024];
-	memset(buffer, 0, 1024);
+	memset( buffer, 0, sizeof( buffer ) );
 	char *dest = buffer;
 	char *saved_args = NULL;
 
@@ -527,13 +532,13 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 
 		if (saved_args != NULL) {
 			// saved args go first, then new arg
-			strcpy(parm->args, saved_args);
+			strcpy_s(parm->args, size, saved_args);
 			// add a separator too, so that we can tell the args apart
-			strcat(parm->args, ",");
+			strcat_s(parm->args, size, ",");
 			// now the new arg
-			strcat(parm->args, buffer);
+			strcat_s(parm->args, size, buffer);
 		} else {
-			strcpy(parm->args, buffer);
+			strcpy_s(parm->args, size, buffer);
 		}
 	}
 
@@ -629,7 +634,11 @@ void os_validate_parms(char *cmdline)
 #else
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {
-					printf("FS2 Open: The Source Code Project, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					if (FS_VERSION_REVIS == 0) {
+						printf("FreeSpace 2 Open, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					} else {
+						printf("FreeSpace 2 Open, version %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
+					}
 					printf("Website: http://scp.indiegames.us\n");
 					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
 					printf("Usage: fs2_open [options]\n");
@@ -1072,8 +1081,8 @@ bool SetCmdlineParams()
 		// Ok - mod stacking support
 		int len = strlen(Cmdline_mod);
 		char *modlist = new char[len+2];
-		memset(modlist, 0, len+2);
-		strcpy(modlist, Cmdline_mod);
+		memset( modlist, 0, len + 2 );
+		strcpy_s(modlist, len+2, Cmdline_mod);
 
 		//modlist[len]= '\0'; // double null termination at the end
 
@@ -1379,6 +1388,16 @@ bool SetCmdlineParams()
 		Cmdline_enable_3d_shockwave = 1;
 	}
 
+	if ( postprocess_arg.found() )
+	{
+		Cmdline_postprocess = 1;
+	}
+
+	if ( bloom_intensity_arg.found() )
+	{
+		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
+	}
+
 	return true; 
 }
 
@@ -1397,12 +1416,11 @@ int fred2_parse_cmdline(int argc, char *argv[])
 			arglen += argc + 2; // leave room for the separators
 		cmdline = new char [arglen+1];
 		i = 1;
-		memset(cmdline, 0, arglen+1); // clear it out
 
-		strcpy(cmdline, argv[i]);
+		strcpy_s(cmdline, arglen+1, argv[i]);
 		for (i=2; i < argc;  i++) {
-			strcat(cmdline, " ");
-			strcat(cmdline, argv[i]);
+			strcat_s(cmdline, arglen+1, " ");
+			strcat_s(cmdline, arglen+1, argv[i]);
 		}
 		os_init_cmdline(cmdline);
 		delete [] cmdline;

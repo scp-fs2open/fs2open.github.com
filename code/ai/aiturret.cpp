@@ -449,7 +449,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	
 	dist_comp = dist;
 	// if weapon has optimum range set then use it
-	float optimum_range = ss->system_info->optimum_range;
+	float optimum_range = ss->optimum_range;
 	if (optimum_range > 0.0f) {
 		if (dist < optimum_range) {
 			dist_comp = (2*optimum_range) - dist;
@@ -457,7 +457,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	}
 
 	// if turret has been told to prefer targets from the current direction then do so
-	float favor_one_side = ss->system_info->favor_current_facing;
+	float favor_one_side = ss->favor_current_facing;
 	if (favor_one_side >= 1.0f) {
 		vm_vec_normalize(&vec_to_target);
 		float dot_to_target = vm_vec_dot(&ss->turret_last_fire_direction, &vec_to_target);
@@ -643,12 +643,35 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.nearest_objnum = -1;
 
 	// here goes the new targeting priority setting
-	int n_tgt_priorities = turret_subsys->num_target_priorities;
+	int n_tgt_priorities;
+	int priority_weapon_idx = -1;
+
+	// check for turret itself first
+	n_tgt_priorities = turret_subsys->num_target_priorities;
+
+	// turret had no priorities set for it.. try weapons
+	if (n_tgt_priorities <= 0) {
+		if (swp->num_primary_banks > 0)
+			// first try highest primary slot...
+			priority_weapon_idx = swp->primary_bank_weapons[0];
+		else
+			// ...and then secondary slot
+			priority_weapon_idx = swp->secondary_bank_weapons[0];
+
+		if (priority_weapon_idx > -1)
+			n_tgt_priorities = Weapon_info[priority_weapon_idx].num_targeting_priorities;
+	}
+
 	if (n_tgt_priorities > 0) {
 
 		for(int i = 0; i < n_tgt_priorities; i++) {
 			// courtesy of WMC...
-			ai_target_priority *tt = &Ai_tp_list[turret_subsys->target_priority[i]];
+			ai_target_priority *tt;
+			if (priority_weapon_idx == -1)
+				tt = &Ai_tp_list[turret_subsys->target_priority[i]];
+			else
+				tt = &Ai_tp_list[Weapon_info[priority_weapon_idx].targeting_priorities[i]];
+
 			int n_types = tt->ship_type.size();
 			int n_s_classes = tt->ship_class.size();
 			int n_w_classes = tt->weapon_class.size();
@@ -1686,6 +1709,14 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	
 	//aip = &Ai_info[Ships[objp->instance].ai_index];
+	// Wanderer - make sure turrets already have all the data
+	if ( !(tp->flags & MSS_FLAG_TURRET_MATRIX) )
+	{
+		if (!(tp->turret_gun_sobj == tp->subobj_num))
+		{
+			model_make_turret_matrix(Ship_info[shipp->ship_info_index].model_num, tp );
+		}
+	}
 
 	// Use the turret info for all guns, not one gun in particular.
 	vec3d	 gvec, gpos;
@@ -1715,8 +1746,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	//WMC - build a list of valid weapons. Fire spawns if there are any.
 	float dist_to_enemy = 0.0f;
-	if(lep != NULL)
-		dist_to_enemy = MAX(0,vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos) - lep->radius);
+	if(lep != NULL) {
+		if (The_mission.ai_profile->flags2 & AIPF2_TURRETS_IGNORE_TARGET_RADIUS)
+			dist_to_enemy = MAX(0,vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos));
+		else
+			dist_to_enemy = MAX(0,vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos) - lep->radius);
+	}
 
 	int valid_weapons[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int num_valid = 0;

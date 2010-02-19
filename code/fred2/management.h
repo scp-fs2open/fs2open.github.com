@@ -29,7 +29,6 @@ extern int cur_waypoint;
 extern int cur_waypoint_list;
 extern int Update_ship;
 extern int Update_wing;
-extern int Fred_font;
 
 extern ai_goal_list Ai_goal_list[];
 extern int Ai_goal_list_size;

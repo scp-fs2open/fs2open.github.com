@@ -207,13 +207,21 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wshadow -funroll-loops -DLUA_USE_APICHECK"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops -DLUA_USE_APICHECK"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_d"])
+		else
+			AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+		fi
 	else
-		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["fs2_open_INF_d"])
+		else
+			AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+		fi
 	fi
 else
 	AC_DEFINE([NDEBUG])
@@ -221,9 +229,17 @@ else
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_r"])
+		else
+			AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+		fi
 	else
-		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+		if test "$fs2_inferno" = "yes" ; then
+			AC_SUBST(FS2_BINARY, ["fs2_open_INF_r"])
+		else
+			AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+		fi
 	fi
 fi
 
@@ -343,6 +359,9 @@ if test "$fs2_os_win32" = "yes" ; then
 	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
 	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
 fi
+
+dnl libpng
+FS2_LDFLAGS="$FS2_LDFLAGS -lpng"
 
 dnl OpenGL libs and CFLAGS
 if test "$fs2_os_win32" = "yes" ; then

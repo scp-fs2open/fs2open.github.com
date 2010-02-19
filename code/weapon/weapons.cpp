@@ -473,7 +473,7 @@ int weapon_info_lookup(char *name)
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp)
+void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 {
 	//Make sure we HAVE flags :p
 	if(!optional_string("$Flags:"))
@@ -486,8 +486,8 @@ void parse_wi_flags(weapon_info *weaponp)
 
 	if (optional_string("+override")) {
 		// reseting the flag values if set to override the existing flags
-		weaponp->wi_flags = WIF_DEFAULT_VALUE;
-		weaponp->wi_flags2 = WIF2_DEFAULT_VALUE;
+		weaponp->wi_flags = wi_flags;
+		weaponp->wi_flags2 = wi_flags2;
 	}
 	
 	for (int i=0; i<num_strings; i++) {
@@ -620,6 +620,14 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_NON_SUBSYS_HOMING;
 		else if (!stricmp(NOX("no lifeleft penalty"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_NO_LIFE_LOST_IF_MISSED;
+		else if (!stricmp(NOX("can be targeted"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CAN_BE_TARGETED;
+		else if (!stricmp(NOX("show on radar"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SHOWN_ON_RADAR;
+		else if (!stricmp(NOX("show friendly on radar"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SHOW_FRIENDLY;
+		else if (!stricmp(NOX("capital+"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_CAPITAL_PLUS;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -861,6 +869,17 @@ void init_weapon_entry(int weap_info_index)
 	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
 
+	wip->flash_impact_weapon_expl_index = -1;
+	wip->flash_impact_explosion_radius = 0.0f;
+
+	wip->piercing_impact_explosion_radius = 0.0f;
+	wip->piercing_impact_particle_count = 0;
+	wip->piercing_impact_particle_life = 0.0f;
+	wip->piercing_impact_particle_velocity = 0.0f;
+	wip->piercing_impact_weapon_expl_index = -1;
+	wip->piercing_impact_particle_back_velocity = 0.0f;
+	wip->piercing_impact_particle_variance = 0.0f;
+
 	wip->muzzle_flash = -1;
 
 	wip->emp_intensity = EMP_DEFAULT_INTENSITY;
@@ -911,10 +930,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
 	wip->b_info.beam_width = -1.0f;
-	wip->b_info.beam_flash_idx = -1;
-	wip->b_info.beam_flash_radius = 0.0f;
-	wip->b_info.beam_tooling_flame_idx = -1;
-	wip->b_info.beam_tooling_flame_radius = 0.0f;
 
 	generic_anim_init(&wip->b_info.beam_glow, NULL);
 	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
@@ -999,6 +1014,8 @@ int parse_weapon(int subtype, bool replace)
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found  = true;
+	int wi_flags = WIF_DEFAULT_VALUE;
+	int wi_flags2 = WIF2_DEFAULT_VALUE;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -1068,6 +1085,10 @@ int parse_weapon(int subtype, bool replace)
 		strcpy_s(wip->name, fname);
 		Num_weapon_types++;
 	}
+
+	if(optional_string("$Alt name:"))
+		stuff_string(wip->alt_name, F_NAME, NAME_LENGTH);
+
 	//Set subtype
 	if(optional_string("$Subtype:"))
 	{
@@ -1359,6 +1380,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
+				wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
 			{
@@ -1370,6 +1392,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+				wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("JAVELIN")))
 			{
@@ -1381,6 +1404,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 
 				wip->wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
+				wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
 			}
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
@@ -1402,12 +1426,19 @@ int parse_weapon(int subtype, bool replace)
 			if (optional_string("+Seeker Strength:"))
 			{
 				//heat default seeker strength is 3
-				wip->seeker_strength = 3;
 				stuff_float(&wip->seeker_strength);
+				wip->wi_flags2 |= WIF2_CUSTOM_SEEKER_STR;
 				if (wip->seeker_strength <= 0)
 				{
-					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					wip->seeker_strength = 3.0f;
+					wip->wi_flags2 &= ~WIF2_CUSTOM_SEEKER_STR;
 				}
+			}
+			else
+			{
+				if(!(wip->wi_flags2 & WIF2_CUSTOM_SEEKER_STR))
+					wip->seeker_strength = 3.0f;
 			}
 
 			if (optional_string("+Target Lead Scaler:"))
@@ -1415,8 +1446,10 @@ int parse_weapon(int subtype, bool replace)
 				stuff_float(&wip->target_lead_scaler);
 				if (wip->target_lead_scaler == 0.0f)
 					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
-				else
+				else {
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+				}
 			}
 		}
 		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
@@ -1451,20 +1484,29 @@ int parse_weapon(int subtype, bool replace)
 			if (optional_string("+Seeker Strength:"))
 			{
 				//aspect default seeker strength is 2
-				wip->seeker_strength = 2;
 				stuff_float(&wip->seeker_strength);
+				wip->wi_flags2 |= WIF2_CUSTOM_SEEKER_STR;
 				if (wip->seeker_strength <= 0)
 				{
-					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+					Warning(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero\nReseting value to default.", wip->name);
+					wip->seeker_strength = 2.0f;
+					wip->wi_flags2 &= ~WIF2_CUSTOM_SEEKER_STR;
 				}
+			} 
+			else
+			{
+				if(!(wip->wi_flags2 & WIF2_CUSTOM_SEEKER_STR))
+					wip->seeker_strength = 2.0f;
 			}
 			if (optional_string("+Target Lead Scaler:"))
 			{
 				stuff_float(&wip->target_lead_scaler);
 				if (wip->target_lead_scaler == 1.0f)
 					wip->wi_flags2 &= ~WIF2_VARIABLE_LEAD_HOMING;
-				else
+				else {
 					wip->wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+					wi_flags2 |= WIF2_VARIABLE_LEAD_HOMING;
+				}
 			}
 		}
 		else
@@ -1485,6 +1527,7 @@ int parse_weapon(int subtype, bool replace)
 
 		// flag as being a swarm weapon
 		wip->wi_flags |= WIF_SWARM;
+		wi_flags |= WIF_SWARM;
 	}
 
 	// *Swarm wait token    -Et1
@@ -1573,7 +1616,7 @@ int parse_weapon(int subtype, bool replace)
 
 	}
 
-	parse_wi_flags(wip);
+	parse_wi_flags(wip, wi_flags, wi_flags2);
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
@@ -1704,6 +1747,31 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->dinky_impact_explosion_radius);
 	else if (first_time)
 		wip->dinky_impact_explosion_radius = wip->impact_explosion_radius;
+
+	if ( optional_string("$Piercing Impact Explosion:") ) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			wip->piercing_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+	}
+
+	if ( optional_string("$Piercing Impact Radius:") )
+		stuff_float(&wip->piercing_impact_explosion_radius);
+
+	if ( optional_string("$Piercing Impact Velocity:") )
+		stuff_float(&wip->piercing_impact_particle_velocity);
+
+	if ( optional_string("$Piercing Impact Splash Velocity:") )
+		stuff_float(&wip->piercing_impact_particle_back_velocity);
+
+	if ( optional_string("$Piercing Impact Variance:") )
+		stuff_float(&wip->piercing_impact_particle_variance);
+
+	if ( optional_string("$Piercing Impact Life:") )
+		stuff_float(&wip->piercing_impact_particle_life);
+
+	if ( optional_string("$Piercing Impact Particles:") )
+		stuff_int(&wip->piercing_impact_particle_count);
 
 	// muzzle flash
 	if ( optional_string("$Muzzleflash:") ) {
@@ -1985,21 +2053,30 @@ int parse_weapon(int subtype, bool replace)
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
 			if ( VALID_FNAME(fname) )
-				wip->b_info.beam_flash_idx = Weapon_explosions.Load(fname);
+				wip->flash_impact_weapon_expl_index = Weapon_explosions.Load(fname);
 		}
 		
 		if ( optional_string("+Beam Flash Radius:") )
-			stuff_float(&wip->b_info.beam_flash_radius);
+			stuff_float(&wip->flash_impact_explosion_radius);
 
 		if ( optional_string("+Beam Piercing Effect:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
 			if ( VALID_FNAME(fname) )
-				wip->b_info.beam_tooling_flame_idx = Weapon_explosions.Load(fname);
+				wip->piercing_impact_weapon_expl_index = Weapon_explosions.Load(fname);
 		}
 		
 		if ( optional_string("+Beam Piercing Radius:") )
-			stuff_float(&wip->b_info.beam_tooling_flame_radius);
+			stuff_float(&wip->piercing_impact_explosion_radius);
+
+		if ( optional_string("+Beam Piercing Effect Velocity:") )
+			stuff_float(&wip->piercing_impact_particle_velocity);
+
+		if ( optional_string("+Beam Piercing Splash Effect Velocity:") )
+			stuff_float(&wip->piercing_impact_particle_back_velocity);
+
+		if ( optional_string("+Beam Piercing Effect Variance:") )
+			stuff_float(&wip->piercing_impact_particle_variance);
 
 		// beam sections
 		while ( optional_string("$Section:") ) {
@@ -4266,7 +4343,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// plot homing missiles on the radar
-	if (wip->wi_flags & WIF_HOMING) {
+	if ((wip->wi_flags & WIF_BOMB) || (wip->wi_flags2 & WIF2_SHOWN_ON_RADAR)) {
 		if ( hud_gauge_active(HUD_RADAR) ) {
 			radar_plot_object( obj );
 		}
@@ -5456,7 +5533,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
 // This function is called when a weapon hits something (or, in the case of
 // missiles explodes for any particular reason)
 //
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -5511,6 +5588,69 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	{
 		expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
+	}
+
+	if((other_obj != NULL) && (quadrant == -1) && (wip->piercing_impact_weapon_expl_index > -1 && armed_weapon)) {
+		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
+
+			int ok_to_draw = 1;
+
+			if (other_obj->type == OBJ_SHIP) {
+				float draw_limit, hull_pct;
+				int dmg_type_idx, piercing_type;
+
+				ship *shipp = &Ships[other_obj->instance];
+
+				hull_pct = other_obj->hull_strength / shipp->ship_max_hull_strength;
+				dmg_type_idx = wip->damage_type_idx;
+				draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
+				
+				if (shipp->armor_type_idx != -1) {
+					piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
+					if (piercing_type == SADTF_PIERCING_DEFAULT) {
+						draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+					} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
+						ok_to_draw = 0;
+					}
+				}
+
+				if (hull_pct > draw_limit)
+					ok_to_draw = 0;
+			}
+
+			if (ok_to_draw) {
+				particle_emitter pe;
+				vec3d null_v;
+
+				vm_vec_zero(&null_v);
+				expl_ani_handle = Weapon_explosions.GetAnim(wip->piercing_impact_weapon_expl_index, hitpos, wip->piercing_impact_explosion_radius);
+
+				pe.max_vel = 2.0f * wip->piercing_impact_particle_velocity;
+				pe.min_vel = 0.5f * wip->piercing_impact_particle_velocity;
+				pe.max_life = 2.0f * wip->piercing_impact_particle_life;
+				pe.min_life = 0.25f * wip->piercing_impact_particle_life;
+				pe.num_high = 2 * wip->piercing_impact_particle_count;
+				pe.num_low =  wip->piercing_impact_particle_count / 2;
+				pe.pos = weapon_obj->pos;
+				pe.normal = weapon_obj->last_orient.vec.fvec;
+				pe.normal_variance = wip->piercing_impact_particle_variance;
+				pe.max_rad = 2.0f * wip->piercing_impact_explosion_radius;
+				pe.min_rad = 0.5f * wip->piercing_impact_explosion_radius;
+				pe.vel = null_v;
+
+				particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
+
+				if (wip->piercing_impact_particle_back_velocity != 0.0f) {
+
+					pe.max_vel = 2.0f * wip->piercing_impact_particle_back_velocity;
+					pe.min_vel = 0.5f * wip->piercing_impact_particle_back_velocity;
+					pe.num_high /= 2;
+					pe.num_low /= 2;
+
+					particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
+				}
+			}
+		}
 	}
 
 	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
@@ -5718,6 +5858,8 @@ void weapons_page_in()
 		//Explosions
 		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
 		Weapon_explosions.PageIn(wip->dinky_impact_weapon_expl_index);
+		Weapon_explosions.PageIn(wip->flash_impact_weapon_expl_index);
+		Weapon_explosions.PageIn(wip->piercing_impact_weapon_expl_index);
 
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id > -1) )

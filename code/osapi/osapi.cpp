@@ -377,7 +377,8 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
 #endif
 
-			disableWindowsKey();
+			if ( !Is_standalone )
+				disableWindowsKey();
 
             if (!Cmdline_window)
             {
@@ -396,7 +397,8 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
 
-			enableWindowsKey();
+			if ( !Is_standalone )
+				enableWindowsKey();
 
             if (!Cmdline_window)
             {
@@ -540,7 +542,8 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 			key_lost_focus();
             mouse_lost_focus();
-			gr_activate(0);
+			if ( !Is_standalone )
+				gr_activate(0);
 			break;
 		}
 
@@ -551,7 +554,8 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 			key_got_focus();
             mouse_got_focus();
-			gr_activate(1);
+			if ( !Is_standalone )
+				gr_activate(1);
 			break;
 		}
 

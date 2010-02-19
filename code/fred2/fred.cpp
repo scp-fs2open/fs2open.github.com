@@ -26,6 +26,7 @@
 #include "CampaignTreeView.h"
 #include "CampaignEditorDlg.h"
 #include "debugconsole/dbugfile.h"
+#include "globalincs/mspdb_callstack.h"
 
 #ifdef NDEBUG
 #ifndef FRED
@@ -97,6 +98,7 @@ CFREDApp::CFREDApp()
 	app_init = 0;
 
 	DBUGFILE_INIT();
+	SCP_mspdbcs_Initialise( );
 
 #ifndef NDEBUG
 	outwnd_init();
@@ -105,6 +107,7 @@ CFREDApp::CFREDApp()
 
 CFREDApp::~CFREDApp()
 {
+	SCP_mspdbcs_Cleanup( );
 	DBUGFILE_DEINIT();
 }
 

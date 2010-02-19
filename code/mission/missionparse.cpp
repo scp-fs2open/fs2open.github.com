@@ -648,12 +648,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 	{
 		stuff_string_list(TVT_wing_names, MAX_TVT_WINGS);
 	}
-
-	// minimal error checking
-	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
-	{
-		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
-	}
 	// end of wing stuff -------------------------------------------------
 
 
@@ -908,6 +902,9 @@ void parse_cutscenes(mission *pm)
 			if (optional_string("$Debriefing Cutscene:")) {
 				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
 			}
+			if (optional_string("$Campaign End Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
+			}
 		}
 	}
 }
@@ -1152,6 +1149,7 @@ done_briefing_music:
 void parse_fiction(mission *pm)
 {
 	char filename[MAX_FILENAME_LEN];
+	char font_filename[MAX_FILENAME_LEN];
 
 	fiction_viewer_reset();
 
@@ -1161,7 +1159,13 @@ void parse_fiction(mission *pm)
 	required_string("$File:");
 	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
 
-	fiction_viewer_load(filename);
+	if (optional_string("$Font:")) {
+		stuff_string(font_filename, F_FILESPEC, MAX_FILENAME_LEN);
+	} else {
+		strcpy_s(font_filename, "");
+	}
+
+	fiction_viewer_load(filename, font_filename);
 }
 
 void parse_cmd_brief(mission *pm)
@@ -1516,33 +1520,32 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 {
 	object *objp = p_objp->created_object;
 	ship *shipp = &Ships[objp->instance];
-	object *knossos_objp;
+	object *knossos_objp = NULL;
 
 	// Assume no valid knossos device
-	shipp->special_warp_objnum = -1;
+	shipp->special_warpin_objnum = -1;
 
 	// find knossos device
-	int found = FALSE;
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
-		knossos_objp = &Objects[so->objnum];
+		object *ship_objp = &Objects[so->objnum];
 
-		if (Ship_info[Ships[knossos_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
+		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
 		{
 			// be close to the right device (allow multiple knossoses)
-			if ( vm_vec_dist_quick(&knossos_objp->pos, &p_objp->pos) < 2.0f*(knossos_objp->radius + objp->radius) )
+			if ( vm_vec_dist_quick(&ship_objp->pos, &p_objp->pos) < 2.0f*(ship_objp->radius + objp->radius) )
 			{
-				found = TRUE;
+				knossos_objp = ship_objp;
 				break;
 			}
 		}
 	}
 
-	if (!found)
+	if (knossos_objp == NULL)
 		return;
 
-	// set ship special_warp_objnum
-	shipp->special_warp_objnum = OBJ_INDEX(knossos_objp);
+	// set ship special_warpin_objnum
+	shipp->special_warpin_objnum = OBJ_INDEX(knossos_objp);
 
 	// position self for warp on plane of device
 	vec3d new_point;
@@ -1902,7 +1905,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	if (p_objp->flags & P_KNOSSOS_WARP_IN)
 	{
-		Objects[objnum].flags |= OF_SPECIAL_WARP;
+		Objects[objnum].flags |= OF_SPECIAL_WARPIN;
 		Knossos_warp_ani_used = 1;
 	}
 
@@ -4261,6 +4264,11 @@ void post_process_ships_wings()
 	// ----------------- at this point the ships have been created -----------------
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
 
+	// error checking for custom wings
+	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
+	{
+		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+	}
 
 	// Goober5000 - for FRED, the ships are initialized after the wings, so we must now tell the wings
 	// where their ships are
@@ -5033,7 +5041,7 @@ int parse_mission(mission *pm, int flags)
 	Player_starts = Num_cargo = Num_waypoint_lists = Num_goals = Num_wings = 0;
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
-	memset( &Player_start_pobject, 0, sizeof(Player_start_pobject) );
+	Player_start_pobject.Reset( );
 	clear_texture_replacements();
 
 	// initialize the initially_docked array.
@@ -5100,7 +5108,7 @@ int parse_mission(mission *pm, int flags)
 				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 			}
 			else {
-				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_loadout_classes, (Num_unknown_loadout_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d weapon class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_loadout_classes, (Num_unknown_loadout_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 			}
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
@@ -5431,7 +5439,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 		}
 
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
-		memset( mission_p, 0, sizeof(mission) );
+		mission_p->Reset( );
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
 	} while (0);
@@ -5468,7 +5476,7 @@ int parse_main(char *mission_name, int flags)
 	// reset parse error stuff
 	Num_unknown_ship_classes = 0;
 	Num_unknown_weapon_classes = 0;
-	Num_unknown_loadout_classes =0;
+	Num_unknown_loadout_classes = 0;
 
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
@@ -5515,7 +5523,7 @@ int parse_main(char *mission_name, int flags)
 			read_file_text(mission_name, CF_TYPE_MISSIONS);
 		}
 
-		memset(&The_mission, 0, sizeof(The_mission));
+		The_mission.Reset( );
 		rval = parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 	} while (0);

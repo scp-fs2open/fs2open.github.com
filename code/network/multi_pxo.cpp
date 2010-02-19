@@ -991,7 +991,7 @@ UI_XSTR Multi_pxo_help_text[GR_NUM_RESOLUTIONS][MULTI_PXO_HELP_NUM_TEXT] = {
 // help text
 #define MULTI_PXO_HELP_FILE			"pxohelp.txt"
 #define MULTI_PXO_MAX_LINES_PP		57
-#define MULTI_PXO_MAX_PAGES			3
+#define MULTI_PXO_MAX_PAGES			5
 
 int Multi_pxo_help_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640

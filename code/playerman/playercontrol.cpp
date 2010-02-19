@@ -15,7 +15,7 @@
 #include "io/joy_ff.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "io/trackir.h"
+#include "external_dll/trackirpublic.h"
 #include "object/object.h"
 #include "hud/hud.h"
 #include "hud/hudtargetbox.h"
@@ -119,14 +119,14 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		} else {
 			return;
 		}
-	} else if (trackir_enabled) {
-		TrackIR_Query();
-		ma->h = -PI2*(TrackIR_GetYaw());
-		ma->p = PI2*(TrackIR_GetPitch());
+	} else if ( gTirDll_TrackIR.Enabled( ) ) {
+		gTirDll_TrackIR.Query();
+		ma->h = -PI2*(gTirDll_TrackIR.GetYaw());
+		ma->p = PI2*(gTirDll_TrackIR.GetPitch());
 
-		trans.xyz.x = -0.4f*TrackIR_GetX();
-		trans.xyz.y = 0.4f*TrackIR_GetY();
-		trans.xyz.z = -TrackIR_GetZ();
+		trans.xyz.x = -0.4f*gTirDll_TrackIR.GetX();
+		trans.xyz.y = 0.4f*gTirDll_TrackIR.GetY();
+		trans.xyz.z = -gTirDll_TrackIR.GetZ();
 
 		if(trans.xyz.z < 0)
 			trans.xyz.z = 0.0f;
@@ -593,6 +593,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward = 1.0f;
 		}
 
+		if ( check_control(REVERSE_THRUST) && check_control(AFTERBURNER) ) {
+			ci->forward = -pi->max_rear_vel * 1.0f;
+		}
+
 		/*if (Player_ship->boost_pod_engaged)
 			ci->forward = 1.0f;*/
 
@@ -877,6 +881,10 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 		dest_ci->sideways = 0.0f;
 		dest_ci->bank = 0.0f;
 		dest_ci->forward = 0.0f;
+		dest_ci->forward_cruise_percent = 0.0f;
+		dest_ci->fire_countermeasure_count = 0;
+		dest_ci->fire_secondary_count = 0;
+		dest_ci->fire_primary_count = 0;
 	} else {
 		dest_ci->pitch = src_ci->pitch;
 		dest_ci->vertical = src_ci->vertical;
@@ -884,6 +892,10 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 		dest_ci->sideways = src_ci->sideways;
 		dest_ci->bank = src_ci->bank;
 		dest_ci->forward = src_ci->forward;
+		/*dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+		dest_ci->fire_countermeasure_count = src_ci->fire_countermeasure_count;
+		dest_ci->fire_secondary_count = src_ci->fire_countermeasure_count;
+		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;*/
 	}
 }
 
@@ -906,11 +918,11 @@ void read_player_controls(object *objp, float frametime)
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
 
-			if ( lua_game_control == LGC_STEERING ) {
+			if ( lua_game_control & LGC_STEERING ) {
 				// make sure to copy the control before reseting it
 				Player->lua_ci = Player->ci;
 				copy_control_info(&(Player->ci), NULL);
-			} else if ( lua_game_control == LGC_FULL ) {
+			} else if ( lua_game_control & LGC_FULL ) {
 				control_info temp;
 				// first copy over the new values, then reset
 				temp = Player->ci;

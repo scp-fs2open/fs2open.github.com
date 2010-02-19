@@ -60,12 +60,14 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_GAS_COLLECT		9
 #define SUBSYSTEM_ACTIVATION		10
 #define SUBSYSTEM_UNKNOWN			11
-
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
+
+// Goober5000
+extern char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
-#define MAX_SPLIT_PLANE				3				// number of artist specified split planes (used in big ship explosions)
+#define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
 // Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
 // the model_clear_instance, model_set_instance, model_get_instance functions.
@@ -312,8 +314,60 @@ typedef struct bsp_info {
 	bool	no_collisions; // for $no_collisions property - kazan
 	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
 
 	float		dumb_turn_rate;
+
+	/* If you've got a better way to do this, please implement it! */
+	void Reset( )
+	{
+		name[ 0 ] = '\0';
+		movement_type = 0;
+		movement_axis = 0;
+		
+		bsp_data_size = 0;
+		blown_off = 0;
+		my_replacement = 0;
+		i_replace = 0;
+		is_live_debris = 0;
+		num_live_debris = 0;
+		sii = NULL;
+		is_thruster = 0;
+		is_damaged = 0;
+		parent = 0;
+		num_children = 0;
+		first_child = 0;
+		next_sibling = 0;
+		num_details = 0;
+		num_arcs = 0;
+		indexed_vertex_buffer = 0;
+		use_render_box = 0;
+		gun_rotation = false;
+		no_collisions = false;
+		nocollide_this_only = false;
+		collide_invisible = false;
+		force_turret_normal = false;
+		dumb_turn_rate = 0.f;
+		bsp_data = NULL;
+		rad = 0.f;
+
+		/* Compound types */
+		memset( live_debris, 0, sizeof( live_debris ) );
+		memset( details, 0, sizeof( details ) );
+		memset( &geometric_center, 0, sizeof( geometric_center ) );
+		memset( &offset, 0, sizeof( offset ) );
+		memset( &orientation, 0, sizeof( orientation ) );
+		memset( &min, 0, sizeof( min ) );
+		memset( &max, 0, sizeof( max ) );
+		memset( bounding_box, 0, sizeof( bounding_box ) );
+		memset( &angs, 0, sizeof( angs ) );
+		memset( arc_pts, 0, sizeof( arc_pts ) );
+		memset( arc_type, 0, sizeof( arc_type ) );
+		memset( &render_box_min, 0, sizeof( render_box_min ) );
+		memset( &render_box_max, 0, sizeof( render_box_max ) );
+
+		buffer.clear( );
+	}
 } bsp_info;
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
@@ -416,7 +470,8 @@ typedef struct dock_bay {
 // struct that holds the indicies into path information associated with a fighter bay on a capital ship
 // NOTE: Fighter bay paths are identified by the path_name $bayN (where N is numbered from 1).
 //			Capital ships only have ONE fighter bay on the entire ship
-#define MAX_SHIP_BAY_PATHS		10
+// NOTE: MAX_SHIP_BAY_PATHS cannot be bumped higher than 31 without rewriting the arrival/departure flag logic.
+#define MAX_SHIP_BAY_PATHS		31
 typedef struct ship_bay {
 	int	num_paths;							// how many paths are associated with the model's fighter bay
 	int	path_indexes[MAX_SHIP_BAY_PATHS];	// index into polymodel->paths[] array
@@ -712,6 +767,7 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE_HTL			(1<<26)		// Show outlines (wireframe view) using HTL method
 #define MR_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
+#define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
 
 // old/obsolete flags
 //#define MR_SHOW_DAMAGE			(1<<4)		// Show the "destroyed" subobjects
@@ -774,6 +830,9 @@ extern int modelstats_num_sortnorms;
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
+
+// Gets and sets turret rotation matrix
+extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.

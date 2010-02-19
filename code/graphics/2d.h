@@ -408,6 +408,15 @@ typedef struct screen {
 	void (*gf_reset_lighting)();
 	void (*gf_set_ambient_light)(int,int,int);
 
+	// postprocessing effects
+	void (*gf_set_post_effect)(SCP_string&, int);
+	void (*gf_set_default_post_process)();
+
+	void (*gf_post_process_init)();
+	void (*gf_post_process_before)();
+	void (*gf_post_process_after)();
+	void (*gf_save_zbuffer)();
+
 	void (*gf_lighting)(bool,bool);
 	void (*gf_center_alpha)(int);
 
@@ -473,13 +482,6 @@ bool gr_unsize_screen_pos(int *x, int *y);
 bool gr_resize_screen_pos(int *x, int *y);
 bool gr_unsize_screen_posf(float *x, float *y);
 bool gr_resize_screen_posf(float *x, float *y);
-
-// Returns -1 if couldn't init font, otherwise returns the
-// font id number.  If you call this twice with the same typeface,
-// it will return the same font number both times.  This font is
-// then set to be the current font, and default font if none is 
-// yet specified.
-int gr_init_font( char * typeface );
 
 // Does formatted printing.  This calls gr_string after formatting,
 // so if you don't need to format the string, then call gr_string
@@ -699,6 +701,8 @@ __inline void gr_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibu
 #define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
 #define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
 
+#define gr_set_post_effect				GR_CALL(*gr_screen.gf_set_post_effect)
+
 #define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
 #define	gr_center_alpha					GR_CALL(*gr_screen.gf_center_alpha)
 
@@ -762,5 +766,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize=true);
 #define VERTEX_FLAG_UV3			(1<<7)	
 #define VERTEX_FLAG_UV4			(1<<8)
 #define VERTEX_FLAG_TANGENT		(1<<9)
+
+void gr_clear_shaders_cache();
 
 #endif

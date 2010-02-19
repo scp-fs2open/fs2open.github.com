@@ -101,7 +101,7 @@ ubyte Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warn
 // used for file logging
 int Log_debug_output_to_file = 1;
 FILE *Log_fp = NULL;
-char *FreeSpace_logfilename = "fs2_open.log";
+char *FreeSpace_logfilename = NULL;
 
 char safe_string[512] = { 0 };
 
@@ -1203,6 +1203,9 @@ void outwnd_init(int display_under_freespace_window)
 */
 	if (Log_fp == NULL) {
 		char pathname[MAX_PATH_LEN];
+
+		/* Set where the log file is going to go */
+		FreeSpace_logfilename = (Fred_running) ? "fred2_open.log" : "fs2_open.log";
 
 		memset( pathname, 0, sizeof(pathname) );
 		snprintf(pathname, MAX_PATH_LEN-1, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);

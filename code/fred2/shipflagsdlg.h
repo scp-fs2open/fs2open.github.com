@@ -48,7 +48,7 @@ public:
 	CButton	m_escort;
 	CButton	m_destroy;
 	CButton	m_cargo_known;
-	CButton	m_special_warp;
+	CButton	m_special_warpin;
 	CButton	m_disable_messages;
 	CButton m_no_death_scream;
 	CButton m_always_death_scream;
