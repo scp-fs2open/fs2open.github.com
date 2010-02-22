@@ -59,8 +59,8 @@ int bm_inited = 0;
 int Bm_paging = 0;
 
 // locals
-static uint Bm_next_signature = 0x1234;
-static int bm_next_handle = 1;
+static unsigned int Bm_next_signature = 0x1234;
+static int bm_next_handle = 0;
 int Bm_low_mem = 0;
 // Bm_max_ram - How much RAM bmpman can use for textures.
 // Set to <1 to make it use all it wants.
@@ -100,7 +100,7 @@ static void bm_free_data(int n, bool release = false)
 	bitmap_entry	*be;
 	bitmap			*bmp;
 
-	Assert( n >= 0 && n < MAX_BITMAPS );
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
@@ -166,7 +166,7 @@ static void bm_free_data_fast(int n)
 	bitmap_entry	*be;
 	bitmap			*bmp;
 
-	Assert( n >= 0 && n < MAX_BITMAPS );
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
@@ -366,7 +366,7 @@ int bm_create( int bpp, int w, int h, void *data, int flags )
 	bm_bitmaps[n].bm.h = (short) h;
 	bm_bitmaps[n].bm.rowsize = (short) w;
 	bm_bitmaps[n].bm.bpp = (ubyte) bpp;
-	bm_bitmaps[n].bm.flags = flags;
+	bm_bitmaps[n].bm.flags = (ubyte) flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 
@@ -558,11 +558,11 @@ int bm_load( char *real_filename )
 	bm_bitmaps[free_slot].type = type;
 	bm_bitmaps[free_slot].comp_type = c_type;
 	bm_bitmaps[free_slot].signature = Bm_next_signature++;
-	bm_bitmaps[free_slot].bm.w = short(w);
-	bm_bitmaps[free_slot].bm.rowsize = short(w);
-	bm_bitmaps[free_slot].bm.h = short(h);
+	bm_bitmaps[free_slot].bm.w = (short) w;
+	bm_bitmaps[free_slot].bm.rowsize = (short) w;
+	bm_bitmaps[free_slot].bm.h = (short) h;
 	bm_bitmaps[free_slot].bm.bpp = 0;
-	bm_bitmaps[free_slot].bm.true_bpp = bpp;
+	bm_bitmaps[free_slot].bm.true_bpp = (ubyte) bpp;
 	bm_bitmaps[free_slot].bm.flags = 0;
 	bm_bitmaps[free_slot].bm.data = 0;
 	bm_bitmaps[free_slot].bm.palette = NULL;
@@ -960,9 +960,9 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 		bm_bitmaps[n+i].info.ani.num_frames = anim_frames;
 		bm_bitmaps[n+i].info.ani.fps = (ubyte)anim_fps;
 		bm_bitmaps[n+i].info.ani.keyframe = key;
-		bm_bitmaps[n+i].bm.w = short(anim_width);
-		bm_bitmaps[n+i].bm.rowsize = short(anim_width);
-		bm_bitmaps[n+i].bm.h = short(anim_height);
+		bm_bitmaps[n+i].bm.w = (short) anim_width ;
+		bm_bitmaps[n+i].bm.rowsize = (short) anim_width;
+		bm_bitmaps[n+i].bm.h = (short) anim_height;
 		if ( reduced )	{
 			bm_bitmaps[n+i].bm.w /= 2;
 			bm_bitmaps[n+i].bm.rowsize /= 2;
@@ -1084,7 +1084,7 @@ int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *
 	}
 }
 
-uint bm_get_signature( int handle )
+unsigned int bm_get_signature(int handle)
 {
 	if ( !bm_inited ) bm_init();
 
@@ -1140,30 +1140,8 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 // basically, map the bitmap into the current palette. used to be done for all pcx's, now just for
 // Fred, since its the only thing that uses the software tmapper
 void bm_swizzle_8bit_for_fred(bitmap_entry *be, bitmap *bmp, ubyte *data, ubyte *palette)
-{		
-/* 2004/10/17 - taylor - no longer needed since FRED is OGL now
-	int pcx_xparent_index = -1;
-	int i;
-	int r, g, b;
-	ubyte palxlat[256];
-
-	for (i=0; i<256; i++ ) {
-		r = palette[i*3];
-		g = palette[i*3+1];
-		b = palette[i*3+2];
-		if ( g == 255 && r == 0 && b == 0 ) {
-			palxlat[i] = 255;
-			pcx_xparent_index = i;
-		} else {			
-			palxlat[i] = (ubyte)(palette_find( r, g, b ));			
-		}
-	}		
-	for (i=0; i<bmp->w * bmp->h; i++ ) {		
-		ubyte c = palxlat[data[i]];			
-		data[i] = c;		
-	}			
-	be->palette_checksum = gr_palette_checksum;
-*/
+{
+/* 2004/10/17 - taylor - no longer needed since FRED is OGL now*/
 }
 
 void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
@@ -1306,8 +1284,8 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 				dv = ( the_anim->height*F1_0 ) / bm->h;
 												
 				for (h = 0; h < bm->h; h++) {
-					ushort *drow = &((ushort*)dptr)[bm->w * h];
-					ushort *srow = &((ushort*)sptr)[f2i(v)*the_anim->width];
+					unsigned short *drow = &((unsigned short*)dptr)[bm->w * h];
+					unsigned short *srow = &((unsigned short*)sptr)[f2i(v)*the_anim->width];
 
 					utmp = u;
 
@@ -1340,9 +1318,6 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {
-	// int idx;	
-	// ushort bit_16;
-
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
@@ -1369,22 +1344,6 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 			break;	
 	
 		case 8:			// Going from 8 bpp to something (probably only for aabitmaps)
-			/*
-			Assert(flags & BMP_AABITMAP);
-			bmp->bpp = 16;
-			bmp->data = (uint)vm_malloc(bmp->w * bmp->h * 2);
-			bmp->flags = be->info.user.flags;
-			bmp->palette = NULL;
-
-			// go through and map the pixels
-			for(idx=0; idx<bmp->w * bmp->h; idx++){			
-				bit_16 = (ushort)((ubyte*)be->info.user.data)[idx];			
-				Assert(bit_16 <= 255);
-
-				// stuff the final result
-				memcpy((char*)bmp->data + (idx * 2), &bit_16, sizeof(ushort));
-			}
-			*/		
 			Assert(flags & BMP_AABITMAP);
 			bmp->bpp = bpp;
 			bmp->flags = be->info.user.flags;		
@@ -1492,20 +1451,20 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 #if BYTE_ORDER == BIG_ENDIAN
 	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
 	if ( (be->comp_type == BM_TYPE_DDS) || (be->comp_type == BM_TYPE_CUBEMAP_DDS) ) {
-		uint i = 0;
+		unsigned int i = 0;
 
 		if (dds_bpp == 32) {
-			uint *swap_tmp;
+			unsigned int *swap_tmp;
 
-			for (i = 0; i < (uint)be->mem_taken; i += 4) {
-				swap_tmp = (uint *)(data + i);
+			for (i = 0; i < (unsigned int)be->mem_taken; i += 4) {
+				swap_tmp = (unsigned int *)(data + i);
 				*swap_tmp = INTEL_INT(*swap_tmp);
 			}
 		} else if (dds_bpp == 16) {
-			ushort *swap_tmp;
+			unsigned short *swap_tmp;
 
-			for (i = 0; i < (uint)be->mem_taken; i += 2) {
-				swap_tmp = (ushort *)(data + i);
+			for (i = 0; i < (unsigned int)be->mem_taken; i += 2) {
+				swap_tmp = (unsigned short *)(data + i);
 				*swap_tmp = INTEL_SHORT(*swap_tmp);
 			}
 		}
@@ -1758,7 +1717,7 @@ void bm_unlock( int handle )
 
 	Assert( bm_bitmaps[bitmapnum].handle == handle );	// INVALID BITMAP HANDLE
 
-	Assert(bitmapnum >= 0 && bitmapnum < MAX_BITMAPS);
+	Assert( (bitmapnum >= 0) && (bitmapnum < MAX_BITMAPS) );
 
 	be = &bm_bitmaps[bitmapnum];
 	bmp = &be->bm;
@@ -1919,8 +1878,7 @@ int bm_unload( int handle, int clear_render_targets )
 
 	int n = handle % MAX_BITMAPS;
 
-
-	Assert(n >= 0 && n < MAX_BITMAPS);
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
@@ -1985,7 +1943,7 @@ int bm_unload_fast( int handle, int clear_render_targets )
 	int n = handle % MAX_BITMAPS;
 
 
-	Assert(n >= 0 && n < MAX_BITMAPS);
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
@@ -2356,51 +2314,51 @@ void (*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *
 void bm_set_components_argb_16_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	if ( *av == 0 ) {
-		*((ushort*)pixel) = (ushort)Gr_current_green->mask;
+		*((unsigned short*)pixel) = (unsigned short)Gr_current_green->mask;
 		return;
 	}
 
-	*((ushort*)pixel) = (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);	
+	*((unsigned short*)pixel) = (unsigned short)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((unsigned short*)pixel) |= (unsigned short)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((unsigned short*)pixel) |= (unsigned short)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);	
 }
 
 void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	if ( *av == 0 ) {
-		*((uint*)pixel) = (uint)Gr_current_green->mask;
+		*((unsigned int*)pixel) = (unsigned int)Gr_current_green->mask;
 		return;
 	}
 
-	*((uint*)pixel) = (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
+	*((unsigned int*)pixel) = (unsigned int)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((unsigned int*)pixel) |= (unsigned int)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((unsigned int*)pixel) |= (unsigned int)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
 }
 
 void bm_set_components_argb_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	if ( *av == 0 ) {
-		*((ushort*)pixel) = 0;
+		*((unsigned short*)pixel) = 0;
 		return;
 	}
 
-	*((ushort*)pixel) = (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((ushort*)pixel) |= (ushort)(Gr_current_alpha->mask);
+	*((unsigned short*)pixel) = (unsigned short)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((unsigned short*)pixel) |= (unsigned short)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((unsigned short*)pixel) |= (unsigned short)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
+	*((unsigned short*)pixel) |= (unsigned short)(Gr_current_alpha->mask);
 }
 
 void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	if ( *av == 0 ) {
-		*((uint*)pixel) = 0;
+		*((unsigned int*)pixel) = 0;
 		return;
 	}
 
-	*((uint*)pixel) = (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((uint*)pixel) |= (uint)(Gr_current_alpha->mask);
+	*((unsigned int*)pixel) = (unsigned int)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((unsigned int*)pixel) |= (unsigned int)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((unsigned int*)pixel) |= (unsigned int)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
+	*((unsigned int*)pixel) |= (unsigned int)(Gr_current_alpha->mask);
 }
 
 // for selecting pixel formats
@@ -2455,23 +2413,23 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 
 	if(r != NULL){
 		if(bit_32){
-			*r = ubyte(( (*((uint*)pixel) & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
+			*r = ubyte(( (*((unsigned int*)pixel) & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
 		} else {
-			*r = ubyte(( ( ((ushort*)pixel)[0] & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
+			*r = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_red->mask)>>Gr_current_red->shift)*Gr_current_red->scale);
 		}
 	}
 	if(g != NULL){
 		if(bit_32){
-			*g = ubyte(( (*((uint*)pixel) & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
+			*g = ubyte(( (*((unsigned int*)pixel) & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
 		} else {
-			*g = ubyte(( ( ((ushort*)pixel)[0] & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
+			*g = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_green->mask) >>Gr_current_green->shift)*Gr_current_green->scale);
 		}
 	}
 	if(b != NULL){
 		if(bit_32){
-			*b = ubyte(( (*((uint*)pixel) & Gr_current_blue->mask)>>Gr_current_blue->shift)*Gr_current_blue->scale);
+			*b = ubyte(( (*((unsigned int*)pixel) & Gr_current_blue->mask)>>Gr_current_blue->shift)*Gr_current_blue->scale);
 		} else {
-			*b = ubyte(( ( ((ushort*)pixel)[0] & Gr_current_blue->mask)>>Gr_current_blue->shift)*Gr_current_blue->scale);
+			*b = ubyte(( ( ((unsigned short*)pixel)[0] & Gr_current_blue->mask)>>Gr_current_blue->shift)*Gr_current_blue->scale);
 		}
 	}
 
@@ -2480,7 +2438,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 		*a = 1;
 		
 		Assert(!bit_32);
-		if(!( ((ushort*)pixel)[0] & 0x8000)){
+		if(!( ((unsigned short*)pixel)[0] & 0x8000)){
 			*a = 0;
 		} 
 	}
@@ -2511,6 +2469,7 @@ int bm_is_compressed(int num)
 	if (!Use_compressed_textures)
 		return 0;
 
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	Assert(num == bm_bitmaps[n].handle);
 
 	type = bm_bitmaps[n].comp_type;
@@ -2574,6 +2533,7 @@ int bm_get_size(int num)
 {
 	int n = num % MAX_BITMAPS;
 
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	Assert(num == bm_bitmaps[n].handle);
 
 	return bm_bitmaps[n].mem_taken;
@@ -2583,6 +2543,7 @@ int bm_get_num_mipmaps(int num)
 {
 	int n = num % MAX_BITMAPS;
 
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	Assert( num == bm_bitmaps[n].handle );
 
 	if (bm_bitmaps[n].num_mipmaps == 0)
@@ -2601,7 +2562,6 @@ int bm_convert_color_index_to_BGR(int num, ubyte **out_data)
 	char filename[MAX_FILENAME_LEN];
 	int i, j, bpp = 0, size = 0;
 	int index = 0, mult = 3;
-
 
 	Assert( out_data != NULL );
 	Assert( num == bm_bitmaps[n].handle );
@@ -2695,7 +2655,6 @@ void bm_print_bitmaps()
 #endif
 }
 
-
 // this will create a render target as close to the desiered resolution as posable of the following base types:
 //  - BMP_FLAG_RENDER_TARGET_STATIC
 //      static render targets are ones that you intend to draw to once or not very often in game
@@ -2754,12 +2713,12 @@ int bm_make_render_target( int width, int height, int flags )
 	bm_bitmaps[n].type = (flags & BMP_FLAG_RENDER_TARGET_STATIC) ? BM_TYPE_RENDER_TARGET_STATIC : BM_TYPE_RENDER_TARGET_DYNAMIC;
 	bm_bitmaps[n].signature = Bm_next_signature++;
 	sprintf( bm_bitmaps[n].filename, "RT_%dx%d+%d", w, h, bpp );
-	bm_bitmaps[n].bm.w = (short)w;
-	bm_bitmaps[n].bm.h = (short)h;
-	bm_bitmaps[n].bm.rowsize = (short)w;
-	bm_bitmaps[n].bm.bpp = bpp;
-	bm_bitmaps[n].bm.true_bpp = bpp;
-	bm_bitmaps[n].bm.flags = (ubyte)flags;
+	bm_bitmaps[n].bm.w = (short) w;
+	bm_bitmaps[n].bm.h = (short) h;
+	bm_bitmaps[n].bm.rowsize = (short) w;
+	bm_bitmaps[n].bm.bpp = (ubyte) bpp;
+	bm_bitmaps[n].bm.true_bpp = (ubyte) bpp;
+	bm_bitmaps[n].bm.flags = (ubyte) flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;
@@ -2836,14 +2795,3 @@ int bm_set_render_target(int handle, int face)
 	return 0;
 }
 
-/*void bm_save_render_target(int handle, int flags)
-{
-	int n = handle % MAX_BITMAPS;
-
-	Assert( n >= 0 );
-
-	Assert( flags & BMP_FLAG_RENDER_TARGET_STATIC );
-
-	gr_bm_save_render_target(slot, flags, data);
-
-}*/

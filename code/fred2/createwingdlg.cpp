@@ -17,6 +17,7 @@
 #include "object/waypoint.h"
 #include "globalincs/linklist.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -77,7 +78,7 @@ void create_wing_dlg::OnOK()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->type == OBJ_SHIP) {
+		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)){
 			i = ptr->instance;
 			if (!strnicmp(m_name, Ships[i].ship_name, strlen(m_name))) {
 				char *namep;
@@ -103,11 +104,33 @@ void create_wing_dlg::OnOK()
 		ptr = GET_NEXT(ptr);
 	}
 
-	for (i=0; i<MAX_WAYPOINT_LISTS; i++)
+	for (i=0; i<Num_iffs; i++) {
+		if (!stricmp(m_name, Iff_info[i].iff_name)) {
+			msg.Format("The name \"%s\" is already being used by a team", m_name);
+			MessageBox(msg);
+			return;
+		}
+	}
+
+	for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+		if (!stricmp(m_name, Ai_tp_list[i].name)) {
+			msg.Format("The name \"%s\" is already being used by a target priority group", m_name);
+			MessageBox(msg);
+			return;
+		}
+	}
+
+	for (i=0; i<MAX_WAYPOINT_LISTS; i++) {
 		if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_name)) {
 			MessageBox("This wing name is already being used by a waypoint path");
 			return;
 		}
-
+	}
+	
+	if (!stricmp(m_name.Left(1), "<")) {
+		MessageBox("Wing names not allowed to begin with <");
+		return;
+	}
+	
 	CDialog::OnOK();
 }

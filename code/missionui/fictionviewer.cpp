@@ -345,6 +345,9 @@ void fiction_viewer_do_frame(float frametime)
 
 int mission_has_fiction()
 {
+	if (Fred_running)
+		return *Fiction_viewer_filename != 0;
+	else
 	return (Fiction_viewer_text != NULL);
 }
 
@@ -364,12 +367,16 @@ void fiction_viewer_reset()
 		vm_free(Fiction_viewer_text);
 	Fiction_viewer_text = NULL;
 
+	*Fiction_viewer_filename = 0;
+	*Fiction_viewer_font_filename = 0;
+
 	Top_fiction_viewer_text_line = 0;
 }
 
 void fiction_viewer_load(char *filename, char *font_filename)
 {
 	int file_length;
+	Assert(filename && font_filename);
 
 	// just to be sure
 	if (Fiction_viewer_text != NULL)
@@ -378,15 +385,17 @@ void fiction_viewer_load(char *filename, char *font_filename)
 		fiction_viewer_reset();
 	}
 
-	// save our filename
+	// save our filenames
 	strcpy_s(Fiction_viewer_filename, filename);
+	strcpy_s(Fiction_viewer_font_filename, font_filename);
 
 	// see if we have a matching font
-	Fiction_viewer_fontnum = gr_get_fontnum(font_filename);
-	if (Fiction_viewer_fontnum >= 0)
-		strcpy_s(Fiction_viewer_font_filename, font_filename);
-	else
+	Fiction_viewer_fontnum = gr_get_fontnum(Fiction_viewer_font_filename);
+	if (Fiction_viewer_fontnum < 0 && !Fred_running)
 		strcpy_s(Fiction_viewer_font_filename, "");
+
+	if (!strlen(filename))
+		return;
 
 	// load up the text
 	CFILE *fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
@@ -396,6 +405,9 @@ void fiction_viewer_load(char *filename, char *font_filename)
 		return;
 	}
 
+	// we don't need to copy the text in Fred
+	if (!Fred_running)
+	{
 	// allocate space
 	file_length = cfilelength(fp);
 	Fiction_viewer_text = (char *) vm_malloc(file_length + 1);
@@ -403,6 +415,7 @@ void fiction_viewer_load(char *filename, char *font_filename)
 
 	// copy all the text
 	cfread(Fiction_viewer_text, file_length, 1, fp);
+	}
 
 	// we're done, close it out
 	cfclose(fp);

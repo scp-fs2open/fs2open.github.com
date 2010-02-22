@@ -1988,6 +1988,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
+				if (!stricmp(CTEXT(node), "<species support ship class>"))
+					break;
+
 				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
@@ -4645,19 +4648,19 @@ int sexp_special_warp_dist( int n)
 	}
 
 	// check that ship has warpout_objnum
-	if (Ships[shipnum].special_warp_objnum == -1) {
+	if (Ships[shipnum].special_warpout_objnum < 0) {
 		return SEXP_NAN;
 	}
 	
-	Assert( (Ships[shipnum].special_warp_objnum >= 0) && (Ships[shipnum].special_warp_objnum < MAX_OBJECTS));
-	if ( (Ships[shipnum].special_warp_objnum < 0) && (Ships[shipnum].special_warp_objnum >= MAX_OBJECTS) ) {
+	Assert( (Ships[shipnum].special_warpout_objnum >= 0) && (Ships[shipnum].special_warpout_objnum < MAX_OBJECTS));
+	if ( (Ships[shipnum].special_warpout_objnum < 0) && (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
 		return SEXP_NAN;
 	}
 
 	// check the special warpout device is valid
 	int valid = FALSE;
 	object *ship_objp = &Objects[Ships[shipnum].objnum];
-	object *warp_objp = &Objects[Ships[shipnum].special_warp_objnum];
+	object *warp_objp = &Objects[Ships[shipnum].special_warpout_objnum];
 	if (warp_objp->type == OBJ_SHIP) {
 		if (Ship_info[Ships[warp_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
 			valid = TRUE;
@@ -5768,6 +5771,18 @@ int sexp_get_object_coordinate(int n, int axis)
 	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
 }
 
+void set_object_for_clients(object *objp)
+{
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		return;
+	}
+
+	// Tell the player (if this is a client) that they've moved.
+	if ((objp->flags & OF_PLAYER_SHIP) && (objp != Player_obj) ){
+		multi_oo_send_changed_object(objp);
+	}
+}
+
 void sexp_set_object_position(int n) 
 {
 	vec3d target_vec, orig_leader_vec;
@@ -5793,6 +5808,7 @@ void sexp_set_object_position(int n)
 			// move the first one first
 			orig_leader_vec = oswpt.objp->pos;
 			oswpt.objp->pos = target_vec;
+			set_object_for_clients(oswpt.objp);
 
 			// move everything on the team
 			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
@@ -5803,6 +5819,7 @@ void sexp_set_object_position(int n)
 				{
 					vm_vec_sub2(&objp->pos, &orig_leader_vec);
 					vm_vec_add2(&objp->pos, &target_vec);
+					set_object_for_clients(objp);
 				}
 			}
 
@@ -5813,10 +5830,7 @@ void sexp_set_object_position(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
-			// Tell the player that they've moved.
-			if( Game_mode & GM_MULTIPLAYER ) {
-				multi_oo_send_changed_object(oswpt.objp);
-			}
+			set_object_for_clients(oswpt.objp);
 			return;
 		}
 
@@ -5825,6 +5839,7 @@ void sexp_set_object_position(int n)
 			// move the wing leader first
 			orig_leader_vec = oswpt.objp->pos;
 			oswpt.objp->pos = target_vec;
+			set_object_for_clients(oswpt.objp);
 
 			// move everything in the wing
 			for (int i = 0; i < oswpt.wingp->current_count; i++)
@@ -5835,6 +5850,7 @@ void sexp_set_object_position(int n)
 				{
 					vm_vec_sub2(&objp->pos, &orig_leader_vec);
 					vm_vec_add2(&objp->pos, &target_vec);
+					set_object_for_clients(objp);
 				}
 			}
 
@@ -5882,10 +5898,8 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 
 	// set orientation -----------------------------
 	objp->orient = m_orient;
-	// Tell the player that they've moved.
-	if( Game_mode & GM_MULTIPLAYER ) {
-		multi_oo_send_changed_object(objp);
-	}
+	// Tell the player (assuming it's a client) that they've moved.
+	set_object_for_clients(objp);
 }
 
 // Goober5000
@@ -6594,7 +6608,7 @@ int sexp_special_warpout_name( int node )
 	}
 
 	// set special warpout objnum
-	Ships[shipnum].special_warp_objnum = Ships[knossos_shipnum].objnum;
+	Ships[shipnum].special_warpout_objnum = Ships[knossos_shipnum].objnum;
 	return SEXP_FALSE;
 }
 
@@ -8577,9 +8591,11 @@ void sexp_explosion_effect(int n)
 						ship_apply_global_damage( objp, NULL, &origin, t_damage );
 						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
+						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
 						vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 						vm_vec_scale( &force, (float)max_blast );
 						ship_apply_whack( &force, &vec_ship_to_impact, objp );
+						}
 						break;
 
 					case OBJ_ASTEROID:
@@ -14207,7 +14223,7 @@ void sexp_set_support_ship(int n)
 	// get ship class
 	n = CDR(n);
 	temp_val = ship_info_lookup(CTEXT(n));
-	if ((temp_val < 0) && (stricmp(CTEXT(n), "<any support ship class>")))
+	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>")) && (stricmp(CTEXT(n), "<any support ship class>"))) )
 	{
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
@@ -15300,7 +15316,7 @@ int sexp_is_primary_selected(int node)
 	}
 
 	// is this the bank currently selected
-	if(bank == shipp->weapons.current_primary_bank){
+	if( (bank == shipp->weapons.current_primary_bank) || (shipp->flags & SF_PRIMARY_LINKED) ){
 		return SEXP_TRUE;
 	}
 
@@ -24180,7 +24196,7 @@ sexp_help_struct Sexp_help[] = {
 	//WMC
 	{ OP_CURRENT_SPEED, "current-speed\r\n"
 		"\tReturns the speed of the given object. Takes 1 argument...\r\n"
-		"\t1:\tHUD gauge to be modified"
+		"\t1:\tName of the object"
 	},
 
 	// Karajora

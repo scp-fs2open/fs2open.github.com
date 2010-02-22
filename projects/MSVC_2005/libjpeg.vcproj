@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="libjpeg"
-	ProjectGUID="{42A241F2-7996-4AAF-8491-FB885E2DC37D}"
+	ProjectGUID="{3842E37A-A368-401A-BDEA-721DEE9A3F75}"
 	>
 	<Platforms>
 		<Platform
@@ -15,12 +15,13 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory=".\Debug"
+			IntermediateDirectory=".\Debug\Profile\libjpeg"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="0"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,16 +41,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="_LIB;WIN32;_DEBUG;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_LIB;WIN32;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
+				PrecompiledHeaderFile=".\Debug\Profile\libjpeg/libjpeg.pch"
+				AssemblerListingLocation=".\Debug\Profile\libjpeg/"
+				ObjectFile=".\Debug\Profile\libjpeg/"
+				ProgramDataBaseFileName=".\Debug\Profile\libjpeg/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -68,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libjpeg_d.lib"
+				OutputFile="Debug\libjpeg_d.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -80,7 +79,7 @@
 			<Tool
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
-				OutputFile="$(IntDir)\$(ProjectName).bsc"
+				OutputFile="Debug/libjpeg_d.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -90,13 +89,14 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			Name="Release Inferno|Win32"
+			OutputDirectory=".\Release_Inferno"
+			IntermediateDirectory=".\Release_Inferno\Profile\libjpeg"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="0"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -117,19 +117,16 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				StringPooling="true"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				BrowseInformation="1"
+				PrecompiledHeaderFile=".\Release_Inferno\Profile\libjpeg/libjpeg.pch"
+				AssemblerListingLocation=".\Release_Inferno\Profile\libjpeg/"
+				ObjectFile=".\Release_Inferno\Profile\libjpeg/"
+				ProgramDataBaseFileName=".\Release_Inferno\Profile\libjpeg/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -144,7 +141,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libjpeg.lib"
+				OutputFile=".\Release_Inferno\libjpeg.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -156,7 +153,156 @@
 			<Tool
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
-				OutputFile="$(IntDir)\$(ProjectName).bsc"
+				OutputFile="Release_Inferno\Profile\libjpeg.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release\Profile\libjpeg"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Release\Profile\libjpeg/libjpeg.pch"
+				AssemblerListingLocation=".\Release\Profile\libjpeg/"
+				ObjectFile=".\Release\Profile\libjpeg/"
+				ProgramDataBaseFileName=".\Release\Profile\libjpeg/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile=".\Release\libjpeg.lib"
+				SuppressStartupBanner="true"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile="Release\Profile\libjpeg.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug Inferno|Win32"
+			OutputDirectory=".\Debug_Inferno"
+			IntermediateDirectory=".\Debug_Inferno\Profile\libjpeg"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				PreprocessorDefinitions="_LIB;WIN32;_DEBUG"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				PrecompiledHeaderFile=".\Debug_Inferno\Profile\libjpeg/libjpeg.pch"
+				AssemblerListingLocation=".\Debug_Inferno\Profile\libjpeg/"
+				ObjectFile=".\Debug_Inferno\Profile\libjpeg/"
+				ProgramDataBaseFileName=".\Debug_Inferno\Profile\libjpeg/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile="Debug_Inferno\libjpeg_d.lib"
+				SuppressStartupBanner="true"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile="Debug_Inferno/libjpeg_d.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -185,7 +331,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -205,7 +367,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -225,7 +403,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -245,7 +439,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -265,7 +475,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -285,7 +511,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -305,7 +547,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -325,7 +583,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -345,7 +619,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -365,7 +655,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -385,7 +691,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -405,7 +727,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -425,7 +763,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -445,7 +799,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -465,7 +835,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -485,7 +871,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -505,7 +907,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -525,7 +943,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -545,7 +979,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -565,7 +1015,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -585,7 +1051,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -605,7 +1087,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -625,7 +1123,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -645,7 +1159,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -665,7 +1195,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -685,7 +1231,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -705,7 +1267,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -725,7 +1303,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -745,7 +1339,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -765,7 +1375,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -785,7 +1411,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -805,7 +1447,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -825,7 +1483,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -845,7 +1519,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -865,7 +1555,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -885,7 +1591,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -905,7 +1627,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -925,7 +1663,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -945,7 +1699,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -965,7 +1735,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -985,7 +1771,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1005,7 +1807,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1025,7 +1843,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1045,7 +1879,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1065,7 +1915,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1085,7 +1951,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"

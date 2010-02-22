@@ -109,6 +109,7 @@ typedef struct support_ship_info {
 #define	MOVIE_PRE_BRIEF			2
 #define	MOVIE_PRE_GAME			3
 #define	MOVIE_PRE_DEBRIEF		4
+#define MOVIE_END_CAMPAIGN		5
 
 // defines a mission cutscene.
 typedef struct mission_cutscene {

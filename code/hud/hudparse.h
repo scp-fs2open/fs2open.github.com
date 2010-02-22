@@ -33,6 +33,8 @@ typedef struct hud_info
 	int Wenergy_size[2];
 	char Aburn_fname[MAX_FILENAME_LEN];
 	char Wenergy_fname[MAX_FILENAME_LEN];
+	bool Aburn_move_flag;
+	bool Wenergy_move_flag;
 	//Hudescort
 	int Escort_coords[2];
 
@@ -58,6 +60,8 @@ typedef struct hud_info
 	int custom_gauge_frames[MAX_CUSTOM_HUD_GAUGES];
 	char custom_gauge_text[MAX_CUSTOM_HUD_GAUGES][NAME_LENGTH];
 	color custom_gauge_colors[MAX_CUSTOM_HUD_GAUGES];
+	int custom_gauge_color_parents[MAX_CUSTOM_HUD_GAUGES];
+	bool custom_gauge_moveflags[MAX_CUSTOM_HUD_GAUGES];
 
 //	int gauge_text_sexp_vars[MAX_HUD_GAUGE_TYPES];
 //	int gauge_frame_sexp_vars[MAX_HUD_GAUGE_TYPES];
@@ -67,6 +71,8 @@ typedef struct hud_info
 	hud_info( )
 		: loaded( false )
 	{
+		int i;
+
 		memset( resolution, 0, sizeof( resolution ) );
 		memset( Player_shield_coords, 0, sizeof( Player_shield_coords ) );
 		memset( Target_shield_coords, 0, sizeof( Target_shield_coords ) );
@@ -98,6 +104,11 @@ typedef struct hud_info
 		memset( custom_gauge_frames, 0, sizeof( custom_gauge_frames ) );
 		memset( custom_gauge_text, 0, sizeof( custom_gauge_text ) );
 		memset( custom_gauge_colors, 0, sizeof( custom_gauge_colors ) );
+		memset( custom_gauge_moveflags, 0, sizeof( custom_gauge_moveflags ) );
+
+		for (i = 0; i < MAX_CUSTOM_HUD_GAUGES; ++i) {
+			custom_gauge_color_parents[i] = -1;
+	}
 	}
 } hud_info;
 
@@ -115,6 +126,8 @@ typedef struct gauge_info
 	size_t frame_dest;	//Storage spot for frame info
 	size_t text_dest;	//Storage spot for text value
 	size_t color_dest;	//Storage spot for color value
+	size_t color_parent_dest;	//Storage spot for color value
+	size_t moveflag_dest;	//Storage spot for pan view move boolean
 	int placement_flags;
 	int show_flags;	//Show outside ship?
 	//int (*update_gauge)(gauge_info* cg);	//Function to update the gauge
@@ -127,6 +140,7 @@ typedef struct gauge_info
 #define HUD_INT(a, b) ((int*)((char*)a + b))
 #define HUD_CHAR(a, b) ((char *)((char*)a + b))
 #define HUD_COLOR(a, b) ((color *)((char*)a + b))
+#define HUD_BOOL(a, b) ((bool *)((char*)a + b))
 
 //Variables
 extern int Num_custom_gauges;

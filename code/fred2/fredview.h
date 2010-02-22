@@ -298,6 +298,7 @@ protected:
 	afx_msg void OnUpdateFormatFs1Retail(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsSetGlobalShipFlags();
 	afx_msg void OnEditorsVoiceManager();
+	afx_msg void OnEditorsFiction();
 	afx_msg void OnDestroy();
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);

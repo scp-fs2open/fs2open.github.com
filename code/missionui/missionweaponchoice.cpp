@@ -37,7 +37,7 @@
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
 #include "network/multi_pmsg.h"
-
+#include "parse/parselo.h"
 
 
 
@@ -2793,9 +2793,14 @@ void weapon_select_do(float frametime)
 					//Draw the weapon name, crappy last-ditch effort to not crash.
 					int half_x, half_y;
 					char *print_name = (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0]) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name;
+
+					// Truncate the # and everything to the right. Zacam
+					end_string_at_first_hash_symbol(print_name);
+					
+					// Center-align and fit the text for display
 					gr_get_string_size(&half_x, &half_y, print_name);
 					half_x = sx +((56 - half_x) / 2);
-					half_y = sy +((24 - half_y) / 2);
+					half_y = sy +((28 - half_y) / 2); // Was ((24 - half_y) / 2) Zacam
 					gr_string(half_x, half_y, print_name);
 				}
 			}
@@ -3044,9 +3049,14 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 			//Draw the weapon name, crappy last-ditch effort to not crash.
 			int half_x, half_y;
 			char *print_name = (Weapon_info[index].alt_name[0]) ? Weapon_info[index].alt_name : Weapon_info[index].name;
+
+			// Truncate the # and everything to the right. Zacam
+			end_string_at_first_hash_symbol(print_name);
+
+			// Center-align and fit the text for display
 			gr_get_string_size(&half_x, &half_y, print_name);
 			half_x = x +((56 - half_x) / 2);
-			half_y = y +((24 - half_y) / 2);
+			half_y = y +((28 - half_y) / 2); // Was ((24 - half_y) / 2) Zacam
 			gr_string(half_x, half_y, print_name);
 		}
 	}

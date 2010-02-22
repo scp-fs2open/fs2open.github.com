@@ -52,6 +52,7 @@
 #include "DumpStats.h"
 #include "SetGlobalShipFlags.h"
 #include "VoiceActingManager.h"
+#include "FictionViewerDlg.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
@@ -344,6 +345,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
 	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
+	ON_COMMAND(ID_EDITORS_FICTION, OnEditorsFiction)
 	ON_WM_DESTROY()
 	ON_WM_CREATE()
 	ON_WM_ERASEBKGND()
@@ -4573,6 +4575,13 @@ void CFREDView::OnEditorsSetGlobalShipFlags()
 void CFREDView::OnEditorsVoiceManager()
 {
 	VoiceActingManager dlg;
+
+	dlg.DoModal();
+}
+
+void CFREDView::OnEditorsFiction()
+{
+	FictionViewerDlg dlg;
 
 	dlg.DoModal();
 }

@@ -681,7 +681,6 @@
 		F0AAA8C710FA0ACE0086B1B4 /* png.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA8B110FA0ACE0086B1B4 /* png.h */; };
 		F0AAA8C810FA0ACE0086B1B4 /* pngconf.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */; };
 		F0AAA8C910FA0ACE0086B1B4 /* pngerror.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B310FA0ACE0086B1B4 /* pngerror.c */; };
-		F0AAA8CA10FA0ACE0086B1B4 /* pnggccrd.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B410FA0ACE0086B1B4 /* pnggccrd.c */; };
 		F0AAA8CB10FA0ACE0086B1B4 /* pngget.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B510FA0ACE0086B1B4 /* pngget.c */; };
 		F0AAA8CC10FA0ACE0086B1B4 /* pngmem.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B610FA0ACE0086B1B4 /* pngmem.c */; };
 		F0AAA8CD10FA0ACE0086B1B4 /* pngpread.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8B710FA0ACE0086B1B4 /* pngpread.c */; };
@@ -692,7 +691,6 @@
 		F0AAA8D210FA0ACE0086B1B4 /* pngset.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BC10FA0ACE0086B1B4 /* pngset.c */; };
 		F0AAA8D310FA0ACE0086B1B4 /* pngtest.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BD10FA0ACE0086B1B4 /* pngtest.c */; };
 		F0AAA8D410FA0ACE0086B1B4 /* pngtrans.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BE10FA0ACE0086B1B4 /* pngtrans.c */; };
-		F0AAA8D510FA0ACE0086B1B4 /* pngvcrd.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8BF10FA0ACE0086B1B4 /* pngvcrd.c */; };
 		F0AAA8D610FA0ACE0086B1B4 /* pngwio.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8C010FA0ACE0086B1B4 /* pngwio.c */; };
 		F0AAA8D710FA0ACE0086B1B4 /* pngwrite.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8C110FA0ACE0086B1B4 /* pngwrite.c */; };
 		F0AAA8D810FA0ACE0086B1B4 /* pngwtran.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA8C210FA0ACE0086B1B4 /* pngwtran.c */; };
@@ -724,8 +722,6 @@
 		F0AAA94D10FA0D060086B1B4 /* zlib.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93410FA0D060086B1B4 /* zlib.h */; };
 		F0AAA94E10FA0D060086B1B4 /* zutil.c in Sources */ = {isa = PBXBuildFile; fileRef = F0AAA93510FA0D060086B1B4 /* zutil.c */; };
 		F0AAA94F10FA0D060086B1B4 /* zutil.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93610FA0D060086B1B4 /* zutil.h */; };
-		F0B73A9210FA065F005E1A69 /* pngutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0B73A9010FA065F005E1A69 /* pngutils.cpp */; };
-		F0B73A9310FA065F005E1A69 /* pngutils.h in Headers */ = {isa = PBXBuildFile; fileRef = F0B73A9110FA065F005E1A69 /* pngutils.h */; };
 		F0B73A9410FA065F005E1A69 /* pngutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0B73A9010FA065F005E1A69 /* pngutils.cpp */; };
 		F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */ = {isa = PBXBuildFile; fileRef = F0B73A9110FA065F005E1A69 /* pngutils.h */; };
 /* End PBXBuildFile section */
@@ -855,14 +851,14 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = F0AAA85C10FA0A7C0086B1B4 /* png */;
+			remoteGlobalIDString = F0AAA85C10FA0A7C0086B1B4;
 			remoteInfo = png;
 		};
 		F0AAA91410FA0CEC0086B1B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = F0AAA8F010FA0CAA0086B1B4 /* zlib */;
+			remoteGlobalIDString = F0AAA8F010FA0CAA0086B1B4;
 			remoteInfo = zlib;
 		};
 /* End PBXContainerItemProxy section */
@@ -1626,15 +1622,11 @@
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
 		F0A86D641000AD6B006CB60B /* vmallocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmallocator.h; sourceTree = "<group>"; };
-		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
-		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
-		F0ED18A0101064C70011978C /* safe_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings.cpp; sourceTree = "<group>"; };
 		F0AAA8A310FA0A7C0086B1B4 /* libpng.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libpng.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		F0AAA8B010FA0ACE0086B1B4 /* png.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = png.c; sourceTree = "<group>"; };
 		F0AAA8B110FA0ACE0086B1B4 /* png.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = png.h; sourceTree = "<group>"; };
 		F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngconf.h; sourceTree = "<group>"; };
 		F0AAA8B310FA0ACE0086B1B4 /* pngerror.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngerror.c; sourceTree = "<group>"; };
-		F0AAA8B410FA0ACE0086B1B4 /* pnggccrd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pnggccrd.c; sourceTree = "<group>"; };
 		F0AAA8B510FA0ACE0086B1B4 /* pngget.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngget.c; sourceTree = "<group>"; };
 		F0AAA8B610FA0ACE0086B1B4 /* pngmem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngmem.c; sourceTree = "<group>"; };
 		F0AAA8B710FA0ACE0086B1B4 /* pngpread.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngpread.c; sourceTree = "<group>"; };
@@ -1645,7 +1637,6 @@
 		F0AAA8BC10FA0ACE0086B1B4 /* pngset.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngset.c; sourceTree = "<group>"; };
 		F0AAA8BD10FA0ACE0086B1B4 /* pngtest.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngtest.c; sourceTree = "<group>"; };
 		F0AAA8BE10FA0ACE0086B1B4 /* pngtrans.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngtrans.c; sourceTree = "<group>"; };
-		F0AAA8BF10FA0ACE0086B1B4 /* pngvcrd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngvcrd.c; sourceTree = "<group>"; };
 		F0AAA8C010FA0ACE0086B1B4 /* pngwio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwio.c; sourceTree = "<group>"; };
 		F0AAA8C110FA0ACE0086B1B4 /* pngwrite.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwrite.c; sourceTree = "<group>"; };
 		F0AAA8C210FA0ACE0086B1B4 /* pngwtran.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pngwtran.c; sourceTree = "<group>"; };
@@ -1680,6 +1671,9 @@
 		F0AAA93610FA0D060086B1B4 /* zutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zutil.h; sourceTree = "<group>"; };
 		F0B73A9010FA065F005E1A69 /* pngutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pngutils.cpp; sourceTree = "<group>"; };
 		F0B73A9110FA065F005E1A69 /* pngutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngutils.h; sourceTree = "<group>"; };
+		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
+		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
+		F0ED18A0101064C70011978C /* safe_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings.cpp; sourceTree = "<group>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
 		F5A47A9E01A0483001D3D55B /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -3243,7 +3237,6 @@
 				F0AAA8B110FA0ACE0086B1B4 /* png.h */,
 				F0AAA8B210FA0ACE0086B1B4 /* pngconf.h */,
 				F0AAA8B310FA0ACE0086B1B4 /* pngerror.c */,
-				F0AAA8B410FA0ACE0086B1B4 /* pnggccrd.c */,
 				F0AAA8B510FA0ACE0086B1B4 /* pngget.c */,
 				F0AAA8B610FA0ACE0086B1B4 /* pngmem.c */,
 				F0AAA8B710FA0ACE0086B1B4 /* pngpread.c */,
@@ -3254,7 +3247,6 @@
 				F0AAA8BC10FA0ACE0086B1B4 /* pngset.c */,
 				F0AAA8BD10FA0ACE0086B1B4 /* pngtest.c */,
 				F0AAA8BE10FA0ACE0086B1B4 /* pngtrans.c */,
-				F0AAA8BF10FA0ACE0086B1B4 /* pngvcrd.c */,
 				F0AAA8C010FA0ACE0086B1B4 /* pngwio.c */,
 				F0AAA8C110FA0ACE0086B1B4 /* pngwrite.c */,
 				F0AAA8C210FA0ACE0086B1B4 /* pngwtran.c */,
@@ -4319,7 +4311,6 @@
 			files = (
 				F0AAA8C610FA0ACE0086B1B4 /* png.c in Sources */,
 				F0AAA8C910FA0ACE0086B1B4 /* pngerror.c in Sources */,
-				F0AAA8CA10FA0ACE0086B1B4 /* pnggccrd.c in Sources */,
 				F0AAA8CB10FA0ACE0086B1B4 /* pngget.c in Sources */,
 				F0AAA8CC10FA0ACE0086B1B4 /* pngmem.c in Sources */,
 				F0AAA8CD10FA0ACE0086B1B4 /* pngpread.c in Sources */,
@@ -4330,7 +4321,6 @@
 				F0AAA8D210FA0ACE0086B1B4 /* pngset.c in Sources */,
 				F0AAA8D310FA0ACE0086B1B4 /* pngtest.c in Sources */,
 				F0AAA8D410FA0ACE0086B1B4 /* pngtrans.c in Sources */,
-				F0AAA8D510FA0ACE0086B1B4 /* pngvcrd.c in Sources */,
 				F0AAA8D610FA0ACE0086B1B4 /* pngwio.c in Sources */,
 				F0AAA8D710FA0ACE0086B1B4 /* pngwrite.c in Sources */,
 				F0AAA8D810FA0ACE0086B1B4 /* pngwtran.c in Sources */,
@@ -4495,7 +4485,6 @@
 					_DEBUG,
 					SCP_UNIX,
 					USE_OPENAL,
-					NO_DIRECT3D,
 					APPLE_APP,
 				);
 				HEADER_SEARCH_PATHS = (
@@ -4609,7 +4598,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = NO;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_MODEL_TUNING = G5;
@@ -4641,7 +4630,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_DEBUGGING_SYMBOLS = default;
@@ -4963,7 +4952,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = NO;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_MODEL_TUNING = G5;
@@ -5035,8 +5024,8 @@
 					_DEBUG,
 					SCP_UNIX,
 					USE_OPENAL,
-					NO_DIRECT3D,
 					APPLE_APP,
+					INF_BUILD,
 				);
 				HEADER_SEARCH_PATHS = (
 					../../code,
@@ -5257,7 +5246,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.11-trunk";
+				CURRENT_PROJECT_VERSION = "3.6.13-trunk";
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_DEBUGGING_SYMBOLS = default;
@@ -5265,11 +5254,11 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					INF_BUILD,
 					NDEBUG,
 					SCP_UNIX,
 					USE_OPENAL,
 					APPLE_APP,
+					INF_BUILD,
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_UNROLL_LOOPS = YES;
@@ -5319,6 +5308,13 @@
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					APPLE_APP,
+					INF_BUILD,
+				);
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/Ogg.framework/Headers,

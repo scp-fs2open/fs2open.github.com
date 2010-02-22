@@ -4821,6 +4821,7 @@ void hud_show_afterburner_gauge()
 {
 	float percent_left;
 	int	clip_h,w,h;	
+	int nose_offset_x = 0, nose_offset_y = 0;
 
 	if ( Aburn_bar_gauge.first_frame == -1 ){
 		return;
@@ -4842,13 +4843,19 @@ void hud_show_afterburner_gauge()
 	clip_h = fl2i( (1.0f - percent_left) * current_hud->Aburn_size[0] + 0.5f );
 
 	bm_get_info(Aburn_bar_gauge.first_frame,&w,&h);
+
+	if (current_hud->Aburn_move_flag)
+	{
+		nose_offset_x = HUD_nose_x;
+		nose_offset_y = HUD_nose_y;
+	}
 	
 	if ( clip_h > 0) {
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1] + HUD_nose_y,w,clip_h,0,0);		
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0] + nose_offset_x, current_hud->Aburn_coords[1] + nose_offset_y,w,clip_h,0,0);
 	}
 
 	if ( clip_h <= current_hud->Aburn_size[0] ) {		
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1]+clip_h + HUD_nose_y,w,h-clip_h,0,clip_h);
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0] + nose_offset_x, current_hud->Aburn_coords[1]+clip_h + nose_offset_y,w,h-clip_h,0,clip_h);
 	} 	
 }
 
@@ -4857,6 +4864,7 @@ void hud_show_weapon_energy_gauge()
 {
 	int x;
 	bool use_new_gauge = false;
+	int nose_offset_x = 0, nose_offset_y = 0;
 
 	// Goober5000 - only check for the new gauge in case of command line + a ballistic-capable ship
 	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
@@ -4870,6 +4878,12 @@ void hud_show_weapon_energy_gauge()
 			}
 		}
 	}
+ 
+	if (current_hud->Aburn_move_flag)
+	{
+		nose_offset_x = HUD_nose_x;
+		nose_offset_y = HUD_nose_y;
+	}
 
 	if(use_new_gauge)
 	{
@@ -4877,8 +4891,8 @@ void hud_show_weapon_energy_gauge()
 		int y;
 		int max_w = 100;
 		float remaining;
-		currentx = current_hud->Wenergy_coords[0] + 10;
-		currenty = current_hud->Wenergy_coords[1];
+		currentx = current_hud->Wenergy_coords[0] + 10 + nose_offset_x;
+		currenty = current_hud->Wenergy_coords[1] + nose_offset_y;
 		if(gr_screen.max_w_unscaled == 640) {
 			max_w = 60;
 		}
@@ -4980,7 +4994,7 @@ void hud_show_weapon_energy_gauge()
 			sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
 			hud_num_make_mono(buf);
 		//	gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
-			gr_string(current_hud->Wenergy_text_coords[0] + HUD_nose_x, current_hud->Wenergy_text_coords[1] + HUD_nose_y, buf);
+			gr_string(current_hud->Wenergy_text_coords[0] + nose_offset_x, current_hud->Wenergy_text_coords[1] + nose_offset_y, buf);
 		}
 
 		hud_set_gauge_color(HUD_WEAPONS_ENERGY);
@@ -5002,11 +5016,11 @@ void hud_show_weapon_energy_gauge()
 		bm_get_info(Wenergy_bar_gauge.first_frame+2,&w,&h);
 		
 		if ( clip_h > 0 ) {
-			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0] + HUD_nose_x, current_hud->Wenergy_coords[1] + HUD_nose_y, w,clip_h,0,0);		
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0] + nose_offset_x, current_hud->Wenergy_coords[1] + nose_offset_y, w,clip_h,0,0);
 		}
 
 		if ( clip_h <= current_hud->Wenergy_size[0] ) {
-			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0] + HUD_nose_x, current_hud->Wenergy_coords[1] + clip_h + HUD_nose_y, w,h-clip_h,0,clip_h);		
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0] + nose_offset_x, current_hud->Wenergy_coords[1] + clip_h + nose_offset_y, w,h-clip_h,0,clip_h);		
 		}
 
 		// hud_set_default_color();

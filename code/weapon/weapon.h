@@ -101,6 +101,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_CAN_BE_TARGETED			(1 << 20)	// allows non-bomb weapons to be targeted
 #define WIF2_SHOWN_ON_RADAR				(1 << 21)	// allows non-bombs be visible on radar
 #define WIF2_SHOW_FRIENDLY				(1 << 22)	// allows friendly weapon radar dots be drawn
+#define WIF2_CAPITAL_PLUS				(1 << 23)   // AI will not use this weapon on fighters or bombers
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)

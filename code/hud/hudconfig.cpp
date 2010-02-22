@@ -47,6 +47,48 @@ int HC_fname_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 HUD_CONFIG_TYPE HUD_config;	// Player HUD configuration
+ 
+char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH] = {
+	"lead indicator",
+	"target orientation",
+	"closest attacking hostile",
+	"current target direction",
+	"mission time",
+	"reticle",
+	"throttle",
+	"radar",
+	"target monitor",
+	"center of reticle",
+	"extra target info",
+	"target shield",
+	"player shield",
+	"power management",
+	"auto-target icon",
+	"auto-speed-match icon",
+	"weapons display",
+	"monitoring view",
+	"directives view",
+	"threat gauge",
+	"afterburner energy",
+	"weapons energy",
+	"weapon linking",
+	"target hull/shield icon",
+	"offscreen indicator",
+	"comm video",
+	"damage display",
+	"message output",
+	"locked missile direction",
+	"countermeasures",
+	"objective notify",
+	"wingmen status",
+	"offscreen range",
+	"kills gauge",
+	"attacking target count",
+	"warning flash",
+	"comm menu",
+	"support gauge",
+	"lag gauge"
+};
 
 // specify the max distance that the radar should detect objects
 // See RR_ #defines in HUDconfig.h.

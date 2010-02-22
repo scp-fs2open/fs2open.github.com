@@ -4335,7 +4335,7 @@ void game_simulation_frame()
 		message_maybe_distort();				// maybe distort incoming message if comms damaged
 		player_repair_frame(flFrametime);	//	AI objects get repaired in ai_process, called from move code...deal with player.
 		player_process_pending_praise();		// maybe send off a delayed praise message to the player
-		player_maybe_play_all_alone_msg();	// mabye tell the player he is all alone	
+		player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
 	}
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		

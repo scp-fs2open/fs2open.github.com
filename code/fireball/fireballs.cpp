@@ -623,7 +623,7 @@ int fireball_is_warp(object * obj)
 	return 0;
 }
 
-// mabye play sound effect for warp hole closing
+// maybe play sound effect for warp hole closing
 void fireball_maybe_play_warp_close_sound(fireball *fb)
 {
 	float life_left;

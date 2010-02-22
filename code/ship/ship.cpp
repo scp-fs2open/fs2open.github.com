@@ -332,7 +332,8 @@ flag_def_list ai_tgt_weapon_flags[] = {
 	{ "aspect seeking",		WIF_HOMING_ASPECT,		0 },
 	{ "engine seeking",		WIF_HOMING_JAVELIN,		0 },
 	{ "pierce shields",		WIF2_PIERCE_SHIELDS,	1 },
-	{ "local ssm",			WIF2_LOCAL_SSM,			1 }
+	{ "local ssm",			WIF2_LOCAL_SSM,			1 },
+	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
 };
 
 int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -4443,7 +4444,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
-	shipp->special_warp_objnum = -1;
+	shipp->special_warpin_objnum = -1;
+	shipp->special_warpout_objnum = -1;
 
 	polymodel *pm = model_get(sip->model_num);
 
@@ -10566,7 +10568,7 @@ int wing_lookup(char *name)
 {
    int idx;
 	for(idx=0;idx<Num_wings;idx++)
-		if(strcmp(Wings[idx].name,name)==0)
+		if(stricmp(Wings[idx].name,name)==0)
 		   return idx;
 
 	return -1;
@@ -11804,11 +11806,6 @@ object *ship_find_repair_ship( object *requester_obj )
 
 	Assert(requester_obj->type == OBJ_SHIP);
 	Assert((requester_obj->instance >= 0) && (requester_obj->instance < MAX_OBJECTS));
-
-	// if support ships are not allowed, then no support ship can repair!
-	if ( !is_support_allowed(requester_obj) ) {
-		return NULL;
-	}
 
 	num_support_ships = 0;
 	num_available_support_ships = 0;
@@ -14678,7 +14675,8 @@ int is_support_allowed(object *objp)
 	// restricted number allowed
 	if (The_mission.support_ships.max_support_ships > 0)
 	{
-		if (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships)
+		// if all the allowed ships have been used up and there are no support ships currently in the mission - can't rearm
+		if ((The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships) && (ship_find_repair_ship(objp) == NULL))
 			return 0;
 	}
 

@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="Fred2"
-	ProjectGUID="{92C8C611-75AA-4BD7-9B73-584822AAAEB5}"
+	ProjectGUID="{434E4D48-3078-406D-871F-E69869AA487E}"
 	Keyword="MFCProj"
 	>
 	<Platforms>
@@ -15,14 +15,14 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			Name="Debug Inferno|Win32"
+			OutputDirectory=".\Debug_Inferno\Profile\fred2"
+			IntermediateDirectory=".\Debug_Inferno\Profile\fred2"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="0"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -30,8 +30,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)\$(TargetFileName)"
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_trunk_d_INF.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fred2_open_trunk_d_INF.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -45,25 +45,22 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+				TypeLibraryName=".\Debug_Inferno\Profile\fred2/Fred2.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../openal/include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410"
+				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;INF_BUILD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
+				PrecompiledHeaderFile=".\Debug_Inferno\Profile\fred2/Fred2.pch"
+				AssemblerListingLocation=".\Debug_Inferno\Profile\fred2/"
+				ObjectFile=".\Debug_Inferno\Profile\fred2/"
+				ProgramDataBaseFileName=".\Debug_Inferno\Profile\fred2/"
 				BrowseInformation="1"
-				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
@@ -81,16 +78,17 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib trackir.lib"
-				OutputFile="$(OutDir)\fred2_open_3_6_10d.exe"
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalDependencies="Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
+				OutputFile="Debug_Inferno/fred2_open_trunk_d_INF.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
+				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
+				ProgramDatabaseFile="Debug_Inferno/fred2_open_trunk_d_INF.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(TargetDir)$(TargetName).map"
+				MapFileName=".\Debug_Inferno\Profile\fred2/fred2_open_trunk_d_INF.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -106,7 +104,7 @@
 			<Tool
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
-				OutputFile="$(IntDir)\$(ProjectName).bsc"
+				OutputFile="Debug_Inferno/Fred2.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -122,14 +120,14 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			Name="Release Inferno|Win32"
+			OutputDirectory=".\Release_Inferno\Profile\fred2"
+			IntermediateDirectory=".\Release_Inferno\Profile\fred2"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="1"
 			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="0"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -137,8 +135,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)\$(TargetFileName)"
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_trunk_r_INF.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fred2_open_trunk_r_INF.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -152,7 +150,7 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
+				TypeLibraryName=".\Release_Inferno\Profile\fred2/Fred2.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -160,17 +158,16 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../../code,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;WINVER=0x410"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL;INF_BUILD"
 				StringPooling="true"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
-				AssemblerListingLocation="$(IntDir)\"
-				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="$(IntDir)\"
-				BrowseInformation="1"
-				BrowseInformationFile="$(IntDir)\"
+				PrecompiledHeaderFile=".\Release_Inferno\Profile\fred2/Fred2.pch"
+				AssemblerListingLocation=".\Release_Inferno\Profile\fred2/"
+				ObjectFile=".\Release_Inferno\Profile\fred2/"
+				ProgramDataBaseFileName=".\Release_Inferno\Profile\fred2/"
+				BrowseInformation="2"
+				BrowseInformationFile=".\Release_Inferno\Profile\fred2/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="1"
@@ -188,15 +185,16 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib trackir.lib"
-				OutputFile="$(OutDir)\fred2_open_3_6_10r.exe"
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
+				OutputFile="Release_Inferno/fred2_open_trunk_r_INF.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64,../../trackir/lib/"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
-				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
+				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
+				ProgramDatabaseFile="Release_Inferno/fred2_open_trunk_r_INF.pdb"
 				GenerateMapFile="true"
-				MapFileName="$(TargetDir)$(TargetName).map"
+				MapFileName=".\Release_Inferno\Profile\fred2/fred2_open_trunk_r_INF.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -212,7 +210,218 @@
 			<Tool
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
-				OutputFile="$(IntDir)\$(ProjectName).bsc"
+				OutputFile="Release_Inferno/Fred2.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory=".\Debug"
+			IntermediateDirectory=".\Debug\Profile\fred2"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			UseOfMFC="1"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+				Description="Copying build..."
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_trunk_d.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fred2_open_trunk_d.exe"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Debug/Fred2.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="../../code,../../openal/include"
+				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				PrecompiledHeaderFile=".\Debug\Profile\fred2/Fred2.pch"
+				AssemblerListingLocation=".\Debug\Profile\fred2/"
+				ObjectFile=".\Debug\Profile\fred2/"
+				ProgramDataBaseFileName=".\Debug\Profile\fred2/"
+				BrowseInformation="1"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalDependencies="Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
+				OutputFile="Debug/fred2_open_trunk_d.exe"
+				LinkIncremental="2"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\Debug/fred2_open_trunk_d.pdb"
+				GenerateMapFile="true"
+				MapFileName=".\Debug\Profile\fred2/fred2_open_trunk_d.map"
+				SubSystem="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile=".\Debug/Fred2.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release\Profile\fred2"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			UseOfMFC="1"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+				Description="Copying build..."
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_trunk_r.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fred2_open_trunk_r.exe"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="true"
+				SuppressStartupBanner="true"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/Fred2.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="../../code,../../openal/include"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_OPENAL"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Release\Profile\fred2/Fred2.pch"
+				AssemblerListingLocation=".\Release\Profile\fred2/"
+				ObjectFile=".\Release\Profile\fred2/"
+				ProgramDataBaseFileName=".\Release\Profile\fred2/"
+				BrowseInformation="2"
+				BrowseInformationFile=".\Release\Profile\fred2/"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
+				OutputFile="Release/fred2_open_trunk_r.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
+				ProgramDatabaseFile=".\Release/fred2_open_trunk_r.pdb"
+				GenerateMapFile="true"
+				MapFileName=".\Release\Profile\fred2/fred2_open_trunk_r.map"
+				SubSystem="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile=".\Release/Fred2.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -239,6 +448,24 @@
 				RelativePath="..\..\code\fred2\AddVariableDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -260,6 +487,64 @@
 			<File
 				RelativePath="..\..\code\fred2\AdjustGridDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\AltShipClassDlg.cpp"
+				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -283,6 +568,24 @@
 				RelativePath="..\..\code\fred2\AsteroidEditorDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -304,6 +607,24 @@
 			<File
 				RelativePath="..\..\code\fred2\BackgroundChooser.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -327,6 +648,24 @@
 				RelativePath="..\..\code\fred2\BgBitmapDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -348,6 +687,24 @@
 			<File
 				RelativePath="..\..\code\fred2\BriefingEditorDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -371,6 +728,24 @@
 				RelativePath="..\..\code\fred2\CampaignEditorDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -392,6 +767,24 @@
 			<File
 				RelativePath="..\..\code\fred2\CampaignFilelistBox.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -415,6 +808,24 @@
 				RelativePath="..\..\code\fred2\CampaignTreeView.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -436,6 +847,24 @@
 			<File
 				RelativePath="..\..\code\fred2\CampaignTreeWnd.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -459,6 +888,24 @@
 				RelativePath="..\..\code\fred2\CmdBrief.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -480,6 +927,24 @@
 			<File
 				RelativePath="..\..\code\fred2\CreateWingDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -503,6 +968,24 @@
 				RelativePath="..\..\code\fred2\CustomWingNames.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -524,6 +1007,24 @@
 			<File
 				RelativePath="..\..\code\fred2\DebriefingEditorDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -547,6 +1048,24 @@
 				RelativePath="..\..\code\fred2\dialog1.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -568,6 +1087,24 @@
 			<File
 				RelativePath="..\..\code\fred2\DumpStats.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -591,6 +1128,64 @@
 				RelativePath="..\..\code\fred2\EventEditor.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\FictionViewerDlg.cpp"
+				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -612,6 +1207,24 @@
 			<File
 				RelativePath="..\..\code\fred2\folderdlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -635,6 +1248,24 @@
 				RelativePath="..\..\code\fred2\FRED.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -657,12 +1288,30 @@
 				RelativePath="..\..\code\fred2\FRED.rc"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions=""
+						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions=""
+						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCResourceCompilerTool"
 						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\Code\fs2_open\code\fred2"
+						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -671,13 +1320,31 @@
 					<Tool
 						Name="VCResourceCompilerTool"
 						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\Code\fs2_open\code\fred2"
+						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\FREDDoc.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -701,6 +1368,24 @@
 				RelativePath="..\..\code\fred2\FredRender.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -722,6 +1407,24 @@
 			<File
 				RelativePath="..\..\code\fred2\FredStubs.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -745,6 +1448,24 @@
 				RelativePath="..\..\code\fred2\FREDView.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -766,6 +1487,24 @@
 			<File
 				RelativePath="..\..\code\fred2\Grid.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -789,6 +1528,24 @@
 				RelativePath="..\..\code\fred2\IgnoreOrdersDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -810,6 +1567,24 @@
 			<File
 				RelativePath="..\..\code\fred2\InitialShips.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -833,6 +1608,24 @@
 				RelativePath="..\..\code\fred2\InitialStatus.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -854,6 +1647,24 @@
 			<File
 				RelativePath="..\..\code\fred2\MainFrm.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -877,6 +1688,24 @@
 				RelativePath="..\..\code\fred2\Management.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -898,6 +1727,24 @@
 			<File
 				RelativePath="..\..\code\fred2\MessageEditorDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -921,6 +1768,24 @@
 				RelativePath="..\..\code\fred2\MissionGoalsDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -942,6 +1807,24 @@
 			<File
 				RelativePath="..\..\code\fred2\MissionNotesDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -965,6 +1848,24 @@
 				RelativePath="..\..\code\fred2\MissionSave.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -986,6 +1887,24 @@
 			<File
 				RelativePath="..\..\code\fred2\ModifyVariableDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1009,6 +1928,24 @@
 				RelativePath="..\..\code\fred2\OperatorArgTypeSelect.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1030,6 +1967,24 @@
 			<File
 				RelativePath="..\..\code\fred2\OrientEditor.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1053,6 +2008,24 @@
 				RelativePath="..\..\code\fred2\PlayerStartEditor.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1074,6 +2047,24 @@
 			<File
 				RelativePath="..\..\code\fred2\PrefsDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1097,6 +2088,24 @@
 				RelativePath="..\..\code\fred2\ReinforcementEditorDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1118,6 +2127,24 @@
 			<File
 				RelativePath="..\..\code\fred2\restrictpaths.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1141,6 +2168,24 @@
 				RelativePath="..\..\code\fred2\SetGlobalShipFlags.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1162,6 +2207,24 @@
 			<File
 				RelativePath="..\..\code\fred2\Sexp_tree.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1185,6 +2248,24 @@
 				RelativePath="..\..\code\fred2\ShieldSysDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1206,6 +2287,24 @@
 			<File
 				RelativePath="..\..\code\fred2\ship_select.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1229,6 +2328,24 @@
 				RelativePath="..\..\code\fred2\ShipCheckListBox.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1250,6 +2367,24 @@
 			<File
 				RelativePath="..\..\code\fred2\ShipClassEditorDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1273,6 +2408,24 @@
 				RelativePath="..\..\code\fred2\ShipEditorDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1294,6 +2447,24 @@
 			<File
 				RelativePath="..\..\code\fred2\ShipFlagsDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1317,6 +2488,24 @@
 				RelativePath="..\..\code\fred2\ShipGoalsDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1338,6 +2527,24 @@
 			<File
 				RelativePath="..\..\code\fred2\ShipSpecialDamage.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1361,6 +2568,24 @@
 				RelativePath="..\..\code\fred2\ShipSpecialHitpoints.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1382,6 +2607,24 @@
 			<File
 				RelativePath="..\..\code\fred2\ShipTexturesDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1405,6 +2648,24 @@
 				RelativePath="..\..\code\fred2\StarfieldEditor.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1426,6 +2687,24 @@
 			<File
 				RelativePath="..\..\code\fred2\StdAfx.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1449,6 +2728,24 @@
 				RelativePath="..\..\code\fred2\TextViewDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1470,6 +2767,24 @@
 			<File
 				RelativePath="..\..\code\fred2\VoiceActingManager.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1493,6 +2808,24 @@
 				RelativePath="..\..\code\fred2\WaypointPathDlg.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1514,6 +2847,24 @@
 			<File
 				RelativePath="..\..\code\fred2\WeaponEditorDlg.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1537,6 +2888,24 @@
 				RelativePath="..\..\code\fred2\wing.cpp"
 				>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -1558,6 +2927,24 @@
 			<File
 				RelativePath="..\..\code\fred2\wing_editor.cpp"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
@@ -1591,7 +2978,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\altshipclassdlg.h"
+				RelativePath="..\..\code\fred2\AltShipClassDlg.h"
 				>
 			</File>
 			<File
@@ -1656,6 +3043,10 @@
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\EventEditor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\FictionViewerDlg.h"
 				>
 			</File>
 			<File
@@ -1868,86 +3259,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\res\data00.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data05.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data10.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data15.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data20.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data25.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data30.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data35.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data40.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data45.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data50.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data55.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data60.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data65.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data70.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data75.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data80.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data85.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data90.bmp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\fred2\res\data95.bmp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\res\FRED.ico"
 				>
 			</File>
@@ -1978,9 +3289,5 @@
 		</Filter>
 	</Files>
 	<Globals>
-		<Global
-			Name="RESOURCE_FILE"
-			Value="\Projects\fs2_open_3_6_10\code\fred2\fred.rc"
-		/>
 	</Globals>
 </VisualStudioProject>

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by fred.rc
+// Microsoft Developer Studio generated include file.
+// Used by FRED.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -122,6 +122,7 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
+#define IDD_FICTION_VIEWER              318
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1017,7 +1018,7 @@
 #define IDC_STATS_TEXT                  1537
 #define IDC_SUBTYPE1                    1538
 #define IDC_SUBTYPE2                    1539
-#define IDC_SPECIAL_WARP                1539
+#define IDC_SPECIAL_WARPIN              1539
 #define IDC_SUBTYPE3                    1540
 #define IDC_LOOP_BRIEF_ANIM             1540
 #define IDC_LOOP_BRIEF_SOUND            1541
@@ -1123,6 +1124,9 @@
 #define IDC_TURRETS_LOCKED              1615
 #define IDC_AFTERBURNER_LOCKED          1616
 #define IDC_FORCE_SHIELDS               1617
+#define IDC_STORY_FILE                  1618
+#define IDC_FONT_FILE                   1619
+#define IDC_FICTION_MUSIC               1620
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1403,6 +1407,7 @@
 #define ID_SAVEFORMAT_FS2OPEN           33091
 #define ID_FORMAT_FS2_OPEN_COMP         33092
 #define ID_AUTOBALANCE                  33093
+#define ID_EDITORS_FICTION              33094
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1413,9 +1418,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        318
+#define _APS_NEXT_RESOURCE_VALUE        319
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1618
+#define _APS_NEXT_CONTROL_VALUE         1621
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -1681,7 +1681,7 @@ int brief_text_colorize(char *src, int instance)
 		}
 
 		// When the word is terminated reset color to white
-		if (is_white_space(src[i])) {
+		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) )) {
 			active_color_index = BRIEF_TEXT_WHITE;
 		}
 
