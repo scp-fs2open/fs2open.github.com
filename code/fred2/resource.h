@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -1108,6 +1108,8 @@
 #define IDC_DEACTIVATE_AUTOPILOT        1594
 #define IDC_HIDE_SHIP_NAME              1594
 #define IDC_SET_CLASS_DYNAMICALLY       1595
+#define IDC_SET_CLASS_DYNAMICALLY2      1596
+#define IDC_TOGGLE_CRIPPLE              1596
 #define IDC_ALT_SHIP_CLASS              1598
 #define ID_STATIC                       1600
 #define IDC_DEFAULT_TO_CLASS            1601

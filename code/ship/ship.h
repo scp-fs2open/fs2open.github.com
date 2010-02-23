@@ -385,6 +385,7 @@ typedef struct ship_subsys_info {
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
+#define SF2_TOGGLE_REACTIONS_ON_CRIPPLE		(1<<21)		// Karajorma - Switches the behaviour other ships show to this ship on disarm/disable
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -859,6 +860,7 @@ typedef struct thruster_particles {
 #define STI_AI_GUARDS_ATTACK			(1<<3)
 #define STI_AI_TURRETS_ATTACK			(1<<4)
 #define STI_AI_CAN_FORM_WING			(1<<5)
+#define STI_AI_PROTECTED_ON_CRIPPLE		(1<<6)
 
 typedef struct ship_type_info {
 	char name[NAME_LENGTH];
@@ -889,6 +891,7 @@ typedef struct ship_type_info {
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
+	SCP_vector<int> ai_cripple_ignores;
 
 	//Explosions
 	float vaporize_chance;
@@ -898,6 +901,7 @@ typedef struct ship_type_info {
 
 	//Regen values - need to be converted after all types have loaded
 	SCP_vector<SCP_string> ai_actively_pursues_temp;
+	SCP_vector<SCP_string> ai_cripple_ignores_temp;
 
 	ship_type_info( )
 		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),

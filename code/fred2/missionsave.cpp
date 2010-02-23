@@ -1610,6 +1610,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"afterburners-locked\"");
 			if (Ships[i].flags2 & SF2_FORCE_SHIELDS_ON)
 				fout(" \"force-shields-on\"");
+			if (Ships[i].flags2 & SF2_TOGGLE_REACTIONS_ON_CRIPPLE)
+				fout(" \"toggle-behaviour-on-cripple\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
