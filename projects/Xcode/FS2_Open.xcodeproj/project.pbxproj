@@ -655,6 +655,8 @@
 		34DCF87008CFB15700A528A0 /* cryptstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86F08CFB15700A528A0 /* cryptstring.cpp */; };
 		34DCF88208CFB29E00A528A0 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954B208C3D6A0003B1351 /* encrypt.cpp */; };
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
+		60584F4C11347FE10080E50C /* audiostr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F208C3D6A0003B1351 /* audiostr.cpp */; };
+		606034471134822A0032BB9A /* dscap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F908C3D6A0003B1351 /* dscap.cpp */; };
 		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
 		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
@@ -4216,6 +4218,8 @@
 				60FAF4E2113431A100CE910F /* acm.cpp in Sources */,
 				60FAF4E3113431A100CE910F /* openal.cpp in Sources */,
 				60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */,
+				60584F4C11347FE10080E50C /* audiostr.cpp in Sources */,
+				606034471134822A0032BB9A /* dscap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
