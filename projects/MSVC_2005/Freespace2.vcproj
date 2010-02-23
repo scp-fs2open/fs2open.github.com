@@ -29,8 +29,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_trunk_INF_d.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_trunk_INF_d.exe"
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_ant-6_INF_d.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_ant-6_INF_d.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -80,15 +80,15 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="Quartz.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Debug_Inferno\fs2_open_trunk_INF_d.exe"
+				OutputFile="Debug_Inferno\fs2_open_ant-6_INF_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug_Inferno/fs2_open_trunk_INF_d.pdb"
+				ProgramDatabaseFile=".\Debug_Inferno/fs2_open_ant-6_INF_d.pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug_Inferno\Profile\freespace2/fs2_open_trunk_INF_d.map"
+				MapFileName=".\Debug_Inferno\Profile\freespace2/fs2_open_ant-6_INF_d.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -135,8 +135,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_trunk_d.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_trunk_d.exe"
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_ant-6_d.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_ant-6_d.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -186,15 +186,15 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="Quartz.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Debug\fs2_open_trunk_d.exe"
+				OutputFile="Debug\fs2_open_ant-6_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/fs2_open_trunk_d.pdb"
+				ProgramDatabaseFile=".\Debug/fs2_open_ant-6_d.pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug\Profile\freespace2/fs2_open_trunk_d.map"
+				MapFileName=".\Debug\Profile\freespace2/fs2_open_ant-6_d.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -242,8 +242,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_trunk_INF_r.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_trunk_INF_r.exe"
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_ant-6_INF_r.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_ant-6_INF_r.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -294,14 +294,14 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="Quartz.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Release_Inferno/fs2_open_trunk_INF_r.exe"
+				OutputFile="Release_Inferno/fs2_open_ant-6_INF_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
-				ProgramDatabaseFile=".\Release_Inferno/fs2_open_trunk_INF_r.pdb"
+				ProgramDatabaseFile=".\Release_Inferno/fs2_open_ant-6_INF_r.pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Release_Inferno\Profile\freespace2/fs2_open_trunk_INF_r.map"
+				MapFileName=".\Release_Inferno\Profile\freespace2/fs2_open_ant-6_INF_r.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -349,8 +349,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_trunk_r.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_trunk_r.exe"
+				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_ant-6_r.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_ant-6_r.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -401,14 +401,14 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="Quartz.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Release/fs2_open_trunk_r.exe"
+				OutputFile="Release/fs2_open_ant-6_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
-				ProgramDatabaseFile=".\Release/fs2_open_trunk_r.pdb"
+				ProgramDatabaseFile=".\Release/fs2_open_ant-6_r.pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Release\Profile\freespace2/fs2_open_trunk_r.map"
+				MapFileName=".\Release\Profile\freespace2/fs2_open_ant-6_r.map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -451,46 +451,6 @@
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreeSpace.cpp"
 			>
-			<FileConfiguration
-				Name="Debug Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreeSpace.h"
@@ -567,46 +527,6 @@
 		<File
 			RelativePath="..\..\code\FREESPACE2\LevelPaging.cpp"
 			>
-			<FileConfiguration
-				Name="Debug Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\..\code\FREESPACE2\LevelPaging.h"

@@ -2028,31 +2028,6 @@ void game_init()
 // SOUND INIT START
 /////////////////////////////
 
-	int use_a3d = 0;
-	int use_eax = 0;
-
-#ifndef USE_OPENAL
-	ptr = os_config_read_string(NULL, NOX("Soundcard"), NULL);
-	mprintf(("soundcard = %s\n", ptr ? ptr : "<nothing>"));
-	if (ptr) {
-		if (!stricmp(ptr, NOX("no sound"))) {
-			Cmdline_freespace_no_sound = 1;
-			Cmdline_freespace_no_music = 1;
-
-		} else if (!stricmp(ptr, NOX("Aureal A3D"))) {
-			use_a3d = 1;
-		} else if (!stricmp(ptr, NOX("EAX"))) {
-			use_eax = 1;
-		}
-	}
-#ifndef SCP_UNIX
-	else
-	{
-		run_launcher();
-		exit(0);
-	}
-#endif
-#else // USE_OPENAL
 	ptr = os_config_read_string(NULL, NOX("SoundDeviceOAL"), NULL);
 	if (ptr) {
 		if ( !stricmp(ptr, NOX("no sound")) ) {
@@ -2062,13 +2037,12 @@ void game_init()
 			Cmdline_freespace_no_music = 1;
 		}
 	}
-#endif // !USE_OPENAL
 
-	if (!Is_standalone)
-	{
-		UserSampleRate = (ushort) os_config_read_uint(NULL, "SoundSampleRate", 44100);
-		UserSampleBits = (ushort) os_config_read_uint(NULL, "SoundSampleBits", 16);
-		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
+	if ( !Is_standalone ) {
+		int use_eax = os_config_read_uint("Sound", NOX("EnableEFX"), 0);
+		unsigned int sample_rate = os_config_read_uint("Sound", "SampleRate", 44100);
+
+		snd_init(use_eax, sample_rate);
 	}
 
 	if(fsspeech_init() == false) {
@@ -2555,10 +2529,6 @@ void game_show_framerate()
 
 		gr_printf( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
 		sy += dy;
-#ifndef USE_OPENAL
-		gr_printf( sx, sy, NOX("S-HRAM: %d KB\n"), Snd_hram/1024 );		// mem used to store game sound
-		sy += dy;
-#endif
 
 		{
 			extern int GL_textures_in;

@@ -452,27 +452,27 @@ int Encode(t_Sample* bufIn, t_Sample* bufOut, int sizeIn, int sizeOut,
 #pragma pack(push, packet_declarations)
 #endif
 
-#pragma pack(1)
+#pragma pack(2)
 
 
 // most general notion of a packet pair
 struct t_PacketPair
 {
-    unsigned long Mode1   : 3;
-    unsigned long Mode1Ex : 1;
-    unsigned long Data1   : 8;
-    unsigned long Mode0   : 3;
-    unsigned long Mode0Ex : 1;
-    unsigned long Data0   : 8;
+    unsigned int Mode1   : 3;
+    unsigned int Mode1Ex : 1;
+    unsigned int Data1   : 8;
+    unsigned int Mode0   : 3;
+    unsigned int Mode0Ex : 1;
+    unsigned int Data0   : 8;
 };
 
 // nominal packet pair
 struct t_PacketPairNom
 {
-    unsigned long Mode1 : 3;
-    unsigned long Data1 : 9;
-    unsigned long Mode0 : 3;
-    unsigned long Data0 : 9;
+    unsigned int Mode1 : 3;
+    unsigned int Data1 : 9;
+    unsigned int Mode0 : 3;
+    unsigned int Data0 : 9;
 };
 
 // run-length packet, case 1 
@@ -509,24 +509,24 @@ struct t_PacketHFData
 // run-length packet, case 0
 struct t_PacketRL0
 {
-    unsigned long Mode1   : 3; // mode of previous packet in pair
-    unsigned long Data1   : 9; // data of previous packet in pair
-    unsigned long Mode0   : 3; // mode of this packet (always 0)
-    unsigned long Mode0Ex : 1; // extra bit to distinguish RL & HF (always 0)
-    unsigned long Length  : 8; // length of run
+    unsigned int Mode1   : 3; // mode of previous packet in pair
+    unsigned int Data1   : 9; // data of previous packet in pair
+    unsigned int Mode0   : 3; // mode of this packet (always 0)
+    unsigned int Mode0Ex : 1; // extra bit to distinguish RL & HF (always 0)
+    unsigned int Length  : 8; // length of run
 };
 
 // high-frequency packet, case 0
 struct t_PacketHF0
 {
-    unsigned long Mode1   : 3; // mode of previous packet in pair
-    unsigned long Data1   : 9; // data of previous packet in pair
-    unsigned long Mode0   : 3; // mode of this packet (always 0)
-    unsigned long Mode0Ex : 1; // extra bit to distinguish RL & HF (always 1)
-	unsigned long Table   : 1; // 1 ==> DataT is lookup table number
-	unsigned long Data0   : 3; // absolute sample data
-	unsigned long DataT   : 3; // absolute sample data or lookup table number
-	unsigned long Unused  : 1;
+    unsigned int Mode1   : 3; // mode of previous packet in pair
+    unsigned int Data1   : 9; // data of previous packet in pair
+    unsigned int Mode0   : 3; // mode of this packet (always 0)
+    unsigned int Mode0Ex : 1; // extra bit to distinguish RL & HF (always 1)
+	unsigned int Table   : 1; // 1 ==> DataT is lookup table number
+	unsigned int Data0   : 3; // absolute sample data
+	unsigned int DataT   : 3; // absolute sample data or lookup table number
+	unsigned int Unused  : 1;
 };
 
 // medium-frequency packet, case 1
@@ -541,12 +541,12 @@ struct t_PacketMF1
 // medium-frequency packet, case 0
 struct t_PacketMF0
 {
-    unsigned long  Mode1 : 3; // mode of previous packet in pair
-    unsigned long  Data1 : 9; // data of previous packet in pair
-    unsigned long  Mode0 : 3; // mode of this packet (always 7)
-    unsigned long  Mult  : 1; // 0 ==> mult data by 1, 1 ==> mult data by 2
-    long           DataX : 2; // not currently used
-    long           Data0 : 6; // total rise or fall over next 4 samples
+    unsigned int  Mode1 : 3; // mode of previous packet in pair
+    unsigned int  Data1 : 9; // data of previous packet in pair
+    unsigned int  Mode0 : 3; // mode of this packet (always 7)
+    unsigned int  Mult  : 1; // 0 ==> mult data by 1, 1 ==> mult data by 2
+    int           DataX : 2; // not currently used
+    int           Data0 : 6; // total rise or fall over next 4 samples
 };
 
 // restore state of compiler padding of structures

@@ -62,7 +62,6 @@ extern float	Master_sound_volume;		// 0 -> 1.0
 extern float	Master_voice_volume;		// 0 -> 1.0
 extern int		Snd_sram;					// System memory consumed by sound data	
 extern int		Snd_hram;					// Soundcard memory consumed by sound data
-extern ushort	UserSampleRate, UserSampleBits;
 
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
 int	snd_load( game_snd *gs, int allow_hardware_load = 0);
@@ -123,14 +122,11 @@ int snd_get_duration(int snd_id);
 // get a 3D vol and pan for a particular sound
 int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f, float range_factor=1.0f);
 
-int	snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
+int	snd_init(int use_eax, unsigned int sample_rate);
 void	snd_close();
 
 // Return 1 or 0 to show that sound system is inited ok
 int	snd_is_inited();
-
-// Returns a pointer to the direct sound object
-uint	sound_get_ds();
 
 void	snd_update_listener(vec3d *pos, vec3d *vel, matrix *orient);
 

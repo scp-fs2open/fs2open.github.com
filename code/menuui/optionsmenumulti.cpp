@@ -1864,7 +1864,7 @@ void options_multi_vox_do()
 
 	case OM_VOX_TEST_PLAYBACK:
 		// if we were playing a sound back, but now the sound is done
-		if((Om_vox_playback_handle != -1) && (ds_get_play_position(ds_get_channel(Om_vox_playback_handle)) >= (DWORD)Om_vox_voice_comp_size)){
+		if ( (Om_vox_playback_handle != -1) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle)) ) {
 			// flush all playing sounds safely
 			rtvoice_stop_playback_all();
 
@@ -2321,6 +2321,10 @@ void options_multi_unselect()
 // set voice sound buffer for display
 void options_multi_set_voice_data(unsigned char *sound_buf,int buf_size,unsigned char *comp_buf, int comp_size, int uncomp_size, double gain)
 {
+	if ( (sound_buf == NULL) || (buf_size <= 0) ) {
+		return;
+	}
+
 	// copy the buffer to the vox tab data
 	if(buf_size > OM_VOX_BUF_SIZE){
 		memcpy(Om_vox_voice_buffer,sound_buf,OM_VOX_BUF_SIZE);
@@ -2334,12 +2338,22 @@ void options_multi_set_voice_data(unsigned char *sound_buf,int buf_size,unsigned
 	if(Om_vox_voice_comp_size == -1){
 		Om_vox_voice_comp_size = 0;
 	}
-	// if we can fit it, decompress this data
-	if((Om_vox_voice_comp_size + uncomp_size) < OM_VOX_COMP_SIZE){
-		// uncompress the data
-		rtvoice_uncompress(comp_buf, comp_size, gain, Om_vox_comp_buffer + Om_vox_voice_comp_size, uncomp_size);
 
-		Om_vox_voice_comp_size += uncomp_size;
+	// make sure that this is actually a compressed buffer
+	// (they can point to the same place if uncompressed)
+	if ( comp_buf && (comp_buf != sound_buf) ) {
+		// if we can fit it, decompress this data
+		if((Om_vox_voice_comp_size + uncomp_size) < OM_VOX_COMP_SIZE){
+			// uncompress the data
+			rtvoice_uncompress(comp_buf, comp_size, gain, Om_vox_comp_buffer + Om_vox_voice_comp_size, uncomp_size);
+
+			Om_vox_voice_comp_size += uncomp_size;
+		}
+	} else {
+		if ( (Om_vox_voice_comp_size + Om_vox_voice_buffer_size) < OM_VOX_COMP_SIZE ) {
+			memcpy(Om_vox_comp_buffer + Om_vox_voice_comp_size, Om_vox_voice_buffer, Om_vox_voice_buffer_size);
+			Om_vox_voice_comp_size += Om_vox_voice_buffer_size;
+		}
 	}
 }
 

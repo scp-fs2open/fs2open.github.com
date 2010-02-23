@@ -58,7 +58,11 @@ static rtv_out_buffer Rtv_output_buffers[MAX_RTV_OUT_BUFFERS];		// data for outp
 static struct	t_CodeInfo Rtv_code_info;		// Parms will need to be transmitted with packets
 
 // recording timer data
+#ifdef _WIN32
 static int Rtv_record_timer_id;		// unique id for callback timer
+#else
+static SDL_TimerID Rtv_record_timer_id;
+#endif
 static int Rtv_callback_time;			// callback time in ms
 
 void (*Rtv_callback)();
@@ -83,7 +87,8 @@ static int Decode_buffer_size;
 // RECORD/ENCODE
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CALLBACK TimeProc(unsigned int id, unsigned int msg, unsigned long userdata, unsigned long dw1, unsigned long dw2)
+#ifdef _WIN32
+void CALLBACK TimeProc(unsigned int id, unsigned int msg, unsigned long userdata, unsigned long dw1, unsigned long dw2) 
 {
 	if ( !Rtv_callback ) {
 		return;
@@ -92,6 +97,29 @@ void CALLBACK TimeProc(unsigned int id, unsigned int msg, unsigned long userdata
 	nprintf(("Alan","In callback\n"));
 	Rtv_callback();
 }
+#else
+Uint32 CALLBACK TimeProc(Uint32 interval, void *param)
+{
+	if ( !Rtv_callback ) {
+		SDL_RemoveTimer(Rtv_record_timer_id);
+		Rtv_record_timer_id = NULL;
+
+		return 0;
+	}
+
+	mprintf(("In callback\n"));
+	Rtv_callback();
+
+	if (Rtv_callback_time) {
+		return interval;
+	} else {
+		SDL_RemoveTimer(Rtv_record_timer_id);
+		Rtv_record_timer_id = NULL;
+
+		return 0;
+	}
+}
+#endif
 
 // Try to pick the most appropriate recording format
 //
@@ -128,6 +156,8 @@ void rtvoice_set_qos(int qos)
 //			!0	=>	failure, recording not possible
 int rtvoice_init_recording(int qos)
 {
+	return -1;
+/*
 	if ( !Rtv_recording_inited ) {
 		if ( rtvoice_pick_record_format() ) {
 			return -1;
@@ -174,6 +204,7 @@ int rtvoice_init_recording(int qos)
 		Rtv_recording_inited=1;
 	}
 	return 0;
+*/
 }
 
 // Stop a stream from recording
@@ -187,11 +218,12 @@ void rtvoice_stop_recording()
 
 	if ( Rtv_record_timer_id ) {
 #ifndef _WIN32
-		STUB_FUNCTION;
+		SDL_RemoveTimer(Rtv_record_timer_id);
+		Rtv_record_timer_id = NULL;
 #else
 		timeKillEvent(Rtv_record_timer_id);
-#endif
 		Rtv_record_timer_id = 0;
+#endif
 	}
 
 	Rtv_recording=0;
@@ -224,6 +256,8 @@ void rtvoice_close_recording()
 		Rtv_capture_compressed_buffer=NULL;
 	}
 
+	dscap_release_buffer();
+
 	Rtv_recording_inited=0;
 }
 
@@ -248,9 +282,7 @@ int rtvoice_start_recording( void (*user_callback)(), int callback_time )
 
 	if ( user_callback ) {
 #ifndef _WIN32
-		STUB_FUNCTION;
-
-		return -1;
+		Rtv_record_timer_id = SDL_AddTimer(callback_time, TimeProc, NULL);
 #else
 		Rtv_record_timer_id = timeSetEvent(callback_time, callback_time, TimeProc, 0, TIME_PERIODIC);
 #endif
@@ -380,11 +412,19 @@ void rtvoice_get_data(unsigned char **outbuf, int *compressed_size, int *uncompr
 	*uncompressed_size=0;
 	*outbuf=NULL;
 
-	if ( max_size < 0 ) {
+	if ( max_size <= 0 ) {
+		if (outbuf_raw != NULL) {
+			*outbuf_raw = NULL;
+		}
+
+		if (outbuf_size_raw != NULL) {
+			*outbuf_size_raw = 0;
+		}
+
 		return;
 	}	
 	
-	raw_size = dscap_get_raw_data(Rtv_capture_raw_buffer, max_size);
+	raw_size = dscap_get_raw_data(Rtv_capture_raw_buffer, Rtv_capture_raw_buffer_size);
 
 	// convert data to 8bit, 11KHz if necessary
 	raw_size = rtvoice_maybe_convert_data(Rtv_capture_raw_buffer, raw_size);
@@ -427,6 +467,10 @@ int rtvoice_get_decode_buffer_size()
 // uncompress the data into PCM format
 void rtvoice_uncompress(unsigned char *data_in, int size_in, double gain, unsigned char *data_out, int size_out)
 {
+	if ( (data_in == NULL) || (size_in <= 0) ) {
+		return;
+	}
+
 	Rtv_code_info.Gain = gain;
 	Decode(&Rtv_code_info, data_in, data_out, size_in, size_out);
 }
@@ -536,7 +580,7 @@ int rtvoice_create_playback_buffer()
 		return -1;
 	}
 
-	return 0;
+	return index;
 }
 
 void rtvoice_stop_playback(int index)
@@ -568,7 +612,7 @@ void rtvoice_free_playback_buffer(int index)
 		Rtv_output_buffers[index].flags=0;
 		if ( Rtv_output_buffers[index].ds_handle != -1 ) {
 			ds_stop_easy(Rtv_output_buffers[index].ds_handle);
-			ds_unload_buffer(Rtv_output_buffers[index].ds_handle, -1);
+			ds_unload_buffer(Rtv_output_buffers[index].ds_handle);
 		}
 		Rtv_output_buffers[index].ds_handle=-1;
 	}
@@ -599,7 +643,7 @@ int rtvoice_play_compressed(int index, unsigned char *data, int size, int uncomp
 	}
 
 	// play the voice
-	rval = ds_play(ds_handle, -1, -100, DS_MUST_PLAY, ds_convert_volume(Master_voice_volume), 0, 0);
+	rval = ds_play(ds_handle, -100, DS_MUST_PLAY, Master_voice_volume, 0, 0);
 	return rval;
 }
 
@@ -621,6 +665,6 @@ int rtvoice_play_uncompressed(int index, unsigned char *data, int size)
 	}
 
 	// play the voice
-	rval = ds_play(ds_handle, -1, -100, DS_MUST_PLAY, ds_convert_volume(Master_voice_volume), 0, 0);
+	rval = ds_play(ds_handle, -100, DS_MUST_PLAY, Master_voice_volume, 0, 0);
 	return rval;
 }
