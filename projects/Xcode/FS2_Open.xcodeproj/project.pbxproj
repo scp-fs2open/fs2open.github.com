@@ -595,9 +595,7 @@
 		34C71C7208C41C3200459F5B /* ds3d.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954F808C3D6A0003B1351 /* ds3d.h */; };
 		34C71C7308C41C3500459F5B /* channel.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954F408C3D6A0003B1351 /* channel.h */; };
 		34C71C7408C41C3600459F5B /* audiostr.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954F308C3D6A0003B1351 /* audiostr.h */; };
-		34C71C7508C41C3700459F5B /* audiostr-openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F108C3D6A0003B1351 /* audiostr-openal.cpp */; };
 		34C71C7608C41C3900459F5B /* acm.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954F008C3D6A0003B1351 /* acm.h */; };
-		34C71C7708C41C3A00459F5B /* acm-openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954EE08C3D6A0003B1351 /* acm-openal.cpp */; };
 		34C71C7808C41C3E00459F5B /* species_defs.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459551008C3D6A0003B1351 /* species_defs.h */; };
 		34C71C7908C41C3E00459F5B /* species_defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459550F08C3D6A0003B1351 /* species_defs.cpp */; };
 		34C71C7A08C41C4100459F5B /* supernova.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459551708C3D6A0003B1351 /* supernova.h */; };
@@ -652,13 +650,16 @@
 		34C71CAB08C41C6F00459F5B /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459554F08C3D6A0003B1351 /* config.h */; };
 		34C71D6708C4556700459F5B /* rtvoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459550508C3D6A0003B1351 /* rtvoice.cpp */; };
 		34C71D6808C4556800459F5B /* rtvoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459550608C3D6A0003B1351 /* rtvoice.h */; };
-		34C71D6C08C455C500459F5B /* rbaudio.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459550408C3D6A0003B1351 /* rbaudio.h */; };
-		34C71D6D08C455C600459F5B /* rbaudio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459550308C3D6A0003B1351 /* rbaudio.cpp */; };
 		34DCF83608CFA6D200A528A0 /* cfilearchiver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF83008CFA68700A528A0 /* cfilearchiver.cpp */; };
 		34DCF86308CFAFEE00A528A0 /* cfileextractor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86208CFAFEE00A528A0 /* cfileextractor.cpp */; };
 		34DCF87008CFB15700A528A0 /* cryptstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86F08CFB15700A528A0 /* cryptstring.cpp */; };
 		34DCF88208CFB29E00A528A0 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954B208C3D6A0003B1351 /* encrypt.cpp */; };
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
+		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
+		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
+		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
+		60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E6113432B800CE910F /* voicerec.cpp */; };
+		60FAF4E9113432B800CE910F /* voicerec.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E7113432B800CE910F /* voicerec.h */; };
 		F093F84F10FDC09B0042E30F /* gropengldraw.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB46210E2E55500089DF93 /* gropengldraw.h */; };
 		F093F85010FDC09B0042E30F /* gropenglpostprocessing.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB461B0E2E55370089DF94 /* gropenglpostprocessing.h */; };
 		F093F85110FDC09B0042E30F /* gropenglshader.h in Headers */ = {isa = PBXBuildFile; fileRef = 25FB46180E2E537F0089DF93 /* gropenglshader.h */; };
@@ -1010,8 +1011,6 @@
 		3459532508C3D6A0003B1351 /* vdplay.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdplay.h; sourceTree = "<group>"; };
 		3459532608C3D6A0003B1351 /* vdplobby.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdplobby.h; sourceTree = "<group>"; };
 		3459532708C3D6A0003B1351 /* vdsetup.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdsetup.h; sourceTree = "<group>"; };
-		3459532808C3D6A0003B1351 /* vdsound.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdsound.h; sourceTree = "<group>"; };
-		3459532908C3D6A0003B1351 /* vdsound.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = vdsound.lib; sourceTree = "<group>"; };
 		3459532A08C3D6A0003B1351 /* vdvp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdvp.h; sourceTree = "<group>"; };
 		3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = exceptionhandler.cpp; sourceTree = "<group>"; };
 		3459532D08C3D6A0003B1351 /* exceptionhandler.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = exceptionhandler.h; sourceTree = "<group>"; };
@@ -1380,9 +1379,7 @@
 		345954EA08C3D6A0003B1351 /* shiphit.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = shiphit.cpp; sourceTree = "<group>"; };
 		345954EB08C3D6A0003B1351 /* shiphit.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = shiphit.h; sourceTree = "<group>"; };
 		345954EC08C3D6A0003B1351 /* subsysdamage.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = subsysdamage.h; sourceTree = "<group>"; };
-		345954EE08C3D6A0003B1351 /* acm-openal.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "acm-openal.cpp"; sourceTree = "<group>"; };
 		345954F008C3D6A0003B1351 /* acm.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = acm.h; sourceTree = "<group>"; };
-		345954F108C3D6A0003B1351 /* audiostr-openal.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "audiostr-openal.cpp"; sourceTree = "<group>"; };
 		345954F208C3D6A0003B1351 /* audiostr.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = audiostr.cpp; sourceTree = "<group>"; };
 		345954F308C3D6A0003B1351 /* audiostr.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = audiostr.h; sourceTree = "<group>"; };
 		345954F408C3D6A0003B1351 /* channel.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = channel.h; sourceTree = "<group>"; };
@@ -1396,8 +1393,6 @@
 		345954FC08C3D6A0003B1351 /* fsspeech.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fsspeech.h; sourceTree = "<group>"; };
 		3459550108C3D6A0003B1351 /* ogg.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = ogg.cpp; sourceTree = "<group>"; };
 		3459550208C3D6A0003B1351 /* ogg.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ogg.h; sourceTree = "<group>"; };
-		3459550308C3D6A0003B1351 /* rbaudio.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = rbaudio.cpp; sourceTree = "<group>"; };
-		3459550408C3D6A0003B1351 /* rbaudio.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = rbaudio.h; sourceTree = "<group>"; };
 		3459550508C3D6A0003B1351 /* rtvoice.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = rtvoice.cpp; sourceTree = "<group>"; };
 		3459550608C3D6A0003B1351 /* rtvoice.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = rtvoice.h; sourceTree = "<group>"; };
 		3459550708C3D6A0003B1351 /* sound.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = sound.cpp; sourceTree = "<group>"; };
@@ -1617,6 +1612,11 @@
 		60E7978A10F59C1C00904FA6 /* trackirglobal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = trackirglobal.cpp; path = external_dll/trackirglobal.cpp; sourceTree = "<group>"; };
 		60E7978C10F59C4100904FA6 /* externalcode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = externalcode.h; path = external_dll/externalcode.h; sourceTree = "<group>"; };
 		60E7978D10F59C4100904FA6 /* trackirpublic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = trackirpublic.h; path = external_dll/trackirpublic.h; sourceTree = "<group>"; };
+		60FAF4DF113431A100CE910F /* acm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = acm.cpp; sourceTree = "<group>"; };
+		60FAF4E0113431A100CE910F /* openal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = openal.cpp; sourceTree = "<group>"; };
+		60FAF4E1113431A100CE910F /* openal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = openal.h; sourceTree = "<group>"; };
+		60FAF4E6113432B800CE910F /* voicerec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = voicerec.cpp; sourceTree = "<group>"; };
+		60FAF4E7113432B800CE910F /* voicerec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = voicerec.h; sourceTree = "<group>"; };
 		914580470FD036ED00788595 /* multi_sexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = multi_sexp.cpp; sourceTree = "<group>"; };
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -2204,8 +2204,6 @@
 				3459532508C3D6A0003B1351 /* vdplay.h */,
 				3459532608C3D6A0003B1351 /* vdplobby.h */,
 				3459532708C3D6A0003B1351 /* vdsetup.h */,
-				3459532808C3D6A0003B1351 /* vdsound.h */,
-				3459532908C3D6A0003B1351 /* vdsound.lib */,
 				3459532A08C3D6A0003B1351 /* vdvp.h */,
 			);
 			path = directx;
@@ -2868,9 +2866,12 @@
 		345954ED08C3D6A0003B1351 /* sound */ = {
 			isa = PBXGroup;
 			children = (
-				345954EE08C3D6A0003B1351 /* acm-openal.cpp */,
+				60FAF4E6113432B800CE910F /* voicerec.cpp */,
+				60FAF4E7113432B800CE910F /* voicerec.h */,
+				60FAF4DF113431A100CE910F /* acm.cpp */,
+				60FAF4E0113431A100CE910F /* openal.cpp */,
+				60FAF4E1113431A100CE910F /* openal.h */,
 				345954F008C3D6A0003B1351 /* acm.h */,
-				345954F108C3D6A0003B1351 /* audiostr-openal.cpp */,
 				345954F208C3D6A0003B1351 /* audiostr.cpp */,
 				345954F308C3D6A0003B1351 /* audiostr.h */,
 				345954F408C3D6A0003B1351 /* channel.h */,
@@ -2883,8 +2884,6 @@
 				345954FB08C3D6A0003B1351 /* fsspeech.cpp */,
 				345954FC08C3D6A0003B1351 /* fsspeech.h */,
 				3459550008C3D6A0003B1351 /* ogg */,
-				3459550308C3D6A0003B1351 /* rbaudio.cpp */,
-				3459550408C3D6A0003B1351 /* rbaudio.h */,
 				3459550508C3D6A0003B1351 /* rtvoice.cpp */,
 				3459550608C3D6A0003B1351 /* rtvoice.h */,
 				3459550708C3D6A0003B1351 /* sound.cpp */,
@@ -3590,7 +3589,6 @@
 				34C71CA808C41C6A00459F5B /* beam.h in Headers */,
 				34C71CAB08C41C6F00459F5B /* config.h in Headers */,
 				34C71D6808C4556800459F5B /* rtvoice.h in Headers */,
-				34C71D6C08C455C500459F5B /* rbaudio.h in Headers */,
 				34A3E7CD08C4BB3800BBC609 /* codec1.h in Headers */,
 				3419B21C091016C700DC7D47 /* iff_defs.h in Headers */,
 				344BA945095A59BF00B9D97D /* ai_profiles.h in Headers */,
@@ -3613,6 +3611,8 @@
 				348808540DA06E31001CAB39 /* objectshield.h in Headers */,
 				348808560DA06E31001CAB39 /* waypoint.h in Headers */,
 				F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */,
+				60FAF4E4113431A100CE910F /* openal.h in Headers */,
+				60FAF4E9113432B800CE910F /* voicerec.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4151,8 +4151,6 @@
 				34C71C6E08C41C2B00459F5B /* fsspeech.cpp in Sources */,
 				34C71C6F08C41C2E00459F5B /* ds3d.cpp in Sources */,
 				34C71C7108C41C3000459F5B /* ds.cpp in Sources */,
-				34C71C7508C41C3700459F5B /* audiostr-openal.cpp in Sources */,
-				34C71C7708C41C3A00459F5B /* acm-openal.cpp in Sources */,
 				34C71C7908C41C3E00459F5B /* species_defs.cpp in Sources */,
 				34C71C7B08C41C4200459F5B /* supernova.cpp in Sources */,
 				34C71C7D08C41C4300459F5B /* starfield.cpp in Sources */,
@@ -4186,7 +4184,6 @@
 				34C71CA908C41C6B00459F5B /* beam.cpp in Sources */,
 				34C71CAA08C41C6F00459F5B /* stubs.cpp in Sources */,
 				34C71D6708C4556700459F5B /* rtvoice.cpp in Sources */,
-				34C71D6D08C455C600459F5B /* rbaudio.cpp in Sources */,
 				34A3E7CE08C4BB3900BBC609 /* codec1.cpp in Sources */,
 				3419B21B091016C700DC7D47 /* iff_defs.cpp in Sources */,
 				344BA944095A59BF00B9D97D /* ai_profiles.cpp in Sources */,
@@ -4216,6 +4213,9 @@
 				348808580DA06E5F001CAB39 /* chttpget.cpp in Sources */,
 				348808590DA06E60001CAB39 /* cftp.cpp in Sources */,
 				F0B73A9410FA065F005E1A69 /* pngutils.cpp in Sources */,
+				60FAF4E2113431A100CE910F /* acm.cpp in Sources */,
+				60FAF4E3113431A100CE910F /* openal.cpp in Sources */,
+				60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
