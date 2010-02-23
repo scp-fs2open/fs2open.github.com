@@ -379,7 +379,7 @@ bool fred_init()
 	}
 	*/
 
-	snd_init(0, 0, 44100, 16);
+	snd_init(0, 44100);
 
 	// Not ready for this yet
   //	Cmdline_nospec = 1;
