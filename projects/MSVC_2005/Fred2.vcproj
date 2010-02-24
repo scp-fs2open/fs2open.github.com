@@ -30,7 +30,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_ant-6_d_INF.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_ant-6_d_INF.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fred2_open_ant-6_d_INF.exe"
 			/>
 			<Tool
@@ -79,7 +79,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
-				AdditionalDependencies="Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="Debug_Inferno/fred2_open_inf-6_d_INF.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -135,7 +135,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_ant-6_r_INF.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_ant-6_r_INF.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fred2_open_ant-6_r_INF.exe"
 			/>
 			<Tool
@@ -241,7 +241,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_ant-6_d.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_ant-6_d.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fred2_open_ant-6_d.exe"
 			/>
 			<Tool
@@ -290,7 +290,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
-				AdditionalDependencies="Quartz.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
+				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="Debug/fred2_open_ant-6_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -346,7 +346,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fred2_open_ant-6_r.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_ant-6_r.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fred2_open_ant-6_r.exe"
 			/>
 			<Tool

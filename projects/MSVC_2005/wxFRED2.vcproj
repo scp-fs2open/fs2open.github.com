@@ -28,7 +28,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)/wxfred2_open_trunk_INF_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_trunk_INF_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/wxfred2_open_trunk_INF_d.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
@@ -102,7 +102,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Debug\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Debug_Inferno/Profile/wxFRED2.bsc"
 			/>
@@ -134,7 +133,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)\wxfred2_open_trunk_INF_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_trunk_INF_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)\wxfred2_open_trunk_INF_r.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
@@ -208,7 +207,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Release\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Release_Inferno/Profile/wxFRED2.bsc"
 			/>
@@ -240,7 +238,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)/wxfred2_open_trunk_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/wxfred2_open_trunk_d.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/wxfred2_open_trunk_d.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
@@ -314,7 +312,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Debug\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Debug/Profile/wxFRED2.bsc"
 			/>
@@ -346,7 +343,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)\wxfred2_open_trunk_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\wxfred2_open_trunk_r.exe&quot;&#x0D;&#x0A;copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)\wxfred2_open_trunk_r.exe;$(FS2PATH)\wxfred.xrc"
 			/>
 			<Tool
@@ -420,7 +417,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Release\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Release/Profile/wxFRED2.bsc"
 			/>
@@ -1181,7 +1177,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Compiling XRC resources..."
-					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(TargetPath)&quot;&#x0D;&#x0A;"
 					Outputs="$(InputDir)$(InputName)_xrc.inl"
 				/>
 			</FileConfiguration>
@@ -1191,7 +1187,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Compiling XRC resources..."
-					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(TargetPath)&quot;&#x0D;&#x0A;"
 					Outputs="$(InputDir)$(InputName)_xrc.inl"
 				/>
 			</FileConfiguration>
@@ -1201,7 +1197,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Compiling XRC resources..."
-					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(TargetPath)&quot;&#x0D;&#x0A;"
 					Outputs="$(InputDir)$(InputName)_xrc.inl"
 				/>
 			</FileConfiguration>
@@ -1211,7 +1207,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Compiling XRC resources..."
-					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+					CommandLine="&quot;$(WXRC)\wxrc.exe&quot; /c /o&quot;$(InputDir)$(InputName)_xrc.inl&quot; &quot;$(TargetPath)&quot;&#x0D;&#x0A;"
 					Outputs="$(InputDir)$(InputName)_xrc.inl"
 				/>
 			</FileConfiguration>

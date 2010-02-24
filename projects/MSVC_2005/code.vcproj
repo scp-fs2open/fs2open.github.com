@@ -79,7 +79,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Debug\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Debug\Profile\code.bsc"
 			/>
@@ -156,7 +155,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Debug\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Debug_Inferno\Profile\code.bsc"
 			/>
@@ -234,7 +232,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Release\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Release_Inferno\Profile\code.bsc"
 			/>
@@ -312,7 +309,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Release\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
 				OutputFile="Release\Profile\code.bsc"
 			/>
