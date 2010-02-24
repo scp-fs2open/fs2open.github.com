@@ -474,7 +474,10 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	if (!Sound_enabled)
 		return -1;
 
-	Assert( gs != NULL );
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	MONITOR_INC( NumSoundsStarted, 1 );
 
@@ -549,7 +552,10 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	if ( !Sound_enabled )
 		return -1;
 
-	Assert(gs != NULL);
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	MONITOR_INC( Num3DSoundsStarted, 1 );
 
@@ -660,7 +666,10 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if (!ds_initialized)
 		return -1;
 
-	Assert(gs != NULL);
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);
@@ -727,15 +736,16 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 	int	handle = -1;
 	sound	*snd;	
 
-	Assert( gs != NULL );
-
 	if (!Sound_enabled)
 		return -1;
 
-	Assert( gs != NULL );
-
 	if (!ds_initialized)
 		return -1;
+
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);

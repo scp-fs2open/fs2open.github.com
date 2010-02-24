@@ -660,7 +660,11 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 {
 	Assert( final_size != NULL );
 	Assert( header != NULL );
-	Assert( si != NULL );
+
+	if (si == NULL) {
+		Int3();
+		return -1;
+	}
 
 	// All sounds are required to have a software buffer
 
@@ -806,7 +810,10 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 	}
 
 	Snd_sram += size;
-	*final_size = size;
+
+	if (final_size) {
+		*final_size = size;
+	}
 
 	OpenAL_ErrorCheck( alBufferData(pi, format, data, size, frequency), return -1 );
 
@@ -1759,10 +1766,10 @@ int ds_get_channel_size(int channel)
 	}
 
 	ALuint buf_id = sound_buffers[sid].buf_id;
-	ALsizei data_size = 0;
+	ALint data_size = 0;
 
-	if (buf_id != 0 && alIsBuffer(buf_id)) {
-		OpenAL_ErrorPrint( alGetBufferiv(buf_id, AL_SIZE, &data_size) );
+	if ( (buf_id != 0) && alIsBuffer(buf_id)) {
+		OpenAL_ErrorPrint( alGetBufferi(buf_id, AL_SIZE, &data_size) );
 	}
 
 	return (int) data_size;
@@ -1805,10 +1812,10 @@ int ds_get_size(int sid, int *size)
 	}
 
 	ALuint buf_id = sound_buffers[sid].buf_id;
-	ALsizei data_size = 0;
+	ALint data_size = 0;
 
-	if (buf_id != 0 && alIsBuffer(buf_id)) {
-		OpenAL_ErrorPrint( alGetBufferiv(buf_id, AL_SIZE, &data_size) );
+	if ( (buf_id != 0) && alIsBuffer(buf_id)) {
+		OpenAL_ErrorPrint( alGetBufferi(buf_id, AL_SIZE, &data_size) );
 
 		if (size) {
 			*size = (int) data_size;

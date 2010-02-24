@@ -219,7 +219,7 @@ int dscap_get_raw_data(unsigned char *outbuf, unsigned int max_size)
 		return 0;
 	}
 
-	ALCsizei max_buf_size = MIN(num_samples, max_size / ALCaptureInfo.block_align);
+	ALCsizei max_buf_size = MIN(num_samples, ALsizei(max_size / ALCaptureInfo.block_align));
 
 	OpenAL_C_ErrorCheck( alcCaptureSamples(ds_capture_device, outbuf, max_buf_size), return 0 );
 

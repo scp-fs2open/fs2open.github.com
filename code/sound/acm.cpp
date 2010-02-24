@@ -185,7 +185,7 @@ static void do_adpcm_nibble(ubyte nib, ADPCMBLOCKHEADER *header, int lPredSamp)
 
 	header->iDelta = delta;
 	header->iSamp2 = header->iSamp1;
-	header->iSamp1 = lNewSamp;
+	header->iSamp1 = (short)lNewSamp;
 }
 
 static int decode_adpcm_sample_frame(HMMIO rw, adpcm_fmt_t *fmt)
@@ -316,11 +316,16 @@ static void adpcm_memory_free(adpcm_fmt_t *fmt)
 //
 int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, ubyte **dest, int max_dest_bytes, int *dest_len, unsigned int *src_bytes_used, unsigned short dest_bps)
 {
-	Assert( pwfxSrc != NULL );
-	Assert( pwfxSrc->wFormatTag == WAVE_FORMAT_ADPCM );
 	Assert( src != NULL );
 	Assert( src_len > 0 );
 	Assert( dest_len != NULL );
+
+	if (pwfxSrc == NULL) {
+		Int3();
+		return -1;
+	}
+
+	Assert( pwfxSrc->wFormatTag == WAVE_FORMAT_ADPCM );
 
 	MMIOINFO IOhdr, IOrw;
 
@@ -431,8 +436,13 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	}
 
 	// send back actual sizes
-	*dest_len = rc;
-	*src_bytes_used = fmt->bytes_processed;
+	if (dest_len) {
+		*dest_len = rc;
+	}
+
+	if (src_bytes_used) {
+		*src_bytes_used = fmt->bytes_processed;
+	}
 
 	// cleanup
 	adpcm_memory_free(fmt);
@@ -446,9 +456,14 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 
 int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream, int dest_bps)
 {
-	Assert( pwfxSrc != NULL );
-	Assert( pwfxSrc->wFormatTag == WAVE_FORMAT_ADPCM );
 	Assert( stream != NULL );
+
+	if (pwfxSrc == NULL) {
+		Int3();
+		return -1;
+	}
+
+	Assert( pwfxSrc->wFormatTag == WAVE_FORMAT_ADPCM );
 
 	MMIOINFO IOhdr;
 
@@ -509,9 +524,12 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	acm_stream_t *str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
 	IF_ERR(str == NULL, -1);
 	str->fmt = fmt;
-	str->dest_bps = dest_bps;
+	str->dest_bps = (ushort)dest_bps;
 	str->src_bps = pwfxSrc->wBitsPerSample;
-	*stream = str;
+
+	if (stream) {
+		*stream = str;
+	}
 
 	// close the io stream
 	mmioClose( hdr, 0 );
@@ -521,7 +539,11 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 
 int ACM_stream_close(void *stream)
 { 
-	Assert(stream != NULL);
+	if (stream == NULL) {
+		Int3();
+		return 0;
+	}
+
 	acm_stream_t *str = (acm_stream_t *)stream;
 	adpcm_memory_free(str->fmt);
 	vm_free(str);
@@ -531,7 +553,11 @@ int ACM_stream_close(void *stream)
 
 int ACM_query_source_size(void *stream, int dest_len)
 {
-	Assert(stream != NULL);
+	if (stream == NULL) {
+		Int3();
+		return 0;
+	}
+
 	acm_stream_t *str = (acm_stream_t *)stream;
 
 	// estimate size of compressed data
@@ -542,7 +568,11 @@ int ACM_query_source_size(void *stream, int dest_len)
 
 int ACM_query_dest_size(void *stream, int src_len)
 {
-	Assert(stream != NULL);
+	if (stream == NULL) {
+		Int3();
+		return 0;
+	}
+
 	acm_stream_t *str = (acm_stream_t *)stream;
 
 	// estimate size of uncompressed data
@@ -553,10 +583,14 @@ int ACM_query_dest_size(void *stream, int src_len)
 
 int ACM_convert(void *stream, ubyte *src, int src_len, ubyte *dest, int max_dest_bytes, unsigned int *dest_len, unsigned int *src_bytes_used)
 {
-	Assert( stream != NULL );
 	Assert( src != NULL );
 	Assert( src_len > 0 );
 	Assert( dest_len != NULL );
+
+	if (stream == NULL) {
+		Int3();
+		return 0;
+	}
 
 	acm_stream_t *str = (acm_stream_t *)stream;
 	uint rc;
@@ -579,8 +613,13 @@ int ACM_convert(void *stream, ubyte *src, int src_len, ubyte *dest, int max_dest
 	rc = read_sample_fmt_adpcm(dest, rw, str->fmt);
 
 	// send back actual sizes
-	*dest_len = rc;
-	*src_bytes_used = str->fmt->bytes_processed;
+	if (dest_len) {
+		*dest_len = rc;
+	}
+
+	if (src_bytes_used) {
+		*src_bytes_used = str->fmt->bytes_processed;
+	}
 
 	mmioClose( rw, 0 );
 
