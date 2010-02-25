@@ -2180,8 +2180,10 @@ strcpy_s(parse_error_text, temp_error);
 			stuff_float(&sip->afterburner_recover_rate);
 		}
 
-		// Goober5000: check div-0
-		Assert(sip->afterburner_fuel_capacity);
+		if (!(sip->afterburner_fuel_capacity) ) {
+			Warning(LOCATION, "Ship class %s has an afterburner but has no afterburner fuel. Setting fuel to 1", sip->name);
+			sip->afterburner_fuel_capacity = 1.0f;
+		}
 	}
 	
 	if ( optional_string("$Trails:") ) {
