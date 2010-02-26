@@ -154,12 +154,16 @@ public class Connector
 
 						// cmd = 'netscape http://www.java-tips.org'
 						cmd = UNIX_PATH + " " + url;
-						process = Runtime.getRuntime().exec(cmd);
+						Runtime.getRuntime().exec(cmd);
 					}
 				}
 				catch (InterruptedException ie)
 				{
 					logger.error("Error bringing up browser; cmd='" + cmd + "'", ie);
+
+					// restore interrupt
+					Thread.currentThread().interrupt();
+
 					return false;
 				}
 			}

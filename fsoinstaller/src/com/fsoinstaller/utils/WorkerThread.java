@@ -102,24 +102,4 @@ public class WorkerThread extends Thread
 		super(target);
 		setPriority(priority);
 	}
-
-	@Override
-	public void start()
-	{
-		if (EventQueue.isDispatchThread())
-		{
-			EventQueue.invokeLater(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					WorkerThread.super.start();
-				}
-			});
-		}
-		else
-		{
-			super.start();
-		}
-	}
 }
