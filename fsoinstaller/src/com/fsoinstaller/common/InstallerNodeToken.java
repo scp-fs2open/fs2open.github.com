@@ -19,6 +19,11 @@
 
 package com.fsoinstaller.common;
 
+/**
+ * These tokens denote subsections of an installer document.
+ * 
+ * @author Goober5000
+ */
 public enum InstallerNodeToken
 {
 	NAME("NAME"),

@@ -48,7 +48,7 @@ import java.net.URL;
  */
 public class BaseURL
 {
-	protected URI baseURL;
+	protected final URI baseURL;
 
 	public BaseURL(String baseURL) throws InvalidBaseURLException
 	{

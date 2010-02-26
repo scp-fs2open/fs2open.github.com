@@ -45,7 +45,8 @@ import org.apache.log4j.Logger;
  * directly or from within a compressed archive. Rewritten from a similar class
  * originally created by Turey.
  * <p>
- * This class should be thread-safe. For the most part, it is also immutable.
+ * This class should be thread-safe. For the most part (i.e. except for the
+ * listeners), it is also immutable.
  * 
  * @author Turey
  * @author Goober5000
@@ -81,7 +82,7 @@ public class Downloader
 			logger.debug("Checking if the file is up to date...");
 			if (destinationFile.exists() && (totalBytes > 0) && (destinationFile.length() == totalBytes))
 			{
-				fireNoDownloadNecessary(this, destinationFile.getName(), 0, totalBytes);
+				fireNoDownloadNecessary(destinationFile.getName(), 0, totalBytes);
 				return true;
 			}
 
@@ -102,7 +103,7 @@ public class Downloader
 		catch (IOException ioe)
 		{
 			logger.error("An exception was thrown during download!", ioe);
-			fireDownloadFailed(this, destinationFile.getName(), 0, totalBytes);
+			fireDownloadFailed(destinationFile.getName(), 0, totalBytes);
 
 			return false;
 		}
@@ -139,9 +140,6 @@ public class Downloader
 			CheckedInputStream checksum = new CheckedInputStream(connection.getInputStream(), new Adler32());
 			zipInputStream = new ZipInputStream(new BufferedInputStream(checksum));
 
-			// TODO: determine archive type?
-			todo();
-
 			ZipEntry entry;
 			while ((entry = zipInputStream.getNextEntry()) != null)
 			{
@@ -161,7 +159,7 @@ public class Downloader
 				logger.debug("Checking if the file is up to date...");
 				if (destinationFile.exists() && (totalBytes > 0) && (destinationFile.length() == totalBytes))
 				{
-					fireNoDownloadNecessary(this, destinationFile.getName(), 0, totalBytes);
+					fireNoDownloadNecessary(destinationFile.getName(), 0, totalBytes);
 					zipInputStream.closeEntry();
 					continue;
 				}
@@ -187,7 +185,7 @@ public class Downloader
 		catch (IOException ioe)
 		{
 			logger.error("An exception was thrown during download!", ioe);
-			fireDownloadFailed(this, currentEntry, 0, totalBytes);
+			fireDownloadFailed(currentEntry, 0, totalBytes);
 
 			return false;
 		}
@@ -227,7 +225,7 @@ public class Downloader
 		long totalBytesWritten = 0;
 
 		logger.debug("Downloading...");
-		fireAboutToStart(this, downloadName, totalBytesWritten, downloadTotalSize);
+		fireAboutToStart(downloadName, totalBytesWritten, downloadTotalSize);
 
 		int bytesRead = 0;
 		while ((bytesRead = inputStream.read(buffer)) != -1)
@@ -235,11 +233,11 @@ public class Downloader
 			outputStream.write(buffer, 0, bytesRead);
 			totalBytesWritten += bytesRead;
 
-			fireProgressReport(this, downloadName, totalBytesWritten, downloadTotalSize);
+			fireProgressReport(downloadName, totalBytesWritten, downloadTotalSize);
 		}
 
 		logger.debug("Download complete");
-		fireDownloadComplete(this, downloadName, totalBytesWritten, downloadTotalSize);
+		fireDownloadComplete(downloadName, totalBytesWritten, downloadTotalSize);
 	}
 
 	public void addDownloadListener(DownloadListener listener)
@@ -252,7 +250,7 @@ public class Downloader
 		downloadListeners.remove(listener);
 	}
 
-	protected void fireNoDownloadNecessary(Object source, String downloadName, long downloadedBytes, long totalBytes)
+	protected void fireNoDownloadNecessary(String downloadName, long downloadedBytes, long totalBytes)
 	{
 		synchronized (downloadListeners)
 		{
@@ -261,7 +259,7 @@ public class Downloader
 			{
 				// lazy instantiation of the event
 				if (event == null)
-					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+					event = new DownloadEvent(this, downloadName, downloadedBytes, totalBytes);
 
 				// fire it
 				listener.downloadNotNecessary(event);
@@ -269,7 +267,7 @@ public class Downloader
 		}
 	}
 
-	protected void fireAboutToStart(Object source, String downloadName, long downloadedBytes, long totalBytes)
+	protected void fireAboutToStart(String downloadName, long downloadedBytes, long totalBytes)
 	{
 		synchronized (downloadListeners)
 		{
@@ -278,7 +276,7 @@ public class Downloader
 			{
 				// lazy instantiation of the event
 				if (event == null)
-					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+					event = new DownloadEvent(this, downloadName, downloadedBytes, totalBytes);
 
 				// fire it
 				listener.downloadAboutToStart(event);
@@ -286,7 +284,7 @@ public class Downloader
 		}
 	}
 
-	protected void fireProgressReport(Object source, String downloadName, long downloadedBytes, long totalBytes)
+	protected void fireProgressReport(String downloadName, long downloadedBytes, long totalBytes)
 	{
 		synchronized (downloadListeners)
 		{
@@ -295,7 +293,7 @@ public class Downloader
 			{
 				// lazy instantiation of the event
 				if (event == null)
-					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+					event = new DownloadEvent(this, downloadName, downloadedBytes, totalBytes);
 
 				// fire it
 				listener.downloadProgressReport(event);
@@ -303,7 +301,7 @@ public class Downloader
 		}
 	}
 
-	protected void fireDownloadComplete(Object source, String downloadName, long downloadedBytes, long totalBytes)
+	protected void fireDownloadComplete(String downloadName, long downloadedBytes, long totalBytes)
 	{
 		synchronized (downloadListeners)
 		{
@@ -312,7 +310,7 @@ public class Downloader
 			{
 				// lazy instantiation of the event
 				if (event == null)
-					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+					event = new DownloadEvent(this, downloadName, downloadedBytes, totalBytes);
 
 				// fire it
 				listener.downloadComplete(event);
@@ -320,7 +318,7 @@ public class Downloader
 		}
 	}
 
-	protected void fireDownloadFailed(Object source, String downloadName, long downloadedBytes, long totalBytes)
+	protected void fireDownloadFailed(String downloadName, long downloadedBytes, long totalBytes)
 	{
 		synchronized (downloadListeners)
 		{
@@ -329,7 +327,7 @@ public class Downloader
 			{
 				// lazy instantiation of the event
 				if (event == null)
-					event = new DownloadEvent(source, downloadName, downloadedBytes, totalBytes);
+					event = new DownloadEvent(this, downloadName, downloadedBytes, totalBytes);
 
 				// fire it
 				listener.downloadFailed(event);

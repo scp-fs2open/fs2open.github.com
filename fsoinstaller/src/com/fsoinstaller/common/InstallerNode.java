@@ -24,6 +24,12 @@ import java.util.Collections;
 import java.util.List;
 
 
+/**
+ * This class represents a single unit of installation, such as a mod, with a
+ * group of associated files.
+ * 
+ * @author Goober5000
+ */
 public class InstallerNode
 {
 	protected String name;

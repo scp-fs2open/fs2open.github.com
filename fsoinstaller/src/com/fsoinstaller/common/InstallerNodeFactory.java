@@ -29,6 +29,8 @@ import java.util.List;
 
 /**
  * Mostly for parsing and printing.
+ * 
+ * @author Goober5000
  */
 public class InstallerNodeFactory
 {
