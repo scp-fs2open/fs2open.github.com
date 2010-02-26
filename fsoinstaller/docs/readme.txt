@@ -20,9 +20,9 @@ FSO Installer (application code only, sans dependencies)
 http://www.fsoinstaller.com/
 GNU General Public License, version 2.0
 
-Archive Tools for Java
-http://www.at4j.org/
-GNU Lesser General Public License, version 3.0
+7-Zip-JBinding
+http://sevenzipjbind.sourceforge.net/
+GNU Lesser General Public License, version 2.1
 
 Apache Log4J
 http://logging.apache.org/log4j/
