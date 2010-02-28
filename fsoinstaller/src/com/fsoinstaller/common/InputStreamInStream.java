@@ -31,6 +31,8 @@ public class InputStreamInStream implements IInStream
 
 	public InputStreamInStream(InputStreamSource inputStreamSource, long totalBytes, int bufferSize)
 	{
+		if (inputStreamSource == null)
+			throw new NullPointerException("InputStreamSource must not be null!");
 		if (bufferSize <= 1)
 			throw new IllegalArgumentException("Buffer size must be greater than 1");
 
@@ -59,10 +61,10 @@ public class InputStreamInStream implements IInStream
 			bufferCount = 0;
 		}
 		// we overran the buffer and need to catch up
-		else if (bufferPos >= buffer.length)
+		else if (bufferPos >= bufferCount)
 		{
 			// get to the correct stream position
-			seekForward(bufferPos - buffer.length);
+			seekForward(bufferPos - bufferCount);
 
 			// reset the buffer
 			bufferPos = 0;
@@ -88,13 +90,31 @@ public class InputStreamInStream implements IInStream
 
 	private void seekForward(long offset) throws IOException
 	{
-		if (offset < 0)
+		if (offset == 0)
+			return;
+		else if (offset < 0)
 			throw new IllegalArgumentException("This method is only for seeking forward");
 
-		for (int i = 0; i < MAX_SEEK_TRIES && (offset > 0); i++)
+		// try skip-seek
+		int tries = 0;
+		while (offset > 0 && tries < MAX_SEEK_TRIES)
 		{
 			long skipped = currentInputStream.skip(offset);
-			offset -= skipped;
+			if (skipped > 0)
+				offset -= skipped;
+			else
+				tries++;
+		}
+
+		// try read-seek
+		tries = 0;
+		while (offset > 0 && tries < MAX_SEEK_TRIES)
+		{
+			long read = currentInputStream.read(buffer, 0, (offset < buffer.length) ? (int) offset : buffer.length);
+			if (read > 0)
+				offset -= read;
+			else
+				tries++;
 		}
 
 		if (offset > 0)
