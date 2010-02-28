@@ -29,16 +29,23 @@ import java.util.EventObject;
  */
 public class DownloadEvent extends EventObject
 {
-	protected String downloadName;
-	protected long downloadedBytes;
-	protected long totalBytes;
+	protected final String downloadName;
+	protected final long downloadedBytes;
+	protected final long totalBytes;
+	protected final Exception exception;
 
 	public DownloadEvent(Object source, String downloadName, long downloadedBytes, long totalBytes)
+	{
+		this(source, downloadName, downloadedBytes, totalBytes, null);
+	}
+
+	public DownloadEvent(Object source, String downloadName, long downloadedBytes, long totalBytes, Exception exception)
 	{
 		super(source);
 		this.downloadName = downloadName;
 		this.downloadedBytes = downloadedBytes;
 		this.totalBytes = totalBytes;
+		this.exception = exception;
 	}
 
 	public String getDownloadName()
@@ -54,5 +61,10 @@ public class DownloadEvent extends EventObject
 	public long getTotalBytes()
 	{
 		return totalBytes;
+	}
+
+	public Exception getException()
+	{
+		return exception;
 	}
 }
