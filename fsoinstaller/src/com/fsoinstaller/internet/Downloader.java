@@ -454,23 +454,29 @@ public class Downloader
 				switch (extractOperationResult)
 				{
 					case OK:
-						logger.debug("Download complete");
-						fireDownloadComplete(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex]);
+						if (currentIndex >= 0)
+						{
+							logger.debug("Download complete");
+							fireDownloadComplete(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex]);
+						}
 						break;
 
 					case UNSUPPORTEDMETHOD:
 						logger.warn("Extraction failed due to unknown compression method!");
-						fireDownloadFailed(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex], new SevenZipException("Unknown compression method"));
+						if (currentIndex >= 0)
+							fireDownloadFailed(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex], new SevenZipException("Unknown compression method"));
 						break;
 
 					case DATAERROR:
 						logger.warn("Extraction failed due to data error!");
-						fireDownloadFailed(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex], new SevenZipException("Data error"));
+						if (currentIndex >= 0)
+							fireDownloadFailed(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex], new SevenZipException("Data error"));
 						break;
 
 					case CRCERROR:
 						logger.warn("Extraction failed due to CRC error!");
-						fireDownloadFailed(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex], new SevenZipException("CRC error"));
+						if (currentIndex >= 0)
+							fireDownloadFailed(_archiveEntries[currentIndex], currentCompletionValue, _archiveSizes[currentIndex], new SevenZipException("CRC error"));
 						break;
 
 					default:
