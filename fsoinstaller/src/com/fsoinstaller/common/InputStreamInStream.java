@@ -5,12 +5,17 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.log4j.Logger;
+
 import net.sf.sevenzipjbinding.IInStream;
 import net.sf.sevenzipjbinding.SevenZipException;
 
 
 public class InputStreamInStream implements IInStream
 {
+	@SuppressWarnings("unused")
+	private static final Logger logger = Logger.getLogger(InputStreamInStream.class);
+
 	private static final int defaultBufferSize = 8192;
 	private static final int MAX_SEEK_TRIES = 10;
 
@@ -63,6 +68,34 @@ public class InputStreamInStream implements IInStream
 		// we overran the buffer and need to catch up
 		else if (bufferPos >= bufferCount)
 		{
+			// special case: if we're within one buffer of the end
+			if (overallPos >= overallCount - buffer.length)
+			{
+				// calculate amount we'd need to seek
+				int newBufferPos = (int) (overallPos - (overallCount - buffer.length));
+				int offset = (int) (bufferPos - bufferCount) - newBufferPos;
+
+				// it's possible that we've arrived in bounds already
+				if (offset < 0)
+				{
+					// finish the buffer
+					// (the buffer info will be properly adjusted below)
+					readFully(buffer, -offset, buffer.length + offset);
+				}
+				// not there yet
+				else
+				{
+					// seek, then read the whole buffer
+					seekForward(offset);
+					readFully(buffer, 0, buffer.length);
+				}
+
+				// now set the new buffer info
+				bufferPos = newBufferPos;
+				bufferCount = buffer.length;
+				return;
+			}
+
 			// get to the correct stream position
 			seekForward(bufferPos - bufferCount);
 
@@ -90,13 +123,15 @@ public class InputStreamInStream implements IInStream
 
 	private void seekForward(long offset) throws IOException
 	{
+		int tries;
+
 		if (offset == 0)
 			return;
 		else if (offset < 0)
 			throw new IllegalArgumentException("This method is only for seeking forward");
 
 		// try skip-seek
-		int tries = 0;
+		tries = 0;
 		while (offset > 0 && tries < MAX_SEEK_TRIES)
 		{
 			long skipped = currentInputStream.skip(offset);
@@ -119,6 +154,33 @@ public class InputStreamInStream implements IInStream
 
 		if (offset > 0)
 			throw new IOException("Number of seek attempts exceeded MAX_SEEK_TRIES");
+	}
+
+	private void readFully(byte[] array, int start, int length) throws IOException
+	{
+		int tries;
+
+		if (length == 0)
+			return;
+		else if (length - start > array.length)
+			throw new IllegalArgumentException("Bytes from start to length must fit into the array!");
+
+		// read it
+		tries = 0;
+		while (length > 0 && tries < MAX_SEEK_TRIES)
+		{
+			int read = currentInputStream.read(array, start, length);
+			if (read > 0)
+			{
+				length -= read;
+				start += read;
+			}
+			else
+				tries++;
+		}
+
+		if (length > 0)
+			throw new IOException("Number of read tries exceeded MAX_SEEK_TRIES");
 	}
 
 	@Override
