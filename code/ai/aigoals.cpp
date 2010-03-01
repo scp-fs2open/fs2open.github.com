@@ -43,9 +43,8 @@
 // Goober5000 - okay, this seems really stupid.  If any ship in the mission is assigned a goal
 // in PURGE_GOALS_ALL_SHIPS, *every* other ship will have certain goals purged.  So I added
 // PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
-#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE)
+#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
 #define PURGE_GOALS_ONE_SHIP		(AI_GOAL_IGNORE_NEW)
-#define PURGE_GOALS_DISARM_DISABLE  (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
 
 // goals given from the player to other ships in the game are also handled in this
 // code
@@ -396,7 +395,7 @@ void ai_mission_goal_complete( ai_info *aip )
 // purging becomes valid.
 void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
 {
-	int i;
+	int i, j;
 	ai_goal *purge_goal;
 	char *name;
 	int mode, ship_index, wingnum;
@@ -449,11 +448,33 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
 					purge_goal->flags |= AIGF_PURGE;
 				break;
 
-			// disarm/disable goals should remove any general attack
-			case AI_GOAL_DISABLE_SHIP:
+			// disarm/disable goals should remove attacks from certain ships types
 			case AI_GOAL_DISARM_SHIP:
-				if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING) )
-					purge_goal->flags |= AIGF_PURGE;
+			case AI_GOAL_DISABLE_SHIP:
+				if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING) ) {
+					int ai_ship_type;
+
+					// for wings we grab the ship type of the wing leader
+					if (ai_wingnum >= 0) {
+						ai_ship_type = Ship_info[Ships[Wings[ai_wingnum].special_ship].ship_info_index].class_type;
+					}
+					// otherwise we simply grab it from the ship itself
+					else {
+						Assert(aip != NULL);
+						ai_ship_type = Ship_info[Ships[aip->shipnum].ship_info_index].class_type;
+					}
+
+					// grab the ship type of the ship that is being disarmed/disabled
+					ship_type_info *crippled_ships_type = &Ship_types[Ship_info[Ships[ship_index].ship_info_index].class_type];
+
+					// work through all the ship types which to see if the class matching our ai ship must ignore the ship 
+					// being disarmed/disabled
+					for ( j=0 ; j < (int)crippled_ships_type->ai_cripple_ignores.size(); j++) {
+						if (crippled_ships_type->ai_cripple_ignores[j] == ai_ship_type) {
+								purge_goal->flags |= AIGF_PURGE;
+						}
+					}
+				}
 				break;
 		}
 	}
@@ -466,10 +487,7 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	ship_obj *sop;
 
 	// only purge goals if a new goal is one of the types in next statement
-	if (!((aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) || (aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE)))
-		return;
-	
-	if ((aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE) && (!(The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS)))
+	if (!(aigp->ai_mode & PURGE_GOALS_ALL_SHIPS))
 		return;
 
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
@@ -1595,16 +1613,12 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// Goober5000 - see note at PURGE_GOALS_ALL_SHIPS... this is bizarre
 	if ((status == SHIP_STATUS_ARRIVED) && !(aigp->flags & AIGF_GOALS_PURGED))
 	{
-		if ((aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) ||
-			((aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE) && (The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS)))
-		{
+		if (aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) {
 			ai_goal_purge_all_invalid_goals(aigp);
 			aigp->flags |= AIGF_GOALS_PURGED;
 		}
-		else if ((aigp->ai_mode & PURGE_GOALS_ONE_SHIP) ||
-			     ((aigp->ai_mode & PURGE_GOALS_DISARM_DISABLE) && (!(The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS))))
-		{
-			ai_goal_purge_invalid_goals(aigp, aip->goals);
+		else if (aigp->ai_mode & PURGE_GOALS_ONE_SHIP) {
+			ai_goal_purge_invalid_goals(aigp, aip->goals, aip, -1);
 			aigp->flags |= AIGF_GOALS_PURGED;
 		}
 	}	
@@ -2174,20 +2188,17 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_attack_object( objp, other_obj, NULL);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
-		if (The_mission.ai_profile->flags & AIPF_GLOBAL_DISARM_DISABLE_EFFECTS) {
-			if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
-				if (aip->target_objnum != -1) {
-					//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
-					if (!(Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HUGE_SHIP))
-						Objects[aip->target_objnum].flags |= OF_PROTECTED;
-				}
-			} else	//	Just in case this ship had been protected, unprotect it.
-				if (aip->target_objnum != -1)
-					Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
-		}
-
+		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
+			if (aip->target_objnum != -1) {
+				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
+				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].ai_bools & STI_AI_PROTECTED_ON_CRIPPLE)
+					Objects[aip->target_objnum].flags |= OF_PROTECTED;
+			}
+		} else	//	Just in case this ship had been protected, unprotect it.
+			if (aip->target_objnum != -1)
+				Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
 		break;
-									  }
+	}
 
 	case AI_GOAL_CHASE_WING:
 		wingnum = wing_name_lookup( current_goal->ship_name );

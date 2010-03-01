@@ -210,6 +210,7 @@ $Fog:																	\n\
 $AI:																	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Sentry Gun										\n\
@@ -220,6 +221,7 @@ $Show Attack Direction:	YES												\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			0.10											\n\
 $EMP Multiplier:		10.0											\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -229,6 +231,7 @@ $AI:																	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Escape Pod										\n\
@@ -239,6 +242,7 @@ $Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
@@ -246,6 +250,7 @@ $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Cargo											\n\
@@ -254,6 +259,7 @@ $Max Debris Speed:		200												\n\
 $FF Multiplier:			0.10											\n\
 $EMP Multiplier:		10.0											\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -272,6 +278,7 @@ $Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		3.5												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -284,6 +291,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Active docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 ;;WMC - Stealth ships always have another type, so this isn't used		\n\
@@ -296,6 +304,7 @@ $Show Attack Direction:	YES												\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -308,6 +317,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Fighter											\n\
@@ -321,6 +331,7 @@ $Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -334,6 +345,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Bomber											\n\
@@ -347,6 +359,7 @@ $Turrets prioritize ship target: YES									\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -360,6 +373,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 ;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber																																																								\n\
@@ -373,6 +387,7 @@ $Warp Pushable:			YES												\n\
 $Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -386,6 +401,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Transport										\n\
@@ -398,6 +414,7 @@ $Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		2.0												\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
@@ -412,6 +429,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Freighter										\n\
@@ -425,6 +443,7 @@ $Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		1.75											\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
@@ -440,6 +459,7 @@ $AI:																	\n\
 	+Can Form Wing:			YES											\n\
 	+Active docks:			( \"cargo\" )								\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					AWACS											\n\
@@ -452,6 +472,7 @@ $Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.8												\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
@@ -466,6 +487,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Gas Miner										\n\
@@ -478,6 +500,7 @@ $Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		1.0												\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
@@ -492,6 +515,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Cruiser											\n\
@@ -504,6 +528,7 @@ $Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.9												\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
@@ -518,6 +543,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Corvette										\n\
@@ -530,6 +556,7 @@ $Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.3333											\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
@@ -544,6 +571,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+		+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Capital											\n\
@@ -557,6 +585,7 @@ $Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.2												\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	NO												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			750.0										\n\
@@ -571,6 +600,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Super Cap										\n\
@@ -584,6 +614,7 @@ $Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.075											\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	NO												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			1000.0										\n\
@@ -596,6 +627,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Drydock											\n\
@@ -608,6 +640,7 @@ $Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.5												\n\
 $Beams Easily Hit:		YES												\n\
+$Protected on cripple:	NO												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			750.0										\n\
@@ -619,6 +652,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Knossos Device									\n\
@@ -630,6 +664,7 @@ $Show Attack Direction:	YES												\n\
 $Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.10											\n\
+$Protected on cripple:	NO												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			1000.0										\n\
@@ -640,6 +675,7 @@ $AI:																	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 #End																	\n\
@@ -928,11 +964,6 @@ $use only single fov for turrets:		NO								\n\
 																		\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
-																		\n\
-;; a disam or disable goal will protect a ship globally and purge		\n\
-;; standing attack orders globally. If set to NO, only the ship/wing	\n\
-;; given the order to disarm or disable will be affected.				\n\
-$disarm or disable cause global ai goal effects:	YES					\n\
 																		\n\
 ;; Fixes a bug where AI class is not properly set if set in the mission	\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\

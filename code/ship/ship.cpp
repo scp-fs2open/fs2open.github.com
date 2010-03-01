@@ -2180,10 +2180,11 @@ strcpy_s(parse_error_text, temp_error);
 			stuff_float(&sip->afterburner_recover_rate);
 		}
 
-		// Goober5000: check div-0
-		Assert(sip->afterburner_fuel_capacity);
-	}
-	
+		if (!(sip->afterburner_fuel_capacity) ) {
+			Warning(LOCATION, "Ship class %s has an afterburner but has no afterburner fuel. Setting fuel to 1", sip->name);
+			sip->afterburner_fuel_capacity = 1.0f;
+		}
+
 	if ( optional_string("$Trails:") ) {
 		bool trails_warning = true;
 
@@ -2192,17 +2193,17 @@ strcpy_s(parse_error_text, temp_error);
 			generic_bitmap_init(&sip->afterburner_trail, NULL);
 			stuff_string(sip->afterburner_trail.filename, F_NAME, MAX_FILENAME_LEN);
 		}
-		
+
 		if ( optional_string("+Width:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_width_factor);
 		}
-			
+
 		if ( optional_string("+Alpha:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_alpha_factor);
 		}
-			
+
 		if ( optional_string("+Life:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_life);
@@ -3270,8 +3271,12 @@ void parse_ship_type()
 	}
 
 	if(optional_string("$Beams Easily Hit:")) {
-			stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
-		}
+		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
+	}
+
+	if(optional_string("$Protected on cripple:")) {
+		stuff_boolean_flag(&stp->ai_bools, STI_AI_PROTECTED_ON_CRIPPLE);
+	}
 
 	if(optional_string("$No Huge Beam Impact Effects:")) {
 		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
@@ -3333,6 +3338,11 @@ void parse_ship_type()
 		if(optional_string("+Passive docks:")) {
 			parse_string_flag_list(&stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
 		}
+
+		if(optional_string("+Ignored on cripple by:")) {
+			stuff_string_list(stp->ai_cripple_ignores_temp); 
+		}
+
 	}
 
 	if(optional_string("$Explosion Animations:"))
@@ -3656,6 +3666,15 @@ void ship_init()
 				}
 			}
 			stp->ai_actively_pursues_temp.clear();
+
+			//Handle disabled/disarmed behaviour
+			for(j = 0; j < stp->ai_cripple_ignores_temp.size(); j++) {
+				idx = ship_type_name_lookup((char*)stp->ai_cripple_ignores_temp[j].c_str());
+				if(idx >= 0) {
+					stp->ai_cripple_ignores.push_back(idx);
+				}
+			}
+			stp->ai_cripple_ignores_temp.clear();
 		}
 
 		//ships.tbl

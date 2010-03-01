@@ -8415,7 +8415,7 @@ void sexp_play_sound_from_file(int n)
 	}
 
 	n = CDR(n);
-	int loop = is_sexp_true(n);
+	int loop = eval_sexp(n);
 
 	// play sound file -----------------------------
 	sexp_start_music(loop);	

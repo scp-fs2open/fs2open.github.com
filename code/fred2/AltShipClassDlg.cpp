@@ -95,6 +95,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	}
 
 	Assert (num_selected_ships > 0);
+	Assert (Objects[cur_object_index].flags & OF_MARKED);
 	if (num_selected_ships > 1) 
 	{
 		multi_edit = true;
@@ -137,7 +138,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 
 	// Set up the actual list of alt classes
 	alt_class_pool.clear();	
-	alt_class_pool = Ships[m_selected_ships[0]].s_alt_classes;
+	alt_class_pool = Ships[Objects[cur_object_index].instance].s_alt_classes;
 	alt_class_list_rebuild(); 
 	
 	return TRUE;  // return TRUE unless you set the focus to a control
