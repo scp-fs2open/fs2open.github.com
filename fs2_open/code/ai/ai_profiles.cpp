@@ -367,8 +367,6 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$allow vertical dodge:", AIPF_ALLOW_VERTICAL_DODGE, AIP_FLAG);
 
-			set_flag(profile, "$disarm or disable cause global ai goal effects:", AIPF_GLOBAL_DISARM_DISABLE_EFFECTS, AIP_FLAG);
-
 			set_flag(profile, "$force beam turrets to use normal fov:", AIPF_FORCE_BEAM_TURRET_FOV, AIP_FLAG);
 
 			set_flag(profile, "$fix ai class bug:", AIPF_FIX_AI_CLASS_BUG, AIP_FLAG);

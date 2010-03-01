@@ -3272,8 +3272,12 @@ void parse_ship_type()
 	}
 
 	if(optional_string("$Beams Easily Hit:")) {
-			stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
-		}
+		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
+	}
+
+	if(optional_string("$Protected on cripple:")) {
+		stuff_boolean_flag(&stp->ai_bools, STI_AI_PROTECTED_ON_CRIPPLE);
+	}
 
 	if(optional_string("$No Huge Beam Impact Effects:")) {
 		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
@@ -3334,6 +3338,10 @@ void parse_ship_type()
 
 		if(optional_string("+Passive docks:")) {
 			parse_string_flag_list(&stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
+		}
+
+		if(optional_string("+Ignored on cripple by:")) {
+			stuff_string_list(stp->ai_cripple_ignores_temp); 
 		}
 	}
 
@@ -3658,6 +3666,15 @@ void ship_init()
 				}
 			}
 			stp->ai_actively_pursues_temp.clear();
+
+			//Handle disabled/disarmed behaviour
+			for(j = 0; j < stp->ai_cripple_ignores_temp.size(); j++) {
+				idx = ship_type_name_lookup((char*)stp->ai_cripple_ignores_temp[j].c_str());
+				if(idx >= 0) {
+					stp->ai_cripple_ignores.push_back(idx);
+				}
+			}
+			stp->ai_cripple_ignores_temp.clear();
 		}
 
 		//ships.tbl

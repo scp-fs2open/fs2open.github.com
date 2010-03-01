@@ -47,9 +47,8 @@
 #define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
 #define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
 #define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
-#define AIPF_GLOBAL_DISARM_DISABLE_EFFECTS						    (1 << 29)
-#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 30)
-#define AIPF_FIX_AI_CLASS_BUG										(1 << 31)
+#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 29)
+#define AIPF_FIX_AI_CLASS_BUG										(1 << 30)
 
 // flags2
 #define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
