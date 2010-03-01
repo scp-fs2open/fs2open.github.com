@@ -859,6 +859,7 @@ typedef struct thruster_particles {
 #define STI_AI_GUARDS_ATTACK			(1<<3)
 #define STI_AI_TURRETS_ATTACK			(1<<4)
 #define STI_AI_CAN_FORM_WING			(1<<5)
+#define STI_AI_PROTECTED_ON_CRIPPLE		(1<<6)
 
 typedef struct ship_type_info {
 	char name[NAME_LENGTH];
@@ -889,6 +890,7 @@ typedef struct ship_type_info {
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
+	SCP_vector<int> ai_cripple_ignores;
 
 	//Explosions
 	float vaporize_chance;
@@ -898,6 +900,7 @@ typedef struct ship_type_info {
 
 	//Regen values - need to be converted after all types have loaded
 	SCP_vector<SCP_string> ai_actively_pursues_temp;
+	SCP_vector<SCP_string> ai_cripple_ignores_temp;
 
 	ship_type_info( )
 		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), weapon_bools( 0 ),
