@@ -60,7 +60,6 @@ public:
 	CButton m_nav_needslink;
 	CButton m_hide_ship_name;
 	CButton	m_set_class_dynamically;
-	CButton	m_toggle_cripple;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -113,7 +112,6 @@ protected:
 	afx_msg void OnAltAsCallsign();
 	afx_msg void OnHideShipName();
 	afx_msg void OnSetClassDynamically();
-	afx_msg void OnToggleCripple();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

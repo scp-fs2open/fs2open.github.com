@@ -385,7 +385,6 @@ typedef struct ship_subsys_info {
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
-#define SF2_TOGGLE_REACTIONS_ON_CRIPPLE		(1<<21)		// Karajorma - Switches the behaviour other ships show to this ship on disarm/disable
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

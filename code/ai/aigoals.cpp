@@ -467,22 +467,11 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 					// grab the ship type of the ship that is being disarmed/disabled
 					ship_type_info *crippled_ships_type = &Ship_types[Ship_info[Ships[ship_index].ship_info_index].class_type];
 
-					// if the ship flag has been set we want to reverse the behaviour. Ship classes that would ignore this ship will attack it and visa versa
-					bool toggle = false;
-					if (Ships[ship_index].flags2 & SF2_TOGGLE_REACTIONS_ON_CRIPPLE) {
-						toggle = true;
-					}
-
-
 					// work through all the ship types which to see if the class matching our ai ship must ignore the ship 
 					// being disarmed/disabled
 					for ( j=0 ; j < (int)crippled_ships_type->ai_cripple_ignores.size(); j++) {
-						// if the two classes match and the toggle isn't set
-						if (!toggle && (crippled_ships_type->ai_cripple_ignores[j] == ai_ship_type)) {
+						if (crippled_ships_type->ai_cripple_ignores[j] == ai_ship_type) {
 								purge_goal->flags |= AIGF_PURGE;
-						}
-						else if (toggle) {							
-							purge_goal->flags |= AIGF_PURGE;
 						}
 					}
 				}	

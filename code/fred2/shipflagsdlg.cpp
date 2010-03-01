@@ -70,7 +70,6 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_NAV_NEEDSLINK, m_nav_needslink);
 	DDX_Control(pDX, IDC_HIDE_SHIP_NAME, m_hide_ship_name);
 	DDX_Control(pDX, IDC_SET_CLASS_DYNAMICALLY, m_set_class_dynamically);
-	DDX_Control(pDX, IDC_TOGGLE_CRIPPLE, m_toggle_cripple);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -128,7 +127,6 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NAV_NEEDSLINK, OnNavNeedslink)
 	ON_BN_CLICKED(IDC_HIDE_SHIP_NAME, OnHideShipName)
 	ON_BN_CLICKED(IDC_SET_CLASS_DYNAMICALLY, OnSetClassDynamically)
-	ON_BN_CLICKED(IDC_TOGGLE_CRIPPLE, OnToggleCripple)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -149,7 +147,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warpin = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
 	int no_death_scream = 0, always_death_scream = 0;
-	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0, set_class_dynamically = 0, toggle_cripple = 0;
+	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0, set_class_dynamically = 0;
 
 	object *objp;
 	ship *shipp;
@@ -191,7 +189,6 @@ BOOL ship_flags_dlg::OnInitDialog()
 					nav_carry = (shipp->flags2 & SF2_NAVPOINT_CARRY) ? 1 : 0; 
 					nav_needslink = (shipp->flags2 & SF2_NAVPOINT_NEEDSLINK) ? 1 : 0;
 					hide_ship_name = (shipp->flags2 & SF2_HIDE_SHIP_NAME) ? 1 : 0;
-					toggle_cripple = (shipp->flags2 & SF2_TOGGLE_REACTIONS_ON_CRIPPLE) ? 1 : 0;
 
 					destroy_before_mission = (shipp->flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(shipp->final_death_time);
@@ -245,8 +242,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					nav_carry = tristate_set(shipp->flags2 & SF2_NAVPOINT_CARRY, nav_carry);
 					nav_needslink = tristate_set(shipp->flags2 & SF2_NAVPOINT_NEEDSLINK, nav_needslink);
 					hide_ship_name = tristate_set(shipp->flags2 & SF2_HIDE_SHIP_NAME, hide_ship_name);
-					toggle_cripple = tristate_set(shipp->flags2 & SF2_TOGGLE_REACTIONS_ON_CRIPPLE, toggle_cripple);
-					
+
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
 					// values are the same, and cleared if the values are not the same.
@@ -313,7 +309,6 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_nav_carry.SetCheck(nav_carry);
 	m_nav_needslink.SetCheck(nav_needslink);
 	m_hide_ship_name.SetCheck(hide_ship_name);
-	m_toggle_cripple.SetCheck(toggle_cripple);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -822,22 +817,6 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
-	switch (m_toggle_cripple.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags2 & SF2_TOGGLE_REACTIONS_ON_CRIPPLE) )
-				set_modified();
-
-			shipp->flags2 |= SF2_TOGGLE_REACTIONS_ON_CRIPPLE;
-			break;
-
-		case 0:
-			if ( shipp->flags2 & SF2_TOGGLE_REACTIONS_ON_CRIPPLE )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_TOGGLE_REACTIONS_ON_CRIPPLE;
-			break;
-	}
-
 	switch (m_guardian.GetCheck()) {
 		case 1:
 			if ( !(shipp->ship_guardian_threshold) )
@@ -1206,14 +1185,5 @@ void ship_flags_dlg::OnHideShipName()
  		m_hide_ship_name.SetCheck(0);
 	} else {
 		m_hide_ship_name.SetCheck(1);
-	}
-}
-
-void ship_flags_dlg::OnToggleCripple() 
-{
-	if (m_toggle_cripple.GetCheck() == 1) {
-		m_toggle_cripple.SetCheck(0);
-	} else {
-		m_toggle_cripple.SetCheck(1);
 	}
 }

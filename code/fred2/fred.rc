@@ -1791,8 +1791,6 @@ BEGIN
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",BS_3STATE | WS_TABSTOP,165,124,97,10
     CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | WS_TABSTOP,165,135,99,10
     CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",BS_3STATE | WS_TABSTOP,165,145,104,10
-    CONTROL         "Toggle Behaviour When Crippled",IDC_TOGGLE_CRIPPLE,
-                    "Button",BS_3STATE | WS_TABSTOP,165,155,133,10
 END
 
 IDD_ADD_VARIABLE DIALOG  0, 0, 422, 102

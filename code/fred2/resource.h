@@ -1108,8 +1108,6 @@
 #define IDC_DEACTIVATE_AUTOPILOT        1594
 #define IDC_HIDE_SHIP_NAME              1594
 #define IDC_SET_CLASS_DYNAMICALLY       1595
-#define IDC_SET_CLASS_DYNAMICALLY2      1596
-#define IDC_TOGGLE_CRIPPLE              1596
 #define IDC_ALT_SHIP_CLASS              1598
 #define ID_STATIC                       1600
 #define IDC_DEFAULT_TO_CLASS            1601
