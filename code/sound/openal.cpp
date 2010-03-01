@@ -260,6 +260,8 @@ static void find_capture_device()
 		return;
 	}
 
+	std::sort( CaptureDevices.begin(), CaptureDevices.end(), openal_device_sort_func );
+
 	// for each device that we have available, try and figure out which to use
 	for (size_t idx = 0; idx < CaptureDevices.size(); idx++) {
 		const ALCchar *device_name = CaptureDevices[idx].device_name.c_str();
@@ -300,11 +302,11 @@ bool openal_init_device(std::string *playback, std::string *capture)
 	}
 
 	if (playback) {
-		playback->clear();
+		playback->erase();
 	}
 
 	if (capture) {
-		capture->clear();
+		capture->erase();
 	}
 
 	// initialize default setup first, for version check...

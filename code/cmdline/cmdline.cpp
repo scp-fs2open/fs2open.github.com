@@ -75,6 +75,7 @@ enum
 
 #define BUILD_CAP_OPENAL	(1<<0)
 #define BUILD_CAP_NO_D3D	(1<<1)
+#define BUILD_CAP_NEW_SND	(1<<2)
 
 typedef struct
 {
@@ -1280,6 +1281,8 @@ bool SetCmdlineParams()
 			/* portej05 defined this always */
 			build_caps |= BUILD_CAP_NO_D3D;
 			build_caps |= BUILD_CAP_OPENAL;
+			build_caps |= BUILD_CAP_NO_D3D;
+			build_caps |= BUILD_CAP_NEW_SND;
 
 			fwrite(&build_caps, 1, 1, fp);
 		}
