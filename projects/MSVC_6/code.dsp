@@ -19,6 +19,8 @@ CFG=code - Win32 Debug
 !MESSAGE 
 !MESSAGE "code - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "code - Win32 Debug" (based on "Win32 (x86) Static Library")
+!MESSAGE "code - Win32 Release Inferno" (based on "Win32 (x86) Static Library")
+!MESSAGE "code - Win32 Debug Inferno" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -41,7 +43,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,12 +66,58 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo /o"Debug\Profile\code.bsc" "Debug\Profile\*.sbr"
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo
+
+!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "code___Win32_Release_Inferno"
+# PROP BASE Intermediate_Dir "code___Win32_Release_Inferno"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "Release_Inferno"
+# PROP Intermediate_Dir "Release_Inferno"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo /o"Release\Profile\code.bsc" "Release\Profile\*.sbr"
+# ADD BSC32 /nologo /o"Release_Inferno\Profile\code.bsc" "Release\Profile\*.sbr"
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 1
+# PROP BASE Output_Dir "code___Win32_Debug_Inferno"
+# PROP BASE Intermediate_Dir "code___Win32_Debug_Inferno"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 1
+# PROP Output_Dir "Debug_Inferno"
+# PROP Intermediate_Dir "Debug_Inferno"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD BASE RSC /l 0x409 /d "_DEBUG"
+# ADD RSC /l 0x409 /d "_DEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo /o"Debug\Profile\code.bsc" "Debug\Profile\*.sbr"
+# ADD BSC32 /nologo /o"Debug_Inferno\Profile\code.bsc" "Debug\Profile\*.sbr"
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
@@ -80,21 +128,14 @@ LIB32=link.exe -lib
 
 # Name "code - Win32 Release"
 # Name "code - Win32 Debug"
+# Name "code - Win32 Release Inferno"
+# Name "code - Win32 Debug Inferno"
 # Begin Group "AI"
 
 # PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=..\..\code\ai\ai.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -111,15 +152,6 @@ SOURCE=..\..\code\ai\ai_profiles.h
 # Begin Source File
 
 SOURCE=..\..\code\ai\AiBig.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -128,28 +160,10 @@ SOURCE=..\..\code\ai\AiBig.h
 # Begin Source File
 
 SOURCE=..\..\code\ai\AiCode.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\ai\AiGoals.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -198,6 +212,18 @@ SOURCE=..\..\code\Asteroid\Asteroid.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Asteroid\Asteroid.h
+# End Source File
+# End Group
+# Begin Group "Autopilot"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Autopilot\Autopilot.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Autopilot\Autopilot.h
 # End Source File
 # End Group
 # Begin Group "Bmpman"
@@ -258,6 +284,18 @@ SOURCE=..\..\code\CFile\CfileSystem.cpp
 # Begin Source File
 
 SOURCE=..\..\code\CFile\CfileSystem.h
+# End Source File
+# End Group
+# Begin Group "Cmdline"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Cmdline\cmdline.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Cmdline\cmdline.h
 # End Source File
 # End Group
 # Begin Group "CMeasure"
@@ -340,6 +378,18 @@ SOURCE=..\..\code\cutscene\oggplayer.cpp
 SOURCE=..\..\code\cutscene\oggplayer.h
 # End Source File
 # End Group
+# Begin Group "ddsutils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\ddsutils\ddsutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ddsutils\ddsutils.h
+# End Source File
+# End Group
 # Begin Group "Debris"
 
 # PROP Default_Filter ""
@@ -376,32 +426,36 @@ SOURCE=..\..\code\debugconsole\timerbar.cpp
 SOURCE=..\..\code\debugconsole\timerbar.h
 # End Source File
 # End Group
+# Begin Group "Decals"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\decals\decals.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\decals\decals.h
+# End Source File
+# End Group
+# Begin Group "Demo"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Demo\Demo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Demo\Demo.h
+# End Source File
+# End Group
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vasync.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vD3dcaps.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3drmdef.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3drmobj.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3drmwin.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vd3dvec.inl
 # End Source File
 # Begin Source File
 
@@ -444,6 +498,34 @@ SOURCE=..\..\code\directx\strmiids.lib
 SOURCE=..\..\code\directx\dxguid.lib
 # End Source File
 # End Group
+# Begin Group "ExceptionHandler"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.h
+# End Source File
+# End Group
+# Begin Group "external_dll"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\externalcode.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\trackirglobal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\external_dll\trackirpublic.h
+# End Source File
+# End Group
 # Begin Group "Fireball"
 
 # PROP Default_Filter ""
@@ -458,6 +540,38 @@ SOURCE=..\..\code\Fireball\FireBalls.h
 # Begin Source File
 
 SOURCE=..\..\code\Fireball\WarpInEffect.cpp
+# End Source File
+# End Group
+# Begin Group "fs2netd"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\protocol.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.h
 # End Source File
 # End Group
 # Begin Group "GameHelp"
@@ -549,7 +663,27 @@ SOURCE=..\..\code\GlobalIncs\LinkList.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\mspdb_callstack.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\mspdb_callstack.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\GlobalIncs\PsTypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\safe_strings.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\safe_strings.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\safe_strings_test.cpp
 # End Source File
 # Begin Source File
 
@@ -566,6 +700,10 @@ SOURCE=..\..\code\GlobalIncs\version.cpp
 # Begin Source File
 
 SOURCE=..\..\code\GlobalIncs\version.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\vmallocator.h
 # End Source File
 # Begin Source File
 
@@ -607,7 +745,6 @@ SOURCE=..\..\code\graphics\grstub.h
 SOURCE=..\..\code\Graphics\Line.h
 # End Source File
 # End Group
-
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""
@@ -633,6 +770,10 @@ SOURCE=..\..\code\graphics\gropenglextension.h
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.h
 # End Source File
 # Begin Source File
 
@@ -673,6 +814,10 @@ SOURCE=..\..\code\graphics\gropenglextension.cpp
 # Begin Source File
 
 SOURCE=..\..\code\graphics\gropengllight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\gropenglpostprocessing.cpp
 # End Source File
 # Begin Source File
 
@@ -861,6 +1006,46 @@ SOURCE=..\..\code\Hud\HUDWingmanStatus.cpp
 SOURCE=..\..\code\Hud\HUDWingmanStatus.h
 # End Source File
 # End Group
+# Begin Group "iff_defs"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\iff_defs\iff_defs.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\iff_defs\iff_defs.h
+# End Source File
+# End Group
+# Begin Group "InetFile"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\CFtp.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\CFtp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\Chttpget.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\Chttpget.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\inetgetfile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Inetfile\inetgetfile.h
+# End Source File
+# End Group
 # Begin Group "Io"
 
 # PROP Default_Filter ""
@@ -928,13 +1113,17 @@ SOURCE=..\..\code\Io\Timer.cpp
 
 SOURCE=..\..\code\Io\Timer.h
 # End Source File
+# End Group
+# Begin Group "jpgutils"
+
+# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\io\trackir.cpp
+SOURCE=..\..\code\jpgutils\jpgutils.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\io\trackir.h
+SOURCE=..\..\code\jpgutils\jpgutils.h
 # End Source File
 # End Group
 # Begin Group "JumpNode"
@@ -981,13 +1170,29 @@ SOURCE=..\..\code\Lighting\Lighting.cpp
 SOURCE=..\..\code\Lighting\Lighting.h
 # End Source File
 # End Group
-# Begin Group "Math"
+# Begin Group "Localization"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\math\bitarray.h
+SOURCE=..\..\code\Localization\fhash.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Localization\fhash.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Localization\localize.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Localization\localize.h
+# End Source File
+# End Group
+# Begin Group "Math"
+
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=..\..\code\Math\Fix.cpp
@@ -1143,15 +1348,6 @@ SOURCE=..\..\code\MenuUI\TrainingMenu.h
 # Begin Source File
 
 SOURCE=..\..\code\Mission\MissionBriefCommon.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1236,15 +1432,6 @@ SOURCE=..\..\code\Mission\MissionTraining.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\Chatbox.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1261,15 +1448,6 @@ SOURCE=..\..\code\missionui\fictionviewer.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionBrief.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1278,15 +1456,6 @@ SOURCE=..\..\code\MissionUI\MissionBrief.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionCmdBrief.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1295,15 +1464,6 @@ SOURCE=..\..\code\MissionUI\MissionCmdBrief.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionDebrief.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1320,15 +1480,6 @@ SOURCE=..\..\code\MissionUI\MissionLoopBrief.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionPause.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1337,15 +1488,6 @@ SOURCE=..\..\code\MissionUI\MissionPause.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionRecommend.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1354,15 +1496,6 @@ SOURCE=..\..\code\MissionUI\MissionRecommend.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionScreenCommon.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1371,15 +1504,6 @@ SOURCE=..\..\code\MissionUI\MissionScreenCommon.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionShipChoice.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1396,15 +1520,6 @@ SOURCE=..\..\code\MissionUI\MissionStats.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\MissionWeaponChoice.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1413,15 +1528,6 @@ SOURCE=..\..\code\MissionUI\MissionWeaponChoice.h
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\RedAlert.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -1464,866 +1570,6 @@ SOURCE=..\..\code\Model\ModelRead.cpp
 SOURCE=..\..\code\Model\ModelsInc.h
 # End Source File
 # End Group
-# Begin Group "Object"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Object\CollideDebrisShip.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\CollideDebrisWeapon.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\CollideShipShip.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\CollideShipWeapon.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\CollideWeaponWeapon.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\deadobjectdock.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\deadobjectdock.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\ObjCollide.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\ObjCollide.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\Object.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\Object.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\objectdock.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\objectdock.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\objectshield.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\objectshield.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\ObjectSnd.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\ObjectSnd.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Object\ObjectSort.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\parseobjectdock.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\parseobjectdock.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\waypoint.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\waypoint.h
-# End Source File
-# End Group
-# Begin Group "Observer"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Observer\Observer.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Observer\Observer.h
-# End Source File
-# End Group
-# Begin Group "OsApi"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\MONOPUB.H
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\OsApi.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\OsApi.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\OsRegistry.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\OsRegistry.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\OutWnd.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\OsApi\OutWnd.h
-# End Source File
-# End Group
-# Begin Group "Palman"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Palman\PalMan.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Palman\PalMan.h
-# End Source File
-# End Group
-# Begin Group "Parse"
-
-# PROP Default_Filter ""
-# Begin Group "Scripting"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\parse\lua.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\lua.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\python.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\python.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\scripting.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\parse\scripting.h
-# End Source File
-# End Group
-# Begin Source File
-
-SOURCE=..\..\code\Parse\Encrypt.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Parse\Encrypt.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Parse\PARSELO.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Parse\parselo.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Parse\SEXP.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Parse\SEXP.H
-# End Source File
-# End Group
-# Begin Group "Particle"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Particle\Particle.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Particle\Particle.h
-# End Source File
-# End Group
-# Begin Group "PcxUtils"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\PcxUtils\pcxutils.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\PcxUtils\pcxutils.h
-# End Source File
-# End Group
-# Begin Group "Physics"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Physics\Physics.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Physics\Physics.h
-# End Source File
-# End Group
-# Begin Group "Playerman"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Playerman\ManagePilot.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Playerman\ManagePilot.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Playerman\Player.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Playerman\PlayerControl.cpp
-# End Source File
-# End Group
-# Begin Group "Popup"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Popup\Popup.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Popup\Popup.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Popup\PopupDead.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Popup\PopupDead.h
-# End Source File
-# End Group
-# Begin Group "Radar"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Radar\Radar.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Radar\Radar.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\radar\radarorb.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\radar\radarorb.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\radar\radarsetup.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\radar\radarsetup.h
-# End Source File
-# End Group
-# Begin Group "Render"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Render\3D.H
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Render\3dClipper.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Render\3ddraw.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Render\3dInternal.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Render\3dLaser.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Render\3dMath.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Render\3dSetup.cpp
-# End Source File
-# End Group
-# Begin Group "Ship"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\ship\Afterburner.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\Afterburner.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\AWACS.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\AWACS.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\Shield.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\Ship.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\Ship.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\ShipContrails.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\ShipContrails.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\ShipFX.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\ShipFX.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\ShipHit.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\ShipHit.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ship\SubsysDamage.h
-# End Source File
-# End Group
-# Begin Group "Sound"
-
-# PROP Default_Filter ""
-# Begin Group "ogg"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\sound\ogg\ogg.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\ogg\ogg.h
-# End Source File
-# End Group
-# Begin Source File
-
-SOURCE="..\..\code\sound\acm-openal.cpp"
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\acm.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\acm.h
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\code\sound\audiostr-openal.cpp"
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\AudioStr.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\AudioStr.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\channel.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\ds.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\ds.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\ds3d.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\ds3d.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\dscap.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\dscap.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\fsspeech.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\fsspeech.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midifile.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\midiseq.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\phrases.xml
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# Begin Custom Build
-InputDir=..\..\code\sound
-InputPath=..\..\code\sound\phrases.xml
-InputName=phrases
-
-BuildCmds= \
-	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
-	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
-
-"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-# Begin Custom Build
-InputDir=..\..\code\sound
-InputPath=..\..\code\sound\phrases.xml
-InputName=phrases
-
-BuildCmds= \
-	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
-	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
-
-"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\RBAudio.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\RBAudio.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\rtvoice.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\rtvoice.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\Sound.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\Sound.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\speech.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\speech.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\voicerec.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\sound\voicerec.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\WinMIDI.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\winmidi_base.cpp
-# End Source File
-# End Group
-# Begin Group "Starfield"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Starfield\Nebula.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Starfield\Nebula.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Starfield\StarField.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Starfield\StarField.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Starfield\Supernova.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Starfield\Supernova.h
-# End Source File
-# End Group
-# Begin Group "Stats"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Stats\Medals.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Stats\Medals.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Stats\Scoring.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Stats\Scoring.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Stats\Stats.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Stats\Stats.h
-# End Source File
-# End Group
-# Begin Group "Ui"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\UI\BUTTON.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\CHECKBOX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\GADGET.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\icon.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\INPUTBOX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\KEYTRAP.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\LISTBOX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\RADIO.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\SCROLL.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\slider.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Ui\SLIDER2.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\UI.H
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\UiDefs.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\UIDRAW.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\UIMOUSE.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\UI\WINDOW.cpp
-# End Source File
-# End Group
-# Begin Group "VCodec"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\VCodec\CODEC1.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\VCodec\CODEC1.H
-# End Source File
-# End Group
-# Begin Group "Weapon"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Beam.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Beam.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Corkscrew.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Corkscrew.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Emp.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Emp.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Flak.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Flak.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\MuzzleFlash.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\MuzzleFlash.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Shockwave.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Shockwave.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Swarm.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Swarm.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Trails.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Trails.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Weapon.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Weapon\Weapons.cpp
-# End Source File
-# End Group
 # Begin Group "Nebula"
 
 # PROP Default_Filter ""
@@ -2338,103 +1584,10 @@ SOURCE=..\..\code\Nebula\Neb.h
 # Begin Source File
 
 SOURCE=..\..\code\Nebula\NebLightning.cpp
-
-!IF  "$(CFG)" == "code - Win32 Release"
-
-# ADD CPP /Od
-
-!ELSEIF  "$(CFG)" == "code - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\Nebula\NebLightning.h
-# End Source File
-# End Group
-# Begin Group "Localization"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Localization\fhash.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Localization\fhash.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Localization\localize.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Localization\localize.h
-# End Source File
-# End Group
-# Begin Group "TgaUtils"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\TgaUtils\TgaUtils.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\TgaUtils\TgaUtils.h
-# End Source File
-# End Group
-# Begin Group "Demo"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Demo\Demo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Demo\Demo.h
-# End Source File
-# End Group
-# Begin Group "InetFile"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\CFtp.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\CFtp.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\Chttpget.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\Chttpget.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\inetgetfile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Inetfile\inetgetfile.h
-# End Source File
-# End Group
-# Begin Group "ExceptionHandler"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.h
 # End Source File
 # End Group
 # Begin Group "Network"
@@ -2705,40 +1858,569 @@ SOURCE=..\..\code\Network\stand_gui.cpp
 SOURCE=..\..\code\Network\stand_gui.h
 # End Source File
 # End Group
-# Begin Group "Decals"
+# Begin Group "Object"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\decals\decals.cpp
+SOURCE=..\..\code\Object\CollideDebrisShip.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\decals\decals.h
+SOURCE=..\..\code\Object\CollideDebrisWeapon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\CollideShipShip.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\CollideShipWeapon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\CollideWeaponWeapon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\deadobjectdock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\deadobjectdock.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\ObjCollide.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\ObjCollide.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\Object.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\Object.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\objectdock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\objectdock.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\objectshield.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\objectshield.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\ObjectSnd.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\ObjectSnd.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Object\ObjectSort.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\parseobjectdock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\parseobjectdock.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\waypoint.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\waypoint.h
 # End Source File
 # End Group
-# Begin Group "ddsutils"
+# Begin Group "Observer"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\ddsutils\ddsutils.cpp
+SOURCE=..\..\code\Observer\Observer.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ddsutils\ddsutils.h
+SOURCE=..\..\code\Observer\Observer.h
 # End Source File
 # End Group
-# Begin Group "Cmdline"
+# Begin Group "OsApi"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\Cmdline\cmdline.cpp
+SOURCE=..\..\code\OsApi\MONOPUB.H
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Cmdline\cmdline.h
+SOURCE=..\..\code\OsApi\OsApi.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\OsApi\OsApi.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\OsApi\OsRegistry.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\OsApi\OsRegistry.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\OsApi\OutWnd.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\OsApi\OutWnd.h
+# End Source File
+# End Group
+# Begin Group "Palman"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Palman\PalMan.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Palman\PalMan.h
+# End Source File
+# End Group
+# Begin Group "Parse"
+
+# PROP Default_Filter ""
+# Begin Group "Scripting"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\parse\lua.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\lua.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\scripting.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\scripting.h
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=..\..\code\Parse\Encrypt.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Parse\Encrypt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Parse\PARSELO.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Parse\parselo.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Parse\SEXP.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Parse\SEXP.H
+# End Source File
+# End Group
+# Begin Group "Particle"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Particle\Particle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Particle\Particle.h
+# End Source File
+# End Group
+# Begin Group "PcxUtils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\PcxUtils\pcxutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\PcxUtils\pcxutils.h
+# End Source File
+# End Group
+# Begin Group "Physics"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Physics\Physics.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Physics\Physics.h
+# End Source File
+# End Group
+# Begin Group "Playerman"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Playerman\ManagePilot.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Playerman\ManagePilot.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Playerman\Player.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Playerman\PlayerControl.cpp
+# End Source File
+# End Group
+# Begin Group "pngutils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\pngutils\pngutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pngutils\pngutils.h
+# End Source File
+# End Group
+# Begin Group "Popup"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Popup\Popup.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Popup\Popup.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Popup\PopupDead.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Popup\PopupDead.h
+# End Source File
+# End Group
+# Begin Group "Radar"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Radar\Radar.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Radar\Radar.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\radar\radarorb.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\radar\radarorb.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\radar\radarsetup.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\radar\radarsetup.h
+# End Source File
+# End Group
+# Begin Group "Render"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Render\3D.H
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Render\3dClipper.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Render\3ddraw.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Render\3dInternal.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Render\3dLaser.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Render\3dMath.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Render\3dSetup.cpp
+# End Source File
+# End Group
+# Begin Group "Ship"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\ship\Afterburner.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\Afterburner.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AWACS.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\AWACS.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\Shield.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\Ship.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\Ship.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipContrails.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipContrails.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipFX.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipFX.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipHit.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\ShipHit.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ship\SubsysDamage.h
+# End Source File
+# End Group
+# Begin Group "Sound"
+
+# PROP Default_Filter ""
+# Begin Group "ogg"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\sound\ogg\ogg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\ogg\ogg.h
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE="..\..\code\sound\acm-openal.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\acm.h
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\code\sound\audiostr-openal.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\AudioStr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\AudioStr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\channel.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\ds.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\ds.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\ds3d.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\ds3d.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\dscap.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\dscap.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\fsspeech.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\fsspeech.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\midiseq.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\phrases.xml
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# Begin Custom Build
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+# Begin Custom Build
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ENDIF
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\RBAudio.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\RBAudio.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\rtvoice.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\rtvoice.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\Sound.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Sound\Sound.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\speech.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\speech.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\voicerec.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\voicerec.h
 # End Source File
 # End Group
 # Begin Group "Species_Defs"
@@ -2753,72 +2435,228 @@ SOURCE=..\..\code\species_defs\species_defs.cpp
 SOURCE=..\..\code\species_defs\species_defs.h
 # End Source File
 # End Group
-# Begin Group "jpgutils"
+# Begin Group "Starfield"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\jpgutils\jpgutils.cpp
+SOURCE=..\..\code\Starfield\Nebula.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\jpgutils\jpgutils.h
+SOURCE=..\..\code\Starfield\Nebula.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Starfield\StarField.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Starfield\StarField.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Starfield\Supernova.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Starfield\Supernova.h
 # End Source File
 # End Group
-# Begin Group "Autopilot"
+# Begin Group "Stats"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\Autopilot\Autopilot.cpp
+SOURCE=..\..\code\Stats\Medals.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Autopilot\Autopilot.h
+SOURCE=..\..\code\Stats\Medals.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Stats\Scoring.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Stats\Scoring.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Stats\Stats.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Stats\Stats.h
 # End Source File
 # End Group
-# Begin Group "iff_defs"
+# Begin Group "TgaUtils"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\iff_defs\iff_defs.cpp
+SOURCE=..\..\code\TgaUtils\TgaUtils.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\iff_defs\iff_defs.h
+SOURCE=..\..\code\TgaUtils\TgaUtils.h
 # End Source File
 # End Group
-# Begin Group "fs2netd"
+# Begin Group "Ui"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\fs2netd_client.cpp
+SOURCE=..\..\code\UI\BUTTON.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\fs2netd_client.h
+SOURCE=..\..\code\UI\CHECKBOX.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\protocol.h
+SOURCE=..\..\code\UI\GADGET.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\tcp_client.cpp
+SOURCE=..\..\code\UI\icon.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\tcp_client.h
+SOURCE=..\..\code\UI\INPUTBOX.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\tcp_socket.cpp
+SOURCE=..\..\code\UI\KEYTRAP.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fs2netd\tcp_socket.h
+SOURCE=..\..\code\UI\LISTBOX.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\RADIO.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\SCROLL.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\slider.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Ui\SLIDER2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\UI.H
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\UiDefs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\UIDRAW.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\UIMOUSE.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\UI\WINDOW.cpp
+# End Source File
+# End Group
+# Begin Group "VCodec"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\VCodec\CODEC1.CPP
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\VCodec\CODEC1.H
+# End Source File
+# End Group
+# Begin Group "Weapon"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Beam.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Beam.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Corkscrew.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Corkscrew.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Emp.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Emp.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Flak.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Flak.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\MuzzleFlash.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\MuzzleFlash.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Shockwave.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Shockwave.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Swarm.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Swarm.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Trails.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Trails.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Weapon.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\Weapon\Weapons.cpp
 # End Source File
 # End Group
 # End Target

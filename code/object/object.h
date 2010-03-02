@@ -120,7 +120,6 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 // Flags used by Fred
 #define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
 #define OF_TEMP_MARKED		(1<<18)	// Temporarily marked (Fred).
-#define OF_REFERENCED		(1<<19)	// (Fred) Object is referenced by something somewhere
 #define OF_HIDDEN			(1<<20)	// Object is hidden (not shown) and can't be manipulated
 
 
