@@ -393,7 +393,7 @@ void ai_mission_goal_complete( ai_info *aip )
 // which are destroy, etc, should get removed.  goal list is the list of goals to purge.  It is
 // always MAX_AI_GOALS in length.  This function will only get called when the goal which causes
 // purging becomes valid.
-void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
+void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *aip, int ai_wingnum )
 {
 	int i, j;
 	ai_goal *purge_goal;
@@ -493,13 +493,13 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
 	{
 		ship *shipp = &Ships[Objects[sop->objnum].instance];
-		ai_goal_purge_invalid_goals(aigp, Ai_info[shipp->ai_index].goals);
+		ai_goal_purge_invalid_goals(aigp, Ai_info[shipp->ai_index].goals, &Ai_info[shipp->ai_index], -1);
 	}
 
 	// we must do the same for the wing goals
 	for (i = 0; i < Num_wings; i++)
 	{
-		ai_goal_purge_invalid_goals(aigp, Wings[i].ai_goals);
+		ai_goal_purge_invalid_goals(aigp, Wings[i].ai_goals, NULL, i);
 	}
 }
 
