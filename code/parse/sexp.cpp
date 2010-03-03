@@ -8406,6 +8406,8 @@ void multi_sexp_close_sound_from_file()
 // Goober5000
 void sexp_play_sound_from_file(int n)
 {
+	int loop = 0;
+
 	// load sound file -----------------------------
 	sexp_load_music(CTEXT(n));
 	
@@ -8415,7 +8417,9 @@ void sexp_play_sound_from_file(int n)
 	}
 
 	n = CDR(n);
-	int loop = eval_sexp(n);
+	if (n >= 0) {
+		loop = eval_sexp(n);
+	}
 
 	// play sound file -----------------------------
 	sexp_start_music(loop);	
