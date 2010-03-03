@@ -453,7 +453,11 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 	}
 
 	GL_state.ScissorTest(GL_TRUE);
-	glScissor(x, gr_screen.max_h-y-h, w, h);
+	if(GL_rendering_to_framebuffer) {
+		glScissor(x, y, w, h);
+	} else {
+		glScissor(x, gr_screen.max_h-y-h, w, h);
+	}
 }
 
 void gr_opengl_reset_clip()

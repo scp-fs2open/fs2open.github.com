@@ -953,8 +953,13 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	}
 
 	GL_CHECK_FOR_ERRORS("start of set_projection_matrix()()");
-
-	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	
+	if (GL_rendering_to_framebuffer) {
+		glViewport(gr_screen.offset_x, gr_screen.offset_y, gr_screen.clip_width, gr_screen.clip_height);
+	} else {
+		glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	}
+	
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -964,7 +969,11 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	clip_height = tan( (double)fov * 0.5 ) * z_near;
 	clip_width = clip_height * (GLdouble)aspect;
 
-	glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
+	if (GL_rendering_to_framebuffer) {
+		glFrustum( -clip_width, clip_width, clip_height, -clip_height, z_near, z_far );
+	} else {
+		glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
+	}
 
 	glMatrixMode(GL_MODELVIEW);
 
