@@ -712,3 +712,178 @@ int main ()
   AC_SUBST(THEORA_LIBS)
   rm -f conf.theoratest
 ])
+
+
+dnl AM_PATH_OPENAL([ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+dnl Test for OpenAL, and define OPENAL_CFLAGS and OPENAL_LIBS
+dnl
+AC_DEFUN([AM_PATH_OPENAL],
+[dnl 
+dnl Get the cflags and libraries
+dnl
+AC_ARG_WITH(openal,[  --with-openal=PFX   Prefix where OpenAL is installed (optional)], openal_prefix="$withval", openal_prefix="")
+AC_ARG_WITH(openal-libraries,[  --with-openal-libraries=DIR   Directory where OpenAL library is installed (optional)], openal_libraries="$withval", openal_libraries="")
+AC_ARG_WITH(openal-includes,[  --with-openal-includes=DIR   Directory where OpenAL header files are installed (optional)], openal_includes="$withval", openal_includes="")
+AC_ARG_ENABLE(openaltest, [  --disable-openaltest       Do not try to compile and run a test OpenAL program],, enable_openaltest=yes)
+
+  if test "x$openal_libraries" != "x" ; then
+    OPENAL_LIBS="-L$openal_libraries"
+  elif test "x$openal_prefix" != "x" ; then
+    OPENAL_LIBS="-L$openal_prefix/lib"
+  elif test "x$prefix" != "xNONE"; then
+    OPENAL_LIBS="-L$libdir"
+  fi
+
+  OPENAL_LIBS="$OPENAL_LIBS -lopenal"
+
+  if test "x$openal_includes" != "x" ; then
+    OPENAL_CFLAGS="-I$openal_includes"
+  elif test "x$openal_prefix" != "x" ; then
+    OPENAL_CFLAGS="-I$openal_prefix/include"
+  elif test "x$prefix" != "xNONE"; then
+    OPENAL_CFLAGS=""
+  fi
+
+
+  AC_MSG_CHECKING(for OpenAL)
+  no_openal=""
+
+
+  if test "x$enable_openaltest" = "xyes" ; then
+    ac_save_CFLAGS="$CFLAGS"
+    ac_save_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $OPENAL_CFLAGS"
+    LIBS="$LIBS $OPENAL_LIBS"
+dnl
+dnl Now check if the installed OpenAL is sufficiently new.
+dnl
+      rm -f conf.openaltest
+      AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <AL/al.h>
+#include <AL/alc.h>
+
+int main ()
+{
+#ifdef AL_VERSION_1_1
+	alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT");
+
+	system("touch conf.openaltest");
+	return 0;
+#else
+	printf("\n*** OpenAL version 1.1 or greater is required.\n");
+	return 1;
+#endif
+}
+
+],, no_openal=yes,[echo $ac_n "cross compiling; assumed OK... $ac_c"])
+     CFLAGS="$ac_save_CFLAGS"
+     LIBS="$ac_save_LIBS"
+  fi
+
+  if test "x$no_openal" = "x" ; then
+     AC_MSG_RESULT(yes)
+     ifelse([$1], , :, [$1])     
+  else
+     AC_MSG_RESULT(no)
+     if test -f conf.openaltest ; then
+       :
+     else
+       echo "*** Could not run OpenAL test program, checking why..."
+       CFLAGS="$CFLAGS $OPENAL_CFLAGS"
+       LIBS="$LIBS $OPENAL_LIBS"
+       AC_TRY_LINK([
+#include <stdio.h>
+#include <AL/al.h>
+],     [ return 0; ],
+       [ echo "*** The test program compiled, but did not run. This usually means"
+       echo "*** that the run-time linker is not finding OpenAL or finding the wrong"
+       echo "*** version of OpenAL. If it is not finding OpenAL, you'll need to set your"
+       echo "*** LD_LIBRARY_PATH environment variable, or edit /etc/ld.so.conf to point"
+       echo "*** to the installed location  Also, make sure you have run ldconfig if that"
+       echo "*** is required on your system"
+       echo "***"
+       echo "*** If you have an old version installed, it is best to remove it, although"
+       echo "*** you may also be able to get things to work by modifying LD_LIBRARY_PATH"],
+       [ echo "*** The test program failed to compile or link. See the file config.log for the"
+       echo "*** exact error that occured. This usually means OpenAL was incorrectly installed"
+       echo "*** or that you have moved OpenAL since it was installed." ])
+       CFLAGS="$ac_save_CFLAGS"
+       LIBS="$ac_save_LIBS"
+     fi
+     OPENAL_CFLAGS=""
+     OPENAL_LIBS=""
+     ifelse([$2], , :, [$2])
+  fi
+  AC_SUBST(OPENAL_CFLAGS)
+  AC_SUBST(OPENAL_LIBS)
+  rm -f conf.openaltest
+])
+
+dnl AM_PATH_OPENGL([ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+dnl Test for OpenGL, and define OPENGL_CFLAGS and OPENGL_LIBS
+dnl
+AC_DEFUN([AM_PATH_OPENGL],
+[dnl 
+dnl Get the cflags and libraries
+dnl
+AC_ARG_WITH(opengl,[  --with-opengl=PFX   Prefix where OpenGL is installed (optional)], opengl_prefix="$withval", opengl_prefix="")
+AC_ARG_WITH(opengl-libraries,[  --with-opengl-libraries=DIR   Directory where OpenGL library is installed (optional)], opengl_libraries="$withval", opengl_libraries="")
+AC_ARG_WITH(opengl-includes,[  --with-opengl-includes=DIR   Directory where OpenGL header files are installed (optional)], opengl_includes="$withval", opengl_includes="")
+AC_ARG_ENABLE(opengltest, [  --disable-opengltest       Do not try to compile and run a test OpenGL program],, enable_opengltest=yes)
+
+  if test "x$opengl_libraries" != "x" ; then
+    OPENGL_LIBS="-L$opengl_libraries"
+  elif test "x$opengl_prefix" != "x" ; then
+    OPENGL_LIBS="-L$opengl_prefix/lib"
+  elif test "x$prefix" != "xNONE"; then
+    OPENGL_LIBS="-L$libdir"
+  fi
+
+  OPENGL_LIBS="$OPENGL_LIBS -lGL -lGLU"
+
+  if test "x$opengl_includes" != "x" ; then
+    OPENGL_CFLAGS="-I$opengl_includes"
+  elif test "x$opengl_prefix" != "x" ; then
+    OPENGL_CFLAGS="-I$opengl_prefix/include"
+  elif test "x$prefix" != "xNONE"; then
+    OPENGL_CFLAGS=""
+  fi
+
+
+  no_opengl=""
+
+
+  if test "x$enable_opengltest" = "xyes" ; then
+    ac_save_CFLAGS="$CFLAGS"
+    ac_save_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $OPENGL_CFLAGS"
+    LIBS="$LIBS $OPENGL_LIBS"
+
+    AC_CHECK_LIB(GL, glPushMatrix,
+      [AC_CHECK_HEADER(GL/gl.h,
+        [AC_CHECK_LIB(GLU, gluPerspective,
+          [AC_CHECK_HEADER(GL/glu.h, ,
+            dnl NOTE: this is a failure
+            no_opengl=yes
+          )]
+        )]
+      )]
+    )
+
+    CFLAGS="$ac_save_CFLAGS"
+    LIBS="$ac_save_LIBS"
+  fi
+
+  if test "x$no_opengl" = "x" ; then
+     ifelse([$1], , :, [$1])     
+  else
+     OPENGL_CFLAGS=""
+     OPENGL_LIBS=""
+     ifelse([$2], , :, [$2])
+  fi
+  AC_SUBST(OPENGL_CFLAGS)
+  AC_SUBST(OPENGL_LIBS)
+])
