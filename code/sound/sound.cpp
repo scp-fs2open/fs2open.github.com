@@ -59,7 +59,7 @@ float Master_sound_volume = 1.0f;	// range is 0 -> 1, used for non-music sound f
 float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playback
 
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
-#define	MIN_SOUND_VOLUME				0.10f
+#define	MIN_SOUND_VOLUME				0.05f
 
 static int snd_next_sig	= 1;
 
