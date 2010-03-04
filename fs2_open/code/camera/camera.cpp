@@ -471,6 +471,8 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				mtxB.a1d[i] = pos;
 			}
 			vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
+
+			vm_orthogonalize_matrix(&c_ori);
 			/*
 			angles a;
 			ori_p.get(&a.p, NULL);
