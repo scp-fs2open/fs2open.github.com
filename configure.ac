@@ -74,19 +74,6 @@ AC_ARG_ENABLE(speech,
 		[fs2_speech=no],
 )
 
-AC_ARG_WITH(ogl-libs,
-	AC_HELP_STRING([--with-ogl-libs=DIR],
-		[Use OpenGL libraries from this directory]),
-		[fs2_ogl_libs="$withval"],
-		[fs2_ogl_libs=""],
-)
-AC_ARG_WITH(ogl-incs,
-	AC_HELP_STRING([--with-ogl-incs=DIR],
-		[Use OpenGL Includes from this directory]),
-		[fs2_ogl_incs="$withval"],
-		[fs2_ogl_incs=""],
-)
-
 AC_ARG_ENABLE(inferno,
 	AC_HELP_STRING([--enable-inferno],
 		[Make an Inferno build]),
@@ -354,45 +341,12 @@ FS2_LDFLAGS=$FS2_LDFLAGS" $THEORA_LIBS"
 D_CFLAGS=$D_CFLAGS" $OGG_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $OGG_LIBS"
 
-dnl DirectX - Win32 only
-if test "$fs2_os_win32" = "yes" ; then
-	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
-	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
-fi
-
-dnl libpng
-FS2_LDFLAGS="$FS2_LDFLAGS -lpng"
-
-dnl OpenGL libs and CFLAGS
-if test "$fs2_os_win32" = "yes" ; then
-	if test "x$fs2_ogl_libs" != "x" ; then
-		FS2_LDFLAGS="$FS2_LDFLAGS -L$fs2_ogl_libs -lopengl32 -lglu32"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -lopengl32 -lglu32"
-	fi
-elif test "$fs2_os_unix" = "yes" ; then
-	if test "x$fs2_ogl_libs" != "x" ; then
-		FS2_LDFLAGS="$FS2_LDFLAGS -L$fs2_ogl_libs -lGL -lGLU"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -lGL -lGLU"
-	fi
-	if test "x$fs2_ogl_incs" != "x" ; then
-		FS2_CXXFLAGS="$FS2_CXXFLAGS -I$fs2_ogl_incs"
-	fi
-	AC_DEFINE([SCP_UNIX])
-	AC_DEFINE([NO_DIRECT3D])
-elif test "$fs2_os_osx" = "yes" ; then
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenGL.framework/Headers"
-	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
-	AC_DEFINE([SCP_UNIX])
-	AC_DEFINE([NO_DIRECT3D])
-	## don't need the CFLAGS here if recent SDL is used
-fi
-
 dnl OpenAL
 if test "$fs2_os_unix" = "yes" ; then
+	AM_PATH_OPENAL(:,AC_MSG_ERROR([*** OpenAL installation not found!]))
 	AC_DEFINE([USE_OPENAL])
-	FS2_LDFLAGS="$FS2_LDFLAGS -lopenal"
+	D_CFLAGS=$D_CFLAGS" $OPENAL_CFLAGS"
+	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENAL_LIBS"
 elif test "$fs2_os_osx" = "yes" ; then
 	AC_DEFINE([USE_OPENAL])
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenAL"
@@ -405,7 +359,37 @@ elif test "$fs2_os_osx" = "yes" ; then
 			AC_MSG_ERROR([*** Cannot find OpenAL which is required! ***]))])])
 fi
 
-dnl OGG Vorbis
+dnl DirectX - Win32 only
+if test "$fs2_os_win32" = "yes" ; then
+	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
+	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
+fi
+
+dnl libpng
+FS2_LDFLAGS="$FS2_LDFLAGS -lpng"
+
+dnl OpenGL libs and CFLAGS
+if test "$fs2_os_win32" = "yes" ; then
+	if test "x$GL_LIBS" != "x" ; then
+		FS2_LDFLAGS="$FS2_LDFLAGS -L$GL_LIBS -lopengl32 -lglu32"
+	else
+		FS2_LDFLAGS="$FS2_LDFLAGS -lopengl32 -lglu32"
+	fi
+elif test "$fs2_os_unix" = "yes" ; then
+	AM_PATH_OPENGL(:,AC_MSG_ERROR([*** OpenGL installation not found!]))
+	D_CFLAGS=$D_CFLAGS" $OPENGL_CFLAGS"
+	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENGL_LIBS"
+	AC_DEFINE([SCP_UNIX])
+	AC_DEFINE([NO_DIRECT3D])
+elif test "$fs2_os_osx" = "yes" ; then
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenGL.framework/Headers"
+	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
+	AC_DEFINE([SCP_UNIX])
+	AC_DEFINE([NO_DIRECT3D])
+	## don't need the CFLAGS here if recent SDL is used
+fi
+
+dnl OGG Vorbis/Theora (static libs)
 if test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_static_ogg" != "x" ; then
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libtheora.a"
@@ -458,11 +442,8 @@ echo
 echo
 echo Configure options:
 echo
-if test "x$fs2_ogl_libs" != "x" ; then
-	echo Using OpenGL libs from . : $fs2_ogl_libs
-fi
-if test "x$fs2_ogl_incs" != "x" ; then
-	echo Using OpenGL includes from . : $fs2_ogl_incs
+if test "x$GL_LIBS" != "x" ; then
+	echo Using OpenGL libs from . : $GL_LIBS
 fi
 if test "x$fs2_static_jpeg" != "x" ; then
 	echo Using libjpeg.a from ... : $fs2_static_jpeg
