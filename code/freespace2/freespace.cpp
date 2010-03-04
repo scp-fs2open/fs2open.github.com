@@ -6211,11 +6211,17 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_DEATH_DIED:
 			Game_mode &= ~GM_DEAD_DIED;
-			
-			// early end while respawning or blowing up in a multiplayer game
-			if((Game_mode & GM_MULTIPLAYER) && ((new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF)) ){
-				game_stop_time();
-				freespace_stop_mission();
+
+			if ( !(Game_mode & GM_MULTIPLAYER) ) {
+				if ( end_mission && (new_state == GS_STATE_DEBRIEF) ) {
+					freespace_stop_mission();
+				}
+			} else {
+				// early end while respawning or blowing up in a multiplayer game
+				if ( (new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF) ) {
+					game_stop_time();
+					freespace_stop_mission();
+				}
 			}
 			break;
 
