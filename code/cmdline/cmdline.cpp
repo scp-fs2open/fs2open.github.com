@@ -502,7 +502,7 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 
 	cmdline += strlen(parm->name);
 
-	while ((*cmdline != '\0') && strncmp(cmdline, " -", 2)) {
+	while ((*cmdline != '\0') && strncmp(cmdline, " -", 2) && ((size_t)(dest-buffer) < sizeof(buffer))) {
 		*dest++ = *cmdline++;
 	}
 
@@ -521,12 +521,15 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 		parm->args = NULL;
 	}
 
-	int size = strlen(buffer) + 1;
-
-	if (saved_args != NULL)
-		size += (strlen(saved_args) + 1);	// an ',' is used as a separator when combining, so be sure to account for it
+	int size = strlen(buffer);
 
 	if (size > 0) {
+		size++;	// nul char
+
+		if (saved_args != NULL) {
+			size += (strlen(saved_args) + 1);	// an ',' is used as a separator when combining, so be sure to account for it
+		}
+
 		parm->args = new char[size];
 		memset(parm->args, 0, size);
 
@@ -537,13 +540,14 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 			strcat_s(parm->args, size, ",");
 			// now the new arg
 			strcat_s(parm->args, size, buffer);
+
+			delete [] saved_args;
 		} else {
 			strcpy_s(parm->args, size, buffer);
 		}
+	} else {
+		parm->args = saved_args;
 	}
-
-	if (saved_args != NULL)
-		delete[] saved_args;
 }
 
 
