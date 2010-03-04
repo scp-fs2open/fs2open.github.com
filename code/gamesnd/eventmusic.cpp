@@ -480,29 +480,6 @@ void event_music_do_frame()
 			}
 		}
 
-		// We want to go back to NRML track music if all the hostiles have been 
-		// destroyed, and we are still playing the battle music
-		if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3)
-		{
-			if (timestamp_elapsed(Battle_over_timestamp) && Event_Music_battle_started == 1)
-			{
-				if (hostile_ships_present() == FALSE)
-				{
-					if (Patterns[Current_pattern].next_pattern != SONG_VICT_2)
-					{
-						// Goober5000
-						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
-							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
-						else
-							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
-
-						Patterns[Current_pattern].force_pattern = TRUE;
-						Event_Music_battle_started = 0;
-					}
-				}
-			}
-		}
-
 		if (Event_Music_battle_started == 0) {
 			if (Current_pattern == SONG_NRML_1 || Current_pattern == SONG_NRML_2 || Current_pattern == SONG_NRML_3 ) {
 				if (timestamp_elapsed(Check_for_battle_music)) {
@@ -510,6 +487,39 @@ void event_music_do_frame()
 					if (hostile_ships_present() == TRUE) {
 						Patterns[Current_pattern].next_pattern = SONG_BTTL_1;
 						Patterns[Current_pattern].force_pattern = TRUE;
+					}
+				}
+			} else if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
+				if (timestamp_elapsed(Battle_over_timestamp)) {
+					Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+					if (hostile_ships_present() == FALSE) {
+						Patterns[Current_pattern].force_pattern = TRUE;
+
+						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1) {
+							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+						} else {
+							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+						}
+					}
+				}
+			}
+		} else {
+			// We want to go back to NRML track music if all the hostiles have been 
+			// destroyed, and we are still playing the battle music
+			if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
+				if (timestamp_elapsed(Battle_over_timestamp)) {
+					if (hostile_ships_present() == FALSE) {
+						if (Patterns[Current_pattern].next_pattern != SONG_VICT_2) {
+							// Goober5000
+							if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1) {
+								Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+							} else {
+								Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+							}
+
+							Patterns[Current_pattern].force_pattern = TRUE;
+							Event_Music_battle_started = 0;
+						}
 					}
 				}
 			}
