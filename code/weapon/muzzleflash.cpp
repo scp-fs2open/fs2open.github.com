@@ -13,6 +13,7 @@
 #include "particle/particle.h"
 #include "graphics/2d.h"
 #include "math/vecmat.h"
+#include "object/object.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -253,7 +254,7 @@ void mflash_level_close()
 }
 
 // create a muzzle flash on the guy
-void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type)
+void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type, object *local)
 {	
 	// mflash *mflashp;
 	mflash_info *mi;
@@ -295,23 +296,45 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	// create the actual animations	
 	mi = &Mflash_info[mflash_type];
 
-	for (idx = 0; idx < mi->blobs.size(); idx++) {
-		mbi = &mi->blobs[idx];
+	if (local != NULL) {
+		for (idx = 0; idx < mi->blobs.size(); idx++) {
+			mbi = &mi->blobs[idx];
 
-		// bogus anim
-		if (mbi->anim_id < 0)
-			continue;
+			// bogus anim
+			if (mbi->anim_id < 0)
+				continue;
 
-		// fire it up
-		memset(&p, 0, sizeof(particle_info));
-		vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
-		vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-		p.rad = mbi->radius;
-		p.type = PARTICLE_BITMAP;
-		p.optional_data = mbi->anim_id;
-		p.attached_objnum = -1;
-		p.attached_sig = 0;
-		particle_create(&p);
+			// fire it up
+			memset(&p, 0, sizeof(particle_info));
+			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
+			vm_vec_zero(&p.vel);
+			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
+			p.rad = mbi->radius;
+			p.type = PARTICLE_BITMAP;
+			p.optional_data = mbi->anim_id;
+			p.attached_objnum = OBJ_INDEX(local);
+			p.attached_sig = local->signature;
+			particle_create(&p);
+		}
+	} else {
+		for (idx = 0; idx < mi->blobs.size(); idx++) {
+			mbi = &mi->blobs[idx];
+
+			// bogus anim
+			if (mbi->anim_id < 0)
+				continue;
+
+			// fire it up
+			memset(&p, 0, sizeof(particle_info));
+			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
+			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
+			p.rad = mbi->radius;
+			p.type = PARTICLE_BITMAP;
+			p.optional_data = mbi->anim_id;
+			p.attached_objnum = -1;
+			p.attached_sig = 0;
+			particle_create(&p);
+		}
 	}
 
 	// increment counter

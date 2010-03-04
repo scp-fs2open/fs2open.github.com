@@ -1579,10 +1579,11 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	if((Weapon_info[weapon_info_index].wi_flags & WIF_MFLASH) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
 		// spiffy new flash stuff
 
-		vec3d real_pos;
-		vm_vec_unrotate(&real_pos, gun_pos,&objp->orient);
-		vm_vec_add2(&real_pos, &objp->pos);			
-		mflash_create(&real_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash);		
+		vec3d real_dir;
+		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);
+		//vm_vec_add2(&real_pos, &objp->pos);			
+		//mflash_create(&real_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash);		
+		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
 	}
 
 	if ( pm->num_lights < 1 ) return;

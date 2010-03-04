@@ -36,7 +36,7 @@ void mflash_level_init();
 void mflash_level_close();
 
 // create a muzzle flash on the guy
-void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type);
+void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type, object *local = NULL);
 
 // process muzzle flash stuff
 void mflash_process_all();
