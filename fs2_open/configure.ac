@@ -35,6 +35,8 @@ AC_SUBST(CXXFLAGS)
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 
+PKG_PROG_PKG_CONFIG()
+
 
 dnl The configuration options
 dnl -------------------------
@@ -126,7 +128,7 @@ case "$target" in
         # linux
         echo "Using 64-bit Unix defines (for $host_os)"
         fs2_os_unix="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi -pedantic"
+		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
         ;;
 	*-*-linux*)
@@ -194,7 +196,7 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops -DLUA_USE_APICHECK"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
@@ -389,6 +391,27 @@ elif test "$fs2_os_osx" = "yes" ; then
 	## don't need the CFLAGS here if recent SDL is used
 fi
 
+dnl PNG libs
+PKG_CHECK_MODULES([PNG], [libpng >= 1.2.20])
+D_CFLAGS=$D_CFLAGS" $PNG_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $PNG_LIBS"
+
+dnl LUA
+PKG_CHECK_MODULES([LUA], [lua >= 5.1.3])
+D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $LUA_LIBS"
+
+dnl JPEG
+AC_CHECK_LIB(jpeg, jpeg_start_decompress,
+	[AC_CHECK_HEADER(jpeglib.h, ,
+		dnl NOTE: this is failure
+		AC_MSG_ERROR([*** JPEG installation missing or broken!])
+	)],
+	AC_MSG_ERROR([*** JPEG installation missing or broken!])
+)
+FS2_LDFLAGS=$FS2_LDFLAGS" -ljpeg"
+
+
 dnl OGG Vorbis/Theora (static libs)
 if test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_static_ogg" != "x" ; then
@@ -435,7 +458,7 @@ LIBS="$FS2_LIBS"
 
 
 dnl The makefiles we create
-AC_OUTPUT([Makefile libjpeg/Makefile lua/Makefile code/Makefile])
+AC_OUTPUT([Makefile code/Makefile])
 
 
 echo
