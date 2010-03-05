@@ -787,7 +787,10 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 			}
 		}
 	} else {
-		aip->time_enemy_in_range *= (1.0f - flFrametime);
+		if (flFrametime < 1.0f)
+			aip->time_enemy_in_range *= (1.0f - flFrametime);
+		else
+			aip->time_enemy_in_range = 0;
 	}
 
 	if(has_fired == -1){	//stuff that hapens when the ship stops fireing
@@ -1094,8 +1097,12 @@ void ai_big_chase()
 	//				 a big ship
 	if (aip->mode != AIM_EVADE && aip->path_start == -1 ) {
 		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy, &player_pos, &predicted_enemy_pos, &En_objp->phys_info.vel);
-	} else
-		aip->time_enemy_in_range *= (1.0f - flFrametime);
+	} else {
+		if (flFrametime < 1.0f)
+			aip->time_enemy_in_range *= (1.0f - flFrametime);
+		else
+			aip->time_enemy_in_range = 0;
+	}
 }
 
 void ai_big_ship(object *objp)
