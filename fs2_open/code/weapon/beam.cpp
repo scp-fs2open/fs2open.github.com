@@ -929,8 +929,9 @@ void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait)
 
 	// determine what "shot" we're on	
 	*shot_index = (int)(beam_time / shot_time);
-	Assert(*shot_index < b->binfo.shot_count);
+	
 	if(*shot_index >= b->binfo.shot_count){
+		nprintf(("Beam","Shot of type D beam had bad shot_index value\n"));
 		*shot_index = b->binfo.shot_count - 1;
 	}	
 
