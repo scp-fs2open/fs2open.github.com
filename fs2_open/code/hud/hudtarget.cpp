@@ -4137,13 +4137,37 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 				hud_set_iff_color(targetp, 1);
 			}
 
-			if ( indicator_frame >= 0 ) {
-				sx = lead_target_vertex.sx;
-				sy = lead_target_vertex.sy;
+			if (Hud_lead_alternate) {
+				vertex target_vertex;
+				g3_rotate_vertex(&target_vertex, target_world_pos);
+				
+				if (target_vertex.codes == 0) { // on screen
 
-				gr_unsize_screen_posf(&sx, &sy);
+					g3_project_vertex(&target_vertex);
+					if (!(target_vertex.flags & PF_OVERFLOW)) {
+			
+						//indicator_frame = Reticle2_indicator_gauge.first_frame + frame_offset;
+						if ( indicator_frame >= 0 ) {
+						//hud_set_gauge_color(HUD_CENTER_RETICLE, HUD_C_BRIGHT);
+							float reticle2_target_sx = target_vertex.sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0] - lead_target_vertex.sx;
+							float reticle2_target_sy = target_vertex.sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1] - lead_target_vertex.sy;
+													
+							reticle2_target_sx += HUD_offset_x + Hud_reticle_center[gr_screen.res][0] + 0.5f;
+							reticle2_target_sy += HUD_offset_y + Hud_reticle_center[gr_screen.res][1] + 0.5f;
+							
+							GR_AABITMAP(indicator_frame, fl2i(reticle2_target_sx)+HUD_nose_x, fl2i(reticle2_target_sy)+HUD_nose_y);
+						}							
+					}
+				}
+			} else {
+				if ( indicator_frame >= 0 ) {
+					sx = lead_target_vertex.sx;
+					sy = lead_target_vertex.sy;
 
-				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+					gr_unsize_screen_posf(&sx, &sy);
+
+					GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+				}
 			}
 		}
 	}
@@ -4210,17 +4234,41 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 				hud_set_iff_color(targetp, 1);
 			}
 
-			if ( indicator_frame >= 0 ) {
-				sx = lead_target_vertex.sx;
-				sy = lead_target_vertex.sy;
+			if (Hud_lead_alternate) {
+				vertex target_vertex;
+				g3_rotate_vertex(&target_vertex, target_world_pos);
+				
+				if (target_vertex.codes == 0) { // on screen
 
-				gr_unsize_screen_posf(&sx, &sy);
+					g3_project_vertex(&target_vertex);
+					if (!(target_vertex.flags & PF_OVERFLOW)) {
+			
+						//indicator_frame = Reticle2_indicator_gauge.first_frame + frame_offset;
+						if ( indicator_frame >= 0 ) {
+						//hud_set_gauge_color(HUD_CENTER_RETICLE, HUD_C_BRIGHT);
+							float reticle2_target_sx = target_vertex.sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0] - lead_target_vertex.sx;
+							float reticle2_target_sy = target_vertex.sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1] - lead_target_vertex.sy;
+													
+							reticle2_target_sx += HUD_offset_x + Hud_reticle_center[gr_screen.res][0] + 0.5f;
+							reticle2_target_sy += HUD_offset_y + Hud_reticle_center[gr_screen.res][1] + 0.5f;
+							
+							GR_AABITMAP(indicator_frame, fl2i(reticle2_target_sx)+HUD_nose_x, fl2i(reticle2_target_sy)+HUD_nose_y);
+						}							
+					}
+				}
+			} else {
+				if ( indicator_frame >= 0 ) {
+					sx = lead_target_vertex.sx;
+					sy = lead_target_vertex.sy;
 
-				//WMC - shake them
-				sx += HUD_nose_x;
-				sy += HUD_nose_y;
+					gr_unsize_screen_posf(&sx, &sy);
 
-				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+					//WMC - shake them
+					sx += HUD_nose_x;
+					sy += HUD_nose_y;
+
+					GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+				}
 			}
 		}
 	}
@@ -4345,17 +4393,41 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 		g3_project_vertex(&lead_target_vertex);
 		if (!(lead_target_vertex.flags & PF_OVERFLOW)) {
 
-			if ( indicator_frame >= 0 ) {
-				sx = lead_target_vertex.sx;
-				sy = lead_target_vertex.sy;
+			if (Hud_lead_alternate) {
+				vertex target_vertex;
+				g3_rotate_vertex(&target_vertex, target_world_pos);
+				
+				if (target_vertex.codes == 0) { // on screen
 
-				gr_unsize_screen_posf(&sx, &sy);
+					g3_project_vertex(&target_vertex);
+					if (!(target_vertex.flags & PF_OVERFLOW)) {
+			
+						//indicator_frame = Reticle2_indicator_gauge.first_frame + frame_offset;
+						if ( indicator_frame >= 0 ) {
+						//hud_set_gauge_color(HUD_CENTER_RETICLE, HUD_C_BRIGHT);
+							float reticle2_target_sx = target_vertex.sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0] - lead_target_vertex.sx;
+							float reticle2_target_sy = target_vertex.sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1] - lead_target_vertex.sy;
+													
+							reticle2_target_sx += HUD_offset_x + Hud_reticle_center[gr_screen.res][0] + 0.5f;
+							reticle2_target_sy += HUD_offset_y + Hud_reticle_center[gr_screen.res][1] + 0.5f;
+							
+							GR_AABITMAP(indicator_frame, fl2i(reticle2_target_sx)+HUD_nose_x, fl2i(reticle2_target_sy)+HUD_nose_y);
+						}							
+					}
+				}
+			} else {
+				if ( indicator_frame >= 0 ) {
+					sx = lead_target_vertex.sx;
+					sy = lead_target_vertex.sy;
 
-				//WMC - shake them
-				sx += HUD_nose_x;
-				sy += HUD_nose_y;
+					gr_unsize_screen_posf(&sx, &sy);
 
-				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+					//WMC - shake them
+					sx += HUD_nose_x;
+					sy += HUD_nose_y;
+
+					GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+				}
 			}
 		}
 	}
