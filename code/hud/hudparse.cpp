@@ -29,6 +29,7 @@ extern int ships_inited; //Need this
 extern char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH];
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
+bool Hud_lead_alternate = false;
 
 // Goober5000
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
@@ -552,6 +553,11 @@ void parse_hud_gauges_tbl(char *filename)
 			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
 		else
 			Hud_reticle_style = temp;
+	}
+
+	if(optional_string("$Alternate Lead Indicator:"))
+	{
+		stuff_boolean(&Hud_lead_alternate);
 	}
 
 	if(optional_string("#Custom Gauges"))

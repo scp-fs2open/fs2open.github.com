@@ -145,6 +145,7 @@ typedef struct gauge_info
 //Variables
 extern int Num_custom_gauges;
 extern float Hud_unit_multiplier;
+extern bool Hud_lead_alternate;
 
 
 #define NUM_HUD_RETICLE_STYLES	2
