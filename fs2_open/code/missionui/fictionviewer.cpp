@@ -24,17 +24,52 @@
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION FICTION VIEWER DEFINES/VARS
 //
+#define NUM_FVW_SETTINGS	2
 
-char *Fiction_viewer_screen_filename[GR_NUM_RESOLUTIONS] =
+char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
-	"fvw",			// GR_640
-	"2_fvw",		// GR_1024
+	{
+		"FictionViewer",		// GR_640
+		"2_FictionViewer"		// GR_1024
+	},
+	{
+		"FictionViewerb",		// GR_640
+		"2_FictionViewerb"		// GR_1024
+	}
 };
 
-char *Fiction_viewer_screen_mask[GR_NUM_RESOLUTIONS] =
+char *Fiction_viewer_screen_mask[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
-	"fvw-m",		// GR_640
-	"2_fvw-m",		// GR_1024
+	{
+		"FictionViewer-m",		// GR_640
+		"2_FictionViewer-m"		// GR_1024
+	},
+	{
+		"FictionViewer-mb",		// GR_640
+		"2_FictionViewer-mb"	// GR_1024
+	}
+};
+
+int Fiction_viewer_text_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
+{
+	// standard FS2-style interface
+	{
+		{ // GR_640
+			37,		37,		547,	375
+		},
+		{ // GR_1024
+			60,		60,		875,	599
+		}
+	},
+	// WCS-style interface
+	{
+		{ // GR_640
+			44,		50,		522,	348
+		},
+		{ // GR_1024
+			71,		80,		835,	556
+		}
+	}
 };
 
 #define NUM_FVW_BUTTONS			3
@@ -45,43 +80,69 @@ char *Fiction_viewer_screen_mask[GR_NUM_RESOLUTIONS] =
 // the xt and yt fields aren't normally used for width and height,
 // but the fields would go unused here and this is more
 // convenient for initialization
-ui_button_info Fiction_viewer_buttons[GR_NUM_RESOLUTIONS][NUM_FVW_BUTTONS] =
+ui_button_info Fiction_viewer_buttons[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][NUM_FVW_BUTTONS] =
 {
-	{ // GR_640
-		ui_button_info("fvw_accept_",	105,	444,	37,		26,		0),
-		ui_button_info("fvw_up_",		576,	51,		37,		33,		1),
-		ui_button_info("fvw_down_",		576,	364,	37,		33,		2),
+	// standard FS2-style interface
+	{
+		{ // GR_640
+			ui_button_info("fvw_accept_",	570,	424,	69,		55,		FVW_BUTTON_ACCEPT),
+			ui_button_info("fvw_up_",		591,	49,		26,		35,		FVW_BUTTON_SCROLL_UP),
+			ui_button_info("fvw_down_",		591,	362,	26,		35,		FVW_BUTTON_SCROLL_DOWN),
+		},
+		{ // GR_1024
+			ui_button_info("2_fvw_accept_",	913,	680,	110,	87,		FVW_BUTTON_ACCEPT),
+			ui_button_info("2_fvw_up_",		945,	79,		42,		56,		FVW_BUTTON_SCROLL_UP),
+			ui_button_info("2_fvw_down_",	945,	580,	42,		56,		FVW_BUTTON_SCROLL_DOWN),
+		}
 	},
-	{ // GR_1024
-		ui_button_info("2_fvw_accept_",	168,	710,	59,		41,		0),
-		ui_button_info("2_fvw_up_",		922,	81,		59,		53,		1),
-		ui_button_info("2_fvw_down_",	922,	582,	59,		53,		2),
+	// WCS-style interface
+	{
+		{ // GR_640
+			ui_button_info("fvw_accept_",	105,	444,	37,		26,		FVW_BUTTON_ACCEPT),
+			ui_button_info("fvw_up_",		576,	51,		37,		33,		FVW_BUTTON_SCROLL_UP),
+			ui_button_info("fvw_down_",		576,	364,	37,		33,		FVW_BUTTON_SCROLL_DOWN),
+		},
+		{ // GR_1024
+			ui_button_info("2_fvw_accept_",	168,	710,	59,		41,		FVW_BUTTON_ACCEPT),
+			ui_button_info("2_fvw_up_",		922,	81,		59,		53,		FVW_BUTTON_SCROLL_UP),
+			ui_button_info("2_fvw_down_",	922,	582,	59,		53,		FVW_BUTTON_SCROLL_DOWN),
+		}
 	}
 };
 
-char *Fiction_viewer_slider_filename[GR_NUM_RESOLUTIONS] =
+char *Fiction_viewer_slider_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
-	"fvw_slider_",
-	"2_fvw_slider_"
-};
-
-int Fiction_viewer_slider_coordinates[GR_NUM_RESOLUTIONS][4] =
-{
-	{ // GR_640
-		589,	83,		16,		280
+	// standard FS2-style interface
+	{
+		"slider",
+		"2_slider"
 	},
-	{ // GR_1024
-		944,	132,	25,		451
+	// WCS-style interface
+	{
+		"fvw_slider_",
+		"2_fvw_slider_"
 	}
 };
 
-int Fiction_viewer_text_coordinates[GR_NUM_RESOLUTIONS][4] =
+int Fiction_viewer_slider_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 {
-	{ // GR_640
-		44,		50,		522,	348
+	// standard FS2-style interface
+	{
+		{ // GR_640
+			594,	84,		18,		280
+		},
+		{ // GR_1024
+			951,	135,	28,		446
+		}
 	},
-	{ // GR_1024
-		71,		80,		835,	556
+	// WCS-style interface
+	{
+		{ // GR_640
+			589,	83,		16,		280
+		},
+		{ // GR_1024
+			944,	132,	25,		451
+		}
 	}
 };
 
@@ -99,6 +160,8 @@ static int Fiction_viewer_fontnum = -1;
 static char Fiction_viewer_filename[MAX_FILENAME_LEN];
 static char Fiction_viewer_font_filename[MAX_FILENAME_LEN];
 static char *Fiction_viewer_text = NULL;
+
+static int Fiction_viewer_ui = -1;
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // FICTION VIEWER FUNCTIONS
@@ -186,11 +249,19 @@ void fiction_viewer_init()
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
 
-	// load the background bitmap
-	Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[gr_screen.res]);
-
-	// no graphics?
-	if (Fiction_viewer_bitmap < 0)
+	// see if we have a background bitmap, and if so, which one
+	// currently, we prioritize the UI that comes latest in the array;
+	// in the future we might specify this in the mission or in a tbl
+	for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+	{
+		// load the first available background bitmap
+		Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+		if (Fiction_viewer_bitmap >= 0)
+			break;
+	}
+	
+	// no ui is valid?
+	if (Fiction_viewer_ui < 0)
 	{
 		Warning(LOCATION, "No fiction viewer graphics -- cannot display fiction viewer!");
 		return;
@@ -208,17 +279,17 @@ void fiction_viewer_init()
 	}
 
 	// calculate text area lines from font
-	Fiction_viewer_text_max_lines = Fiction_viewer_text_coordinates[gr_screen.res][3] / gr_get_font_height();
+	Fiction_viewer_text_max_lines = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3] / gr_get_font_height();
 
 	// window
 	Fiction_viewer_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0, Fiction_viewer_fontnum);
-	Fiction_viewer_window.set_mask_bmap(Fiction_viewer_screen_mask[gr_screen.res]);	
+	Fiction_viewer_window.set_mask_bmap(Fiction_viewer_screen_mask[Fiction_viewer_ui][gr_screen.res]);	
 
 	// add the buttons
 	for (int i = 0; i < NUM_FVW_BUTTONS; i++)
 	{
 		int repeat = (i == FVW_BUTTON_SCROLL_UP || i == FVW_BUTTON_SCROLL_DOWN);
-		ui_button_info *b = &Fiction_viewer_buttons[gr_screen.res][i];
+		ui_button_info *b = &Fiction_viewer_buttons[Fiction_viewer_ui][gr_screen.res][i];
 
 		b->button.create(&Fiction_viewer_window, "", b->x, b->y, b->xt, b->yt, repeat, 1);		
 		b->button.set_highlight_action(common_play_highlight_sound);
@@ -227,23 +298,23 @@ void fiction_viewer_init()
 	}
 
 	// set up hotkeys for buttons
-	Fiction_viewer_buttons[gr_screen.res][FVW_BUTTON_ACCEPT].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
-	Fiction_viewer_buttons[gr_screen.res][FVW_BUTTON_SCROLL_UP].button.set_hotkey(KEY_UP);
-	Fiction_viewer_buttons[gr_screen.res][FVW_BUTTON_SCROLL_DOWN].button.set_hotkey(KEY_DOWN);
+	Fiction_viewer_buttons[Fiction_viewer_ui][gr_screen.res][FVW_BUTTON_ACCEPT].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
+	Fiction_viewer_buttons[Fiction_viewer_ui][gr_screen.res][FVW_BUTTON_SCROLL_UP].button.set_hotkey(KEY_UP);
+	Fiction_viewer_buttons[Fiction_viewer_ui][gr_screen.res][FVW_BUTTON_SCROLL_DOWN].button.set_hotkey(KEY_DOWN);
 
 	// init brief text
-	brief_color_text_init(Fiction_viewer_text, Fiction_viewer_text_coordinates[gr_screen.res][2], 0, 0);
+	brief_color_text_init(Fiction_viewer_text, Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][2], 0, 0);
 
 	// if the story is going to overflow the screen, add a slider
 	if (Num_brief_text_lines[0] > Fiction_viewer_text_max_lines)
 	{
 		Fiction_viewer_slider.create(&Fiction_viewer_window,
-			Fiction_viewer_slider_coordinates[gr_screen.res][0],
-			Fiction_viewer_slider_coordinates[gr_screen.res][1],
-			Fiction_viewer_slider_coordinates[gr_screen.res][2],
-			Fiction_viewer_slider_coordinates[gr_screen.res][3],
+			Fiction_viewer_slider_coordinates[Fiction_viewer_ui][gr_screen.res][0],
+			Fiction_viewer_slider_coordinates[Fiction_viewer_ui][gr_screen.res][1],
+			Fiction_viewer_slider_coordinates[Fiction_viewer_ui][gr_screen.res][2],
+			Fiction_viewer_slider_coordinates[Fiction_viewer_ui][gr_screen.res][3],
 			Num_brief_text_lines[0] - Fiction_viewer_text_max_lines,
-			Fiction_viewer_slider_filename[gr_screen.res],
+			Fiction_viewer_slider_filename[Fiction_viewer_ui][gr_screen.res],
 			&fiction_viewer_scroll_up,
 			&fiction_viewer_scroll_down,
 			&fiction_viewer_scroll_capture);
@@ -307,7 +378,7 @@ void fiction_viewer_do_frame(float frametime)
 
 	// process button presses
 	for (i = 0; i < NUM_FVW_BUTTONS; i++)
-		if (Fiction_viewer_buttons[gr_screen.res][i].button.pressed())
+		if (Fiction_viewer_buttons[Fiction_viewer_ui][gr_screen.res][i].button.pressed())
 			fiction_viewer_button_pressed(i);
 	
 	common_music_do();
@@ -324,14 +395,14 @@ void fiction_viewer_do_frame(float frametime)
 	Fiction_viewer_window.draw();		
 
 	// render the briefing text
-	brief_render_text(Top_fiction_viewer_text_line, Fiction_viewer_text_coordinates[gr_screen.res][0], Fiction_viewer_text_coordinates[gr_screen.res][1], Fiction_viewer_text_coordinates[gr_screen.res][3], frametime);
+	brief_render_text(Top_fiction_viewer_text_line, Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][0], Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][1], Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3], frametime);
 
 	// maybe output the "more" indicator
 	if ((Fiction_viewer_text_max_lines + Top_fiction_viewer_text_line) < Num_brief_text_lines[0])
 	{
 		// can be scrolled down
-		int more_txt_x = Fiction_viewer_text_coordinates[gr_screen.res][0] + (Fiction_viewer_text_coordinates[gr_screen.res][2]/2) - 10;
-		int more_txt_y = Fiction_viewer_text_coordinates[gr_screen.res][1] + Fiction_viewer_text_coordinates[gr_screen.res][3] - 2;				// located below text, centered
+		int more_txt_x = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][0] + (Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][2]/2) - 10;
+		int more_txt_y = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][1] + Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3] - 2;				// located below text, centered
 
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
