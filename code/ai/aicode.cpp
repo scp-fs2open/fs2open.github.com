@@ -8806,6 +8806,9 @@ void ai_chase()
 						//	ship_stop_fire_primary(Pl_objp);
 						}
 					}
+				}
+
+				if ( tswp->num_secondary_banks > 0) {
 
 					//	Don't fire secondaries at a protected ship.
 					if (!(En_objp->flags & OF_PROTECTED)) {
