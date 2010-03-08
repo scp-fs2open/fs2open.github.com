@@ -9264,8 +9264,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
 							{
 								if ((sip->aiming_flags & AIM_FLAG_AUTOAIM) &&
-									aip->target_objnum != -1 &&
-									Players[Player_num].lead_indicator_active == 1)
+									aip->target_objnum != -1)
 								{
 									// Fire weapon in target direction
 									vec3d target_position, target_velocity_vec, predicted_target_pos;
