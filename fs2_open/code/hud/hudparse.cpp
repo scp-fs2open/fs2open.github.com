@@ -45,26 +45,26 @@ int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 #define HUD_VAR(a) offsetof(hud_info, a)
 
 gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
-	{ NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Shield_mini_coords),	"$Shield Mini:",			305, 291, 497, 470, 0, HUD_VAR(Shield_mini_fname), 0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size), HUD_VAR(Aburn_fname), 0, 0, 0, 0, HUD_VAR(Aburn_move_flag), -1, -1 },
-	{ NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size), HUD_VAR(Wenergy_fname), 0, 0, 0, 0, HUD_VAR(Wenergy_move_flag), -1, -1 },
-	{ NULL,			HUD_VAR(Wenergy_text_coords),	"$Weapons Energy Text:",	439, 318, 708, 509, 0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Player_shield_coords),	"Player Shield",		396, 379, 634, 670,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Target_shield_coords),	"Target Shield",		142, 379, 292, 670,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Shield_mini_coords),	"Shield Mini",			305, 291, 497, 470, 0, HUD_VAR(Shield_mini_fname), 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Aburn_coords),			"Afterburner Energy",	171, 265, 274, 424, HUD_VAR(Aburn_size), HUD_VAR(Aburn_fname), 0, 0, 0, 0, HUD_VAR(Aburn_move_flag), -1, -1 },
+	{ NULL,			HUD_VAR(Wenergy_coords),		"Weapons Energy",		416, 265, 666, 424, HUD_VAR(Wenergy_size), HUD_VAR(Wenergy_fname), 0, 0, 0, 0, HUD_VAR(Wenergy_move_flag), -1, -1 },
+	{ NULL,			HUD_VAR(Wenergy_text_coords),	"Weapons Energy Text",	439, 318, 708, 509, 0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Escort_coords),			"Escort List",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, 0, 0, -1, -1 },
 
 	//Mini-gauges
-	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"$Text Base:",				310, 298, 502, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-//	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			489, 208, 869, 331,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_entry_last),		"$Last Ship:",				0, 11, 0, 11,		0, HUD_VAR(Escort_filename[2]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_name),			"$Ship Name:",				3, 0, 4, 0,			0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_integrity),		"$Ship Hull:",				128, 0, 116, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
-	{ &gauges[6],	HUD_VAR(Escort_status),			"$Ship Status:",			-12, 0, -11, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 }
+	{ &gauges[2],	HUD_VAR(Hud_mini_3digit),		"Text Base",			310, 298, 502, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"Text 1 digit",			316, 298, 511, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+//	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"Text 2 digit",			213, 298, 346, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"Text 2 digit",			313, 298, 506, 477,	0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_htext_coords),	"Header Text",			489, 208, 869, 331,	0, 0, 0, 0, 0, 0, 0, -1, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_list),			"List",					0, 12, 0, 13,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_entry),			"Ship",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_entry_last),		"Last Ship",			0, 11, 0, 11,		0, HUD_VAR(Escort_filename[2]), 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_name),			"Ship Name",			3, 0, 4, 0,			0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_integrity),		"Ship Hull",			128, 0, 116, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 },
+	{ &gauges[6],	HUD_VAR(Escort_status),			"Ship Status",			-12, 0, -11, 0,		0, 0, 0, 0, 0, 0, 0, HG_NOADD, -1 }
 };
 
 //Number of gauges
@@ -182,12 +182,16 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 	float percentage_temp[2];
 	int size_temp[2];
 	bool size_defined = false;
+	char token_name[NAME_LENGTH + 2] = "$";
+
+	strcat_s(token_name, cg->fieldname);
+	strcat_s(token_name, ":");
 
 	if(required)
 	{
-		required_string(cg->fieldname);
+		required_string(token_name);
 	}
-	if(!required && !optional_string(cg->fieldname))
+	if(!required && !optional_string(token_name))
 	{
 		return 0;
 	}
@@ -333,7 +337,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 		{
 			cg = &gauges[i];
 			
-			if(!parent && !strnicmp(cg->fieldname + sizeof(char), gaugename, strlen(cg->fieldname) - 2))
+			if(!parent && !stricmp(cg->fieldname, gaugename))
 			{
 				parent = cg;
 				break;
@@ -465,10 +469,7 @@ void parse_custom_gauge()
 		cg->moveflag_dest = HUD_VAR(custom_gauge_moveflags[0]) + (Num_custom_gauges * sizeof(bool));
 
 		required_string("$Name:");
-		//Gotta make this a token
-		cg->fieldname[0] = '$';
-		stuff_string(cg->fieldname + 1, F_NAME, sizeof(cg->fieldname) - 1);
-		strcat_s(cg->fieldname, ":");
+		stuff_string(cg->fieldname, F_NAME, NAME_LENGTH);
 
 		if(optional_string("+Default640X:"))
 		{
@@ -743,7 +744,7 @@ int hud_get_gauge_index(char* name)
 {
 	for(int i = 0; i < Num_gauge_types; i++)
 	{
-		if(!strnicmp(gauges[i].fieldname + sizeof(char), name, strlen(gauges[i].fieldname) - 2))
+		if(!stricmp(gauges[i].fieldname, name))
 		{
 			return i;
 		}
