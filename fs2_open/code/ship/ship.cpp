@@ -4191,8 +4191,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->score = 0;
 	shipp->assist_score_pct = 0;
 	shipp->escort_priority = 0;
-	shipp->special_exp_index = -1;
-	shipp->special_hitpoint_index = -1;
 	shipp->num_hits = 0;
 	shipp->flags = 0;
 	shipp->flags2 = 0;
@@ -4386,11 +4384,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	physics_ship_init(objp);
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
-		shipp->ship_max_hull_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shipp->ship_max_hull_strength = sip->max_hull_strength;
 		shield_set_strength(objp, shipp->ship_max_shield_strength);
 	}
 
@@ -6214,7 +6210,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	Assert( (shipp != NULL) && (sip != NULL) );
 
 
-	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (shipp->special_exp_index < 0)) {
+	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (shipp->special_exp_damage == -1)) {
 		float override = Ai_info[shipp->ai_index].kamikaze_damage;
 
 		inner_rad = exp_objp->radius*2.0f;
@@ -6223,19 +6219,12 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		max_blast = override * 5.0f;
 		shockwave_speed = 100.0f;
 	} else {
-		if (shipp->special_exp_index != -1) {
-			int start = shipp->special_exp_index;
-			int propagates;
-			inner_rad = (float) atoi(Sexp_variables[start+INNER_RAD].text);
-			outer_rad = (float) atoi(Sexp_variables[start+OUTER_RAD].text);
-			max_damage = (float) atoi(Sexp_variables[start+DAMAGE].text);
-			max_blast = (float) atoi(Sexp_variables[start+BLAST].text);
-			propagates = atoi(Sexp_variables[start+PROPAGATE].text);
-			if (propagates) {
-				shockwave_speed = (float) atoi(Sexp_variables[start+SHOCK_SPEED].text);
-			} else {
-				shockwave_speed = 0.0f;
-			}
+		if (shipp->use_special_explosion) {
+			inner_rad = (float)shipp->special_exp_inner;
+			outer_rad = (float)shipp->special_exp_outer;
+			max_damage = (float)shipp->special_exp_damage;
+			max_blast = (float)shipp->special_exp_blast;
+			shockwave_speed = (float)shipp->special_exp_shockwave_speed;
 		} else {
 			inner_rad = sip->shockwave.inner_rad;
 			outer_rad = sip->shockwave.outer_rad;
@@ -8199,7 +8188,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (by_sexp)
 	{
 		// hull
-		if (sp->special_hitpoint_index != -1) {
+		if (sp->special_hitpoints) {
 			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
 		} else {
 			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
@@ -8207,7 +8196,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		// shield
-		if (sp->special_hitpoint_index != -1) {
+		if (sp->special_shield > 0) {
 			shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
 		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
@@ -8263,8 +8252,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->ship_max_hull_strength = 100.0f;
 		objp->hull_strength = 100.0f;
 	} else {
-		if (sp->special_hitpoint_index != -1) {
-			sp->ship_max_hull_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
+		if (sp->special_hitpoints > 0) {
+			sp->ship_max_hull_strength = (float)sp->special_hitpoints > 0;
 		} else {
 			sp->ship_max_hull_strength = sip->max_hull_strength;
 		}
@@ -8279,8 +8268,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
-		if (sp->special_hitpoint_index != -1) {
-			sp->ship_max_shield_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		if (sp->special_shield >= 0) {
+			sp->ship_max_shield_strength = (float)sp->special_shield;
 		} else {
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
@@ -14837,8 +14826,8 @@ float ship_get_exp_damage(object* objp)
 
 	ship *shipp = &Ships[objp->instance];
 
-	if (shipp->special_exp_index != -1) {
-		damage = (float) atoi(Sexp_variables[shipp->special_exp_index+DAMAGE].text);
+	if (shipp->special_exp_damage >= 0) {
+		damage = (float)shipp->special_exp_damage;
 	} else {
 		damage = Ship_info[shipp->ship_info_index].shockwave.damage;
 	}
@@ -14856,10 +14845,10 @@ float ship_get_exp_outer_rad(object *ship_objp)
 	float outer_rad;
 	Assert(ship_objp->type == OBJ_SHIP);
 
-	if (Ships[ship_objp->instance].special_exp_index == -1) {
+	if (Ships[ship_objp->instance].special_exp_outer == -1) {
 		outer_rad = Ship_info[Ships[ship_objp->instance].ship_info_index].shockwave.outer_rad;
 	} else {
-		outer_rad = (float) atoi(Sexp_variables[Ships[ship_objp->instance].special_exp_index+OUTER_RAD].text);
+		outer_rad = (float)Ships[ship_objp->instance].special_exp_outer;
 	}
 
 	return outer_rad;

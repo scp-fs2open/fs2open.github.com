@@ -660,6 +660,9 @@ int Num_sexp_nodes = 0;
 sexp_node *Sexp_nodes = NULL;
 
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
+sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
+
+int Num_special_expl_blocks;
 
 SCP_vector<int> Current_sexp_operator;
 
@@ -682,6 +685,7 @@ void init_sexp_vars();
 int eval_num(int node);
 
 // for handling variables
+void add_block_variable(const char *text, const char *var_name, int type, int index);
 void sexp_modify_variable(int node);
 int sexp_get_variable_by_index(int node);
 void sexp_set_variable_by_index(int node);
@@ -2958,7 +2962,7 @@ int stuff_sexp_variable_list()
 			// Goober5000 - This looks dangerous... these flags are needed for certain things, but it
 			// looks like BLOCK_*_SIZE is the only thing that keeps a block from running off the end
 			// of its boundary.
-			type = SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP | SEXP_VARIABLE_BLOCK_HIT;
+			type = SEXP_VARIABLE_BLOCK;
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
 			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
@@ -3000,19 +3004,102 @@ int stuff_sexp_variable_list()
 			Error(LOCATION, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
 		}
 
-		count++;
-
 		// check if variable name already exists
 		if ( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) ) {
 			Assert(get_index_sexp_variable_name(var_name) == -1);
 		}
 
-		sexp_add_variable(default_value, var_name, type, index);
+		if ( type & SEXP_VARIABLE_BLOCK ) {
+			add_block_variable(default_value, var_name, type, index);
+		}
+		else {			
+			count++;
+			sexp_add_variable(default_value, var_name, type, index);
+		}
 	}
 
 	Mp++;
 
 	return count;
+}
+
+bool has_special_explosion_block_index(ship *shipp, int *index)
+{
+	int current_index;
+
+	for ( current_index = (MAX_SEXP_VARIABLES - BLOCK_EXP_SIZE) ; current_index >= (MAX_SEXP_VARIABLES - (BLOCK_EXP_SIZE * Num_special_expl_blocks)) ; current_index = (current_index - BLOCK_EXP_SIZE) ) {
+		if ( 
+			(atoi(Block_variables[current_index+INNER_RAD].text) == shipp->special_exp_inner) &&
+			(atoi(Block_variables[current_index+OUTER_RAD].text) == shipp->special_exp_outer) &&
+			(atoi(Block_variables[current_index+DAMAGE].text) == shipp->special_exp_damage) &&
+			(atoi(Block_variables[current_index+BLAST].text) == shipp->special_exp_blast) &&
+			(atoi(Block_variables[current_index+PROPAGATE].text) == (shipp->use_shockwave ? 1:0) ) &&
+			(atoi(Block_variables[current_index+SHOCK_SPEED].text) == shipp->special_exp_shockwave_speed)
+			) {
+				*index = current_index;
+				return true;
+		}
+	}	
+
+	// if we got here, this ship's special explosions aren't represented in the Block_variables array
+	*index = current_index;
+	return false;
+}
+
+bool generate_special_explosion_block_variables()
+{
+	ship *shipp; 
+	ship_obj *sop;
+	int current_index;
+	bool already_added = false; 
+	int num_sexp_variables;
+	int i;
+
+	// since we're (re)generating the block variable index, we don't start off with any block variables 
+	Num_special_expl_blocks = 0;
+
+	// get the number of sexp_variables we currently have. We must not try to add a block variable with an index below this.
+	num_sexp_variables = sexp_variable_count();
+
+	for ( sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop) ) {
+		shipp=&Ships[Objects[sop->objnum].instance];
+
+		if (!(shipp->use_special_explosion)) {
+			continue;
+		}
+
+		already_added = has_special_explosion_block_index(shipp, &current_index);
+
+		// if we can't add an index for this add this ship to the list of those which failed
+		if (current_index < num_sexp_variables) {
+			// fail list code goes here
+			continue;
+		}
+
+		//if we haven't added this entry already, do so
+		if (!already_added) {
+			sprintf(Block_variables[current_index+INNER_RAD].text, "%d", shipp->special_exp_inner);
+			sprintf(Block_variables[current_index+OUTER_RAD].text, "%d", shipp->special_exp_outer);
+			sprintf(Block_variables[current_index+DAMAGE].text, "%d", shipp->special_exp_damage);
+			sprintf(Block_variables[current_index+BLAST].text, "%d", shipp->special_exp_blast);
+			sprintf(Block_variables[current_index+PROPAGATE].text, "%d", (shipp->use_shockwave ? 1:0) );
+			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%d", shipp->special_exp_shockwave_speed);
+
+			// add the names
+			for (i = current_index; i < (current_index + BLOCK_EXP_SIZE); i++ ) {
+				sprintf(Block_variables[i].variable_name, "%s", shipp->ship_name); 
+			}
+
+			Num_special_expl_blocks++;
+		}			
+	}
+
+	return true;
+}
+
+int num_block_variables()
+{
+	return Num_special_expl_blocks * BLOCK_EXP_SIZE;
 }
 
 //
@@ -12815,7 +12902,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 
 
 	// copy hull...
-	target_shipp->special_hitpoint_index = source_shipp->special_hitpoint_index;
+	target_shipp->special_hitpoints = source_shipp->special_hitpoints;
 	target_shipp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
 	target_objp->hull_strength = source_objp->hull_strength;
 
@@ -12856,7 +12943,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 	}
 
 	// copy hull...
-	target_pobjp->special_hitpoint_index = source_shipp->special_hitpoint_index;
+	target_pobjp->special_hitpoints = source_shipp->special_hitpoints;
 	target_pobjp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
 	target_pobjp->initial_hull = fl2i(get_hull_pct(source_objp) * 100.0f);
 
@@ -20298,27 +20385,11 @@ int query_operator_argument_type(int op, int argnum)
 	return 0;
 }
 
-void update_block_names(const char *old_name, const char *new_name)
-{
-	int i;
-
-	for (i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) {
-			if ( !strcmp(old_name, Sexp_variables[i].variable_name) ) {
-				strcpy_s(Sexp_variables[i].variable_name, new_name);
-			}
-		}
-	}
-}
-
 // DA: 1/7/99  Used to rename ships and waypoints, not variables
 // Strictly used in FRED
 void update_sexp_references(char *old_name, char *new_name)
 {
 	int i;
-
-	// update_block_names
-	update_block_names(old_name, new_name);
 
 	Assert(strlen(new_name) < TOKEN_LENGTH);
 	for (i = 0; i < Num_sexp_nodes; i++)
@@ -20843,8 +20914,8 @@ char *CTEXT(int n)
 			sexp_variable_index = get_index_sexp_variable_name(variable_name);
 		}
 
-		// if we have a non-block variable, return the variable value, else return the regular argument
-		if ((sexp_variable_index != -1) && !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_BLOCK))
+		// if we have a variable, return the variable value, else return the regular argument
+		if (sexp_variable_index != -1)
 			return Sexp_variables[sexp_variable_index].text;
 		else
 			return Sexp_replacement_arguments.back();
@@ -20882,12 +20953,22 @@ char *CTEXT(int n)
 void init_sexp_vars()
 {
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-//		if ( !(Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT) )
-//			Sexp_nodes[i].type = SEXP_NOT_USED;
 		Sexp_variables[i].type = SEXP_VARIABLE_NOT_USED;
+		Block_variables[i].type = SEXP_VARIABLE_NOT_USED;
 	}
 }
 
+// adds a variable to the block variable array rather than the Sexp_variables array
+void add_block_variable(const char *text, const char *var_name, int type, int index)
+{
+	Assert( (index >= 0) && (index < MAX_SEXP_VARIABLES) );
+
+	strcpy_s(Block_variables[index].text, text);
+	strcpy_s(Block_variables[index].variable_name, var_name);
+	Block_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
+	Block_variables[index].type = (type | SEXP_VARIABLE_SET);
+	
+}
 
 // Adds an Sexp_variable to be used in a mission.
 // This should be called from within mission parse.
@@ -20924,9 +21005,9 @@ void sexp_add_array_block_variable(int index, bool is_numeric)
 	strcpy_s(Sexp_variables[index].variable_name, "variable array block");
 
 	if (is_numeric)
-		Sexp_variables[index].type = SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_SET;
+		Sexp_variables[index].type = SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_SET;
 	else
-		Sexp_variables[index].type = SEXP_VARIABLE_STRING | SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_SET;
+		Sexp_variables[index].type = SEXP_VARIABLE_STRING | SEXP_VARIABLE_SET;
 }
 
 // Modifies and Sexp_variable to be used in a mission
@@ -21255,7 +21336,7 @@ int sexp_variable_count()
 	int count = 0;
 
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET)  && !(Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) ) {
+		if ( Sexp_variables[i].type & SEXP_VARIABLE_SET) {
 			count++;
 		}
 	}
@@ -21269,7 +21350,7 @@ int sexp_campaign_persistent_variable_count()
 	int count = 0;
 
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET) && !(Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) && (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
+		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET) && (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
 			count++;
 		}
 	}
@@ -21328,114 +21409,10 @@ int sexp_var_compare(const void *var1, const void *var2)
 	}
 }
 
-// Count number of variables in block
-int sexp_variable_block_count()
-{
-	int count = 0;
-	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_BLOCK) {
-			count++;
-		}
-	}
-
-	return count;
-}
-
 // Sort sexp_variable list lexigraphically, with set before unset
 void sexp_variable_sort()
 {
-	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES - sexp_variable_block_count()), sizeof(sexp_variable), sexp_var_compare );
-}
-
-int sexp_variable_allocate_block(const char* block_name, int block_type)
-{
-	int num_blocks, block_count, var_count, start;
-	block_count = sexp_variable_block_count();
-	var_count = sexp_variable_count();
-
-	if (block_type & SEXP_VARIABLE_BLOCK_EXP) {
-		num_blocks = BLOCK_EXP_SIZE;
-	} else if (block_type & SEXP_VARIABLE_BLOCK_HIT) {
-		num_blocks = BLOCK_HIT_SIZE;
-	} else {
-		Int3();	// add new block type here with size
-		return -1;
-	}
-
-	if (block_count + var_count > (MAX_SEXP_VARIABLES - num_blocks)) {
-		// not enough free space
-		return -1;
-	}
-
-	// squeeze all variables to front of array
-	sexp_variable_sort();
-
-	// squeeze all block to end of array
-	sexp_variable_condense_block();
-
-	start = MAX_SEXP_VARIABLES - block_count - num_blocks;
-
-	for (int idx=start; idx<start+num_blocks; idx++) {
-		Assert(Sexp_variables[idx].type == SEXP_VARIABLE_NOT_USED);
-		Sexp_variables[idx].type = SEXP_VARIABLE_BLOCK | block_type;
-		strcpy_s(Sexp_variables[idx].variable_name, block_name);
-	}
-
-	return start;
-}
-
-// squeeze all blocks to top of array
-void sexp_variable_condense_block()
-{
-	int temp_idx, idx, var_count, i;
-
-	var_count = sexp_variable_count();
-	temp_idx = MAX_SEXP_VARIABLES-1;
-
-	for (idx=MAX_SEXP_VARIABLES-1; idx>var_count-1; idx--) {
-		if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
-			if (temp_idx > idx) {
-				Sexp_variables[temp_idx] = Sexp_variables[idx];
-				Sexp_variables[idx].type = SEXP_VARIABLE_NOT_USED;
-
-				// now we need to check that nothing actually used this block
-				for (i = 0; i < MAX_SHIPS; i++) {
-					if (Ships[i].special_exp_index == idx) {
-						Ships[i].special_exp_index = temp_idx;
-					}
-					if (Ships[i].special_hitpoint_index == idx) {
-						Ships[i].special_hitpoint_index = temp_idx;
-					}
-				}
-			}
-			temp_idx--;
-		}
-	}
-}
-
-
-void sexp_variable_block_free(const char *ship_name, int start_index, int block_type)
-{
-	int num_blocks;
-
-	if (block_type & SEXP_VARIABLE_BLOCK_EXP) {
-		num_blocks = BLOCK_EXP_SIZE;
-	} else if (block_type & SEXP_VARIABLE_BLOCK_HIT) {
-		num_blocks = BLOCK_HIT_SIZE;
-	} else {
-		Int3();  // new type of block
-		return;
-	}
-
-	for (int i=start_index; i<(start_index + num_blocks); i++) {
-		Assert(!stricmp(Sexp_variables[i].variable_name, ship_name));
-
-		Assert(Sexp_variables[i].type & block_type);
-
-		Sexp_variables[i].type = SEXP_VARIABLE_NOT_USED;
-	}
-
-	sexp_variable_condense_block();
+	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
 }
 
 // evaluate number which may result from an operator or may be text
