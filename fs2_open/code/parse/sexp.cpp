@@ -12437,7 +12437,7 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = fl2i((shipp->weapons.primary_bank_capacity[requested_bank] 
+	maximum_allowed = fl2i((Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[requested_bank] 
 		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size)+0.5);
 	if (maximum_allowed < requested_ammo) 
 	{
