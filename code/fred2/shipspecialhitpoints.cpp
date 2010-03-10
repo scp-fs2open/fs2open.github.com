@@ -31,10 +31,11 @@ void ShipSpecialHitpoints::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(ShipSpecialHitpoints)
 	DDX_Check(pDX, IDC_ENABLE_SPECIAL_HITPOINTS, m_special_hitpoints_enabled);
+	DDX_Check(pDX, IDC_ENABLE_SPECIAL_SHIELD, m_special_shield_enabled);
 	DDX_Text(pDX, IDC_SPECIAL_SHIELDS, m_shields);
-	DDV_MinMaxInt(pDX, m_shields, 0, INT_MAX);
+	DDV_MinMaxInt(pDX, m_shields, -1, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_HULL, m_hull);
-	DDV_MinMaxInt(pDX, m_hull, 10, INT_MAX);
+	DDV_MinMaxInt(pDX, m_hull, 1, INT_MAX);
 	//}}AFX_DATA_MAP
 }
 
@@ -42,6 +43,7 @@ void ShipSpecialHitpoints::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(ShipSpecialHitpoints, CDialog)
 	//{{AFX_MSG_MAP(ShipSpecialHitpoints)
 	ON_BN_CLICKED(IDC_ENABLE_SPECIAL_HITPOINTS, OnEnableSpecialHitpoints)
+	ON_BN_CLICKED(IDC_ENABLE_SPECIAL_SHIELD, OnEnableSpecialShieldpoints)
 	ON_BN_CLICKED(ID_OK, OnOk)
 	ON_BN_CLICKED(ID_CANCEL, OnCancel)
 	//}}AFX_MSG_MAP
@@ -58,46 +60,70 @@ void ShipSpecialHitpoints::OnEnableSpecialHitpoints()
 	DoGray();
 }
 
+void ShipSpecialHitpoints::OnEnableSpecialShieldpoints() 
+{
+	// TODO: Add your control notification handler code here
+	UpdateData(TRUE);
+
+	DoGray();
+}
+
 BOOL ShipSpecialHitpoints::OnInitDialog() 
 {
 	// get ship num
 	object *objp;
 
-	m_ship_num = -1;
+	num_selected_ships = 0;
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
 			if (objp->flags & OF_MARKED) {
-
-				m_ship_num = objp->instance;
-				break;
+				m_selected_ships[num_selected_ships] = objp->instance;
+				num_selected_ships++;
 			}
 		}
 		objp = GET_NEXT(objp);
 	}
 
-	if (Ships[m_ship_num].special_hitpoint_index == -1)
-	{
+	Assert(num_selected_ships);
+	Assert (Objects[cur_object_index].flags & OF_MARKED);
+	m_ship_num = Objects[cur_object_index].instance; 
+
+	// get the details from the first ship
+	//hull
+	if (Ships[m_ship_num].special_hitpoints) {
+		m_hull = Ships[m_ship_num].special_hitpoints;
+		m_special_hitpoints_enabled = TRUE;
+	}
+	else {
+		// get default_table_values
+		ship_info *sip;
+		sip = &Ship_info[Ships[m_ship_num].ship_info_index];
+
+		m_hull = (int)sip->max_hull_strength;
+		m_special_hitpoints_enabled = FALSE;
+
+		if (m_hull < 1) m_hull = 10;
+	}
+
+	//shields
+	if (Ships[m_ship_num].special_shield > 0){
+		m_shields = Ships[m_ship_num].special_shield;
+		m_special_shield_enabled = TRUE;
+	}
+	else {
 		// get default_table_values
 		ship_info *sip;
 		sip = &Ship_info[Ships[m_ship_num].ship_info_index];
 
 		m_shields = (int)sip->max_shield_strength;
-		m_hull = (int)sip->max_hull_strength;
-		m_special_hitpoints_enabled = FALSE;
+		m_special_shield_enabled = FALSE;
 
-		if (m_shields < 0) m_shields = 0;
-		if (m_hull < 10) m_hull = 10;
-	} else {
-		int index = Ships[m_ship_num].special_hitpoint_index;
-//		Assert( (index > 0) && (index < MAX_SEXP_VARIABLES-(BLOCK_HITPOINT_SIZE-1)) );
-
-		m_shields = atoi(Sexp_variables[index++].text);
-		m_hull = atoi(Sexp_variables[index++].text);
-
-		m_special_hitpoints_enabled = TRUE;
-	}
+		if (m_shields < 0) {
+			m_shields = 0;
+		}
+	} 
 
 	CDialog::OnInitDialog();
 
@@ -110,7 +136,7 @@ BOOL ShipSpecialHitpoints::OnInitDialog()
 
 void ShipSpecialHitpoints::DoGray()
 {
-	GetDlgItem(IDC_SPECIAL_SHIELDS)->EnableWindow(m_special_hitpoints_enabled);
+	GetDlgItem(IDC_SPECIAL_SHIELDS)->EnableWindow(m_special_shield_enabled);
 	GetDlgItem(IDC_SPECIAL_HULL)->EnableWindow(m_special_hitpoints_enabled);
 }
 
@@ -124,6 +150,8 @@ void ShipSpecialHitpoints::OnCancel()
 void ShipSpecialHitpoints::OnOk() 
 {
 	float temp_max_hull_strength;
+	int new_shield_strength, new_hull_strength;
+	int i;
 
 	UpdateData(TRUE);
 
@@ -131,58 +159,65 @@ void ShipSpecialHitpoints::OnOk()
 	if (m_special_hitpoints_enabled) {
 
 		// Don't update anything if the hull strength is invalid
-		if (m_hull < 10) 
-		{
+		if (m_hull < 1) {
 			return;
 		}
 
-		int start;
-
-		if (Ships[m_ship_num].special_hitpoint_index == -1) {
-
-			// get free sexp_variables
-			start = sexp_variable_allocate_block(Ships[m_ship_num].ship_name, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_HIT);
-			if (start == -1) {
-				MessageBox("Unable to allocate storage, try deleting Sexp variables");
-				return;
-			} else {
-				Ships[m_ship_num].special_hitpoint_index = start;
-			}
-		} else {
-			start = Ships[m_ship_num].special_hitpoint_index;
-		}
 		// set to update
 		set_modified();
 
-		// set em
-		sprintf(Sexp_variables[start+SHIELD_STRENGTH].text, "%d", m_shields);
-		sprintf(Sexp_variables[start+HULL_STRENGTH].text, "%d", m_hull);
+		new_hull_strength = m_hull;
+		//Ships[m_ship_num].special_hitpoints = m_hull;
 
-	} else {
-		if (Ships[m_ship_num].special_hitpoint_index != -1) {
-			// set to update
-			set_modified();
+	} 
+	else {
+		// set to update
+		set_modified();
 
-			// free block
-			sexp_variable_block_free(Ships[m_ship_num].ship_name, Ships[m_ship_num].special_hitpoint_index, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_HIT);
+		new_hull_strength = 0;
+	}
 
-			// set index to no hit block
-			Ships[m_ship_num].special_hitpoint_index = -1;
+	if (m_special_shield_enabled) {
+
+		// Don't update anything if the hull strength is invalid
+		if (m_shields < 0) 	{
+			return;
 		}
+
+		// set to update
+		set_modified();
+
+		new_shield_strength = m_shields;
+		//Ships[m_ship_num].special_shield = m_shields;
+
+	} 
+	else {
+		// set to update
+		set_modified();
+
+		new_shield_strength = -1;
 	}
 
-	// calc kamikaze stuff
-	if (Ships[m_ship_num].special_hitpoint_index != -1)
-	{
-		temp_max_hull_strength = (float) atoi(Sexp_variables[Ships[m_ship_num].special_hitpoint_index+HULL_STRENGTH].text);
+	for ( i=0; i<num_selected_ships; i++) {
+		// set the special hitpoints/shield
+		Ships[m_selected_ships[i]].special_hitpoints = new_hull_strength;
+		Ships[m_selected_ships[i]].special_shield = new_shield_strength;
+
+		// calc kamikaze stuff
+		if (Ships[m_selected_ships[i]].special_hitpoints)
+		{
+			temp_max_hull_strength = (float)Ships[m_selected_ships[i]].special_hitpoints;
+		}
+		else
+		{
+			temp_max_hull_strength = Ship_info[Ships[m_selected_ships[i]].ship_info_index].max_hull_strength;
+		}
+
+		Ai_info[Ships[m_selected_ships[i]].ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+
+
 	}
-	else
-	{
-		temp_max_hull_strength = Ship_info[Ships[m_ship_num].ship_info_index].max_hull_strength;
-	}
 
-	Ai_info[Ships[m_ship_num].ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
-
-
+	
 	CDialog::OnOK();
 }

@@ -400,8 +400,17 @@ typedef struct p_object {
 	int	group;								// group object is within or -1 if none.
 	int	persona_index;
 	float	kamikaze_damage;					// base damage for a kamikaze attack
-	int	special_exp_index;
-	int special_hitpoint_index;
+
+	bool use_special_explosion;				// new special explosion/hitpoints system 
+	int special_exp_damage;
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
+	bool use_shockwave;
+	int special_exp_shockwave_speed;
+	int	special_hitpoints;
+	int	special_shield;
+
 	ushort net_signature;					// network signature this object can have
 	int destroy_before_mission_time;
 
@@ -485,8 +494,15 @@ typedef struct p_object {
 		group = 0;
 		persona_index = 0;
 		kamikaze_damage = 0.;
-		special_exp_index = 0;
-		special_hitpoint_index = 0;
+		use_special_explosion = false;
+		special_exp_damage = -1;
+		special_exp_blast = -1;
+		special_exp_inner = -1;
+		special_exp_outer = -1;
+		use_shockwave = false;
+		special_exp_shockwave_speed = -1;
+		special_hitpoints = 0;
+		special_shield = -1;
 		net_signature = 0;
 		destroy_before_mission_time = 0;
 

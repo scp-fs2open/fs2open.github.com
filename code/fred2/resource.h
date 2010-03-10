@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -1048,6 +1048,7 @@
 #define IDC_SPECIAL_SHIELDS             1555
 #define IDC_SPECIAL_HULL                1556
 #define IDC_LOADING_SCREEN_BUTTON1024   1557
+#define IDC_ENABLE_SPECIAL_SHIELD       1557
 #define IDC_LOADING_SCREEN640           1558
 #define IDC_TYPE_CAMPAIGN_PERSISTENT    1559
 #define IDC_MAX_HULL_REPAIR_VAL         1559

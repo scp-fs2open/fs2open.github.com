@@ -1731,7 +1731,18 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->team = p_objp->team;
 	strcpy_s(shipp->ship_name, p_objp->name);
 	shipp->escort_priority = p_objp->escort_priority;
-	shipp->special_exp_index = p_objp->special_exp_index;
+
+	
+	
+	shipp->use_special_explosion = p_objp->use_special_explosion;
+	shipp->special_exp_damage = p_objp->special_exp_damage;
+	shipp->special_exp_blast = p_objp->special_exp_blast ;
+	shipp->special_exp_inner = p_objp->special_exp_inner ;
+	shipp->special_exp_outer = p_objp->special_exp_outer ;
+	shipp->use_shockwave = p_objp->use_shockwave ;
+	shipp->special_exp_shockwave_speed = p_objp->special_exp_shockwave_speed ;
+	shipp->special_hitpoints = p_objp->special_hitpoints ;
+	shipp->special_shield = p_objp->special_shield ;
 
 	for (i=0;i<MAX_IFFS;i++)
 	{
@@ -1742,13 +1753,12 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// Goober5000
-	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
-	if (shipp->special_hitpoint_index >= 0)
+	if (shipp->special_hitpoints > 0)
 	{
 		float hull_factor = shipp->ship_max_hull_strength / sip->max_hull_strength;
 		ship_subsys *ss;
@@ -2363,6 +2373,48 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 		shipp->flags2 |= SF2_FORCE_SHIELDS_ON;
 }
 
+void fix_old_special_explosions(p_object *p_objp, int variable_index) 
+{
+	int i;
+
+	Assertion(!(p_objp->use_special_explosion), "Mission appears to be using both the new and old method of special explosions for %s. Old method values used", p_objp->name); 
+	
+	// check all the variables are valid
+	for ( i = variable_index; i < (variable_index + BLOCK_EXP_SIZE); i++ ) {
+		if (!( Block_variables[i].type & SEXP_VARIABLE_BLOCK )) {
+			Warning (LOCATION, "%s is using the old special explosions method but does not appear to have variables for all the values", p_objp->name);
+			return;
+		}
+	}
+
+	p_objp->use_special_explosion = true;
+
+	p_objp->special_exp_damage = atoi(Block_variables[variable_index+DAMAGE].text);
+	p_objp->special_exp_blast = atoi(Block_variables[variable_index+BLAST].text);
+	p_objp->special_exp_inner = atoi(Block_variables[variable_index+INNER_RAD].text);
+	p_objp->special_exp_outer = atoi(Block_variables[variable_index+OUTER_RAD].text);
+	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
+	p_objp->special_exp_shockwave_speed = atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+}
+
+void fix_old_special_hits(p_object *p_objp, int variable_index)
+{
+	int i; 
+
+	Assertion( ((p_objp->special_hitpoints == 0) && (p_objp->special_shield == -1)),"Mission appears to be using both the new and old method of special hitpoints for %s", p_objp->name);  
+	
+	// check all the variables are valid
+	for ( i = variable_index; i < (variable_index + BLOCK_HIT_SIZE); i++ ) {
+		if (!( Block_variables[i].type & SEXP_VARIABLE_BLOCK )) {
+			Warning (LOCATION, "%s is using the old special hitpoints method but does not appear to have variables for all the values", p_objp->name);
+			return;
+		}
+	}
+
+	p_objp->special_hitpoints = atoi(Block_variables[variable_index+HULL_STRENGTH].text);
+	p_objp->special_shield = atoi(Block_variables[variable_index+SHIELD_STRENGTH].text);
+}
+
 //	Mp points at the text of an object, which begins with the "$Name:" field.
 //	Snags all object information.  Creating the ship now only happens after everything has been parsed.
 //
@@ -2712,44 +2764,74 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		Player_starts++;
 	}
 
-	p_objp->special_exp_index = -1;
-	if (optional_string("+Special Exp index:"))
-		stuff_int(&p_objp->special_exp_index);
+	p_objp->use_special_explosion = false;
+	p_objp->special_exp_damage = -1;
+	p_objp->special_exp_blast = -1;
+	p_objp->special_exp_inner = -1;
+	p_objp->special_exp_outer = -1;
+	p_objp->use_shockwave = false;
+	p_objp->special_exp_shockwave_speed = 0;
+	p_objp->special_hitpoints = 0;
+	p_objp->special_shield = -1;
 
-	p_objp->special_hitpoint_index = -1;
-	if (optional_string("+Special Hitpoint index:"))
-		stuff_int(&p_objp->special_hitpoint_index);
+	if (optional_string("$Special Explosion:")) {
+		p_objp->use_special_explosion = true;
 
-	// set max hitpoint values	
-	p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
-	p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
-	
-	// swap to the special hitpoint ones if they were set
-	if (p_objp->special_hitpoint_index != -1)
-	{
-		bool reset_index = false; 
-
-		if ((Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].type & SEXP_VARIABLE_SET)  && 
-			(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].type & SEXP_VARIABLE_BLOCK) ) {
-			p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		}
-		else {
-			Warning(LOCATION, "Special shield hitpoints used for variable number %d. But no variable with this number exists!", p_objp->special_hitpoint_index+SHIELD_STRENGTH); 
-			reset_index = true;
+		if (required_string("+Special Exp Damage:")) {
+			stuff_int(&p_objp->special_exp_damage);
 		}
 
-		if ((Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].type & SEXP_VARIABLE_SET)  && 
-			(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].type & SEXP_VARIABLE_BLOCK) ) {
-			p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
-		}
-		else {
-			Warning(LOCATION, "Special hitpoints used for variable number %d. But no variable with this number exists!", p_objp->special_hitpoint_index+HULL_STRENGTH); 
-			reset_index = true;
+		if (required_string("+Special Exp Blast:")) {
+			stuff_int(&p_objp->special_exp_blast);
 		}
 
-		if (reset_index) {
-			p_objp->special_hitpoint_index = -1;
+		if (required_string("+Special Exp Inner Radius:")) {
+			stuff_int(&p_objp->special_exp_inner);
 		}
+
+		if (required_string("+Special Exp Outer Radius:")) {
+			stuff_int(&p_objp->special_exp_outer);
+		}
+
+		if (optional_string("+Special Exp Shockwave Speed:")) {
+			stuff_int(&p_objp->special_exp_shockwave_speed);
+			p_objp->use_shockwave = true;
+		}
+	}
+
+	if (optional_string("+Special Hitpoints:")) {
+		stuff_int(&p_objp->special_hitpoints);
+	}
+
+	if (optional_string("+Special Shield Points:")) {
+		stuff_int(&p_objp->special_shield);
+	}
+
+	if (optional_string("+Special Exp index:")) {
+		int variable_index; 
+		stuff_int(&variable_index);
+		fix_old_special_explosions(p_objp, variable_index);
+	}
+
+	if (optional_string("+Special Hitpoint index:")) {
+		int variable_index; 
+		stuff_int(&variable_index);
+		fix_old_special_hits(p_objp, variable_index);
+	}
+
+	// set max hitpoint and shield values		
+	if (p_objp->special_shield != -1) {
+		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
+	}
+	else {
+		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+	}
+		
+	if (p_objp->special_hitpoints > 0) {
+		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
+	}
+	else {
+		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
 	}
 
 	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
@@ -5001,9 +5083,7 @@ void parse_variables()
 					// if the active mission has a variable with the same name as a campaign
 					// variable AND it is not a block variable, override its initial value
 					// with the previous mission's value
-					if (!(stricmp(Sexp_variables[k].variable_name, Campaign.missions[i].saved_variables[j].variable_name))
-						&& !(Campaign.missions[i].saved_variables[j].type & SEXP_VARIABLE_BLOCK))
-					{
+					if (!(stricmp(Sexp_variables[k].variable_name, Campaign.missions[i].saved_variables[j].variable_name)) ) {
 						Sexp_variables[k].type = Campaign.missions[i].saved_variables[j].type;
 						strcpy_s(Sexp_variables[k].text, Campaign.missions[i].saved_variables[j].text);
 					}
@@ -5020,9 +5100,7 @@ void parse_variables()
 				// if the active mission has a variable with the same name as a player
 				// variable AND it is not a block variable, override its initial value
 				// with the previous mission's value
-				if (!(stricmp(Sexp_variables[j].variable_name, Player->player_variables[i].variable_name))
-					&& !(Player->player_variables[i].type & SEXP_VARIABLE_BLOCK))
-				{
+				if (!(stricmp(Sexp_variables[j].variable_name, Player->player_variables[i].variable_name)) ) {
 					Sexp_variables[j].type = Player->player_variables[i].type;
 					strcpy_s(Sexp_variables[j].text, Player->player_variables[i].text);
 				}

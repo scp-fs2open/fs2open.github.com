@@ -466,9 +466,16 @@ typedef struct ship {
 	int	next_hit_spark;
 	int	num_hits;			//	Note, this is the number of spark emitter positions!
 	ship_spark	sparks[MAX_SHIP_HITS];
-
-	int	special_exp_index;
-	int special_hitpoint_index;
+	
+	bool use_special_explosion; 
+	int special_exp_damage;					// new special explosion/hitpoints system
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
+	bool use_shockwave;
+	int special_exp_shockwave_speed;
+	int	special_hitpoints;
+	int	special_shield;
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;

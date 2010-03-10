@@ -13,6 +13,7 @@
 #define _SEXP_H
 
 struct ship_subsys;
+struct ship;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -735,8 +736,10 @@ char *CTEXT(int n);
 #define SEXP_VARIABLE_NOT_USED				(1<<7)	//	(0x0080)
 
 #define SEXP_VARIABLE_BLOCK					(1<<0)	//	(0x0001)
+/*
 #define SEXP_VARIABLE_BLOCK_EXP				(1<<1)	//	(0x0002)
 #define SEXP_VARIABLE_BLOCK_HIT				(1<<2)	//	(0x0004)
+*/
 #define SEXP_VARIABLE_PLAYER_PERSISTENT		(1<<3)	//	(0x0008)
 
 // Goober5000 - hopefully this should work and not conflict with anything
@@ -900,6 +903,7 @@ extern int Num_sexp_nodes;
 extern sexp_node *Sexp_nodes;
 
 extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
+extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern sexp_oper Operators[];
 extern int Num_operators;
@@ -988,10 +992,9 @@ void sexp_variable_delete(int index);
 void sexp_variable_sort();
 void sexp_fred_modify_variable(const char *text, const char *var_name, int index, int type);
 int sexp_add_variable(const char *text, const char *var_name, int type, int index=-1);
-int sexp_variable_allocate_block(const char* block_name, int block_type);
-void sexp_variable_condense_block();
-void sexp_variable_block_free(const char *ship_name, int start_index, int block_type);
-
+bool generate_special_explosion_block_variables();
+int num_block_variables();
+bool has_special_explosion_block_index(ship *shipp, int *index);
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
