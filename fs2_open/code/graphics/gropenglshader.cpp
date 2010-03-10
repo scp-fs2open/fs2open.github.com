@@ -204,13 +204,13 @@ static const int Num_shader_files = sizeof(GL_shader_file) / sizeof(opengl_shade
 // Resources system - move it to more appropiate file as soon as we get working resource manager
 using namespace resources;
 
-text_file::text_file(const char *filename, txt_file_type ftype) {
+bool text_file::open(const char *filename, txt_file_type ftype) {
 	// open file
 	CFILE *fp = cfopen(const_cast<char*>(filename), "rt", CFILE_NORMAL, get_cfile_type(ftype));
 
 	if (!fp) {
-		mprintf(("Could not open text file \'%s\'.\n", filename));
-		return;
+	//	nprintf(("SHADER_DEBUG", "Could not open text file \'%s\'.\n", filename));
+		return false;
 	}
 
 	// load file
@@ -225,6 +225,8 @@ text_file::text_file(const char *filename, txt_file_type ftype) {
 
 	// clean
 	vm_free(bytes);
+
+	return true;
 }
 
 const SCP_string &text_file::read() const {
@@ -273,13 +275,13 @@ bool opengl::shader::compile_link() {
 	do {
 		vert = compile_object((const GLcharARB*)vert_src, GL_VERTEX_SHADER_ARB);
 		if (!vert) {
-			mprintf(("ERROR! Unable to create vertex shader!\n"));
+			mprintf(("    ERROR! Unable to create vertex shader!\n"));
 			break;
 		}
 
 		frag = compile_object((const GLcharARB*)frag_src, GL_FRAGMENT_SHADER_ARB);
 		if (!frag) {
-			mprintf(("ERROR! Unable to create fragment shader!\n"));
+			mprintf(("    ERROR! Unable to create fragment shader!\n"));
 			break;
 		}
 	} while (false);
@@ -288,7 +290,7 @@ bool opengl::shader::compile_link() {
 	if (vert && frag) {
 		shader_program = link_objects(vert, frag);
 		if (!shader_program)
-			mprintf(("ERROR! Unable to create shader program!\n"));
+			mprintf(("    ERROR! Unable to create shader program!\n"));
 	}
 
 	// clean
@@ -331,7 +333,7 @@ GLhandleARB opengl::shader::compile_object(const GLcharARB *shader_source, GLenu
 	// we failed, bail out now...
 	if (status == 0) {
 		// basic error check
-		mprintf(("%s shader failed to compile:\n%s\n", (shader_type == GL_VERTEX_SHADER_ARB) ? "Vertex" : "Fragment", info_log.c_str()));
+		mprintf(("    %s shader failed to compile:\n%s\n", (shader_type == GL_VERTEX_SHADER_ARB) ? "Vertex" : "Fragment", info_log.c_str()));
 		if (shader_object) {
 			vglDeleteObjectARB(shader_object);
 			shader_object = 0;
@@ -367,7 +369,7 @@ GLhandleARB opengl::shader::link_objects(GLhandleARB vertex_object, GLhandleARB 
 
 	// we failed, bail out now...
 	if (status == 0) {
-		mprintf(("Shader failed to link:\n%s\n", info_log.c_str()));
+		mprintf(("    Shader failed to link:\n%s\n", info_log.c_str()));
 		if (shader_object) {
 			vglDeleteObjectARB(shader_object);
 			shader_object = 0;
@@ -686,7 +688,7 @@ void shader_manager::apply_main_shader(int flags) {
 			current_main->apply();
 		} else {
 			current_main = NULL;
-			mprintf(("Requested main shader not found: 0x%x.\n", flags));
+			mprintf(("  Requested main shader not found: 0x%x.\n", flags));
 		}
 	}
 }
@@ -697,6 +699,10 @@ opengl::post_shader *shader_manager::apply_post_shader() {
 }
 
 opengl::post_shader *shader_manager::apply_post_shader(int flags) {
+	if ( !flags ) {
+		return NULL;
+	}
+
 	// check if shader is already loaded
 	SCP_map<int, post_shader*>::iterator itr = post_shaders.find(flags);
 	if (itr != post_shaders.end())
@@ -713,25 +719,27 @@ opengl::post_shader *shader_manager::apply_post_shader(int flags) {
 	return current_post;
 }
 
-opengl::special_shader *shader_manager::apply_special_shader(int flags) {
+opengl::special_shader *shader_manager::get_special_shader(int flags) {
 	special_shader *sshader;
 
 	SCP_map<int, special_shader*>::iterator itr = special_shaders.find(flags);
 	if (itr == special_shaders.end()) {
 		mprintf(("  Compiling special shader ->  %s / %s ... \n", special_shader::get_vert_name(flags).c_str(), special_shader::get_frag_name(flags).c_str()));
 
-		resources::text_file *vert = new resources::text_file(special_shader::get_vert_name(flags).c_str(), resources::text_file::shader_source);
-		resources::text_file *frag = new resources::text_file(special_shader::get_frag_name(flags).c_str(), resources::text_file::shader_source);
-		sshader = new opengl::special_shader(flags, vert, frag);
-		special_shaders[flags] = sshader;
+		resources::text_file vert;
+		resources::text_file frag;
 
-		delete vert;
-		delete frag;
+		bool r_vert = vert.open(special_shader::get_vert_name(flags).c_str(), resources::text_file::shader_source);
+		bool r_frag = frag.open(special_shader::get_frag_name(flags).c_str(), resources::text_file::shader_source);
+
+		if ( !(r_vert && r_frag) ) {
+			return NULL;
+		}
+
+		sshader = new opengl::special_shader(flags, &vert, &frag);
+		special_shaders[flags] = sshader;
 	} else
 		sshader = (*itr).second;
-
-	if (!sshader->start_pass(0))
-		return NULL;
 
 	return sshader;
 }
@@ -741,10 +749,10 @@ void shader_manager::apply_fixed_pipeline() {
 }
 
 shader_manager::shader_manager() : current_main(NULL), current_post(NULL) {
-	mprintf(("\nInitializing Shaders Manager...\n"));
+	mprintf(("  Initializing Shaders Manager...\n"));
 	load_main_shaders();
 //	load_post_shaders(); //we load post-processing shaders on demand
-	mprintf(("Shaders Manager initialized.\n\n"));
+	mprintf(("  Shaders Manager initialized.\n\n"));
 }
 
 shader_manager::~shader_manager() {
@@ -766,7 +774,7 @@ shader_manager::~shader_manager() {
 opengl::shader_manager *opengl::shader_manager::instance = NULL;
 
 void shader_manager::load_main_shaders() {
-	mprintf(("Loading and compiling main shaders...\n"));
+	mprintf(("  Loading and compiling main shaders...\n"));
 
 	// check if we can use new main shaders
 	bool main_vert = resources::text_file::file_exist("main-v.sdr", resources::text_file::shader_source) != 0;
@@ -805,55 +813,54 @@ void shader_manager::load_main_shaders() {
 		else
 			frag_name = shader_file->frag;
 
-		mprintf(("  Compiling main shader ->  %s (%s) / %s (%s) ... \n", vert_name, shader_file->vert, frag_name, shader_file->frag));
+		mprintf(("    Compiling main shader ->  %s (%s) / %s (%s) ... \n", vert_name, shader_file->vert, frag_name, shader_file->frag));
 
 		// create new shader program
-		resources::text_file *vert = new resources::text_file(vert_name, resources::text_file::shader_source);
-		resources::text_file *frag = new resources::text_file(frag_name, resources::text_file::shader_source);
-		opengl::main_shader *sdr = new opengl::main_shader(vert, frag);
+		resources::text_file vert, frag;
+		opengl::main_shader *sdr = NULL;
 
-		// configure shader
-		sdr->configure(shader_file->flags);
+		bool r_vert = vert.open(vert_name, resources::text_file::shader_source);
+		bool r_frag = frag.open(frag_name, resources::text_file::shader_source);
+
+		if (r_vert && r_frag) {
+			sdr = new(std::nothrow) opengl::main_shader(&vert, &frag);
+			Verify( sdr );
+
+			// configure shader
+			sdr->configure(shader_file->flags);
+		} else {
+			mprintf(("      Shader file(s) (%s / %s) not found!\n", vert_name, frag_name));
+		}
 
 		// compile shader and add it to shaders list
-		if (sdr->compile_link())
+		if (sdr && sdr->compile_link())
 			main_shaders[shader_file->flags] = sdr;
 		else {
 			// if problem caused by height map - disable
 			if (shader_file->flags & main_shader::flag_height_map) {
-				mprintf(("  Shader in_error!  Disabling height maps!\n"));
+				mprintf(("      Shader in_error!  Disabling height maps!\n"));
 				config::disable(config::height_map);
 			}
 
 			// if problem caused by normal map - disable
 			if (shader_file->flags & main_shader::flag_normal_map) {
-				mprintf(("  Shader in_error!  Disabling normal maps and height maps!\n"));
+				mprintf(("      Shader in_error!  Disabling normal maps and height maps!\n"));
 				config::disable(config::height_map);
 				config::disable(config::normal_map);
 			}
 
 			// there is no way to use glsl
 			if (i == 0) {
-				mprintf(("  Shader in_error!  Disabling GLSL!\n"));
+				mprintf(("      Shader in_error!  Disabling GLSL!\n"));
 
 				config::disable(config::glsl);
 				config::disable(config::height_map);
 				config::disable(config::normal_map);
 
-				delete sdr;
-				delete vert;
-				delete frag;
-
 				destroy();
 				return;
 			}
-
-			delete sdr;
 		}
-			
-		// clean
-		delete vert;
-		delete frag;
 	}
 }
 
@@ -863,26 +870,26 @@ opengl::post_shader *shader_manager::load_post_shader(int flags) {
 	mprintf(("  Compiling post shader (0x%x) ->  %s / %s ... \n", flags, vert_name, frag_name));
 
 	// create new shader program
-	resources::text_file *vert = new resources::text_file(vert_name, resources::text_file::shader_source);
-	resources::text_file *frag = new resources::text_file(frag_name, resources::text_file::shader_source);
-	opengl::post_shader *sdr = new opengl::post_shader(vert, frag);
+	resources::text_file vert, frag;
+	opengl::post_shader *sdr = NULL;
 
-	// configure shader
-	sdr->configure(flags);
+	bool r_vert = vert.open(vert_name, resources::text_file::shader_source);
+	bool r_frag = frag.open(frag_name, resources::text_file::shader_source);
+
+	if (r_vert && r_frag) {
+		sdr = new(std::nothrow) opengl::post_shader(&vert, &frag);
+		Verify( sdr );
+
+		// configure shader
+		sdr->configure(flags);
+	}
 
 	// compile shader and add it to shaders list
-	if (sdr->compile_link())
+	if (sdr && sdr->compile_link())
 		post_shaders[flags] = sdr;
 	else {
 		mprintf(("  Post-processing shader in_error!\n"));
-
-		delete sdr;
-		sdr = NULL;
 	}
-
-	// clean
-	delete vert;
-	delete frag;
 
 	return sdr;
 }

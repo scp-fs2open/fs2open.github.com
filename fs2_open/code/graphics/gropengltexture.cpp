@@ -914,7 +914,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	}
 
 	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
-			&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || (bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1)) )
+			&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
 		if (max_levels == 1) {
 			// if we are going to cull the size then we need to force a resize
@@ -1923,7 +1923,7 @@ namespace opengl {
 
 	SCP_multimap <std::pair<int, int>, render_target*> render_target::pool;
 
-	render_target::render_target(int w, int h) : width(w), height(h), depth_t(NULL), depth_rb(NULL), use_rb(false) {
+	render_target::render_target(int w, int h) : depth_rb(NULL), depth_t(NULL), use_rb(false), target(0), width(w), height(h) {
 		Assert(w > 0 && h > 0);
 
 		// Create frame buffer
