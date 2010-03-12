@@ -561,10 +561,6 @@ int scoring_eval_kill(object *ship_obj)
 		}
 	}
 
-	// if this ship doesn't show up on player sensors, then don't eval a kill
-	if ( dead_ship->flags & SF_HIDDEN_FROM_SENSORS ){
-		return -1;
-	}
 
 #ifndef NDEBUG
 	scoring_eval_harbison( dead_ship );
