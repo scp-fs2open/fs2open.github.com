@@ -125,7 +125,7 @@ private:
 	void clone(const subtitle &sub);
 
 	SCP_vector<std::string> text_lines;
-	float text_pos[2];
+	struct { int x; int y; } text_pos;
 
 	float display_time;
 	float fade_time;
@@ -134,7 +134,7 @@ private:
 	//Done with set
 	char imageanim[MAX_FILENAME_LEN];
 	int image_id;
-	int image_pos[2];
+	struct { int x; int y; int w; int h; } image_pos;
 	
 	//Time this has been displayed
 	float time_displayed;
@@ -144,9 +144,9 @@ private:
 
 	bool post_shaded;
 public:
-	subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, 
-			 char* in_imageanim = NULL, float in_fade_time = 0.0f, color *in_text_color = NULL, 
-			 bool center_x = false, bool center_y = false, int in_width = 200, bool post_shaded=false);
+	subtitle(int in_x_pos, int in_y_pos, char* in_text = NULL, char* in_imageanim = NULL,
+			 float in_display_time = 0, float in_fade_time = 0.0f, color *in_text_color = NULL, 
+			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded=false);
 	~subtitle();
 
     subtitle(const subtitle &sub) { clone(sub); }

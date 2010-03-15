@@ -546,6 +546,8 @@ sexp_oper Operators[] = {
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
 	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
 	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 13, },
+	{ "show-subtitle-text",			OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6, 12, },
+	{ "show-subtitle-image",		OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8, 10, },
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
@@ -16184,9 +16186,13 @@ void sexp_show_subtitle(int node)
 	bool post_shaded = false;
 
 	x_pos = eval_num(node);
+	if (gr_screen.max_w != 1024)
+		x_pos *= gr_screen.max_w / 1024.0f;
 
 	n = CDR(node);
 	y_pos = eval_num(n);
+	if (gr_screen.max_h != 768)
+		y_pos *= gr_screen.max_h / 768.0f;
 
 	n = CDR(n);
 	text = CTEXT(n);
@@ -16262,7 +16268,173 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, r, g, b, 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, display_time, imageanim, fade_time, &new_color, center_x, center_y, width, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, center_x, center_y, width, 0, post_shaded);
+	Subtitles.push_back(new_subtitle);
+}
+
+void sexp_show_subtitle_text(int node)
+{
+	int n = node;
+
+	char *text = CTEXT(n);
+	n = CDR(n);
+
+	int x_pct = eval_num(n);
+	n = CDR(n);
+
+	int y_pct = eval_num(n);
+	n = CDR(n);
+
+	bool center_x = is_sexp_true(n) != 0;
+	n = CDR(n);
+
+	bool center_y = is_sexp_true(n) != 0;
+	n = CDR(n);
+
+	float display_time = eval_num(n) / 1000.0f;
+	n = CDR(n);
+
+	float fade_time = 0.0f;
+	if (n >= 0)
+	{
+		fade_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+	}
+
+	int width_pct = 0;
+	if (n >= 0)
+	{
+		width_pct = eval_num(n);
+		n = CDR(n);
+	}
+
+	int red = 255;
+	if (n >= 0)
+	{
+		red = eval_num(n);
+		n = CDR(n);
+	}
+
+	int green = 255;
+	if (n >= 0)
+	{
+		green = eval_num(n);
+		n = CDR(n);
+	}
+
+	int blue = 255;
+	if (n >= 0)
+	{
+		blue = eval_num(n);
+		n = CDR(n);
+	}
+
+	bool post_shaded = false;
+	if (n >= 0)
+	{
+		post_shaded = is_sexp_true(n) != 0;
+		n = CDR(n);
+	}
+
+	// check bounds
+	if (x_pct < -100)
+		x_pct = -100;
+	if (x_pct > 100)
+		x_pct = 100;
+	if (y_pct < -100)
+		y_pct = -100;
+	if (y_pct > 100)
+		y_pct = 100;
+	if (width_pct > 100)
+		width_pct = 100;
+	if (red > 255)
+		red = 255;
+	if (green > 255)
+		green = 255;
+	if (blue > 255)
+		blue = 255;
+
+	color new_color;
+	gr_init_alphacolor(&new_color, red, green, blue, 255);
+
+	// calculate pixel positions
+	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
+	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
+	int width = (width_pct == 0) ? 200 : gr_screen.max_w * (width_pct / 100.0f);
+
+	// add the subtitle
+	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, center_x, center_y, width, 0, post_shaded);
+	Subtitles.push_back(new_subtitle);
+}
+
+void sexp_show_subtitle_image(int node)
+{
+	int n = node;
+
+	char *image = CTEXT(n);
+	n = CDR(n);
+
+	int x_pct = eval_num(n);
+	n = CDR(n);
+
+	int y_pct = eval_num(n);
+	n = CDR(n);
+
+	bool center_x = is_sexp_true(n) != 0;
+	n = CDR(n);
+
+	bool center_y = is_sexp_true(n) != 0;
+	n = CDR(n);
+
+	int width_pct = eval_num(n);
+	n = CDR(n);
+
+	int height_pct = eval_num(n);
+	n = CDR(n);
+
+	float display_time = eval_num(n) / 1000.0f;
+	n = CDR(n);
+
+	float fade_time = 0.0f;
+	if (n >= 0)
+	{
+		fade_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+	}
+
+	bool post_shaded = false;
+	if (n >= 0)
+	{
+		post_shaded = is_sexp_true(n) != 0;
+		n = CDR(n);
+	}
+
+	// check bounds
+	if (x_pct < -100)
+		x_pct = -100;
+	if (x_pct > 100)
+		x_pct = 100;
+	if (y_pct < -100)
+		y_pct = -100;
+	if (y_pct > 100)
+		y_pct = 100;
+	if (width_pct < 0)
+		width_pct = 0;
+	if (width_pct > 100)
+		width_pct = 100;
+	if (height_pct < 0)
+		height_pct = 0;
+	if (height_pct > 100)
+		height_pct = 100;
+
+	// calculate pixel positions
+	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
+	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
+	int width = gr_screen.max_w * (width_pct / 100.0f);
+	int height = gr_screen.max_h * (height_pct / 100.0f);
+
+	// add the subtitle
+	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -18099,6 +18271,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				sexp_show_subtitle(node);
 				break;
+			case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+				sexp_val = SEXP_TRUE;
+				sexp_show_subtitle_text(node);
+				break;
+			case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
+				sexp_val = SEXP_TRUE;
+				sexp_show_subtitle_image(node);
+				break;
 			case OP_CUTSCENES_SET_TIME_COMPRESSION:
 				sexp_val = SEXP_TRUE;
 				sexp_set_time_compression(node);
@@ -18822,6 +19002,8 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
 		case OP_CUTSCENES_SHOW_SUBTITLE:
+		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
@@ -20308,19 +20490,43 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CUTSCENES_SHOW_SUBTITLE:
 			if(argnum < 2)
 				return OPF_NUMBER;
-			else if(argnum == 2)
+			else if (argnum == 2)
 				return OPF_STRING;
-			else if(argnum == 3)
+			else if (argnum == 3)
 				return OPF_POSITIVE;
-			else if(argnum == 4)
+			else if (argnum == 4)
 				return OPF_STRING;
-			else if(argnum == 5)
+			else if (argnum == 5)
 				return OPF_POSITIVE;
-			else if(argnum < 8)
+			else if (argnum < 8)
 				return OPF_BOOL;
-			else if(argnum < 12)
+			else if (argnum < 12)
 				return OPF_POSITIVE;
-			else if(argnum == 12 )
+			else if (argnum == 12 )
+				return OPF_BOOL;
+
+		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+			if (argnum == 0)
+				return OPF_STRING;
+			else if (argnum == 1 || argnum == 2)
+				return OPF_NUMBER;
+			else if (argnum == 3 || argnum == 4)
+				return OPF_BOOL;
+			else if (argnum >= 5 && argnum <= 10)
+				return OPF_POSITIVE;
+			else if (argnum == 11)
+				return OPF_BOOL;
+
+		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
+			if (argnum == 0)
+				return OPF_STRING;
+			else if (argnum == 1 || argnum == 2)
+				return OPF_NUMBER;
+			else if (argnum == 3 || argnum == 4)
+				return OPF_BOOL;
+			else if (argnum >= 5 && argnum <= 8)
+				return OPF_POSITIVE;
+			else if (argnum == 9)
 				return OPF_BOOL;
 
 		//</Cutscenes>
@@ -21653,6 +21859,8 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
 		case OP_CUTSCENES_SHOW_SUBTITLE:
+		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
@@ -24208,39 +24416,39 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_CUTSCENE_BARS, "set-cutscene-bars\r\n"
-		"\tShows bars at the top and bottom of screen  "
+		"\tShows bars at the top and bottom of screen.  "
 		"Takes 0 or 1 arguments...\r\n"
 		"\t1:\tMilliseconds for bars to slide in\r\n"
 	},
 
 	{ OP_CUTSCENES_UNSET_CUTSCENE_BARS, "unset-cutscene-bars\r\n"
-		"\tRemoves cutscene bars  "
+		"\tRemoves cutscene bars.  "
 		"Takes 0 or 1 arguments...\r\n"
 		"\t1:\tMilliseconds for bars to slide out\r\n"
 	},
 
 	{ OP_CUTSCENES_FADE_IN, "fade-in\r\n"
-		"\tFades in  "
+		"\tFades in.  "
 		"Takes 0 or 1 arguments...\r\n"
 		"\t1:\tTime to fade in (in milliseconds)\r\n"
 	},
 
 	{ OP_CUTSCENES_FADE_OUT, "fade-out\r\n"
-		"\tFades out  "
+		"\tFades out.  "
 		"Takes 0 to 2 arguments...\r\n"
 		"\t1:\tTime to fade in (in milliseconds)\r\n"
 		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA, "set-camera\r\n"
-		"\tSets SEXP camera, or another specified cutscene camera  "
+		"\tSets SEXP camera, or another specified cutscene camera.  "
 		"Takes 0 to 1 arguments...\r\n"
 		"\t(optional)\r\n"
 		"\t1:\tCamera name (created if nonexistent)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FACING, "set-camera-facing\r\n"
-		"\tMakes the camera face the given point  "
+		"\tMakes the camera face the given point.  "
 		"Takes 3 to 6 arguments...\r\n"
 		"\t1:\tX position to face\r\n"
 		"\t2:\tY position to face\r\n"
@@ -24252,7 +24460,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FACING_OBJECT, "set-camera-facing-object\r\n"
-		"\tMakes the camera face the given object  "
+		"\tMakes the camera face the given object.  "
 		"Takes 1 to 4 arguments...\r\n"
 		"\t1:\tObject to face\r\n"
 		"\t(optional)\r\n"
@@ -24262,7 +24470,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_FOV, "set-camera-fov\r\n"
-		"\tSets the camera field of view  "
+		"\tSets the camera field of view.  "
 		"Takes 1 to 4 arguments...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
 		"\t(optional)\r\n"
@@ -24281,7 +24489,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_POSITION, "set-camera-position\r\n"
-		"\tSets the camera position to a spot in mission space  "
+		"\tSets the camera position to a spot in mission space.  "
 		"Takes 3 to 6 arguments...\r\n"
 		"\t1:\tX position\r\n"
 		"\t2:\tY position\r\n"
@@ -24293,7 +24501,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_ROTATION, "set-camera-rotation\r\n"
-		"\tSets the camera rotation  "
+		"\tSets the camera rotation.  "
 		"Takes 3 to 6 arguments...\r\n"
 		"\t1:\tPitch (degrees)\r\n"
 		"\t2:\tBank (degrees)\r\n"
@@ -24305,7 +24513,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_CAMERA_TARGET, "set-camera-target\r\n"
-		"\tSets the object and subystem camera should track. Camera orientation is offset from the target  "
+		"\tSets the object and subystem camera should track. Camera orientation is offset from the target.  "
 		"Takes 1 to 2 arguments...\r\n"
 		"\t1:\tShip to track\r\n"
 		"\t(optional)\r\n"
@@ -24313,7 +24521,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
-		"\tSets the field of view - overrides all camera settings  "
+		"\tSets the field of view - overrides all camera settings.  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
 	},
@@ -24325,36 +24533,68 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_RESET_FOV, "reset-fov\r\n"
-		"\tResets the field of view  "
+		"\tResets the field of view.  "
 	},
 
 	{ OP_CUTSCENES_RESET_CAMERA, "reset-camera\r\n"
-		"\tReleases cutscene camera control  "
+		"\tReleases cutscene camera control.  "
 		"Takes 1 optional argument...\r\n"
 		"\t(optional)\r\n"
 		"\t1:\tReset camera data (Position, facing, FOV...) (default: false)"
 	},
 
-	{ OP_CUTSCENES_SHOW_SUBTITLE, "show-subtitle\r\n"
-		"\tShows a subtitle  "
-		"Takes 4 to 12 arguments...\r\n"
+	{ OP_CUTSCENES_SHOW_SUBTITLE, "show-subtitle (deprecated)\r\n"
+		"\tDisplays a subtitle, either an image or a string of text.  As this operator tries to combine two functions into one and does not adjust coordinates for screen formats, it has been deprecated.\r\n"
+		"Takes 4 to 13 arguments...\r\n"
 		"\t1:\tX position (negative value to be from right of screen)\r\n"
 		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
 		"\t3:\tText to display\r\n"
 		"\t4:\tTime to be displayed, not including fadein/out\r\n"
-		"\t(optional) 5:\tImage name\r\n"
-		"\t(optional) 6:\tFade in time\r\n"
-		"\t(optional) 7:\tCenter horizontally?\r\n"
-		"\t(optional) 8:\tCenter vertically?\r\n"
-		"\t(optional) 9:\tWidth\r\n"
-		"\t(optional) 10:\tText red component (0-255)\r\n"
-		"\t(optional) 11:\tText green component (0-255)\r\n"
-		"\t(optional) 12:\tText blue component (0-255)\r\n"
-		"\t(optional) 13:\tDrawn after shading?"
+		"\t5:\tImage name (optional)\r\n"
+		"\t6:\tFade in time (optional)\r\n"
+		"\t7:\tCenter horizontally? (optional)\r\n"
+		"\t8:\tCenter vertically? (optional)\r\n"
+		"\t9:\tWidth (optional)\r\n"
+		"\t10:\tText red component (0-255) (optional)\r\n"
+		"\t11:\tText green component (0-255) (optional)\r\n"
+		"\t12:\tText blue component (0-255) (optional)\r\n"
+		"\t13:\tDrawn after shading? (optional)"
+	},
+
+	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
+		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the SEXP type system, textual subtitles are currently limited to 31 characters or fewer.\r\n"
+		"Takes 6 to 12 arguments...\r\n"
+		"\t1:\tText to display\r\n"
+		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
+		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
+		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
+		"\t5:\tCenter vertically? (if true, overrides argument #3)\r\n"
+		"\t6:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
+		"\t7:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
+		"\t8:\tParagraph width, from 1 to 100% (optional; 0 uses default 200 pixels)\r\n"
+		"\t9:\tText red component (0-255) (optional)\r\n"
+		"\t10:\tText green component (0-255) (optional)\r\n"
+		"\t11:\tText blue component (0-255) (optional)\r\n"
+		"\t12:\tDrawn after shading? (optional)"
+	},
+
+	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
+		"\tDisplays a subtitle in the form of an image.\r\n"
+		"Takes 8 to 10 arguments...\r\n"
+		"\t1:\tImage to display\r\n"
+		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
+		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
+		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
+		"\t5:\tCenter vertically? (if true, overrides argument #3)\r\n"
+		"\t6:\tImage width, from 1 to 100% (0 uses original width)\r\n"
+		"\t7:\tImage height, from 1 to 100% (0 uses original height)\r\n"
+		"\t8:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
+		"\t9:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
+		"\t10:\tDrawn after shading? (optional)"
 	},
 
 	{ OP_CUTSCENES_SET_TIME_COMPRESSION, "set-time-compression\r\n"
-		"\tSets the time compression  "
+		"\tSets the time compression and prevents it from being changed by the user.  "
 		"Takes 1 to 3 arguments...\r\n"
 		"\t1:\tNew time compression (% of 1x)\r\n"
 		"\t2:\tTime in ms for change to take\r\n"
@@ -24362,11 +24602,12 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_CUTSCENES_RESET_TIME_COMPRESSION, "reset-time-compression\r\n"
-		"\tResets the time compression; always call when done with set-time-compression  "
+		"\tResets the time compression - that is to say, time compression is set back to 1x, "
+		"and the time compression controls are unlocked.  Always call this when done with set-time-compression.  "
 	},
 
 	{ OP_CUTSCENES_FORCE_PERSPECTIVE, "lock-perspective\r\n"
-		"\tPrevents or allows the player from changing the view mode  "
+		"\tPrevents or allows the player from changing the view mode.  "
 		"Takes 1 or 2 arguments...\r\n"
 		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
 		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down"
@@ -24380,7 +24621,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
-		"\tSets the color of a jump node  "
+		"\tSets the color of a jump node.  "
 		"Takes 5 arguments...\r\n"
 		"\t1:\tJump node to change color for\r\n"
 		"\t2:\tRed value\r\n"
@@ -24390,7 +24631,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_MODEL, "set-jumpnode-model\r\n"
-		"\tSets the model of a jump node  "
+		"\tSets the model of a jump node.  "
 		"Takes 3 arguments...\r\n"
 		"\t1:\tJump node to change model for\r\n"
 		"\t2:\tModel filename\r\n"
@@ -24398,13 +24639,13 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"
-		"\tSets the model of a jump node  "
+		"\tSets the model of a jump node.  "
 		"Takes 1 arguments..\r\n"
 		"\t1:\tJump node to show\r\n"
 	},
 
 	{ OP_JUMP_NODE_HIDE_JUMPNODE, "hide-jumpnode\r\n"
-		"\tSets the model of a jump node  "
+		"\tSets the model of a jump node.  "
 		"Takes 1 arguments...\r\n"
 		"\t1:\tJump node to hide\r\n"
 	},

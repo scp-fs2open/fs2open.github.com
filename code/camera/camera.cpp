@@ -615,10 +615,12 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 //*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
-subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width, bool in_post_shaded)
+subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim, float in_display_time, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
 {
 	// basic init, this always has to be done
 	memset( imageanim, 0, sizeof(imageanim) );
+	memset( &text_pos, 0, 2*sizeof(int) );
+	memset( &image_pos, 0, 4*sizeof(int) );
 	image_id = -1;
 
 	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
@@ -641,7 +643,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 	}
 
 	//Setup text color
-	if(in_text_color)
+	if(in_text_color != NULL)
 		text_color = *in_text_color;
 	else
 		gr_init_alphacolor(&text_color, 255, 255, 255, 255);
@@ -661,9 +663,6 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 
 	//Setup pos
 	int w=0, h=0, tw=0, th=0;
-	float deltax, deltay;
-	image_pos[0] = 0;
-	image_pos[1] = 0;
 	if(center_x || center_y)
 	{
 		//Get text size
@@ -681,6 +680,11 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 		if(image_id != -1)
 		{
 			bm_get_info(image_id, &w, &h);
+			if (in_width > 0)
+				w = in_width;
+			if (in_height > 0)
+				h = in_height;
+
 			tw += w;
 			if(h > th)
 				th = h;
@@ -688,44 +692,29 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 
 		//Center it?
 		if(center_x)
-			image_pos[0] = (gr_screen.max_w - tw)/2;
+			image_pos.x = (gr_screen.max_w - tw)/2;
 		if(center_y)
-			image_pos[1] = (gr_screen.max_h - th)/2;
+			image_pos.y = (gr_screen.max_h - th)/2;
 	}
+
 	if(in_x_pos < 0 && !center_x)
-		image_pos[0] += gr_screen.max_w + in_x_pos;
+		image_pos.x += gr_screen.max_w + in_x_pos;
 	else if(!center_x)
-		image_pos[0] += in_x_pos;
+		image_pos.x += in_x_pos;
 
 	if(in_y_pos < 0 && !center_y)
-		image_pos[1] += gr_screen.max_h + in_y_pos;
+		image_pos.y += gr_screen.max_h + in_y_pos;
 	else if(!center_y)
-		image_pos[1] += in_y_pos;
+		image_pos.y += in_y_pos;
+
+	image_pos.w = in_width;
+	image_pos.h = in_height;
 
 	if(image_id != -1)
-	{
-		text_pos[0] = (float) (image_pos[0] + w);	//Still set from bm_get_info call
-		if (!center_x)
-		{
-			deltax = text_pos[0] / 1024.0f;	//MikeStar;
-			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
-		}
-	}
+		text_pos.x = image_pos.x + w;	//Still set from bm_get_info call
 	else
-	{
-		text_pos[0] = (float) image_pos[0];
-		if (!center_x)
-		{
-			deltax = text_pos[0] / 1024.0f;	//MikeStar;
-			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
-		}
-	}
-	text_pos[1] = (float) image_pos[1];
-	if (!center_y)
-	{
-		deltay = text_pos[1] / 768.0f;	//MikeStar;
-		text_pos[1] = gr_screen.max_h * deltay;	//MikeStar;
-	}
+		text_pos.x = image_pos.x;
+	text_pos.y = image_pos.y;
 
 	time_displayed = 0.0f;
 	time_displayed_end = 2.0f*fade_time + display_time;
@@ -757,8 +746,8 @@ void subtitle::do_frame(float frametime)
 	gr_set_color_fast(&text_color);
 
 	int font_height = gr_get_font_height();
-	int x = fl2i(text_pos[0]);
-	int y = fl2i(text_pos[1]);
+	int x = text_pos.x;
+	int y = text_pos.y;
 
 	for(unsigned int i = 0; i < text_lines.size(); i++)
 	{
@@ -769,7 +758,27 @@ void subtitle::do_frame(float frametime)
 	if(image_id != -1)
 	{
 		gr_set_bitmap(image_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, text_color.alpha/255.0f);
-		gr_bitmap(image_pos[0], image_pos[1], false);
+
+		// scaling?
+		if (image_pos.w > 0 || image_pos.h > 0)
+		{
+			int orig_w, orig_h;
+			vec3d scale;
+
+			bm_get_info(image_id, &orig_w, &orig_h);
+			scale.xyz.x = image_pos.w / (float) orig_w;
+			scale.xyz.y = image_pos.h / (float) orig_h;
+			scale.xyz.z = 1.0f;
+
+			gr_push_scale_matrix(&scale);
+			gr_bitmap(image_pos.x, image_pos.y, false);
+			gr_pop_scale_matrix();
+		}
+		// no scaling
+		else
+		{
+			gr_bitmap(image_pos.x, image_pos.y, false);
+		}
 	}
 
 	time_displayed += frametime;
@@ -792,8 +801,9 @@ void subtitle::clone(const subtitle &sub)
 		text_lines.push_back(sub.text_lines[i]);
 	}
 
-	text_pos[0] = sub.text_pos[0];
-	text_pos[1] = sub.text_pos[1];
+	// copy the structs
+	text_pos = sub.text_pos;
+	image_pos = sub.image_pos;
 
 	display_time = sub.display_time;
 	fade_time = sub.fade_time;
@@ -807,9 +817,6 @@ void subtitle::clone(const subtitle &sub)
 		memset( imageanim, 0, MAX_FILENAME_LEN );
 		image_id = -1;
 	}
-
-	image_pos[0] = sub.image_pos[0];
-	image_pos[1] = sub.image_pos[1];
 
 	time_displayed = sub.time_displayed;
 	time_displayed_end = sub.time_displayed_end;
