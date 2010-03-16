@@ -1239,6 +1239,16 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Mass:")) {
 		stuff_float( &(wip->mass) );
+
+		// Goober5000 - hack in order to make the beam whack behavior of these three beams match all other beams
+		// this relies on Bobboau's beam whack hack in beam_apply_whack()
+		if (!strcmp(wip->name, "SAAA") && (wip->mass == 4.0f)
+			|| !strcmp(wip->name, "MjolnirBeam") && (wip->mass == 1000.0f)
+			|| !strcmp(wip->name, "MjolnirBeam#home") && (wip->mass == 1000.0f))
+		{
+			wip->mass = 100.0f;
+		}
+
 		diag_printf ("Weapon mass -- %7.3f\n", wip->mass);
 	}
 

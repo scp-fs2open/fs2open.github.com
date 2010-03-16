@@ -196,9 +196,10 @@ typedef struct beam_light_info {
 beam_light_info Beam_lights[MAX_BEAM_LIGHT_INFO];
 int Beam_light_count = 0;
 
-float b_whack_small = 500.0f;
-float b_whack_big = 1500.0f;
+float b_whack_small = 2000.0f;	// used to be 500.0f with the retail whack bug
+float b_whack_big = 10000.0f;	// used to be 1500.0f with the retail whack bug
 float b_whack_damage = 150.0f;
+
 DCF(b_whack_small, "")
 {
 	dc_get_arg(ARG_FLOAT);
