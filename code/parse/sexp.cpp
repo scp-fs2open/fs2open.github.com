@@ -16239,7 +16239,7 @@ void sexp_show_subtitle_text(int node)
 		blue = eval_num(n);
 		n = CDR(n);
 	}
-	
+
 	char *font = NULL;
 	if (n >= 0)
 	{
