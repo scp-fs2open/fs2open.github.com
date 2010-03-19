@@ -627,6 +627,14 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
 		return;
 
+	char text_buf[256];
+	if (in_text != NULL && strlen(in_text) >= 0)
+	{
+		strcpy(text_buf, in_text);
+		sexp_replace_variable_names_with_values(text_buf, 256);
+		in_text = text_buf;
+	}
+
 
 	int num_text_lines = 0;
 	char *text_line_ptrs[MAX_SUBTITLE_LINES];
