@@ -546,7 +546,7 @@ sexp_oper Operators[] = {
 	{ "reset-fov",					OP_CUTSCENES_RESET_FOV,					0, 0, },
 	{ "reset-camera",				OP_CUTSCENES_RESET_CAMERA,				0, 1, },
 	{ "show-subtitle",				OP_CUTSCENES_SHOW_SUBTITLE,				4, 13, },
-	{ "show-subtitle-text",			OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6, 12, },
+	{ "show-subtitle-text",			OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6, 13, },
 	{ "show-subtitle-image",		OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8, 10, },
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
@@ -16187,12 +16187,12 @@ void sexp_show_subtitle(int node)
 
 	x_pos = eval_num(node);
 	if (gr_screen.max_w != 1024)
-		x_pos *= gr_screen.max_w / 1024.0f;
+		x_pos = (int) ((x_pos / 1024.0f) * gr_screen.max_w);
 
 	n = CDR(node);
 	y_pos = eval_num(n);
 	if (gr_screen.max_h != 768)
-		y_pos *= gr_screen.max_h / 768.0f;
+		y_pos = (int) ((y_pos / 768.0f) * gr_screen.max_h);
 
 	n = CDR(n);
 	text = CTEXT(n);
@@ -16213,14 +16213,12 @@ void sexp_show_subtitle(int node)
 			n = CDR(n);
 			if(n != -1)
 			{
-				if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-					center_x = true;
+				center_x = is_sexp_true(n) != 0;
 
 				n = CDR(n);
 				if(n != -1)
 				{
-					if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-						center_y = true;
+					center_y = is_sexp_true(n) != 0;
 						
 					n = CDR(n);
 					if(n != -1)
@@ -16268,7 +16266,7 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, r, g, b, 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, center_x, center_y, width, 0, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -16326,6 +16324,13 @@ void sexp_show_subtitle_text(int node)
 	if (n >= 0)
 	{
 		blue = eval_num(n);
+		n = CDR(n);
+	}
+
+	char *font = NULL;
+	if (n >= 0)
+	{
+		font = CTEXT(n);
 		n = CDR(n);
 	}
 
@@ -20515,6 +20520,8 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum >= 5 && argnum <= 10)
 				return OPF_POSITIVE;
 			else if (argnum == 11)
+				return OPF_STRING;
+			else if (argnum == 12)
 				return OPF_BOOL;
 
 		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
@@ -22851,7 +22858,7 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_CHANGE_SOUNDTRACK, "change-soundtrack\r\n"
 		"\tChanges the mission music.  Takes 1 argument...\r\n"
-		"\1: Name of the music selection (taken from music.tbl)" },
+		"\t1: Name of the music selection (taken from music.tbl)" },
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_TABLE, "play-sound-from-table\r\n"
@@ -24563,7 +24570,7 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
 		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the SEXP type system, textual subtitles are currently limited to 31 characters or fewer.\r\n"
-		"Takes 6 to 12 arguments...\r\n"
+		"Takes 6 to 13 arguments...\r\n"
 		"\t1:\tText to display\r\n"
 		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
 		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
@@ -24575,7 +24582,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t9:\tText red component (0-255) (optional)\r\n"
 		"\t10:\tText green component (0-255) (optional)\r\n"
 		"\t11:\tText blue component (0-255) (optional)\r\n"
-		"\t12:\tDrawn after shading? (optional)"
+		"\t12:\tText font (optional; not currently implemented)\r\n"
+		"\t13:\tDrawn after shading? (optional)"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
