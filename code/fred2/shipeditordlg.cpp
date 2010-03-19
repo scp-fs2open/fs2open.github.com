@@ -1253,9 +1253,16 @@ int CShipEditorDlg::update_ship(int ship)
 	if (strlen(m_cargo1)) {
 		z = string_lookup(m_cargo1, Cargo_names, Num_cargo);
 		if (z == -1) {
-			Assert(Num_cargo < MAX_CARGO);
-			z = Num_cargo++;
-			strcpy(Cargo_names[z], m_cargo1);
+			if (Num_cargo < MAX_CARGO) {
+				z = Num_cargo++;
+				strcpy(Cargo_names[z], m_cargo1);
+			}
+			else {
+				str.Format("Maximum number of cargo names (%d) reached.\nIgnoring new name.\n", MAX_CARGO);
+				MessageBox(str, "Error", MB_ICONEXCLAMATION);
+				z = 0;
+				m_cargo1 = Cargo_names[z];
+			}
 		}
 
 		MODIFY(Ships[ship].cargo1, (char)z);
