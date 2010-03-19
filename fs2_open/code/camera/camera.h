@@ -130,6 +130,7 @@ private:
 	float display_time;
 	float fade_time;
 	color text_color;
+	int text_fontnum;
 
 	//Done with set
 	char imageanim[MAX_FILENAME_LEN];
@@ -145,7 +146,7 @@ private:
 	bool post_shaded;
 public:
 	subtitle(int in_x_pos, int in_y_pos, char* in_text = NULL, char* in_imageanim = NULL,
-			 float in_display_time = 0, float in_fade_time = 0.0f, color *in_text_color = NULL, 
+			 float in_display_time = 0, float in_fade_time = 0.0f, color *in_text_color = NULL, int in_text_fontnum = -1,
 			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded=false);
 	~subtitle();
 

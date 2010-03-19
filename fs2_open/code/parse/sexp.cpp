@@ -83,6 +83,7 @@
 #include "object/waypoint.h"
 #include "graphics/2d.h"
 #include "object/objectsnd.h"
+#include "graphics/font.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -2363,17 +2364,35 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			//Karajorma
 			case OPF_PERSONA:
-				if (type2 != SEXP_ATOM_STRING){
+				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				for (i=0; i < Num_personas ; i++) {
-					if (!strcmp(CTEXT(node), Personas[i].name))
+					if (!strcmp(CTEXT(node), Personas[i].name)) {
 						break;
+					}
 				}
 
-				if (i == Num_personas) 
+				if (i == Num_personas) {
 					return SEXP_CHECK_INVALID_PERSONA_NAME; 
+				}
+				break;
+
+			case OPF_FONT:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i = 0; i < Num_fonts; i++) {
+					if (!stricmp(CTEXT(node), Fonts[i].filename)) {
+						break;
+					}
+				}
+
+				if (i == Num_fonts) {
+					return SEXP_CHECK_INVALID_FONT;
+				}
 				break;
 				
 			case OPF_KEYPRESS:
@@ -16266,7 +16285,7 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, r, g, b, 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, center_x, center_y, width, 0, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -16327,11 +16346,21 @@ void sexp_show_subtitle_text(int node)
 		n = CDR(n);
 	}
 
-	char *font = NULL;
+	int fontnum = -1;
 	if (n >= 0)
 	{
-		font = CTEXT(n);
+		char *font = CTEXT(n);
 		n = CDR(n);
+
+		// perform font lookup
+		for (int i = 0; i < Num_fonts; i++)
+		{
+			if (!stricmp(font, Fonts[i].filename))
+			{
+				fontnum = i;
+				break;
+			}
+		}
 	}
 
 	bool post_shaded = false;
@@ -16368,7 +16397,7 @@ void sexp_show_subtitle_text(int node)
 	int width = (width_pct == 0) ? 200 : gr_screen.max_w * (width_pct / 100.0f);
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, center_x, center_y, width, 0, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -16439,7 +16468,7 @@ void sexp_show_subtitle_image(int node)
 	int height = gr_screen.max_h * (height_pct / 100.0f);
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, center_x, center_y, width, height, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -20520,7 +20549,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum >= 5 && argnum <= 10)
 				return OPF_POSITIVE;
 			else if (argnum == 11)
-				return OPF_STRING;
+				return OPF_FONT;
 			else if (argnum == 12)
 				return OPF_BOOL;
 
@@ -21033,7 +21062,10 @@ char *sexp_error_message(int num)
 			return "Invalid variable name"; 
 
 		case SEXP_CHECK_INVALID_VARIABLE_TYPE:
-			return "Invalid variable type"; 
+			return "Invalid variable type";
+
+		case SEXP_CHECK_INVALID_FONT:
+			return "Invalid font";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -24582,7 +24614,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t9:\tText red component (0-255) (optional)\r\n"
 		"\t10:\tText green component (0-255) (optional)\r\n"
 		"\t11:\tText blue component (0-255) (optional)\r\n"
-		"\t12:\tText font (optional; not currently implemented)\r\n"
+		"\t12:\tText font (optional)\r\n"
 		"\t13:\tDrawn after shading? (optional)"
 	},
 

@@ -2555,6 +2555,9 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<persona name>";
 			break;
 
+		case OPF_FONT:
+			str = Fonts[0].filename;
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -2634,6 +2637,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPES:
+		case OPF_FONT:
 			return 1;
 
 		case OPF_SHIP:
@@ -4320,6 +4324,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_post_effect();
 			break;
 
+		case OPF_FONT:
+			list = get_listing_opf_font();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5113,6 +5121,18 @@ sexp_list_item *sexp_tree::get_listing_opf_persona()
 		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
 			head.add_data (Personas[i].name);
 		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_font()
+{
+	int i;
+	sexp_list_item head;
+
+	for (i = 0; i < Num_fonts; i++) {
+		head.add_data(Fonts[i].filename);
 	}
 
 	return head.next;

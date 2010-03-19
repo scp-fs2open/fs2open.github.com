@@ -113,6 +113,7 @@ struct ship;
 #define OPF_POST_EFFECT			67		// Hery - type of post-processing effect
 #define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
 #define OPF_ARMOR_TYPES			69		// FUBAR - Armor type or <none>
+#define OPF_FONT				70		// Goober5000 - a FreeSpace font
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -838,6 +839,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_PERSONA_NAME			-139
 #define SEXP_CHECK_INVALID_VARIABLE_TYPE		-140
 #define SEXP_CHECK_INVALID_SUBSYS_TYPE			-141
+#define SEXP_CHECK_INVALID_FONT					-142
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

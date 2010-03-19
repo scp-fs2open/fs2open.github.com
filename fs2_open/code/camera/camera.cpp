@@ -9,6 +9,7 @@
 #include "model/model.h" //polymodel, model_get
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h" //compute_slew_matrix
+#include "graphics/font.h"
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
@@ -615,7 +616,7 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 //*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
-subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim, float in_display_time, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
+subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim, float in_display_time, float in_fade_time, color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
 {
 	// basic init, this always has to be done
 	memset( imageanim, 0, sizeof(imageanim) );
@@ -647,6 +648,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 		text_color = *in_text_color;
 	else
 		gr_init_alphacolor(&text_color, 255, 255, 255, 255);
+	text_fontnum = in_text_fontnum;
 
 	//Setup display and fade time
 	display_time = fl_abs(in_display_time);
@@ -665,6 +667,18 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 	int w=0, h=0, tw=0, th=0;
 	if(center_x || center_y)
 	{
+		// switch font because we need to measure it
+		int old_fontnum;
+		if (text_fontnum >= 0)
+		{
+			old_fontnum = gr_get_current_fontnum();
+			gr_set_font(text_fontnum);
+		}
+		else
+		{
+			old_fontnum = -1;
+		}
+
 		//Get text size
 		for(int i = 0; i < num_text_lines; i++)
 		{
@@ -674,6 +688,12 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 				tw = w;
 
 			th += h;
+		}
+
+		// restore old font
+		if (old_fontnum >= 0)
+		{
+			gr_set_font(old_fontnum);
 		}
 
 		//Get image size
@@ -745,6 +765,18 @@ void subtitle::do_frame(float frametime)
 
 	gr_set_color_fast(&text_color);
 
+	// save old font and set new font
+	int old_fontnum;
+	if (text_fontnum >= 0)
+	{
+		old_fontnum = gr_get_current_fontnum();
+		gr_set_font(text_fontnum);
+	}
+	else
+	{
+		old_fontnum = -1;
+	}
+
 	int font_height = gr_get_font_height();
 	int x = text_pos.x;
 	int y = text_pos.y;
@@ -755,7 +787,13 @@ void subtitle::do_frame(float frametime)
 		y += font_height;
 	}
 
-	if(image_id != -1)
+	// restore old font
+	if (old_fontnum >= 0)
+	{
+		gr_set_font(old_fontnum);
+	}
+
+	if(image_id >= 0)
 	{
 		gr_set_bitmap(image_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, text_color.alpha/255.0f);
 
@@ -800,6 +838,7 @@ void subtitle::clone(const subtitle &sub)
 	for (i = 0; i < sub.text_lines.size(); i++) {
 		text_lines.push_back(sub.text_lines[i]);
 	}
+	text_fontnum = sub.text_fontnum;
 
 	// copy the structs
 	text_pos = sub.text_pos;
