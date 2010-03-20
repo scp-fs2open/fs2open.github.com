@@ -628,7 +628,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 		return;
 
 	char text_buf[256];
-	if (in_text != NULL && strlen(in_text) >= 0)
+	if (in_text != NULL && strlen(in_text) > 0)
 	{
 		strcpy(text_buf, in_text);
 		sexp_replace_variable_names_with_values(text_buf, 256);
@@ -642,7 +642,9 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 
 	//Setup text
 	if ( (in_text != NULL) && (strlen(in_text) > 0) ) {
-		num_text_lines = split_str(in_text, in_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
+		int split_width = (in_width > 0) ? in_width : 200;
+
+		num_text_lines = split_str(in_text, split_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
 		std::string temp_str;
 		for(int i = 0; i < num_text_lines; i++)
 		{

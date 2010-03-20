@@ -16196,7 +16196,7 @@ void sexp_reset_camera(int node)
 void sexp_show_subtitle(int node)
 {
 	//These should be set to the default if not required to be explicitly defined
-	int x_pos, y_pos, width=200;
+	int x_pos, y_pos, width=0;
 	char *text, *imageanim=NULL;
 	float display_time, fade_time=0.0f;
 	int r=255, g=255, b=255;
@@ -16262,8 +16262,7 @@ void sexp_show_subtitle(int node)
 									n = CDR(n);
 									if ( n !=-1 )
 									{
-										if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
-											post_shaded = true;
+										post_shaded = is_sexp_true(n) != 0;
 									}
 								}
 							}
@@ -16394,7 +16393,7 @@ void sexp_show_subtitle_text(int node)
 	// calculate pixel positions
 	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
 	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
-	int width = (width_pct == 0) ? 200 : gr_screen.max_w * (width_pct / 100.0f);
+	int width = gr_screen.max_w * (width_pct / 100.0f);
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
