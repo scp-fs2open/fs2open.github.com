@@ -14,7 +14,7 @@
 
 #include "globalincs/globals.h"
 
-#define MAX_INTEL_ENTRIES			30
+#define MAX_INTEL_ENTRIES		75
 #define TECH_INTEL_DESC_LEN		5120
 
 typedef struct {
