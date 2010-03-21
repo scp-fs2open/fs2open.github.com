@@ -548,6 +548,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	sound		*snd;
 	float		volume, distance, max_volume;
 	float		min_range, max_range;
+	float		pan;
 
 	if ( !Sound_enabled )
 		return -1;
@@ -573,6 +574,10 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
+
+	if (snd->sid < 0) {
+		return -1;
+	}
 
 	handle = -1;
 
@@ -615,7 +620,25 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 		return -1;
 	}
 
-	handle = ds3d_play( snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume), volume, ds_priority(priority));
+	bool play_2d = (Cmdline_no_3d_sound == 1);
+
+	// any stereo sounds will not play in proper 3D
+	if (snd->info.n_channels != 1) {
+		mprintf(("WARNING:  Attemping to play non-mono sound in 3D!! (%s)\n", snd->filename));
+		play_2d = true;
+	}
+
+	if (play_2d) {
+		if (distance <= 0.0f) {
+			pan = 0.0f;
+		} else {
+			pan = vm_vec_dot(&View_matrix.vec.rvec, &vector_to_sound);
+		}
+
+		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), volume / gs->default_volume, pan, looping);
+	} else {
+		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume), volume, ds_priority(priority));
+	}
 
 	return handle;
 }

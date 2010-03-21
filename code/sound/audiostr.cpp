@@ -1197,7 +1197,8 @@ uint AudioStream::GetMaxWriteSize (void)
 	return (dwMaxSize);
 }
 
-#define VOLUME_ATTENUATION_BEFORE_CUTOFF			0.97f
+#define VOLUME_ATTENUATION_BEFORE_CUTOFF			0.03f
+#define VOLUME_ATTENUATION							0.65f
 bool AudioStream::ServiceBuffer (void)
 {
 	float vol;
@@ -1219,11 +1220,10 @@ bool AudioStream::ServiceBuffer (void)
 		if ( m_lCutoffVolume == 0.0f ) {
 			vol = Get_Volume();
 //			nprintf(("Alan","Volume is: %d\n",vol));
-			m_lCutoffVolume = MAX(vol - VOLUME_ATTENUATION_BEFORE_CUTOFF, 0.0f);
+			m_lCutoffVolume = vol * VOLUME_ATTENUATION_BEFORE_CUTOFF;
 		}
 
-		vol = Get_Volume();
-		vol *= 0.65f;
+		vol = Get_Volume() * VOLUME_ATTENUATION;
 //		nprintf(("Alan","Volume is now: %d\n",vol));
 		Set_Volume(vol);
 
@@ -1456,6 +1456,7 @@ void AudioStream::Stop_and_Rewind (void)
 		m_timer.destructor();
 
 		m_fPlaying = false;
+		m_bIsPaused = false;
 	}
 
 	// Unqueue all buffers
