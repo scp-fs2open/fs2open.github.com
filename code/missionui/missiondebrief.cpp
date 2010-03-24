@@ -2644,7 +2644,7 @@ void debrief_do_frame(float frametime)
 	}	
 
 	// maybe show skip mission popup
-	if ((!Debrief_skip_popup_already_shown) && (Player->show_skip_popup) && (Game_mode & GM_NORMAL) && (Game_mode & GM_CAMPAIGN_MODE) && (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT) && !(Game_mode & GM_MULTIPLAYER)) {
+	if ( Must_replay_mission && (!Debrief_skip_popup_already_shown) && (Player->show_skip_popup) && (Game_mode & GM_NORMAL) && (Game_mode & GM_CAMPAIGN_MODE) && (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT) && !(Game_mode & GM_MULTIPLAYER)) {
 		int popup_choice = popup(0, 3, XSTR("Do Not Skip This Mission", 1473),
 												 XSTR("Advance To The Next Mission", 1474),
 												 XSTR("Don't Show Me This Again", 1475),
