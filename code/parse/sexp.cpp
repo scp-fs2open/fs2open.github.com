@@ -21265,6 +21265,9 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	strcpy_s(Sexp_variables[index].text, text);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
+	// we want to use the same variable substitution that's in messages etc.
+	sexp_replace_variable_names_with_values(Sexp_variables[index].text, TOKEN_LENGTH);
+
 	// do multi_callback_here
 	// if we're called from the sexp code send a SEXP packet (more efficient) 
 	if( MULTIPLAYER_MASTER && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK) && sexp_callback) {
