@@ -182,7 +182,7 @@ public:
 
 	//Get
 	char *GetNamePtr(){return Name;}
-	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
+	bool IsName(char *in_name){return (stricmp(in_name,Name)==0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
