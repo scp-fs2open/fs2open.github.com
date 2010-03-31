@@ -21262,11 +21262,20 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( !MULTIPLAYER_CLIENT );
 
-	strcpy_s(Sexp_variables[index].text, text);
+	if (strchr(text, '$') != NULL)
+	{
+		// we want to use the same variable substitution that's in messages etc.
+		char buf[TOKEN_LENGTH];
+		strcpy_s(buf, text);
+		sexp_replace_variable_names_with_values(buf, TOKEN_LENGTH);
+		strcpy_s(Sexp_variables[index].text, buf);
+	}
+	else
+	{
+		// no variables, so no substitution
+		strcpy_s(Sexp_variables[index].text, text);
+	}
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
-
-	// we want to use the same variable substitution that's in messages etc.
-	sexp_replace_variable_names_with_values(Sexp_variables[index].text, TOKEN_LENGTH);
 
 	// do multi_callback_here
 	// if we're called from the sexp code send a SEXP packet (more efficient) 
