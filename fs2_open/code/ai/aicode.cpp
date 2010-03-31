@@ -5849,7 +5849,7 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 //		Favor aspect seekers when attacking small ships faraway.
 //		Favor rapid fire dumbfire when attacking a large ship.
 //		Ignore heat seekers because we're not sure how they'll work.
-void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1)
+void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1, int wif2_priority1 = -1, int wif2_priority2 = -1)
 {
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
@@ -5867,6 +5867,11 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	// Ignore bombs unless one of the priorities asks for them to be selected.
 	if (!(WIF_HUGE & (priority1 | priority2))) {
 		ignore_mask |= WIF_HUGE;
+	}
+
+	// Ignore capital+ unless one of the priorities asks for it.
+	if (!(WIF2_CAPITAL_PLUS & (wif2_priority1 | wif2_priority2))) {
+		ignore_mask |= WIF2_CAPITAL_PLUS;
 	}
 
 	// Ignore bomber+ unless one of the priorities asks for them to be selected
@@ -5895,6 +5900,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 
 	for (i=0; i<num_weapon_types; i++) {
 		int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+		int wi_flags2 = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags2;
 		int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
 
 		if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
@@ -5902,6 +5908,13 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
 				break;
 			} else if (wi_flags & priority2)
+				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
+		}
+		if (!(wi_flags2 & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
+			if (wi_flags2 & wif2_priority1) {
+				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
+				break;
+			} else if (wi_flags2 & wif2_priority2)
 				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
 		}
 	}
@@ -7719,7 +7732,7 @@ int has_preferred_secondary(object *objp, object *en_objp, ship_weapon *swp)
 void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 {
 	float			subsystem_strength = 0.0f;
-	int			is_big_ship, priority1, priority2;
+	int			is_big_ship, wif_priority1, wif_priority2, wif2_priority1, wif2_priority2;
 	ship_weapon	*swp;
 	ship_info	*esip;
 
@@ -7761,31 +7774,41 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 
 		if (is_big_ship)
 		{
-			priority1 = WIF_HUGE;
-			priority2 = (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
+			wif_priority1 = WIF_HUGE;
+			wif_priority2 = (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
+			wif2_priority1 = WIF2_CAPITAL_PLUS;
+			wif2_priority2 = 0;
 		} 
 		else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) )
 		{
-			priority1 = WIF_BOMBER_PLUS;
-			priority2 = WIF_HOMING;
+			wif_priority1 = WIF_BOMBER_PLUS;
+			wif_priority2 = WIF_HOMING;
+			wif2_priority1 = 0;
+			wif2_priority2 = 0;
 		} 
 		else if (subsystem_strength > 100.0f)
 		{
-			priority1 = WIF_PUNCTURE;
-			priority2 = WIF_HOMING;
+			wif_priority1 = WIF_PUNCTURE;
+			wif_priority2 = WIF_HOMING;
+			wif2_priority1 = 0;
+			wif2_priority2 = 0;
 		}
 		else if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
-			priority1 = 0;								
-			priority2 = 0;
+			wif_priority1 = 0;								
+			wif_priority2 = 0;
+			wif2_priority1 = 0;
+			wif2_priority2 = 0;
 		} 
 		else
 		{
-			priority1 = WIF_HOMING;
-			priority2 = 0;
+			wif_priority1 = WIF_HOMING;
+			wif_priority2 = 0;
+			wif2_priority1 = 0;
+			wif2_priority2 = 0;
 		}
 		
-		ai_select_secondary_weapon(objp, swp, priority1, priority2);
+		ai_select_secondary_weapon(objp, swp, wif_priority1, wif_priority2, wif2_priority1, wif2_priority2);
 	}
 
 	// nprintf(("AI", "Frame %i: Chose secondary %s\n", Framecount, Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name));
