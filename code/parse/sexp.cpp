@@ -2359,17 +2359,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			//Karajorma
 			case OPF_PERSONA:
-				if (type2 != SEXP_ATOM_STRING){
+				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
 				for (i=0; i < Num_personas ; i++) {
-					if (!strcmp(CTEXT(node), Personas[i].name))
+					if (!strcmp(CTEXT(node), Personas[i].name)) {
 						break;
+					}
 				}
 
-				if (i == Num_personas) 
-					return SEXP_CHECK_INVALID_PERSONA_NAME; 
+				if (i == Num_personas) {
+					return SEXP_CHECK_INVALID_PERSONA_NAME;
+				}
 				break;
 				
 			case OPF_KEYPRESS:
@@ -21149,11 +21151,20 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( !MULTIPLAYER_CLIENT );
 
+	if (strchr(text, '$') != NULL)
+	{
+		// we want to use the same variable substitution that's in messages etc.
+		char buf[TOKEN_LENGTH];
+		strcpy_s(buf, text);
+		sexp_replace_variable_names_with_values(buf, TOKEN_LENGTH);
+		strcpy_s(Sexp_variables[index].text, buf);
+	}
+	else
+	{
+		// no variables, so no substitution
 	strcpy_s(Sexp_variables[index].text, text);
+	}
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
-
-	// we want to use the same variable substitution that's in messages etc.
-	sexp_replace_variable_names_with_values(Sexp_variables[index].text, TOKEN_LENGTH);
 
 	// do multi_callback_here
 	// if we're called from the sexp code send a SEXP packet (more efficient) 
