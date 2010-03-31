@@ -397,7 +397,12 @@ D_CFLAGS=$D_CFLAGS" $PNG_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $PNG_LIBS"
 
 dnl LUA
-PKG_CHECK_MODULES([LUA], [lua >= 5.1.3])
+## Checking for lua.pc and if that fails lua5.1.pc
+PKG_CHECK_MODULES(
+	[LUA],
+	[lua >= 5.1.3],
+	[], ## do nothing special
+	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [])])
 D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $LUA_LIBS"
 
