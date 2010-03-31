@@ -8908,10 +8908,17 @@ void ai_chase()
 				}
 			}
 		} else {
-			aip->time_enemy_in_range *= (1.0f - flFrametime);
+			if (flFrametime < 1.0f)
+				aip->time_enemy_in_range *= (1.0f - flFrametime);
+			else
+				aip->time_enemy_in_range = 0;
 		}
-	} else
-		aip->time_enemy_in_range *= (1.0f - flFrametime);
+	} else {
+		if (flFrametime < 1.0f)
+			aip->time_enemy_in_range *= (1.0f - flFrametime);
+		else
+			aip->time_enemy_in_range = 0;
+	}
 
 	if(has_fired == -1){
 		ship_stop_fire_primary(Pl_objp);
