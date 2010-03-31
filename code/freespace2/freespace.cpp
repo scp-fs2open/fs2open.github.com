@@ -823,6 +823,7 @@ void game_sunspot_process(float frametime)
 	
 		Sun_drew = 0;				
 	} else {
+		Sun_spot_goal = 0.0f;
 		if ( Sun_drew )	{
 			// check sunspots for all suns
 			n_lights = light_get_global_count();
@@ -845,14 +846,10 @@ void game_sunspot_process(float frametime)
 
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
-				} else {
-					Sun_spot_goal = 0.0f;
 				}
 			}
 
 			Sun_drew = 0;
-		} else {
-			Sun_spot_goal = 0.0f;
 		}
 	}
 
