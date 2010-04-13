@@ -994,6 +994,10 @@ void game_level_close()
 		subtitles_close();
 		trail_level_close();
 
+		// be sure to not only reset the time but the lock as well
+		set_time_compression(1.0f, 0.0f);
+		lock_time_compression(false);
+
 		audiostream_unpause_all();
 		Game_paused = 0;
 
@@ -6132,7 +6136,6 @@ void game_leave_state( int old_state, int new_state )
 				}
 
 				freespace_stop_mission();			
-				set_time_compression(1.0f);
 			}
 			break;
 
@@ -6376,8 +6379,6 @@ void game_enter_state( int old_state, int new_state )
 				Net_player->flags &= ~NETINFO_FLAG_DO_NETWORKING;
 			}
 
-			set_time_compression(1.0f);
-
 			// remove any multiplayer flags from the game mode
 			Game_mode &= ~(GM_MULTIPLAYER);
 	
@@ -6423,8 +6424,6 @@ void game_enter_state( int old_state, int new_state )
 				if (!game_start_mission())
 					break;
 			}
-
-			set_time_compression(1.0f);
 
 			// maybe play a movie before the mission
 			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
@@ -6776,9 +6775,7 @@ void mouse_force_pos(int x, int y);
 				// JAS: Used to do all paging here!!!!
 								
 				Net_player->state = NETPLAYER_STATE_WAITING;			
-				send_netplayer_update_packet();				
-				Missiontime = 0;
-				set_time_compression(1.0f);
+				send_netplayer_update_packet();
 				break;
 			case MULTI_SYNC_INGAME:
 				multi_sync_init();
