@@ -1321,7 +1321,7 @@ int CShipEditorDlg::update_ship(int ship)
 		m_arrival_delay.save(&Ships[ship].arrival_delay);
 		m_departure_delay.save(&Ships[ship].departure_delay);
 		if (m_arrival_target >= 0) {
-			z = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET)) -> GetItemData(m_arrival_target);
+			z = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, z);
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
@@ -1331,7 +1331,7 @@ int CShipEditorDlg::update_ship(int ship)
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					str.Format("Ship must arrive at least %d meters away from target.\n"
 						"Value has been reset to this.  Use with caution!\r\n"
-						"Reccomended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[ship].objnum].radius) );
+						"Recommended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[ship].objnum].radius) );
 
 					MessageBox(str);
 					if (Ships[ship].arrival_distance < 0)
@@ -1343,8 +1343,10 @@ int CShipEditorDlg::update_ship(int ship)
 				}
 			}
 		}
-		z = ((CComboBox *)GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
-		MODIFY(Ships[ship].departure_anchor, z );
+		if (m_departure_target >= 0) {
+			z = ((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
+			MODIFY(Ships[ship].departure_anchor, z );
+		}
 	}
 
 	if (m_hotkey != -1)
