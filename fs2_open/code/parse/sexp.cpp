@@ -376,7 +376,7 @@ sexp_oper Operators[] = {
 
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
-	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,					0, 1 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
@@ -10053,6 +10053,17 @@ void sexp_nebula_toggle_poof(int n)
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission(int n)
 {
+	int ignore_player_mortality = 1;
+
+	if (n != -1) {
+		ignore_player_mortality = is_sexp_true(n);
+	}
+
+	// if the player is dead we may want to let the death screen handle things
+	if (!ignore_player_mortality && (Player_ship->flags && SF_DYING)) {
+		return;
+	}
+
 	send_debrief_event();
 
 	// Karajorma - callback all the clients here. 
@@ -23721,7 +23732,7 @@ sexp_help_struct Sexp_help[] = {
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
-		"Takes no arguments." },
+		"\t1:\t(optional)End Mission even if the player is dead (defaults to true)" },
 
 	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"
