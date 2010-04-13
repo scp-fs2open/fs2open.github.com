@@ -2656,6 +2656,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPES:
 		case OPF_FONT:
+		case OPF_HUD_ELEMENT:
 			return 1;
 
 		case OPF_SHIP:
@@ -4353,6 +4354,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_font();
 			break;
 
+		case OPF_HUD_ELEMENT:
+			list = get_listing_opf_hud_elements();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5679,6 +5684,14 @@ sexp_list_item *sexp_tree::get_listing_opf_armor_types()
 	head.add_data(SEXP_NONE_STRING);
 	for (t=0; t<Armor_types.size(); t++)
 		head.add_data(Armor_types[t].GetNamePtr());
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_hud_elements()
+{
+	sexp_list_item head;
+	head.add_data("warpout");
 
 	return head.next;
 }

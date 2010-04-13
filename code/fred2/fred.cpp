@@ -668,3 +668,7 @@ int CFREDApp::ExitInstance()
 
 	return CWinApp::ExitInstance();
 }
+
+// Empty functions to make fred link with the sexp_mission_set_subspace
+void game_start_subspace_ambient_sound() {}
+void game_stop_subspace_ambient_sound() {} 

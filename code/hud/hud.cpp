@@ -2700,7 +2700,12 @@ void hud_maybe_display_subspace_notify()
 {
 	int warp_aborted = 0;
 	// maybe make gauge active
-	if ( (Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3) ) {
+	if ( (Player->control_mode == PCM_WARPOUT_STAGE1)
+		|| (Player->control_mode == PCM_WARPOUT_STAGE2)
+		|| (Player->control_mode == PCM_WARPOUT_STAGE3)
+		|| (Sexp_hud_display_warpout > 0)
+		)
+	{
 		if (!hud_subspace_notify_active()) {
 			// keep sound from being played 1e06 times
 			hud_start_subspace_notify();
@@ -2715,6 +2720,13 @@ void hud_maybe_display_subspace_notify()
 
 	if ( !hud_subspace_notify_active() ) {
 		return;
+	}
+
+	if ( Sexp_hud_display_warpout > 1 ) {
+		if ( Sexp_hud_display_warpout < timestamp()) {
+			Sexp_hud_display_warpout = 0;
+			return;
+		}
 	}
 
 	if ( Objective_display_gauge.first_frame < 0 ) {
