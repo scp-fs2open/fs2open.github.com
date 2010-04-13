@@ -6538,6 +6538,19 @@ void game_enter_state( int old_state, int new_state )
 				//Game_time_compression = F1_0;
 			}
 
+			/* game could be comming from a restart (rather than first start)
+			so make sure that we zero the hud gauge overrides (Sexp_hud_*)
+			\sa sexp_hud_display_gauge*/
+			if ( (old_state == GS_STATE_GAME_PLAY)
+				|| (old_state == GS_STATE_BRIEFING)
+				|| (old_state == GS_STATE_DEBRIEF)
+				|| (old_state == GS_STATE_SHIP_SELECT)
+				|| (old_state == GS_STATE_WEAPON_SELECT)
+				|| (old_state == GS_STATE_RED_ALERT) )
+			{
+				Sexp_hud_display_warpout = 0;
+			}
+
 			// coming from the gameplay state or the main menu, we might need to load the mission
 			if ( (Game_mode & GM_NORMAL) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) || (old_state == GS_STATE_DEATH_BLEW_UP)) ) {
 				if ( !game_start_mission() )		// this should put us into a new state.
