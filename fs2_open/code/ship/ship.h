@@ -302,6 +302,12 @@ typedef	struct ship_subsys {
 	// target priority setting for turrets
 	int      target_priority[32];
 	int      num_target_priorities;
+
+	//SUSHI: Fields for max_turret_aim_update_delay
+	//Only used when targeting small ships
+	fix		next_aim_pos_time;
+	vec3d	last_aim_enemy_pos;
+	vec3d	last_aim_enemy_vel;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.

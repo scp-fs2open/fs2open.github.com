@@ -209,6 +209,7 @@ typedef struct ai_class {
 	float	ai_stalemate_dist_thresh[NUM_SKILL_LEVELS];
 	int		ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 	float	ai_max_aim_update_delay[NUM_SKILL_LEVELS];
+	float	ai_turret_max_aim_update_delay[NUM_SKILL_LEVELS];
 	int		ai_profile_flags;		//Holds the state of flags that are set
 	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
 
@@ -439,6 +440,7 @@ typedef struct ai_info {
 	float	ai_stalemate_dist_thresh;
 	int		ai_chance_to_use_missiles_on_plr;
 	float	ai_max_aim_update_delay;
+	float	ai_turret_max_aim_update_delay;
 	int		ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
 
 

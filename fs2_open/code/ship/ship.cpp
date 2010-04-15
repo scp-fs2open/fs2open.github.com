@@ -4845,6 +4845,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->weapons.current_primary_bank = -1;
 		ship_system->weapons.current_secondary_bank = -1;
 		
+		ship_system->next_aim_pos_time = 0;
+
 		// Make turret flag checks and warnings
 
 		

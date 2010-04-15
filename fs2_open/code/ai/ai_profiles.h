@@ -96,6 +96,7 @@ typedef struct ai_profile_t {
 	float stalemate_time_thresh[NUM_SKILL_LEVELS];			// SUSHI: The amount of time required for the AI to detect (and try to break) dogfight stalemate
 	float stalemate_dist_thresh[NUM_SKILL_LEVELS];			// SUSHI: The maximum distance the AI and target must be within for a stalemate
 	float max_aim_update_delay[NUM_SKILL_LEVELS];			// SUSHI: The maximum delay before the AI updates their aim against small ships
+	float turret_max_aim_update_delay[NUM_SKILL_LEVELS];	// SUSHI: As above, but for turrets updating their aim
 
 	//	Multiplicative delay factors for increasing skill levels.
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
