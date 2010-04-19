@@ -1035,13 +1035,18 @@ int CFred_mission_save::save_variables()
 	char string[] = "string";
 	char block[] = "block";
 	int i;
+	int num_block_vars = 0;
 
 	// sort sexp_variables
 	sexp_variable_sort();
 
 	// get count
 	int num_variables = sexp_variable_count();
-	int num_block_vars = sexp_variable_block_count();
+
+	if (Format_fs2_open == FSO_FORMAT_RETAIL) {
+		generate_special_explosion_block_variables();
+		num_block_vars = num_block_variables();
+	}
 	int total_variables = num_variables + num_block_vars;
 
 	if (total_variables > 0) {
@@ -1087,7 +1092,7 @@ int CFred_mission_save::save_variables()
 
 		for (i=MAX_SEXP_VARIABLES-num_block_vars; i<MAX_SEXP_VARIABLES; i++) {
 			type = block;
-			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Sexp_variables[i].variable_name, Sexp_variables[i].text, type);
+			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Block_variables[i].variable_name, Block_variables[i].text, type);
 		}
 
 		fout("\n)");
@@ -1626,27 +1631,117 @@ int CFred_mission_save::save_objects()
 			fout(" %d", Ships[i].escort_priority);
 		}
 
-		if (Ships[i].special_exp_index != -1) {
-			if (optional_string_fred("+Special Exp index:", "$Name:")) {
-				parse_comments();
-			} else {
-				fout("\n+Special Exp index:");
-			}
+		// special explosions
+		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
+			if (Ships[i].use_special_explosion) {
+				if (optional_string_fred("$Special Explosion:", "$Name:")) {
+					parse_comments();
 
-			fout(" %d", Ships[i].special_exp_index);
+					required_string_fred("+Special Exp Damage:"); 
+					parse_comments();
+					fout(" %d", Ships[i].special_exp_damage);
+
+					required_string_fred("+Special Exp Blast:"); 
+					parse_comments();
+					fout(" %d", Ships[i].special_exp_blast);
+
+					required_string_fred("+Special Exp Inner Radius:"); 
+					parse_comments();
+					fout(" %d", Ships[i].special_exp_inner);
+
+					required_string_fred("+Special Exp Outer Radius:"); 
+					parse_comments();
+					fout(" %d", Ships[i].special_exp_outer);
+
+					if (Ships[i].use_shockwave && (Ships[i].special_exp_shockwave_speed > 0)) {
+						optional_string_fred("+Special Exp Shockwave Speed:"); 
+						parse_comments();
+						fout(" %d", Ships[i].special_exp_shockwave_speed);
+					}
+					else {
+						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
+					}
+				}
+				else {
+					fso_comment_push(";;FSO 3.6.13;;");
+					fout_version("\n$Special Explosion:");
+
+					fout_version("\n+Special Exp Damage:"); 
+					fout(" %d", Ships[i].special_exp_damage);
+
+					fout_version("\n+Special Exp Blast:"); 
+					fout(" %d", Ships[i].special_exp_blast);
+
+					fout_version("\n+Special Exp Inner Radius:"); 
+					fout(" %d", Ships[i].special_exp_inner);
+
+					fout_version("\n+Special Exp Outer Radius:"); 
+					fout(" %d", Ships[i].special_exp_outer);
+
+					if (Ships[i].use_shockwave && (Ships[i].special_exp_shockwave_speed > 0)) {
+						fout_version("\n+Special Exp Shockwave Speed:"); 
+						fout(" %d", Ships[i].special_exp_shockwave_speed);
+					}
+
+					fso_comment_pop();
+				}
+			}
+			else {
+				bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
+			}
+		}
+			// retail format special explosions
+		else {
+			if (Ships[i].use_special_explosion) {
+				int special_exp_index;
+
+				if (has_special_explosion_block_index(&Ships[i], &special_exp_index)) {
+					fout("\n+Special Exp index:");
+					fout(" %d", special_exp_index);
+				}
+				else {
+					CString text = "You are saving in the retail mission format, but ";
+					text += "the mission has too many special explosions defined. \"";
+					text += Ships[i].ship_name;
+					text += "\" has therefore lost any special explosion data that was defined for it. ";
+					text += "\" Either remove special explosions or SEXP variables if you need it to have one ";
+					MessageBox(NULL, text, "Too many variables!", MB_OK);
+					
+				}				
+			}			
 		}
 
 		// Goober5000 ------------------------------------------------
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			if (Ships[i].special_hitpoint_index != -1) {
-				if (optional_string_fred("+Special Hitpoint index:", "$Name:")) {
+			if (Ships[i].special_hitpoints) {
+				if (optional_string_fred("+Special Hitpoints:", "$Name:")) {
 					parse_comments();
 				} else {
-					fout("\n+Special Hitpoint index:");
+					fso_comment_push(";;FSO 3.6.13;;");
+					fout_version("\n+Special Hitpoints:");
+					fso_comment_pop();
 				}
 
-				fout(" %d", Ships[i].special_hitpoint_index);
+				fout(" %d", Ships[i].special_hitpoints);
+			}
+			else {
+				bypass_comment(";;FSO 3.6.13;; +Special Hitpoints:");
+			}
+
+			if (Ships[i].special_shield >= 0) {
+				if (optional_string_fred("+Special Shield Points:", "$Name:")) {
+					parse_comments();
+				} else {
+					fso_comment_push(";;FSO 3.6.13;;");
+					fout_version("\n+Special Shield Points:");
+					fso_comment_pop();
+				}
+
+				fout(" %d", Ships[i].special_shield);
+			}
+			else {
+				bypass_comment(";;FSO 3.6.13;; +Special Shield Points:");
 			}
 		}
 		// -----------------------------------------------------------
@@ -1864,9 +1959,9 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 	}
 
 	// Goober5000
-	if (Format_fs2_open != FSO_FORMAT_RETAIL && (shipp->special_hitpoint_index != -1))
+	if (Format_fs2_open != FSO_FORMAT_RETAIL && (shipp->special_hitpoints))
 	{
-		temp_max_hull_strength = (float) atoi(Sexp_variables[shipp->special_hitpoint_index+HULL_STRENGTH].text);
+		temp_max_hull_strength = (float)shipp->special_hitpoints;
 	}
 	else
 	{

@@ -23,11 +23,16 @@ public:
 	//{{AFX_DATA(ShipSpecialHitpoints)
 	enum { IDD = IDD_SPECIAL_HITPOINTS };
 	BOOL	m_special_hitpoints_enabled;
+	BOOL	m_special_shield_enabled;
 	int		m_shields;
 	int		m_hull;
-	int		m_ship_num;
 	//}}AFX_DATA
 
+private:
+	// variables to handle selection of multiple ships
+	int m_selected_ships[MAX_SHIPS];
+	int num_selected_ships;
+	int m_ship_num;
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -42,6 +47,7 @@ protected:
 	// Generated message map functions
 	//{{AFX_MSG(ShipSpecialHitpoints)
 	afx_msg void OnEnableSpecialHitpoints();
+	afx_msg void OnEnableSpecialShieldpoints();
 	virtual BOOL OnInitDialog();
 	afx_msg void DoGray();
 	virtual void OnCancel();

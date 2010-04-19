@@ -42,15 +42,15 @@ void ShipSpecialDamage::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_ENABLE_SHOCKWAVE, m_shock_enabled);
 	DDX_Check(pDX, IDC_ENABLE_SPECIAL_EXP, m_special_exp_enabled);
 	DDX_Text(pDX, IDC_SPECIAL_INNER_RAD, m_inner_rad);
-	DDV_MinMaxInt(pDX, m_inner_rad, 10, 10000);
+	DDV_MinMaxInt(pDX, m_inner_rad, 1, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_OUTER_RAD, m_outer_rad);
-	DDV_MinMaxInt(pDX, m_outer_rad, 11, 10000);
+	DDV_MinMaxInt(pDX, m_outer_rad, 2, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_DAMAGE, m_damage);
-	DDV_MinMaxInt(pDX, m_damage, 0, 100000);
+	DDV_MinMaxInt(pDX, m_damage, 0, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_SHOCK_SPEED, m_shock_speed);
-	DDV_MinMaxInt(pDX, m_shock_speed, 10, 10000);
+	DDV_MinMaxInt(pDX, m_shock_speed, 0, INT_MAX);
 	DDX_Text(pDX, IDC_SPECIAL_BLAST, m_blast);
-	DDV_MinMaxInt(pDX, m_blast, 0, 100000);
+	DDV_MinMaxInt(pDX, m_blast, 0, INT_MAX);
 	//}}AFX_DATA_MAP
 }
 
@@ -71,7 +71,8 @@ void ShipSpecialDamage::OnEnableShockwave()
 	UpdateData(TRUE);
 
 	// enable/disable shock speed
-	DoGray();}
+	DoGray();
+}
 
 void ShipSpecialDamage::OnEnableSpecialExp() 
 {
@@ -89,21 +90,23 @@ BOOL ShipSpecialDamage::OnInitDialog()
 	// get ship num
 	object *objp;
 
-	m_ship_num = -1;
+	num_selected_ships = 0;
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
 			if (objp->flags & OF_MARKED) {
-
-				m_ship_num = objp->instance;
-				break;
+				m_selected_ships[num_selected_ships] = objp->instance;
+				num_selected_ships++;
 			}
 		}
 		objp = GET_NEXT(objp);
 	}
 
-	if (Ships[m_ship_num].special_exp_index == -1) {
+	Assert (Objects[cur_object_index].flags & OF_MARKED);
+	m_ship_num = Objects[cur_object_index].instance;
+
+	if (!(Ships[m_ship_num].use_special_explosion)) {
 		// get default_table_values
 		ship_info *sip;
 		sip = &Ship_info[Ships[m_ship_num].ship_info_index];
@@ -116,19 +119,23 @@ BOOL ShipSpecialDamage::OnInitDialog()
 		m_shock_speed = (int) sip->shockwave.speed;
 		m_special_exp_enabled = FALSE;
 
-		if (m_inner_rad < 10) m_inner_rad = 10;
-		if (m_outer_rad < 11) m_outer_rad = 11;
-		if (m_shock_speed < 10) m_shock_speed = 10;
-	} else {
-		int index = Ships[m_ship_num].special_exp_index;
-		Assert( (index > 0) && (index < MAX_SEXP_VARIABLES-(BLOCK_EXP_SIZE-1)) );
-
-		m_inner_rad = atoi(Sexp_variables[index++].text);
-		m_outer_rad = atoi(Sexp_variables[index++].text);
-		m_damage = atoi(Sexp_variables[index++].text);
-		m_blast = atoi(Sexp_variables[index++].text);
-		m_shock_enabled = atoi(Sexp_variables[index++].text);
-		m_shock_speed = atoi(Sexp_variables[index++].text);
+		if (m_inner_rad < 1) {
+			m_inner_rad = 1;
+		}
+		if (m_outer_rad < 2) {
+			m_outer_rad = 2;
+		}
+		if (m_shock_speed < 1) {
+			m_shock_speed = 1;
+		}
+	}
+	else {
+		m_inner_rad = Ships[m_ship_num].special_exp_inner;
+		m_outer_rad = Ships[m_ship_num].special_exp_outer;
+		m_damage = Ships[m_ship_num].special_exp_damage;
+		m_blast = Ships[m_ship_num].special_exp_blast;
+		m_shock_enabled = Ships[m_ship_num].use_shockwave;
+		m_shock_speed = Ships[m_ship_num].special_exp_shockwave_speed;
 		m_special_exp_enabled = TRUE;
 	}
 
@@ -164,16 +171,15 @@ void ShipSpecialDamage::OnOK()
 {
 	UpdateData(TRUE);
 
-	object *objp;
+	int i;
 
-	objp = GET_FIRST(&obj_used_list);
-	while (objp != END_OF_LIST(&obj_used_list)) {
-		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED)
-				update_ship(objp->instance);
-		}
+	if (m_inner_rad > m_outer_rad) {
+		MessageBox("Inner radius must be less than outer radius");
+		return;
+	}
 
-		objp = GET_NEXT(objp);
+	for ( i = 0; i < num_selected_ships; i++ ) {
+		update_ship(m_selected_ships[i]);
 	}
 
 	CDialog::OnOK();
@@ -182,51 +188,33 @@ void ShipSpecialDamage::OnOK()
 void ShipSpecialDamage::update_ship(int shipnum)
 {
 	ship *shipp = &Ships[shipnum];
+	
+	// set to update
+	set_modified();
 
-	// TODO: Add extra validation here
 	if (m_special_exp_enabled) {
-
-		int start;
-
-		if (m_inner_rad > m_outer_rad) {
-			MessageBox("Inner radius must be less than outer radius");
-			return;
-		}
-
-		if (shipp->special_exp_index == -1) {
-			// get free sexp_variables
-			start = sexp_variable_allocate_block(shipp->ship_name, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP);
-			if (start == -1) {
-				MessageBox("Unable to allocate storage, try deleting Sexp variables");
-				return;
-			} else {
-				shipp->special_exp_index = start;
-			}
-		} else {
-			start = shipp->special_exp_index;
-		}
-		// set to update
-		set_modified();
-
 		// set em
-		sprintf(Sexp_variables[start+INNER_RAD].text, "%d", m_inner_rad);
-		sprintf(Sexp_variables[start+OUTER_RAD].text, "%d", m_outer_rad);
-		sprintf(Sexp_variables[start+DAMAGE].text, "%d", m_damage);
-		sprintf(Sexp_variables[start+BLAST].text, "%d", m_blast);
-		sprintf(Sexp_variables[start+PROPAGATE].text, "%d", m_shock_enabled);
-		sprintf(Sexp_variables[start+SHOCK_SPEED].text, "%d", m_shock_speed);
-
-	} else {
-		if (shipp->special_exp_index != -1) {
-			// set to update
-			set_modified();
-
-			// free block
-			sexp_variable_block_free(shipp->ship_name, Ships[m_ship_num].special_exp_index, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP);
-
-			// set index to no exp block
-			shipp->special_exp_index = -1;
+		shipp->use_special_explosion = true;
+		shipp->special_exp_inner = m_inner_rad;
+		shipp->special_exp_outer = m_outer_rad;
+		shipp->special_exp_damage = m_damage;
+		shipp->special_exp_blast = m_blast;
+		shipp->use_shockwave = (m_shock_enabled ? 1:0) ;
+		if (m_shock_speed) {
+			if (m_shock_speed < 1) {
+				m_shock_speed = 1;
+				MessageBox("Shockwave speed must be defined! Setting this to 1 now");
+			}
+			shipp->special_exp_shockwave_speed = m_shock_speed;
 		}
+	} else {
+		shipp->use_special_explosion = false;
+		shipp->special_exp_inner = -1;
+		shipp->special_exp_outer = -1;
+		shipp->special_exp_damage = -1;
+		shipp->special_exp_blast = -1;
+		shipp->use_shockwave = false;
+		shipp->special_exp_shockwave_speed = -1;
 	}
 }
 

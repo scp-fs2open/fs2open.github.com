@@ -563,6 +563,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags, Iff_info[shipp->team].default_parse_flags2);
 
 	// default shield setting
+	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
 	if (((z1 == 1) && z2) || (z2 == 1))
@@ -601,9 +602,9 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	}
 	
 	// calc kamikaze stuff
-	if (shipp->special_hitpoint_index != -1)
+	if (shipp->use_special_explosion)
 	{
-		temp_max_hull_strength = (float) atoi(Sexp_variables[shipp->special_hitpoint_index+HULL_STRENGTH].text);
+		temp_max_hull_strength = (float)shipp->special_exp_blast;
 	}
 	else
 	{
