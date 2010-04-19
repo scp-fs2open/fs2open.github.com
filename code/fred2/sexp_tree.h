@@ -258,6 +258,7 @@ public:
 	sexp_list_item *get_listing_opf_persona();
 	// ---------------------------------------------------------
 	sexp_list_item *get_listing_opf_post_effect();
+	sexp_list_item *get_listing_opf_hud_elements();
 
 	int m_mode;
 	int item_index;

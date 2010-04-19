@@ -458,6 +458,7 @@ sexp_oper Operators[] = {
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
+	{ "mission-set-subspace",		OP_MISSION_SET_SUBSPACE,			1, 1 },
 	{ "add-background-bitmap",		OP_ADD_BACKGROUND_BITMAP,			9, 9 }, // phreak
 	{ "remove-background-bitmap",	OP_REMOVE_BACKGROUND_BITMAP,		1, 1 }, // phreak
 	{ "add-sun-bitmap",				OP_ADD_SUN_BITMAP,					6, 6 }, // phreak
@@ -475,6 +476,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
+	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -712,6 +714,9 @@ void multi_sexp_modify_variable();
 // Karajorma - some useful helper methods
 player * get_player_from_ship_node(int node, bool test_respawns = false);
 ship * sexp_get_ship_from_node(int node);
+
+// hud-display-gauge magic values
+#define SEXP_HUD_GAUGE_WARPOUT "warpout"
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
@@ -2579,6 +2584,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 
+			case OPF_HUD_ELEMENT:
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				} else {
+					char *gauge = CTEXT(node);
+					if ( strcmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
+						break;
+					}
+				}
+				return SEXP_CHECK_INVALID_HUD_ELEMENT;
+
 			default:
 				Error(LOCATION, "Unhandled argument format");
 				//Int3();  // currently unhandled argument format (so add it now)
@@ -2866,6 +2883,10 @@ int get_sexp(char *token)
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
+				Dynamic_environment = true;
+				break;
+
+			case OP_MISSION_SET_SUBSPACE:
 				Dynamic_environment = true;
 				break;
 
@@ -8426,6 +8447,19 @@ void sexp_start_music(int loop)
 	}
 }
 
+/* Make sure that the Sexp_hud_display_* get added to the game_state
+transitions in freespace.cpp (game_enter_state()). */
+int Sexp_hud_display_warpout = 0;
+
+void sexp_hud_display_gauge(int n) {
+	int show_for = eval_num(n);
+	char* gauge = CTEXT(CDR(n));
+
+	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
+		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
+	}
+}
+
 // Goober5000
 void sexp_play_sound_from_table(int n)
 {
@@ -9852,6 +9886,29 @@ void sexp_add_background_bitmap(int n)
 	{
 		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 		return;
+	}
+}
+
+/* freespace.cpp does not have these availiable externally, and we must call
+them so that the main simulation loop does not have to constantly check for
+Game_subspace_effect so that it could turn on the subspace sounds.
+
+Because these are in freespace.cpp there are also stubs of these functions
+in fred.cpp as it does not deal with the game loop (obviously) but still
+links against code.lib. */
+extern void game_start_subspace_ambient_sound();
+extern void game_stop_subspace_ambient_sound();
+
+void sexp_mission_set_subspace(int n)
+{
+	if (eval_num(n) > 0) {
+		The_mission.flags |= MISSION_FLAG_SUBSPACE;
+		Game_subspace_effect = 1;
+		game_start_subspace_ambient_sound();
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_SUBSPACE;
+		Game_subspace_effect = 0;
+		game_stop_subspace_ambient_sound();
 	}
 }
 
@@ -17333,6 +17390,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_DISPLAY_GAUGE:
+				sexp_hud_display_gauge(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -17461,6 +17523,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			//-WMC
 			case OP_MISSION_SET_NEBULA:
 				sexp_mission_set_nebula(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_MISSION_SET_SUBSPACE:
+				sexp_mission_set_subspace(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -19054,6 +19121,8 @@ int query_operator_return_type(int op)
 		case OP_SET_POST_EFFECT:
 		case OP_CHANGE_IFF_COLOR:
 		case OP_REMOVE_WEAPONS:
+		case OP_MISSION_SET_SUBSPACE:
+		case OP_HUD_DISPLAY_GAUGE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -19170,6 +19239,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TEAM_SCORE:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_MISSION_SET_NEBULA:	//WMC
+		case OP_MISSION_SET_SUBSPACE:
 			return OPF_POSITIVE;
 
 		case OP_AI_WARP:								// this operator is obsolete
@@ -19698,6 +19768,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_POSITIVE;
+
+		case OP_HUD_DISPLAY_GAUGE:
+			if ( argnum == 0 ) {
+				return OPF_POSITIVE;
+			} else {
+				return OPF_HUD_ELEMENT;
+			}
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -21035,6 +21112,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_VARIABLE_TYPE:
 			return "Invalid variable type"; 
+
+		case SEXP_CHECK_INVALID_HUD_ELEMENT:
+			return "Invalid hud element magic name";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -21842,6 +21922,7 @@ int get_subcategory(int sexp_id)
 
 		case OP_SET_SKYBOX_MODEL:
 		case OP_MISSION_SET_NEBULA:
+		case OP_MISSION_SET_SUBSPACE:
 		case OP_ADD_BACKGROUND_BITMAP:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
@@ -21860,6 +21941,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
+		case OP_HUD_DISPLAY_GAUGE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -23601,6 +23683,11 @@ sexp_help_struct Sexp_help[] = {
 		"\tTakes1 argument...\r\n"
 		"\t1:\t0 for nebula off, 1 for nebula on" },
 
+	{ OP_MISSION_SET_SUBSPACE, "mission-set-subspace\r\n"
+		"\tTurns subspace on/off\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\r1:\t0 for subspace off, 1 for subspace on" },
+
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
@@ -24347,6 +24434,14 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HUD_SET_MAX_TARGETING_RANGE, "hud-set-max-targeting-range\r\n"
 		"\tSets the farthest distance at which an object can be targeted.  Takes 1 argument...\r\n"
 		"\1: Maximum targeting distance (0 for infinite)\r\n"
+	},
+
+	{ OP_HUD_DISPLAY_GAUGE, "hud-display-gauge <milliseconds> <gauge>\r\n"
+		"\tCauses specified hud gauge to appear or disappear for so many milliseconds.  Takes 1 argument...\r\n"
+		"\t1: Number of milliseconds that the warpout gauge should appear on the HUD."
+		" 0 will immediately cause the gauge to disappear.\r\n"
+		"\t2: Name of HUD element.  Must be one of:\r\n"
+		"\t\t" SEXP_HUD_GAUGE_WARPOUT " - the \"Subspace drive active\" box that appears above the viewscreen.\r\n"
 	},
 
 	// Goober5000
