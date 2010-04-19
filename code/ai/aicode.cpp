@@ -2846,6 +2846,14 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 	model_path	*mp;
 	pnode			*ppfp_start = Ppfp;
 
+	Assert(path_num >= 0);
+
+	//	Do garbage collection if necessary.
+	if (Ppfp-Path_points + 64 > MAX_PATH_POINTS) {
+		garbage_collect_path_points();
+		ppfp_start = Ppfp;
+	}
+
 	aip->path_start = Ppfp - Path_points;
 	Assert(path_num < pm->n_paths);
 	
