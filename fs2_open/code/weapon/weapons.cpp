@@ -934,8 +934,9 @@ void init_weapon_entry(int weap_info_index)
 	generic_anim_init(&wip->b_info.beam_glow, NULL);
 	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
 
-	for (i = 0; i < NUM_SKILL_LEVELS; i++)
-		wip->b_info.beam_miss_factor[i] = 0.00001f;
+	for (i = 0; i < MAX_IFFS; i++)
+		for (j = 0; j < NUM_SKILL_LEVELS; j++)
+			wip->b_info.beam_iff_miss_factor[i][j] = 0.00001f;
 	
 	//WMC - Okay, so this is needed now
 	beam_weapon_section_info *bsip;
@@ -1010,7 +1011,7 @@ int parse_weapon(int subtype, bool replace)
 	char buf[WEAPONS_MULTITEXT_LENGTH];
 	weapon_info *wip = NULL;
 	char fname[NAME_LENGTH];
-	int idx;
+	int iff, idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found  = true;
@@ -2006,10 +2007,25 @@ int parse_weapon(int subtype, bool replace)
 
 		// magic miss #
 		if(optional_string("+Miss Factor:")) {
-			for(idx=0; idx<NUM_SKILL_LEVELS; idx++)
-			{
-				if(!stuff_float_optional(&wip->b_info.beam_miss_factor[idx])) {
-					break;
+			// an unspecified Miss Factor like this should apply to all IFFs
+			for(iff=0; iff<Num_iffs; iff++) {
+				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
+					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {
+						break;
+					}
+				}
+			}
+		}
+		// now check miss factors for each IFF
+		for(iff=0; iff<Num_iffs; iff++) {
+			char miss_factor_string[NAME_LENGTH + 15];
+			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
+			if(optional_string(miss_factor_string)) {
+				// this Miss Factor applies only to the specified IFF
+				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
+					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {
+						break;
+					}
 				}
 			}
 		}

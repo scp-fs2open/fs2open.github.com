@@ -216,7 +216,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_miss_factor[NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by skill level
+	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
 	int beam_loop_sound;				// looping beam sound
 	int beam_warmup_sound;				// warmup sound
 	int beam_warmdown_sound;			// warmdown sound
