@@ -629,7 +629,11 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				if (!(Objects[Player->objnum].phys_info.flags & PF_GLIDING)) {
 					//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 					pmax_speed = Ships[Player_obj->instance].current_max_speed;
-					ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					if (pmax_speed > 0.0f) {
+						ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					} else {
+						ci->forward_cruise_percent = 0.0f;
+					}
 					override_analog_throttle = 1;
 					//if ( ci->forward_cruise_percent > 100.0f )
 						//HUD_printf ("Cannot travel that fast.  Setting throttle to full.");
