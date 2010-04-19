@@ -32,6 +32,7 @@
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
 
 
 
@@ -2009,7 +2010,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	vec3d oct1, oct2;
 	vec3d turret_point, turret_norm;
 	beam_weapon_info *bwi;
-	int skill_level;
+	int miss_factor;
 
 	int temp = b->subsys->turret_next_fire_pos;
 
@@ -2034,15 +2035,6 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	}
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
-	// skill level
-	skill_level = Game_skill_level;
-	if(Game_skill_level >= NUM_SKILL_LEVELS){
-		skill_level = NUM_SKILL_LEVELS - 1;
-	}
-	if(Game_skill_level < 0){
-		skill_level = 0;
-	}
-
 	// stuff num shots even though its only used for type D weapons
 	b->binfo.shot_count = (ubyte)num_shots;
 	if(b->binfo.shot_count > MAX_BEAM_SHOTS){
@@ -2052,9 +2044,14 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	// generate the proper amount of directional vectors	
 	switch(b->type){	
 	// pick an accuracy. beam will be properly aimed at actual fire time
-	case BEAM_TYPE_A:		
+	case BEAM_TYPE_A:
+		// determine the miss factor
+		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
+		Assert(b->team >= 0 && b->team < Num_iffs);
+		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
+
 		// all we will do is decide whether or not we will hit - type A beam weapons are re-aimed immediately before firing
-		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + bwi->beam_miss_factor[skill_level] * accuracy);
+		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + miss_factor * accuracy);
 		b->binfo.shot_count = 1;
 
 		// get random model points, this is useful for big ships, because we never miss when shooting at them			
@@ -2062,7 +2059,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		break;	
 
 	// just 2 points in the "slash"
-	case BEAM_TYPE_B:							
+	case BEAM_TYPE_B:
 		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);		
 
 		// point 1
@@ -2083,10 +2080,15 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 
 	// type D beams fire at small ship multiple times
 	case BEAM_TYPE_D:
+		// determine the miss factor
+		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
+		Assert(b->team >= 0 && b->team < Num_iffs);
+		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
+
 		// get a bunch of shot aims
 		for(idx=0; idx<b->binfo.shot_count; idx++){
 			//	MK, 9/3/99: Added pow() function to make increasingly likely to miss with subsequent shots.  30% more likely with each shot.
-			float r = ((float) pow(1.3f, idx)) * bwi->beam_miss_factor[skill_level] * accuracy;
+			float r = ((float) pow(1.3f, idx)) * miss_factor * accuracy;
 			b->binfo.shot_aim[idx] = frand_range(0.0f, 1.0f + r);
 		}
 		break;
