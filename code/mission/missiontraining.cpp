@@ -785,7 +785,7 @@ void message_training_setup(int m, int length, char *special_message)
 	training_process_message(Training_buf);
 	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 
-	Assert( Training_num_lines >= 0, "split_str encountered an error" );
+	Assert( Training_num_lines >= 0 );
 
 	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
 		if (length > 0)
