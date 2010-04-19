@@ -50,6 +50,7 @@ public:
 	int get_int();
 	float get_float();
 	char *str();
+	bool check_if_args_is_valid();
 };
 
 static cmdline_parm Parm_list(NULL, NULL);
@@ -800,6 +801,21 @@ cmdline_parm::~cmdline_parm()
 #endif
 }
 
+// checks if the objects args variable is valid
+// returns true if it is, shows an error box and returns false if not valid.
+bool cmdline_parm::check_if_args_is_valid() {
+	if ( args == NULL ) {
+		Error(__FILE__, __LINE__, 
+			"Command line flag passed that requires an argument, but the argument is missing!\r\n"
+			"The flag is '%s', make sure that you have an argument that follows it.\r\n"
+			"You may need to close your launcher and remove the flag manually from %s/data/cmdline_fso.cfg\r\n",
+			name, "<Freespace directory>");
+		return false;
+	} else {
+		return true;
+	}
+}
+
 
 // returns - true if the parameter exists on the command line, otherwise false
 int cmdline_parm::found()
@@ -810,7 +826,8 @@ int cmdline_parm::found()
 // returns - the interger representation for the parameter arguement
 int cmdline_parm::get_int()
 {
-	Assert(args);
+	check_if_args_is_valid();
+
 	int offset = 0;
 
 	if (stacks) {
@@ -833,7 +850,8 @@ int cmdline_parm::get_int()
 // returns - the float representation for the parameter arguement
 float cmdline_parm::get_float()
 {
-	Assert(args!=NULL);
+	check_if_args_is_valid();
+
 	int offset = 0;
 
 	if (stacks) {
@@ -856,7 +874,8 @@ float cmdline_parm::get_float()
 // returns - the string value for the parameter arguement
 char *cmdline_parm::str()
 {
-	Assert(args);
+	check_if_args_is_valid();
+
 	return args;
 }
 
