@@ -785,6 +785,8 @@ void message_training_setup(int m, int length, char *special_message)
 	training_process_message(Training_buf);
 	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 
+	Assert( Training_num_lines >= 0, "split_str encountered an error" );
+
 	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
 		if (length > 0)
 			Training_message_timestamp = timestamp(length * 1000);
@@ -917,18 +919,16 @@ void message_training_display()
 		return;
 	}
 
-	// next two lines moved to message_training_setup() - taylor
-//	training_process_message(Training_buf);
-//	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
-
-	Assert(Training_num_lines > 0);
-	for (i=0; i<Training_num_lines; i++) {
-		Training_lines[i][Training_line_sizes[i]] = 0;
-		drop_leading_white_space(Training_lines[i]);
-	}
+	// the code that preps the training message and counts the number of lines
+	// has been moved to message_training_setup()
 
 	if (Training_num_lines <= 0){
 		return;
+	}
+
+	for (i=0; i<Training_num_lines; i++) {
+		Training_lines[i][Training_line_sizes[i]] = 0;
+		drop_leading_white_space(Training_lines[i]);
 	}
 
 	height = gr_get_font_height();
