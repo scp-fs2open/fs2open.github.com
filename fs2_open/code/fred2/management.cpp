@@ -324,8 +324,10 @@ bool fred_init()
 
 	timer_init();
 
-	Assert(strlen(Fred_exe_dir) > 0);
+	Assert(strlen(Fred_base_dir) > 0);
 
+	// sigh... this should enable proper reading of cmdline_fso.cfg - Goober5000
+	cfile_chdir(Fred_base_dir);
 
 	// this should enable mods - Kazan
 	fred2_parse_cmdline(__argc, __argv);
