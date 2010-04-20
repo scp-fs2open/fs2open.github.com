@@ -8600,7 +8600,7 @@ void sexp_explosion_effect(int n)
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
+		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"  (otherwise use the index in fireball.tbl - FUBAR)
 		"\t11: Sound (index into sounds.tbl)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)" },
@@ -8652,10 +8652,12 @@ void sexp_explosion_effect(int n)
 	{
 		fireball_type = FIREBALL_EXPLOSION_LARGE2;
 	}
-	else
-	{
+	else if (eval_num(n) >= Num_fireball_types)	{
 		Warning(LOCATION, "explosion-effect type is out of range; quitting the explosion...\n");
 		return;
+	}
+	else {
+		fireball_type = eval_num(n);
 	}
 	n = CDR(n);
 
@@ -23030,7 +23032,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
+		"\t10: Type - For backward compatibility 0 = medium, 1 = large1 (4th in table), 2 = large2 (5th in table)\r\n"
+		"           3 or greater link to respctive entry in fireball.tbl\r\n"
 		"\t11: Sound (index into sounds.tbl)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)" },
