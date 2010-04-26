@@ -85,8 +85,8 @@ typedef struct physics_info {
 	int		shockwave_decay;		// timestamp used to control how long ship affected after hit by shockwave
 	int		reduced_damp_decay;	// timestamp used to control how long ship ship has reduced damp physics	
 	
-	vec3d glide_saved_vel;	//WMC - the key variable for gliding. Saves the orientation that velocity will be applied on.
 	float	glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity (so that something can't accelerate to ridiculous speeds... unless allowed to)
+	float	cur_glide_cap;	//SUSHI: Used for dynamic glide cap, so we can use the ramping function on the glide cap
 	float	glide_accel_mult;	//SUSHI: The acceleration multiplier for glide mode. A value < 0 means use glide ramping instead
 	bool use_newtonian_damp;	//SUSHI: Whether or not to use newtonian dampening
 	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
