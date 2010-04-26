@@ -3999,6 +3999,7 @@ void physics_ship_init(object *objp)
 	if ( (pi->max_vel.xyz.x > 0.000001f) || (pi->max_vel.xyz.y > 0.000001f) )
 		pi->flags |= PF_SLIDE_ENABLED;
 
+	pi->cur_glide_cap = pi->max_vel.xyz.z; //Init dynamic glide cap stuff to the max vel.
 	if ( sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f )		//Backslash
 		pi->glide_cap = sinfo->glide_cap;
 	else

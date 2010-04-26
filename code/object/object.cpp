@@ -1927,7 +1927,6 @@ void object_set_gliding(object *objp, bool enable)
 
 	if(enable) {
 		objp->phys_info.flags |= PF_GLIDING;
-		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
 	} else {
 		objp->phys_info.flags &= ~PF_GLIDING;
 		vm_vec_rotate(&objp->phys_info.prev_ramp_vel, &objp->phys_info.vel, &objp->orient);	//Backslash
