@@ -848,6 +848,10 @@ $Chance AI Has to Fire Missiles at Player:	0, 1, 2, 3, 4				\n\
 ;; aim. Applies for small ships vs small ships							\n\
 $Max Aim Update Delay: 0, 0, 0, 0, 0									\n\
 																		\n\
+;; The maximum amount of delay allowed before turret AI will update its	\n\
+;; aim. Applies for turrets vs small ships								\n\
+$Turret Max Aim Update Delay: 0, 0, 0, 0, 0								\n\
+																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
 																		\n\
