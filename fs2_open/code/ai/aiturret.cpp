@@ -1337,7 +1337,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 	{
 
 		// make side even for team vs. team
-		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
+		if (MULTI_TEAM) {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
 				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;

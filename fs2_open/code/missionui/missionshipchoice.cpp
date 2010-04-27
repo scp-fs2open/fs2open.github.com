@@ -3008,7 +3008,7 @@ void ship_select_init_team_data(int team_num)
 	// determine how many wings we should be checking for
 	Wss_num_wings = 0;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		// now setup wings for easy reference		
 		ss_init_wing_info(0,team_num);			
 	} else {			
@@ -3034,7 +3034,7 @@ void ship_select_common_init()
 	// initialize team critical data for all teams
 	int idx;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
+	if(MULTI_TEAM){		
 		// initialize for all teams in the game
 		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){	
 			ship_select_init_team_data(idx);

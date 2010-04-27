@@ -188,7 +188,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 	// multiplayer clients don't use this function to add log entries -- they will get
 	// all their info from the host
-	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
+	if ( MULTIPLAYER_CLIENT ){
 		return;
 	}
 
@@ -362,7 +362,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	entry->timestamp = Missiontime;
 
 	// if in multiplayer and I am the master, send this log entry to everyone
-	if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
+	if ( MULTIPLAYER_MASTER ){
 		send_mission_log_packet( last_entry );
 	}
 

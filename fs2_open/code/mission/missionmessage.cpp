@@ -349,8 +349,8 @@ void message_parse(bool importing_from_fsm)
 			mt = -1;
 		}
 
-		// only bother with filters if multiplayer and TvT
-		if(Fred_running || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
+		// only bother with filters in-game if multiplayer and TvT
+		if(Fred_running || (MULTI_TEAM) ){
 			msg.multi_team = mt;
 		}
 	}

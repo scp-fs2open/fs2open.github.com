@@ -1200,7 +1200,7 @@ void hud_render_multi_ping()
 	}
 	
 	// if we're in multiplayer mode, display our ping time to the server
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
 		char ping_str[50];
 		memset(ping_str,0,50);
 
@@ -2686,7 +2686,7 @@ void hud_add_objective_messsage(int type, int status)
 	Objective_display.goal_status=status;
 
 	// if this is a multiplayer tvt game
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+	if(MULTI_TEAM && (Net_player != NULL)){
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal, Net_player->p_info.team);
 	} else {
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal);

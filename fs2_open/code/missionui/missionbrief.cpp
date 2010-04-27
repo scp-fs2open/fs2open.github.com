@@ -877,7 +877,7 @@ void brief_init()
 	}
 
 	// get a pointer to the appropriate briefing structure
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Briefing = &Briefings[Net_player->p_info.team];
 	} else {
 		Briefing = &Briefings[0];			
