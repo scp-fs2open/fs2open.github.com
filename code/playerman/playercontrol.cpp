@@ -761,7 +761,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->fire_secondary_count++;
 
 			// if we're a multiplayer client, set our accum bits now
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
 				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
 			}
 		}

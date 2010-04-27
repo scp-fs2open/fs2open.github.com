@@ -7503,7 +7503,7 @@ void ship_process_post(object * obj, float frametime)
 		//	Do AI.
 
 		// for multiplayer people.  return here if in multiplay and not the host
-		if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+		if ( MULTIPLAYER_CLIENT ) {
 			model_anim_handle_multiplayer( &Ships[num] );
 			return;
 		}
@@ -13498,7 +13498,7 @@ warn_player_done:
 		int ship_index;
 
 		// multiplayer tvt - this is client side.
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			ship_index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED, 0.0f, -1, 0, Net_player->p_info.team );
 		} else {
 			ship_index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
@@ -13673,7 +13673,7 @@ void ship_maybe_ask_for_help(ship *sp)
 		return;
 
 	// determine team filter if TvT
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+	if(MULTI_TEAM)
 		multi_team_filter = sp->team;
 
 	// handle awacs ship as a special case
@@ -13745,7 +13745,7 @@ void ship_scream(ship *sp)
 		return;
 
 	// multiplayer tvt
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+	if (MULTI_TEAM)
 		multi_team_filter = sp->team;
 
 	// Bail if the ship is silenced
@@ -13872,7 +13872,7 @@ void	ship_maybe_tell_about_low_ammo(ship *sp)
 					if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
 					{
 						// multiplayer tvt
-						if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
+						if(MULTI_TEAM) {
 							multi_team_filter = sp->team;
 						}
 
@@ -13964,7 +13964,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 	int multi_team_filter = -1;
 
 	// multiplayer tvt
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+	if(MULTI_TEAM)
 		multi_team_filter = sp->team;
 
 
@@ -15489,7 +15489,7 @@ int ship_starting_wing_lookup(char *wing_name)
 int ship_squadron_wing_lookup(char *wing_name)
 {
 	// TvT uses a different set of wing names from everything else
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+	if (MULTI_TEAM)
 	{
 		for (int i = 0; i < MAX_TVT_WINGS; i++)
 		{

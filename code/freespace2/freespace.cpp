@@ -3056,7 +3056,7 @@ extern void render_shields();
 
 void player_repair_frame(float frametime)
 {
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if(MULTIPLAYER_MASTER){
 		int idx;
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			net_player *np;
@@ -4202,7 +4202,7 @@ void game_simulation_frame()
 	}
 
 	// blow ships up in multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
+	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
 		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
 		ship *shipp;
@@ -4282,7 +4282,7 @@ void game_simulation_frame()
 	}
 
 	// evaluate mission departures and arrivals before we process all objects.
-	if ( !(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending()) ) {
+	if ( !(Game_mode & GM_MULTIPLAYER) || (MULTIPLAYER_MASTER && !multi_endgame_ending()) ) {
 
 		// we don't want to evaluate mission stuff when any ingame joiner in multiplayer is receiving
 		// ships/wing packets.
@@ -4312,7 +4312,7 @@ void game_simulation_frame()
 	}
 	
 	// do all interpolation now
-	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
+	if ( MULTIPLAYER_CLIENT && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
 		// client side processing of warping in effect stages
 		multi_do_client_warp(flFrametime);     
 	
@@ -4725,7 +4725,7 @@ void game_frame(int paused)
 				}
 				
 				// if we're not the master, we may have to send the server-critical ship status button_info bits
-				if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
+				if (MULTIPLAYER_CLIENT && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
 					multi_maybe_send_ship_status();
 				}
 			}
@@ -6628,15 +6628,14 @@ void mouse_force_pos(int x, int y);
 			}
 	
 			// under certain circumstances, the server should reset the object update rate limiting stuff
-			if( ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) &&
-				 ((old_state == GS_STATE_MULTI_PAUSED) || (old_state == GS_STATE_MULTI_MISSION_SYNC)) ){
+			if( MULTIPLAYER_MASTER && ((old_state == GS_STATE_MULTI_PAUSED) || (old_state == GS_STATE_MULTI_MISSION_SYNC)) ){
 				
 				// reinitialize the rate limiting system for all clients
 				multi_oo_rate_init_all();
 			}
 
 			// multiplayer clients should always re-initialize their control info rate limiting system			
-			if((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if(MULTIPLAYER_CLIENT){
 				multi_oo_rate_init_all();
 			}
 			

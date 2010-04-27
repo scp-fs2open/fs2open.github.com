@@ -787,7 +787,7 @@ void parse_player_info2(mission *pm)
 		for (i=0; i<total; i += 4) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !Campaign.ships_allowed[list[i]] )
 					continue;
 			}
@@ -808,7 +808,7 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ship_info_lookup(str);
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 						if ( Campaign.ships_allowed[ptr->default_ship] ) {
@@ -834,7 +834,7 @@ void parse_player_info2(mission *pm)
 		for (i = 0; i < total; i += 4) {
 			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
 			// pool if they are not allowed
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !Campaign.weapons_allowed[list2[i]] ) {
 					continue;
 				}
@@ -1782,7 +1782,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (p_objp->wingnum >= 0))
+	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0))
 	{
 		for (i = 0; i < MAX_STARTING_WINGS; i++)
 		{
@@ -2497,7 +2497,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
+	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
 		return 0;
 
 	// optional alternate name type
@@ -3801,7 +3801,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
-		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		if (MULTI_TEAM)
 		{
 			// different for tvt -- Goober5000
 			for (j = 0; j < MAX_TVT_WINGS; j++)
@@ -5283,7 +5283,7 @@ void post_process_mission()
 	}
 
 	// when TVT, hack starting wings to be team wings
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
 		for (i=0; i<MAX_STARTING_WINGS; i++)
 		{
@@ -6354,7 +6354,7 @@ void mission_eval_arrivals()
 	// before checking arrivals, check to see if we should play a message concerning arrivals
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
-	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)))
+	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM)
 	{
 		int rship, use_terran_cmd;
 
@@ -6462,7 +6462,7 @@ void mission_eval_arrivals()
 				continue;
 
 			// multiplayer team vs. team
-			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+			if(MULTI_TEAM)
 			{
 				// send a hostile wing arrived message
 				rship = wingp->ship_index[wingp->special_ship];

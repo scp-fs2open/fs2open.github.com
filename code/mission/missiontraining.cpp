@@ -211,7 +211,7 @@ void training_obj_display()
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
-			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+			if(MULTI_TEAM && (Net_player != NULL)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
@@ -373,7 +373,7 @@ void sort_training_objectives()
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
 				continue ;
 			}
@@ -409,7 +409,7 @@ void sort_training_objectives()
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 				continue ;

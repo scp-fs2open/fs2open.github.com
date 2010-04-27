@@ -1758,7 +1758,7 @@ int button_function_critical(int n, net_player *p = NULL)
 	Assert(n >= 0);
    
 	// multiplayer clients should leave critical button bits alone and pass them to the server instead
-	if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+	if (MULTIPLAYER_CLIENT) {
 		// if this flag is set, we should apply the button itself (came from the server)
 		if (!Multi_button_info_ok){
 			return 0;
@@ -1807,7 +1807,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 
 				// multiplayer server should maintain bank/link status here
-				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+				if ( MULTIPLAYER_MASTER ) {
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}
@@ -1828,7 +1828,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 
 				// multiplayer server should maintain bank/link status here
-				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+				if ( MULTIPLAYER_MASTER ) {
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}
@@ -1848,7 +1848,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 
 				// multiplayer server should maintain bank/link status here
-				if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+				if( MULTIPLAYER_MASTER ){
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}					
@@ -1885,7 +1885,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1898,7 +1898,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			increase_recharge_rate(objp, WEAPONS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1911,7 +1911,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			decrease_recharge_rate(objp, WEAPONS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1924,7 +1924,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			increase_recharge_rate(objp, SHIELDS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1937,7 +1937,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			decrease_recharge_rate(objp, SHIELDS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1950,7 +1950,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			increase_recharge_rate(objp, ENGINES);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1963,7 +1963,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			decrease_recharge_rate(objp, ENGINES);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1979,7 +1979,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			snd_play( &Snds[SND_ENERGY_TRANS] );
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}

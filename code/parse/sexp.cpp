@@ -7813,7 +7813,7 @@ void sexp_ingame_ship_change_iff(ship *shipp, int new_team)
 	shipp->team = new_team;
 
 	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (shipp->objnum >= 0))
+	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (shipp->objnum >= 0))
 		send_change_iff_packet(Objects[shipp->objnum].net_signature, new_team);
 }
 
@@ -7883,7 +7883,7 @@ void sexp_ingame_ship_change_iff_color(ship *shipp, int observer_team, int obser
 	shipp->ship_iff_color[observer_team][observed_team] = alternate_iff_color;
 
 	// Like the rest of the change_iff_color functions copied with minor alterations from earlier change_iff functions.
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (shipp->objnum >= 0))
+	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (shipp->objnum >= 0))
 		send_change_iff_color_packet(Objects[shipp->objnum].net_signature, observer_team, observed_team, alternate_iff_color);
 }
 
@@ -8139,7 +8139,7 @@ void sexp_change_ai_class(int n)
 			ship_subsystem_set_new_ai_class(ship_num, CTEXT(n), new_ai_class);
 
 			// send a network packet if we need to
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
+			if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Ships[ship_num].objnum >= 0))
 			{
 				send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, CTEXT(n), new_ai_class);
 			}
@@ -8151,7 +8151,7 @@ void sexp_change_ai_class(int n)
 		ship_set_new_ai_class(ship_num, new_ai_class);
 
 		// send a network packet if we need to
-		if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
+		if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Ships[ship_num].objnum >= 0))
 		{
 			send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, NULL, new_ai_class);
 		}
@@ -15232,7 +15232,7 @@ int sexp_return_player_data(int node, int type)
 
 			case OP_RESPAWNS_LEFT:
 				// Dogfight missions have no respawn limit
-				if ((Game_mode & GM_MULTIPLAYER) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
+				if (MULTI_NOT_DOGFIGHT) {
 					if ( Net_players[np_index].flags & NETINFO_FLAG_RESPAWNING) {						
 						// since the player hasn't actually respawned yet he hasn't used up a number or spawns equal to his deaths
 						// so add an extra life back. 
