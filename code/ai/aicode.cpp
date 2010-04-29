@@ -8628,7 +8628,7 @@ void ai_chase()
 			aip->ai_flags &= ~AIF_ATTACK_SLOWLY;	//	Just in case, clear here.
 
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
-				? (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
+				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
 				: aip->ai_get_away_chance;
 
 			switch (myrand() % 5) {
@@ -8869,7 +8869,7 @@ void ai_chase()
 									else
 									{
 										float secondary_range_mult = (aip->ai_secondary_range_mult == FLT_MIN)
-											? (Game_skill_level + 1 + (3 * aip->ai_class/(Num_ai_classes - 1)))/NUM_SKILL_LEVELS
+											? (float)(Game_skill_level + 1 + (3 * aip->ai_class/(Num_ai_classes - 1)))/NUM_SKILL_LEVELS
 											: aip->ai_secondary_range_mult;
 
 										firing_range = MIN((swip->max_speed * swip->lifetime * secondary_range_mult), swip->weapon_range);
@@ -12153,7 +12153,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			//	For ships on player's team, have constant, average chance to fire.
 			//	For enemies, increasing chance with higher skill level.
 			if (shipp->team == Player_ship->team)
-				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2] * Ai_classes[aip->ai_class].ai_cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
+				fire_chance = Ai_classes[aip->ai_class].ai_cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
 			else
 				fire_chance = aip->ai_cmeasure_fire_chance;
 
@@ -12371,7 +12371,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		} 
 		else 
 		{
-			delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2] * Ai_classes[aip->ai_class].ai_shield_manage_delay[NUM_SKILL_LEVELS/2];
+			delay = Ai_classes[aip->ai_class].ai_shield_manage_delay[NUM_SKILL_LEVELS/2];
 		}
 
 		//	Scale between 1x and 3x based on ai_class (SUSHI: only if autoscale is on)
