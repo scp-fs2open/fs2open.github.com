@@ -1788,7 +1788,10 @@ void hud_show_damage_popup()
 			n_firstline++;
 			gr_string(sx, sy, n_firstline);
 		} else {
-			gr_string(sx, sy, hud_targetbox_truncate_subsys_name(hud_subsys_list[best_index].name));
+			char temp_name[NAME_LENGTH];
+			strcpy(temp_name, hud_subsys_list[best_index].name);
+			hud_targetbox_truncate_subsys_name(temp_name);
+			gr_string(sx, sy, temp_name);
 		}
 
 		sprintf(buf, XSTR( "%d%%", 219), best_str);
