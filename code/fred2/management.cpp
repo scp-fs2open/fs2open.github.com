@@ -2521,7 +2521,7 @@ void generate_weaponry_usage_list(int *arr, int wing)
 		j = swp->num_secondary_banks;
 		while (j--) {
 			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < MAX_WEAPON_TYPES) {
-				arr[swp->secondary_bank_weapons[j]] += int(ceil(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100 / (Weapon_info[swp->secondary_bank_weapons[j]].cargo_size)));
+				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
 			}
 		}
 	}
