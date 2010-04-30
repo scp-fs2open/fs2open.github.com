@@ -72,7 +72,7 @@ void hud_render_target_weapon(object *target_objp);
 void hud_update_cargo_scan_sound();
 void hud_cargo_scan_update(object *targetp, float frametime);
 
-char *hud_targetbox_truncate_subsys_name(char *outstr);
+void hud_targetbox_truncate_subsys_name(char *outstr);
 
 //swich through the valid targetbox modes
 void hud_targetbox_switch_wireframe_mode();
