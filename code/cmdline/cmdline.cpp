@@ -386,6 +386,7 @@ cmdline_parm dis_collisions("-dis_collisions", NULL);	// Cmdline_dis_collisions
 cmdline_parm dis_weapons("-dis_weapons", NULL);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 cmdline_parm nowarn_arg("-no_warn", NULL);			// Cmdline_nowarn
+cmdline_parm extra_warn_arg("-extra_warn", NULL);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL);					// Cmdline_show_fps
 cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL);	// Cmdline_show_mem_usage
 cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
@@ -406,6 +407,7 @@ int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 int Cmdline_noparseerrors = 0;
 int Cmdline_nowarn = 0; // turn warnings off in FRED
+int Cmdline_extra_warn = 0;
 int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
@@ -909,6 +911,11 @@ bool SetCmdlineParams()
 	{
 		Cmdline_FRED2_htl = 1;
 	}*/
+
+	if (extra_warn_arg.found())
+	{
+		Cmdline_extra_warn = 1;
+	}
 
 	if (timerbar_arg.found()) {
 		Cmdline_timerbar = 1;

@@ -134,6 +134,7 @@ extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_nowarn;
+extern int Cmdline_extra_warn;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;

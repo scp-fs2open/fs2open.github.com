@@ -711,6 +711,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 		if (index >= 0)
 			The_mission.ai_profile = &Ai_profiles[index];
+		else
+			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
 
 	Assert( The_mission.ai_profile != NULL );
@@ -806,6 +808,9 @@ void parse_player_info2(mission *pm)
 		if (optional_string("+Default_ship:")) {
 			stuff_string(str, F_NAME, NAME_LENGTH);
 			ptr->default_ship = ship_info_lookup(str);
+			if (-1 == ptr->default_ship) {
+				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
@@ -2509,9 +2514,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		// try and find the alternate name
 		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
-		Assert(p_objp->alt_type_index >= 0);
 		if(p_objp->alt_type_index < 0)
-			mprintf(("Error looking up alternate ship type name!\n"));
+			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name, name);
 		else
 			mprintf(("Using alternate ship type name: %s\n", name));
 	}
@@ -2525,9 +2529,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		// try and find the callsign
 		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
-		Assert(p_objp->callsign_index >= 0);
 		if(p_objp->callsign_index < 0)
-			mprintf(("Error looking up callsign!\n"));
+			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name, name);
 		else
 			mprintf(("Using callsign: %s\n", name));
 	}
@@ -3207,9 +3210,15 @@ void parse_common_object_data(p_object	*objp)
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
 			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", 0);
-			if (index == -1 && (Num_cargo < MAX_CARGO)) {
-				index = Num_cargo;
-				strcpy(Cargo_names[Num_cargo++], cargo_name);
+			if (index == -1) {
+				if (Num_cargo < MAX_CARGO) {
+					index = Num_cargo;
+					strcpy(Cargo_names[Num_cargo++], cargo_name);
+				}
+				else {
+					WarningEx(LOCATION, "Maximum number of cargo names (%d) exceeded, defaulting to Nothing!", MAX_CARGO);
+					index = 0;
+				}
 			}
 			Subsys_status[i].subsys_cargo_name = index;
 		}
@@ -4901,6 +4910,9 @@ void parse_bitmaps(mission *pm)
 				}
 			}
 
+			if (z == NUM_NEBULAS)
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula %s!", pm->name, str);
+
 			if (optional_string("+Color:")) {
 				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
 				for (z=0; z<NUM_NEBULA_COLORS; z++){
@@ -4910,6 +4922,9 @@ void parse_bitmaps(mission *pm)
 					}
 				}
 			}
+
+			if (z == NUM_NEBULA_COLORS)
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name, str);
 
 			if (optional_string("+Pitch:")){
 				stuff_int(&Nebula_pitch);
