@@ -3162,6 +3162,9 @@ void parse_common_object_data(p_object	*objp)
 {
 	int i;
 
+	// Genghis: used later for subsystem checking
+	ship_info* sip = &Ship_info[objp->ship_class];
+
 	// set some defaults..
 	objp->initial_velocity = 0;
 	objp->initial_hull = 100;
@@ -3185,6 +3188,17 @@ void parse_common_object_data(p_object	*objp)
 		objp->subsys_count++;
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
+		// Genghis: check that the subsystem name makes sense for this ship type
+		if (stricmp("Pilot", Subsys_status[i].name))
+		{
+			int j;
+			for (j=0; j < sip->n_subsystems; ++j)
+				if (!stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
+					break;
+			if (j == sip->n_subsystems)
+				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
+		}
+
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
