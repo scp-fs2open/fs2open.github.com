@@ -2804,6 +2804,9 @@ strcpy_s(parse_error_text, temp_error);
 				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				// get and set index
 				sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
+
+				if(sp->engine_wash_pointer == NULL)
+					Warning(LOCATION,"Invalid engine wash name %s specified for subsystem %s in ship class %s", name_tmp, sp->subobj_name, sip->name);
 			}
 
 			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
