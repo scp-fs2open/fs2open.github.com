@@ -391,6 +391,7 @@ hud_info* parse_ship_start()
 
 	if(ship_index == -1)
 	{
+		WarningEx(LOCATION, "\"$Ship:\" name \"%s\" not found.", shipname);
 		return NULL;
 	}
 
@@ -491,6 +492,9 @@ void parse_custom_gauge()
 		{
 			stuff_string(buffer, F_NAME, NAME_LENGTH);
 			cg->parent = hud_get_gauge(buffer);
+			if (cg->parent == NULL) {
+				WarningEx(LOCATION, "\"+Parent:\" HUD gauge \"%s\" not found!", buffer);
+			}
 		}
 
 		Num_gauge_types++;

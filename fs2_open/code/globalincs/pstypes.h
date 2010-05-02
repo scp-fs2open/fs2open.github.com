@@ -180,6 +180,7 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
 extern void _cdecl Error( const char * filename, int line, const char * format, ... );
 extern void _cdecl Warning( char * filename, int line, const char * format, ... );
+extern void _cdecl WarningEx( char *filename, int line, const char *format, ... );
 
 extern int Global_warning_count;
 extern int Global_error_count;
