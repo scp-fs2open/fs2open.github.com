@@ -259,7 +259,9 @@ sexp_oper Operators[] = {
 	{ "number-of",					OP_NUMBER_OF,				2, INT_MAX, },	// Goober5000
 	{ "in-sequence",				OP_IN_SEQUENCE,				1, INT_MAX, },	// Karajorma
 	{ "invalidate-argument",		OP_INVALIDATE_ARGUMENT,		1, INT_MAX, },	// Goober5000
+	{ "invalidate-all-arguments",	OP_INVALIDATE_ALL_ARGUMENTS,	0, 0, },	// Karajorma
 	{ "validate-argument",			OP_VALIDATE_ARGUMENT,		1, INT_MAX, },	// Karajorma
+	{ "validate-all-arguments",		OP_VALIDATE_ALL_ARGUMENTS,		0, 0, },	// Karajorma
 	{ "do-for-valid-arguments",		OP_DO_FOR_VALID_ARGUMENTS,	1, INT_MAX, },	// Karajorma
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
@@ -703,6 +705,8 @@ SCP_vector<char*> Applicable_arguments_temp;
 arg_item Sexp_applicable_argument_list;
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
+
+int get_handler_for_x_of_operator(int node);
 
 //Karajorma
 int get_generic_subsys(char *subsy_name);
@@ -7638,25 +7642,39 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	return val;
 }
 
+void sexp_change_all_argument_validity(int n, bool invalidate)
+{
+	int arg_handler, arg_n;
+	bool toggled;
+
+	arg_handler = get_handler_for_x_of_operator(n);
+		
+	while (n != -1)
+	{
+		arg_n = CDR(arg_handler);
+		while (arg_n != -1) {
+			if (invalidate) {
+				Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+			}
+			else {
+				Sexp_nodes[arg_n].flags |= SNF_ARGUMENT_VALID;
+			}
+			// iterate
+			arg_n = CDR(arg_n);
+		}
+		
+		// iterate
+		n = CDR(n);
+	}
+}
+
 // Goober5000
 void sexp_change_argument_validity(int n, bool invalidate)
 {
-	int conditional, arg_handler, arg_n;
+	int arg_handler, arg_n;
 	bool toggled;
 
-	conditional = n; 
-	do {
-		// find the conditional sexp
-		conditional = find_parent_operator(conditional);
-		if (conditional == -1)
-			return;
-	}
-	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
-
-	// get the first op of the parent, which should be a *_of operator
-	arg_handler = CADR(conditional);
-	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
-		return;
+	arg_handler = get_handler_for_x_of_operator(n);
 
 	// loop through arguments
 	while (n != -1)
@@ -7716,6 +7734,34 @@ void sexp_change_argument_validity(int n, bool invalidate)
 		// iterate
 		n = CDR(n);
 	}
+}
+
+int get_handler_for_x_of_operator(int n)
+{
+	int conditional, arg_handler;
+
+	if (n < 0) {
+		return -1;
+	}
+
+	conditional = n; 
+	do {
+		// find the conditional sexp
+		conditional = find_parent_operator(conditional);
+		if (conditional == -1) {
+			return -1;
+		}
+	}
+	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
+
+	// get the first op of the parent, which should be a *_of operator
+	arg_handler = CADR(conditional);
+	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
+		return -1;
+	}
+
+	return arg_handler;
+
 }
 
 // Goober5000
@@ -17182,6 +17228,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_in_sequence( cur_node, referenced_node );
 				break;
 
+			// Karajorma
+			case OP_INVALIDATE_ALL_ARGUMENTS:
+			case OP_VALIDATE_ALL_ARGUMENTS:
+				sexp_change_all_argument_validity(cur_node, (op_num == OP_INVALIDATE_ALL_ARGUMENTS));
+				sexp_val = SEXP_TRUE;
+			break;
+
 			// Goober5000
 			case OP_INVALIDATE_ARGUMENT:
 			case OP_VALIDATE_ARGUMENT:
@@ -18922,6 +18975,8 @@ int query_operator_return_type(int op)
 		case OP_EVERY_TIME_ARGUMENT:
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
+		case OP_INVALIDATE_ALL_ARGUMENTS:
+		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_DO_FOR_VALID_ARGUMENTS:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
@@ -19241,6 +19296,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_RESET_ORDERS:
+		case OP_INVALIDATE_ALL_ARGUMENTS:
+		case OP_VALIDATE_ALL_ARGUMENTS:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -22776,6 +22833,17 @@ sexp_help_struct Sexp_help[] = {
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to restore to the preceding argument list." },
+
+	// Karajorma
+	{ OP_INVALIDATE_ALL_ARGUMENTS, "Invalidate-all-arguments (Conditional operator)\r\n"
+		"\tRemoves all argument from future consideration as " SEXP_ARGUMENT_STRING " special data items.\r\n"
+		"Takes no arguments." },
+
+	// Karajorma
+	{ OP_VALIDATE_ALL_ARGUMENTS, "Validate-all-arguments (Conditional operator)\r\n"
+		"\tRestores all arguments for future consideration as " SEXP_ARGUMENT_STRING " special data items.\r\n"
+		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
+		"Takes no arguments." },
 
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"

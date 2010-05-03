@@ -348,6 +348,8 @@ struct ship;
 #define OP_IN_SEQUENCE						(0x000a | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ARGUMENT				(0x000b | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_DO_FOR_VALID_ARGUMENTS			(0x000c | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
 
 
 // sexpressions with side-effects
