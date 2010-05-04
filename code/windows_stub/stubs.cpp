@@ -145,6 +145,19 @@ void WinAssert(char * text, char *filename, int line, const char * format, ... )
 	abort();
 }
 
+void WarningEx( char *filename, int line, const char *format, ... )
+{
+#ifndef NDEBUG
+	if (Cmdline_extra_warn) {
+		char msg[sizeof(AssertText1)];
+		va_list args;
+		va_start(args, format);
+		vsprintf(msg, format, args);
+		va_end(args);
+		Warning(filename, line, msg);
+	}
+#endif
+}
 
 // standard warning message
 void Warning( char * filename, int line, const char * format, ... )
