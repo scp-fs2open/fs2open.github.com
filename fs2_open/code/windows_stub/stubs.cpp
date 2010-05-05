@@ -149,7 +149,7 @@ void WarningEx( char *filename, int line, const char *format, ... )
 {
 #ifndef NDEBUG
 	if (Cmdline_extra_warn) {
-		char msg[sizeof(AssertText1)];
+		char msg[2 * MAX_BUF_SIZE];
 		va_list args;
 		va_start(args, format);
 		vsprintf(msg, format, args);
