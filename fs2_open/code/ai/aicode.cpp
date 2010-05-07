@@ -78,7 +78,7 @@
 
 #define NEXT_REARM_TIMESTAMP (60*1000)			//	Ships will re-request rearm, typically, after this long.
 
-#define CIRCLE_STRAFE_DIST 250.0f	//Maximum distance for circle strafe behavior.
+#define CIRCLE_STRAFE_MAX_DIST 300.0f	//Maximum distance for circle strafe behavior.
 
 // AIM_CHASE submode defines
 // SM_STEALTH_FIND
@@ -6671,9 +6671,28 @@ int ai_near_full_strength(object *objp)
 {	
 	return (get_hull_pct(objp) > 0.9f) || (get_shield_pct(objp) > 0.8f);
 }
+
+void do_random_sidethrust(ai_info *aip, ship_info *sip)
+{
+	//Sidethrust vector is initially based on the velocity vector representing the ship's current sideways motion.
+	vec2d side_vec;
+	//Length to hold circle strafe is random (1-3) + slide accel time, changes every 4 seconds
+	int strafeHoldDirAmount = (int)(sip->slide_accel) + static_rand_range((Missiontime + static_rand(aip->shipnum)) >> 18, 1, 3);
+	//Get a random float using some of the more significant chunks of the missiontime as a seed (>>16 means it changes every second)
+	//This means that we get the same random values for a little bit.
+	//Using static_rand(shipnum) as a crude hash function to make sure that the seed is different for each ship and direction
+	//The *2 ensures that y and x stay separate.
+	side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
+	side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
+	//Scale it up so that the longest dimension is length 1.0. This ensures we are always getting as much use out of sidethrust as possible.
+	vm_vec_boxscale(&side_vec, 1.0f);
+
+	AI_ci.sideways = side_vec.x;
+	AI_ci.vertical = side_vec.y;
+}
 				
 //	Set acceleration while in attack mode.
-void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, float dot_from_enemy)
+void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float dot_to_enemy, float dot_from_enemy)
 {
 	float	speed_ratio;
 
@@ -6705,23 +6724,17 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 	//Circle Strafe: We try to maintain a constant distance from the target while using sidethrust to move in a circle
 	//around the target
 	if (aip->submode == AIS_CHASE_CIRCLESTRAFE) {
-		accelerate_ship(aip, 0.0f); //Just maintain current distance
+		//If glide is available, use it (smooths things out a bit)
+		if (sip->can_glide == true)
+			Pl_objp->phys_info.flags |= PF_GLIDING;
 
-		//Sidethrust vector is initially based on the velocity vector representing the ship's current sideways motion.
-		vec2d side_vec;
-		//NOTE: Leaving this hardcoded for now, but it might be good to make it configurable at some point. 
-		int strafeHoldDirAmount = 3;
-		//Get a random float using some of the more significant chunks of the missiontime as a seed (>>16 means it changes every second)
-		//This means that we get the same random values for a little bit.
-		//Using static_rand(shipnum) as a crude hash function to make sure that the seed is different for each ship and direction
-		//The *2 ensures that y and x stay separate.
-		side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
-		side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
-		//Scale it up so that the longest dimension is length 1.0. This ensures we are always getting as much use out of sidethrust as possible.
-		vm_vec_boxscale(&side_vec, 1.0f);
+		//Just maintain current distance, unless we are too close: then back off
+		if (dist_to_enemy <= (CIRCLE_STRAFE_MAX_DIST / 2))
+			accelerate_ship(aip, -1.0f); 
+		else
+			accelerate_ship(aip, 0.0f); 
 
-		AI_ci.sideways = side_vec.x;
-		AI_ci.vertical = side_vec.y;
+		do_random_sidethrust(aip, sip);
 		return;
 	}
 
@@ -7127,7 +7140,7 @@ void ai_stealth_find()
 
 	dot_from_enemy = -vm_vec_dotprod(&vec_to_enemy, &En_objp->orient.vec.fvec);
 
-	attack_set_accel(aip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
+	attack_set_accel(aip, sip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
 }
 
 // -----------------------------------------------------------------------------
@@ -7312,7 +7325,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 		ai_turn_towards_vector(&new_pos, Pl_objp, flFrametime, sip->srotation_time, NULL, rel_pos, bank_override, 0);
 	}
 
-	attack_set_accel(aip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
+	attack_set_accel(aip, sip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
 }
 
 //	EVADE_SQUIGGLE submode handler for chase mode.
@@ -8501,8 +8514,9 @@ void ai_chase()
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
-		} else if (dist_to_enemy < CIRCLE_STRAFE_DIST + En_objp->radius &&
-			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
+		} else if (dist_to_enemy < CIRCLE_STRAFE_MAX_DIST + En_objp->radius &&
+			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y)) &&
+			(dot_to_enemy > 0.33) &&
 			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_circle_strafe_percent)) {
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
@@ -8616,8 +8630,9 @@ void ai_chase()
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
-		} else if (dist_to_enemy < CIRCLE_STRAFE_DIST + En_objp->radius &&
-			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
+		} else if (dist_to_enemy < CIRCLE_STRAFE_MAX_DIST + En_objp->radius &&
+			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y)) &&
+			(dot_to_enemy > 0.33) &&
 			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_circle_strafe_percent)) {
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
@@ -8768,7 +8783,10 @@ void ai_chase()
 		break;
 
 	case AIS_CHASE_CIRCLESTRAFE:
-		if ((dist_to_enemy > CIRCLE_STRAFE_DIST + En_objp->radius) || (Missiontime - aip->submode_start_time > i2f(4))) {
+		//Break out of circle strafe if the target is too far, moving too fast, or we've been doing this for a while
+		if ((dist_to_enemy > CIRCLE_STRAFE_MAX_DIST + En_objp->radius) || 
+			(Missiontime - aip->submode_start_time > i2f(8)) || 
+			(En_objp->phys_info.speed > MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5)) {
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;
