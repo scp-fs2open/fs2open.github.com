@@ -27,7 +27,6 @@ typedef struct cutscene_info
 } cutscene_info;
 
 extern SCP_vector<cutscene_info> Cutscenes;
-extern size_t Num_cutscenes;
 extern int Cutscenes_viewable;
 
 // initializa table data
