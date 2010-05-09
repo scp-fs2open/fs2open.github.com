@@ -3941,8 +3941,7 @@ void game_render_frame( camid cid )
 
 	bool draw_viewer_last = false;
 	obj_render_all(obj_render, &draw_viewer_last);
-
-	//mflash_render_all();						// render all muzzle flashes	
+	
 	//	Why do we not show the shield effect in these modes?  Seems ok.
 	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
 	render_shields();
@@ -4351,9 +4350,6 @@ void game_simulation_frame()
 
 			// Move missile trails
 			trail_move_all(flFrametime);		
-
-			// process muzzle flashes
-			mflash_process_all();
 
 			// Flash the gun flashes
 			shipfx_flash_do_frame(flFrametime);			
