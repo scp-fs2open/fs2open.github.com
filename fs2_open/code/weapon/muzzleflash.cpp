@@ -81,25 +81,6 @@ typedef struct mflash_info {
 SCP_vector<mflash_info> Mflash_info;
 
 
-//#define MAX_MFLASH				50
-
-// Stuff for missile trails doesn't need to be saved or restored... or does it?
-/*
-typedef struct mflash {	
-	struct	mflash * prev;
-	struct	mflash * next;
-
-	ubyte		type;																			// muzzle flash type
-	int		blobs[MAX_MFLASH_BLOBS];												// blobs
-} mflash;
-
-int Num_mflash = 0;
-mflash Mflash[MAX_MFLASH];
-
-mflash Mflash_free_list;
-mflash Mflash_used_list;
-*/
-
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH FUNCTIONS
 // 
@@ -215,18 +196,6 @@ void mflash_level_init()
 {
 	uint i, idx;
 
-	/*
-	Num_mflash = 0;
-	list_init( &Mflash_free_list );
-	list_init( &Mflash_used_list );
-
-	// Link all object slots into the free list
-	for (i=0; i<MAX_MFLASH; i++)	{
-		memset(&Mflash[i], 0, sizeof(mflash));
-		list_append(&Mflash_free_list, &Mflash[i] );
-	}
-	*/
-
 	// reset all anim usage for this level
 	for ( i = 0; i < Mflash_info.size(); i++) {
 		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
@@ -271,28 +240,6 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	if ( (mflash_type < 0) || (mflash_type >= (int)Mflash_info.size()) )
 		return;
 
-	/*
-	if (Num_mflash >= MAX_MFLASH ) {
-		#ifndef NDEBUG
-		mprintf(("Muzzle flash creation failed - too many trails!\n" ));
-		#endif
-		return;
-	}
-
-	// Find next available trail
-	mflashp = GET_FIRST(&Mflash_free_list);
-	Assert( mflashp != &Mflash_free_list );		// shouldn't have the dummy element
-
-	// remove trailp from the free list
-	list_remove( &Mflash_free_list, mflashp );
-	
-	// insert trailp onto the end of used list
-	list_append( &Mflash_used_list, mflashp );
-
-	// store some stuff
-	mflashp->type = (ubyte)mflash_type;	
-	*/
-
 	// create the actual animations	
 	mi = &Mflash_info[mflash_type];
 
@@ -335,47 +282,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 			p.attached_sig = 0;
 			particle_create(&p);
 		}
-	}
-
-	// increment counter
-	// Num_mflash++;		
-}
-
-// process muzzle flash stuff
-void mflash_process_all()
-{
-	/*
-	mflash *mflashp;
-
-	// if the timestamp has elapsed recycle it
-	mflashp = GET_FIRST(&Mflash_used_list);
-
-	while ( mflashp!=END_OF_LIST(&Mflash_used_list) )	{			
-		if((mflashp->stamp == -1) || timestamp_elapsed(mflashp->stamp)){
-			// delete it from the list!
-			mflash *next_one = GET_NEXT(mflashp);
-
-			// remove objp from the used list
-			list_remove( &Mflash_used_list, mflashp );
-
-			// add objp to the end of the free
-			list_append( &Mflash_free_list, mflashp );
-
-			// decrement counter
-			Num_mflash--;
-
-			Assert(Num_mflash >= 0);
-			
-			mflashp = next_one;			
-		} else {	
-			mflashp = GET_NEXT(mflashp);
-		}
-	}
-	*/
-}
-
-void mflash_render_all()
-{
+	}		
 }
 
 // lookup type by name
