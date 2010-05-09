@@ -37,26 +37,9 @@
 #define SWARM_USED						(1<<0)
 #define SWARM_POSITIVE_PATH			(1<<1)
 
-typedef struct swarm_info {
-	int		flags;
-	int		change_timestamp;
-	vec3d	original_target;
-	vec3d	new_target;
-	vec3d	circle_rvec, circle_uvec;
-	vec3d	last_offset;
-	uint		change_count;		
-	int		path_num;			// which path swarm missile is currently following
-	int		homing_objnum;		// object number that swarm missile is homing on, -1 if not homing
-	int		change_time;		// when swarm missile should next update direction, based on missile speed
-	float		angle_offset;
-	float		last_dist;			// last distance to target
-} swarm_info;
 
-
-#define MAX_SWARM_MISSILES	100
 swarm_info	Swarm_missiles[MAX_SWARM_MISSILES];
 
-#define MAX_TURRET_SWARM_INFO	100
 turret_swarm_info Turret_swarm_info[MAX_TURRET_SWARM_INFO];
 
 int Turret_swarm_validity_next_check_time;
