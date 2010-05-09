@@ -5090,7 +5090,15 @@ void spawn_child_weapons(object *objp)
 			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
 			if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
 			{
-				weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+				//Deal with swarm weapons
+				if (wp->swarm_index >= 0) {
+					swarm_info	*swarmp;
+					swarmp = &Swarm_missiles[wp->swarm_index];
+
+					weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
+				} else {
+					weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+				}
 			}
 
     		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
