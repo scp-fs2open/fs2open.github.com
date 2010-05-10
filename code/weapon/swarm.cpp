@@ -249,7 +249,7 @@ void swarm_update_direction(object *objp, float frametime)
 		swarmp->change_timestamp = timestamp(swarmp->change_time);
 
 		// check if swarm missile is homing, if so need to calculate a new target pos to turn towards
-		if ( hobjp != &obj_used_list && f2fl(Missiontime - wp->creation_time) > 0.5f ) {
+		if ( hobjp != &obj_used_list && f2fl(Missiontime - wp->creation_time) > 0.5f && ( f2fl(Missiontime - wp->creation_time) > wip->free_flight_time ) ) {
 			swarmp->original_target = wp->homing_pos;
 
 			// Calculate a rvec and uvec that will determine the displacement from the
