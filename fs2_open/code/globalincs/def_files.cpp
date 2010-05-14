@@ -973,6 +973,10 @@ $allow vertical dodge:	NO												\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\
 $fix AI class bug:	NO													\n\
 																		\n\
+;; If set, the AI will NOT make extra effort to avoid ramming the player\n\
+;; during dogfights. This results in more aggressive AI.				\n\
+$No extra collision avoidance vs player:	NO							\n\
+																		\n\
 #End																	\n\
 ";
 
