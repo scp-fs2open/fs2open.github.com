@@ -52,6 +52,7 @@
 
 // flags2
 #define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
+#define AIPF2_NO_SPECIAL_PLAYER_AVOID									(1 << 1)
 
 #define MAX_AI_PROFILES	5
 
