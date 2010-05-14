@@ -6728,9 +6728,11 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 		if (sip->can_glide == true)
 			Pl_objp->phys_info.flags |= PF_GLIDING;
 
-		//Just maintain current distance, unless we are too close: then back off
-		if (dist_to_enemy <= (CIRCLE_STRAFE_MAX_DIST / 2))
+		//Try to maintain a distance between 50% and 75% of maximum circle strafe distance
+		if (dist_to_enemy <= CIRCLE_STRAFE_MAX_DIST * .5)
 			accelerate_ship(aip, -1.0f); 
+		else if (dist_to_enemy >= CIRCLE_STRAFE_MAX_DIST * 0.75)
+			accelerate_ship(aip, 1.0f); 
 		else
 			accelerate_ship(aip, 0.0f); 
 
