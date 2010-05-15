@@ -2791,11 +2791,13 @@ float submodel_get_radius( int modelnum, int submodelnum )
 
 polymodel * model_get(int model_num)
 {
-	Assert( model_num > -1 );
+	Assert( model_num >= 0 );
+	if ( model_num < 0 )
+		return NULL;
 
 	int num = model_num % MAX_POLYGON_MODELS;
 	
-	Assert( num > -1 );
+	Assert( num >= 0 );
 	Assert( num < MAX_POLYGON_MODELS );
 	Assert( Polygon_models[num] );
 	Assert( Polygon_models[num]->id == model_num );
