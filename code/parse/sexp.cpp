@@ -7645,7 +7645,6 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
-	bool toggled;
 
 	arg_handler = get_handler_for_x_of_operator(n);
 		

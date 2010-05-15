@@ -790,7 +790,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					int points = pm->missile_banks[i].num_slots;
 					int missles_left = shipp->weapons.secondary_bank_ammo[i];
 					int next_point = shipp->weapons.secondary_next_slot[i];
-					float fire_wait = Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
+					float fire_wait = Weapon_info[shipp->weapons.secondary_bank_weapons[i]].fire_wait;
 					float reload_time = (fire_wait == 0.0f) ? 1.0f : 1.0f / fire_wait;
 
 					//ok so...we want to move up missles but only if there is a missle there to be moved up
