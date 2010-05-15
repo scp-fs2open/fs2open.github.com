@@ -4530,13 +4530,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 			shipp->secondary_point_reload_pct[i][k] = 1.0f;
 		}
 	}
-	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
-		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
-			shipp->reload_time[i] = 1.0f;
-		}else{
-			shipp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
-		}
-	}
 	for(i = 0; i<MAX_SHIP_PRIMARY_BANKS; i++){
 		shipp->primary_rotate_rate[i] = 0.0f;
 		shipp->primary_rotate_ang[i] = 0.0f;
@@ -8353,7 +8346,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
-	model_anim_set_initial_states(sp);
 
 	//======================================================
 
@@ -8409,11 +8401,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		swp->current_secondary_bank = 0;
 	}
 
-/*
-	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
-	code.  It should be (and probably is) handled elsewhere, like ship_set or ship_create or something.  Contact
-	me if you want to discuss this.
-
+	// Bobboau's animation fixup
 	ship_weapon	*swp;
 	swp = &sp->weapons;
 	int i;
@@ -8425,15 +8413,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = false;
 	}
 	model_anim_set_initial_states(sp);
-
-	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
-		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
-			sp->reload_time[i] = 1.0f;
-		}else{
-			sp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
-		}
-	}
-*/
 }
 
 #ifndef NDEBUG

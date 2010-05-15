@@ -677,7 +677,6 @@ typedef struct ship {
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
-	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
