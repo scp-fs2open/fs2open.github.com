@@ -1258,7 +1258,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if (valid)
 			strcpy_s(sip->pof_file_hud, temp);
 		else
-			WarningEx(LOCATION, "Ship %s\POF target file \"%s\" invalid!", sip->name, temp);
+			WarningEx(LOCATION, "Ship \"%s\" POF target file \"%s\" invalid!", sip->name, temp);
 	}
 
 	// optional hud target LOD if not using special hud model
@@ -8182,6 +8182,7 @@ void ship_model_change(int n, int ship_type)
 //
 void change_ship_type(int n, int ship_type, int by_sexp)
 {
+	int i;
 	ship_info	*sip;
 	ship_info	*sip_orig;
 	ship			*sp;
@@ -8402,10 +8403,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	}
 
 	// Bobboau's animation fixup
-	ship_weapon	*swp;
-	swp = &sp->weapons;
-	int i;
-
 	for( i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
 			swp->primary_animation_position[i] = false;
 	}
