@@ -855,7 +855,7 @@ void message_training_queue(char *text, int timestamp, int length)
 
 // Goober5000 - removes current message from the queue
 void message_training_remove_from_queue(int idx)
-{
+{	
 	Training_message_queue[idx].length = -1;
 	Training_message_queue[idx].num = -1;
 	Training_message_queue[idx].timestamp = -1;
@@ -866,30 +866,8 @@ void message_training_remove_from_queue(int idx)
 		Training_message_queue[idx].special_message = NULL;
 	}
 
-	Assert( Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX );
-	for (int j=idx+1; j<=Training_message_queue_count; j++) {
-		if ( j < TRAINING_MESSAGE_QUEUE_MAX ) {
-			// move all higher messages down one index
-			Training_message_queue[j - 1] = Training_message_queue[j];
-		} else if ( j == TRAINING_MESSAGE_QUEUE_MAX ) {
-			/* We are supposed to slide down the message in the last index, but
-			because it is the last index, we just need to "copy" from invalid. */
-			Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX - 1].length = -1;
-			Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX - 1].num = -1;
-			Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX - 1].timestamp = -1;
-			// Not a memory leak because we have already moved the pointer down,
-			// so it gets deleted later when expires.
-			Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX - 1].special_message = NULL;
-		} else {
-			// Somthing has majorly messed up.
-			mprintf(("message_training_remove_from_queue(int idx=%d) {\n"
-				"j = %d; Training_message_queue_count = %d; "
-				"TRAINING_MESSAGE_QUEUE_MAX = %d\n",
-				idx, j, Training_message_queue_count,
-				TRAINING_MESSAGE_QUEUE_MAX));
-			Int3();
-		}
-	}
+	for (int j=idx+1; j<Training_message_queue_count; j++)
+		Training_message_queue[j - 1] = Training_message_queue[j];
 	Training_message_queue_count--;
 }
 
