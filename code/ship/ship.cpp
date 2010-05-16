@@ -1170,6 +1170,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		if (valid)
 			strcpy_s(sip->cockpit_pof_file, temp);
+		else
+			WarningEx(LOCATION, "Ship %s\nCockpit POF file \"%s\" invalid!", sip->name, temp);
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
@@ -1192,6 +1194,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		if (valid)
 			strcpy_s(sip->pof_file, temp);
+		else
+			WarningEx(LOCATION, "Ship %s\nPOF file \"%s\" invalid!", sip->name, temp);
 	}
 
 	// ship class texture replacement - Goober5000 and taylor
@@ -1253,6 +1257,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 		if (valid)
 			strcpy_s(sip->pof_file_hud, temp);
+		else
+			WarningEx(LOCATION, "Ship %s\POF target file \"%s\" invalid!", sip->name, temp);
 	}
 
 	// optional hud target LOD if not using special hud model
@@ -2591,6 +2597,12 @@ strcpy_s(parse_error_text, temp_error);
 		iff_data[0] = iff_lookup(iff_1);
 		iff_data[1] = iff_lookup(iff_2);
 
+		if (iff_data[0] == -1)
+			WarningEx(LOCATION, "Ship %s\nIFF colour seen by \"%s\" invalid!", sip->name, iff_1);
+
+		if (iff_data[1] == -1)
+			WarningEx(LOCATION, "Ship %s\nIFF colour when IFF is \"%s\" invalid!", sip->name, iff_2);
+
 		// Set the color
 		required_string("+As Color:");
 		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
@@ -2769,6 +2781,9 @@ strcpy_s(parse_error_text, temp_error);
 			if(optional_string("$Armor Type:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 				sp->armor_type_idx = armor_type_get_idx(buf);
+
+				if (sp->armor_type_idx == -1)
+					WarningEx(LOCATION, "Ship %s, subsystem %s\nInvalid armor type %s!", sip->name, sp->subobj_name, buf);
 			}
 
 			//	Get default primary bank weapons
