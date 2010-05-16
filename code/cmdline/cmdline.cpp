@@ -1156,7 +1156,12 @@ bool SetCmdlineParams()
 	}
 
 	if ( fov_arg.found() ) {
-		VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+		Cmdline_fov = fov_arg.get_float();
+		if (Cmdline_fov > 0.1) {
+			VIEWER_ZOOM_DEFAULT = Cmdline_fov;
+		} else {
+			VIEWER_ZOOM_DEFAULT = Cmdline_fov = 0.75f;
+		}
 	}
 
 	if( clip_dist_arg.found() ) {
