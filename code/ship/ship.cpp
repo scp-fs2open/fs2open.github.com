@@ -1258,7 +1258,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if (valid)
 			strcpy_s(sip->pof_file_hud, temp);
 		else
-			WarningEx(LOCATION, "Ship %s\POF target file \"%s\" invalid!", sip->name, temp);
+			WarningEx(LOCATION, "Ship \"%s\" POF target file \"%s\" invalid!", sip->name, temp);
 	}
 
 	// optional hud target LOD if not using special hud model
@@ -4510,13 +4510,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
 		for(int k = 0; k<MAX_SLOTS; k++){
 			shipp->secondary_point_reload_pct[i][k] = 1.0f;
-		}
-	}
-	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
-		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
-			shipp->reload_time[i] = 1.0f;
-		}else{
-			shipp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
 		}
 	}
 	for(i = 0; i<MAX_SHIP_PRIMARY_BANKS; i++){
@@ -8169,6 +8162,7 @@ void ship_model_change(int n, int ship_type)
 //
 void change_ship_type(int n, int ship_type, int by_sexp)
 {
+	int i;
 	ship_info	*sip;
 	ship_info	*sip_orig;
 	ship			*sp;
@@ -8333,7 +8327,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
-	model_anim_set_initial_states(sp);
 
 	//======================================================
 
@@ -8389,15 +8382,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		swp->current_secondary_bank = 0;
 	}
 
-/*
-	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
-	code.  It should be (and probably is) handled elsewhere, like ship_set or ship_create or something.  Contact
-	me if you want to discuss this.
-
-	ship_weapon	*swp;
-	swp = &sp->weapons;
-	int i;
-
+	// Bobboau's animation fixup
 	for( i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
 			swp->primary_animation_position[i] = false;
 	}
@@ -8405,15 +8390,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = false;
 	}
 	model_anim_set_initial_states(sp);
-
-	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
-		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
-			sp->reload_time[i] = 1.0f;
-		}else{
-			sp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
-		}
-	}
-*/
 }
 
 #ifndef NDEBUG
