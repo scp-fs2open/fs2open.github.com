@@ -1502,6 +1502,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].is_thruster=0;
 
+				// Genghis: if we have a thruster and none of the collision 
+				// properties were provided, then set "nocollide_this_only".
+				if (pm->submodel[n].is_thruster && !(pm->submodel[n].no_collisions) && !(pm->submodel[n].nocollide_this_only) && !(pm->submodel[n].collide_invisible) )
+				{
+					pm->submodel[n].nocollide_this_only = true;
+				}
+
 				if ( strstr( pm->submodel[n].name, "-destroyed") )	
 					pm->submodel[n].is_damaged=1;
 				else
