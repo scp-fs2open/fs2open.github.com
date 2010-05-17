@@ -205,6 +205,7 @@ typedef struct ai_class {
 	float	ai_glide_attack_percent[NUM_SKILL_LEVELS];
 	float	ai_circle_strafe_percent[NUM_SKILL_LEVELS];
 	float	ai_glide_strafe_percent[NUM_SKILL_LEVELS];
+	float	ai_random_sidethrust_percent[NUM_SKILL_LEVELS];
 	float	ai_stalemate_time_thresh[NUM_SKILL_LEVELS];
 	float	ai_stalemate_dist_thresh[NUM_SKILL_LEVELS];
 	int		ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
@@ -438,6 +439,7 @@ typedef struct ai_info {
 	float	ai_glide_attack_percent;
 	float	ai_circle_strafe_percent;
 	float	ai_glide_strafe_percent;
+	float	ai_random_sidethrust_percent;
 	float	ai_stalemate_time_thresh;
 	float	ai_stalemate_dist_thresh;
 	int		ai_chance_to_use_missiles_on_plr;

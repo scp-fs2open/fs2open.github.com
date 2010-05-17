@@ -548,6 +548,7 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_glide_attack_percent[i] = FLT_MIN;
 		aicp->ai_circle_strafe_percent[i] = FLT_MIN;
 		aicp->ai_glide_strafe_percent[i] = FLT_MIN;
+		aicp->ai_random_sidethrust_percent[i] = FLT_MIN;
 		aicp->ai_stalemate_time_thresh[i] = FLT_MIN;
 		aicp->ai_stalemate_dist_thresh[i] = FLT_MIN;
 		aicp->ai_chance_to_use_missiles_on_plr[i] = INT_MIN;
@@ -688,6 +689,9 @@ void parse_ai_class()
 
 	if (optional_string("$Glide Strafe Percent:")) 
 		parse_float_list(aicp->ai_glide_strafe_percent, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Random Sidethrust Percent:")) 
+		parse_float_list(aicp->ai_random_sidethrust_percent, NUM_SKILL_LEVELS);
 
 	if (optional_string("$Stalemate Time Threshold:"))
 		parse_float_list(aicp->ai_stalemate_time_thresh, NUM_SKILL_LEVELS);
@@ -8453,6 +8457,21 @@ void ai_chase()
 		aip->submode_start_time = Missiontime;
 	}
 
+	//Maybe apply random sidethrust, depending on the current submode
+	//The following are valid targets for random sidethrust (circle strafe uses it too, but that is handled separately)
+	if (aip->submode == SM_ATTACK ||
+		aip->submode == SM_SUPER_ATTACK ||
+		aip->submode == SM_EVADE_SQUIGGLE ||
+		aip->submode == SM_EVADE ||
+		aip->submode == SM_GET_AWAY)
+	{
+		//Re-roll for random sidethrust every 2 seconds
+		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent)
+		{
+			do_random_sidethrust(aip, sip);
+		}
+	}
+
 	//
 	//	Maybe choose a new submode.
 	//
@@ -14732,6 +14751,8 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 		profile->circle_strafe_percent[Game_skill_level] : aicp->ai_circle_strafe_percent[Game_skill_level];
 	aip->ai_glide_strafe_percent = (aicp->ai_glide_strafe_percent[Game_skill_level] == FLT_MIN) ? 
 		profile->glide_strafe_percent[Game_skill_level] : aicp->ai_glide_strafe_percent[Game_skill_level];
+	aip->ai_random_sidethrust_percent = (aicp->ai_random_sidethrust_percent[Game_skill_level] == FLT_MIN) ? 
+		profile->random_sidethrust_percent[Game_skill_level] : aicp->ai_random_sidethrust_percent[Game_skill_level];
 	aip->ai_stalemate_time_thresh = (aicp->ai_stalemate_time_thresh[Game_skill_level] == FLT_MIN) ? 
 		profile->stalemate_time_thresh[Game_skill_level] : aicp->ai_stalemate_time_thresh[Game_skill_level];
 	aip->ai_stalemate_dist_thresh = (aicp->ai_stalemate_dist_thresh[Game_skill_level] == FLT_MIN) ? 

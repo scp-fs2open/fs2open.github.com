@@ -273,6 +273,19 @@ void parse_ai_profiles_tbl(char *filename)
 				}
 			}
 
+			if (optional_string("$Random Sidethrust Percent:")) {
+				parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
+				for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
+						profile->random_sidethrust_percent[i] = 0.0f;
+						Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
+					}
+					profile->random_sidethrust_percent[i] /= 100.0;
+				}
+			}
+
 			if (optional_string("$Stalemate Time Threshold:"))
 				parse_float_list(profile->stalemate_time_thresh, NUM_SKILL_LEVELS);
 

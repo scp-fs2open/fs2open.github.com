@@ -798,6 +798,10 @@ $Circle Strafe Percent: 0, 0, 0, 0, 0									\n\
 ;; capital ships when it is an option.									\n""\
 $Glide Strafe Percent: 0, 0, 0, 0, 0									\n\
 																		\n\
+;; Percentage of the time where AI ships will randomly sidethrust in a	\n\
+;; dogfight.															\n\
+$Random Sidethrust Percent: 0, 0, 0, 0, 0								\n\
+																		\n\
 ;; The amount of time required for the AI to detect 					\n\
 ;; (and try to break) dogfight stalemate.								\n\
 $Stalemate Time Threshold: 0, 0, 0, 0, 0								\n\
