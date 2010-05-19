@@ -855,20 +855,25 @@ void message_training_queue(char *text, int timestamp, int length)
 
 // Goober5000 - removes current message from the queue
 void message_training_remove_from_queue(int idx)
-{	
-	Training_message_queue[idx].length = -1;
-	Training_message_queue[idx].num = -1;
-	Training_message_queue[idx].timestamp = -1;
-
+{
+	// we're overwriting all messages with the next message, but to
+	// avoid memory leaks, we should free the special message entry
 	if (Training_message_queue[idx].special_message != NULL)
 	{
 		vm_free(Training_message_queue[idx].special_message);
 		Training_message_queue[idx].special_message = NULL;
 	}
 
+	// replace current message with the one above it, etc.
 	for (int j=idx+1; j<Training_message_queue_count; j++)
 		Training_message_queue[j - 1] = Training_message_queue[j];
+
+	// delete the topmost message
 	Training_message_queue_count--;
+	Training_message_queue[Training_message_queue_count].length = -1;
+	Training_message_queue[Training_message_queue_count].num = -1;
+	Training_message_queue[Training_message_queue_count].timestamp = -1;
+	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
 }
 
 // check the training message queue to see if we should play a new message yet or not.
