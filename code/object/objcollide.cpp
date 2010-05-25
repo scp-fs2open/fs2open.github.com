@@ -753,12 +753,14 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 
 		float max_vel_weapon, max_vel_other;
 
-		max_vel_weapon = wp->weapon_max_vel;
-
-		if ((wp->lssm_stage==5))
-		{
+		//SUSHI: Fix bug where additive weapon velocity screws up collisions
+		//Assumes that weapons which don't home don't change speed, which is currently the case.
+		if (!(wip->wi_flags & WIF_TURNS))
+			max_vel_weapon = obj_weapon->phys_info.speed;
+		else if ((wp->lssm_stage==5))
 			max_vel_weapon = wip->lssm_stage5_vel;
-		}
+		else
+			max_vel_weapon = wp->weapon_max_vel;
 
 		max_vel_other = other->phys_info.max_vel.xyz.z;
 		if (max_vel_other < 10.0f) {
