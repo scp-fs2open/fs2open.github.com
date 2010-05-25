@@ -681,17 +681,50 @@ void parse_ai_class()
 	if (optional_string("$AI Turn Time Scale:"))
 		parse_float_list(aicp->ai_turn_time_scale, NUM_SKILL_LEVELS);
 
-	if (optional_string("$Glide Attack Percent:")) 
+	if (optional_string("$Glide Attack Percent:")) {
 		parse_float_list(aicp->ai_glide_attack_percent, NUM_SKILL_LEVELS);
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_glide_attack_percent[i] < 0.0f || aicp->ai_glide_attack_percent[i] > 100.0f) {
+				aicp->ai_glide_attack_percent[i] = 0.0f;
+				Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_glide_attack_percent[i]);
+			}
+			aicp->ai_glide_attack_percent[i] /= 100.0;
+		}
 
-	if (optional_string("$Circle Strafe Percent:")) 
+	}
+
+	if (optional_string("$Circle Strafe Percent:")) {
 		parse_float_list(aicp->ai_circle_strafe_percent, NUM_SKILL_LEVELS);
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_circle_strafe_percent[i] < 0.0f || aicp->ai_circle_strafe_percent[i] > 100.0f) {
+				aicp->ai_circle_strafe_percent[i] = 0.0f;
+				Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_circle_strafe_percent[i]);
+			}
+			aicp->ai_circle_strafe_percent[i] /= 100.0;
+		}
+	}
 
-	if (optional_string("$Glide Strafe Percent:")) 
+	if (optional_string("$Glide Strafe Percent:")) {
 		parse_float_list(aicp->ai_glide_strafe_percent, NUM_SKILL_LEVELS);
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_glide_strafe_percent[i] < 0.0f || aicp->ai_glide_strafe_percent[i] > 100.0f) {
+				aicp->ai_glide_strafe_percent[i] = 0.0f;
+				Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_glide_strafe_percent[i]);
+			}
+			aicp->ai_glide_strafe_percent[i] /= 100.0;
+		}
+	}
 
-	if (optional_string("$Random Sidethrust Percent:")) 
+	if (optional_string("$Random Sidethrust Percent:")) {
 		parse_float_list(aicp->ai_random_sidethrust_percent, NUM_SKILL_LEVELS);
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			if (aicp->ai_random_sidethrust_percent[i] < 0.0f || aicp->ai_random_sidethrust_percent[i] > 100.0f) {
+				aicp->ai_random_sidethrust_percent[i] = 0.0f;
+				Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", aicp->ai_random_sidethrust_percent[i]);
+			}
+			aicp->ai_random_sidethrust_percent[i] /= 100.0;
+		}
+	}
 
 	if (optional_string("$Stalemate Time Threshold:"))
 		parse_float_list(aicp->ai_stalemate_time_thresh, NUM_SKILL_LEVELS);
