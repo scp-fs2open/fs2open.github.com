@@ -1391,9 +1391,9 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			ai_submode = SM_ATTACK;
 			// if no enemies present, use the affirmative, instead of engaging enemies message
 			if ( hud_squadmsg_enemies_present() )
-				message = MESSAGE_YESSIR;
-			else
 				message = MESSAGE_ENGAGE;
+			else
+				message = MESSAGE_YESSIR;
 			target_shipname = NULL;
 			break;
 		
@@ -1642,10 +1642,11 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		case ENGAGE_ENEMY_ITEM:
 			ai_mode = AI_GOAL_CHASE_ANY;
 			ai_submode = SM_ATTACK;
+			// if no enemies present, use the affirmative, instead of engaging enemies message
 			if ( hud_squadmsg_enemies_present() )
-				message = MESSAGE_YESSIR;
-			else
 				message = MESSAGE_ENGAGE;
+			else
+				message = MESSAGE_YESSIR;
 			target_shipname = NULL;
 			break;
 
