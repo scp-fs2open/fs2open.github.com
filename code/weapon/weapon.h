@@ -556,7 +556,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 // for weapons flagged as particle spewers, spew particles. wheee
 void weapon_maybe_spew_particle(object *obj);
 
-
+bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1 );
 int weapon_name_lookup(char *name);
 int cmeasure_name_lookup(char *name);
