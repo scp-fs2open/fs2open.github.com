@@ -55,10 +55,10 @@ int Fiction_viewer_text_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 	// standard FS2-style interface
 	{
 		{ // GR_640
-			37,		37,		547,	375
+			39,		32,		574,	356
 		},
 		{ // GR_1024
-			60,		60,		875,	599
+			30,		40,		909,	597
 		}
 	},
 	// WCS-style interface
@@ -85,14 +85,15 @@ ui_button_info Fiction_viewer_buttons[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][NUM_
 	// standard FS2-style interface
 	{
 		{ // GR_640
-			ui_button_info("fvw_accept_",	570,	424,	69,		55,		FVW_BUTTON_ACCEPT),
-			ui_button_info("fvw_up_",		591,	49,		26,		35,		FVW_BUTTON_SCROLL_UP),
-			ui_button_info("fvw_down_",		591,	362,	26,		35,		FVW_BUTTON_SCROLL_DOWN),
+			ui_button_info("fvw_accept_",	571,	425,	69,		55,		FVW_BUTTON_ACCEPT),
+			ui_button_info("fvw_up_",		614,	14,		25,		31,		FVW_BUTTON_SCROLL_UP),
+			ui_button_info("fvw_down_",		614,	370,	25,		31,		FVW_BUTTON_SCROLL_DOWN),
+		//                 Filename          x       y     width  height
 		},
 		{ // GR_1024
-			ui_button_info("2_fvw_accept_",	913,	680,	110,	87,		FVW_BUTTON_ACCEPT),
-			ui_button_info("2_fvw_up_",		945,	79,		42,		56,		FVW_BUTTON_SCROLL_UP),
-			ui_button_info("2_fvw_down_",	945,	580,	42,		56,		FVW_BUTTON_SCROLL_DOWN),
+			ui_button_info("2_fvw_accept_",	918,	688,	99,		77,		FVW_BUTTON_ACCEPT),
+			ui_button_info("2_fvw_up_",		981,	16,		40,		50,		FVW_BUTTON_SCROLL_UP),
+			ui_button_info("2_fvw_down_",	981,	606,	40,		50,		FVW_BUTTON_SCROLL_DOWN),
 		}
 	},
 	// WCS-style interface
@@ -129,10 +130,10 @@ int Fiction_viewer_slider_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 	// standard FS2-style interface
 	{
 		{ // GR_640
-			594,	84,		18,		280
+			618,	49,		18,		317 //Initial position x, initial position y, width, height of the slider column
 		},
 		{ // GR_1024
-			951,	135,	28,		446
+			988,	72,		28,		529
 		}
 	},
 	// WCS-style interface
