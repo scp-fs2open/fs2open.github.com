@@ -4972,6 +4972,7 @@ void sexp_set_energy_pct (int node, int op_num)
 
 		sindex = ship_name_lookup( shipname );
 		if ( sindex == -1 ){					// hmm.. if true, must not have arrived yet
+			node = CDR(node);
 			continue;
 		}
 		
