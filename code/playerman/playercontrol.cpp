@@ -87,7 +87,9 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 	if ((ap->p == bp->p) && (ap->h == bp->h))
 		return;
 
-	sk = 1.0f - scale*flFrametime;
+	sk = 1.0f - scale*flRealframetime;
+
+	CLAMP(sk, 0.0f, 1.0f);
 
 	delta.p = ap->p - bp->p;
 	delta.h = ap->h - bp->h;
