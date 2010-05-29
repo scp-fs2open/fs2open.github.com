@@ -699,10 +699,6 @@ opengl::post_shader *shader_manager::apply_post_shader() {
 }
 
 opengl::post_shader *shader_manager::apply_post_shader(int flags) {
-	if ( !flags ) {
-		return NULL;
-	}
-
 	// check if shader is already loaded
 	SCP_map<int, post_shader*>::iterator itr = post_shaders.find(flags);
 	if (itr != post_shaders.end())
