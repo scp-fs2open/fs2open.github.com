@@ -585,19 +585,9 @@ void obj_snd_do_frame()
 				} // end switch
 
 				if ( go_ahead_flag ) {
-					if ( ds_using_ds3d() ) {
-						osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE);
-						if ( osp->instance != -1 ) {
-							Num_obj_sounds_playing++;
-						}
-					}
-					else {
-						snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
-						osp->instance = snd_play_looping( gs, osp->pan, 0, 0, (osp->vol*speed_vol_multiplier*rot_vol_mult)/gs->default_volume, SND_PRIORITY_TRIPLE_INSTANCE );
-						if ( osp->instance != -1 ) {
-							osp->freq =	snd_get_pitch(osp->instance);
-							Num_obj_sounds_playing++;
-						}
+					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE);
+					if ( osp->instance != -1 ) {
+						Num_obj_sounds_playing++;
 					}
 				}
 				Assert(Num_obj_sounds_playing <= MAX_OBJ_SOUNDS_PLAYING);
@@ -630,51 +620,29 @@ void obj_snd_do_frame()
 			sp = &Ships[objp->instance];
 
 
-		if (ds_using_ds3d()) {
-			channel = ds_get_channel(osp->instance);
-			// for DirectSound3D sounds, re-establish the maximum speed based on the
-			//	speed_vol_multiplier
-			if ( sp == NULL || ( (sp != NULL) && (sp->flags & SF_ENGINES_ON) ) ) {
-				snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult );
-			}
-			else {
-				// engine sound is disabled
-				snd_set_volume( osp->instance, 0.0f );
-			}
-
-			vec3d *vel=NULL;
-			vel = &objp->phys_info.vel;
-
-			// Don't play doppler effect for cruisers or capitals
-			if ( sp ) {
-				if ( ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
-					vel=NULL;
-				}
-			}
-
-			ds3d_update_buffer(channel, i2fl(gs->min), i2fl(gs->max), &source_pos, vel);
-			snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
+		channel = ds_get_channel(osp->instance);
+		// for DirectSound3D sounds, re-establish the maximum speed based on the
+		//	speed_vol_multiplier
+		if ( sp == NULL || ( (sp != NULL) && (sp->flags & SF_ENGINES_ON) ) ) {
+			snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult );
 		}
 		else {
-			if ( sp == NULL || (sp != NULL && (sp->flags & SF_ENGINES_ON) ) ) {
-				snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
-				snd_set_volume( osp->instance, osp->vol*speed_vol_multiplier*rot_vol_mult );
-				snd_set_pan( osp->instance, osp->pan );
-				// Don't play doppler effect for cruisers or capitals
-				if ( objp->type == OBJ_SHIP && Doppler_enabled == TRUE ) {
-					if ( !(ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-						int new_freq;
-						// calc doppler effect
-						new_freq = obj_snd_get_freq(osp->freq, objp, observer_obj, &source_pos);
-						if ( abs(new_freq - osp->freq) > OBJSND_CHANGE_FREQUENCY_THRESHOLD ) {
-							snd_set_pitch( osp->instance, new_freq);
-						}
-					}
-				}
-			}
-			else
-				snd_set_volume( osp->instance, 0.0f );
+			// engine sound is disabled
+			snd_set_volume( osp->instance, 0.0f );
 		}
+
+		vec3d *vel=NULL;
+		vel = &objp->phys_info.vel;
+
+		// Don't play doppler effect for cruisers or capitals
+		if ( sp ) {
+			if ( ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
+				vel=NULL;
+			}
+		}
+
+		ds3d_update_buffer(channel, i2fl(gs->min), i2fl(gs->max), &source_pos, vel);
+		snd_get_3d_vol_and_pan(gs, &source_pos, &osp->vol, &osp->pan, add_distance);
 	}	// end for
 
 	// see if we want to play a flyby sound

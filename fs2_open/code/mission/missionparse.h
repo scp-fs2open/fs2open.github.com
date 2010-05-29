@@ -16,6 +16,7 @@
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
+#include "sound/sound.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -146,6 +147,7 @@ typedef struct mission {
 	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
+	sound_env	sound_environment;
 
 	// Goober5000
 	int	command_persona;
@@ -187,6 +189,7 @@ typedef struct mission {
 		skybox_flags = 0;
 		contrail_threshold = 0;
 		ambient_light_level = 0;
+		sound_environment.id = -1;
 		command_persona = 0;
 		command_sender[ 0 ] = '\0';
 		event_music_name[ 0 ] = '\0';

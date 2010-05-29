@@ -69,6 +69,8 @@
 #include "cmdline/cmdline.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "sound/sound.h"
+#include "sound/ds.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -720,6 +722,32 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// Kazan - player use AI at start?
 	if (pm->flags & MISSION_FLAG_PLAYER_START_AI)
 		Player_use_ai = 1;
+
+	pm->sound_environment.id = -1;
+	if (optional_string("$Sound Environment:")) {
+		char preset[65] = { '\0' };
+		stuff_string(preset, F_NAME, sizeof(preset)-1);
+
+		int preset_id = ds_eax_get_preset_id(preset);
+
+		if (preset_id >= 0) {
+			sound_env_get(&pm->sound_environment, preset_id);
+		}
+
+		// NOTE: values will be clamped properly when the effect is actually set
+
+		if (optional_string("+Volume:")) {
+			stuff_float(&pm->sound_environment.volume);
+		}
+
+		if (optional_string("+Damping:")) {
+			stuff_float(&pm->sound_environment.damping);
+		}
+
+		if (optional_string("+Decay Time:")) {
+			stuff_float(&pm->sound_environment.decay);
+		}
+	}
 }
 
 void parse_player_info(mission *pm)

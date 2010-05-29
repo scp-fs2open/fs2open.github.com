@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -66,7 +66,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -88,8 +88,8 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Release_Inferno"
 # PROP Intermediate_Dir "Release_Inferno"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -111,8 +111,8 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Debug_Inferno"
 # PROP Intermediate_Dir "Debug_Inferno"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -475,19 +475,11 @@ SOURCE=..\..\code\DirectX\vdsetup.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\DirectX\vDsound.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\DirectX\vdvp.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vDinput.lib
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vDsound.lib
 # End Source File
 # Begin Source File
 
@@ -2279,15 +2271,11 @@ SOURCE=..\..\code\sound\ogg\ogg.h
 # End Group
 # Begin Source File
 
-SOURCE="..\..\code\sound\acm-openal.cpp"
+SOURCE=..\..\code\sound\acm.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\Sound\acm.h
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\code\sound\audiostr-openal.cpp"
 # End Source File
 # Begin Source File
 
@@ -2339,6 +2327,14 @@ SOURCE=..\..\code\Sound\midiseq.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\sound\openal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\openal.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\sound\phrases.xml
 
 !IF  "$(CFG)" == "code - Win32 Release"
@@ -2379,16 +2375,12 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF
+!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
-# End Source File
-# Begin Source File
+!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
 
-SOURCE=..\..\code\Sound\RBAudio.cpp
-# End Source File
-# Begin Source File
+!ENDIF 
 
-SOURCE=..\..\code\Sound\RBAudio.h
 # End Source File
 # Begin Source File
 
@@ -2569,18 +2561,6 @@ SOURCE=..\..\code\UI\UIMOUSE.cpp
 # Begin Source File
 
 SOURCE=..\..\code\UI\WINDOW.cpp
-# End Source File
-# End Group
-# Begin Group "VCodec"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\VCodec\CODEC1.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\VCodec\CODEC1.H
 # End Source File
 # End Group
 # Begin Group "Weapon"

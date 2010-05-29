@@ -41,13 +41,6 @@ PKG_PROG_PKG_CONFIG()
 dnl The configuration options
 dnl -------------------------
 
-AC_ARG_ENABLE(sound,
-	AC_HELP_STRING([--disable-sound],
-		[TEST: disable sound]),
-		[fs2_sound=$enableval],
-		[fs2_sound=yes],
-)
-
 AC_ARG_ENABLE(debug,
 	AC_HELP_STRING([--enable-debug],
 		[Build in DEBUG mode (default = no)]),
@@ -166,10 +159,6 @@ if test "fs2_demo" = "yes" ; then
 	AC_DEFINE([FS2_DEMO])
 fi
 
-if ! test "$fs2_sound" = "yes" ; then
-	AC_DEFINE([NO_SOUND])
-fi
-
 if test "$fs2_speech" = "yes" ; then
 	AC_DEFINE([FS2_SPEECH])
 fi
@@ -246,7 +235,6 @@ AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
 AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx" = "yes")
 AM_CONDITIONAL(FS2_OS_OSX,     test "$fs2_os_osx"   = "yes")
 
-AM_CONDITIONAL(FS2_SOUND,      test "$fs2_sound"      = "yes")
 AM_CONDITIONAL(FS2_DEVIL,      test "$fs2_devil"      = "yes")
 AM_CONDITIONAL(FS2_SPEECH,     test "$fs2_speech"     = "yes")
 AM_CONDITIONAL(FS2_DEBUG,      test "$fs2_debug"      = "yes")
@@ -346,11 +334,9 @@ FS2_LDFLAGS=$FS2_LDFLAGS" $OGG_LIBS"
 dnl OpenAL
 if test "$fs2_os_unix" = "yes" ; then
 	AM_PATH_OPENAL(:,AC_MSG_ERROR([*** OpenAL installation not found!]))
-	AC_DEFINE([USE_OPENAL])
 	D_CFLAGS=$D_CFLAGS" $OPENAL_CFLAGS"
 	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENAL_LIBS"
 elif test "$fs2_os_osx" = "yes" ; then
-	AC_DEFINE([USE_OPENAL])
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenAL"
 	AC_CHECK_HEADER(/Library/Frameworks/OpenAL.framework/Headers/al.h,
 		FS2_CXXFLAGS="$FS2_CXXFLAGS -I/Library/Frameworks/OpenAL.framework/Headers",
@@ -480,7 +466,6 @@ if test "x$fs2_static_ogg" != "x" ; then
 	echo Static OGG libs from ... : $fs2_static_ogg
 fi
 echo
-echo Sound enabled .......... : $fs2_sound
 echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug

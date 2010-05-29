@@ -61,6 +61,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
+#include "sound/ds.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
 #include "starfield/starfield.h"
@@ -427,8 +428,10 @@ sexp_oper Operators[] = {
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
-	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 2 },		// Goober5000
+	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 3 },		// Goober5000
 	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
+	{ "set-sound-environment",		OP_SET_SOUND_ENVIRONMENT,		1, INT_MAX },	// Taylor
+	{ "update-sound-environment",	OP_UPDATE_SOUND_ENVIRONMENT,	2, INT_MAX },	// Taylor
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,	1,	1,			},
@@ -682,6 +685,11 @@ int Players_mlocked_timestamp;
 // for play-music - Goober5000
 int	Sexp_music_handle = -1;
 void sexp_stop_music(int fade = 1);
+
+// for sound environments - Goober5000/Taylor
+int sexp_sound_environment_option_lookup(char *text);
+char *Sound_environment_option[] = { "volume", "decay time", "damping" };
+int Num_sound_environment_options = 3;
 
 int get_sexp(char *token);
 void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
@@ -2404,6 +2412,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 				
+			case OPF_SOUND_ENVIRONMENT_OPTION:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (sexp_sound_environment_option_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION; 
+				}
+				break;
+
 			case OPF_KEYPRESS:
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -8493,7 +8511,7 @@ void sexp_music_close()
 }
 
 // Goober5000
-void sexp_load_music(char* fname)
+void sexp_load_music(char* fname, int type = -1)
 {
 	if ( Cmdline_freespace_no_music ) {
 		return;
@@ -8504,9 +8522,14 @@ void sexp_load_music(char* fname)
 		sexp_stop_music();
 	}
 
+	if ( type < 0 )
+	{
+		type = ASF_MENUMUSIC;
+	}
+
 	if ( fname )
 	{
-		Sexp_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
+		Sexp_music_handle = audiostream_open( fname, type );
 	}
 }
 
@@ -8594,9 +8617,22 @@ void multi_sexp_close_sound_from_file()
 void sexp_play_sound_from_file(int n)
 {
 	int loop = 0;
+	int soundfx = 0;
+	int type = ASF_MENUMUSIC;
+
+	// third option, but needed when loading music -
+	soundfx = CDDR(n);
+
+	if (soundfx >= 0) {
+		soundfx = eval_sexp(soundfx);
+
+		if (soundfx > 0) {
+			type = ASF_SOUNDFX;
+		}
+	}
 
 	// load sound file -----------------------------
-	sexp_load_music(CTEXT(n));
+	sexp_load_music(CTEXT(n), type);
 	
 	if (MULTIPLAYER_MASTER) {
 		multi_start_packet();
@@ -8628,6 +8664,89 @@ void multi_sexp_play_sound_from_file()
 
 	multi_get_bool(loop);
 	sexp_start_music(loop);	
+}
+
+int sexp_sound_environment_option_lookup(char *text)
+{
+	int i;
+
+	for (i = 0; i < Num_sound_environment_options; i++) {
+		if (!strcmp(text, Sound_environment_option[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+// Taylor
+void sexp_set_sound_environment(int node)
+{
+	int n;
+	sound_env env;
+	int preset_id = -1;
+
+	char *preset = CTEXT(node);
+
+	if ( preset && !stricmp(preset, "none") ) {
+		sound_env_disable();
+		return;
+	}
+
+	preset_id = ds_eax_get_preset_id( preset );
+
+	if (preset_id < 0) {
+		return;
+	}
+
+	// fill in defaults for this preset, in case we don't set everything
+	if ( sound_env_get(&env, preset_id) ) {
+		return;
+	}
+
+	n = CDR(node);
+
+	while (n >= 0) {
+		char *option = CTEXT(n);
+
+		float val = (float)eval_num(CDR(n)) / 1000.0f;
+
+		if ( !stricmp(option, "volume") ) {
+			env.volume = val;
+		} else if ( !stricmp(option, "decay time") ) {
+			env.decay = val;
+		} else if ( !stricmp(option, "damping") ) {
+			env.damping = val;
+		}
+
+		// move to next option
+		n = CDDR(n);
+	}
+	
+	sound_env_set(&env);
+}
+
+// Taylor
+void sexp_update_sound_environment(int node)
+{
+	int n = node;
+
+	while (n >= 0) {
+		char *option = CTEXT(n);
+
+		float val = (float)eval_num(CDR(n)) / 1000.0f;
+
+		if ( !stricmp(option, "volume") ) {
+			ds_eax_set_volume(val);
+		} else if ( !stricmp(option, "decay time") ) {
+			ds_eax_set_decay_time(val);
+		} else if ( !stricmp(option, "damping") ) {
+			ds_eax_set_damping(val);
+		}
+
+		// move to next option
+		n = CDDR(n);
+	}
 }
 
 // Goober5000
@@ -17442,6 +17561,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_SOUND_ENVIRONMENT:
+				sexp_set_sound_environment(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_UPDATE_SOUND_ENVIRONMENT:
+				sexp_update_sound_environment(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_HUD_DISABLE:
 				sexp_hud_disable(node);
 				sexp_val = SEXP_TRUE;
@@ -19107,6 +19236,8 @@ int query_operator_return_type(int op)
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_PLAY_SOUND_FROM_TABLE:
+		case OP_SET_SOUND_ENVIRONMENT:
+		case OP_UPDATE_SOUND_ENVIRONMENT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
@@ -19849,6 +19980,24 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return OPF_BOOL;
 
+		case OP_SET_SOUND_ENVIRONMENT:
+			if (argnum == 0)
+				return OPF_STRING;
+
+			// fall through
+			argnum--;
+
+		case OP_UPDATE_SOUND_ENVIRONMENT:
+		{
+			// every two, the value repeats
+			int a_mod = argnum % 2;
+
+			if (a_mod == 0)
+				return OPF_SOUND_ENVIRONMENT_OPTION;
+			else
+				return OPF_POSITIVE;
+		}
+
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 			return OPF_POSITIVE;
@@ -19894,10 +20043,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 
 		case OP_SEND_MESSAGE_LIST:
-			int a_mod;
-
+		{
 			// every four, the value repeats
-			a_mod = argnum % 4;			
+			int a_mod = argnum % 4;
 
 			// who from
 			if(a_mod == 0)
@@ -19908,6 +20056,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 			else if(a_mod == 3)
 				return OPF_POSITIVE;
+		}
 
 		case OP_TRAINING_MSG:
 			if (argnum < 2)
@@ -21214,6 +21363,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_HUD_ELEMENT:
 			return "Invalid hud element magic name";
+
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
+			return "Invalid sound environment option";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -21992,6 +22144,8 @@ int get_subcategory(int sexp_id)
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_SET_SOUND_ENVIRONMENT:
+		case OP_UPDATE_SOUND_ENVIRONMENT:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
 		case OP_ADD_REMOVE_ESCORT:
@@ -23076,15 +23230,33 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_FILE, "play-sound-from-file\r\n"
 		"\tPlays a sound, such as a music soundtrack, from a file.  Important: Only one sound at a time can be played with this sexp!\r\n"
-		"Takes 1 or 2 arguments...\r\n"
+		"Takes 1 to 3 arguments...\r\n"
 		"\t1: Sound (file name)\r\n"
-		"\t2: Enter a non-zero number to loop. default is off (optional)."
+		"\t2: Enter a non-zero number to loop. default is off (optional).\r\n"
+		"\t3: Enter a non-zero number to use environment effects. default is off (optional)."
 	},
 
 	// Goober5000
 	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
 		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
 		"\t1: Fade (default is true)" },
+
+	// Taylor
+	{ OP_SET_SOUND_ENVIRONMENT, "set-sound-environment\r\n"
+		"Sets the EAX environment for all sound effects.  Optionally sets one or more parameters specific to the environment.  Takes 1 or more arguments...\r\n"
+		"\t1:\tSound environment name (a value of \"none\" will disable the effects)\r\n"
+		"\t2:\tEnvironment option (optional)\r\n"
+		"\t3:\tEnvironment value x 1000, e.g. 10 is 0.01 (optional)\r\n"
+		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
+		"IMPORTANT: each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
+
+	// Taylor
+	{ OP_UPDATE_SOUND_ENVIRONMENT, "update-sound-environment\r\n"
+		"Updates the current EAX environment with new values.  Takes 2 or more arguments...\r\n"
+		"\t1:\tEnvironment option\r\n"
+		"\t2:\tEnvironment value x 1000, e.g. 10 is 0.01\r\n"
+		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
+		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 
 	// Goober5000
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
@@ -24076,15 +24248,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Range, in meters\r\n" },
 
 	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
-		"\tSends a series of delayed messages. All times are accumulated"
+		"\tSends a series of delayed messages. All times are accumulated.\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message editor).\r\n"
 		"\t4:\tDelay from previous message in list (if any) in ms\r\n"
-		"Use Add-Data for multiple messages"
-		"IMPORTANT : each additional message in the list MUST HAVE 4 entries;\r\n"
-		"any message without the 4 proper fields will be ignored, as will any\r\n"
-		"successive messages"},
+		"Use Add-Data for multiple messages.\r\n\r\n"
+		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
+		"any message without the four proper fields will be ignored, as will any "
+		"successive messages."},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"

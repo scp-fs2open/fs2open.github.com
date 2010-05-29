@@ -13,6 +13,7 @@
 #include "localization/localize.h"
 #include "species_defs/species_defs.h"
 #include "parse/parselo.h"
+#include "sound/ds.h"
 
 
 int Num_game_sounds = 0;
@@ -315,6 +316,146 @@ void gamesnd_parse_soundstbl()
 	delete[] missing_species;
 
 	required_string("#Flyby Sounds End");
+
+	if ( optional_string("#Sound Environments Start") ) {
+		char name[65] = { '\0' };
+		char template_name[65] = { '\0' };
+		EFXREVERBPROPERTIES *props;
+
+		while ( required_string_either("#Sound Environments End", "$Name:") ) {
+			required_string("$Name:");
+			stuff_string(name, F_NAME, sizeof(name)-1);
+
+			if ( optional_string("$Template:") ) {
+				stuff_string(template_name, F_NAME, sizeof(template_name)-1);
+			} else {
+				template_name[0] = '\0';
+			}
+
+			ds_eax_get_prop(&props, name, template_name);
+
+			if ( optional_string("+Density:") ) {
+				stuff_float(&props->flDensity);
+				CLAMP(props->flDensity, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Diffusion:") ) {
+				stuff_float(&props->flDiffusion);
+				CLAMP(props->flDiffusion, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Gain:") ) {
+				stuff_float(&props->flGain);
+				CLAMP(props->flGain, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Gain HF:") ) {
+				stuff_float(&props->flGainHF);
+				CLAMP(props->flGainHF, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Gain LF:") ) {
+				stuff_float(&props->flGainLF);
+				CLAMP(props->flGainLF, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Decay Time:") ) {
+				stuff_float(&props->flDecayTime);
+				CLAMP(props->flDecayTime, 0.01f, 20.0f);
+			}
+
+			if ( optional_string("+Decay HF Ratio:") ) {
+				stuff_float(&props->flDecayHFRatio);
+				CLAMP(props->flDecayHFRatio, 0.1f, 20.0f);
+			}
+
+			if ( optional_string("+Decay LF Ratio:") ) {
+				stuff_float(&props->flDecayLFRatio);
+				CLAMP(props->flDecayLFRatio, 0.1f, 20.0f);
+			}
+
+			if ( optional_string("+Reflections Gain:") ) {
+				stuff_float(&props->flReflectionsGain);
+				CLAMP(props->flReflectionsGain, 0.0f, 3.16f);
+			}
+
+			if ( optional_string("+Reflections Delay:") ) {
+				stuff_float(&props->flReflectionsDelay);
+				CLAMP(props->flReflectionsDelay, 0.0f, 0.3f);
+			}
+
+			if ( optional_string("+Reflections Pan:") ) {
+				stuff_float_list(props->flReflectionsPan, 3);
+				CLAMP(props->flReflectionsPan[0], 0.0f, 1.0f);
+				CLAMP(props->flReflectionsPan[1], 0.0f, 1.0f);
+				CLAMP(props->flReflectionsPan[2], 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Late Reverb Gain:") ) {
+				stuff_float(&props->flLateReverbGain);
+				CLAMP(props->flLateReverbGain, 0.0f, 10.0f);
+			}
+
+			if ( optional_string("+Late Reverb Delay:") ) {
+				stuff_float(&props->flLateReverbDelay);
+				CLAMP(props->flLateReverbDelay, 0.0f, 0.1f);
+			}
+
+			if ( optional_string("+Late Reverb Pan:") ) {
+				stuff_float_list(props->flLateReverbPan, 3);
+				CLAMP(props->flLateReverbPan[0], 0.0f, 1.0f);
+				CLAMP(props->flLateReverbPan[1], 0.0f, 1.0f);
+				CLAMP(props->flLateReverbPan[2], 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Echo Time:") ) {
+				stuff_float(&props->flEchoTime);
+				CLAMP(props->flEchoTime, 0.075f, 0.25f);
+			}
+
+			if ( optional_string("+Echo Depth:") ) {
+				stuff_float(&props->flEchoDepth);
+				CLAMP(props->flEchoDepth, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+Modulation Time:") ) {
+				stuff_float(&props->flModulationTime);
+				CLAMP(props->flModulationTime, 0.004f, 4.0f);
+			}
+
+			if ( optional_string("+Modulation Depth:") ) {
+				stuff_float(&props->flModulationDepth);
+				CLAMP(props->flModulationDepth, 0.0f, 1.0f);
+			}
+
+			if ( optional_string("+HF Reference:") ) {
+				stuff_float(&props->flHFReference);
+				CLAMP(props->flHFReference, 1000.0f, 20000.0f);
+			}
+
+			if ( optional_string("+LF Reference:") ) {
+				stuff_float(&props->flLFReference);
+				CLAMP(props->flLFReference, 20.0f, 1000.0f);
+			}
+
+			if ( optional_string("+Room Rolloff Factor:") ) {
+				stuff_float(&props->flRoomRolloffFactor);
+				CLAMP(props->flRoomRolloffFactor, 0.0f, 10.0f);
+			}
+
+			if ( optional_string("+Air Absorption Gain HF:") ) {
+				stuff_float(&props->flAirAbsorptionGainHF);
+				CLAMP(props->flAirAbsorptionGainHF, 0.892f, 1.0f);
+			}
+
+			if ( optional_string("+Decay HF Limit:") ) {
+				stuff_int(&props->iDecayHFLimit);
+				CLAMP(props->iDecayHFLimit, 0, 1);
+			}
+		}
+
+		required_string("#Sound Environments End");
+	}
 
 	// close localization
 	lcl_ext_close();
