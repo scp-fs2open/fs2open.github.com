@@ -1168,6 +1168,9 @@ int ds_init()
 	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
 	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
 
+	// disable doppler (FIXME)
+	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
+
 	ds_init_channels();
 	ds_init_buffers();
 
