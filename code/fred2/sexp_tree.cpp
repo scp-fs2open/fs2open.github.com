@@ -2657,6 +2657,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_ARMOR_TYPES:
 		case OPF_FONT:
 		case OPF_HUD_ELEMENT:
+		case OPF_SOUND_ENVIRONMENT_OPTION:
 			return 1;
 
 		case OPF_SHIP:
@@ -4358,6 +4359,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_hud_elements();
 			break;
 
+		case OPF_SOUND_ENVIRONMENT_OPTION:
+			list = get_listing_opf_sound_environment_option();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5196,6 +5201,16 @@ sexp_list_item *sexp_tree::get_listing_opf_priority()
 	head.add_data("High");
 	head.add_data("Normal");
 	head.add_data("Low");
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_sound_environment_option()
+{
+	sexp_list_item head;
+
+	for (int i=0; i < Num_sound_environment_options; i++)
+		head.add_data(Sound_environment_option[i]);
+
 	return head.next;
 }
 

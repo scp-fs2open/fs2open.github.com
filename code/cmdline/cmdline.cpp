@@ -77,6 +77,7 @@ enum
 
 #define BUILD_CAP_OPENAL	(1<<0)
 #define BUILD_CAP_NO_D3D	(1<<1)
+#define BUILD_CAP_NEW_SND	(1<<2)
 
 typedef struct
 {
@@ -164,6 +165,7 @@ Flag exe_params[] =
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-ati_swap",			"Fix Color issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://scp.indiegames.us/mantis/view.php?id=1669", },
+	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
@@ -367,6 +369,7 @@ cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- U
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
 cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
+cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_load_all_weapons = 0;
@@ -379,6 +382,7 @@ int Cmdline_safeloading = 0;
 int Cmdline_no_fbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
+int Cmdline_no_3d_sound = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -1321,10 +1325,10 @@ bool SetCmdlineParams()
 			ubyte build_caps = 0;
 
 			/* portej05 defined this always */
-			build_caps |= BUILD_CAP_NO_D3D;
-#ifdef USE_OPENAL
 			build_caps |= BUILD_CAP_OPENAL;
-#endif
+			build_caps |= BUILD_CAP_NO_D3D;
+			build_caps |= BUILD_CAP_NEW_SND;
+
 
 			fwrite(&build_caps, 1, 1, fp);
 		}
@@ -1420,6 +1424,9 @@ bool SetCmdlineParams()
 
 	if ( verify_vps_arg.found() )
 		Cmdline_verify_vps = 1;
+
+	if ( no3dsound_arg.found() )
+		Cmdline_no_3d_sound = 1;
 
     if ( atiswap_arg.found() )
     {

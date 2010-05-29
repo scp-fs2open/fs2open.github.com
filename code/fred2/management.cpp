@@ -381,7 +381,7 @@ bool fred_init()
 	}
 	*/
 
-	snd_init(0, 0, 44100, 16);
+	snd_init();
 
 	// Not ready for this yet
   //	Cmdline_nospec = 1;
@@ -1091,6 +1091,9 @@ void clear_mission()
 	strcpy_s(The_mission.loading_screen[GR_1024],"");
 	strcpy_s(The_mission.skybox_model, "");
 	strcpy_s(The_mission.envmap_name, "");
+
+	// no sound environment
+	The_mission.sound_environment.id = -1;
 
 	ENVMAP = -1;
 

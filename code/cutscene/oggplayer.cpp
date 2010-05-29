@@ -20,7 +20,7 @@
 #include "io/key.h"
 #include "osapi/osapi.h"
 #include "sound/sound.h"
-#include "sound/ds.h"
+#include "sound/openal.h"
 #include "bmpman/bmpman.h"
 #include "cutscene/oggplayer.h"
 #include "io/timer.h"

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by fred.rc
+// Microsoft Developer Studio generated include file.
+// Used by FRED.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -123,6 +123,7 @@
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
 #define IDD_FICTION_VIEWER              318
+#define IDD_SOUND_ENVIRONMENT           319
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -531,6 +532,7 @@
 #define IDC_ASCT1_CLASS_COMBO1          1188
 #define IDC_SHIP_VARIABLES_COMBO        1188
 #define IDC_SUFFIX                      1188
+#define IDC_SOUND_ENVIRONMENT           1188
 #define IDC_CREATED                     1189
 #define IDC_DEPARTURE_TARGET            1189
 #define IDC_SBITMAP                     1189
@@ -777,6 +779,7 @@
 #define IDC_SPECIAL_INNER_RAD           1343
 #define IDC_SQUAD_LOGO                  1343
 #define IDC_SQUADRON_WING_NAME_1        1343
+#define IDC_SOUND_ENVIRONMENT_DAMPING   1343
 #define IDC_EDIT3                       1344
 #define IDC_AMMO3                       1344
 #define IDC_TIME                        1344
@@ -790,6 +793,7 @@
 #define IDC_ABBREV_CAMPAIGN             1344
 #define IDC_TVT_WING_NAME_1             1344
 #define IDC_ASSIST_SCORE                1344
+#define IDC_SOUND_ENVIRONMENT_VOLUME    1344
 #define IDC_EDIT4                       1345
 #define IDC_AMMO4                       1345
 #define IDC_VOICE                       1345
@@ -1128,6 +1132,13 @@
 #define IDC_STORY_FILE                  1618
 #define IDC_FONT_FILE                   1619
 #define IDC_FICTION_MUSIC               1620
+#define IDC_SOUND_ENVIRONMENT_LABEL     1621
+#define IDC_SOUND_ENVIRONMENT_VOLUME_LABEL 1622
+#define IDC_SOUND_ENVIRONENT_DAMPING_LABEL 1623
+#define IDC_SOUND_ENVIRONMENT_DECAY_LABEL 1624
+#define IDC_SOUND_ENVIRONMENT_DECAY     1625
+#define IDC_SOUND_ENVIRONMENT_BUTTON    1626
+#define IDC_SOUND_ENVIRONMENT_TEST      1627
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1419,9 +1430,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        319
+#define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1621
+#define _APS_NEXT_CONTROL_VALUE         1628
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
