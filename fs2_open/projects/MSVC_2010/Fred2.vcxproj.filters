@@ -2,15 +2,15 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{bc4bd8c4-5ac2-4cc3-ada8-5910deadaffd}</UniqueIdentifier>
+      <UniqueIdentifier>{aca57a9c-6673-43b0-9f4b-88f108732502}</UniqueIdentifier>
       <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{083cac7c-3000-4076-8284-daaf3ab513ae}</UniqueIdentifier>
+      <UniqueIdentifier>{6278499e-b4a9-478c-9518-6181587df03e}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
     <Filter Include="Resource Files">
-      <UniqueIdentifier>{cd9b1cc7-bc0a-4c87-9cc8-ac7bc9f6fdc0}</UniqueIdentifier>
+      <UniqueIdentifier>{2807b250-bdd3-4a89-96d7-df52eec4ca5c}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
   </ItemGroup>
@@ -175,6 +175,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fred2\shiptexturesdlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\fred2\soundenvironmentdlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fred2\starfieldeditor.cpp">
@@ -371,6 +374,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fred2\shiptexturesdlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\fred2\soundenvironmentdlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fred2\starfieldeditor.h">
