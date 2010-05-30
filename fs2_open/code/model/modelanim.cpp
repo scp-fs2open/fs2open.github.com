@@ -100,7 +100,7 @@ void triggered_rotation::start(queued_animation *q)
 		if (q->accel.a1d[axis] == 0.0f)
 			slow_angle.a1d[axis] = end_angle.a1d[axis];
 		else
-			slow_angle.a1d[axis] = end_angle.a1d[axis] - (((q->vel.a1d[axis] * q->vel.a1d[axis]) / (2.0f * q->accel.a1d[axis])) * direction.a1d[axis]);
+			slow_angle.a1d[axis] = end_angle.a1d[axis] + (((q->vel.a1d[axis] * q->vel.a1d[axis]) / (2.0f * q->accel.a1d[axis])) * direction.a1d[axis]);
 	}
 
 	nprintf(("ModelAnim", "Dir=[%f, %f, %f], End=[%f, %f, %f], Vel=[%f, %f, %f], Accel=[%f, %f, %f], Slow=[%f, %f, %f]\n", direction.a1d[0], direction.a1d[1], direction.a1d[2],
@@ -421,7 +421,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 			}
 
 			// if we've over shot the angle, this shouldn't happen but it might if odd values are given
-			if ( (trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) > (trigger->end_angle.a1d[i] * trigger->direction.a1d[i]) ) {
+			if ( (trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) >= (trigger->end_angle.a1d[i] * trigger->direction.a1d[i]) ) {
 				trigger->current_ang.a1d[i] = trigger->end_angle.a1d[i];
 				trigger->current_vel.a1d[i] = 0.0f;
 				not_moving_count++;
@@ -654,6 +654,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 				int pad = real_time - psub->triggers[i].end;
 
 				for (int a = 0; a < 3; a++) {
+					/*
 					float direction = pss->trigger.direction.a1d[a];
 
 					// if it's in the final slowdown phase then it really isn't _that_ bad
@@ -687,7 +688,28 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 								ani_time = a_time;
 						}
 					}
+					*/
+					// Wanderer Way -- START
+					// end_angle = S(2)
+					triggered_rotation tr = pss->trigger;
+					float end_angle = (tr.current_ang.a1d[a]  + (((tr.rot_vel.a1d[a]*tr.rot_vel.a1d[a]) - (tr.current_vel.a1d[a]*tr.current_vel.a1d[a])) / (2*tr.rot_accel.a1d[a])));
+
+					if (end_angle > tr.slow_angle.a1d[a]) {
+						//T(total) =  (2V(maximum) - V(initial))/a + (S(turnpoint) - S(initial) + (V(initial)^2 - V(maximum)^2)/2a) / V(maximum)
+						a_time = fl2i(((((2*tr.rot_vel.a1d[a]) - tr.current_ang.a1d[a])/tr.rot_accel.a1d[a]) + tr.slow_angle.a1d[a] - tr.current_ang.a1d[a] + (((tr.current_vel.a1d[a]*tr.current_vel.a1d[a]) - (tr.rot_vel.a1d[a]*tr.rot_vel.a1d[a])) / (2*tr.rot_accel.a1d[a])))*1000.0f);
+						if (ani_time < a_time)
+							ani_time = a_time;
+					} else {
+						//T(total)  = 2 * sqrt((S(final) - S(initial))/a - ( (V(initial)/a)^2 ) / 2 ) - V(initial)/a
+						a_time = fl2i((2 * fl_sqrt(((tr.end_angle.a1d[a] - tr.current_ang.a1d[a])/tr.rot_accel.a1d[a]) - ((tr.current_vel.a1d[a] * tr.current_vel.a1d[a]) / (tr.rot_accel.a1d[a] * tr.rot_accel.a1d[a])) / 2) - (tr.current_vel.a1d[a] / tr.rot_accel.a1d[a]))*1000.0f);
+						if (ani_time < a_time)
+							ani_time = a_time;
+					}
+
+					// Wanderer Way -- END
+					
 				}
+
 
 				if (ani_time)
 					ani_time += pad;
