@@ -2,211 +2,208 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="AI">
-      <UniqueIdentifier>{b546f4d2-0f4c-4628-972c-936ad31ec696}</UniqueIdentifier>
+      <UniqueIdentifier>{16293009-1d93-484a-846f-dcb07316547c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Anim">
-      <UniqueIdentifier>{04dadca9-4f43-4905-b06c-788249265037}</UniqueIdentifier>
+      <UniqueIdentifier>{271f0e62-ae8d-45d5-ae5a-ebb16d5ca6c4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Asteroid">
-      <UniqueIdentifier>{001a01c0-43cd-460e-95dc-1473bdbce199}</UniqueIdentifier>
+      <UniqueIdentifier>{a7e43a85-dd31-4d09-90f4-eb5e09e61bb9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Bmpman">
-      <UniqueIdentifier>{80511257-d8d8-4841-8cdd-98bcc2fe307e}</UniqueIdentifier>
+      <UniqueIdentifier>{8b831318-1881-4d35-8fba-27d3b19c4bdc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Camera">
-      <UniqueIdentifier>{56697249-c2b5-4bcd-a294-6579f17aba52}</UniqueIdentifier>
+      <UniqueIdentifier>{bc1db3dd-3a3a-4cfa-a937-e506937e6169}</UniqueIdentifier>
     </Filter>
     <Filter Include="CFile">
-      <UniqueIdentifier>{be6bdc6f-ab13-4e70-b5a6-9af476cd328b}</UniqueIdentifier>
+      <UniqueIdentifier>{6dc2d54c-d2a1-4173-89e6-1708cee59f27}</UniqueIdentifier>
     </Filter>
     <Filter Include="CMeasure">
-      <UniqueIdentifier>{eb082be1-df63-47dd-ae33-a31430989e6a}</UniqueIdentifier>
+      <UniqueIdentifier>{28708851-9642-4a48-ba3c-73a7e437f2fa}</UniqueIdentifier>
     </Filter>
     <Filter Include="ControlConfig">
-      <UniqueIdentifier>{0c980842-ef78-4238-8d6d-e130cf374e9d}</UniqueIdentifier>
+      <UniqueIdentifier>{58ee2276-6169-435a-85b8-9023bbfba863}</UniqueIdentifier>
     </Filter>
     <Filter Include="Cutscene">
-      <UniqueIdentifier>{a36f1075-b079-4f81-9717-8dc7622171ee}</UniqueIdentifier>
+      <UniqueIdentifier>{4ace400e-31f1-4939-8b0d-6cb7534fbed7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Debris">
-      <UniqueIdentifier>{2b3ede91-58fd-492e-bd94-24429af56ec6}</UniqueIdentifier>
+      <UniqueIdentifier>{1d2746e4-3e3c-433e-aeab-e85bf0085e0d}</UniqueIdentifier>
     </Filter>
     <Filter Include="DebugConsole">
-      <UniqueIdentifier>{08ca8143-b89a-4b6d-9a52-4933c638220d}</UniqueIdentifier>
+      <UniqueIdentifier>{2f7f7195-f66a-46a0-bf1d-fdd7de709d3e}</UniqueIdentifier>
     </Filter>
     <Filter Include="DirectX">
-      <UniqueIdentifier>{05959155-52d3-4202-9e9d-c501d7874393}</UniqueIdentifier>
+      <UniqueIdentifier>{30665de6-7ec7-42b4-b6de-7da88828aba0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Fireball">
-      <UniqueIdentifier>{76cb337b-b49b-46ea-9b1b-44ff615aa61a}</UniqueIdentifier>
+      <UniqueIdentifier>{fd4f39a4-4486-4b3f-ba06-01ce340bb52d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameHelp">
-      <UniqueIdentifier>{7b4316bd-7a16-4f89-949b-128fbe6b04de}</UniqueIdentifier>
+      <UniqueIdentifier>{302080fd-4351-4e50-b564-de2eb2388460}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameSequence">
-      <UniqueIdentifier>{ad736240-79ee-4ea3-b88e-af80519064bb}</UniqueIdentifier>
+      <UniqueIdentifier>{2722fbe3-8a1f-4c4f-ac44-a19aebe88fba}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameSnd">
-      <UniqueIdentifier>{88cecabb-e30f-43ec-a892-8dc3affae93e}</UniqueIdentifier>
+      <UniqueIdentifier>{097357e4-f580-4ff6-a66e-2c79841209e1}</UniqueIdentifier>
     </Filter>
     <Filter Include="GlobalIncs">
-      <UniqueIdentifier>{4ac7fe96-f21d-4f8d-a8e5-154eee03214e}</UniqueIdentifier>
+      <UniqueIdentifier>{4d88e59d-0e24-401a-9bba-677103b42016}</UniqueIdentifier>
     </Filter>
     <Filter Include="Graphics">
-      <UniqueIdentifier>{ee0d5b1a-79fe-40ed-8953-8003bc13833a}</UniqueIdentifier>
+      <UniqueIdentifier>{05d8b62e-5a58-4e2a-ac4f-01d1a77c8924}</UniqueIdentifier>
     </Filter>
     <Filter Include="Graphics\SoftwareGr">
-      <UniqueIdentifier>{c1186914-4fb2-4e28-9cc7-797701e2c288}</UniqueIdentifier>
+      <UniqueIdentifier>{6a02bc1e-e658-42a0-b3a7-1b8705d26450}</UniqueIdentifier>
     </Filter>
     <Filter Include="Graphics\OpenGLGr">
-      <UniqueIdentifier>{030edb07-9577-4ad6-b224-121baeb5cff4}</UniqueIdentifier>
+      <UniqueIdentifier>{981d4713-50cf-427a-a9ac-5fbf6bcb2505}</UniqueIdentifier>
     </Filter>
     <Filter Include="Graphics\OpenGLGr\OpenGL Headers">
-      <UniqueIdentifier>{c1d7c2f7-5374-476e-89e0-ccf54c5c3f3d}</UniqueIdentifier>
+      <UniqueIdentifier>{6e59147f-314d-4731-845f-3f1d2378e160}</UniqueIdentifier>
     </Filter>
     <Filter Include="Graphics\OpenGLGr\OpenGL CPPs">
-      <UniqueIdentifier>{10152948-f18e-4bfd-8f23-4c8e18ff5b6b}</UniqueIdentifier>
+      <UniqueIdentifier>{de4026e1-341e-4653-90dc-efb23b8d945e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Hud">
-      <UniqueIdentifier>{2d34c263-13a9-4f83-ab90-db6e087254f3}</UniqueIdentifier>
+      <UniqueIdentifier>{3046400a-cda3-40a4-be0b-0be663e67af7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Io">
-      <UniqueIdentifier>{7df525fb-bc60-41ac-882d-a880bb5b58db}</UniqueIdentifier>
+      <UniqueIdentifier>{b4451db7-ea7b-4ac0-ba7a-874a9c89bd9d}</UniqueIdentifier>
     </Filter>
     <Filter Include="JumpNode">
-      <UniqueIdentifier>{38482b29-eb01-4fb2-8e0c-8cab3fba1217}</UniqueIdentifier>
+      <UniqueIdentifier>{38f64747-51aa-4348-a5d0-dac6143ca14e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Lab">
-      <UniqueIdentifier>{a7daa8e4-01f8-4a53-846c-2f04b3582e20}</UniqueIdentifier>
+      <UniqueIdentifier>{7748e888-fae3-47a1-a255-5918f158993f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Lighting">
-      <UniqueIdentifier>{8ebd0b6c-41e9-4294-b949-8bba91e47b73}</UniqueIdentifier>
+      <UniqueIdentifier>{3a949639-d54c-47c6-92fe-2d9890a46c18}</UniqueIdentifier>
     </Filter>
     <Filter Include="Math">
-      <UniqueIdentifier>{2990cd26-0464-4bca-af7a-fef2fef139cc}</UniqueIdentifier>
+      <UniqueIdentifier>{6f93a9a6-6fd3-4afd-b8e2-8a23beea1b41}</UniqueIdentifier>
     </Filter>
     <Filter Include="MenuUI">
-      <UniqueIdentifier>{7823ad0b-2a89-4bcd-9bdc-95f3169f316e}</UniqueIdentifier>
+      <UniqueIdentifier>{ef96ebc9-f803-4351-9769-8b733369a0ec}</UniqueIdentifier>
     </Filter>
     <Filter Include="Mission">
-      <UniqueIdentifier>{a53b0c4f-515f-4f8e-b2ce-60b47437be6e}</UniqueIdentifier>
+      <UniqueIdentifier>{d6cee94b-1134-469f-9ecc-9590848bf934}</UniqueIdentifier>
     </Filter>
     <Filter Include="MissionUI">
-      <UniqueIdentifier>{c1fa8192-1357-4bfa-bd87-60078e1057b5}</UniqueIdentifier>
+      <UniqueIdentifier>{1d27ba41-63dc-41d6-8e8b-96bbcdd8e746}</UniqueIdentifier>
     </Filter>
     <Filter Include="Model">
-      <UniqueIdentifier>{0cdece20-0a65-4f6e-bdb2-bb9f544fc5f4}</UniqueIdentifier>
+      <UniqueIdentifier>{b52d54f8-32fa-4429-8b6d-224242ec8314}</UniqueIdentifier>
     </Filter>
     <Filter Include="Object">
-      <UniqueIdentifier>{524c5f68-87ba-4274-afcf-f679560fb12d}</UniqueIdentifier>
+      <UniqueIdentifier>{57556725-ebe3-42cf-a8d7-91b1be6eb1b6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Observer">
-      <UniqueIdentifier>{45958289-b06b-4bf5-b4f4-ce8df1446acb}</UniqueIdentifier>
+      <UniqueIdentifier>{e3454afb-be12-45af-9f07-7c6a1f80a28f}</UniqueIdentifier>
     </Filter>
     <Filter Include="OsApi">
-      <UniqueIdentifier>{839ca642-a6f6-4038-886f-f3c9a70a55ea}</UniqueIdentifier>
+      <UniqueIdentifier>{53780bee-e6b6-4cbd-a348-89ede0a81e98}</UniqueIdentifier>
     </Filter>
     <Filter Include="Palman">
-      <UniqueIdentifier>{9cf719e4-89db-45bf-912e-984198606921}</UniqueIdentifier>
+      <UniqueIdentifier>{46757c9d-1c64-4f83-b3d9-eab82e0e0f11}</UniqueIdentifier>
     </Filter>
     <Filter Include="Parse">
-      <UniqueIdentifier>{8b7cfcb9-ee99-4a5f-9e28-320450d1feb8}</UniqueIdentifier>
+      <UniqueIdentifier>{75adf504-b9f8-4926-af08-9afdf594dde8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Particle">
-      <UniqueIdentifier>{2fa56935-4973-4f9e-be99-94ef26b084ec}</UniqueIdentifier>
+      <UniqueIdentifier>{b16b94b6-a253-4020-868a-0d6a3150ced7}</UniqueIdentifier>
     </Filter>
     <Filter Include="PcxUtils">
-      <UniqueIdentifier>{fa6705a1-743e-4171-993f-ee310b034e88}</UniqueIdentifier>
+      <UniqueIdentifier>{046f682e-1fa8-4318-ac68-7e61801ed9a8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Physics">
-      <UniqueIdentifier>{5e9cbba9-54ac-41fd-808f-27c1a92fc600}</UniqueIdentifier>
+      <UniqueIdentifier>{73764146-6133-4a00-9463-532184af6694}</UniqueIdentifier>
     </Filter>
     <Filter Include="Playerman">
-      <UniqueIdentifier>{38dde6e6-a1c1-403c-91f4-7363b5041dc5}</UniqueIdentifier>
+      <UniqueIdentifier>{9db79e68-6640-4232-9f4c-7811fcd113f4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Popup">
-      <UniqueIdentifier>{93314da2-4273-41f2-a38d-f0761ecd6d3b}</UniqueIdentifier>
+      <UniqueIdentifier>{a46119c3-864f-48b2-8830-d2e9dbc8f9bc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Radar">
-      <UniqueIdentifier>{0f15f9a8-6d24-4723-b0c2-254e526085c2}</UniqueIdentifier>
+      <UniqueIdentifier>{72395cf4-a4d5-4414-8169-18325390c726}</UniqueIdentifier>
     </Filter>
     <Filter Include="Render">
-      <UniqueIdentifier>{87feef8c-f818-47b3-84aa-3d247a3ecdb3}</UniqueIdentifier>
+      <UniqueIdentifier>{4e490ec4-3d32-4544-8b4f-c3b3c9daf08f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Ship">
-      <UniqueIdentifier>{43d54a53-29af-48fc-b297-5979386e5437}</UniqueIdentifier>
+      <UniqueIdentifier>{4e3a7c4e-b208-4f65-b68b-6088762f1549}</UniqueIdentifier>
     </Filter>
     <Filter Include="Sound">
-      <UniqueIdentifier>{844445f2-3337-4b82-9675-9036308f7c60}</UniqueIdentifier>
+      <UniqueIdentifier>{ea046106-a870-4c3b-86c7-aca70ee2c79f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Sound\ogg">
-      <UniqueIdentifier>{2770c4c8-a514-4669-b971-d8d856d5bf06}</UniqueIdentifier>
+      <UniqueIdentifier>{efcb428f-2785-4284-9b38-444976158c42}</UniqueIdentifier>
     </Filter>
     <Filter Include="Starfield">
-      <UniqueIdentifier>{2cbaf87d-2ddf-4b50-84e0-f62b73073783}</UniqueIdentifier>
+      <UniqueIdentifier>{d09fb706-57c8-4486-96eb-cda09ebe9fd7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Stats">
-      <UniqueIdentifier>{b7d2e758-09db-4c8e-af38-629bf10c3670}</UniqueIdentifier>
+      <UniqueIdentifier>{d7c86572-8f03-49cb-8a32-41aecb5d50b9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Ui">
-      <UniqueIdentifier>{d978dae5-7bbd-49d6-9a5d-dcef70e0744f}</UniqueIdentifier>
+      <UniqueIdentifier>{789075d9-5184-430c-805e-6eee25ac385f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Weapon">
-      <UniqueIdentifier>{417c93df-e23d-444e-866e-219840f1b4e3}</UniqueIdentifier>
+      <UniqueIdentifier>{a9dd5287-17a3-4c92-a8ec-49325c3964f2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Nebula">
-      <UniqueIdentifier>{43c18130-508e-41b3-827e-6f8f77d40f04}</UniqueIdentifier>
+      <UniqueIdentifier>{c965279b-d0c5-445e-b188-4689a7260690}</UniqueIdentifier>
     </Filter>
     <Filter Include="Localization">
-      <UniqueIdentifier>{002755fa-6599-4ff3-b53d-dc216fd87d0a}</UniqueIdentifier>
+      <UniqueIdentifier>{32108f5a-45a1-439b-9896-730018077ae5}</UniqueIdentifier>
     </Filter>
     <Filter Include="TgaUtils">
-      <UniqueIdentifier>{adffe81f-8b6f-4a15-aa2e-31d870661e30}</UniqueIdentifier>
+      <UniqueIdentifier>{25c68a5e-5388-4000-9e50-06969c08876c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Demo">
-      <UniqueIdentifier>{8f4f9e06-119b-44a4-b669-c92cee208f7a}</UniqueIdentifier>
+      <UniqueIdentifier>{cc1e07e9-5157-4df2-b909-5918a92fb0ce}</UniqueIdentifier>
     </Filter>
     <Filter Include="InetFile">
-      <UniqueIdentifier>{9c62cc22-fae1-407a-b18f-8929c1ebd642}</UniqueIdentifier>
+      <UniqueIdentifier>{4b6dadcf-c79a-45df-a025-411a39d9e0fa}</UniqueIdentifier>
     </Filter>
     <Filter Include="ExceptionHandler">
-      <UniqueIdentifier>{01525c8b-ce0a-4202-85c2-345fe0fb620a}</UniqueIdentifier>
+      <UniqueIdentifier>{0f5c779b-0b8b-48af-9b0b-570d6e2b5e9c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Network">
-      <UniqueIdentifier>{38819052-cab3-4e57-90b7-5d4c9019a216}</UniqueIdentifier>
+      <UniqueIdentifier>{a398cd63-314d-40b6-8873-ddf4ff3f4fc9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Decals">
-      <UniqueIdentifier>{8e9da459-6039-44d6-8c8d-58f07ace20f9}</UniqueIdentifier>
+      <UniqueIdentifier>{8bc44419-7657-4c95-8125-85fdbe456685}</UniqueIdentifier>
     </Filter>
     <Filter Include="ddsutils">
-      <UniqueIdentifier>{ea6d2061-f64a-423e-85c0-f493f45f87f2}</UniqueIdentifier>
+      <UniqueIdentifier>{9ecb8211-7db5-4b2f-bf0f-502f3c1b2341}</UniqueIdentifier>
     </Filter>
     <Filter Include="pngutils">
-      <UniqueIdentifier>{8c033917-35c0-487f-a567-5f197d48faeb}</UniqueIdentifier>
+      <UniqueIdentifier>{ec188d39-3334-4d89-bc36-dde4b7815c42}</UniqueIdentifier>
     </Filter>
     <Filter Include="Cmdline">
-      <UniqueIdentifier>{f2f3c638-de10-4904-a4e3-d7d03fd4199d}</UniqueIdentifier>
+      <UniqueIdentifier>{4feafd16-d55a-4ce8-b2a7-31ea81d03b2b}</UniqueIdentifier>
     </Filter>
     <Filter Include="fs2netd">
-      <UniqueIdentifier>{b6ebf09d-b647-4b02-9c4b-4a11b5beaf19}</UniqueIdentifier>
+      <UniqueIdentifier>{eaaf5609-a655-4b46-95b4-bee16c341561}</UniqueIdentifier>
     </Filter>
     <Filter Include="Species_Defs">
-      <UniqueIdentifier>{a0a4fa12-1c7b-42b5-b486-13e8a1c50e69}</UniqueIdentifier>
+      <UniqueIdentifier>{ab2a00a5-8e90-4bec-ba37-9ba23bfc53cd}</UniqueIdentifier>
     </Filter>
     <Filter Include="jpgutils">
-      <UniqueIdentifier>{324bac1c-12a3-426e-9b86-557b29c08fc7}</UniqueIdentifier>
+      <UniqueIdentifier>{53d524f2-cb9c-4b53-a547-329b308436f1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Autopilot">
-      <UniqueIdentifier>{56f935f8-3ff0-40d3-aa3f-358d7068c4b5}</UniqueIdentifier>
+      <UniqueIdentifier>{1b375441-5abe-4fff-8f94-f88efdb84d9a}</UniqueIdentifier>
     </Filter>
     <Filter Include="iff_defs">
-      <UniqueIdentifier>{f15efb2a-9c96-4759-83bc-f4a3fb174791}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="VCodec">
-      <UniqueIdentifier>{48b540dc-75ad-41c4-8649-d34dbf7882d9}</UniqueIdentifier>
+      <UniqueIdentifier>{15b5cbd5-0511-43d9-b151-5283e6e67bb7}</UniqueIdentifier>
     </Filter>
     <Filter Include="ExternalDLL">
-      <UniqueIdentifier>{39d7cfce-a4cf-4c61-b701-0194dc1b2299}</UniqueIdentifier>
+      <UniqueIdentifier>{34eefea3-a25d-40cd-8198-13c48ad8a6eb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -762,10 +759,7 @@
     <ClCompile Include="..\..\code\ship\shiphit.cpp">
       <Filter>Ship</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\sound\acm-openal.cpp">
-      <Filter>Sound</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\sound\audiostr-openal.cpp">
+    <ClCompile Include="..\..\code\sound\acm.cpp">
       <Filter>Sound</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\sound\audiostr.cpp">
@@ -783,7 +777,7 @@
     <ClCompile Include="..\..\code\sound\fsspeech.cpp">
       <Filter>Sound</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\sound\rbaudio.cpp">
+    <ClCompile Include="..\..\code\sound\openal.cpp">
       <Filter>Sound</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\sound\rtvoice.cpp">
@@ -1050,9 +1044,6 @@
     <ClCompile Include="..\..\code\iff_defs\iff_defs.cpp">
       <Filter>iff_defs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\vcodec\codec1.cpp">
-      <Filter>VCodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\external_dll\trackirglobal.cpp">
       <Filter>ExternalDLL</Filter>
     </ClCompile>
@@ -1143,9 +1134,6 @@
       <Filter>DirectX</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vdsetup.h">
-      <Filter>DirectX</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\DirectX\vdsound.h">
       <Filter>DirectX</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vdvp.h">
@@ -1622,7 +1610,7 @@
     <ClInclude Include="..\..\code\sound\grammar.h">
       <Filter>Sound</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\sound\rbaudio.h">
+    <ClInclude Include="..\..\code\sound\openal.h">
       <Filter>Sound</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\sound\rtvoice.h">
@@ -1856,9 +1844,6 @@
     <ClInclude Include="..\..\code\iff_defs\iff_defs.h">
       <Filter>iff_defs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\vcodec\codec1.h">
-      <Filter>VCodec</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\code\external_dll\externalcode.h">
       <Filter>ExternalDLL</Filter>
     </ClInclude>
@@ -1874,9 +1859,6 @@
       <Filter>DirectX</Filter>
     </Library>
     <Library Include="..\..\code\DirectX\vdinput.lib">
-      <Filter>DirectX</Filter>
-    </Library>
-    <Library Include="..\..\code\DirectX\vdsound.lib">
       <Filter>DirectX</Filter>
     </Library>
   </ItemGroup>
