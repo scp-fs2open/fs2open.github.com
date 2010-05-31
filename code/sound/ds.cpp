@@ -1637,7 +1637,6 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, pan, 0.0f, 0.0f) );
 	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
 
-	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_DOPPLER_FACTOR, 0.0f) );
 	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_PITCH, 1.0f) );
 	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_GAIN, volume) );
 
