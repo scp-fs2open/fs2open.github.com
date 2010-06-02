@@ -52,7 +52,8 @@
 
 // flags2
 #define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
-#define AIPF2_NO_SPECIAL_PLAYER_AVOID									(1 << 1)
+#define AIPF2_NO_SPECIAL_PLAYER_AVOID								(1 << 1)
+#define AIPF2_PERFORM_LESS_SCREAM_CHECKS							(1 << 2)
 
 #define MAX_AI_PROFILES	5
 
@@ -126,6 +127,7 @@ typedef struct ai_profile_t {
 
 	// the chance (x/7) that ship is allowed to fire missiles at player ship.
 	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+
 
 } ai_profile_t;
 

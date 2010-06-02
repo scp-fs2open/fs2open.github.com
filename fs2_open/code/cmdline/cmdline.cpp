@@ -336,11 +336,9 @@ int Cmdline_voice_recognition = 0;
 // MOD related
 cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
 cmdline_parm tbp("-tbp", NULL);			// Cmdline_tbp  -- TBP warp effects -Et1
-cmdline_parm wcsaga("-wcsaga", NULL);	// Cmdline_wcsaga
 
 char *Cmdline_mod = NULL; //DTP for mod arguement
 int Cmdline_tbp = 0;
-int Cmdline_wcsaga = 0;
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -1371,11 +1369,6 @@ bool SetCmdlineParams()
 
 	if ( ballistic_gauge.found() ) {
 		Cmdline_ballistic_gauge = 1;
-	}
-
-	if (wcsaga.found())
-	{
-		Cmdline_wcsaga = 1;
 	}
 
 	if ( cache_bitmaps_arg.found() ) {
