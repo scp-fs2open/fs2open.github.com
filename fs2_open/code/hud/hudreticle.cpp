@@ -585,7 +585,12 @@ void hud_show_reticle_weapons()
 // threat exists, and draw flashing frames.
 void hud_show_lock_threat()
 {
-	int frame_offset;
+	int frame_offset, num_frames;
+
+	//Let's find out how many frames our ani has, and adjust accordingly
+	num_frames = Reticle_gauges[RETICLE_LOCK_WARN].num_frames;
+	//We need at least two frames here
+	Assert( num_frames >= 2 );
 
 	if ( Player->threat_flags & (THREAT_LOCK | THREAT_ATTEMPT_LOCK) ) {
 		if ( timestamp_elapsed(Threat_lock_timer) ) {
@@ -595,7 +600,7 @@ void hud_show_lock_threat()
 				Threat_lock_timer = timestamp(THREAT_LOCK_FLASH);
 			}
 			Threat_lock_frame++;
-			if ( Threat_lock_frame > 2 ) {
+			if ( Threat_lock_frame > (num_frames - 1) ) { //The first frame being the default "off" setting, we need to cycle through all the other frames
 				Threat_lock_frame = 1;
 			}
 			if ( (Threat_lock_frame == 2) && (Player->threat_flags & THREAT_ATTEMPT_LOCK ) ) {
@@ -633,13 +638,18 @@ void hud_show_lock_threat()
 // threat exists, and draw flashing frames.
 void hud_show_dumbfire_threat()
 {
-	int frame_offset;
+	int frame_offset, num_frames;
+
+	//Check how many frames the ani actually has
+	num_frames = Reticle_gauges[RETICLE_LASER_WARN].num_frames;
+	//We need at least two frames here
+	Assert( num_frames >= 2 );
 
 	if ( Player->threat_flags & THREAT_DUMBFIRE ) {
 		if ( timestamp_elapsed(Threat_dumbfire_timer) ) {
 			Threat_dumbfire_timer = timestamp(THREAT_DUMBFIRE_FLASH);
 			Threat_dumbfire_frame++;
-			if ( Threat_dumbfire_frame > 2 ) {
+			if ( Threat_dumbfire_frame > (num_frames - 1) ) { //The first frame being the default "off" setting, we need to cycle through all the other frames
 				Threat_dumbfire_frame = 1;
 			}
 		}
