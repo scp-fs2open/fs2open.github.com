@@ -3301,6 +3301,10 @@ void parse_ship_type()
 		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
 	}
 
+	if(optional_string("$Don't display class in briefing:")) {
+		stuff_boolean_flag(&stp->hud_bools, STI_HUD_NO_CLASS_DISPLAY);
+	}
+
 	if(optional_string("$Fog:"))
 	{
 		if(optional_string("+Start dist:")) {
@@ -13730,7 +13734,6 @@ void ship_maybe_lament()
 #define PLAYER_MAX_SCREAMS				10
 
 // play a death scream for a ship
-extern int Cmdline_wcsaga;
 void ship_scream(ship *sp)
 {
 	int multi_team_filter = -1;
@@ -13753,7 +13756,7 @@ void ship_scream(ship *sp)
 	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
 
 	// Goober5000
-	if (!Cmdline_wcsaga || Player_ship->team == sp->team)
+	if (Player_ship->team == sp->team)
 		Player->scream_count++;
 
 	sp->flags |= SF_SHIP_HAS_SCREAMED;
@@ -13766,7 +13769,6 @@ void ship_scream(ship *sp)
 // ship has just died, maybe play a scream.
 //
 // NOTE: this is only called for ships that are not the player ship
-extern int Cmdline_wcsaga;
 void ship_maybe_scream(ship *sp)
 {
 	// bail if screaming is disabled
@@ -13776,26 +13778,19 @@ void ship_maybe_scream(ship *sp)
 	// if screaming is enabled, skip all checks
 	if (!(sp->flags2 & SF2_ALWAYS_DEATH_SCREAM))
 	{
-		// for WCSaga, only do a subset of the checks
-		if (Cmdline_wcsaga)
-		{
-			// only scream 50% of the time
-			if (rand() & 1)
-				return;
+		// only scream 50% of the time
+		if (rand() & 1)
+			return;
 
-			// check if enough time has elapsed since last scream; if not, leave
-			if (!timestamp_elapsed(Player->allow_scream_timestamp))
-				return;
-		}
-		// otherwise do all checks
-		else
+		// check if enough time has elapsed since last scream; if not, leave
+		if (!timestamp_elapsed(Player->allow_scream_timestamp))
+			return;
+
+		// for WCSaga, only do a subset of the checks
+		if (!(The_mission.ai_profile->flags2 & AIPF2_PERFORM_LESS_SCREAM_CHECKS))
 		{
 			// bail if this ship isn't from the player wing
 			if (!(sp->flags & SF_FROM_PLAYER_WING))
-				return;
-
-			// only scream 50% of the time
-			if (rand() & 1)
 				return;
 
 			// first check if the player has reached the maximum number of screams for a mission
@@ -13804,10 +13799,6 @@ void ship_maybe_scream(ship *sp)
 
 			// if on different teams (i.e. team v. team games in multiplayer), no scream
 			if (Player_ship->team != sp->team)
-				return;
-
-			// check if enough time has elapsed since last scream; if not, leave
-			if (!timestamp_elapsed(Player->allow_scream_timestamp))
 				return;
 		}
 	}
