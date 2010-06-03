@@ -105,7 +105,6 @@ extern int Cmdline_voice_recognition;
 // MOD related
 extern char *Cmdline_mod;	 // DTP for mod support
 extern int Cmdline_tbp;
-extern int Cmdline_wcsaga;
 
 // Multiplayer/Network related
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)

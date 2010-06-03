@@ -856,6 +856,7 @@ typedef struct thruster_particles {
 #define STI_HUD_HOTKEY_ON_LIST			(1<<0)
 #define STI_HUD_TARGET_AS_THREAT		(1<<1)
 #define STI_HUD_SHOW_ATTACK_DIRECTION	(1<<2)
+#define STI_HUD_NO_CLASS_DISPLAY		(1<<3)
 
 #define STI_SHIP_SCANNABLE				(1<<0)
 #define STI_SHIP_WARP_PUSHES			(1<<1)

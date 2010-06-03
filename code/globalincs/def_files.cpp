@@ -942,6 +942,10 @@ $disarm or disable cause global ai goal effects:	YES					\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\
 $fix AI class bug:	NO													\n\
 																		\n\
+;; If set, the game will check if the dying ship is a player's wingman, \n\
+;; before making it give a death scream					 				\n\
+$Perform less checks for death screams:	NO								\n\
+																		\n\
 #End																	\n\
 ";
 
