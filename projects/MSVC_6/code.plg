@@ -1,0 +1,26 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: code - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\iwarfiel\LOCALS~1\Temp\RSPAB.tmp" with contents
+[
+/nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "USE_OPENAL" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR"Debug\Profile\code/" /Fp"Debug\Profile\code/code.pch" /YX /Fo"Debug\Profile\code/" /Fd"Debug\Profile\code/" /FD /GZ /GZ /c 
+"C:\My Documents\Visual Studio Projects\Visual C++\fs2_open_3_6_12\code\Parse\SEXP.CPP"
+]
+Creating command line "cl.exe @C:\DOCUME~1\iwarfiel\LOCALS~1\Temp\RSPAB.tmp" 
+<h3>Output Window</h3>
+Compiling...
+SEXP.CPP
+safe_strings disabled - this is not good!
+
+
+
+<h3>Results</h3>
+SEXP.OBJ - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>
