@@ -1011,6 +1011,23 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 	ship_model_stop(objp);	
 }
 
+//Update turret aiming data based on max turret aim update delay
+void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss)
+{
+	if (Missiontime >= ss->next_aim_pos_time)
+	{
+		ss->last_aim_enemy_pos = En_Objp->pos;
+		ss->last_aim_enemy_vel = En_Objp->phys_info.vel;
+		ss->next_aim_pos_time = Missiontime + fl2f(frand_range(0.0f, aip->ai_turret_max_aim_update_delay));
+	}
+	else
+	{
+		//Update the position based on the velocity (assume no velocity vector change)
+		vm_vec_scale_add2(&ss->last_aim_enemy_pos, &ss->last_aim_enemy_vel, flFrametime);
+	}
+}
+
+
 //	Rotate a turret towards an enemy.
 //	Return TRUE if caller should use angles in subsequent rotations.
 //	Some obscure model thing only John Slagel knows about.
@@ -1041,23 +1058,26 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		ship_get_global_turret_info(&Objects[parent_objnum], tp, &gun_pos, &gun_vec);
 
+		//Update "known" position and velocity of target. Only matters if max_aim_update_delay is set.
+		turret_ai_update_aim(&Ai_info[shipp->ai_index], &Objects[ss->turret_enemy_objnum], ss);
+
 		//Figure out what point on the ship we want to point the gun at, and store the global location
 		//in enemy_point.
 		vec3d	enemy_point;
 		if ((ss->targeted_subsys != NULL) && !(ss->flags & SSF_NO_SS_TARGETING)) {
 			if (ss->turret_enemy_objnum != -1) {
 				vm_vec_unrotate(&enemy_point, &ss->targeted_subsys->system_info->pnt, &Objects[ss->turret_enemy_objnum].orient);
-				vm_vec_add2(&enemy_point, &Objects[ss->turret_enemy_objnum].pos);
+				vm_vec_add2(&enemy_point, &ss->last_aim_enemy_pos);
 			}
 		} else {
 			if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
 				ai_big_pick_attack_point_turret(lep, ss, &gun_pos, &gun_vec, &enemy_point, tp->turret_fov, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
 			} else {
-				enemy_point = lep->pos;
+				enemy_point = ss->last_aim_enemy_pos;
 			}
 		}
 
-		target_moving_direction = lep->phys_info.vel;
+		target_moving_direction = ss->last_aim_enemy_vel;
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
