@@ -13754,10 +13754,7 @@ void ship_scream(ship *sp)
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
-
-	// Goober5000
-	if (Player_ship->team == sp->team)
-		Player->scream_count++;
+	Player->scream_count++;
 
 	sp->flags |= SF_SHIP_HAS_SCREAMED;
 
