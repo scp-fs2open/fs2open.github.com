@@ -3725,6 +3725,18 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index valus of the weapon class", "number", "index value of the weapon class")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_args(L, "i", -1);
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ade_set_args(L, "i", -1);
+
+	return ade_set_args(L, "i", idx);
+}
+
 //**********HANDLE: Eyepoint
 struct eye_h
 {
@@ -4732,6 +4744,18 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship class", "number", "index value of the ship class")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_args(L, "i", -1);
+
+	if(idx < 0 || idx >= Num_ship_classes)
+		return ade_set_args(L, "i", -1);
+
+	return ade_set_args(L, "i", idx);
 }
 
 //**********HANDLE: Waypoint
@@ -6933,6 +6957,24 @@ ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team", "team", "Weapon team, or in
 	}
 
 	return ade_set_args(L, "o", l_Team.Set(wp->team));
+}
+
+ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is armed.", "boolean", "boolean value of the weapon arming status")
+{
+	object_h *oh = NULL;
+	bool hit_target = false;
+	if(!ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &hit_target))
+		return ADE_RETURN_FALSE;
+
+	if(!oh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+	
+	if(weapon_armed(wp, hit_target))
+		return ADE_RETURN_TRUE;
+	
+	return ADE_RETURN_FALSE;
 }
 
 
