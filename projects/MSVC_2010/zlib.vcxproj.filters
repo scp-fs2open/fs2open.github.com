@@ -13,10 +13,6 @@
       <UniqueIdentifier>{a4a51874-693d-43c0-97d7-3ea3b3462f28}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
-    <Filter Include="Assembler Files %28Unsupported%29">
-      <UniqueIdentifier>{7fafb408-a638-4c7f-b2e8-9a1e31ec4ddd}</UniqueIdentifier>
-      <Extensions>asm;obj;c;cpp;cxx;h;hpp;hxx</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\zlib\adler32.c">
@@ -54,15 +50,6 @@
     </ClCompile>
     <ClCompile Include="..\..\zlib\zutil.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\zlib\contrib\masmx86\gvmat32c.c">
-      <Filter>Assembler Files %28Unsupported%29</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\zlib\contrib\masmx86\gvmat32.asm">
-      <Filter>Assembler Files %28Unsupported%29</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\zlib\contrib\masmx86\inffas32.asm">
-      <Filter>Assembler Files %28Unsupported%29</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
