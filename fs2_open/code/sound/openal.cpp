@@ -218,8 +218,15 @@ static void find_playback_device()
 
 			// done
 			break;
-		}
+		} else {
+			// clean up for next pass
+			alcMakeContextCurrent(NULL);
+			alcDestroyContext(context);
+			alcCloseDevice(device);
 
+			context = NULL;
+			device = NULL;
+		}
 	}
 
 	alcMakeContextCurrent(NULL);
