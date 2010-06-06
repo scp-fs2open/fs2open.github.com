@@ -431,7 +431,7 @@ int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
 	game_snd gs;
 	int		rval;
 
-	if ( (soundnum < 0) || ((size_t)soundnum >= Sounds.size() ) {
+	if ( (soundnum < 0) || ((size_t)soundnum >= Sounds.size() ) ) {
 		return -1;
 	}
 
