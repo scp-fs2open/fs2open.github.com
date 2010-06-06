@@ -331,6 +331,12 @@ int joy_ff_create_effects()
 void joy_ff_stop_effects()
 {
 	joy_ff_afterburn_off();
+
+	if (pDeathroll1)
+		pDeathroll1->Stop();
+
+	if (pDeathroll2)
+		pDeathroll2->Stop();
 }
 
 void joy_ff_mission_init(vec3d v)
