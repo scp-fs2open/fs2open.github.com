@@ -250,8 +250,6 @@ static int Palette_bmp;
 //static int ShipWin02;
 //static int ShipWin03;
 //static int ShipWin04;
-//static ubyte Palette[768];
-//static char Palette_name[128];  // not used now - taylor
 
 static int Ships_loaded = 0;
 static int Weapons_loaded = 0;
