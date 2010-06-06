@@ -8480,7 +8480,9 @@ void sexp_play_sound_from_table(int n)
 
 
 	// play sound effect ---------------------------
-	snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	if (sound_index >= 0) {
+		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	}
 
 	if (MULTIPLAYER_MASTER) {
 		multi_start_packet();
@@ -8662,7 +8664,10 @@ void sexp_explosion_effect(int n)
 
 
 	// play sound effect ---------------------------
-	snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	if (sound_index >= 0)
+	{
+		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	}
 
 
 	// create the fireball -------------------------
