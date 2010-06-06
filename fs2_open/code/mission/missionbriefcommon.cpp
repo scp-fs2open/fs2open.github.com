@@ -172,7 +172,6 @@ static int Brief_stage_highlight_sound_handle = -1;
 // used for scrolling briefing text ( if necessary )
 int		Num_brief_text_lines[MAX_TEXT_STREAMS];
 int		Top_brief_text_line;
-static char		Brief_text[MAX_BRIEF_LINES][MAX_BRIEF_LINE_LEN];
 
 // Used to support drawing colored text for the briefing.  Gets complicates since we
 // need to be able to draw one character at a time as well when the briefing text
