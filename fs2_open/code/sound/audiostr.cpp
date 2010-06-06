@@ -905,7 +905,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 				float *swap_tmp;
 
 				for (int i = 0; i < rc; i += sizeof(float)) {
-					swap_tmp = (float *)(dest_buf + i);
+					swap_tmp = (float *)((ubyte*)dest_buf + i);
 					*swap_tmp = INTEL_FLOAT(swap_tmp);
 				}
 #endif
