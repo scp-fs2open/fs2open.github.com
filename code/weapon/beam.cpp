@@ -2889,7 +2889,7 @@ void beam_handle_collisions(beam *b)
 		r_coll_count++;		
 
 		// play the impact sound
-		if(first_hit){
+		if ( first_hit && (wi->impact_snd >= 0) ) {
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 
