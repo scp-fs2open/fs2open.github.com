@@ -315,6 +315,7 @@ typedef struct bsp_info {
 	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
+	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 
 	float		dumb_turn_rate;
 
@@ -350,6 +351,7 @@ typedef struct bsp_info {
 		dumb_turn_rate = 0.f;
 		bsp_data = NULL;
 		rad = 0.f;
+		lod_name[ 0 ] = '\0';  
 
 		/* Compound types */
 		memset( live_debris, 0, sizeof( live_debris ) );

@@ -1335,6 +1335,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].gun_rotation = false;
 
+				if ( (p = strstr(props, "$lod0_name")) != NULL)
+					get_user_prop_value(p+10, pm->submodel[n].lod_name);
+
 				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
 					p += 12;
 					while (*p == ' ') p++;
@@ -2490,7 +2493,14 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		}
 
 		sm1->num_details = 0;
-		l1 = strlen(sm1->name);
+		// If a backward compatibility LOD name is declared use it
+		if (strlen(sm1->lod_name) != 0) {
+			l1=strlen(sm1->lod_name);
+		}
+		// otherwise use the name for LOD comparision
+		else {
+			l1 = strlen(sm1->name);
+		}
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
@@ -2515,19 +2525,36 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			}
 
 			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
-			if ((int)strlen(sm2->name)!=l1) continue;
+			if ((int)strlen(sm2->name)!=l1) continue; 
 	
 			int ndiff = 0;
 			int first_diff = 0;
 			for ( k=0; k<l1; k++)	{
-				if (sm1->name[k] != sm2->name[k] )	{
-					if (ndiff==0) first_diff = k;
-					ndiff++;
+				// If a backward compatibility LOD name is declared use it
+				if (strlen(sm1->lod_name) != 0) {
+					if (sm1->lod_name[k] != sm2->name[k] )	{
+						if (ndiff==0) first_diff = k;
+						ndiff++;
+					}
+				}
+				// otherwise do the standard LOD comparision
+				else {
+					if (sm1->name[k] != sm2->name[k] )	{
+						if (ndiff==0) first_diff = k;
+						ndiff++;
+					}
 				}
 			}
 			if (ndiff==1)	{		// They only differ by one character!
 				int dl1, dl2;
-				dl1 = tolower(sm1->name[first_diff]) - 'a';
+				// If a backward compatibility LOD name is declared use it
+				if (strlen(sm1->lod_name) != 0) {
+					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
+				}
+				// otherwise do the standard LOD comparision
+				else {
+					dl1 = tolower(sm1->name[first_diff]) - 'a';
+				}
 				dl2 = tolower(sm2->name[first_diff]) - 'a';
 
 				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
@@ -2536,7 +2563,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 					dl2--;	// Start from 1 up...
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
-					//mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2, sm1->name ));
+  				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
 				}
 			}
 		}
