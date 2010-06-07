@@ -5623,23 +5623,29 @@ void ship_render(object * obj)
 
 					bank = &(model_get(sip->model_num))->missile_banks[i];
 					
-					num_secondaries_rendered = 0;
-					
-					for(k = 0; k < bank->num_slots; k++)
-                    {
-						secondary_weapon_pos = bank->pnt[k];
-
-                        if (num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i])
-                            break;
-
-						if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
-                            continue;
+					if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+						for(k = 0; k < bank->num_slots; k++) {
+							model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
+						}
+					} else {
+						num_secondaries_rendered = 0;
 						
-						num_secondaries_rendered++;
-		
-						vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+						for(k = 0; k < bank->num_slots; k++)
+						{
+							secondary_weapon_pos = bank->pnt[k];
 
-						model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+							if (num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i])
+								break;
+
+							if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
+								continue;
+							
+							num_secondaries_rendered++;
+			
+							vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+
+							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+						}
 					}
 				}
 				g3_done_instance(true);
@@ -9252,6 +9258,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 //mprintf(("I am going to fire a weapon %d times, from %d points, the last point fired was %d, and that will be point %d\n",numtimes,points,shipp->last_fired_point[bank_to_fire],shipp->last_fired_point[bank_to_fire]%num_slots));
 				for ( w = 0; w < numtimes; w++ ) {
+					polymodel *weapon_model = NULL;
+					if(winfo_p->external_model_num >= 0)
+						weapon_model = model_get(winfo_p->external_model_num);
+
+					if ((weapon_model->n_guns <= swp->external_model_fp_counter[bank_to_fire]) || (swp->external_model_fp_counter[bank_to_fire] < 0))
+						swp->external_model_fp_counter[bank_to_fire] = 0;
+
 					for ( j = 0; j < points; j++ ) {
 						int pt; //point
 						if (winfo_p->wi_flags2 & WIF2_CYCLE){
@@ -9265,19 +9278,21 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 
 						int sub_shots = 1;
-						polymodel *weapon_model = NULL;
-						if(winfo_p->external_model_num >= 0){
-							weapon_model = model_get(winfo_p->external_model_num);
-							// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
-							if (weapon_model->n_guns) 
+						// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
+						if (weapon_model->n_guns)
+							if (!(winfo_p->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP))
 								sub_shots = weapon_model->gun_banks[0].num_slots;
-						}
 
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
 							// Use 0 instead of bank_to_fire as index to external weapon model firingpoints 
-							if (weapon_model && weapon_model->n_guns)
-								vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
+							if (weapon_model && weapon_model->n_guns) {
+								if (winfo_p->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP) {
+									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[bank_to_fire]]);
+								} else {
+									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
+								}
+							}
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
@@ -9469,6 +9484,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 						}
 					}
+					swp->external_model_fp_counter[bank_to_fire]++;
 //					shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 				}
 			}
@@ -10078,6 +10094,24 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			}
 			shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
 			pnt = pm->missile_banks[bank].pnt[pnt_index++];
+
+			polymodel *weapon_model = NULL;
+			if(wip->external_model_num >= 0){
+				weapon_model = model_get(wip->external_model_num);
+			}
+
+			if (weapon_model && weapon_model->n_guns) {
+				int external_bank = bank + MAX_SHIP_PRIMARY_BANKS;
+				if (wip->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP) {
+					if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
+						swp->external_model_fp_counter[external_bank] = 0;
+					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[external_bank]]);
+					swp->external_model_fp_counter[external_bank]++;
+				} else {
+					// make it use the 0 index slot
+					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[0]);
+				}
+			}
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
