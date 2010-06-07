@@ -55,7 +55,7 @@ int Fiction_viewer_text_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 	// standard FS2-style interface
 	{
 		{ // GR_640
-			37,		37,		568,	344
+			17,		37,		588,	344
 		},
 		{ // GR_1024
 			25,		48,		944,	576
