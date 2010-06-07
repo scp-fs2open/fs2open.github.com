@@ -9259,11 +9259,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 //mprintf(("I am going to fire a weapon %d times, from %d points, the last point fired was %d, and that will be point %d\n",numtimes,points,shipp->last_fired_point[bank_to_fire],shipp->last_fired_point[bank_to_fire]%num_slots));
 				for ( w = 0; w < numtimes; w++ ) {
 					polymodel *weapon_model = NULL;
-					if(winfo_p->external_model_num >= 0)
+					if(winfo_p->external_model_num >= 0) 
 						weapon_model = model_get(winfo_p->external_model_num);
 
-					if ((weapon_model->n_guns <= swp->external_model_fp_counter[bank_to_fire]) || (swp->external_model_fp_counter[bank_to_fire] < 0))
-						swp->external_model_fp_counter[bank_to_fire] = 0;
+					if (weapon_model)
+						if ((weapon_model->n_guns <= swp->external_model_fp_counter[bank_to_fire]) || (swp->external_model_fp_counter[bank_to_fire] < 0))
+							swp->external_model_fp_counter[bank_to_fire] = 0;
 
 					for ( j = 0; j < points; j++ ) {
 						int pt; //point
@@ -9279,7 +9280,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 						int sub_shots = 1;
 						// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
-						if (weapon_model->n_guns)
+						if (weapon_model && weapon_model->n_guns)
 							if (!(winfo_p->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP))
 								sub_shots = weapon_model->gun_banks[0].num_slots;
 
