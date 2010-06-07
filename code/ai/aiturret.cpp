@@ -1008,7 +1008,9 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 
-	ship_model_stop(objp);	
+	ship_model_stop(objp);
+
+	// per firingpoint based changes go here for turrets
 }
 
 //Update turret aiming data based on max turret aim update delay

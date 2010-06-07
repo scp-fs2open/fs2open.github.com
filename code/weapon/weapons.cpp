@@ -628,6 +628,10 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_SHOW_FRIENDLY;
 		else if (!stricmp(NOX("capital+"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CAPITAL_PLUS;
+		else if (!stricmp(NOX("chain external model fps"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_EXTERNAL_WEAPON_FP;
+		else if (!stricmp(NOX("external model launcher"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_EXTERNAL_WEAPON_LNCH;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
