@@ -2620,8 +2620,8 @@ strcpy_s(parse_error_text, temp_error);
 			override_strings = true;
 		}
 
-		for(i = 0; i < num_groups; i++) {
-			for(j = 0; j < num_strings; j++) {
+		for(j = 0; j < num_strings; j++) {
+			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
 					//so now the string from the list above as well as the ai priority group name match
 					//clear it if override has been set
@@ -2633,9 +2633,15 @@ strcpy_s(parse_error_text, temp_error);
 						//find the index number of the current ship info type
 						if (Ship_info[k].name == sip->name) {
 							Ai_tp_list[i].ship_class.push_back(k);
+							break;
 						}
 					}
+					// found something, try next string
+					break;
 				}
+			}
+			if (i == num_groups) {
+				Warning(LOCATION,"Unidentified priority group '%s' set for ship class '%s'\n", target_group_strings[j].c_str(), sip->name);
 			}
 		}
 	}
@@ -2894,7 +2900,11 @@ strcpy_s(parse_error_text, temp_error);
 						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
 							sp->target_priority[i] = j;
 							sp->num_target_priorities++;
+							break;
 						}
+					}
+					if (j == num_groups) {
+						Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in ship class '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, sip->name);
 					}
 				}
 			}
@@ -3225,8 +3235,8 @@ void parse_ship_type()
 			override_strings = true;
 		}
 
-		for(i = 0; i < num_groups; i++) {
-			for(j = 0; j < num_strings; j++) {
+		for(j = 0; j < num_strings; j++) {
+			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
 					//so now the string from the list above as well as the ai priority group name match
 					//clear it if override has been set
@@ -3236,7 +3246,11 @@ void parse_ship_type()
 					}
 					//find the index number of the current ship info type
 					Ai_tp_list[i].ship_type.push_back(ship_type_name_lookup(name_buf));
+					break;
 				}
+			}
+			if (i == num_groups) {
+				Warning(LOCATION,"Unidentified priority group '%s' set for objecttype '%s'\n", target_group_strings[j].c_str(), stp->name);
 			}
 		}
 	}
@@ -3651,6 +3665,24 @@ void ship_parse_post_cleanup()
 		{
 			Warning(LOCATION, "Compatibility warning:\nNo shield icon specified for '%s' but the \"generate icon\" flag is not specified.\nEnabling flag by default.\n", sip->name);
 			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
+		}
+	}
+
+	// check also target groups here
+	int n_tgt_groups = Ai_tp_list.size();
+
+	if (n_tgt_groups > 0) {
+		for(i = 0; i < n_tgt_groups; i++) {
+			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
+				//had none of these, check next
+				if ((Ai_tp_list[i].obj_type == -1)) {
+					//didn't have this one
+					if (!(Ai_tp_list[i].ship_class.size() || Ai_tp_list[i].ship_type.size() || Ai_tp_list[i].weapon_class.size())) {
+						// had nothing - time to issue a warning
+						Warning(LOCATION, "Target priority group '%s' had no targeting rules issued for it.\n", Ai_tp_list[i].name);
+					}
+				}
+			}
 		}
 	}
 }
@@ -16050,7 +16082,11 @@ void parse_ai_target_priorities()
 			for(j = 0; j < MAX_WEAPON_TYPES ; j++) {
 				if ( !stricmp(Weapon_info[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.weapon_class.push_back(j);
+					break;
 				}
+			}
+			if (j == MAX_WEAPON_TYPES) {
+				Warning(LOCATION, "Unidentified weapon class '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
 	}
@@ -16063,7 +16099,11 @@ void parse_ai_target_priorities()
 			for (j = 0; j < num_ai_tgt_obj_flags; j++) {
 				if ( !stricmp(ai_tgt_obj_flags[j].name, temp_strings[i].c_str()) ) {
 					temp_priority.obj_flags |= ai_tgt_obj_flags[j].def;
+					break;
 				}
+			}
+			if (j == num_ai_tgt_obj_flags) {
+				Warning(LOCATION, "Unidentified object flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
 	}
@@ -16080,7 +16120,11 @@ void parse_ai_target_priorities()
 					} else {
 						temp_priority.sif2_flags |= ai_tgt_ship_flags[j].def;
 					}
+					break;
 				}
+			}
+			if (j == num_ai_tgt_ship_flags) {
+				Warning(LOCATION, "Unidentified ship class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
 	}
@@ -16097,7 +16141,11 @@ void parse_ai_target_priorities()
 					} else {
 						temp_priority.wif2_flags |= ai_tgt_weapon_flags[j].def;
 					}
+					break;
 				}
+			}
+			if (j == num_ai_tgt_weapon_flags) {
+				Warning(LOCATION, "Unidentified weapon class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
 	}
