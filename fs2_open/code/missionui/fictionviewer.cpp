@@ -55,10 +55,10 @@ int Fiction_viewer_text_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 	// standard FS2-style interface
 	{
 		{ // GR_640
-			39,		32,		574,	356
+			37,		37,		568,	344
 		},
 		{ // GR_1024
-			30,		40,		909,	597
+			25,		48,		944,	576
 		}
 	},
 	// WCS-style interface
@@ -130,10 +130,10 @@ int Fiction_viewer_slider_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 	// standard FS2-style interface
 	{
 		{ // GR_640
-			618,	49,		18,		317 //Initial position x, initial position y, width, height of the slider column
+			618,	48,		18,		320		//Initial position x, initial position y, width, height of the slider column
 		},
 		{ // GR_1024
-			988,	72,		28,		529
+			988,	70,		28,		532
 		}
 	},
 	// WCS-style interface
@@ -403,7 +403,7 @@ void fiction_viewer_do_frame(float frametime)
 	{
 		// can be scrolled down
 		int more_txt_x = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][0] + (Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][2]/2) - 10;
-		int more_txt_y = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][1] + Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3] - 2;				// located below text, centered
+		int more_txt_y = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][1] + Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3];				// located below text, centered
 
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
