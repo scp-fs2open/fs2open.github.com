@@ -195,7 +195,6 @@ typedef struct weapon {
 
 
 // info specific to beam weapons
-#define MAX_BEAM_SECTIONS				5
 typedef struct beam_weapon_section_info {
 	float width;							// width of the section
 	ubyte rgba_inner[4];					// for non-textured beams

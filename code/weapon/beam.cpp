@@ -33,6 +33,7 @@
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
 #include "iff_defs/iff_defs.h"
+#include "globalincs/globals.h"
 
 
 
@@ -53,86 +54,6 @@ extern int Cmdline_nohtl;
 #define SHOT_POINT_TIME				200			// 5 arcs a second
 
 #define TOOLTIME						1500.0f
-
-// max # of collisions we'll allow per frame
-#define MAX_FRAME_COLLISIONS		10
-
-// collision info
-typedef struct beam_collision {
-	mc_info			cinfo;							// collision info
-	int				c_objnum;						// objnum of the guy we recently collided with
-	int				c_sig;							// object sig
-	int				c_stamp;							// when we should next apply damage	
-	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
-	int			is_exit_collision;					//does this occur when the beam is exiting the ship
-} beam_collision;
-
-// beam flag defines
-#define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
-#define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
-
-// beam struct (the actual weapon/object)
-typedef struct beam {
-	// low-level data
-	int		objnum;					// our own objnum
-	int		weapon_info_index;
-	int		sig;						// signature for the shooting object
-	object	*objp;					// the shooting object (who owns the turret that I am being fired from)
-	object	*target;					// target object
-	ship_subsys *target_subsys;	// targeted subsys
-	int		target_sig;				// target sig
-	ship_subsys *subsys;				// subsys its being fired from
-	beam		*next, *prev;			// link list stuff
-	vec3d	targeting_laser_offset;
-	int		framecount;				// how many frames the beam has been active
-	int		flags;					// see BF_* defines 	
-	float		shrink;					// shrink factor	
-
-	// beam info	
-	int		warmup_stamp;			// timestamp for "warming up"
-	int		warmdown_stamp;		// timestamp for "warming down"
-	int		type;						// see BEAM_TYPE_* defines in beam.h
-	float		life_left;				// in seconds
-	float		life_total;				// total life	
-	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
-	// the vector between it and last_start is where the beam will be aiming. AFTER performing collision checks, it is the
-	// literal world collision point on the object (or meaningless, if we hit nothing). The function beam_move_all_pre() is
-	// responsible for then setting it up pre-collision time
-	vec3d	last_shot;				
-	vec3d	last_start;				
-	int		shot_index;				// for type D beam weapons
-	float	beam_glow_frame;		// what frame a beam glow animation is on
-	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
-
-	// recent collisions
-	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions
-	int r_collision_count;														// # of recent collisions
-
-	// collision info for this frame
-	beam_collision f_collisions[MAX_FRAME_COLLISIONS];					// collisions for the current frame
-	int f_collision_count;														// # of collisions we recorded this frame
-
-	// looping sound info, HANDLE
-	int		beam_sound_loop;		// -1 if none
-
-	// team 
-	char		team;
-
-	float range;
-	float damage_threshold;
-
-	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
-	// everything looks the same
-	beam_info binfo;
-	bool fighter_beam;
-	int bank;
-
-	int Beam_muzzle_stamp;
-	vec3d local_pnt;
-	int firingpoint;
-
-	float		beam_width;
-} beam;
 
 beam Beams[MAX_BEAMS];				// all beams
 beam Beam_free_list;					// free beams
