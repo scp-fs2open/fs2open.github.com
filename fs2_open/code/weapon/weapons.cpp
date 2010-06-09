@@ -3474,6 +3474,10 @@ void weapon_delete(object *obj)
 	weapon *wp;
 	int num;
 
+	Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
+	Script_system.RunCondition(CHA_ONWEAPONDELETE);
+	Script_system.RemHookVars(2, "Weapon", "Self");
+
 	num = obj->instance;
 
 	Assert( Weapons[num].objnum == OBJ_INDEX(obj));
