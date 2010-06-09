@@ -687,6 +687,9 @@ int	Sexp_music_handle = -1;
 void sexp_stop_music(int fade = 1);
 
 // for sound environments - Goober5000/Taylor
+#define SSEO_VOLUME		0
+#define SSEO_DECAY_TIME	1
+#define SSEO_DAMPING	2
 int sexp_sound_environment_option_lookup(char *text);
 char *Sound_environment_option[] = { "volume", "decay time", "damping" };
 int Num_sound_environment_options = 3;
@@ -2412,6 +2415,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 				
+			case OPF_SOUND_ENVIRONMENT:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && ds_eax_get_preset_id(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT;
+				}
+				break;
+
 			case OPF_SOUND_ENVIRONMENT_OPTION:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -2605,27 +2618,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;						
 
 			case OPF_BACKGROUND_BITMAP:
-				break;
-
 			case OPF_SUN_BITMAP:
-				break;
-
 			case OPF_NEBULA_STORM_TYPE:
-				break;
-
 			case OPF_NEBULA_POOF:
-				break;
-
 			case OPF_POST_EFFECT:
-				if (type2 != SEXP_ATOM_STRING)
-				{
+				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
 
 			case OPF_HUD_ELEMENT:
-				if (type2 != SEXP_ATOM_STRING)
-				{
+				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				} else {
 					char *gauge = CTEXT(node);
@@ -8673,6 +8676,11 @@ int sexp_sound_environment_option_lookup(char *text)
 {
 	int i;
 
+	Assert(text != NULL);
+	if (text == NULL) {
+		return -1;
+	}
+	
 	for (i = 0; i < Num_sound_environment_options; i++) {
 		if (!strcmp(text, Sound_environment_option[i])) {
 			return i;
@@ -8691,7 +8699,7 @@ void sexp_set_sound_environment(int node)
 
 	char *preset = CTEXT(node);
 
-	if ( preset && !stricmp(preset, "none") ) {
+	if ( preset && !stricmp(preset, SEXP_NONE_STRING) ) {
 		sound_env_disable();
 		return;
 	}
@@ -8710,15 +8718,15 @@ void sexp_set_sound_environment(int node)
 	n = CDR(node);
 
 	while (n >= 0) {
-		char *option = CTEXT(n);
+		int option = sexp_sound_environment_option_lookup(CTEXT(n));
 
 		float val = (float)eval_num(CDR(n)) / 1000.0f;
 
-		if ( !stricmp(option, "volume") ) {
+		if ( option == SSEO_VOLUME ) {
 			env.volume = val;
-		} else if ( !stricmp(option, "decay time") ) {
+		} else if ( option == SSEO_DECAY_TIME ) {
 			env.decay = val;
-		} else if ( !stricmp(option, "damping") ) {
+		} else if ( option == SSEO_DAMPING ) {
 			env.damping = val;
 		}
 
@@ -8735,15 +8743,15 @@ void sexp_update_sound_environment(int node)
 	int n = node;
 
 	while (n >= 0) {
-		char *option = CTEXT(n);
+		int option = sexp_sound_environment_option_lookup(CTEXT(n));
 
 		float val = (float)eval_num(CDR(n)) / 1000.0f;
 
-		if ( !stricmp(option, "volume") ) {
+		if ( option == SSEO_VOLUME ) {
 			ds_eax_set_volume(val);
-		} else if ( !stricmp(option, "decay time") ) {
+		} else if ( option == SSEO_DECAY_TIME ) {
 			ds_eax_set_decay_time(val);
-		} else if ( !stricmp(option, "damping") ) {
+		} else if ( option == SSEO_DAMPING ) {
 			ds_eax_set_damping(val);
 		}
 
@@ -19988,7 +19996,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_SOUND_ENVIRONMENT:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_SOUND_ENVIRONMENT;
 
 			// fall through
 			argnum--;
@@ -21369,6 +21377,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_HUD_ELEMENT:
 			return "Invalid hud element magic name";
+
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT:
+			return "Invalid sound environment";
 
 		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
 			return "Invalid sound environment option";
@@ -23250,7 +23261,7 @@ sexp_help_struct Sexp_help[] = {
 	// Taylor
 	{ OP_SET_SOUND_ENVIRONMENT, "set-sound-environment\r\n"
 		"Sets the EAX environment for all sound effects.  Optionally sets one or more parameters specific to the environment.  Takes 1 or more arguments...\r\n"
-		"\t1:\tSound environment name (a value of \"none\" will disable the effects)\r\n"
+		"\t1:\tSound environment name (a value of \"" SEXP_NONE_STRING "\" will disable the effects)\r\n"
 		"\t2:\tEnvironment option (optional)\r\n"
 		"\t3:\tEnvironment value x 1000, e.g. 10 is 0.01 (optional)\r\n"
 		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"

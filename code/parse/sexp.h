@@ -115,7 +115,8 @@ struct ship;
 #define OPF_ARMOR_TYPES			69		// FUBAR - Armor type or <none>
 #define OPF_FONT				70		// Goober5000 - a FreeSpace font
 #define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
-#define OPF_SOUND_ENVIRONMENT_OPTION 72	// Goober5000 - one of Taylor's options
+#define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
+#define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -849,7 +850,8 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SUBSYS_TYPE			-141
 #define SEXP_CHECK_INVALID_FONT					-142
 #define SEXP_CHECK_INVALID_HUD_ELEMENT			-143
-#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-144
+#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT	-144
+#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
