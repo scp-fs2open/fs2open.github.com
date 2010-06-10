@@ -53,9 +53,10 @@ BEGIN_EVENT_TABLE(FREDFrame, wxFrame)
 END_EVENT_TABLE()
 
 
-FREDFrame::FREDFrame(const wxChar *title, int xpos, int ypos, int width, int height)
+FREDFrame::FREDFrame(const wxChar *title, int xpos, int ypos, int width, int height, wxFREDMission* current_Mission)
 	: wxFrame(NULL, -1, title, wxPoint(xpos, ypos), wxSize(width, height))
 {
+	the_Mission = current_Mission;
 	myMenuBar = wxXmlResource::Get()->LoadMenuBar(_T("FREDMenu"));
 	SetMenuBar(myMenuBar);
 
@@ -115,7 +116,7 @@ void FREDFrame::OnEditorsAsteroidField(wxCommandEvent &WXUNUSED(event))
 
 void FREDFrame::OnEditorsMissionSpecs(wxCommandEvent &WXUNUSED(event))
 {
-	dlgMissionSpecsEditor *dlg = new dlgMissionSpecsEditor(this);
+	dlgMissionSpecsEditor *dlg = new dlgMissionSpecsEditor(this, the_Mission);
 	dlg->ShowModal();
 	dlg->Destroy();
 }
@@ -157,9 +158,8 @@ void FREDFrame::OnEditorsVoiceActingManager(wxCommandEvent &WXUNUSED(event))
 
 void FREDFrame::OnEditorsCampaign(wxCommandEvent &WXUNUSED(event))
 {
-	dlgCampaignEditor *dlg = new dlgCampaignEditor(this);
-	dlg->ShowModal();
-	dlg->Destroy();
+	frmCampaignEditor *frm = new frmCampaignEditor(this);
+	frm->Show();
 }
 
 void FREDFrame::OnHelpAboutFRED2(wxCommandEvent &WXUNUSED(event))
