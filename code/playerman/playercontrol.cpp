@@ -87,7 +87,9 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 	if ((ap->p == bp->p) && (ap->h == bp->h))
 		return;
 
-	sk = 1.0f - scale*flFrametime;
+	sk = 1.0f - scale*flRealframetime;
+
+	CLAMP(sk, 0.0f, 1.0f);
 
 	delta.p = ap->p - bp->p;
 	delta.h = ap->h - bp->h;
@@ -629,7 +631,11 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				if (!(Objects[Player->objnum].phys_info.flags & PF_GLIDING)) {
 					//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 					pmax_speed = Ships[Player_obj->instance].current_max_speed;
-					ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					if (pmax_speed > 0.0f) {
+						ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					} else {
+						ci->forward_cruise_percent = 0.0f;
+					}
 					override_analog_throttle = 1;
 					//if ( ci->forward_cruise_percent > 100.0f )
 						//HUD_printf ("Cannot travel that fast.  Setting throttle to full.");
@@ -757,7 +763,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->fire_secondary_count++;
 
 			// if we're a multiplayer client, set our accum bits now
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
 				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
 			}
 		}

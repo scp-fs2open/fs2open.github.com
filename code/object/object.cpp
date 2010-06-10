@@ -790,6 +790,8 @@ void obj_move_call_physics(object *objp, float frametime)
 					int points = pm->missile_banks[i].num_slots;
 					int missles_left = shipp->weapons.secondary_bank_ammo[i];
 					int next_point = shipp->weapons.secondary_next_slot[i];
+					float fire_wait = Weapon_info[shipp->weapons.secondary_bank_weapons[i]].fire_wait;
+					float reload_time = (fire_wait == 0.0f) ? 1.0f : 1.0f / fire_wait;
 
 					//ok so...we want to move up missles but only if there is a missle there to be moved up
 					//there is a missle behind next_point, and how ever many missles there are left after that
@@ -799,7 +801,7 @@ void obj_move_call_physics(object *objp, float frametime)
 						for (int k = next_point; k < next_point+missles_left; k ++) {
 							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
 							if (s_pct < 1.0)
-								s_pct += shipp->reload_time[i] * frametime;
+								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
 								s_pct = 1.0f;
 						}
@@ -808,7 +810,7 @@ void obj_move_call_physics(object *objp, float frametime)
 						for (int k = 0; k < points; k++) {
 							float &s_pct = shipp->secondary_point_reload_pct[i][k];
 							if (s_pct < 1.0)
-								s_pct += shipp->reload_time[i] * frametime;
+								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
 								s_pct = 1.0f;
 						}
@@ -1927,7 +1929,6 @@ void object_set_gliding(object *objp, bool enable)
 
 	if(enable) {
 		objp->phys_info.flags |= PF_GLIDING;
-		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
 	} else {
 		objp->phys_info.flags &= ~PF_GLIDING;
 		vm_vec_rotate(&objp->phys_info.prev_ramp_vel, &objp->phys_info.vel, &objp->orient);	//Backslash

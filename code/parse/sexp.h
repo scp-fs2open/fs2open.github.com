@@ -114,6 +114,9 @@ struct ship;
 #define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
 #define OPF_ARMOR_TYPES			69		// FUBAR - Armor type or <none>
 #define OPF_FONT				70		// Goober5000 - a FreeSpace font
+#define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
+#define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
+#define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -347,6 +350,8 @@ struct ship;
 #define OP_IN_SEQUENCE						(0x000a | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ARGUMENT				(0x000b | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_DO_FOR_VALID_ARGUMENTS			(0x000c | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
 
 
 // sexpressions with side-effects
@@ -575,6 +580,10 @@ struct ship;
 #define OP_SET_ARMOR_TYPE					(0x00d2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 #define OP_CUTSCENES_SHOW_SUBTITLE_TEXT		(0x00d3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CUTSCENES_SHOW_SUBTITLE_IMAGE	(0x00d4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_MISSION_SET_SUBSPACE				(0x00d5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_HUD_DISPLAY_GAUGE				(0x00d6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_SOUND_ENVIRONMENT			(0x00d7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
+#define OP_UPDATE_SOUND_ENVIRONMENT			(0x00d8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -840,6 +849,9 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_VARIABLE_TYPE		-140
 #define SEXP_CHECK_INVALID_SUBSYS_TYPE			-141
 #define SEXP_CHECK_INVALID_FONT					-142
+#define SEXP_CHECK_INVALID_HUD_ELEMENT			-143
+#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT	-144
+#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1039,7 +1051,21 @@ extern int Num_submenus;
 //Outputs sexp.html file
 bool output_sexps(char *filepath);
 
-
 void multi_sexp_eval();
+
+// Goober5000/Taylor
+extern int Num_sound_environment_options;
+extern char *Sound_environment_option[];
+
+/** Global state variables for the hud-display-gauge sexp.
+They all should be named Sexp_hud_display_*;
+They all should follow the following symantics for the value of the
+variable:
+=0	don't show
+=1	show until canceled
+>1	timestamp when gauge should stop showing (set zero when expired)
+\sa sexp_hud_display_warpout
+*/
+extern int Sexp_hud_display_warpout;
 
 #endif

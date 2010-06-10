@@ -1076,7 +1076,7 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 	int	rval = 0;
 
 #if !defined FS2_DEMO
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
+	if (MULTI_DOGFIGHT) {
 		if (weapon_flags & DOGFIGHT_WEAPON)
 			rval = 1;
 	}
@@ -1946,7 +1946,7 @@ void weapon_select_common_init()
 {
 	int idx;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		// initialize for all teams
 		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 			weapon_select_init_team(idx);
@@ -3979,7 +3979,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 
 	common_flash_button_init();
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_HOST ) {
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+		if(MULTI_TEAM){
 			// set the global pointers to the right pools
 			common_set_team_pointers(pl->p_info.team);
 		}
@@ -3989,7 +3989,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 			update = wl_apply(mode, from_bank, from_list, to_bank, to_list, ship_slot, player_index, dont_play_sound);
 		}		
 
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+		if(MULTI_TEAM){
 			// set the global pointers to the right pools
 			common_set_team_pointers(Net_player->p_info.team);
 		}

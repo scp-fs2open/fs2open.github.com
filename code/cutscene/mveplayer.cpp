@@ -19,7 +19,7 @@
 #include "osapi/osapi.h"
 #include "io/timer.h"
 #include "sound/sound.h"
-#include "sound/ds.h"
+#include "sound/openal.h"
 #include "bmpman/bmpman.h"
 //#include "sound/audiostr.h"
 
@@ -45,7 +45,6 @@ static int mve_audio_canplay = 0;
 static int mve_audio_compressed = 0;
 static int audiobuf_created;
 
-#ifdef USE_OPENAL
 // struct for the audio stream information
 typedef struct MVE_AUDIO_T {
 	ALenum format;
@@ -61,7 +60,6 @@ mve_audio_t *mas;  // mve_audio_stream
 
 // audio decompressor
 extern void mveaudio_uncompress(short *buffer, unsigned char *data, int length);
-#endif // USE_OPENAL
 
 // video variables
 int g_width, g_height;
@@ -227,7 +225,6 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 		return;
 	}
 
-#ifdef USE_OPENAL
     int flags, desired_buffer, sample_rate;
 
     mas = (mve_audio_t *) vm_malloc ( sizeof(mve_audio_t) );
@@ -278,7 +275,6 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 	OpenAL_ErrorPrint( alSourcef(mas->source_id, AL_GAIN, 1.0f) );
 
 	memset(mas->audio_buffer, 0, MVE_AUDIO_BUFFERS * sizeof(ALuint));
-#endif // USE_OPENAL
 
     mve_audio_buffer_tail = 0;
 
@@ -289,7 +285,6 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 void mve_audio_play()
 {
 	if (mve_audio_canplay) {
-#ifdef USE_OPENAL
 		ALint status, bqueued;
 
 		OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_SOURCE_STATE, &status), return );
@@ -301,7 +296,6 @@ void mve_audio_play()
 		if (status != AL_PLAYING && bqueued > 0) {
 			OpenAL_ErrorPrint( alSourcePlay(mas->source_id) );
 		}
-#endif // USE_OPENAL
 	}
 }
 
@@ -311,7 +305,6 @@ static void mve_audio_stop()
 	if (!audiobuf_created)
 		return;
 
-#ifdef USE_OPENAL
 	ALint p = 0;
 
 	mve_audio_playing = 0;
@@ -332,7 +325,6 @@ static void mve_audio_stop()
 		vm_free(mas);
 		mas = NULL;
 	}
-#endif // USE_OPENAL
 }
 
 int mve_audio_data(ubyte major, ubyte *data)
@@ -342,7 +334,6 @@ int mve_audio_data(ubyte major, ubyte *data)
 	int nsamp;
 
 	if (mve_audio_canplay) {
-#ifdef USE_OPENAL
 		chan = mve_get_ushort(data + 2);
 		nsamp = mve_get_ushort(data + 4);
 
@@ -409,7 +400,6 @@ int mve_audio_data(ubyte major, ubyte *data)
 				mprintf(("MVE: Buffer overrun: Queue full\n"));
 			}
 		}
-#endif // USE_OPENAL
 	}
 
 	return 1;

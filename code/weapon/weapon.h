@@ -102,6 +102,8 @@ extern int Num_weapon_subtypes;
 #define WIF2_SHOWN_ON_RADAR				(1 << 21)	// allows non-bombs be visible on radar
 #define WIF2_SHOW_FRIENDLY				(1 << 22)	// allows friendly weapon radar dots be drawn
 #define WIF2_CAPITAL_PLUS				(1 << 23)   // AI will not use this weapon on fighters or bombers
+#define WIF2_EXTERNAL_WEAPON_FP			(1 << 24)	// will try to use external models FPs if possible
+#define WIF2_EXTERNAL_WEAPON_LNCH		(1 << 25)	// render external secondary as a launcher
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -193,7 +195,6 @@ typedef struct weapon {
 
 
 // info specific to beam weapons
-#define MAX_BEAM_SECTIONS				5
 typedef struct beam_weapon_section_info {
 	float width;							// width of the section
 	ubyte rgba_inner[4];					// for non-textured beams
@@ -216,7 +217,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_miss_factor[NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by skill level
+	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
 	int beam_loop_sound;				// looping beam sound
 	int beam_warmup_sound;				// warmup sound
 	int beam_warmdown_sound;			// warmdown sound
@@ -556,7 +557,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 // for weapons flagged as particle spewers, spew particles. wheee
 void weapon_maybe_spew_particle(object *obj);
 
-
+bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1 );
 int weapon_name_lookup(char *name);
 int cmeasure_name_lookup(char *name);

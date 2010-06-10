@@ -3347,7 +3347,7 @@ void send_mission_log_packet( int num )
 	int sindex;
 	log_entry *entry;
 
-	Assert ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) );
+	Assert ( MULTIPLAYER_MASTER );
 
 	// get the data from the log
 	entry = &log_entries[num];
@@ -3375,7 +3375,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 	char pname[NAME_LENGTH], sname[NAME_LENGTH];
 	fix timestamp;
 
-	Assert ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
+	Assert ( MULTIPLAYER_CLIENT );
 
 	offset = HEADER_LENGTH;
 	GET_DATA(type);

@@ -7,85 +7,61 @@
  *
 */
 
-
-
-
-#ifndef SCP_UNIX
-
-#ifndef USE_OPENAL
-#error This code has been modified to work only with OpenAL builds!
-#endif
-
 #include "globalincs/pstypes.h"
+#include "sound/openal.h"
 #include "sound/ds.h"
 #include "sound/dscap.h"
-#include "directx/vdsound.h"
 
+#include <string>
 
 
 int dscap_inited = 0;						// flag to indicate that DirectSoundCapture inited ok
-int dscap_recording;						// flag to indicate that sound is being recorded
+int dscap_recording = 0;						// flag to indicate that sound is being recorded
 
-static LPDIRECTSOUNDCAPTURE			pDSC;		// global capture interface
-static LPDIRECTSOUNDCAPTUREBUFFER	pDSCB;	// global capture buffer
+typedef struct ALcapture_t {
+	uint samples_per_second;
+	uint bits_per_sample;
+	uint n_channels;
+	uint block_align;
 
-static WAVEFORMATEX	Dscap_wfx;
+	ALenum format;
+	ALsizei buffer_size;
+} ALcapture_t;
 
-static unsigned long Dscap_last_capture_offset;	
+static ALcapture_t ALCaptureInfo;
 
-HINSTANCE Dscap_dll_handle = NULL;
+static ALCdevice *ds_capture_device = NULL;
+static std::string capture_dev_name;
 
-HRESULT (__stdcall *pfn_DirectSoundCaptureCreate)(LPGUID lpGUID, LPDIRECTSOUNDCAPTURE *lplpDSC, LPUNKNOWN pUnkOuter);
 
-// init the DirectSoundCapture system
+// init the capture system
 // exit:	0	->		success
 //			!0	->		failure
 int dscap_init()
 {
-	HRESULT	dsrval;
-
-	if ( dscap_inited ) {
+	if (dscap_inited) {
 		return 0;
 	}
 
-	if (Dscap_dll_handle == NULL) {
-		Dscap_dll_handle = LoadLibrary("dsound.dll");
+	bool rval = openal_init_device(NULL, &capture_dev_name);
 
-		if ( !Dscap_dll_handle ) {
-			return -1;
-		}
-	}
+	if ( !rval || capture_dev_name.empty() ) {
+		dscap_inited = 0;
 
-	pfn_DirectSoundCaptureCreate = (HRESULT(__stdcall *)(LPGUID lpGuid, LPDIRECTSOUNDCAPTURE *lplpDSC, IUnknown FAR *pUnkOuter))GetProcAddress(Dscap_dll_handle, "DirectSoundCaptureCreate");
-
-	if ( !pfn_DirectSoundCaptureCreate ) {
-		nprintf(( "Sound", "SOUND ==> Could not get DirectSoundCaptureCreate function pointer\n" ));
 		return -1;
 	}
 
-	dsrval = pfn_DirectSoundCaptureCreate(NULL, &pDSC, NULL);
-
-	if ( dsrval != DS_OK ) {
-		nprintf(( "Sound", "SOUND ==> Error '%s' initializing DirectSoundCapture.\n", get_DSERR_text(dsrval)  ));
-		return -1;
-	}		
-
-	pDSCB=NULL;
-
-	dscap_recording=0;
-	dscap_inited=1;
+	dscap_inited = 1;
 
 	return 0;
 }
 
 void dscap_release_buffer()
 {
-	if ( !pDSCB ) {
-		return;
+	if (ds_capture_device != NULL) {
+		OpenAL_C_ErrorPrint( alcCaptureCloseDevice(ds_capture_device) );
+		ds_capture_device = NULL;
 	}
-
-	pDSCB->Release();
-	pDSCB = NULL;
 }
 
 // create a capture buffer with the specified format
@@ -93,9 +69,8 @@ void dscap_release_buffer()
 //			!0	->		error creating the buffer
 int dscap_create_buffer(int freq, int bits_per_sample, int nchannels, int nseconds)
 {
-	HRESULT			dsrval;
-	DSCBUFFERDESC	dscbd;
-	WAVEFORMATEX	wfx;
+	ALenum al_format = AL_FORMAT_MONO8;
+	ALsizei buf_size = freq * nseconds;
 
 	if ( !dscap_inited ) {
 		dscap_init();
@@ -105,33 +80,40 @@ int dscap_create_buffer(int freq, int bits_per_sample, int nchannels, int nsecon
 		return -1;
 	}
 
-	// Set up recording format
-	wfx.wFormatTag = WAVE_FORMAT_PCM;
-	wfx.nChannels = (unsigned short)nchannels;
-	wfx.nSamplesPerSec = freq;
-	wfx.wBitsPerSample = (unsigned short)bits_per_sample;
-	wfx.cbSize = 0;
-	wfx.nBlockAlign = (unsigned short)(wfx.nChannels * (wfx.wBitsPerSample / 8));
-	wfx.nAvgBytesPerSec = wfx.nBlockAlign * wfx.nSamplesPerSec;
+	Assert( (nchannels == 1) || (nchannels == 2) );
+	Assert( (bits_per_sample == 8) || (bits_per_sample == 16) );
 
-	Dscap_wfx = wfx;	// save the recording format
-
-	if ( pDSCB ) {
-		dscap_release_buffer();
+	if (nchannels == 1) {
+		if (bits_per_sample == 8)  {
+			al_format = AL_FORMAT_MONO8;
+		} else if (bits_per_sample == 16) {
+			al_format = AL_FORMAT_MONO16;
+		}
+	} else if (nchannels == 2) {
+		if (bits_per_sample == 8) {
+			al_format = AL_FORMAT_STEREO8;
+		} else if (bits_per_sample == 16) {
+			al_format = AL_FORMAT_STEREO16;
+		}
 	}
 
-	memset(&dscbd, 0, sizeof(DSCBUFFERDESC));
-	dscbd.dwSize = sizeof(DSCBUFFERDESC);
-	dscbd.dwBufferBytes = wfx.nAvgBytesPerSec * nseconds;
-	dscbd.lpwfxFormat = &wfx;
+	const ALCchar *dev_name = (const ALCchar*) capture_dev_name.c_str();
+	ds_capture_device = alcCaptureOpenDevice(dev_name, freq, al_format, buf_size);
 
-	dsrval = pDSC->CreateCaptureBuffer(&dscbd, &pDSCB, NULL);
-	if ( dsrval != DS_OK ) {
-		nprintf(( "Sound", "SOUND ==> Error '%s' creating a DirectSoundCapture buffer.\n", get_DSERR_text(dsrval)  ));
+	if (ds_capture_device == NULL) {
 		return -1;
 	}
 
-	Dscap_last_capture_offset=0;
+	if ( alcGetError(ds_capture_device) != ALC_NO_ERROR ) {
+		return -1;
+	}
+
+	ALCaptureInfo.format = al_format;
+	ALCaptureInfo.bits_per_sample = bits_per_sample;
+	ALCaptureInfo.n_channels = nchannels;
+	ALCaptureInfo.samples_per_second = freq;
+	ALCaptureInfo.block_align = (nchannels * bits_per_sample) / 8;
+
 	return 0;
 }
 
@@ -141,91 +123,33 @@ int dscap_supported()
 	if ( !dscap_inited ) {
 		dscap_init();
 	}
+
 	return dscap_inited;
-}
-
-// fill up the capture buffer with silence
-int dscap_fill_buffer_with_silence()
-{
-	HRESULT			dsrval;
-	unsigned long	buffer_len, size1, size2;
-	void				*data1=NULL, *data2=NULL;
-
-	buffer_len = dscap_max_buffersize();
-
-	Assert(pDSCB);
-
-	dsrval = pDSCB->Lock(0, buffer_len, &data1, &size1, &data2, &size2, 0);
-	if ( dsrval != DS_OK ) {
-		return -1;
-	}
-
-	unsigned char silence_byte;
-
-	switch(Dscap_wfx.wBitsPerSample) {
-	case 8:
-		silence_byte = 0x80;
-		break;
-	case 16:
-		silence_byte = 0x00;
-		break;
-	default:
-		silence_byte = 0x00;
-		break;
-	}
-
-	if ( (data1) && (size1 > 0) ) {
-		memset(data1, silence_byte, size1);
-	}
-
-	if ( (data2) && (size2 > 0) ) {
-		memset(data2, silence_byte, size2);
-	}
-
-	dsrval = pDSCB->Unlock(data1, size1, data2, size2);
-	if ( dsrval != DS_OK ) {
-		return -1;
-	}
-
-	return 0;
 }
 
 // start recording into the buffer
 int dscap_start_record()
 {
-	HRESULT	dsrval;
-
-	if ( !dscap_inited ) {
-		dscap_init();
-	}
-
 	if ( !dscap_inited ) {
 		return -1;
 	}
 
-	if ( dscap_recording ) {
+	if (dscap_recording) {
 		return -1;
 	}
 
-	Assert(pDSCB);
+	OpenAL_C_ErrorCheck( alcCaptureStart(ds_capture_device), return -1 );
 
-	dscap_fill_buffer_with_silence();
+	dscap_recording = 1;
 
-	dsrval = pDSCB->Start(DSCBSTART_LOOPING);
-	if ( dsrval != DS_OK ) {
-		return -1;
-	}
-
-	dscap_recording=1;
 //	nprintf(("Alan","RTVOICE => start record\n"));
+
 	return 0;
 }
 
 // stop recording into the buffer
 int dscap_stop_record()
 {
-	HRESULT	dsrval;
-
 	if ( !dscap_inited ) {
 		return -1;
 	}
@@ -234,14 +158,12 @@ int dscap_stop_record()
 		return -1;
 	}
 
-	Assert(pDSCB);
-	dsrval = pDSCB->Stop();
-	if ( dsrval != DS_OK ) {
-		return -1;
-	}
+	OpenAL_C_ErrorCheck( alcCaptureStop(ds_capture_device), return -1 );
 
-	dscap_recording=0;
+	dscap_recording = 0;
+
 //	nprintf(("Alan","RTVOICE => stop record\n"));
+
 	return 0;
 }
 
@@ -249,24 +171,16 @@ int dscap_stop_record()
 void dscap_close()
 {
 	dscap_stop_record();
-	dscap_release_buffer();
 
-	if ( pDSC ) {
-		pDSC->Release();
-		pDSC=NULL;
-	}
-
-	if (Dscap_dll_handle != NULL) {
-		FreeLibrary(Dscap_dll_handle);
-		Dscap_dll_handle = NULL;
+	if (ds_capture_device != NULL) {
+		OpenAL_C_ErrorPrint( alcCaptureCloseDevice(ds_capture_device) );
+		ds_capture_device = NULL;
 	}
 }
 
 // return the max buffer size
 int dscap_max_buffersize()
 {
-	DSCBCAPS	caps;
-
 	if ( !dscap_inited ) {
 		dscap_init();
 	}
@@ -275,77 +189,40 @@ int dscap_max_buffersize()
 		return -1;
 	}
 
-	if (!pDSCB) {
-		return 0;
-	}
+	ALCsizei num_samples = 0;
 
-	caps.dwSize = sizeof(DSCBCAPS);
-	caps.dwFlags = 0;
+	OpenAL_C_ErrorCheck( alcGetIntegerv(ds_capture_device, ALC_CAPTURE_SAMPLES, sizeof(ALCsizei), &num_samples), return -1 );
 
-	pDSCB->GetCaps(&caps);
-
-	return caps.dwBufferBytes;
+	return (num_samples * ALCaptureInfo.block_align);
 }
 
 // retreive the recorded voice data
 int dscap_get_raw_data(unsigned char *outbuf, unsigned int max_size)
 {
-	HRESULT			dsrval;
-	unsigned long	capture_offset, read_offset, num_bytes_captured, size1, size2;
-	void				*data1=NULL, *data2=NULL;
-
 	if ( !dscap_inited ) {
 		dscap_init();
 	}
 
 	if ( !dscap_inited ) {
-		return -1;
+		return 0;
 	}
 
-	if ( !pDSCB ) {
-		return -1;
+	if (outbuf == NULL) {
+		return 0;
 	}
 
-	dsrval = pDSCB->GetCurrentPosition(&capture_offset, &read_offset);
-	if ( dsrval != DS_OK ) {
-		return -1;
+	ALCsizei num_samples = 0;
+
+	OpenAL_C_ErrorPrint( alcGetIntegerv(ds_capture_device, ALC_CAPTURE_SAMPLES, sizeof(ALCsizei), &num_samples) );
+
+	if (num_samples <= 0) {
+		return 0;
 	}
 
-	if ( read_offset >= Dscap_last_capture_offset ) {
-		num_bytes_captured = read_offset-Dscap_last_capture_offset;
-	} else {
-		unsigned long max_size = dscap_max_buffersize();
-		num_bytes_captured = max_size - Dscap_last_capture_offset + read_offset;
-	}
+	ALCsizei max_buf_size = MIN(num_samples, ALsizei(max_size / ALCaptureInfo.block_align));
 
-	if ( num_bytes_captured <= 0 ) {
-		return -1;
-	}	
+	OpenAL_C_ErrorCheck( alcCaptureSamples(ds_capture_device, outbuf, max_buf_size), return 0 );
 
-	dsrval = pDSCB->Lock(Dscap_last_capture_offset, num_bytes_captured, &data1, &size1, &data2, &size2, 0);
-	if ( dsrval != DS_OK ) {
-		return -1;
-	}
-
-	if ( max_size < (size1+size2) ) {
-		return -1;
-	}
-
-	if ( (data1) && (size1 > 0) ) {
-		memcpy(outbuf, data1, size1);
-	}
-
-	if ( (data2) && (size2 > 0) ) {
-		memcpy(outbuf+size1, data2, size2);
-	}
-
-	dsrval = pDSCB->Unlock(data1, size1, data2, size2);
-	if ( dsrval != DS_OK ) {
-		return -1;
-	}
-
-	Dscap_last_capture_offset = read_offset;
-	return (size1+size2);
+	return (int)max_buf_size * ALCaptureInfo.block_align;
 }
 
-#endif	// !SCP_UNIX

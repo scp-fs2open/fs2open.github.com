@@ -61,6 +61,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
+#include "sound/ds.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
 #include "starfield/starfield.h"
@@ -259,7 +260,9 @@ sexp_oper Operators[] = {
 	{ "number-of",					OP_NUMBER_OF,				2, INT_MAX, },	// Goober5000
 	{ "in-sequence",				OP_IN_SEQUENCE,				1, INT_MAX, },	// Karajorma
 	{ "invalidate-argument",		OP_INVALIDATE_ARGUMENT,		1, INT_MAX, },	// Goober5000
+	{ "invalidate-all-arguments",	OP_INVALIDATE_ALL_ARGUMENTS,	0, 0, },	// Karajorma
 	{ "validate-argument",			OP_VALIDATE_ARGUMENT,		1, INT_MAX, },	// Karajorma
+	{ "validate-all-arguments",		OP_VALIDATE_ALL_ARGUMENTS,		0, 0, },	// Karajorma
 	{ "do-for-valid-arguments",		OP_DO_FOR_VALID_ARGUMENTS,	1, INT_MAX, },	// Karajorma
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
@@ -376,7 +379,7 @@ sexp_oper Operators[] = {
 
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
-	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,					0, 1 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
@@ -425,8 +428,10 @@ sexp_oper Operators[] = {
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
-	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 2 },		// Goober5000
+	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 3 },		// Goober5000
 	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
+	{ "set-sound-environment",		OP_SET_SOUND_ENVIRONMENT,		1, INT_MAX },	// Taylor
+	{ "update-sound-environment",	OP_UPDATE_SOUND_ENVIRONMENT,	2, INT_MAX },	// Taylor
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,	1,	1,			},
@@ -459,6 +464,7 @@ sexp_oper Operators[] = {
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
+	{ "mission-set-subspace",		OP_MISSION_SET_SUBSPACE,			1, 1 },
 	{ "add-background-bitmap",		OP_ADD_BACKGROUND_BITMAP,			9, 9 }, // phreak
 	{ "remove-background-bitmap",	OP_REMOVE_BACKGROUND_BITMAP,		1, 1 }, // phreak
 	{ "add-sun-bitmap",				OP_ADD_SUN_BITMAP,					6, 6 }, // phreak
@@ -476,6 +482,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
+	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -679,6 +686,14 @@ int Players_mlocked_timestamp;
 int	Sexp_music_handle = -1;
 void sexp_stop_music(int fade = 1);
 
+// for sound environments - Goober5000/Taylor
+#define SSEO_VOLUME		0
+#define SSEO_DECAY_TIME	1
+#define SSEO_DAMPING	2
+int sexp_sound_environment_option_lookup(char *text);
+char *Sound_environment_option[] = { "volume", "decay time", "damping" };
+int Num_sound_environment_options = 3;
+
 int get_sexp(char *token);
 void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
 void update_sexp_references(char *old_name, char *new_name, int format, int node);
@@ -702,6 +717,8 @@ arg_item Sexp_applicable_argument_list;
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
 
+int get_handler_for_x_of_operator(int node);
+
 //Karajorma
 int get_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
@@ -713,6 +730,9 @@ void multi_sexp_modify_variable();
 // Karajorma - some useful helper methods
 player * get_player_from_ship_node(int node, bool test_respawns = false);
 ship * sexp_get_ship_from_node(int node);
+
+// hud-display-gauge magic values
+#define SEXP_HUD_GAUGE_WARPOUT "warpout"
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
@@ -2395,6 +2415,26 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 				
+			case OPF_SOUND_ENVIRONMENT:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && ds_eax_get_preset_id(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT;
+				}
+				break;
+
+			case OPF_SOUND_ENVIRONMENT_OPTION:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (sexp_sound_environment_option_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION; 
+				}
+				break;
+
 			case OPF_KEYPRESS:
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -2578,23 +2618,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;						
 
 			case OPF_BACKGROUND_BITMAP:
-				break;
-
 			case OPF_SUN_BITMAP:
-				break;
-
 			case OPF_NEBULA_STORM_TYPE:
-				break;
-
 			case OPF_NEBULA_POOF:
-				break;
-
 			case OPF_POST_EFFECT:
-				if (type2 != SEXP_ATOM_STRING)
-				{
+				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
+
+			case OPF_HUD_ELEMENT:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				} else {
+					char *gauge = CTEXT(node);
+					if ( strcmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
+						break;
+					}
+				}
+				return SEXP_CHECK_INVALID_HUD_ELEMENT;
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -2883,6 +2925,10 @@ int get_sexp(char *token)
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
+				Dynamic_environment = true;
+				break;
+				
+			case OP_MISSION_SET_SUBSPACE:
 				Dynamic_environment = true;
 				break;
 
@@ -4929,6 +4975,7 @@ void sexp_set_energy_pct (int node, int op_num)
 
 		sindex = ship_name_lookup( shipname );
 		if ( sindex == -1 ){					// hmm.. if true, must not have arrived yet
+			node = CDR(node);
 			continue;
 		}
 		
@@ -7617,25 +7664,38 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	return val;
 }
 
+void sexp_change_all_argument_validity(int n, bool invalidate)
+{
+	int arg_handler, arg_n;
+
+	arg_handler = get_handler_for_x_of_operator(n);
+		
+	while (n != -1)
+	{
+		arg_n = CDR(arg_handler);
+		while (arg_n != -1) {
+			if (invalidate) {
+				Sexp_nodes[arg_n].flags &= ~SNF_ARGUMENT_VALID;
+			}
+			else {
+				Sexp_nodes[arg_n].flags |= SNF_ARGUMENT_VALID;
+			}
+			// iterate
+			arg_n = CDR(arg_n);
+		}
+		
+		// iterate
+		n = CDR(n);
+	}
+}
+
 // Goober5000
 void sexp_change_argument_validity(int n, bool invalidate)
 {
-	int conditional, arg_handler, arg_n;
+	int arg_handler, arg_n;
 	bool toggled;
 
-	conditional = n; 
-	do {
-		// find the conditional sexp
-		conditional = find_parent_operator(conditional);
-		if (conditional == -1)
-			return;
-	}
-	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
-
-	// get the first op of the parent, which should be a *_of operator
-	arg_handler = CADR(conditional);
-	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
-		return;
+	arg_handler = get_handler_for_x_of_operator(n);
 
 	// loop through arguments
 	while (n != -1)
@@ -7695,6 +7755,34 @@ void sexp_change_argument_validity(int n, bool invalidate)
 		// iterate
 		n = CDR(n);
 	}
+}
+
+int get_handler_for_x_of_operator(int n)
+{
+	int conditional, arg_handler;
+
+	if (n < 0) {
+		return -1;
+	}
+
+	conditional = n; 
+	do {
+		// find the conditional sexp
+		conditional = find_parent_operator(conditional);
+		if (conditional == -1) {
+			return -1;
+		}
+	}
+	while (!is_blank_argument_op(get_operator_const(CTEXT(conditional))));
+
+	// get the first op of the parent, which should be a *_of operator
+	arg_handler = CADR(conditional);
+	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
+		return -1;
+	}
+
+	return arg_handler;
+
 }
 
 // Goober5000
@@ -7792,7 +7880,7 @@ void sexp_ingame_ship_change_iff(ship *shipp, int new_team)
 	shipp->team = new_team;
 
 	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (shipp->objnum >= 0))
+	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (shipp->objnum >= 0))
 		send_change_iff_packet(Objects[shipp->objnum].net_signature, new_team);
 }
 
@@ -7862,7 +7950,7 @@ void sexp_ingame_ship_change_iff_color(ship *shipp, int observer_team, int obser
 	shipp->ship_iff_color[observer_team][observed_team] = alternate_iff_color;
 
 	// Like the rest of the change_iff_color functions copied with minor alterations from earlier change_iff functions.
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (shipp->objnum >= 0))
+	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (shipp->objnum >= 0))
 		send_change_iff_color_packet(Objects[shipp->objnum].net_signature, observer_team, observed_team, alternate_iff_color);
 }
 
@@ -8118,7 +8206,7 @@ void sexp_change_ai_class(int n)
 			ship_subsystem_set_new_ai_class(ship_num, CTEXT(n), new_ai_class);
 
 			// send a network packet if we need to
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
+			if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Ships[ship_num].objnum >= 0))
 			{
 				send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, CTEXT(n), new_ai_class);
 			}
@@ -8130,7 +8218,7 @@ void sexp_change_ai_class(int n)
 		ship_set_new_ai_class(ship_num, new_ai_class);
 
 		// send a network packet if we need to
-		if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
+		if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Ships[ship_num].objnum >= 0))
 		{
 			send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, NULL, new_ai_class);
 		}
@@ -8353,6 +8441,19 @@ void sexp_hud_set_max_targeting_range(int n)
 		Hud_max_targeting_range = 0;
 }
 
+/* Make sure that the Sexp_hud_display_* get added to the game_state
+transitions in freespace.cpp (game_enter_state()). */
+int Sexp_hud_display_warpout = 0;
+
+void sexp_hud_display_gauge(int n) {
+	int show_for = eval_num(n);
+	char* gauge = CTEXT(CDR(n));
+
+	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
+		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
+	}
+}
+
 // Goober5000
 // trigger whether player uses the game AI for stuff
 void sexp_player_use_ai(int flag)
@@ -8414,7 +8515,7 @@ void sexp_music_close()
 }
 
 // Goober5000
-void sexp_load_music(char* fname)
+void sexp_load_music(char* fname, int type = -1)
 {
 	if ( Cmdline_freespace_no_music ) {
 		return;
@@ -8425,9 +8526,14 @@ void sexp_load_music(char* fname)
 		sexp_stop_music();
 	}
 
+	if ( type < 0 )
+	{
+		type = ASF_MENUMUSIC;
+	}
+
 	if ( fname )
 	{
-		Sexp_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
+		Sexp_music_handle = audiostream_open( fname, type );
 	}
 }
 
@@ -8462,7 +8568,9 @@ void sexp_play_sound_from_table(int n)
 
 
 	// play sound effect ---------------------------
-	snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	if (sound_index >= 0) {
+		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	}
 
 	if (MULTIPLAYER_MASTER) {
 		multi_start_packet();
@@ -8515,9 +8623,22 @@ void multi_sexp_close_sound_from_file()
 void sexp_play_sound_from_file(int n)
 {
 	int loop = 0;
+	int soundfx = 0;
+	int type = ASF_MENUMUSIC;
+
+	// third option, but needed when loading music -
+	soundfx = CDDR(n);
+
+	if (soundfx >= 0) {
+		soundfx = eval_sexp(soundfx);
+
+		if (soundfx > 0) {
+			type = ASF_SOUNDFX;
+		}
+	}
 
 	// load sound file -----------------------------
-	sexp_load_music(CTEXT(n));
+	sexp_load_music(CTEXT(n), type);
 	
 	if (MULTIPLAYER_MASTER) {
 		multi_start_packet();
@@ -8551,6 +8672,94 @@ void multi_sexp_play_sound_from_file()
 	sexp_start_music(loop);	
 }
 
+int sexp_sound_environment_option_lookup(char *text)
+{
+	int i;
+
+	Assert(text != NULL);
+	if (text == NULL) {
+		return -1;
+	}
+	
+	for (i = 0; i < Num_sound_environment_options; i++) {
+		if (!strcmp(text, Sound_environment_option[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+// Taylor
+void sexp_set_sound_environment(int node)
+{
+	int n;
+	sound_env env;
+	int preset_id = -1;
+
+	char *preset = CTEXT(node);
+
+	if ( preset && !stricmp(preset, SEXP_NONE_STRING) ) {
+		sound_env_disable();
+		return;
+	}
+
+	preset_id = ds_eax_get_preset_id( preset );
+
+	if (preset_id < 0) {
+		return;
+	}
+
+	// fill in defaults for this preset, in case we don't set everything
+	if ( sound_env_get(&env, preset_id) ) {
+		return;
+	}
+
+	n = CDR(node);
+
+	while (n >= 0) {
+		int option = sexp_sound_environment_option_lookup(CTEXT(n));
+
+		float val = (float)eval_num(CDR(n)) / 1000.0f;
+
+		if ( option == SSEO_VOLUME ) {
+			env.volume = val;
+		} else if ( option == SSEO_DECAY_TIME ) {
+			env.decay = val;
+		} else if ( option == SSEO_DAMPING ) {
+			env.damping = val;
+		}
+
+		// move to next option
+		n = CDDR(n);
+	}
+	
+	sound_env_set(&env);
+}
+
+// Taylor
+void sexp_update_sound_environment(int node)
+{
+	int n = node;
+
+	while (n >= 0) {
+		int option = sexp_sound_environment_option_lookup(CTEXT(n));
+
+		float val = (float)eval_num(CDR(n)) / 1000.0f;
+
+		if ( option == SSEO_VOLUME ) {
+			ds_eax_set_volume(val);
+		} else if ( option == SSEO_DECAY_TIME ) {
+			ds_eax_set_decay_time(val);
+		} else if ( option == SSEO_DAMPING ) {
+			ds_eax_set_damping(val);
+		}
+
+		// move to next option
+		n = CDDR(n);
+	}
+}
+
 // Goober5000
 void sexp_explosion_effect(int n)
 /* From the SEXP help...
@@ -8566,7 +8775,7 @@ void sexp_explosion_effect(int n)
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
+		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"  (otherwise use the index in fireball.tbl - FUBAR)
 		"\t11: Sound (index into sounds.tbl)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)" },
@@ -8618,10 +8827,12 @@ void sexp_explosion_effect(int n)
 	{
 		fireball_type = FIREBALL_EXPLOSION_LARGE2;
 	}
-	else
-	{
+	else if (eval_num(n) >= Num_fireball_types)	{
 		Warning(LOCATION, "explosion-effect type is out of range; quitting the explosion...\n");
 		return;
+	}
+	else {
+		fireball_type = eval_num(n);
 	}
 	n = CDR(n);
 
@@ -8644,7 +8855,10 @@ void sexp_explosion_effect(int n)
 
 
 	// play sound effect ---------------------------
-	snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	if (sound_index >= 0)
+	{
+		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+	}
 
 
 	// create the fireball -------------------------
@@ -9793,6 +10007,29 @@ void sexp_mission_set_nebula(int n)
 	stars_set_nebula(eval_num(n) > 0);
 }
 
+/* freespace.cpp does not have these availiable externally, and we must call
+them so that the main simulation loop does not have to constantly check for
+Game_subspace_effect so that it could turn on the subspace sounds.
+
+Because these are in freespace.cpp there are also stubs of these functions
+in fred.cpp as it does not deal with the game loop (obviously) but still
+links against code.lib. */
+extern void game_start_subspace_ambient_sound();
+extern void game_stop_subspace_ambient_sound();
+
+void sexp_mission_set_subspace(int n)
+{
+	if (eval_num(n) > 0) {
+		The_mission.flags |= MISSION_FLAG_SUBSPACE;
+		Game_subspace_effect = 1;
+		game_start_subspace_ambient_sound();
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_SUBSPACE;
+		Game_subspace_effect = 0;
+		game_stop_subspace_ambient_sound();
+	}
+}
+
 void sexp_add_background_bitmap(int n)
 {
 	int sexp_var;
@@ -9996,6 +10233,17 @@ void sexp_nebula_toggle_poof(int n)
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission(int n)
 {
+	int ignore_player_mortality = 1;
+
+	if (n != -1) {
+		ignore_player_mortality = is_sexp_true(n);
+	}
+
+	// if the player is dead we may want to let the death screen handle things
+	if (!ignore_player_mortality && (Player_ship->flags && SF_DYING)) {
+		return;
+	}
+
 	send_debrief_event();
 
 	// Karajorma - callback all the clients here. 
@@ -15162,7 +15410,7 @@ int sexp_return_player_data(int node, int type)
 
 			case OP_RESPAWNS_LEFT:
 				// Dogfight missions have no respawn limit
-				if ((Game_mode & GM_MULTIPLAYER) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
+				if (MULTI_NOT_DOGFIGHT) {
 					if ( Net_players[np_index].flags & NETINFO_FLAG_RESPAWNING) {						
 						// since the player hasn't actually respawned yet he hasn't used up a number or spawns equal to his deaths
 						// so add an extra life back. 
@@ -17112,6 +17360,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_in_sequence( cur_node, referenced_node );
 				break;
 
+			// Karajorma
+			case OP_INVALIDATE_ALL_ARGUMENTS:
+			case OP_VALIDATE_ALL_ARGUMENTS:
+				sexp_change_all_argument_validity(cur_node, (op_num == OP_INVALIDATE_ALL_ARGUMENTS));
+				sexp_val = SEXP_TRUE;
+			break;
+
 			// Goober5000
 			case OP_INVALIDATE_ARGUMENT:
 			case OP_VALIDATE_ARGUMENT:
@@ -17320,6 +17575,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_SOUND_ENVIRONMENT:
+				sexp_set_sound_environment(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_UPDATE_SOUND_ENVIRONMENT:
+				sexp_update_sound_environment(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_HUD_DISABLE:
 				sexp_hud_disable(node);
 				sexp_val = SEXP_TRUE;
@@ -17357,6 +17622,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HUD_SET_MAX_TARGETING_RANGE:
 				sexp_hud_set_max_targeting_range(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_HUD_DISPLAY_GAUGE:
+				sexp_hud_display_gauge(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -17488,6 +17758,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			//-WMC
 			case OP_MISSION_SET_NEBULA:
 				sexp_mission_set_nebula(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_MISSION_SET_SUBSPACE:
+				sexp_mission_set_subspace(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -18842,6 +19117,8 @@ int query_operator_return_type(int op)
 		case OP_EVERY_TIME_ARGUMENT:
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
+		case OP_INVALIDATE_ALL_ARGUMENTS:
+		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_DO_FOR_VALID_ARGUMENTS:
 		case OP_CHANGE_IFF:
 		case OP_CHANGE_AI_CLASS:
@@ -18973,6 +19250,8 @@ int query_operator_return_type(int op)
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_PLAY_SOUND_FROM_TABLE:
+		case OP_SET_SOUND_ENVIRONMENT:
+		case OP_UPDATE_SOUND_ENVIRONMENT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
@@ -19081,6 +19360,8 @@ int query_operator_return_type(int op)
 		case OP_SET_POST_EFFECT:
 		case OP_CHANGE_IFF_COLOR:
 		case OP_REMOVE_WEAPONS:
+		case OP_MISSION_SET_SUBSPACE:
+		case OP_HUD_DISPLAY_GAUGE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -19159,6 +19440,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_RESET_ORDERS:
+		case OP_INVALIDATE_ALL_ARGUMENTS:
+		case OP_VALIDATE_ALL_ARGUMENTS:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -19197,6 +19480,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TEAM_SCORE:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_MISSION_SET_NEBULA:	//WMC
+		case OP_MISSION_SET_SUBSPACE:
 			return OPF_POSITIVE;
 
 		case OP_AI_WARP:								// this operator is obsolete
@@ -19710,6 +19994,24 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return OPF_BOOL;
 
+		case OP_SET_SOUND_ENVIRONMENT:
+			if (argnum == 0)
+				return OPF_SOUND_ENVIRONMENT;
+
+			// fall through
+			argnum--;
+
+		case OP_UPDATE_SOUND_ENVIRONMENT:
+		{
+			// every two, the value repeats
+			int a_mod = argnum % 2;
+
+			if (a_mod == 0)
+				return OPF_SOUND_ENVIRONMENT_OPTION;
+			else
+				return OPF_POSITIVE;
+		}
+
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 			return OPF_POSITIVE;
@@ -19755,10 +20057,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 
 		case OP_SEND_MESSAGE_LIST:
-			int a_mod;
-
+		{
 			// every four, the value repeats
-			a_mod = argnum % 4;			
+			int a_mod = argnum % 4;
 
 			// who from
 			if(a_mod == 0)
@@ -19769,6 +20070,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 			else if(a_mod == 3)
 				return OPF_POSITIVE;
+		}
 
 		case OP_TRAINING_MSG:
 			if (argnum < 2)
@@ -20619,6 +20921,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else return OPF_SHIP_WING;
 
+		case OP_HUD_DISPLAY_GAUGE:
+			if ( argnum == 0 ) {
+				return OPF_POSITIVE;
+			} else {
+				return OPF_HUD_ELEMENT;
+			}
+
 		default:
 			Int3();
 	}
@@ -21065,6 +21374,15 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_FONT:
 			return "Invalid font";
+
+		case SEXP_CHECK_INVALID_HUD_ELEMENT:
+			return "Invalid hud element magic name";
+
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT:
+			return "Invalid sound environment";
+
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
+			return "Invalid sound environment option";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -21843,6 +22161,8 @@ int get_subcategory(int sexp_id)
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_SET_SOUND_ENVIRONMENT:
+		case OP_UPDATE_SOUND_ENVIRONMENT:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
 		case OP_ADD_REMOVE_ESCORT:
@@ -21880,6 +22200,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_SET_POST_EFFECT:
+		case OP_MISSION_SET_SUBSPACE:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_HUD_DISABLE:
@@ -21890,6 +22211,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
+		case OP_HUD_DISPLAY_GAUGE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -22682,6 +23004,17 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to restore to the preceding argument list." },
 
+	// Karajorma
+	{ OP_INVALIDATE_ALL_ARGUMENTS, "Invalidate-all-arguments (Conditional operator)\r\n"
+		"\tRemoves all argument from future consideration as " SEXP_ARGUMENT_STRING " special data items.\r\n"
+		"Takes no arguments." },
+
+	// Karajorma
+	{ OP_VALIDATE_ALL_ARGUMENTS, "Validate-all-arguments (Conditional operator)\r\n"
+		"\tRestores all arguments for future consideration as " SEXP_ARGUMENT_STRING " special data items.\r\n"
+		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
+		"Takes no arguments." },
+
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"
 		"\tSets the specified ship(s) or wing(s) to the specified team.\r\n"
@@ -22914,15 +23247,33 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_FILE, "play-sound-from-file\r\n"
 		"\tPlays a sound, such as a music soundtrack, from a file.  Important: Only one sound at a time can be played with this sexp!\r\n"
-		"Takes 1 or 2 arguments...\r\n"
+		"Takes 1 to 3 arguments...\r\n"
 		"\t1: Sound (file name)\r\n"
-		"\t2: Enter a non-zero number to loop. default is off (optional)."
+		"\t2: Enter a non-zero number to loop. default is off (optional).\r\n"
+		"\t3: Enter a non-zero number to use environment effects. default is off (optional)."
 	},
 
 	// Goober5000
 	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
 		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
 		"\t1: Fade (default is true)" },
+
+	// Taylor
+	{ OP_SET_SOUND_ENVIRONMENT, "set-sound-environment\r\n"
+		"Sets the EAX environment for all sound effects.  Optionally sets one or more parameters specific to the environment.  Takes 1 or more arguments...\r\n"
+		"\t1:\tSound environment name (a value of \"" SEXP_NONE_STRING "\" will disable the effects)\r\n"
+		"\t2:\tEnvironment option (optional)\r\n"
+		"\t3:\tEnvironment value x 1000, e.g. 10 is 0.01 (optional)\r\n"
+		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
+		"IMPORTANT: each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
+
+	// Taylor
+	{ OP_UPDATE_SOUND_ENVIRONMENT, "update-sound-environment\r\n"
+		"Updates the current EAX environment with new values.  Takes 2 or more arguments...\r\n"
+		"\t1:\tEnvironment option\r\n"
+		"\t2:\tEnvironment value x 1000, e.g. 10 is 0.01\r\n"
+		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
+		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 
 	// Goober5000
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
@@ -22937,7 +23288,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
+		"\t10: Type - For backward compatibility 0 = medium, 1 = large1 (4th in table), 2 = large2 (5th in table)\r\n"
+		"           3 or greater link to respctive entry in fireball.tbl\r\n"
 		"\t11: Sound (index into sounds.tbl)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)" },
@@ -23631,10 +23983,15 @@ sexp_help_struct Sexp_help[] = {
 		"\tTakes1 argument...\r\n"
 		"\t1:\t0 for nebula off, 1 for nebula on" },
 
+	{ OP_MISSION_SET_SUBSPACE, "mission-set-subspace\r\n"
+		"\tTurns subspace on/off\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\r1:\t0 for subspace off, 1 for subspace on" },
+
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
-		"Takes no arguments." },
+		"\t1:\t(optional)End Mission even if the player is dead (defaults to true)" },
 
 	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"
@@ -23908,15 +24265,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Range, in meters\r\n" },
 
 	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
-		"\tSends a series of delayed messages. All times are accumulated"
+		"\tSends a series of delayed messages. All times are accumulated.\r\n"
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message editor).\r\n"
 		"\t4:\tDelay from previous message in list (if any) in ms\r\n"
-		"Use Add-Data for multiple messages"
-		"IMPORTANT : each additional message in the list MUST HAVE 4 entries;\r\n"
-		"any message without the 4 proper fields will be ignored, as will any\r\n"
-		"successive messages"},
+		"Use Add-Data for multiple messages.\r\n\r\n"
+		"IMPORTANT: Each additional message in the list MUST HAVE four entries; "
+		"any message without the four proper fields will be ignored, as will any "
+		"successive messages."},
 
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"
@@ -24377,6 +24734,14 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HUD_SET_MAX_TARGETING_RANGE, "hud-set-max-targeting-range\r\n"
 		"\tSets the farthest distance at which an object can be targeted.  Takes 1 argument...\r\n"
 		"\1: Maximum targeting distance (0 for infinite)\r\n"
+	},
+
+	{ OP_HUD_DISPLAY_GAUGE, "hud-display-gauge <milliseconds> <gauge>\r\n"
+		"\tCauses specified hud gauge to appear or disappear for so many milliseconds.  Takes 1 argument...\r\n"
+		"\t1: Number of milliseconds that the warpout gauge should appear on the HUD."
+		" 0 will immediately cause the gauge to disappear.\r\n"
+		"\t2: Name of HUD element.  Must be one of:\r\n"
+		"\t\t" SEXP_HUD_GAUGE_WARPOUT " - the \"Subspace drive active\" box that appears above the viewscreen.\r\n"
 	},
 
 	// Goober5000

@@ -195,13 +195,9 @@ static generic_anim Cur_Anim;
 static char *Cur_anim_filename = "~~~~";
 static int anim_done = 0;
 
-static int Last_anim_frame_num;
-
 static int Cmd_brief_last_voice;
 static int Cmd_brief_paused = 0;
 //static int Palette_bmp = -1;
-static ubyte Palette[768];
-//static char Palette_name[128];
 
 static int Uses_scroll_buttons = 0;
 

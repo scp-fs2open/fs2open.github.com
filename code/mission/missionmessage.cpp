@@ -264,12 +264,16 @@ void persona_parse()
 		}
 	}
 
+	if ( i == MAX_PERSONA_TYPES )
+		WarningEx(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
+
 	char cstrtemp[NAME_LENGTH];
 	if ( optional_string("+") )
 	{
+		int j;
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
 
-		for (int j = 0; j < (int)Species_info.size(); j++)
+		for (j = 0; j < (int)Species_info.size(); j++)
 		{
 			if (!strcmp(cstrtemp, Species_info[j].species_name))
 			{
@@ -277,11 +281,10 @@ void persona_parse()
 				break;
 			}
 		}
+
+		if ( j == (int)Species_info.size() )
+			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
-
-	if ( i == MAX_PERSONA_TYPES )
-		Error(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
-
 
 	Num_personas++;
 }
@@ -349,8 +352,8 @@ void message_parse(bool importing_from_fsm)
 			mt = -1;
 		}
 
-		// only bother with filters if multiplayer and TvT
-		if(Fred_running || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
+		// only bother with filters in-game if multiplayer and TvT
+		if(Fred_running || (MULTI_TEAM) ){
 			msg.multi_team = mt;
 		}
 	}
@@ -367,6 +370,9 @@ void message_parse(bool importing_from_fsm)
 	if ( optional_string("+Persona:") ) {
 		stuff_string(persona_name, F_NAME, NAME_LENGTH);
 		msg.persona_index = message_persona_name_lookup( persona_name );
+
+		if ( msg.persona_index == -1 )
+			WarningEx(LOCATION, "Unknown persona in message %s in messages.tbl -- %s\n", msg.name, persona_name );
 	}
 
 	if ( !Fred_running)

@@ -713,7 +713,7 @@ void debrief_set_multi_clients( int stage_count, int active_stages[] )
 	int i;
 
 	// set up the right briefing for this guy
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Debriefing = &Debriefings[Net_player->p_info.team];
 	} else {
 		Debriefing = &Debriefings[0];			
@@ -2002,7 +2002,7 @@ void debrief_init()
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
 	// set up the right briefing for this guy
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Debriefing = &Debriefings[Net_player->p_info.team];
 	} else {
 		Debriefing = &Debriefings[0];			
@@ -2633,15 +2633,6 @@ void debrief_do_frame(float frametime)
 	help_overlay_maybe_blit(DEBRIEFING_OVERLAY);
 
 	gr_flip();
-
-	// don't let dude skip 3-09.  hack.	
-	if(Game_mode & GM_CAMPAIGN_MODE){
-		if((Campaign.current_mission >= 0) && (Campaign.current_mission < MAX_CAMPAIGN_MISSIONS)){
-			if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, "sm3-09.fs2")) {
-				Debrief_skip_popup_already_shown = 1;
-			}
-		}
-	}	
 
 	// maybe show skip mission popup
 	if ( Must_replay_mission && (!Debrief_skip_popup_already_shown) && (Player->show_skip_popup) && (Game_mode & GM_NORMAL) && (Game_mode & GM_CAMPAIGN_MODE) && (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT) && !(Game_mode & GM_MULTIPLAYER)) {

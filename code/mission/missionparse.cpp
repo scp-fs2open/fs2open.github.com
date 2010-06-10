@@ -69,6 +69,8 @@
 #include "cmdline/cmdline.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "sound/sound.h"
+#include "sound/ds.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -711,6 +713,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 		if (index >= 0)
 			The_mission.ai_profile = &Ai_profiles[index];
+		else
+			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
 
 	Assert( The_mission.ai_profile != NULL );
@@ -718,6 +722,32 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// Kazan - player use AI at start?
 	if (pm->flags & MISSION_FLAG_PLAYER_START_AI)
 		Player_use_ai = 1;
+
+	pm->sound_environment.id = -1;
+	if (optional_string("$Sound Environment:")) {
+		char preset[65] = { '\0' };
+		stuff_string(preset, F_NAME, sizeof(preset)-1);
+
+		int preset_id = ds_eax_get_preset_id(preset);
+
+		if (preset_id >= 0) {
+			sound_env_get(&pm->sound_environment, preset_id);
+		}
+
+		// NOTE: values will be clamped properly when the effect is actually set
+
+		if (optional_string("+Volume:")) {
+			stuff_float(&pm->sound_environment.volume);
+		}
+
+		if (optional_string("+Damping:")) {
+			stuff_float(&pm->sound_environment.damping);
+		}
+
+		if (optional_string("+Decay Time:")) {
+			stuff_float(&pm->sound_environment.decay);
+		}
+	}
 }
 
 void parse_player_info(mission *pm)
@@ -787,7 +817,7 @@ void parse_player_info2(mission *pm)
 		for (i=0; i<total; i += 4) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !Campaign.ships_allowed[list[i]] )
 					continue;
 			}
@@ -806,9 +836,12 @@ void parse_player_info2(mission *pm)
 		if (optional_string("+Default_ship:")) {
 			stuff_string(str, F_NAME, NAME_LENGTH);
 			ptr->default_ship = ship_info_lookup(str);
+			if (-1 == ptr->default_ship) {
+				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 						if ( Campaign.ships_allowed[ptr->default_ship] ) {
@@ -834,7 +867,7 @@ void parse_player_info2(mission *pm)
 		for (i = 0; i < total; i += 4) {
 			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
 			// pool if they are not allowed
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !Campaign.weapons_allowed[list2[i]] ) {
 					continue;
 				}
@@ -1782,7 +1815,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (p_objp->wingnum >= 0))
+	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0))
 	{
 		for (i = 0; i < MAX_STARTING_WINGS; i++)
 		{
@@ -2497,7 +2530,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
+	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
 		return 0;
 
 	// optional alternate name type
@@ -2509,9 +2542,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		// try and find the alternate name
 		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
-		Assert(p_objp->alt_type_index >= 0);
 		if(p_objp->alt_type_index < 0)
-			mprintf(("Error looking up alternate ship type name!\n"));
+			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name, name);
 		else
 			mprintf(("Using alternate ship type name: %s\n", name));
 	}
@@ -2525,9 +2557,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		// try and find the callsign
 		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
-		Assert(p_objp->callsign_index >= 0);
 		if(p_objp->callsign_index < 0)
-			mprintf(("Error looking up callsign!\n"));
+			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name, name);
 		else
 			mprintf(("Using callsign: %s\n", name));
 	}
@@ -3162,6 +3193,9 @@ void parse_common_object_data(p_object	*objp)
 {
 	int i;
 
+	// Genghis: used later for subsystem checking
+	ship_info* sip = &Ship_info[objp->ship_class];
+
 	// set some defaults..
 	objp->initial_velocity = 0;
 	objp->initial_hull = 100;
@@ -3185,6 +3219,17 @@ void parse_common_object_data(p_object	*objp)
 		objp->subsys_count++;
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
+		// Genghis: check that the subsystem name makes sense for this ship type
+		if (stricmp("Pilot", Subsys_status[i].name))
+		{
+			int j;
+			for (j=0; j < sip->n_subsystems; ++j)
+				if (!stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
+					break;
+			if (j == sip->n_subsystems)
+				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
+		}
+
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
@@ -3193,9 +3238,15 @@ void parse_common_object_data(p_object	*objp)
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
 			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", 0);
-			if (index == -1 && (Num_cargo < MAX_CARGO)) {
-				index = Num_cargo;
-				strcpy(Cargo_names[Num_cargo++], cargo_name);
+			if (index == -1) {
+				if (Num_cargo < MAX_CARGO) {
+					index = Num_cargo;
+					strcpy(Cargo_names[Num_cargo++], cargo_name);
+				}
+				else {
+					WarningEx(LOCATION, "Maximum number of cargo names (%d) exceeded, defaulting to Nothing!", MAX_CARGO);
+					index = 0;
+				}
 			}
 			Subsys_status[i].subsys_cargo_name = index;
 		}
@@ -3801,7 +3852,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
-		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		if (MULTI_TEAM)
 		{
 			// different for tvt -- Goober5000
 			for (j = 0; j < MAX_TVT_WINGS; j++)
@@ -4887,6 +4938,9 @@ void parse_bitmaps(mission *pm)
 				}
 			}
 
+			if (z == NUM_NEBULAS)
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula %s!", pm->name, str);
+
 			if (optional_string("+Color:")) {
 				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
 				for (z=0; z<NUM_NEBULA_COLORS; z++){
@@ -4896,6 +4950,9 @@ void parse_bitmaps(mission *pm)
 					}
 				}
 			}
+
+			if (z == NUM_NEBULA_COLORS)
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name, str);
 
 			if (optional_string("+Pitch:")){
 				stuff_int(&Nebula_pitch);
@@ -5283,7 +5340,7 @@ void post_process_mission()
 	}
 
 	// when TVT, hack starting wings to be team wings
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
 		for (i=0; i<MAX_STARTING_WINGS; i++)
 		{
@@ -6354,7 +6411,7 @@ void mission_eval_arrivals()
 	// before checking arrivals, check to see if we should play a message concerning arrivals
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
-	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)))
+	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM)
 	{
 		int rship, use_terran_cmd;
 
@@ -6462,7 +6519,7 @@ void mission_eval_arrivals()
 				continue;
 
 			// multiplayer team vs. team
-			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+			if(MULTI_TEAM)
 			{
 				// send a hostile wing arrived message
 				rship = wingp->ship_index[wingp->special_ship];

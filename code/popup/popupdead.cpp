@@ -412,27 +412,8 @@ int popupdead_do_frame(float frametime)
 {
 	int k, choice;
 
-/*
-	if (Popupdead_skip_active) {
-		// do the skip mission popup, and thats all
-		if (popupdead_skip_do_frame() == 1) {
-			return 2;	// fake the "go to briefing" choice
-		} else {
-			return -1;	// fake no choice
-		}
-	}
-*/
 	if ( !Popupdead_active ) {
 		return -1;
-	}
-
-	// don't let dude skip 3-09.  hack.
-	if(Game_mode & GM_CAMPAIGN_MODE){
-		if((Campaign.current_mission >= 0) && (Campaign.current_mission < MAX_CAMPAIGN_MISSIONS)){
-			if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, "sm3-09.fs2")) {
-				Popupdead_skip_already_shown = 1;
-			}
-		}
 	}
 
 	// maybe show skip mission popup

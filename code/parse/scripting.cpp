@@ -65,6 +65,7 @@ flag_def_list Script_actions[] =
 	{"On Warp Out",				CHA_WARPOUT,		0},
 	{"On Death",				CHA_DEATH,			0},
 	{"On Mission End",			CHA_MISSIONEND,		0},
+	{"On Weapon Delete",		CHA_ONWEAPONDELETE,	0},
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);

@@ -136,7 +136,8 @@ typedef struct _LARGE_INTEGER {
 
 // sound defines/structs
 #define WAVE_FORMAT_PCM		1
-#define WAVE_FORMAT_ADPCM	2
+#define WAVE_FORMAT_ADPCM		2
+#define WAVE_FORMAT_IEEE_FLOAT	3
 
 #pragma pack(1) // required to get proper values in ds_parse_wave()
 typedef struct {

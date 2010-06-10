@@ -123,5 +123,7 @@ extern int Num_medals;
 // from lighting.cpp
 #define MAX_LIGHTS 256
 
+// from weapon.h (and beam.h)
+#define MAX_BEAM_SECTIONS				5
 
 #endif	// _GLOBALS_H

@@ -44,6 +44,8 @@
 #include "iff_defs/iff_defs.h"
 #include "missionui/fictionviewer.h"
 #include "globalincs/version.h"
+#include "sound/sound.h"
+#include "sound/ds.h"
 
 
 void CFred_mission_save::convert_special_tags_to_retail(char *text, int max_len)
@@ -586,6 +588,30 @@ int CFred_mission_save::save_mission_info()
 	} else {
 		fso_comment_push(";;FSO 3.6.9;;");
 		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
+		fso_comment_pop();
+	}
+
+	// sound environment (EFX/EAX) - taylor
+	sound_env *m_env = &The_mission.sound_environment;
+	if ( (m_env->id >= 0) && (m_env->id < (int)EFX_presets.size()) ) {
+		EFXREVERBPROPERTIES *prop = &EFX_presets[m_env->id];
+
+		fso_comment_push(";;FSO 3.6.12;;");
+
+		fout_version("\n\n$Sound Environment: %s", prop->name.c_str());
+
+		if (m_env->volume != prop->flGain) {
+			fout_version("\n+Volume: %f", m_env->volume);
+		}
+
+		if (m_env->damping != prop->flDecayHFRatio) {
+			fout_version("\n+Damping: %f", m_env->damping);
+		}
+
+		if (m_env->decay != prop->flDecayTime) {
+			fout_version("\n+Decay Time: %f", m_env->decay);
+		}
+
 		fso_comment_pop();
 	}
 

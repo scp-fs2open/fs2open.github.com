@@ -50,6 +50,7 @@ public:
 	int get_int();
 	float get_float();
 	char *str();
+	bool check_if_args_is_valid();
 };
 
 static cmdline_parm Parm_list(NULL, NULL);
@@ -76,6 +77,7 @@ enum
 
 #define BUILD_CAP_OPENAL	(1<<0)
 #define BUILD_CAP_NO_D3D	(1<<1)
+#define BUILD_CAP_NEW_SND	(1<<2)
 
 typedef struct
 {
@@ -163,6 +165,7 @@ Flag exe_params[] =
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-ati_swap",			"Fix Color issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://scp.indiegames.us/mantis/view.php?id=1669", },
+	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
@@ -333,11 +336,9 @@ int Cmdline_voice_recognition = 0;
 // MOD related
 cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
 cmdline_parm tbp("-tbp", NULL);			// Cmdline_tbp  -- TBP warp effects -Et1
-cmdline_parm wcsaga("-wcsaga", NULL);	// Cmdline_wcsaga
 
 char *Cmdline_mod = NULL; //DTP for mod arguement
 int Cmdline_tbp = 0;
-int Cmdline_wcsaga = 0;
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -366,6 +367,7 @@ cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- U
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
 cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
+cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_load_all_weapons = 0;
@@ -378,6 +380,7 @@ int Cmdline_safeloading = 0;
 int Cmdline_no_fbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
+int Cmdline_no_3d_sound = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -385,6 +388,7 @@ cmdline_parm dis_collisions("-dis_collisions", NULL);	// Cmdline_dis_collisions
 cmdline_parm dis_weapons("-dis_weapons", NULL);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 cmdline_parm nowarn_arg("-no_warn", NULL);			// Cmdline_nowarn
+cmdline_parm extra_warn_arg("-extra_warn", NULL);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL);					// Cmdline_show_fps
 cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL);	// Cmdline_show_mem_usage
 cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
@@ -405,6 +409,7 @@ int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 int Cmdline_noparseerrors = 0;
 int Cmdline_nowarn = 0; // turn warnings off in FRED
+int Cmdline_extra_warn = 0;
 int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
@@ -800,6 +805,21 @@ cmdline_parm::~cmdline_parm()
 #endif
 }
 
+// checks if the objects args variable is valid
+// returns true if it is, shows an error box and returns false if not valid.
+bool cmdline_parm::check_if_args_is_valid() {
+	if ( args == NULL ) {
+		Error(__FILE__, __LINE__, 
+			"Command line flag passed that requires an argument, but the argument is missing!\r\n"
+			"The flag is '%s', make sure that you have an argument that follows it.\r\n"
+			"You may need to close your launcher and remove the flag manually from %s/data/cmdline_fso.cfg\r\n",
+			name, "<Freespace directory>");
+		return false;
+	} else {
+		return true;
+	}
+}
+
 
 // returns - true if the parameter exists on the command line, otherwise false
 int cmdline_parm::found()
@@ -810,7 +830,8 @@ int cmdline_parm::found()
 // returns - the interger representation for the parameter arguement
 int cmdline_parm::get_int()
 {
-	Assert(args);
+	check_if_args_is_valid();
+
 	int offset = 0;
 
 	if (stacks) {
@@ -833,7 +854,8 @@ int cmdline_parm::get_int()
 // returns - the float representation for the parameter arguement
 float cmdline_parm::get_float()
 {
-	Assert(args!=NULL);
+	check_if_args_is_valid();
+
 	int offset = 0;
 
 	if (stacks) {
@@ -856,7 +878,8 @@ float cmdline_parm::get_float()
 // returns - the string value for the parameter arguement
 char *cmdline_parm::str()
 {
-	Assert(args);
+	check_if_args_is_valid();
+
 	return args;
 }
 
@@ -890,6 +913,11 @@ bool SetCmdlineParams()
 	{
 		Cmdline_FRED2_htl = 1;
 	}*/
+
+	if (extra_warn_arg.found())
+	{
+		Cmdline_extra_warn = 1;
+	}
 
 	if (timerbar_arg.found()) {
 		Cmdline_timerbar = 1;
@@ -1137,7 +1165,12 @@ bool SetCmdlineParams()
 	}
 
 	if ( fov_arg.found() ) {
-		VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+		Cmdline_fov = fov_arg.get_float();
+		if (Cmdline_fov > 0.1) {
+			VIEWER_ZOOM_DEFAULT = Cmdline_fov;
+		} else {
+			VIEWER_ZOOM_DEFAULT = Cmdline_fov = 0.75f;
+		}
 	}
 
 	if( clip_dist_arg.found() ) {
@@ -1290,10 +1323,10 @@ bool SetCmdlineParams()
 			ubyte build_caps = 0;
 
 			/* portej05 defined this always */
-			build_caps |= BUILD_CAP_NO_D3D;
-#ifdef USE_OPENAL
 			build_caps |= BUILD_CAP_OPENAL;
-#endif
+			build_caps |= BUILD_CAP_NO_D3D;
+			build_caps |= BUILD_CAP_NEW_SND;
+
 
 			fwrite(&build_caps, 1, 1, fp);
 		}
@@ -1336,11 +1369,6 @@ bool SetCmdlineParams()
 
 	if ( ballistic_gauge.found() ) {
 		Cmdline_ballistic_gauge = 1;
-	}
-
-	if (wcsaga.found())
-	{
-		Cmdline_wcsaga = 1;
 	}
 
 	if ( cache_bitmaps_arg.found() ) {
@@ -1389,6 +1417,9 @@ bool SetCmdlineParams()
 
 	if ( verify_vps_arg.found() )
 		Cmdline_verify_vps = 1;
+
+	if ( no3dsound_arg.found() )
+		Cmdline_no_3d_sound = 1;
 
     if ( atiswap_arg.found() )
     {

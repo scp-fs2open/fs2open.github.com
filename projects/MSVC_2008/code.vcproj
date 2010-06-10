@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -123,7 +123,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -204,7 +204,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -287,7 +287,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -370,7 +370,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -453,7 +453,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -543,7 +543,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -629,7 +629,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -715,7 +715,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -802,7 +802,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;INF_BUILD;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -889,7 +889,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -976,7 +976,7 @@
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -1326,14 +1326,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\DirectX\vdsetup.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\DirectX\vdsound.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\DirectX\vdsound.lib"
 				>
 			</File>
 			<File
@@ -2689,15 +2681,11 @@
 			Name="Sound"
 			>
 			<File
-				RelativePath="..\..\code\sound\acm-openal.cpp"
+				RelativePath="..\..\code\sound\acm.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\code\sound\acm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\audiostr-openal.cpp"
 				>
 			</File>
 			<File
@@ -2746,6 +2734,14 @@
 			</File>
 			<File
 				RelativePath="..\..\code\sound\grammar.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\sound\openal.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\sound\openal.h"
 				>
 			</File>
 			<File
@@ -2859,14 +2855,6 @@
 						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\rbaudio.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\sound\rbaudio.h"
-				>
 			</File>
 			<File
 				RelativePath="..\..\code\sound\rtvoice.cpp"
@@ -3610,18 +3598,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\iff_defs\iff_defs.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="VCodec"
-			>
-			<File
-				RelativePath="..\..\code\vcodec\codec1.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\vcodec\codec1.h"
 				>
 			</File>
 		</Filter>
