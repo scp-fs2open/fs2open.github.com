@@ -28,6 +28,7 @@
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
 #include "fireball/fireballs.h"
+#include "hud/hud.h"
 
 #include <string>
 
@@ -1217,6 +1218,10 @@ typedef struct ship_info {
 	float piercing_damage_draw_limit;
 
 	int damage_lightning_type;
+
+	SCP_vector<HudGauge*> hud_gauges;
+	bool hud_enabled;
+	bool hud_retail;
 } ship_info;
 
 extern int Num_wings;

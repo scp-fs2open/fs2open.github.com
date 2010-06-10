@@ -85,6 +85,26 @@ float Max_draw_distance = Default_max_draw_distance;
 static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
 static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
 
+float Gr_save_resize_X = 1.0f, Gr_save_resize_Y = 1.0f;
+float Gr_save_unsize_X = 1.0f, Gr_save_unsize_Y = 1.0f;
+
+void gr_set_screen_scale(int w, int h)
+{
+	Gr_resize_X = (float)gr_screen.max_w / (float)w;
+	Gr_resize_Y = (float)gr_screen.max_h / (float)h;
+
+	Gr_unsize_X = (float)w / (float)gr_screen.max_w;
+	Gr_unsize_Y = (float)h / (float)gr_screen.max_h;
+}
+
+void gr_reset_screen_scale()
+{
+	Gr_resize_X = Gr_save_resize_X;
+	Gr_resize_Y = Gr_save_resize_Y;
+
+	Gr_unsize_X = Gr_save_unsize_X;
+	Gr_unsize_Y = Gr_save_unsize_Y;
+}
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
@@ -390,11 +410,11 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		mode = GR_OPENGL;
 	}
 
-	Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
-	Gr_resize_Y = (float)height	/ ((res == GR_1024) ?  768.0f : 480.0f);
+	Gr_save_resize_X = Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
+	Gr_save_resize_Y = Gr_resize_Y = (float)height	/ ((res == GR_1024) ?  768.0f : 480.0f);
 
-	Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
-	Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
+	Gr_save_unsize_X = Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
+	Gr_save_unsize_Y = Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
 
 
 	gr_screen.signature = Gr_signature++;

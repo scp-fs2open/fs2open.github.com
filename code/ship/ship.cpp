@@ -858,6 +858,10 @@ void init_ship_entry(ship_info *sip)
 	}
 	
 	sip->emp_resistance_mod = 0.0f;
+
+	sip->hud_gauges.clear();
+	sip->hud_enabled = false;
+	sip->hud_retail = false;
 	sip->piercing_damage_draw_limit = 0.10f;
 	sip->damage_lightning_type = SLT_DEFAULT;
 }

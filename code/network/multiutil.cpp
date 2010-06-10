@@ -78,10 +78,6 @@
 #include "fs2netd/fs2netd_client.h"
 #include "parse/parselo.h"
 
-extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
-extern int MSG_WINDOW_Y_START;
-extern int MSG_WINDOW_HEIGHT;
-
 extern int ascii_table[];
 extern int shifted_ascii_table[];
 

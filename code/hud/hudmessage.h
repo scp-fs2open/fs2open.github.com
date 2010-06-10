@@ -12,6 +12,9 @@
 #ifndef _HUDMESSAGE_H
 #define _HUDMESSAGE_H
 
+#include "hud/hud.h"
+#include "anim/packunpack.h"
+
 #define SCROLL_BUFFER_LINES		128			// maximum number of HUD messages that can be stored
 #define SCROLL_TIME					30				// time in milliseconds between scrolling a message
 #define SCROLL_STEP_SIZE			3
@@ -77,8 +80,7 @@ void hud_scrollback_do_frame(float frametime);
 void hud_scrollback_exit();
 
 void hud_init_msg_window();
-void hud_show_msg_window();
-void hud_show_fixed_text();
+void hud_update_msg_window();
 int HUD_team_get_source(int team);
 int HUD_source_get_team(int team);
 void HUD_printf(char *format, ...);
@@ -92,5 +94,35 @@ void HUD_add_to_scrollback(char *text, int source);
 void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int w);
 void hud_add_msg_to_scrollback(char *text, int source, int t);
 void hud_free_scrollback_list();
+
+class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES
+{
+public:
+	HudGaugeMessages();
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeTalkingHead: public HudGauge // HUD_TALKING_HEAD
+{
+	hud_frames Head_frame;
+
+	int Header_offsets[2];
+	int Anim_offsets[2];
+	int Anim_size[2];
+
+	anim_instance *head_anim;
+	int msg_id;
+public:
+	HudGaugeTalkingHead();
+	void initBitmaps(char *fname);
+	void initHeaderOffsets(int x, int y);
+	void initAnimOffsets(int x, int y);
+	void initAnimSizes(int w, int h);
+	void pageIn();
+	void render(float frametime);
+	void initialize();
+	anim_instance* createAnim(int anim_start_frame, anim* anim_data);
+};
 
 #endif
