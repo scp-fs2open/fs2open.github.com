@@ -1275,7 +1275,7 @@ void HudGaugeTrainingMessages::render(float frametime)
 
 		if (z) {
 			buf[z] = 0;
-			gr_printf(x, y, "%s", buf);
+			renderPrintf(x, y, "%s", buf);
 		}
 	}
 

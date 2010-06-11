@@ -600,6 +600,9 @@ int parse_gauge_type()
 	if(optional_string("+Kills:"))
 		return HUD_OBJECT_KILLS;
 
+	if(optional_string("+Weapon Linking:"))
+		return HUD_OBJECT_WEAPON_LINKING;
+
 	return -1;
 }
 
