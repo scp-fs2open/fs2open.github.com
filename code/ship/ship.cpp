@@ -9320,6 +9320,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 									}
 
 									target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
+									if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+										vm_vec_sub2(&target_velocity_vec, &obj->phys_info.vel);
+
 									dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
 									time_to_target = 0.0f;
 
