@@ -936,7 +936,7 @@ $use only single fov for turrets:		NO								\n\
 																		\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
-																		\n\
+																		\n""\
 ;; a disam or disable goal will protect a ship globally and purge		\n\
 ;; standing attack orders globally. If set to NO, only the ship/wing	\n\
 ;; given the order to disarm or disable will be affected.				\n\
@@ -946,9 +946,13 @@ $disarm or disable cause global ai goal effects:	YES					\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\
 $fix AI class bug:	NO													\n\
 																		\n\
+;; If set, the AI will NOT make extra effort to avoid ramming the player\n\
+;; during dogfights. This results in more aggressive AI.				\n\
+$no extra collision avoidance vs player:	NO							\n\
+																		\n\
 ;; If set, the game will check if the dying ship is a player's wingman, \n\
 ;; before making it give a death scream					 				\n\
-$Perform less checks for death screams:	NO								\n\
+$perform less checks for death screams:	NO								\n\
 																		\n\
 #End																	\n\
 ";
