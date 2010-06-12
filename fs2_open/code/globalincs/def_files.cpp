@@ -979,11 +979,11 @@ $fix AI class bug:	NO													\n\
 																		\n\
 ;; If set, the AI will NOT make extra effort to avoid ramming the player\n\
 ;; during dogfights. This results in more aggressive AI.				\n\
-$No extra collision avoidance vs player:	NO							\n\
+$no extra collision avoidance vs player:	NO							\n\
 																		\n\
 ;; If set, the game will check if the dying ship is a player's wingman, \n\
 ;; before making it give a death scream					 				\n\
-$Perform less checks for death screams:	NO								\n\
+$perform less checks for death screams:	NO								\n\
 																		\n\
 #End																	\n\
 ";
