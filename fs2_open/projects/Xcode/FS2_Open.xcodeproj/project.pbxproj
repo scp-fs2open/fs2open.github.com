@@ -725,6 +725,7 @@
 		F0AAA94F10FA0D060086B1B4 /* zutil.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93610FA0D060086B1B4 /* zutil.h */; };
 		F0B73A9410FA065F005E1A69 /* pngutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0B73A9010FA065F005E1A69 /* pngutils.cpp */; };
 		F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */ = {isa = PBXBuildFile; fileRef = F0B73A9110FA065F005E1A69 /* pngutils.h */; };
+		F0E986A311C66F5700CF5169 /* bitarray.h in Headers */ = {isa = PBXBuildFile; fileRef = F0E986A211C66F5700CF5169 /* bitarray.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1669,6 +1670,7 @@
 		F0AAA93610FA0D060086B1B4 /* zutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zutil.h; sourceTree = "<group>"; };
 		F0B73A9010FA065F005E1A69 /* pngutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pngutils.cpp; sourceTree = "<group>"; };
 		F0B73A9110FA065F005E1A69 /* pngutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngutils.h; sourceTree = "<group>"; };
+		F0E986A211C66F5700CF5169 /* bitarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitarray.h; sourceTree = "<group>"; };
 		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
 		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
 		F0ED18A0101064C70011978C /* safe_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings.cpp; sourceTree = "<group>"; };
@@ -2466,6 +2468,7 @@
 		345953EA08C3D6A0003B1351 /* math */ = {
 			isa = PBXGroup;
 			children = (
+				F0E986A211C66F5700CF5169 /* bitarray.h */,
 				345953EC08C3D6A0003B1351 /* fix.cpp */,
 				345953ED08C3D6A0003B1351 /* fix.h */,
 				345953EE08C3D6A0003B1351 /* floating.cpp */,
@@ -3600,6 +3603,7 @@
 				F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */,
 				60FAF4E4113431A100CE910F /* openal.h in Headers */,
 				60FAF4E9113432B800CE910F /* voicerec.h in Headers */,
+				F0E986A311C66F5700CF5169 /* bitarray.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
