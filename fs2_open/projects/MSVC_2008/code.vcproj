@@ -1905,6 +1905,10 @@
 			Name="Math"
 			>
 			<File
+				RelativePath="..\..\code\math\bitarray.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\Math\fix.cpp"
 				>
 			</File>
