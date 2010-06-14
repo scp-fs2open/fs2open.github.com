@@ -1187,6 +1187,10 @@ SOURCE=..\..\code\Localization\localize.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\..\code\math\bitarray.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Math\Fix.cpp
 # End Source File
 # Begin Source File
