@@ -317,7 +317,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 	if((ga->direction & GENERIC_ANIM_DIRECTION_PAUSED) == 0) {
 		if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
 			//keep going forwards if we're in a keyframe loop
-			if(ga->keyframe && (ga->anim_time > keytime)) {
+			if(ga->keyframe && (ga->anim_time >= keytime)) {
 				ga->anim_time += frametime;
 				if(ga->anim_time >= ga->total_time) {
 					ga->anim_time = keytime - 0.001f;
@@ -327,11 +327,11 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y)
 			else {
 				//playing backwards
 				ga->anim_time -= frametime;
-				if((ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) && ga->anim_time < 0.0) {
+				if((ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) && ga->anim_time <= 0.0) {
 					ga->anim_time = 0;		//stop on first frame when playing in reverse
 				}
 				else {
-					while(ga->anim_time < 0.0)
+					while(ga->anim_time <= 0.0)
 						ga->anim_time += ga->total_time;	//make sure we're always positive, so we can go back to the end
 				}
 			}
