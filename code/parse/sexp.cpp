@@ -121,8 +121,11 @@ sexp_oper Operators[] = {
 	{ "or",								OP_OR,							2,	INT_MAX,	},
 	{ "not",								OP_NOT,							1, 1,			},
 	{ "=",								OP_EQUALS,						2,	INT_MAX,	},
+	{ "!=",								OP_NOT_EQUAL,						2,	INT_MAX,	},	// Goober5000
 	{ ">",								OP_GREATER_THAN,				2,	INT_MAX,	},
+	{ ">=",								OP_GREATER_OR_EQUAL,				2,	INT_MAX,	},	// Goober5000
 	{ "<",								OP_LESS_THAN,					2,	INT_MAX,	},
+	{ "<=",								OP_LESS_OR_EQUAL,					2,	INT_MAX,	},	// Goober5000
 	{ "string-equals",						OP_STRING_EQUALS,				2,	INT_MAX,	},
 	{ "string-greater-than",				OP_STRING_GREATER_THAN,			2,	INT_MAX,	},
 	{ "string-less-than",					OP_STRING_LESS_THAN,			2,	INT_MAX,	},
@@ -3896,12 +3899,28 @@ int sexp_number_compare(int n, int op)
 				if (first_number != current_number) return SEXP_FALSE;
 				break;
 
+			case OP_NOT_EQUAL:
+				if (first_number == current_number) return SEXP_FALSE;
+				break;
+
 			case OP_GREATER_THAN:
 				if (first_number <= current_number) return SEXP_FALSE;
 				break;
 
+			case OP_GREATER_OR_EQUAL:
+				if (first_number < current_number) return SEXP_FALSE;
+				break;
+
 			case OP_LESS_THAN:
 				if (first_number >= current_number) return SEXP_FALSE;
+				break;
+
+			case OP_LESS_OR_EQUAL:
+				if (first_number > current_number) return SEXP_FALSE;
+				break;
+
+			default:
+				Warning(LOCATION, "Unhandled comparison case!  Operator = ", op);
 				break;
 		}
 	}
@@ -16999,9 +17018,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_and_in_sequence(node);
 				break;
 
+			case OP_EQUALS:
 			case OP_GREATER_THAN:
 			case OP_LESS_THAN:
-			case OP_EQUALS:
+			case OP_NOT_EQUAL:
+			case OP_GREATER_OR_EQUAL:
+			case OP_LESS_OR_EQUAL:
 				sexp_val = sexp_number_compare( node, op_num );
 				break;
 
@@ -18970,6 +18992,9 @@ int query_operator_return_type(int op)
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
+		case OP_NOT_EQUAL:
+		case OP_GREATER_OR_EQUAL:
+		case OP_LESS_OR_EQUAL:
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
@@ -19471,6 +19496,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
+		case OP_NOT_EQUAL:
+		case OP_GREATER_OR_EQUAL:
+		case OP_LESS_OR_EQUAL:
 		case OP_RAND:
 		case OP_RAND_MULTIPLE:
 		case OP_ABS:
@@ -22531,11 +22559,23 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 or more numeric arguments." },
 
 	{ OP_GREATER_THAN, "Greater Than (Boolean operator)\r\n"
-		"\tTrue if the first argument is greater than the second argument.\r\n\r\n"
+		"\tTrue if the first argument is greater than the subsequent argument(s).\r\n\r\n"
 		"Returns a boolean value.  Takes 2 numeric arguments." },
 
 	{ OP_LESS_THAN, "Less Than (Boolean operator)\r\n"
-		"\tTrue if the first argument is less than the second argument.\r\n\r\n"
+		"\tTrue if the first argument is less than the subsequent argument(s).\r\n\r\n"
+		"Returns a boolean value.  Takes 2 numeric arguments." },
+
+	{ OP_NOT_EQUAL, "Not Equal To (Boolean operator)\r\n"
+		"\tIs true if the first argument is not equal to any of the subsequent arguments.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more numeric arguments." },
+
+	{ OP_GREATER_OR_EQUAL, "Greater Than Or Equal To (Boolean operator)\r\n"
+		"\tTrue if the first argument is greater than or equal to the subsequent argument(s).\r\n\r\n"
+		"Returns a boolean value.  Takes 2 numeric arguments." },
+
+	{ OP_LESS_OR_EQUAL, "Less Than Or Equal To (Boolean operator)\r\n"
+		"\tTrue if the first argument is less than or equal to the subsequent argument(s).\r\n\r\n"
 		"Returns a boolean value.  Takes 2 numeric arguments." },
 
 	// Goober5000
