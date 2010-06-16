@@ -245,6 +245,7 @@ sexp_oper Operators[] = {
 	{ "time-wing-arrived",		OP_TIME_WING_ARRIVED,		1,	1,	},
 	{ "time-wing-departed",		OP_TIME_WING_DEPARTED,		1,	1,	},
 	{ "mission-time",			OP_MISSION_TIME,			0, 0,	},
+	{ "mission-time-msecs",		OP_MISSION_TIME_MSECS,		0, 0,	},	// Goober5000
 	{ "time-docked",			OP_TIME_DOCKED,				3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
@@ -4778,6 +4779,12 @@ int sexp_has_time_elapsed(int n)
 int sexp_mission_time()
 {
 	return f2i(Missiontime);
+}
+
+// next function returns the time into the mission, in milliseconds
+int sexp_mission_time_msecs()
+{
+	return f2i(Missiontime * 1000);
 }
 
 // returns percent of length of distance to special warpout plane
@@ -17190,6 +17197,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_mission_time();
 				break;
 
+			case OP_MISSION_TIME_MSECS:
+				sexp_val = sexp_mission_time_msecs();
+				break;
+
 			case OP_TIME_DOCKED:
 				sexp_val = sexp_time_docked(node);
 				break;
@@ -19071,6 +19082,7 @@ int query_operator_return_type(int op)
 		case OP_TIME_WING_ARRIVED:
 		case OP_TIME_WING_DEPARTED:
 		case OP_MISSION_TIME:
+		case OP_MISSION_TIME_MSECS:
 		case OP_TIME_DOCKED:
 		case OP_TIME_UNDOCKED:
 		case OP_AFTERBURNER_LEFT:
@@ -19429,6 +19441,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TRUE:
 		case OP_FALSE:
 		case OP_MISSION_TIME:
+		case OP_MISSION_TIME_MSECS:
 /*		case OP_INT3:	*/
 		case OP_NOP:
 		case OP_WAYPOINT_MISSED:
@@ -22791,7 +22804,11 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_MISSION_TIME, "Mission time (Time operator)\r\n"
 		"\tReturns the current time into the mission.\r\n\r\n"
-		"Returns a numeric value." },
+		"Returns a numeric value.  Takes no arguments." },
+
+	{ OP_MISSION_TIME_MSECS, "Mission time, in milliseconds (Time operator)\r\n"
+		"\tReturns the current time into the mission, in milliseconds.  Useful for more fine-grained timing than possible with normal second-based sexps.  (Tip: when an event occurs, assign the result of mission-time-msecs to a variable.  Then, in another event, wait until mission-time-msecs is greater than the value of that variable plus some delay amount.  This second event should be chained or coupled with additional conditions so that it doesn't accidentally fire on an uninitialized variable!)\r\n\r\n"
+		"Returns a numeric value.  Takes no arguments." },
 
 	{ OP_TIME_DOCKED, "Time docked (Time operator)\r\n"
 		"\tReturns the time the specified ships docked.\r\n\r\n"
