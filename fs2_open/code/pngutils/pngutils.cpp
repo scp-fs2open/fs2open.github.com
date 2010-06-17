@@ -100,7 +100,7 @@ int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 	{
 		mprintf(("png_read_header: error creating info struct\n"));
 		cfclose(png_file);
-		png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
+		png_destroy_read_struct(&png_ptr, NULL, NULL);
 		return PNG_ERROR_READING;
 	}
 
@@ -108,7 +108,7 @@ int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 	{
 		mprintf(("png_read_header: something went wrong\n"));
 		/* Free all of the memory associated with the png_ptr and info_ptr */
-		png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 		cfclose(png_file);
 		/* If we get here, we had a problem reading the file */
 		return PNG_ERROR_READING;
@@ -128,7 +128,7 @@ int png_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 		png_file = NULL;
 	}
 
-	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
+	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
 	return PNG_ERROR_NONE;
 }
@@ -183,7 +183,7 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 	{
 		mprintf(("png_read_bitmap: info_ptr went wrong\n"));
 		cfclose(png_file);
-		png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
+		png_destroy_read_struct(&png_ptr, NULL, NULL);
 		return PNG_ERROR_READING;
 	}
 
@@ -191,7 +191,7 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 	{
 		mprintf(("png_read_bitmap: something went wrong\n"));
 		/* Free all of the memory associated with the png_ptr and info_ptr */
-		png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 		cfclose(png_file);
 		/* If we get here, we had a problem reading the file */
 		return PNG_ERROR_READING;
@@ -199,7 +199,7 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 
 	png_set_read_fn(png_ptr, &png_file, png_scp_read_data);
 
-	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND, png_voidp_NULL);
+	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND, NULL);
 	len = png_get_rowbytes(png_ptr, info_ptr);
 
 	row_pointers = png_get_rows(png_ptr, info_ptr);
@@ -212,7 +212,7 @@ int png_read_bitmap(char *real_filename, ubyte *image_data, ubyte *bpp, int dest
 		memcpy(&image_data[i * len], row_pointers[i], len);
 	}
 
-	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
+	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 	cfclose(png_file);
 
 	return PNG_ERROR_NONE;
