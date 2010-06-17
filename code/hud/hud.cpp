@@ -3526,5 +3526,5 @@ void HudGaugeSupernova::render(float frametime)
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	gr_printf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
 }
