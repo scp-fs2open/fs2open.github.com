@@ -2766,6 +2766,13 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+	
+	int grow_mode = 0; //By default, expand the gauge to the left (in -x direction)
+
+	if(optional_string("Expansion Mode:")) {
+		if(required_string("Right")) 
+			grow_mode = 1;
+	}
 
 	HudGaugeWingmanStatus* hud_gauge = new HudGaugeWingmanStatus();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -2784,6 +2791,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 	hud_gauge->initWingmate6Offsets(wingmate_offsets[5][0], wingmate_offsets[5][1]);
 	hud_gauge->initWingNameOffsets(wing_name_offsets[0], wing_name_offsets[1]);
 	hud_gauge->initWingWidth(wing_width);
+	hud_gauge->initGrowMode(grow_mode);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

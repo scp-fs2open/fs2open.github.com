@@ -38,10 +38,14 @@ protected:
 	int left_frame_end_x;
 	int middle_frame_width;
 	
+	int actual_origin[2];
 	int single_wing_offsets[2];
 	int multiple_wing_offsets[2];
 	int wing_width;
 	int wing_name_offsets[2];
+
+	enum {GROW_LEFT, GROW_RIGHT};
+	int grow_mode;
 
 	int wingmate_offsets[MAX_SHIPS_PER_WING][2];
 
@@ -63,6 +67,7 @@ public:
 	void initWingmate4Offsets(int x, int y);
 	void initWingmate5Offsets(int x, int y);
 	void initWingmate6Offsets(int x, int y);
+	void initGrowMode(int mode);
 	void pageIn();
 	void initialize();
 	void render(float frametime);

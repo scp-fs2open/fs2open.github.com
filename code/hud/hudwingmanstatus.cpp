@@ -311,6 +311,10 @@ void HudGaugeWingmanStatus::initBitmaps(char *fname_left, char *fname_middle, ch
 	}
 }
 
+void HudGaugeWingmanStatus::initGrowMode(int mode) {
+	grow_mode = mode;
+}
+
 void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 {
 	int sx, sy, bitmap;
@@ -320,7 +324,7 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 		return;
 	}
 
-	if(num_wings_to_draw > 2) {
+	if((num_wings_to_draw > 2) && (grow_mode == GROW_LEFT)) {
 		// make some room for the spacers
 		sx = position[0] - (num_wings_to_draw - 2)*middle_frame_width; 
 	} else {
@@ -333,6 +337,10 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 	if ( bitmap > -1 ) {
 		renderBitmap(bitmap, sx, sy);
 	}
+	
+	//Tell renderDots() where to start
+	actual_origin[0] = sx;
+	actual_origin[1] = sy;
 
 	// write "wingmen" on gauge
 	renderString(sx+header_offsets[0], sy+header_offsets[1], XSTR( "wingmen", 352));
@@ -365,8 +373,8 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		sx = position[0] + single_wing_offsets[0];
 		sy = position[1] + single_wing_offsets[1];
 	} else {
-		sx = position[0] + multiple_wing_offsets[0] - screen_index*wing_width; // wing_width = 35
-		sy = position[1] + multiple_wing_offsets[1];
+		sx = actual_origin[0] + multiple_wing_offsets[0] + (screen_index - 1)*wing_width; // wing_width = 35
+		sy = actual_origin[1] + multiple_wing_offsets[1];
 	}
 	
 	// draw wingman dots
