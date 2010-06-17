@@ -1455,13 +1455,13 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip)
 	y1 = fl2i(0.5f + position[1] + Cargo_scan_start_offsets[1] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
 	x2 = x1 + Cargo_scan_w;
 
-	gr_line(x1, y1, x2, y1);
+	renderLine(x1, y1, x2, y1);
 
 	// RT Changed this to be optional
 	if(Cmdline_dualscanlines) {
 		// added 2nd horizontal scan line - phreak
 		y1 = fl2i(position[1] + Cargo_scan_start_offsets[1] + Cargo_scan_h - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
-		gr_line(x1, y1, x2, y1);
+		renderLine(x1, y1, x2, y1);
 	}
 
 	// draw vertical scan line
@@ -1469,13 +1469,13 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip)
 	y1 = position[1] + Cargo_scan_start_offsets[1] /*Cargo_scan_coords[gr_screen.res][1]*/;
 	y2 = y1 + Cargo_scan_h; /*Cargo_scan_coords[gr_screen.res][3]*/
 
-	gr_line(x1, y1-3, x1, y2-1);
+	renderLine(x1, y1-3, x1, y2-1);
 
 	// RT Changed this to be optional
 	if(Cmdline_dualscanlines) {
 		// added 2nd vertical scan line - phreak
 		x1 = fl2i(0.5f + Cargo_scan_w + position[0] + Cargo_scan_start_offsets[0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_w ));
-		gr_line(x1, y1-3, x1, y2-1);
+		renderLine(x1, y1-3, x1, y2-1);
 	}
 }
 

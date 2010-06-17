@@ -2129,8 +2129,8 @@ void load_gauge_target_monitor(int base_w, int base_h, int ship_index)
 
 	Cargo_scan_start_offsets[0] = 2;
 	Cargo_scan_start_offsets[1] = 45;
-	Cargo_scan_size[0] = 109;
-	Cargo_scan_size[1] = 130;
+	Cargo_scan_size[0] = 130;
+	Cargo_scan_size[1] = 109;
 
 	if(check_base_res(base_w, base_h)) {
 		base_res[0] = base_w;
