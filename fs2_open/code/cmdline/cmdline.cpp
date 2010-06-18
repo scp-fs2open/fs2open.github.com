@@ -136,8 +136,6 @@ Flag exe_params[] =
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
-	{ "-tbp",				"Toggle features for The Babylon Project",	true,	0,				EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tbp", }, // TBP warp effects -Et1
-	{ "-wcsaga",			"Toggle features for Wing Commander Saga",	true,	0,				EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-wcsaga", },
 
 	{ "-snd_preload",		"Preload mission game sounds",			true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable sound and music",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -335,10 +333,8 @@ int Cmdline_voice_recognition = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
-cmdline_parm tbp("-tbp", NULL);			// Cmdline_tbp  -- TBP warp effects -Et1
 
 char *Cmdline_mod = NULL; //DTP for mod arguement
-int Cmdline_tbp = 0;
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -1180,16 +1176,6 @@ bool SetCmdlineParams()
 	if (orb_radar.found())
 	{
 		Cmdline_orb_radar = 1;
-	}
-
-	// TBP warp effects -Et1
-	// Chief1983 - Add 3d shockwave, ship choice 3d and weapon choice 3d if TBP is checked
-	if( tbp.found() )
-	{
-		Cmdline_tbp = 1;
-		Cmdline_enable_3d_shockwave = 1;
-		Cmdline_ship_choice_3d = 1;
-		Cmdline_weapon_choice_3d = 1;
 	}
 
 	if ( use_3dwarp.found() ) {

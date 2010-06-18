@@ -983,6 +983,7 @@ typedef struct man_thruster {
 #define WT_IN_PLACE_ANIM	1
 #define WT_SWEEPER			2
 #define WT_HYPERSPACE		3
+#define WT_USE_KNOSSOS		4
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
