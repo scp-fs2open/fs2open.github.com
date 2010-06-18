@@ -3896,7 +3896,7 @@ int WE_Default::warpStart()
 	if (direction == WD_WARP_OUT)
 	{
 		// maybe special warpout
-		int fireball_type = ((portal_objp != NULL) || Cmdline_tbp) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		int fireball_type = ((portal_objp != NULL) || (sip->warpout_type == WT_USE_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
 		// create fireball
 		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
