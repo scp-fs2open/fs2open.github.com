@@ -3665,7 +3665,7 @@ void ship_parse_post_cleanup()
 
 	if (n_tgt_groups > 0) {
 		for(i = 0; i < n_tgt_groups; i++) {
-			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
+			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].sif2_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
 				//had none of these, check next
 				if ((Ai_tp_list[i].obj_type == -1)) {
 					//didn't have this one
@@ -16152,6 +16152,7 @@ ai_target_priority init_ai_target_priorities()
 	temp_priority.ship_class.clear();
 	temp_priority.ship_type.clear();
 	temp_priority.sif_flags = 0;
+	temp_priority.sif2_flags = 0;
 	temp_priority.weapon_class.clear();
 	temp_priority.wif2_flags = 0;
 	temp_priority.wif_flags = 0;
