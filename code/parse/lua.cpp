@@ -4105,20 +4105,27 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
+	int flags = 0;
+	int submodel = -1;
 
 	switch(obj->type) {
 		case OBJ_SHIP:
 			model_num = Ship_info[Ships[obj->instance].ship_info_index].model_num;
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		case OBJ_WEAPON:
 			model_num = Weapon_info[Weapons[obj->instance].weapon_info_index].model_num;
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		case OBJ_DEBRIS:
 			model_num = Debris[obj->instance].model_num;
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY | MC_SUBMODEL);
+			submodel = Debris[obj->instance].submodel_num;
 			break;
 		case OBJ_ASTEROID:
 			temp = Asteroids[obj->instance].asteroid_subtype;
 			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].model_num[temp];
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		default:
 			return ADE_RETURN_NIL;
@@ -4130,11 +4137,12 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	mc_info hull_check;
 
 	hull_check.model_num = model_num;
+	hull_check.submodel_num = submodel;
 	hull_check.orient = &obj->orient;
 	hull_check.pos = &obj->pos;
 	hull_check.p0 = v3a;
 	hull_check.p1 = v3b;
-	hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
+	hull_check.flags = flags;
 
 	if ( !model_collide(&hull_check) ) {
 		return ADE_RETURN_NIL;
