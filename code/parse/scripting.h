@@ -60,6 +60,7 @@ struct image_desc
 #define CHA_KEYRELEASED		18
 #define CHA_ONSTATESTART	19
 #define CHA_ONSTATEEND		20
+#define CHA_ONWEAPONDELETE	21
 
 
 struct script_condition
