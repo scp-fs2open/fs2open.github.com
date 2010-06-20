@@ -1630,7 +1630,11 @@ void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vec3d *rot_axis)
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
 		rot_axis->xyz.y = (m->vec.fvec.xyz.x - m->vec.rvec.xyz.z);
 		rot_axis->xyz.z = (m->vec.rvec.xyz.y - m->vec.uvec.xyz.x);
-		vm_vec_normalize(rot_axis);
+		if (IS_VEC_NULL_SQ_SAFE(rot_axis)) {
+			vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
+		} else {
+			vm_vec_normalize(rot_axis);
+		}
 	} else { // angle is PI within limits
 		*theta = PI;
 
