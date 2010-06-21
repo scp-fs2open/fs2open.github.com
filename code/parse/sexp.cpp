@@ -8832,7 +8832,7 @@ int sexp_explosion_option_lookup(char *text)
 }
 
 // Goober5000
-int sexp_set_explosion_option(int node)
+void sexp_set_explosion_option(int node)
 {
 	int n = node, ship_num;
 	ship *shipp;
@@ -8841,24 +8841,37 @@ int sexp_set_explosion_option(int node)
 
 	// get ship
 	ship_num = ship_name_lookup(CTEXT(n));
-	if (ship_num < 0) {
-		return SEXP_CANT_EVAL;
-	}
+	if (ship_num < 0)
+		return;
+
 	shipp = &Ships[ship_num];
 	sip = &Ship_info[shipp->ship_info_index];
 	sci = &sip->shockwave;
 
 	n = CDR(n);
 
+	// if we haven't changed anything yet, create a new special-exp with the same values as a standard exp
+	if (!shipp->use_special_explosion)
+	{
+		shipp->special_exp_damage = sci->damage;
+		shipp->special_exp_blast = sci->blast;
+		shipp->special_exp_inner = sci->inner_rad;
+		shipp->special_exp_outer = sci->outer_rad;
+		shipp->special_exp_shockwave_speed = sci->speed;
+
+		shipp->use_special_explosion = true;
+		shipp->use_shockwave = (sci->speed > 0);
+	}
+
 	// process all options
-	while (n >= 0) {
+	while (n >= 0)
+	{
 		int option = sexp_explosion_option_lookup(CTEXT(n));
 		n = CDR(n);
 
 		// watch out for bogus options
-		if (n < 0) {
+		if (n < 0)
 			break;
-		}
 
 		int val = eval_num(n);
 		Assert(val >= 0);	// should be true due to OPF_POSITIVE
@@ -8874,13 +8887,23 @@ int sexp_set_explosion_option(int node)
 			shipp->special_exp_outer = val;
 		} else if (option == EO_SHOCKWAVE_SPEED) {
 			shipp->special_exp_shockwave_speed = val;
-			shipp->use_shockwave = (val != 0);
+			shipp->use_shockwave = (val > 0);
 		}
 	}
 
-	// set special exp flag
-	shipp->use_special_explosion = (shipp->special_exp_damage != (int) sci->damage) || (shipp->special_exp_blast != (int) sci->blast) || (shipp->special_exp_inner != (int) sci->inner_rad)
-		|| (shipp->special_exp_outer != (int) sci->outer_rad) || (shipp->special_exp_shockwave_speed != (int) sci->speed);
+	// if all our values are the same as a standard exp, turn off the special exp
+	if ((shipp->special_exp_damage == (int) sci->damage) && (shipp->special_exp_blast == (int) sci->blast) && (shipp->special_exp_inner == (int) sci->inner_rad)
+		&& (shipp->special_exp_outer == (int) sci->outer_rad) && (shipp->special_exp_shockwave_speed == (int) sci->speed))
+	{
+		shipp->use_special_explosion = false;
+		shipp->use_shockwave = false;
+
+		shipp->special_exp_damage = -1;
+		shipp->special_exp_blast = -1;
+		shipp->special_exp_inner = -1;
+		shipp->special_exp_outer = -1;
+		shipp->special_exp_shockwave_speed = -1;
+	}
 }
 
 // Goober5000
