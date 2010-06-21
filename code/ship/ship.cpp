@@ -565,10 +565,11 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
+	"Knossos",
+	"Babylon5",
 	"Galactica",
 	"Homeworld",
 	"Hyperspace",
-	"Babylon5",
 };
 
 int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
@@ -4131,6 +4132,8 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 	switch(sip->warpin_type)
 	{
 		case WT_DEFAULT:
+		case WT_KNOSSOS:
+		case WT_DEFAULT_THEN_KNOSSOS:
 			shipp->warpin_effect = new WE_Default(objp, WD_WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
@@ -4152,7 +4155,8 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 	switch(sip->warpout_type)
 	{
 		case WT_DEFAULT:
-		case WT_USE_KNOSSOS:
+		case WT_KNOSSOS:
+		case WT_DEFAULT_THEN_KNOSSOS:
 			shipp->warpout_effect = new WE_Default(objp, WD_WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:

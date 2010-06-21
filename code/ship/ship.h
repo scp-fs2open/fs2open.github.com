@@ -979,11 +979,12 @@ typedef struct man_thruster {
 } man_thruster;
 
 //Warp type defines
-#define WT_DEFAULT			0
-#define WT_IN_PLACE_ANIM	1
-#define WT_SWEEPER			2
-#define WT_HYPERSPACE		3
-#define WT_USE_KNOSSOS		4
+#define WT_DEFAULT					0
+#define WT_KNOSSOS					1
+#define WT_DEFAULT_THEN_KNOSSOS		2
+#define WT_IN_PLACE_ANIM			3
+#define WT_SWEEPER					4
+#define WT_HYPERSPACE				5
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
