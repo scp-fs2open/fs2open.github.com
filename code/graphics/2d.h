@@ -750,6 +750,7 @@ void gr_set_shader(shader *shade);
 
 // new bitmap functions
 void gr_bitmap(int x, int y, bool resize = true);
+void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool resize = true);
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling);
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 

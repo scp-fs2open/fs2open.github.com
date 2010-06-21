@@ -318,7 +318,8 @@ static int Damage_flash_bright;
 static int Damage_flash_timer;
 
 HudGauge::HudGauge():
-base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(false), active(false), pop_up(false), disabled_views(0), custom_gauge(false)
+base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(false), active(false), pop_up(false), disabled_views(0), texture_target(-1), 
+texture_cache(-1), target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -330,6 +331,8 @@ base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(fa
 
 	popup_timer = timestamp(1);
 
+	texture_target_fname[0] = '\0';
+
 	custom_name[0] = '\0';
 	custom_text[0] = '\0';
 	custom_frame.first_frame = -1;
@@ -340,7 +343,8 @@ base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(fa
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, bool _slew, bool _message, int _disabled_views, 
 				   int r, int g, int b):
 base_w(0), base_h(0), gauge_object(_gauge_object), gauge_config(_gauge_config), config_override(_allow_override), reticle_follow(_slew), 
-message_gauge(_message), active(true), pop_up(false), disabled_views(_disabled_views), custom_gauge(false)
+message_gauge(_message), active(true), pop_up(false), disabled_views(_disabled_views), texture_target(-1), texture_cache(-1), target_x(-1), target_y(-1), 
+target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
 
@@ -361,6 +365,8 @@ message_gauge(_message), active(true), pop_up(false), disabled_views(_disabled_v
 
 	popup_timer = timestamp(1);
 
+	texture_target_fname[0] = '\0';
+
 	custom_name[0] = '\0';
 	custom_text[0] = '\0';
 	custom_frame.first_frame = -1;
@@ -371,7 +377,8 @@ message_gauge(_message), active(true), pop_up(false), disabled_views(_disabled_v
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname):
 gauge_object(HUD_OBJECT_CUSTOM), base_w(0), base_h(0), gauge_config(_gauge_config), config_override(true), reticle_follow(_slew), message_gauge(false), 
-active(true), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), custom_gauge(true)
+active(true), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), texture_target(-1), texture_cache(-1), 
+target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(true)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -387,6 +394,8 @@ active(true), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP
 	flash_status = false;
 
 	popup_timer = timestamp(1);
+
+	texture_target_fname[0] = '\0';
 
 	if(_custom_name) {
 		strcpy_s(custom_name, _custom_name);
@@ -736,8 +745,13 @@ void HudGauge::renderBitmap(int x, int y)
 	gr_unsize_screen_pos(&nx, &ny);
 	jx += nx;
 	jy += ny;
+
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
 	
-	gr_aabitmap(jx, jy); 
+	gr_aabitmap(jx, jy, resize); 
 
 	gr_reset_screen_scale();
 }
@@ -746,6 +760,42 @@ void HudGauge::renderBitmap(int frame, int x, int y)
 {
 	gr_set_bitmap(frame);
 	renderBitmap(x, y);
+}
+
+void HudGauge::renderBitmapUv(int frame, int x, int y, int w, int h, float u0, float v0, float u1, float v1)
+{
+	int jx, jy, nx = 0, ny = 0; 
+	
+	if(!emp_should_blit_gauge()) { 
+		return;
+	}
+
+	jx = x; 
+	jy = y; 
+	emp_hud_jitter(&jx, &jy); 
+
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	}
+
+	gr_set_screen_scale(base_w, base_h);
+
+	gr_unsize_screen_pos(&nx, &ny);
+	jx += nx;
+	jy += ny;
+
+	gr_set_bitmap(frame);
+
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
+
+	gr_bitmap_uv(jx, jy, w, h, u0, v0, u1, v1, resize);
+
+	gr_reset_screen_scale();
 }
 
 void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy)
@@ -772,8 +822,15 @@ void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int
 	jx += nx;
 	jy += ny;
 
-	gr_set_bitmap(frame); 
-	gr_aabitmap_ex(jx, jy, w, h, sx, sy);
+	gr_set_bitmap(frame);
+
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
+
+	gr_aabitmap_ex(jx, jy, w, h, sx, sy, resize);
+
 	gr_reset_screen_scale();
 }
 
@@ -937,6 +994,91 @@ bool HudGauge::canRender()
 	}
 
 	return true;
+}
+
+void HudGauge::setupRenderToCache()
+{
+	if(strlen(texture_target_fname) > 0 && texture_cache > -1) {// check if the player's ship has the proper replacement textures
+		bm_set_render_target(texture_cache, 0);
+		gr_set_cull(0);
+		gr_clear();
+	} 
+}
+
+void HudGauge::doneRenderToCache()
+{
+	if(strlen(texture_target_fname) > 0 && texture_cache > -1) {
+		gr_set_cull(1);
+		bm_set_render_target(-1);
+	} 
+}
+
+void HudGauge::renderToCockpit()
+{
+	if(strlen(texture_target_fname) <= 0) 
+		return;
+
+	if(texture_cache < 0) 
+		return;
+
+	if(Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0) // might be good to spit out an error msg saying that this ship doesn't have a cockpit
+		return;
+
+	int i, tm_num, bmp_handle = -1;
+
+	// if no texture target has been found yet, find one.
+	if(texture_target < 0) {
+		polymodel *pm = model_get(Ship_info[Player_ship->ship_info_index].cockpit_model_num);
+
+		for (i = 0; i < pm->n_textures; i++)
+		{
+			tm_num = pm->maps[i].FindTexture(texture_target_fname);
+			if(tm_num > -1)
+			{
+				texture_target = i*TM_NUM_TYPES+tm_num;
+				bmp_handle = pm->maps[i].textures[tm_num].GetTexture();
+				break;
+			}
+		}
+	}
+
+	if (Player_ship->cockpit_replacement_textures /*cockpit_textures*/ == NULL) {
+		Player_ship->cockpit_replacement_textures/*cockpit_textures*/ = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+
+		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+			Player_ship->cockpit_replacement_textures[i]/*cockpit_textures[i]*/ = -1;
+	}
+
+	HUD_reset_clip();
+
+	// we haven't created a render target for this cockpit texture yet so make it
+	if(Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/ == -1)
+	{
+		// get outta here if no valid bmp handle found 
+		if(bmp_handle == -1) 
+			return;
+
+		int w, h;
+		bm_get_info(bmp_handle, &w, &h);
+		Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/ = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+
+		// now copy the texture onto this render target
+		bm_set_render_target(Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/);
+		gr_set_bitmap(bmp_handle);
+		gr_bitmap_ex(0,0, w, h, 0, 0, true);
+	}
+	else {
+		bm_set_render_target(Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/);
+	}
+	int w, h;
+
+	bm_get_info(texture_cache, &w, &h);
+
+	gr_set_bitmap(texture_cache);
+	int cull = gr_set_cull(0);
+	gr_bitmap_uv(target_x, target_y, target_w, target_h, 0.0f, 0.0f, i2fl(cache_w)/i2fl(w), i2fl(cache_h)/i2fl(h), false);
+	gr_set_cull(cull);
+	bm_set_render_target(-1);
 }
 
 // ----------------------------------------------------------------------

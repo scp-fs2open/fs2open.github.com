@@ -638,6 +638,7 @@ typedef struct ship {
 	
 	// Goober5000 - revised nameplate implementation
 	int *ship_replacement_textures;
+	int *cockpit_replacement_textures;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index

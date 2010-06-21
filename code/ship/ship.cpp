@@ -4539,6 +4539,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Goober5000 - revised texture replacement
 	shipp->ship_replacement_textures = NULL;
+	shipp->cockpit_replacement_textures = NULL;
 
 	shipp->glow_point_bank_active.clear();
 
@@ -5872,7 +5873,7 @@ void ship_render_cockpit(object *objp)
 	model_set_detail_level(0);
 	model_clear_instance(sip->cockpit_model_num);
 	//model_render(sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
-	model_render(sip->cockpit_model_num, &eye_ori, &pos, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
+	model_render(sip->cockpit_model_num, &eye_ori, &pos, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1, shipp->cockpit_replacement_textures/*cockpit_textures*/);
 
 	//Zbuffer
 	gr_zbuffer_set(saved_zbuffer_mode);
@@ -5970,6 +5971,11 @@ void ship_delete( object * obj )
 	if (shipp->ship_replacement_textures != NULL) {
 		vm_free(shipp->ship_replacement_textures);
 		shipp->ship_replacement_textures = NULL;
+	}
+
+	if(shipp->cockpit_replacement_textures != NULL) {
+		vm_free(shipp->cockpit_replacement_textures);
+		shipp->cockpit_replacement_textures = NULL;
 	}
 
 	// glow point banks

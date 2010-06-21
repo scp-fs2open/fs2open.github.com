@@ -871,6 +871,29 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 	g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
 }
 
+void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool allow_scaling)
+{
+	float x, y, w, h;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	x = i2fl(_x);
+	y = i2fl(_y);
+	w = i2fl(_w);
+	h = i2fl(_h);
+
+	// I will tidy this up later - RT
+	if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		gr_resize_screen_posf(&x, &y);
+		gr_resize_screen_posf(&w, &h);
+	}
+
+	// RT draws all hall interface stuff
+	g3_draw_2d_poly_bitmap(x, y, w, h, _u0, _v0, _u1, _v1, TMAP_FLAG_INTERFACE);
+}
+
 // NEW new bitmap functions -Bobboau
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 {

@@ -204,6 +204,14 @@ protected:
 	char custom_name[NAME_LENGTH];
 	char custom_text[NAME_LENGTH];
 
+	// Render to texture stuff
+	char texture_target_fname[MAX_FILENAME_LEN];
+	int texture_target;
+	int texture_cache;
+	int cache_w, cache_h;
+	int target_x, target_y;
+	int target_w;
+	int target_h;
 public:
 	// constructors
 	HudGauge();
@@ -245,8 +253,12 @@ public:
 
 	// rendering functions
 	void setGaugeColor(int bright_index = -4);
+	void setupRenderToCache();
+	void doneRenderToCache();
+	void renderToCockpit();
 	void renderBitmap(int x, int y);
 	void renderBitmap(int frame, int x, int y);
+	void renderBitmapUv(int frame, int x, int y, int w, int h, float u0, float v0, float u1, float v1);
 	void renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy);
 	void renderString(int x, int y, char *str);
 	void renderString(int x, int y, int gauge_id, char *str);

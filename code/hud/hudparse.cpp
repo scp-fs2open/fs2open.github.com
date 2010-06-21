@@ -29,6 +29,7 @@
 #include "radar/radarsetup.h"
 #include "radar/radar.h"
 #include "radar/radarorb.h"
+#include "radar/radardradis.h"
 #include "ship/ship.h" //for ship struct
 #include "graphics/font.h" //for gr_force_fit_string
 #include "hud/hudtargetbox.h" 
@@ -325,11 +326,9 @@ void load_missing_retail_gauges()
 		// if we're missing a radar gauge, load either orb or standard
 		retail_gauge_loaded = false;
 		for(int j = 0; j < num_loaded_gauges; j++) {
-			if(HUD_OBJECT_RADAR_ORB == default_hud_gauges[j]->getObjectType()) {
-				retail_gauge_loaded = true;
-			}
-
-			if(HUD_OBJECT_RADAR_STD == default_hud_gauges[j]->getObjectType()) {
+			if(HUD_OBJECT_RADAR_STD == default_hud_gauges[j]->getObjectType() ||
+				HUD_OBJECT_RADAR_ORB == default_hud_gauges[j]->getObjectType() ||
+				HUD_OBJECT_RADAR_BSG == default_hud_gauges[j]->getObjectType()) {
 				retail_gauge_loaded = true;
 			}
 		}
@@ -378,11 +377,9 @@ void load_missing_retail_gauges()
 			// if we're missing a radar gauge, load either orb or standard
 			retail_gauge_loaded = false;
 			for(int j = 0; j < num_loaded_gauges; j++) {
-				if(HUD_OBJECT_RADAR_ORB == Ship_info[k].hud_gauges[j]->getObjectType()) {
-					retail_gauge_loaded = true;
-				}
-
-				if(HUD_OBJECT_RADAR_STD == Ship_info[k].hud_gauges[j]->getObjectType()) {
+				if(HUD_OBJECT_RADAR_ORB == Ship_info[k].hud_gauges[j]->getObjectType() || 
+					HUD_OBJECT_RADAR_STD == Ship_info[k].hud_gauges[j]->getObjectType() ||
+					HUD_OBJECT_RADAR_BSG == Ship_info[k].hud_gauges[j]->getObjectType()) {
 					retail_gauge_loaded = true;
 				}
 			}
@@ -539,6 +536,9 @@ int parse_gauge_type()
 
 	if(optional_string("+Radar Orb:")) 
 		return HUD_OBJECT_RADAR_ORB;
+
+	if(optional_string("+Radar BSG:")) 
+		return HUD_OBJECT_RADAR_BSG;
 
 	if(optional_string("+Afterburner Energy:")) 
 		return HUD_OBJECT_AFTERBURNER;
@@ -707,6 +707,9 @@ void load_gauge(int gauge, int base_w, int base_h, int ship_idx)
 		break;
 	case HUD_OBJECT_RADAR_ORB:
 		load_gauge_radar_orb(base_w, base_h, ship_idx);
+		break;
+	case HUD_OBJECT_RADAR_BSG:
+		load_gauge_radar_dradis(base_w, base_h, ship_idx);
 		break;
 	case HUD_OBJECT_WEAPON_LINKING:
 		load_gauge_weapon_linking(base_w, base_h, ship_idx);
@@ -2018,6 +2021,116 @@ void load_gauge_radar_orb(int base_w, int base_h, int ship_index)
 	hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
 	hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
 	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
+
+	if(ship_index >= 0) {
+		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	} else {
+		default_hud_gauges.push_back(hud_gauge);
+	}
+}
+
+void load_gauge_radar_dradis(int base_w, int base_h, int ship_index)
+{
+	// basic radar gauge info
+	int coords[2];
+	int base_res[2];
+	int Radar_radius[2];
+
+	// bitmap filenames for the effect
+	char xy_fname[MAX_FILENAME_LEN] = "dradis_xy";
+	char xz_yz_fname[MAX_FILENAME_LEN] = "dradis_xz_yz"; 
+	char sweep_fname[MAX_FILENAME_LEN] = "dradis_sweep";
+	char target_fname[MAX_FILENAME_LEN] = "dradis_target";
+	char unknown_fname[MAX_FILENAME_LEN] = "dradis_unknown";
+	
+	// parameters for background
+	char background_fname[MAX_FILENAME_LEN] = "";
+	int background_size[2] = {0, 0};
+
+	// parameters for foreground image
+	char foreground_fname[MAX_FILENAME_LEN] = "";
+	int foreground_size[2] = {0, 0};
+
+	// render to texture parameters
+	char texture_name[MAX_FILENAME_LEN] = "";
+	int target_coords[2] = {0, 0};
+	int target_size[2] = {0, 0};
+
+	if(gr_screen.res == GR_640) {
+		coords[0] = 231;
+		coords[1] = 332;
+
+		base_res[0] = 640;
+		base_res[1] = 480;
+	} else {
+		coords[0] = 369;
+		coords[1] = 531;
+
+		base_res[0] = 1024;
+		base_res[1] = 768;
+	}
+
+	Radar_radius[0] = 281;
+	Radar_radius[1] = 233;
+	
+	if(check_base_res(base_w, base_h)) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if(optional_string("Position:")) {
+			stuff_int_list(coords, 2);
+		}
+
+		if(optional_string("Size:")) {
+			stuff_int_list(Radar_radius, 2);
+		}
+		if(optional_string("XY Disc Filename:")) {
+			stuff_string(xy_fname, F_NAME, MAX_FILENAME_LEN);
+		}
+		if(optional_string("XZ YZ Disc Filename:")) {
+			stuff_string(xz_yz_fname, F_NAME, MAX_FILENAME_LEN);
+		}
+		if(optional_string("Sweep Disc Filename:")) {
+			stuff_string(sweep_fname, F_NAME, MAX_FILENAME_LEN);
+		}
+		if(optional_string("Default Contact Filename:")) {
+			stuff_string(target_fname, F_NAME, MAX_FILENAME_LEN);
+		}
+		if(optional_string("Unknown Contact Filename:")) {
+			stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
+		}
+		if(optional_string("Background Filename:")) {
+			stuff_string(background_fname, F_NAME, MAX_FILENAME_LEN);
+
+			if(optional_string("Clip Size:")) {
+				stuff_int_list(background_size, 2);
+			}
+		}
+		if(optional_string("Foreground Filename:")) {
+			stuff_string(foreground_fname, F_NAME, MAX_FILENAME_LEN);
+
+			if(optional_string("Clip Size:")) {
+				stuff_int_list(foreground_size, 2);
+			}
+		}
+		if(optional_string("Texture Target:") && ship_index >= 0) {
+			stuff_string(texture_name, F_NAME, MAX_FILENAME_LEN);
+
+			required_string("Clip Offset:");
+			stuff_int_list(target_coords, 2);
+
+			required_string("Clip Size:");
+			stuff_int_list(target_size, 2);
+		}
+	}
+	HudGaugeRadarDradis* hud_gauge = new HudGaugeRadarDradis();
+	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
+	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
+	hud_gauge->initBackground(background_fname, background_size[0], background_size[1]);
+	hud_gauge->initForeground(foreground_fname, foreground_size[0], foreground_size[1]);
+	hud_gauge->initRenderTexture(texture_name, target_coords[0], target_coords[1], target_size[0], target_size[1]);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

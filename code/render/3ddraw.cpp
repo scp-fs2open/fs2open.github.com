@@ -2357,6 +2357,63 @@ int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_t
 	return ret;
 }
 
+int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, float u0, float v0, float u1, float v1, uint additional_tmap_flags)
+{
+	int ret;
+	int saved_zbuffer_mode;
+	vertex v[4];
+	vertex *vertlist[4] = { &v[0], &v[1], &v[2], &v[3] };
+	memset(v,0,sizeof(vertex)*4);
+
+	g3_start_frame(1);
+
+	// turn off zbuffering	
+	saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);	
+
+	// stuff coords	
+	v[0].sx = x;
+	v[0].sy = y;	
+	v[0].sw = 0.0f;
+	v[0].u = u0;
+	v[0].v = v0;
+	v[0].flags = PF_PROJECTED;
+	v[0].codes = 0;
+
+	v[1].sx = (x + w);
+	v[1].sy = y;	
+	v[1].sw = 0.0f;
+	v[1].u = u1;
+	v[1].v = v0;
+	v[1].flags = PF_PROJECTED;
+	v[1].codes = 0;
+
+	v[2].sx = (x + w);
+	v[2].sy = (y + h);	
+	v[2].sw = 0.0f;
+	v[2].u = u1;
+	v[2].v = v1;
+	v[2].flags = PF_PROJECTED;
+	v[2].codes = 0;
+
+	v[3].sx = x;
+	v[3].sy = (y + h);	
+	v[3].sw = 0.0f;
+	v[3].u = u0;
+	v[3].v = v1;
+	v[3].flags = PF_PROJECTED;
+	v[3].codes = 0;
+
+	// set debrief	
+	ret = g3_draw_poly_constant_sw(4, vertlist, TMAP_FLAG_TEXTURED | additional_tmap_flags, 0.1f);
+
+	g3_end_frame();
+	
+	gr_zbuffer_set(saved_zbuffer_mode);	
+
+	return ret;
+}
+
 vertex *bitmap_2d_poly_list=NULL;
 vertex **bitmap_2d_poly_vertlist=NULL;
 int bitmap_2d_poly_list_size=0;

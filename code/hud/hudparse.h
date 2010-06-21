@@ -110,67 +110,70 @@ void load_gauge_radar_std(int base_w, int base_h, int ship_idx = -1);
 #define HUD_OBJECT_RADAR_ORB				26
 void load_gauge_radar_orb(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_AFTERBURNER			27
+#define HUD_OBJECT_RADAR_BSG				27
+void load_gauge_radar_dradis(int base_w, int base_h, int ship_idx = -1);
+
+#define HUD_OBJECT_AFTERBURNER			28
 void load_gauge_afterburner(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_WEAPON_ENERGY			28
+#define HUD_OBJECT_WEAPON_ENERGY			29
 void load_gauge_weapon_energy(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_TEXT_WARNINGS			29
+#define HUD_OBJECT_TEXT_WARNINGS			30
 void load_gauge_text_warnings(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_CENTER_RETICLE		30
+#define HUD_OBJECT_CENTER_RETICLE		31
 void load_gauge_center_reticle(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_THROTTLE				31
+#define HUD_OBJECT_THROTTLE				32
 void load_gauge_throttle(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_THREAT				32
+#define HUD_OBJECT_THREAT				33
 void load_gauge_threat_indicator(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_LEAD					33
+#define HUD_OBJECT_LEAD					34
 void load_gauge_lead(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_LEAD_SIGHT			34
+#define HUD_OBJECT_LEAD_SIGHT			35
 void load_gauge_lead_sight(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_LOCK					35
+#define HUD_OBJECT_LOCK					36
 void load_gauge_lock(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_WEAPON_LINKING		36
+#define HUD_OBJECT_WEAPON_LINKING		37
 void load_gauge_weapon_linking(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_MULTI_MSG				37
+#define HUD_OBJECT_MULTI_MSG				38
 void load_gauge_multi_msg(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_VOICE_STATUS			38
+#define HUD_OBJECT_VOICE_STATUS			39
 void load_gauge_voice_status(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_PING					39
+#define HUD_OBJECT_PING					40
 void load_gauge_ping(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_SUPERNOVA				40
+#define HUD_OBJECT_SUPERNOVA				41
 void load_gauge_supernova(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_OFFSCREEN				41
+#define HUD_OBJECT_OFFSCREEN				42
 void load_gauge_offscreen(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_BRACKETS				42
+#define HUD_OBJECT_BRACKETS				43
 void load_gauge_brackets(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_ORIENTATION_TEE		43
+#define HUD_OBJECT_ORIENTATION_TEE		44
 void load_gauge_orientation_tee(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_HOSTILE_TRI			44
+#define HUD_OBJECT_HOSTILE_TRI			45
 void load_gauge_hostile_tri(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_TARGET_TRI			45
+#define HUD_OBJECT_TARGET_TRI			46
 void load_gauge_target_tri(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_MISSILE_TRI			46
+#define HUD_OBJECT_MISSILE_TRI			47
 void load_gauge_missile_tri(int base_w, int base_h, int ship_idx = -1);
 
-#define HUD_OBJECT_KILLS				47
+#define HUD_OBJECT_KILLS				48
 void load_gauge_kills(int base_w, int base_h, int ship_idx = -1);
 
 #endif // _HUDPARSE_H
