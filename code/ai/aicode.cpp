@@ -304,6 +304,9 @@ typedef struct {
 //	Move to a position relative to a dock bay using thrusters.
 float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, rotating_dockpoint_info *rdinfo = NULL);
 
+// The object that is declared to be the leader of the group formation for
+// the "autopilot"
+object *Autopilot_flight_leader = NULL;
 
 // ai_set_rearm_status takes a team (friendly, hostile, neutral) and a time.  This function
 // sets the timestamp used to tell is it is a good time for this team to rearm.  Once the timestamp
@@ -4262,38 +4265,37 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	object *wing_leader = get_wing_leader(aip->wing);
-
 	vec3d perp, goal_point;
 
 	bool carry_flag = ((shipp->flags2 & SF2_NAVPOINT_CARRY) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY)));
 
 	if (AutoPilotEngaged && timestamp_elapsed(LockAPConv) && carry_flag
-		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != wing_leader)) )
+		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != Autopilot_flight_leader)) )
 	{
+		Assertion( Autopilot_flight_leader != NULL, "When under autopliot there must be a flight leader" );
 		// snap wings into formation them into formation
 		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
 			if (aip->wing != -1) {
 				int wing_index = get_wing_index(Pl_objp, aip->wing);
 
-				if (wing_leader != Pl_objp) {
+				if (Autopilot_flight_leader != Pl_objp) {
 					// not leader.. get our position relative to leader
-					get_absolute_wing_pos_autopilot(&goal_point, wing_leader, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					get_absolute_wing_pos_autopilot(&goal_point, Autopilot_flight_leader, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
 				} else {
 					j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
 
 					switch (autopilot_wings[aip->wing] % 2) {
 						case 1: // back-left
-							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_copy_normalize(&perp, &Autopilot_flight_leader->orient.vec.rvec);
 							vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
-							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							vm_vec_add(&goal_point, &Autopilot_flight_leader->pos, &perp);
 							break;
 
 						default: //back-right
 						case 0:
-							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_copy_normalize(&perp, &Autopilot_flight_leader->orient.vec.rvec);
 							vm_vec_scale(&perp, 166.0f*j);
-							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							vm_vec_add(&goal_point, &Autopilot_flight_leader->pos, &perp);
 							break;
 					}
 
@@ -4305,7 +4307,7 @@ void ai_fly_to_ship()
 			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 		} else {
-			vm_vec_scale_add(&perp, &Pl_objp->pos, &wing_leader->phys_info.vel, 1000.0f);
+			vm_vec_scale_add(&perp, &Pl_objp->pos, &Autopilot_flight_leader->phys_info.vel, 1000.0f);
 			ai_turn_towards_vector(&perp, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 		}
 	} else {
@@ -4512,38 +4514,36 @@ void ai_waypoints()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	object *wing_leader = get_wing_leader(aip->wing);
-
 	vec3d perp, goal_point;
 
 	bool carry_flag = ((shipp->flags2 & SF2_NAVPOINT_CARRY) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY)));
 
 	if (AutoPilotEngaged && timestamp_elapsed(LockAPConv) && carry_flag
-		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != wing_leader)) )
+		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != Autopilot_flight_leader)) )
 	{
 		// snap wings into formation them into formation
 		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
 			if (aip->wing != -1) {
 				int wing_index = get_wing_index(Pl_objp, aip->wing);
 
-				if (wing_leader != Pl_objp) {
+				if (Autopilot_flight_leader != Pl_objp) {
 					// not leader.. get our position relative to leader
-					get_absolute_wing_pos_autopilot(&goal_point, wing_leader, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					get_absolute_wing_pos_autopilot(&goal_point, Autopilot_flight_leader, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
 				} else {
 					j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
 
 					switch (autopilot_wings[aip->wing] % 2) {
 						case 1: // back-left
-							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_copy_normalize(&perp, &Autopilot_flight_leader->orient.vec.rvec);
 							vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
-							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							vm_vec_add(&goal_point, &Autopilot_flight_leader->pos, &perp);
 							break;
 
 						default: //back-right
 						case 0:
-							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_copy_normalize(&perp, &Autopilot_flight_leader->orient.vec.rvec);
 							vm_vec_scale(&perp, 166.0f*j);
-							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							vm_vec_add(&goal_point, &Autopilot_flight_leader->pos, &perp);
 							break;
 					}
 
@@ -4552,12 +4552,10 @@ void ai_waypoints()
 				Pl_objp->pos = goal_point;
 			}
 
-			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Autopilot_flight_leader->pos);
 			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 		} else {
-			if ( !wing_leader )
-				wing_leader = Pl_objp;
-			vm_vec_scale_add(&perp, &Pl_objp->pos, &wing_leader->phys_info.vel, 1000.0f);
+			vm_vec_scale_add(&perp, &Pl_objp->pos, &Autopilot_flight_leader->phys_info.vel, 1000.0f);
 			ai_turn_towards_vector(&perp, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 		}
 	} else {
