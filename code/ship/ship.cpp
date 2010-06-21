@@ -565,6 +565,8 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
+	"Knossos",
+	"Babylon5",
 	"Galactica",
 	"Homeworld",
 	"Hyperspace",
@@ -2831,7 +2833,7 @@ strcpy_s(parse_error_text, temp_error);
 				sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
 
 				if(sp->engine_wash_pointer == NULL)
-					Warning(LOCATION,"Invalid engine wash name %s specified for subsystem %s in ship class %s", name_tmp, sp->subobj_name, sip->name);
+					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in ship class %s", name_tmp, sp->subobj_name, sip->name);
 			}
 
 			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
@@ -4134,6 +4136,8 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 	switch(sip->warpin_type)
 	{
 		case WT_DEFAULT:
+		case WT_KNOSSOS:
+		case WT_DEFAULT_THEN_KNOSSOS:
 			shipp->warpin_effect = new WE_Default(objp, WD_WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
@@ -4155,6 +4159,8 @@ void ship_set_warp_effects(object *objp, ship_info *sip)
 	switch(sip->warpout_type)
 	{
 		case WT_DEFAULT:
+		case WT_KNOSSOS:
+		case WT_DEFAULT_THEN_KNOSSOS:
 			shipp->warpout_effect = new WE_Default(objp, WD_WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
@@ -9324,6 +9330,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 									}
 
 									target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
+									if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+										vm_vec_sub2(&target_velocity_vec, &obj->phys_info.vel);
+
 									dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
 									time_to_target = 0.0f;
 

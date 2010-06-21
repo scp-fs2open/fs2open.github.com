@@ -2660,6 +2660,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_HUD_ELEMENT:
 		case OPF_SOUND_ENVIRONMENT:
 		case OPF_SOUND_ENVIRONMENT_OPTION:
+		case OPF_EXPLOSION_OPTION:
 			return 1;
 
 		case OPF_SHIP:
@@ -4369,6 +4370,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_sound_environment_option();
 			break;
 
+		case OPF_EXPLOSION_OPTION:
+			list = get_listing_opf_explosion_option();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5230,6 +5235,16 @@ sexp_list_item *sexp_tree::get_listing_opf_sound_environment_option()
 
 	for (int i = 0; i < Num_sound_environment_options; i++)
 		head.add_data(Sound_environment_option[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_explosion_option()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_explosion_options; i++)
+		head.add_data(Explosion_option[i]);
 
 	return head.next;
 }

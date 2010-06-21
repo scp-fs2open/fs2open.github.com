@@ -117,6 +117,7 @@ struct ship;
 #define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
 #define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
 #define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
+#define OPF_EXPLOSION_OPTION	74		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -230,6 +231,9 @@ struct ship;
 #define OP_STRING_EQUALS					(0x000a | OP_CATEGORY_LOGICAL)
 #define OP_STRING_GREATER_THAN				(0x000b | OP_CATEGORY_LOGICAL)
 #define OP_STRING_LESS_THAN					(0x000c | OP_CATEGORY_LOGICAL)
+#define OP_NOT_EQUAL						(0x000d | OP_CATEGORY_LOGICAL)	// Goober5000
+#define OP_GREATER_OR_EQUAL					(0x000e | OP_CATEGORY_LOGICAL)	// Goober5000
+#define OP_LESS_OR_EQUAL					(0x000f | OP_CATEGORY_LOGICAL)	// Goober5000
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
 #define	OP_GOAL_TRUE_DELAY					(0x0001 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -267,8 +271,9 @@ struct ship;
 #define	OP_TIME_WING_ARRIVED				(0x0004 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_WING_DEPARTED				(0x0005 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_MISSION_TIME						(0x0006 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
-#define	OP_TIME_DOCKED						(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
-#define	OP_TIME_UNDOCKED					(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define	OP_MISSION_TIME_MSECS				(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define	OP_TIME_DOCKED						(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define	OP_TIME_UNDOCKED					(0x0009 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 
 #define	OP_SHIELDS_LEFT						(0x0000 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_HITS_LEFT						(0x0001 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
@@ -584,6 +589,7 @@ struct ship;
 #define OP_HUD_DISPLAY_GAUGE				(0x00d6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SET_SOUND_ENVIRONMENT			(0x00d7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
 #define OP_UPDATE_SOUND_ENVIRONMENT			(0x00d8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
+#define OP_SET_EXPLOSION_OPTION				(0x00d9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -852,6 +858,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_HUD_ELEMENT			-143
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT	-144
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
+#define SEXP_CHECK_INVALID_EXPLOSION_OPTION		-146
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1056,6 +1063,10 @@ void multi_sexp_eval();
 // Goober5000/Taylor
 extern int Num_sound_environment_options;
 extern char *Sound_environment_option[];
+
+// Goober5000
+extern int Num_explosion_options;
+extern char *Explosion_option[];
 
 /** Global state variables for the hud-display-gauge sexp.
 They all should be named Sexp_hud_display_*;
