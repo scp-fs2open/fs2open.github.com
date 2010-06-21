@@ -111,6 +111,7 @@ void parse_ai_profiles_tbl(char *filename)
 		}
 		else
 		{
+			no_create = false;
 			// don't create multiple profiles with the same name
 			if (previous_profile != NULL)
 			{
