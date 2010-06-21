@@ -117,6 +117,7 @@ struct ship;
 #define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
 #define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
 #define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
+#define OPF_EXPLOSION_OPTION	74		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -588,6 +589,7 @@ struct ship;
 #define OP_HUD_DISPLAY_GAUGE				(0x00d6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SET_SOUND_ENVIRONMENT			(0x00d7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
 #define OP_UPDATE_SOUND_ENVIRONMENT			(0x00d8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
+#define OP_SET_EXPLOSION_OPTION				(0x00d9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -856,6 +858,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_HUD_ELEMENT			-143
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT	-144
 #define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
+#define SEXP_CHECK_INVALID_EXPLOSION_OPTION		-146
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1060,6 +1063,10 @@ void multi_sexp_eval();
 // Goober5000/Taylor
 extern int Num_sound_environment_options;
 extern char *Sound_environment_option[];
+
+// Goober5000
+extern int Num_explosion_options;
+extern char *Explosion_option[];
 
 /** Global state variables for the hud-display-gauge sexp.
 They all should be named Sexp_hud_display_*;

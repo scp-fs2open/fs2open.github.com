@@ -353,6 +353,7 @@ sexp_oper Operators[] = {
 	{ "ship-subsys-untargetable",	OP_SHIP_SUBSYS_UNTARGETABLE,	2, INT_MAX },	// Goober5000
 	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
 	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
+	{ "set-explosion-option",		OP_SET_EXPLOSION_OPTION,		3, INT_MAX	},	// Goober5000
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
 	{ "fix-warp",					OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,					1, INT_MAX, },
@@ -691,12 +692,22 @@ int	Sexp_music_handle = -1;
 void sexp_stop_music(int fade = 1);
 
 // for sound environments - Goober5000/Taylor
-#define SSEO_VOLUME		0
-#define SSEO_DECAY_TIME	1
-#define SSEO_DAMPING	2
+#define SEO_VOLUME		0
+#define SEO_DECAY_TIME	1
+#define SEO_DAMPING		2
 int sexp_sound_environment_option_lookup(char *text);
 char *Sound_environment_option[] = { "volume", "decay time", "damping" };
 int Num_sound_environment_options = 3;
+
+// for explosions - Goober5000
+#define EO_DAMAGE			0
+#define EO_BLAST			1
+#define EO_INNER_RADIUS		2
+#define EO_OUTER_RADIUS		3
+#define EO_SHOCKWAVE_SPEED	4
+int sexp_explosion_option_lookup(char *text);
+char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed" };
+int Num_explosion_options = 5;
 
 int get_sexp(char *token);
 void build_extended_sexp_string(int cur_node, int level, int mode, int max_len);
@@ -2436,6 +2447,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (sexp_sound_environment_option_lookup(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION; 
+				}
+				break;
+
+			case OPF_EXPLOSION_OPTION:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (sexp_explosion_option_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_EXPLOSION_OPTION; 
 				}
 				break;
 
@@ -8719,11 +8740,12 @@ int sexp_sound_environment_option_lookup(char *text)
 // Taylor
 void sexp_set_sound_environment(int node)
 {
-	int n;
+	int n = node;
 	sound_env env;
 	int preset_id = -1;
 
-	char *preset = CTEXT(node);
+	char *preset = CTEXT(n);
+	n = CDR(n);
 
 	if ( preset && !stricmp(preset, SEXP_NONE_STRING) ) {
 		sound_env_disable();
@@ -8731,7 +8753,6 @@ void sexp_set_sound_environment(int node)
 	}
 
 	preset_id = ds_eax_get_preset_id( preset );
-
 	if (preset_id < 0) {
 		return;
 	}
@@ -8741,23 +8762,25 @@ void sexp_set_sound_environment(int node)
 		return;
 	}
 
-	n = CDR(node);
-
 	while (n >= 0) {
 		int option = sexp_sound_environment_option_lookup(CTEXT(n));
+		n = CDR(n);
 
-		float val = (float)eval_num(CDR(n)) / 1000.0f;
-
-		if ( option == SSEO_VOLUME ) {
-			env.volume = val;
-		} else if ( option == SSEO_DECAY_TIME ) {
-			env.decay = val;
-		} else if ( option == SSEO_DAMPING ) {
-			env.damping = val;
+		// watch out for bogus options
+		if (n < 0) {
+			break;
 		}
 
-		// move to next option
-		n = CDDR(n);
+		float val = (float)eval_num(n) / 1000.0f;
+		n = CDR(n);
+
+		if ( option == SEO_VOLUME ) {
+			env.volume = val;
+		} else if ( option == SEO_DECAY_TIME ) {
+			env.decay = val;
+		} else if ( option == SEO_DAMPING ) {
+			env.damping = val;
+		}
 	}
 	
 	sound_env_set(&env);
@@ -8770,20 +8793,94 @@ void sexp_update_sound_environment(int node)
 
 	while (n >= 0) {
 		int option = sexp_sound_environment_option_lookup(CTEXT(n));
+		n = CDR(n);
 
-		float val = (float)eval_num(CDR(n)) / 1000.0f;
-
-		if ( option == SSEO_VOLUME ) {
-			ds_eax_set_volume(val);
-		} else if ( option == SSEO_DECAY_TIME ) {
-			ds_eax_set_decay_time(val);
-		} else if ( option == SSEO_DAMPING ) {
-			ds_eax_set_damping(val);
+		// watch out for bogus options
+		if (n < 0) {
+			break;
 		}
 
-		// move to next option
-		n = CDDR(n);
+		float val = (float)eval_num(n) / 1000.0f;
+		n = CDR(n);
+
+		if ( option == SEO_VOLUME ) {
+			ds_eax_set_volume(val);
+		} else if ( option == SEO_DECAY_TIME ) {
+			ds_eax_set_decay_time(val);
+		} else if ( option == SEO_DAMPING ) {
+			ds_eax_set_damping(val);
+		}
 	}
+}
+
+int sexp_explosion_option_lookup(char *text)
+{
+	int i;
+
+	Assert(text != NULL);
+	if (text == NULL) {
+		return -1;
+	}
+	
+	for (i = 0; i < Num_explosion_options; i++) {
+		if (!strcmp(text, Explosion_option[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+// Goober5000
+int sexp_set_explosion_option(int node)
+{
+	int n = node, ship_num;
+	ship *shipp;
+	ship_info *sip;
+	shockwave_create_info *sci;
+
+	// get ship
+	ship_num = ship_name_lookup(CTEXT(n));
+	if (ship_num < 0) {
+		return SEXP_CANT_EVAL;
+	}
+	shipp = &Ships[ship_num];
+	sip = &Ship_info[shipp->ship_info_index];
+	sci = &sip->shockwave;
+
+	n = CDR(n);
+
+	// process all options
+	while (n >= 0) {
+		int option = sexp_explosion_option_lookup(CTEXT(n));
+		n = CDR(n);
+
+		// watch out for bogus options
+		if (n < 0) {
+			break;
+		}
+
+		int val = eval_num(n);
+		Assert(val >= 0);	// should be true due to OPF_POSITIVE
+		n = CDR(n);
+
+		if (option == EO_DAMAGE) {
+			shipp->special_exp_damage = val;
+		} else if (option == EO_BLAST) {
+			shipp->special_exp_blast = val;
+		} else if (option == EO_INNER_RADIUS) {
+			shipp->special_exp_inner = val;
+		} else if (option == EO_OUTER_RADIUS) {
+			shipp->special_exp_outer = val;
+		} else if (option == EO_SHOCKWAVE_SPEED) {
+			shipp->special_exp_shockwave_speed = val;
+			shipp->use_shockwave = (val != 0);
+		}
+	}
+
+	// set special exp flag
+	shipp->use_special_explosion = (shipp->special_exp_damage != (int) sci->damage) || (shipp->special_exp_blast != (int) sci->blast) || (shipp->special_exp_inner != (int) sci->inner_rad)
+		|| (shipp->special_exp_outer != (int) sci->outer_rad) || (shipp->special_exp_shockwave_speed != (int) sci->speed);
 }
 
 // Goober5000
@@ -17862,6 +17959,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_EXPLOSION_OPTION:
+				sexp_set_explosion_option(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_DONT_COLLIDE_INVISIBLE:
 			case OP_COLLIDE_INVISIBLE:
 				sexp_dont_collide_invisible( node, (op_num == OP_DONT_COLLIDE_INVISIBLE) );
@@ -19271,6 +19373,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
+		case OP_SET_EXPLOSION_OPTION:
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
 		case OP_CHANGE_SHIP_CLASS:
@@ -20049,6 +20152,21 @@ int query_operator_argument_type(int op, int argnum)
 
 			if (a_mod == 0)
 				return OPF_SOUND_ENVIRONMENT_OPTION;
+			else
+				return OPF_POSITIVE;
+		}
+
+		case OP_SET_EXPLOSION_OPTION:
+		{
+			// editing a ship
+			if (argnum == 0)
+				return OPF_SHIP;
+
+			// every two, the value repeats
+			int a_mod = (argnum - 1) % 2;
+
+			if (a_mod == 0)
+				return OPF_EXPLOSION_OPTION;
 			else
 				return OPF_POSITIVE;
 		}
@@ -21424,6 +21542,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
 			return "Invalid sound environment option";
+
+		case SEXP_CHECK_INVALID_EXPLOSION_OPTION:
+			return "Invalid explosion option";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -22216,6 +22337,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_VANISH:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
+		case OP_SET_EXPLOSION_OPTION:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_TAG:
@@ -23330,6 +23452,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tEnvironment option\r\n"
 		"\t2:\tEnvironment value x 1000, e.g. 10 is 0.01\r\n"
 		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
+		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
+		
+	// Goober5000
+	{ OP_SET_EXPLOSION_OPTION, "set-explosion-option\r\n"
+		"Sets an explosion option on a particular ship.  Takes 3 or more arguments...\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tExplosion option\r\n"
+		"\t3:\tExplosion value (for shockwave speed, 0 will produce no shockwave)\r\n"
+		"Use Add-Data to specify additional explosion options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 
 	// Goober5000

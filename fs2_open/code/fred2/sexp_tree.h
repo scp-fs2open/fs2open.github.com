@@ -260,6 +260,7 @@ public:
 	sexp_list_item *get_listing_opf_hud_elements();
 	sexp_list_item *get_listing_opf_sound_environment();
 	sexp_list_item *get_listing_opf_sound_environment_option();
+	sexp_list_item *get_listing_opf_explosion_option();
 
 	int m_mode;
 	int item_index;
