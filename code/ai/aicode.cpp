@@ -4272,7 +4272,7 @@ void ai_fly_to_ship()
 	if (AutoPilotEngaged && timestamp_elapsed(LockAPConv) && carry_flag
 		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != Autopilot_flight_leader)) )
 	{
-		Assertion( Autopilot_flight_leader != NULL, "When under autopliot there must be a flight leader" );
+		Assertion( Autopilot_flight_leader != NULL, "When under autopliot there must be a flight leader", Autopilot_flight_leader );
 		// snap wings into formation them into formation
 		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
 			if (aip->wing != -1) {
