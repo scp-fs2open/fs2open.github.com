@@ -6255,6 +6255,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 		if (shipp->pre_death_explosion_happened == 1) {
 			return ade_set_args(L, "i", 1);
 		}
+		return ade_set_args(L, "i", 3);
 	}
 
 	return ade_set_args(L, "i", 0);
