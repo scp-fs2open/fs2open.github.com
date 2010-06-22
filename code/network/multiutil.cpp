@@ -81,7 +81,6 @@
 extern int ascii_table[];
 extern int shifted_ascii_table[];
 
-
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
 ushort Next_asteroid_signature;									// next signature for an asteroid

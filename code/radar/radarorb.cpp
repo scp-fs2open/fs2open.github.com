@@ -99,7 +99,12 @@ void HudGaugeRadarOrb::initBitmaps(char *fname)
 void HudGaugeRadarOrb::plotBlip(blip *b, vec3d *scaled_pos)
 {
 	*scaled_pos = b->position;
-	vm_vec_normalize(scaled_pos);
+	
+	if (IS_VEC_NULL_SQ_SAFE(scaled_pos)) {
+		vm_vec_make(scaled_pos, 1.0f, 0.0f, 0.0f);
+	} else {
+		vm_vec_normalize(scaled_pos);
+	}
 
 	float scale = b->dist / Radar_bright_range;
 	if (scale > 1.25f) scale = 1.25f;
