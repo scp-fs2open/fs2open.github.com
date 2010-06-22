@@ -3853,18 +3853,14 @@ int WE_Default::warpStart()
 		HUD_printf(NOX("Subspace drive engaged"));
 	}
 
-	int portal_objnum;
-	if (direction == WD_WARP_IN)
-		portal_objnum = shipp->special_warpin_objnum;
-	else if (direction == WD_WARP_OUT)
-		portal_objnum = shipp->special_warpout_objnum;
-	else
-		portal_objnum = -1;
-
 	portal_objp = NULL;
-	if(portal_objnum >= 0 && shipfx_special_warp_objnum_valid(portal_objnum))
+	if ((direction == WD_WARP_IN) && shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
 	{
-		portal_objp = &Objects[portal_objnum];
+		portal_objp = &Objects[shipp->special_warpin_objnum];
+	}
+	else if ((direction == WD_WARP_OUT) && shipfx_special_warp_objnum_valid(shipp->special_warpout_objnum))
+	{
+		portal_objp = &Objects[shipp->special_warpout_objnum];
 	}
 
 	float warpout_speed = 0.0f;
@@ -3904,7 +3900,7 @@ int WE_Default::warpStart()
 	else if (direction == WD_WARP_IN)
 	{
 		// maybe special warpin
-		int fireball_type = ((portal_objp != NULL) || (sip->warpout_type == WT_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		int fireball_type = ((portal_objp != NULL) || (sip->warpin_type == WT_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
 		// create fireball
 		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
