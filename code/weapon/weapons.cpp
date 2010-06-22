@@ -2007,12 +2007,14 @@ int parse_weapon(int subtype, bool replace)
 
 		// magic miss #
 		if(optional_string("+Miss Factor:")) {
-			// an unspecified Miss Factor like this should apply to all IFFs
-			for(iff=0; iff<Num_iffs; iff++) {
-				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
-					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {
-						break;
-					}
+			for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
+				float temp;
+				if(!stuff_float_optional(&temp)) {
+					break;
+				}
+				// an unspecified Miss Factor should apply to all IFFs
+				for(iff=0; iff<Num_iffs; iff++) {
+					wip->b_info.beam_iff_miss_factor[iff][idx] = temp;
 				}
 			}
 		}
