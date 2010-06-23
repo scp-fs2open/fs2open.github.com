@@ -10657,10 +10657,11 @@ void sexp_allow_weapon(int n)
 
 // Goober5000
 // generic function for all those sexps that set flags
-void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int p_object_flag, int p_object_flag2, int set_it, bool send_multiplayer = false, bool include_players_in_ship_lookup = false)
+void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int p_object_flag, int p_object_flag2, bool set_it, bool send_multiplayer = false, bool include_players_in_ship_lookup = false)
 {
 	char *ship_name;
 	int ship_index;
+	int n = node;
 
 	if (send_multiplayer && MULTIPLAYER_MASTER) {
 		multi_start_packet(); 
@@ -10673,14 +10674,16 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 		multi_send_int(ship_flag2); 
 		multi_send_int(p_object_flag); 
 		multi_send_int(p_object_flag2); 
-		multi_send_bool(set_it ? true : false); 
+		multi_send_bool(set_it); 
 	}
 
 	// loop for all ships in the sexp
-	for (; node >= 0; node = CDR(node))
+	// NB: if the flag is set, we will continue acting on nodes until we run out of them;
+	//     if not, we will only act on the first one
+	for (; n >= 0; process_subsequent_nodes ? n = CDR(n) : n = -1)
 	{
 		// get ship name
-		ship_name = CTEXT(node);
+		ship_name = CTEXT(n);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
 		if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL))
@@ -10876,7 +10879,7 @@ void multi_sexp_deal_with_ship_flag()
 // function to deal with breaking/fixing the warp engines on ships/wings.
 // --repairable is true when we are breaking the warp drive (can be repaired)
 // --damage_it is true when we are sabotaging it, one way or the other; false when fixing it
-void sexp_deal_with_warp( int n, int repairable, int damage_it )
+void sexp_deal_with_warp( int n, bool repairable, bool damage_it )
 {
 	int ship_flag, p_object_flag;
 
@@ -10891,7 +10894,7 @@ void sexp_deal_with_warp( int n, int repairable, int damage_it )
 		p_object_flag = P_SF_WARP_NEVER;
 	}
 
-	sexp_deal_with_ship_flag(n, 0, 0, ship_flag, 0, p_object_flag, 0, damage_it);
+	sexp_deal_with_ship_flag(n, true, 0, 0, ship_flag, 0, p_object_flag, 0, damage_it);
 }
 
 // function which is used to tell the AI when it is okay to fire certain secondary
@@ -10927,7 +10930,7 @@ void sexp_good_secondary_time(int n)
 void sexp_toggle_builtin_messages (int node, bool enable_messages)
 {
 	char *ship_name;
-	int wingnum, shipnum, ship_index ;
+	int wingnum, shipnum, ship_index;
 
 	// If no arguments were supplied then turn off all messages then bail
 	if (node < 0)
@@ -10945,14 +10948,12 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 	}
 
 	// iterate through all the nodes supplied
-	while (node != -1)
-	{
-		
-		// check that this isn't a request to silence command. 
+	while (node >= 0)
+	{		
 		ship_name = CTEXT(node);
 
-		// if (ship_name[0] == '#' )
-		if (!stricmp(ship_name, "#Command")) 
+		// check that this isn't a request to silence command. 
+		if ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender)) 
 		{
 			// Either disable or enable messages from command
 			if (enable_messages) 
@@ -10985,14 +10986,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		// If it isn't command then assume that we're dealing with a ship 
 		else 
 		{
-			if (enable_messages)
-			{
-				sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_NO_BUILTIN_MESSAGES, 0, P2_SF2_NO_BUILTIN_MESSAGES, 0);
-			}
-			else
-			{
-				sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_NO_BUILTIN_MESSAGES, 0, P2_SF2_NO_BUILTIN_MESSAGES, 1);
-			}
+			sexp_deal_with_ship_flag(node, false, 0, 0, 0, SF2_NO_BUILTIN_MESSAGES, 0, P2_SF2_NO_BUILTIN_MESSAGES, !enable_messages);
 		}
 
 		node = CDR(node);
@@ -11448,37 +11442,37 @@ int sexp_goal_incomplete(int n)
 		return SEXP_TRUE;
 }
 
-// protects/unprotects a ship.  The flag tells us whether or not the protect bit should be set (flag==1)
-// or cleared (flag==0)
-void sexp_protect_ships(int n, int flag)
+// protects/unprotects a ship.  The flag tells us whether or not the protect bit should be set (flag==true)
+// or cleared (flag==false)
+void sexp_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, OF_PROTECTED, 0, 0, 0, P_OF_PROTECTED, 0, flag);
+	sexp_deal_with_ship_flag(n, true, OF_PROTECTED, 0, 0, 0, P_OF_PROTECTED, 0, flag);
 }
 
-// protects/unprotects a ship.  The flag tells us whether or not the protect bit should be set (flag==1)
-// or cleared (flag==0)
-void sexp_beam_protect_ships(int n, int flag )
+// protects/unprotects a ship.  The flag tells us whether or not the protect bit should be set (flag==true)
+// or cleared (flag==false)
+void sexp_beam_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
+	sexp_deal_with_ship_flag(n, true, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
 }
 
 // Goober5000 - sets the "dont collide invisible" flag on a list of ships
-void sexp_dont_collide_invisible(int n, int dont_collide)
+void sexp_dont_collide_invisible(int n, bool dont_collide)
 {
-	sexp_deal_with_ship_flag(n, 0, 0, 0, SF2_DONT_COLLIDE_INVIS, 0, P_SF2_DONT_COLLIDE_INVIS, dont_collide);
+	sexp_deal_with_ship_flag(n, true, 0, 0, 0, SF2_DONT_COLLIDE_INVIS, 0, P_SF2_DONT_COLLIDE_INVIS, dont_collide);
 }
 
 // Goober5000 - sets the vaporize flag on a list of ships
-void sexp_ships_vaporize(int n, int vaporize)
+void sexp_ships_vaporize(int n, bool vaporize)
 {
-	sexp_deal_with_ship_flag(n, 0, 0, SF_VAPORIZE, 0, P_SF_VAPORIZE, 0, vaporize);
+	sexp_deal_with_ship_flag(n, true, 0, 0, SF_VAPORIZE, 0, P_SF_VAPORIZE, 0, vaporize);
 }
 
 // sexpression to make ships "visible" and "invisible" to sensors.  The visible parameter is true
 // when making ships visible, false otherwise
-void sexp_ships_visible(int n, int visible)
+void sexp_ships_visible(int n, bool visible)
 {
-	sexp_deal_with_ship_flag(n, 0, 0, SF_HIDDEN_FROM_SENSORS, 0, P_SF_HIDDEN_FROM_SENSORS, 0, !visible, true);
+	sexp_deal_with_ship_flag(n, true, 0, 0, SF_HIDDEN_FROM_SENSORS, 0, P_SF_HIDDEN_FROM_SENSORS, 0, !visible, true);
 
 	// we also have to add any escort ships that were made visible
 	for (; n >= 0; n = CDR(n))
@@ -11498,9 +11492,9 @@ void sexp_ships_visible(int n, int visible)
 }
 
 // Goober5000
-void sexp_ships_stealthy(int n, int stealthy)
+void sexp_ships_stealthy(int n, bool stealthy)
 {
-	sexp_deal_with_ship_flag(n, 0, 0, 0, SF2_STEALTH, 0, P_SF2_STEALTH, stealthy, true);
+	sexp_deal_with_ship_flag(n, true, 0, 0, 0, SF2_STEALTH, 0, P_SF2_STEALTH, stealthy, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!stealthy)
@@ -11518,9 +11512,9 @@ void sexp_ships_stealthy(int n, int stealthy)
 }
 
 // Goober5000
-void sexp_friendly_stealth_invisible(int n, int invisible)
+void sexp_friendly_stealth_invisible(int n, bool invisible)
 {
-	sexp_deal_with_ship_flag(n, 0, 0, 0, SF2_FRIENDLY_STEALTH_INVIS, 0, P_SF2_FRIENDLY_STEALTH_INVIS, invisible, true);
+	sexp_deal_with_ship_flag(n, true, 0, 0, 0, SF2_FRIENDLY_STEALTH_INVIS, 0, P_SF2_FRIENDLY_STEALTH_INVIS, invisible, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!invisible)
@@ -11650,14 +11644,14 @@ void sexp_ship_tag( int n, int tag )
 }
 
 // sexpression to toggle invulnerability flag of ships.
-void sexp_ships_invulnerable( int n, int invulnerable )
+void sexp_ships_invulnerable( int n, bool invulnerable )
 {
-	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_OF_INVULNERABLE, 0, invulnerable);
+	sexp_deal_with_ship_flag(n, true, OF_INVULNERABLE, 0, 0, 0, P_OF_INVULNERABLE, 0, invulnerable);
 }
 
-void sexp_ships_bomb_targetable(int n, int targetable)
+void sexp_ships_bomb_targetable(int n, bool targetable)
 {
-	sexp_deal_with_ship_flag(n, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_OF_TARGETABLE_AS_BOMB, targetable, true);
+	sexp_deal_with_ship_flag(n, true, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_OF_TARGETABLE_AS_BOMB, targetable, true);
 }
 
 // Goober5000
@@ -11967,9 +11961,9 @@ void sexp_ship_vanish(int n)
 	}
 }
 
-void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
+void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
 {
-	sexp_deal_with_ship_flag(n, OF_NO_SHIELDS, 0, 0, 0, P_OF_NO_SHIELDS, 0, shields_off);
+	sexp_deal_with_ship_flag(n, true, OF_NO_SHIELDS, 0, 0, 0, P_OF_NO_SHIELDS, 0, shields_off);
 }
 
 // Goober5000
@@ -13121,21 +13115,21 @@ void sexp_set_weapon (int node, bool primary)
 void sexp_deal_with_afterburner_lock (int node, bool lock)
 {
 	Assert (node != -1);
-	sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_AFTERBURNER_LOCKED, 0, 0, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, 0, 0, 0, SF2_AFTERBURNER_LOCKED, 0, 0, (lock ? 1:0), true);
 }
 
 // Karajorma - locks or unlocks primary weapons on the requested ship
 void sexp_deal_with_primary_lock (int node, bool lock)
 {
 	Assert (node != -1);	
-	sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_PRIMARIES_LOCKED, 0, P2_SF2_PRIMARIES_LOCKED, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, 0, 0, 0, SF2_PRIMARIES_LOCKED, 0, P2_SF2_PRIMARIES_LOCKED, (lock ? 1:0), true);
 
 }
 
 void sexp_deal_with_secondary_lock (int node, bool lock)
 {
 	Assert (node != -1);	
-	sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_SECONDARIES_LOCKED, 0, P2_SF2_SECONDARIES_LOCKED, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, 0, 0, 0, SF2_SECONDARIES_LOCKED, 0, P2_SF2_SECONDARIES_LOCKED, (lock ? 1:0), true);
 
 }
 
