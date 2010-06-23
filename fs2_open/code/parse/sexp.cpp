@@ -297,7 +297,6 @@ sexp_oper Operators[] = {
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
-	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
 	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
 	{ "allow-treason",				OP_ALLOW_TREASON,				1, 1 },			// Karajorma
@@ -19420,7 +19419,6 @@ int query_operator_return_type(int op)
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_KAMIKAZE:
-		case OP_NOT_KAMIKAZE:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_LOCK_ROTATING_SUBSYSTEM:
@@ -20876,9 +20874,6 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP_WING;
 
-		case OP_NOT_KAMIKAZE:
-			return OPF_SHIP_WING;
-
 		case OP_NUM_SHIPS_IN_BATTLE:	//phreak modified by FUBAR
 			return OPF_SHIP_WING_TEAM;
 
@@ -22212,7 +22207,6 @@ int get_subcategory(int sexp_id)
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
 		case OP_KAMIKAZE:
-		case OP_NOT_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_ALLOW_TREASON:
@@ -24727,12 +24721,6 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest: Names of ships to perform kamikaze\r\n"
 	},
 	
-	//-Sesquipedalian
-	{ OP_NOT_KAMIKAZE, "not-kamikaze\r\n"
-		"\tTells ships abort a kamikaze run  Takes 1 or more arguments....\r\n"
-		"\tAll: Names of ships to abort kamikaze\r\n"
-	},
-
 	//phreak
 	{ OP_TURRET_TAGGED_SPECIFIC, "turret-tagged-specific\r\n"
 		"\tSpecific turrets on a ship only fire at tagged targets, as opposed to all turrets doing this using turret-tagged-only\r\n"
