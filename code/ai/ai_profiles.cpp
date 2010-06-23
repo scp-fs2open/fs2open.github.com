@@ -49,7 +49,6 @@ void set_flag(ai_profile_t *profile, char *name, int flag, int type)
 void parse_ai_profiles_tbl(char *filename)
 {
 	int i, rval;
-	bool no_create = false;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
 	char *saved_Mp = NULL;
@@ -84,6 +83,7 @@ void parse_ai_profiles_tbl(char *filename)
 	{
 		ai_profile_t *profile = &dummy_profile;
 		ai_profile_t *previous_profile = NULL;
+		bool no_create = false;
 		
 		// get the name
 		required_string("$Profile Name:");
@@ -111,7 +111,6 @@ void parse_ai_profiles_tbl(char *filename)
 		}
 		else
 		{
-			no_create = false;
 			// don't create multiple profiles with the same name
 			if (previous_profile != NULL)
 			{
