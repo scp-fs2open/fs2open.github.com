@@ -2141,6 +2141,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 				else
 					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+			} else {
+				// make sure salvo fire mode does not turn into autofire
+				if ((tp->flags & MSS_FLAG_TURRET_SALVO) && ((i + 1) == number_of_firings)) {
+					ai_info *parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
+					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
+				}
 			}
 			// moved this here so we increment the fire pos only after we have fired and not during it
 			ss->turret_next_fire_pos++;
