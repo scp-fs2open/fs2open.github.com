@@ -2219,14 +2219,16 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
 		vec3d of_dst;
 		vm_vec_rotate( &of_dst, v2e, &ss->world_to_turret_matrix );
-		vm_vec_normalize(&of_dst);
 		if ((of_dst.xyz.x == 0) && (of_dst.xyz.y == 0)) {
 			return true;
 		} else {
 			of_dst.xyz.z = 0;
-			// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
-			if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
-				return true;
+			if (!IS_VEC_NULL_SQ_SAFE(&of_dst)) {
+				vm_vec_normalize(&of_dst);
+				// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
+				if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
+					return true;
+			}
 		}
 	}
 	return false;
