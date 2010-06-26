@@ -12,6 +12,7 @@
 #include "graphics/2d.h"
 #include "localization/localize.h"
 #include "hud/hud.h"
+#include "mission/missiontraining.h" //for Max_directives
 #include "hud/hudescort.h"
 //#include "weapon/emp.h"
 #include "hud/hudparse.h" //Duh.
@@ -522,6 +523,11 @@ void parse_hud_gauges_tbl(char *filename)
 
 	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
+
+	if(optional_string("$Max Directives:"))
+	{
+		stuff_int(&Max_directives);
+	}
 
 	if(optional_string("$Max Escort Ships:"))
 	{
