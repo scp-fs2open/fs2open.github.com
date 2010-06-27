@@ -3918,6 +3918,8 @@ int WE_Default::warpStart()
 		return 0;
 	}
 
+	// G5K 6/26/2010 this should no longer be needed
+	/*
 	// maybe negate if special warp effect
 	fvec = Objects[warp_objnum].orient.vec.fvec;
 	if (portal_objp != NULL)
@@ -3930,6 +3932,7 @@ int WE_Default::warpStart()
 			vm_vec_negate(&fvec);
 		}
 	}
+	*/
 
 	stage_time_start = total_time_start = timestamp();
 	if(direction == WD_WARP_IN)
