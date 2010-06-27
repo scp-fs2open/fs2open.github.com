@@ -319,9 +319,6 @@ void cmd_brief_stop_anim(int id)
 
 void cmd_brief_new_stage(int stage)
 {
-	char *p;
-	char filename[NAME_LENGTH];
-
 	if (stage < 0) {
 		cmd_brief_stop_anim(-1);
 		Cur_stage = -1;
