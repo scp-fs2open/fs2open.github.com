@@ -1,4 +1,5 @@
 #include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 #include "bmpman/bmpman.h"
 #include "graphics/generic.h"
 #include "graphics/2d.h"
@@ -18,6 +19,54 @@
  
 //we check background type to avoid messed up colours for ANI
 #define ANI_BPP_CHECK		(ga->ani.bg_type == BM_TYPE_PCX) ? 16 : 32
+
+// Goober5000
+int generic_anim_init_and_stream(generic_anim *anim, char *anim_filename, ubyte bg_type, bool attempt_hi_res)
+{
+	int stream_result = -1;
+	char filename[NAME_LENGTH];
+	char *p;
+
+	Assert(anim != NULL);
+	Assert(anim_filename != NULL);
+
+	// hi-res support
+	if (attempt_hi_res && (gr_screen.res == GR_1024)) {
+		// attempt to load a hi-res animation
+		memset(filename, 0, NAME_LENGTH);
+		strcpy_s(filename, "2_");
+		strncat(filename, anim_filename, NAME_LENGTH - 3);
+
+		// remove extension
+		p = strchr(filename, '.');
+		if(p) {
+			*p = '\0';
+		}
+
+		// attempt to stream the hi-res ani
+		generic_anim_init(anim, filename);
+		anim->ani.bg_type = bg_type;
+		stream_result = generic_anim_stream(anim);
+	}
+
+	// we failed to stream hi-res, or we aren't running in hi-res, so try low-res
+	if (stream_result < 0) {
+		strcpy_s(filename, anim_filename);
+
+		// remove extension
+		p = strchr(filename, '.');
+		if(p) {
+			*p = '\0';
+		}
+
+		// attempt to stream the low-res ani
+		generic_anim_init(anim, filename);
+		anim->ani.bg_type = bg_type;
+		stream_result = generic_anim_stream(anim);
+	}
+
+	return stream_result;
+}
 
 // Goober5000
 void generic_anim_init(generic_anim *ga, char *filename)
