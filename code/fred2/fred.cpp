@@ -28,6 +28,8 @@
 #include "debugconsole/dbugfile.h"
 #include "globalincs/mspdb_callstack.h"
 
+#include "AFXADV.H"
+
 #ifdef NDEBUG
 #ifndef FRED
 #error macro FRED is not defined when trying to build release Fred.  Please define FRED macro in build settings in all Fred projects
@@ -80,12 +82,12 @@ window_data Mission_notes_wnd_data;
 BEGIN_MESSAGE_MAP(CFREDApp, CWinApp)
 	//{{AFX_MSG_MAP(CFREDApp)
 	ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
+	ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
 		// NOTE - the ClassWizard will add and remove mapping macros here.
 		//    DO NOT EDIT what you see in these blocks of generated code!
 	//}}AFX_MSG_MAP
 	// Standard file based document commands
 	ON_COMMAND(ID_FILE_NEW, CWinApp::OnFileNew)
-	ON_COMMAND(ID_FILE_OPEN, CWinApp::OnFileOpen)
 	// Standard print setup command
 	ON_COMMAND(ID_FILE_PRINT_SETUP, CWinApp::OnFilePrintSetup)
 END_MESSAGE_MAP()
@@ -236,9 +238,23 @@ BOOL CFREDApp::InitInstance()
 	*str_end = '\0';
 
 
+	// Goober5000 - figure out where the FRED file dialog should go
+	if ((m_pRecentFileList != NULL) && (m_pRecentFileList->GetSize() > 0))
+	{
+		// use the most recently opened file to supply the default folder
+		m_sInitialDir = m_pRecentFileList->operator[](0);	// lol syntax
+	}
+	else
+	{
+		// use FRED's own directory to search for missions
+		m_sInitialDir = Fred_base_dir;
+		m_sInitialDir += "\\data\\missions";
+	}
+
+
 	// Parse command line for standard shell commands, DDE, file open
 	CCommandLineInfo cmdInfo;
-	ParseCommandLine(cmdInfo);	
+	ParseCommandLine(cmdInfo);
 
 	m_nCmdShow = Main_wnd_data.p.showCmd;
 
@@ -307,6 +323,25 @@ void CFREDApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
+}
+
+// G5K - from http://www.experts-exchange.com/Programming/System/Windows__Programming/MFC/Q_20155824.html
+void CFREDApp::OnFileOpen()
+{
+    // use the initial dir the first time we prompt for a file
+    // name. after a successful open, the file name will be
+    // changed to be the empty string and the default dir
+    // will be supplied by the CFileDialog internal memory
+    if(!DoPromptFileName(m_sInitialDir, AFX_IDS_OPENFILE, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, TRUE, NULL))
+	{
+        // open cancelled
+        return;
+    }
+    AfxGetApp()->OpenDocumentFile(m_sInitialDir);
+    // if returns NULL, the user has already been alerted
+
+    // now erase the initial dir since we only want to use it once
+    m_sInitialDir.Empty();
 }
 
 /////////////////////////////////////////////////////////////////////////////
