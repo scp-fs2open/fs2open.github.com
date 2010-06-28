@@ -8575,8 +8575,7 @@ void ai_chase()
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
 		} else if (dist_to_enemy < CIRCLE_STRAFE_MAX_DIST + En_objp->radius &&
-			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y)) &&
-			(dot_to_enemy > 0.33) &&
+			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
 			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_circle_strafe_percent)) {
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
@@ -8691,8 +8690,7 @@ void ai_chase()
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
 		} else if (dist_to_enemy < CIRCLE_STRAFE_MAX_DIST + En_objp->radius &&
-			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y)) &&
-			(dot_to_enemy > 0.33) &&
+			(En_objp->phys_info.speed < MAX(sip->max_vel.xyz.x, sip->max_vel.xyz.y) * 1.5f) &&
 			(static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_circle_strafe_percent)) {
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
