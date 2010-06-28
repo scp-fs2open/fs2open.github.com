@@ -74,6 +74,7 @@ typedef struct {
 char Training_buf[TRAINING_MESSAGE_LENGTH];
 char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
 char Training_voice_filename[NAME_LENGTH];
+int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
 int Training_message_timestamp;
 int Training_line_sizes[MAX_TRAINING_MESSAGE_LINES];
 int Training_message_method = 1;
@@ -173,8 +174,8 @@ void training_obj_display()
 
 	offset = 0;
 	end = Training_obj_num_lines;
-	if (end > TRAINING_OBJ_DISPLAY_LINES) {
-		end = TRAINING_OBJ_DISPLAY_LINES;
+	if (end > Max_directives) {
+		end = Max_directives;
 		offset = Training_obj_num_lines - end;
 	}
 
@@ -302,6 +303,9 @@ void training_mission_init()
 	Training_obj_num_lines = 0;
 	Training_message_queue_count = 0;
 	Training_failure = 0;
+	if (Max_directives > TRAINING_OBJ_LINES) {
+		Max_directives = TRAINING_OBJ_LINES;
+	}
 	for (i=0; i<TRAINING_OBJ_LINES; i++)
 		Training_obj_lines[i] = -1;
 
@@ -361,7 +365,7 @@ void sort_training_objectives()
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines
-	offset = Training_obj_num_lines - TRAINING_OBJ_DISPLAY_LINES;
+	offset = Training_obj_num_lines - Max_directives;
 
 	if (offset <= 0) {
 		return;
@@ -447,7 +451,7 @@ void sort_training_objectives()
 
 		// find first slot that can be bumped
 		// look at the last (N-4 to N) positions
-		for (slot_idx=0; slot_idx<TRAINING_OBJ_DISPLAY_LINES; slot_idx++) {
+		for (slot_idx=0; slot_idx<Max_directives; slot_idx++) {
 			if ( Training_obj_lines[i+offset] & TRAINING_OBJ_STATUS_KNOWN ) {
 				break;
 			}
