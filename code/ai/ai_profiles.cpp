@@ -49,7 +49,6 @@ void set_flag(ai_profile_t *profile, char *name, int flag, int type)
 void parse_ai_profiles_tbl(char *filename)
 {
 	int i, rval;
-	bool no_create = false;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
 	char *saved_Mp = NULL;
@@ -84,6 +83,7 @@ void parse_ai_profiles_tbl(char *filename)
 	{
 		ai_profile_t *profile = &dummy_profile;
 		ai_profile_t *previous_profile = NULL;
+		bool no_create = false;
 		
 		// get the name
 		required_string("$Profile Name:");
@@ -273,6 +273,19 @@ void parse_ai_profiles_tbl(char *filename)
 				}
 			}
 
+			if (optional_string("$Random Sidethrust Percent:")) {
+				parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
+				for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
+						profile->random_sidethrust_percent[i] = 0.0f;
+						Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
+					}
+					profile->random_sidethrust_percent[i] /= 100.0;
+				}
+			}
+
 			if (optional_string("$Stalemate Time Threshold:"))
 				parse_float_list(profile->stalemate_time_thresh, NUM_SKILL_LEVELS);
 
@@ -308,6 +321,9 @@ void parse_ai_profiles_tbl(char *filename)
 
 			if (optional_string("$Max Aim Update Delay:"))
 				parse_float_list(profile->max_aim_update_delay, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Turret Max Aim Update Delay:"))
+				parse_float_list(profile->turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS, AIP_FLAG);
 
@@ -372,6 +388,10 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$fix ai class bug:", AIPF_FIX_AI_CLASS_BUG, AIP_FLAG);
 
 			set_flag(profile, "$turrets ignore targets radius in range checks:", AIPF2_TURRETS_IGNORE_TARGET_RADIUS, AIP_FLAG2);
+
+			set_flag(profile, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
+
+			set_flag(profile, "$perform less checks for death screams:", AIPF2_PERFORM_LESS_SCREAM_CHECKS, AIP_FLAG2);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

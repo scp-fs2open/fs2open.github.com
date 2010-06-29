@@ -28,11 +28,21 @@
 #define MAX_PITCH		100000
 
 
+// User specified sound quality
+#define DS_SQ_LOW		0
+#define DS_SQ_MEDIUM	1
+#define DS_SQ_HIGH		2
+
+extern int Ds_sound_quality;
+extern int Ds_float_supported;
+
 // limits placed on how many concurrent sounds of the same type can play simultaneously
 #define DS_MUST_PLAY				0
 #define DS_LIMIT_ONE				1
 #define DS_LIMIT_TWO				2
 #define DS_LIMIT_THREE			3
+
+#define DS_3D		(1<<0)
 
 typedef struct sound_info {
 	int	format;		// WAVE_FORMAT_* defines from mmreg.h
@@ -49,7 +59,7 @@ typedef struct sound_info {
 
 extern int							ds_initialized;
 
-int	ds_init(int use_eax, unsigned int sample_rate);
+int	ds_init();
 void	ds_close();
 int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg = false, OggVorbis_File *ovf = NULL);
 int	ds_parse_sound_info(char *real_filename, sound_info *s_info);
@@ -93,6 +103,75 @@ void ds_do_frame();
 // --------------------
 
 // use this structure for get/set all properties...
+
+// used for const array of default values
+typedef struct EFXREVERBPROPERTIES_list
+{
+	char *name;
+
+	float flDensity;
+	float flDiffusion;
+	float flGain;
+	float flGainHF;
+	float flGainLF;
+	float flDecayTime;
+	float flDecayHFRatio;
+	float flDecayLFRatio;
+	float flReflectionsGain;
+	float flReflectionsDelay;
+	float flReflectionsPan[3];
+	float flLateReverbGain;
+	float flLateReverbDelay;
+	float flLateReverbPan[3];
+	float flEchoTime;
+	float flEchoDepth;
+	float flModulationTime;
+	float flModulationDepth;
+	float flAirAbsorptionGainHF;
+	float flHFReference;
+	float flLFReference;
+	float flRoomRolloffFactor;
+	int	iDecayHFLimit;
+} EFXREVERBPROPERTIES_list;
+
+typedef struct EFXREVERBPROPERTIES
+{
+	SCP_string name;
+
+	float flDensity;
+	float flDiffusion;
+	float flGain;
+	float flGainHF;
+	float flGainLF;
+	float flDecayTime;
+	float flDecayHFRatio;
+	float flDecayLFRatio;
+	float flReflectionsGain;
+	float flReflectionsDelay;
+	float flReflectionsPan[3];
+	float flLateReverbGain;
+	float flLateReverbDelay;
+	float flLateReverbPan[3];
+	float flEchoTime;
+	float flEchoDepth;
+	float flModulationTime;
+	float flModulationDepth;
+	float flAirAbsorptionGainHF;
+	float flHFReference;
+	float flLFReference;
+	float flRoomRolloffFactor;
+	int	iDecayHFLimit;
+
+	EFXREVERBPROPERTIES()
+	{
+	}
+
+	EFXREVERBPROPERTIES(const EFXREVERBPROPERTIES_list &list);
+} EFXREVERBPROPERTIES;
+
+extern SCP_vector<EFXREVERBPROPERTIES> EFX_presets;
+
+
 typedef struct 
 {
     unsigned int environment;          // 0 to EAX_ENVIRONMENT_COUNT-1
@@ -141,6 +220,9 @@ enum
 int ds_eax_init();
 void ds_eax_close();
 
+int ds_eax_get_preset_id(const char *name);
+int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *template_name = NULL);
+
 int ds_eax_set_preset(unsigned long envid);
 
 int ds_eax_set_volume(float volume);
@@ -148,7 +230,7 @@ int ds_eax_set_decay_time(float seconds);
 int ds_eax_set_damping(float damp);
 int ds_eax_set_environment(unsigned long envid);
 int ds_eax_set_all(unsigned long id, float volume, float damping, float decay);
-int ds_eax_get_all(EAX_REVERBPROPERTIES *er);
+int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id = -1);
 int ds_eax_is_inited();
 
 #endif /* __DS_H__ */

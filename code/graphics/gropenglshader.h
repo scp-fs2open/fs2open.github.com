@@ -41,7 +41,9 @@ namespace resources {
 			table_file
 		};
 
-		text_file(const char *, txt_file_type ftype);
+		text_file() { }
+
+		bool open(const char *, txt_file_type ftype);
 
 		const SCP_string &read() const;
 
@@ -470,10 +472,10 @@ namespace opengl {
 		 */
 		post_shader *apply_post_shader(int flags);
 
-		/** Applies specific special %shader.
+		/** Get specific special %shader.
 		 * @param flags special %shader index
 		 */
-		special_shader *apply_special_shader(int flags);
+		special_shader *get_special_shader(int flags);
 
 		/** Turns main %shader off. */
 		void apply_fixed_pipeline();

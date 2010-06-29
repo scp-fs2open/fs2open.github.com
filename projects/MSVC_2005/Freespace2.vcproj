@@ -80,7 +80,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Debug_Inferno\fs2_open_ant-6_INF_d.exe"
+				OutputFile="Debug_Inferno\fs2_open_trunk_INF_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
@@ -134,8 +134,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_ant-6_d.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_ant-6_d.exe"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_trunk_d.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_trunk_d.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -185,7 +185,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Debug\fs2_open_ant-6_d.exe"
+				OutputFile="Debug\fs2_open_trunk_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
@@ -240,8 +240,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_ant-6_INF_r.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_ant-6_INF_r.exe"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_trunk_INF_r.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_trunk_INF_r.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -292,7 +292,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Release_Inferno/fs2_open_ant-6_INF_r.exe"
+				OutputFile="Release_Inferno/fs2_open_trunk_INF_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
@@ -346,8 +346,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_ant-6_r.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_ant-6_r.exe"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_trunk_r.exe&quot;&#x0D;&#x0A;"
+				Outputs="$(FS2PATH)/fs2_open_trunk_r.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -398,7 +398,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Release/fs2_open_ant-6_r.exe"
+				OutputFile="Release/fs2_open_trunk_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"

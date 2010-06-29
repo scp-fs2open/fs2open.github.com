@@ -36,6 +36,7 @@ struct ship_info;
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
 extern int fireball_used[MAX_FIREBALL_TYPES];
+extern int Num_fireball_types;
 
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {

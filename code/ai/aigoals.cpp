@@ -474,7 +474,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 								purge_goal->flags |= AIGF_PURGE;
 						}
 					}
-				}
+				}	
 				break;
 		}
 	}
@@ -489,7 +489,7 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	// only purge goals if a new goal is one of the types in next statement
 	if (!(aigp->ai_mode & PURGE_GOALS_ALL_SHIPS))
 		return;
-
+	
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
 	{
 		ship *shipp = &Ships[Objects[sop->objnum].instance];
@@ -2197,6 +2197,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		} else	//	Just in case this ship had been protected, unprotect it.
 			if (aip->target_objnum != -1)
 				Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
+
 		break;
 	}
 

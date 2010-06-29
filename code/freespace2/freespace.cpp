@@ -143,6 +143,7 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "sound/audiostr.h"
+#include "sound/ds.h"
 #include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "sound/voicerec.h"
@@ -601,7 +602,7 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 
 // EAX stuff
 sound_env Game_sound_env;
-sound_env Game_default_sound_env = {SND_ENV_BATHROOM, 0.2F,0.2F,1.0F};
+sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 int Game_sound_env_update_timestamp;
 
 
@@ -823,6 +824,7 @@ void game_sunspot_process(float frametime)
 	
 		Sun_drew = 0;				
 	} else {
+		Sun_spot_goal = 0.0f;
 		if ( Sun_drew )	{
 			// check sunspots for all suns
 			n_lights = light_get_global_count();
@@ -845,14 +847,10 @@ void game_sunspot_process(float frametime)
 
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
-				} else {
-					Sun_spot_goal = 0.0f;
 				}
 			}
 
 			Sun_drew = 0;
-		} else {
-			Sun_spot_goal = 0.0f;
 		}
 	}
 
@@ -996,6 +994,10 @@ void game_level_close()
 		cam_close();
 		subtitles_close();
 		trail_level_close();
+
+		// be sure to not only reset the time but the lock as well
+		set_time_compression(1.0f, 0.0f);
+		lock_time_compression(false);
 
 		audiostream_unpause_all();
 		Game_paused = 0;
@@ -1449,7 +1451,14 @@ void game_assign_sound_environment()
 	}
 	*/
 
-	Game_sound_env = Game_default_sound_env;
+	if (The_mission.sound_environment.id >= 0) {
+		Game_sound_env = The_mission.sound_environment;
+	} else if (SND_ENV_DEFAULT > 0) {
+		sound_env_get(&Game_sound_env, SND_ENV_DEFAULT);
+	} else {
+		Game_sound_env = Game_default_sound_env;
+	}
+
 	Game_sound_env_update_timestamp = timestamp(1);
 }
 
@@ -2028,21 +2037,8 @@ void game_init()
 // SOUND INIT START
 /////////////////////////////
 
-	ptr = os_config_read_string(NULL, NOX("SoundDeviceOAL"), NULL);
-	if (ptr) {
-		if ( !stricmp(ptr, NOX("no sound")) ) {
-			mprintf(("Sound is disabled!\n"));
-
-			Cmdline_freespace_no_sound = 1;
-			Cmdline_freespace_no_music = 1;
-		}
-	}
-
 	if ( !Is_standalone ) {
-		int use_eax = os_config_read_uint("Sound", NOX("EnableEFX"), 0);
-		unsigned int sample_rate = os_config_read_uint("Sound", "SampleRate", 44100);
-
-		snd_init(use_eax, sample_rate);
+		snd_init();
 	}
 
 	if(fsspeech_init() == false) {
@@ -3025,7 +3021,7 @@ extern void render_shields();
 
 void player_repair_frame(float frametime)
 {
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if(MULTIPLAYER_MASTER){
 		int idx;
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			net_player *np;
@@ -3910,8 +3906,7 @@ void game_render_frame( camid cid )
 
 	bool draw_viewer_last = false;
 	obj_render_all(obj_render, &draw_viewer_last);
-
-	//mflash_render_all();						// render all muzzle flashes	
+	
 	//	Why do we not show the shield effect in these modes?  Seems ok.
 	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
 	render_shields();
@@ -4171,7 +4166,7 @@ void game_simulation_frame()
 	}
 
 	// blow ships up in multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
+	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
 		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
 		ship *shipp;
@@ -4251,7 +4246,7 @@ void game_simulation_frame()
 	}
 
 	// evaluate mission departures and arrivals before we process all objects.
-	if ( !(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending()) ) {
+	if ( !(Game_mode & GM_MULTIPLAYER) || (MULTIPLAYER_MASTER && !multi_endgame_ending()) ) {
 
 		// we don't want to evaluate mission stuff when any ingame joiner in multiplayer is receiving
 		// ships/wing packets.
@@ -4281,7 +4276,7 @@ void game_simulation_frame()
 	}
 	
 	// do all interpolation now
-	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
+	if ( MULTIPLAYER_CLIENT && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
 		// client side processing of warping in effect stages
 		multi_do_client_warp(flFrametime);     
 	
@@ -4320,9 +4315,6 @@ void game_simulation_frame()
 
 			// Move missile trails
 			trail_move_all(flFrametime);		
-
-			// process muzzle flashes
-			mflash_process_all();
 
 			// Flash the gun flashes
 			shipfx_flash_do_frame(flFrametime);			
@@ -4694,7 +4686,7 @@ void game_frame(int paused)
 				}
 				
 				// if we're not the master, we may have to send the server-critical ship status button_info bits
-				if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
+				if (MULTIPLAYER_CLIENT && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
 					multi_maybe_send_ship_status();
 				}
 			}
@@ -6105,7 +6097,6 @@ void game_leave_state( int old_state, int new_state )
 				}
 
 				freespace_stop_mission();			
-				set_time_compression(1.0f);
 			}
 			break;
 
@@ -6181,11 +6172,17 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_DEATH_DIED:
 			Game_mode &= ~GM_DEAD_DIED;
-			
-			// early end while respawning or blowing up in a multiplayer game
-			if((Game_mode & GM_MULTIPLAYER) && ((new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF)) ){
-				game_stop_time();
-				freespace_stop_mission();
+
+			if ( !(Game_mode & GM_MULTIPLAYER) ) {
+				if ( end_mission && (new_state == GS_STATE_DEBRIEF) ) {
+					freespace_stop_mission();
+				}
+			} else {
+				// early end while respawning or blowing up in a multiplayer game
+				if ( (new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF) ) {
+					game_stop_time();
+					freespace_stop_mission();
+				}
 			}
 			break;
 
@@ -6343,8 +6340,6 @@ void game_enter_state( int old_state, int new_state )
 				Net_player->flags &= ~NETINFO_FLAG_DO_NETWORKING;
 			}
 
-			set_time_compression(1.0f);
-
 			// remove any multiplayer flags from the game mode
 			Game_mode &= ~(GM_MULTIPLAYER);
 	
@@ -6390,8 +6385,6 @@ void game_enter_state( int old_state, int new_state )
 				if (!game_start_mission())
 					break;
 			}
-
-			set_time_compression(1.0f);
 
 			// maybe play a movie before the mission
 			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
@@ -6506,6 +6499,19 @@ void game_enter_state( int old_state, int new_state )
 				//Game_time_compression = F1_0;
 			}
 
+			/* game could be comming from a restart (rather than first start)
+			so make sure that we zero the hud gauge overrides (Sexp_hud_*)
+			\sa sexp_hud_display_gauge*/
+			if ( (old_state == GS_STATE_GAME_PLAY)
+				|| (old_state == GS_STATE_BRIEFING)
+				|| (old_state == GS_STATE_DEBRIEF)
+				|| (old_state == GS_STATE_SHIP_SELECT)
+				|| (old_state == GS_STATE_WEAPON_SELECT)
+				|| (old_state == GS_STATE_RED_ALERT) )
+			{
+				Sexp_hud_display_warpout = 0;
+			}
+
 			// coming from the gameplay state or the main menu, we might need to load the mission
 			if ( (Game_mode & GM_NORMAL) && ((old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) || (old_state == GS_STATE_DEATH_BLEW_UP)) ) {
 				if ( !game_start_mission() )		// this should put us into a new state.
@@ -6583,15 +6589,14 @@ void mouse_force_pos(int x, int y);
 			}
 	
 			// under certain circumstances, the server should reset the object update rate limiting stuff
-			if( ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) &&
-				 ((old_state == GS_STATE_MULTI_PAUSED) || (old_state == GS_STATE_MULTI_MISSION_SYNC)) ){
+			if( MULTIPLAYER_MASTER && ((old_state == GS_STATE_MULTI_PAUSED) || (old_state == GS_STATE_MULTI_MISSION_SYNC)) ){
 				
 				// reinitialize the rate limiting system for all clients
 				multi_oo_rate_init_all();
 			}
 
 			// multiplayer clients should always re-initialize their control info rate limiting system			
-			if((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if(MULTIPLAYER_CLIENT){
 				multi_oo_rate_init_all();
 			}
 			
@@ -6743,9 +6748,7 @@ void mouse_force_pos(int x, int y);
 				// JAS: Used to do all paging here!!!!
 								
 				Net_player->state = NETPLAYER_STATE_WAITING;			
-				send_netplayer_update_packet();				
-				Missiontime = 0;
-				set_time_compression(1.0f);
+				send_netplayer_update_packet();
 				break;
 			case MULTI_SYNC_INGAME:
 				multi_sync_init();

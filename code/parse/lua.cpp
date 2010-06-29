@@ -43,6 +43,7 @@
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "weapon/weapon.h"
+#include "weapon/beam.h"
 
 //*************************Lua globals*************************
 SCP_vector<ade_table_entry> Ade_table_entries;
@@ -3725,6 +3726,18 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index valus of the weapon class", "number", "index value of the weapon class")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_args(L, "i", -1);
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ade_set_args(L, "i", -1);
+
+	return ade_set_args(L, "i", idx);
+}
+
 //**********HANDLE: Eyepoint
 struct eye_h
 {
@@ -4092,20 +4105,27 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 		return ADE_RETURN_NIL;
 
 	obj = objh->objp;
+	int flags = 0;
+	int submodel = -1;
 
 	switch(obj->type) {
 		case OBJ_SHIP:
 			model_num = Ship_info[Ships[obj->instance].ship_info_index].model_num;
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		case OBJ_WEAPON:
 			model_num = Weapon_info[Weapons[obj->instance].weapon_info_index].model_num;
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		case OBJ_DEBRIS:
 			model_num = Debris[obj->instance].model_num;
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY | MC_SUBMODEL);
+			submodel = Debris[obj->instance].submodel_num;
 			break;
 		case OBJ_ASTEROID:
 			temp = Asteroids[obj->instance].asteroid_subtype;
 			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].model_num[temp];
+			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		default:
 			return ADE_RETURN_NIL;
@@ -4117,11 +4137,12 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	mc_info hull_check;
 
 	hull_check.model_num = model_num;
+	hull_check.submodel_num = submodel;
 	hull_check.orient = &obj->orient;
 	hull_check.pos = &obj->pos;
 	hull_check.p0 = v3a;
 	hull_check.p1 = v3b;
-	hull_check.flags = MC_CHECK_MODEL | MC_CHECK_RAY;
+	hull_check.flags = flags;
 
 	if ( !model_collide(&hull_check) ) {
 		return ADE_RETURN_NIL;
@@ -4732,6 +4753,18 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship class", "number", "index value of the ship class")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_args(L, "i", -1);
+
+	if(idx < 0 || idx >= Num_ship_classes)
+		return ade_set_args(L, "i", -1);
+
+	return ade_set_args(L, "i", idx);
 }
 
 //**********HANDLE: Waypoint
@@ -6222,6 +6255,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 		if (shipp->pre_death_explosion_happened == 1) {
 			return ade_set_args(L, "i", 1);
 		}
+		return ade_set_args(L, "i", 3);
 	}
 
 	return ade_set_args(L, "i", 0);
@@ -6935,6 +6969,312 @@ ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team", "team", "Weapon team, or in
 	return ade_set_args(L, "o", l_Team.Set(wp->team));
 }
 
+ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is armed.", "boolean", "boolean value of the weapon arming status")
+{
+	object_h *oh = NULL;
+	bool hit_target = false;
+	if(!ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &hit_target))
+		return ADE_RETURN_FALSE;
+
+	if(!oh->IsValid())
+		return ADE_RETURN_FALSE;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+	
+	if(weapon_armed(wp, hit_target))
+		return ADE_RETURN_TRUE;
+	
+	return ADE_RETURN_FALSE;
+}
+
+//**********HANDLE: Beam
+ade_obj<object_h> l_Beam("beam", "Beam handle", &l_Object);
+
+ADE_VIRTVAR(Class, l_Beam, "weaponclass", "Weapon's class", "weaponclass", "Weapon class, or invalid weaponclass handle if beam handle is invalid")
+{
+	object_h *oh=NULL;
+	int nc=-1;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&oh), l_Weaponclass.Get(&nc)))
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	beam *bp = &Beams[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && nc > -1) {
+		bp->weapon_info_index = nc;
+	}
+
+	return ade_set_args(L, "o", l_Weaponclass.Set(bp->weapon_info_index));
+}
+
+ADE_VIRTVAR(LastShot, l_Beam, "vector", "End point of the beam", "vector", "vector or null vector if beam handle is not valid")
+{
+	object_h *oh=NULL;
+	vec3d *vec3;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&oh), l_Vector.GetPtr(&vec3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	beam *bp = &Beams[oh->objp->instance];
+
+	if(ADE_SETTING_VAR) {
+		bp->last_shot = *vec3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(bp->last_shot));
+}
+
+ADE_VIRTVAR(LastStart, l_Beam, "vector", "Start point of the beam", "vector", "vector or null vector if beam handle is not valid")
+{
+	object_h *oh=NULL;
+	vec3d *v3;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&oh), l_Vector.GetPtr(&v3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	beam *bp = &Beams[oh->objp->instance];
+
+	if(ADE_SETTING_VAR) {
+		bp->last_start = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(bp->last_start));
+}
+
+ADE_VIRTVAR(Target, l_Beam, "object", "Target of beam. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Beam target, or invalid object handle if beam handle is invalid")
+{
+	object_h *objh;
+	object_h *newh;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Object.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(bp->target_sig != newh->sig)
+			{
+				bp->target = newh->objp;
+				bp->target_sig = newh->sig;
+			}
+		}
+		else
+		{
+			bp->target = NULL;
+			bp->target_sig = 0;
+		}
+	}
+
+	return ade_set_object_with_breed(L, OBJ_INDEX(bp->target));
+}
+
+ADE_VIRTVAR(TargetSubsystem, l_Beam, "subsystem", "Subsystem that beam is targeting.", "subsystem", "Target subsystem, or invalid subsystem handle if beam handle is invalid")
+{
+	object_h *objh;
+	ship_subsys_h *newh;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(bp->target_sig != newh->sig)
+			{
+				bp->target = newh->objp;
+				bp->target_subsys = newh->ss;
+				bp->target_sig = newh->sig;
+			}
+		}
+		else
+		{
+			bp->target = NULL;
+			bp->target_subsys = NULL;
+		}
+	}
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(bp->target, bp->target_subsys)));
+}
+
+ADE_VIRTVAR(ParentShip, l_Beam, "object", "Parent of the beam.", "object", "Beam parent, or invalid object handle if beam handle is invalid")
+{
+	object_h *objh;
+	object_h *newh;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Object.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(bp->sig != newh->sig)
+			{
+				bp->objp = newh->objp;
+				bp->sig = newh->sig;
+			}
+		}
+		else
+		{
+			bp->objp = NULL;
+			bp->sig = 0;
+		}
+	}
+
+	return ade_set_object_with_breed(L, OBJ_INDEX(bp->objp));
+}
+
+ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired from.", "subsystem", "Parent subsystem, or invalid subsystem handle if beam handle is invalid")
+{
+	object_h *objh;
+	ship_subsys_h *newh;
+	if(!ade_get_args(L, "o|o", l_Beam.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(bp->sig != newh->sig)
+			{
+				bp->objp = newh->objp;
+				bp->subsys = newh->ss;
+			}
+		}
+		else
+		{
+			bp->objp = NULL;
+			bp->subsys = NULL;
+		}
+	}
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(bp->objp, bp->subsys)));
+}
+
+ADE_FUNC(getCollisionCount, l_Beam, NULL, "Get the number of collisions in frame.", "number", "Number of beam collisions")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", bp->f_collision_count);
+}
+
+ADE_FUNC(getCollisionPosition, l_Beam, "number", "Get the position of the defined collision.", "vector", "World vector")
+{
+	object_h *objh;
+	int idx;
+	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	// convert from Lua to C
+	idx--;
+	if ((idx >= 10) || (idx < 0))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	// so we have valid beam and valid indexer
+	return ade_set_args(L, "o", l_Vector.Set(bp->f_collisions[idx].cinfo.hit_point_world));
+}
+
+ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined collision.", "object", "Object the beam collided with")
+{
+	object_h *objh;
+	int idx;
+	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	// convert from Lua to C
+	idx--;
+	if ((idx >= 10) || (idx < 0))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	// so we have valid beam and valid indexer
+	return ade_set_object_with_breed(L, bp->f_collisions[idx].c_objnum);
+}
+
+ADE_FUNC(isExitCollision, l_Beam, "number", "Checks if the defined collision was exit collision.", "boolean", "True if the collision was exit collision, false if entry, nil otherwise")
+{
+	object_h *objh;
+	int idx;
+	if(!ade_get_args(L, "oi", l_Beam.GetPtr(&objh), &idx))
+		return ADE_RETURN_NIL;
+
+	// convert from Lua to C
+	idx--;
+	if ((idx >= 10) || (idx < 0))
+		return ADE_RETURN_NIL;
+
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ADE_RETURN_NIL;
+
+	// so we have valid beam and valid indexer
+	if (bp->f_collisions[idx].is_exit_collision)
+		return ADE_RETURN_TRUE;
+	
+	return ADE_RETURN_FALSE;
+}
 
 //**********HANDLE: Wing
 ade_obj<int> l_Wing("wing", "Wing handle");
@@ -10250,6 +10590,37 @@ ADE_INDEXER(l_Mission_Weapons, "number Index", "Gets handle to a weapon object i
 ADE_FUNC(__len, l_Mission_Weapons, NULL, "Number of weapon objects in mission. Note that this is only accurate for one frame.", "number", "Number of weapon objects in mission")
 {
 	return ade_set_args(L, "i", Num_weapons);
+}
+
+//****SUBLIBRARY: Mission/Beams
+ade_lib l_Mission_Beams("Beams", &l_Mission, NULL, NULL);
+
+ADE_INDEXER(l_Mission_Beams, "number Index", "Gets handle to a beam object in the mission.", "beam", "Beam handle, or invalid beam handle if index is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Beam.Set(object_h()));
+
+	//Remember, Lua indices start at 0.
+	int count=1;
+
+	for(int i = 0; i < MAX_BEAMS; i++)
+	{
+		if (Beams[i].weapon_info_index < 0 || Beams[i].objnum < 0 || Objects[Beams[i].objnum].type != OBJ_BEAM)
+			continue;
+
+		if(count == idx) {
+			return ade_set_args(L, "o", l_Beam.Set(object_h(&Objects[Beams[i].objnum])));
+		}
+
+		count++;
+	}
+
+	return ade_set_error(L, "o", l_Beam.Set(object_h()));
+}
+ADE_FUNC(__len, l_Mission_Beams, NULL, "Number of beam objects in mission. Note that this is only accurate for one frame.", "number", "Number of beam objects in mission")
+{
+	return ade_set_args(L, "i", Beam_count);
 }
 
 //****SUBLIBRARY: Mission/Wings

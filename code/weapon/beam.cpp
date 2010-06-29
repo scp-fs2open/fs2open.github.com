@@ -32,6 +32,8 @@
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
+#include "globalincs/globals.h"
 
 
 
@@ -52,86 +54,6 @@ extern int Cmdline_nohtl;
 #define SHOT_POINT_TIME				200			// 5 arcs a second
 
 #define TOOLTIME						1500.0f
-
-// max # of collisions we'll allow per frame
-#define MAX_FRAME_COLLISIONS		10
-
-// collision info
-typedef struct beam_collision {
-	mc_info			cinfo;							// collision info
-	int				c_objnum;						// objnum of the guy we recently collided with
-	int				c_sig;							// object sig
-	int				c_stamp;							// when we should next apply damage	
-	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
-	int			is_exit_collision;					//does this occur when the beam is exiting the ship
-} beam_collision;
-
-// beam flag defines
-#define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
-#define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
-
-// beam struct (the actual weapon/object)
-typedef struct beam {
-	// low-level data
-	int		objnum;					// our own objnum
-	int		weapon_info_index;
-	int		sig;						// signature for the shooting object
-	object	*objp;					// the shooting object (who owns the turret that I am being fired from)
-	object	*target;					// target object
-	ship_subsys *target_subsys;	// targeted subsys
-	int		target_sig;				// target sig
-	ship_subsys *subsys;				// subsys its being fired from
-	beam		*next, *prev;			// link list stuff
-	vec3d	targeting_laser_offset;
-	int		framecount;				// how many frames the beam has been active
-	int		flags;					// see BF_* defines 	
-	float		shrink;					// shrink factor	
-
-	// beam info	
-	int		warmup_stamp;			// timestamp for "warming up"
-	int		warmdown_stamp;		// timestamp for "warming down"
-	int		type;						// see BEAM_TYPE_* defines in beam.h
-	float		life_left;				// in seconds
-	float		life_total;				// total life	
-	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
-	// the vector between it and last_start is where the beam will be aiming. AFTER performing collision checks, it is the
-	// literal world collision point on the object (or meaningless, if we hit nothing). The function beam_move_all_pre() is
-	// responsible for then setting it up pre-collision time
-	vec3d	last_shot;				
-	vec3d	last_start;				
-	int		shot_index;				// for type D beam weapons
-	float	beam_glow_frame;		// what frame a beam glow animation is on
-	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
-
-	// recent collisions
-	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions
-	int r_collision_count;														// # of recent collisions
-
-	// collision info for this frame
-	beam_collision f_collisions[MAX_FRAME_COLLISIONS];					// collisions for the current frame
-	int f_collision_count;														// # of collisions we recorded this frame
-
-	// looping sound info, HANDLE
-	int		beam_sound_loop;		// -1 if none
-
-	// team 
-	char		team;
-
-	float range;
-	float damage_threshold;
-
-	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
-	// everything looks the same
-	beam_info binfo;
-	bool fighter_beam;
-	int bank;
-
-	int Beam_muzzle_stamp;
-	vec3d local_pnt;
-	int firingpoint;
-
-	float		beam_width;
-} beam;
 
 beam Beams[MAX_BEAMS];				// all beams
 beam Beam_free_list;					// free beams
@@ -196,9 +118,10 @@ typedef struct beam_light_info {
 beam_light_info Beam_lights[MAX_BEAM_LIGHT_INFO];
 int Beam_light_count = 0;
 
-float b_whack_small = 500.0f;
-float b_whack_big = 1500.0f;
+float b_whack_small = 2000.0f;	// used to be 500.0f with the retail whack bug
+float b_whack_big = 10000.0f;	// used to be 1500.0f with the retail whack bug
 float b_whack_damage = 150.0f;
+
 DCF(b_whack_small, "")
 {
 	dc_get_arg(ARG_FLOAT);
@@ -929,8 +852,9 @@ void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait)
 
 	// determine what "shot" we're on	
 	*shot_index = (int)(beam_time / shot_time);
-	Assert(*shot_index < b->binfo.shot_count);
+	
 	if(*shot_index >= b->binfo.shot_count){
+		nprintf(("Beam","Shot of type D beam had bad shot_index value\n"));
 		*shot_index = b->binfo.shot_count - 1;
 	}	
 
@@ -2007,7 +1931,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	vec3d oct1, oct2;
 	vec3d turret_point, turret_norm;
 	beam_weapon_info *bwi;
-	int skill_level;
+	int miss_factor;
 
 	int temp = b->subsys->turret_next_fire_pos;
 
@@ -2032,15 +1956,6 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	}
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
-	// skill level
-	skill_level = Game_skill_level;
-	if(Game_skill_level >= NUM_SKILL_LEVELS){
-		skill_level = NUM_SKILL_LEVELS - 1;
-	}
-	if(Game_skill_level < 0){
-		skill_level = 0;
-	}
-
 	// stuff num shots even though its only used for type D weapons
 	b->binfo.shot_count = (ubyte)num_shots;
 	if(b->binfo.shot_count > MAX_BEAM_SHOTS){
@@ -2050,9 +1965,14 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	// generate the proper amount of directional vectors	
 	switch(b->type){	
 	// pick an accuracy. beam will be properly aimed at actual fire time
-	case BEAM_TYPE_A:		
+	case BEAM_TYPE_A:
+		// determine the miss factor
+		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
+		Assert(b->team >= 0 && b->team < Num_iffs);
+		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
+
 		// all we will do is decide whether or not we will hit - type A beam weapons are re-aimed immediately before firing
-		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + bwi->beam_miss_factor[skill_level] * accuracy);
+		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + miss_factor * accuracy);
 		b->binfo.shot_count = 1;
 
 		// get random model points, this is useful for big ships, because we never miss when shooting at them			
@@ -2060,7 +1980,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		break;	
 
 	// just 2 points in the "slash"
-	case BEAM_TYPE_B:							
+	case BEAM_TYPE_B:
 		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);		
 
 		// point 1
@@ -2081,10 +2001,15 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 
 	// type D beams fire at small ship multiple times
 	case BEAM_TYPE_D:
+		// determine the miss factor
+		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
+		Assert(b->team >= 0 && b->team < Num_iffs);
+		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
+
 		// get a bunch of shot aims
 		for(idx=0; idx<b->binfo.shot_count; idx++){
 			//	MK, 9/3/99: Added pow() function to make increasingly likely to miss with subsequent shots.  30% more likely with each shot.
-			float r = ((float) pow(1.3f, idx)) * bwi->beam_miss_factor[skill_level] * accuracy;
+			float r = ((float) pow(1.3f, idx)) * miss_factor * accuracy;
 			b->binfo.shot_aim[idx] = frand_range(0.0f, 1.0f + r);
 		}
 		break;
@@ -2885,7 +2810,7 @@ void beam_handle_collisions(beam *b)
 		r_coll_count++;		
 
 		// play the impact sound
-		if(first_hit){
+		if ( first_hit && (wi->impact_snd >= 0) ) {
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 

@@ -13,6 +13,7 @@
 #define _SEXP_H
 
 struct ship_subsys;
+struct ship;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -112,6 +113,11 @@ struct ship_subsys;
 #define OPF_POST_EFFECT			67		// Hery - type of post-processing effect
 #define OPF_TARGET_PRIORITIES	68		// FUBAR - Target priority groups
 #define OPF_ARMOR_TYPES			69		// FUBAR - Armor type or <none>
+#define OPF_FONT				70		// Goober5000 - a FreeSpace font
+#define OPF_HUD_ELEMENT			71		// A magic name of a specific HUD element
+#define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
+#define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
+#define OPF_EXPLOSION_OPTION	74		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -225,6 +231,9 @@ struct ship_subsys;
 #define OP_STRING_EQUALS					(0x000a | OP_CATEGORY_LOGICAL)
 #define OP_STRING_GREATER_THAN				(0x000b | OP_CATEGORY_LOGICAL)
 #define OP_STRING_LESS_THAN					(0x000c | OP_CATEGORY_LOGICAL)
+#define OP_NOT_EQUAL						(0x000d | OP_CATEGORY_LOGICAL)	// Goober5000
+#define OP_GREATER_OR_EQUAL					(0x000e | OP_CATEGORY_LOGICAL)	// Goober5000
+#define OP_LESS_OR_EQUAL					(0x000f | OP_CATEGORY_LOGICAL)	// Goober5000
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
 #define	OP_GOAL_TRUE_DELAY					(0x0001 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -262,12 +271,13 @@ struct ship_subsys;
 #define	OP_TIME_WING_ARRIVED				(0x0004 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_WING_DEPARTED				(0x0005 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_MISSION_TIME						(0x0006 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
-#define	OP_TIME_DOCKED						(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
-#define	OP_TIME_UNDOCKED					(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define	OP_MISSION_TIME_MSECS				(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define	OP_TIME_DOCKED						(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define	OP_TIME_UNDOCKED					(0x0009 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 
 #define	OP_SHIELDS_LEFT						(0x0000 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_HITS_LEFT						(0x0001 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_HITS_LEFT_SUBSYSTEM				(0x0002 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define	OP_HITS_LEFT_SUBSYSTEM				(0x0002 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// deprecated
 #define	OP_SIM_HITS_LEFT					(0x0003 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_DISTANCE							(0x0004 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_DISTANCE_SUBSYSTEM				(0x0005 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
@@ -345,6 +355,8 @@ struct ship_subsys;
 #define OP_IN_SEQUENCE						(0x000a | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ARGUMENT				(0x000b | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_DO_FOR_VALID_ARGUMENTS			(0x000c | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
 
 
 // sexpressions with side-effects
@@ -457,7 +469,7 @@ struct ship_subsys;
 #define OP_CLOSE_SOUND_FROM_FILE			(0x0064 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_HUD_DISABLE						(0x0065	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_KAMIKAZE							(0x0066 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
-#define OP_NOT_KAMIKAZE						(0x0067 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
+#define OP_MISSION_SET_SUBSPACE				(0x0067 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_TURRET_TAGGED_SPECIFIC			(0x0068 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_TURRET_TAGGED_CLEAR_SPECIFIC		(0x0069 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_LOCK_ROTATING_SUBSYSTEM			(0x006a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
@@ -492,7 +504,7 @@ struct ship_subsys;
 #define OP_CUTSCENES_SET_FOV				(0x0085 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
 #define OP_CUTSCENES_RESET_FOV				(0x0086 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
 #define OP_CUTSCENES_RESET_CAMERA			(0x0087 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
-#define OP_CUTSCENES_SHOW_SUBTITLE			(0x0088 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
+#define OP_CUTSCENES_SHOW_SUBTITLE			(0x0088 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC / deprecated
 #define OP_CUTSCENES_SET_TIME_COMPRESSION	(0x0089 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
 #define OP_CUTSCENES_RESET_TIME_COMPRESSION	(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
 #define OP_CUTSCENES_FORCE_PERSPECTIVE		(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// WMC
@@ -567,9 +579,16 @@ struct ship_subsys;
 #define OP_SET_VARIABLE_BY_INDEX			(0x00cd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SET_POST_EFFECT					(0x00ce | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Hery
 #define OP_TURRET_SET_OPTIMUM_RANGE			(0x00cf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+
 #define OP_TURRET_SET_DIRECTION_PREFERENCE	(0x00d0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 #define OP_TURRET_SET_TARGET_PRIORITIES		(0x00d1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 #define OP_SET_ARMOR_TYPE					(0x00d2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_CUTSCENES_SHOW_SUBTITLE_TEXT		(0x00d3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CUTSCENES_SHOW_SUBTITLE_IMAGE	(0x00d4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_HUD_DISPLAY_GAUGE				(0x00d5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_SOUND_ENVIRONMENT			(0x00d6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
+#define OP_UPDATE_SOUND_ENVIRONMENT			(0x00d7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
+#define OP_SET_EXPLOSION_OPTION				(0x00d8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -735,8 +754,10 @@ char *CTEXT(int n);
 #define SEXP_VARIABLE_NOT_USED				(1<<7)	//	(0x0080)
 
 #define SEXP_VARIABLE_BLOCK					(1<<0)	//	(0x0001)
+/*
 #define SEXP_VARIABLE_BLOCK_EXP				(1<<1)	//	(0x0002)
 #define SEXP_VARIABLE_BLOCK_HIT				(1<<2)	//	(0x0004)
+*/
 #define SEXP_VARIABLE_PLAYER_PERSISTENT		(1<<3)	//	(0x0008)
 
 // Goober5000 - hopefully this should work and not conflict with anything
@@ -832,6 +853,11 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_PERSONA_NAME			-139
 #define SEXP_CHECK_INVALID_VARIABLE_TYPE		-140
 #define SEXP_CHECK_INVALID_SUBSYS_TYPE			-141
+#define SEXP_CHECK_INVALID_FONT					-142
+#define SEXP_CHECK_INVALID_HUD_ELEMENT			-143
+#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT	-144
+#define SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION	-145
+#define SEXP_CHECK_INVALID_EXPLOSION_OPTION		-146
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -900,6 +926,7 @@ extern int Num_sexp_nodes;
 extern sexp_node *Sexp_nodes;
 
 extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
+extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern sexp_oper Operators[];
 extern int Num_operators;
@@ -988,10 +1015,9 @@ void sexp_variable_delete(int index);
 void sexp_variable_sort();
 void sexp_fred_modify_variable(const char *text, const char *var_name, int index, int type);
 int sexp_add_variable(const char *text, const char *var_name, int type, int index=-1);
-int sexp_variable_allocate_block(const char* block_name, int block_type);
-void sexp_variable_condense_block();
-void sexp_variable_block_free(const char *ship_name, int start_index, int block_type);
-
+bool generate_special_explosion_block_variables();
+int num_block_variables();
+bool has_special_explosion_block_index(ship *shipp, int *index);
 
 // Karajorma
 void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
@@ -1031,7 +1057,25 @@ extern int Num_submenus;
 //Outputs sexp.html file
 bool output_sexps(char *filepath);
 
-
 void multi_sexp_eval();
+
+// Goober5000/Taylor
+extern int Num_sound_environment_options;
+extern char *Sound_environment_option[];
+
+// Goober5000
+extern int Num_explosion_options;
+extern char *Explosion_option[];
+
+/** Global state variables for the hud-display-gauge sexp.
+They all should be named Sexp_hud_display_*;
+They all should follow the following symantics for the value of the
+variable:
+=0	don't show
+=1	show until canceled
+>1	timestamp when gauge should stop showing (set zero when expired)
+\sa sexp_hud_display_warpout
+*/
+extern int Sexp_hud_display_warpout;
 
 #endif

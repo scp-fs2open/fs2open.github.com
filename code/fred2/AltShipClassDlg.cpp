@@ -87,7 +87,6 @@ BOOL AltShipClassDlg::OnInitDialog()
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
 			if (objp->flags & OF_MARKED) {
-
 				m_selected_ships[num_selected_ships++] = objp->instance;
 			}
 		}
@@ -96,6 +95,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 
 	Assert (num_selected_ships > 0);
 	Assert (Objects[cur_object_index].flags & OF_MARKED);
+
 	if (num_selected_ships > 1) 
 	{
 		multi_edit = true;

@@ -244,14 +244,11 @@ static int Techroom_ship_modelnum;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 //static int Anim_playing_id = -1;
-//static int anim_done = 0;
 static int Palette_bmp;
 //static int ShipWin01;
 //static int ShipWin02;
 //static int ShipWin03;
 //static int ShipWin04;
-//static ubyte Palette[768];
-//static char Palette_name[128];  // not used now - taylor
 
 static int Ships_loaded = 0;
 static int Weapons_loaded = 0;
@@ -395,12 +392,14 @@ void techroom_select_new_entry()
 		Techroom_ship_modelnum = -1;
 		Trackball_mode = 0;
 
-		//load animation here, we now only have one loaded
-		generic_anim_init(&Current_list[Cur_entry].animation, Current_list[Cur_entry].tech_anim_filename);
-		Current_list[Cur_entry].animation.ani.bg_type = bm_get_type(Tech_background_bitmap);
-		if(generic_anim_stream(&Current_list[Cur_entry].animation) != -1){
+		// load animation here, we now only have one loaded
+		int stream_result = generic_anim_init_and_stream(&Current_list[Cur_entry].animation, Current_list[Cur_entry].tech_anim_filename, bm_get_type(Tech_background_bitmap), true);
+
+		if (stream_result >= 0) {
 			Current_list[Cur_entry].has_anim = 1;
 		} else {
+			// we've failed to load any animation
+			// load an image and treat it like a 1 frame animation
 			Current_list[Cur_entry].bitmap = bm_load(Current_list[Cur_entry].tech_anim_filename);
 		}
 	}
@@ -730,7 +729,7 @@ void tech_ship_scroll_capture()
 	techroom_unload_animation();
 
 	techroom_select_new_entry();
-	}
+}
 
 void techroom_anim_render(float frametime)
 {

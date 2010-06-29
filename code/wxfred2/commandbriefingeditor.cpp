@@ -28,6 +28,7 @@ END_EVENT_TABLE()
 dlgCommandBriefingEditor::dlgCommandBriefingEditor(wxWindow *parent)
 	: wxDialog()
 {
+	wxInitAllImageHandlers();
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgCommandBriefingEditor");
 }
 

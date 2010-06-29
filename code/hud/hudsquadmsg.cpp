@@ -1072,7 +1072,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	}
 
 	// check for multiplayer mode
-	if((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+	if(MULTIPLAYER_CLIENT) {
 		send_player_order_packet(SQUAD_MSG_ALL, 0, command);
 		return;
 	}
@@ -1229,7 +1229,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	}
 
 	// check for multiplayer mode
-	if((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if(MULTIPLAYER_CLIENT){
 		send_player_order_packet(SQUAD_MSG_SHIP, shipnum, command);
 		return 0;
 	}
@@ -1391,9 +1391,9 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			ai_submode = SM_ATTACK;
 			// if no enemies present, use the affirmative, instead of engaging enemies message
 			if ( hud_squadmsg_enemies_present() )
-				message = MESSAGE_YESSIR;
-			else
 				message = MESSAGE_ENGAGE;
+			else
+				message = MESSAGE_YESSIR;
 			target_shipname = NULL;
 			break;
 		
@@ -1405,7 +1405,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		
 		// the following are support ship options!!!
 		case REARM_REPAIR_ME_ITEM:		
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (player_num != -1) ){
+			if( MULTIPLAYER_MASTER && (player_num != -1) ){
 				hud_squadmsg_repair_rearm(0,&Objects[Net_players[player_num].m_player->objnum]);
 			} else {
 				hud_squadmsg_repair_rearm(0);				// note we return right away.  repair/rearm code handles messaging, etc
@@ -1416,7 +1416,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			return 0;
 		
 		case ABORT_REARM_REPAIR_ITEM:
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (player_num != -1) ){
+			if( MULTIPLAYER_MASTER && (player_num != -1) ){
 				hud_squadmsg_repair_rearm_abort(0,&Objects[Net_players[player_num].m_player->objnum]);
 			} else {
 				hud_squadmsg_repair_rearm_abort(0);		// note we return right away.  repair/rearm code handles messaging, etc
@@ -1511,7 +1511,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	}
 
 	// check for multiplayer mode
-	if((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if(MULTIPLAYER_CLIENT){
 		send_player_order_packet(SQUAD_MSG_WING, wingnum,command);
 		return 0;
 	}
@@ -1642,10 +1642,11 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		case ENGAGE_ENEMY_ITEM:
 			ai_mode = AI_GOAL_CHASE_ANY;
 			ai_submode = SM_ATTACK;
+			// if no enemies present, use the affirmative, instead of engaging enemies message
 			if ( hud_squadmsg_enemies_present() )
-				message = MESSAGE_YESSIR;
-			else
 				message = MESSAGE_ENGAGE;
+			else
+				message = MESSAGE_YESSIR;
 			target_shipname = NULL;
 			break;
 
@@ -2467,7 +2468,7 @@ int hud_squadmsg_do_frame( )
 	hud_set_gauge_color(HUD_MESSAGE_BOX);
 
 	// check for multiplayer mode - this is really a special case checker for support ship requesting and aborting
-	if((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Squad_msg_mode == SM_MODE_REPAIR_REARM || Squad_msg_mode == SM_MODE_REPAIR_REARM_ABORT)){
+	if(MULTIPLAYER_CLIENT && (Squad_msg_mode == SM_MODE_REPAIR_REARM || Squad_msg_mode == SM_MODE_REPAIR_REARM_ABORT)){
 		char *subsys_name;
 //		int who_to_sig;
 		ushort net_sig;
@@ -2527,7 +2528,7 @@ int hud_squadmsg_do_frame( )
 		break;		
 		
 	case SM_MODE_REPAIR_REARM:
-		//if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (addr != NULL)){
+		//if( MULTIPLAYER_MASTER && (addr != NULL)){
 		//	hud_squadmsg_repair_rearm(1,&Objects[Net_players[player_num].player->objnum]);
 		//} else {
 			hud_squadmsg_repair_rearm(1);				// note we return right away.  repair/rearm code handles messaging, etc
@@ -2535,7 +2536,7 @@ int hud_squadmsg_do_frame( )
 		break;
 
 	case SM_MODE_REPAIR_REARM_ABORT:
-		//if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (addr != NULL)){
+		//if( MULTIPLAYER_MASTER && (addr != NULL)){
 		//	hud_squadmsg_repair_rearm_abort(1,&Objects[Net_players[player_num].player->objnum]);
 		//} else {
 			hud_squadmsg_repair_rearm_abort(1);		// note we return right away.  repair/rearm code handles messaging, etc

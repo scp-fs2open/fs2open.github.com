@@ -141,6 +141,7 @@ typedef struct ship_weapon {
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************
@@ -182,7 +183,7 @@ public:
 
 	//Get
 	char *GetNamePtr(){return Name;}
-	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
+	bool IsName(char *in_name){return (stricmp(in_name,Name)==0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
@@ -302,6 +303,12 @@ typedef	struct ship_subsys {
 	// target priority setting for turrets
 	int      target_priority[32];
 	int      num_target_priorities;
+
+	//SUSHI: Fields for max_turret_aim_update_delay
+	//Only used when targeting small ships
+	fix		next_aim_pos_time;
+	vec3d	last_aim_enemy_pos;
+	vec3d	last_aim_enemy_vel;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -466,9 +473,16 @@ typedef struct ship {
 	int	next_hit_spark;
 	int	num_hits;			//	Note, this is the number of spark emitter positions!
 	ship_spark	sparks[MAX_SHIP_HITS];
-
-	int	special_exp_index;
-	int special_hitpoint_index;
+	
+	bool use_special_explosion; 
+	int special_exp_damage;					// new special explosion/hitpoints system
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
+	bool use_shockwave;
+	int special_exp_shockwave_speed;
+	int	special_hitpoints;
+	int	special_shield;
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
@@ -664,7 +678,6 @@ typedef struct ship {
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
-	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
@@ -844,6 +857,7 @@ typedef struct thruster_particles {
 #define STI_HUD_HOTKEY_ON_LIST			(1<<0)
 #define STI_HUD_TARGET_AS_THREAT		(1<<1)
 #define STI_HUD_SHOW_ATTACK_DIRECTION	(1<<2)
+#define STI_HUD_NO_CLASS_DISPLAY		(1<<3)
 
 #define STI_SHIP_SCANNABLE				(1<<0)
 #define STI_SHIP_WARP_PUSHES			(1<<1)
@@ -965,10 +979,12 @@ typedef struct man_thruster {
 } man_thruster;
 
 //Warp type defines
-#define WT_DEFAULT			0
-#define WT_IN_PLACE_ANIM	1
-#define WT_SWEEPER			2
-#define WT_HYPERSPACE		3
+#define WT_DEFAULT					0
+#define WT_KNOSSOS					1
+#define WT_DEFAULT_THEN_KNOSSOS		2
+#define WT_IN_PLACE_ANIM			3
+#define WT_SWEEPER					4
+#define WT_HYPERSPACE				5
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {

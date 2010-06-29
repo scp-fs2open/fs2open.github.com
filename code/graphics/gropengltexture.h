@@ -167,8 +167,9 @@ namespace opengl {
 		 * @param tex released texture
 		 */
 		static void release(texture *tex) {
-			Assert(tex);
-			pool.insert(std::pair<std::pair<int, int>, texture*>(std::pair<int, int>(tex->get_width(), tex->get_height()), tex));
+			if (tex) {
+				pool.insert(std::pair<std::pair<int, int>, texture*>(std::pair<int, int>(tex->get_width(), tex->get_height()), tex));
+			}
 		}
 	};
 

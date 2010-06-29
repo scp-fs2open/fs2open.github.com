@@ -52,6 +52,7 @@ typedef struct window_data {
 class CFREDApp : public CWinApp
 {
 	int app_init;
+	CString m_sInitialDir;
 
 public:
 	void record_window_data(window_data *wndd, CWnd *wnd);
@@ -75,6 +76,7 @@ public:
 
 	//{{AFX_MSG(CFREDApp)
 	afx_msg void OnAppAbout();
+	afx_msg void OnFileOpen();
 		// NOTE - the ClassWizard will add and remove member functions here.
 		//    DO NOT EDIT what you see in these blocks of generated code !
 	//}}AFX_MSG

@@ -30,7 +30,7 @@ color *Color_netplayer[20] = {
 	&Color_bright_blue,
 	&Color_green,
 	&Color_bright_green,
-	&Color_black,
+	&Color_pink,
 	&Color_grey,
 	&Color_silver,
 	&Color_white,

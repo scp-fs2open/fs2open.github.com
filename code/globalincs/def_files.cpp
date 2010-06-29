@@ -571,7 +571,7 @@ $AI:																	\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
-		+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
+	+Ignored on cripple by:	( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 $Vaporize Percent Chance: 0.0											\n\
 ""\
 $Name:					Capital											\n\
@@ -798,6 +798,10 @@ $Circle Strafe Percent: 0, 0, 0, 0, 0									\n\
 ;; capital ships when it is an option.									\n""\
 $Glide Strafe Percent: 0, 0, 0, 0, 0									\n\
 																		\n\
+;; Percentage of the time where AI ships will randomly sidethrust in a	\n\
+;; dogfight.															\n\
+$Random Sidethrust Percent: 0, 0, 0, 0, 0								\n\
+																		\n\
 ;; The amount of time required for the AI to detect 					\n\
 ;; (and try to break) dogfight stalemate.								\n\
 $Stalemate Time Threshold: 0, 0, 0, 0, 0								\n\
@@ -847,6 +851,10 @@ $Chance AI Has to Fire Missiles at Player:	0, 1, 2, 3, 4				\n\
 ;; The maximum amount of delay allowed before the AI will update its	\n\
 ;; aim. Applies for small ships vs small ships							\n\
 $Max Aim Update Delay: 0, 0, 0, 0, 0									\n\
+																		\n\
+;; The maximum amount of delay allowed before turret AI will update its	\n\
+;; aim. Applies for turrets vs small ships								\n\
+$Turret Max Aim Update Delay: 0, 0, 0, 0, 0								\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\
@@ -964,10 +972,18 @@ $use only single fov for turrets:		NO								\n\
 																		\n\
 ;; allow AI ships to dodge weapons vertically as well as horizontally	\n\
 $allow vertical dodge:	NO												\n\
-																		\n\
+																		\n""\
 ;; Fixes a bug where AI class is not properly set if set in the mission	\n\
 ;; This should be YES if you want anything in AI.tbl to mean anything	\n\
 $fix AI class bug:	NO													\n\
+																		\n\
+;; If set, the AI will NOT make extra effort to avoid ramming the player\n\
+;; during dogfights. This results in more aggressive AI.				\n\
+$no extra collision avoidance vs player:	NO							\n\
+																		\n\
+;; If set, the game will check if the dying ship is a player's wingman, \n\
+;; before making it give a death scream					 				\n\
+$perform less checks for death screams:	NO								\n\
 																		\n\
 #End																	\n\
 ";

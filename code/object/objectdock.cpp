@@ -9,6 +9,7 @@
 #include "globalincs/pstypes.h"
 #include "object/objectdock.h"
 #include "object/object.h"
+#include "math/bitarray.h"
 #include "ship/ship.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
@@ -18,7 +19,7 @@
 
 // helper prototypes
 
-void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), bool *visited_bitstring);
+void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), ubyte *visited_bitstring);
 void dock_move_docked_children_tree(object *objp, object *parent_objp);
 void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop);
 void dock_check_find_docked_object_helper(object *objp, dock_function_info *infop);
@@ -329,10 +330,10 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	else
 	{
 		// create a bit array to mark the objects we check
-		bool *visited_bitstring = (bool *) malloc( Num_objects * sizeof( bool ) );
+		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Num_objects));
 
 		// clear it
-		memset(visited_bitstring, 0, Num_objects * sizeof( bool ) );
+		memset(visited_bitstring, 0, calculate_num_bytes(Num_objects));
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
@@ -343,14 +344,14 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	}
 }
 
-void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), bool *visited_bitstring)
+void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), ubyte *visited_bitstring)
 {
 	// make sure we haven't visited this object already
-	if ( visited_bitstring[ OBJ_INDEX(objp) ] )
+	if (get_bit(visited_bitstring, OBJ_INDEX(objp)))
 		return;
 
 	// mark as visited
-	visited_bitstring[ OBJ_INDEX(objp) ] = true;
+	set_bit(visited_bitstring, OBJ_INDEX(objp));
 
 	// call the function for this object, and return if instructed
 	function(objp, infop);

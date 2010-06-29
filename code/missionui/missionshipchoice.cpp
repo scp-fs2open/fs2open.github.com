@@ -1481,7 +1481,7 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-	if( Cmdline_ship_choice_3d || ((Ss_icons != NULL) && (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)) )
+	if( Cmdline_ship_choice_3d || ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames == 0)) )
 	{
 		// check we have a valid ship class selected
 		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
@@ -1713,6 +1713,12 @@ void start_ship_animation(int ship_class, int play_sound)
 			return;
 		}
 
+		//Unload Anim if one was playing
+		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0) {
+			generic_anim_unload(&Ss_icons[Ship_anim_class].ss_anim);
+			Ship_anim_class = -1;
+		}
+
 		// Load the necessary model file
 		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 		
@@ -1732,6 +1738,12 @@ void start_ship_animation(int ship_class, int play_sound)
 		}
 
 		ss_icon = &Ss_icons[ship_class];
+
+		//If there was a model loaded for the previous ship, unload it
+		if (ShipSelectModelNum >= 0 ) {
+			model_unload(ShipSelectModelNum);
+			ShipSelectModelNum = -1;
+		}
 
 		//unload the previous anim
 		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0)
@@ -1764,7 +1776,6 @@ void start_ship_animation(int ship_class, int play_sound)
 //	if ( play_sound ) {
 		gamesnd_play_iface(SND_SHIP_ICON_CHANGE);
 //	}
-
 }
 
 void ss_unload_all_anims()
@@ -3008,7 +3019,7 @@ void ship_select_init_team_data(int team_num)
 	// determine how many wings we should be checking for
 	Wss_num_wings = 0;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		// now setup wings for easy reference		
 		ss_init_wing_info(0,team_num);			
 	} else {			
@@ -3034,7 +3045,7 @@ void ship_select_common_init()
 	// initialize team critical data for all teams
 	int idx;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
+	if(MULTI_TEAM){		
 		// initialize for all teams in the game
 		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){	
 			ship_select_init_team_data(idx);

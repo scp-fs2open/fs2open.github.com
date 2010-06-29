@@ -1008,8 +1008,27 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 
-	ship_model_stop(objp);	
+	ship_model_stop(objp);
+
+	// per firingpoint based changes go here for turrets
 }
+
+//Update turret aiming data based on max turret aim update delay
+void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss)
+{
+	if (Missiontime >= ss->next_aim_pos_time)
+	{
+		ss->last_aim_enemy_pos = En_Objp->pos;
+		ss->last_aim_enemy_vel = En_Objp->phys_info.vel;
+		ss->next_aim_pos_time = Missiontime + fl2f(frand_range(0.0f, aip->ai_turret_max_aim_update_delay));
+	}
+	else
+	{
+		//Update the position based on the velocity (assume no velocity vector change)
+		vm_vec_scale_add2(&ss->last_aim_enemy_pos, &ss->last_aim_enemy_vel, flFrametime);
+	}
+}
+
 
 //	Rotate a turret towards an enemy.
 //	Return TRUE if caller should use angles in subsequent rotations.
@@ -1041,23 +1060,26 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		ship_get_global_turret_info(&Objects[parent_objnum], tp, &gun_pos, &gun_vec);
 
+		//Update "known" position and velocity of target. Only matters if max_aim_update_delay is set.
+		turret_ai_update_aim(&Ai_info[shipp->ai_index], &Objects[ss->turret_enemy_objnum], ss);
+
 		//Figure out what point on the ship we want to point the gun at, and store the global location
 		//in enemy_point.
 		vec3d	enemy_point;
 		if ((ss->targeted_subsys != NULL) && !(ss->flags & SSF_NO_SS_TARGETING)) {
 			if (ss->turret_enemy_objnum != -1) {
 				vm_vec_unrotate(&enemy_point, &ss->targeted_subsys->system_info->pnt, &Objects[ss->turret_enemy_objnum].orient);
-				vm_vec_add2(&enemy_point, &Objects[ss->turret_enemy_objnum].pos);
+				vm_vec_add2(&enemy_point, &ss->last_aim_enemy_pos);
 			}
 		} else {
 			if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
 				ai_big_pick_attack_point_turret(lep, ss, &gun_pos, &gun_vec, &enemy_point, tp->turret_fov, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
 			} else {
-				enemy_point = lep->pos;
+				enemy_point = ss->last_aim_enemy_pos;
 			}
 		}
 
-		target_moving_direction = lep->phys_info.vel;
+		target_moving_direction = ss->last_aim_enemy_vel;
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
@@ -1317,7 +1339,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 	{
 
 		// make side even for team vs. team
-		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
+		if (MULTI_TEAM) {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
 				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
@@ -2119,6 +2141,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 				else
 					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+			} else {
+				// make sure salvo fire mode does not turn into autofire
+				if ((tp->flags & MSS_FLAG_TURRET_SALVO) && ((i + 1) == number_of_firings)) {
+					ai_info *parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
+					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
+				}
 			}
 			// moved this here so we increment the fire pos only after we have fired and not during it
 			ss->turret_next_fire_pos++;
@@ -2191,14 +2219,16 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
 		vec3d of_dst;
 		vm_vec_rotate( &of_dst, v2e, &ss->world_to_turret_matrix );
-		vm_vec_normalize(&of_dst);
 		if ((of_dst.xyz.x == 0) && (of_dst.xyz.y == 0)) {
 			return true;
 		} else {
 			of_dst.xyz.z = 0;
-			// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
-			if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
-				return true;
+			if (!IS_VEC_NULL_SQ_SAFE(&of_dst)) {
+				vm_vec_normalize(&of_dst);
+				// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
+				if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
+					return true;
+			}
 		}
 	}
 	return false;

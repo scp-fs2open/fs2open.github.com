@@ -324,8 +324,10 @@ bool fred_init()
 
 	timer_init();
 
-	Assert(strlen(Fred_exe_dir) > 0);
+	Assert(strlen(Fred_base_dir) > 0);
 
+	// sigh... this should enable proper reading of cmdline_fso.cfg - Goober5000
+	cfile_chdir(Fred_base_dir);
 
 	// this should enable mods - Kazan
 	fred2_parse_cmdline(__argc, __argv);
@@ -379,7 +381,7 @@ bool fred_init()
 	}
 	*/
 
-	snd_init(0, 44100);
+	snd_init();
 
 	// Not ready for this yet
   //	Cmdline_nospec = 1;
@@ -563,6 +565,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags, Iff_info[shipp->team].default_parse_flags2);
 
 	// default shield setting
+	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
 	if (((z1 == 1) && z2) || (z2 == 1))
@@ -601,9 +604,9 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	}
 	
 	// calc kamikaze stuff
-	if (shipp->special_hitpoint_index != -1)
+	if (shipp->use_special_explosion)
 	{
-		temp_max_hull_strength = (float) atoi(Sexp_variables[shipp->special_hitpoint_index+HULL_STRENGTH].text);
+		temp_max_hull_strength = (float)shipp->special_exp_blast;
 	}
 	else
 	{
@@ -1088,6 +1091,9 @@ void clear_mission()
 	strcpy_s(The_mission.loading_screen[GR_1024],"");
 	strcpy_s(The_mission.skybox_model, "");
 	strcpy_s(The_mission.envmap_name, "");
+
+	// no sound environment
+	The_mission.sound_environment.id = -1;
 
 	ENVMAP = -1;
 
@@ -2518,7 +2524,7 @@ void generate_weaponry_usage_list(int *arr, int wing)
 		j = swp->num_secondary_banks;
 		while (j--) {
 			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < MAX_WEAPON_TYPES) {
-				arr[swp->secondary_bank_weapons[j]] += int(ceil(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100 / (Weapon_info[swp->secondary_bank_weapons[j]].cargo_size + 0.5f)));
+				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
 			}
 		}
 	}

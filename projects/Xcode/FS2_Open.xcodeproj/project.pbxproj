@@ -121,8 +121,6 @@
 		349807D10A25B46F0013844A /* mvelib.h in Headers */ = {isa = PBXBuildFile; fileRef = 349807CC0A25B46F0013844A /* mvelib.h */; };
 		349807D20A25B46F0013844A /* mveplayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807CD0A25B46F0013844A /* mveplayer.cpp */; };
 		349807E10A25B98A0013844A /* modelanim.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807E00A25B98A0013844A /* modelanim.cpp */; };
-		34A3E7CD08C4BB3800BBC609 /* codec1.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459553908C3D6A0003B1351 /* codec1.h */; };
-		34A3E7CE08C4BB3900BBC609 /* codec1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459553808C3D6A0003B1351 /* codec1.cpp */; };
 		34A3E7F908C4E15400BBC609 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C71A9108C4184200459F5B /* libjpeg.a */; };
 		34A3E7FA08C4E15500BBC609 /* libcode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C71A8208C4147700459F5B /* libcode.a */; };
 		34A759D90B49248B00C5E7AA /* decoder8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34A759D60B49248B00C5E7AA /* decoder8.cpp */; };
@@ -727,6 +725,7 @@
 		F0AAA94F10FA0D060086B1B4 /* zutil.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93610FA0D060086B1B4 /* zutil.h */; };
 		F0B73A9410FA065F005E1A69 /* pngutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0B73A9010FA065F005E1A69 /* pngutils.cpp */; };
 		F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */ = {isa = PBXBuildFile; fileRef = F0B73A9110FA065F005E1A69 /* pngutils.h */; };
+		F0E986A311C66F5700CF5169 /* bitarray.h in Headers */ = {isa = PBXBuildFile; fileRef = F0E986A211C66F5700CF5169 /* bitarray.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1435,8 +1434,6 @@
 		3459553308C3D6A0003B1351 /* window.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = window.cpp; sourceTree = "<group>"; };
 		3459553508C3D6A0003B1351 /* variables.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = variables.cpp; sourceTree = "<group>"; };
 		3459553608C3D6A0003B1351 /* variables.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = variables.h; sourceTree = "<group>"; };
-		3459553808C3D6A0003B1351 /* codec1.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = codec1.cpp; sourceTree = "<group>"; };
-		3459553908C3D6A0003B1351 /* codec1.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = codec1.h; sourceTree = "<group>"; };
 		3459553B08C3D6A0003B1351 /* beam.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = beam.cpp; sourceTree = "<group>"; };
 		3459553D08C3D6A0003B1351 /* beam.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = beam.h; sourceTree = "<group>"; };
 		3459553E08C3D6A0003B1351 /* corkscrew.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = corkscrew.cpp; sourceTree = "<group>"; };
@@ -1673,6 +1670,7 @@
 		F0AAA93610FA0D060086B1B4 /* zutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zutil.h; sourceTree = "<group>"; };
 		F0B73A9010FA065F005E1A69 /* pngutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pngutils.cpp; sourceTree = "<group>"; };
 		F0B73A9110FA065F005E1A69 /* pngutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngutils.h; sourceTree = "<group>"; };
+		F0E986A211C66F5700CF5169 /* bitarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitarray.h; sourceTree = "<group>"; };
 		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
 		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
 		F0ED18A0101064C70011978C /* safe_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings.cpp; sourceTree = "<group>"; };
@@ -2008,7 +2006,6 @@
 				3459552008C3D6A0003B1351 /* tgautils */,
 				3459552308C3D6A0003B1351 /* ui */,
 				3459553408C3D6A0003B1351 /* variables */,
-				3459553708C3D6A0003B1351 /* vcodec */,
 				3459553A08C3D6A0003B1351 /* weapon */,
 				3459554E08C3D6A0003B1351 /* windows_stub */,
 				3459555108C3D6A0003B1351 /* wxfred2 */,
@@ -2471,6 +2468,7 @@
 		345953EA08C3D6A0003B1351 /* math */ = {
 			isa = PBXGroup;
 			children = (
+				F0E986A211C66F5700CF5169 /* bitarray.h */,
 				345953EC08C3D6A0003B1351 /* fix.cpp */,
 				345953ED08C3D6A0003B1351 /* fix.h */,
 				345953EE08C3D6A0003B1351 /* floating.cpp */,
@@ -2979,15 +2977,6 @@
 				3459553608C3D6A0003B1351 /* variables.h */,
 			);
 			path = variables;
-			sourceTree = "<group>";
-		};
-		3459553708C3D6A0003B1351 /* vcodec */ = {
-			isa = PBXGroup;
-			children = (
-				3459553808C3D6A0003B1351 /* codec1.cpp */,
-				3459553908C3D6A0003B1351 /* codec1.h */,
-			);
-			path = vcodec;
 			sourceTree = "<group>";
 		};
 		3459553A08C3D6A0003B1351 /* weapon */ = {
@@ -3591,7 +3580,6 @@
 				34C71CA808C41C6A00459F5B /* beam.h in Headers */,
 				34C71CAB08C41C6F00459F5B /* config.h in Headers */,
 				34C71D6808C4556800459F5B /* rtvoice.h in Headers */,
-				34A3E7CD08C4BB3800BBC609 /* codec1.h in Headers */,
 				3419B21C091016C700DC7D47 /* iff_defs.h in Headers */,
 				344BA945095A59BF00B9D97D /* ai_profiles.h in Headers */,
 				3468A8D10991BD4200123C87 /* def_files.h in Headers */,
@@ -3615,6 +3603,7 @@
 				F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */,
 				60FAF4E4113431A100CE910F /* openal.h in Headers */,
 				60FAF4E9113432B800CE910F /* voicerec.h in Headers */,
+				F0E986A311C66F5700CF5169 /* bitarray.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4186,7 +4175,6 @@
 				34C71CA908C41C6B00459F5B /* beam.cpp in Sources */,
 				34C71CAA08C41C6F00459F5B /* stubs.cpp in Sources */,
 				34C71D6708C4556700459F5B /* rtvoice.cpp in Sources */,
-				34A3E7CE08C4BB3900BBC609 /* codec1.cpp in Sources */,
 				3419B21B091016C700DC7D47 /* iff_defs.cpp in Sources */,
 				344BA944095A59BF00B9D97D /* ai_profiles.cpp in Sources */,
 				3468A8D00991BD4200123C87 /* def_files.cpp in Sources */,

@@ -33,6 +33,7 @@
 #define LAB_FLAG_SHOW_DEBRIS		(1<<2)	// render debris instead of normal LOD
 #define LAB_FLAG_SUBMODEL_ROTATE	(1<<3)	// do rotation for any rotating ship subobjects
 #define LAB_FLAG_LIGHTNING_ARCS		(1<<4)	// show damage lightning
+#define LAB_FLAG_FULLY_LOAD			(1<<5)	// use create_ship() to test the ships
 
 // modes
 #define LAB_MODE_NONE		0	// not showing anything
@@ -1607,6 +1608,7 @@ void labviewer_make_render_options_window(Button *caller)
 	// add all of the flags that we want/need...
 
 	// viewer flags
+	ADD_RENDER_FLAG("Test Load Ships", Lab_viewer_flags, LAB_FLAG_FULLY_LOAD);
 	ADD_RENDER_FLAG("Disable Model Rotation", Lab_viewer_flags, LAB_FLAG_NO_ROTATION);
 	ADD_RENDER_FLAG("Show Insignia", Lab_viewer_flags, LAB_FLAG_SHOW_INSIGNIA);
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
@@ -1837,6 +1839,16 @@ void labviewer_change_ship_lod(Tree* caller)
 {
 	int ship_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
 	Assert( ship_index >= 0 );
+
+	// Genghis - Attempt to create and then immediately delete the selected ship type.
+	// This causes the full error-handling to kick-in, making the Lab viewer a more
+	// useful tool for checking model errors.
+	if (Lab_viewer_flags & LAB_FLAG_FULLY_LOAD)
+	{
+		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+		int test_idx = ship_create(&vmd_identity_matrix, &vmd_zero_vector, ship_index);
+		obj_delete(test_idx);
+	}
 
 	Lab_last_selected_ship = Lab_selected_index;
 

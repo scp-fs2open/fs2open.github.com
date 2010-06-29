@@ -1200,7 +1200,7 @@ void hud_render_multi_ping()
 	}
 	
 	// if we're in multiplayer mode, display our ping time to the server
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
 		char ping_str[50];
 		memset(ping_str,0,50);
 
@@ -1788,7 +1788,10 @@ void hud_show_damage_popup()
 			n_firstline++;
 			gr_string(sx, sy, n_firstline);
 		} else {
-			gr_string(sx, sy, hud_targetbox_truncate_subsys_name(hud_subsys_list[best_index].name));
+			char temp_name[NAME_LENGTH];
+			strcpy(temp_name, hud_subsys_list[best_index].name);
+			hud_targetbox_truncate_subsys_name(temp_name);
+			gr_string(sx, sy, temp_name);
 		}
 
 		sprintf(buf, XSTR( "%d%%", 219), best_str);
@@ -2686,7 +2689,7 @@ void hud_add_objective_messsage(int type, int status)
 	Objective_display.goal_status=status;
 
 	// if this is a multiplayer tvt game
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+	if(MULTI_TEAM && (Net_player != NULL)){
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal, Net_player->p_info.team);
 	} else {
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal);
@@ -2700,7 +2703,12 @@ void hud_maybe_display_subspace_notify()
 {
 	int warp_aborted = 0;
 	// maybe make gauge active
-	if ( (Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3) ) {
+	if ( (Player->control_mode == PCM_WARPOUT_STAGE1)
+		|| (Player->control_mode == PCM_WARPOUT_STAGE2)
+		|| (Player->control_mode == PCM_WARPOUT_STAGE3)
+		|| (Sexp_hud_display_warpout > 0)
+		)
+	{
 		if (!hud_subspace_notify_active()) {
 			// keep sound from being played 1e06 times
 			hud_start_subspace_notify();
@@ -2715,6 +2723,13 @@ void hud_maybe_display_subspace_notify()
 
 	if ( !hud_subspace_notify_active() ) {
 		return;
+	}
+
+	if ( Sexp_hud_display_warpout > 1 ) {
+		if ( Sexp_hud_display_warpout < timestamp()) {
+			Sexp_hud_display_warpout = 0;
+			return;
+		}
 	}
 
 	if ( Objective_display_gauge.first_frame < 0 ) {

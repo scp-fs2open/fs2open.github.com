@@ -20,37 +20,6 @@
 #include "sound/dscap.h"
 
 
-/*
-// presets
-//#define EAX_PRESET_GENERIC         EAX_ENVIRONMENT_GENERIC,0.5F,1.493F,0.5F
-#define EAX_PRESET_GENERIC         EAX_ENVIRONMENT_GENERIC,0.2F,0.2F,1.0F
-#define EAX_PRESET_PADDEDCELL      EAX_ENVIRONMENT_PADDEDCELL,0.25F,0.1F,0.0F
-#define EAX_PRESET_ROOM            EAX_ENVIRONMENT_ROOM,0.417F,0.4F,0.666F
-#define EAX_PRESET_BATHROOM        EAX_ENVIRONMENT_BATHROOM,0.653F,1.499F,0.166F
-#define EAX_PRESET_LIVINGROOM      EAX_ENVIRONMENT_LIVINGROOM,0.208F,0.478F,0.0F
-#define EAX_PRESET_STONEROOM       EAX_ENVIRONMENT_STONEROOM,0.5F,2.309F,0.888F
-#define EAX_PRESET_AUDITORIUM      EAX_ENVIRONMENT_AUDITORIUM,0.403F,4.279F,0.5F
-#define EAX_PRESET_CONCERTHALL     EAX_ENVIRONMENT_CONCERTHALL,0.5F,3.961F,0.5F
-#define EAX_PRESET_CAVE            EAX_ENVIRONMENT_CAVE,0.5F,2.886F,1.304F
-#define EAX_PRESET_ARENA           EAX_ENVIRONMENT_ARENA,0.361F,7.284F,0.332F
-#define EAX_PRESET_HANGAR          EAX_ENVIRONMENT_HANGAR,0.5F,10.0F,0.3F
-#define EAX_PRESET_CARPETEDHALLWAY EAX_ENVIRONMENT_CARPETEDHALLWAY,0.153F,0.259F,2.0F
-#define EAX_PRESET_HALLWAY         EAX_ENVIRONMENT_HALLWAY,0.361F,1.493F,0.0F
-#define EAX_PRESET_STONECORRIDOR   EAX_ENVIRONMENT_STONECORRIDOR,0.444F,2.697F,0.638F
-#define EAX_PRESET_ALLEY           EAX_ENVIRONMENT_ALLEY,0.25F,1.752F,0.776F
-#define EAX_PRESET_FOREST          EAX_ENVIRONMENT_FOREST,0.111F,3.145F,0.472F
-#define EAX_PRESET_CITY            EAX_ENVIRONMENT_CITY,0.111F,2.767F,0.224F
-#define EAX_PRESET_MOUNTAINS       EAX_ENVIRONMENT_MOUNTAINS,0.194F,7.841F,0.472F
-#define EAX_PRESET_QUARRY          EAX_ENVIRONMENT_QUARRY,1.0F,1.499F,0.5F
-#define EAX_PRESET_PLAIN           EAX_ENVIRONMENT_PLAIN,0.097F,2.767F,0.224F
-#define EAX_PRESET_PARKINGLOT      EAX_ENVIRONMENT_PARKINGLOT,0.208F,1.652F,1.5F
-#define EAX_PRESET_SEWERPIPE       EAX_ENVIRONMENT_SEWERPIPE,0.652F,2.886F,0.25F
-#define EAX_PRESET_UNDERWATER      EAX_ENVIRONMENT_UNDERWATER,1.0F,1.499F,0.0F
-#define EAX_PRESET_DRUGGED         EAX_ENVIRONMENT_DRUGGED,0.875F,8.392F,1.388F
-#define EAX_PRESET_DIZZY           EAX_ENVIRONMENT_DIZZY,0.139F,17.234F,0.666F
-#define EAX_PRESET_PSYCHOTIC       EAX_ENVIRONMENT_PSYCHOTIC,0.486F,7.563F,0.806F
-*/
-
 typedef struct sound_buffer
 {
 	ALuint buf_id;		// OpenAL buffer id
@@ -85,145 +54,78 @@ static int Ds_eax_inited = 0;
 
 static int AL_play_position = 0;
 
-#ifndef AL_BYTE_LOKI
-// in case it's not defined by older/other drivers
-#define AL_BYTE_LOKI	0x100C
-#endif
+// NOTE: these can't be static
+int Ds_sound_quality = DS_SQ_MEDIUM;
+int Ds_float_supported = 0;
 
-// not define by older OpenAL versions
-#ifndef AL_BYTE_OFFSET
-#define AL_BYTE_OFFSET	0x1026
-#endif
 
-#define EFX_EAXREVERB_PRESET_GENERIC  { 1.0f, 1.0f, 0.316228f, 0.891251f, 1.0f, 1.49f, 0.83f, 1.0f, 0.050003f, 0.007f, {0.0f, 0.0f, 0.0f}, 1.258925f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_PADDEDCELL  { 0.171500f, 1.0f, 0.316228f, 0.001f, 1.0f, 0.17f, 0.10f, 1.0f, 0.250035f, 0.001f, {0.0f, 0.0f, 0.0f}, 1.269112f, 0.002f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_ROOM  { 0.428687f, 1.0f, 0.316228f, 0.592925f, 1.0f, 0.40f, 0.83f, 1.0f, 0.150314f, 0.002f, {0.0f, 0.0f, 0.0f}, 1.062919f, 0.003f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_BATHROOM  { 0.171500f, 1.0f, 0.316228f, 0.251189f, 1.0f, 1.49f, 0.54f, 1.0f, 0.653131f, 0.007f, {0.0f, 0.0f, 0.0f}, 3.273407f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_LIVINGROOM  { 0.976563f, 1.0f, 0.316228f, 0.001f, 1.0f, 0.50f, 0.10f, 1.0f, 0.205116f, 0.003f, {0.0f, 0.0f, 0.0f}, 0.280543f, 0.004f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_STONEROOM  { 1.0f, 1.0f, 0.316228f, 0.707946f, 1.0f, 2.31f, 0.64f, 1.0f, 0.441062f, 0.012f, {0.0f, 0.0f, 0.0f}, 1.100272f, 0.017f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_AUDITORIUM  { 1.0f, 1.0f, 0.316228f, 0.578096f, 1.0f, 4.32f, 0.59f, 1.0f, 0.403181f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.716968f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_CONCERTHALL  { 1.0f, 1.0f, 0.316228f, 0.562341f, 1.0f, 3.92f, 0.70f, 1.0f, 0.242661f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.997700f, 0.029f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_CAVE  { 1.0f, 1.0f, 0.316228f, 1.0f, 1.0f, 2.91f, 1.30f, 1.0f, 0.500035f, 0.015f, {0.0f, 0.0f, 0.0f}, 0.706318f, 0.022f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
-#define EFX_EAXREVERB_PRESET_ARENA  { 1.0f, 1.0f, 0.316228f, 0.447713f, 1.0f, 7.24f, 0.33f, 1.0f, 0.261216f, 0.02f, {0.0f, 0.0f, 0.0f}, 1.018591f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_HANGAR  { 1.0f, 1.0f, 0.316228f, 0.316228f, 1.0f, 10.05f, 0.23f, 1.0f, 0.500035f, 0.02f, {0.0f, 0.0f, 0.0f}, 1.256030f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_CARPETEDHALLWAY  { 0.428687f, 1.0f, 0.316228f, 0.01f, 1.0f, 0.30f, 0.10f, 1.0f, 0.121479f, 0.002f, {0.0f, 0.0f, 0.0f}, 0.153109f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_HALLWAY  { 0.364500f, 1.0f, 0.316228f, 0.707946f, 1.0f, 1.49f, 0.59f, 1.0f, 0.245754f, 0.007f, {0.0f, 0.0f, 0.0f}, 1.661499f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_STONECORRIDOR  { 1.0f, 1.0f, 0.316228f, 0.761202f, 1.0f, 2.70f, 0.79f, 1.0f, 0.247172f, 0.013f, {0.0f, 0.0f, 0.0f}, 1.575796f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_ALLEY  { 1.0f, 0.30f, 0.316228f, 0.732825f, 1.0f, 1.49f, 0.86f, 1.0f, 0.250035f, 0.007f, {0.0f, 0.0f, 0.0f}, 0.995405f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.125f, 0.95f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_FOREST  { 1.0f, 0.30f, 0.316228f, 0.022387f, 1.0f, 1.49f, 0.54f, 1.0f, 0.052481f, 0.162f, {0.0f, 0.0f, 0.0f}, 0.768245f, 0.088f, {0.0f, 0.0f, 0.0f}, 0.125f, 1.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_CITY  { 1.0f, 0.50f, 0.316228f, 0.398107f, 1.0f, 1.49f, 0.67f, 1.0f, 0.073030f, 0.007f, {0.0f, 0.0f, 0.0f}, 0.142725f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_MOUNTAINS  { 1.0f, 0.27f, 0.316228f, 0.056234f, 1.0f, 1.49f, 0.21f, 1.0f, 0.040738f, 0.30f, {0.0f, 0.0f, 0.0f}, 0.191867f, 0.10f, {0.0f, 0.0f, 0.0f}, 0.25f, 1.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
-#define EFX_EAXREVERB_PRESET_QUARRY  { 1.0f, 1.0f, 0.316228f, 0.316228f, 1.0f, 1.49f, 0.83f, 1.0f, 0.0f, 0.061f, {0.0f, 0.0f, 0.0f}, 1.778279f, 0.025f, {0.0f, 0.0f, 0.0f}, 0.125f, 0.70f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_PLAIN  { 1.0f, 0.21f, 0.316228f, 0.10f, 1.0f, 1.49f, 0.50f, 1.0f, 0.058479f, 0.179f, {0.0f, 0.0f, 0.0f}, 0.108893f, 0.10f, {0.0f, 0.0f, 0.0f}, 0.25f, 1.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_PARKINGLOT  { 1.0f, 1.0f, 0.316228f, 1.0f, 1.0f, 1.65f, 1.50f, 1.0f, 0.208209f, 0.008f, {0.0f, 0.0f, 0.0f}, 0.265155f, 0.012f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
-#define EFX_EAXREVERB_PRESET_SEWERPIPE  { 0.307063f, 0.80f, 0.316228f, 0.316228f, 1.0f, 2.81f, 0.14f, 1.0f, 1.638702f, 0.014f, {0.0f, 0.0f, 0.0f}, 3.247133f, 0.021f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_UNDERWATER  { 0.364500f, 1.0f, 0.316228f, 0.01f, 1.0f, 1.49f, 0.10f, 1.0f, 0.596348f, 0.007f, {0.0f, 0.0f, 0.0f}, 7.079458f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 1.18f, 0.348f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 }
-#define EFX_EAXREVERB_PRESET_DRUGGED  { 0.428687f, 0.50f, 0.316228f, 1.0f, 1.0f, 8.39f, 1.39f, 1.0f, 0.875992f, 0.002f, {0.0f, 0.0f, 0.0f}, 3.108136f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 1.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
-#define EFX_EAXREVERB_PRESET_DIZZY  { 0.364500f, 0.60f, 0.316228f, 0.630957f, 1.0f, 17.23f, 0.56f, 1.0f, 0.139155f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.493742f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 1.0f, 0.81f, 0.31f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
-#define EFX_EAXREVERB_PRESET_PSYCHOTIC  { 0.062500f, 0.50f, 0.316228f, 0.840427f, 1.0f, 7.56f, 0.91f, 1.0f, 0.486407f, 0.02f, {0.0f, 0.0f, 0.0f}, 2.437811f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 4.00f, 1.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
-
-#ifndef EFXEAXREVERBPROPERTIES_DEFINED
-#define EFXEAXREVERBPROPERTIES_DEFINED
-typedef struct
+// this is so stupid - required to get VC6 to use the following array initializer
+EFXREVERBPROPERTIES::EFXREVERBPROPERTIES(const EFXREVERBPROPERTIES_list &list)
 {
-	float flDensity;
-	float flDiffusion;
-	float flGain;
-	float flGainHF;
-	float flGainLF;
-	float flDecayTime;
-	float flDecayHFRatio;
-	float flDecayLFRatio;
-	float flReflectionsGain;
-	float flReflectionsDelay;
-	float flReflectionsPan[3];
-	float flLateReverbGain;
-	float flLateReverbDelay;
-	float flLateReverbPan[3];
-	float flEchoTime;
-	float flEchoDepth;
-	float flModulationTime;
-	float flModulationDepth;
-	float flAirAbsorptionGainHF;
-	float flHFReference;
-	float flLFReference;
-	float flRoomRolloffFactor;
-	int	iDecayHFLimit;
-} EFXEAXREVERBPROPERTIES, *LPEFXEAXREVERBPROPERTIES;
-#endif
+	name = list.name;
 
-EFXEAXREVERBPROPERTIES EFX_Presets[] = {
-	EFX_EAXREVERB_PRESET_GENERIC,
-	EFX_EAXREVERB_PRESET_PADDEDCELL,
-	EFX_EAXREVERB_PRESET_ROOM,
-	EFX_EAXREVERB_PRESET_BATHROOM,
-	EFX_EAXREVERB_PRESET_LIVINGROOM,
-	EFX_EAXREVERB_PRESET_STONEROOM,
-	EFX_EAXREVERB_PRESET_AUDITORIUM,
-	EFX_EAXREVERB_PRESET_CONCERTHALL,
-	EFX_EAXREVERB_PRESET_CAVE,
-	EFX_EAXREVERB_PRESET_ARENA,
-	EFX_EAXREVERB_PRESET_HANGAR,
-	EFX_EAXREVERB_PRESET_CARPETEDHALLWAY,
-	EFX_EAXREVERB_PRESET_HALLWAY,
-	EFX_EAXREVERB_PRESET_STONECORRIDOR,
-	EFX_EAXREVERB_PRESET_ALLEY,
-	EFX_EAXREVERB_PRESET_FOREST,
-	EFX_EAXREVERB_PRESET_CITY,
-	EFX_EAXREVERB_PRESET_MOUNTAINS,
-	EFX_EAXREVERB_PRESET_QUARRY,
-	EFX_EAXREVERB_PRESET_PLAIN,
-	EFX_EAXREVERB_PRESET_PARKINGLOT,
-	EFX_EAXREVERB_PRESET_SEWERPIPE,
-	EFX_EAXREVERB_PRESET_UNDERWATER,
-	EFX_EAXREVERB_PRESET_DRUGGED,
-	EFX_EAXREVERB_PRESET_DIZZY,
-	EFX_EAXREVERB_PRESET_PSYCHOTIC
+	flDensity = list.flDensity;
+	flDiffusion = list.flDiffusion;
+	flGain = list.flGain;
+	flGainHF = list.flGainHF;
+	flGainLF = list.flGainLF;
+	flDecayTime = list.flDecayTime;
+	flDecayHFRatio = list.flDecayHFRatio;
+	flDecayLFRatio = list.flDecayLFRatio;
+	flReflectionsGain = list.flReflectionsGain;
+	flReflectionsDelay = list.flReflectionsDelay;
+	flReflectionsPan[0] = list.flReflectionsPan[0];
+	flReflectionsPan[1] = list.flReflectionsPan[1];
+	flReflectionsPan[2] = list.flReflectionsPan[2];
+	flLateReverbGain = list.flLateReverbGain;
+	flLateReverbDelay = list.flLateReverbDelay;
+	flLateReverbPan[0] = list.flLateReverbPan[0];
+	flLateReverbPan[1] = list.flLateReverbPan[1];
+	flLateReverbPan[2] = list.flLateReverbPan[2];
+	flEchoTime = list.flEchoTime;
+	flEchoDepth = list.flEchoDepth;
+	flModulationTime = list.flModulationTime;
+	flModulationDepth = list.flModulationDepth;
+	flAirAbsorptionGainHF = list.flAirAbsorptionGainHF;
+	flHFReference = list.flHFReference;
+	flLFReference = list.flLFReference;
+	flRoomRolloffFactor = list.flRoomRolloffFactor;
+
+	iDecayHFLimit = list.iDecayHFLimit;
+}
+
+static const EFXREVERBPROPERTIES_list EFX_Reverb_Defaults[EAX_ENVIRONMENT_COUNT] =
+{
+	{ "Generic", 1.0f, 1.0f, 0.316228f, 0.891251f, 1.0f, 1.49f, 0.83f, 1.0f, 0.050003f, 0.007f, {0.0f, 0.0f, 0.0f}, 1.258925f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Padded cell", 0.171500f, 1.0f, 0.316228f, 0.001f, 1.0f, 0.17f, 0.10f, 1.0f, 0.250035f, 0.001f, {0.0f, 0.0f, 0.0f}, 1.269112f, 0.002f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Room", 0.428687f, 1.0f, 0.316228f, 0.592925f, 1.0f, 0.40f, 0.83f, 1.0f, 0.150314f, 0.002f, {0.0f, 0.0f, 0.0f}, 1.062919f, 0.003f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Bathroom", 0.171500f, 1.0f, 0.316228f, 0.251189f, 1.0f, 1.49f, 0.54f, 1.0f, 0.653131f, 0.007f, {0.0f, 0.0f, 0.0f}, 3.273407f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Living room", 0.976563f, 1.0f, 0.316228f, 0.001f, 1.0f, 0.50f, 0.10f, 1.0f, 0.205116f, 0.003f, {0.0f, 0.0f, 0.0f}, 0.280543f, 0.004f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Stone room", 1.0f, 1.0f, 0.316228f, 0.707946f, 1.0f, 2.31f, 0.64f, 1.0f, 0.441062f, 0.012f, {0.0f, 0.0f, 0.0f}, 1.100272f, 0.017f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Auditorium", 1.0f, 1.0f, 0.316228f, 0.578096f, 1.0f, 4.32f, 0.59f, 1.0f, 0.403181f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.716968f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Concert hall", 1.0f, 1.0f, 0.316228f, 0.562341f, 1.0f, 3.92f, 0.70f, 1.0f, 0.242661f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.997700f, 0.029f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Cave", 1.0f, 1.0f, 0.316228f, 1.0f, 1.0f, 2.91f, 1.30f, 1.0f, 0.500035f, 0.015f, {0.0f, 0.0f, 0.0f}, 0.706318f, 0.022f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 },
+	{ "Arena", 1.0f, 1.0f, 0.316228f, 0.447713f, 1.0f, 7.24f, 0.33f, 1.0f, 0.261216f, 0.02f, {0.0f, 0.0f, 0.0f}, 1.018591f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Hangar", 1.0f, 1.0f, 0.316228f, 0.316228f, 1.0f, 10.05f, 0.23f, 1.0f, 0.500035f, 0.02f, {0.0f, 0.0f, 0.0f}, 1.256030f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Carpeted hallway", 0.428687f, 1.0f, 0.316228f, 0.01f, 1.0f, 0.30f, 0.10f, 1.0f, 0.121479f, 0.002f, {0.0f, 0.0f, 0.0f}, 0.153109f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Hallway", 0.364500f, 1.0f, 0.316228f, 0.707946f, 1.0f, 1.49f, 0.59f, 1.0f, 0.245754f, 0.007f, {0.0f, 0.0f, 0.0f}, 1.661499f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Stone corridor", 1.0f, 1.0f, 0.316228f, 0.761202f, 1.0f, 2.70f, 0.79f, 1.0f, 0.247172f, 0.013f, {0.0f, 0.0f, 0.0f}, 1.575796f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Alley", 1.0f, 0.30f, 0.316228f, 0.732825f, 1.0f, 1.49f, 0.86f, 1.0f, 0.250035f, 0.007f, {0.0f, 0.0f, 0.0f}, 0.995405f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.125f, 0.95f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Forest", 1.0f, 0.30f, 0.316228f, 0.022387f, 1.0f, 1.49f, 0.54f, 1.0f, 0.052481f, 0.162f, {0.0f, 0.0f, 0.0f}, 0.768245f, 0.088f, {0.0f, 0.0f, 0.0f}, 0.125f, 1.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "City", 1.0f, 0.50f, 0.316228f, 0.398107f, 1.0f, 1.49f, 0.67f, 1.0f, 0.073030f, 0.007f, {0.0f, 0.0f, 0.0f}, 0.142725f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Mountains", 1.0f, 0.27f, 0.316228f, 0.056234f, 1.0f, 1.49f, 0.21f, 1.0f, 0.040738f, 0.30f, {0.0f, 0.0f, 0.0f}, 0.191867f, 0.10f, {0.0f, 0.0f, 0.0f}, 0.25f, 1.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 },
+	{ "Quarry", 1.0f, 1.0f, 0.316228f, 0.316228f, 1.0f, 1.49f, 0.83f, 1.0f, 0.0f, 0.061f, {0.0f, 0.0f, 0.0f}, 1.778279f, 0.025f, {0.0f, 0.0f, 0.0f}, 0.125f, 0.70f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Plain", 1.0f, 0.21f, 0.316228f, 0.10f, 1.0f, 1.49f, 0.50f, 1.0f, 0.058479f, 0.179f, {0.0f, 0.0f, 0.0f}, 0.108893f, 0.10f, {0.0f, 0.0f, 0.0f}, 0.25f, 1.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Parking lot", 1.0f, 1.0f, 0.316228f, 1.0f, 1.0f, 1.65f, 1.50f, 1.0f, 0.208209f, 0.008f, {0.0f, 0.0f, 0.0f}, 0.265155f, 0.012f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 },
+	{ "Sewer pipe", 0.307063f, 0.80f, 0.316228f, 0.316228f, 1.0f, 2.81f, 0.14f, 1.0f, 1.638702f, 0.014f, {0.0f, 0.0f, 0.0f}, 3.247133f, 0.021f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 0.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Underwater", 0.364500f, 1.0f, 0.316228f, 0.01f, 1.0f, 1.49f, 0.10f, 1.0f, 0.596348f, 0.007f, {0.0f, 0.0f, 0.0f}, 7.079458f, 0.011f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 1.18f, 0.348f, 0.994260f, 5000.0f, 250.0f, 0.0f, 1 },
+	{ "Drugged", 0.428687f, 0.50f, 0.316228f, 1.0f, 1.0f, 8.39f, 1.39f, 1.0f, 0.875992f, 0.002f, {0.0f, 0.0f, 0.0f}, 3.108136f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 0.25f, 1.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 },
+	{ "Dizzy", 0.364500f, 0.60f, 0.316228f, 0.630957f, 1.0f, 17.23f, 0.56f, 1.0f, 0.139155f, 0.02f, {0.0f, 0.0f, 0.0f}, 0.493742f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 1.0f, 0.81f, 0.31f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 },
+	{ "Psychotic", 0.062500f, 0.50f, 0.316228f, 0.840427f, 1.0f, 7.56f, 0.91f, 1.0f, 0.486407f, 0.02f, {0.0f, 0.0f, 0.0f}, 2.437811f, 0.03f, {0.0f, 0.0f, 0.0f}, 0.25f, 0.0f, 4.00f, 1.0f, 0.994260f, 5000.0f, 250.0f, 0.0f, 0 }
 };
 
+SCP_vector<EFXREVERBPROPERTIES> EFX_presets;
 
-#ifndef ALC_EXT_EFX
-#define AL_FILTER_TYPE					0x8001
-#define AL_EFFECT_TYPE					0x8001
-#define AL_FILTER_NULL					0x0000
-#define AL_FILTER_LOWPASS				0x0001
-#define AL_EFFECT_NULL					0x0000
-#define AL_EFFECT_EAXREVERB				0x8000
-#define AL_EFFECT_REVERB				0x0001
-#define AL_EFFECT_ECHO					0x0004
-#define ALC_EFX_MAJOR_VERSION			0x20001
-#define ALC_EFX_MINOR_VERSION			0x20002
-#define ALC_MAX_AUXILIARY_SENDS			0x20003
-
-#define AL_AUXILIARY_SEND_FILTER		0x20006
-
-#define AL_EAXREVERB_DENSITY                               0x0001
-#define AL_EAXREVERB_DIFFUSION                             0x0002
-#define AL_EAXREVERB_GAIN                                  0x0003
-#define AL_EAXREVERB_GAINHF                                0x0004
-#define AL_EAXREVERB_GAINLF                                0x0005
-#define AL_EAXREVERB_DECAY_TIME                            0x0006
-#define AL_EAXREVERB_DECAY_HFRATIO                         0x0007
-#define AL_EAXREVERB_DECAY_LFRATIO                         0x0008
-#define AL_EAXREVERB_REFLECTIONS_GAIN                      0x0009
-#define AL_EAXREVERB_REFLECTIONS_DELAY                     0x000A
-#define AL_EAXREVERB_REFLECTIONS_PAN                       0x000B
-#define AL_EAXREVERB_LATE_REVERB_GAIN                      0x000C
-#define AL_EAXREVERB_LATE_REVERB_DELAY                     0x000D
-#define AL_EAXREVERB_LATE_REVERB_PAN                       0x000E
-#define AL_EAXREVERB_ECHO_TIME                             0x000F
-#define AL_EAXREVERB_ECHO_DEPTH                            0x0010
-#define AL_EAXREVERB_MODULATION_TIME                       0x0011
-#define AL_EAXREVERB_MODULATION_DEPTH                      0x0012
-#define AL_EAXREVERB_AIR_ABSORPTION_GAINHF                 0x0013
-#define AL_EAXREVERB_HFREFERENCE                           0x0014
-#define AL_EAXREVERB_LFREFERENCE                           0x0015
-#define AL_EAXREVERB_ROOM_ROLLOFF_FACTOR                   0x0016
-#define AL_EAXREVERB_DECAY_HFLIMIT                         0x0017
-
-#define AL_EFFECTSLOT_NULL                                 0x0000
-#define AL_EFFECTSLOT_EFFECT                               0x0001
-#endif
 
 typedef ALvoid (AL_APIENTRY * ALGENFILTERS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALDELETEFILTERS) (ALsizei, ALuint*);
@@ -233,6 +135,7 @@ typedef ALvoid (AL_APIENTRY * ALDELETEEFFECTS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALEFFECTI) (ALuint, ALenum, ALint);
 typedef ALvoid (AL_APIENTRY * ALEFFECTF) (ALuint, ALenum, ALfloat);
 typedef ALvoid (AL_APIENTRY * ALEFFECTFV) (ALuint, ALenum, ALfloat*);
+typedef ALvoid (AL_APIENTRY * ALGETEFFECTF) (ALuint, ALenum, ALfloat*);
 
 typedef ALvoid (AL_APIENTRY * ALGENAUXILIARYEFFECTSLOTS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALDELETEAUXILIARYEFFECTSLOTS) (ALsizei, ALuint*);
@@ -251,6 +154,7 @@ ALDELETEEFFECTS v_alDeleteEffects = NULL;
 ALEFFECTI v_alEffecti = NULL;
 ALEFFECTF v_alEffectf = NULL;
 ALEFFECTFV v_alEffectfv = NULL;
+ALGETEFFECTF v_alGetEffectf = NULL;
 
 ALGENAUXILIARYEFFECTSLOTS v_alGenAuxiliaryEffectSlots = NULL;
 ALDELETEAUXILIARYEFFECTSLOTS v_alDeleteAuxiliaryEffectSlots = NULL;
@@ -263,10 +167,10 @@ ALAUXILIARYEFFECTSLOTFV v_alAuxiliaryEffectSlotfv = NULL;
 ALCdevice *ds_sound_device = NULL;
 ALCcontext *ds_sound_context = NULL;
 
-static ALuint AL_EFX_aux_id = 0;
+ALuint AL_EFX_aux_id = 0;
 static ALuint AL_EFX_effect_id = 0;
 
-
+static int Ds_active_env = -1;
 
 
 
@@ -287,11 +191,11 @@ static void al_efx_load_preset(unsigned int presetid)
 		return;
 	}
 
-	if (presetid >= EAX_ENVIRONMENT_COUNT) {
+	if (presetid >= EFX_presets.size()) {
 		return;
 	}
 
-	EFXEAXREVERBPROPERTIES *prop = &EFX_Presets[presetid];
+	EFXREVERBPROPERTIES *prop = &EFX_presets[presetid];
 
 	OpenAL_ErrorPrint( v_alEffectf(AL_EFX_effect_id, AL_EAXREVERB_DENSITY, prop->flDensity) );
 	OpenAL_ErrorPrint( v_alEffectf(AL_EFX_effect_id, AL_EAXREVERB_DIFFUSION, prop->flDiffusion) );
@@ -316,6 +220,8 @@ static void al_efx_load_preset(unsigned int presetid)
 	OpenAL_ErrorPrint( v_alEffectf(AL_EFX_effect_id, AL_EAXREVERB_LFREFERENCE, prop->flLFReference) );
 	OpenAL_ErrorPrint( v_alEffectf(AL_EFX_effect_id, AL_EAXREVERB_ROOM_ROLLOFF_FACTOR, prop->flRoomRolloffFactor) );
 	OpenAL_ErrorPrint( v_alEffecti(AL_EFX_effect_id, AL_EAXREVERB_DECAY_HFLIMIT, prop->iDecayHFLimit) );
+
+	Ds_active_env = presetid;
 }
 
 
@@ -375,12 +281,26 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 				(*header)->wFormatTag = OGG_FORMAT_VORBIS;
 				(*header)->nChannels = (ushort)ovf->vi->channels;
 				(*header)->nSamplesPerSec = ovf->vi->rate;
-				(*header)->wBitsPerSample = 16;								//OGGs always decoded at 16 bits here
-				(*header)->nBlockAlign = (ushort)(ovf->vi->channels * 2);
-				(*header)->nAvgBytesPerSec =  ovf->vi->rate * ovf->vi->channels * 2;
+
+				switch (Ds_sound_quality) {
+					case DS_SQ_HIGH:
+						(*header)->wBitsPerSample = Ds_float_supported ? 32 : 16;
+						break;
+
+					case DS_SQ_MEDIUM:
+						(*header)->wBitsPerSample = 16;
+						break;
+
+					default:
+						(*header)->wBitsPerSample = 8;
+						break;
+				}
+
+				(*header)->nBlockAlign = (ushort)(((*header)->wBitsPerSample / 8) * ovf->vi->channels);
+				(*header)->nAvgBytesPerSec = ovf->vi->rate * (*header)->nBlockAlign;
 
 				//WMC - Total samples * channels * bits/sample
-				*dest_size = (uint)(ov_pcm_total(ovf, -1) * ovf->vi->channels * 2);
+				*dest_size = (uint)(ov_pcm_total(ovf, -1) * (*header)->nBlockAlign);
 			} else {
 				Assert( 0 );
 				return -1;
@@ -424,7 +344,57 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 					PCM_header.wf.nBlockAlign		= cfread_ushort(fp);
 					PCM_header.wBitsPerSample		= cfread_ushort(fp);
 
-					if (PCM_header.wf.wFormatTag != WAVE_FORMAT_PCM)
+					// should be either: WAVE_FORMAT_PCM, WAVE_FORMAT_ADPCM, WAVE_FORMAT_IEEE_FLOAT
+					switch (PCM_header.wf.wFormatTag) {
+						case WAVE_FORMAT_PCM: {
+							if ( (PCM_header.wBitsPerSample != 8) && (PCM_header.wBitsPerSample != 16) ) {
+								nprintf(("Sound", "SOUND ==> %d-bit PCM is not supported!\n", PCM_header.wBitsPerSample));
+								return -1;
+							}
+
+							// fix block align
+							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
+
+							break;
+						}
+
+						case WAVE_FORMAT_IEEE_FLOAT: {
+							if (PCM_header.wBitsPerSample != 32) {
+								nprintf(("Sound", "SOUND ==> %d-bit FLOAT PCM is not supported!\n", PCM_header.wBitsPerSample));
+								return -1;
+							}
+
+							switch (Ds_sound_quality) {
+								case DS_SQ_HIGH:
+									PCM_header.wBitsPerSample = Ds_float_supported ? 32 : 16;
+									break;
+
+								case DS_SQ_MEDIUM:
+									PCM_header.wBitsPerSample = 16;
+									break;
+
+								default:
+									PCM_header.wBitsPerSample = 8;
+									break;
+							}
+
+							// fix block align
+							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
+
+							break;
+						}
+
+						case WAVE_FORMAT_ADPCM:
+							// block align doesn't get fixed here
+							break;
+
+						default: {
+							nprintf(("Sound", "SOUND ==> Format '%d' is not supported!\n", PCM_header.wf.wFormatTag));
+							return -1;
+						}
+					}
+
+					if (PCM_header.wf.wFormatTag == WAVE_FORMAT_ADPCM)
 						cbExtra = cfread_ushort(fp);
 
 					// Allocate memory for WAVEFORMATEX structure + extra bytes
@@ -437,7 +407,8 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 						if (cbExtra != 0)
 							cfread( ((ubyte *)(*header) + sizeof(WAVEFORMATEX)), cbExtra, 1, fp);
 					} else {
-						Assert(0);		// malloc failed
+						// malloc failed
+						return -1;
 					}
 
 					got_fmt = true;
@@ -494,6 +465,7 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	char			filename[MAX_FILENAME_LEN];
 	const int		NUM_EXT = 2;
 	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
+	int				rval = -1;
 
 
 	if ( (real_filename == NULL) || (s_info == NULL) )
@@ -526,21 +498,37 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 			// we only support one logical bitstream
 			if ( ov_streams(&ovf) != 1 ) {
 				nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
-				return -1;
+				ov_clear(&ovf);
+				goto Done;
 			}
 
 			s_info->format = OGG_FORMAT_VORBIS;
 			s_info->n_channels = (ushort)ovf.vi->channels;
 			s_info->sample_rate = ovf.vi->rate;
-			s_info->bits = 16;								//OGGs always decoded at 16 bits here
-			s_info->n_block_align = (ushort)(ovf.vi->channels * 2);
-			s_info->avg_bytes_per_sec = ovf.vi->rate * ovf.vi->channels * 2;
 
-			s_info->size = (uint)(ov_pcm_total(&ovf, -1) * ovf.vi->channels * 2);
+			switch (Ds_sound_quality) {
+				case DS_SQ_HIGH:
+					s_info->bits = Ds_float_supported ? 32 : 16;
+					break;
+
+				case DS_SQ_MEDIUM:
+					s_info->bits = 16;
+					break;
+
+				default:
+					s_info->bits = 8;
+					break;
+			}
+
+			s_info->n_block_align = (ushort)((s_info->bits / 8) * s_info->n_channels);
+			s_info->avg_bytes_per_sec = s_info->sample_rate * s_info->n_block_align;
+
+			s_info->size = (uint)(ov_pcm_total(&ovf, -1) * s_info->n_block_align);
 
 			ov_clear(&ovf);
 	
 			// we're all good, can leave now
+			rval = 0;
 			goto Done;
 		}
 	}
@@ -576,12 +564,62 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 					PCM_header.wf.nBlockAlign		= cfread_ushort(fp);
 					PCM_header.wBitsPerSample		= cfread_ushort(fp);
 
+					// should be either: WAVE_FORMAT_PCM, WAVE_FORMAT_ADPCM, WAVE_FORMAT_IEEE_FLOAT
+					switch (PCM_header.wf.wFormatTag) {
+						case WAVE_FORMAT_PCM: {
+							if ( (PCM_header.wBitsPerSample != 8) && (PCM_header.wBitsPerSample != 16) ) {
+								nprintf(("Sound", "SOUND ==> %d-bit PCM is not supported!\n", PCM_header.wBitsPerSample));
+								goto Done;
+							}
+
+							// fix block align
+							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
+
+							break;
+						}
+
+						case WAVE_FORMAT_IEEE_FLOAT: {
+							if (PCM_header.wBitsPerSample != 32) {
+								nprintf(("Sound", "SOUND ==> %d-bit FLOAT PCM is not supported!\n", PCM_header.wBitsPerSample));
+								goto Done;
+							}
+
+							switch (Ds_sound_quality) {
+								case DS_SQ_HIGH:
+									PCM_header.wBitsPerSample = Ds_float_supported ? 32 : 16;
+									break;
+
+								case DS_SQ_MEDIUM:
+									PCM_header.wBitsPerSample = 16;
+									break;
+
+								default:
+									PCM_header.wBitsPerSample = 8;
+									break;
+							}
+
+							// fix block align
+							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
+
+							break;
+						}
+
+						case WAVE_FORMAT_ADPCM:
+							// block align doesn't get fixed here
+							break;
+
+						default: {
+							nprintf(("Sound", "SOUND ==> Format '%d' is not supported!\n", PCM_header.wf.wFormatTag));
+							goto Done;
+						}
+					}
+
 					s_info->format = PCM_header.wf.wFormatTag;
 					s_info->n_channels = PCM_header.wf.nChannels;
 					s_info->sample_rate = PCM_header.wf.nSamplesPerSec;
 					s_info->bits = PCM_header.wBitsPerSample;
-					s_info->n_block_align = PCM_header.wf.nBlockAlign;
 					s_info->avg_bytes_per_sec =  PCM_header.wf.nAvgBytesPerSec;
+					s_info->n_block_align = PCM_header.wf.nBlockAlign;
 
 					got_fmt = true;
 	
@@ -597,18 +635,18 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 					break;
 			}
 
-			if (got_fmt && got_data)
+			if (got_fmt && got_data) {
+				rval = 0;
 				goto Done;
+			}
 
 			cfseek( fp, next_chunk, CF_SEEK_SET );
 		}
 	}
 
-	return -1;
-
 Done:
 	cfclose(fp);
-	return 0;
+	return rval;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -679,10 +717,10 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 
 	ALenum format;
 	ALsizei size;
-	ALint bits, bps;
+	ALint bits, bps, n_channels = si->n_channels;
 	ALuint frequency;
 	ALvoid *data = NULL;
-	int byte_order = 0, section, last_section = -1;
+	int sign, byte_order = 0, section, last_section = -1;
 
 	// the below two covnert_ variables are only used when the wav format is not
 	// PCM.  DirectSound only takes PCM sound data, so we must convert to PCM if required
@@ -694,11 +732,13 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 
 
 	switch (si->format) {
-		case WAVE_FORMAT_PCM:
+		case WAVE_FORMAT_PCM: {
 			Assert( si->data != NULL );
+
 			bits = si->bits;
 			bps  = si->avg_bytes_per_sec;
 			size = si->size;
+
 #if BYTE_ORDER == BIG_ENDIAN
 			// swap 16-bit sound data
 			if (bits == 16) {
@@ -710,14 +750,20 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 				}
 			}
 #endif
-			data = si->data;
-			break;
 
-		case WAVE_FORMAT_ADPCM:
+			data = si->data;
+
+			break;
+		}
+
+		case WAVE_FORMAT_ADPCM: {
 			Assert( si->data != NULL );
-			// this ADPCM decoder decodes to 16-bit only so keep that in mind
-			nprintf(( "Sound", "SOUND ==> converting sound from ADPCM to PCM\n" ));
-			rc = ACM_convert_ADPCM_to_PCM(pwfx, si->data, si->size, &convert_buffer, 0, &convert_len, &src_bytes_used, 16);
+
+			bits = (Ds_sound_quality == DS_SQ_LOW) ? 8 : 16;
+
+			nprintf(( "Sound", "SOUND ==> Converting sound from ADPCM to PCM\n" ));
+
+			rc = ACM_convert_ADPCM_to_PCM(pwfx, si->data, si->size, &convert_buffer, 0, &convert_len, &src_bytes_used, bits);
 
 			if ( rc == -1 ) {
 				return -1;
@@ -727,85 +773,240 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 				return -1;	// ACM conversion failed?
 			}
 
-			bits = 16;
 			bps  = (((si->n_channels * bits) / 8) * si->sample_rate);
 			size = convert_len;
 			data = convert_buffer;
 
 			nprintf(( "Sound", "SOUND ==> Coverted sound from ADPCM to PCM successfully\n" ));
-			break;
 
-		case OGG_FORMAT_VORBIS:
+			break;
+		}
+
+		case WAVE_FORMAT_IEEE_FLOAT: {
+			Assert( si->data != NULL );
+
+			bits = si->bits;
+
+#if BYTE_ORDER == BIG_ENDIAN
+			// need to byte-swap before any later conversions
+			float *swap_tmp;
+
+			for (uint i = 0; i < si->size; i += sizeof(float)) {
+				swap_tmp = (float *)(si->data + i);
+				*swap_tmp = INTEL_FLOAT(swap_tmp);
+			}
+#endif
+
+			if (bits == 32) {
+				bps = si->avg_bytes_per_sec;
+				size = si->size;
+
+				data = si->data;
+			} else if (bits == 16) {
+				bps = si->avg_bytes_per_sec >> 1;
+				size = si->size >> 1;
+
+				convert_buffer = (ubyte*)vm_malloc_q(size);
+
+				if (convert_buffer == NULL) {
+					return -1;
+				}
+
+				float *in_p = (float*)si->data;
+				short *out_p = (short*)convert_buffer;
+
+				int end = si->size / sizeof(float);
+
+				for (int i = 0; i < end; i++) {
+					int i_val = (int)(in_p[i] * 32767.0f + 0.5f);
+					CLAMP(i_val, -32768, 32767);
+
+					*out_p++ = (short)i_val;
+				}
+
+				data = convert_buffer;
+			} else {
+				bps = si->avg_bytes_per_sec >> 2;
+				size = si->size >> 2;
+
+				convert_buffer = (ubyte*)vm_malloc_q(size);
+
+				if (convert_buffer == NULL) {
+					return -1;
+				}
+
+				float *in_p = (float*)si->data;
+				ubyte *out_p = (ubyte*)convert_buffer;
+
+				int end = si->size / sizeof(float);
+
+				for (int i = 0; i < end; i++) {
+					int i_val = (int)(in_p[i] * 127.0f + 0.5f) + 128;
+					CLAMP(i_val, 0, 255);
+
+					*out_p++ = (ubyte)i_val;
+				}
+
+				data = convert_buffer;
+			}
+
+			break;
+		}
+
+		case OGG_FORMAT_VORBIS: {
 			nprintf(( "Sound", "SOUND ==> converting sound from OGG to PCM\n" ));
 
+			sign = (si->bits == 8) ? 0 : 1;
 #if BYTE_ORDER == BIG_ENDIAN
 			byte_order = 1;
 #endif
 			src_bytes_used = 0;
-			convert_buffer = (ubyte*)vm_malloc(si->size);
-			Assert(convert_buffer != NULL);
 
-			if (convert_buffer == NULL)
+			convert_buffer = (ubyte*)vm_malloc_q(si->size);
+
+			if (convert_buffer == NULL) {
 				return -1;
+			}
 
 			while (src_bytes_used < si->size) {
-				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, byte_order, si->bits / 8, 1, &section);
+				float **pcm;
+
+				if (si->bits == 32) {
+					rc = ov_read_float(&si->ogg_info, &pcm, 1024, &section);
+				} else {
+					rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, byte_order, si->bits / 8, sign, &section);
+				}
 
 				// fail if the bitstream changes, shouldn't get this far if that's the case though
 				if ((last_section != -1) && (last_section != section)) {
 					nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
+					ov_clear(&si->ogg_info);
 					vm_free(convert_buffer);
 					convert_buffer = NULL;
 					return -1;
 				}
 
 				if (rc == OV_EBADLINK) {
+					ov_clear(&si->ogg_info);
 					vm_free(convert_buffer);
 					convert_buffer = NULL;
+
 					return -1;
 				} else if (rc == 0) {
 					break;
 				} else if (rc > 0) {
+					if (si->bits == 32) {
+						float *out_p = (float*)(convert_buffer + src_bytes_used);
+
+						for (int i = 0; i < rc; i++) {
+							for (int j = 0; j < si->n_channels; j++) {
+								*out_p++ = pcm[j][i];
+							}
+						}
+
+						src_bytes_used += (rc * si->n_block_align);
+					} else {
+						src_bytes_used += rc;
+					}
+
 					last_section = section;
-					src_bytes_used += rc;
 				}
 			}
 
 			bits = si->bits;
-			bps = (((si->n_channels * bits) / 8) * si->sample_rate);
+			bps = si->avg_bytes_per_sec;
 			size = (int)src_bytes_used;
+
 			data = convert_buffer;
 
 			// we're done with ogg stuff so clean it up
 			ov_clear(&si->ogg_info);
 
-			nprintf(( "Sound", "SOUND ==> Coverted sound from OGG to PCM successfully\n" ));
+			nprintf(( "Sound", "SOUND ==> Coverted sound from OGG successfully\n" ));
+
 			break;
+		}
 
 		default:
 			return -1;
 	}
 
+	// if this is supposed to play in 3D then make sure it's mono
+	if ( (flags & DS_3D) && (n_channels > 1) ) {
+		ubyte *mono_buffer = NULL;
+
+		mono_buffer = (ubyte*)vm_malloc_q(size);
+
+		if (mono_buffer == NULL) {
+			if (convert_buffer) {
+				vm_free(convert_buffer);
+			}
+
+			return -1;
+		}
+
+		if (bits == 32) {
+			float *in_p = (float*)data;
+			float *out_p = (float*)mono_buffer;
+
+			int end = size / sizeof(float);
+
+			for (int i = 0; i < end; i += 2) {
+				float i_val = (in_p[i] + in_p[i+1]) * 0.5f;
+				CLAMP(i_val, -1.0f, 1.0f);
+
+				*out_p++ = i_val;
+			}
+		} else if (bits == 16) {
+			short *in_p = (short*)data;
+			short *out_p = (short*)mono_buffer;
+
+			int end = size / sizeof(short);
+
+			for (int i = 0; i < end; i += 2) {
+				int i_val = (in_p[i] + in_p[i+1]) >> 1;
+				CLAMP(i_val, -32768, 32767);
+
+				*out_p++ = (short)i_val;
+			}
+		} else {
+			Assert( bits == 8 );
+
+			ubyte *in_p = (ubyte*)data;
+			ubyte *out_p = (ubyte*)mono_buffer;
+
+			for (int i = 0; i < size; i += 2) {
+				int i_val = (in_p[i] + in_p[i+1]) >> 1;
+				CLAMP(i_val, 0, 255);
+
+				*out_p++ = (ubyte)i_val;
+			}
+		}
+
+		n_channels = 1;
+		size >>= 1;
+		bps >>= 1;
+
+		data = mono_buffer;
+
+		if (convert_buffer) {
+			vm_free(convert_buffer);
+			convert_buffer = NULL;
+		}
+
+		nprintf(("Sound", "SOUND ==> Converted 3D sound from stereo to mono\n"));
+	}
+
 	/* format is now in pcm */
 	frequency = si->sample_rate;
 
-	if (bits == 16) {
-		if (si->n_channels == 2) {
-			format = AL_FORMAT_STEREO16;
-		} else if (si->n_channels == 1) {
-			format = AL_FORMAT_MONO16;
-		} else {
-			return -1;
+	format = openal_get_format(bits, n_channels);
+
+	if (format == AL_INVALID_VALUE) {
+		if (convert_buffer) {
+			vm_free(convert_buffer);
 		}
-	} else if (bits == 8) {
-		if (si->n_channels == 2) {
-			format = AL_FORMAT_STEREO8;
-		} else if (si->n_channels == 1) {
-			format = AL_FORMAT_MONO8;
-		} else {
-			return -1;
-		}
-	} else {
+
 		return -1;
 	}
 
@@ -815,15 +1016,22 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 		*final_size = size;
 	}
 
-	OpenAL_ErrorCheck( alBufferData(pi, format, data, size, frequency), return -1 );
+	OpenAL_ErrorCheck( alBufferData(pi, format, data, size, frequency), { if (convert_buffer) vm_free(convert_buffer); return -1; } );
 
 	sound_buffers[*sid].buf_id = pi;
 	sound_buffers[*sid].channel_id = -1;
 	sound_buffers[*sid].frequency = frequency;
 	sound_buffers[*sid].bits_per_sample = bits;
-	sound_buffers[*sid].nchannels = si->n_channels;
+	sound_buffers[*sid].nchannels = n_channels;
 	sound_buffers[*sid].nseconds = size / bps;
 	sound_buffers[*sid].nbytes = size;
+
+	// update sound_info struct with any changed data
+	si->bits = bits;
+	si->n_channels = n_channels;
+	si->size = size;
+	si->n_block_align = (bits / 8) * n_channels;
+	si->avg_bytes_per_sec = bps;
 
 	if ( convert_buffer )
 		vm_free( convert_buffer );
@@ -863,14 +1071,35 @@ void ds_init_buffers()
 //
 // returns:     -1           => init failed
 //               0           => init success
-int ds_init(int use_eax, unsigned int sample_rate)
+int ds_init()
 {
 	ALfloat list_orien[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
-	ALCint attrList[] = { ALC_FREQUENCY, sample_rate, 0 };
-
-	Ds_use_eax = use_eax;
+	ALCint attrList[] = { ALC_FREQUENCY, 22050, 0 };
+	unsigned int sample_rate = 22050;
 
 	mprintf(("Initializing OpenAL...\n"));
+
+	Ds_sound_quality = os_config_read_uint("Sound", "Quality", DS_SQ_MEDIUM);
+	CLAMP(Ds_sound_quality, DS_SQ_LOW, DS_SQ_HIGH);
+
+	switch (Ds_sound_quality) {
+		case DS_SQ_HIGH:
+			sample_rate = 48000;
+			break;
+
+		case DS_SQ_MEDIUM:
+			sample_rate = 44100;
+			break;
+
+		default:
+			sample_rate = 22050;
+			break;
+	}
+
+	sample_rate = os_config_read_uint("Sound", "SampleRate", sample_rate);
+
+	attrList[1] = sample_rate;
+
 
 	std::string playback_device;
 	std::string capture_device;
@@ -903,12 +1132,20 @@ int ds_init(int use_eax, unsigned int sample_rate)
 
 	// make sure we can actually use AL_BYTE_LOKI (Mac/Win OpenAL doesn't have it)
 	if ( alIsExtensionPresent( (const ALchar*)"AL_LOKI_play_position" ) == AL_TRUE ) {
-		mprintf(("  Using extension \"AL_LOKI_play_position\".\n"));
+		mprintf(("  Found extension \"AL_LOKI_play_position\".\n"));
 		AL_play_position = 1;
 	}
 
-	if ( alcIsExtensionPresent(ds_sound_device, (const ALchar*)"ALC_EXT_EFX") == AL_FALSE ) {
-		Ds_use_eax = 0;
+	if ( alIsExtensionPresent( (const ALchar*)"AL_EXT_float32" ) == AL_TRUE ) {
+		mprintf(("  Found extension \"AL_EXT_float32\".\n"));
+		Ds_float_supported = 1;
+	}
+
+	Ds_use_eax = 0;
+
+	if ( alcIsExtensionPresent(ds_sound_device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
+		mprintf(("  Found extension \"ALC_EXT_EFX\".\n"));
+		Ds_use_eax = os_config_read_uint("Sound", "EnableEFX", Fred_running);
 	}
 
 	if (Ds_use_eax == 1) {
@@ -917,10 +1154,22 @@ int ds_init(int use_eax, unsigned int sample_rate)
 		}
 	}
 
+	// the presets always need to be available to FRED
+	if ( !Ds_use_eax && Fred_running ) {
+		EFX_presets.reserve(EAX_ENVIRONMENT_COUNT);
+
+		for (int i = 0; i < EAX_ENVIRONMENT_COUNT; i++) {
+			EFX_presets.push_back( EFX_Reverb_Defaults[i] );
+		}
+	}
+
 	// setup default listener position/orientation
 	// this is needed for 2D pan
 	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
 	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
+
+	// disable doppler (FIXME)
+	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
 
 	ds_init_channels();
 	ds_init_buffers();
@@ -1278,25 +1527,9 @@ int ds_lock_data(int sid, unsigned char *data, int size)
 		return -1;
 	}
 
-	ALenum format;
+	ALenum format = openal_get_format(sound_buffers[sid].bits_per_sample, sound_buffers[sid].nchannels);
 
-	if (sound_buffers[sid].bits_per_sample == 16) {
-		if (sound_buffers[sid].nchannels == 2) {
-			format = AL_FORMAT_STEREO16;
-		} else if (sound_buffers[sid].nchannels == 1) {
-			format = AL_FORMAT_MONO16;
-		} else {
-			return -1;
-		}
-	} else if (sound_buffers[sid].bits_per_sample == 8) {
-		if (sound_buffers[sid].nchannels == 2) {
-			format = AL_FORMAT_STEREO8;
-		} else if (sound_buffers[sid].nchannels == 1) {
-			format = AL_FORMAT_MONO8;
-		} else {
-			return -1;
-		}
-	} else {
+	if (format == AL_INVALID_VALUE) {
 		return -1;
 	}
 
@@ -1947,6 +2180,7 @@ int ds_eax_set_all(unsigned long id, float vol, float damping, float decay)
 	// special disabled case
 	if ( (id == EAX_ENVIRONMENT_GENERIC) && (vol == 0.0f) && (damping == 0.0f) && (decay == 0.0f) ) {
 		v_alAuxiliaryEffectSloti(AL_EFX_aux_id, AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+		Ds_active_env = -1;
 		return 0;
 	}
 
@@ -1965,15 +2199,125 @@ int ds_eax_set_all(unsigned long id, float vol, float damping, float decay)
 	return 0;
 }
 
+int ds_eax_get_preset_id(const char *name)
+{
+	if ( !name || !strlen(name) ) {
+		return -1;
+	}
+
+	size_t count = EFX_presets.size();
+
+	for (size_t i = 0; i < count; i++) {
+		if ( !stricmp(name, EFX_presets[i].name.c_str()) ) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *template_name)
+{
+	Assert( props != NULL );
+	Assert( name != NULL );
+	Assert( strlen(name) > 0 );
+
+	int template_id = -1;
+
+	int id = ds_eax_get_preset_id(name);
+
+	if (id >= 0) {
+		*props = &EFX_presets[id];
+	} else {
+		id = EFX_presets.size();
+
+		EFXREVERBPROPERTIES n_prop;
+
+		if ( (template_name != NULL) && (strlen(template_name) > 0) ) {
+			template_id = ds_eax_get_preset_id(template_name);
+		}
+
+		if (template_id >= 0) {
+			n_prop = EFX_presets[template_id];
+			n_prop.name = name;
+		} else {
+			n_prop.name = name;
+			n_prop.flDensity = 1.0f;
+			n_prop.flDiffusion = 1.0f;
+			n_prop.flGain = 0.32f;
+			n_prop.flGainHF = 0.89f;
+			n_prop.flGainLF = 0.0f;
+			n_prop.flDecayTime = 1.49f;
+			n_prop.flDecayHFRatio = 0.83f;
+			n_prop.flDecayLFRatio = 1.0f;
+			n_prop.flReflectionsGain = 0.05f;
+			n_prop.flReflectionsDelay = 0.007f;
+			n_prop.flReflectionsPan[0] = 0.0f;
+			n_prop.flReflectionsPan[1] = 0.0f;
+			n_prop.flReflectionsPan[2] = 0.0f;
+			n_prop.flLateReverbGain = 1.26f;
+			n_prop.flLateReverbDelay = 0.011f;
+			n_prop.flLateReverbPan[0] = 0.0f;
+			n_prop.flLateReverbPan[1] = 0.0f;
+			n_prop.flLateReverbPan[2] = 0.0f;
+			n_prop.flEchoTime = 0.25f;
+			n_prop.flEchoDepth = 0.0f;
+			n_prop.flModulationTime = 0.25f;
+			n_prop.flModulationDepth = 0.0f;
+			n_prop.flAirAbsorptionGainHF = 0.994f;
+			n_prop.flHFReference = 5000.0f;
+			n_prop.flLFReference = 250.0f;
+			n_prop.flRoomRolloffFactor = 0.0f;
+			n_prop.iDecayHFLimit = AL_TRUE;
+		}
+
+		EFX_presets.push_back( n_prop );
+
+		*props = &EFX_presets[id];
+	}
+
+	if ( !stricmp(name, "default") ) {
+		extern unsigned int SND_ENV_DEFAULT;
+		SND_ENV_DEFAULT = id;
+	}
+
+	return 0;
+}
+
 // Get up the parameters for the current environment
 //
 // er: (output) hold environment parameters
+// id: if set will get specified preset env, otherwise current env
 //
 // returns: 0 if successful, otherwise return -1
 //
-int ds_eax_get_all(EAX_REVERBPROPERTIES *er)
+int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id)
 {
-	return -1;
+	if ( !er ) {
+		return -1;
+	}
+
+	if (id < 0) {
+		if (Ds_active_env < 0) {
+			return -1;
+		}
+
+		er->environment = Ds_active_env;
+
+		OpenAL_ErrorPrint( v_alGetEffectf(AL_EFX_effect_id, AL_EAXREVERB_GAIN, &er->fVolume) );
+		OpenAL_ErrorPrint( v_alGetEffectf(AL_EFX_effect_id, AL_EAXREVERB_DECAY_TIME, &er->fDecayTime_sec) );
+		OpenAL_ErrorPrint( v_alGetEffectf(AL_EFX_effect_id, AL_EAXREVERB_DECAY_HFRATIO, &er->fDamping) );
+	} else if (id < (int)EFX_presets.size()) {
+		er->environment = (unsigned int)id;
+
+		er->fVolume = EFX_presets[id].flGain;
+		er->fDecayTime_sec = EFX_presets[id].flDecayTime;
+		er->fDamping = EFX_presets[id].flDecayHFRatio;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 // Close down EAX, freeing any allocated resources
@@ -2014,6 +2358,7 @@ int ds_eax_init()
 		v_alEffecti = (ALEFFECTI) al_load_function("alEffecti");
 		v_alEffectf = (ALEFFECTF) al_load_function("alEffectf");
 		v_alEffectfv = (ALEFFECTFV) al_load_function("alEffectfv");
+		v_alGetEffectf = (ALGETEFFECTF) al_load_function("alGetEffectf");
 
 		v_alGenAuxiliaryEffectSlots = (ALGENAUXILIARYEFFECTSLOTS) al_load_function("alGenAuxiliaryEffectSlots");
 		v_alDeleteAuxiliaryEffectSlots = (ALDELETEAUXILIARYEFFECTSLOTS) al_load_function("alDeleteAuxiliaryEffectSlots");
@@ -2057,11 +2402,17 @@ int ds_eax_init()
 		return -1;
 	}
 
-	ds_eax_set_all(EAX_ENVIRONMENT_GENERIC, 0.0f, 0.0f, 0.0f);
+	// add default presets
+	EFX_presets.reserve(EAX_ENVIRONMENT_COUNT);
+
+	for (int i = 0; i < EAX_ENVIRONMENT_COUNT; i++) {
+		EFX_presets.push_back( EFX_Reverb_Defaults[i] );
+	}
 
 	Ds_eax_inited = 1;
 
-	mprintf(( "  Using extension \"ALC_EXT_EFX\".\n" ));
+	// disabled by default
+	ds_eax_set_all(EAX_ENVIRONMENT_GENERIC, 0.0f, 0.0f, 0.0f);
 
 	return 0;
 }

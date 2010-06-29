@@ -1905,6 +1905,10 @@
 			Name="Math"
 			>
 			<File
+				RelativePath="..\..\code\math\bitarray.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\Math\fix.cpp"
 				>
 			</File>
@@ -3598,18 +3602,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\iff_defs\iff_defs.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="VCodec"
-			>
-			<File
-				RelativePath="..\..\code\vcodec\codec1.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\vcodec\codec1.h"
 				>
 			</File>
 		</Filter>

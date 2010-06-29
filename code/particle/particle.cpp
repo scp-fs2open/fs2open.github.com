@@ -263,7 +263,11 @@ void particle_move_all(float frametime)
 		return;
 
 	for (SCP_vector<particle>::iterator p = Particles.begin(); p != Particles.end(); ) {
-		p->age += frametime;
+		if (p->age == 0.0f) {
+			p->age = 0.00001f;
+		} else {
+			p->age += frametime;
+		}
 
 		// if it's time expired, remove it
 		if (p->age > p->max_life) {
@@ -356,12 +360,21 @@ void particle_render_all()
 
 	for (SCP_vector<particle>::iterator p = Particles.begin(); p != Particles.end(); ++p) {
 		// skip back-facing particles (ripped from fullneb code)
-		if ( vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p->pos) <= 0.0f ) {
+		// Wanderer - add support for attached particles
+		vec3d p_pos;
+		if (p->attached_objnum >= 0) {
+			vm_vec_unrotate(&p_pos, &p->pos, &Objects[p->attached_objnum].orient);
+			vm_vec_add2(&p_pos, &Objects[p->attached_objnum].pos);
+		} else {
+			p_pos = p->pos;
+		}
+
+		if ( vm_vec_dot_to_point(&Eye_matrix.vec.fvec, &Eye_position, &p_pos) <= 0.0f ) {
 			continue;
 		}
 
 		// calculate the alpha to draw at
-		alpha = get_current_alpha(&p->pos);
+		alpha = get_current_alpha(&p_pos);
 
 		// if it's transparent then just skip it
 		if (alpha <= 0.0f) {
@@ -373,7 +386,7 @@ void particle_render_all()
 
 		// if this is a tracer style particle, calculate tracer vectors
 		if (p->tracer_length > 0.0f) {
-			ts = p->pos;
+			ts = p_pos;
 			temp = p->velocity;
 			vm_vec_normalize_quick(&temp);
 			vm_vec_scale_add(&te, &ts, &temp, p->tracer_length);
@@ -381,37 +394,17 @@ void particle_render_all()
 			// don't bother rotating
 			rotate = 0;
 		}
-		// if this is an "attached" particle. move it
-		else if (p->attached_objnum >= 0) {
-			// offset the vector, and transform to view coords
-			// vm_vec_add(&te, &Objects[p->attached_objnum].pos, &p->pos);
-
-			vm_vec_unrotate(&temp, &p->pos, &Objects[p->attached_objnum].orient);
-			vm_vec_add2(&temp, &Objects[p->attached_objnum].pos);
-
-			flags = g3_rotate_vertex(&pos, &temp);
-
-			if (flags) {
-				continue;
-			}
-
-			if (!Cmdline_nohtl)
-				g3_transfer_vertex(&pos, &temp);
-
-			// don't bother rotating again
-			rotate = 0;
-		}
 
 		// rotate the vertex
 		if (rotate) {
-			flags = g3_rotate_vertex( &pos, &p->pos );
+			flags = g3_rotate_vertex( &pos, &p_pos );
 
 			if ( flags ) {
 				continue;
 			}
 
 			if (!Cmdline_nohtl)
-				g3_transfer_vertex(&pos, &p->pos);
+				g3_transfer_vertex(&pos, &p_pos);
 		}
 
 		// pct complete for the particle
@@ -429,7 +422,7 @@ void particle_render_all()
 
 		if (p->type == PARTICLE_DEBUG) {
 			gr_set_color( 255, 0, 0 );
-			g3_draw_sphere_ez( &p->pos, p->radius );
+			g3_draw_sphere_ez( &p_pos, p->radius );
 		} else {
 			framenum = p->optional_data;
 

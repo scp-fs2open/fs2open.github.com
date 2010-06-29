@@ -312,7 +312,11 @@ void radar_plot_object_orb( object *objp )
 		return;
 	}
 
-	vm_vec_normalize(&pos);
+	if (IS_VEC_NULL_SQ_SAFE(&pos)) {
+			vm_vec_make(&pos, 1.0f, 0.0f, 0.0f);
+	} else {
+			vm_vec_normalize(&pos);
+	}
 
 	float scale = dist / Radar_bright_range;
 	if (scale > 1.25f) scale = 1.25f;

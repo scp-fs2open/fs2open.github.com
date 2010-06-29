@@ -1584,7 +1584,7 @@ void asteroid_update_collide_flag(object *asteroid_objp)
 	asp->collide_objsig = -1;
 
 	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return;
 	}
 

@@ -704,6 +704,9 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 					//	ship_stop_fire_primary(Pl_objp);
 					}
 				}
+			}
+
+			if (tswp->num_secondary_banks > 0) {
 
 				int	priority1, priority2;
 
@@ -787,7 +790,10 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 			}
 		}
 	} else {
-		aip->time_enemy_in_range *= (1.0f - flFrametime);
+		if (flFrametime < 1.0f)
+			aip->time_enemy_in_range *= (1.0f - flFrametime);
+		else
+			aip->time_enemy_in_range = 0;
 	}
 
 	if(has_fired == -1){	//stuff that hapens when the ship stops fireing
@@ -1094,8 +1100,12 @@ void ai_big_chase()
 	//				 a big ship
 	if (aip->mode != AIM_EVADE && aip->path_start == -1 ) {
 		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy, &player_pos, &predicted_enemy_pos, &En_objp->phys_info.vel);
-	} else
-		aip->time_enemy_in_range *= (1.0f - flFrametime);
+	} else {
+		if (flFrametime < 1.0f)
+			aip->time_enemy_in_range *= (1.0f - flFrametime);
+		else
+			aip->time_enemy_in_range = 0;
+	}
 }
 
 void ai_big_ship(object *objp)
@@ -1151,9 +1161,13 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.
-		pnt = po->gun_banks[0].pnt[0];
-		vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
-		vm_vec_add2(&gun_pos, &Pl_objp->pos);
+		if (po->n_guns > 0) {
+			pnt = po->gun_banks[0].pnt[0];
+			vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
+			vm_vec_add2(&gun_pos, &Pl_objp->pos);
+		} else {
+			gun_pos = Pl_objp->pos;
+		}
 		weapon_speed = ai_get_weapon_speed(&shipp->weapons);
 		
 		set_predicted_enemy_pos_turret(&predicted_enemy_pos, &gun_pos, Pl_objp, enemy_pos, &En_objp->phys_info.vel, weapon_speed, aip->time_enemy_in_range);
@@ -1417,7 +1431,7 @@ void ai_big_strafe_glide_attack()
 	if (aip->submode_parm1 == 1) {
 		accelerate_ship(aip, 1.0f);
 		//Use afterburners if we have them and are pointed the right way
-		if (dot_to_goal > 0.99f && ai_maybe_fire_afterburner(Pl_objp, aip)) {
+		if (dot_to_goal > 0.99f) {
 			afterburners_start(Pl_objp);
 			aip->afterburner_stop_time = Missiontime + 3*F1_0;
 		}

@@ -28,6 +28,7 @@ END_EVENT_TABLE()
 dlgDebriefingEditor::dlgDebriefingEditor(wxWindow *parent)
 	: wxDialog()
 {
+	wxInitAllImageHandlers();
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgDebriefingEditor");
 }
 

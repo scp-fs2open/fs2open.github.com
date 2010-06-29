@@ -43,6 +43,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
 #include "graphics/gropenglshader.h"
+#include "sound/ds.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -867,8 +868,9 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_INTEL:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, this one is deprecated 
+							// unlike the above operators, these are deprecated 
 							case OP_HITS_LEFT_SUBSYSTEM:
+							case OP_CUTSCENES_SHOW_SUBTITLE:
 								j = Num_op_menus;	// don't allow these operators to be visible
 								break;
 						}
@@ -904,8 +906,9 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_INTEL:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, this one is deprecated 
+							// unlike the above operators, these are deprecated 
 							case OP_HITS_LEFT_SUBSYSTEM:
+							case OP_CUTSCENES_SHOW_SUBTITLE:
 								j = Num_submenus;	// don't allow these operators to be visible
 								break;
 						}
@@ -1145,7 +1148,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			// modify string or number if (modify_variable)
-			if ( Operators[op].value == OP_MODIFY_VARIABLE || Operators[op].value == OP_SET_VARIABLE_BY_INDEX ) {
+			if ( Operators[op].value == OP_MODIFY_VARIABLE ) {
 				int modify_type = get_modify_variable_type(parent);
 
 				if (modify_type == OPF_NUMBER) {
@@ -1153,6 +1156,24 @@ void sexp_tree::right_clicked(int mode)
 					menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
 				}
 				// no change for string type
+			}
+			else if ( Operators[op].value == OP_SET_VARIABLE_BY_INDEX ) {
+				// it depends on which argument we are modifying
+				// first argument is always a number
+				if (Replace_count == 0) {
+					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+					menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
+				}
+				// second argument could be anything
+				else {
+					int modify_type = get_modify_variable_type(parent);
+
+					if (modify_type == OPF_NUMBER) {
+						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
+					}
+					// no change for string type
+				}
 			}
 
 			list->destroy();
@@ -2553,6 +2574,9 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<persona name>";
 			break;
 
+		case OPF_FONT:
+			str = Fonts[0].filename;
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -2632,6 +2656,11 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPES:
+		case OPF_FONT:
+		case OPF_HUD_ELEMENT:
+		case OPF_SOUND_ENVIRONMENT:
+		case OPF_SOUND_ENVIRONMENT_OPTION:
+		case OPF_EXPLOSION_OPTION:
 			return 1;
 
 		case OPF_SHIP:
@@ -3136,19 +3165,26 @@ void get_variable_name_from_sexp_tree_node_text(const char *text, char *var_name
 
 int sexp_tree::get_modify_variable_type(int parent)
 {
-	Assert(parent >= 0);
 	int sexp_var_index = -1;
+
+	Assert(parent >= 0);
 	int op_const = get_operator_const(tree_nodes[parent].text);
 
+	Assert(tree_nodes[parent].child >= 0);
+	char *node_text = tree_nodes[tree_nodes[parent].child].text;
+
 	if ( op_const == OP_MODIFY_VARIABLE ) {
-		Assert(tree_nodes[parent].child >= 0);
-		sexp_var_index = get_tree_name_to_sexp_variable_index(tree_nodes[tree_nodes[parent].child].text);
+		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);
 		Assert(sexp_var_index >= 0);
-	} else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
-		Assert(tree_nodes[parent].child != -1);
-		if (can_construe_as_integer(tree_nodes[tree_nodes[parent].child].text)) {
-			sexp_var_index = atoi(tree_nodes[tree_nodes[parent].child].text);
+	}
+	else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
+		if (can_construe_as_integer(node_text)) {
+			sexp_var_index = atoi(node_text);
 			Assert(sexp_var_index >= 0);
+		}
+		else if (strchr(node_text, '(') && strchr(node_text, ')')) {
+			// the variable index is itself a variable!
+			return OPF_AMBIGUOUS;
 		}
 	} else {
 		Int3();  // should not be called otherwise
@@ -4318,6 +4354,26 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_post_effect();
 			break;
 
+		case OPF_FONT:
+			list = get_listing_opf_font();
+			break;
+
+		case OPF_HUD_ELEMENT:
+			list = get_listing_opf_hud_elements();
+			break;
+
+		case OPF_SOUND_ENVIRONMENT:
+			list = get_listing_opf_sound_environment();
+			break;
+
+		case OPF_SOUND_ENVIRONMENT_OPTION:
+			list = get_listing_opf_sound_environment_option();
+			break;
+
+		case OPF_EXPLOSION_OPTION:
+			list = get_listing_opf_explosion_option();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5116,6 +5172,18 @@ sexp_list_item *sexp_tree::get_listing_opf_persona()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_font()
+{
+	int i;
+	sexp_list_item head;
+
+	for (i = 0; i < Num_fonts; i++) {
+		head.add_data(Fonts[i].filename);
+	}
+
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_listing_opf_who_from()
 {
 	object *ptr;
@@ -5144,6 +5212,40 @@ sexp_list_item *sexp_tree::get_listing_opf_priority()
 	head.add_data("High");
 	head.add_data("Normal");
 	head.add_data("Low");
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_sound_environment()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+	for (int i = 0; i  < EFX_presets.size(); i++) {
+		// ugh
+		char *text = const_cast<char*>(EFX_presets[i].name.c_str());
+		head.add_data(text);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_sound_environment_option()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_sound_environment_options; i++)
+		head.add_data(Sound_environment_option[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_explosion_option()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_explosion_options; i++)
+		head.add_data(Explosion_option[i]);
+
 	return head.next;
 }
 
@@ -5567,7 +5669,7 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_storm_type()
 	sexp_list_item head;
 	int i;
 
-	head.add_data("none");
+	head.add_data(SEXP_NONE_STRING);
 
 	for (i=0; i < Num_storm_types; i++)
 	{
@@ -5632,6 +5734,14 @@ sexp_list_item *sexp_tree::get_listing_opf_armor_types()
 	head.add_data(SEXP_NONE_STRING);
 	for (t=0; t<Armor_types.size(); t++)
 		head.add_data(Armor_types[t].GetNamePtr());
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_hud_elements()
+{
+	sexp_list_item head;
+	head.add_data("warpout");
 
 	return head.next;
 }

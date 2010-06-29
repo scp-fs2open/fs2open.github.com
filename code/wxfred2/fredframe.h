@@ -9,11 +9,13 @@
 #ifndef _FREDFRAME_H
 #define _FREDFRAME_H
 
+#include "mission.h"
+
 class FREDFrame : public wxFrame
 {
 	public:
 		// constructor/destructors
-		FREDFrame(const wxChar *title, int xpos, int ypos, int width, int height);
+		FREDFrame(const wxChar *title, int xpos, int ypos, int width, int height, wxFREDMission* current_Mission);
 		~FREDFrame();
 
 		// event handlers
@@ -31,6 +33,8 @@ class FREDFrame : public wxFrame
 		void OnEditorsVoiceActingManager(wxCommandEvent &WXUNUSED(event));
 		void OnEditorsCampaign(wxCommandEvent &WXUNUSED(event));
 		void OnHelpAboutFRED2(wxCommandEvent &WXUNUSED(event));
+
+		wxFREDMission* the_Mission;
 
 	protected:		
 		// events

@@ -53,6 +53,8 @@ int Snd_sram;								// mem (in bytes) used up by storing sounds in system memor
 float Master_sound_volume = 1.0f;	// range is 0 -> 1, used for non-music sound fx
 float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playback
 
+unsigned int SND_ENV_DEFAULT = 0;
+
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
 #define	MIN_SOUND_VOLUME				0.05f
 
@@ -93,7 +95,7 @@ void snd_clear()
 // returns:     1		=> init success
 //              0		=> init failed
 //
-int snd_init(int use_eax, unsigned int sample_rate)
+int snd_init()
 {
 	int rval;
 
@@ -108,20 +110,12 @@ int snd_init(int use_eax, unsigned int sample_rate)
 	snd_clear();
 
 
-	rval = ds_init(use_eax, sample_rate);
+	rval = ds_init();
 
 	if ( rval != 0 ) {
 		nprintf(( "Sound", "SOUND ==> Fatal error initializing audio device, turn sound off.\n" ));
 		Cmdline_freespace_no_sound = Cmdline_freespace_no_music = 1;
 		goto Failure;
-	}
-
-
-	// Init the Audio Compression Manager
-	if ( ACM_init() == -1 ) {
-		HWND hwnd = (HWND)os_get_window();
-		MessageBox(hwnd, XSTR("Could not properly initialize the Microsoft ADPCM codec.\n\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.",972), NULL, MB_OK);
-//		Warning(LOCATION, "Could not properly initialize the Microsoft ADPCM codec.\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.");
 	}
 
 	if ( OGG_init() == -1 ) {
@@ -309,7 +303,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	// ok, we got it, so set the proper filename for logging purposes
 	strcat_s(filename, audio_ext[rc]);
 
-
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
 		nprintf(("Sound", "Could not read sound file %s\n", filename));
@@ -323,11 +316,17 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
 	si->n_block_align		= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
 	si->bits				= header->wBitsPerSample;	// Read 16-bit bits per sample	
-	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));
 
 	type = 0;
 
+	if (gs->flags & GAME_SND_USE_DS3D) {
+		type |= DS_3D;
+	}
+
 	rc = ds_load_buffer(&snd->sid, &snd->uncompressed_size, header, si, type);
+
+	// NOTE: "si" values can change once loaded in the buffer
+	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));
 
 	// free the header if needed
 	if (header != NULL)
@@ -414,7 +413,6 @@ void snd_close(void)
 	snd_stop_all();
 	if (!ds_initialized) return;
 	snd_unload_all();		// free the sound data stored in DirectSound secondary buffers
-	ACM_close();	// Close the Audio Compression Manager (ACM)
 	dscap_close();	// Close DirectSoundCapture
 	ds_close();		// Close DirectSound off
 }
@@ -432,6 +430,10 @@ int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
 {
 	game_snd gs;
 	int		rval;
+
+	if ( (soundnum < 0) || ((size_t)soundnum >= Sounds.size() ) ) {
+		return -1;
+	}
 
 	gs.id = soundnum;
 	gs.id_sig = Sounds[soundnum].sig;
@@ -620,15 +622,11 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 		return -1;
 	}
 
-	bool play_2d = (Cmdline_no_3d_sound == 1);
+	// any stereo sounds will not play in proper 3D, but they should have
+	// been converted to mono already!
+	Assert( snd->info.n_channels == 1 );
 
-	// any stereo sounds will not play in proper 3D
-	if (snd->info.n_channels != 1) {
-		mprintf(("WARNING:  Attemping to play non-mono sound in 3D!! (%s)\n", snd->filename));
-		play_2d = true;
-	}
-
-	if (play_2d) {
+	if (Cmdline_no_3d_sound) {
 		if (distance <= 0.0f) {
 			pan = 0.0f;
 		} else {
@@ -1267,7 +1265,7 @@ int snd_time_remaining(int handle)
 
 // snd_env_ interface
 
-static unsigned long Sound_env_id;
+static int Sound_env_id;
 static float Sound_env_volume;
 static float Sound_env_damping;
 static float Sound_env_decay;
@@ -1289,12 +1287,12 @@ int sound_env_set(sound_env *se)
 
 // Get the sound environment
 //
-int sound_env_get(sound_env *se)
+int sound_env_get(sound_env *se, int preset)
 {
 	EAX_REVERBPROPERTIES er;
 
-	if (ds_eax_get_all(&er) == 0) {
-		se->id = er.environment;
+	if (ds_eax_get_all(&er, preset) == 0) {
+		se->id = (int)er.environment;
 		se->volume = er.fVolume;
 		se->decay = er.fDecayTime_sec;
 		se->damping = er.fDamping;
@@ -1309,7 +1307,7 @@ int sound_env_get(sound_env *se)
 int sound_env_disable()
 {
 	sound_env se;
-	se.id = SND_ENV_GENERIC;
+	se.id = EAX_ENVIRONMENT_GENERIC;
 	se.volume = 0.0f;
 	se.damping = 0.0f;
 	se.decay = 0.0f;

@@ -877,7 +877,7 @@ void brief_init()
 	}
 
 	// get a pointer to the appropriate briefing structure
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Briefing = &Briefings[Net_player->p_info.team];
 	} else {
 		Briefing = &Briefings[0];
@@ -1302,8 +1302,7 @@ int brief_setup_closeup(brief_icon *bi)
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
 		// Goober5000 - wcsaga doesn't want this
-		if (!Cmdline_wcsaga && sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN))
-		{
+		if (Ship_types[sip->class_type].hud_bools & STI_HUD_NO_CLASS_DISPLAY ) {
 			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
 

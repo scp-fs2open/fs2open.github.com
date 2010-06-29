@@ -51,7 +51,7 @@ typedef struct game_snd
 
 typedef struct sound_env
 {
-	unsigned long id;
+	int id;
 	float volume;
 	float damping;
 	float decay;
@@ -122,7 +122,7 @@ int snd_get_duration(int snd_id);
 // get a 3D vol and pan for a particular sound
 int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f, float range_factor=1.0f);
 
-int	snd_init(int use_eax, unsigned int sample_rate);
+int	snd_init();
 void	snd_close();
 
 // Return 1 or 0 to show that sound system is inited ok
@@ -151,38 +151,12 @@ int snd_get_samples_per_measure(char *filename, float num_measures);
 
 // sound environment
 
-enum
-{
-    SND_ENV_GENERIC,
-    SND_ENV_PADDEDCELL,
-    SND_ENV_ROOM,
-    SND_ENV_BATHROOM,
-    SND_ENV_LIVINGROOM,
-    SND_ENV_STONEROOM,
-    SND_ENV_AUDITORIUM,
-    SND_ENV_CONCERTHALL,
-    SND_ENV_CAVE,
-    SND_ENV_ARENA,
-    SND_ENV_HANGAR,
-    SND_ENV_CARPETEDHALLWAY,
-    SND_ENV_HALLWAY,
-    SND_ENV_STONECORRIDOR,
-    SND_ENV_ALLEY,
-    SND_ENV_FOREST,
-    SND_ENV_CITY,
-    SND_ENV_MOUNTAINS,
-    SND_ENV_QUARRY,
-    SND_ENV_PLAIN,
-    SND_ENV_PARKINGLOT,
-    SND_ENV_SEWERPIPE,
-    SND_ENV_UNDERWATER,
-    SND_ENV_DRUGGED,
-    SND_ENV_DIZZY,
-    SND_ENV_PSYCHOTIC
-};
+
+extern unsigned int SND_ENV_DEFAULT;
+
 
 int sound_env_set(sound_env *se);
-int sound_env_get(sound_env *se);
+int sound_env_get(sound_env *se, int preset = -1);
 int sound_env_disable();
 int sound_env_supported();
 

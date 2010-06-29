@@ -1371,7 +1371,8 @@ void parse_menumusic()
 	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_EXT, exts) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
-	Num_music_files++;	
+	if (!nocreate)
+		Num_music_files++;	
 }
 
 // -------------------------------------------------------------------------------------------------

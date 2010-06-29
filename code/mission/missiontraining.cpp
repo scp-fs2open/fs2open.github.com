@@ -74,6 +74,7 @@ typedef struct {
 char Training_buf[TRAINING_MESSAGE_LENGTH];
 char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
 char Training_voice_filename[NAME_LENGTH];
+int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
 int Training_message_timestamp;
 int Training_line_sizes[MAX_TRAINING_MESSAGE_LINES];
 int Training_message_method = 1;
@@ -173,8 +174,8 @@ void training_obj_display()
 
 	offset = 0;
 	end = Training_obj_num_lines;
-	if (end > TRAINING_OBJ_DISPLAY_LINES) {
-		end = TRAINING_OBJ_DISPLAY_LINES;
+	if (end > Max_directives) {
+		end = Max_directives;
 		offset = Training_obj_num_lines - end;
 	}
 
@@ -211,7 +212,7 @@ void training_obj_display()
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
-			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+			if(MULTI_TEAM && (Net_player != NULL)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
@@ -302,6 +303,9 @@ void training_mission_init()
 	Training_obj_num_lines = 0;
 	Training_message_queue_count = 0;
 	Training_failure = 0;
+	if (Max_directives > TRAINING_OBJ_LINES) {
+		Max_directives = TRAINING_OBJ_LINES;
+	}
 	for (i=0; i<TRAINING_OBJ_LINES; i++)
 		Training_obj_lines[i] = -1;
 
@@ -361,7 +365,7 @@ void sort_training_objectives()
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines
-	offset = Training_obj_num_lines - TRAINING_OBJ_DISPLAY_LINES;
+	offset = Training_obj_num_lines - Max_directives;
 
 	if (offset <= 0) {
 		return;
@@ -373,7 +377,7 @@ void sort_training_objectives()
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
 				continue ;
 			}
@@ -409,7 +413,7 @@ void sort_training_objectives()
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 				continue ;
@@ -447,7 +451,7 @@ void sort_training_objectives()
 
 		// find first slot that can be bumped
 		// look at the last (N-4 to N) positions
-		for (slot_idx=0; slot_idx<TRAINING_OBJ_DISPLAY_LINES; slot_idx++) {
+		for (slot_idx=0; slot_idx<Max_directives; slot_idx++) {
 			if ( Training_obj_lines[i+offset] & TRAINING_OBJ_STATUS_KNOWN ) {
 				break;
 			}
@@ -785,6 +789,8 @@ void message_training_setup(int m, int length, char *special_message)
 	training_process_message(Training_buf);
 	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 
+	Assert( Training_num_lines >= 0 );
+
 	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
 		if (length > 0)
 			Training_message_timestamp = timestamp(length * 1000);
@@ -853,20 +859,25 @@ void message_training_queue(char *text, int timestamp, int length)
 
 // Goober5000 - removes current message from the queue
 void message_training_remove_from_queue(int idx)
-{	
-	Training_message_queue[idx].length = -1;
-	Training_message_queue[idx].num = -1;
-	Training_message_queue[idx].timestamp = -1;
-
+{
+	// we're overwriting all messages with the next message, but to
+	// avoid memory leaks, we should free the special message entry
 	if (Training_message_queue[idx].special_message != NULL)
 	{
 		vm_free(Training_message_queue[idx].special_message);
 		Training_message_queue[idx].special_message = NULL;
 	}
 
+	// replace current message with the one above it, etc.
 	for (int j=idx+1; j<Training_message_queue_count; j++)
 		Training_message_queue[j - 1] = Training_message_queue[j];
+
+	// delete the topmost message
 	Training_message_queue_count--;
+	Training_message_queue[Training_message_queue_count].length = -1;
+	Training_message_queue[Training_message_queue_count].num = -1;
+	Training_message_queue[Training_message_queue_count].timestamp = -1;
+	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
 }
 
 // check the training message queue to see if we should play a new message yet or not.
@@ -917,18 +928,16 @@ void message_training_display()
 		return;
 	}
 
-	// next two lines moved to message_training_setup() - taylor
-//	training_process_message(Training_buf);
-//	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
-
-	Assert(Training_num_lines > 0);
-	for (i=0; i<Training_num_lines; i++) {
-		Training_lines[i][Training_line_sizes[i]] = 0;
-		drop_leading_white_space(Training_lines[i]);
-	}
+	// the code that preps the training message and counts the number of lines
+	// has been moved to message_training_setup()
 
 	if (Training_num_lines <= 0){
 		return;
+	}
+
+	for (i=0; i<Training_num_lines; i++) {
+		Training_lines[i][Training_line_sizes[i]] = 0;
+		drop_leading_white_space(Training_lines[i]);
 	}
 
 	height = gr_get_font_height();

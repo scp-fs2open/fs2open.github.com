@@ -195,7 +195,7 @@ void multi_respawn_player_leave(net_player *pl)
 	}
 
 	// dogfight mode
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return;
 	}	
 

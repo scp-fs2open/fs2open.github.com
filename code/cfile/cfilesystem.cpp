@@ -1168,7 +1168,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	int last_root_index = -1;
 	int last_path_index = -1;
 
-	file_list_index.reserve(Num_files);
+	file_list_index.reserve( MIN(ext_num * 4, Num_files) );
 
 	// next, run though and pick out base matches
 	for (i = 0; i < Num_files; i++) {

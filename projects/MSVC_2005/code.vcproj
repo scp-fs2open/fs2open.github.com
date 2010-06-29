@@ -2719,18 +2719,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="VCodec"
-			>
-			<File
-				RelativePath="..\..\code\VCodec\CODEC1.CPP"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\VCodec\CODEC1.H"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="Weapon"
 			>
 			<File

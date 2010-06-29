@@ -16,6 +16,7 @@
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
+#include "sound/sound.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -146,6 +147,7 @@ typedef struct mission {
 	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
+	sound_env	sound_environment;
 
 	// Goober5000
 	int	command_persona;
@@ -187,6 +189,7 @@ typedef struct mission {
 		skybox_flags = 0;
 		contrail_threshold = 0;
 		ambient_light_level = 0;
+		sound_environment.id = -1;
 		command_persona = 0;
 		command_sender[ 0 ] = '\0';
 		event_music_name[ 0 ] = '\0';
@@ -400,8 +403,17 @@ typedef struct p_object {
 	int	group;								// group object is within or -1 if none.
 	int	persona_index;
 	float	kamikaze_damage;					// base damage for a kamikaze attack
-	int	special_exp_index;
-	int special_hitpoint_index;
+
+	bool use_special_explosion;				// new special explosion/hitpoints system 
+	int special_exp_damage;
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
+	bool use_shockwave;
+	int special_exp_shockwave_speed;
+	int	special_hitpoints;
+	int	special_shield;
+
 	ushort net_signature;					// network signature this object can have
 	int destroy_before_mission_time;
 
@@ -485,8 +497,15 @@ typedef struct p_object {
 		group = 0;
 		persona_index = 0;
 		kamikaze_damage = 0.;
-		special_exp_index = 0;
-		special_hitpoint_index = 0;
+		use_special_explosion = false;
+		special_exp_damage = -1;
+		special_exp_blast = -1;
+		special_exp_inner = -1;
+		special_exp_outer = -1;
+		use_shockwave = false;
+		special_exp_shockwave_speed = -1;
+		special_hitpoints = 0;
+		special_shield = -1;
 		net_signature = 0;
 		destroy_before_mission_time = 0;
 

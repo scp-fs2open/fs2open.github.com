@@ -1843,7 +1843,7 @@ void options_multi_vox_do()
 				// attempt to get a playback handle
 				handle = multi_voice_test_get_playback_buffer();
 				if(handle != -1){
-					Om_vox_playback_handle = rtvoice_play_uncompressed(handle, Om_vox_comp_buffer, Om_vox_voice_comp_size);
+					Om_vox_playback_handle = rtvoice_play(handle, Om_vox_comp_buffer, Om_vox_voice_comp_size);
 
 					// mark us as playing back
 					Om_vox_test_status = OM_VOX_TEST_PLAYBACK;
@@ -2319,41 +2319,24 @@ void options_multi_unselect()
 }
 
 // set voice sound buffer for display
-void options_multi_set_voice_data(unsigned char *sound_buf,int buf_size,unsigned char *comp_buf, int comp_size, int uncomp_size, double gain)
+void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double gain)
 {
 	if ( (sound_buf == NULL) || (buf_size <= 0) ) {
 		return;
 	}
 
 	// copy the buffer to the vox tab data
-	if(buf_size > OM_VOX_BUF_SIZE){
-		memcpy(Om_vox_voice_buffer,sound_buf,OM_VOX_BUF_SIZE);
-		Om_vox_voice_buffer_size = OM_VOX_BUF_SIZE;
-	} else {
-		memcpy(Om_vox_voice_buffer,sound_buf,buf_size);
-		Om_vox_voice_buffer_size = buf_size;
-	}
+	Om_vox_voice_buffer_size = MIN(buf_size, OM_VOX_BUF_SIZE);
+	memcpy(Om_vox_voice_buffer, sound_buf, Om_vox_voice_buffer_size);
 
 	// copy and uncompress the compressed buffer
 	if(Om_vox_voice_comp_size == -1){
 		Om_vox_voice_comp_size = 0;
 	}
 
-	// make sure that this is actually a compressed buffer
-	// (they can point to the same place if uncompressed)
-	if ( comp_buf && (comp_buf != sound_buf) ) {
-		// if we can fit it, decompress this data
-		if((Om_vox_voice_comp_size + uncomp_size) < OM_VOX_COMP_SIZE){
-			// uncompress the data
-			rtvoice_uncompress(comp_buf, comp_size, gain, Om_vox_comp_buffer + Om_vox_voice_comp_size, uncomp_size);
-
-			Om_vox_voice_comp_size += uncomp_size;
-		}
-	} else {
-		if ( (Om_vox_voice_comp_size + Om_vox_voice_buffer_size) < OM_VOX_COMP_SIZE ) {
-			memcpy(Om_vox_comp_buffer + Om_vox_voice_comp_size, Om_vox_voice_buffer, Om_vox_voice_buffer_size);
-			Om_vox_voice_comp_size += Om_vox_voice_buffer_size;
-		}
+	if ( (Om_vox_voice_comp_size + buf_size) < OM_VOX_COMP_SIZE ) {
+		memcpy(Om_vox_comp_buffer + Om_vox_voice_comp_size, sound_buf, buf_size);
+		Om_vox_voice_comp_size += buf_size;
 	}
 }
 

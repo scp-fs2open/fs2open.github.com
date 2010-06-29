@@ -19,7 +19,6 @@
 
 #include "voiceactingmanagereditor.h"
 #include <wx/xrc/xmlres.h>
-#include "voicefilemanager.h"
 
 
 BEGIN_EVENT_TABLE(dlgVoiceActingManagerEditor, wxDialog)
@@ -38,7 +37,5 @@ dlgVoiceActingManagerEditor::~dlgVoiceActingManagerEditor()
 
 void dlgVoiceActingManagerEditor::OnGenerateFileNames(wxCommandEvent &WXUNUSED(event))
 {
-	dlgVoiceFileManager *dlg = new dlgVoiceFileManager(this);
-	dlg->ShowModal();
-	dlg->Destroy();
+	
 }

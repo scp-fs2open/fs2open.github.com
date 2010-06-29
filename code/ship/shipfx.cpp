@@ -1579,10 +1579,11 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	if((Weapon_info[weapon_info_index].wi_flags & WIF_MFLASH) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
 		// spiffy new flash stuff
 
-		vec3d real_pos;
-		vm_vec_unrotate(&real_pos, gun_pos,&objp->orient);
-		vm_vec_add2(&real_pos, &objp->pos);			
-		mflash_create(&real_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash);		
+		vec3d real_dir;
+		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);
+		//vm_vec_add2(&real_pos, &objp->pos);			
+		//mflash_create(&real_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash);		
+		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
 	}
 
 	if ( pm->num_lights < 1 ) return;
@@ -3852,18 +3853,14 @@ int WE_Default::warpStart()
 		HUD_printf(NOX("Subspace drive engaged"));
 	}
 
-	int portal_objnum;
-	if (direction == WD_WARP_IN)
-		portal_objnum = shipp->special_warpin_objnum;
-	else if (direction == WD_WARP_OUT)
-		portal_objnum = shipp->special_warpout_objnum;
-	else
-		portal_objnum = -1;
-
 	portal_objp = NULL;
-	if(portal_objnum >= 0 && shipfx_special_warp_objnum_valid(portal_objnum))
+	if ((direction == WD_WARP_IN) && shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
 	{
-		portal_objp = &Objects[portal_objnum];
+		portal_objp = &Objects[shipp->special_warpin_objnum];
+	}
+	else if ((direction == WD_WARP_OUT) && shipfx_special_warp_objnum_valid(shipp->special_warpout_objnum))
+	{
+		portal_objp = &Objects[shipp->special_warpout_objnum];
 	}
 
 	float warpout_speed = 0.0f;
@@ -3895,7 +3892,7 @@ int WE_Default::warpStart()
 	if (direction == WD_WARP_OUT)
 	{
 		// maybe special warpout
-		int fireball_type = ((portal_objp != NULL) || Cmdline_tbp) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		int fireball_type = ((portal_objp != NULL) || (sip->warpout_type == WT_KNOSSOS) || (sip->warpout_type == WT_DEFAULT_THEN_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
 		// create fireball
 		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
@@ -3903,7 +3900,7 @@ int WE_Default::warpStart()
 	else if (direction == WD_WARP_IN)
 	{
 		// maybe special warpin
-		int fireball_type = (portal_objp != NULL) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		int fireball_type = ((portal_objp != NULL) || (sip->warpin_type == WT_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
 		// create fireball
 		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
@@ -3921,6 +3918,8 @@ int WE_Default::warpStart()
 		return 0;
 	}
 
+	// G5K 6/26/2010 this should no longer be needed
+	/*
 	// maybe negate if special warp effect
 	fvec = Objects[warp_objnum].orient.vec.fvec;
 	if (portal_objp != NULL)
@@ -3933,6 +3932,7 @@ int WE_Default::warpStart()
 			vm_vec_negate(&fvec);
 		}
 	}
+	*/
 
 	stage_time_start = total_time_start = timestamp();
 	if(direction == WD_WARP_IN)
