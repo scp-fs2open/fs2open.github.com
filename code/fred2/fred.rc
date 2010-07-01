@@ -634,7 +634,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.12 RC1 OpenGL",
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.12 OpenGL",
                     IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",
                     IDC_STATIC,39,17,164,8
@@ -3147,7 +3147,7 @@ IDC_CURSOR2             CURSOR  DISCARDABLE     "res\\cursor2.cur"
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.6.12 RC1 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 3.6.12 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE DISCARDABLE 
