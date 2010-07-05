@@ -2763,7 +2763,7 @@ void beam_handle_collisions(beam *b)
 		}
 
 		if (wi->wi_flags & WIF_HUGE) {
-			if (Objects[target].type & OBJ_SHIP) {
+			if (Objects[target].type == OBJ_SHIP) {
 				ship_type_info *sti;
 				sti = ship_get_type_info(&Objects[target]);
 				if (sti->weapon_bools & STI_WEAP_NO_HUGE_IMPACT_EFF)
