@@ -15259,7 +15259,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		objp_hitter = &Objects[hitter_objnum];
 
 		// lets not check hits by ghosts any further either
-		if(objp_hitter->type & OBJ_GHOST)
+		if(objp_hitter->type == OBJ_GHOST)
 			return;
 		
 		//	Hit by a protected ship, don't attack it.
