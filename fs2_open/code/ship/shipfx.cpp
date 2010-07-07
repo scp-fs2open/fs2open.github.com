@@ -3918,10 +3918,11 @@ int WE_Default::warpStart()
 		return 0;
 	}
 
+	fvec = Objects[warp_objnum].orient.vec.fvec;
+
 	// G5K 6/26/2010 this should no longer be needed
 	/*
 	// maybe negate if special warp effect
-	fvec = Objects[warp_objnum].orient.vec.fvec;
 	if (portal_objp != NULL)
 	{
         float dot = vm_vec_dotprod(&fvec, &objp->orient.vec.fvec);
