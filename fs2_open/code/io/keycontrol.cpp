@@ -1671,13 +1671,13 @@ void game_process_keys()
 					}
 
 					//If topdown view in non-2D mission, go back to cockpit view.
-					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION)) {
+					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION) && !(Perspective_locked) ) {
 						Viewer_mode &= ~VM_TOPDOWN;
 						break;
 					}
 
 					// if in external view or chase view, go back to cockpit view
-					if ( Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP) ) {
+					if ( (Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP)) && !(Perspective_locked) ) {
 						Viewer_mode &= ~(VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP);
 						break;
 					}
