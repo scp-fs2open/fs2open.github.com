@@ -8,6 +8,7 @@
 #define _AUTOPILOT_H_
 
 #include "globalincs/pstypes.h"
+#include "object/object.h"
 #include <map>
 
 // milliseconds between updates
@@ -37,13 +38,15 @@ struct NavPoint
 };
 
 
-#define NP_NUM_MESSAGES 6
 #define NP_MSG_FAIL_NOSEL		0
 #define NP_MSG_FAIL_GLIDING		1
 #define NP_MSG_FAIL_TOCLOSE		2
 #define NP_MSG_FAIL_HOSTILES	3
 #define NP_MSG_MISC_LINKED		4
 #define NP_MSG_FAIL_HAZARD		5
+#define NP_MSG_FAIL_SUPPORT_PRESENT	6
+#define NP_MSG_FAIL_SUPPORT_WORKING 7
+#define NP_NUM_MESSAGES 8
 
 struct NavMessage
 {
@@ -62,27 +65,28 @@ extern std::map<int,int> autopilot_wings;
 bool Sel_NextNav();
 
 
-// Tell us is autopilot is allow
+// Tell us if autopilot is allowed
 // This needs:
 //        * Nav point selected
-//        * No enemies within 5,000 meters
+//        * No enemies within AutopilotMinEnemyDistance meters
+//        * No asteroids within AutopilotMinAsteroidDistance meters
 //        * Destination > 1,000 meters away
-bool CanAutopilot(bool send_msg=false);
-bool CanAutopilotPos(vec3d targetPos);
+//        * Support ship not present or is actively leaving
+bool CanAutopilot(vec3d targetPos, bool send_msg=false);
+
+// Check if autopilot is allowed at player's current position
+// See CanAutopilot(vec3d, bool) for more information
+inline bool CanAutopilot(bool send_msg=false) { return CanAutopilot(Player_obj->pos, send_msg); }
 
 // Engages autopilot
 // This does:
+//        * Checks if Autopilot is allowed.  See CanAutopilot() for conditions.
 //        * Control switched from player to AI
 //        * Time compression to 32x
 //        * Tell AI to fly to targetted Nav Point (for all nav-status wings/ships)
-//		  * Sets max waypoint speed to the best-speed of the slowest ship tagged
-void StartAutopilot();
-
-// Checks if autopilot should automatically die
-// Returns true if:
-//         * Targetted waypoint < 1,000 meters away
-//         * Enemy < 5,000 meters
-bool Autopilot_AutoDiable();
+//        * Sets max waypoint speed to the best-speed of the slowest ship tagged
+// Returns false if autopilot cannot be started. True otherwise.
+bool StartAutopilot();
 
 // Disengages autopilot
 // this does:
