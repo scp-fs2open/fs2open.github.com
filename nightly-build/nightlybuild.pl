@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.5.1
+# Nightly build script version 1.6.0
+# 1.6.0 - Added stoprevision command line support, shifted around some debug output
 # 1.5.1 - Fix problems with VS2008, to allow spaces in config names.
 # 1.5.0 - Big update to allow for building more configs and grouping them into different archives, all in the same post.
 # 1.4.4 - Grab the VC2008 pdb files by changing the regex in the config
@@ -8,7 +9,7 @@
 # 1.4.2 - fix some more issues with the export method
 # 1.4.1 - just a bit more cleanup
 # 1.4 - performs a local export before compiling for clean working dir, also checks Linux build output for error
-# 1.3.1. - checks for most directories instead of assuming they exist
+# 1.3.1 - checks for most directories instead of assuming they exist
 # 1.3 - cleans builds every compile, supports VC6 as well as VC2008, set up options in config file
 # 1.2 - added a lot of error checking, mostly making sure files exist at every step, does some output parsing for error statements
 # 1.1 - support for Linux (make) and OS X (xcodebuild), switched to ini style config
@@ -24,6 +25,7 @@ use Smf;
 use Cwd;
 use Data::Dumper;
 use File::Path;
+use Getopt::Long;
 
 my $CONFIG = Config::Tiny->new();
 $CONFIG = Config::Tiny->read("buildconfig.conf"); # Read in the ftp and forum authentication info
@@ -49,6 +51,9 @@ my %archives;
 my %md5s;
 my @archiveslist;
 my $exportpath;
+my $stoprevision = '';
+
+GetOptions ('stoprevision:s' => \$stoprevision);
 
 if(updatesvn() != 1)
 {
@@ -119,8 +124,13 @@ sub getrevision
 
 sub updatesvn
 {
+	my $rline = '';
 	my $updateoutput;
-	my $updatecommand = "svn update " . $CONFIG->{$OS}->{source_path};
+	if($stoprevision)
+	{
+		$rline = '-r ' . $stoprevision . ' ';
+	}
+	my $updatecommand = "svn update " . $rline . $CONFIG->{$OS}->{source_path};
 	
 	unless(-d $CONFIG->{$OS}->{source_path})
 	{
@@ -256,16 +266,16 @@ sub compile
 			}
 			
 			$command = $command . " 2>&1";
-#			print $command . "\n";
+			print $command . "\n";
 			$output = `$command`;
 			
 			push(@outputlist, $output);
 			
-#			print $output . "\n";
 			# TODO:  Check @outputlist for actual changes, or if it just exited without doing anything
 			if(($OS eq "OSX" && $output =~ / BUILD FAILED /) || 
 				($OS eq "WIN" && !($output =~ /0 Projects failed/)) || 
 				($OS eq "LINUX" && $output =~ / Error 1\n$/)) {
+				print $output . "\n\n";
 				print "Building " . $_ . " failed, see output for more information.\n";
 				return 0;
 			}
