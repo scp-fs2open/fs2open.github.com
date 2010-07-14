@@ -4413,7 +4413,8 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 					}
 				} else {
 					Assertion( pl_treat_as_ship_p != NULL,
-						"pl_done_p cannot be NULL while pl_treat_as_ship_p is not NULL" );
+						"pl_done_p cannot be NULL while pl_treat_as_ship_p is not NULL",
+						pl_treat_as_ship_p );
 				}
 		}
 	}
