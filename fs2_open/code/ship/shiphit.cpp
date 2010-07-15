@@ -1910,33 +1910,31 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	// apply pain to me
 
 	// Goober5000: make sure other_obj doesn't cause a read violation!
-	if (Player_obj != NULL) 
+	if (other_obj && !Ship_info[ship_obj->instance].flags2 & SIF2_NO_PAIN_FLASH)
 	{
-		if (other_obj && !(Ships[Player_obj->instance].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)))
-		{
-			// For the record, ship_hit_pain seems to simply be the red flash that appears
-			// on the screen when you're hit.
-			int special_check = !MULTIPLAYER_CLIENT;
+		// For the record, ship_hit_pain seems to simply be the red flash that appears
+		// on the screen when you're hit.
+		int special_check = !MULTIPLAYER_CLIENT;
 
-			// now the actual checks
-			if (other_obj->type == OBJ_BEAM)
+		// now the actual checks
+		if (other_obj->type == OBJ_BEAM)
+		{
+			Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
+			if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
 			{
-				Assert((beam_get_weapon_info_index(other_obj) >= 0) && (beam_get_weapon_info_index(other_obj) < Num_weapon_types));
-				if (((Weapon_info[beam_get_weapon_info_index(other_obj)].subtype != WP_LASER) || special_check) && (ship_obj == Player_obj))
-				{
-					ship_hit_pain(damage);
-				}	
-			}
-			if (other_obj->type == OBJ_WEAPON)
+				ship_hit_pain(damage);
+			}	
+		}
+		if (other_obj->type == OBJ_WEAPON)
+		{
+			Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
+			if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (Player_obj != NULL) && (ship_obj == Player_obj))
 			{
-				Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_obj->instance].weapon_info_index < Num_weapon_types));
-				if (((Weapon_info[Weapons[other_obj->instance].weapon_info_index].subtype != WP_LASER) || special_check) && (ship_obj == Player_obj))
-				{
-					ship_hit_pain(damage);
-				}
+				ship_hit_pain(damage);
 			}
-		}	// read violation sanity check
-	}
+		}
+	}	// read violation sanity check
+
 
 	// If the ship is invulnerable, do nothing
 	if (ship_obj->flags & OF_INVULNERABLE)	{
