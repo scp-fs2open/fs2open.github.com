@@ -4393,21 +4393,24 @@ void HudGaugeLeadSight::render(float frametime)
 		}
 	}
 
-	frame_offset = pickFrame(prange, srange, dist_to_target);
+	/*frame_offset = pickFrame(prange, srange, dist_to_target);
 	
 	if ( frame_offset < 0 ) {
 		return;
-	}
+	}*/
 
 	// fire it up
 	bool in_frame = g3_in_frame() > 0;
-	if(!in_frame)
+	if(!in_frame) {
 		g3_start_frame(0);
-
-	indicator_frame = Lead_sight.first_frame + frame_offset;
+	}
 
 	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderSight(indicator_frame, &target_pos, &lead_target_pos); // render the primary weapon lead sight
+	renderSight(1, &target_pos, &lead_target_pos); // render the primary weapon lead sight
+
+	if(!in_frame) {
+		g3_end_frame();
+	}
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
@@ -4417,23 +4420,31 @@ void HudGaugeLeadSight::render(float frametime)
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->wi_flags & WIF_HOMING )
+		if ( wip->wi_flags & WIF_HOMING ) {
 			return;
+		}
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
 
-		if (dist_to_target > max_dist)
+		if (dist_to_target > max_dist) {
 			return;
+		}
+	}
+
+	// fire it up
+	in_frame = g3_in_frame() > 0;
+	if(!in_frame) {
+		g3_start_frame(0);
 	}
 		
 	//give it the "in secondary range frame
-	indicator_frame = Lead_sight.first_frame;
 
 	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderSight(indicator_frame, &target_pos, &lead_target_pos); // now render the secondary weapon lead sight
+	renderSight(0, &target_pos, &lead_target_pos); // now render the secondary weapon lead sight
 
-	if(!in_frame)
+	if(!in_frame) {
 		g3_end_frame();
+	}
 }
 
 // hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
