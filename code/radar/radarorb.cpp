@@ -351,7 +351,6 @@ void HudGaugeRadarOrb::doneDrawingHtl()
 {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
-	hud_save_restore_camera_data(0);
 	resetClip();
     gr_zbuffer_set(1);
 }
