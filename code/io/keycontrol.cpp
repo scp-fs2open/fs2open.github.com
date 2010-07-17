@@ -2846,11 +2846,7 @@ int button_function(int n)
 				}
 				else
 				{
-					if (CanAutopilot(true))
-					{
-						StartAutopilot();
-					}
-					else
+					if (!StartAutopilot())
 						gamesnd_play_iface(SND_GENERAL_FAIL);
 				}
 			}
