@@ -1910,7 +1910,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	// apply pain to me
 
 	// Goober5000: make sure other_obj doesn't cause a read violation!
-	if (other_obj && !Ship_info[ship_obj->instance].flags2 & SIF2_NO_PAIN_FLASH)
+	if (other_obj && !(Ship_info[ship_obj->instance].flags2 & SIF2_NO_PAIN_FLASH))
 	{
 		// For the record, ship_hit_pain seems to simply be the red flash that appears
 		// on the screen when you're hit.
