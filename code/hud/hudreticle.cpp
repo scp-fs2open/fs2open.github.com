@@ -613,7 +613,7 @@ void HudGaugeThreatIndicator::renderLockThreat()
 }
 
 HudGaugeWeaponLinking::HudGaugeWeaponLinking():
-HudGauge(HUD_OBJECT_WEAPON_LINKING, HUD_WEAPON_LINKING_GAUGE, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_WEAPON_LINKING, HUD_THREAT_GAUGE, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -742,7 +742,7 @@ void HudGaugeWeaponLinking::render(float frametime)
 	}
 	
 	if ( gauge_index != -1 ) {
-		renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, position[0] + Weapon_link_offsets[gauge_index][0] + HUD_nose_x, position[1] + Weapon_link_offsets[gauge_index][1] + HUD_nose_y);
+		renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, position[0] + Weapon_link_offsets[gauge_index][0], position[1] + Weapon_link_offsets[gauge_index][1]);
 	}
 
 	int num_banks = swp->num_secondary_banks;
@@ -781,7 +781,7 @@ void HudGaugeWeaponLinking::render(float frametime)
 			frame_offset = swp->current_secondary_bank+1;
 		}
 
-		renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, position[0] + Weapon_link_offsets[gauge_index][0] + HUD_nose_x,  position[1] + Weapon_link_offsets[gauge_index][1] + HUD_nose_y);
+		renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, position[0] + Weapon_link_offsets[gauge_index][0],  position[1] + Weapon_link_offsets[gauge_index][1]);
 	}
 }
 
