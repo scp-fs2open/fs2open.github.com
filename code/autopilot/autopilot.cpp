@@ -729,11 +729,11 @@ bool StartAutopilot()
 
 		tpos = *Navs[CurrentNav].GetPosition();
 		// determine distance toward nav at which camera will be
-		vm_vec_sub(&pos, &tpos, &Player_obj->pos);
+		vm_vec_sub(&pos, &tpos, &Autopilot_flight_leader->pos);
 		vm_vec_normalize(&pos); // pos is now a unit vector in the direction we will be moving the camera
 		//norm1 = pos;
 		vm_vec_scale(&pos, 5*speed_cap*tc_factor); // pos is now scaled by 5 times the speed (5 seconds ahead)
-		vm_vec_add(&pos, &pos, &Player_obj->pos); // pos is now 5*speed cap in front of player ship
+		vm_vec_add(&pos, &pos, &Autopilot_flight_leader->pos); // pos is now 5*speed cap in front of player ship
 
 		switch (myrand()%24) 
 		// 8 different ways of getting perp points
@@ -1027,6 +1027,7 @@ void nav_warp(bool prewarp=false)
 	/* calcuate the speed that everyone is supposed to be going so that there
 	is no need for anyone to accelerate or decelerate (most obvious with
 	the player's fighter slowing down as it changes the camera pan speed). */
+	Assert( Ai_info[Ships[Autopilot_flight_leader->instance].ai_index].waypoint_speed_cap > 0 );
 	vm_vec_scale(&velocity, (float)Ai_info[Ships[Autopilot_flight_leader->instance].ai_index].waypoint_speed_cap);
 
 	// Find all ships that are supposed to autopilot with the player and move them
