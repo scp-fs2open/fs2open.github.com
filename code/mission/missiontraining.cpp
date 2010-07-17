@@ -918,7 +918,11 @@ void message_training_display()
 
 	Training_message_visible = 0;
 	message_training_queue_check();
-	training_obj_display();
+	
+	if ( !hud_disabled_except_messages() ) {
+		training_obj_display();
+	}
+	
 
 	if (Training_failure){
 		return;
