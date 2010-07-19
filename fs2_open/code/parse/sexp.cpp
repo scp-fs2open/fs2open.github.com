@@ -8210,7 +8210,7 @@ int sexp_is_ai_class(int n)
 	// just the ship
 	else
 	{
-		if (Ship_info[Ships[ship_num].ship_info_index].ai_class == ai_class)
+		if (Ai_info[Ships[ship_num].ai_index].ai_class == ai_class)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
