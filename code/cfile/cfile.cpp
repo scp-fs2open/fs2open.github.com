@@ -147,9 +147,14 @@ int cfile_in_root_dir(char *exe_path)
 		token_count++;
 		tok = strtok(NULL, DIR_SEPARATOR_STR);
 	} while(tok != NULL);
-		
-	// root directory if we have <= 1 slash
+	
+#ifdef SCP_UNIX
+	// /freespace works, / does not
+	if(token_count <= 1) {
+#else
+	// C:/freespace works, C:/ does not
 	if(token_count <= 2){
+#endif
 		return 1;
 	}
 
