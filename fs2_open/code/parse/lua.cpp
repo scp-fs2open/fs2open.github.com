@@ -8149,7 +8149,7 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	if(vol > 100.0f)
 		vol = 100.0f;
 
-	idx = snd_play(&Snds[idx], pan, vol*0.01f, pri, voice_msg);
+	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
 
 	return ade_set_args(L, "b", idx > -1);
 }
@@ -8160,7 +8160,7 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interf
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_play_iface(idx);
+	gamesnd_play_iface(gamesnd_get_by_iface_tbl_index(idx));
 
 	return ade_set_args(L, "b", idx > -1);
 }
