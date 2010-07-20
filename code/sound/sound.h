@@ -30,7 +30,7 @@
 
 typedef struct game_snd
 {
-	int	sig;						// number of sound in sounds.tbl (not used)
+	int	sig;						// index number of sound in as specified in sounds.tbl
 	char	filename[MAX_FILENAME_LEN];
 	float	default_volume;		// range: 0.0 -> 1.0
 	int	min, max;				// min: distance at which sound will stop getting louder  max: distance at which sound is inaudible
