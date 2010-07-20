@@ -27,6 +27,8 @@ void gamesnd_preload_common_sounds();
 void gamesnd_play_iface(int n);
 void gamesnd_play_error_beep();
 int gamesnd_get_by_name(char* name);
+int gamesnd_get_by_tbl_index(int index);
+int gamesnd_get_by_iface_tbl_index(int index);
 
 //This should handle NO_SOUND just fine since it doesn't directly access lowlevel code
 //Does all parsing for a sound
@@ -40,11 +42,8 @@ void common_play_highlight_sound();
 #define MIN_GAME_SOUNDS					202
 #define MIN_INTERFACE_SOUNDS			70
 
-extern int Num_game_sounds;
-extern int Num_iface_sounds;
-
-extern game_snd *Snds;
-extern game_snd *Snds_iface;
+extern SCP_vector<game_snd> Snds;
+extern SCP_vector<game_snd> Snds_iface;
 
 
 // symbolic names for misc. game sounds.  The order here must match the order in

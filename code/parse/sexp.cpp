@@ -8615,7 +8615,7 @@ void sexp_play_sound_from_table(int n)
 
 	// play sound effect ---------------------------
 	if (sound_index >= 0) {
-		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+		snd_play_3d( &Snds[gamesnd_get_by_tbl_index(sound_index)], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
 	}
 
 	if (MULTIPLAYER_MASTER) {
@@ -8638,9 +8638,10 @@ void multi_sexp_play_sound_from_table()
 	multi_get_float(origin.xyz.z);
 	multi_get_int(sound_index);
 
+
 	if (sound_index != -1) {
 		// play sound effect ---------------------------
-		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+		snd_play_3d( &Snds[gamesnd_get_by_tbl_index(sound_index)], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
 	}
 }
 
