@@ -13,6 +13,7 @@
 #include "localization/localize.h"
 #include "species_defs/species_defs.h"
 #include "parse/parselo.h"
+#include <limits.h>
 
 
 SCP_vector<game_snd> Snds;
