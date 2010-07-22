@@ -7,6 +7,8 @@
 // VoiceActingManager.h : header file
 //
 
+#include "mission/missionmessage.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // VoiceActingManager dialog
 
@@ -33,6 +35,7 @@ public:
 	BOOL m_export_briefings;
 	BOOL m_export_debriefings;
 	BOOL m_export_messages;
+	BOOL m_group_messages;
 	//}}AFX_DATA
 
 
@@ -52,6 +55,9 @@ protected:
 	void build_example(CString section);
 	CString generate_filename(CString section, int number, int digits);
 	char *get_message_sender(char *message);
+	void export_one_message(MMessage *message);
+	void group_message_indexes(SCP_vector<int> &message_indexes);
+	void group_message_indexes_in_tree(int node, SCP_vector<int> &source_list, SCP_vector<int> &destination_list);
 
 	CFILE *fp;
 	int fout(char *format, ...);
@@ -77,6 +83,11 @@ protected:
 	afx_msg void OnChangeNoReplace();
 	afx_msg void OnGenerateFileNames();
 	afx_msg void OnGenerateScript();
+	afx_msg void OnExportEverything();
+	afx_msg void OnExportCommandBriefings();
+	afx_msg void OnExportBriefings();
+	afx_msg void OnExportDebriefings();
+	afx_msg void OnExportMessages();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
