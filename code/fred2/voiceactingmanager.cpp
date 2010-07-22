@@ -7,9 +7,11 @@
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionmessage.h"
+#include "mission/missiongoals.h"
 #include "hud/hudtarget.h"
 #include "parse/sexp.h"
 #include "iff_defs/iff_defs.h"
+#include "mission/missiongoals.h"
 #include <math.h>
 
 #ifdef _DEBUG
@@ -28,6 +30,7 @@ char Voice_abbrev_mission[NAME_LENGTH];
 bool Voice_no_replace_filenames;
 char Voice_script_entry_format[NOTES_LENGTH];
 int Voice_export_selection;
+bool Voice_group_messages;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -52,6 +55,7 @@ VoiceActingManager::VoiceActingManager(CWnd* pParent /*=NULL*/)
 	m_export_briefings = FALSE;
 	m_export_debriefings = FALSE;
 	m_export_messages = FALSE;
+	m_group_messages = FALSE;
 	//}}AFX_DATA_INIT
 }
 
@@ -74,6 +78,7 @@ void VoiceActingManager::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EXPORT_BRIEFINGS, m_export_briefings);
 	DDX_Check(pDX, IDC_EXPORT_DEBRIEFINGS, m_export_debriefings);
 	DDX_Check(pDX, IDC_EXPORT_MESSAGES, m_export_messages);
+	DDX_Check(pDX, IDC_GROUP_MESSAGES, m_group_messages);
 	//}}AFX_DATA_MAP
 }
 
@@ -98,6 +103,11 @@ BEGIN_MESSAGE_MAP(VoiceActingManager, CDialog)
 	ON_BN_CLICKED(IDC_NO_REPLACE, OnChangeNoReplace)
 	ON_BN_CLICKED(IDC_GENERATE_FILE_NAMES, OnGenerateFileNames)
 	ON_BN_CLICKED(IDC_GENERATE_SCRIPT, OnGenerateScript)
+	ON_BN_CLICKED(IDC_EXPORT_EVERYTHING, OnExportEverything)
+	ON_BN_CLICKED(IDC_EXPORT_COMMAND_BRIEFINGS, OnExportCommandBriefings)
+	ON_BN_CLICKED(IDC_EXPORT_BRIEFINGS, OnExportBriefings)
+	ON_BN_CLICKED(IDC_EXPORT_DEBRIEFINGS, OnExportDebriefings)
+	ON_BN_CLICKED(IDC_EXPORT_MESSAGES, OnExportMessages)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -133,6 +143,10 @@ BOOL VoiceActingManager::OnInitDialog()
 		m_export_messages = TRUE;
 	else
 		m_export_everything = TRUE;
+	m_group_messages = Voice_group_messages;
+	
+	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
+	button->EnableWindow(m_export_everything || m_export_messages);
 
 	UpdateData(FALSE);
 
@@ -150,7 +164,7 @@ void VoiceActingManager::OnClose()
 	strcpy_s(Voice_abbrev_debriefing, m_abbrev_debriefing);
 	strcpy_s(Voice_abbrev_message, m_abbrev_message);
 	strcpy_s(Voice_abbrev_mission, m_abbrev_mission);
-	Voice_no_replace_filenames = m_no_replace == TRUE ? true : false;
+	Voice_no_replace_filenames = (m_no_replace == TRUE) ? true : false;
 
 	// save data for script
 	strcpy_s(Voice_script_entry_format, m_script_entry_format);
@@ -164,6 +178,7 @@ void VoiceActingManager::OnClose()
 		Voice_export_selection = 4;
 	else
 		Voice_export_selection = 0;
+	Voice_group_messages = (m_group_messages == TRUE) ? true : false;
 
 	CDialog::OnClose();
 }
@@ -402,56 +417,27 @@ void VoiceActingManager::OnGenerateScript()
 	{
 		fout("\n\nMessages\n--------\n\n");
 
-		for (i = 0; i < Num_messages - Num_builtin_messages; i++)
+		if (m_group_messages)
 		{
-			CString entry = m_script_entry_format;
-			entry.Replace("\r\n", "\n");
+			SCP_vector<int> message_indexes;
+			for (i = 0; i < Num_messages - Num_builtin_messages; i++)
+				message_indexes.push_back(i + Num_builtin_messages);
 
-			MMessage *message = &Messages[i + Num_builtin_messages];
+			group_message_indexes(message_indexes);
 
-			// replace file name
-			entry.Replace("$filename", message->wave_info.name);
-
-			// determine and replace persona
-			entry.Replace("$message", message->message);
-			if (message->persona_index >= 0)
-				entry.Replace("$persona", Personas[message->persona_index].name);
-			else
-				entry.Replace("$persona", "<none>");
-
-			// determine sender
-			char sender[NAME_LENGTH+1];
-			strcpy_s(sender, get_message_sender(message->name));
-			int shipnum = ship_name_lookup(sender);
-
-			if (shipnum >= 0)
+			for (i = 0; i < message_indexes.size(); i++)
 			{
-				ship *shipp = &Ships[shipnum];
-
-				// we may have to use the callsign
-				if (*Fred_callsigns[shipnum])
-				{
-					hud_stuff_ship_callsign(sender, shipp);
-				}
-				// account for hidden ship names
-				else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) )
-				{
-					hud_stuff_ship_class(sender, shipp);
-				}
-				// use the regular sender text
-				else
-				{
-					end_string_at_first_hash_symbol(sender);
-				}
+				MMessage *message = &Messages[message_indexes[i]];
+				export_one_message(message);
 			}
-
-			// replace sender (but print #Command as Command)
-			if (*sender == '#')
-				entry.Replace("$sender", &sender[1]);
-			else
-				entry.Replace("$sender", sender);
-
-			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
+		}
+		else
+		{
+			for (i = 0; i < Num_messages - Num_builtin_messages; i++)
+			{
+				MMessage *message = &Messages[i + Num_builtin_messages];
+				export_one_message(message);
+			}
 		}
 	}
 
@@ -459,6 +445,56 @@ void VoiceActingManager::OnGenerateScript()
 
 	// notify
 	MessageBox("Script generation complete.", "Woohoo!");
+}
+
+void VoiceActingManager::export_one_message(MMessage *message)
+{
+	CString entry = m_script_entry_format;
+	entry.Replace("\r\n", "\n");
+
+	// replace file name
+	entry.Replace("$filename", message->wave_info.name);
+
+	// determine and replace persona
+	entry.Replace("$message", message->message);
+	if (message->persona_index >= 0)
+		entry.Replace("$persona", Personas[message->persona_index].name);
+	else
+		entry.Replace("$persona", "<none>");
+
+	// determine sender
+	char sender[NAME_LENGTH+1];
+	strcpy_s(sender, get_message_sender(message->name));
+	int shipnum = ship_name_lookup(sender);
+
+	if (shipnum >= 0)
+	{
+		ship *shipp = &Ships[shipnum];
+
+		// we may have to use the callsign
+		if (*Fred_callsigns[shipnum])
+		{
+			hud_stuff_ship_callsign(sender, shipp);
+		}
+		// account for hidden ship names
+		else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) )
+		{
+			hud_stuff_ship_class(sender, shipp);
+		}
+		// use the regular sender text
+		else
+		{
+			end_string_at_first_hash_symbol(sender);
+		}
+	}
+
+	// replace sender (but print #Command as Command)
+	if (*sender == '#')
+		entry.Replace("$sender", &sender[1]);
+	else
+		entry.Replace("$sender", sender);
+
+	fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 }
 
 void VoiceActingManager::OnSetfocusAbbrevBriefing() 
@@ -666,4 +702,137 @@ char *VoiceActingManager::get_message_sender(char *message)
 	}
 
 	return "<none>";
+}
+
+void VoiceActingManager::group_message_indexes(SCP_vector<int> &message_indexes)
+{
+	int i;
+#ifndef NDEBUG
+	int initial_size = message_indexes.size();
+#endif
+
+	SCP_vector<int> temp_message_indexes = message_indexes;
+	message_indexes.clear();
+
+	// add all messages found in send-message-list or send-random-message node trees
+	for (i = 0; i < Num_mission_events; i++)
+	{
+		mission_event *event = &Mission_events[i];
+		group_message_indexes_in_tree(event->formula, temp_message_indexes, message_indexes);
+	}
+
+	// add remaining messages
+	for (i = 0; i < temp_message_indexes.size(); i++)
+		message_indexes.push_back(temp_message_indexes[i]);
+
+#ifndef NDEBUG
+	if (initial_size > message_indexes.size())
+	{
+		Warning(LOCATION, "Initial size is greater than size after sorting!");
+	}
+	else if (initial_size < message_indexes.size())
+	{
+		Warning(LOCATION, "Initial size is less than size after sorting!");
+	}
+#endif
+}
+
+void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int> &source_list, SCP_vector<int> &destination_list)
+{
+	int i, op, n;
+
+	if (node < 0)
+		return;
+	if (Sexp_nodes[node].type == SEXP_NOT_USED)
+		return;
+
+	// stuff
+	op = get_operator_const(Sexp_nodes[node].text);
+	n = CDR(node);
+
+	if (op == OP_SEND_MESSAGE_LIST)
+	{
+		// check the argument list
+		while (n != -1)
+		{
+			// the third argument is a message
+			char *message_name = Sexp_nodes[CDDR(n)].text;
+
+			// check source messages
+			for (i = 0; i < source_list.size(); i++)
+			{
+				if (!strcmp(message_name, Messages[source_list[i]].name))
+				{
+					// move it from source to destination
+					destination_list.push_back(source_list[i]);
+					source_list.erase(source_list.begin() + i);
+					break;
+				}
+			}
+
+			// iterate along the list
+			n = CDDDDR(n);
+		}
+	}
+	else if (op == OP_SEND_RANDOM_MESSAGE)
+	{
+		// check the argument list
+		n = CDDR(n);
+		while (n != -1)
+		{
+			// each argument from this point on is a message
+			char *message_name = Sexp_nodes[n].text;
+
+			// check source messages
+			for (i = 0; i < source_list.size(); i++)
+			{
+				if (!strcmp(message_name, Messages[source_list[i]].name))
+				{
+					// move it from source to destination
+					destination_list.push_back(source_list[i]);
+					source_list.erase(source_list.begin() + i);
+					break;
+				}
+			}
+
+			// iterate along the list
+			n = CDR(n);
+		}
+	}
+
+	// iterate on first element
+	group_message_indexes_in_tree(CAR(node), source_list, destination_list);
+
+	// iterate on rest of elements
+	group_message_indexes_in_tree(CDR(node), source_list, destination_list);
+}
+
+void VoiceActingManager::OnExportEverything()
+{
+	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
+	button->EnableWindow(TRUE);
+}
+
+void VoiceActingManager::OnExportCommandBriefings()
+{
+	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
+	button->EnableWindow(FALSE);
+}
+
+void VoiceActingManager::OnExportBriefings()
+{
+	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
+	button->EnableWindow(FALSE);
+}
+
+void VoiceActingManager::OnExportDebriefings()
+{
+	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
+	button->EnableWindow(FALSE);
+}
+
+void VoiceActingManager::OnExportMessages()
+{
+	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
+	button->EnableWindow(TRUE);
 }
