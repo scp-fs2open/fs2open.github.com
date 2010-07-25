@@ -14,14 +14,13 @@
 #include "species_defs/species_defs.h"
 #include "parse/parselo.h"
 #include "sound/ds.h"
+#include <limits.h>
 
 
-int Num_game_sounds = 0;
-game_snd *Snds = NULL;
+SCP_vector<game_snd> Snds;
 
-int Num_iface_sounds = 0;
-game_snd *Snds_iface = NULL;
-int *Snds_iface_handle = NULL;
+SCP_vector<game_snd> Snds_iface;
+SCP_vector<int> Snds_iface_handle;
 
 #define GAME_SND	0
 #define IFACE_SND	1
@@ -39,7 +38,8 @@ void gamesnd_play_iface(int n)
 //WMC - now ignores file extension.
 int gamesnd_get_by_name(char* name)
 {
-	for(int i = 0; i < Num_game_sounds; i++)
+	Assert( Snds.size() <= INT_MAX );
+	for(int i = 0; i < (int)Snds.size(); i++)
 	{
 		char *p = strrchr( Snds[i].filename, '.' );
 		if(p == NULL)
@@ -50,6 +50,31 @@ int gamesnd_get_by_name(char* name)
 			}
 		}
 		else if(!strnicmp(Snds[i].filename, name, p-Snds[i].filename))
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+int gamesnd_get_by_tbl_index(int index)
+{
+	Assert( Snds.size() <= INT_MAX );
+	for(int i = 0; i < (int)Snds.size(); i++) {
+		if ( Snds[i].sig == index )
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+int gamesnd_get_by_iface_tbl_index(int index)
+{
+	Assert( Snds_iface.size() <= INT_MAX );
+	Assert( Snds_iface.size() == Snds_iface_handle.size() );
+	for(int i = 0; i < (int)Snds_iface.size(); i++) {
+		if ( Snds_iface[i].sig == index )
 		{
 			return i;
 		}
@@ -74,12 +99,18 @@ void parse_sound(char* tag, int *idx_dest, char* object_name)
 		if(idx != -1)
 			(*idx_dest) = idx;
 		else
-			(*idx_dest) = atoi(buf);
-
-		//Ensure sound is in range
-		if((*idx_dest) < -1 || (*idx_dest) >= Num_game_sounds)
 		{
-			Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and %d. Forcing to -1 (Nonexistant sound).\n", tag, object_name, Num_game_sounds);
+			idx = gamesnd_get_by_tbl_index(atoi(buf));
+			if (idx != -1)
+				(*idx_dest) = idx;
+		}
+
+		Assert( Snds.size() <= INT_MAX );
+		//Ensure sound is in range
+		if((*idx_dest) < -1 || (*idx_dest) >= (int)Snds.size())
+		{
+			(*idx_dest) = -1;
+			Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and %d. Forcing to -1 (Nonexistant sound).\n", tag, object_name, Snds.size());
 		}
 	}
 }
@@ -97,7 +128,8 @@ void gamesnd_preload_common_sounds()
 	if ( !Sound_enabled )
 		return;
 
-	for ( i = 0; i < Num_game_sounds; i++ ) {
+	Assert( Snds.size() <= INT_MAX );
+	for ( i = 0; i < (int)Snds.size(); i++ ) {
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( gs->preload ) {
@@ -121,7 +153,8 @@ void gamesnd_load_gameplay_sounds()
 	if ( !Sound_enabled )
 		return;
 
-	for ( i = 0; i < Num_game_sounds; i++ ) {
+	Assert( Snds.size() <= INT_MAX );
+	for ( i = 0; i < (int)Snds.size(); i++ ) {
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( !gs->preload ) { // don't try to load anything that's already preloaded
@@ -142,7 +175,8 @@ void gamesnd_unload_gameplay_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < Num_game_sounds; i++ ) {
+	Assert( Snds.size() <= INT_MAX );
+	for ( i = 0; i < (int)Snds.size(); i++ ) {
 		gs = &Snds[i];
 		if ( gs->id != -1 ) {
 			snd_unload( gs->id );
@@ -164,7 +198,8 @@ void gamesnd_load_interface_sounds()
 	if ( !Sound_enabled )
 		return;
 
-	for ( i = 0; i < Num_iface_sounds; i++ ) {
+	Assert( Snds_iface.size() < INT_MAX );
+	for ( i = 0; i < (int)Snds_iface.size(); i++ ) {
 		gs = &Snds_iface[i];
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			gs->id = snd_load(gs);
@@ -182,7 +217,8 @@ void gamesnd_unload_interface_sounds()
 	int		i;
 	game_snd	*gs;
 
-	for ( i = 0; i < Num_iface_sounds; i++ ) {
+	Assert( Snds_iface.size() < INT_MAX );
+	for ( i = 0; i < (int)Snds_iface.size(); i++ ) {
 		gs = &Snds_iface[i];
 		if ( gs->id != -1 ) {
 			snd_unload( gs->id );
@@ -256,7 +292,8 @@ void gamesnd_parse_soundstbl()
 	// Parse the gameplay sounds section
 	required_string("#Game Sounds Start");
 	while (required_string_either("#Game Sounds End","$Name:")) {
-		Assert( num_game_sounds < Num_game_sounds);
+		Assert( Snds.size() < INT_MAX );
+		Assert( num_game_sounds < (int)Snds.size() );
 		gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
 		num_game_sounds++;
 		gamesnd_add_sound_slot( GAME_SND, num_game_sounds );
@@ -266,7 +303,8 @@ void gamesnd_parse_soundstbl()
 	// Parse the interface sounds section
 	required_string("#Interface Sounds Start");
 	while (required_string_either("#Interface Sounds End","$Name:")) {
-		Assert( num_iface_sounds < Num_iface_sounds);
+		Assert( Snds_iface_handle.size() < INT_MAX );
+		Assert( num_iface_sounds < (int)Snds_iface.size() );
 		gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
 		num_iface_sounds++;
 		gamesnd_add_sound_slot( IFACE_SND, num_iface_sounds );
@@ -467,6 +505,7 @@ void gamesnd_parse_soundstbl()
 //
 void gamesnd_init_struct(game_snd *gs)
 {
+	gs->sig = -1;
 	gs->filename[0] = 0;
 	gs->id = -1;
 	gs->id_sig = -1;
@@ -482,33 +521,26 @@ void gamesnd_init_sounds()
 {
 	int		i;
 
-	if (Snds == NULL) {
-		Snds = (game_snd *) vm_malloc (sizeof(game_snd) * MIN_GAME_SOUNDS);
-		Verify( Snds != NULL );
-		Num_game_sounds = MIN_GAME_SOUNDS;
-	}
+	Snds.clear();
+	Snds.resize(MIN_GAME_SOUNDS);
 
-	Assert( Num_game_sounds > 0 );
+	Assert( Snds.size() > 0 );
 
+	Assert( Snds.size() <= INT_MAX );
 	// init the gameplay sounds
-	for ( i = 0; i < Num_game_sounds; i++ ) {
+	for ( i = 0; i < (int)Snds.size(); i++ ) {
 		gamesnd_init_struct(&Snds[i]);
 	}
 
-	if (Snds_iface == NULL) {
-		Snds_iface = (game_snd *) vm_malloc (sizeof(game_snd) * MIN_INTERFACE_SOUNDS);
-		Verify( Snds_iface != NULL );
-		Num_iface_sounds = MIN_INTERFACE_SOUNDS;
+	Snds_iface.clear();
+	Snds_iface.resize(MIN_INTERFACE_SOUNDS);
+	Snds_iface_handle.resize(MIN_INTERFACE_SOUNDS);
+	
+	Assert( Snds_iface.size() > 0 );
 
-		Assert( Snds_iface_handle == NULL );
-		Snds_iface_handle = (int *) vm_malloc (sizeof(int) * Num_iface_sounds);
-		Verify( Snds_iface_handle != NULL );
-	}
-
-	Assert( Num_iface_sounds > 0 );
-
+	Assert( Snds_iface.size() < INT_MAX );
 	// init the interface sounds
-	for ( i = 0; i < Num_iface_sounds; i++ ) {
+	for ( i = 0; i < (int)Snds_iface.size(); i++ ) {
 		gamesnd_init_struct(&Snds_iface[i]);
 		Snds_iface_handle[i] = -1;
 	}
@@ -517,20 +549,9 @@ void gamesnd_init_sounds()
 // close out gamesnd,  ONLY CALL FROM game_shutdown()!!!!
 void gamesnd_close()
 {
-	if (Snds != NULL) {
-		vm_free(Snds);
-		Snds = NULL;
-	}
-
-	if (Snds_iface != NULL) {
-		vm_free(Snds_iface);
-		Snds_iface = NULL;
-	}
-
-	if (Snds_iface_handle != NULL) {
-		vm_free(Snds_iface_handle);
-		Snds_iface_handle = NULL;
-	}
+	Snds.clear();
+	Snds_iface.clear();
+	Snds_iface_handle.clear();
 }
 
 // callback function for the UI code to call when the mouse first goes over a button.
@@ -552,16 +573,14 @@ void gamesnd_add_sound_slot(int type, int num)
 	switch (type) {
 		case GAME_SND:
 		{
-			Assert( Snds != NULL );
-			Assert( num < (Num_game_sounds + increase_by) );
+			Assert( Snds.size() <= INT_MAX );
+			Assert( num < ((int)Snds.size() + increase_by) );
 
-			if (num >= Num_game_sounds) {
-				Snds = (game_snd *) vm_realloc (Snds, sizeof(game_snd) * (Num_game_sounds + increase_by));
-				Verify( Snds != NULL );
-				Num_game_sounds += increase_by;
+			if (num >= (int)Snds.size()) {
+				Snds.resize(Snds.size() + increase_by);
 
 				// default all new entries
-				for (i = (Num_game_sounds - increase_by); i < Num_game_sounds; i++) {
+				for (i = ((int)Snds.size() - increase_by); i < (int)Snds.size(); i++) {
 					gamesnd_init_struct(&Snds[i]);
 				}
 			}
@@ -570,20 +589,17 @@ void gamesnd_add_sound_slot(int type, int num)
 
 		case IFACE_SND:
 		{
-			Assert( Snds_iface != NULL );
-			Assert( num < (Num_game_sounds + increase_by) );
+			Assert( Snds_iface.size() < INT_MAX );
+			Assert( num < ((int)Snds_iface.size() + increase_by) );
 
-			if (num >= Num_iface_sounds) {
-				Snds_iface = (game_snd *) vm_realloc (Snds_iface, sizeof(game_snd) * (Num_iface_sounds + increase_by));
-				Verify( Snds_iface != NULL );
-				Num_iface_sounds += increase_by;
+			if (num >= (int)Snds_iface.size()) {
+				Snds_iface.resize(Snds_iface.size() + increase_by);
 
-				Assert( Snds_iface_handle != NULL );
-				Snds_iface_handle = (int *) vm_realloc (Snds_iface_handle, sizeof(int) * Num_iface_sounds);
-				Verify( Snds_iface_handle != NULL );
+				Snds_iface_handle.resize(Snds_iface.size());
+				Assert( Snds_iface.size() < INT_MAX );
 
 				// default all new entries
-				for (i = (Num_iface_sounds - increase_by); i < Num_iface_sounds; i++) {
+				for (i = ((int)Snds_iface_handle.size() - increase_by); i < (int)Snds_iface_handle.size(); i++) {
 					gamesnd_init_struct(&Snds_iface[i]);
 					Snds_iface_handle[i] = -1;
 				}

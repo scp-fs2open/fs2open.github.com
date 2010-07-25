@@ -72,6 +72,7 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
+#include "autopilot/autopilot.h"
 
 
 
@@ -283,6 +284,7 @@ flag_def_list Ship_flags[] = {
 	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
 	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
 	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
+	{ "no pain flash",				SIF2_NO_PAIN_FLASH,			1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -11883,6 +11885,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 // function which is used to find a repair ship to repair requester_obj.  the way repair ships will work
 // is:
+// if repair ship present and ordered to depart, return NULL.
 // if repair ship present and available, return pointer to that object.
 // If repair ship present and busy, possibly return that object if he can satisfy the request soon enough.
 // If repair ship present and busy and cannot satisfy request, return NULL to warp a new one in if below max number
@@ -11928,6 +11931,14 @@ object *ship_find_repair_ship( object *requester_obj )
 
 			// don't deal with dying or departing support ships
 			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
+				continue;
+			}
+
+			/* Ship has been ordered to warpout but has not had a chance to
+			process the order.*/
+			Assert( Ships[objp->instance].ai_index != -1 );
+			ai_info* aip = &(Ai_info[Ships[objp->instance].ai_index]);
+			if ( ai_find_goal_index( aip->goals, AI_GOAL_WARP ) != -1 ) {
 				continue;
 			}
 
@@ -14746,6 +14757,10 @@ void ship_page_out_textures(int ship_index, bool release)
 int is_support_allowed(object *objp)
 {
 	// check updated mission conditions to allow support
+
+	// If running under autopilot support is not allowed
+	if ( AutoPilotEngaged )
+		return 0;
 
 	// none allowed
 	if (The_mission.support_ships.max_support_ships == 0)

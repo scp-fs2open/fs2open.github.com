@@ -14,6 +14,7 @@
 #include "sound/audiostr.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
+#include "globalincs/vmallocator.h"
 
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -180,7 +181,7 @@ void snd_spew_debug_info()
 	int message_sounds = 0;
 	int interface_sounds = 0;
 	int done = 0;
-	int s_idx;
+	size_t s_idx;
 
 	if(!Sound_spew){
 		return;
@@ -195,7 +196,7 @@ void snd_spew_debug_info()
 		done = 0;
 
 		// what kind of sound is this
-		for(s_idx=0; s_idx<Num_game_sounds; s_idx++){
+		for(s_idx=0; s_idx < Snds.size(); s_idx++){
 			if(!stricmp(Snds[s_idx].filename, Sounds[idx].filename)){
 				game_sounds++;
 				done = 1;
@@ -203,7 +204,7 @@ void snd_spew_debug_info()
 		}
 
 		if(!done){
-			for(s_idx=0; s_idx<Num_game_sounds; s_idx++){
+			for(s_idx=0; s_idx < Snds.size(); s_idx++){
 				if(!stricmp(Snds_iface[s_idx].filename, Sounds[idx].filename)){
 					interface_sounds++;
 					done = 1;

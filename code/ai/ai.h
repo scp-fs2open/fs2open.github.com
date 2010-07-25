@@ -639,6 +639,7 @@ extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, i
 extern void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index );
 extern void ai_add_rearm_goal( object *requester_objp, object *support_objp );
 extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_path=0);
+extern int ai_find_goal_index( ai_goal* aigp, int mode, int submode = -1, int priority = -1 );
 
 // Goober5000
 extern void ai_do_safety(object *objp);

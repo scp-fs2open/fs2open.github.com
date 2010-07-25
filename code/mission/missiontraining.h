@@ -12,6 +12,7 @@
 
 #include "hud/hud.h"
 
+extern int Max_directives;
 extern int Training_message_method;
 extern int Training_num_lines;
 extern int Training_message_visible;

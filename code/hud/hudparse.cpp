@@ -123,6 +123,10 @@ void parse_hud_gauges_tbl(char *filename)
 	if(optional_string("$Load Retail Configuration:")) {
 		stuff_boolean(&Hud_retail);
 	}
+	
+	if(optional_string("$Max Directives:")) {
+		stuff_int(&Max_directives);
+	}
 
 	if(optional_string("$Max Escort Ships:")) {
 		stuff_int(&Max_escort_ships);

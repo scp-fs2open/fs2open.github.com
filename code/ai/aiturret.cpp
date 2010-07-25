@@ -2141,6 +2141,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_fire_weapon(valid_weapons[0], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
 				else
 					turret_fire_weapon(valid_weapons[i], ss, parent_objnum, &gpos, &tv2e, &predicted_enemy_pos);
+			} else {
+				// make sure salvo fire mode does not turn into autofire
+				if ((tp->flags & MSS_FLAG_TURRET_SALVO) && ((i + 1) == number_of_firings)) {
+					ai_info *parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
+					turret_set_next_fire_timestamp(valid_weapons[0], wip, ss, parent_aip);
+				}
 			}
 			// moved this here so we increment the fire pos only after we have fired and not during it
 			ss->turret_next_fire_pos++;
@@ -2213,14 +2219,16 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
 		vec3d of_dst;
 		vm_vec_rotate( &of_dst, v2e, &ss->world_to_turret_matrix );
-		vm_vec_normalize(&of_dst);
 		if ((of_dst.xyz.x == 0) && (of_dst.xyz.y == 0)) {
 			return true;
 		} else {
 			of_dst.xyz.z = 0;
-			// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
-			if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
-				return true;
+			if (!IS_VEC_NULL_SQ_SAFE(&of_dst)) {
+				vm_vec_normalize(&of_dst);
+				// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
+				if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
+					return true;
+			}
 		}
 	}
 	return false;

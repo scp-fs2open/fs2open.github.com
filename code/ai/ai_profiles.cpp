@@ -49,7 +49,6 @@ void set_flag(ai_profile_t *profile, char *name, int flag, int type)
 void parse_ai_profiles_tbl(char *filename)
 {
 	int i, rval;
-	bool no_create = false;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
 	char *saved_Mp = NULL;
@@ -84,6 +83,7 @@ void parse_ai_profiles_tbl(char *filename)
 	{
 		ai_profile_t *profile = &dummy_profile;
 		ai_profile_t *previous_profile = NULL;
+		bool no_create = false;
 		
 		// get the name
 		required_string("$Profile Name:");
@@ -111,7 +111,6 @@ void parse_ai_profiles_tbl(char *filename)
 		}
 		else
 		{
-			no_create = false;
 			// don't create multiple profiles with the same name
 			if (previous_profile != NULL)
 			{
@@ -393,6 +392,8 @@ void parse_ai_profiles_tbl(char *filename)
 			set_flag(profile, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
 
 			set_flag(profile, "$perform less checks for death screams:", AIPF2_PERFORM_LESS_SCREAM_CHECKS, AIP_FLAG2);
+
+			set_flag(profile, "$big ships manage shields:", AIPF2_BIG_SHIELD_MANAGE, AIP_FLAG2);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
