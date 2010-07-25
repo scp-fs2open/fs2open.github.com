@@ -398,8 +398,8 @@ typedef struct model_path {
 } model_path;
 
 typedef struct model_tmap_vert {
-	short vertnum;
-	short normnum;
+	ushort vertnum;
+	ushort normnum;
 	float u,v;
 } model_tmap_vert;
 
