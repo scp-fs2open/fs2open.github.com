@@ -17,7 +17,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="D:\FreeSpace2"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
