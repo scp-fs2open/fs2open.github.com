@@ -1809,8 +1809,8 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 						} else if (turret_weapon_has_subtype(&A->weapons, WP_LASER)) {
 							ent[num_live_turrets].type = TYPE_FACING_LASER;
 						} else {
-							Int3();
-							ent[num_live_turrets].type = TYPE_FACING_LASER;
+							//Turret not live, bail
+							continue;
 						}
 					}
 
