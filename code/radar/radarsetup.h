@@ -99,7 +99,7 @@ protected:
 	int Radar_radius[2];
 	int Radar_dist_offsets[RR_MAX_RANGES][2];
 
-	color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
+	// color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
