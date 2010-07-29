@@ -770,7 +770,7 @@ void parse_ai_class()
 
 	set_aic_flag(aicp, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
 
-	set_aic_flag(aicp, "$big ships manage shields:", AIPF2_BIG_SHIELD_MANAGE, AIP_FLAG2);
+	set_aic_flag(aicp, "$all ships manage shields:", AIPF2_ALL_SHIPS_MANAGE_SHIELDS, AIP_FLAG2);
 }
 
 void reset_ai_class_names()
@@ -12311,7 +12311,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		// set timestamp
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
-		if (sip->flags & SIF_SMALL_SHIP || (aip->ai_profile_flags2 & AIPF2_BIG_SHIELD_MANAGE)) {
+		if (sip->flags & SIF_SMALL_SHIP || (aip->ai_profile_flags2 & AIPF2_ALL_SHIPS_MANAGE_SHIELDS)) {
 			if (Missiontime - aip->last_hit_time < F1_0*10)
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else

@@ -393,7 +393,7 @@ void parse_ai_profiles_tbl(char *filename)
 
 			set_flag(profile, "$perform less checks for death screams:", AIPF2_PERFORM_LESS_SCREAM_CHECKS, AIP_FLAG2);
 
-			set_flag(profile, "$big ships manage shields:", AIPF2_BIG_SHIELD_MANAGE, AIP_FLAG2);
+			set_flag(profile, "$all ships manage shields:", AIPF2_ALL_SHIPS_MANAGE_SHIELDS, AIP_FLAG2);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

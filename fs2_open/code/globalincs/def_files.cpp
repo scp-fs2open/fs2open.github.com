@@ -990,8 +990,9 @@ $no extra collision avoidance vs player:	NO							\n\
 ;; before making it give a death scream					 				\n\
 $perform less checks for death screams:	NO								\n\
 																		\n\
-;; If set, allows shield management for large ships.					\n\
-$big ships manage shields:				NO								\n\
+;; If set, allows shield management for all ships						\n\
+;; (including capships).												\n\
+$all ships manage shields:				NO								\n\
 																		\n\
 #End																	\n\
 ";
