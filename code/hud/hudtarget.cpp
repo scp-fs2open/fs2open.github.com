@@ -6521,7 +6521,7 @@ void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *targ
 	element.flags = flags;
 
 	if(bracket_clr) {
-		gr_init_color(&element.bracket_clr, bracket_clr->red, bracket_clr->green, bracket_clr->blue);
+		element.bracket_clr = *bracket_clr;
 	} else {
 		// no color given, so this will tell the target display gauges to use IFF colors. 
 		gr_init_color(&element.bracket_clr, 0, 0, 0);
