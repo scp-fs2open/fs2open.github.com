@@ -4453,17 +4453,17 @@ void ai_waypoints()
 				aip->wp_index = 0; // go back to the start.
 			} else {
 				aip->wp_index = (wpl->count - 1); // stay on the last waypoint
-			}
-			// Log a message that the wing or ship reached his waypoint and
-			// remove the goal from the AI goals of the ship pr wing, respectively.
-			// Wether or not we should treat this as a ship or a wing is determined by
-			// ai_fly_to_target_position when it marks the AI directive as complete
-			if ( treat_as_ship ) {
-				ai_mission_goal_complete( aip );					// this call should reset the AI mode
-				mission_log_add_entry( LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, wpl->name, -1 );
-			} else {
-				ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
-				mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, wpl->name, -1 );
+				// Log a message that the wing or ship reached his waypoint and
+				// remove the goal from the AI goals of the ship pr wing, respectively.
+				// Wether or not we should treat this as a ship or a wing is determined by
+				// ai_fly_to_target_position when it marks the AI directive as complete
+				if ( treat_as_ship ) {
+					ai_mission_goal_complete( aip );					// this call should reset the AI mode
+					mission_log_add_entry( LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, wpl->name, -1 );
+				} else {
+					ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
+					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, wpl->name, -1 );
+				}
 			}
 		}
 	}
