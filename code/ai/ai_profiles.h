@@ -54,7 +54,7 @@
 #define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
 #define AIPF2_NO_SPECIAL_PLAYER_AVOID								(1 << 1)
 #define AIPF2_PERFORM_LESS_SCREAM_CHECKS							(1 << 2)
-#define AIPF2_BIG_SHIELD_MANAGE										(1 << 3)
+#define AIPF2_ALL_SHIPS_MANAGE_SHIELDS										(1 << 3)
 
 #define MAX_AI_PROFILES	5
 
