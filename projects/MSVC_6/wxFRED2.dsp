@@ -45,8 +45,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
+# SUBTRACT CPP /Z<none> /Fr
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -56,8 +56,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Release/Profile/wxFRED2.bsc" "Release\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release/wxfred2_open_trunk_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
-# SUBTRACT LINK32 /nodefaultlib
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /pdb:none /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release/wxfred2_open_trunk_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
+# SUBTRACT LINK32 /map /debug /nodefaultlib
 # Begin Custom Build - Copying build...
 ProjDir=.
 InputPath=.\Release\wxfred2_open_trunk_r.exe
@@ -134,8 +134,8 @@ BuildCmds= \
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /D "INF_BUILD" /U "_DEBUG" /YX /FD /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /I "$(WXWIN)/lib/vc_lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /D "INF_BUILD" /U "_DEBUG" /YX /FD /c
+# SUBTRACT CPP /Z<none> /Fr
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /i "../../code/wxfred2/res" /i "$(WXWIN)/include" /i "$(WXWIN)/contrib/include" /d "NDEBUG"
@@ -146,8 +146,8 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release/wxfred2_open_trunk_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
 # SUBTRACT BASE LINK32 /nodefaultlib
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release_Inferno/wxfred2_open_trunk_INF_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
-# SUBTRACT LINK32 /nodefaultlib
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /pdb:none /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release_Inferno/wxfred2_open_trunk_INF_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
+# SUBTRACT LINK32 /map /debug /nodefaultlib
 # Begin Custom Build - Copying build...
 ProjDir=.
 InputPath=.\Release_Inferno\wxfred2_open_trunk_INF_r.exe
