@@ -25,7 +25,6 @@
 #include "parse/parselo.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
-#include "asteroid/asteroid.h"
 
 
 #define MAX_DEBRIS_VCLIPS	4
@@ -2023,7 +2022,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	mprintf(( "Stars: %d\n", xt2-xt1 ));
 #endif
 
-	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris || Asteroid_field.num_initial_asteroids) )	{
+	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) )	{
 		stars_draw_debris();
 	}
 
