@@ -47,6 +47,7 @@ extern tracker_game_data Multi_tracker_game_data;
 bool fs2netd_is_online();
 
 void fs2netd_reset_connection();
+void fs2netd_disconnect();
 
 void fs2netd_close();
 
