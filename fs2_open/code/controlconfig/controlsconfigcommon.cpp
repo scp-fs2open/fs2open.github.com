@@ -183,6 +183,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, false, "Toggle Auto Pilot"},
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
 	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle Gliding"},
+	{                           KEY_O,				-1,	WEAPON_TAB, false, "Cycle Primary Weapon Firing Rate" },
 	{                           -1,					-1, -1,			 false,	"" }
 };
 
