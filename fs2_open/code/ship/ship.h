@@ -987,6 +987,18 @@ typedef struct man_thruster {
 #define WT_SWEEPER					4
 #define WT_HYPERSPACE				5
 
+// Holds variables for collision physics (Gets its own struct purely for clarity purposes)
+//Most of this only really applies properly to small ships
+typedef struct ship_collision_physics {
+	//Collision physics definitions: how a ship responds to collisions
+	float both_small_bounce;	//Bounce factor when both ships are small
+								//This currently only comes into play if one ship is the player... 
+								//blame retail for that.
+	float bounce;				//Bounce factor for all other cases
+	float friction;				//Controls lateral velocity lost when colliding with a large ship
+	float rotation_factor;		//Affects the rotational energy of collisions... TBH not sure how. 
+} ship_collision_physics;
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -1056,7 +1068,8 @@ typedef struct ship_info {
 	float		max_speed, min_speed, max_accel;
 
 	//Collision
-	int				collision_damage_type_idx;
+	int						collision_damage_type_idx;
+	ship_collision_physics	collision_physics;
 
 	// ship explosion info
 	shockwave_create_info shockwave;

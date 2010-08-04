@@ -106,8 +106,6 @@ extern void fs2netd_add_table_validation(char *tblname);
 
 //#define MIN_COLLISION_MOVE_DIST		5.0
 //#define COLLISION_VEL_CONST			0.1
-#define COLLISION_FRICTION_FACTOR	0.0		// ratio of maximum friction impulse to repulsion impulse
-#define COLLISION_ROTATION_FACTOR	1.0		// increase in rotation from collision
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
 int	Ai_render_debug_flag=0;
@@ -702,6 +700,11 @@ void init_ship_entry(ship_info *sip)
 	strcpy_s(sip->shockwave_name,"");*/
 
 	sip->collision_damage_type_idx = -1;
+	sip->collision_physics.both_small_bounce = 5.0;	//Retail default collision physics
+	sip->collision_physics.bounce = 5.0;
+	sip->collision_physics.friction = 0.0f;
+	sip->collision_physics.rotation_factor = 0.2f;
+
 	sip->debris_min_lifetime = -1.0f;
 	sip->debris_max_lifetime = -1.0f;
 	sip->debris_min_speed = -1.0f;
@@ -1332,6 +1335,27 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_int(&sip->dspew_max_particles);
 		}
 	}
+
+	if(optional_string("$Collision Physics:"))
+	{
+		if(optional_string("+Bounce:"))
+		{
+			stuff_float(&sip->collision_physics.bounce);
+		}
+		if(optional_string("+Both Small Bounce:"))
+		{
+			stuff_float(&sip->collision_physics.both_small_bounce);
+		}
+		if(optional_string("+Friction:"))
+		{
+			stuff_float(&sip->collision_physics.friction);
+		}
+		if(optional_string("+Rotation Factor:"))
+		{
+			stuff_float(&sip->collision_physics.friction);
+		}
+	}
+
 
 	if(optional_string("$Debris:"))
 	{
