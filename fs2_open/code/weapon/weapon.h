@@ -104,6 +104,8 @@ extern int Num_weapon_subtypes;
 #define WIF2_CAPITAL_PLUS				(1 << 23)   // AI will not use this weapon on fighters or bombers
 #define WIF2_EXTERNAL_WEAPON_FP			(1 << 24)	// will try to use external models FPs if possible
 #define WIF2_EXTERNAL_WEAPON_LNCH		(1 << 25)	// render external secondary as a launcher
+#define WIF2_TAKES_BLAST_DAMAGE			(1 << 26)	// This weapon can take blast damage
+#define WIF2_TAKES_SHOCKWAVE_DAMAGE		(1 << 27)	// This weapon can take shockwave damage
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
