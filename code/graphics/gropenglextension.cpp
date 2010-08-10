@@ -147,7 +147,7 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_fragment_shader" }, 0, { NULL } },
 
 	// shader version 3.0 detection extensions (if any of these extensions exist then we should have a SM3.0 compatible card, hopefully)
-	{ false, false, 3, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } }
+	{ false, false, 2, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program" }, 0, { NULL } }
 };
 
 // ogl_funcion is:
@@ -370,7 +370,7 @@ void opengl_extensions_init()
 //	}
 
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
-			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) && Is_Extension_Enabled(OGL_SM30) )
+			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) /*&& Is_Extension_Enabled(OGL_SM30)*/ )
 	{
 		Use_GLSL = 1;
 	}
