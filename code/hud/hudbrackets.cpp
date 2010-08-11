@@ -705,6 +705,13 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			Hud_target_h = gr_screen.clip_height;
 		}
 
+		if(clr->red && clr->green && clr->blue ) {
+			gr_set_color_fast(clr);
+		} else {
+			// if no specific color defined, use the IFF color.
+			hud_set_iff_color(targetp, 1);
+		}
+
 		if ( draw_box ) {
 			float distance = 0.0f; // init to 0 if we don't have to display distance
 			int target_objnum = -1;
@@ -717,25 +724,11 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 				target_objnum = OBJ_INDEX(targetp);
 			}
 
-			if(clr->red && clr->green && clr->blue ) {
-				gr_set_color_fast(clr);
-			} else {
-				// if no specific color defined, use the IFF color.
-				hud_set_iff_color(targetp, 1);
-			}
-
 			renderBoundingBrackets(x1-5, y1-5, x2+5, y2+5, w_correction, h_correction, distance, target_objnum, flags);
+		}
 
-			if ( (targetp->type == OBJ_SHIP) && (flags & TARGET_DISPLAY_SUBSYS) ) {
-				// set the screen to this gauge's resolution
-				gr_set_screen_scale(base_w, base_h);
-
-				// then we draw the brackets surrounding current subobj
-				draw_bounding_brackets_subobject();
-
-				// reset the scale to normal
-				gr_reset_screen_scale();
-			}
+		if ( (targetp->type == OBJ_SHIP) && (flags & TARGET_DISPLAY_SUBSYS) ) {
+			renderBoundingBracketsSubobject();
 		}
 	}
 }
@@ -923,4 +916,99 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 	// we're done, so bring the scale back to normal
 	gr_reset_screen_scale();
+}
+
+void HudGaugeBrackets::renderBoundingBracketsSubobject()
+{
+	if (Player_ai->targeted_subsys_parent == Player_ai->target_objnum)
+		if (Player_ai->targeted_subsys != NULL) {
+			ship_subsys	*subsys;
+			int		target_objnum;
+			object* targetp;
+			vertex subobj_vertex;
+			vec3d	subobj_pos;
+			int x1,x2,y1,y2;
+
+			subsys = Player_ai->targeted_subsys;
+			target_objnum = Player_ai->target_objnum;
+			Assert(target_objnum != -1);
+			targetp = &Objects[target_objnum];
+			Assert( targetp->type == OBJ_SHIP );
+
+			gr_set_screen_scale(base_w, base_h);
+
+			get_subsystem_world_pos(targetp, subsys, &subobj_pos);
+
+			g3_rotate_vertex(&subobj_vertex,&subobj_pos);
+
+			g3_project_vertex(&subobj_vertex);
+			if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
+				return;
+
+			int subobj_x = fl2i(subobj_vertex.sx + 0.5f);
+			int subobj_y = fl2i(subobj_vertex.sy + 0.5f);
+			int hud_subtarget_w, hud_subtarget_h, bound_rc;
+
+			bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);
+			if ( bound_rc != 0 )
+				return;
+
+			hud_subtarget_w = x2-x1+1;
+			if ( hud_subtarget_w > gr_screen.clip_width ) {
+				hud_subtarget_w = gr_screen.clip_width;
+			}
+
+			hud_subtarget_h = y2-y1+1;
+			if ( hud_subtarget_h > gr_screen.clip_height ) {
+				hud_subtarget_h = gr_screen.clip_height;
+			}
+
+			if ( hud_subtarget_w > gr_screen.max_w ) {
+				x1 = subobj_x - (gr_screen.max_w>>1);
+				x2 = subobj_x + (gr_screen.max_w>>1);
+			}
+			if ( hud_subtarget_h > gr_screen.max_h ) {
+				y1 = subobj_y - (gr_screen.max_h>>1);
+				y2 = subobj_y + (gr_screen.max_h>>1);
+			}
+
+			// *** these unsize take care of everything below ***
+			gr_unsize_screen_pos( &hud_subtarget_w, &hud_subtarget_h );
+			gr_unsize_screen_pos( &subobj_x, &subobj_y );
+			gr_unsize_screen_pos( &x1, &y1 );
+			gr_unsize_screen_pos( &x2, &y2 );
+
+			if ( hud_subtarget_w < Min_subtarget_box_width ) {
+				x1 = subobj_x - (Min_subtarget_box_width>>1);
+				x2 = subobj_x + (Min_subtarget_box_width>>1);
+			}
+			if ( hud_subtarget_h < Min_subtarget_box_height ) {
+				y1 = subobj_y - (Min_subtarget_box_height>>1);
+				y2 = subobj_y + (Min_subtarget_box_height>>1);
+			}
+
+			// determine if subsystem is on far or near side of the ship
+			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
+
+			// AL 29-3-98: If subsystem is destroyed, draw gray brackets
+			// Goober5000: this will now execute for fighterbays if the bay has been given a
+			// percentage subsystem strength in ships.tbl
+			// Goober5000: this will now execute for any subsys that takes damage and will not
+			// execute for any subsys that doesn't take damage
+			if ( (Player_ai->targeted_subsys->current_hits <= 0) && ( ship_subsys_takes_damage(Player_ai->targeted_subsys) ) ) {
+				gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
+			} else {
+				hud_set_iff_color( targetp, 1 );
+			}
+
+			if ( Player->subsys_in_view ) {
+				draw_brackets_square_quick(x1, y1, x2, y2);
+			} else {
+				draw_brackets_diamond_quick(x1, y1, x2, y2);
+			}
+			// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
+
+			// reset the scale to normal
+			gr_reset_screen_scale();
+		}
 }
