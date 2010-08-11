@@ -23631,7 +23631,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t5:  Location Y\r\n"
 		"\t6:  Location Z\r\n"
 		"\t7:  Radius\r\n"
-		"\t8:  Duration in seconds\r\n"
+		"\t8:  Duration in seconds (values smaller than 4 are ignored)\r\n"
 		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
 		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
