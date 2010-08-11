@@ -770,7 +770,7 @@ void parse_ai_class()
 
 	set_aic_flag(aicp, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
 
-	set_aic_flag(aicp, "$big ships manage shields:", AIPF2_BIG_SHIELD_MANAGE, AIP_FLAG2);
+	set_aic_flag(aicp, "$all ships manage shields:", AIPF2_ALL_SHIPS_MANAGE_SHIELDS, AIP_FLAG2);
 }
 
 void reset_ai_class_names()
@@ -4453,17 +4453,17 @@ void ai_waypoints()
 				aip->wp_index = 0; // go back to the start.
 			} else {
 				aip->wp_index = (wpl->count - 1); // stay on the last waypoint
-			}
-			// Log a message that the wing or ship reached his waypoint and
-			// remove the goal from the AI goals of the ship pr wing, respectively.
-			// Wether or not we should treat this as a ship or a wing is determined by
-			// ai_fly_to_target_position when it marks the AI directive as complete
-			if ( treat_as_ship ) {
-				ai_mission_goal_complete( aip );					// this call should reset the AI mode
-				mission_log_add_entry( LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, wpl->name, -1 );
-			} else {
-				ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
-				mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, wpl->name, -1 );
+				// Log a message that the wing or ship reached his waypoint and
+				// remove the goal from the AI goals of the ship pr wing, respectively.
+				// Wether or not we should treat this as a ship or a wing is determined by
+				// ai_fly_to_target_position when it marks the AI directive as complete
+				if ( treat_as_ship ) {
+					ai_mission_goal_complete( aip );					// this call should reset the AI mode
+					mission_log_add_entry( LOG_WAYPOINTS_DONE, Ships[Pl_objp->instance].ship_name, wpl->name, -1 );
+				} else {
+					ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
+					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, wpl->name, -1 );
+				}
 			}
 		}
 	}
@@ -12309,7 +12309,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		// set timestamp
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
-		if (sip->flags & SIF_SMALL_SHIP || (aip->ai_profile_flags2 & AIPF2_BIG_SHIELD_MANAGE)) {
+		if (sip->flags & SIF_SMALL_SHIP || (aip->ai_profile_flags2 & AIPF2_ALL_SHIPS_MANAGE_SHIELDS)) {
 			if (Missiontime - aip->last_hit_time < F1_0*10)
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else

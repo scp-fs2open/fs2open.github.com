@@ -1593,6 +1593,9 @@ void standalone_main_init()
 
 	// if this is a tracker game then we have some extra tasks to perform
 	if (MULTI_IS_TRACKER_GAME) {
+		// disconnect and prepare for reset if we are already connected
+		fs2netd_disconnect();
+
 		// login (duh!)
 		if ( fs2netd_login() ) {
 			// validate missions
@@ -1659,7 +1662,7 @@ void multi_standalone_reset_all()
 			delete_player( idx );
 		}		
 	}
-		
+
 	// make sure we go to the proper state.	
 	if(gameseq_get_state() == GS_STATE_STANDALONE_MAIN){
 		standalone_main_init();

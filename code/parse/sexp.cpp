@@ -14566,6 +14566,30 @@ void sexp_add_remove_escort(int node)
 	} else {
 		hud_remove_ship_from_escort(Ships[sindex].objnum);
 	}
+
+	multi_start_packet();
+	multi_send_int(sindex);
+	multi_send_int(flag); 
+	multi_end_packet();
+}
+
+void multi_sexp_add_remove_escort()
+{
+	int sindex;
+	int flag;
+
+	multi_get_int(sindex); 
+	if (!(multi_get_int(flag))) {
+		return;
+	}
+
+	// add/remove
+	if(flag){
+		Ships[sindex].escort_priority = flag ;	
+		hud_add_ship_to_escort(Ships[sindex].objnum, 1);
+	} else {
+		hud_remove_ship_from_escort(Ships[sindex].objnum);
+	}
 }
 
 //given: two escort priorities and a list of ships
@@ -15122,6 +15146,27 @@ void add_nav_ship(int node)
 	char *nav_name = CTEXT(node);
 	char *ship_name = CTEXT(CDR(node));
 	AddNav_Ship(nav_name, ship_name, 0);
+
+	multi_start_packet();
+	multi_send_string(nav_name);
+	multi_send_string(ship_name);
+	multi_end_packet();
+}
+
+void multi_add_nav_ship()
+{
+	char nav_name[TOKEN_LENGTH];
+	char ship_name[TOKEN_LENGTH];
+
+	if (!multi_get_string(nav_name)) {
+		return; 
+	}
+	
+	if (!multi_get_string(ship_name)) {
+		return;
+	}
+
+	AddNav_Ship(nav_name, ship_name, 0);
 }
 
 
@@ -15130,6 +15175,22 @@ void add_nav_ship(int node)
 void del_nav(int node)
 {
 	char *nav_name = CTEXT(node);
+	DelNavPoint(nav_name);
+
+	multi_start_packet();
+	multi_send_string(nav_name);
+	multi_end_packet();
+
+}
+
+void multi_del_nav()
+{
+	char nav_name[TOKEN_LENGTH];
+
+	if (!multi_get_string(nav_name)) {
+		return; 
+	}
+	
 	DelNavPoint(nav_name);
 }
 
@@ -16779,6 +16840,55 @@ void sexp_show_subtitle_text(int node)
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
+
+	multi_start_packet();
+	multi_send_int(x_pos);
+	multi_send_int(y_pos);
+	multi_send_string(text);
+	multi_send_float(display_time);
+	multi_send_float(fade_time);
+	multi_send_int(red);
+	multi_send_int(green);
+	multi_send_int(blue);
+	multi_send_int(fontnum);
+	multi_send_bool(center_x);
+	multi_send_bool(center_y);
+	multi_send_int(width);
+	multi_send_bool(post_shaded);
+	multi_end_packet();
+}
+
+void multi_sexp_show_subtitle_text()
+{
+	int x_pos, y_pos, width=0, fontnum;
+	char text[TOKEN_LENGTH];
+	float display_time, fade_time=0.0f;
+	int red=255, green=255, blue=255;
+	bool center_x=false, center_y=false;
+	int n = -1;
+	bool post_shaded = false;
+	color new_color;
+
+	multi_get_int(x_pos);
+	multi_get_int(y_pos);
+	multi_get_string(text);
+	multi_get_float(display_time);
+	multi_get_float(fade_time);
+	multi_get_int(red);
+	multi_get_int(green);
+	multi_get_int(blue);
+	multi_get_int(fontnum);
+	multi_get_bool(center_x);
+	multi_get_bool(center_y);
+	multi_get_int(width);
+	multi_get_bool(post_shaded);
+
+	gr_init_alphacolor(&new_color, red, green, blue, 255);
+
+	// add the subtitle
+	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
+	Subtitles.push_back(new_subtitle);	
+
 }
 
 void sexp_show_subtitle_image(int node)
@@ -18954,6 +19064,22 @@ void multi_sexp_eval()
 			case OP_CUTSCENES_FADE_OUT:
 				multi_sexp_fade_out();
 				break;
+
+			case OP_NAV_ADD_SHIP:
+				multi_add_nav_ship();
+				break;
+
+			case OP_NAV_DEL:
+				multi_del_nav();
+				break;
+
+			case OP_ADD_REMOVE_ESCORT:
+				multi_sexp_add_remove_escort();
+				break;
+
+			case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+				 multi_sexp_show_subtitle_text();
+				 break;
 
 			// bad sexp in the packet
 			default: 
@@ -23498,7 +23624,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t5:  Location Y\r\n"
 		"\t6:  Location Z\r\n"
 		"\t7:  Radius\r\n"
-		"\t8:  Duration in seconds\r\n"
+		"\t8:  Duration in seconds (values smaller than 4 are ignored)\r\n"
 		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
 		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
