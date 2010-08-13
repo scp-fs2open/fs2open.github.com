@@ -272,7 +272,7 @@ void HudGaugeDirectives::render(float frametime)
 	y_count = 0;
 	for (i=0; i<end; i++) {
 		x = position[0] + text_start_offsets[0];
-		y = position[1] + text_start_offsets[1] + y_count * height + height / 2 + 1;
+		y = position[1] + text_start_offsets[1] + y_count * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
 		c = &Color_normal;
@@ -351,7 +351,7 @@ void HudGaugeDirectives::render(float frametime)
 		y_count++;
 
 		if ( second_line ) {
-			y = position[1] + text_start_offsets[1] + y_count * height + height / 2 + 1;
+			y = position[1] + text_start_offsets[1] + y_count * text_h;
 			
 			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
 			// gr_printf(x+12, y, second_line);
