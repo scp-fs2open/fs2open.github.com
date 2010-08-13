@@ -3558,8 +3558,6 @@ void load_gauge_hostile_tri(int base_w, int base_h, int ship_index)
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	float Max_tri_seperation;
-	float Max_front_seperation;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3570,8 +3568,6 @@ void load_gauge_hostile_tri(int base_w, int base_h, int ship_index)
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
-		Max_tri_seperation = 10.0f;
-		Max_front_seperation = 10.0f;
 		Radius = 104;
 	} else {
 		coords[0] = 512;
@@ -3582,8 +3578,6 @@ void load_gauge_hostile_tri(int base_w, int base_h, int ship_index)
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
-		Max_tri_seperation = 16.0f;
-		Max_front_seperation = 16.0f;
 		Radius = 166;
 	}
 
@@ -3617,8 +3611,6 @@ void load_gauge_target_tri(int base_w, int base_h, int ship_index)
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	float Max_tri_seperation;
-	float Max_front_seperation;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3629,8 +3621,6 @@ void load_gauge_target_tri(int base_w, int base_h, int ship_index)
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
-		Max_tri_seperation = 10.0f;
-		Max_front_seperation = 10.0f;
 		Radius = 104;
 	} else {
 		coords[0] = 512;
@@ -3641,8 +3631,6 @@ void load_gauge_target_tri(int base_w, int base_h, int ship_index)
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
-		Max_tri_seperation = 16.0f;
-		Max_front_seperation = 16.0f;
 		Radius = 166;
 	}
 
@@ -3676,8 +3664,6 @@ void load_gauge_missile_tri(int base_w, int base_h, int ship_index)
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	float Max_tri_seperation;
-	float Max_front_seperation;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3688,8 +3674,6 @@ void load_gauge_missile_tri(int base_w, int base_h, int ship_index)
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
-		Max_tri_seperation = 10.0f;
-		Max_front_seperation = 10.0f;
 		Radius = 104;
 	} else {
 		coords[0] = 512;
@@ -3700,8 +3684,6 @@ void load_gauge_missile_tri(int base_w, int base_h, int ship_index)
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
-		Max_tri_seperation = 16.0f;
-		Max_front_seperation = 16.0f;
 		Radius = 166;
 	}
 
