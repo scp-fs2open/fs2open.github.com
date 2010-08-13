@@ -2440,12 +2440,12 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 	int Weapon_sreload_offset_x;
 	int Weapon_slinked_offset_x;
 	int Weapon_sunlinked_offset_x;
-	int start_offset_y;
-	int start_name_offset_y;
-	int primary_bg_h;
-	int primary_name_h;
-	int secondary_bg_h;
-	int secondary_name_h;
+	int top_primary_h;
+	int top_secondary_h;
+	int pname_start_offset_y;
+	int sname_start_offset_y;
+	int primary_text_h;
+	int secondary_text_h;
 
 	// thank god both GR640 and GR1024 use the same weapons gauge bitmaps
 	char fname_p_top[MAX_FILENAME_LEN] = "weapons1";
@@ -2468,65 +2468,41 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 
 		base_res[0] = 640;
 		base_res[1] = 480;
-
-		top_offset_x[0] = 12;
-		top_offset_x[1] = -12;
-
-		Weapon_header_offsets[0][0] = 21;
-		Weapon_header_offsets[0][1] = 1;
-		Weapon_header_offsets[1][0] = -10;
-		Weapon_header_offsets[1][1] = 1;
-
-		frame_offset_x[0] = 0;
-		frame_offset_x[1] = -12;
-
-		Weapon_plink_offset_x = 33;
-		Weapon_pname_offset_x = 39;
-		Weapon_pammo_offset_x = 28;
-		Weapon_sammo_offset_x = 28;
-		Weapon_sname_offset_x = 39;
-		Weapon_sreload_offset_x = 118;
-		Weapon_slinked_offset_x = 28;
-		Weapon_sunlinked_offset_x = 33;
-
-		start_offset_y = 20;
-		start_name_offset_y = 12;
 	} else {
 		coords[0] = 880;
 		coords[1] = 525;
 
 		base_res[0] = 1024;
 		base_res[1] = 768;
-
-		top_offset_x[0] = 12;
-		top_offset_x[1] = -12;
-
-		Weapon_header_offsets[0][0] = 21;
-		Weapon_header_offsets[0][1] = 2;
-		Weapon_header_offsets[1][0] = -10;
-		Weapon_header_offsets[1][1] = 2;
-
-		frame_offset_x[0] = 0;
-		frame_offset_x[1] = -12;
-		
-		Weapon_plink_offset_x = 33;
-		Weapon_pname_offset_x = 39;
-		Weapon_pammo_offset_x = 28; 
-		Weapon_sammo_offset_x = 28;
-		Weapon_sname_offset_x = 39;
-		Weapon_sreload_offset_x = 118;
-		Weapon_slinked_offset_x = 28;
-		Weapon_sunlinked_offset_x = 33;
-
-		start_offset_y = 20;
-		start_name_offset_y = 12;
 	}
 
-	primary_bg_h = 12;
-	primary_name_h = 10;
+	top_offset_x[0] = 12;
+	top_offset_x[1] = -12;
 
-	secondary_bg_h = 9;
-	secondary_name_h = 9;
+	Weapon_header_offsets[0][0] = 21;
+	Weapon_header_offsets[0][1] = 2;
+	Weapon_header_offsets[1][0] = -10;
+	Weapon_header_offsets[1][1] = 2;
+
+	frame_offset_x[0] = 0;
+	frame_offset_x[1] = -12;
+	
+	Weapon_plink_offset_x = 33;
+	Weapon_pname_offset_x = 39;
+	Weapon_pammo_offset_x = 28; 
+	Weapon_sammo_offset_x = 28;
+	Weapon_sname_offset_x = 39;
+	Weapon_sreload_offset_x = 118;
+	Weapon_slinked_offset_x = 28;
+	Weapon_sunlinked_offset_x = 33;	
+
+	top_primary_h = 20;
+	top_secondary_h = 12;
+	pname_start_offset_y = 12;
+	sname_start_offset_y = 4;
+
+	primary_text_h = 12;
+	secondary_text_h = 9;
 
 	if(check_base_res(base_w, base_h)) {
 		base_res[0] = base_w;
@@ -2550,12 +2526,11 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 	hud_gauge->initHeaderOffsets(Weapon_header_offsets[0][0], Weapon_header_offsets[0][1], 
 		Weapon_header_offsets[1][0], Weapon_header_offsets[1][1]);
 	hud_gauge->initFrameOffsetX(frame_offset_x[0], frame_offset_x[1]);
-	hud_gauge->initStartOffsetY(start_offset_y);
-	hud_gauge->initStartNameOffsetY(start_name_offset_y);
+	hud_gauge->initStartNameOffsetsY(pname_start_offset_y, sname_start_offset_y);
 	hud_gauge->initPrimaryWeaponOffsets(Weapon_plink_offset_x, Weapon_pname_offset_x, Weapon_pammo_offset_x);
 	hud_gauge->initSecondaryWeaponOffsets(Weapon_sammo_offset_x, Weapon_sname_offset_x, Weapon_sreload_offset_x, Weapon_slinked_offset_x, Weapon_sunlinked_offset_x);
-	hud_gauge->initPrimaryHeights(primary_bg_h, primary_name_h);
-	hud_gauge->initSecondaryHeights(secondary_bg_h, secondary_name_h);
+	hud_gauge->initPrimaryHeights(top_primary_h, primary_text_h);
+	hud_gauge->initSecondaryHeights(top_secondary_h, secondary_text_h);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

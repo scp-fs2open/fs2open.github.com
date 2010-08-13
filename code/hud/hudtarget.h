@@ -276,14 +276,15 @@ protected:
 	int Weapon_slinked_offset_x;
 	int Weapon_sunlinked_offset_x;
 
-	int start_offset_y;
-	int start_name_offset_y;
+	int top_primary_h;
+	int pname_start_offset_y;
 
-	int primary_bg_h;
-	int primary_name_h;
+	int top_secondary_h;
+	int sname_start_offset_y;
 
-	int secondary_bg_h;
-	int secondary_name_h; 
+	int primary_text_h;
+
+	int secondary_text_h;
 public:
 	HudGaugeWeapons();
 	void initBitmapsPrimaryTop(char *fname, char *fname_ballistic);
@@ -297,10 +298,9 @@ public:
 	void initFrameOffsetX(int x, int x_b);
 	void initPrimaryWeaponOffsets(int link_x, int name_x, int ammo_x);
 	void initSecondaryWeaponOffsets(int ammo_x, int name_x, int reload_x, int linked_x, int unlinked_x);
-	void initStartOffsetY(int y);
-	void initStartNameOffsetY(int y);
-	void initPrimaryHeights(int bg_h, int name_h);
-	void initSecondaryHeights(int bg_h, int name_h);
+	void initStartNameOffsetsY(int p_y, int s_y);
+	void initPrimaryHeights(int top_h, int text_h);
+	void initSecondaryHeights(int top_h, int text_h);
 
 	void render(float frametime);
 	void pageIn();

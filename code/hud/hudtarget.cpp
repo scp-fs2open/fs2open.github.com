@@ -6017,26 +6017,22 @@ void HudGaugeWeapons::initSecondaryWeaponOffsets(int ammo_x, int name_x, int rel
 	Weapon_sunlinked_offset_x = unlinked_x;
 }
 
-void HudGaugeWeapons::initStartOffsetY(int y)
+void HudGaugeWeapons::initStartNameOffsetsY(int p_y, int s_y)
 {
-	start_offset_y = y;
+	pname_start_offset_y = p_y;
+	sname_start_offset_y = s_y;
 }
 
-void HudGaugeWeapons::initStartNameOffsetY(int y)
+void HudGaugeWeapons::initPrimaryHeights(int top_h, int text_h)
 {
-	start_name_offset_y = y;
+	top_primary_h = top_h;
+	primary_text_h = text_h;
 }
 
-void HudGaugeWeapons::initPrimaryHeights(int bg_h, int name_h)
+void HudGaugeWeapons::initSecondaryHeights(int top_h, int text_h)
 {
-	primary_bg_h = bg_h;
-	primary_name_h = name_h;
-}
-
-void HudGaugeWeapons::initSecondaryHeights(int bg_h, int name_h)
-{
-	secondary_bg_h = bg_h;
-	secondary_name_h = name_h;
+	top_secondary_h = top_h;
+	secondary_text_h = text_h;
 }
 
 void HudGaugeWeapons::initBitmapsPrimaryTop(char *fname, char *fname_ballistic)
@@ -6209,16 +6205,18 @@ void HudGaugeWeapons::render(float frametime)
 
 	char	ammo_str[32];
 	int		i, w, h;
-	int y = position[1] + start_offset_y;
-	int name_y = position[1] + start_name_offset_y;
+	int y = position[1] + top_primary_h;
+	int name_y = position[1] + pname_start_offset_y;
 	
 	// render primaries
 	for(i = 0; i < np; i++) {
 		setGaugeColor();
 
-		// choose which background to draw for additional primaries
+		// choose which background to draw for additional primaries. 
+		// Note, we don't draw a background for the first primary. 
+		// It is assumed that the top primary wep frame already has this rendered.
 		if(i == 1) {
-			// used to draw the second primary weapon name
+			// used to draw the second primary weapon background
 			renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		} else if(i != 0) {
 			// used to draw the the third, fourth, fifth, etc...
@@ -6267,9 +6265,9 @@ void HudGaugeWeapons::render(float frametime)
 		}
 
 		if(i != 0) {
-			y += primary_bg_h;
+			y += primary_text_h;
 		}
-		name_y += primary_name_h;
+		name_y += primary_text_h;
 	}
 
 	//name_y = gr_screen.res==0 ? 309 : 561;
@@ -6283,7 +6281,8 @@ void HudGaugeWeapons::render(float frametime)
 	}
 
 	renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
-	y+=3;	//Unfortunately, the top gauge is a different size than the others
+	name_y = y + sname_start_offset_y;
+	y += top_secondary_h;
 
 	for(i = 0; i < ns; i++)
 	{
@@ -6343,15 +6342,17 @@ void HudGaugeWeapons::render(float frametime)
 
 		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);		
 
-		y += secondary_bg_h;
-		name_y += secondary_name_h;
+		if(i != 0) {
+			y += secondary_text_h;
+		}
+		name_y += secondary_text_h;
 	}
 
 	// a bit lonely here with no secondaries so just print "<none>"
 	if(ns==0)
 	{
 		renderString(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_S1, XSTR( "<none>", 329));	
-		y += secondary_bg_h;		// bump the bottom of the gauge down so it fits "<none>" without any overlap.
+		y += secondary_text_h;		// bump the bottom of the gauge down so it fits "<none>" without any overlap.
 	}
 
 	y -= 0;
