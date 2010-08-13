@@ -3602,8 +3602,6 @@ void load_gauge_hostile_tri(int base_w, int base_h, int ship_index)
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
-	hud_gauge->initMaxTriSeperation(Max_tri_seperation);
-	hud_gauge->initMaxFrontSeperation(Max_front_seperation);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3663,8 +3661,6 @@ void load_gauge_target_tri(int base_w, int base_h, int ship_index)
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
-	hud_gauge->initMaxTriSeperation(Max_tri_seperation);
-	hud_gauge->initMaxFrontSeperation(Max_front_seperation);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3724,8 +3720,6 @@ void load_gauge_missile_tri(int base_w, int base_h, int ship_index)
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
-	hud_gauge->initMaxTriSeperation(Max_tri_seperation);
-	hud_gauge->initMaxFrontSeperation(Max_front_seperation);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

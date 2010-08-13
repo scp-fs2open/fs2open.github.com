@@ -2804,16 +2804,6 @@ void HudGaugeReticleTriangle::initTriHeight(float h)
 	Target_triangle_height = h;
 }
 
-void HudGaugeReticleTriangle::initMaxTriSeperation(float length)
-{
-	Max_tri_seperation = length;
-}
-
-void HudGaugeReticleTriangle::initMaxFrontSeperation(float length)
-{
-	Max_front_seperation = length;
-}
-
 void HudGaugeReticleTriangle::render(float frametime)
 {
 }
@@ -2884,104 +2874,6 @@ void HudGaugeReticleTriangle::renderTriangleMissileTail(float ang, float xpos, f
 		gr_line(fl2i(xpos), fl2i(ypos), fl2i(xtail), fl2i(ytail));
 	}
 	gr_reset_screen_scale();
-}
-
-// Render a missile warning triangle, that splits apart to indicate distance
-void HudGaugeReticleTriangle::renderTriangleMissileSplit(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside)
-{
-	// points to draw triangles
-	float x1=0.0f;
-	float y1=0.0f;
-	float x2=0.0f;
-	float y2=0.0f;
-	float x3=0.0f;
-	float y3=0.0f;
-	float x4=0.0f;
-	float y4=0.0f;
-	float x5=0.0f;
-	float y5=0.0f;
-	float x6=0.0f;
-	float y6=0.0f;
-
-	float triangle_sep, half_triangle_sep,sin_ang,cos_ang;
-
-	sin_ang=(float)sin(ang);
-	cos_ang=(float)cos(ang);
-
-	if ( cur_dist < Min_warning_missile_dist ) {
-		triangle_sep = 0.0f;
-	} else if ( cur_dist > Max_warning_missile_dist ) {
-		triangle_sep = Max_tri_seperation + Max_front_seperation;
-	} else {
-		triangle_sep = (cur_dist/Max_warning_missile_dist) * (Max_tri_seperation + Max_front_seperation);
-	}
-
-	// calculate these values only once, since it will be used in several places
-	half_triangle_sep = 0.5f * triangle_sep;
-
-	xpos = (float)floor(xpos);
-	ypos = (float)floor(ypos);
-
-	if ( triangle_sep == 0 ) {
-		x1 = xpos - Target_triangle_base * -sin_ang;
-		y1 = ypos + Target_triangle_base * cos_ang;
-		x2 = xpos + Target_triangle_base * -sin_ang;
-		y2 = ypos - Target_triangle_base * cos_ang;
-		if ( draw_inside ) {
-		} else {
-			xpos += Target_triangle_height * cos_ang;
-			ypos -= Target_triangle_height * sin_ang;
-		}
-		if (draw_solid) {
-			hud_tri(xpos,ypos,x1,y1,x2,y2);
-		} else {
-			hud_tri_empty(xpos,ypos,x1,y1,x2,y2);
-		}
-	} else {
-			// calc left side points
-			x5 = xpos - half_triangle_sep * -sin_ang;
-			y5 = ypos + half_triangle_sep * cos_ang;
-
-			x6 = x5 - Target_triangle_base * -sin_ang;
-			y6 = y5 + Target_triangle_base * cos_ang;
-
-			x4=x5;
-			y4=y5;
-			if ( draw_inside ) {
-				x4 -= Target_triangle_height * cos_ang;
-				y4 += Target_triangle_height * sin_ang;
-			} else {
-				x4 += Target_triangle_height * cos_ang;
-				y4 -= Target_triangle_height * sin_ang;
-			}
-
-			// calc right side points
-			x2 = xpos + half_triangle_sep * -sin_ang;
-			y2 = ypos - half_triangle_sep * cos_ang;
-
-			x3 = x2 + Target_triangle_base * -sin_ang;
-			y3 = y2 - Target_triangle_base * cos_ang;
-
-			x1=x2;
-			y1=y2;
-			if ( draw_inside ) {
-				x1 -= Target_triangle_height * cos_ang;
-				y1 += Target_triangle_height * sin_ang;
-			} else {
-				x1 += Target_triangle_height * cos_ang;
-				y1 -= Target_triangle_height * sin_ang;
-			}
-
-		// draw both tris with a line connecting them
-		if ( draw_solid ) {
-			hud_tri(x3,y3,x2,y2,x1,y1);
-			hud_tri(x4,y4,x5,y5,x6,y6);
-		} else {
-			hud_tri_empty(x3,y3,x2,y2,x1,y1);
-			hud_tri_empty(x4,y4,x5,y5,x6,y6);
-		}
-		gr_line(fl2i(x2+0.5f),fl2i(y2+0.5f),fl2i(x5+0.5f),fl2i(y5+0.5f));
-	}
 }
 
 //	Render a triangle on the outside of the targeting circle.

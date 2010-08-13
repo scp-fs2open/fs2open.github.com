@@ -325,20 +325,15 @@ protected:
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	float Max_tri_seperation;
-	float Max_front_seperation;
 public:
 	HudGaugeReticleTriangle();
 	HudGaugeReticleTriangle(int _gauge_object, int _gauge_config);
 	void initRadius(int length);
 	void initTriBase(float length);
 	void initTriHeight(float h);
-	void initMaxTriSeperation(float length);
-	void initMaxFrontSeperation(float length);
 	virtual void render(float frametime);
 	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri);
 	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
-	void renderTriangleMissileSplit(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
 };
 
 class HudGaugeHostileTriangle: public HudGaugeReticleTriangle
