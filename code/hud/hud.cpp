@@ -1323,6 +1323,14 @@ void hud_update_frame(float frametime)
 
 	hud_target_change_check();
 
+	// check to see if we are in messaging mode.  If so, send the key to the code
+	// to deal with the message.  hud_sqaudmsg_do_frame will return 0 if the key
+	// wasn't used in messaging mode, otherwise 1.  In the event the key was used,
+	// return immediately out of this function.
+	if ( Players->flags & PLAYER_FLAGS_MSG_MODE ) {
+		hud_squadmsg_do_frame();
+	}
+
 	if (Player_ai->target_objnum == -1) {
 		if ( Target_static_looping != -1 ) {
 			snd_stop(Target_static_looping);
@@ -1452,16 +1460,6 @@ void hud_update_frame(float frametime)
 
 	hud_update_target_static();
 	hud_update_ship_status(targetp);
-
-	// check to see if we are in messaging mode.  If so, send the key to the code
-	// to deal with the message.  hud_sqaudmsg_do_frame will return 0 if the key
-	// wasn't used in messaging mode, otherwise 1.  In the event the key was used,
-	// return immediately out of this function.
-	if ( Players->flags & PLAYER_FLAGS_MSG_MODE ) {
-		if ( hud_squadmsg_do_frame() ){
-			return;
-		}
-	}
 }
 
 // Draw white brackets around asteroids which has the AF_DRAW_BRACKETS flag set
