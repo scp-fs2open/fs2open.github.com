@@ -2592,7 +2592,7 @@ void load_gauge_directives(int base_w, int base_h, int ship_index)
 	header_offsets[1] = 2;
 	middle_frame_offset_y = 12;
 	text_start_offsets[0] = 3;
-	text_start_offsets[1] = 9;
+	text_start_offsets[1] = 13;
 	text_h = 9;
 
 	if(check_base_res(base_w, base_h)) {
