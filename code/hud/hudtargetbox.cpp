@@ -202,10 +202,10 @@ void HudGaugeTargetBox::initIntegrityHeight(int h)
 	integrity_bar_h = h;
 }
 
-void HudGaugeTargetBox::initIntegrityStringOffsets(int x, int y)
+void HudGaugeTargetBox::initStatusOffsets(int x, int y)
 {
-	Integrity_string_offsets[0] = x;
-	Integrity_string_offsets[1] = y;
+	Status_offsets[0] = x;
+	Status_offsets[1] = y;
 }
 
 void HudGaugeTargetBox::initNameOffsets(int x, int y)
@@ -405,7 +405,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	maybeFlashElement(TBOX_FLASH_STATUS);
 	
 	// finally print out the status of this ship
-	renderString(position[0] + Integrity_string_offsets[0], position[1] + Integrity_string_offsets[1], EG_TBOX_INTEG, buf);	
+	renderString(position[0] + Status_offsets[0], position[1] + Status_offsets[1], EG_TBOX_INTEG, buf);	
 
 	setGaugeColor();
 

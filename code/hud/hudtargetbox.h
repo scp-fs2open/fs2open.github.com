@@ -53,7 +53,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 
 	int Integrity_bar_offsets[2];
 	int integrity_bar_h;
-	int Integrity_string_offsets[2];
+	int Status_offsets[2];
 	
 	int Name_offsets[2];
 	int Class_offsets[2];
@@ -81,7 +81,7 @@ public:
 	void initViewportSize(int w, int h);
 	void initIntegrityOffsets(int x, int y);
 	void initIntegrityHeight(int h);
-	void initIntegrityStringOffsets(int x, int y);
+	void initStatusOffsets(int x, int y);
 	void initNameOffsets(int x, int y);
 	void initClassOffsets(int x, int y);
 	void initDistOffsets(int x, int y);

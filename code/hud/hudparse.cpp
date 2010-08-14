@@ -2186,7 +2186,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int ship_index)
 	int Viewport_offsets[2];
 	int Integrity_bar_offsets[2];
 	int Integrity_bar_h;
-	int Integrity_string_offsets[2];
+	int Status_offsets[2];
 	int Name_offsets[2];
 	int Class_offsets[2];
 	int Dist_offsets[2];
@@ -2222,8 +2222,8 @@ void load_gauge_target_monitor(int base_w, int base_h, int ship_index)
 	Integrity_bar_offsets[0] = 133;
 	Integrity_bar_offsets[1] = 52;
 	Integrity_bar_h = 88;
-	Integrity_string_offsets[0] = 107;
-	Integrity_string_offsets[1] = 53;
+	Status_offsets[0] = 107;
+	Status_offsets[1] = 53;
 	
 	Name_offsets[0] = 8;
 	Name_offsets[1] = -3;
@@ -2260,7 +2260,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int ship_index)
 	hud_gauge->initViewportSize(Viewport_size[0], Viewport_size[1]);
 	hud_gauge->initIntegrityOffsets(Integrity_bar_offsets[0], Integrity_bar_offsets[1]);
 	hud_gauge->initIntegrityHeight(Integrity_bar_h);
-	hud_gauge->initIntegrityStringOffsets(Integrity_string_offsets[0], Integrity_string_offsets[1]);
+	hud_gauge->initStatusOffsets(Status_offsets[0], Status_offsets[1]);
 	hud_gauge->initNameOffsets(Name_offsets[0], Name_offsets[1]);
 	hud_gauge->initClassOffsets(Class_offsets[0], Class_offsets[1]);
 	hud_gauge->initDistOffsets(Dist_offsets[0], Dist_offsets[1]);
