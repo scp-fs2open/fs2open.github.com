@@ -838,6 +838,7 @@ void load_gauge_lag(int base_w, int base_h, int ship_index)
 	int coords[2];
 	int base_res[2];
 	char fname[MAX_FILENAME_LEN] = "netlag1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 386;
@@ -862,10 +863,18 @@ void load_gauge_lag(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+
 	HudGaugeLag* hud_gauge = new HudGaugeLag();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -882,6 +891,7 @@ void load_gauge_mini_shields(int base_w, int base_h, int ship_index)
 	int Mini_1digit_offsets[2];
 	int Mini_2digit_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "targhit1";
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 305;
@@ -920,6 +930,22 @@ void load_gauge_mini_shields(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("3 Digit Hull Offsets:")) {
+		stuff_int_list(Mini_3digit_offsets, 2);
+	}
+	if(optional_string("2 Digit Hull Offsets:")) {
+		stuff_int_list(Mini_2digit_offsets, 2);
+	}
+	if(optional_string("1 Digit Hull Offsets:")) {
+		stuff_int_list(Mini_1digit_offsets, 2);
+	}
+
 	HudGaugeShieldMini* hud_gauge = new HudGaugeShieldMini();
 	hud_gauge->init1DigitOffsets(Mini_1digit_offsets[0], Mini_1digit_offsets[1]);
 	hud_gauge->init2DigitOffsets(Mini_2digit_offsets[0], Mini_2digit_offsets[1]);
@@ -927,6 +953,7 @@ void load_gauge_mini_shields(int base_w, int base_h, int ship_index)
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -942,6 +969,7 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
 	char fname[MAX_FILENAME_LEN];
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 416;
@@ -976,7 +1004,17 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
-		}
+		}	
+	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&Wenergy_h);
 	}
 
 	HudGaugeWeaponEnergy* hud_gauge = new HudGaugeWeaponEnergy();
@@ -985,6 +1023,7 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initEnergyHeight(Wenergy_h);
 	hud_gauge->initTextOffsets(Wenergy_text_offsets[0], Wenergy_text_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -997,6 +1036,7 @@ void load_gauge_target_shields(int base_w, int base_h, int ship_index)
 {
 	int coords[2];
 	int base_res[2];
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 142;
@@ -1021,9 +1061,14 @@ void load_gauge_target_shields(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+
 	HudGaugeShieldTarget* hud_gauge = new HudGaugeShieldTarget();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1036,6 +1081,7 @@ void load_gauge_player_shields(int base_w, int base_h, int ship_index)
 {
 	int coords[2];
 	int base_res[2];
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 396;
@@ -1060,9 +1106,14 @@ void load_gauge_player_shields(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+
 	HudGaugeShieldPlayer* hud_gauge = new HudGaugeShieldPlayer();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1086,6 +1137,7 @@ void load_gauge_escort_view(int base_w, int base_h, int ship_index)
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 486;
@@ -1136,6 +1188,43 @@ void load_gauge_escort_view(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Top Background Filename:")) {
+		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Middle Background Filename:")) {
+		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Bottom Background Filename:")) {
+		stuff_string(fname_bottom, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Entry Height:")) {
+		stuff_int(&entry_h);
+	}
+	if(optional_string("Entry Stagger Width:")) {
+		stuff_int(&entry_stagger_w);
+	}
+	if(optional_string("Header Text:")) {
+		stuff_string(header_text, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(header_text_offsets, 2);
+	}
+	if(optional_string("List Start Offsets:")) {
+		stuff_int_list(list_start_offsets, 2);
+	}
+	if(optional_string("Hull X-offset:")) {
+		stuff_int(&ship_integrity_offsets[0]);
+	}
+	if(optional_string("Name X-offset:")) {
+		stuff_int(&ship_name_offsets[0]);
+	}
+	if(optional_string("Status X-offset:")) {
+		stuff_int(&ship_status_offsets[0]);
+	}
+
 	HudGaugeEscort* hud_gauge = new HudGaugeEscort();
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -1148,6 +1237,7 @@ void load_gauge_escort_view(int base_w, int base_h, int ship_index)
 	hud_gauge->initShipIntegrityOffsets(ship_integrity_offsets[0], ship_integrity_offsets[1]);
 	hud_gauge->initShipNameOffsets(ship_name_offsets[0], ship_name_offsets[1]);
 	hud_gauge->initShipStatusOffsets(ship_status_offsets[0], ship_status_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1162,6 +1252,7 @@ void load_gauge_afterburner(int base_w, int base_h, int ship_index)
 	int base_res[2];
 	int energy_h;
 	char fname[MAX_FILENAME_LEN];
+	bool slew = true;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -1201,7 +1292,17 @@ void load_gauge_afterburner(int base_w, int base_h, int ship_index)
 
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
-		}
+		}	
+	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&energy_h);
 	}
 
 	HudGaugeAfterburner *hud_gauge = new HudGaugeAfterburner();
@@ -1210,6 +1311,7 @@ void load_gauge_afterburner(int base_w, int base_h, int ship_index)
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initEnergyHeight(energy_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1226,6 +1328,7 @@ void load_gauge_mission_time(int base_w, int base_h, int ship_index)
 	int time_text_offsets[2];
 	int time_val_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "time1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 587;
@@ -1256,12 +1359,26 @@ void load_gauge_mission_time(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Text Offsets:")) {
+		stuff_int_list(time_text_offsets, 2);
+	}
+	if(optional_string("Value Offsets:")) {
+		stuff_int_list(time_val_offsets, 2);
+	}
+
 	HudGaugeMissionTime* hud_gauge = new HudGaugeMissionTime();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTextOffsets(time_text_offsets[0], time_text_offsets[1]);
 	hud_gauge->initValueOffsets(time_val_offsets[0], time_val_offsets[1]);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1279,6 +1396,7 @@ void load_gauge_threat_indicator(int base_w, int base_h, int ship_index)
 	char fname_arc[MAX_FILENAME_LEN];
 	char fname_laser[MAX_FILENAME_LEN];
 	char fname_lock[MAX_FILENAME_LEN];
+	bool slew = true;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -1359,12 +1477,32 @@ void load_gauge_threat_indicator(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Arc Filename:")) {
+		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Dumbfire Filename:")) {
+		stuff_string(fname_laser, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Lock Filename:")) {
+		stuff_string(fname_lock, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Dumbfire Offsets:")) {
+		stuff_int_list(Laser_warn_offsets, 2);
+	}
+	if(optional_string("Lock Offsets:")) {
+		stuff_int_list(Lock_warn_offsets, 2);
+	}
+
 	HudGaugeThreatIndicator* hud_gauge = new HudGaugeThreatIndicator();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname_arc, fname_laser, fname_lock);
 	hud_gauge->initLaserWarnOffsets(Laser_warn_offsets[0], Laser_warn_offsets[1]);
 	hud_gauge->initLockWarnOffsets(Lock_warn_offsets[0], Lock_warn_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1426,6 +1564,10 @@ void load_gauge_center_reticle(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+
 	HudGaugeReticle* hud_gauge = new HudGaugeReticle();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -1451,6 +1593,7 @@ void load_gauge_throttle(int base_w, int base_h, int ship_index)
 	int orbit_radius;
 	char fname[MAX_FILENAME_LEN];
 	bool show_background = false;
+	bool slew = true;
 
 	// default values for the throttle
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
@@ -1545,6 +1688,40 @@ void load_gauge_throttle(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Bottom Offset Y:")) {
+		stuff_int(&bottom_offset_y);
+	}
+	if(optional_string("Foreground Clip Width:")) {
+		stuff_int(&throttle_w);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&throttle_h);
+	}
+	if(optional_string("Afterburner Clip Height:")) {
+		stuff_int(&throttle_aburn_h);
+	}
+	if(optional_string("Show Background:")) {
+		stuff_boolean(&show_background);
+	}
+	if(optional_string("Max Speed Label Offsets:")) {
+		stuff_int_list(max_speed_offset, 2);
+	}
+	if(optional_string("Min Speed Label Offsets:")) {
+		stuff_int_list(zero_speed_offset, 2);
+	}
+	if(optional_string("Orbit Center Offsets:")) {
+		stuff_int_list(orbit_center_offset, 2);
+	}
+	if(optional_string("Orbit Radius:")) {
+		stuff_int(&orbit_radius);
+	}
+
 	HudGaugeThrottle* hud_gauge = new HudGaugeThrottle();
 
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -1558,6 +1735,7 @@ void load_gauge_throttle(int base_w, int base_h, int ship_index)
 	hud_gauge->initOrbitRadius(orbit_radius);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->showBackground(show_background);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1576,6 +1754,7 @@ void load_gauge_ets_weapons(int base_w, int base_h, int ship_index)
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
+	bool slew = false;
 
 	if(Lcl_gr) {
 		// German
@@ -1618,6 +1797,25 @@ void load_gauge_ets_weapons(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&bar_h);
+	}
+	if(optional_string("Letter Offsets:")) {
+		stuff_int_list(letter_offsets, 2);
+	}
+	if(optional_string("Top Offsets:")) {
+		stuff_int_list(top_offsets, 2);
+	}
+	if(optional_string("Bottom Offsets:")) {
+		stuff_int_list(bottom_offsets, 2);
+	}
+
 	HudGaugeEtsWeapons* hud_gauge = new HudGaugeEtsWeapons();
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -1627,6 +1825,7 @@ void load_gauge_ets_weapons(int base_w, int base_h, int ship_index)
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1645,6 +1844,7 @@ void load_gauge_ets_shields(int base_w, int base_h, int ship_index)
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
+	bool slew = false;
 
 	if(Lcl_gr){
 		// German
@@ -1688,6 +1888,25 @@ void load_gauge_ets_shields(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&bar_h);
+	}
+	if(optional_string("Letter Offsets:")) {
+		stuff_int_list(letter_offsets, 2);
+	}
+	if(optional_string("Top Offsets:")) {
+		stuff_int_list(top_offsets, 2);
+	}
+	if(optional_string("Bottom Offsets:")) {
+		stuff_int_list(bottom_offsets, 2);
+	}
+
 	HudGaugeEtsShields* hud_gauge = new HudGaugeEtsShields();
 
 	hud_gauge->initBarHeight(bar_h);
@@ -1698,6 +1917,7 @@ void load_gauge_ets_shields(int base_w, int base_h, int ship_index)
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1716,6 +1936,7 @@ void load_gauge_ets_engines(int base_w, int base_h, int ship_index)
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
+	bool slew = false;
 
 	if(Lcl_gr){
 		// German
@@ -1760,6 +1981,25 @@ void load_gauge_ets_engines(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Foreground Clip Height:")) {
+		stuff_int(&bar_h);
+	}
+	if(optional_string("Letter Offsets:")) {
+		stuff_int_list(letter_offsets, 2);
+	}
+	if(optional_string("Top Offsets:")) {
+		stuff_int_list(top_offsets, 2);
+	}
+	if(optional_string("Bottom Offsets:")) {
+		stuff_int_list(bottom_offsets, 2);
+	}
+
 	HudGaugeEtsEngines* hud_gauge = new HudGaugeEtsEngines();
 
 	hud_gauge->initBarHeight(bar_h);
@@ -1770,6 +2010,7 @@ void load_gauge_ets_engines(int base_w, int base_h, int ship_index)
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1787,6 +2028,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int ship_index)
 	int bracket_offsets[2];
 	int order_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "targetview3";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 5;
@@ -1829,6 +2071,22 @@ void load_gauge_extra_target_data(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Bracket Offsets:")) {
+		stuff_int_list(bracket_offsets, 2);
+	}
+	if(optional_string("Dock Offsets:")) {
+		stuff_int_list(dock_offsets, 2);
+	}
+	if(optional_string("Order Offsets:")) {
+		stuff_int_list(order_offsets, 2);
+	}
+
 	HudGaugeExtraTargetData* hud_gauge = new HudGaugeExtraTargetData();
 
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -1837,6 +2095,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int ship_index)
 	hud_gauge->initDockOffsets(dock_offsets[0], dock_offsets[1]);
 	hud_gauge->initOrderOffsets(order_offsets[0], order_offsets[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -1917,6 +2176,19 @@ void load_gauge_radar_std(int base_w, int base_h, int ship_index)
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
 		}
+	}
+
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Infinity Distance Offsets:")) {
+		stuff_int_list(Radar_dist_offsets[2], 2);
+	}
+	if(optional_string("Long Distance Offsets:")) {
+		stuff_int_list(Radar_dist_offsets[1], 2);
+	}
+	if(optional_string("Short Distance Offsets:")) {
+		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
 
 	HudGaugeRadarStd* hud_gauge = new HudGaugeRadarStd();
@@ -2011,6 +2283,19 @@ void load_gauge_radar_orb(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Infinity Distance Offsets:")) {
+		stuff_int_list(Radar_dist_offsets[2], 2);
+	}
+	if(optional_string("Long Distance Offsets:")) {
+		stuff_int_list(Radar_dist_offsets[1], 2);
+	}
+	if(optional_string("Short Distance Offsets:")) {
+		stuff_int_list(Radar_dist_offsets[0], 2);
+	}
+
 	HudGaugeRadarOrb* hud_gauge = new HudGaugeRadarOrb();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -2080,49 +2365,50 @@ void load_gauge_radar_dradis(int base_w, int base_h, int ship_index)
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
 		}
+	}
 
-		if(optional_string("Size:")) {
-			stuff_int_list(Radar_radius, 2);
-		}
-		if(optional_string("XY Disc Filename:")) {
-			stuff_string(xy_fname, F_NAME, MAX_FILENAME_LEN);
-		}
-		if(optional_string("XZ YZ Disc Filename:")) {
-			stuff_string(xz_yz_fname, F_NAME, MAX_FILENAME_LEN);
-		}
-		if(optional_string("Sweep Disc Filename:")) {
-			stuff_string(sweep_fname, F_NAME, MAX_FILENAME_LEN);
-		}
-		if(optional_string("Default Contact Filename:")) {
-			stuff_string(target_fname, F_NAME, MAX_FILENAME_LEN);
-		}
-		if(optional_string("Unknown Contact Filename:")) {
-			stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
-		}
-		if(optional_string("Background Filename:")) {
-			stuff_string(background_fname, F_NAME, MAX_FILENAME_LEN);
+	if(optional_string("Size:")) {
+		stuff_int_list(Radar_radius, 2);
+	}
+	if(optional_string("XY Disc Filename:")) {
+		stuff_string(xy_fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("XZ YZ Disc Filename:")) {
+		stuff_string(xz_yz_fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Sweep Disc Filename:")) {
+		stuff_string(sweep_fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Default Contact Filename:")) {
+		stuff_string(target_fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Unknown Contact Filename:")) {
+		stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Background Filename:")) {
+		stuff_string(background_fname, F_NAME, MAX_FILENAME_LEN);
 
-			if(optional_string("Clip Size:")) {
-				stuff_int_list(background_size, 2);
-			}
-		}
-		if(optional_string("Foreground Filename:")) {
-			stuff_string(foreground_fname, F_NAME, MAX_FILENAME_LEN);
-
-			if(optional_string("Clip Size:")) {
-				stuff_int_list(foreground_size, 2);
-			}
-		}
-		if(optional_string("Texture Target:") && ship_index >= 0) {
-			stuff_string(texture_name, F_NAME, MAX_FILENAME_LEN);
-
-			required_string("Clip Offset:");
-			stuff_int_list(target_coords, 2);
-
-			required_string("Clip Size:");
-			stuff_int_list(target_size, 2);
+		if(optional_string("Clip Size:")) {
+			stuff_int_list(background_size, 2);
 		}
 	}
+	if(optional_string("Foreground Filename:")) {
+		stuff_string(foreground_fname, F_NAME, MAX_FILENAME_LEN);
+
+		if(optional_string("Clip Size:")) {
+			stuff_int_list(foreground_size, 2);
+		}
+	}
+	if(optional_string("Texture Target:") && ship_index >= 0) {
+		stuff_string(texture_name, F_NAME, MAX_FILENAME_LEN);
+
+		required_string("Clip Offset:");
+		stuff_int_list(target_coords, 2);
+
+		required_string("Clip Size:");
+		stuff_int_list(target_size, 2);
+	}
+
 	HudGaugeRadarDradis* hud_gauge = new HudGaugeRadarDradis();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -2143,6 +2429,7 @@ void load_gauge_text_warnings(int base_w, int base_h, int ship_index)
 {
 	int coords[2];
 	int base_res[2];
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -2167,9 +2454,14 @@ void load_gauge_text_warnings(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+
 	HudGaugeTextWarnings* hud_gauge = new HudGaugeTextWarnings();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2253,6 +2545,50 @@ void load_gauge_target_monitor(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+
+	if(optional_string("Monitor Filename:")) {
+		stuff_string(fname_monitor, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Integrity Bar Filename:")) {
+		stuff_string(fname_integrity, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Viewport Offsets:")) {
+		stuff_int_list(Viewport_offsets, 2);
+	}
+	if(optional_string("Viewport Size:")) {
+		stuff_int_list(Viewport_size, 2);
+	}
+	if(optional_string("Integrity Bar Offsets:")) {
+		stuff_int_list(Integrity_bar_offsets, 2);
+	}
+	if(optional_string("Integrity Bar Foreground Clip Height")) {
+		stuff_int(&Integrity_bar_h);
+	}
+	if(optional_string("Status Offsets:")) {
+		stuff_int_list(Status_offsets, 2);
+	}
+	if(optional_string("Name Offsets:")) {
+		stuff_int_list(Name_offsets, 2);
+	}
+	if(optional_string("Class Offsets:")) {
+		stuff_int_list(Class_offsets, 2);
+	}
+	if(optional_string("Distance Offsets:")) {
+		stuff_int_list(Dist_offsets, 2);
+	}
+	if(optional_string("Speed Offsets:")) {
+		stuff_int_list(Speed_offsets, 2);
+	}
+	if(optional_string("Hull Offsets:")) {
+		stuff_int_list(Hull_offsets, 2);
+	}
+	if(optional_string("Cargo Scan Start Offsets:")) {
+		stuff_int_list(Cargo_scan_start_offsets, 2);
+	}
+	if(optional_string("Cargo Scan Size:")) {
+		stuff_int_list(Cargo_scan_size, 2);
+	}
+
 	HudGaugeTargetBox* hud_gauge = new HudGaugeTargetBox();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -2292,6 +2628,7 @@ void load_gauge_squad_message(int base_w, int base_h, int ship_index)
 	char fname_top[MAX_FILENAME_LEN] = "message1";
 	char fname_middle[MAX_FILENAME_LEN] = "message2";
 	char fname_bottom[MAX_FILENAME_LEN] = "message3";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 445;
@@ -2334,6 +2671,40 @@ void load_gauge_squad_message(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Top Background Filename:")) {
+		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Entry Background Filename:")) {
+		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Bottom Background Filename:")) {
+		stuff_string(fname_bottom, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(Header_offsets, 2);
+	}
+	if(optional_string("List Start Offsets:")) {
+		stuff_int_list(Item_start_offsets, 2);
+	}
+	if(optional_string("Top Background Height:")) {
+		stuff_int(&Middle_frame_start_offset_y);
+	}
+	if(optional_string("Entry Height:")) {
+		stuff_int(&Item_h);
+	}
+	if(optional_string("Command X-offset:")) {
+		stuff_int(&Item_offset_x);
+	}
+	if(optional_string("Page Up Offsets:")) {
+		stuff_int_list(Pgup_offsets, 2);
+	}
+	if(optional_string("Page Down Offsets:")) {
+		stuff_int_list(Pgdn_offsets, 2);
+	}
+
 	HudGaugeSquadMessage* hud_gauge = new HudGaugeSquadMessage();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
@@ -2345,6 +2716,7 @@ void load_gauge_squad_message(int base_w, int base_h, int ship_index)
 	hud_gauge->initItemOffsetX(Item_offset_x);
 	hud_gauge->initPgUpOffsets(Pgup_offsets[0], Pgup_offsets[1]);
 	hud_gauge->initPgDnOffsets(Pgdn_offsets[0], Pgdn_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2364,6 +2736,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int ship_index)
 	int Red_text_offset_y;
 	int Red_text_val_offset_y;
 	char fname[MAX_FILENAME_LEN] = "objective1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 245;
@@ -2402,6 +2775,30 @@ void load_gauge_objective_notify(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Objective Text Y-offset:")) {
+		stuff_int(&Objective_text_offset_y);
+	}
+	if(optional_string("Objective Value Y-offset:")) {
+		stuff_int(&Objective_text_val_offset_y);
+	}
+	if(optional_string("Subspace Text Y-offset:")) {
+		stuff_int(&Subspace_text_offset_y);
+	}
+	if(optional_string("Subspace Value Y-offset:")) {
+		stuff_int(&Subspace_text_val_offset_y);
+	}
+	if(optional_string("Red Alert Text Y-offset:")) {
+		stuff_int(&Red_text_offset_y);
+	}
+	if(optional_string("Red Alert Value Y-offset:")) {
+		stuff_int(&Red_text_val_offset_y);
+	}
 
 	HudGaugeObjectiveNotify* hud_gauge = new HudGaugeObjectiveNotify();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -2413,6 +2810,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int ship_index)
 	hud_gauge->initSubspaceValueOffsetY(Subspace_text_val_offset_y);
 	hud_gauge->initRedAlertTextOffsetY(Red_text_offset_y);
 	hud_gauge->initRedAlertValueOffsetY(Red_text_val_offset_y);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2442,6 +2840,7 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 	int sname_start_offset_y;
 	int primary_text_h;
 	int secondary_text_h;
+	bool slew = false;
 
 	// thank god both GR640 and GR1024 use the same weapons gauge bitmaps
 	char fname_p_top[MAX_FILENAME_LEN] = "weapons1";
@@ -2509,6 +2908,106 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Primary List Top Background Filename:")) {
+		stuff_string(fname_p_top, F_NAME, MAX_FILENAME_LEN);
+		if(optional_string("Alt Ballistic Filename:")) {
+			stuff_string(fname_p_top_b, F_NAME, MAX_FILENAME_LEN);
+		}
+	}
+	if(optional_string("Primary List Entry Background Filename:")) {
+		stuff_string(fname_p_middle, F_NAME, MAX_FILENAME_LEN);
+		if(optional_string("Alt Ballistic Filename:")) {
+			stuff_string(fname_p_middle_b, F_NAME, MAX_FILENAME_LEN);
+		}
+	}
+	if(optional_string("Primary List Bottom Background Filename:")) {
+		stuff_string(fname_p_last, F_NAME, MAX_FILENAME_LEN);
+		if(optional_string("Alt Ballistic Filename:")) {
+			stuff_string(fname_p_last_b, F_NAME, MAX_FILENAME_LEN);
+		}
+	}
+	if(optional_string("Secondary List Top Background Filename:")) {
+		stuff_string(fname_s_top, F_NAME, MAX_FILENAME_LEN);
+		if(optional_string("Alt Ballistic Filename:")) {
+			stuff_string(fname_s_top_b, F_NAME, MAX_FILENAME_LEN);
+		}
+	}
+	if(optional_string("Secondary List Entry Background Filename")) {
+		stuff_string(fname_s_middle, F_NAME, MAX_FILENAME_LEN);
+		if(optional_string("Alt Ballistic Filename:")) {
+			stuff_string(fname_s_middle_b, F_NAME, MAX_FILENAME_LEN);
+		}
+	}
+	if(optional_string("Secondary List Bottom Background Filename")) {
+		stuff_string(fname_s_bottom, F_NAME, MAX_FILENAME_LEN);
+		if(optional_string("Alt Ballistic Filename:")) {
+			stuff_string(fname_s_bottom_b, F_NAME, MAX_FILENAME_LEN);
+		}
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(Weapon_header_offsets[0], 2);
+		if(optional_string("Alt Ballistic Offsets:")) {
+			stuff_int_list(Weapon_header_offsets[1], 2);
+		}
+	}
+	if(optional_string("Top Primary Background X-offset:")) {
+		stuff_int(&top_offset_x[0]);
+		if(optional_string("Alt Ballistic X-offset:")) {
+			stuff_int(&top_offset_x[1]);
+		}
+	}
+	if(optional_string("Text X-offset:")) {
+		stuff_int(&frame_offset_x[0]);
+		if(optional_string("Alt Ballistic X-offset:")) {
+			stuff_int(&frame_offset_x[1]);
+		}
+	}
+	if(optional_string("Top Primary Frame Height:")) {
+		stuff_int(&top_primary_h);
+	}
+	if(optional_string("Top Secondary Frame Height:")) {
+		stuff_int(&top_secondary_h);
+	}
+	if(optional_string("Primary List Start Y-offset:")) {
+		stuff_int(&pname_start_offset_y);
+	}
+	if(optional_string("Secondary List Start Y-offset:")) {
+		stuff_int(&sname_start_offset_y);
+	}
+	if(optional_string("Primary Weapon Ammo X-offset:")) {
+		stuff_int(&Weapon_pammo_offset_x);
+	}
+	if(optional_string("Primary Weapon Link X-offset:")) {
+		stuff_int(&Weapon_plink_offset_x);
+	}
+	if(optional_string("Primary Weapon Name X-offset:")) {
+		stuff_int(&Weapon_pname_offset_x);
+	}
+	if(optional_string("Secondary Weapon Ammo X-offset:")) {
+		stuff_int(&Weapon_sammo_offset_x);
+	}
+	if(optional_string("Secondary Weapon Unlinked X-offset:")) {
+		stuff_int(&Weapon_sunlinked_offset_x);
+	}
+	if(optional_string("Secondary Weapon Linked X-offset:")) {
+		stuff_int(&Weapon_slinked_offset_x);
+	}
+	if(optional_string("Secondary Weapon Name X-offset:")) {
+		stuff_int(&Weapon_sname_offset_x);
+	}
+	if(optional_string("Secondary Weapon Reload X-offset:")) {
+		stuff_int(&Weapon_sreload_offset_x);
+	}
+	if(optional_string("Primary Weapon Entry Height:")) {
+		stuff_int(&primary_text_h);
+	}
+	if(optional_string("Secondary Weapon Entry Height:")) {
+		stuff_int(&secondary_text_h);
+	}
+
 	HudGaugeWeapons* hud_gauge = new HudGaugeWeapons();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -2527,6 +3026,7 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 	hud_gauge->initSecondaryWeaponOffsets(Weapon_sammo_offset_x, Weapon_sname_offset_x, Weapon_sreload_offset_x, Weapon_slinked_offset_x, Weapon_sunlinked_offset_x);
 	hud_gauge->initPrimaryHeights(top_primary_h, primary_text_h);
 	hud_gauge->initSecondaryHeights(top_secondary_h, secondary_text_h);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2546,6 +3046,7 @@ void load_gauge_directives(int base_w, int base_h, int ship_index)
 	char fname_top[MAX_FILENAME_LEN] = "directives1";
 	char fname_middle[MAX_FILENAME_LEN] = "directives2";
 	char fname_bottom[MAX_FILENAME_LEN] = "directives3";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 5;
@@ -2575,6 +3076,31 @@ void load_gauge_directives(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Top Background Filename:")) {
+		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Entry Background Filename:")) {
+		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Bottom Background Filename:")) {
+		stuff_string(fname_bottom, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(header_offsets, 2);
+	}
+	if(optional_string("Top Background Height:")) {
+		stuff_int(&middle_frame_offset_y);
+	}
+	if(optional_string("List Start Offsets:")) {
+		stuff_int_list(text_start_offsets, 2);
+	}
+	if(optional_string("Entry Height:")) {
+		stuff_int(&text_h);
+	}
+
 	HudGaugeDirectives* hud_gauge = new HudGaugeDirectives();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
@@ -2583,6 +3109,7 @@ void load_gauge_directives(int base_w, int base_h, int ship_index)
 	hud_gauge->initTextHeight(text_h);
 	hud_gauge->initTextStartOffsets(text_start_offsets[0], text_start_offsets[1]);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2628,6 +3155,19 @@ void load_gauge_talking_head(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(Header_offsets, 2);
+	}
+	if(optional_string("Animation Offsets:")) {
+		stuff_int_list(Anim_offsets, 2);
+	}
+	if(optional_string("Animation Background Size:")) {
+		stuff_int_list(Anim_size, 2);
+	}
+
 	HudGaugeTalkingHead* hud_gauge = new HudGaugeTalkingHead();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -2650,6 +3190,7 @@ void load_gauge_countermeasures(int base_w, int base_h, int ship_index)
 	int cm_text_offset[2];
 	int cm_text_val_offset[2];
 	char fname[MAX_FILENAME_LEN] = "countermeasure1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 497;
@@ -2673,7 +3214,20 @@ void load_gauge_countermeasures(int base_w, int base_h, int ship_index)
 
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
-		}
+		}	
+	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Text Offsets:")) {
+		stuff_int_list(cm_text_offset, 2);
+	}
+	if(optional_string("Value Offsets:")) {
+		stuff_int_list(cm_text_val_offset, 2);
 	}
 
 	HudGaugeCmeasures* hud_gauge = new HudGaugeCmeasures();
@@ -2682,6 +3236,7 @@ void load_gauge_countermeasures(int base_w, int base_h, int ship_index)
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initCountTextOffsets(cm_text_offset[0], cm_text_offset[1]);
 	hud_gauge->initCountValueOffsets(cm_text_val_offset[0], cm_text_val_offset[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2697,6 +3252,7 @@ void load_gauge_auto_target(int base_w, int base_h, int ship_index)
 	int auto_text_offset[2];
 	int target_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		base_res[0] = 640;
@@ -2723,6 +3279,19 @@ void load_gauge_auto_target(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+	
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Auto Offsets:")) {
+		stuff_int_list(auto_text_offset, 2);
+	}
+	if(optional_string("Target Offsets:")) {
+		stuff_int_list(target_text_offset, 2);
+	}
 
 	HudGaugeAutoTarget* hud_gauge = new HudGaugeAutoTarget();
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
@@ -2730,6 +3299,7 @@ void load_gauge_auto_target(int base_w, int base_h, int ship_index)
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTargetTextOffsets(target_text_offset[0], target_text_offset[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2745,6 +3315,7 @@ void load_gauge_auto_speed(int base_w, int base_h, int ship_index)
 	int auto_text_offset[2];
 	int speed_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		base_res[0] = 640;
@@ -2771,6 +3342,19 @@ void load_gauge_auto_speed(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+	
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Auto Offsets:")) {
+		stuff_int_list(auto_text_offset, 2);
+	}
+	if(optional_string("Speed Offsets:")) {
+		stuff_int_list(speed_text_offset, 2);
+	}
 
 	HudGaugeAutoSpeed* hud_gauge = new HudGaugeAutoSpeed();
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
@@ -2778,6 +3362,7 @@ void load_gauge_auto_speed(int base_w, int base_h, int ship_index)
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSpeedTextOffsets(speed_text_offset[0], speed_text_offset[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2797,6 +3382,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 	int multiple_wing_offsets[2];
 	int wing_width;
 	int wing_name_offsets[2];
+	bool slew = false;
 
 	int wingmate_offsets[MAX_SHIPS_PER_WING][2];
 	char fname_left[MAX_FILENAME_LEN] = "wingman1";
@@ -2852,6 +3438,46 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Left Background Filename:")) {
+		stuff_string(fname_left, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Entry Background Filename:")) {
+		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Right Background Filename:")) {
+		stuff_string(fname_right, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Dot Filename:")) {
+		stuff_string(fname_dots, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(header_offsets, 2);
+	}
+	if(optional_string("Left Background Width:")) {
+		stuff_int(&left_frame_end_x);
+	}
+	if(optional_string("Entry Width:")) {
+		stuff_int(&wing_width);
+	}
+	if(optional_string("Single Wing Offsets:")) {
+		stuff_int_list(single_wing_offsets, 2);
+	}
+	if(optional_string("Multiple Wing Start Offsets:")) {
+		stuff_int_list(multiple_wing_offsets, 2);
+	}
+	if(optional_string("Dot Offsets:")) {
+		stuff_int_list(wingmate_offsets[0], 2);
+		stuff_int_list(wingmate_offsets[1], 2);
+		stuff_int_list(wingmate_offsets[2], 2);
+		stuff_int_list(wingmate_offsets[3], 2);
+		stuff_int_list(wingmate_offsets[4], 2);
+		stuff_int_list(wingmate_offsets[5], 2);
+		stuff_int_list(wingmate_offsets[6], 2);
+	}
 	
 	int grow_mode = 0; //By default, expand the gauge to the left (in -x direction)
 
@@ -2877,6 +3503,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 	hud_gauge->initWingNameOffsets(wing_name_offsets[0], wing_name_offsets[1]);
 	hud_gauge->initWingWidth(wing_width);
 	hud_gauge->initGrowMode(grow_mode);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2899,6 +3526,7 @@ void load_gauge_damage(int base_w, int base_h, int ship_index)
 	char fname_top[MAX_FILENAME_LEN] = "damage1";
 	char fname_middle[MAX_FILENAME_LEN] = "damage2";
 	char fname_bottom[MAX_FILENAME_LEN] = "damage3";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 245;
@@ -2931,6 +3559,40 @@ void load_gauge_damage(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Top Background Filename:")) {
+		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Middle Background Filename:")) {
+		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Bottom Background Filename:")) {
+		stuff_string(fname_bottom, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(header_offsets, 2);
+	}
+	if(optional_string("Hull Integrity Offsets:")) {
+		stuff_int_list(hull_integ_offsets, 2);
+	}
+	if(optional_string("Hull Integrity Value X-offset:")) {
+		stuff_int(&hull_integ_val_offset_x);
+	}
+	if(optional_string("Top Background Height:")) {
+		stuff_int(&middle_frame_start_offset_y);
+	}
+	if(optional_string("Subsystem Entry Height:")) {
+		stuff_int(&line_h);
+	}
+	if(optional_string("Subsystem List Start Offsets:")) {
+		stuff_int_list(subsys_integ_start_offsets, 2);
+	}
+	if(optional_string("Subsystem Entry Value X-offset:")) {
+		stuff_int(&subsys_integ_val_offset_x);
+	}
+
 	HudGaugeDamage* hud_gauge = new HudGaugeDamage();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
@@ -2942,6 +3604,7 @@ void load_gauge_damage(int base_w, int base_h, int ship_index)
 	hud_gauge->initSubsysIntegStartOffsets(subsys_integ_start_offsets[0], subsys_integ_start_offsets[1]);
 	hud_gauge->initSubsysIntegValueOffsetX(subsys_integ_val_offset_x);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -2959,6 +3622,7 @@ void load_gauge_support(int base_w, int base_h, int ship_index)
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
 	char fname[MAX_FILENAME_LEN] = "support1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 265;
@@ -2994,6 +3658,26 @@ void load_gauge_support(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Header Offsets:")) {
+		stuff_int_list(header_offsets, 2);
+	}
+	if(optional_string("Text Y-offset:")) {
+		stuff_int(&text_val_offset_y);
+	}
+	if(optional_string("Dock Status X-offset:")) {
+		stuff_int(&text_dock_offset_x);
+	}
+	if(optional_string("Dock Time X-offset:")) {
+		stuff_int(&text_dock_val_offset_x);
+	}
+
 	HudGaugeSupport* hud_gauge = new HudGaugeSupport();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
@@ -3002,6 +3686,7 @@ void load_gauge_support(int base_w, int base_h, int ship_index)
 	hud_gauge->initTextDockOffsetX(text_dock_offset_x);
 	hud_gauge->initTextDockValueOffsetX(text_dock_val_offset_x);
 	hud_gauge->initTextValueOffsetY(text_val_offset_y);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3096,6 +3781,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int ship_index)
 	char fname_secondary_link_1[MAX_FILENAME_LEN];
 	char fname_secondary_link_2[MAX_FILENAME_LEN];
 	char fname_secondary_link_3[MAX_FILENAME_LEN];
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 374;
@@ -3155,6 +3841,44 @@ void load_gauge_weapon_linking(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Single Primary Filename:")) {
+		stuff_string(fname_primary_link_1, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Double Primary Filename:")) {
+		stuff_string(fname_primary_link_2, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Single Secondary Filename:")) {
+		stuff_string(fname_secondary_link_1, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Double Secondary Filename:")) {
+		stuff_string(fname_secondary_link_2, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Triple Secondary Filename:")) {
+		stuff_string(fname_secondary_link_3, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Single Primary Offsets:")) {
+		stuff_int_list(Weapon_link_offsets[LINK_ONE_PRIMARY], 2);
+	}
+	if(optional_string("Double Primary Offsets:")) {
+		stuff_int_list(Weapon_link_offsets[LINK_TWO_PRIMARY], 2);
+	}
+	if(optional_string("Single Secondary Offsets:")) {
+		stuff_int_list(Weapon_link_offsets[LINK_ONE_SECONDARY], 2);
+	}
+	if(optional_string("Double Secondary Offsets:")) {
+		stuff_int_list(Weapon_link_offsets[LINK_TWO_SECONDARY], 2);
+	}
+	if(optional_string("Triple Secondary Offsets:")) {
+		stuff_int_list(Weapon_link_offsets[LINK_THREE_SECONDARY], 2);
+	}
+
 	HudGaugeWeaponLinking* hud_gauge = new HudGaugeWeaponLinking();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
@@ -3164,6 +3888,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int ship_index)
 	hud_gauge->init2SecondaryOffsets(Weapon_link_offsets[LINK_TWO_SECONDARY][0], Weapon_link_offsets[LINK_TWO_SECONDARY][1]);
 	hud_gauge->init3SecondaryOffsets(Weapon_link_offsets[LINK_THREE_SECONDARY][0], Weapon_link_offsets[LINK_THREE_SECONDARY][1]);
 	hud_gauge->initBitmaps(fname_arc, fname_primary_link_1, fname_primary_link_2, fname_secondary_link_1, fname_secondary_link_2, fname_secondary_link_3);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3215,6 +3940,7 @@ void load_gauge_voice_status(int base_w, int base_h, int ship_index)
 {
 	int coords[2];
 	int base_res[2];
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 5;
@@ -3238,9 +3964,15 @@ void load_gauge_voice_status(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+
 	HudGaugeVoiceStatus* hud_gauge = new HudGaugeVoiceStatus();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3253,6 +3985,7 @@ void load_gauge_ping(int base_w, int base_h, int ship_index)
 {
 	int coords[2];
 	int base_res[2];
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 560;
@@ -3276,9 +4009,15 @@ void load_gauge_ping(int base_w, int base_h, int ship_index)
 			stuff_int_list(coords, 2);
 		}
 	}
+
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+
 	HudGaugePing* hud_gauge = new HudGaugePing();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3291,6 +4030,7 @@ void load_gauge_supernova(int base_w, int base_h, int ship_index)
 {
 	int coords[2];
 	int base_res[2];
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 100;
@@ -3315,9 +4055,14 @@ void load_gauge_supernova(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+
 	HudGaugeSupernova* hud_gauge = new HudGaugeSupernova();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3416,6 +4161,29 @@ void load_gauge_lock(int base_w, int base_h, int ship_index)
 		base_res[1] = base_h;
 	}
 
+	if(optional_string("Lock Filename:")) {
+		stuff_string(fname_lock, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Locked Filename:")) {
+		stuff_string(fname_spin, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Lock Center Offsets:")) {
+		int temp[2];
+
+		stuff_int_list(temp, 2);
+
+		Lock_gauge_half_w = temp[0];
+		Lock_gauge_half_h = temp[1];
+	}
+	if(optional_string("Locked Center Offsets:")) {
+		int temp[2];
+
+		stuff_int_list(temp, 2);
+
+		Lockspin_half_w = temp[0];
+		Lockspin_half_h = temp[1];
+	}
+
 	HudGaugeLock* hud_gauge = new HudGaugeLock();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
@@ -3506,6 +4274,10 @@ void load_gauge_brackets(int base_w, int base_h, int ship_index)
 		base_res[1] = base_h;
 	}
 
+	if(optional_string("Dot Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+
 	HudGaugeBrackets* hud_gauge = new HudGaugeBrackets();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
@@ -3526,6 +4298,7 @@ void load_gauge_hostile_tri(int base_w, int base_h, int ship_index)
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3558,12 +4331,26 @@ void load_gauge_hostile_tri(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Radius:")) {
+		stuff_int(&Radius);
+	}
+	if(optional_string("Triangle Base:")) {
+		stuff_float(&Target_triangle_base);
+	}
+	if(optional_string("Triangle Height:")) {
+		stuff_float(&Target_triangle_height);
+	}
+
 	HudGaugeHostileTriangle* hud_gauge = new HudGaugeHostileTriangle();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3579,6 +4366,7 @@ void load_gauge_target_tri(int base_w, int base_h, int ship_index)
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3611,12 +4399,26 @@ void load_gauge_target_tri(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Radius:")) {
+		stuff_int(&Radius);
+	}
+	if(optional_string("Triangle Base:")) {
+		stuff_float(&Target_triangle_base);
+	}
+	if(optional_string("Triangle Height:")) {
+		stuff_float(&Target_triangle_height);
+	}
+
 	HudGaugeTargetTriangle* hud_gauge = new HudGaugeTargetTriangle();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3632,6 +4434,7 @@ void load_gauge_missile_tri(int base_w, int base_h, int ship_index)
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3664,12 +4467,26 @@ void load_gauge_missile_tri(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Radius:")) {
+		stuff_int(&Radius);
+	}
+	if(optional_string("Triangle Base:")) {
+		stuff_float(&Target_triangle_base);
+	}
+	if(optional_string("Triangle Height:")) {
+		stuff_float(&Target_triangle_height);
+	}
+
 	HudGaugeMissileTriangles* hud_gauge = new HudGaugeMissileTriangles();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3727,6 +4544,18 @@ void load_gauge_lead(int base_w, int base_h, int ship_index)
 		base_res[1] = base_h;
 	}
 
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Center Offsets:")) {
+		int temp[2];
+
+		stuff_int_list(temp, 2);
+
+		Lead_indicator_half[0] = i2fl(temp[0]);
+		Lead_indicator_half[1] = i2fl(temp[1]);
+	}
+
 	HudGaugeLeadIndicator* hud_gauge = new HudGaugeLeadIndicator();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initHalfSize(Lead_indicator_half[0], Lead_indicator_half[1]);
@@ -3744,6 +4573,7 @@ void load_gauge_orientation_tee(int base_w, int base_h, int ship_index)
 	int coords[2];
 	int base_res[2];
 	int Radius;
+	bool slew = true;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 320;
@@ -3772,10 +4602,18 @@ void load_gauge_orientation_tee(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Radius:")) {
+		stuff_int(&Radius);
+	}
+
 	HudGaugeOrientationTee* hud_gauge = new HudGaugeOrientationTee();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
@@ -3813,6 +4651,10 @@ void load_gauge_lead_sight(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+
 	HudGaugeLeadSight* hud_gauge = new HudGaugeLeadSight();
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -3832,6 +4674,7 @@ void load_gauge_kills(int base_w, int base_h, int ship_index)
 	int text_offsets[2] = {6, 4};
 	int text_value_offsets[2] = {74, 4};
 	char fname[MAX_FILENAME_LEN] = "kills1";
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		coords[0] = 497;
@@ -3864,12 +4707,26 @@ void load_gauge_kills(int base_w, int base_h, int ship_index)
 		}
 	}
 
+	if(optional_string("Slew:")) {
+		stuff_boolean(&slew);
+	}
+	if(optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Text Offsets:")) {
+		stuff_int_list(text_offsets, 2);
+	}
+	if(optional_string("Value Offsets:")) {
+		stuff_int_list(text_value_offsets, 2);
+	}
+
 	HudGaugeKills* hud_gauge = new HudGaugeKills();
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initTextOffsets(text_offsets[0], text_offsets[1]);
 	hud_gauge->initTextValueOffsets(text_value_offsets[0], text_value_offsets[1]);
+	hud_gauge->initSlew(slew);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
