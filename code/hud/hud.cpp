@@ -437,6 +437,11 @@ void HudGauge::initBaseResolution(int w, int h)
 	base_h = h;
 }
 
+void HudGauge::initSlew(bool slew)
+{
+	reticle_follow = slew;
+}
+
 char* HudGauge::getCustomGaugeName()
 {
 	return custom_name;

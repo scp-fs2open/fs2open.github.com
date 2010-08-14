@@ -221,6 +221,7 @@ public:
 
 	void initPosition(int x, int y);
 	void initBaseResolution(int w, int h);
+	void initSlew(bool slew);
 
 	int getConfigType();
 	int getObjectType();
