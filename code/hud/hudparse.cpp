@@ -2792,7 +2792,6 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 	int base_res[2];
 	int header_offsets[2];
 	int left_frame_end_x;
-	int middle_frame_width;
 	
 	int single_wing_offsets[2];
 	int multiple_wing_offsets[2];
@@ -2823,7 +2822,6 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 	header_offsets[0] = 2;
 	header_offsets[1] = 2;
 	left_frame_end_x = 71;
-	middle_frame_width = 35;
 	
 	single_wing_offsets[0] = 28;
 	single_wing_offsets[1] = 15;
@@ -2867,7 +2865,6 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 	hud_gauge->initBitmaps(fname_left, fname_middle, fname_right, fname_dots);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initLeftFrameEndX(left_frame_end_x);
-	hud_gauge->initMiddleFrameWidth(middle_frame_width);
 	hud_gauge->initMultipleWingOffsets(multiple_wing_offsets[0], multiple_wing_offsets[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSingleWingOffsets(single_wing_offsets[0], single_wing_offsets[1]);

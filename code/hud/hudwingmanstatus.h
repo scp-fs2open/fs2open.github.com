@@ -36,7 +36,6 @@ protected:
 
 	int header_offsets[2];
 	int left_frame_end_x;
-	int middle_frame_width;
 	
 	int actual_origin[2];
 	int single_wing_offsets[2];
@@ -56,7 +55,6 @@ public:
 	void initBitmaps(char *fname_left, char *fname_middle, char *fname_right, char *fname_dots);
 	void initHeaderOffsets(int x, int y);
 	void initLeftFrameEndX(int x);
-	void initMiddleFrameWidth(int w);
 	void initSingleWingOffsets(int x, int y);
 	void initMultipleWingOffsets(int x, int y);
 	void initWingWidth(int w);

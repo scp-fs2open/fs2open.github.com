@@ -224,11 +224,6 @@ void HudGaugeWingmanStatus::initLeftFrameEndX(int x)
 	left_frame_end_x = x;
 }
 
-void HudGaugeWingmanStatus::initMiddleFrameWidth(int w)
-{
-	middle_frame_width = w;
-}
-
 void HudGaugeWingmanStatus::initSingleWingOffsets(int x, int y)
 {
 	single_wing_offsets[0] = x;
@@ -326,7 +321,7 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 
 	if((num_wings_to_draw > 2) && (grow_mode == GROW_LEFT)) {
 		// make some room for the spacers
-		sx = position[0] - (num_wings_to_draw - 2)*middle_frame_width; 
+		sx = position[0] - (num_wings_to_draw - 2)*wing_width; 
 	} else {
 		sx = position[0];
 	}
@@ -353,7 +348,7 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 	if(num_wings_to_draw > 2 && bitmap > 0) {
 		for(int i = 0; i < num_wings_to_draw - 2; i++){
 			renderBitmap(bitmap, sx, sy);
-			sx += middle_frame_width;
+			sx += wing_width;
 		}
 	}
 
