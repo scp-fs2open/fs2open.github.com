@@ -161,16 +161,14 @@ void HudGaugeEscort::initListStartOffsets(int x, int y)
 	list_start_offsets[1] = y;
 }
 
-void HudGaugeEscort::initEntrySize(int w, int h)
+void HudGaugeEscort::initEntryHeight(int h)
 {
-	entry_size[0] = w;
-	entry_size[1] = h;
+	entry_h = h;
 }
 
-void HudGaugeEscort::initLastEntrySize(int w, int h)
+void HudGaugeEscort::initEntryStaggerWidth(int w)
 {
-	last_entry_size[0] = w;
-	last_entry_size[1] = h;
+	entry_stagger_w = w;
 }
 
 void HudGaugeEscort::initShipNameOffsets(int x, int y)
@@ -304,8 +302,8 @@ void HudGaugeEscort::render(float frametime)
 		{
 			if(i != 0)
 			{
-				x += last_entry_size[0];
-				y += last_entry_size[1];
+				x += entry_stagger_w;
+				y += entry_h;
 			}
 			renderBitmap(Escort_gauges[1].first_frame, x, y);
 			
@@ -314,8 +312,8 @@ void HudGaugeEscort::render(float frametime)
 		}
 
 		//Increment for last entry
-		x += last_entry_size[0];
-		y += last_entry_size[1];
+		x += entry_stagger_w;
+		y += entry_h;
 	}
 
 	//Back to right #

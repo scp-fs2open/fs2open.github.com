@@ -45,8 +45,8 @@ protected:
 	int header_text_offsets[2];			// coordinates of the header text
 	char header_text[NAME_LENGTH];		// Header text for the Escort Gauge. Default is "monitoring"
 	int list_start_offsets[2];					// Offset Start of the Ship List
-	int entry_size[2];				// Offset Width and Height of each entry
-	int last_entry_size[2];			// Offset Width and Height of the last entry
+	int entry_h;						// the height of each entry
+	int entry_stagger_w;				// width of the staircase effect
 	int ship_name_offsets[2];					// Offset of the Ship Name column
 	int ship_integrity_offsets[2];			// Offset of the Ship Hull column
 	int ship_status_offsets[2];				// Offset of the Ship Status column
@@ -56,8 +56,8 @@ public:
 	void initHeaderText(char *text);
 	void initHeaderTextOffsets(int x, int y);
 	void initListStartOffsets(int x, int y);
-	void initEntrySize(int w, int h);
-	void initLastEntrySize(int w, int h);
+	void initEntryHeight(int h);
+	void initEntryStaggerWidth(int w);
 	void initShipNameOffsets(int x, int y);
 	void initShipIntegrityOffsets(int x, int y);
 	void initShipStatusOffsets(int x, int y);
