@@ -1016,6 +1016,9 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 	if(optional_string("Foreground Clip Height:")) {
 		stuff_int(&Wenergy_h);
 	}
+	if(optional_string("Text Offsets:")) {
+		stuff_int_list(Wenergy_text_offsets, 2);
+	}
 
 	HudGaugeWeaponEnergy* hud_gauge = new HudGaugeWeaponEnergy();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
@@ -1194,7 +1197,7 @@ void load_gauge_escort_view(int base_w, int base_h, int ship_index)
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Middle Background Filename:")) {
+	if(optional_string("Entry Background Filename:")) {
 		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
 	}
 	if(optional_string("Bottom Background Filename:")) {
@@ -1694,7 +1697,7 @@ void load_gauge_throttle(int base_w, int base_h, int ship_index)
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Foreground Clip Bottom Offset Y:")) {
+	if(optional_string("Foreground Clip Bottom Y-offset:")) {
 		stuff_int(&bottom_offset_y);
 	}
 	if(optional_string("Foreground Clip Width:")) {
@@ -2582,6 +2585,9 @@ void load_gauge_target_monitor(int base_w, int base_h, int ship_index)
 	if(optional_string("Hull Offsets:")) {
 		stuff_int_list(Hull_offsets, 2);
 	}
+	if(optional_string("Cargo Contents Offsets:")) {
+		stuff_int_list(Cargo_string_offsets, 2);
+	}
 	if(optional_string("Cargo Scan Start Offsets:")) {
 		stuff_int_list(Cargo_scan_start_offsets, 2);
 	}
@@ -2917,7 +2923,7 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 			stuff_string(fname_p_top_b, F_NAME, MAX_FILENAME_LEN);
 		}
 	}
-	if(optional_string("Primary List Entry Background Filename:")) {
+	if(optional_string("Primary List Middle Background Filename:")) {
 		stuff_string(fname_p_middle, F_NAME, MAX_FILENAME_LEN);
 		if(optional_string("Alt Ballistic Filename:")) {
 			stuff_string(fname_p_middle_b, F_NAME, MAX_FILENAME_LEN);
@@ -3845,7 +3851,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int ship_index)
 	if(optional_string("Slew:")) {
 		stuff_boolean(&slew);
 	}
-	if(optional_string("Filename:")) {
+	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
 	}
 	if(optional_string("Single Primary Filename:")) {
