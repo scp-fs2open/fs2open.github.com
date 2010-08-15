@@ -3565,7 +3565,7 @@ void load_gauge_damage(int base_w, int base_h, int ship_index)
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Middle Background Filename:")) {
+	if(optional_string("Entry Background Filename:")) {
 		stuff_string(fname_middle, F_NAME, MAX_FILENAME_LEN);
 	}
 	if(optional_string("Bottom Background Filename:")) {
