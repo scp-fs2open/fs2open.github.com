@@ -5529,7 +5529,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 }
 
 
-ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
+ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
 	ship_subsys_h *sso;
 	object_h *objh;
@@ -5546,9 +5546,27 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem",
 		ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
 		ss->turret_enemy_sig = objh->sig;
 		ss->targeted_subsys = NULL;
+		ss->scripting_target_override = true;
 	}
 
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
+}
+
+ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
+{
+	bool targetOverride = false;
+	ship_subsys_h *sso;
+	object_h *objh;
+	if(!ade_get_args(L, "b|o|o", &targetOverride, l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&objh)))
+		return ADE_RETURN_FALSE;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_FALSE;
+
+	ship_subsys *ss = sso->ss;
+
+	ss->scripting_target_override = targetOverride;
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")

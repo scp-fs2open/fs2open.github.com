@@ -259,6 +259,7 @@ typedef	struct ship_subsys {
 	float	optimum_range;					        
 	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
+	bool	scripting_target_override;
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
