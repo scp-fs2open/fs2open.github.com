@@ -153,7 +153,10 @@ void parse_hud_gauges_tbl(char *filename)
 	}
 
 	if(optional_string("$Reticle Style:")) {
-		int temp = required_string_either("FS1", "FS2");
+		int temp = required_string_either("FS1", "FS2"); 
+
+		// using require_string_either won't advance the Mp pointer to the next token so force it instead
+		skip_to_start_of_string("#Gauge Config");
 
 		if (temp < 0)
 			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
@@ -971,6 +974,20 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 	char fname[MAX_FILENAME_LEN];
 	bool slew = true;
 
+	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+		if(gr_screen.res == GR_640) {
+			strcpy_s(fname, "energy2_fs1");
+		} else {
+			strcpy_s(fname, "2_energy2_fs1");
+		}
+	} else {
+		if(gr_screen.res == GR_640) {
+			strcpy_s(fname, "energy2");
+		} else {
+			strcpy_s(fname, "2_energy2");
+		}
+	}
+
 	if(gr_screen.res == GR_640) {
 		coords[0] = 416;
 		coords[1] = 265;
@@ -982,8 +999,6 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 		Wenergy_text_offsets[1] = 53;
 
 		Wenergy_h = 60;
-
-		strcpy_s(fname, "energy2");
 	} else {
 		coords[0] = 666;
 		coords[1] = 424;
@@ -995,7 +1010,6 @@ void load_gauge_weapon_energy(int base_w, int base_h, int ship_index)
 		Wenergy_text_offsets[1] = 85;
 
 		Wenergy_h = 96;
-		strcpy_s(fname, "2_energy2");
 	}
 
 	if(check_base_res(base_w, base_h)) {
