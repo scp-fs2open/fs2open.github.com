@@ -5556,8 +5556,7 @@ ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targetin
 {
 	bool targetOverride = false;
 	ship_subsys_h *sso;
-	object_h *objh;
-	if(!ade_get_args(L, "b|o|o", &targetOverride, l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&objh)))
+	if(!ade_get_args(L, "ob", l_Subsystem.GetPtr(&sso), &targetOverride))
 		return ADE_RETURN_FALSE;
 
 	if(!sso->IsValid())
