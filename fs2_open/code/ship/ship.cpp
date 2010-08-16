@@ -4882,6 +4882,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_time_enemy_in_range = 0.0f;
 		ship_system->disruption_timestamp=timestamp(0);
 		ship_system->turret_pick_big_attack_point_timestamp = timestamp(0);
+		ship_system->scripting_target_override = false;
 		vm_vec_zero(&ship_system->turret_big_attack_point);
 		for(j = 0; j < NUM_TURRET_ORDER_TYPES; j++)
 		{
