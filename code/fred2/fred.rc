@@ -2457,10 +2457,11 @@ BEGIN
                     WS_TABSTOP
     LTEXT           "Example",IDC_LBL_EXAMPLE,17,158,31,10
     EDITTEXT        IDC_EXAMPLE,49,156,77,12,ES_AUTOHSCROLL | ES_READONLY
-    CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
+    CONTROL         "Include sender name in filename",IDC_INCLUDE_SENDER,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,175,112,10
-    PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,190,120,
-                    14
+    CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,112,10
+    PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,198,120,14
     GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,204
     GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,76
     EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,56,ES_MULTILINE | 
