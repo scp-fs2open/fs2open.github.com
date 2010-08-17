@@ -22737,21 +22737,21 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
-		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
+		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
 		"\tSets the Y speed of a ship, wing, or waypoint."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
-		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
+		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
 		"\tSets the Z speed of a ship, wing, or waypoint."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
-		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
+		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_X, "get-object-x\r\n"
