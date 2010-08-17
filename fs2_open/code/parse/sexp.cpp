@@ -10260,7 +10260,13 @@ void sexp_remove_background_bitmap(int n)
 	int slot = eval_num(n);
 
 	if (slot >= 0) {
-		stars_mark_bitmap_unused( slot );
+		int instances = stars_get_num_bitmaps();
+		if ( instances > slot ) {
+			stars_mark_bitmap_unused( slot );
+		} else {
+			Error(LOCATION, "remove-background-bitmap: slot %d does not exist. Slot must be less than %d.",
+				slot, instances);
+		}
 	}
 }
 
@@ -10343,7 +10349,13 @@ void sexp_remove_sun_bitmap(int n)
 	int slot = eval_num(n);
 
 	if (slot >= 0) {
-		stars_mark_sun_unused( slot );
+		int instances = stars_get_num_suns();
+		if ( instances > slot ) {
+			stars_mark_sun_unused( slot );
+		} else {
+			Error(LOCATION, "remove-sun-bitmap: slot %d does not exist. Slot must be less than %d.",
+				slot, instances);
+		}
 	}
 }
 
