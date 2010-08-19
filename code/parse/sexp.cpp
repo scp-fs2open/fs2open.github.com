@@ -62,6 +62,7 @@
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
+#include "sound/sound.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
 #include "starfield/starfield.h"
@@ -436,6 +437,7 @@ sexp_oper Operators[] = {
 	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
 	{ "set-sound-environment",		OP_SET_SOUND_ENVIRONMENT,		1, INT_MAX },	// Taylor
 	{ "update-sound-environment",	OP_UPDATE_SOUND_ENVIRONMENT,	2, INT_MAX },	// Taylor
+	{ "adjust-audio-volume",		OP_ADJUST_AUDIO_VOLUME,			1, 3},
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,	1,	1,			},
@@ -697,6 +699,11 @@ void sexp_stop_music(int fade = 1);
 int sexp_sound_environment_option_lookup(char *text);
 char *Sound_environment_option[] = { "volume", "decay time", "damping" };
 int Num_sound_environment_options = 3;
+
+// for adjust-audio-volume - The E
+char *Adjust_audio_options[] = { "Music", "Voice", "Effects" };
+int Num_adjust_audio_options = 3;
+int audio_volume_option_lookup(char *text);
 
 // for explosions - Goober5000
 #define EO_DAMAGE			0
@@ -2437,6 +2444,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && ds_eax_get_preset_id(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT;
 				}
+				break;
+
+			case OPF_AUDIO_VOLUME_OPTION:
+				if (audio_volume_option_lookup(CTEXT(node)) == -1)
+					return SEXP_CHECK_TYPE_MISMATCH;
 				break;
 
 			case OPF_SOUND_ENVIRONMENT_OPTION:
@@ -8588,7 +8600,7 @@ void sexp_start_music(int loop)
 {
 	if ( Sexp_music_handle != -1 ) {
 		if ( !audiostream_is_playing(Sexp_music_handle) )
-			audiostream_play(Sexp_music_handle, Master_event_music_volume, loop);
+			audiostream_play(Sexp_music_handle, (Master_event_music_volume * aav_music_volume), loop);
 	}
 	else {
 		nprintf(("Warning", "Can not play music. sexp_start_music called when no music file is set for Sexp_music_handle!\n"));
@@ -8810,6 +8822,55 @@ void sexp_update_sound_environment(int node)
 		} else if ( option == SEO_DAMPING ) {
 			ds_eax_set_damping(val);
 		}
+	}
+}
+
+//The E
+	//From sexp help:
+	//{ OP_ADJUST_AUDIO_VOLUME, "adjust-audio-volume\r\n"
+	//	"Adjusts the relative volume of one sound type. Takes 2 or 3 arguments....\r\n"
+	//	"\t1:\tSound Type to adjust, either Master, Music, Voice or Effects\r\n"
+	//	"\t2:\tPercentage of the users' settings to adjust to, 0 will be silence, 100 means the maximum volume as set by the user\r\n"
+	//	"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
+
+int audio_volume_option_lookup(char *text)
+{
+	int i;
+
+	Assert(text != NULL);
+	if (text == NULL) {
+		return -1;
+	}
+	
+	for (i = 0; i < Num_adjust_audio_options; i++) {
+		if (!strcmp(text, Adjust_audio_options[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void sexp_adjust_audio_volume(int node)
+{
+	int n = node;
+
+	if (n > 0) {
+		int option = audio_volume_option_lookup(CTEXT(n));
+		n = CDR(n);
+
+		float target_volume = 1.0f;
+		if (n >= 0) {
+			target_volume = (float)eval_num(n) / 100;
+			CLAMP(target_volume, 0.0f, 1.0f);
+			n = CDR(n);
+		}
+
+		int time = 0;
+		if (n >= 0)
+			time = eval_num(n);
+
+		snd_adjust_audio_volume(option, target_volume, time);
 	}
 }
 
@@ -17854,6 +17915,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_ADJUST_AUDIO_VOLUME:
+				sexp_adjust_audio_volume(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_HUD_DISABLE:
 				sexp_hud_disable(node);
 				sexp_val = SEXP_TRUE;
@@ -19547,6 +19613,7 @@ int query_operator_return_type(int op)
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
+		case OP_ADJUST_AUDIO_VOLUME:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
@@ -20306,6 +20373,14 @@ int query_operator_argument_type(int op, int argnum)
 
 			if (a_mod == 0)
 				return OPF_SOUND_ENVIRONMENT_OPTION;
+			else
+				return OPF_POSITIVE;
+		}
+
+		case OP_ADJUST_AUDIO_VOLUME:
+		{
+			if (argnum == 0)
+				return OPF_AUDIO_VOLUME_OPTION;
 			else
 				return OPF_POSITIVE;
 		}
@@ -22475,6 +22550,7 @@ int get_subcategory(int sexp_id)
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
+		case OP_ADJUST_AUDIO_VOLUME:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
 		case OP_ADD_REMOVE_ESCORT:
@@ -23603,7 +23679,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tEnvironment value x 1000, e.g. 10 is 0.01\r\n"
 		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
-		
+	
+	//The E
+	{ OP_ADJUST_AUDIO_VOLUME, "adjust-audio-volume\r\n"
+		"Adjusts the relative volume of one sound type. Takes 1 to 3 arguments....\r\n"
+		"\t1:\tSound Type to adjust, either Music, Voice or Effects. Will act as a reset for the given category, if no other argument present\r\n"
+		"\t2:\tPercentage of the users' settings to adjust to (optional), 0 will be silence, 100 means the maximum volume as set by the user\r\n"
+		"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
+
 	// Goober5000
 	{ OP_SET_EXPLOSION_OPTION, "set-explosion-option\r\n"
 		"Sets an explosion option on a particular ship.  Takes 3 or more arguments...\r\n"

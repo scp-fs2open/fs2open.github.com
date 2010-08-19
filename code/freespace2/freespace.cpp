@@ -1132,8 +1132,7 @@ void game_level_init(int seed)
 	supernova_level_init();
 	cam_init();
 	subtitles_init();
-
-
+	snd_aav_init();
 
 	// multiplayer dogfight hack
 	dogfight_blown = 0;
@@ -6095,6 +6094,7 @@ void game_leave_state( int old_state, int new_state )
 				if ( (Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MAIN_MENU) ){
 					multi_quit_game(PROMPT_NONE);
 				}
+				snd_aav_init();
 
 				freespace_stop_mission();			
 			}

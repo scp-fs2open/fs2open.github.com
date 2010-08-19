@@ -56,6 +56,20 @@ float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playbac
 
 unsigned int SND_ENV_DEFAULT = 0;
 
+//For the adjust-audio-volume sexp
+float aav_voice_volume = 1.0f;
+float aav_music_volume = 1.0f;
+float aav_effect_volume = 1.0f;
+
+struct aav {
+	float start_volume;
+	float delta;
+	float start_time;
+	int delta_time;
+};
+
+aav aav_data[3];
+
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
 #define	MIN_SOUND_VOLUME				0.05f
 
@@ -122,6 +136,8 @@ int snd_init()
 	if ( OGG_init() == -1 ) {
 		mprintf(("Could not initialize the OGG vorbis converter.\n"));
 	}
+
+	snd_aav_init();
 
 	// Init the audio streaming stuff
 	audiostream_init();
@@ -496,9 +512,9 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 
 	volume = gs->default_volume * vol_scale;
 	if ( gs->flags&GAME_SND_VOICE ) {
-		volume *= Master_voice_volume;
+		volume *= (Master_voice_volume * aav_voice_volume);
 	} else {
-		volume *= Master_sound_volume;
+		volume *= (Master_sound_volume * aav_effect_volume);
 	}
 	if ( volume > 1.0f )
 		volume = 1.0f;
@@ -618,7 +634,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 		} 
 	}
 
-	volume *= Master_sound_volume;
+	volume *= (Master_sound_volume * aav_effect_volume);
 	if ( (volume < MIN_SOUND_VOLUME) && !force) {
 		return -1;
 	}
@@ -636,7 +652,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 
 		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), volume / gs->default_volume, pan, looping);
 	} else {
-		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume), volume, ds_priority(priority));
+		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, ds_priority(priority));
 	}
 
 	return handle;
@@ -785,7 +801,7 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 		return -1;
 
 	volume = gs->default_volume * vol_scale;
-	volume *= Master_sound_volume;
+	volume *= (Master_sound_volume * aav_effect_volume);
 	if ( volume > 1.0f )
 		volume = 1.0f;
 
@@ -842,7 +858,7 @@ void snd_set_volume( int sig, float volume )
 		return;
 	}
 
-	new_volume = volume * Master_sound_volume;
+	new_volume = volume * (Master_sound_volume * aav_effect_volume);
 	ds_set_volume( channel, new_volume );
 }
 
@@ -1325,8 +1341,13 @@ int sound_env_supported()
 
 // Called once per game frame
 //
+
+void adjust_volume_on_frame(float* volume_now, aav* data);
 void snd_do_frame()
 {
+	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
+	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
+	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
 	ds_do_frame();
 }
 
@@ -1366,4 +1387,78 @@ int snd_get_samples_per_measure(char *filename, float num_measures)
 
 	// ok, now return the samples per measure (which is half of bytes_per_measure)
 	return (bytes_per_measure / 2);
+}
+
+void snd_adjust_audio_volume(int type, float percent, int time)
+{
+	Assert( type >= 0 && type < 4 );
+	
+	switch (type) {
+	case AAV_MUSIC:
+		aav_data[type].start_volume = aav_music_volume;
+		if (percent < aav_music_volume)
+			aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
+		else
+			aav_data[type].delta = percent - aav_music_volume;
+		break;
+	case AAV_VOICE:
+		aav_data[type].start_volume = aav_voice_volume;
+		if (percent < aav_voice_volume)
+			aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
+		else
+			aav_data[type].delta = percent - aav_voice_volume;
+		break;
+	case AAV_EFFECTS:
+		aav_data[type].start_volume = aav_effect_volume;
+		if (percent < aav_effect_volume)
+			aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
+		else
+			aav_data[type].delta = percent - aav_effect_volume;
+		break;
+	}
+
+	aav_data[type].delta_time = time;
+	aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
+}
+
+void adjust_volume_on_frame(float* volume_now, aav* data)
+{
+	if (Missiontime == 0){
+		return;
+	}
+
+	if (*volume_now == (data->start_volume + data->delta))
+		return;
+	
+	float msMissiontime = (f2fl(Missiontime) * 1000);
+	
+	if ( msMissiontime > ( data->start_time + data->delta_time) ) {
+		*volume_now = data->start_volume + data->delta;
+		return;
+	}
+	
+	float done = 0.0f;
+	//How much change do we need?
+	if (data->delta_time == 0)
+		done = 1.0f;
+	else
+		done =(float) (msMissiontime - data->start_time)/data->delta_time;
+
+	//apply change
+	*volume_now = data->start_volume + (data->delta * done);
+	CLAMP(*volume_now, 0.0f, 1.0f);
+}
+
+void snd_aav_init()
+{
+	aav_music_volume = 1.0f;
+	aav_voice_volume = 1.0f;
+	aav_effect_volume = 1.0f;
+
+	for (int i = 0; i < 3; i++) {
+		aav_data[i].delta = 0.0f;
+		aav_data[i].start_volume = 1.0f;
+		aav_data[i].delta_time = 0;
+		aav_data[i].start_time = 0.0f;	
+	}
 }
