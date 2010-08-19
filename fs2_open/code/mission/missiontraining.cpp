@@ -730,7 +730,7 @@ int message_play_training_voice(int index)
 
 			Training_voice_type = 1;
 			if (Training_voice_handle >= 0)
-				audiostream_play(Training_voice_handle, Master_voice_volume, 0);
+				audiostream_play(Training_voice_handle, (Master_voice_volume * aav_voice_volume), 0);
 
 			Training_voice = index;
 			return Training_voice;

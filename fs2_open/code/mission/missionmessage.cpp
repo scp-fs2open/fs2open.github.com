@@ -1970,7 +1970,7 @@ void message_maybe_distort()
 					snd_set_volume(Playing_messages[i].wave, 0.0f);
 			} else {
 				if ( was_muted )
-					snd_set_volume(Playing_messages[i].wave, Master_sound_volume);
+					snd_set_volume(Playing_messages[i].wave, (Master_sound_volume * aav_voice_volume));
 			}
 		}
 	}
