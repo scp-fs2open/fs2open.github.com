@@ -3689,7 +3689,7 @@ void ship_parse_post_cleanup()
 		// ultra stupid compatbility handling for the once broken "generate hud" flag.
 		// it was previously testing the afterburner flag, so that's what we check for that
 		if ( (sip->shield_icon_index == 255) && (sip->flags & SIF_AFTERBURNER)
-				&& !(sip->flags2 & SIF2_GENERATE_HUD_ICON) )
+				&& !(sip->flags2 & SIF2_GENERATE_HUD_ICON) && (sip->flags & SIF_PLAYER_SHIP) )
 		{
 			Warning(LOCATION, "Compatibility warning:\nNo shield icon specified for '%s' but the \"generate icon\" flag is not specified.\nEnabling flag by default.\n", sip->name);
 			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
