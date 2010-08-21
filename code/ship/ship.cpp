@@ -73,6 +73,7 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "autopilot/autopilot.h"
+#include "cmdline/cmdline.h"
 
 
 
@@ -5437,13 +5438,14 @@ void ship_render(object * obj)
 					//it is specified
 					//it isn't assigned already
 					//start sound doesn't exist or has finished
-					if(mtp->loop_snd >= 0
-						&& shipp->thrusters_sounds[i] < 0
-						&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
-						)
-					{
-						shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
-					}
+					if (!Cmdline_freespace_no_sound)
+						if(mtp->loop_snd >= 0
+							&& shipp->thrusters_sounds[i] < 0
+							&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
+							)
+						{
+							shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
+						}
 
 					//Draw graphics
 					//Skip invalid ones

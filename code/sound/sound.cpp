@@ -1037,6 +1037,11 @@ int snd_get_duration(int snd_id)
 	if ( snd_id < 0 )
 		return 0;
 
+	Assert( !Sounds.empty() );
+
+	if ( Sounds.empty() )
+		return 0;
+
 	return Sounds[snd_id].duration;
 }
 
