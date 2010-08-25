@@ -25,6 +25,7 @@
 #include "mission/missionparse.h"
 #include "species_defs/species_defs.h"
 #include "playerman/managepilot.h"
+#include "object/objectsnd.h"
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -1848,6 +1849,7 @@ void labviewer_change_ship_lod(Tree* caller)
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 		int test_idx = ship_create(&vmd_identity_matrix, &vmd_zero_vector, ship_index);
 		obj_delete(test_idx);
+		obj_snd_level_close();
 	}
 
 	Lab_last_selected_ship = Lab_selected_index;
