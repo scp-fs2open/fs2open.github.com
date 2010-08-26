@@ -11,7 +11,7 @@
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 #include "render/3d.h"
-#include "bmpman/bmpman.h";
+#include "bmpman/bmpman.h"
 
 geometry_batcher::~geometry_batcher()
 {
