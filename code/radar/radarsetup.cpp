@@ -445,22 +445,20 @@ void HudGaugeRadar::drawRange()
 	switch ( HUD_config.rp_dist ) {
 
 	case RR_SHORT:
-		gr_printf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], XSTR( "2k", 467));
+		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], XSTR( "2k", 467));
 		break;
 
 	case RR_LONG:
-		gr_printf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], XSTR( "10k", 468));
+		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], XSTR( "10k", 468));
 		break;
 
 	case RR_INFINITY:
 		sprintf(buf, NOX("%c"), Lcl_special_chars);
-		gr_printf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], buf);
+		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], buf);
 		break;
 
 	default:
 		Int3();	// can't happen (get Alan if it does)
 		break;
 	}
-
-	hud_set_default_color();
 }
