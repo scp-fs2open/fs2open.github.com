@@ -3496,7 +3496,6 @@ void load_gauge_wingman_status(int base_w, int base_h, int ship_index)
 		stuff_int_list(wingmate_offsets[3], 2);
 		stuff_int_list(wingmate_offsets[4], 2);
 		stuff_int_list(wingmate_offsets[5], 2);
-		stuff_int_list(wingmate_offsets[6], 2);
 	}
 	
 	int grow_mode = 0; //By default, expand the gauge to the left (in -x direction)
