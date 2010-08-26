@@ -258,14 +258,14 @@ void HudGaugeTargetBox::initCargoScanSize(int w, int h)
 
 void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_integrity, char *fname_static)
 {
-	Monitor_frame.first_frame = bm_load_animation("targetview1", &Monitor_frame.num_frames);
+	Monitor_frame.first_frame = bm_load_animation(fname_monitor, &Monitor_frame.num_frames);
 	if ( Monitor_frame.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: %s\n", "targetview1");
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_monitor);
 	}
 
-	Integrity_bar.first_frame = bm_load_animation("targetview2", &Integrity_bar.num_frames);
+	Integrity_bar.first_frame = bm_load_animation(fname_integrity, &Integrity_bar.num_frames);
 	if ( Integrity_bar.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: %s\n", "targetview2");
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_integrity);
 	}
 
 	strcpy_s(static_fname, fname_static);
