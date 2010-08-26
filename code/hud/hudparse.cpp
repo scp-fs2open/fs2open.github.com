@@ -2955,13 +2955,13 @@ void load_gauge_weapons(int base_w, int base_h, int ship_index)
 			stuff_string(fname_s_top_b, F_NAME, MAX_FILENAME_LEN);
 		}
 	}
-	if(optional_string("Secondary List Entry Background Filename")) {
+	if(optional_string("Secondary List Entry Background Filename:")) {
 		stuff_string(fname_s_middle, F_NAME, MAX_FILENAME_LEN);
 		if(optional_string("Alt Ballistic Filename:")) {
 			stuff_string(fname_s_middle_b, F_NAME, MAX_FILENAME_LEN);
 		}
 	}
-	if(optional_string("Secondary List Bottom Background Filename")) {
+	if(optional_string("Secondary List Bottom Background Filename:")) {
 		stuff_string(fname_s_bottom, F_NAME, MAX_FILENAME_LEN);
 		if(optional_string("Alt Ballistic Filename:")) {
 			stuff_string(fname_s_bottom_b, F_NAME, MAX_FILENAME_LEN);
