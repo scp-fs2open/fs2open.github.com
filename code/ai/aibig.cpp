@@ -1640,6 +1640,20 @@ void ai_big_strafe()
 		Int3();		//	Illegal submode for AIM_STRAFE
 		break;
 	}
+
+	//Maybe apply random sidethrust, depending on the current submode
+	//The following are valid targets for random sidethrust (circle strafe uses it too, but that is handled separately)
+	if (aip->submode == AIS_STRAFE_ATTACK ||
+		aip->submode == AIS_STRAFE_AVOID ||
+		aip->submode == AIS_STRAFE_RETREAT1 ||
+		aip->submode == AIS_STRAFE_RETREAT2 ||
+		aip->submode == AIS_STRAFE_POSITION)
+	{
+		//Re-roll for random sidethrust every 2 seconds
+		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent) {
+			do_random_sidethrust(aip, &Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index]);
+		}
+	}
 }
 
 // See if Pl_objp should enter strafe mode (This is called from maybe_evade_dumbfire_weapon(), and the

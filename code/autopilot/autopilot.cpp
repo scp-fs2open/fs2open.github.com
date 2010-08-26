@@ -1231,7 +1231,7 @@ void send_autopilot_msg(char *msg, char *snd)
 	// send/play
 	if (audio_handle != -1)
 	{
-		audiostream_play(audio_handle, Master_event_music_volume, 0);
+		audiostream_play(audio_handle, (Master_event_music_volume * aav_music_volume), 0);
 	}
 
 	if (strlen(msg) != 0 && strcmp(msg, "none"))

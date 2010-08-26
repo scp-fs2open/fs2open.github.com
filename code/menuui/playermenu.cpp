@@ -50,11 +50,7 @@ static char *Demo_title_bitmap_filename = NOX("DemoTitle1");
 // PLAYER SELECT defines
 //
 
-//#define MAX_PLAYER_SELECT_LINES		8							// max # of pilots displayed at once
-int Player_select_max_lines[GR_NUM_RESOLUTIONS] = {			// max # of pilots displayed at once
-	8,			// GR_640
-	15			// GR_1024
-};
+int Max_lines;  //Max number of pilots displayed in Window. Gets set in player_select_draw_list()
 
 // button control defines
 #define NUM_PLAYER_SELECT_BUTTONS	8							// button control defines
@@ -918,7 +914,7 @@ void player_select_scroll_list_down()
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 	}
 		
-	if (Player_select_pilot >= (Player_select_list_start + Player_select_max_lines[gr_screen.res])){
+	if (Player_select_pilot >= (Player_select_list_start + Max_lines)){
 		Player_select_list_start++;
 	}
 }
@@ -1064,7 +1060,12 @@ void player_select_draw_list()
 {
 	int idx;
 
-	for (idx=0; idx<Player_select_max_lines[gr_screen.res]; idx++) {
+	if (gr_screen.res == 1)
+		Max_lines = 145/gr_get_font_height(); //Make the max number of lines dependent on the font height. 145 and 85 are magic numbers, based on the window size in retail. 
+	else
+		Max_lines = 85/gr_get_font_height();
+
+	for (idx=0; idx<Max_lines; idx++) {
 		// only draw as many pilots as we have
 		if ((idx + Player_select_list_start) == Player_select_num_pilots)
 			break;

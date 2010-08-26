@@ -118,6 +118,7 @@ struct ship;
 #define OPF_SOUND_ENVIRONMENT	72		// Goober5000 - one of EFX_presets, per Taylor
 #define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
 #define OPF_EXPLOSION_OPTION	74		// Goober5000
+#define OPF_AUDIO_VOLUME_OPTION 75		// The E
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -589,6 +590,7 @@ struct ship;
 #define OP_SET_SOUND_ENVIRONMENT			(0x00d6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
 #define OP_UPDATE_SOUND_ENVIRONMENT			(0x00d7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
 #define OP_SET_EXPLOSION_OPTION				(0x00d8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ADJUST_AUDIO_VOLUME				(0x00d9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1066,6 +1068,10 @@ extern char *Sound_environment_option[];
 // Goober5000
 extern int Num_explosion_options;
 extern char *Explosion_option[];
+
+//The E
+extern int Num_adjust_audio_options;
+extern char *Adjust_audio_options[];
 
 /** Global state variables for the hud-display-gauge sexp.
 They all should be named Sexp_hud_display_*;

@@ -21,6 +21,7 @@
 struct ship_weapon;
 struct ship_subsys;
 struct object;
+struct ship_info;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
@@ -702,4 +703,8 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 
 //SUSHI: Updating AI aim
 void ai_update_aim(ai_info *aip, object* En_Objp);
+
+//SUSHI: Random evasive sidethrust
+void do_random_sidethrust(ai_info *aip, ship_info *sip);
+
 #endif

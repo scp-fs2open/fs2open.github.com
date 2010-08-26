@@ -1140,6 +1140,7 @@
 #define IDC_SOUND_ENVIRONMENT_BUTTON    1626
 #define IDC_SOUND_ENVIRONMENT_TEST      1627
 #define IDC_GROUP_MESSAGES              1628
+#define IDC_INCLUDE_SENDER              1629
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775

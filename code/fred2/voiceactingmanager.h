@@ -27,6 +27,7 @@ public:
 	CString	m_abbrev_debriefing;
 	CString	m_abbrev_message;
 	CString	m_abbrev_mission;
+	BOOL m_use_sender_in_filename;
 	CString	m_example;
 	BOOL m_no_replace;
 	CString m_script_entry_format;
@@ -53,9 +54,10 @@ protected:
 	int calc_digits(int size);
 	void build_example();
 	void build_example(CString section);
-	CString generate_filename(CString section, int number, int digits);
+	CString generate_filename(CString section, int number, int digits, MMessage *message=NULL);
 	char *get_message_sender(char *message);
 	void export_one_message(MMessage *message);
+	void get_valid_sender(char *sender, size_t sender_size, MMessage *message);
 	void group_message_indexes(SCP_vector<int> &message_indexes);
 	void group_message_indexes_in_tree(int node, SCP_vector<int> &source_list, SCP_vector<int> &destination_list);
 
@@ -88,6 +90,7 @@ protected:
 	afx_msg void OnExportBriefings();
 	afx_msg void OnExportDebriefings();
 	afx_msg void OnExportMessages();
+	afx_msg void OnBnClickedIncludeSender();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

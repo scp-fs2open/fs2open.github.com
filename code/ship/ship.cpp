@@ -73,6 +73,7 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "autopilot/autopilot.h"
+#include "cmdline/cmdline.h"
 
 
 
@@ -3693,7 +3694,7 @@ void ship_parse_post_cleanup()
 		// ultra stupid compatbility handling for the once broken "generate hud" flag.
 		// it was previously testing the afterburner flag, so that's what we check for that
 		if ( (sip->shield_icon_index == 255) && (sip->flags & SIF_AFTERBURNER)
-				&& !(sip->flags2 & SIF2_GENERATE_HUD_ICON) )
+				&& !(sip->flags2 & SIF2_GENERATE_HUD_ICON) && (sip->flags & SIF_PLAYER_SHIP) )
 		{
 			Warning(LOCATION, "Compatibility warning:\nNo shield icon specified for '%s' but the \"generate icon\" flag is not specified.\nEnabling flag by default.\n", sip->name);
 			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
@@ -4887,6 +4888,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_time_enemy_in_range = 0.0f;
 		ship_system->disruption_timestamp=timestamp(0);
 		ship_system->turret_pick_big_attack_point_timestamp = timestamp(0);
+		ship_system->scripting_target_override = false;
 		vm_vec_zero(&ship_system->turret_big_attack_point);
 		for(j = 0; j < NUM_TURRET_ORDER_TYPES; j++)
 		{
@@ -5441,13 +5443,14 @@ void ship_render(object * obj)
 					//it is specified
 					//it isn't assigned already
 					//start sound doesn't exist or has finished
-					if(mtp->loop_snd >= 0
-						&& shipp->thrusters_sounds[i] < 0
-						&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
-						)
-					{
-						shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
-					}
+					if (!Cmdline_freespace_no_sound)
+						if(mtp->loop_snd >= 0
+							&& shipp->thrusters_sounds[i] < 0
+							&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
+							)
+						{
+							shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
+						}
 
 					//Draw graphics
 					//Skip invalid ones

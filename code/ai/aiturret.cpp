@@ -1905,8 +1905,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	if(num_valid < 1)
 		ss->turret_enemy_objnum = -1;
 
-	//	Maybe pick a new enemy.
-	if ( turret_should_pick_new_target(ss) ) {
+	//	Maybe pick a new enemy, unless targeting has been taken over by scripting
+	if ( turret_should_pick_new_target(ss) && !ss->scripting_target_override) {
 		Num_find_turret_enemy++;
 		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum);
 		//Assert(objnum < 0 || is_target_beam_valid(tp, objnum));

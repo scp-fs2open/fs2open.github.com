@@ -8350,10 +8350,14 @@ void ai_chase()
 		aip->submode == SM_SUPER_ATTACK ||
 		aip->submode == SM_EVADE_SQUIGGLE ||
 		aip->submode == SM_EVADE ||
-		aip->submode == SM_GET_AWAY)
+		aip->submode == SM_GET_AWAY ||
+		aip->submode == AIS_CHASE_GLIDEATTACK)
 	{
 		//Re-roll for random sidethrust every 2 seconds
-		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent)
+		//Also, only do this if we've recently been hit or are in current primary weapon range of target
+		float current_weapon_range = Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].weapon_range;
+		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent &&
+			((Missiontime - aip->last_hit_time < i2f(5) && aip->hitter_objnum >= 0) || dist_to_enemy < current_weapon_range)) 
 		{
 			do_random_sidethrust(aip, sip);
 		}

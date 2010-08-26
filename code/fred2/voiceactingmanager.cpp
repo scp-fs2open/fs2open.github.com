@@ -2,7 +2,9 @@
 //
 
 #include "stdafx.h"
+#include <string.h>
 #include "fred.h"
+#include "fred2/freddoc.h"
 #include "VoiceActingManager.h"
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
@@ -19,6 +21,8 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+#define INVALID_MESSAGE ((MMessage*)0xFFFFFFFF)
 
 // to keep track of data
 char Voice_abbrev_briefing[NAME_LENGTH];
@@ -47,6 +51,7 @@ VoiceActingManager::VoiceActingManager(CWnd* pParent /*=NULL*/)
 	m_abbrev_debriefing = _T("");
 	m_abbrev_message = _T("");
 	m_abbrev_mission = _T("");
+	m_use_sender_in_filename = FALSE;
 	m_example = _T("");
 	m_no_replace = FALSE;
 	m_script_entry_format = _T("");
@@ -72,6 +77,7 @@ void VoiceActingManager::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_ABBREV_MISSION, m_abbrev_mission);
 	DDX_Text(pDX, IDC_EXAMPLE, m_example);
 	DDX_Check(pDX, IDC_NO_REPLACE, m_no_replace);
+	DDX_Check(pDX, IDC_INCLUDE_SENDER, m_use_sender_in_filename);
 	DDX_Text(pDX, IDC_ENTRY_FORMAT, m_script_entry_format);
 	DDX_Check(pDX, IDC_EXPORT_EVERYTHING, m_export_everything);
 	DDX_Check(pDX, IDC_EXPORT_COMMAND_BRIEFINGS, m_export_command_briefings);
@@ -108,6 +114,7 @@ BEGIN_MESSAGE_MAP(VoiceActingManager, CDialog)
 	ON_BN_CLICKED(IDC_EXPORT_BRIEFINGS, OnExportBriefings)
 	ON_BN_CLICKED(IDC_EXPORT_DEBRIEFINGS, OnExportDebriefings)
 	ON_BN_CLICKED(IDC_EXPORT_MESSAGES, OnExportMessages)
+	ON_BN_CLICKED(IDC_INCLUDE_SENDER, &VoiceActingManager::OnBnClickedIncludeSender)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -228,10 +235,10 @@ void VoiceActingManager::build_example(CString section)
 		return;
 	}
 
-	m_example = generate_filename(section, 1, 2);
+	m_example = generate_filename(section, 1, 2, INVALID_MESSAGE);
 }
 
-CString VoiceActingManager::generate_filename(CString section, int number, int digits)
+CString VoiceActingManager::generate_filename(CString section, int number, int digits, MMessage *message)
 {
 	if (section == "")
 		return "none.wav";
@@ -256,8 +263,51 @@ CString VoiceActingManager::generate_filename(CString section, int number, int d
 	}
 	str = str + num;
 
+
+	const CString suffix = get_suffix();
+	// append sender name if supposed to and I have been passed a message
+	// to get the sender from
+	if ( message != NULL && m_use_sender_in_filename ) {
+		size_t allow_to_copy = NAME_LENGTH - suffix.GetLength() - str.GetLength();
+		char sender[NAME_LENGTH];
+		if ( message == INVALID_MESSAGE ) {
+			scp_strcpy_s(LOCATION, sender, "Alpha 1");
+		} else {
+			get_valid_sender(sender, sizeof(sender), message);
+		}
+
+		// truncate sender to that we don't overflow filename
+		sender[allow_to_copy] = '\0';
+		size_t j;
+		for( j = 0; sender[j] != '\0'; j++ ) {
+			// lower case letter
+			sender[j] = (char)tolower(sender[j]);
+
+			// replace any non alpha numeric with a underscore
+			if ( !isalnum( sender[j] ) )
+				sender[j] = '_';
+		}
+
+		// flatten muliple underscores
+		j = 1;
+		while( sender[j] != '\0' ) {
+			if ( sender[j-1] == '_' && sender[j] == '_' ) {
+				size_t k;
+				for (k = j + 1; sender[k] != '\0'; k++ )
+					sender[k - 1] = sender[k];
+				sender[k - 1] = '\0';
+			} else {
+				// only increment on rounds when I am not moving the string down
+				j++;
+			}
+		}
+		str = str + sender;
+	}
+
 	// suffix
 	str = str + get_suffix();
+
+	Assert( str.GetLength() < NAME_LENGTH );
 
 	return str;
 }
@@ -266,6 +316,7 @@ void VoiceActingManager::OnGenerateFileNames()
 {
 	int i;
 	int digits;
+	size_t modified_filenames = 0;
 
 	// stuff data to variables
 	UpdateData(TRUE);
@@ -280,6 +331,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		if (!m_no_replace || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
 		{
 			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_command_briefing, i + 1, digits)));
+			modified_filenames++;
 		}
 	}
 
@@ -293,6 +345,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		if (!m_no_replace || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
 		{
 			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_briefing, i + 1, digits)));
+			modified_filenames++;
 		}
 	}
 
@@ -306,6 +359,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		if (!m_no_replace || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
 		{
 			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_debriefing, i + 1, digits)));
+			modified_filenames++;
 		}
 	}
 
@@ -314,6 +368,7 @@ void VoiceActingManager::OnGenerateFileNames()
 	for (i = 0; i < Num_messages - Num_builtin_messages; i++)
 	{
 		char *filename = Messages[i + Num_builtin_messages].wave_info.name;
+		MMessage *message = &Messages[i + Num_builtin_messages];
 
 		// generate only if we're replacing or if it has a replaceable name
 		if (!m_no_replace || !filename || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
@@ -323,12 +378,20 @@ void VoiceActingManager::OnGenerateFileNames()
 				free(filename);
 
 			// allocate new filename
-			Messages[i + Num_builtin_messages].wave_info.name = strdup(LPCTSTR(generate_filename(m_abbrev_message, i + 1, digits)));
+			Messages[i + Num_builtin_messages].wave_info.name = strdup(LPCTSTR(generate_filename(m_abbrev_message, i + 1, digits, message)));
+			modified_filenames++;
 		}
 	}
 
-	// notify
-	MessageBox("File name generation complete.", "Woohoo!");
+	if ( modified_filenames > 0 ) {
+		// Tell FRED that we actually modified something
+		set_modified(TRUE);
+	}
+
+	// notify user that we are done and how many filenames were changed
+	char message[128] = { '\0' };
+	snprintf(message, sizeof(message), "File name generation complete. Modified %d messages.", modified_filenames);
+	MessageBox(message, "Woohoo!");
 }
 
 void VoiceActingManager::OnGenerateScript()
@@ -464,8 +527,36 @@ void VoiceActingManager::export_one_message(MMessage *message)
 
 	// determine sender
 	char sender[NAME_LENGTH+1];
-	strcpy_s(sender, get_message_sender(message->name));
-	int shipnum = ship_name_lookup(sender);
+
+	get_valid_sender(sender, sizeof(sender), message);
+
+	// replace sender (but print #Command as Command)
+	if (*sender == '#')
+		entry.Replace("$sender", &sender[1]);
+	else
+		entry.Replace("$sender", sender);
+
+	fout("%s\n\n\n", (char *) (LPCTSTR) entry);
+}
+
+/** Passed sender string will have either have the senders name
+or '<none>'*/
+void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMessage *message) {
+	Assert( sender != NULL );
+	Assert( message != NULL );
+
+	strncpy(sender, get_message_sender(message->name), sender_size);
+
+	// strip hash if present
+	if ( sender[0] == '#' ) {
+		size_t i = 1;
+		for(; sender[i] != '\0'; i++ ) {
+			sender[i-1] = sender[i];
+		}
+		sender[i-1] = '\0';
+	}
+
+	int shipnum = ship_name_lookup(sender, 1); // The player's ship is valid for this search.
 
 	if (shipnum >= 0)
 	{
@@ -487,14 +578,6 @@ void VoiceActingManager::export_one_message(MMessage *message)
 			end_string_at_first_hash_symbol(sender);
 		}
 	}
-
-	// replace sender (but print #Command as Command)
-	if (*sender == '#')
-		entry.Replace("$sender", &sender[1]);
-	else
-		entry.Replace("$sender", sender);
-
-	fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 }
 
 void VoiceActingManager::OnSetfocusAbbrevBriefing() 
@@ -835,4 +918,14 @@ void VoiceActingManager::OnExportMessages()
 {
 	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
 	button->EnableWindow(TRUE);
+}
+
+
+void VoiceActingManager::OnBnClickedIncludeSender()
+{
+	UpdateData(TRUE);
+
+	build_example();
+
+	UpdateData(FALSE);
 }
