@@ -394,7 +394,6 @@ void HudGaugeMessages::render(float frametime)
 	int i;
 
 	hud_set_default_color();
-	gr_set_font(FONT1);
 
 	setClip(position[0], position[1], MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
 

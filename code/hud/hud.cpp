@@ -319,7 +319,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(false), active(false), pop_up(false), disabled_views(0), texture_target(-1), 
-texture_cache(-1), target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false)
+texture_cache(-1), target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -344,7 +344,7 @@ HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, b
 				   int r, int g, int b):
 base_w(0), base_h(0), gauge_object(_gauge_object), gauge_config(_gauge_config), config_override(_allow_override), reticle_follow(_slew), 
 message_gauge(_message), active(true), pop_up(false), disabled_views(_disabled_views), texture_target(-1), texture_cache(-1), target_x(-1), target_y(-1), 
-target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false)
+target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
 
@@ -378,7 +378,7 @@ target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false)
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname):
 gauge_object(HUD_OBJECT_CUSTOM), base_w(0), base_h(0), gauge_config(_gauge_config), config_override(true), reticle_follow(_slew), message_gauge(false), 
 active(true), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), texture_target(-1), texture_cache(-1), 
-target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(true)
+target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(true), font_num(FONT1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -442,6 +442,13 @@ void HudGauge::initSlew(bool slew)
 	reticle_follow = slew;
 }
 
+void HudGauge::initFont(int font)
+{
+	if ( font >= 0 && font < Num_fonts) {
+		font_num = font;
+	}
+}
+
 char* HudGauge::getCustomGaugeName()
 {
 	return custom_name;
@@ -478,6 +485,11 @@ void HudGauge::updateCustomGaugeText(char* txt)
 bool HudGauge::configOverride()
 {
 	return config_override;
+}
+
+void HudGauge::setFont()
+{
+	gr_set_font(font_num);
 }
 
 void HudGauge::setGaugeColor(int bright_index)
@@ -1619,6 +1631,7 @@ void hud_render_all()
 		for(int i = 0; i < num_gauges; i++) {
 			if(sip->hud_gauges[i]->canRender()) {
 				sip->hud_gauges[i]->resetClip();
+				sip->hud_gauges[i]->setFont();
 				sip->hud_gauges[i]->render(flFrametime);
 			}
 		}
@@ -1627,10 +1640,14 @@ void hud_render_all()
 		for(int i = 0; i < num_gauges; i++) {
 			if(default_hud_gauges[i]->canRender()) {
 				default_hud_gauges[i]->resetClip();
+				default_hud_gauges[i]->setFont();
 				default_hud_gauges[i]->render(flFrametime);
 			}
 		}
 	}
+
+	// set font back the way it was
+	gr_set_font(FONT1);
 }
 
 // hud_stop_looped_engine_sounds()
@@ -2177,11 +2194,6 @@ void HudGaugeTextWarnings::render(float frametime)
 
 	int w, h;
 
-	// different font size in hi-res
-	if(gr_screen.res != GR_640){
-		gr_set_font(FONT3);
-	}
-
 	// string size
 	gr_get_string_size(&w, &h, Hud_text_flash);
 
@@ -2196,9 +2208,6 @@ void HudGaugeTextWarnings::render(float frametime)
 	// string
 	setGaugeColor(HUD_C_BRIGHT);
 	renderString(fl2i((float)position[0] - ((float)w / 2.0f)), position[1], Hud_text_flash);
-
-	// go back to normal font
-	gr_set_font(FONT1);
 }
 
 HudGaugeKills::HudGaugeKills():

@@ -185,6 +185,8 @@ protected:
 	int gauge_config;
 	int gauge_object;
 
+	int font_num;
+
 	bool config_override;
 	bool reticle_follow;
 	bool active;
@@ -222,6 +224,7 @@ public:
 	void initPosition(int x, int y);
 	void initBaseResolution(int w, int h);
 	void initSlew(bool slew);
+	void initFont(int font_num);
 
 	int getConfigType();
 	int getObjectType();
@@ -253,6 +256,7 @@ public:
 	virtual void initialize();
 
 	// rendering functions
+	void setFont();
 	void setGaugeColor(int bright_index = -4);
 	void setupRenderToCache();
 	void doneRenderToCache();
