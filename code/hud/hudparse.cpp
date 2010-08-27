@@ -556,8 +556,13 @@ int parse_gauge_type()
 	if(optional_string("+Extra Target Data:")) 
 		return HUD_OBJECT_EXTRA_TARGET_DATA;
 
-	if(optional_string("+Radar:")) 
-		return HUD_OBJECT_RADAR_STD;
+	if(optional_string("+Radar:")) {
+		if(Cmdline_orb_radar) {
+			return HUD_OBJECT_RADAR_ORB;
+		} else {
+			return HUD_OBJECT_RADAR_STD;
+		}
+	}
 
 	if(optional_string("+Radar Orb:")) 
 		return HUD_OBJECT_RADAR_ORB;
