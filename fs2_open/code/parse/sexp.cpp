@@ -12223,7 +12223,7 @@ void sexp_ship_change_callsign(int node)
 	node = CDR(node);
 
 	// and its index
-	if (!*new_callsign || !stricmp(new_callsign, "<any string>"))
+	if (!*new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
 	{
 		cindex = -1;
 	}
