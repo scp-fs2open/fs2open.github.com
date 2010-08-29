@@ -114,7 +114,7 @@ BEGIN_MESSAGE_MAP(VoiceActingManager, CDialog)
 	ON_BN_CLICKED(IDC_EXPORT_BRIEFINGS, OnExportBriefings)
 	ON_BN_CLICKED(IDC_EXPORT_DEBRIEFINGS, OnExportDebriefings)
 	ON_BN_CLICKED(IDC_EXPORT_MESSAGES, OnExportMessages)
-	ON_BN_CLICKED(IDC_INCLUDE_SENDER, &VoiceActingManager::OnBnClickedIncludeSender)
+	ON_BN_CLICKED(IDC_INCLUDE_SENDER, OnBnClickedIncludeSender)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -271,7 +271,7 @@ CString VoiceActingManager::generate_filename(CString section, int number, int d
 		size_t allow_to_copy = NAME_LENGTH - suffix.GetLength() - str.GetLength();
 		char sender[NAME_LENGTH];
 		if ( message == INVALID_MESSAGE ) {
-			scp_strcpy_s(LOCATION, sender, "Alpha 1");
+			strcpy_s(sender, "Alpha 1");
 		} else {
 			get_valid_sender(sender, sizeof(sender), message);
 		}
