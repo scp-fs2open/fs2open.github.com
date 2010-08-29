@@ -12130,45 +12130,70 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name(ship *shipp, char *alt_name)
+void sexp_ingame_ship_alt_name(ship *shipp, char alt_index)
 {
-	Assert((shipp != NULL) && (alt_name != NULL));
+	Assert((shipp != NULL) && (alt_index < Mission_alt_type_count));
 
-	// see if this is actually the ship class
-	if (!stricmp(Ship_info[shipp->ship_info_index].name, alt_name))
+	// we might be clearing it
+	if (alt_index < 0)
 	{
 		shipp->alt_type_index = -1;
 		return;
 	}
 
-	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
-	shipp->alt_type_index = (char) mission_parse_add_alt(alt_name);
+	// see if this is actually the ship class
+	if (!stricmp(Ship_info[shipp->ship_info_index].name, Mission_alt_types[alt_index]))
+	{
+		shipp->alt_type_index = -1;
+		return;
+	}
+
+	shipp->alt_type_index = alt_index;
 }
 
 // Goober5000
-void sexp_parse_ship_alt_name(p_object *parse_obj, char *alt_name)
+void sexp_parse_ship_alt_name(p_object *parse_obj, char alt_index)
 {
-	Assert((parse_obj != NULL) && (alt_name != NULL));
+	Assert((parse_obj != NULL) && (alt_index < Mission_alt_type_count));
 
-	// see if this is actually the ship class
-	if (!stricmp(Ship_class_names[parse_obj->ship_class], alt_name))
+	// we might be clearing it
+	if (alt_index < 0)
 	{
 		parse_obj->alt_type_index = -1;
 		return;
 	}
 
-	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
-	parse_obj->alt_type_index = (char) mission_parse_add_alt(alt_name);
+	// see if this is actually the ship class
+	if (!stricmp(Ship_class_names[parse_obj->ship_class], Mission_alt_types[alt_index]))
+	{
+		parse_obj->alt_type_index = -1;
+		return;
+	}
+
+	parse_obj->alt_type_index = alt_index;
 }
 
 // Goober5000
-void sexp_ship_change_alt_name(int n)
+void sexp_ship_change_alt_name(int node)
 {
+	int n = node, new_alt_index;
 	char *new_alt_name;
 
 	// get the alt-name
 	new_alt_name = CTEXT(n);
 	n = CDR(n);
+
+	// and its index
+	if (!*new_alt_name || !stricmp(new_alt_name, SEXP_ANY_STRING))
+	{
+		new_alt_index = -1;
+	}
+	else
+	{
+		new_alt_index = mission_parse_lookup_alt(new_alt_name);
+		if (new_alt_index < 0)
+			new_alt_index = mission_parse_add_alt(new_alt_name);
+	}
 
 	for ( ; n != -1; n = CDR(n) )
 	{
@@ -12180,16 +12205,14 @@ void sexp_ship_change_alt_name(int n)
 			// change ingame ship
 			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_alt_name(oswpt.shipp, new_alt_name);
-
+				sexp_ingame_ship_alt_name(oswpt.shipp, new_alt_index);
 				break;
 			}
 
 			// change ship yet to arrive
 			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				sexp_parse_ship_alt_name(oswpt.p_objp, new_alt_name);
-
+				sexp_parse_ship_alt_name(oswpt.p_objp, new_alt_index);
 				break;
 			}
 
@@ -12198,14 +12221,15 @@ void sexp_ship_change_alt_name(int n)
 			{		
 				// current ships
 				for (int i = 0; i < oswpt.wingp->current_count; i++)
-					sexp_ingame_ship_alt_name(&Ships[oswpt.wingp->ship_index[i]], new_alt_name);
+					sexp_ingame_ship_alt_name(&Ships[oswpt.wingp->ship_index[i]], new_alt_index);
 	
 				// ships yet to arrive
 				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 				{
 					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
-						sexp_parse_ship_alt_name(p_objp, new_alt_name);
+						sexp_parse_ship_alt_name(p_objp, new_alt_index);
 				}
+				break;
 			}
 		}
 	}
