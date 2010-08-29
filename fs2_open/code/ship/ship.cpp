@@ -628,6 +628,7 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
 	sip->desc = NULL;
+	sip->tech_title[0] = 0;
 	sip->tech_desc = NULL;
 	sip->ship_length = NULL;
 	sip->gun_mounts = NULL;
@@ -1142,6 +1143,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	
+	if (optional_string("+Tech Title:")) {
+		stuff_string(sip->tech_title, F_NAME, NAME_LENGTH);
+	}
+
 	if (optional_string("+Tech Description:")) {
 		stuff_malloc_string(&sip->tech_desc, F_MULTITEXT, NULL, SHIP_MULTITEXT_LENGTH);
 	}

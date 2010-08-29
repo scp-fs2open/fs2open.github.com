@@ -809,7 +809,7 @@ void techroom_change_tab(int num)
 						Ship_list[Ship_list_size].index = i;
 						Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
 						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
-						Ship_list[Ship_list_size].name = (Ship_info[i].alt_name[0]) ? Ship_info[i].alt_name : Ship_info[i].name;
+						Ship_list[Ship_list_size].name = *Ship_info[i].tech_title ? Ship_info[i].tech_title : (*Ship_info[i].alt_name ? Ship_info[i].alt_name : Ship_info[i].name);
 						Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
 						Ship_list[Ship_list_size].model_num = -1;
 						Ship_list[Ship_list_size].textures_loaded = 0;
@@ -872,14 +872,11 @@ void techroom_change_tab(int num)
 						Weapon_list[Weapon_list_size].index = i;
 						Weapon_list[Weapon_list_size].desc = Weapon_info[i].tech_desc;
 						Weapon_list[Weapon_list_size].has_anim = 1;
-						Weapon_list[Weapon_list_size].name = Weapon_info[i].tech_title;
+						Weapon_list[Weapon_list_size].name = *Weapon_info[i].tech_title ? Weapon_info[i].tech_title : Weapon_info[i].name;
 						Weapon_list[Weapon_list_size].bitmap = -1;
 						Weapon_list[Weapon_list_size].animation.num_frames = 0;
 						Weapon_list[Weapon_list_size].model_num = -1;
 						Weapon_list[Weapon_list_size].textures_loaded = 0;
-						if (Weapon_list[Weapon_list_size].name[0] == 0) {
-							Weapon_list[Weapon_list_size].name = Weapon_info[i].name;
-						}
 						// copy the weapon animation filename
 						strncpy(Weapon_list[Weapon_list_size].tech_anim_filename, Weapon_info[i].tech_anim_filename, MAX_FILENAME_LEN - 1);
 
