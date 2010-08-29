@@ -1014,6 +1014,7 @@ typedef struct ship_info {
 	char		*manufacturer_str;				// string used by tooltips
 	char		*desc;								// string used by tooltips
 	char		*tech_desc;							// string used by tech database
+	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
 	char     *ship_length;						// string used by multiplayer ship desc
 	char     *gun_mounts;			         // string used by multiplayer ship desc
