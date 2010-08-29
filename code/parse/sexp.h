@@ -691,11 +691,12 @@ struct ship;
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
 #define SEXP_SIM_HULL_STRING		"Simulated Hull"
+#define SEXP_SHIELD_STRING			"Shields"
 #define SEXP_ALL_ENGINES_STRING		"<all engines>"
 #define SEXP_ALL_TURRETS_STRING		"<all turrets>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
-#define SEXP_SHIELD_STRING			"Shields"
+#define SEXP_ANY_STRING				"<any string>"
 
 // macros for accessing sexpression atoms
 #define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)
