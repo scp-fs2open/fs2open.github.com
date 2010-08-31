@@ -166,7 +166,7 @@
 				ProgramDataBaseFileName=".\Release_Inferno\Profile\wxfred2/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -189,9 +189,9 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
-				GenerateDebugInformation="true"
+				GenerateDebugInformation="false"
 				ProgramDatabaseFile=".\Release_Inferno/wxfred2_open_trunk_INF_r.pdb"
-				GenerateMapFile="true"
+				GenerateMapFile="false"
 				MapFileName=".\Release_Inferno\Profile\wxfred2/wxfred2_open_trunk_INF_r.map"
 				SubSystem="2"
 				TargetMachine="1"
@@ -376,7 +376,7 @@
 				ProgramDataBaseFileName=".\Release\Profile\wxfred2/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -399,9 +399,9 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
-				GenerateDebugInformation="true"
+				GenerateDebugInformation="false"
 				ProgramDatabaseFile=".\Release/wxfred2_open_trunk_r.pdb"
-				GenerateMapFile="true"
+				GenerateMapFile="false"
 				MapFileName=".\Release\Profile\wxfred2/wxfred2_open_trunk_r.map"
 				SubSystem="2"
 				TargetMachine="1"
