@@ -7713,7 +7713,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
 				Assertion((Player_weapon_precedence[j] > 0), "Error reading player weapon precedence list. Check weapons.tbl for $Player Weapon Precedence entry, and correct as necessary.\n");
 				int weapon_id = Player_weapon_precedence[j];
-				if (Weapon_info[weapon_id].subtype & (WP_LASER || WP_BEAM)) {
+				if ( (Weapon_info[weapon_id].subtype == WP_LASER) || (Weapon_info[weapon_id].subtype == WP_BEAM) ) {
 					swp->primary_bank_weapons[i] = weapon_id;
 					break;
 				}
@@ -7736,7 +7736,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
 				Assert(Player_weapon_precedence[j] > 0);
 				int weapon_id = Player_weapon_precedence[j];
-				if (Weapon_info[weapon_id].subtype & WP_MISSILE) {
+				if (Weapon_info[weapon_id].subtype == WP_MISSILE) {
 					swp->secondary_bank_weapons[i] = weapon_id;
 					break;
 				}
