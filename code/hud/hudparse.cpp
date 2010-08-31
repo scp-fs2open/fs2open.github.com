@@ -2271,6 +2271,9 @@ void load_gauge_extra_target_data(int base_w, int base_h, int font, int ship_ind
 	if(optional_string("Order Offsets:")) {
 		stuff_int_list(order_offsets, 2);
 	}
+	if(optional_string("Time Offsets:")) {
+		stuff_int_list(time_offsets, 2);
+	}
 
 	HudGaugeExtraTargetData* hud_gauge = new HudGaugeExtraTargetData();
 
@@ -2279,6 +2282,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int font, int ship_ind
 	hud_gauge->initBracketOffsets(bracket_offsets[0], bracket_offsets[1]);
 	hud_gauge->initDockOffsets(dock_offsets[0], dock_offsets[1]);
 	hud_gauge->initOrderOffsets(order_offsets[0], order_offsets[1]);
+	hud_gauge->initTimeOffsets(time_offsets[0], time_offsets[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSlew(slew);
 	hud_gauge->initFont(font_num);
@@ -2793,7 +2797,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int font, int ship_index)
 	if(optional_string("Integrity Bar Offsets:")) {
 		stuff_int_list(Integrity_bar_offsets, 2);
 	}
-	if(optional_string("Integrity Bar Foreground Clip Height")) {
+	if(optional_string("Integrity Bar Foreground Clip Height:")) {
 		stuff_int(&Integrity_bar_h);
 	}
 	if(optional_string("Status Offsets:")) {
