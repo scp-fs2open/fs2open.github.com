@@ -618,7 +618,7 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	int index = find_good_batch_item(texture);
 	Assert( index >= 0 );
 
-	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap", bm_get_filename(texture) );
+	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
 	geometry_map[index].tmap_flags = tmap_flags;
 	geometry_map[index].alpha = alpha;
