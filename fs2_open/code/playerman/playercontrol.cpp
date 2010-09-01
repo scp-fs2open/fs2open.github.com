@@ -1498,7 +1498,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Assert ( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
 
 			if ( cargo_name[0] == '#' )
-				sprintf(outstr, XSTR( "passengers:\n   %s", 83), cargo_name+1 );
+				sprintf(outstr, XSTR( "passengers: %s", 83), cargo_name+1 );
 			else
 				sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
 		} else {
