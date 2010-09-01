@@ -400,7 +400,7 @@ void HudGaugeRadarDradis::doneDrawingHtl()
 		renderBitmapUv(foreground, position[0], position[1], Radar_radius[0], Radar_radius[1], 0.0f, 0.0f, i2fl(foreground_w)/i2fl(w), i2fl(foreground_h)/i2fl(h));
 	}
 	
-	hud_save_restore_camera_data(0);
+	//hud_save_restore_camera_data(0);
 
 	gr_zbuffer_set(1);
 
