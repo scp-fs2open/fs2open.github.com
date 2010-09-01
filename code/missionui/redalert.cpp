@@ -601,7 +601,7 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 	ss = GET_FIRST(&shipp->subsys_list);
 	while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
 
-		Assertion((count < MAX_RED_ALERT_SUBSYSTEMS), "Too many subsystems in ship %s with red-alert-carry status. Tried to store %d, maximum is %d", shipp->ship_name, count, MAX_RED_ALERT_SUBSYSTEMS);
+		Assertion((count < MAX_RED_ALERT_SUBSYSTEMS), "Too many subsystems in ship %s with red-alert-carry status. Tried to store %d, maximum is %d\n", shipp->ship_name, count, MAX_RED_ALERT_SUBSYSTEMS);
 
 		if ( count >= MAX_RED_ALERT_SUBSYSTEMS ) 
 			break; //Ran out of systems, better bail

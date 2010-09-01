@@ -5499,7 +5499,7 @@ sexp_list_item *sexp_tree::get_listing_opf_string()
 {
 	sexp_list_item head;
 
-	head.add_data("<any string>");
+	head.add_data(SEXP_ANY_STRING);
 
 	return head.next;
 }

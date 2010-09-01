@@ -628,6 +628,7 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
 	sip->desc = NULL;
+	sip->tech_title[0] = 0;
 	sip->tech_desc = NULL;
 	sip->ship_length = NULL;
 	sip->gun_mounts = NULL;
@@ -1146,6 +1147,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	
+	if (optional_string("+Tech Title:")) {
+		stuff_string(sip->tech_title, F_NAME, NAME_LENGTH);
+	}
+
 	if (optional_string("+Tech Description:")) {
 		stuff_malloc_string(&sip->tech_desc, F_MULTITEXT, NULL, SHIP_MULTITEXT_LENGTH);
 	}
@@ -7716,9 +7721,9 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a laser
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
-				Assert(Player_weapon_precedence[j] > 0);
+				Assertion((Player_weapon_precedence[j] > 0), "Error reading player weapon precedence list. Check weapons.tbl for $Player Weapon Precedence entry, and correct as necessary.\n");
 				int weapon_id = Player_weapon_precedence[j];
-				if (Weapon_info[weapon_id].subtype & (WP_LASER || WP_BEAM)) {
+				if ( (Weapon_info[weapon_id].subtype == WP_LASER) || (Weapon_info[weapon_id].subtype == WP_BEAM) ) {
 					swp->primary_bank_weapons[i] = weapon_id;
 					break;
 				}
@@ -7741,7 +7746,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
 				Assert(Player_weapon_precedence[j] > 0);
 				int weapon_id = Player_weapon_precedence[j];
-				if (Weapon_info[weapon_id].subtype & WP_MISSILE) {
+				if (Weapon_info[weapon_id].subtype == WP_MISSILE) {
 					swp->secondary_bank_weapons[i] = weapon_id;
 					break;
 				}

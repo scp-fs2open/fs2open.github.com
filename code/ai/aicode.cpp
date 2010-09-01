@@ -4269,7 +4269,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 		&& carry_flag
 		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != Autopilot_flight_leader)) )
 	{
-		Assertion( Autopilot_flight_leader != NULL, "When under autopliot there must be a flight leader", Autopilot_flight_leader );
+		Assertion( Autopilot_flight_leader != NULL, "When under autopilot there must be a flight leader" );
 		// snap wings into formation them into formation
 		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
 			if (aip->wing != -1) {
@@ -4413,8 +4413,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 					}
 				} else {
 					Assertion( pl_treat_as_ship_p != NULL,
-						"pl_done_p cannot be NULL while pl_treat_as_ship_p is not NULL",
-						pl_treat_as_ship_p );
+						"pl_done_p cannot be NULL while pl_treat_as_ship_p is not NULL" );
 				}
 		}
 	}

@@ -591,6 +591,7 @@ struct ship;
 #define OP_UPDATE_SOUND_ENVIRONMENT			(0x00d7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Taylor
 #define OP_SET_EXPLOSION_OPTION				(0x00d8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ADJUST_AUDIO_VOLUME				(0x00d9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_SHIP_CHANGE_CALLSIGN				(0x00da | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// FUBAR
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -690,11 +691,12 @@ struct ship;
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
 #define SEXP_SIM_HULL_STRING		"Simulated Hull"
+#define SEXP_SHIELD_STRING			"Shields"
 #define SEXP_ALL_ENGINES_STRING		"<all engines>"
 #define SEXP_ALL_TURRETS_STRING		"<all turrets>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
-#define SEXP_SHIELD_STRING			"Shields"
+#define SEXP_ANY_STRING				"<any string>"
 
 // macros for accessing sexpression atoms
 #define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)
