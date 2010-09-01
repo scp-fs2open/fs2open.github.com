@@ -1108,6 +1108,7 @@
     <ClInclude Include="..\..\code\lab\lab.h" />
     <ClInclude Include="..\..\code\lab\wmcgui.h" />
     <ClInclude Include="..\..\code\Lighting\lighting.h" />
+    <ClInclude Include="..\..\code\math\bitarray.h" />
     <ClInclude Include="..\..\code\Math\fix.h" />
     <ClInclude Include="..\..\code\Math\floating.h" />
     <ClInclude Include="..\..\code\Math\fvi.h" />
