@@ -534,7 +534,7 @@ int bm_load( char *real_filename )
 	}
 
 	if (free_slot < 0) {
-		Int3();
+		Assertion(free_slot < 0, "Could not find free BMPMAN slot for bitmap: %s", real_filename);
 		goto Done;
 	}
 
@@ -1046,7 +1046,7 @@ int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *
 	}
 	#endif
 
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!
+	Assertion( bm_bitmaps[bitmapnum].handle == handle, "Invalid bitmap handle %d passed to bm_get_info().\nThis might be due to an invalid animation somewhere else.\n", handle );		// INVALID BITMAP HANDLE!
 
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
 		if (w) *w = 0;
@@ -1089,7 +1089,7 @@ unsigned int bm_get_signature(int handle)
 	if ( !bm_inited ) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
+	Assertion( bm_bitmaps[bitmapnum].handle == handle, "Invalid bitmap handle %d passed to bm_get_signature().\nThis might be due to an invalid animation somewhere else.\n", handle );		// INVALID BITMAP HANDLE!
 
 	return bm_bitmaps[bitmapnum].signature;
 }
@@ -1100,7 +1100,7 @@ ubyte bm_get_type(int handle)
 	if ( !bm_inited ) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
+	Assertion( bm_bitmaps[bitmapnum].handle == handle, "Invalid bitmap handle %d passed to bm_get_type().\nThis might be due to an invalid animation somewhere else.\n", handle );		// INVALID BITMAP HANDLE!
 
 	return bm_bitmaps[bitmapnum].type;
 }
@@ -1597,13 +1597,7 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
-	#ifndef NDEBUG
-	if(bm_bitmaps[bitmapnum].handle != handle) {
-		mprintf(("bm_lock - %s: bm_bitmaps[%d].handle = %d, handle = %d\n", bm_bitmaps[bitmapnum].filename, bitmapnum, bm_bitmaps[bitmapnum].handle, handle));
-	}
-	#endif
-
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
+	Assertion( bm_bitmaps[bitmapnum].handle == handle, "Invalid handle %d passed to bm_lock. This might be due to an animation elsewhere in the code being too short.\n", handle );		// INVALID BITMAP HANDLE
 
 //	flags &= (~BMP_RLE);
 
