@@ -10965,7 +10965,7 @@ void ship_model_start(object *objp)
 			case SUBSYSTEM_ACTIVATION:
 				break;
 			case SUBSYSTEM_TURRET:
-				Assert( !(psub->flags & MSS_FLAG_ROTATES) ); // Turrets can't rotate!!! See John!
+				Assertion( !(psub->flags & MSS_FLAG_ROTATES), "Turret %s on ship %s has the $rotate or $triggered subobject property defined. Please fix the model.\n", psub->name, Ship_info[shipp->ship_info_index].name ); // Turrets can't rotate!!! See John!
 				break;
 			default:
 				Error(LOCATION, "Illegal subsystem type.\n");
