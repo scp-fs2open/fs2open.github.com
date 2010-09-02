@@ -300,9 +300,9 @@ void HudGaugeWingmanStatus::initBitmaps(char *fname_left, char *fname_middle, ch
 		Warning(LOCATION, "Error loading %s\n", fname_right);
 	}
 
-	Wingman_status_dots.first_frame = bm_load_animation("wingman4", &Wingman_status_dots.num_frames);
+	Wingman_status_dots.first_frame = bm_load_animation(fname_dots, &Wingman_status_dots.num_frames);
 	if ( Wingman_status_dots.first_frame == -1 ) {
-		Warning(LOCATION, NOX("Error loading wingman4'\n"));
+		Warning(LOCATION, "Error loading %s\n", fname_dots);
 	}
 }
 
