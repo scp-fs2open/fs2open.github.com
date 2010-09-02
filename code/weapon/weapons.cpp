@@ -5897,7 +5897,7 @@ void weapons_page_in()
 			}
 
 			default:
-				Int3();	// Invalid weapon rendering type.
+				Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
 		}
 
 		wip->external_model_num = -1;
