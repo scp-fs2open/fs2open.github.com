@@ -192,11 +192,6 @@ void big_explosion_flash(float flash);
 // flash effect to 0.
 void game_flash_diminish();
 
-// Loads the best palette for this level, based
-// on nebula color and hud color.  You could just call palette_load_table with
-// the appropriate filename, but who wants to do that.
-void game_load_palette();
-
 //================================================================
 
 // Call at the beginning of each frame
