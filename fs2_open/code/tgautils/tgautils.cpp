@@ -424,9 +424,9 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 		cfclose(targa_file);
 		targa_file = NULL;
 	}
-
+	
 	if ( (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) ) {
-		Int3();
+		Assertion( (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32), "Invalid colour depth (%d) in header of tga file %s\n", header.pixel_depth, real_filename );
 		return TARGA_ERROR_READING;
 	}
 
