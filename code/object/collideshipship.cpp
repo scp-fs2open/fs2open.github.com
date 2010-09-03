@@ -628,6 +628,10 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	object *heavy = ship_ship_hit_info->heavy;
 	object *light = ship_ship_hit_info->light;
 
+	// gurgh... this includes asteroids too???
+	Assert(heavy->type == OBJ_SHIP || heavy->type == OBJ_ASTEROID);
+	Assert(light->type == OBJ_SHIP || light->type == OBJ_ASTEROID);
+
 	// make cruiser/asteroid collision softer on cruisers.
 	int special_cruiser_asteroid_collision;
 	int cruiser_light = 0;
@@ -672,7 +676,16 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	if (ship_ship_hit_info->submodel_rot_hit == 1) {
 		bool set_model = false;
 
-		polymodel *pm = model_get(Ship_info[Ships[heavy->instance].ship_info_index].model_num);
+		polymodel *pm;
+		if (heavy->type == OBJ_SHIP) {
+			pm = model_get(Ship_info[Ships[heavy->instance].ship_info_index].model_num);
+		} else if (heavy->type == OBJ_ASTEROID) {
+			pm = Asteroid_info[Asteroids[heavy->instance].asteroid_type].modelp[Asteroids[heavy->instance].asteroid_subtype];
+		} else {
+			// we should have caught this already
+			Int3();
+			pm = NULL;
+		}
 
 		// be sure model is set
 		if (pm->submodel[ship_ship_hit_info->submodel_num].sii == NULL) {
@@ -843,7 +856,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * light->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
 	vm_vec_scale_add2(&light->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
 
-	// restore mass in case of special cruuiser / asteroid collision
+	// restore mass in case of special cruiser / asteroid collision
 	if (special_cruiser_asteroid_collision) {
 		if (cruiser_light) {
 			light->phys_info.mass = copy_mass;
