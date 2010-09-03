@@ -1087,7 +1087,7 @@ void anim_reverse_direction(anim_instance *ai)
 
 	// you're not allowed to call anim_reverse_direction(...) unless every frame is a keyframe!!!!
 	// The God of Delta-RLE demands it be thus.
-	Assertion(!(ai->parent->flags & ANF_ALL_KEYFRAMES), "Ani was set to play backwards. In order to enable this, all frames of the animation MUST be keyframes.");
+	Assertion( ai->parent->flags & ANF_ALL_KEYFRAMES, "Ani was set to play backwards. In order to enable this, all frames of the animation MUST be keyframes.");
 		
 	// flip the animation direction
 	if(ai->direction == ANIM_DIRECT_FORWARD){
