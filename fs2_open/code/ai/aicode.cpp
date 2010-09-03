@@ -5602,7 +5602,7 @@ int ai_fire_primary_weapon(object *objp)
 
 	if (aip->target_objnum != -1){
 		enemy_objp = &Objects[aip->target_objnum];
-		enemy_sip = &Ship_info[Ships[enemy_objp->instance].ship_info_index];
+		enemy_sip = (enemy_objp->type == OBJ_SHIP) ? &Ship_info[Ships[enemy_objp->instance].ship_info_index] : NULL;
 	} else {
 		enemy_objp = NULL;
 		enemy_sip = NULL;
@@ -5639,7 +5639,7 @@ int ai_fire_primary_weapon(object *objp)
 
 	//SUSHI: Burst-fire for ballistic primaries.
 	if (The_mission.ai_profile->primary_ammo_burst_mult[Game_skill_level] > 0 &&						//Make sure we are using burst fire
-		enemy_objp != NULL &&																			//We need a target, obviously
+		enemy_objp != NULL && enemy_sip != NULL															//We need a target, obviously
 		(enemy_objp->phys_info.speed >= 1.0f) &&														//Only burst for moving ships
 		(enemy_sip->flags & (SIF_SMALL_SHIP | SIF_TRANSPORT)) && 										//Only burst for small ships (transports count)
 		swp->primary_bank_start_ammo[swp->current_primary_bank] > 0 &&									//Prevent div by 0
