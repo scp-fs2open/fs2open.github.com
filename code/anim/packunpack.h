@@ -106,7 +106,6 @@ void	anim_init();
 anim_instance *init_anim_instance(anim *ptr, int bpp);
 void	free_anim_instance(anim_instance *inst);
 int	anim_get_next_frame(anim_instance *inst);
-int	anim_get_frame(anim_instance *inst, int frame_num, int xlate_pal=1);
 ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap, int bpp);
 void	anim_set_palette(anim *a);
 void	anim_check_for_palette_change(anim_instance *inst);
