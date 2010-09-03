@@ -1238,7 +1238,7 @@ void game_loading_callback(int count)
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
-	Assert( Game_loading_ani.num_frames > 0 );
+	Assertion( Game_loading_ani.num_frames > 0, "Load Screen animation %s not found, or corrupted. Needs to be an animation with at least 1 frame.", Game_loading_ani.filename );
 
 	int do_flip = 0;
 
@@ -1355,7 +1355,7 @@ void game_loading_callback_init()
 	strcpy(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_init(&Game_loading_ani, Game_loading_ani.filename);
 	generic_anim_load(&Game_loading_ani);
-	Assert( Game_loading_ani.num_frames > 0 );
+	Assertion( Game_loading_ani.num_frames > 0, "Load Screen animation %s not found, or corrupted. Needs to be an animation with at least 1 frame.", Game_loading_ani.filename );
 
 	Game_loading_callback_inited = 1;
 	Mouse_hidden = 1;
@@ -4987,7 +4987,7 @@ void game_set_frametime(int state)
 	}
 #endif
 
-	Assert( Framerate_cap > 0 );
+	Assertion( Framerate_cap > 0, "Framerate cap %d is too low. Needs to be a positive, non-zero number", Framerate_cap );
 
 	// Cap the framerate so it doesn't get too high.
 	if (!Cmdline_NoFPSCap)
