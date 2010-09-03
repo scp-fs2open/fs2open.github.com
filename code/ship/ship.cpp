@@ -8269,6 +8269,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip_orig;
 	ship			*sp;
 	ship_weapon *swp;
+	ship_subsys *ss;
 	object		*objp;
 	p_object	*p_objp;
 	float hull_pct, shield_pct;
@@ -8280,37 +8281,67 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
+	ph_inf = objp->phys_info;
 
-	// Goober5000 - maintain the original hull and shield percentages when called by sexp
-	if (by_sexp)
+
+	// Goober5000 - maintain the original hull, shield, and subsystem percentages... gah
+
+	// hull
+	if (sp->special_hitpoints) {
+		hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
+	} else {
+		Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
+		hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+	}
+
+	// extra check
+	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
+	if (hull_pct <= 0.0f) hull_pct = 0.1f;
+	if (hull_pct > 1.0f) hull_pct = 1.0f;
+
+	// shield
+	if (sp->special_shield > 0) {
+		shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
+	} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
+		shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
+	} else {
+		shield_pct = 0.0f;
+	}
+
+	// extra check
+	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
+	if (shield_pct < 0.0f) shield_pct = 0.0f;
+	if (shield_pct > 1.0f) shield_pct = 1.0f;
+
+	// subsystems
+	int num_saved_subsystems = 0;
+	char **subsys_names = new char *[sip_orig->n_subsystems];
+	float *subsys_pcts = new float[sip_orig->n_subsystems];
+
+	ss = GET_FIRST(&sp->subsys_list);
+	while ( ss != END_OF_LIST(&sp->subsys_list) )
 	{
-		// hull
-		if (sp->special_hitpoints) {
-			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
-		} else {
-			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
-			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+		if (num_saved_subsystems == sip_orig->n_subsystems)
+		{
+			Error(LOCATION, "Subsystem mismatch while changing ship class from '%s' to '%s'!", sip_orig->name, sip->name);
+			break;
 		}
 
-		// shield
-		if (sp->special_shield > 0) {
-			shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
-		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
-			shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
-		} else {
-			shield_pct = 0.0f;
-		}
+		// save subsys information
+		subsys_names[num_saved_subsystems] = new char[NAME_LENGTH];
+		strcpy(subsys_names[num_saved_subsystems], ss->system_info->subobj_name);
+		subsys_pcts[num_saved_subsystems] = ss->current_hits / ss->max_hits;
 
-		// physics
-		ph_inf = objp->phys_info;
+		// extra check
+		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
+		if (subsys_pcts[num_saved_subsystems] < 0.0f) subsys_pcts[num_saved_subsystems] = 0.0f;
+		if (subsys_pcts[num_saved_subsystems] > 1.0f) subsys_pcts[num_saved_subsystems] = 1.0f;
+
+		num_saved_subsystems++;
+		ss = GET_NEXT(ss);
 	}
-	// set to 100% otherwise
-	else
-	{
-		hull_pct = 1.0f;
-		shield_pct = 1.0f;
-	}
-	
+
+
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
 		p_objp = mission_parse_get_parse_object(sp->ship_name);
@@ -8325,15 +8356,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			objp->flags &= ~OF_NO_SHIELDS;
 		}
 	}
-
-	// Goober5000 - extra checks
-	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
-	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
-	if (hull_pct <= 0.0f) hull_pct = 0.1f;
-	if (hull_pct > 1.0f) hull_pct = 1.0f;
-	if (shield_pct < 0.0f) shield_pct = 0.0f;
-	if (shield_pct > 1.0f) shield_pct = 1.0f;
-
 
 	// point to new ship data
 	ship_model_change(n, ship_type);
@@ -8386,8 +8408,36 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// fix up the subsystems
 	subsys_set( sp->objnum );
 
-	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
 
+	// Goober5000 - restore the subsystem percentages
+
+	ss = GET_FIRST(&sp->subsys_list);
+	while ( ss != END_OF_LIST(&sp->subsys_list) )
+	{
+		for (i = 0; i < num_saved_subsystems; i++)
+		{
+			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
+			{
+				ss->current_hits = ss->max_hits * subsys_pcts[i];
+				break;
+			}
+		}
+
+		ss = GET_NEXT(ss);
+	}
+	ship_recalc_subsys_strength(sp);
+
+	// now free the memory
+	for (i = 0; i < sip_orig->n_subsystems; i++)
+		delete[] subsys_names[i];
+	delete [] subsys_names;
+	delete [] subsys_pcts;
+
+
+	// DONE WITH PERCENTAGE STUFF
+
+
+	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
 	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
 
 	// avoid cases where either of these are 0
