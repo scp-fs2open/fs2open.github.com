@@ -1316,40 +1316,6 @@ if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_
 //	If new target (objnum) is different than old target, reset target_time.
 int set_target_objnum(ai_info *aip, int objnum)
 {
-/*
-	char	old_name[32], new_name[32];
-
-	if (!timestamp_elapsed(aip->ok_to_target_timestamp))
-		return aip->target_objnum;
-
-	if (Player_ship && (Ships[aip->shipnum].team == Player_ship->team)) {
-		if (aip->target_objnum == -1)
-			strcpy_s(old_name, "none");
-		else
-			strcpy_s(old_name, Ships[Objects[aip->target_objnum].instance].ship_name);
-
-		if (objnum == -1)
-			strcpy_s(new_name, "none");
-		else
-			strcpy_s(new_name, Ships[Objects[objnum].instance].ship_name);
-
-		nprintf(("AI", "Ship %s changing target from %s to %s\n", Ships[aip->shipnum].ship_name, old_name, new_name));
-	}
-*/
-
-	// AL 2-25-97: Ensure that a protected ship isn't being set as a target (for non-players only)
-	/*
-	if ( objnum >= 0 ) {
-		if ( !(Objects[Ships[aip->shipnum].objnum].flags & OF_PLAYER_SHIP) ) {
-			if ( Objects[objnum].flags & OF_PROTECTED ) {
-				// AL 2-26-97: removing Int3() until issue with setting OF_PROTECTED in ai_set_attack_subsystem()
-				//Int3();								// this should not happen
-				return aip->target_objnum;		// don't change targets
-			}
-		}
-	}
-	*/
-
 	if ((aip != Player_ai) && (!timestamp_elapsed(aip->ok_to_target_timestamp))) {
 		return aip->target_objnum;
 	}
@@ -1451,7 +1417,6 @@ void adjust_accel_for_docking(ai_info *aip)
 
 		// make sure we at least some velocity
 		if (ratio < 0.1f) {
-		//	Int3();
 			ratio = 0.1f;
 		}
 
@@ -1854,52 +1819,6 @@ float get_wing_lowest_max_speed(object *objp)
 	return lowest_max_speed;
 }
 
-/*
-//	Tell everyone to ignore object objnum.
-void set_global_ignore_object(int objnum)
-{
-	int	i;
-
-	Assert(Objects[objnum].type == OBJ_SHIP);
-
-	nprintf(("AI", "Telling everyone to ignore object %s\n", Ships[Objects[objnum].instance].ship_name));
-
-	for (i=0; i<MAX_IGNORE_OBJECTS; i++) {
-		if (Ignore_objects[i].objnum == -1) {
-			Ignore_objects[i].objnum = objnum;
-			Ignore_objects[i].signature = Objects[objnum].signature;
-			break;
-		}
-	}
-
-	if (i == MAX_IGNORE_OBJECTS) {
-		//	Couldn't find a free slot, but maybe one of these objects has died.
-		for (i=0; i<MAX_IGNORE_OBJECTS; i++) {
-			int	o = Ignore_objects[i].objnum;
-			if (Objects[o].type != OBJ_SHIP)
-				break;		//	Not a ship, so use this slot.
-			if (Objects[o].signature != Ignore_objects[i].signature)
-				break;		//	Signatures don't match, so use this slot.
-		}
-
-		if (i != MAX_IGNORE_OBJECTS) {
-			Ignore_objects[i].objnum = objnum;
-			Ignore_objects[i].signature = Objects[objnum].signature;
-		} else {
-			nprintf(("Warning", "Ignore_objects buffer full.  Stealing a slot to ignore object #%i\n"));
-			Int3();
-
-			int	r;
-
-			r = objnum % MAX_IGNORE_OBJECTS;
-
-			Ignore_objects[r].objnum = objnum;
-			Ignore_objects[r].signature = Objects[objnum].signature;
-		}
-	}
-}
-
-*/
 
 // Goober5000 - fixed up a bit
 //	Determine if object objnum is supposed to be ignored by object with ai_info *aip.
@@ -5251,7 +5170,6 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	{
 		// this can be NULL in the case of a target death and attacker weapon
 		// change.  using notification message instead of a fault
-	//	Int3();
 		mprintf(("'other_objpp == NULL' in ai_select_primary_weapon()\n"));
 		return -1;
 	}
@@ -6291,7 +6209,6 @@ float ai_get_weapon_dist(ship_weapon *swp)
 	//	If weapon_num is illegal, return a reasonable value.  A valid weapon
 	//	will get selected when this ship tries to fire.
 	if (weapon_num == -1) {
-		// Int3();
 		return 1000.0f;
 	}
 
@@ -6309,7 +6226,6 @@ float ai_get_weapon_speed(ship_weapon *swp)
 	weapon_num = swp->primary_bank_weapons[bank_num];
 
 	if (weapon_num == -1) {
-		//Int3();
 		return 100.0f;
 	}
 
@@ -7962,14 +7878,6 @@ void ai_cruiser_chase()
 	//ship_info	*sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
-
-	//WMC - We don't need/want this anymore.
-	/*
-	if (!(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
-		Int3();	//	Hmm, not a very big ship, how did we get in this function?
-		aip->mode = AIM_NONE;
-		return;
-	}*/
 
 	if (En_objp->type != OBJ_SHIP) {
 		Int3();
