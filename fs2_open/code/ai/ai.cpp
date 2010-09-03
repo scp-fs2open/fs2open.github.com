@@ -88,7 +88,7 @@ char *ai_get_goal_ship_name(char *name, int *index)
 		}
 
 	Assert(Total_goal_ship_names < MAX_GOAL_SHIP_NAMES);
-	Assert(strlen(name) < NAME_LENGTH - 1);
+	Assertion(strlen(name) < NAME_LENGTH - 1, "Ship name %s is too long. Needs to be 31 characters or less.", name);
 	i = Total_goal_ship_names++;
 	strcpy_s(Goal_ship_names[i], name);
 	*index = i;
