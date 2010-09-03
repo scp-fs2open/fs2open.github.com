@@ -2728,11 +2728,11 @@ void ss_load_icons(int ship_class)
 	{
 		int				first_frame, num_frames, i;
 		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
-		if ( first_frame == -1 ) {
-			Int3();	// Could not load in icon frames.. get Alan
+		
+		Assertion(first_frame != -1, "Failed to load icon %s\n", sip->icon_filename);	// Could not load in icon frames.. get Alan
+		if (first_frame == -1)
 			return;
-		}
-
+	
 		for ( i = 0; i < num_frames; i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;
 		}
