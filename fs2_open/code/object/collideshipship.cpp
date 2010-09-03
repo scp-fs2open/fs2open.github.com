@@ -22,6 +22,7 @@
 #include "io/joy_ff.h"
 #include "io/timer.h"
 #include "asteroid/asteroid.h"
+#include "debris/debris.h"
 #include "playerman/player.h"
 #include "object/objectdock.h"
 #include "object/objectshield.h"
@@ -625,9 +626,9 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	object *heavy = ship_ship_hit_info->heavy;
 	object *light = ship_ship_hit_info->light;
 
-	// gurgh... this includes asteroids too???
-	Assert(heavy->type == OBJ_SHIP || heavy->type == OBJ_ASTEROID);
-	Assert(light->type == OBJ_SHIP || light->type == OBJ_ASTEROID);
+	// gurgh... this includes asteroids and debris too
+	Assert(heavy->type == OBJ_SHIP || heavy->type == OBJ_ASTEROID || heavy->type == OBJ_DEBRIS);
+	Assert(light->type == OBJ_SHIP || light->type == OBJ_ASTEROID || light->type == OBJ_DEBRIS);
 
 	// make cruiser/asteroid collision softer on cruisers.
 	int special_cruiser_asteroid_collision;
@@ -678,6 +679,8 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = model_get(Ship_info[Ships[heavy->instance].ship_info_index].model_num);
 		} else if (heavy->type == OBJ_ASTEROID) {
 			pm = Asteroid_info[Asteroids[heavy->instance].asteroid_type].modelp[Asteroids[heavy->instance].asteroid_subtype];
+		} else if (heavy->type == OBJ_DEBRIS) {
+			pm = model_get(Debris[heavy->instance].model_num);
 		} else {
 			// we should have caught this already
 			Int3();
