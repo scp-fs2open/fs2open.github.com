@@ -444,10 +444,9 @@ void parse_msgtbl()
 	if (pVawacs25)
 	{
 		char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
-
-		if (pVawacs25 && pAwacs75 && pVawacs25 < pAwacs75)
+		if (pAwacs75)
 		{
-			// move the V from one place to the other
+			// move the 'V' from the first filename to the second, and adjust the 'A' case
 			*pVawacs25 = 'A';
 			for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
 				pVawacs25[i] = pVawacs25[i+1];
