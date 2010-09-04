@@ -1140,7 +1140,7 @@ void message_training_update_frame()
 		return;
 	}
 	
-	if ( hud_disabled() ) {
+	if ( hud_disabled() && !hud_disabled_except_messages()) {
 		return;
 	}
 
