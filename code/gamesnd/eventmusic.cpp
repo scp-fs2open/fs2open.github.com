@@ -1198,9 +1198,7 @@ void parse_soundtrack()
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string("#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1336,9 +1334,7 @@ void parse_menumusic()
 			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
-		if(!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("$Name:", "#Menu Music End"), "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
