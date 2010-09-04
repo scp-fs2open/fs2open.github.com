@@ -328,7 +328,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		char *filename = Cmd_briefs[0].stage[i].wave_filename;
 
 		// generate only if we're replacing or if it has a replaceable name
-		if (!m_no_replace || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
+		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
 		{
 			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_command_briefing, i + 1, digits)));
 			modified_filenames++;
@@ -342,7 +342,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		char *filename = Briefings[0].stages[i].voice;
 
 		// generate only if we're replacing or if it has a replaceable name
-		if (!m_no_replace || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
+		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
 		{
 			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_briefing, i + 1, digits)));
 			modified_filenames++;
@@ -356,7 +356,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		char *filename = Debriefings[0].stages[i].voice;
 
 		// generate only if we're replacing or if it has a replaceable name
-		if (!m_no_replace || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
+		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
 		{
 			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_debriefing, i + 1, digits)));
 			modified_filenames++;
@@ -371,7 +371,7 @@ void VoiceActingManager::OnGenerateFileNames()
 		MMessage *message = &Messages[i + Num_builtin_messages];
 
 		// generate only if we're replacing or if it has a replaceable name
-		if (!m_no_replace || !filename || !strlen(filename) || !strnicmp(filename, "none.wav", 4) || message_filename_is_generic(filename))
+		if (!m_no_replace || !strlen(filename) || !strlen(filename) || message_filename_is_generic(filename))
 		{
 			// free existing filename
 			if (filename != NULL)
