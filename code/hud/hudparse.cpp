@@ -3789,6 +3789,9 @@ void load_gauge_wingman_status(int base_w, int base_h, int font, int ship_index)
 	if(optional_string("Multiple Wing Start Offsets:")) {
 		stuff_int_list(multiple_wing_offsets, 2);
 	}
+	if(optional_string("Wing Name Offsets:")) {
+		stuff_int_list(wing_name_offsets, 2);
+	}
 	if(optional_string("Dot Offsets:")) {
 		stuff_int_list(wingmate_offsets[0], 2);
 		stuff_int_list(wingmate_offsets[1], 2);
