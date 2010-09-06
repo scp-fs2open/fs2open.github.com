@@ -187,6 +187,7 @@ sexp_oper Operators[] = {
 	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
 	{ "is-ship-type",					OP_IS_SHIP_TYPE,					2, INT_MAX,	},
 	{ "is-ship-class",					OP_IS_SHIP_CLASS,					2, INT_MAX,	},
+	{ "is-facing",						OP_IS_FACING,						3, 4, },
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
@@ -12479,6 +12480,59 @@ int sexp_facing(int node)
 	return SEXP_FALSE;
 }
 
+
+int sexp_is_facing(int node)
+{
+	int sh;
+	object *obj1, *obj2;
+	float a1, a2;
+	vec3d v1, v2; 
+
+	if (ship_query_state(CTEXT(node)) < 0){
+		return SEXP_KNOWN_FALSE;
+	}
+
+	sh = ship_name_lookup(CTEXT(node));
+	if (sh < 0) {
+		return SEXP_FALSE;
+	}
+	obj1 = &Objects[Ships[sh].objnum];
+
+	node = CDR(node);
+
+	if (ship_query_state(CTEXT(node)) < 0){
+		return SEXP_KNOWN_FALSE;
+	}
+
+	sh = ship_name_lookup(CTEXT(node));
+	if (sh < 0) {
+		return SEXP_FALSE;
+	}
+
+	obj2 = &Objects[Ships[sh].objnum];
+	
+	v1 = obj1->orient.vec.fvec;
+	
+	vm_vec_normalize(&v1);
+	vm_vec_sub(&v2, &obj2->pos, &obj1->pos);
+	vm_vec_normalize(&v2);
+	a1 = vm_vec_dotprod(&v1, &v2);
+	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
+
+	node = CDR(node);
+
+	if (node > 0) {
+		if (sexp_distance3(obj1, obj2) > eval_num(node))
+			return SEXP_FALSE;
+	}
+
+	if (a1 >= a2){
+		return SEXP_TRUE;
+	}
+
+	return SEXP_FALSE;
+}
+
 // is ship facing first waypoint in waypoint path
 int sexp_facing2(int node)
 {
@@ -18389,6 +18443,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_facing(node);
 				break;
 
+			case OP_IS_FACING:
+				sexp_val = sexp_is_facing(node);
+				break;
+
 			case OP_FACING2:
 				sexp_val = sexp_facing2(node);
 				break;
@@ -19465,6 +19523,7 @@ int query_operator_return_type(int op)
 		case OP_IS_PLAYER:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
+		case OP_IS_FACING:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -21385,6 +21444,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_HUD_ELEMENT;
 			}
 
+		case OP_IS_FACING:
+			if (argnum != 2)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
+
 		default:
 			Int3();
 	}
@@ -22750,6 +22815,7 @@ int get_subcategory(int sexp_id)
 		case OP_IS_SHIP_TYPE:
 		case OP_CURRENT_SPEED:
 		case OP_GET_THROTTLE_SPEED:
+		case OP_IS_FACING:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_SHIELDS_LEFT:
@@ -24039,6 +24105,18 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 argument...\r\n"
 		"\t1:\tShip to check is withing forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
+
+	{ OP_IS_FACING, "Is Facing (Boolean training operator)\r\n"
+		"\tIs true as long as the second ship is within the first ship's specified "
+		"forward cone.  A forward cone is defined as any point that the angle between the "
+		"vector of the point and the player, and the forward facing vector is within the "
+		"given angle. If the distance between the two ships is greather than"
+		"the fourth parameter, this will return false.\r\n\r\n"
+		"Returns a boolean value.  Takes 3 or 4 argument...\r\n"
+		"\t1:\tShip to check from.\r\n"
+		"\t2:\tShip to check is within forward cone.\r\n"
+		"\t3:\tAngle in degrees of the forward cone.\r\n"
+		"\t4:\tRange in meters (optional)."},
 
 	{ OP_FACING2, "Facing Waypoint(Boolean training operator)\r\n"
 		"\tIs true as long as the specified first waypoint is within the player's specified "
