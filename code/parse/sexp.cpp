@@ -21445,7 +21445,7 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_IS_FACING:
-			if (argnum != 2)
+			if (argnum < 2)
 				return OPF_SHIP;
 			else
 				return OPF_POSITIVE;
