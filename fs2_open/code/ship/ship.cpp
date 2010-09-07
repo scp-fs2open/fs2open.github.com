@@ -12953,12 +12953,10 @@ int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos,
 		pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 		Assert( pm != NULL );
 
-		if (ss->system_info->path_num > pm->n_paths) {
-			// possibly a bad model?
-			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name));
-		//	Int3();
+		// possibly a bad model?
+		Assertion(ss->system_info->path_num < pm->n_paths, "WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name);
+		if (ss->system_info->path_num > pm->n_paths) 
 			return 1;
-		}
 
 		mp = &pm->paths[ss->system_info->path_num];
 		if ( mp->nverts >= 2 ) {
