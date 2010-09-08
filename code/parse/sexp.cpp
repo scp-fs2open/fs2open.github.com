@@ -12517,7 +12517,9 @@ int sexp_is_facing(int node)
 	vm_vec_sub(&v2, &obj2->pos, &obj1->pos);
 	vm_vec_normalize(&v2);
 	a1 = vm_vec_dotprod(&v1, &v2);
-	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
+
+	node = CDR(node);
+	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(node))));
 
 	node = CDR(node);
 
