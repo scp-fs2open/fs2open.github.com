@@ -17061,7 +17061,6 @@ void multi_sexp_show_subtitle_text()
 	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
 	bool center_x=false, center_y=false;
-	int n = -1;
 	bool post_shaded = false;
 	color new_color;
 
@@ -17156,6 +17155,43 @@ void sexp_show_subtitle_image(int node)
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);
+
+	multi_start_packet();
+	multi_send_int(x_pos);
+	multi_send_int(y_pos);
+	multi_send_string(image);
+	multi_send_float(display_time);
+	multi_send_float(fade_time);
+	multi_send_bool(center_x);
+	multi_send_bool(center_y);
+	multi_send_int(width);
+	multi_send_int(height);
+	multi_send_bool(post_shaded);
+	multi_end_packet();
+}
+
+void multi_sexp_show_subtitle_image()
+{
+	int x_pos, y_pos, width=0, height=0;
+	char image[TOKEN_LENGTH];
+	float display_time, fade_time=0.0f;
+	bool center_x=false, center_y=false;
+	bool post_shaded = false;
+
+	multi_get_int(x_pos);
+	multi_get_int(y_pos);
+	multi_get_string(image);
+	multi_get_float(display_time);
+	multi_get_float(fade_time);
+	multi_get_bool(center_x);
+	multi_get_bool(center_y);
+	multi_get_int(width);
+	multi_get_bool(post_shaded);
+
+	// add the subtitle
+	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
+	Subtitles.push_back(new_subtitle);	
+
 }
 
 void sexp_set_time_compression(int n)
