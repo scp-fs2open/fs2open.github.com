@@ -4102,7 +4102,49 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 	return ade_set_args(L, "i", objh->objp->collision_group_id);
 }
 
-ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector fvec", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.fvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
+}
+
+ADE_FUNC(getuvec, l_Object, "[boolean normalize]", "Returns the objects' current uvec.", "vector", "Objects' up vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.uvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
+}
+
+ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current rvec.", "vector", "Objects' rvec, or nil if invalid. If called with a true argument, vector will be normalized.")
 {
 	object_h *objh = NULL;
 	object *obj = NULL;
