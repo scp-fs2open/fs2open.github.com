@@ -6806,6 +6806,23 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 	return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting on the object", "number", "Current EMP effect strength or NIL if object is invalid")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship *shipp = &Ships[obj->instance];
+
+	return ade_set_args(L, "f", shipp->emp_intensity);
+}
+
 //**********HANDLE: Weapon
 ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
 
