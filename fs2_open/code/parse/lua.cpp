@@ -6818,6 +6818,8 @@ ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting o
 	if(!objh->IsValid())
 		return ADE_RETURN_NIL;
 
+	obj = objh->objp;
+
 	ship *shipp = &Ships[obj->instance];
 
 	return ade_set_args(L, "f", shipp->emp_intensity);
