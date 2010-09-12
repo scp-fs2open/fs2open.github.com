@@ -12489,7 +12489,7 @@ int sexp_is_facing(int node)
 	vec3d v1, v2; 
 
 	if (ship_query_state(CTEXT(node)) < 0){
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	}
 
 	sh = ship_name_lookup(CTEXT(node));
@@ -12501,7 +12501,7 @@ int sexp_is_facing(int node)
 	node = CDR(node);
 
 	if (ship_query_state(CTEXT(node)) < 0){
-		return SEXP_KNOWN_FALSE;
+		return SEXP_FALSE;
 	}
 
 	sh = ship_name_lookup(CTEXT(node));
