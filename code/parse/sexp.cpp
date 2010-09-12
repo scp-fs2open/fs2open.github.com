@@ -12488,9 +12488,8 @@ int sexp_is_facing(int node)
 	float a1, a2;
 	vec3d v1, v2; 
 
-	if (ship_query_state(CTEXT(node)) < 0){
-		return SEXP_FALSE;
-	}
+	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
+		return SEXP_CANT_EVAL;
 
 	sh = ship_name_lookup(CTEXT(node));
 	if (sh < 0) {
@@ -12500,9 +12499,8 @@ int sexp_is_facing(int node)
 
 	node = CDR(node);
 
-	if (ship_query_state(CTEXT(node)) < 0){
-		return SEXP_FALSE;
-	}
+	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
+		return SEXP_CANT_EVAL;
 
 	sh = ship_name_lookup(CTEXT(node));
 	if (sh < 0) {
