@@ -1074,7 +1074,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 // Warning:  Do not change ROTVEL_COLLIDE_WHACK_CONST.  This will mess up collision physics.
 // If you need to change the rotation, change  COLLISION_ROTATION_FACTOR in collide_ship_ship.
 #define ROTVEL_COLLIDE_WHACK_CONST 1.0
-void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient )
+void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient, bool is_landing )
 {
 	vec3d	body_delta_rotvel;
 
@@ -1095,9 +1095,11 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
 
 	// find time for shake from weapon to end
-	int dtime = timestamp_until(pi->afterburner_decay);
-	if (dtime < WEAPON_SHAKE_TIME) {
-		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
+	if (!is_landing) {
+		int dtime = timestamp_until(pi->afterburner_decay);
+		if (dtime < WEAPON_SHAKE_TIME) {
+			pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
+		}
 	}
 
 	pi->flags |= PF_REDUCED_DAMP;

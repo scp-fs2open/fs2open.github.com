@@ -1071,3 +1071,12 @@ void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_r
 
 	hit->submodel_rot_hit = submodel_rot_hit;
 }
+
+//Previously, this was done with 
+//memset(&ship_ship_hit_info, -1, sizeof(collision_info_struct));
+//All those -1s are to replicate that logic
+void init_collision_info_struct(collision_info_struct *cis)
+{
+	memset(cis, -1, sizeof(collision_info_struct));
+	cis->is_landing = false;
+}
