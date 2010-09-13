@@ -817,8 +817,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
 #define SIF2_NO_PRIMARY_LINKING				(1 << 10)	// Chief - slated for 3.7 originally, but this looks pretty simple to implement.
 #define SIF2_NO_PAIN_FLASH					(1 << 11)	// The E - disable red pain flash
+#define SIF2_ALLOW_LANDINGS					(1 << 12)	// SUSHI: Automatically set if any subsystems allow landings (as a shortcut)
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	12		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	13		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -989,15 +990,42 @@ typedef struct man_thruster {
 #define WT_HYPERSPACE				5
 
 // Holds variables for collision physics (Gets its own struct purely for clarity purposes)
-//Most of this only really applies properly to small ships
+// Most of this only really applies properly to small ships
 typedef struct ship_collision_physics {
-	//Collision physics definitions: how a ship responds to collisions
-	float both_small_bounce;	//Bounce factor when both ships are small
-								//This currently only comes into play if one ship is the player... 
-								//blame retail for that.
-	float bounce;				//Bounce factor for all other cases
-	float friction;				//Controls lateral velocity lost when colliding with a large ship
-	float rotation_factor;		//Affects the rotational energy of collisions... TBH not sure how. 
+	// Collision physics definitions: how a ship responds to collisions
+	float both_small_bounce;	// Bounce factor when both ships are small
+								// This currently only comes into play if one ship is the player... 
+								// blame retail for that.
+	float bounce;				// Bounce factor for all other cases
+	float friction;				// Controls lateral velocity lost when colliding with a large ship
+	float rotation_factor;		// Affects the rotational energy of collisions... TBH not sure how. 
+
+	// Speed & angle constraints for a smooth landing
+	// Note that all angles are stored as a dotproduct between normalized vectors instead. This saves us from having
+	// to do a lot of dot product calculations later.
+	float landing_max_z;		
+	float landing_min_z;
+	float landing_min_y;
+	float landing_max_x;
+	float landing_max_angle;
+	float landing_min_angle;
+	float landing_max_rot_angle;
+
+	// Speed & angle constraints for a "rough" landing (one with normal collision consequences, but where 
+	// the ship is still reoriented towards its resting orientation)
+	float reorient_max_z;
+	float reorient_min_z;
+	float reorient_min_y;
+	float reorient_max_x;
+	float reorient_max_angle;
+	float reorient_min_angle;
+	float reorient_max_rot_angle;
+
+	// Landing response parameters
+	float reorient_mult;		// How quickly the ship will reorient towards it's resting position
+	float landing_rest_angle;	// The vertical angle where the ship's orientation comes to rest
+	int landing_sound_idx;		//Sound to play on successful landing collisions
+
 } ship_collision_physics;
 
 // The real FreeSpace ship_info struct.

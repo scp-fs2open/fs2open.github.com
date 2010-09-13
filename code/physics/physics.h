@@ -132,7 +132,7 @@ extern void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time,
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
 extern void physics_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, float mass);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
-extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient);
+extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing);
 int check_rotvel_limit( physics_info *pi );
 
 

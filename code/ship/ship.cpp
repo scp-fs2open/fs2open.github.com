@@ -74,7 +74,7 @@
 #include "network/multimsgs.h"
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
-
+#include "object/objcollide.h"
 
 
 
@@ -235,7 +235,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "no subsystem targeting",	MSS_FLAG_NO_SS_TARGETING,	0 },
 	{ "fire on target",			MSS_FLAG_FIRE_ON_TARGET,	0 },
 	{ "reset when idle",		MSS_FLAG_TURRET_RESET_IDLE,	0 },
-	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 }
+	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 },
+	{ "allow landing",			MSS_FLAG_ALLOW_LANDING,		0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -704,8 +705,27 @@ void init_ship_entry(ship_info *sip)
 	sip->collision_damage_type_idx = -1;
 	sip->collision_physics.both_small_bounce = 5.0;	//Retail default collision physics
 	sip->collision_physics.bounce = 5.0;
-	sip->collision_physics.friction = 0.0f;
-	sip->collision_physics.rotation_factor = 0.2f;
+	sip->collision_physics.friction = COLLISION_FRICTION_FACTOR;
+	sip->collision_physics.rotation_factor = COLLISION_ROTATION_FACTOR;
+
+	// Default landing parameters
+	sip->collision_physics.landing_max_z = 0.0f;
+	sip->collision_physics.landing_min_z = 0.0f;
+	sip->collision_physics.landing_min_y = 0.0f;
+	sip->collision_physics.landing_max_x = 0.0f;
+	sip->collision_physics.landing_max_angle = 0.0f;
+	sip->collision_physics.landing_min_angle = 0.0f;
+	sip->collision_physics.landing_max_rot_angle = 0.0f;
+	sip->collision_physics.reorient_max_z = 0.0f;
+	sip->collision_physics.reorient_min_z = 0.0f;
+	sip->collision_physics.reorient_min_y = 0.0f;
+	sip->collision_physics.reorient_max_x = 0.0f;
+	sip->collision_physics.reorient_max_angle = 0.0f;
+	sip->collision_physics.reorient_min_angle = 0.0f;
+	sip->collision_physics.reorient_max_rot_angle = 0.0f;
+	sip->collision_physics.reorient_mult = 1.0f;	
+	sip->collision_physics.landing_rest_angle = 0.0f;
+	sip->collision_physics.landing_sound_idx = -1;
 
 	sip->debris_min_lifetime = -1.0f;
 	sip->debris_max_lifetime = -1.0f;
@@ -1344,22 +1364,83 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Collision Physics:"))
 	{
-		if(optional_string("+Bounce:"))
-		{
+		if(optional_string("+Bounce:"))	{
 			stuff_float(&sip->collision_physics.bounce);
 		}
-		if(optional_string("+Both Small Bounce:"))
-		{
+		if(optional_string("+Both Small Bounce:")) {
 			stuff_float(&sip->collision_physics.both_small_bounce);
 		}
-		if(optional_string("+Friction:"))
-		{
+		if(optional_string("+Friction:")) {
 			stuff_float(&sip->collision_physics.friction);
 		}
-		if(optional_string("+Rotation Factor:"))
-		{
+		if(optional_string("+Rotation Factor:")) {
 			stuff_float(&sip->collision_physics.friction);
 		}
+		if(optional_string("+Landing Max Forward Vel:")) {
+			stuff_float(&sip->collision_physics.landing_max_z);
+		}
+		if(optional_string("+Landing Min Forward Vel:")) {
+			stuff_float(&sip->collision_physics.landing_min_z);
+		}
+		if(optional_string("+Landing Max Descent Vel:")) {
+			stuff_float(&sip->collision_physics.landing_min_y);
+			sip->collision_physics.landing_min_y *= -1;
+		}
+		if(optional_string("+Landing Max Horizontal Vel:")) {
+			stuff_float(&sip->collision_physics.landing_max_x);
+		}
+		if(optional_string("+Landing Max Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_max_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Landing Min Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_min_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Landing Max Rotate Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Max Forward Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_max_z);
+		}
+		if(optional_string("+Reorient Min Forward Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_min_z);
+		}
+		if(optional_string("+Reorient Max Descent Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_min_y);
+			sip->collision_physics.reorient_min_y *= -1;
+		}
+		if(optional_string("+Reorient Max Horizontal Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_max_x);
+		}
+		if(optional_string("+Reorient Max Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.reorient_max_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Min Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.reorient_min_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Max Rotate Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.reorient_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Speed Mult:")) {
+			stuff_float(&sip->collision_physics.reorient_mult);
+		}
+		if(optional_string("+Landing Rest Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_rest_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		parse_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
 	}
 
 
@@ -2945,6 +3026,10 @@ strcpy_s(parse_error_text, temp_error);
 
 			if (optional_string("$Flags:")) {
 				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
+
+				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
+				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
+					sip->flags2 |= SIF2_ALLOW_LANDINGS;
 			}
 
 			if (optional_string("+non-targetable")) {
