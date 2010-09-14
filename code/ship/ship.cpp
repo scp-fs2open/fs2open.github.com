@@ -8415,7 +8415,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		// save subsys information
 		subsys_names[num_saved_subsystems] = new char[NAME_LENGTH];
 		strcpy(subsys_names[num_saved_subsystems], ss->system_info->subobj_name);
-		subsys_pcts[num_saved_subsystems] = ss->current_hits / ss->max_hits;
+
+		if (ss->max_hits > 0.0f)
+			subsys_pcts[num_saved_subsystems] = ss->current_hits / ss->max_hits;
+		else
+			subsys_pcts[num_saved_subsystems] = ss->max_hits;
 
 		// extra check
 		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
