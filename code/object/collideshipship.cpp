@@ -888,7 +888,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// If within certain bounds, we want to add some more rotation towards the "resting orientation" of the ship
 	// These bounds are defined separately from normal "landing" bounds so that they can be more generous: 
 	// we can have crash landings that still re-orient the ship.
-	if (subsys_landing_allowed &
+	if (subsys_landing_allowed &&
 		light_local_vel.xyz.z < light_sip->collision_physics.reorient_max_z  &&
 		light_local_vel.xyz.z > light_sip->collision_physics.reorient_min_z &&
 		light_local_vel.xyz.y > light_sip->collision_physics.reorient_min_y &&
