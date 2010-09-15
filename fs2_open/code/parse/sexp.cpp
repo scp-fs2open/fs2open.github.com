@@ -8437,13 +8437,41 @@ void sexp_clear_goals(int n)
 // Goober5000
 void sexp_hud_disable(int n)
 {
-	hud_set_draw(!eval_num(n));
+	int disable_hud = eval_num(n);
+	hud_set_draw(!disable_hud);
+
+	multi_start_packet();
+	multi_send_int(disable_hud);
+	multi_end_packet;
+}
+
+void multi_sexp_hud_disable()
+{
+	int disable_hud;
+
+	if (multi_get_int(disable_hud)) {
+		hud_set_draw(!disable_hud);
+	}
 }
 
 // Goober5000
 void sexp_hud_disable_except_messages(int n)
 {
-	hud_disable_except_messages(eval_num(n));
+	int disable_hud = eval_num(n);
+	hud_disable_except_messages(disable_hud);
+
+	multi_start_packet();
+	multi_send_int(disable_hud);
+	multi_end_packet;
+}
+
+void multi_sexp_hud_disable_except_messages()
+{
+	int disable_hud;
+
+	if (multi_get_int(disable_hud)) {
+		hud_disable_except_messages(disable_hud);
+	}
 }
 
 void sexp_hud_set_text_num(int n)
@@ -8531,6 +8559,15 @@ void sexp_hud_display_gauge(int n) {
 	char* gauge = CTEXT(CDR(n));
 
 	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
+		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
+	}
+}
+
+void multi_sexp_hud_display_gauge()
+{
+	int show_for; 
+
+	if (multi_get_int(show_for)) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
 	}
 }
@@ -12793,14 +12830,31 @@ void sexp_send_training_message(int node)
 		}
 	}
 
+	multi_start_packet();
+	multi_send_int(t);
+	multi_send_int(delay);
+
 	if ((Mission_events[Event_index].repeat_count > 1) || (CDR(node) < 0)){
 		message_training_queue(CTEXT(node), timestamp(delay), t);
+		multi_send_string(CTEXT(node));
 	} else {
 		message_training_queue(CTEXT(CDR(node)), timestamp(delay), t);
+		multi_send_string(CTEXT(CDR(node)));
 	}
+	multi_end_packet();
+}
 
-//	if (Training_msg_method)
-//		gameseq_post_event(GS_EVENT_TRAINING_PAUSE);
+void multi_sexp_send_training_message()
+{	
+	int t, delay;
+	char message[TOKEN_LENGTH];
+
+	multi_get_int(t);
+	multi_get_int(delay);
+	if (multi_get_string(message)) {
+		message_training_queue(message, timestamp(delay), t); 
+	}
+	
 }
 
 int sexp_shield_recharge_pct(int node)
@@ -16375,8 +16429,22 @@ void sexp_flash_hud_gauge( int node )
 	for (i = 0; i < NUM_HUD_GAUGES; i++ ) {
 		if ( !stricmp(HUD_gauge_text[i], name) ) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
+
+			multi_start_packet();
+			multi_send_int(i);
+			multi_end_packet();
+
 			break;
 		}
+	}
+}
+
+void multi_sexp_flash_hud_gauge()
+{
+	int i; 
+
+	if (multi_get_int(i)) {
+		hud_gauge_start_flash(i);
 	}
 }
 
@@ -16411,48 +16479,49 @@ void sexp_scramble_messages(bool scramble)
 	Sexp_Messages_Scrambled = scramble;
 }
 
-void sexp_set_cutscene_bars(int node)
+void toggle_cutscene_bars(float delta_speed, int set) 
 {
-	//We know we want the bars
-	Cutscene_bar_flags |= CUB_CUTSCENE;
+	//Do we want the bars?
+	if (set) {
+		Cutscene_bar_flags |= CUB_CUTSCENE;
+	}
+	else {
+		Cutscene_bar_flags &= ~CUB_CUTSCENE;
+	}
 
+	if(delta_speed > 0.0f) {
+		Cutscene_bars_progress = 0.0f;
+		Cutscene_bar_flags |= CUB_GRADUAL;
+		Cutscene_delta_time = delta_speed;
+	}
+	else {
+		Cutscene_bar_flags &= ~CUB_GRADUAL;
+	}
+}
+
+void sexp_toggle_cutscene_bars(int node, int set)
+{
 	float delta_speed = 0.0f;
 
 	if(node != -1)
 		delta_speed = eval_num(node)/1000.0f;
 
-	if(delta_speed > 0.0f)
-	{
-		Cutscene_bars_progress = 0.0f;
-		Cutscene_bar_flags |= CUB_GRADUAL;
-		Cutscene_delta_time = delta_speed;
-	}
-	else
-	{
-		Cutscene_bar_flags &= ~CUB_GRADUAL;
-	}
+	toggle_cutscene_bars(delta_speed, set);
+
+	multi_start_packet();
+	multi_send_float(delta_speed);
+	multi_end_packet();
 }
 
-void sexp_unset_cutscene_bars(int node)
+void muli_sexp_toggle_cutscene_bars(int set)
 {
-	//We know we DON'T want the bars
-	Cutscene_bar_flags &= ~CUB_CUTSCENE;
-	float delta_speed = 0.0f;
+	float delta_speed;
 
-	if(node != -1)
-		delta_speed = eval_num(node)/1000.0f;
-
-	if(delta_speed > 0.0f)
-	{
-		Cutscene_bars_progress = 0.0f;
-		Cutscene_bar_flags |= CUB_GRADUAL;
-		Cutscene_delta_time = delta_speed;
-	}
-	else
-	{
-		Cutscene_bar_flags &= ~CUB_GRADUAL;
+	if(multi_get_float(delta_speed) ) {
+		toggle_cutscene_bars(delta_speed, set);
 	}
 }
+
 void sexp_fade_in(int n)
 {
 	float delta_time = 0.0f;
@@ -19125,13 +19194,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
-				sexp_val = SEXP_TRUE;
-				sexp_set_cutscene_bars(node);
-				break;
 			case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 				sexp_val = SEXP_TRUE;
-				sexp_unset_cutscene_bars(node);
+				sexp_toggle_cutscene_bars(node, op_num == OP_CUTSCENES_SET_CUTSCENE_BARS);
 				break;
+
 			case OP_CUTSCENES_FADE_IN:
 				sexp_val = SEXP_TRUE;
 				sexp_fade_in(node);
@@ -19437,6 +19504,30 @@ void multi_sexp_eval()
 			case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
 				 multi_sexp_show_subtitle_text();
 				 break;
+
+			case OP_TRAINING_MSG:
+				multi_sexp_send_training_message(); 
+				break;
+
+			case OP_HUD_DISABLE:
+				multi_sexp_hud_disable();
+				break;
+			
+			case OP_HUD_DISABLE_EXCEPT_MESSAGES:
+				multi_sexp_hud_disable_except_messages();
+				break;
+
+			case OP_FLASH_HUD_GAUGE:
+				multi_sexp_flash_hud_gauge();
+				break;
+
+			case OP_HUD_DISPLAY_GAUGE:
+				multi_sexp_hud_display_gauge();
+				break;
+
+			case OP_CUTSCENES_SET_CUTSCENE_BARS:
+				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				break;
 
 			// bad sexp in the packet
 			default: 
