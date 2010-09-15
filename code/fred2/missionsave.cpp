@@ -1135,6 +1135,7 @@ int CFred_mission_save::save_variables()
 int CFred_mission_save::save_players()
 {
 	int i, j;
+	int var_idx;
 	int used_pool[MAX_WEAPON_TYPES];
 
 	// write out alternate name list
@@ -1179,20 +1180,22 @@ int CFred_mission_save::save_players()
 
 		for (j=0; j<Team_data[i].num_ship_choices; j++) {
 			// Check to see if a variable name should be written for the class rather than a number
-			if (Team_data[i].ship_list_variables[j] != -1) {
-				Assert (Team_data[i].ship_list_variables[j] > -1 && Team_data[i].ship_list_variables[j] < MAX_SEXP_VARIABLES); 
+			if (strlen(Team_data[i].ship_list_variables[j])) {
+				var_idx = get_index_sexp_variable_name(Team_data[i].ship_list_variables[j]);
+				Assert (var_idx > -1 && var_idx < MAX_SEXP_VARIABLES); 
 			
-				fout("\t@%s\t", Sexp_variables[Team_data[i].ship_list_variables[j]].variable_name);
+				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			}
 			else {
 				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name); 
 			}
 
 			// Now check if we should write a variable or a number for the amount of ships available
-			if (Team_data[i].ship_count_variables[j] != -1) {
-				Assert (Team_data[i].ship_count_variables[j] > -1 && Team_data[i].ship_count_variables[j] < MAX_SEXP_VARIABLES); 
+			if (strlen(Team_data[i].ship_count_variables[j])) {
+				var_idx = get_index_sexp_variable_name(Team_data[i].ship_count_variables[j]);
+				Assert (var_idx > -1 && var_idx < MAX_SEXP_VARIABLES); 
 			
-				fout("@%s\n", Sexp_variables[Team_data[i].ship_count_variables[j]].variable_name);			
+				fout("@%s\n", Sexp_variables[var_idx].variable_name);			
 			}
 			else {
 				fout("%d\n", Team_data[i].ship_count[j]);
@@ -1211,10 +1214,11 @@ int CFred_mission_save::save_players()
 		generate_weaponry_usage_list(i, used_pool); 
 		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
 			// first output the weapon name or a variable that sets it 
-			if (Team_data[i].weaponry_pool_variable[j] != -1) {
-				Assert (Team_data[i].weaponry_pool_variable[j] > -1 && Team_data[i].weaponry_pool_variable[j] < MAX_SEXP_VARIABLES); 
+			if (strlen(Team_data[i].weaponry_pool_variable[j])) {
+				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[j]);
+				Assert (var_idx > -1 && var_idx < MAX_SEXP_VARIABLES); 
 
-				fout("\t@%s\t", Sexp_variables[Team_data[i].weaponry_pool_variable[j]].variable_name); 
+				fout("\t@%s\t", Sexp_variables[var_idx].variable_name); 
 			}
 			else {
 				fout("\t\"%s\"\t", Weapon_info[Team_data[i].weaponry_pool[j]].name);
@@ -1223,13 +1227,14 @@ int CFred_mission_save::save_players()
 			// now output the amount of this weapon or a variable that sets it. If this weapon is in the used pool and isn't
 			// set by a variable we should add the amount of weapons used by the wings to it and zero the entry so we know 
 			// that we have dealt with it
-			if (Team_data[i].weaponry_amount_variable[j] != -1) {
-				Assert (Team_data[i].weaponry_amount_variable[j] > -1 && Team_data[i].weaponry_amount_variable[j] < MAX_SEXP_VARIABLES); 
+			if (strlen(Team_data[i].weaponry_amount_variable[j])) {
+				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_amount_variable[j]);
+				Assert (var_idx > -1 && var_idx < MAX_SEXP_VARIABLES); 
 
-				fout ("@%s\n", Sexp_variables[Team_data[i].weaponry_amount_variable[j]].variable_name); 			
+				fout ("@%s\n", Sexp_variables[var_idx].variable_name); 			
 			}
 			else {
-				if (Team_data[i].weaponry_pool_variable[j] != -1) {
+				if (strlen(Team_data[i].weaponry_pool_variable[j])) {
 					fout ("%d\n", Team_data[i].weaponry_count[j]);
 				}
 				else {

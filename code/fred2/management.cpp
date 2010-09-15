@@ -999,9 +999,9 @@ void clear_mission()
 		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
 			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				Team_data[i].ship_list[count] = j;
-				Team_data[i].ship_list_variables[count] = -1;
+				strcpy_s(Team_data[i].ship_list_variables[count], "");
 				Team_data[i].ship_count[count] = 5;
-				Team_data[i].ship_count_variables[count++] = -1;
+				strcpy_s(Team_data[i].ship_count_variables[count++], "");
 			}
 		}
 		Team_data[i].num_ship_choices = count;
@@ -1015,8 +1015,8 @@ void clear_mission()
 					Team_data[i].weaponry_count[count] = 500;
 				}
 				Team_data[i].weaponry_pool[count] = j; 
-				Team_data[i].weaponry_pool_variable[count] = -1;
-				Team_data[i].weaponry_amount_variable[count++] = -1;
+				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
+				strcpy_s(Team_data[i].weaponry_amount_variable[count++], "");
 			} 
 		}
 		Team_data[i].num_weapon_choices = count; 

@@ -823,11 +823,23 @@ void parse_player_info2(mission *pm)
 			}
 
 			ptr->ship_list[num_choices] = list[i];
-			ptr->ship_list_variables[num_choices] = list[i+1];
+			// if the list isn't set by a variable leave the variable name empty
+			if (list[i+1] == -1) {
+				strcpy_s(ptr->ship_list_variables[num_choices], "") ;
+			}
+			else {
+				strcpy_s(ptr->ship_list_variables[num_choices],Sexp_variables[list[i+1]].variable_name);
+			}
 			ptr->ship_count[num_choices] = list[i+2];
 			ptr->loadout_total += list[i+2];
-			ptr->ship_count_variables[num_choices] =list[i+3];
 
+			// if the list isn't set by a variable leave the variable name empty
+			if (list[i+3] == -1) {
+				strcpy_s(ptr->ship_count_variables[num_choices], "");
+			}
+			else {
+				strcpy_s(ptr->ship_count_variables[num_choices], Sexp_variables[list[i+3]].variable_name);
+			}
 			num_choices++;
 		}
 		ptr->num_ship_choices = num_choices;
@@ -879,8 +891,22 @@ void parse_player_info2(mission *pm)
 				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running ) {
 					ptr->weaponry_pool[num_choices] = list2[i]; 
 					ptr->weaponry_count[num_choices] = list2[i+2];
-					ptr->weaponry_pool_variable[num_choices] = list2[i+1];
-					ptr->weaponry_amount_variable[num_choices] = list2[i+3];
+
+					// if the list isn't set by a variable leave the variable name empty
+					if (list2[i+1] == -1) {
+						strcpy_s(ptr->weaponry_pool_variable[num_choices], "");
+					}
+					else {
+						strcpy_s(ptr->weaponry_pool_variable[num_choices], Sexp_variables[list2[i+1]].variable_name);
+					}
+
+					// if the list isn't set by a variable leave the variable name empty
+					if (list2[i+3] == -1) {
+						strcpy_s(ptr->weaponry_amount_variable[num_choices], "");
+					}
+					else {
+						strcpy_s(ptr->weaponry_amount_variable[num_choices], Sexp_variables[list2[i+3]].variable_name);
+					}
 					num_choices++; 
 				}
 				else {

@@ -427,7 +427,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		generate_weaponry_usage_list(i, used_pool);
 		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
-			if ((Team_data[i].weaponry_pool_variable[j] == -1) && (Team_data[i].weaponry_amount_variable[j] == -1) ) {
+			if ( (!strlen(Team_data[i].weaponry_pool_variable[j])) && (!strlen(Team_data[i].weaponry_amount_variable[j])) ) {
 				// convert weaponry_pool to be extras available beyond the current ships weapons
 				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
 				if (Team_data[i].weaponry_count[j] < 0) {
@@ -446,8 +446,8 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 				// add the weapon as a new entry
 				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
 				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j]; 
-				Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices] = -1;
-				Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++] = -1;		
+				strcpy_s(Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices], "");
+				strcpy_s(Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++], "");		
 			}
 		}
 	}
