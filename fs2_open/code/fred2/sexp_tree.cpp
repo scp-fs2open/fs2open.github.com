@@ -5919,20 +5919,20 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 
 	for (int i=0; i < MAX_TVT_TEAMS; i++) {
 		for(idx=0; idx<Team_data[i].num_ship_choices; idx++) {
-			if (var_index == Team_data[i].ship_list_variables[idx]) {
+			if (!strcmp(Team_data[i].ship_list_variables[idx], Sexp_variables[var_index].variable_name)) {
 				count++; 
 			}
 
-			if (var_index == Team_data[i].ship_count_variables[idx]) {
-				count++; 
+			if (!strcmp(Team_data[i].ship_count_variables[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
 			}
 		}
 
 		for (idx=0; idx<Team_data[i].num_weapon_choices; idx++) {
-			if (var_index == Team_data[i].weaponry_pool_variable[idx]) {
+			if (!strcmp(Team_data[i].weaponry_pool_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
-			if (var_index == Team_data[i].weaponry_amount_variable[idx]) {
+			if (!strcmp(Team_data[i].weaponry_amount_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
 		}
