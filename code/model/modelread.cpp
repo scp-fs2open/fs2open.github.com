@@ -1893,7 +1893,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 										cfread_vector(&bogus, fp);
 									}
 								}
-								Assert( n_slots > 0 );
+								Assertion( n_slots > 0, "Turret %s has no firing points.\n", subsystemp->name );
 
 								subsystemp->turret_num_firing_points = n_slots;
 
