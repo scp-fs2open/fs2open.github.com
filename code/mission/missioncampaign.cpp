@@ -152,6 +152,11 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 			}
 		}
 
+		if (name == NULL) {
+			Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type);
+			break;
+		}
+
 		if (desc) {
 			if (optional_string("+Description:")) {
 				*desc = stuff_and_malloc_string(F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
@@ -207,6 +212,8 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max)
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 			if (num < max)
 				list[num++] = vm_strdup(name);
+			else
+				Warning(LOCATION, "Maximum number of missions exceeded (%d)!", max);
 		}
 	}
 
@@ -2282,7 +2289,11 @@ void read_mission_goal_list(int num)
 			}
 
 			event_count++;
-			Assert(event_count < MAX_MISSION_EVENTS);
+			if (event_count > MAX_MISSION_EVENTS) {
+				Warning(LOCATION, "Maximum number of events exceeded (%d)!", MAX_MISSION_EVENTS);
+				event_count = MAX_MISSION_EVENTS;
+				break;
+			}
 		}
 	}
 
@@ -2305,7 +2316,11 @@ void read_mission_goal_list(int num)
 			}
 
 			count++;
-			Assert(count < MAX_GOALS);
+			if (count > MAX_GOALS) {
+				Warning(LOCATION, "Maximum number of goals exceeded (%d)!", MAX_GOALS);
+				count = MAX_GOALS;
+				break;
+			}
 		}
 	}
 
