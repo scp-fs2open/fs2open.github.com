@@ -119,6 +119,7 @@ struct ship;
 #define OPF_SOUND_ENVIRONMENT_OPTION 73	// Goober5000 - one of Taylor's options
 #define OPF_EXPLOSION_OPTION	74		// Goober5000
 #define OPF_AUDIO_VOLUME_OPTION 75		// The E
+#define OPF_WEAPON_BANK_NUMBER	76		// Karajomra - The number of a primary/secondary/tertiary weapon bank or all of them
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -340,6 +341,8 @@ struct ship;
 #define OP_GET_THROTTLE_SPEED				(0x003a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_HITS_LEFT_SUBSYSTEM_GENERIC		(0x003b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_HITS_LEFT_SUBSYSTEM_SPECIFIC		(0x003c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_HAS_PRIMARY_WEAPON				(0x003d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_HAS_SECONDARY_WEAPON				(0x003e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 // conditional sexpressions
@@ -698,6 +701,7 @@ struct ship;
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
 #define SEXP_ANY_STRING				"<any string>"
+#define SEXP_ALL_BANKS_STRING		"<all weapon banks>"
 
 // macros for accessing sexpression atoms
 #define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)

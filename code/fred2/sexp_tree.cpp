@@ -2667,6 +2667,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SOUND_ENVIRONMENT_OPTION:
 		case OPF_EXPLOSION_OPTION:
 		case OPF_AUDIO_VOLUME_OPTION:
+		case OPF_WEAPON_BANK_NUMBER:
 			return 1;
 
 		case OPF_SHIP:
@@ -4384,6 +4385,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_explosion_option();
 			break;
 
+		case OPF_WEAPON_BANK_NUMBER:
+			list = get_listing_opf_weapon_banks();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5762,6 +5767,14 @@ sexp_list_item *sexp_tree::get_listing_opf_hud_elements()
 {
 	sexp_list_item head;
 	head.add_data("warpout");
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_weapon_banks()
+{
+	sexp_list_item head;
+	head.add_data(SEXP_ALL_BANKS_STRING);
 
 	return head.next;
 }

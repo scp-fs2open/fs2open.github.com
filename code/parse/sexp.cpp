@@ -242,6 +242,8 @@ sexp_oper Operators[] = {
 	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
 	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
 	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
+	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
+	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -2675,6 +2677,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 				return SEXP_CHECK_INVALID_HUD_ELEMENT;
+
+			case OPF_WEAPON_BANK_NUMBER:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (!stricmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
+					break;
+				}
+
+				// if we haven't specified all banks we need to check the number of the bank is legal
+				else {
+					int num_banks = atoi(CTEXT(node));
+					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) {
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+					}
+				}
+				break;
+				
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -11194,6 +11215,93 @@ int sexp_weapon_fired_delay(int node, int op_num)
 	return SEXP_FALSE;
 }
 
+int sexp_has_weapon(int node, int op_num)
+{
+	ship *shipp;
+	weapon_info * wip; 
+	int i;
+	int requested_bank;
+	int weapon_index;
+	int num_weapon_banks = 0;
+	int *weapon_banks = NULL;
+
+	shipp = sexp_get_ship_from_node(node); 
+	if (shipp == NULL) {
+		return SEXP_FALSE;
+	}
+
+	// Get the bank to check
+	node = CDR(node);
+	if (!strcmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
+		requested_bank = -1;
+	}
+	else {
+		requested_bank = eval_num(node);
+	}	
+	node = CDR(node);
+ 
+	switch (op_num) {
+		case OP_HAS_PRIMARY_WEAPON:
+			weapon_banks = shipp->weapons.primary_bank_weapons;
+			num_weapon_banks = shipp->weapons.num_primary_banks;
+			break;
+
+		case OP_HAS_SECONDARY_WEAPON:
+			weapon_banks = shipp->weapons.secondary_bank_weapons;
+			num_weapon_banks = shipp->weapons.num_secondary_banks;
+			break;
+
+		default:
+			Warning(LOCATION, "Unrecognised bank type used in has-x-weapon. Returning false");
+			return SEXP_FALSE;
+	}
+	
+
+	//loop through the weapons and test them
+	while (node > -1) {
+		weapon_index = weapon_info_lookup(CTEXT(node));
+		Assertion (weapon_index >= 0, "Weapon name %s is unknown.", CTEXT(node));
+
+		// if we're checking every bank
+		if (requested_bank == -1) {
+			for (i = 0; i < num_weapon_banks; i++) {
+				if (weapon_index == weapon_banks[i]) {
+					return SEXP_TRUE;
+				}
+			}
+		}
+
+		// if we're only checking one bank
+		else {
+			if (weapon_index == weapon_banks[requested_bank]) {
+				return SEXP_TRUE;
+			}
+		}
+
+		/*
+		else {
+			switch (op_num) {
+				 case OP_HAS_PRIMARY_WEAPON:
+					 if (weapon_index == shipp->weapons.primary_bank_weapons[requested_bank]) {
+						 return SEXP_TRUE;
+					 }
+					 break;
+
+				 case OP_HAS_SECONDARY_WEAPON:
+					 if 
+		}
+		*/
+		 
+
+
+
+	
+	node = CDR(node);
+	}
+
+	return SEXP_FALSE;
+}
+
 // function to deal with getting status of goals for previous missions (in the current campaign).
 // the status parameter is used to tell this function if we are looking for a goal_satisfied, goal_failed,
 // or goal incomplete event
@@ -18900,6 +19008,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
 				break;
 
+			case OP_HAS_PRIMARY_WEAPON:
+			case OP_HAS_SECONDARY_WEAPON:
+				sexp_val = sexp_has_weapon(node, op_num);
+				break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -19560,6 +19673,8 @@ int query_operator_return_type(int op)
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
 		case OP_IS_FACING:
+		case OP_HAS_PRIMARY_WEAPON:
+		case OP_HAS_SECONDARY_WEAPON:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -21271,6 +21386,15 @@ int query_operator_argument_type(int op, int argnum)
 			else 
 				return OPF_POSITIVE;
 
+		case OP_HAS_PRIMARY_WEAPON:
+		case OP_HAS_SECONDARY_WEAPON:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1) 
+				return OPF_WEAPON_BANK_NUMBER;
+			else 
+				return OPF_WEAPON_NAME;
+
 		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
 		case OP_NAV_DEL:			//kazan
@@ -22833,6 +22957,8 @@ int get_subcategory(int sexp_id)
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
+		case OP_HAS_PRIMARY_WEAPON:
+		case OP_HAS_SECONDARY_WEAPON:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -25413,18 +25539,34 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajora
 	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
-		"\tReturns true if the primary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number\r\n"
-		"\t3:\tDelay (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
 	// Karajora
 	{ OP_SECONDARY_FIRED_SINCE, "secondary-fired-since\r\n"
-		"\tReturns true if the secondary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number\r\n"
-		"\t3:\tDelay (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
+	},
+
+	// Karajora
+	{ OP_HAS_PRIMARY_WEAPON, "has-primary-weapon\r\n"
+		"\tReturns true if the primary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tWeapon bank number\r\n"
+		"\tRest:\tWeapon name\r\n"
+	},
+
+	// Karajora
+	{ OP_HAS_SECONDARY_WEAPON, "has-secondary-weapon\r\n"
+		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tWeapon bank number\r\n"
+		"\tRest:\tWeapon name\r\n"
 	},
 
 	//phreak
