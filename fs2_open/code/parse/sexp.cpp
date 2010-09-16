@@ -8442,7 +8442,7 @@ void sexp_hud_disable(int n)
 
 	multi_start_packet();
 	multi_send_int(disable_hud);
-	multi_end_packet;
+	multi_end_packet();
 }
 
 void multi_sexp_hud_disable()
@@ -8462,7 +8462,7 @@ void sexp_hud_disable_except_messages(int n)
 
 	multi_start_packet();
 	multi_send_int(disable_hud);
-	multi_end_packet;
+	multi_end_packet();
 }
 
 void multi_sexp_hud_disable_except_messages()
