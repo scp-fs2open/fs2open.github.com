@@ -1384,7 +1384,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					// Find end of number
 					parsed_string = strchr(parsed_string, ',');
-					Assert(parsed_string != NULL);
+					if (parsed_string == NULL) {
+						Warning( LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec: delaration in its properties."
+							"\n\n$uvec: should be followed by 3 numbers separated with commas."
+							"\n\nCouldn't find first comma (,)!",
+							 pm->submodel[n].name, filename);
+					}
 					parsed_string++;
 
 					while (*parsed_string == ' ') {
@@ -1395,7 +1401,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					// Find end of number
 					parsed_string = strchr(parsed_string, ',');
-					Assert(parsed_string != NULL);
+					if (parsed_string == NULL) {
+						Warning( LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec: delaration in its properties."
+							"\n\n$uvec: should be followed by 3 numbers separated with commas."
+							"\n\nCouldn't find second comma (,)!",
+							 pm->submodel[n].name, filename);
+					}
 					parsed_string++;
 
 					while (*parsed_string == ' ') {
@@ -1415,7 +1427,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						// Find end of number
 						parsed_string = strchr(parsed_string, ',');
-						Assert(parsed_string != NULL);
+						if (parsed_string == NULL) {
+							Warning( LOCATION,
+								"Submodel '%s' of model '%s' has an improperly formatted $fvec: delaration in its properties."
+								"\n\n$fvec: should be followed by 3 numbers separated with commas."
+								"\n\nCouldn't find first comma (,)!",
+								 pm->submodel[n].name, filename);
+						}
 						parsed_string++;
 
 						while (*parsed_string == ' ') {
@@ -1426,7 +1444,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						// Find end of number
 						parsed_string = strchr(parsed_string, ',');
-						Assert(parsed_string != NULL);
+						if (parsed_string == NULL) {
+							Warning( LOCATION,
+								"Submodel '%s' of model '%s' has an improperly formatted $fvec: delaration in its properties."
+								"\n\n$fvec: should be followed by 3 numbers separated with commas."
+								"\n\nCouldn't find second comma (,)!",
+								 pm->submodel[n].name, filename);
+						}
 						parsed_string++;
 
 						while (*parsed_string == ' ') {
