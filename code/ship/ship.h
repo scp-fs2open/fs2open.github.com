@@ -141,6 +141,7 @@ typedef struct ship_weapon {
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************
@@ -182,7 +183,7 @@ public:
 
 	//Get
 	char *GetNamePtr(){return Name;}
-	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
+	bool IsName(char *in_name){return (stricmp(in_name,Name)==0);}
 	float GetDamage(float damage_applied, int in_damage_type_idx);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
@@ -258,6 +259,7 @@ typedef	struct ship_subsys {
 	float	optimum_range;					        
 	float	favor_current_facing;					        
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
+	bool	scripting_target_override;
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
@@ -302,6 +304,12 @@ typedef	struct ship_subsys {
 	// target priority setting for turrets
 	int      target_priority[32];
 	int      num_target_priorities;
+
+	//SUSHI: Fields for max_turret_aim_update_delay
+	//Only used when targeting small ships
+	fix		next_aim_pos_time;
+	vec3d	last_aim_enemy_pos;
+	vec3d	last_aim_enemy_vel;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -466,9 +474,16 @@ typedef struct ship {
 	int	next_hit_spark;
 	int	num_hits;			//	Note, this is the number of spark emitter positions!
 	ship_spark	sparks[MAX_SHIP_HITS];
-
-	int	special_exp_index;
-	int special_hitpoint_index;
+	
+	bool use_special_explosion; 
+	int special_exp_damage;					// new special explosion/hitpoints system
+	int special_exp_blast;
+	int special_exp_inner;
+	int special_exp_outer;
+	bool use_shockwave;
+	int special_exp_shockwave_speed;
+	int	special_hitpoints;
+	int	special_shield;
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
@@ -664,7 +679,6 @@ typedef struct ship {
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
-	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
@@ -802,8 +816,10 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
 #define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
 #define SIF2_NO_PRIMARY_LINKING				(1 << 10)	// Chief - slated for 3.7 originally, but this looks pretty simple to implement.
-
-#define	MAX_SHIP_FLAGS	11		//	Number of distinct flags for flags field in ship_info struct
+#define SIF2_NO_PAIN_FLASH					(1 << 11)	// The E - disable red pain flash
+#define SIF2_ALLOW_LANDINGS					(1 << 12)	// SUSHI: Automatically set if any subsystems allow landings (as a shortcut)
+// !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
+#define	MAX_SHIP_FLAGS	13		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
@@ -844,6 +860,7 @@ typedef struct thruster_particles {
 #define STI_HUD_HOTKEY_ON_LIST			(1<<0)
 #define STI_HUD_TARGET_AS_THREAT		(1<<1)
 #define STI_HUD_SHOW_ATTACK_DIRECTION	(1<<2)
+#define STI_HUD_NO_CLASS_DISPLAY		(1<<3)
 
 #define STI_SHIP_SCANNABLE				(1<<0)
 #define STI_SHIP_WARP_PUSHES			(1<<1)
@@ -965,10 +982,51 @@ typedef struct man_thruster {
 } man_thruster;
 
 //Warp type defines
-#define WT_DEFAULT			0
-#define WT_IN_PLACE_ANIM	1
-#define WT_SWEEPER			2
-#define WT_HYPERSPACE		3
+#define WT_DEFAULT					0
+#define WT_KNOSSOS					1
+#define WT_DEFAULT_THEN_KNOSSOS		2
+#define WT_IN_PLACE_ANIM			3
+#define WT_SWEEPER					4
+#define WT_HYPERSPACE				5
+
+// Holds variables for collision physics (Gets its own struct purely for clarity purposes)
+// Most of this only really applies properly to small ships
+typedef struct ship_collision_physics {
+	// Collision physics definitions: how a ship responds to collisions
+	float both_small_bounce;	// Bounce factor when both ships are small
+								// This currently only comes into play if one ship is the player... 
+								// blame retail for that.
+	float bounce;				// Bounce factor for all other cases
+	float friction;				// Controls lateral velocity lost when colliding with a large ship
+	float rotation_factor;		// Affects the rotational energy of collisions... TBH not sure how. 
+
+	// Speed & angle constraints for a smooth landing
+	// Note that all angles are stored as a dotproduct between normalized vectors instead. This saves us from having
+	// to do a lot of dot product calculations later.
+	float landing_max_z;		
+	float landing_min_z;
+	float landing_min_y;
+	float landing_max_x;
+	float landing_max_angle;
+	float landing_min_angle;
+	float landing_max_rot_angle;
+
+	// Speed & angle constraints for a "rough" landing (one with normal collision consequences, but where 
+	// the ship is still reoriented towards its resting orientation)
+	float reorient_max_z;
+	float reorient_min_z;
+	float reorient_min_y;
+	float reorient_max_x;
+	float reorient_max_angle;
+	float reorient_min_angle;
+	float reorient_max_rot_angle;
+
+	// Landing response parameters
+	float reorient_mult;		// How quickly the ship will reorient towards it's resting position
+	float landing_rest_angle;	// The vertical angle where the ship's orientation comes to rest
+	int landing_sound_idx;		//Sound to play on successful landing collisions
+
+} ship_collision_physics;
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
@@ -984,6 +1042,7 @@ typedef struct ship_info {
 	char		*manufacturer_str;				// string used by tooltips
 	char		*desc;								// string used by tooltips
 	char		*tech_desc;							// string used by tech database
+	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
 	char     *ship_length;						// string used by multiplayer ship desc
 	char     *gun_mounts;			         // string used by multiplayer ship desc
@@ -1039,7 +1098,8 @@ typedef struct ship_info {
 	float		max_speed, min_speed, max_accel;
 
 	//Collision
-	int				collision_damage_type_idx;
+	int						collision_damage_type_idx;
+	ship_collision_physics	collision_physics;
 
 	// ship explosion info
 	shockwave_create_info shockwave;

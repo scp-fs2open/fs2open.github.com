@@ -1106,7 +1106,6 @@ void ship_flags_dlg::OnSetClassDynamically()
 		m_set_class_dynamically.SetCheck(1);
 	}
 }
-
 void ship_flags_dlg::OnNoDeathScream()
 {
 	if (m_no_death_scream.GetCheck() == 1) {

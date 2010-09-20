@@ -107,6 +107,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
 #define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
 #define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
+#define MSS_FLAG_ALLOW_LANDING		(1 << 21)		// This subsystem can be landed on
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -315,6 +316,7 @@ typedef struct bsp_info {
 	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
+	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 
 	float		dumb_turn_rate;
 
@@ -350,6 +352,7 @@ typedef struct bsp_info {
 		dumb_turn_rate = 0.f;
 		bsp_data = NULL;
 		rad = 0.f;
+		lod_name[ 0 ] = '\0';  
 
 		/* Compound types */
 		memset( live_debris, 0, sizeof( live_debris ) );
@@ -396,8 +399,8 @@ typedef struct model_path {
 } model_path;
 
 typedef struct model_tmap_vert {
-	short vertnum;
-	short normnum;
+	ushort vertnum;
+	ushort normnum;
 	float u,v;
 } model_tmap_vert;
 

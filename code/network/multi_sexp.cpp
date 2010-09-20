@@ -133,7 +133,7 @@ void multi_sexp_maybe_send_packet()
 		return;
 	}
 
-	send_sexp_packet(data, packet_end + 1); 
+	send_sexp_packet(data, sub_packet_size); 
 
 	j = 0; 
 	//Slide down any entries after the stored index to the start of the array.
@@ -143,12 +143,21 @@ void multi_sexp_maybe_send_packet()
 		j++;
 	}
 
-	// if we have an existing argument count we need to update where to put it too
-	if (current_argument_count) {
-		argument_count_index -= sub_packet_size; 
+	packet_size = j; 
+
+	// flush the remaining type buffer
+	for (i = j ; i < MAX_PACKET_SIZE ; i++) {
+		type[i] = -1;
 	}
 
-	packet_size = j; 
+	// if we have an existing argument count we need to update where to put it too
+	if (current_argument_count) {
+		argument_count_index = argument_count_index - sub_packet_size; 
+	}
+
+	Assert(argument_count_index >=0);
+
+
 }
 
 // flushes out the packet and sends any data still in there
@@ -197,6 +206,8 @@ void multi_send_ship(int shipnum)
 	}
 
 	multi_send_ship(&Ships[shipnum]);
+	
+	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_ship(ship *shipp) 

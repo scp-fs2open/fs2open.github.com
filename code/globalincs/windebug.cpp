@@ -1164,6 +1164,20 @@ void _cdecl Error( const char * filename, int line, const char * format, ... )
 	Messagebox_active = false;
 }
 
+void _cdecl WarningEx( char *filename, int line, const char *format, ... )
+{
+#ifndef NDEBUG
+	if (Cmdline_extra_warn) {
+		char msg[sizeof(AssertText1)];
+		va_list args;
+		va_start(args, format);
+		vsprintf(msg, format, args);
+		va_end(args);
+		Warning(filename, line, msg);
+	}
+#endif
+}
+
 void _cdecl Warning( char *filename, int line, const char *format, ... )
 {
 	Global_warning_count++;

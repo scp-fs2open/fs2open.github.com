@@ -9,15 +9,22 @@
 #ifndef _MISSION_SPECS_EDITOR_H
 #define _MISSION_SPECS_EDITOR_H
 
+#include "mission.h"
+
+
 class dlgMissionSpecsEditor : public wxDialog
 {
 	public:
+		wxFREDMission* the_Mission;
+
 		// constructor/destructors
-		dlgMissionSpecsEditor(wxWindow *parent);
+		dlgMissionSpecsEditor(wxWindow *parent, wxFREDMission* current_Mission);
 		~dlgMissionSpecsEditor();
 
 		// event handlers
 		// event functions go here
+		void OnTitleChange(wxCommandEvent &WXUNUSED(event));
+		void OnAuthorChange(wxCommandEvent &WXUNUSED(event));
 
 	protected:		
 		// events

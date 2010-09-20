@@ -628,6 +628,14 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_SHOW_FRIENDLY;
 		else if (!stricmp(NOX("capital+"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CAPITAL_PLUS;
+		else if (!stricmp(NOX("chain external model fps"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_EXTERNAL_WEAPON_FP;
+		else if (!stricmp(NOX("external model launcher"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_EXTERNAL_WEAPON_LNCH;
+		else if (!stricmp(NOX("takes blast damage"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TAKES_BLAST_DAMAGE;
+		else if (!stricmp(NOX("takes shockwave damage"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TAKES_SHOCKWAVE_DAMAGE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -934,8 +942,9 @@ void init_weapon_entry(int weap_info_index)
 	generic_anim_init(&wip->b_info.beam_glow, NULL);
 	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
 
-	for (i = 0; i < NUM_SKILL_LEVELS; i++)
-		wip->b_info.beam_miss_factor[i] = 0.00001f;
+	for (i = 0; i < MAX_IFFS; i++)
+		for (j = 0; j < NUM_SKILL_LEVELS; j++)
+			wip->b_info.beam_iff_miss_factor[i][j] = 0.00001f;
 	
 	//WMC - Okay, so this is needed now
 	beam_weapon_section_info *bsip;
@@ -1010,7 +1019,7 @@ int parse_weapon(int subtype, bool replace)
 	char buf[WEAPONS_MULTITEXT_LENGTH];
 	weapon_info *wip = NULL;
 	char fname[NAME_LENGTH];
-	int idx;
+	int iff, idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found  = true;
@@ -1239,6 +1248,16 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Mass:")) {
 		stuff_float( &(wip->mass) );
+
+		// Goober5000 - hack in order to make the beam whack behavior of these three beams match all other beams
+		// this relies on Bobboau's beam whack hack in beam_apply_whack()
+		if (!strcmp(wip->name, "SAAA") && (wip->mass == 4.0f)
+			|| !strcmp(wip->name, "MjolnirBeam") && (wip->mass == 1000.0f)
+			|| !strcmp(wip->name, "MjolnirBeam#home") && (wip->mass == 1000.0f))
+		{
+			wip->mass = 100.0f;
+		}
+
 		diag_printf ("Weapon mass -- %7.3f\n", wip->mass);
 	}
 
@@ -1996,10 +2015,27 @@ int parse_weapon(int subtype, bool replace)
 
 		// magic miss #
 		if(optional_string("+Miss Factor:")) {
-			for(idx=0; idx<NUM_SKILL_LEVELS; idx++)
-			{
-				if(!stuff_float_optional(&wip->b_info.beam_miss_factor[idx])) {
+			for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
+				float temp;
+				if(!stuff_float_optional(&temp)) {
 					break;
+				}
+				// an unspecified Miss Factor should apply to all IFFs
+				for(iff=0; iff<Num_iffs; iff++) {
+					wip->b_info.beam_iff_miss_factor[iff][idx] = temp;
+				}
+			}
+		}
+		// now check miss factors for each IFF
+		for(iff=0; iff<Num_iffs; iff++) {
+			char miss_factor_string[NAME_LENGTH + 15];
+			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
+			if(optional_string(miss_factor_string)) {
+				// this Miss Factor applies only to the specified IFF
+				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
+					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {
+						break;
+					}
 				}
 			}
 		}
@@ -3442,6 +3478,10 @@ void weapon_delete(object *obj)
 	weapon *wp;
 	int num;
 
+	Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
+	Script_system.RunCondition(CHA_ONWEAPONDELETE);
+	Script_system.RemHookVars(2, "Weapon", "Self");
+
 	num = obj->instance;
 
 	Assert( Weapons[num].objnum == OBJ_INDEX(obj));
@@ -4587,7 +4627,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-		if ((target_objnum != -1) && (!targeting_same || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (target_team == Iff_traitor))) ) {
+		if ((target_objnum != -1) && (!targeting_same || (MULTI_DOGFIGHT && (target_team == Iff_traitor))) ) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
 			wp->nearest_dist = 99999.0f;
@@ -5062,7 +5102,15 @@ void spawn_child_weapons(object *objp)
 			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
 			if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
 			{
-				weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+				//Deal with swarm weapons
+				if (wp->swarm_index >= 0) {
+					swarm_info	*swarmp;
+					swarmp = &Swarm_missiles[wp->swarm_index];
+
+					weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
+				} else {
+					weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+				}
 			}
 
     		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
@@ -5335,11 +5383,6 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 {
 	float			dist, max_dist, min_dist;
 
- 	// only blast ships and asteroids
-	if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID)) {
-		return -1;
-	}
-
 	max_dist = objp->radius + outer_rad;
 	dist = vm_vec_dist_quick(&objp->pos, pos);	
 	if ( (dist > max_dist) || (dist > (limit+objp->radius)) ) {
@@ -5433,11 +5476,19 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 	Assert(sci->inner_rad != 0);	
 
 	// only blast ships and asteroids
+	// And (some) weapons
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) ) {
+		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_WEAPON) ) {
 			continue;
 		}
 	
+		if ( objp->type == OBJ_WEAPON ) {
+			// only apply to missiles with hitpoints
+			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE))
+				continue;
+		}
+
 		if ( objp->type == OBJ_SHIP ) {
 			// don't blast navbuoys
 			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY ) {
@@ -5459,6 +5510,13 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			break;
 		case OBJ_ASTEROID:
 			asteroid_hit(objp, NULL, NULL, damage);
+			break;
+		case OBJ_WEAPON:
+			objp->hull_strength -= damage;
+			if (objp->hull_strength < 0.0f) {
+				Weapons[objp->instance].lifeleft = 0.01f;
+				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+			}
 			break;
 		default:
 			Int3();
@@ -5839,7 +5897,7 @@ void weapons_page_in()
 			}
 
 			default:
-				Int3();	// Invalid weapon rendering type.
+				Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
 		}
 
 		wip->external_model_num = -1;

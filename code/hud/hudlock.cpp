@@ -350,7 +350,7 @@ int hud_abort_lock()
 	if ((Player_ship->team == target_team) && (!iff_x_attacks_y(Player_ship->team, target_team)))
 	{
 		// if we're in multiplayer dogfight, ignore this
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
+		if(!MULTI_DOGFIGHT) {
 			return 1;
 		}
 	}

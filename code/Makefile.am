@@ -185,7 +185,7 @@ EXTRA_DIST =	\
 
 # D_ variants are defaults and should always be used
 # FS2_ variants are for game building and wxFRED
-AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@ -I../lua
+AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@
 AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
 noinst_LIBRARIES = libcode.a
@@ -283,6 +283,10 @@ FS2_SOURCES =	\
 	gamehelp/gameplayhelp.h	\
 	gamesequence/gamesequence.cpp	\
 	gamesequence/gamesequence.h	\
+	gamesnd/eventmusic.cpp	\
+	gamesnd/eventmusic.h	\
+	gamesnd/gamesnd.cpp	\
+	gamesnd/gamesnd.h	\
 	globalincs/alphacolors.cpp	\
 	globalincs/alphacolors.h	\
 	globalincs/crypt.cpp	\
@@ -572,6 +576,8 @@ FS2_SOURCES =	\
 	object/object.h	\
 	object/objectshield.cpp	\
 	object/objectshield.h	\
+	object/objectsnd.cpp	\
+	object/objectsnd.h	\
 	object/objectsort.cpp	\
 	object/parseobjectdock.cpp	\
 	object/parseobjectdock.h	\
@@ -634,6 +640,30 @@ FS2_SOURCES =	\
 	ship/shiphit.cpp	\
 	ship/shiphit.h	\
 	ship/subsysdamage.h	\
+	sound/audiostr.cpp	\
+	sound/audiostr.h	\
+	sound/acm.cpp	\
+	sound/acm.h	\
+	sound/ds.cpp	\
+	sound/ds.h	\
+	sound/ds3d.cpp	\
+	sound/ds3d.h	\
+	sound/dscap.cpp	\
+	sound/dscap.h	\
+	sound/fsspeech.cpp	\
+	sound/fsspeech.h	\
+	sound/openal.cpp	\
+	sound/openal.h	\
+	sound/rtvoice.cpp	\
+	sound/rtvoice.h	\
+	sound/sound.cpp	\
+	sound/sound.h	\
+	sound/speech.cpp	\
+	sound/speech.h	\
+	sound/voicerec.cpp	\
+	sound/voicerec.h	\
+	sound/ogg/ogg.cpp	\
+	sound/ogg/ogg.h	\
 	species_defs/species_defs.cpp	\
 	species_defs/species_defs.h	\
 	starfield/nebula.cpp	\
@@ -707,44 +737,6 @@ JOY_SOURCES =	\
 	io/joy-unix.cpp
 endif
 
-## sound support sources
-if FS2_SOUND
-SOUND_SOURCES =	\
-	gamesnd/eventmusic.cpp	\
-	gamesnd/eventmusic.h	\
-	gamesnd/gamesnd.cpp	\
-	gamesnd/gamesnd.h	\
-	object/objectsnd.cpp	\
-	object/objectsnd.h	\
-	sound/ogg/ogg.cpp	\
-	sound/ogg/ogg.h	\
-	sound/audiostr-openal.cpp	\
-	sound/audiostr.cpp	\
-	sound/audiostr.h	\
-	sound/acm-openal.cpp	\
-	sound/acm.h	\
-	sound/ds.cpp	\
-	sound/ds.h	\
-	sound/ds3d.cpp	\
-	sound/ds3d.h	\
-	sound/dscap.cpp	\
-	sound/dscap.h	\
-	sound/rbaudio.cpp	\
-	sound/rbaudio.h	\
-	sound/rtvoice.cpp	\
-	sound/rtvoice.h	\
-	sound/sound.cpp	\
-	sound/sound.h	\
-	vcodec/codec1.cpp	\
-	vcodec/codec1.h	\
-	sound/fsspeech.cpp	\
-	sound/fsspeech.h	\
-	sound/speech.cpp	\
-	sound/speech.h	\
-	sound/voicerec.cpp	\
-	sound/voicerec.h
-endif
-
 ## Win32-specific sources
 if FS2_OS_WIN32
 WIN32_SOURCES =	\
@@ -755,7 +747,6 @@ WIN32_SOURCES =	\
 	directx/vdplay.h	\
 	directx/vdplobby.h	\
 	directx/vdsetup.h	\
-	directx/vdsound.h	\
 	directx/vdvp.h	\
 	globalincs/windebug.cpp	\
 	graphics/gl/GLAUX.H	\
@@ -787,8 +778,8 @@ endif
 
 
 ## libcode.a
-libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${SOUND_SOURCES}	\
-	${WIN32_SOURCES} ${UNIX_SOURCES}
+libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${WIN32_SOURCES}	\
+	${UNIX_SOURCES}
 
 ##
 ## End CODE library
@@ -818,10 +809,10 @@ fs2_open_INF_d_SOURCES =	\
 fs2_open_INF_r_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
-fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
-fs2_open_INF_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
-fs2_open_INF_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
+fs2_open_d_LDADD = libcode.a
+fs2_open_r_LDADD = libcode.a
+fs2_open_INF_d_LDADD = libcode.a
+fs2_open_INF_r_LDADD = libcode.a
 
 ##
 ## End MAIN binary
@@ -853,10 +844,10 @@ wxFRED2_INF_d_SOURCES = \
 wxFRED2_INF_r_SOURCES =	\
 	${wxFRED_SOURCES}
 
-wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
-wxFRED2_r_LDADD = libcode.a ../libjpeg/libjpeg.a
-wxFRED2_INF_d_LDADD = libcode.a ../libjpeg/libjpeg.a
-wxFRED2_INF_r_LDADD = libcode.a ../libjpeg/libjpeg.a
+wxFRED2_d_LDADD = libcode.a
+wxFRED2_r_LDADD = libcode.a
+wxFRED2_INF_d_LDADD = libcode.a
+wxFRED2_INF_r_LDADD = libcode.a
 
 ##
 ## End wxFRED2 binary

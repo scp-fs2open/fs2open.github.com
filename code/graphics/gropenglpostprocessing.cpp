@@ -10,8 +10,18 @@ using namespace opengl;
 bool post_effect::changed = true;
 
 texture *bloom::high_pass(texture *image, int size) {
-	Assert(image);
 	Assert(size != 0);
+
+	if ( !image ) {
+		return NULL;
+	}
+
+	// Get bright pass filter
+	special_shader *bright_sdr = shader_manager::get()->get_special_shader(special_shader::bright_pass);
+
+	if ( !bright_sdr ) {
+		return NULL;
+	}
 
 	// Acquire render target
 	opengl::render_target *target;
@@ -28,11 +38,13 @@ texture *bloom::high_pass(texture *image, int size) {
 	target->apply();
 	target->attach_texture(tex);
 	target->clear(render_target::clr_color);
-	// Apply bright pass filter
-	special_shader *bright_sdr = shader_manager::get()->apply_special_shader(special_shader::bright_pass);
 
-	if (!bright_sdr)
+	// Apply bright pass filter
+	if ( !bright_sdr->start_pass(0) ) {
+		render_target::release(target);
+		texture_pool::release(tex);
 		return NULL;
+	}
 	
 	bright_sdr->set_texture(b_texture, image);
 
@@ -43,8 +55,18 @@ texture *bloom::high_pass(texture *image, int size) {
 }
 
 texture *bloom::blur(texture *image, int size) {
-	Assert(image);
 	Assert(size != 0);
+
+	if ( !image ) {
+		return NULL;
+	}
+
+	// Blur
+	special_shader *blur_sdr = shader_manager::get()->get_special_shader(special_shader::blur);
+
+	if ( !blur_sdr ) {
+		return NULL;
+	}
 
 	// Acquire render target
 	opengl::render_target *target;
@@ -63,9 +85,12 @@ texture *bloom::blur(texture *image, int size) {
 	target->apply();
 
 	// Blur
-	special_shader *blur_sdr = shader_manager::get()->apply_special_shader(special_shader::blur);
-	if (!blur_sdr)
+	if ( !blur_sdr->start_pass(0) ) {
+		render_target::release(target);
+		texture_pool::release(texture0);
+		texture_pool::release(texture1);
 		return NULL;
+	}
 
 	for (int pass = 0; pass < 2; pass++) {
 		target->attach_texture(!pass ? texture0 : texture1);
@@ -101,7 +126,6 @@ bool bloom::begin(texture *pp_img) {
 
 void bloom::end() {
 	if (config::get_integer(config::bloom_int)) {
-		Assert(blurred);
 		texture_pool::release(blurred);
 	}
 }
@@ -126,6 +150,12 @@ void bloom::set_uniforms(post_shader *sdr) {
 bool depth_of_field::begin(texture *pp_img) {
 	Assert(pp_img);
 
+	special_shader *blur_sdr = shader_manager::get()->apply_special_shader(special_shader::blur);
+
+	if ( !blur_sdr ) {
+		return false;
+	}
+
 	render_target *target;
 
 	target = render_target::acquire(gr_screen.max_w / 4, gr_screen.max_h / 4);
@@ -140,10 +170,12 @@ bool depth_of_field::begin(texture *pp_img) {
 	Assert(texture0);
 	Assert(texture1);
 
-	special_shader *blur_sdr = shader_manager::get()->apply_special_shader(special_shader::blur);
-
-	if (!blur_sdr)
+	if ( !blur_sdr->start_pass(0) ) {
+		render_target::release(target);
+		texture_pool::release(texture0);
+		texture_pool::release(texture1);
 		return false;
+	}
 
 	for (int pass = 0; pass < 2; pass++) {
 		target->attach_texture(!pass ? texture0 : texture1);
@@ -201,19 +233,19 @@ void simple_effects::read_list() {
 	required_string("#Effects");
 	while (required_string_either("#End", "$Name:")) {
 		post_effect eff;
-		char buf[NAME_LENGTH];
+		char buf[NAME_LENGTH+1] = { 0 };
 
 		required_string("$Name:");
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		eff.name = vm_strdup(buf);
+		eff.name = buf;
 
 		required_string("$Uniform:");
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		eff.uniform_name =  vm_strdup(buf);
+		eff.uniform_name = buf;
 
 		required_string("$Define:");
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		eff.define_name =  vm_strdup(buf);
+		eff.define_name = buf;
 
 		required_string("$AlwaysOn:");
 		stuff_boolean(&eff.always_on);
@@ -272,8 +304,18 @@ post_processing *post_processing::instance = NULL;
 
 void post_processing::create() {
 	Assert(instance == NULL);
-	if (config::is_enabled(config::post_process))
-		instance = new post_processing;
+	if (config::is_enabled(config::post_process)) {
+		instance = new(std::nothrow) post_processing;
+
+		if ( instance && !config::is_enabled(config::post_process) ) {
+			delete instance;
+			instance = NULL;
+		}
+	}
+
+	if ( !instance ) {
+		config::disable(config::post_process);
+	}
 }
 
 void post_processing::remove() {
@@ -295,14 +337,26 @@ post_processing::post_processing() {
 	image = texture_pool::acquire(target->get_width(), target->get_height());
 	target->attach_texture(image);
 
+	bloom_eff = NULL;
+	simple_eff = NULL;
+#ifdef DEPTH_OF_FIELD
+	dof_eff = NULL;
+#endif
+
 	if (!target->check_status()) {
 		mprintf(("FBO error. Could not initialize post-processing.\n"));
 		config::disable(config::post_process);
 	} else {
-		bloom_eff = new bloom;
-		simple_eff = new simple_effects;
+		bloom_eff = new(std::nothrow) bloom;
+		simple_eff = new(std::nothrow) simple_effects;
+
+		if ( !(bloom_eff && simple_eff) ) {
+			mprintf(("Memory error. Could not initialize post-processing.\n"));
+			config::disable(config::post_process);
+		}
+
 #ifdef DEPTH_OF_FIELD
-		dof_eff = new depth_of_field;
+		dof_eff = new(std::nothrow) depth_of_field;
 
 		depth = texture::create(target->get_width(), target->get_height(), texture::fmt_depth);
 #endif
@@ -469,6 +523,12 @@ void gr_opengl_post_process_init() {
 
 	// Check if we can use post processing
 	if (!opengl::config::is_enabled(opengl::config::glsl) || opengl::config::is_enabled(opengl::config::no_fbo)) {
+		Cmdline_postprocess = 0;
+		return;
+	}
+
+	if (!resources::text_file::file_exist("post_processing.tbl", resources::text_file::table_file)) {
+		mprintf(("Post-processing table not found.  Disabling...\n"));
 		Cmdline_postprocess = 0;
 		return;
 	}

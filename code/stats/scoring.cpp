@@ -561,10 +561,6 @@ int scoring_eval_kill(object *ship_obj)
 		}
 	}
 
-	// if this ship doesn't show up on player sensors, then don't eval a kill
-	if ( dead_ship->flags & SF_HIDDEN_FROM_SENSORS ){
-		return -1;
-	}
 
 #ifndef NDEBUG
 	scoring_eval_harbison( dead_ship );
@@ -660,7 +656,7 @@ int scoring_eval_kill(object *ship_obj)
 			}
 
 			// if he killed a guy on his own team increment his bonehead kills
-			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){
+			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !MULTI_DOGFIGHT ){
 				if (!(The_mission.flags & MISSION_FLAG_NO_TRAITOR)) {
 					plr->stats.m_bonehead_kills++;
 					kill_score = -(int)(dead_ship->score * scoring_get_scale_factor());
@@ -674,7 +670,7 @@ int scoring_eval_kill(object *ship_obj)
 			// otherwise increment his valid kill count and score
 			else {
 				// dogfight mode
-				if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (multi_find_player_by_object(ship_obj) < 0)){
+				if(MULTI_DOGFIGHT && (multi_find_player_by_object(ship_obj) < 0)){
 					// don't add a kill for dogfight kills on non-players
 				} else {
 					plr->stats.m_okKills[si_index]++;		
@@ -1027,7 +1023,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 float scoring_get_scale_factor()
 {
 	// multiplayer dogfight. don't scale anything
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return 1.0f;
 	}
 

@@ -16,17 +16,9 @@
 #include "mm/mmreg.h"
 #endif
 
-#ifndef USE_OPENAL
-#include "mm/msacm.h"
-#endif
-
 #include "globalincs/pstypes.h"
 
 int	ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, ubyte **dest, int max_dest_bytes, int *dest_len, unsigned int *src_bytes_used, unsigned short dest_bps=16);
-int	ACM_init();
-void	ACM_close();
-int	ACM_is_inited();
-
 
 int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream, int dest_bps=16);
 int ACM_stream_close(void *stream);

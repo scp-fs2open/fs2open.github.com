@@ -30,13 +30,19 @@ public:
 	//{{AFX_DATA(ShipSpecialDamage)
 	enum { IDD = IDD_SPECIAL_DAMAGE };
 	int		m_shock_enabled;
-	BOOL		m_special_exp_enabled;
+	BOOL	m_special_exp_enabled;
 	int		m_inner_rad;
 	int		m_outer_rad;
 	int		m_damage;
 	int		m_shock_speed;
 	int		m_blast;
 	int		m_ship_num;
+
+private:
+	// variables to handle selection of multiple ships
+	int m_selected_ships[MAX_SHIPS];
+	int num_selected_ships;
+
 	//}}AFX_DATA
 
 

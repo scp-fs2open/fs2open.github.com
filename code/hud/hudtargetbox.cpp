@@ -196,7 +196,7 @@ static int Last_ts;	// holds last target status.
 void hud_blit_target_integrity(int disabled,int force_obj_num = -1);
 
 // cut down long subsystem names to a more manageable length
-char *hud_targetbox_truncate_subsys_name(char *outstr)
+void hud_targetbox_truncate_subsys_name(char *outstr)
 {	
 	if(Lcl_gr){
 		if ( strstr(outstr, "communication") )	{
@@ -244,17 +244,15 @@ char *hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") || strstr(outstr, "missile") ) {
 			strcpy(outstr, "tourelle");
 		} 
-	} else {	
-		if ( strstr(outstr, XSTR( "communication", 333)))	{
-			strcpy( outstr, XSTR( "comm", 334) );
-		} else if ( strstr(outstr, XSTR( "navigation", 335)))	{
-			strcpy( outstr, XSTR( "nav", 336) );
-		} else if (!stricmp(outstr, "Gas Collector")) {
+	} else {
+		if (strstr(outstr, XSTR("communication", 333)))	{
+			strcpy(outstr, XSTR("comm", 334));
+		} else if (strstr(outstr, XSTR("navigation", 335)))	{
+			strcpy(outstr, XSTR("nav", 336));
+		} else if (strstr(outstr, "gas collector")) {
 			strcpy(outstr, "collector");
 		}
 	}
-
-	return outstr;
 }
 
 //swich through the valid targetbox modes

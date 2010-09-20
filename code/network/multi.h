@@ -99,7 +99,7 @@ struct player;
 #define IPX_PORT_LENGTH						2				// length of the port field for an IPX address
 
 // netgame defines
-#define RESPAWN_ANARCHY						(0xffffffff)// respawn setting for an "anarchy" style game
+// #define RESPAWN_ANARCHY						(0xffffffff)// respawn setting for an "anarchy" style game
 #define MP_SINGLE								0				// not playing a campaign - single mission
 #define MP_CAMPAIGN							1				// playing a campaign
 
@@ -290,15 +290,15 @@ extern int Om_tracker_flag;
 
 // join request denial codes
 #define JOIN_DENY_JR_STATE				0		// join request is rejected because the game is not in the proper state
-#define JOIN_DENY_JR_TRACKER_INVAL	1		// join request is rejected because the game is an MT game and the passed player info is invalid
-#define JOIN_DENY_JR_PASSWD			2		// join request is rejected because the game is password protected and the password sent is incorrect
-#define JOIN_DENY_JR_CLOSED			3		// join request is rejected because the game is closed and is currently ingame
-#define JOIN_DENY_JR_RANK_HIGH		4		// join request is rejected because the game is rank based and the passed rank is too high
+#define JOIN_DENY_JR_TRACKER_INVAL		1		// join request is rejected because the game is an MT game and the passed player info is invalid
+#define JOIN_DENY_JR_PASSWD				2		// join request is rejected because the game is password protected and the password sent is incorrect
+#define JOIN_DENY_JR_CLOSED				3		// join request is rejected because the game is closed and is currently ingame
+#define JOIN_DENY_JR_RANK_HIGH			4		// join request is rejected because the game is rank based and the passed rank is too high
 #define JOIN_DENY_JR_RANK_LOW			5		// join request is rejected because the game is rank based and the passed rank is too low
 #define JOIN_DENY_JR_DUP				6		// join request is denied because there is an exiting netplayer with matching characteristics
 #define JOIN_DENY_JR_FULL				7		// join request is denied because the game is full
 #define JOIN_DENY_JR_TEMP_CLOSED		8		// join request is denied because the _forming_ netgame has been toggled closed
-#define JOIN_DENY_JR_BANNED			9		// join request is denied because the player has been banned for the duration of the game
+#define JOIN_DENY_JR_BANNED				9		// join request is denied because the player has been banned for the duration of the game
 #define JOIN_DENY_JR_NOOBS				10		// join request is denied because observers are not allowed
 #define JOIN_DENY_JR_INGAME_JOIN		11		// join request is denied because someone else is already ingame joining
 #define JOIN_DENY_JR_BAD_VERSION		12		// incompatible version types
@@ -313,7 +313,7 @@ extern int Om_tracker_flag;
 #define REPAIR_INFO_ABORT			0x5		// server to client - client has aborted a rearm/repair
 #define REPAIR_INFO_BROKEN			0x6		// server to client - client is breaking repair -- might be reestablished
 #define REPAIR_INFO_WARP_ADD		0x7		// server to client - add client onto list of people for arriving support ship
-#define REPAIR_INFO_WARP_REMOVE	0x8		// server to client - remove client from list of people for arriving support ship
+#define REPAIR_INFO_WARP_REMOVE		0x8		// server to client - remove client from list of people for arriving support ship
 #define REPAIR_INFO_ONWAY			0x9		// server to client - repair ship on way
 #define REPAIR_INFO_KILLED			0xa		// server to client - repair ship was killed on way to rearm player
 #define REPAIR_INFO_COMPLETE		0xb		// server to client - repair of your ship is complete
@@ -322,7 +322,7 @@ extern int Om_tracker_flag;
 #define DEBRIS_UPDATE_UPDATE			0x1		// update a piece
 #define DEBRIS_UPDATE_REMOVE			0x2		// remove a piece of debris
 #define DEBRIS_UPDATE_NUKE				0x3		// blow up a piece of debris
-#define DEBRIS_UPDATE_CREATE_HULL	0x4		// create a piece of debris
+#define DEBRIS_UPDATE_CREATE_HULL		0x4		// create a piece of debris
 
 // weapon select/ship select update packets
 #define WSS_WEAPON_SELECT			0x1		// ship select stuff
@@ -336,7 +336,7 @@ extern int Om_tracker_flag;
 
 // accept player data codes
 #define APD_NEXT						0			// there is still more player data
-#define APD_END_PACKET				1			// end of this packet
+#define APD_END_PACKET					1			// end of this packet
 #define APD_END_DATA					2			// end of the data
 
 // ingame ship request codes		
@@ -357,18 +357,18 @@ extern int Om_tracker_flag;
 // asteroid stuff
 #define ASTEROID_CREATE				0x1		// create an asteroid
 #define ASTEROID_THROW				0x2		// throw an asteroid
-#define ASTEROID_HIT					0x3		// asteroid hit occured
+#define ASTEROID_HIT				0x3		// asteroid hit occured
 
 // commands for squadmate messages
 #define SQUAD_MSG_SHIP				0x1
 #define SQUAD_MSG_WING				0x2
 #define SQUAD_MSG_ALL				0x3
-#define SQUAD_MSG_REINFORCEMENT	0x4
+#define SQUAD_MSG_REINFORCEMENT		0x4
 
 // SW_STD_QUERY codes
 #define SW_STD_START					0x1		// from host to standalone saying "query the tracker"
 #define SW_STD_OK						0x2		// from standalone to host - "everything is cool"
-#define SW_STD_BAD					0x3		// from standalone to host - "everything is bad"
+#define SW_STD_BAD						0x3		// from standalone to host - "everything is bad"
 
 // stats block packet
 #define STATS_MISSION				0			// all stats for the mission (except kills), for one player
@@ -578,6 +578,7 @@ typedef struct server_item {
 #define JOIN_FLAG_AS_OBSERVER			(1<<0)	// wants to join as an aboserver
 #define JOIN_FLAG_HAS_CD				(1<<1)	// currently has a CD in the drive
 #define JOIN_FLAG_HAXOR					(1<<2)	// if the player has hacked data
+
 typedef struct join_request {
 	char passwd[MAX_PASSWD_LEN+1];				// password for a password protected game
 	char callsign[CALLSIGN_LEN+1];				// player's callsign
@@ -613,33 +614,33 @@ typedef struct network_buffer {
 #define NETINFO_FLAG_MT_FAILED				(1<<3)      // all attempts to connect have failed
 #define NETINFO_FLAG_MT_STARTUP				(1<<4)      // the initial state (ie, we haven't tried anything yet)
 #define NETINFO_FLAG_GAME_HOST				(1<<5)      // I'm the host
-#define NETINFO_FLAG_INGAME_JOIN				(1<<6)      // means he is still in the process of joining ingame
-#define NETINFO_FLAG_OBSERVER					(1<<7)      // means he's an observer
+#define NETINFO_FLAG_INGAME_JOIN			(1<<6)      // means he is still in the process of joining ingame
+#define NETINFO_FLAG_OBSERVER				(1<<7)      // means he's an observer
 #define NETINFO_FLAG_OBS_PLAYER				(1<<8)      // means he's an observer, but he was formerly a player (should show his stats)
-#define NETINFO_FLAG_LIMBO						(1<<9)      // (client side) means he has to choose whether to be an observer or quit (no more respawns)
+#define NETINFO_FLAG_LIMBO					(1<<9)      // (client side) means he has to choose whether to be an observer or quit (no more respawns)
 #define NETINFO_FLAG_MISSION_OK				(1<<10)     // this client's mission has been verified
 #define NETINFO_FLAG_RESPAWNING				(1<<11)     // so that we wait on a keypress, or other user input before respawning
 #define NETINFO_FLAG_DO_NETWORKING			(1<<12)		// set when we can send/receive data
-#define NETINFO_FLAG_TEAM_LOCKED				(1<<13)		// if this is set, only the host can modify the team settings for this player
+#define NETINFO_FLAG_TEAM_LOCKED			(1<<13)		// if this is set, only the host can modify the team settings for this player
 #define NETINFO_FLAG_TEAM_CAPTAIN			(1<<14)		// this player is the captain of his team
 #define NETINFO_FLAG_KICKED					(1<<15)		// this player was kicked
 #define NETINFO_FLAG_ACCEPT_INGAME			(1<<16)		// accepted ingame
-#define NETINFO_FLAG_ACCEPT_HOST				(1<<17)		// accetped as host
+#define NETINFO_FLAG_ACCEPT_HOST			(1<<17)		// accetped as host
 #define NETINFO_FLAG_ACCEPT_OBSERVER		(1<<18)		// accepted as observer
 #define NETINFO_FLAG_ACCEPT_CLIENT			(1<<19)		// accepted as client
-#define NETINFO_FLAG_WARPING_OUT				(1<<20)		// clients keep track of this for themselves to know if they should be leaving
+#define NETINFO_FLAG_WARPING_OUT			(1<<20)		// clients keep track of this for themselves to know if they should be leaving
 #define NETINFO_FLAG_HAS_CD					(1<<21)		// the player has a CD in the drive
-#define NETINFO_FLAG_RELIABLE_CONNECTED	(1<<22)		// reliable socket is now active
+#define NETINFO_FLAG_RELIABLE_CONNECTED		(1<<22)		// reliable socket is now active
 #define NETINFO_FLAG_MT_GET_FAILED			(1<<23)		// set during MT stats update process indicating we didn't properly get his stats
 #define NETINFO_FLAG_MT_SEND_FAILED			(1<<24)		// set during MT stats update process indicating we didn't properly send his stats
-#define NETINFO_FLAG_MT_DONE					(1<<25)		// set when a player has been processed for stats (fail, succeed, or otherwise)
-#define NETINFO_FLAG_HAXOR						(1<<26)		// the player has some form of hacked client data
+#define NETINFO_FLAG_MT_DONE				(1<<25)		// set when a player has been processed for stats (fail, succeed, or otherwise)
+#define NETINFO_FLAG_HAXOR					(1<<26)		// the player has some form of hacked client data
 
 #define NETPLAYER_IS_OBSERVER(player)		(player->flags & (NETINFO_FLAG_OBSERVER|NETINFO_FLAG_OBS_PLAYER))
 #define NETPLAYER_IS_DEAD(player)			(player->flags & (NETINFO_FLAG_LIMBO|NETINFO_FLAG_RESPAWNING))
 
 // netgame modes
-#define NG_MODE_OPEN								1				// an open game
+#define NG_MODE_OPEN							1				// an open game
 #define NG_MODE_CLOSED							2				// a closed game
 #define NG_MODE_PASSWORD						3				// a password protected game
 #define NG_MODE_RESTRICTED						4				// a restricted game
@@ -650,16 +651,16 @@ typedef struct network_buffer {
 #define NG_FLAG_TEMP_CLOSED					(1<<0)		// a forming netgame is temporarily closed (should not be checked otherwise)
 #define NG_FLAG_SERVER_LOST					(1<<1)		// client has temporarily lost contact with the server
 #define NG_FLAG_INGAME_JOINING				(1<<2)		// someone is ingame joining.
-#define NG_FLAG_INGAME_JOINING_CRITICAL	(1<<3)		// someone is ingame joining and at the critical point where we cannot do certain things.
+#define NG_FLAG_INGAME_JOINING_CRITICAL		(1<<3)		// someone is ingame joining and at the critical point where we cannot do certain things.
 #define NG_FLAG_STORED_MT_STATS				(1<<4)		// stored tracker stats in the debriefing already
-#define NG_FLAG_HACKED_SHIPS_TBL				(1<<5)		// set when the server is playing with a hacked ships.tbl (only needed to notify hosts playing on a standalone)
+#define NG_FLAG_HACKED_SHIPS_TBL			(1<<5)		// set when the server is playing with a hacked ships.tbl (only needed to notify hosts playing on a standalone)
 #define NG_FLAG_HACKED_WEAPONS_TBL			(1<<6)		// set when the server is playing with a hacked weapons.tbl (only needed to notify hosts playing on a standalone)
 
 // netgame type flags
-#define NG_TYPE_COOP								(1<<0)		// cooperative mode
+#define NG_TYPE_COOP							(1<<0)		// cooperative mode
 #define NG_TYPE_TVT								(1<<1)		// team vs. team mode
 #define NG_TYPE_SW								(1<<2)		// squad war
-#define NG_TYPE_TEAM								( NG_TYPE_TVT | NG_TYPE_SW )
+#define NG_TYPE_TEAM							( NG_TYPE_TVT | NG_TYPE_SW )
 #define NG_TYPE_DOGFIGHT						(1<<3)		// plain old dogfight mode
 
 // some quick macros for the above
@@ -674,32 +675,32 @@ typedef struct network_buffer {
 
 // state defines for netgame states
 #define NETGAME_STATE_FORMING					1				// players are joining, host is selecting missions, etc
-#define NETGAME_STATE_BRIEFING				2				// players are reading the mission briefing
+#define NETGAME_STATE_BRIEFING					2				// players are reading the mission briefing
 #define NETGAME_STATE_IN_MISSION				3				// the mission itself is being played
-#define NETGAME_STATE_SERVER_TRANSFER		4				// server status is being transferred from one computer to another
+#define NETGAME_STATE_SERVER_TRANSFER			4				// server status is being transferred from one computer to another
 #define NETGAME_STATE_PAUSED					5				// the netgame is paused
 #define NETGAME_STATE_DEBRIEF					6				// the debriefing screen			
-#define NETGAME_STATE_MISSION_SYNC			7				// client/server data sync screens before and after the briefing stage
+#define NETGAME_STATE_MISSION_SYNC				7				// client/server data sync screens before and after the briefing stage
 #define NETGAME_STATE_ENDGAME					8				// game is moving from gameplay to the debriefing state
-#define NETGAME_STATE_STD_HOST_SETUP		9				// the host is on the setup netgame screen for the standalone server
+#define NETGAME_STATE_STD_HOST_SETUP			9				// the host is on the setup netgame screen for the standalone server
 #define NETGAME_STATE_HOST_SETUP				10				// the host is on the setup netgame screen _non_ standalone
 
 // state defines for netplayer states
 #define NETPLAYER_STATE_JOINING				0				// joining the netgame
 #define NETPLAYER_STATE_JOINED				1				// has joined and opened a reliable socket connection
-#define NETPLAYER_STATE_MISSION_LOADING	2				// in the process of loading the mission
+#define NETPLAYER_STATE_MISSION_LOADING		2				// in the process of loading the mission
 #define NETPLAYER_STATE_MISSION_LOADED		3				// mission loaded
-#define NETPLAYER_STATE_BRIEFING				4				// in the briefing
+#define NETPLAYER_STATE_BRIEFING			4				// in the briefing
 #define NETPLAYER_STATE_SHIP_SELECT			5				// in the ship selection screen
 #define NETPLAYER_STATE_WEAPON_SELECT		6				// in the weapon selection screen
 #define NETPLAYER_STATE_DATA_LOAD			7				// loading specific data (textures, etc)
 #define NETPLAYER_STATE_WAITING				8				// waiting to do something (like enter the mission)
-#define NETPLAYER_STATE_SLOT_ACK				9				// got player ship slot packets
+#define NETPLAYER_STATE_SLOT_ACK			9				// got player ship slot packets
 #define NETPLAYER_STATE_IN_MISSION			10				// in the mission itself
 #define NETPLAYER_STATE_INGAME_SHIPS		11				// player is receiving ingame join ship data
 #define NETPLAYER_STATE_INGAME_WINGS		12				// player is receiving ingame join wing data
 #define NETPLAYER_STATE_INGAME_RPTS			13				// player is receiving ingame join respawn data
-#define NETPLAYER_STATE_INGAME_SHIP_SELECT 14			// player is in the ship select screen for ingame join
+#define NETPLAYER_STATE_INGAME_SHIP_SELECT	14				// player is in the ship select screen for ingame join
 #define NETPLAYER_STATE_DEBRIEF				15				// player is in the debrief state (screen)
 #define NETPLAYER_STATE_MISSION_SYNC		16				// player is in the mission sync screen
 #define NETPLAYER_STATE_STD_HOST_SETUP		17				// the host is on the setup netgame screen for the standalone server
@@ -708,8 +709,8 @@ typedef struct network_buffer {
 #define NETPLAYER_STATE_SLOTS_ACK			20				// the player has received wss slots data (ingame join only)
 #define NETPLAYER_STATE_POST_DATA_ACK		21				// the player has received the post briefing data block
 #define NETPLAYER_STATE_WSS_ACK				22				// have received weapon slot information
-#define NETPLAYER_STATE_FLAG_ACK				23				// the player has received his flag change information
-#define NETPLAYER_STATE_MT_STATS				24				// the server is in the process of requesting or updating stats from the MT
+#define NETPLAYER_STATE_FLAG_ACK			23				// the player has received his flag change information
+#define NETPLAYER_STATE_MT_STATS			24				// the server is in the process of requesting or updating stats from the MT
 #define NETPLAYER_STATE_MISSION_XFER		25				// the player is in the process of receiving a mission file
 #define NETPLAYER_STATE_INGAME_STUFF		26				// received ingame "stuff"  happens just before ship selection
 #define NETPLAYER_STATE_DEBRIEF_ACCEPT		27				// the player has hit the accept button in the debrief and is good to go

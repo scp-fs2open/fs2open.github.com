@@ -156,14 +156,14 @@ void save_filter_info(void)
 
 void outwnd_printf2(char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4];
+	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
 	va_list args;
 
 	if (format == NULL)
 		return;
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1,format, args);
 	va_end(args);
 
 	outwnd_print("General", tmp);
@@ -171,14 +171,14 @@ void outwnd_printf2(char *format, ...)
 
 void outwnd_printf(char *id, char *format, ...)
 {
-	char tmp[MAX_LINE_WIDTH*4];
+	char tmp[MAX_LINE_WIDTH*4] = {'\0'};
 	va_list args;
 
 	if ( (id == NULL) || (format == NULL) )
 		return;
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1,format, args);
 	va_end(args);
 
 	outwnd_print(id, tmp);
@@ -297,7 +297,7 @@ void safe_point_print(char *format, ...)
 	va_list args;
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1,format, args);
 	va_end(args);
 	strcpy(safe_string, tmp);
 }

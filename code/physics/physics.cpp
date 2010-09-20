@@ -687,7 +687,20 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		if ( pi->flags & PF_REDUCED_DAMP ) {
 			ramp_time_const *= reduced_damp_ramp_time_expansion;
 		}
-		pi->prev_ramp_vel.xyz.z = velocity_ramp( pi->prev_ramp_vel.xyz.z, goal_vel.xyz.z, ramp_time_const, sim_time);
+		pi->prev_ramp_vel.xyz.z = velocity_ramp(pi->prev_ramp_vel.xyz.z, goal_vel.xyz.z, ramp_time_const, sim_time);
+
+		//Deternine the current dynamic glide cap, and ramp to it
+		//This is outside the normal "glide" block since we want the cap to adjust whether or not the ship is in glide mode
+		float dynamic_glide_cap_goal = 0.0;
+		if (pi->flags & PF_AFTERBURNER_ON) {
+			dynamic_glide_cap_goal = ( goal_vel.xyz.z >= 0.0f ) ? pi->afterburner_max_vel.xyz.z : pi->afterburner_max_reverse_vel;
+		}
+		else {
+			//Use the maximum value in X, Y, and Z (including overclocking)
+			dynamic_glide_cap_goal = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
+		}
+		pi->cur_glide_cap = velocity_ramp(pi->cur_glide_cap, dynamic_glide_cap_goal, ramp_time_const, sim_time);
+
 
 		if ( pi->flags & PF_GLIDING ) {
 			pi->desired_vel = pi->vel;
@@ -699,19 +712,10 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 			//Having pi->glide_cap == 0 means we're using a dynamic glide cap
 			float curGlideCap = 0.0f;
-			if (pi->glide_cap == 0.0f) {
-				//For dynamic glide capping, normal flight and afterburner have separate glide caps
-				if (pi->flags & PF_AFTERBURNER_ON) {
-					curGlideCap = pi->afterburner_max_vel.xyz.z;
-				}
-				else {
-					//Take the maximum value in X, Y, and Z (including overclocking)
-					curGlideCap = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
-				}
-			}
-			else {
+			if (pi->glide_cap == 0.0f) 
+				curGlideCap = pi->cur_glide_cap;
+			else 
 				curGlideCap = pi->glide_cap;
-			}
 
 			//If we're near the (positive) glide cap, decay velocity where we aren't thrusting
 			//This is a hack, but makes the flight feel a lot smoother
@@ -1070,7 +1074,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 // Warning:  Do not change ROTVEL_COLLIDE_WHACK_CONST.  This will mess up collision physics.
 // If you need to change the rotation, change  COLLISION_ROTATION_FACTOR in collide_ship_ship.
 #define ROTVEL_COLLIDE_WHACK_CONST 1.0
-void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient )
+void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient, bool is_landing )
 {
 	vec3d	body_delta_rotvel;
 
@@ -1091,9 +1095,11 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
 
 	// find time for shake from weapon to end
-	int dtime = timestamp_until(pi->afterburner_decay);
-	if (dtime < WEAPON_SHAKE_TIME) {
-		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
+	if (!is_landing) {
+		int dtime = timestamp_until(pi->afterburner_decay);
+		if (dtime < WEAPON_SHAKE_TIME) {
+			pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
+		}
 	}
 
 	pi->flags |= PF_REDUCED_DAMP;

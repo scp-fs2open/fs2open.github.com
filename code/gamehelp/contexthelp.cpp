@@ -368,17 +368,13 @@ void help_overlay_init()
 {
 	// load right_bracket bitmap
 	help_right_bracket_bitmap = bm_load("right_bracket");
-	if(help_right_bracket_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
-	}
+	// we failed to load the bitmap - this is very bad
+	Assertion( help_right_bracket_bitmap >= 0, "Failed to load bitmap right_bracket for help overlay\n");
 
 	// load left_bracket bitmap
 	help_left_bracket_bitmap = bm_load("left_bracket");
-	if(help_left_bracket_bitmap < 0){
-		// we failed to load the bitmap - this is very bad
-		Int3();
-	}
+	// we failed to load the bitmap - this is very bad
+	Assertion( help_left_bracket_bitmap >= 0, "Failed to load bitmap left_bracket for help overlay\n");
 
 	atexit(close_help);
 	// parse help.tbl

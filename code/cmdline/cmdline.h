@@ -104,9 +104,6 @@ extern int Cmdline_voice_recognition;
 
 // MOD related
 extern char *Cmdline_mod;	 // DTP for mod support
-extern int Cmdline_tbp;
-extern int Cmdline_wcsaga;
-
 // Multiplayer/Network related
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
@@ -127,6 +124,7 @@ extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
 extern int Cmdline_noglsl;
 extern int Cmdline_ati_color_swap;
+extern int Cmdline_no_3d_sound;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
@@ -134,6 +132,7 @@ extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_nowarn;
+extern int Cmdline_extra_warn;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;

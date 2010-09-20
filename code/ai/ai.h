@@ -21,6 +21,7 @@
 struct ship_weapon;
 struct ship_subsys;
 struct object;
+struct ship_info;
 
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
@@ -205,12 +206,16 @@ typedef struct ai_class {
 	float	ai_glide_attack_percent[NUM_SKILL_LEVELS];
 	float	ai_circle_strafe_percent[NUM_SKILL_LEVELS];
 	float	ai_glide_strafe_percent[NUM_SKILL_LEVELS];
+	float	ai_random_sidethrust_percent[NUM_SKILL_LEVELS];
 	float	ai_stalemate_time_thresh[NUM_SKILL_LEVELS];
 	float	ai_stalemate_dist_thresh[NUM_SKILL_LEVELS];
 	int		ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 	float	ai_max_aim_update_delay[NUM_SKILL_LEVELS];
+	float	ai_turret_max_aim_update_delay[NUM_SKILL_LEVELS];
 	int		ai_profile_flags;		//Holds the state of flags that are set
 	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
+	int		ai_profile_flags2;		
+	int		ai_profile_flags2_set;	
 
 	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
 	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
@@ -435,11 +440,14 @@ typedef struct ai_info {
 	float	ai_glide_attack_percent;
 	float	ai_circle_strafe_percent;
 	float	ai_glide_strafe_percent;
+	float	ai_random_sidethrust_percent;
 	float	ai_stalemate_time_thresh;
 	float	ai_stalemate_dist_thresh;
 	int		ai_chance_to_use_missiles_on_plr;
 	float	ai_max_aim_update_delay;
+	float	ai_turret_max_aim_update_delay;
 	int		ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
+	int		ai_profile_flags2;	
 
 
 	union {
@@ -632,6 +640,7 @@ extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, i
 extern void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index );
 extern void ai_add_rearm_goal( object *requester_objp, object *support_objp );
 extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_path=0);
+extern int ai_find_goal_index( ai_goal* aigp, int mode, int submode = -1, int priority = -1 );
 
 // Goober5000
 extern void ai_do_safety(object *objp);
@@ -694,4 +703,8 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 
 //SUSHI: Updating AI aim
 void ai_update_aim(ai_info *aip, object* En_Objp);
+
+//SUSHI: Random evasive sidethrust
+void do_random_sidethrust(ai_info *aip, ship_info *sip);
+
 #endif

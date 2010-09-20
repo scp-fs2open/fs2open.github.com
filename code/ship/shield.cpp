@@ -112,7 +112,7 @@ void load_shield_hit_bitmap()
 		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
         */
-		Assert(Species_info[i].shield_anim.first_frame >= 0);
+		Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
 	}
 
 	#endif

@@ -66,7 +66,8 @@ static bool do_full_packet = true;
 
 static int Local_timeout = -1;
 static int Next_gameserver_update = -1;
-static int Last_pong = -1;
+static int Ping_timestamp = -1;
+static int Last_activity = -1;
 static int Login_retry_time = -1;
 
 static SCP_vector<file_record> FS2NetD_file_list;
@@ -92,7 +93,8 @@ static void fs2netd_reset_state()
 	do_full_packet = true;
 	Local_timeout = -1;
 	Next_gameserver_update = -1;
-	Last_pong = -1;
+	Last_activity = -1;
+	Ping_timestamp = -1;
 	Duplicate_login_detected = false;
 	Login_retry_time = -1;
 }
@@ -167,17 +169,36 @@ void fs2netd_reset_connection()
 
 	FS2NetD_Disconnect();
 
-	// wait a little to allow for the port to clear
-	Sleep(250);
-
 	fs2netd_reset_state();
+
+	// wait a little to allow for the port to clear
+	Sleep(500);
 
 	// try to reinit the server connection
 	fs2netd_login();
 
-	if (reset_gameserver) {
+	Sleep(250);
+
+	if ( reset_gameserver && fs2netd_is_online() ) {
 		fs2netd_gameserver_start();
 	}
+}
+
+void fs2netd_disconnect()
+{
+	if ( !Is_connected ) {
+		return;
+	}
+
+	if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
+		fs2netd_gameserver_disconnect();
+	}
+
+	FS2NetD_Disconnect();
+
+	fs2netd_reset_state();
+
+	Sleep(500);
 }
 
 static int fs2netd_connect_do()
@@ -305,6 +326,10 @@ int fs2netd_login_do()
 		
 			Local_timeout = -1;
 			return 2;
+		}
+
+		if (do_full_packet) {
+			ml_printf("FS2NetD MSG: Requesting login pilot stats for '%s' ...", Players[Player_num].callsign);
 		}
 
 		int rescode = FS2NetD_GetPlayerData(Players[Player_num].callsign, &Players[Player_num], true, do_full_packet);
@@ -469,6 +494,9 @@ bool fs2netd_login()
 	if (retval) {
 		Logged_in = true;
 		sprintf(Multi_tracker_id_string, "%d", Multi_tracker_id);
+	} else {
+		// clear and reset connection, for the next time we try...
+		fs2netd_disconnect();
 	}
 
 	if (Is_standalone) {
@@ -480,11 +508,13 @@ bool fs2netd_login()
 
 static void fs2netd_handle_ping()
 {
-	static int Next_ping = -1;
-	bool reset = false;
+	static int CONN_check = -1;
 
-	// if we didn't get a PONG within 4 minutes the server connection must have dropped
-	if ( (Last_pong != -1) && ((Next_ping - Last_pong) > 240) ) {
+	// if we didn't get a pong within 30 seconds of a ping then assume that the
+	// server connection must of have dropped or is otherwise unresponsive
+	if ( (Ping_timestamp != -1) && ((timer_get_seconds() - Ping_timestamp) > 30) ) {
+		Ping_timestamp = -1;
+
 		ml_string("FS2NetD WARNING: Lost connection to server!");
 		fs2netd_reset_connection();
 
@@ -496,11 +526,11 @@ static void fs2netd_handle_ping()
 			}
 
 			ml_string("FS2NetD ERROR: Lost connection to the FS2NetD server!");
-			FS2NetD_Disconnect();
-			fs2netd_reset_state();
 
-			ml_string("FS2NetD MSG: Will attempt an automatic reconnect to server in 30 minutes...");
-			Login_retry_time = timer_get_seconds() + 1800;
+			fs2netd_disconnect();
+
+			ml_string("FS2NetD MSG: Will attempt an automatic reconnect to server in 5 minutes...");
+			Login_retry_time = timer_get_seconds() + 300;
 
 			return;
 		} else {
@@ -508,24 +538,24 @@ static void fs2netd_handle_ping()
 		}
 	}
 
-	// send out ping every 90 seconds
-	if ( (Next_ping == -1) || (timer_get_seconds() >= Next_ping) ) {
-		// if we have seen a long period of time between pings then reset the pong time too
-		if ( (timer_get_seconds() - Next_ping) > 120 ) {
-			reset = true;
-		}
-
-		Next_ping = timer_get_seconds() + 90;
-
-		// we go ahead and set the initial Last_pong here, even though we haven't gotten a pong yet
-		if ( (Last_pong == -1) || reset ) {
-			Last_pong = Next_ping;
-			reset = false;
-		}
-
+	// send out a ping after 5 minutes of no other activity to make sure the server
+	// is still responding (probably not though)
+	if ( (Ping_timestamp == -1) && (timer_get_seconds() >= (Last_activity + 300)) ) {
+		Ping_timestamp = timer_get_seconds();
 		FS2NetD_Ping();
+		ml_string("FS2NetD sent PING");
 
-		// also send out a ID check to keep our login verified
+		if (Last_activity < 0) {
+			Last_activity = timer_get_seconds();
+		}
+	}
+
+	// check for a valid connection (SID, duplicate login, etc.)
+	if ( (CONN_check == -1) || (timer_get_seconds() >= CONN_check) ) {
+		// every 3 minutes
+		CONN_check = timer_get_seconds() + 180;
+
+		// session ID check
 		if ( FS2NetD_CheckValidID() < 0 ) {
 			ml_string("FS2NetD WARNING: Unable to validate login!");
 			fs2netd_reset_connection();
@@ -538,11 +568,11 @@ static void fs2netd_handle_ping()
 				}
 
 				ml_string("FS2NetD ERROR: Lost connection to the FS2NetD server!");
-				FS2NetD_Disconnect();
-				fs2netd_reset_state();
 
-				ml_string("FS2NetD MSG: Will attempt an automatic reconnect to server in 30 minutes...");
-				Login_retry_time = timer_get_seconds() + 1800;
+				fs2netd_disconnect();
+
+				ml_string("FS2NetD MSG: Will attempt an automatic reconnect to server in 5 minutes...");
+				Login_retry_time = timer_get_seconds() + 300;
 
 				return;
 			} else {
@@ -555,7 +585,7 @@ static void fs2netd_handle_ping()
 			FS2NetD_CheckDuplicateLogin();
 		}
 
-		ml_string("FS2NetD sent PING/IDENT");
+		ml_string("FS2NetD sent IDENT check");
 	}
 }
 
@@ -583,6 +613,8 @@ static void fs2netd_handle_messages()
 	if ( (bytes_read == 0) || (bytes_read < BASE_PACKET_SIZE) ) {
 		return;
 	}
+
+	Last_activity = timer_get_seconds();
 
 	buffer_offset = 0;
 
@@ -612,7 +644,8 @@ static void fs2netd_handle_messages()
 
 				ml_printf("FS2NetD PONG: %d ms", timer_get_milliseconds() - itemp);
 
-				Last_pong = timer_get_seconds();
+				// reset timestamp, since the ping was successful
+				Ping_timestamp = -1;
 
 				break;
 			}
@@ -739,8 +772,8 @@ void fs2netd_do_frame()
 			fs2netd_login();
 
 			if ( !Logged_in ) {
-				// bah!  try again in another 30 minutes
-				Login_retry_time = timer_get_seconds() + 1800;
+				// bah!  try again in another 5 minutes
+				Login_retry_time = timer_get_seconds() + 300;
 			} else {
 				Login_retry_time = -1;
 			}
@@ -1548,6 +1581,10 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 		Local_timeout = timer_get_seconds() + 30;
 
 		In_process = true;
+	}
+
+	if (first_call) {
+		ml_printf("FS2NetD MSG: Requesting pilot stats for '%s' ...", callsign);
 	}
 
 	int rc = FS2NetD_GetPlayerData(callsign, &new_plr, false, first_call);
