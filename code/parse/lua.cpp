@@ -3249,6 +3249,17 @@ ADE_FUNC(getScreenCoords, l_Vector, NULL, "Gets screen cordinates of a world vec
 	return ade_set_args(L, "ff", vtx.sx, vtx.sy);
 }
 
+ADE_FUNC(getNormalized, l_Vector, NULL, "Returns a normalized version of the vector", "vector", "Normalized Vector, or NIL if invalid")
+{
+	vec3d v3;
+	if(!ade_get_args(L, "o", l_Vector.Get(&v3)))
+		return ADE_RETURN_NIL;
+
+	vm_vec_normalize(&v3);
+
+	return ade_set_args(L, "o", l_Vector.Set(v3));
+}
+
 //**********HANDLE: material
 static const int THT_INDEPENDENT	= 0;
 static const int THT_OBJECT			= 1;
@@ -4090,6 +4101,69 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 	}
 
 	return ade_set_args(L, "i", objh->objp->collision_group_id);
+}
+
+ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.fvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
+}
+
+ADE_FUNC(getuvec, l_Object, "[boolean normalize]", "Returns the objects' current uvec.", "vector", "Objects' up vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.uvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
+}
+
+ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current rvec.", "vector", "Objects' rvec, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.fvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
 }
 
 ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector Position", "World collision point (local if boolean is set to true), nil if no collisions")
@@ -6731,6 +6805,25 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 	}
 
 	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting on the object", "number", "Current EMP effect strength or NIL if object is invalid")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+
+	ship *shipp = &Ships[obj->instance];
+
+	return ade_set_args(L, "f", shipp->emp_intensity);
 }
 
 //**********HANDLE: Weapon

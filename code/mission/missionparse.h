@@ -17,6 +17,7 @@
 #include "object/object.h"
 #include "graphics/2d.h"
 #include "sound/sound.h"
+#include "parse/sexp.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -616,16 +617,16 @@ typedef struct {
 	int		num_ship_choices; // number of ship choices inside ship_list 
 	int		loadout_total;	// Total number of ships available of all classes 
 	int		ship_list[MAX_SHIP_CLASSES];
-	int		ship_list_variables[MAX_SHIP_CLASSES];
+	char	ship_list_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
 	int		ship_count[MAX_SHIP_CLASSES];
-	int		ship_count_variables[MAX_SHIP_CLASSES];
+	char	ship_count_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
 
 	// weapons
 	int		num_weapon_choices;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
 	int		weaponry_count[MAX_WEAPON_TYPES];
-	int		weaponry_pool_variable[MAX_WEAPON_TYPES];
-	int		weaponry_amount_variable[MAX_WEAPON_TYPES];
+	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
+	char	weaponry_amount_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
 } team_data;
 
 #define MAX_P_WINGS		16

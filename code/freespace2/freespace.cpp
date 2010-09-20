@@ -1185,32 +1185,6 @@ void game_do_networking()
 	}	
 }
 
-
-// Loads the best palette for this level, based
-// on nebula color and hud color.  You could just call palette_load_table with
-// the appropriate filename, but who wants to do that.
-void game_load_palette()
-{
-	char palette_filename[1024];
-
-	// We only use 3 hud colors right now
-	// Assert( HUD_config.color >= 0 );
-	// Assert( HUD_config.color <= 2 );
-
-	Assert( Mission_palette >= 0 );
-	Assert( Mission_palette <= 98 );
-
-	// if ( The_mission.flags & MISSION_FLAG_SUBSPACE )	{
-		strcpy_s( palette_filename, NOX("gamepalette-subspace") );
-	// } else {
-		// sprintf( palette_filename, NOX("gamepalette%d-%02d"), HUD_config.color+1, Mission_palette+1 );
-	// }
-
-	mprintf(( "Loading palette %s\n", palette_filename ));
-
-	// palette_load_table(palette_filename);
-}
-
 // An estimate as to how high the count passed to game_loading_callback will go.
 // This is just a guess, it seems to always be about the same.   The count is
 // proportional to the code being executed, not the time, so this works good
@@ -1257,7 +1231,7 @@ void game_loading_callback(int count)
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
-	Assert( Game_loading_ani.num_frames > 0 );
+	Assertion( Game_loading_ani.num_frames > 0, "Load Screen animation %s not found, or corrupted. Needs to be an animation with at least 1 frame.", Game_loading_ani.filename );
 
 	int do_flip = 0;
 
@@ -1374,7 +1348,7 @@ void game_loading_callback_init()
 	strcpy(Game_loading_ani.filename, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_init(&Game_loading_ani, Game_loading_ani.filename);
 	generic_anim_load(&Game_loading_ani);
-	Assert( Game_loading_ani.num_frames > 0 );
+	Assertion( Game_loading_ani.num_frames > 0, "Load Screen animation %s not found, or corrupted. Needs to be an animation with at least 1 frame.", Game_loading_ani.filename );
 
 	Game_loading_callback_inited = 1;
 	Mouse_hidden = 1;
@@ -1608,14 +1582,6 @@ int game_start_mission()
 	// free up memory from parsing the mission
 	extern void stop_parse();
 	stop_parse();
-
-	//WMC - *sigh* more mprintf clutter. It was commented out when I got here
-	/*
-	// the standalone server in multiplayer doesn't do any rendering, so we will not even bother loading the palette
-	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
-		mprintf(( "=================== LOADING GAME PALETTE ================\n" ));
-		// game_load_palette();
-	}*/
 
 	game_busy( NOX("** starting game_post_level_init() **") );
 	load_post_level_init = (uint) time(NULL);
@@ -4983,7 +4949,7 @@ void game_set_frametime(int state)
 	}
 #endif
 
-	Assert( Framerate_cap > 0 );
+	Assertion( Framerate_cap > 0, "Framerate cap %d is too low. Needs to be a positive, non-zero number", Framerate_cap );
 
 	// Cap the framerate so it doesn't get too high.
 	if (!Cmdline_NoFPSCap)

@@ -687,7 +687,6 @@ void hud_config_synch_sliders(int i)
 // reset some ui components based on HUD config data
 void hud_config_synch_ui()
 {
-	// game_load_palette();
 	HUD_init_hud_color_array();
 	// HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha-3;		// convert to value from 0-10	
 
@@ -1013,8 +1012,6 @@ void hud_config_set_color(int color)
 	int idx;	
 
 	hud_config_record_color(color);
-
-	// game_load_palette();
 
 	HUD_init_hud_color_array();
 

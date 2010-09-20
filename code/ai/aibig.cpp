@@ -694,7 +694,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 			ship_weapon *tswp = &temp_shipp->weapons;
 
 			if ( tswp->num_primary_banks > 0 ) {
-				Assert(tswp->current_primary_bank < tswp->num_primary_banks);
+				Assertion(tswp->current_primary_bank < tswp->num_primary_banks, "AI tried to select primary bank %d. Might be a model error\n", tswp->current_primary_bank);
 				weapon_info	*wip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];
 
 				if (dist_to_enemy < MIN((wip->max_speed * wip->lifetime), wip->weapon_range)){

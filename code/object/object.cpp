@@ -779,8 +779,8 @@ void obj_move_call_physics(object *objp, float frametime)
 
 			if (shipp->weapons.num_secondary_banks > 0) {
 				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-				Assert( pm != NULL );
-				Assert( pm->missile_banks != NULL );
+				Assertion( pm != NULL, "No polymodel found for ship %s", Ship_info[shipp->ship_info_index].name );
+				Assertion( pm->missile_banks != NULL, "Ship %s has %d secondary banks, but no missile banks could be found.\n", Ship_info[shipp->ship_info_index].name, shipp->weapons.num_secondary_banks );
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother

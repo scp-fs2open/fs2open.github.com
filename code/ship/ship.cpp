@@ -74,7 +74,7 @@
 #include "network/multimsgs.h"
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
-
+#include "object/objcollide.h"
 
 
 
@@ -235,7 +235,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "no subsystem targeting",	MSS_FLAG_NO_SS_TARGETING,	0 },
 	{ "fire on target",			MSS_FLAG_FIRE_ON_TARGET,	0 },
 	{ "reset when idle",		MSS_FLAG_TURRET_RESET_IDLE,	0 },
-	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 }
+	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 },
+	{ "allow landing",			MSS_FLAG_ALLOW_LANDING,		0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -704,8 +705,27 @@ void init_ship_entry(ship_info *sip)
 	sip->collision_damage_type_idx = -1;
 	sip->collision_physics.both_small_bounce = 5.0;	//Retail default collision physics
 	sip->collision_physics.bounce = 5.0;
-	sip->collision_physics.friction = 0.0f;
-	sip->collision_physics.rotation_factor = 0.2f;
+	sip->collision_physics.friction = COLLISION_FRICTION_FACTOR;
+	sip->collision_physics.rotation_factor = COLLISION_ROTATION_FACTOR;
+
+	// Default landing parameters
+	sip->collision_physics.landing_max_z = 0.0f;
+	sip->collision_physics.landing_min_z = 0.0f;
+	sip->collision_physics.landing_min_y = 0.0f;
+	sip->collision_physics.landing_max_x = 0.0f;
+	sip->collision_physics.landing_max_angle = 0.0f;
+	sip->collision_physics.landing_min_angle = 0.0f;
+	sip->collision_physics.landing_max_rot_angle = 0.0f;
+	sip->collision_physics.reorient_max_z = 0.0f;
+	sip->collision_physics.reorient_min_z = 0.0f;
+	sip->collision_physics.reorient_min_y = 0.0f;
+	sip->collision_physics.reorient_max_x = 0.0f;
+	sip->collision_physics.reorient_max_angle = 0.0f;
+	sip->collision_physics.reorient_min_angle = 0.0f;
+	sip->collision_physics.reorient_max_rot_angle = 0.0f;
+	sip->collision_physics.reorient_mult = 1.0f;	
+	sip->collision_physics.landing_rest_angle = 0.0f;
+	sip->collision_physics.landing_sound_idx = -1;
 
 	sip->debris_min_lifetime = -1.0f;
 	sip->debris_max_lifetime = -1.0f;
@@ -1348,22 +1368,83 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Collision Physics:"))
 	{
-		if(optional_string("+Bounce:"))
-		{
+		if(optional_string("+Bounce:"))	{
 			stuff_float(&sip->collision_physics.bounce);
 		}
-		if(optional_string("+Both Small Bounce:"))
-		{
+		if(optional_string("+Both Small Bounce:")) {
 			stuff_float(&sip->collision_physics.both_small_bounce);
 		}
-		if(optional_string("+Friction:"))
-		{
+		if(optional_string("+Friction:")) {
 			stuff_float(&sip->collision_physics.friction);
 		}
-		if(optional_string("+Rotation Factor:"))
-		{
+		if(optional_string("+Rotation Factor:")) {
 			stuff_float(&sip->collision_physics.friction);
 		}
+		if(optional_string("+Landing Max Forward Vel:")) {
+			stuff_float(&sip->collision_physics.landing_max_z);
+		}
+		if(optional_string("+Landing Min Forward Vel:")) {
+			stuff_float(&sip->collision_physics.landing_min_z);
+		}
+		if(optional_string("+Landing Max Descent Vel:")) {
+			stuff_float(&sip->collision_physics.landing_min_y);
+			sip->collision_physics.landing_min_y *= -1;
+		}
+		if(optional_string("+Landing Max Horizontal Vel:")) {
+			stuff_float(&sip->collision_physics.landing_max_x);
+		}
+		if(optional_string("+Landing Max Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_max_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Landing Min Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_min_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Landing Max Rotate Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Max Forward Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_max_z);
+		}
+		if(optional_string("+Reorient Min Forward Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_min_z);
+		}
+		if(optional_string("+Reorient Max Descent Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_min_y);
+			sip->collision_physics.reorient_min_y *= -1;
+		}
+		if(optional_string("+Reorient Max Horizontal Vel:")) {
+			stuff_float(&sip->collision_physics.reorient_max_x);
+		}
+		if(optional_string("+Reorient Max Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.reorient_max_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Min Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.reorient_min_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Max Rotate Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.reorient_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		if(optional_string("+Reorient Speed Mult:")) {
+			stuff_float(&sip->collision_physics.reorient_mult);
+		}
+		if(optional_string("+Landing Rest Angle:")) {
+			float degrees;
+			stuff_float(&degrees);
+			sip->collision_physics.landing_rest_angle = cos(ANG_TO_RAD(90 - degrees));
+		}
+		parse_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
 	}
 
 
@@ -2949,6 +3030,10 @@ strcpy_s(parse_error_text, temp_error);
 
 			if (optional_string("$Flags:")) {
 				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
+
+				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
+				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
+					sip->flags2 |= SIF2_ALLOW_LANDINGS;
 			}
 
 			if (optional_string("+non-targetable")) {
@@ -8279,6 +8364,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip_orig;
 	ship			*sp;
 	ship_weapon *swp;
+	ship_subsys *ss;
 	object		*objp;
 	p_object	*p_objp;
 	float hull_pct, shield_pct;
@@ -8290,37 +8376,71 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	swp = &sp->weapons;
 	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
+	ph_inf = objp->phys_info;
 
-	// Goober5000 - maintain the original hull and shield percentages when called by sexp
-	if (by_sexp)
+
+	// Goober5000 - maintain the original hull, shield, and subsystem percentages... gah
+
+	// hull
+	if (sp->special_hitpoints) {
+		hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
+	} else {
+		Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
+		hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+	}
+
+	// extra check
+	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
+	if (hull_pct <= 0.0f) hull_pct = 0.1f;
+	if (hull_pct > 1.0f) hull_pct = 1.0f;
+
+	// shield
+	if (sp->special_shield > 0) {
+		shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
+	} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
+		shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
+	} else {
+		shield_pct = 0.0f;
+	}
+
+	// extra check
+	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
+	if (shield_pct < 0.0f) shield_pct = 0.0f;
+	if (shield_pct > 1.0f) shield_pct = 1.0f;
+
+	// subsystems
+	int num_saved_subsystems = 0;
+	char **subsys_names = new char *[sip_orig->n_subsystems];
+	float *subsys_pcts = new float[sip_orig->n_subsystems];
+
+	ss = GET_FIRST(&sp->subsys_list);
+	while ( ss != END_OF_LIST(&sp->subsys_list) )
 	{
-		// hull
-		if (sp->special_hitpoints) {
-			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
-		} else {
-			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
-			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+		if (num_saved_subsystems == sip_orig->n_subsystems)
+		{
+			Error(LOCATION, "Subsystem mismatch while changing ship class from '%s' to '%s'!", sip_orig->name, sip->name);
+			break;
 		}
 
-		// shield
-		if (sp->special_shield > 0) {
-			shield_pct = shield_get_strength(objp) / sp->ship_max_shield_strength;
-		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
-			shield_pct = shield_get_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
-		} else {
-			shield_pct = 0.0f;
-		}
+		// save subsys information
+		subsys_names[num_saved_subsystems] = new char[NAME_LENGTH];
+		strcpy(subsys_names[num_saved_subsystems], ss->system_info->subobj_name);
 
-		// physics
-		ph_inf = objp->phys_info;
+		if (ss->max_hits > 0.0f)
+			subsys_pcts[num_saved_subsystems] = ss->current_hits / ss->max_hits;
+		else
+			subsys_pcts[num_saved_subsystems] = ss->max_hits;
+
+		// extra check
+		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
+		if (subsys_pcts[num_saved_subsystems] < 0.0f) subsys_pcts[num_saved_subsystems] = 0.0f;
+		if (subsys_pcts[num_saved_subsystems] > 1.0f) subsys_pcts[num_saved_subsystems] = 1.0f;
+
+		num_saved_subsystems++;
+		ss = GET_NEXT(ss);
 	}
-	// set to 100% otherwise
-	else
-	{
-		hull_pct = 1.0f;
-		shield_pct = 1.0f;
-	}
-	
+
+
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
 		p_objp = mission_parse_get_parse_object(sp->ship_name);
@@ -8335,15 +8455,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			objp->flags &= ~OF_NO_SHIELDS;
 		}
 	}
-
-	// Goober5000 - extra checks
-	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
-	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
-	if (hull_pct <= 0.0f) hull_pct = 0.1f;
-	if (hull_pct > 1.0f) hull_pct = 1.0f;
-	if (shield_pct < 0.0f) shield_pct = 0.0f;
-	if (shield_pct > 1.0f) shield_pct = 1.0f;
-
 
 	// point to new ship data
 	ship_model_change(n, ship_type);
@@ -8396,8 +8507,36 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// fix up the subsystems
 	subsys_set( sp->objnum );
 
-	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
 
+	// Goober5000 - restore the subsystem percentages
+
+	ss = GET_FIRST(&sp->subsys_list);
+	while ( ss != END_OF_LIST(&sp->subsys_list) )
+	{
+		for (i = 0; i < num_saved_subsystems; i++)
+		{
+			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
+			{
+				ss->current_hits = ss->max_hits * subsys_pcts[i];
+				break;
+			}
+		}
+
+		ss = GET_NEXT(ss);
+	}
+	ship_recalc_subsys_strength(sp);
+
+	// now free the memory
+	for (i = 0; i < sip_orig->n_subsystems; i++)
+		delete[] subsys_names[i];
+	delete [] subsys_names;
+	delete [] subsys_pcts;
+
+
+	// DONE WITH PERCENTAGE STUFF
+
+
+	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
 	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
 
 	// avoid cases where either of these are 0
@@ -10975,7 +11114,7 @@ void ship_model_start(object *objp)
 			case SUBSYSTEM_ACTIVATION:
 				break;
 			case SUBSYSTEM_TURRET:
-				Assert( !(psub->flags & MSS_FLAG_ROTATES) ); // Turrets can't rotate!!! See John!
+				Assertion( !(psub->flags & MSS_FLAG_ROTATES), "Turret %s on ship %s has the $rotate or $triggered subobject property defined. Please fix the model.\n", psub->name, Ship_info[shipp->ship_info_index].name ); // Turrets can't rotate!!! See John!
 				break;
 			default:
 				Error(LOCATION, "Illegal subsystem type.\n");
@@ -12913,12 +13052,10 @@ int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos,
 		pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 		Assert( pm != NULL );
 
-		if (ss->system_info->path_num > pm->n_paths) {
-			// possibly a bad model?
-			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name));
-		//	Int3();
+		// possibly a bad model?
+		Assertion(ss->system_info->path_num <= pm->n_paths, "Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name);
+		if (ss->system_info->path_num > pm->n_paths) 
 			return 1;
-		}
 
 		mp = &pm->paths[ss->system_info->path_num];
 		if ( mp->nverts >= 2 ) {
@@ -15212,7 +15349,7 @@ void ship_update_artillery_lock()
 
 		// TEST CODE
 		if(aip->artillery_lock_time >= 2.0f){
-			HUD_printf("Firing artillery");
+			HUD_printf(XSTR("Firing artillery", 1570));
 
 			ssm_create(&Objects[aip->artillery_objnum], &cinfo->hit_point_world, 0, NULL, shipp->team);				
 

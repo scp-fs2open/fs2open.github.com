@@ -818,53 +818,6 @@ CFILE *cfopen_special(char *file_path, char *mode, const int size, const int off
 		// it's a normal file
 		return cf_open_fill_cfblock(fp, dir_type);
 	}
-
-/*	char longname[_MAX_PATH];
-
-	if ( !cfile_inited ) {
-		Int3();
-		return NULL;
-	}
-
-	//================================================
-	// Check that all the parameters make sense
-	Assert( file_path && strlen(file_path) );
-	Assert( mode != NULL );
-
-	if ( (ext_num <= 0) || (!ext_list) ) {
-		Int3();
-		return NULL;
-	}
-
-	// cfopen_ext() only supports reading files, not creating them
-	if ( strchr(mode, 'w') ) {
-		Int3();
-		return NULL;
-	}
-
-	//================================================
-	// Search for file on disk, on cdrom, or in a packfile
-
-	int offset, size;
-	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy_s(copy_file_path, file_path);
-
-	if ( cf_find_file_location_ext(copy_file_path, ext_num, ext_list, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize) ) {
-		// Fount it, now create a cfile out of it
-		FILE *fp = fopen( longname, "rb" );
-
-		if ( fp ) {
-			if ( offset ) {
-				// Found it in a pack file
-				return cf_open_packed_cfblock(fp, dir_type, offset, size );
-			} else {
-				// Found it in a normal file
-				return cf_open_fill_cfblock(fp, dir_type);
-			} 
-		}
-	}
-
-	return NULL;*/
 }
 
 
