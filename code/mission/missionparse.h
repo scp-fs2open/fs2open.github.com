@@ -99,7 +99,8 @@ typedef struct support_ship_info {
 	int		departure_anchor;				// departure anchor
 	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 	float	max_subsys_repair_val;			// same thing, except for subsystems -C
-	int		max_support_ships;				// max number of support ships
+	int		max_support_ships;				// max number of consecutive support ships
+	int		max_concurrent_ships;			// max number of concurrent support ships in mission per team
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
 	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)

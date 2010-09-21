@@ -535,6 +535,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.max_hull_repair_val = 0.0f;
 	pm->support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_support_ships = -1;	// infinite
+	pm->support_ships.max_concurrent_ships = 1;
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
 	pm->support_ships.support_available_for_species = 0;
