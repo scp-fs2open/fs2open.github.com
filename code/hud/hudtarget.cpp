@@ -3483,6 +3483,9 @@ void hud_show_targeting_gauges(float frametime)
 		Hud_target_h = 0;
 	}
 
+	// update cargo scanning
+	hud_cargo_scan_update(targetp, frametime);
+
 	// display the lock indicator
 	if (!Player->target_is_dying) {
 		hud_do_lock_indicator(frametime);

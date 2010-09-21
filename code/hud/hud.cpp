@@ -1467,7 +1467,6 @@ void hud_update_frame(float frametime)
 	}
 
 	// update cargo scanning
-	hud_cargo_scan_update(targetp, frametime);
 	hud_update_cargo_scan_sound();
 
 	if ( Viewer_mode & ( VM_EXTERNAL | VM_WARP_CHASE ) ) {
