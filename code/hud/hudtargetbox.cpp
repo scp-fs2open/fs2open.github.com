@@ -1416,6 +1416,7 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 void hud_cargo_scan_update(object *targetp, float frametime)
 {
 	// update cargo inspection status
+	Cargo_string[0] = 0;
 	if ( targetp->type == OBJ_SHIP ) {
 		Target_display_cargo = player_inspect_cargo(frametime, Cargo_string);
 		if ( Target_display_cargo ) {
