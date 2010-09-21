@@ -816,11 +816,11 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			break;
 	}
 
-	emp_hud_printf(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, hud_name);	
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, hud_name);
 	
 
 	if ( time_to_impact >= 0.0f ) {
-		emp_hud_printf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
+		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
 	}
 }
 
