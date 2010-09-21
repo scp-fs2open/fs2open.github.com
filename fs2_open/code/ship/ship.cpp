@@ -12051,40 +12051,44 @@ int ship_do_rearm_frame( object *objp, float frametime )
 // If repair ship present and busy, possibly return that object if he can satisfy the request soon enough.
 // If repair ship present and busy and cannot satisfy request, return NULL to warp a new one in if below max number
 // if no repair ship present, return NULL to force a new one to be warped in.
-#define	MAX_SUPPORT_SHIPS_PER_TEAM		1
-
 object *ship_find_repair_ship( object *requester_obj )
 {
 	object *objp;
-	ship *requester_ship;
-	int	num_support_ships, num_available_support_ships;
-	float	min_dist = 99999.0f;
-	object	*nearest_support_ship = NULL;
-	int		support_ships[MAX_SUPPORT_SHIPS_PER_TEAM];
+	int num_support_ships = 0;
+	float min_dist = 99999.0f;
+	object *nearest_support_ship = NULL;
+	int min_time_till_available = 999999.0f;
+	object *soonest_available_support_ship = NULL;
 
-	Assert(requester_obj->type == OBJ_SHIP);
-	Assert((requester_obj->instance >= 0) && (requester_obj->instance < MAX_OBJECTS));
+	Assertion(requester_obj->type == OBJ_SHIP, "requester_obj not a ship. Has type of %08x", requester_obj->type);
+	Assertion((requester_obj->instance >= 0) && (requester_obj->instance < MAX_SHIPS),
+		"requester_obj does not have a valid pointer to a ship. Pointer is %d, which is smaller than 0 or bigger than %d",
+		requester_obj->instance, MAX_SHIPS);
 
-	num_support_ships = 0;
-	num_available_support_ships = 0;
-
-	requester_ship = &Ships[requester_obj->instance];
+	ship *requester_ship = &Ships[requester_obj->instance];
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
 		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
 		{
-			ship			*shipp;
-			ship_info	*sip;
-			float			dist;
+			ship *shipp;
+			ship_info *sip;
+			float dist;
 
-			Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
+			Assertion((objp->instance >= 0) && (objp->instance < MAX_SHIPS),
+				"objp does not have a valid pointer to a ship. Pointer is %d, which is smaller than 0 or bigger than %d",
+				objp->instance, MAX_SHIPS);
 
 			shipp = &Ships[objp->instance];
-			sip = &Ship_info[shipp->ship_info_index];
 
 			if ( shipp->team != requester_ship->team ) {
 				continue;
 			}
+
+			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < MAX_SHIP_CLASSES),
+				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
+				shipp->ship_name, shipp->ship_info_index, MAX_SHIP_CLASSES);
+
+			sip = &Ship_info[shipp->ship_info_index];
 
 			if ( !(sip->flags & SIF_SUPPORT) ) {
 				continue;
@@ -12097,17 +12101,42 @@ object *ship_find_repair_ship( object *requester_obj )
 
 			/* Ship has been ordered to warpout but has not had a chance to
 			process the order.*/
-			Assert( Ships[objp->instance].ai_index != -1 );
-			ai_info* aip = &(Ai_info[Ships[objp->instance].ai_index]);
+			Assertion( (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO),
+				"Ship '%s' doesn't have a valid ai pointer. Pointer is %d, which is smaller than 0 or larger than %d",
+				shipp->ship_name, shipp->ai_index, MAX_AI_INFO);
+			ai_info* aip = &(Ai_info[shipp->ai_index]);
 			if ( ai_find_goal_index( aip->goals, AI_GOAL_WARP ) != -1 ) {
 				continue;
 			}
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
 
-			if (!(Ai_info[shipp->ai_index].ai_flags & AIF_REPAIRING))
+			if (((aip->ai_flags & (AIF_REPAIRING|AIF_AWAITING_REPAIR|AIF_BEING_REPAIRED)) > 0))
 			{
-				num_available_support_ships++;
+				// support ship is already busy, track the one that will be
+				// done soonest by estimating how many seconds it will take for the support ship
+				// to reach the requester.
+				// The estimate is calculated by calculating how many seconds it will take the
+				// support ship to travel from its current location to the requester at max velocity
+				// We assume that every leg of the support ships journey will take the amount of time
+				// for the support ship to fly from its current location to the requester.  This is
+				// a bit hacky but it penalizes further away support ships, so a futher support ship
+				// will only be called if the closer ones are really busy.  This is just a craps shoot
+				// anyway because everything is moving around.
+				float howlong = 0;
+				for( int i = 0; i < MAX_AI_GOALS; i++ ) {
+					if ( aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR ) {
+						howlong += dist * objp->phys_info.max_vel.xyz.z;
+					}
+				}
+				if ( howlong < min_time_till_available ) {
+					min_time_till_available = howlong;
+					soonest_available_support_ship = objp;
+				}
+			}
+			else
+			{
+				// support ship not already busy, find the closest
 				if (dist < min_dist)
 				{
 					min_dist = dist;
@@ -12115,26 +12144,26 @@ object *ship_find_repair_ship( object *requester_obj )
 				}
 			}
 
-			if ( num_support_ships >= MAX_SUPPORT_SHIPS_PER_TEAM )
-			{
-				mprintf(("Why is there more than %d support ships in this mission?\n",MAX_SUPPORT_SHIPS_PER_TEAM));
-				break;
-			}
-			else
-			{
-				support_ships[num_support_ships] = OBJ_INDEX(objp);
-				num_support_ships++;
-			}
+			// it a support ship, count it so that we can see if we can cheat
+			// and request for a new support ship to be warped in to service
+			// this request if all of the ships that I find are busy.
+			num_support_ships++;
 		}
 	}
 
 	if (nearest_support_ship != NULL) {
+		// the nearest non-busy support ship is to service request
 		return nearest_support_ship;
-	} else if (num_support_ships >= MAX_SUPPORT_SHIPS_PER_TEAM) {
-		Assert(&Objects[support_ships[0]] != NULL);
-		return &Objects[support_ships[0]];
+	} else if (num_support_ships >= The_mission.support_ships.max_concurrent_ships) {
+		// found more support ships than should be in mission, so I can't ask for more,
+		// instead I will give the player the ship that will be done soonest or return NULL
+		// because there are no support ships in mission and they are not allowed to be
+		// requested by the AI or the player (that is, they have to be FREDed in)
+		return soonest_available_support_ship;
 	} else {
-		Assert(num_support_ships < MAX_SUPPORT_SHIPS_PER_TEAM);
+		Assert(num_support_ships < The_mission.support_ships.max_concurrent_ships);
+		// We are allowed more support ships in the mission; request another ship
+		// to service this request.
 		return NULL;
 	}
 }

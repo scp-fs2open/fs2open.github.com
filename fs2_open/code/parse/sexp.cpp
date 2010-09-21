@@ -450,7 +450,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
-	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
+	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
@@ -15111,6 +15111,14 @@ void sexp_set_support_ship(int n)
 	// get max number of ships allowed
 	n = CDR(n);
 	The_mission.support_ships.max_support_ships = eval_num(n);
+
+	// get the number of concurrent ships allowed
+	if ( n == -1 ) {
+		The_mission.support_ships.max_concurrent_ships = 1;
+	} else {
+		n = CDR(n);
+		The_mission.support_ships.max_concurrent_ships = eval_num(n);
+	}
 }
 
 // Goober5000
@@ -21454,6 +21462,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUPPORT_SHIP_CLASS;
 			if (argnum == 5)
 				return OPF_NUMBER;
+			if (argnum == 6)
+				return OPF_NUMBER;
 
 		case OP_KAMIKAZE:
 			if (argnum==0)
@@ -25303,7 +25313,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Departure location\r\n"
 		"\t4: Departure anchor\r\n"
 		"\t5: Ship class\r\n"
-		"\t6: Maximum number of support ships in this mission (use a negative number for infinity)\r\n"
+		"\t6: Maximum number of support ships consecutively in this mission (use a negative number for infinity)\r\n"
+		"\t7: Maximum number of support ships concurrently in this mission (optional, default 1)\r\n"
 		"\r\n"
 		"Note: The support ship will emerge from or depart into hyperspace if the location is set as hyperspace *or* the anchor is set as <no anchor>."
 	},
