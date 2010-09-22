@@ -866,7 +866,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 	brief_icon	*icon[2];
 	vertex		icon_vertex[2];
 	int			icon_status[2] = {0,0};
-	int			icon_w, icon_h, i;
+	int			icon_w, icon_h;
 	float			icon_x[2], icon_y[2];
 
 	bl = &Briefing->stages[stage_num].lines[line_num];
@@ -895,7 +895,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 	icon[1] = &Briefing->stages[stage_num].icons[bl->end_icon];
 
 	// project icons
-	for (i=0; i<2; i++) {
+	for (int i=0; i<2; i++) {
 		g3_rotate_vertex(&icon_vertex[i],&icon[i]->pos);
 		if (!(icon_vertex[i].flags&PF_PROJECTED))
 			g3_project_vertex(&icon_vertex[i]);
@@ -910,7 +910,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 	}
 
 	// get screen (x,y) for icons
-	for (i=0; i<2; i++) {
+	for (int i=0; i<2; i++) {
 		brief_common_get_icon_dimensions(&icon_w, &icon_h, icon[i]->type, icon[i]->ship_class);
 		icon_x[i] = icon_vertex[i].sx;
 		icon_y[i] = icon_vertex[i].sy;
