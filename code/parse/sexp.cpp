@@ -15113,10 +15113,11 @@ void sexp_set_support_ship(int n)
 	The_mission.support_ships.max_support_ships = eval_num(n);
 
 	// get the number of concurrent ships allowed
+	n = CDR(n);
 	if ( n == -1 ) {
+		// 7th arg not specified, set default
 		The_mission.support_ships.max_concurrent_ships = 1;
 	} else {
-		n = CDR(n);
 		The_mission.support_ships.max_concurrent_ships = eval_num(n);
 	}
 }
