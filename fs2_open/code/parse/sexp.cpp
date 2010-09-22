@@ -10519,7 +10519,7 @@ void sexp_end_mission(int n)
 	}
 
 	// if the player is dead we may want to let the death screen handle things
-	if (!ignore_player_mortality && (Player_ship->flags && SF_DYING)) {
+	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
 	}
 
