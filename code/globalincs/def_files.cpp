@@ -985,6 +985,10 @@ $no extra collision avoidance vs player:	NO							\n\
 ;; before making it give a death scream					 				\n\
 $perform less checks for death screams:	NO								\n\
 																		\n\
+;; If set, allows shield management for all ships						\n\
+;; (including capships).												\n\
+$all ships manage shields:				NO								\n\
+																		\n\
 #End																	\n\
 ";
 
@@ -1016,6 +1020,12 @@ $Linked:																\n\
 	+Snd File: none														\n\
 $Hazard:																\n\
 	+Msg: Cannot engage autopilot: Hazard Near							\n\
+	+Snd File: none														\n\
+$Support Present:														\n\
+	+Msg: Cannot engage autopilot: Support Ship Present					\n\
+	+Snd File: none														\n\
+$Support Working:														\n\
+	+Msg: Cannot engage autopilot: Support Ship is rearming or repairing a ship	\n\
 	+Snd File: none														\n\
 																		\n\
 #END																	\n\

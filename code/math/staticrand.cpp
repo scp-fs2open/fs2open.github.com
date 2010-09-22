@@ -35,6 +35,9 @@ int static_rand(int num)
 {
 	int	a, b, c;
 
+	if (num < 0) 
+		num *= -1;
+
 	if (!Semirand_inited)
 		init_semirand();
 

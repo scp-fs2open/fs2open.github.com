@@ -2576,6 +2576,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 
 		case OPF_FONT:
 			str = Fonts[0].filename;
+			break;
+
+		case OPF_AUDIO_VOLUME_OPTION:
+			str = "Music";
+			break;
 
 		default:
 			str = "<new default required!>";
@@ -2661,6 +2666,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SOUND_ENVIRONMENT:
 		case OPF_SOUND_ENVIRONMENT_OPTION:
 		case OPF_EXPLOSION_OPTION:
+		case OPF_AUDIO_VOLUME_OPTION:
+		case OPF_WEAPON_BANK_NUMBER:
 			return 1;
 
 		case OPF_SHIP:
@@ -4370,8 +4377,16 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_sound_environment_option();
 			break;
 
+		case OPF_AUDIO_VOLUME_OPTION:
+			list = get_listing_opf_adjust_audio_volume();
+			break; 
+
 		case OPF_EXPLOSION_OPTION:
 			list = get_listing_opf_explosion_option();
+			break;
+
+		case OPF_WEAPON_BANK_NUMBER:
+			list = get_listing_opf_weapon_banks();
 			break;
 
 		default:
@@ -5239,6 +5254,16 @@ sexp_list_item *sexp_tree::get_listing_opf_sound_environment_option()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_adjust_audio_options; i++)
+		head.add_data(Adjust_audio_options[i]);
+
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_listing_opf_explosion_option()
 {
 	sexp_list_item head;
@@ -5479,7 +5504,7 @@ sexp_list_item *sexp_tree::get_listing_opf_string()
 {
 	sexp_list_item head;
 
-	head.add_data("<any string>");
+	head.add_data(SEXP_ANY_STRING);
 
 	return head.next;
 }
@@ -5746,6 +5771,14 @@ sexp_list_item *sexp_tree::get_listing_opf_hud_elements()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_weapon_banks()
+{
+	sexp_list_item head;
+	head.add_data(SEXP_ALL_BANKS_STRING);
+
+	return head.next;
+}
+
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type
 void sexp_tree::delete_sexp_tree_variable(const char *var_name)
@@ -5886,20 +5919,20 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 
 	for (int i=0; i < MAX_TVT_TEAMS; i++) {
 		for(idx=0; idx<Team_data[i].num_ship_choices; idx++) {
-			if (var_index == Team_data[i].ship_list_variables[idx]) {
+			if (!strcmp(Team_data[i].ship_list_variables[idx], Sexp_variables[var_index].variable_name)) {
 				count++; 
 			}
 
-			if (var_index == Team_data[i].ship_count_variables[idx]) {
-				count++; 
+			if (!strcmp(Team_data[i].ship_count_variables[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
 			}
 		}
 
 		for (idx=0; idx<Team_data[i].num_weapon_choices; idx++) {
-			if (var_index == Team_data[i].weaponry_pool_variable[idx]) {
+			if (!strcmp(Team_data[i].weaponry_pool_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
-			if (var_index == Team_data[i].weaponry_amount_variable[idx]) {
+			if (!strcmp(Team_data[i].weaponry_amount_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
 		}

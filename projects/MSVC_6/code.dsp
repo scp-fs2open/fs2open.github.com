@@ -43,7 +43,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# SUBTRACT CPP /Z<none>
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -89,7 +90,8 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Release_Inferno"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# SUBTRACT CPP /Z<none>
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe

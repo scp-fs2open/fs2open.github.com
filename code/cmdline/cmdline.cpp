@@ -173,7 +173,7 @@ Flag exe_params[] =
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
 	{ "-fullscreen_window", "Run in fullscreen window",				false,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
-	{ "-timerbar",			"",											true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-timerbar", },
+
 	{ "-stats",				"Show statistics",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
 	{ "-coords",			"Show coordinates",						false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
 	{ "-show_mem_usage",	"Show memory usage",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-show_mem_usage", },
@@ -917,7 +917,9 @@ bool SetCmdlineParams()
 	}
 
 	if (timerbar_arg.found()) {
-		Cmdline_timerbar = 1;
+		#ifdef WIN32
+		MessageBox(NULL, "the timerbar has been disabled in builds after August 31, 2010.  Please remove the \"-timerbar\" command line from the launcher to prevent this message from appearing the the future.", "", MB_OK | MB_ICONINFORMATION);
+		#endif
 	}
 
 	if ( missioncrcspew_arg.found() ) {

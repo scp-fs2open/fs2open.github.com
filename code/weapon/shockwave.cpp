@@ -350,11 +350,20 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	}
 
 	// blast ships and asteroids
+	// And (some) weapons
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) ) {
+		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_WEAPON)) {
 			continue;
 		}
 
+		if ( objp->type == OBJ_WEAPON ) {
+			// only apply to missiles with hitpoints
+			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE))
+				continue;
+		}
+
+	
 		if ( objp->type == OBJ_SHIP ) {
 			// don't blast navbuoys
 			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY ) {
@@ -391,6 +400,13 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			break;
 		case OBJ_ASTEROID:
 			asteroid_hit(objp, NULL, NULL, damage);
+			break;
+		case OBJ_WEAPON:
+			objp->hull_strength -= damage;
+			if (objp->hull_strength < 0.0f) {
+				Weapons[objp->instance].lifeleft = 0.01f;
+				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+			}
 			break;
 		default:
 			Int3();

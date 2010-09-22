@@ -632,6 +632,10 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_EXTERNAL_WEAPON_FP;
 		else if (!stricmp(NOX("external model launcher"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_EXTERNAL_WEAPON_LNCH;
+		else if (!stricmp(NOX("takes blast damage"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TAKES_BLAST_DAMAGE;
+		else if (!stricmp(NOX("takes shockwave damage"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TAKES_SHOCKWAVE_DAMAGE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -5379,11 +5383,6 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 {
 	float			dist, max_dist, min_dist;
 
- 	// only blast ships and asteroids
-	if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID)) {
-		return -1;
-	}
-
 	max_dist = objp->radius + outer_rad;
 	dist = vm_vec_dist_quick(&objp->pos, pos);	
 	if ( (dist > max_dist) || (dist > (limit+objp->radius)) ) {
@@ -5477,11 +5476,19 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 	Assert(sci->inner_rad != 0);	
 
 	// only blast ships and asteroids
+	// And (some) weapons
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) ) {
+		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_WEAPON) ) {
 			continue;
 		}
 	
+		if ( objp->type == OBJ_WEAPON ) {
+			// only apply to missiles with hitpoints
+			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE))
+				continue;
+		}
+
 		if ( objp->type == OBJ_SHIP ) {
 			// don't blast navbuoys
 			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY ) {
@@ -5503,6 +5510,13 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			break;
 		case OBJ_ASTEROID:
 			asteroid_hit(objp, NULL, NULL, damage);
+			break;
+		case OBJ_WEAPON:
+			objp->hull_strength -= damage;
+			if (objp->hull_strength < 0.0f) {
+				Weapons[objp->instance].lifeleft = 0.01f;
+				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+			}
 			break;
 		default:
 			Int3();
@@ -5883,7 +5897,7 @@ void weapons_page_in()
 			}
 
 			default:
-				Int3();	// Invalid weapon rendering type.
+				Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
 		}
 
 		wip->external_model_num = -1;

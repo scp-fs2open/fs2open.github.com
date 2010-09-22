@@ -1094,15 +1094,15 @@ void brief_render_closeup(int ship_class, float frametime)
 		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 	}
 
-	int model_render_flags;
+	int model_render_flags_local;
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);
-		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
+		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
 	} else {
-		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
+		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
 	}
 
-	model_render( Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos, model_render_flags );
+	model_render( Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos, model_render_flags_local );
 
 	if (is_neb) {
 		The_mission.flags |= MISSION_FLAG_FULLNEB;

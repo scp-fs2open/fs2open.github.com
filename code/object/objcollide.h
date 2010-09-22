@@ -35,8 +35,14 @@ typedef struct collision_info_struct {
 	int		submodel_num;			// submodel of heavy object that is hit
 	int		edge_hit;				// if edge is hit, need to change collision normal
 	int		submodel_rot_hit;		// if collision is against rotating submodel
+	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
 } collision_info_struct;
 
+//Collision physics constants
+#define COLLISION_FRICTION_FACTOR		0.0f	//Default value if not set in ships.tbl
+#define COLLISION_ROTATION_FACTOR		0.2f	//Default value if not set in ships.tbl
+#define MIN_LANDING_SOUND_VEL			2.0f
+#define LANDING_POS_OFFSET				0.05f
 
 //===============================================================================
 // GENERAL COLLISION DETECTION HELPER FUNCTIONS 
@@ -138,4 +144,5 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp);
 
 int reject_due_collision_groups(object *A, object *B);
 
+void init_collision_info_struct(collision_info_struct *cis);
 #endif

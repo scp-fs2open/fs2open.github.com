@@ -181,6 +181,11 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 
 int Default_command_persona;
 
+
+// Goober5000
+// NOTE - these are truncated filenames, i.e. without extensions
+SCP_vector<SCP_string> generic_message_filenames;
+
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
 ///////////////////////////////////////////////////////////////////
@@ -419,7 +424,6 @@ void message_parse(bool importing_from_fsm)
 
 void parse_msgtbl()
 {
-	char *p1, *p2, *p3;
 	int i, j;
 
 	// open localization
@@ -435,27 +439,19 @@ void parse_msgtbl()
 	Num_messages = 0;
 	Num_personas = 0;
 
-	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
-	p1 = strstr(Mp, "#End");
-	*(p1+4)=0;
-	p1 = strstr(Mp, "2926");
-	if (p1)
+	// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
+	char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
+	if (pVawacs25)
 	{
-		p2 = strstr(p1, "Vawacs25.wav");
-		p3 = strstr(p1, "$Name");
-		if (p2 && p3 && (p2 < p3))
+		char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
+		if (pAwacs75)
 		{
-			replace_one(p2, "Vawacs25.wav", "Awacs25.wav", 500);
-		}
-	}
-	p1 = strstr(Mp, "2927");
-	if (p1)
-	{
-		p2 = strstr(p1, "Awacs75.wav");
-		p3 = strstr(p1, "$Name");
-		if (p2 && p3 && (p2 < p3))
-		{
-			replace_one(p2, "Awacs75.wav", "Vawacs75.wav", 500);
+			// move the 'V' from the first filename to the second, and adjust the 'A' case
+			*pVawacs25 = 'A';
+			for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
+				pVawacs25[i] = pVawacs25[i+1];
+			pAwacs75[-1] = 'V';
+			pAwacs75[0] = 'a';
 		}
 	}
 
@@ -489,6 +485,50 @@ void parse_msgtbl()
 		}
 	}
 
+
+	// additional table part!
+	generic_message_filenames.clear();
+	generic_message_filenames.push_back("none");
+	generic_message_filenames.push_back("cuevoice");
+	generic_message_filenames.push_back("emptymsg");
+	generic_message_filenames.push_back("generic");
+	generic_message_filenames.push_back("msgstart");
+
+	if (optional_string("#Simulated Speech Overrides"))
+	{
+		char filename[MAX_FILENAME_LEN];
+
+		while (required_string_either("#End", "$File Name:"))
+		{
+			required_string("$File Name:");
+			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+
+			// get extension
+			char *ptr = strchr(filename, '.');
+			if (ptr == NULL)
+			{
+				Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
+				continue;
+			}
+
+			// test extension
+			if (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav"))
+			{
+				Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
+				continue;
+			}
+
+			// truncate extension
+			*ptr = '\0';
+
+			// add truncated file name
+			generic_message_filenames.push_back(filename);
+		}
+
+		required_string("#End");
+	}
+
+	
 	// close localization
 	lcl_ext_close();
 }
@@ -859,10 +899,26 @@ void message_load_wave(int index, const char *filename)
 // Goober5000
 bool message_filename_is_generic(char *filename)
 {
-	if (!strnicmp(filename, "cuevoice.wav", 8)) return true;
-	if (!strnicmp(filename, "emptymsg.wav", 8)) return true;
-	if (!strnicmp(filename, "generic.wav", 7)) return true;
-	if (!strnicmp(filename, "msgstart.wav", 8)) return true;
+	int i;
+	char truncated_filename[MAX_FILENAME_LEN];
+
+	// truncate any file extension
+	strcpy(truncated_filename, filename);
+	char *ptr = strchr(truncated_filename, '.');
+
+	// extension must be a recognized sound file
+	if ((ptr == NULL) || (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav")))
+		return false;
+
+	// truncate it
+	*ptr = '\0';
+
+	// test against the list
+	for (i = 0; i < generic_message_filenames.size(); i++)
+	{
+		if (!stricmp(generic_message_filenames[i].c_str(), truncated_filename))
+			return true;
+	}
 
 	return false;
 }
@@ -1970,7 +2026,7 @@ void message_maybe_distort()
 					snd_set_volume(Playing_messages[i].wave, 0.0f);
 			} else {
 				if ( was_muted )
-					snd_set_volume(Playing_messages[i].wave, Master_sound_volume);
+					snd_set_volume(Playing_messages[i].wave, (Master_sound_volume * aav_voice_volume));
 			}
 		}
 	}

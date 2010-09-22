@@ -274,7 +274,7 @@
 				BrowseInformation="1"
 				WarningLevel="2"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -298,7 +298,7 @@
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
 				ProgramDatabaseFile=".\Release_Inferno/fs2_open_ant-6_INF_r.pdb"
-				GenerateMapFile="true"
+				GenerateMapFile="false"
 				MapFileName=".\Release_Inferno\Profile\freespace2/fs2_open_ant-6_INF_r.map"
 				SubSystem="2"
 				TargetMachine="1"
@@ -380,7 +380,7 @@
 				BrowseInformation="1"
 				WarningLevel="2"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
 			<Tool
@@ -404,7 +404,7 @@
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
 				ProgramDatabaseFile=".\Release/fs2_open_ant-6_r.pdb"
-				GenerateMapFile="true"
+				GenerateMapFile="false"
 				MapFileName=".\Release\Profile\freespace2/fs2_open_ant-6_r.map"
 				SubSystem="2"
 				TargetMachine="1"
@@ -529,11 +529,11 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
+			RelativePath="..\..\code\freespace2\phrases.cfg"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\phrases.cfg"
+			RelativePath="..\..\code\sound\phrases.cfg"
 			>
 		</File>
 	</Files>

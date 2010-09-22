@@ -184,8 +184,8 @@ void mflash_page_in(bool load_all)
 
 		// blobs
 		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, NULL, 1);
-			Assert( Mflash_info[i].blobs[idx].anim_id >= 0 );
+			Mflash_info[i].blobs[idx].anim_id = bm_load_either(Mflash_info[i].blobs[idx].name, &num_frames, &fps, NULL, 1);
+			Assertion( (Mflash_info[i].blobs[idx].anim_id >= 0), "Failed to load muzzle flash animation %s\n", Mflash_info[i].blobs[idx].name );
 			bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
 		}
 	}

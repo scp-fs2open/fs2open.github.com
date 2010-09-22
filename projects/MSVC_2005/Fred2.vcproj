@@ -170,7 +170,7 @@
 				BrowseInformationFile=".\Release_Inferno\Profile\fred2/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="1"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -193,7 +193,7 @@
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
 				ProgramDatabaseFile="Release_Inferno/fred2_open_ant-6_r_INF.pdb"
-				GenerateMapFile="true"
+				GenerateMapFile="false"
 				MapFileName=".\Release_Inferno\Profile\fred2/fred2_open_ant-6_r_INF.map"
 				SubSystem="2"
 				TargetMachine="1"
@@ -381,7 +381,7 @@
 				BrowseInformationFile=".\Release\Profile\fred2/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="1"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -404,7 +404,7 @@
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
 				ProgramDatabaseFile=".\Release/fred2_open_ant-6_r.pdb"
-				GenerateMapFile="true"
+				GenerateMapFile="false"
 				MapFileName=".\Release\Profile\fred2/fred2_open_ant-6_r.map"
 				SubSystem="2"
 				TargetMachine="1"

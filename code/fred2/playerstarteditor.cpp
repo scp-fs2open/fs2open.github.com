@@ -95,22 +95,32 @@ BOOL player_start_editor::OnInitDialog()
 		for(idx=0; idx<Team_data[i].num_ship_choices; idx++)
 		{
 			// do we have a variable for this entry? if we don't....
-			if (Team_data[i].ship_list_variables[idx] == -1)
+			if (!strlen(Team_data[i].ship_list_variables[idx]))
 			{
 				// This pool is set to hold the number of ships available at an index corresponding to the Ship_info array.
 				static_ship_pool[i][Team_data[i].ship_list[idx]] = Team_data[i].ship_count[idx];
 				// This pool is set to hold whether a ship at a Ship_info index has been set by a variable (and the 
 				// variables index in Sexp_variables) if it has).
-				static_ship_variable_pool[i][Team_data[i].ship_list[idx]] = Team_data[i].ship_count_variables[idx];
+				if (strlen(Team_data[i].ship_count_variables[idx])) {
+					static_ship_variable_pool[i][Team_data[i].ship_list[idx]] = get_index_sexp_variable_name(Team_data[i].ship_count_variables[idx]);
+				}
+				else {
+					static_ship_variable_pool[i][Team_data[i].ship_list[idx]] = -1;
+				}
 			}
 			// if we do....
 			else
 			{
 				// This pool is set to hold the number of ships available at an index corresponding to the Sexp_variables array
-				dynamic_ship_pool[i][Team_data[i].ship_list_variables[idx]] = Team_data[i].ship_count[idx];
+				dynamic_ship_pool[i][get_index_sexp_variable_name(Team_data[i].ship_list_variables[idx])] = Team_data[i].ship_count[idx];
 				// This pool is set to hold whether a ship at a Ship_info index has been set by a variable (and the 
 				// variables index in Sexp_variables) if it has).
-				dynamic_ship_variable_pool[i][Team_data[i].ship_list_variables[idx]] = Team_data[i].ship_count_variables[idx];
+				if (strlen(Team_data[i].ship_count_variables[idx])) {
+					dynamic_ship_variable_pool[i][get_index_sexp_variable_name(Team_data[i].ship_list_variables[idx])] = get_index_sexp_variable_name(Team_data[i].ship_count_variables[idx]);
+				}
+				else {
+					dynamic_ship_variable_pool[i][get_index_sexp_variable_name(Team_data[i].ship_list_variables[idx])] = -1;
+				}
 			}
 		}
 	}
@@ -125,16 +135,26 @@ BOOL player_start_editor::OnInitDialog()
 		for(idx=0; idx<Team_data[i].num_weapon_choices; idx++)
 		{
 			// do we have a variable for this entry?
-			if (Team_data[i].weaponry_pool_variable[idx] == -1)
+			if (!strlen(Team_data[i].weaponry_pool_variable[idx]))
 			{
 				static_weapon_pool[i][Team_data[i].weaponry_pool[idx]] = Team_data[i].weaponry_count[idx];
-				static_weapon_variable_pool[i][Team_data[i].weaponry_pool[idx]] = Team_data[i].weaponry_amount_variable[idx];
+				if (strlen(Team_data[i].weaponry_amount_variable[idx])) {
+					static_weapon_variable_pool[i][Team_data[i].weaponry_pool[idx]] = get_index_sexp_variable_name(Team_data[i].weaponry_amount_variable[idx]);
+				}
+				else {
+					static_weapon_variable_pool[i][Team_data[i].weaponry_pool[idx]] = -1;
+				}
 			}
 			// if we do....
 			else
 			{
-				dynamic_weapon_pool[i][Team_data[i].weaponry_pool_variable[idx]] = Team_data[i].weaponry_count[idx];
-				dynamic_weapon_variable_pool[i][Team_data[i].weaponry_pool_variable[idx]] = Team_data[i].weaponry_amount_variable[idx];
+				dynamic_weapon_pool[i][get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[idx])] = Team_data[i].weaponry_count[idx];
+				if (strlen(Team_data[i].weaponry_amount_variable[idx])) {
+					dynamic_weapon_variable_pool[i][get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[idx])] = get_index_sexp_variable_name(Team_data[i].weaponry_amount_variable[idx]);
+				}
+				else {
+					dynamic_weapon_variable_pool[i][get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[idx])] =  -1;
+				}
 			}
 		}
 	}
@@ -760,18 +780,24 @@ void player_start_editor::OnOK()
 
 
 				// Copy the variable to Team_data
-				Team_data[i].ship_list_variables[num_choices] = idx;
+				if (idx != -1) {
+					Assert (idx < MAX_SEXP_VARIABLES);
+					strcpy_s(Team_data[i].ship_list_variables[num_choices], Sexp_variables[idx].variable_name);
+				}
+				else {
+					strcpy_s(Team_data[i].ship_list_variables[num_choices], ""); 
+				}
 				Team_data[i].ship_list[num_choices] = -1;
 
 				// Now we need to set the number of this type available
 				if (dynamic_ship_variable_pool[i][idx] == -1) {
 					Team_data[i].ship_count[num_choices] = dynamic_ship_pool[i][idx];
-					Team_data[i].ship_count_variables[num_choices] = -1; 
+					strcpy_s(Team_data[i].ship_count_variables[num_choices], ""); 
 				}
 				else {
 					Assert (Sexp_variables[dynamic_ship_variable_pool[i][idx]].type & SEXP_VARIABLE_NUMBER);
 
-					Team_data[i].ship_count_variables[num_choices] = dynamic_ship_variable_pool[i][idx];
+					strcpy_s(Team_data[i].ship_count_variables[num_choices], Sexp_variables[dynamic_ship_variable_pool[i][idx]].variable_name);
 					Team_data[i].ship_count[num_choices] = atoi(Sexp_variables[dynamic_ship_variable_pool[i][idx]].text);
 				}
 
@@ -785,17 +811,17 @@ void player_start_editor::OnOK()
 			// if we have ships here
 			if(static_ship_pool[i][idx] > 0 || static_ship_variable_pool[i][idx] > -1) {
 				Team_data[i].ship_list[num_choices] = idx;
-				Team_data[i].ship_list_variables[num_choices] = -1;
+				strcpy_s(Team_data[i].ship_list_variables[num_choices], "");
 
 				// Now set the number of this class available
 				if (static_ship_variable_pool[i][idx] == -1) {
 					Team_data[i].ship_count[num_choices] = static_ship_pool[i][idx];
-					Team_data[i].ship_count_variables[num_choices] = -1;
+					strcpy_s(Team_data[i].ship_count_variables[num_choices], "");
 				}
 				else {
 					Assert (Sexp_variables[static_ship_variable_pool[i][idx]].type & SEXP_VARIABLE_NUMBER);
 					
-					Team_data[i].ship_count_variables[num_choices] = static_ship_variable_pool[i][idx];
+					strcpy_s(Team_data[i].ship_count_variables[num_choices], Sexp_variables[static_ship_variable_pool[i][idx]].variable_name);
 					Team_data[i].ship_count[num_choices] = atoi(Sexp_variables[static_ship_variable_pool[i][idx]].text);
 				}
 
@@ -830,20 +856,20 @@ void player_start_editor::OnOK()
 				}
 				
 				// Copy the variable to Team_data
-				Team_data[i].weaponry_pool_variable[num_choices] = idx;
+				strcpy_s(Team_data[i].weaponry_pool_variable[num_choices], Sexp_variables[idx].variable_name);
 				Team_data[i].weaponry_pool[num_choices] = -1;
 
 				// Now we need to set the number of this class available
 				if (dynamic_weapon_variable_pool[i][idx] == -1)
 				{
 					Team_data[i].weaponry_count[num_choices] = dynamic_weapon_pool[i][idx];
-					Team_data[i].weaponry_amount_variable[num_choices] = -1; 
+					strcpy_s(Team_data[i].weaponry_amount_variable[num_choices], ""); 
 				}
 				else 
 				{
 					Assert (Sexp_variables[dynamic_weapon_variable_pool[i][idx]].type & SEXP_VARIABLE_NUMBER);
 
-					Team_data[i].weaponry_amount_variable[num_choices] = dynamic_weapon_variable_pool[i][idx];
+					strcpy_s(Team_data[i].weaponry_amount_variable[num_choices], Sexp_variables[dynamic_weapon_variable_pool[i][idx]].variable_name);
 					Team_data[i].weaponry_count[num_choices] = atoi(Sexp_variables[dynamic_weapon_variable_pool[i][idx]].text);
 				}
 
@@ -859,19 +885,19 @@ void player_start_editor::OnOK()
 			if(static_weapon_pool[i][idx] > 0 || static_weapon_variable_pool[i][idx] > -1)
 			{
 				Team_data[i].weaponry_pool[num_choices] = idx;
-				Team_data[i].weaponry_pool_variable[num_choices] = -1;
+				strcpy_s(Team_data[i].weaponry_pool_variable[num_choices], "");
 
 				// Now set the number of this class available
 				if (static_weapon_variable_pool[i][idx] == -1)
 				{
 					Team_data[i].weaponry_count[num_choices] = static_weapon_pool[i][idx];
-					Team_data[i].weaponry_amount_variable[num_choices] = -1;
+					strcpy_s(Team_data[i].weaponry_amount_variable[num_choices], "");
 				}
 				else 
 				{
 					Assert (Sexp_variables[static_weapon_variable_pool[i][idx]].type & SEXP_VARIABLE_NUMBER);
 					
-					Team_data[i].weaponry_amount_variable[num_choices] = static_weapon_variable_pool[i][idx];
+					strcpy_s(Team_data[i].weaponry_amount_variable[num_choices], Sexp_variables[static_weapon_variable_pool[i][idx]].variable_name);
 					Team_data[i].weaponry_count[num_choices] = atoi(Sexp_variables[static_weapon_variable_pool[i][idx]].text);
 				}
 

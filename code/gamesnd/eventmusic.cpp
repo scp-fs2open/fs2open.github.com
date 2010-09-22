@@ -407,7 +407,7 @@ void event_music_force_switch()
 		return;	// invalid pattern
 
 	Assert(new_pattern >= 0 && new_pattern < MAX_PATTERNS);
-	audiostream_play(Patterns[new_pattern].handle, Master_event_music_volume, 0);	// no looping
+	audiostream_play(Patterns[new_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 	audiostream_set_sample_cutoff(Patterns[new_pattern].handle, fl2i(Patterns[new_pattern].num_measures * Patterns[new_pattern].samples_per_measure) );
 	Patterns[Current_pattern].next_pattern = Patterns[Current_pattern].default_next_pattern;
 	Patterns[Current_pattern].force_pattern = FALSE;
@@ -440,7 +440,7 @@ void event_music_do_frame()
 		if ( Current_pattern != -1  && Patterns[Current_pattern].handle >= 0) {
 			//WMC - removed in favor of if
 			//Assert(Patterns[Current_pattern].handle >= 0 );
-			audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
+			audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 		}
 	}
@@ -462,7 +462,7 @@ void event_music_do_frame()
 			audiostream_stop(pat->handle);	// stop current and rewind
 			pat->loop_for--;
 			if ( pat->loop_for > 0 ) {
-				audiostream_play(pat->handle, Master_event_music_volume, 0);	// no looping
+				audiostream_play(pat->handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 				audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 			}
 			else {
@@ -924,7 +924,7 @@ int event_music_friendly_arrival()
 			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
 			// arrival music pattern, and this is it
 			Assert(Patterns[SONG_AARV_1].handle >= 0 );
-			audiostream_play(Patterns[SONG_AARV_1].handle, Master_event_music_volume, 0);	// no looping
+			audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
 		}
 		// don't overlay
@@ -1198,9 +1198,7 @@ void parse_soundtrack()
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string("#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1336,9 +1334,7 @@ void parse_menumusic()
 			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
-		if(!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("$Name:", "#Menu Music End"), "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1591,7 +1587,7 @@ void event_music_unpause()
 
 	Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 	if ( audiostream_is_paused(Patterns[Current_pattern].handle) == TRUE ) {
-		audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
+		audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 		audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 	}
 }

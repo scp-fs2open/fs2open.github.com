@@ -108,7 +108,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	}
 
 	if( (quadrant_num == -1) && Cmdline_decals ){
-		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
+		weapon_info	*wip2 = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
 		decal_point dec;
 		dec.orient = weapon_obj->orient;
 		vec3d hit_fvec;
@@ -118,10 +118,10 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 		dec.orient.vec.fvec = hit_fvec;
 		vm_fix_matrix(&dec.orient);
 		dec.pnt.xyz = hitpos->xyz;
-		dec.radius = wip->decal_rad;
+		dec.radius = wip2->decal_rad;
 
-		if ( (dec.radius > 0) && (wip->decal_texture.bitmap_id > -1) )
-			decal_create(ship_obj, &dec, submodel_num, wip->decal_texture.bitmap_id, wip->decal_backface_texture.bitmap_id, wip->decal_glow_texture_id, wip->decal_burn_texture_id, wip->decal_burn_time);
+		if ( (dec.radius > 0) && (wip2->decal_texture.bitmap_id > -1) )
+			decal_create(ship_obj, &dec, submodel_num, wip->decal_texture.bitmap_id, wip2->decal_backface_texture.bitmap_id, wip2->decal_glow_texture_id, wip2->decal_burn_texture_id, wip2->decal_burn_time);
 	}
 	
 

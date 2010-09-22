@@ -2026,7 +2026,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 // function to display a list of reinforcements available to the player
 void hud_squadmsg_reinforcement_select()
 {
-	int i, k;
+	int i, k, wingnum;
 	reinforcements *rp;
 
 	if ( Num_menu_items == -1 ) {
@@ -2042,7 +2042,32 @@ void hud_squadmsg_reinforcement_select()
 			// don't put items which are not on my team
 			if((Player_ship != NULL) && (ship_get_reinforcement_team(i) != Player_ship->team)){
 				continue;
-			} 
+			}
+			
+			//  check the arrival cue sexpression of the ship/wing of this reinforcement.
+			// Goober5000 - if it can't arrive, it doesn't count.  This should check
+			// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
+			// a reinforcement menu containing no valid selections.
+			if ( (wingnum = wing_name_lookup(rp->name, 1)) != -1 ) {
+				Assert ( Wings[wingnum].arrival_cue >= 0 );
+				if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
+					|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
+					continue;
+				}
+			} else {
+				p_object *p_objp;
+				
+				p_objp = mission_parse_get_arrival_ship( rp->name );
+				if ( p_objp != NULL ) {
+					if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
+						|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
+						continue;
+					}
+				} else {
+					Int3();							// allender says bogus!  reinforcement should be here since it wasn't a wing!
+					continue;
+				}
+			}
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy_s( MsgItems[Num_menu_items].text, rp->name );

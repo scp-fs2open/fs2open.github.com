@@ -3248,6 +3248,17 @@ ADE_FUNC(getScreenCoords, l_Vector, NULL, "Gets screen cordinates of a world vec
 	return ade_set_args(L, "ff", vtx.sx, vtx.sy);
 }
 
+ADE_FUNC(getNormalized, l_Vector, NULL, "Returns a normalized version of the vector", "vector", "Normalized Vector, or NIL if invalid")
+{
+	vec3d v3;
+	if(!ade_get_args(L, "o", l_Vector.Get(&v3)))
+		return ADE_RETURN_NIL;
+
+	vm_vec_normalize(&v3);
+
+	return ade_set_args(L, "o", l_Vector.Set(v3));
+}
+
 //**********HANDLE: material
 static const int THT_INDEPENDENT	= 0;
 static const int THT_OBJECT			= 1;
@@ -4089,6 +4100,69 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 	}
 
 	return ade_set_args(L, "i", objh->objp->collision_group_id);
+}
+
+ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.fvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
+}
+
+ADE_FUNC(getuvec, l_Object, "[boolean normalize]", "Returns the objects' current uvec.", "vector", "Objects' up vector, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.uvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
+}
+
+ADE_FUNC(getrvec, l_Object, "[boolean normalize]", "Returns the objects' current rvec.", "vector", "Objects' rvec, or nil if invalid. If called with a true argument, vector will be normalized.")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+	bool normalize = false;
+	
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &normalize)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+	vec3d v1 = obj->orient.vec.fvec;
+	if (normalize)
+		vm_vec_normalize(&v1);
+
+	return ade_set_args(L, "o", l_Vector.Set(v1));
 }
 
 ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [boolean Local]", "Checks the collisions between the polygons of the current object and a ray", "vector Position", "World collision point (local if boolean is set to true), nil if no collisions")
@@ -5529,7 +5603,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 }
 
 
-ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
+ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
 	ship_subsys_h *sso;
 	object_h *objh;
@@ -5546,9 +5620,26 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem",
 		ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
 		ss->turret_enemy_sig = objh->sig;
 		ss->targeted_subsys = NULL;
+		ss->scripting_target_override = true;
 	}
 
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
+}
+
+ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
+{
+	bool targetOverride = false;
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "ob", l_Subsystem.GetPtr(&sso), &targetOverride))
+		return ADE_RETURN_FALSE;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_FALSE;
+
+	ship_subsys *ss = sso->ss;
+
+	ss->scripting_target_override = targetOverride;
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")
@@ -6713,6 +6804,25 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 	}
 
 	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting on the object", "number", "Current EMP effect strength or NIL if object is invalid")
+{
+	object_h *objh = NULL;
+	object *obj = NULL;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	obj = objh->objp;
+
+	ship *shipp = &Ships[obj->instance];
+
+	return ade_set_args(L, "f", shipp->emp_intensity);
 }
 
 //**********HANDLE: Weapon
@@ -8149,7 +8259,7 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	if(vol > 100.0f)
 		vol = 100.0f;
 
-	idx = snd_play(&Snds[idx], pan, vol*0.01f, pri, voice_msg);
+	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
 
 	return ade_set_args(L, "b", idx > -1);
 }
@@ -8160,7 +8270,7 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interf
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_play_iface(idx);
+	gamesnd_play_iface(gamesnd_get_by_iface_tbl_index(idx));
 
 	return ade_set_args(L, "b", idx > -1);
 }

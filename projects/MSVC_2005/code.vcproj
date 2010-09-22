@@ -2492,10 +2492,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\sound\grammar.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\sound\openal.cpp"
 				>
 			</File>

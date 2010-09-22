@@ -1008,7 +1008,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
  * Pass -1 in priority to ignore priority when searching
  * Returns -1 if not found, or [0, MAX_AI_GOALS)
  */
-int ai_find_goal_index( ai_goal* aigp, int mode, int submode = -1, int priority = -1 )
+int ai_find_goal_index( ai_goal* aigp, int mode, int submode, int priority )
 {
 	Assert( aigp != NULL );
 	for ( int i = 0; i < MAX_AI_GOALS; i++ )

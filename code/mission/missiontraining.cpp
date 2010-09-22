@@ -730,7 +730,7 @@ int message_play_training_voice(int index)
 
 			Training_voice_type = 1;
 			if (Training_voice_handle >= 0)
-				audiostream_play(Training_voice_handle, Master_voice_volume, 0);
+				audiostream_play(Training_voice_handle, (Master_voice_volume * aav_voice_volume), 0);
 
 			Training_voice = index;
 			return Training_voice;
@@ -918,7 +918,11 @@ void message_training_display()
 
 	Training_message_visible = 0;
 	message_training_queue_check();
-	training_obj_display();
+	
+	if ( !hud_disabled_except_messages() ) {
+		training_obj_display();
+	}
+	
 
 	if (Training_failure){
 		return;

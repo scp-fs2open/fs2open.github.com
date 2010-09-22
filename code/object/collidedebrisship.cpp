@@ -61,7 +61,7 @@ int collide_debris_ship( obj_pair * pair )
 		vec3d	hitpos;
 		// create and initialize ship_ship_hit_info struct
 		collision_info_struct debris_hit_info;
-		memset( &debris_hit_info, -1, sizeof(collision_info_struct) );
+		init_collision_info_struct(&debris_hit_info);
 
 		if ( pdebris->phys_info.mass > pship->phys_info.mass ) {
 			debris_hit_info.heavy = pdebris;
@@ -218,7 +218,7 @@ int collide_asteroid_ship( obj_pair * pair )
 		vec3d	hitpos;
 		// create and initialize ship_ship_hit_info struct
 		collision_info_struct asteroid_hit_info;
-		memset( &asteroid_hit_info, -1, sizeof(collision_info_struct) );
+		init_collision_info_struct(&asteroid_hit_info);
 
 		if ( pasteroid->phys_info.mass > pship->phys_info.mass ) {
 			asteroid_hit_info.heavy = pasteroid;

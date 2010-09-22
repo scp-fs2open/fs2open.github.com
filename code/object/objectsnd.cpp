@@ -673,6 +673,10 @@ int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship
 	if ( Obj_snd_enabled == FALSE )
 		return -1;
 
+	//Initialize object sound list, if not initialized
+	if (!Obj_snd_level_inited)
+		obj_snd_level_init();
+
 	obj_snd	*snd = NULL;
 	object	*objp = &Objects[objnum];
 	int idx, sound_index;

@@ -1671,13 +1671,13 @@ void game_process_keys()
 					}
 
 					//If topdown view in non-2D mission, go back to cockpit view.
-					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION)) {
+					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION) && !(Perspective_locked) ) {
 						Viewer_mode &= ~VM_TOPDOWN;
 						break;
 					}
 
 					// if in external view or chase view, go back to cockpit view
-					if ( Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP) ) {
+					if ( (Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP)) && !(Perspective_locked) ) {
 						Viewer_mode &= ~(VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP);
 						break;
 					}
@@ -2846,11 +2846,7 @@ int button_function(int n)
 				}
 				else
 				{
-					if (CanAutopilot(true))
-					{
-						StartAutopilot();
-					}
-					else
+					if (!StartAutopilot())
 						gamesnd_play_iface(SND_GENERAL_FAIL);
 				}
 			}

@@ -62,6 +62,7 @@
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
+#include "sound/sound.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
 #include "starfield/starfield.h"
@@ -186,6 +187,7 @@ sexp_oper Operators[] = {
 	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
 	{ "is-ship-type",					OP_IS_SHIP_TYPE,					2, INT_MAX,	},
 	{ "is-ship-class",					OP_IS_SHIP_CLASS,					2, INT_MAX,	},
+	{ "is-facing",						OP_IS_FACING,						3, 4, },
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
@@ -240,6 +242,8 @@ sexp_oper Operators[] = {
 	{ "primary-fired-since",		OP_PRIMARY_FIRED_SINCE,		3,	3},	// Karajorma
 	{ "secondary-fired-since",		OP_SECONDARY_FIRED_SINCE,	3,	3},	// Karajorma
 	{ "get-throttle-speed",			OP_GET_THROTTLE_SPEED,		1, 1,			}, // Karajorma
+	{ "has-primary-weapon",			OP_HAS_PRIMARY_WEAPON,		3,	INT_MAX},	// Karajorma
+	{ "has-secondary-weapon",		OP_HAS_SECONDARY_WEAPON,	3,	INT_MAX},	// Karajorma
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
@@ -436,6 +440,7 @@ sexp_oper Operators[] = {
 	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
 	{ "set-sound-environment",		OP_SET_SOUND_ENVIRONMENT,		1, INT_MAX },	// Taylor
 	{ "update-sound-environment",	OP_UPDATE_SOUND_ENVIRONMENT,	2, INT_MAX },	// Taylor
+	{ "adjust-audio-volume",		OP_ADJUST_AUDIO_VOLUME,			1, 3},
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "variable-array-get",				OP_GET_VARIABLE_BY_INDEX,	1,	1,			},
@@ -445,7 +450,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
-	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
+	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
@@ -459,6 +464,7 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
+	{ "ship-change-callsign",		OP_SHIP_CHANGE_CALLSIGN,	2, INT_MAX	},	// FUBAR
 	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 	{ "remove-weapons",			OP_REMOVE_WEAPONS,			0, 1 },	// Karajorma
@@ -697,6 +703,11 @@ void sexp_stop_music(int fade = 1);
 int sexp_sound_environment_option_lookup(char *text);
 char *Sound_environment_option[] = { "volume", "decay time", "damping" };
 int Num_sound_environment_options = 3;
+
+// for adjust-audio-volume - The E
+char *Adjust_audio_options[] = { "Music", "Voice", "Effects" };
+int Num_adjust_audio_options = 3;
+int audio_volume_option_lookup(char *text);
 
 // for explosions - Goober5000
 #define EO_DAMAGE			0
@@ -2439,6 +2450,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 
+			case OPF_AUDIO_VOLUME_OPTION:
+				if (audio_volume_option_lookup(CTEXT(node)) == -1)
+					return SEXP_CHECK_TYPE_MISMATCH;
+				break;
+
 			case OPF_SOUND_ENVIRONMENT_OPTION:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -2661,6 +2677,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 				return SEXP_CHECK_INVALID_HUD_ELEMENT;
+
+			case OPF_WEAPON_BANK_NUMBER:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (!stricmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
+					break;
+				}
+
+				// if we haven't specified all banks we need to check the number of the bank is legal
+				else {
+					int num_banks = atoi(CTEXT(node));
+					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) {
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+					}
+				}
+				break;
+				
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -8210,7 +8245,7 @@ int sexp_is_ai_class(int n)
 	// just the ship
 	else
 	{
-		if (Ship_info[Ships[ship_num].ship_info_index].ai_class == ai_class)
+		if (Ai_info[Ships[ship_num].ai_index].ai_class == ai_class)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
@@ -8402,13 +8437,41 @@ void sexp_clear_goals(int n)
 // Goober5000
 void sexp_hud_disable(int n)
 {
-	hud_set_draw(!eval_num(n));
+	int disable_hud = eval_num(n);
+	hud_set_draw(!disable_hud);
+
+	multi_start_packet();
+	multi_send_int(disable_hud);
+	multi_end_packet();
+}
+
+void multi_sexp_hud_disable()
+{
+	int disable_hud;
+
+	if (multi_get_int(disable_hud)) {
+		hud_set_draw(!disable_hud);
+	}
 }
 
 // Goober5000
 void sexp_hud_disable_except_messages(int n)
 {
-	hud_disable_except_messages(eval_num(n));
+	int disable_hud = eval_num(n);
+	hud_disable_except_messages(disable_hud);
+
+	multi_start_packet();
+	multi_send_int(disable_hud);
+	multi_end_packet();
+}
+
+void multi_sexp_hud_disable_except_messages()
+{
+	int disable_hud;
+
+	if (multi_get_int(disable_hud)) {
+		hud_disable_except_messages(disable_hud);
+	}
 }
 
 void sexp_hud_set_text_num(int n)
@@ -8496,6 +8559,15 @@ void sexp_hud_display_gauge(int n) {
 	char* gauge = CTEXT(CDR(n));
 
 	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
+		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
+	}
+}
+
+void multi_sexp_hud_display_gauge()
+{
+	int show_for; 
+
+	if (multi_get_int(show_for)) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
 	}
 }
@@ -8588,7 +8660,7 @@ void sexp_start_music(int loop)
 {
 	if ( Sexp_music_handle != -1 ) {
 		if ( !audiostream_is_playing(Sexp_music_handle) )
-			audiostream_play(Sexp_music_handle, Master_event_music_volume, loop);
+			audiostream_play(Sexp_music_handle, (Master_event_music_volume * aav_music_volume), loop);
 	}
 	else {
 		nprintf(("Warning", "Can not play music. sexp_start_music called when no music file is set for Sexp_music_handle!\n"));
@@ -8615,7 +8687,7 @@ void sexp_play_sound_from_table(int n)
 
 	// play sound effect ---------------------------
 	if (sound_index >= 0) {
-		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+		snd_play_3d( &Snds[gamesnd_get_by_tbl_index(sound_index)], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
 	}
 
 	if (MULTIPLAYER_MASTER) {
@@ -8638,9 +8710,10 @@ void multi_sexp_play_sound_from_table()
 	multi_get_float(origin.xyz.z);
 	multi_get_int(sound_index);
 
+
 	if (sound_index != -1) {
 		// play sound effect ---------------------------
-		snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+		snd_play_3d( &Snds[gamesnd_get_by_tbl_index(sound_index)], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
 	}
 }
 
@@ -8809,6 +8882,55 @@ void sexp_update_sound_environment(int node)
 		} else if ( option == SEO_DAMPING ) {
 			ds_eax_set_damping(val);
 		}
+	}
+}
+
+//The E
+	//From sexp help:
+	//{ OP_ADJUST_AUDIO_VOLUME, "adjust-audio-volume\r\n"
+	//	"Adjusts the relative volume of one sound type. Takes 2 or 3 arguments....\r\n"
+	//	"\t1:\tSound Type to adjust, either Master, Music, Voice or Effects\r\n"
+	//	"\t2:\tPercentage of the users' settings to adjust to, 0 will be silence, 100 means the maximum volume as set by the user\r\n"
+	//	"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
+
+int audio_volume_option_lookup(char *text)
+{
+	int i;
+
+	Assert(text != NULL);
+	if (text == NULL) {
+		return -1;
+	}
+	
+	for (i = 0; i < Num_adjust_audio_options; i++) {
+		if (!strcmp(text, Adjust_audio_options[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void sexp_adjust_audio_volume(int node)
+{
+	int n = node;
+
+	if (n > 0) {
+		int option = audio_volume_option_lookup(CTEXT(n));
+		n = CDR(n);
+
+		float target_volume = 1.0f;
+		if (n >= 0) {
+			target_volume = (float)eval_num(n) / 100;
+			CLAMP(target_volume, 0.0f, 1.0f);
+			n = CDR(n);
+		}
+
+		int time = 0;
+		if (n >= 0)
+			time = eval_num(n);
+
+		snd_adjust_audio_volume(option, target_volume, time);
 	}
 }
 
@@ -10259,7 +10381,13 @@ void sexp_remove_background_bitmap(int n)
 	int slot = eval_num(n);
 
 	if (slot >= 0) {
-		stars_mark_bitmap_unused( slot );
+		int instances = stars_get_num_bitmaps();
+		if ( instances > slot ) {
+			stars_mark_bitmap_unused( slot );
+		} else {
+			Error(LOCATION, "remove-background-bitmap: slot %d does not exist. Slot must be less than %d.",
+				slot, instances);
+		}
 	}
 }
 
@@ -10342,7 +10470,13 @@ void sexp_remove_sun_bitmap(int n)
 	int slot = eval_num(n);
 
 	if (slot >= 0) {
-		stars_mark_sun_unused( slot );
+		int instances = stars_get_num_suns();
+		if ( instances > slot ) {
+			stars_mark_sun_unused( slot );
+		} else {
+			Error(LOCATION, "remove-sun-bitmap: slot %d does not exist. Slot must be less than %d.",
+				slot, instances);
+		}
 	}
 }
 
@@ -10385,7 +10519,7 @@ void sexp_end_mission(int n)
 	}
 
 	// if the player is dead we may want to let the death screen handle things
-	if (!ignore_player_mortality && (Player_ship->flags && SF_DYING)) {
+	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
 	}
 
@@ -11113,6 +11247,93 @@ int sexp_weapon_fired_delay(int node, int op_num)
 
 	if (timestamp() - delay < last_fired) {
 		return SEXP_TRUE; 
+	}
+
+	return SEXP_FALSE;
+}
+
+int sexp_has_weapon(int node, int op_num)
+{
+	ship *shipp;
+	weapon_info * wip; 
+	int i;
+	int requested_bank;
+	int weapon_index;
+	int num_weapon_banks = 0;
+	int *weapon_banks = NULL;
+
+	shipp = sexp_get_ship_from_node(node); 
+	if (shipp == NULL) {
+		return SEXP_FALSE;
+	}
+
+	// Get the bank to check
+	node = CDR(node);
+	if (!strcmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
+		requested_bank = -1;
+	}
+	else {
+		requested_bank = eval_num(node);
+	}	
+	node = CDR(node);
+ 
+	switch (op_num) {
+		case OP_HAS_PRIMARY_WEAPON:
+			weapon_banks = shipp->weapons.primary_bank_weapons;
+			num_weapon_banks = shipp->weapons.num_primary_banks;
+			break;
+
+		case OP_HAS_SECONDARY_WEAPON:
+			weapon_banks = shipp->weapons.secondary_bank_weapons;
+			num_weapon_banks = shipp->weapons.num_secondary_banks;
+			break;
+
+		default:
+			Warning(LOCATION, "Unrecognised bank type used in has-x-weapon. Returning false");
+			return SEXP_FALSE;
+	}
+	
+
+	//loop through the weapons and test them
+	while (node > -1) {
+		weapon_index = weapon_info_lookup(CTEXT(node));
+		Assertion (weapon_index >= 0, "Weapon name %s is unknown.", CTEXT(node));
+
+		// if we're checking every bank
+		if (requested_bank == -1) {
+			for (i = 0; i < num_weapon_banks; i++) {
+				if (weapon_index == weapon_banks[i]) {
+					return SEXP_TRUE;
+				}
+			}
+		}
+
+		// if we're only checking one bank
+		else {
+			if (weapon_index == weapon_banks[requested_bank]) {
+				return SEXP_TRUE;
+			}
+		}
+
+		/*
+		else {
+			switch (op_num) {
+				 case OP_HAS_PRIMARY_WEAPON:
+					 if (weapon_index == shipp->weapons.primary_bank_weapons[requested_bank]) {
+						 return SEXP_TRUE;
+					 }
+					 break;
+
+				 case OP_HAS_SECONDARY_WEAPON:
+					 if 
+		}
+		*/
+		 
+
+
+
+	
+	node = CDR(node);
 	}
 
 	return SEXP_FALSE;
@@ -12055,45 +12276,70 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name(ship *shipp, char *alt_name)
+void sexp_ingame_ship_alt_name(ship *shipp, char alt_index)
 {
-	Assert((shipp != NULL) && (alt_name != NULL));
+	Assert((shipp != NULL) && (alt_index < Mission_alt_type_count));
 
-	// see if this is actually the ship class
-	if (!stricmp(Ship_info[shipp->ship_info_index].name, alt_name))
+	// we might be clearing it
+	if (alt_index < 0)
 	{
 		shipp->alt_type_index = -1;
 		return;
 	}
 
-	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
-	shipp->alt_type_index = (char) mission_parse_add_alt(alt_name);
+	// see if this is actually the ship class
+	if (!stricmp(Ship_info[shipp->ship_info_index].name, Mission_alt_types[alt_index]))
+	{
+		shipp->alt_type_index = -1;
+		return;
+	}
+
+	shipp->alt_type_index = alt_index;
 }
 
 // Goober5000
-void sexp_parse_ship_alt_name(p_object *parse_obj, char *alt_name)
+void sexp_parse_ship_alt_name(p_object *parse_obj, char alt_index)
 {
-	Assert((parse_obj != NULL) && (alt_name != NULL));
+	Assert((parse_obj != NULL) && (alt_index < Mission_alt_type_count));
 
-	// see if this is actually the ship class
-	if (!stricmp(Ship_class_names[parse_obj->ship_class], alt_name))
+	// we might be clearing it
+	if (alt_index < 0)
 	{
 		parse_obj->alt_type_index = -1;
 		return;
 	}
 
-	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
-	parse_obj->alt_type_index = (char) mission_parse_add_alt(alt_name);
+	// see if this is actually the ship class
+	if (!stricmp(Ship_class_names[parse_obj->ship_class], Mission_alt_types[alt_index]))
+	{
+		parse_obj->alt_type_index = -1;
+		return;
+	}
+
+	parse_obj->alt_type_index = alt_index;
 }
 
 // Goober5000
-void sexp_ship_change_alt_name(int n)
+void sexp_ship_change_alt_name(int node)
 {
+	int n = node, new_alt_index;
 	char *new_alt_name;
 
 	// get the alt-name
 	new_alt_name = CTEXT(n);
 	n = CDR(n);
+
+	// and its index
+	if (!*new_alt_name || !stricmp(new_alt_name, SEXP_ANY_STRING))
+	{
+		new_alt_index = -1;
+	}
+	else
+	{
+		new_alt_index = mission_parse_lookup_alt(new_alt_name);
+		if (new_alt_index < 0)
+			new_alt_index = mission_parse_add_alt(new_alt_name);
+	}
 
 	for ( ; n != -1; n = CDR(n) )
 	{
@@ -12105,16 +12351,14 @@ void sexp_ship_change_alt_name(int n)
 			// change ingame ship
 			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_alt_name(oswpt.shipp, new_alt_name);
-
+				sexp_ingame_ship_alt_name(oswpt.shipp, new_alt_index);
 				break;
 			}
 
 			// change ship yet to arrive
 			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				sexp_parse_ship_alt_name(oswpt.p_objp, new_alt_name);
-
+				sexp_parse_ship_alt_name(oswpt.p_objp, new_alt_index);
 				break;
 			}
 
@@ -12123,16 +12367,52 @@ void sexp_ship_change_alt_name(int n)
 			{		
 				// current ships
 				for (int i = 0; i < oswpt.wingp->current_count; i++)
-					sexp_ingame_ship_alt_name(&Ships[oswpt.wingp->ship_index[i]], new_alt_name);
+					sexp_ingame_ship_alt_name(&Ships[oswpt.wingp->ship_index[i]], new_alt_index);
 	
 				// ships yet to arrive
 				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 				{
 					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
-						sexp_parse_ship_alt_name(p_objp, new_alt_name);
+						sexp_parse_ship_alt_name(p_objp, new_alt_index);
 				}
+				break;
 			}
 		}
+	}
+}
+
+// FUBAR
+void sexp_ship_change_callsign(int node)
+{
+	char *new_callsign;
+	int sindex, cindex;
+	ship *shipp = NULL;
+
+	// get the callsign
+	new_callsign = CTEXT(node);
+	node = CDR(node);
+
+	// and its index
+	if (!*new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	{
+		cindex = -1;
+	}
+	else
+	{
+		cindex = mission_parse_lookup_callsign(new_callsign);
+		if (cindex < 0)
+			cindex = mission_parse_add_callsign(new_callsign);
+	}
+
+	while ( node >= 0 )
+	{
+		sindex = ship_name_lookup(CTEXT(node));
+		if (sindex >= 0) 
+		{
+			shipp = &Ships[sindex];
+			shipp->callsign_index = cindex;
+		}
+		node = CDR(node);
 	}
 }
 
@@ -12345,6 +12625,59 @@ int sexp_facing(int node)
 	return SEXP_FALSE;
 }
 
+
+int sexp_is_facing(int node)
+{
+	int sh;
+	object *obj1, *obj2;
+	float a1, a2;
+	vec3d v1, v2; 
+
+	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
+		return SEXP_CANT_EVAL;
+
+	sh = ship_name_lookup(CTEXT(node));
+	if (sh < 0) {
+		return SEXP_FALSE;
+	}
+	obj1 = &Objects[Ships[sh].objnum];
+
+	node = CDR(node);
+
+	if (sexp_query_has_yet_to_arrive(CTEXT(node)))
+		return SEXP_CANT_EVAL;
+
+	sh = ship_name_lookup(CTEXT(node));
+	if (sh < 0) {
+		return SEXP_FALSE;
+	}
+
+	obj2 = &Objects[Ships[sh].objnum];
+	
+	v1 = obj1->orient.vec.fvec;
+	
+	vm_vec_normalize(&v1);
+	vm_vec_sub(&v2, &obj2->pos, &obj1->pos);
+	vm_vec_normalize(&v2);
+	a1 = vm_vec_dotprod(&v1, &v2);
+
+	node = CDR(node);
+	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(node))));
+
+	node = CDR(node);
+
+	if (node > 0) {
+		if (sexp_distance3(obj1, obj2) > eval_num(node))
+			return SEXP_FALSE;
+	}
+
+	if (a1 >= a2){
+		return SEXP_TRUE;
+	}
+
+	return SEXP_FALSE;
+}
+
 // is ship facing first waypoint in waypoint path
 int sexp_facing2(int node)
 {
@@ -12497,14 +12830,31 @@ void sexp_send_training_message(int node)
 		}
 	}
 
+	multi_start_packet();
+	multi_send_int(t);
+	multi_send_int(delay);
+
 	if ((Mission_events[Event_index].repeat_count > 1) || (CDR(node) < 0)){
 		message_training_queue(CTEXT(node), timestamp(delay), t);
+		multi_send_string(CTEXT(node));
 	} else {
 		message_training_queue(CTEXT(CDR(node)), timestamp(delay), t);
+		multi_send_string(CTEXT(CDR(node)));
 	}
+	multi_end_packet();
+}
 
-//	if (Training_msg_method)
-//		gameseq_post_event(GS_EVENT_TRAINING_PAUSE);
+void multi_sexp_send_training_message()
+{	
+	int t, delay;
+	char message[TOKEN_LENGTH];
+
+	multi_get_int(t);
+	multi_get_int(delay);
+	if (multi_get_string(message)) {
+		message_training_queue(message, timestamp(delay), t); 
+	}
+	
 }
 
 int sexp_shield_recharge_pct(int node)
@@ -14572,6 +14922,30 @@ void sexp_add_remove_escort(int node)
 	} else {
 		hud_remove_ship_from_escort(Ships[sindex].objnum);
 	}
+
+	multi_start_packet();
+	multi_send_int(sindex);
+	multi_send_int(flag); 
+	multi_end_packet();
+}
+
+void multi_sexp_add_remove_escort()
+{
+	int sindex;
+	int flag;
+
+	multi_get_int(sindex); 
+	if (!(multi_get_int(flag))) {
+		return;
+	}
+
+	// add/remove
+	if(flag){
+		Ships[sindex].escort_priority = flag ;	
+		hud_add_ship_to_escort(Ships[sindex].objnum, 1);
+	} else {
+		hud_remove_ship_from_escort(Ships[sindex].objnum);
+	}
 }
 
 //given: two escort priorities and a list of ships
@@ -14737,6 +15111,15 @@ void sexp_set_support_ship(int n)
 	// get max number of ships allowed
 	n = CDR(n);
 	The_mission.support_ships.max_support_ships = eval_num(n);
+
+	// get the number of concurrent ships allowed
+	n = CDR(n);
+	if ( n == -1 ) {
+		// 7th arg not specified, set default
+		The_mission.support_ships.max_concurrent_ships = 1;
+	} else {
+		The_mission.support_ships.max_concurrent_ships = eval_num(n);
+	}
 }
 
 // Goober5000
@@ -15128,6 +15511,27 @@ void add_nav_ship(int node)
 	char *nav_name = CTEXT(node);
 	char *ship_name = CTEXT(CDR(node));
 	AddNav_Ship(nav_name, ship_name, 0);
+
+	multi_start_packet();
+	multi_send_string(nav_name);
+	multi_send_string(ship_name);
+	multi_end_packet();
+}
+
+void multi_add_nav_ship()
+{
+	char nav_name[TOKEN_LENGTH];
+	char ship_name[TOKEN_LENGTH];
+
+	if (!multi_get_string(nav_name)) {
+		return; 
+	}
+	
+	if (!multi_get_string(ship_name)) {
+		return;
+	}
+
+	AddNav_Ship(nav_name, ship_name, 0);
 }
 
 
@@ -15136,6 +15540,22 @@ void add_nav_ship(int node)
 void del_nav(int node)
 {
 	char *nav_name = CTEXT(node);
+	DelNavPoint(nav_name);
+
+	multi_start_packet();
+	multi_send_string(nav_name);
+	multi_end_packet();
+
+}
+
+void multi_del_nav()
+{
+	char nav_name[TOKEN_LENGTH];
+
+	if (!multi_get_string(nav_name)) {
+		return; 
+	}
+	
 	DelNavPoint(nav_name);
 }
 
@@ -16018,8 +16438,22 @@ void sexp_flash_hud_gauge( int node )
 	for (i = 0; i < NUM_HUD_GAUGES; i++ ) {
 		if ( !stricmp(HUD_gauge_text[i], name) ) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
+
+			multi_start_packet();
+			multi_send_int(i);
+			multi_end_packet();
+
 			break;
 		}
+	}
+}
+
+void multi_sexp_flash_hud_gauge()
+{
+	int i; 
+
+	if (multi_get_int(i)) {
+		hud_gauge_start_flash(i);
 	}
 }
 
@@ -16054,48 +16488,49 @@ void sexp_scramble_messages(bool scramble)
 	Sexp_Messages_Scrambled = scramble;
 }
 
-void sexp_set_cutscene_bars(int node)
+void toggle_cutscene_bars(float delta_speed, int set) 
 {
-	//We know we want the bars
-	Cutscene_bar_flags |= CUB_CUTSCENE;
+	//Do we want the bars?
+	if (set) {
+		Cutscene_bar_flags |= CUB_CUTSCENE;
+	}
+	else {
+		Cutscene_bar_flags &= ~CUB_CUTSCENE;
+	}
 
+	if(delta_speed > 0.0f) {
+		Cutscene_bars_progress = 0.0f;
+		Cutscene_bar_flags |= CUB_GRADUAL;
+		Cutscene_delta_time = delta_speed;
+	}
+	else {
+		Cutscene_bar_flags &= ~CUB_GRADUAL;
+	}
+}
+
+void sexp_toggle_cutscene_bars(int node, int set)
+{
 	float delta_speed = 0.0f;
 
 	if(node != -1)
 		delta_speed = eval_num(node)/1000.0f;
 
-	if(delta_speed > 0.0f)
-	{
-		Cutscene_bars_progress = 0.0f;
-		Cutscene_bar_flags |= CUB_GRADUAL;
-		Cutscene_delta_time = delta_speed;
-	}
-	else
-	{
-		Cutscene_bar_flags &= ~CUB_GRADUAL;
-	}
+	toggle_cutscene_bars(delta_speed, set);
+
+	multi_start_packet();
+	multi_send_float(delta_speed);
+	multi_end_packet();
 }
 
-void sexp_unset_cutscene_bars(int node)
+void muli_sexp_toggle_cutscene_bars(int set)
 {
-	//We know we DON'T want the bars
-	Cutscene_bar_flags &= ~CUB_CUTSCENE;
-	float delta_speed = 0.0f;
+	float delta_speed;
 
-	if(node != -1)
-		delta_speed = eval_num(node)/1000.0f;
-
-	if(delta_speed > 0.0f)
-	{
-		Cutscene_bars_progress = 0.0f;
-		Cutscene_bar_flags |= CUB_GRADUAL;
-		Cutscene_delta_time = delta_speed;
-	}
-	else
-	{
-		Cutscene_bar_flags &= ~CUB_GRADUAL;
+	if(multi_get_float(delta_speed) ) {
+		toggle_cutscene_bars(delta_speed, set);
 	}
 }
+
 void sexp_fade_in(int n)
 {
 	float delta_time = 0.0f;
@@ -16785,6 +17220,54 @@ void sexp_show_subtitle_text(int node)
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
 	Subtitles.push_back(new_subtitle);
+
+	multi_start_packet();
+	multi_send_int(x_pos);
+	multi_send_int(y_pos);
+	multi_send_string(text);
+	multi_send_float(display_time);
+	multi_send_float(fade_time);
+	multi_send_int(red);
+	multi_send_int(green);
+	multi_send_int(blue);
+	multi_send_int(fontnum);
+	multi_send_bool(center_x);
+	multi_send_bool(center_y);
+	multi_send_int(width);
+	multi_send_bool(post_shaded);
+	multi_end_packet();
+}
+
+void multi_sexp_show_subtitle_text()
+{
+	int x_pos, y_pos, width=0, fontnum;
+	char text[TOKEN_LENGTH];
+	float display_time, fade_time=0.0f;
+	int red=255, green=255, blue=255;
+	bool center_x=false, center_y=false;
+	bool post_shaded = false;
+	color new_color;
+
+	multi_get_int(x_pos);
+	multi_get_int(y_pos);
+	multi_get_string(text);
+	multi_get_float(display_time);
+	multi_get_float(fade_time);
+	multi_get_int(red);
+	multi_get_int(green);
+	multi_get_int(blue);
+	multi_get_int(fontnum);
+	multi_get_bool(center_x);
+	multi_get_bool(center_y);
+	multi_get_int(width);
+	multi_get_bool(post_shaded);
+
+	gr_init_alphacolor(&new_color, red, green, blue, 255);
+
+	// add the subtitle
+	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
+	Subtitles.push_back(new_subtitle);	
+
 }
 
 void sexp_show_subtitle_image(int node)
@@ -16856,6 +17339,43 @@ void sexp_show_subtitle_image(int node)
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);
+
+	multi_start_packet();
+	multi_send_int(x_pos);
+	multi_send_int(y_pos);
+	multi_send_string(image);
+	multi_send_float(display_time);
+	multi_send_float(fade_time);
+	multi_send_bool(center_x);
+	multi_send_bool(center_y);
+	multi_send_int(width);
+	multi_send_int(height);
+	multi_send_bool(post_shaded);
+	multi_end_packet();
+}
+
+void multi_sexp_show_subtitle_image()
+{
+	int x_pos, y_pos, width=0, height=0;
+	char image[TOKEN_LENGTH];
+	float display_time, fade_time=0.0f;
+	bool center_x=false, center_y=false;
+	bool post_shaded = false;
+
+	multi_get_int(x_pos);
+	multi_get_int(y_pos);
+	multi_get_string(image);
+	multi_get_float(display_time);
+	multi_get_float(fade_time);
+	multi_get_bool(center_x);
+	multi_get_bool(center_y);
+	multi_get_int(width);
+	multi_get_bool(post_shaded);
+
+	// add the subtitle
+	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
+	Subtitles.push_back(new_subtitle);	
+
 }
 
 void sexp_set_time_compression(int n)
@@ -17608,6 +18128,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SHIP_CHANGE_CALLSIGN:
+				sexp_ship_change_callsign(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SET_DEATH_MESSAGE:
 				sexp_set_death_message(node);
 				sexp_val = SEXP_TRUE;
@@ -17728,6 +18253,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_UPDATE_SOUND_ENVIRONMENT:
 				sexp_update_sound_environment(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_ADJUST_AUDIO_VOLUME:
+				sexp_adjust_audio_volume(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -18133,6 +18663,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_FACING:
 				sexp_val = sexp_facing(node);
+				break;
+
+			case OP_IS_FACING:
+				sexp_val = sexp_is_facing(node);
 				break;
 
 			case OP_FACING2:
@@ -18552,6 +19086,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
 				break;
 
+			case OP_HAS_PRIMARY_WEAPON:
+			case OP_HAS_SECONDARY_WEAPON:
+				sexp_val = sexp_has_weapon(node, op_num);
+				break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -18664,13 +19203,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
-				sexp_val = SEXP_TRUE;
-				sexp_set_cutscene_bars(node);
-				break;
 			case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 				sexp_val = SEXP_TRUE;
-				sexp_unset_cutscene_bars(node);
+				sexp_toggle_cutscene_bars(node, op_num == OP_CUTSCENES_SET_CUTSCENE_BARS);
 				break;
+
 			case OP_CUTSCENES_FADE_IN:
 				sexp_val = SEXP_TRUE;
 				sexp_fade_in(node);
@@ -18961,6 +19498,46 @@ void multi_sexp_eval()
 				multi_sexp_fade_out();
 				break;
 
+			case OP_NAV_ADD_SHIP:
+				multi_add_nav_ship();
+				break;
+
+			case OP_NAV_DEL:
+				multi_del_nav();
+				break;
+
+			case OP_ADD_REMOVE_ESCORT:
+				multi_sexp_add_remove_escort();
+				break;
+
+			case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
+				 multi_sexp_show_subtitle_text();
+				 break;
+
+			case OP_TRAINING_MSG:
+				multi_sexp_send_training_message(); 
+				break;
+
+			case OP_HUD_DISABLE:
+				multi_sexp_hud_disable();
+				break;
+			
+			case OP_HUD_DISABLE_EXCEPT_MESSAGES:
+				multi_sexp_hud_disable_except_messages();
+				break;
+
+			case OP_FLASH_HUD_GAUGE:
+				multi_sexp_flash_hud_gauge();
+				break;
+
+			case OP_HUD_DISPLAY_GAUGE:
+				multi_sexp_hud_display_gauge();
+				break;
+
+			case OP_CUTSCENES_SET_CUTSCENE_BARS:
+				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -19195,6 +19772,9 @@ int query_operator_return_type(int op)
 		case OP_IS_PLAYER:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
+		case OP_IS_FACING:
+		case OP_HAS_PRIMARY_WEAPON:
+		case OP_HAS_SECONDARY_WEAPON:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -19408,6 +19988,7 @@ int query_operator_return_type(int op)
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
+		case OP_ADJUST_AUDIO_VOLUME:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
@@ -19450,6 +20031,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
@@ -19813,6 +20395,12 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP_WING;
 
+		case OP_SHIP_CHANGE_CALLSIGN:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP;
+
 		case OP_SET_DEATH_MESSAGE:
 			if (argnum == 0)
 				return OPF_STRING;
@@ -20167,6 +20755,14 @@ int query_operator_argument_type(int op, int argnum)
 
 			if (a_mod == 0)
 				return OPF_SOUND_ENVIRONMENT_OPTION;
+			else
+				return OPF_POSITIVE;
+		}
+
+		case OP_ADJUST_AUDIO_VOLUME:
+		{
+			if (argnum == 0)
+				return OPF_AUDIO_VOLUME_OPTION;
 			else
 				return OPF_POSITIVE;
 		}
@@ -20867,6 +21463,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUPPORT_SHIP_CLASS;
 			if (argnum == 5)
 				return OPF_NUMBER;
+			if (argnum == 6)
+				return OPF_NUMBER;
 
 		case OP_KAMIKAZE:
 			if (argnum==0)
@@ -20889,6 +21487,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else 
 				return OPF_POSITIVE;
+
+		case OP_HAS_PRIMARY_WEAPON:
+		case OP_HAS_SECONDARY_WEAPON:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1) 
+				return OPF_WEAPON_BANK_NUMBER;
+			else 
+				return OPF_WEAPON_NAME;
 
 		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
@@ -21098,6 +21705,12 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_HUD_ELEMENT;
 			}
+
+		case OP_IS_FACING:
+			if (argnum < 2)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
 
 		default:
 			Int3();
@@ -22336,6 +22949,7 @@ int get_subcategory(int sexp_id)
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
+		case OP_ADJUST_AUDIO_VOLUME:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
 
 		case OP_ADD_REMOVE_ESCORT:
@@ -22357,6 +22971,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
@@ -22444,6 +23059,8 @@ int get_subcategory(int sexp_id)
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
+		case OP_HAS_PRIMARY_WEAPON:
+		case OP_HAS_SECONDARY_WEAPON:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -22462,6 +23079,7 @@ int get_subcategory(int sexp_id)
 		case OP_IS_SHIP_TYPE:
 		case OP_CURRENT_SPEED:
 		case OP_GET_THROTTLE_SPEED:
+		case OP_IS_FACING:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_SHIELDS_LEFT:
@@ -22610,21 +23228,21 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
-		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
+		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
 		"\tSets the Y speed of a ship, wing, or waypoint."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
-		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
+		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
 		"\tSets the Z speed of a ship, wing, or waypoint."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
-		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
+		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_X, "get-object-x\r\n"
@@ -23464,7 +24082,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tEnvironment value x 1000, e.g. 10 is 0.01\r\n"
 		"Use Add-Data to specify additional environment options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
-		
+	
+	//The E
+	{ OP_ADJUST_AUDIO_VOLUME, "adjust-audio-volume\r\n"
+		"Adjusts the relative volume of one sound type. Takes 1 to 3 arguments....\r\n"
+		"\t1:\tSound Type to adjust, either Music, Voice or Effects. Will act as a reset for the given category, if no other argument present\r\n"
+		"\t2:\tPercentage of the users' settings to adjust to (optional), 0 will be silence, 100 means the maximum volume as set by the user\r\n"
+		"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
+
 	// Goober5000
 	{ OP_SET_EXPLOSION_OPTION, "set-explosion-option\r\n"
 		"Sets an explosion option on a particular ship.  Takes 3 or more arguments...\r\n"
@@ -23504,7 +24129,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t5:  Location Y\r\n"
 		"\t6:  Location Z\r\n"
 		"\t7:  Radius\r\n"
-		"\t8:  Duration in seconds\r\n"
+		"\t8:  Duration in seconds (values smaller than 4 are ignored)\r\n"
 		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
 		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
@@ -23744,6 +24369,18 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 argument...\r\n"
 		"\t1:\tShip to check is withing forward cone.\r\n"
 		"\t2:\tAngle in degrees of the forward cone." },
+
+	{ OP_IS_FACING, "Is Facing (Boolean training operator)\r\n"
+		"\tIs true as long as the second ship is within the first ship's specified "
+		"forward cone.  A forward cone is defined as any point that the angle between the "
+		"vector of the point and the player, and the forward facing vector is within the "
+		"given angle. If the distance between the two ships is greather than"
+		"the fourth parameter, this will return false.\r\n\r\n"
+		"Returns a boolean value.  Takes 3 or 4 argument...\r\n"
+		"\t1:\tShip to check from.\r\n"
+		"\t2:\tShip to check is within forward cone.\r\n"
+		"\t3:\tAngle in degrees of the forward cone.\r\n"
+		"\t4:\tRange in meters (optional)."},
 
 	{ OP_FACING2, "Facing Waypoint(Boolean training operator)\r\n"
 		"\tIs true as long as the specified first waypoint is within the player's specified "
@@ -24124,6 +24761,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tChanges the alternate ship class name displayed in the HUD target window.  Takes 2 or more arguments...\r\n"
 		"\t1:\tThe ship class name to display\r\n"
 		"\tRest:\tThe ships to display the new class name" },
+
+	// FUBAR
+	{ OP_SHIP_CHANGE_CALLSIGN, "ship-change-callsign\r\n"
+		"\tChanges the callsign of a ship.  Takes 2 or more arguments...\r\n"
+		"\t1:\tThe callsign to display or empty to remove\r\n"
+		"\tRest:\tThe ships to display the new callsign" },
 
 	// Goober5000
 	{ OP_SET_DEATH_MESSAGE, "set-death-message\r\n"
@@ -24671,7 +25314,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Departure location\r\n"
 		"\t4: Departure anchor\r\n"
 		"\t5: Ship class\r\n"
-		"\t6: Maximum number of support ships in this mission (use a negative number for infinity)\r\n"
+		"\t6: Maximum number of support ships consecutively in this mission (use a negative number for infinity)\r\n"
+		"\t7: Maximum number of support ships concurrently in this mission (optional, default 1)\r\n"
 		"\r\n"
 		"Note: The support ship will emerge from or depart into hyperspace if the location is set as hyperspace *or* the anchor is set as <no anchor>."
 	},
@@ -24998,18 +25642,34 @@ sexp_help_struct Sexp_help[] = {
 
 	// Karajora
 	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
-		"\tReturns true if the primary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number\r\n"
-		"\t3:\tDelay (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
 	// Karajora
 	{ OP_SECONDARY_FIRED_SINCE, "secondary-fired-since\r\n"
-		"\tReturns true if the secondary weapon bank specified has been fired within the supplied time. Takes 3 arguments...\r\n\r\n"
+		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number\r\n"
-		"\t3:\tDelay (in millieconds)\r\n"
+		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
+	},
+
+	// Karajora
+	{ OP_HAS_PRIMARY_WEAPON, "has-primary-weapon\r\n"
+		"\tReturns true if the primary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tWeapon bank number\r\n"
+		"\tRest:\tWeapon name\r\n"
+	},
+
+	// Karajora
+	{ OP_HAS_SECONDARY_WEAPON, "has-secondary-weapon\r\n"
+		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tWeapon bank number\r\n"
+		"\tRest:\tWeapon name\r\n"
 	},
 
 	//phreak

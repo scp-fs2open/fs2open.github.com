@@ -11,6 +11,7 @@
 // Goober5000 - now these warnings will only be disabled when compiling with MSVC :)
 #if defined _MSC_VER
 
+// 4002 is too many actual parameters for macro 'Assertion'
 // 4100 is unreferenced formal parameters,
 // 4127 is constant conditional (assert)
 // 4201 nonstandard extension used: nameless struct/union (happens a lot in Windows include headers)
@@ -28,7 +29,7 @@
 //      So to disable this, I add in a stub function at the top of each module that does nothing.
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 // 4996 deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
-#pragma warning(disable: 4100 4127 4201 4390 4410 4511 4512 4514 4611 4663 4710 4711 4725 4786 4996)
+#pragma warning(disable: 4002 4100 4127 4201 4290 4390 4410 4511 4512 4514 4611 4663 4710 4711 4725 4786 4996)
 
 #endif
 
