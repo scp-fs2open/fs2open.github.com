@@ -1050,6 +1050,7 @@
     <ClInclude Include="..\..\code\globalincs\alphacolors.h" />
     <ClInclude Include="..\..\code\globalincs\crypt.h" />
     <ClInclude Include="..\..\code\globalincs\def_files.h" />
+    <ClInclude Include="..\..\code\globalincs\fsmemory.h" />
     <ClInclude Include="..\..\code\globalincs\globals.h" />
     <ClInclude Include="..\..\code\globalincs\linklist.h" />
     <ClInclude Include="..\..\code\globalincs\mspdb_callstack.h" />

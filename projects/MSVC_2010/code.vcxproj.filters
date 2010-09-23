@@ -1853,6 +1853,9 @@
     <ClInclude Include="..\..\code\math\bitarray.h">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\globalincs\fsmemory.h">
+      <Filter>GlobalIncs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\code\directx\dxguid.lib">
