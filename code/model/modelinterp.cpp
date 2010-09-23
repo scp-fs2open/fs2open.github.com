@@ -4118,67 +4118,65 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 	int problem_count = 0;
 
-	if (&polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)] != NULL) {
-		for (int i = 1; i < (n_vert-1); i++) {
-			V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
-			N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
-			v = Interp_verts[(int)tverts[0].vertnum];
-			V->x = v->xyz.x;
-			V->y = v->xyz.y;
-			V->z = v->xyz.z;
-			V->u = tverts[0].u;
-			V->v = tverts[0].v;
+	for (int i = 1; i < (n_vert-1); i++) {
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
+		v = Interp_verts[(int)tverts[0].vertnum];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = tverts[0].u;
+		V->v = tverts[0].v;
 
-			*N = *Interp_norms[(int)tverts[0].normnum];
+		*N = *Interp_norms[(int)tverts[0].normnum];
 
-			if ( IS_VEC_NULL(N) )
-				*N = *vp(p);
+		if ( IS_VEC_NULL(N) )
+			*N = *vp(p);
 
-	  		problem_count += check_values(N);
-			// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
-			vm_vec_normalize_safe(N);
-	//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
+	  	problem_count += check_values(N);
+		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
+		vm_vec_normalize_safe(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-			V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
-			N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
-			v = Interp_verts[(int)tverts[i].vertnum];
-			V->x = v->xyz.x;
-			V->y = v->xyz.y;
-			V->z = v->xyz.z;
-			V->u = tverts[i].u;
-			V->v = tverts[i].v;
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
+		v = Interp_verts[(int)tverts[i].vertnum];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = tverts[i].u;
+		V->v = tverts[i].v;
 
-			*N = *Interp_norms[(int)tverts[i].normnum];
+		*N = *Interp_norms[(int)tverts[i].normnum];
 
-			if ( IS_VEC_NULL(N) )
-				*N = *vp(p);
+		if ( IS_VEC_NULL(N) )
+			*N = *vp(p);
 
-	 		problem_count += check_values(N);
-			// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
-			vm_vec_normalize_safe(N);
-	//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
+	 	problem_count += check_values(N);
+		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
+		vm_vec_normalize_safe(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-			V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
-			N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
-			v = Interp_verts[(int)tverts[i+1].vertnum];
-			V->x = v->xyz.x;
-			V->y = v->xyz.y;
-			V->z = v->xyz.z;
-			V->u = tverts[i+1].u;
-			V->v = tverts[i+1].v;
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
+		v = Interp_verts[(int)tverts[i+1].vertnum];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = tverts[i+1].u;
+		V->v = tverts[i+1].v;
 
-			*N = *Interp_norms[(int)tverts[i+1].normnum];
+		*N = *Interp_norms[(int)tverts[i+1].normnum];
 
-			if ( IS_VEC_NULL(N) )
-				*N = *vp(p);
+		if ( IS_VEC_NULL(N) )
+			*N = *vp(p);
 
-			problem_count += check_values(N);
-			// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
-			vm_vec_normalize_safe(N);
-	//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		problem_count += check_values(N);
+		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
+		vm_vec_normalize_safe(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-			polygon_list[pof_tex].n_verts += 3;
-		}
+		polygon_list[pof_tex].n_verts += 3;
 	}
 
 	Parse_normal_problem_count += problem_count;
@@ -4442,9 +4440,9 @@ void find_sortnorm(int offset, ubyte *bsp_data)
 }
 
 
-static void allocate_poly_list(int n_textures)
+static void allocate_poly_list()
 {
-	for (int i = 0; i < n_textures; i++) {
+	for (int i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		polygon_list[i].allocate(tri_count[i]*3);
 	}
 
@@ -4485,7 +4483,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	bsp_info *model = &pm->submodel[mn];
 
-	for (i = 0; i < pm->n_textures; i++) {
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		polygon_list[i].n_verts = 0;
 		tri_count[i] = 0;
 	}
@@ -4493,7 +4491,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	find_tri_counts(0, model->bsp_data);
 
 
-	for (i = 0; i < pm->n_textures; i++) {
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		total_verts += tri_count[i];
 
 		// for the moment we can only support INT_MAX worth of verts per index buffer
@@ -4506,13 +4504,13 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		return;
 	}
 
-	allocate_poly_list(pm->n_textures);
+	allocate_poly_list();
 
 	parse_bsp(0, model->bsp_data);
 
 	total_verts = 0;
 
-	for (i = 0; i < pm->n_textures; i++) {
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		total_verts += polygon_list[i].n_verts;
 	}
 
@@ -4526,7 +4524,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	model_list->allocate( (int)total_verts );
 
-	for (i = 0; i < pm->n_textures; i++) {
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		if ( !polygon_list[i].n_verts )
 			continue;
 
@@ -4586,13 +4584,11 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 			for (i = 0; i < ibx_verts; i++) {
 				int ivert = cfread_int( ibuffer_info.read );
 
-				if (&model_list->vert[ivert] != NULL) {
-					tlist->vert[i] = model_list->vert[ivert];
-					tlist->norm[i] = model_list->norm[ivert];
+				tlist->vert[i] = model_list->vert[ivert];
+				tlist->norm[i] = model_list->norm[ivert];
 
-					if (Cmdline_normal) {
-						tlist->tsb[i] = model_list->tsb[ivert];
-					}
+				if (Cmdline_normal) {
+					tlist->tsb[i] = model_list->tsb[ivert];
 				}
 			}
 
@@ -4639,7 +4635,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	recode_check = 0;
 //	recode_bsp(0, model->bsp_data);
 
-	for (i = 0; i < pm->n_textures; i++) {
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		if ( !polygon_list[i].n_verts )
 			continue;
 
