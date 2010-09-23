@@ -15,6 +15,7 @@
 // 4100 is unreferenced formal parameters,
 // 4127 is constant conditional (assert)
 // 4201 nonstandard extension used: nameless struct/union (happens a lot in Windows include headers)
+// 4290 C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 // 4390 empty control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
 // 4410 illegal size for operand... ie... 	fxch st(1)
 // 4511 copy constructor could not be generated (happens a lot in Windows include headers)
