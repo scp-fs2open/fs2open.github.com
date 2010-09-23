@@ -108,7 +108,7 @@ typedef struct hud_info
 
 		for (i = 0; i < MAX_CUSTOM_HUD_GAUGES; ++i) {
 			custom_gauge_color_parents[i] = -1;
-	}
+		}
 	}
 } hud_info;
 

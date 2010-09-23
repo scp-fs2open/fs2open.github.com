@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
 
@@ -88,7 +88,7 @@ int	Briefing_music_begin_timestamp = 0;
 static MENU_REGION	Briefing_select_region[NUM_BRIEFING_REGIONS];
 static int				Num_briefing_regions;
 
-// For closeup display
+// For closeup display 
 #define					ONE_REV_TIME		6		// time (sec) for one revolution
 #define					MAX_ANG_CHG			0.15f
 
@@ -162,10 +162,10 @@ static char *Brief_win_filename[GR_NUM_RESOLUTIONS] = {
 int Closeup_region[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
 		211, 158, 215, 157
-	},
+	}, 
 	{ // GR_1024
 		337, 253, 345, 252
-	},
+	}, 
 };
 
 char *Closeup_background_filename[GR_NUM_RESOLUTIONS] = {
@@ -181,9 +181,9 @@ char *Closeup_button_filename[GR_NUM_RESOLUTIONS] = {
 int Closeup_button_hotspot = 14;
 
 //static int			Closeup_button_coords[2] = {CLOSEUP_X+164,CLOSEUP_Y+227};
-int Closeup_button_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ 374, 316 },		// GR_640
-	{ 599, 506 }		// GR_1024
+int Closeup_button_coords[GR_NUM_RESOLUTIONS][2] = {	
+	{ 374, 316 },		// GR_640	
+	{ 599, 506 }		// GR_1024	
 };
 
 UI_BUTTON	Closeup_close_button;
@@ -221,7 +221,7 @@ int Briefing_paused = 0;	// for stopping audio and stage progression
 #define	BRIEF_SKIP_TRAINING_MASK		15
 #define	BRIEF_PAUSE_MASK					16
 
-struct brief_buttons {
+struct brief_buttons {	
 	char *filename;
 	int x, y;
 	int xt, yt;
@@ -250,24 +250,24 @@ brief_buttons	Brief_buttons[GR_NUM_RESOLUTIONS][NUM_BRIEF_BUTTONS] = {
 		brief_buttons("BRB_10",		29,	116,	117,	157,	10),
 		brief_buttons("BRB_11",		4,		116,	117,	157,	11),
 		brief_buttons("BRB_12",		0,		405,	117,	157,	12),
-		brief_buttons("BRB_13",		0,		447,	117,	157,	13),
+		brief_buttons("BRB_13",		0,		447,	117,	157,	13),			
 		brief_buttons("BRB_15",		562,	0,		117,	157,	15),			// skip training
 		brief_buttons("BRB_16",		56,	116,	117,	157,	16),
-		brief_buttons("TSB_34",		603,	374,	117,	157,	34),
-		brief_buttons("BRB_15",		562,	0,		117,	157,	15)			// exit loop
-	},
+		brief_buttons("TSB_34",		603,	374,	117,	157,	34),	
+		brief_buttons("BRB_15",		562,	0,		117,	157,	15)			// exit loop	
+	}, 
 	{ // GR_1024
 		brief_buttons("2_BRB_08",		175,	187,	117,	157,	8),
 		brief_buttons("2_BRB_09",		135,	187,	117,	157,	9),
 		brief_buttons("2_BRB_10",		47,	187,	117,	157,	10),
 		brief_buttons("2_BRB_11",		8,		187,	117,	157,	11),
 		brief_buttons("2_BRB_12",		0,		649,	117,	157,	12),
-		brief_buttons("2_BRB_13",		0,		716,	117,	157,	13),
+		brief_buttons("2_BRB_13",		0,		716,	117,	157,	13),			
 		brief_buttons("2_BRB_15",		900,	0,		117,	157,	15),		// skip training
 		brief_buttons("2_BRB_16",		91,	187,	117,	157,	16),
-		brief_buttons("2_TSB_34",		966,	599,	117,	157,	34),
-		brief_buttons("2_BRB_15",		900,	0,		117,	157,	15)			// exit loop
-	},
+		brief_buttons("2_TSB_34",		966,	599,	117,	157,	34),			
+		brief_buttons("2_BRB_15",		900,	0,		117,	157,	15)			// exit loop	
+	}, 	
 };
 
 // briefing UI
@@ -277,7 +277,7 @@ UI_XSTR Brief_select_text[GR_NUM_RESOLUTIONS][BRIEF_SELECT_NUM_TEXT] = {
 		{ "Lock",				1270,	602,	364,	UI_XSTR_COLOR_GREEN, -1, &Brief_buttons[0][BRIEF_BUTTON_MULTI_LOCK].button },
 		{ "Skip Training",	1442,	467,	7,		UI_XSTR_COLOR_GREEN, -1, &Brief_buttons[0][BRIEF_BUTTON_SKIP_TRAINING].button },
 		{ "Exit Loop",			1477,	490,	7,		UI_XSTR_COLOR_GREEN, -1, &Brief_buttons[0][BRIEF_BUTTON_EXIT_LOOP].button }
-	},
+	}, 
 	{ // GR_1024
 		{ "Lock",				1270,	964,	584,	UI_XSTR_COLOR_GREEN, -1, &Brief_buttons[1][BRIEF_BUTTON_MULTI_LOCK].button },
 		{ "Skip Training",	1442,	805,	12,	UI_XSTR_COLOR_GREEN, -1, &Brief_buttons[1][BRIEF_BUTTON_SKIP_TRAINING].button },
@@ -353,7 +353,7 @@ void brief_skip_training_pressed()
 	mission_campaign_store_goals_and_events_and_variables();
 
 	mission_campaign_eval_next_mission();
-	mission_campaign_mission_over();
+	mission_campaign_mission_over();	
 
 	// CD CHECK
 	if(game_do_cd_mission_check(Game_current_mission_filename)){
@@ -539,7 +539,7 @@ void brief_button_do(int i)
 			break;
 
 		case BRIEF_BUTTON_MULTI_LOCK:
-			Assert(Game_mode & GM_MULTIPLAYER);
+			Assert(Game_mode & GM_MULTIPLAYER);			
 			// the "lock" button has been pressed
 			multi_ts_lock_pressed();
 
@@ -585,7 +585,7 @@ void brief_redraw_pressed_buttons()
 {
 	int			i;
 	UI_BUTTON	*b;
-
+	
 	common_redraw_pressed_buttons();
 
 	for ( i = 0; i < NUM_BRIEF_BUTTONS; i++ ) {
@@ -694,7 +694,7 @@ void brief_buttons_init()
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_SCROLL_DOWN].button.disable();
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_SCROLL_DOWN].button.hide();
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_PAUSE].button.disable();
-		Brief_buttons[gr_screen.res][BRIEF_BUTTON_PAUSE].button.hide();
+		Brief_buttons[gr_screen.res][BRIEF_BUTTON_PAUSE].button.hide();		
 	}
 }
 
@@ -728,7 +728,7 @@ void brief_load_bitmaps()
 {
 	Brief_text_bitmap = bm_load(Brief_infobox_filename[gr_screen.res]);
 	Brief_grid_bitmap = bm_load(Brief_win_filename[gr_screen.res]);
-
+	
 	if ( Closeup_bitmap == -1 ) {
 		Closeup_bitmap = bm_load(Closeup_background_filename[gr_screen.res]);
 	}
@@ -743,7 +743,7 @@ void brief_ui_init()
 	if(Game_mode & GM_MULTIPLAYER) {
 		Brief_background_bitmap = bm_load(Brief_multi_filename[gr_screen.res]);
 	} else {
-		Brief_background_bitmap = bm_load(Brief_filename[gr_screen.res]);
+		Brief_background_bitmap = bm_load(Brief_filename[gr_screen.res]);	
 	}
 
 	if ( Num_brief_stages <= 0 ){
@@ -780,7 +780,7 @@ void brief_set_default_closeup()
 		if ( bs->icons[i].flags & BI_HIGHLIGHT )
 			break;
 	}
-
+	
 	if ( i == bs->num_icons ) {
 		brief_setup_closeup(&bs->icons[0]);
 	}
@@ -849,7 +849,7 @@ void brief_compact_stages()
 
 
 // --------------------------------------------------------------------------------------
-// brief_init()
+// brief_init() 
 //
 	int red_alert_mission(void);
 //
@@ -857,7 +857,7 @@ void brief_init()
 {
 	int i;
 
-	// Since first stage of briefing can take some time to arrive and play,
+	// Since first stage of briefing can take some time to arrive and play, 
 	// reset the trailer timer on briefing init.
 #ifdef FS2_DEMO
 	demo_reset_trailer_timer();
@@ -880,7 +880,7 @@ void brief_init()
 	if(MULTI_TEAM){
 		Briefing = &Briefings[Net_player->p_info.team];
 	} else {
-		Briefing = &Briefings[0];
+		Briefing = &Briefings[0];			
 	}
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
@@ -923,7 +923,7 @@ void brief_init()
 	// init the scene-cut data
 	brief_transition_reset();
 
-#ifndef FS2_DEMO
+#ifndef FS2_DEMO	
 	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
 #endif
@@ -968,7 +968,7 @@ void brief_init()
 	brief_buttons_init();
 
 	// if multiplayer, initialize a few other systems
-	if(Game_mode & GM_MULTIPLAYER){
+	if(Game_mode & GM_MULTIPLAYER){		
 		// again, should not be necessary, but we'll leave it for now
 		chatbox_create();
 
@@ -1028,7 +1028,7 @@ void brief_render_closeup_text()
 
 	render_x = Closeup_region[0];
 	render_y = Closeup_region[1] + CLOSEUP_IMG_H;
-
+	
 	gr_set_clip(render_x+CLOSEUP_TEXT_OFFSET, render_y, CLOSEUP_W,CLOSEUP_TEXT_H);
 	gr_set_color_fast(&Color_white);
 
@@ -1083,7 +1083,7 @@ void brief_render_closeup(int ship_class, float frametime)
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
-
+	
 	model_clear_instance( Closeup_icon->modelnum );
 	model_set_detail_level(0);
 
@@ -1096,7 +1096,7 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	int model_render_flags_local;
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
-		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);		
 		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
 	} else {
 		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
@@ -1180,7 +1180,7 @@ void brief_render(float frametime)
 		}
 	}
 
-	brief_maybe_blit_scene_cut(frametime);
+	brief_maybe_blit_scene_cut(frametime);	
 
 #if !defined(NDEBUG) || defined(INTERPLAYQA)
 	gr_set_color_fast(&Color_normal);
@@ -1204,7 +1204,7 @@ void brief_render(float frametime)
 	// maybe do objectives
 	if (Current_brief_stage == Briefing->num_stages) {
 		ML_objectives_do_frame(0);
-	}
+	}	
 }
 
 // -------------------------------------------------------------------------------------
@@ -1229,7 +1229,7 @@ void brief_get_closeup_ship_modelnum(brief_icon *ci)
 		if ( objp == &obj_used_list || objp->type != OBJ_SHIP ) {
 			continue;
 		}
-
+		
 		sp = &Ships[objp->instance];
 		if ( sp->ship_info_index == ci->ship_class ) {
 			ci->ship_class = sp->ship_info_index;
@@ -1308,7 +1308,7 @@ int brief_setup_closeup(brief_icon *bi)
 
 		break;
 	}
-
+	
 	if ( Closeup_icon->modelnum == -1 ) {
 		if ( sip == NULL ) {
 			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
@@ -1347,7 +1347,7 @@ void brief_update_closeup_icon(int mode)
 	brief_stage		*bs;
 	brief_icon		*bi;
 	int				i, closeup_index;
-
+	
 
 	if ( mode == 0 ) {
 		// mode 0 means disable the closeup icon
@@ -1409,7 +1409,7 @@ void brief_check_for_anim()
 		if (mx >= x && mx <= (x+iw) && my >= y && my <= (y+ih)) {
 			return;
 		}
-	}
+ 	}
 
 	// if mouse coords are outside the briefing screen, then go away
 	my -= bscreen.map_y1;
@@ -1445,7 +1445,7 @@ void brief_maybe_flash_button()
 {
 	UI_BUTTON *b;
 
-	if ( Num_brief_stages <= 0 )
+	if ( Num_brief_stages <= 0 ) 
 		return;
 
 	if ( Closeup_icon != NULL ) {
@@ -1460,7 +1460,7 @@ void brief_maybe_flash_button()
 #ifdef FS2_DEMO
 				return;
 #else
-			// AL 30-3-98: Don't flash ship selection button if in a training mission,
+			// AL 30-3-98: Don't flash ship selection button if in a training mission, 
 			if ( brief_only_allow_briefing() ) {
 				return;
 			}
@@ -1533,7 +1533,7 @@ void brief_do_frame(float frametime)
 		// check for special keys
 		switch(k) {
 
-#ifndef NDEBUG
+#ifndef NDEBUG			
 			case KEY_CTRLED | KEY_PAGEUP: {
 				if (Closeup_icon->ship_class) {
 					Closeup_icon->ship_class--;
@@ -1585,7 +1585,7 @@ void brief_do_frame(float frametime)
 				Closeup_cam_pos.xyz.z -= 10;
 				cam_change = 1;
 				break;
-
+			
 			case KEY_Y:
 				Closeup_cam_pos.xyz.y += 1;
 				cam_change = 1;
@@ -1608,14 +1608,14 @@ void brief_do_frame(float frametime)
 
 			case KEY_COMMA:
 				Closeup_zoom -= 0.1f;
-				if ( Closeup_zoom < 0.1 )
+				if ( Closeup_zoom < 0.1 ) 
 					Closeup_zoom = 0.1f;
 				cam_change = 1;
 				break;
 
 			case KEY_COMMA+KEY_SHIFTED:
 				Closeup_zoom -= 0.5f;
-				if ( Closeup_zoom < 0.1 )
+				if ( Closeup_zoom < 0.1 ) 
 					Closeup_zoom = 0.1f;
 				cam_change = 1;
 				break;
@@ -1707,7 +1707,7 @@ void brief_do_frame(float frametime)
 					}
 				}
 				else {
-					if ( Briefing->stages[Last_brief_stage].flags & BS_BACKWARD_CUT ) {
+					if ( Briefing->stages[Last_brief_stage].flags & BS_BACKWARD_CUT ) { 
 						Quick_transition_stage = Current_brief_stage;
 						Current_brief_stage = Last_brief_stage;
 						Assert(Current_brief_stage >= 0);
@@ -1772,11 +1772,11 @@ void brief_do_frame(float frametime)
 			// blit the "ships/players" locked button
 			// multi_ts_blit_locked_button();
 
-			// maybe blit the multiplayer "locked" button
+			// maybe blit the multiplayer "locked" button	
 			// if its locked, everyone blits it as such
 			if(multi_ts_is_locked()){
 				Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.draw_forced(2);
-			}
+			} 
 			// anyone who can't hit the button sees it off, otherwise
 			else {
 				if( ((Netgame.type_flags & NG_TYPE_TEAM) && !(Net_player->flags & NETINFO_FLAG_TEAM_CAPTAIN)) ||
@@ -1787,15 +1787,15 @@ void brief_do_frame(float frametime)
 				}
 			}
 		}
-	}
+	}		
 
 	// maybe flash a button if player hasn't done anything for a while
 	brief_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(BR_OVERLAY);
+	help_overlay_maybe_blit(BR_OVERLAY);	
 
-	gr_flip();
+	gr_flip();	
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
@@ -1816,7 +1816,7 @@ void brief_do_frame(float frametime)
 //
 //
 void brief_unload_bitmaps()
-{
+{	
 	if ( Brief_text_bitmap != -1 ) {
 		bm_release(Brief_text_bitmap);
 		Brief_text_bitmap = -1;
@@ -1961,7 +1961,7 @@ void brief_maybe_blit_scene_cut(float frametime)
 		Fade_anim.time_elapsed += frametime;
 
 		if ( !Brief_playing_fade_sound ) {
-			gamesnd_play_iface(SND_BRIEFING_STATIC);
+			gamesnd_play_iface(SND_BRIEFING_STATIC);					
 			Brief_playing_fade_sound = 1;
 		}
 
@@ -1970,13 +1970,13 @@ void brief_maybe_blit_scene_cut(float frametime)
 			Start_fade_up_anim = 0;
 			Start_fade_down_anim = 1;
 			Current_brief_stage = Quick_transition_stage;
-
+		
 			if ( Current_brief_stage < 0 ) {
 				brief_transition_reset();
 				Current_brief_stage = Last_brief_stage;
 			}
 
-			Assert(Current_brief_stage >= 0);
+			Assert(Current_brief_stage >= 0);			
 			goto Fade_down_anim_start;
 		}
 
@@ -2038,7 +2038,7 @@ void brief_transition_reset()
 	Fade_anim.time_elapsed = 0.0f;
 }
 
-// return 1 if this mission only allow players to use the briefing (and not ship or
+// return 1 if this mission only allow players to use the briefing (and not ship or 
 // weapon loadout).  Otherwise return 0.
 int brief_only_allow_briefing()
 {

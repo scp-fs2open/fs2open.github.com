@@ -75,6 +75,31 @@ const char *openal_error_string(int get_alc)
 	return NULL;
 }
 
+ALenum openal_get_format(ALint bits, ALint n_channels)
+{
+	ALenum format = AL_INVALID_VALUE;
+
+	if ( (n_channels < 1) || (n_channels > 2) ) {
+		return format;
+	}
+
+	switch (bits) {
+		case 32:
+			format = (n_channels == 1) ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_STEREO_FLOAT32;
+			break;
+
+		case 16:
+			format = (n_channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
+			break;
+
+		case 8:
+			format = (n_channels == 1) ? AL_FORMAT_MONO8 : AL_FORMAT_STEREO8;
+			break;
+	}
+
+	return format;
+}
+
 static bool openal_device_sort_func(const OALdevice &d1, const OALdevice &d2)
 {
 	if (d1.type > d2.type) {
@@ -193,8 +218,15 @@ static void find_playback_device()
 
 			// done
 			break;
-		}
+		} else {
+			// clean up for next pass
+			alcMakeContextCurrent(NULL);
+			alcDestroyContext(context);
+			alcCloseDevice(device);
 
+			context = NULL;
+			device = NULL;
+		}
 	}
 
 	alcMakeContextCurrent(NULL);
@@ -261,6 +293,7 @@ static void find_capture_device()
 	}
 
 	std::sort( CaptureDevices.begin(), CaptureDevices.end(), openal_device_sort_func );
+
 
 	// for each device that we have available, try and figure out which to use
 	for (size_t idx = 0; idx < CaptureDevices.size(); idx++) {
@@ -403,6 +436,8 @@ bool openal_init_device(std::string *playback, std::string *capture)
 				nprintf(("OpenAL", "\n"));
 			}
 		}
+
+		nprintf(("OpenAL", "\n"));
 	}
 #endif
 

@@ -47,6 +47,8 @@ typedef struct ADPCM_FMT_T {
 	uint samples_left_in_block;
 	int nibble_state;
 	ubyte nibble;
+
+	ushort dest_bps;
 } adpcm_fmt_t;
 
 typedef struct acm_stream_t {
@@ -58,8 +60,7 @@ typedef struct acm_stream_t {
 
 // similar to BIAL_IF_MACRO in SDL_sound
 #define IF_ERR(a, b) if (a) { mprintf(("ACM ERROR, line %d...\n", __LINE__)); return b; }
-
-static int ACM_inited = 0;
+#define IF_ERR2(a, b) if (a) { mprintf(("ACM ERROR, line %d...\n", __LINE__)); b; }
 
 
 /*****************************************************************************
@@ -218,20 +219,46 @@ static int decode_adpcm_sample_frame(HMMIO rw, adpcm_fmt_t *fmt)
 
 static void put_adpcm_sample_frame1(ubyte *_buf, adpcm_fmt_t *fmt)
 {
-	short *buf = (short *)_buf;
 	int i;
-	
-	for (i = 0; i < fmt->adpcm.wav.nChannels; i++)
-		*buf++ = fmt->header[i].iSamp1;
+
+	if (fmt->dest_bps == 16) {
+		short *buf = (short *)_buf;
+
+		for (i = 0; i < fmt->adpcm.wav.nChannels; i++) {
+			*buf++ = fmt->header[i].iSamp1;
+		}
+	} else {
+		Assert( fmt->dest_bps == 8 );
+
+		for (i = 0; i < fmt->adpcm.wav.nChannels; i++) {
+			int i_val = (int)(fmt->header[i].iSamp1 / 255) + 128;
+			CLAMP(i_val, 0, 255);
+
+			*_buf++ = (ubyte)i_val;
+		}
+	}
 }
 
 static void put_adpcm_sample_frame2(ubyte *_buf, adpcm_fmt_t *fmt)
 {
-	short *buf = (short *)_buf;
 	int i;
 
-	for (i = 0; i < fmt->adpcm.wav.nChannels; i++)
-		*buf++ = fmt->header[i].iSamp2;
+	if (fmt->dest_bps == 16) {
+		short *buf = (short *)_buf;
+
+		for (i = 0; i < fmt->adpcm.wav.nChannels; i++) {
+			*buf++ = fmt->header[i].iSamp2;
+		}
+	} else {
+		Assert( fmt->dest_bps == 8 );
+
+		for (i = 0; i < fmt->adpcm.wav.nChannels; i++) {
+			int i_val = (int)(fmt->header[i].iSamp2 / 255) + 128;
+			CLAMP(i_val, 0, 255);
+
+			*_buf++ = (ubyte)i_val;
+		}
+	}
 }
 
 static uint read_sample_fmt_adpcm(ubyte *data, HMMIO rw, adpcm_fmt_t *fmt)
@@ -344,56 +371,58 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	HMMIO rw = mmioOpen( NULL, &IOrw, MMIO_READ );
 	uint rc;
 	uint new_size = 0;
-
-	if ( ACM_inited == 0 ) {
-		rc = ACM_init();
-		if ( rc != 0 )
-			return -1;
-	}
-
-	// estimate size of uncompressed data
-	// uncompressed data has: channels=pfwxScr->nChannels, bitPerSample=destbits
-	// compressed data has:   channels=pfwxScr->nChannels, bitPerSample=pwfxSrc->wBitsPerSample
-	new_size = ( src_len * dest_bps ) / pwfxSrc->wBitsPerSample;
-	new_size *= 2;//buffer must be large enough for all data
-
-	// DO NOT free() here, *estimated size*
-	if ( *dest == NULL ) {
-		*dest = (ubyte *)vm_malloc(new_size);
-		
-		IF_ERR(*dest == NULL, -1);
-		
-		memset(*dest, 0x00, new_size);	// silence (for 16 bits/sec which will be our output)
-	}
+	int left_over = 0;
+	int i;
 
 	adpcm_fmt_t *fmt = (adpcm_fmt_t *)vm_malloc(sizeof(adpcm_fmt_t));
 	IF_ERR(fmt == NULL, -1);
 	memset(fmt, '\0', sizeof(adpcm_fmt_t));
 
 	// wav header info (WAVEFORMATEX)
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.wFormatTag), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.nChannels), -1);
-	IF_ERR(!read_dword(hdr, &fmt->adpcm.wav.nSamplesPerSec), -1);
-	IF_ERR(!read_dword(hdr, &fmt->adpcm.wav.nAvgBytesPerSec), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.nBlockAlign), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.wBitsPerSample), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.cbSize), -1);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.wFormatTag), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.nChannels), goto Error);
+	IF_ERR2(!read_dword(hdr, &fmt->adpcm.wav.nSamplesPerSec), goto Error);
+	IF_ERR2(!read_dword(hdr, &fmt->adpcm.wav.nAvgBytesPerSec), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.nBlockAlign), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.wBitsPerSample), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.cbSize), goto Error);
 	// adpcm specific header info
-	IF_ERR(!read_word_s(hdr, &fmt->adpcm.wSamplesPerBlock), -1);
-	IF_ERR(!read_word_s(hdr, &fmt->adpcm.wNumCoef), -1);
+	IF_ERR2(!read_word_s(hdr, &fmt->adpcm.wSamplesPerBlock), goto Error);
+	IF_ERR2(!read_word_s(hdr, &fmt->adpcm.wNumCoef), goto Error);
 
 	// allocate memory for COEF struct and fill it
 	fmt->adpcm.aCoef = (ADPCMCOEFSET *)vm_malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
-	IF_ERR(fmt->adpcm.aCoef == NULL, -1);
+	IF_ERR2(fmt->adpcm.aCoef == NULL, goto Error);
 
-	for (int i=0; i<fmt->adpcm.wNumCoef; i++) {
-		IF_ERR(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef1), -1);
-		IF_ERR(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef2), -1);
+	for (i = 0; i < fmt->adpcm.wNumCoef; i++) {
+		IF_ERR2(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef1), goto Error);
+		IF_ERR2(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef2), goto Error);
 	}
 
 	// allocate memory for the ADPCM block header that's to be filled later
 	fmt->header = (ADPCMBLOCKHEADER *)vm_malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
-	IF_ERR(fmt->header == NULL, -1);
+	IF_ERR2(fmt->header == NULL, goto Error);
+
+	// estimate size of uncompressed data
+	// uncompressed data has: channels=pfwxScr->nChannels, bitPerSample=destbits
+	// compressed data has:   channels=pfwxScr->nChannels, bitPerSample=pwfxSrc->wBitsPerSample
+	new_size = (src_len / fmt->adpcm.wav.nBlockAlign) * fmt->adpcm.wSamplesPerBlock * (dest_bps / 8);
+
+	// DO NOT free() here, *estimated size*
+	if ( *dest == NULL ) {
+		*dest = (ubyte *)vm_malloc(new_size);
+
+		if (*dest == NULL) {
+			goto Error;
+		}
+
+		// silence
+		if (dest_bps == 8) {
+			memset(*dest, 0x80, new_size);
+		} else {
+			memset(*dest, 0x00, new_size);
+		}
+	}
 
 	// buffer to estimated size since we have to process the whole thing at once
 	fmt->buffer_size = new_size;
@@ -406,16 +435,11 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 
 	// sanity check, should always be 4
 	if (fmt->adpcm.wav.wBitsPerSample != 4) {
-		adpcm_memory_free(fmt);
-
-		// cleanup mmio stuff
-		mmioClose( rw, 0 );
-		mmioClose( hdr, 0 );
-
-		return -1;
+		goto Error;
 	}
 
 	fmt->sample_frame_size = ((dest_bps / 8) * pwfxSrc->nChannels);
+	fmt->dest_bps = (ushort)dest_bps;
 
 	if ( !max_dest_bytes ) {
 		max_dest_bytes = new_size;
@@ -424,7 +448,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	// convert to PCM
 	rc = read_sample_fmt_adpcm(*dest, rw, fmt);
 
-	int left_over = (src_len - fmt->bytes_processed);
+	left_over = (src_len - fmt->bytes_processed);
 
 	if ( (left_over > 0) && (left_over < fmt->adpcm.wav.nBlockAlign) ) {
 		// hmm, we have some left over, probably a crappy file.  just add in the
@@ -452,6 +476,17 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	mmioClose( hdr, 0 );
 
 	return 0;
+
+Error:
+	// cleanup
+	if (fmt) {
+		adpcm_memory_free(fmt);
+	}
+
+	mmioClose( rw, 0 );
+	mmioClose( hdr, 0 );
+
+	return -1;
 }
 
 int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream, int dest_bps)
@@ -465,6 +500,8 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 
 	Assert( pwfxSrc->wFormatTag == WAVE_FORMAT_ADPCM );
 
+	int i;
+	acm_stream_t *str = NULL;
 	MMIOINFO IOhdr;
 
 	memset( &IOhdr, 0, sizeof(MMIOINFO) );
@@ -474,42 +511,35 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	IOhdr.cchBuffer = (sizeof(WAVEFORMATEX) + pwfxSrc->cbSize);
 
 	HMMIO hdr = mmioOpen( NULL, &IOhdr, MMIO_READ );
-	uint rc;
-
-	if ( ACM_inited == 0 ) {
-		rc = ACM_init();
-		if ( rc != 0 )
-			return -1;
-	}
 
 	adpcm_fmt_t *fmt = (adpcm_fmt_t *)vm_malloc(sizeof(adpcm_fmt_t));
-	IF_ERR(fmt == NULL, -1);
+	IF_ERR2(fmt == NULL, goto Error);
 	memset(fmt, '\0', sizeof(adpcm_fmt_t));
 
 	// wav header info (WAVEFORMATEX)
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.wFormatTag), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.nChannels), -1);
-	IF_ERR(!read_dword(hdr, &fmt->adpcm.wav.nSamplesPerSec), -1);
-	IF_ERR(!read_dword(hdr, &fmt->adpcm.wav.nAvgBytesPerSec), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.nBlockAlign), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.wBitsPerSample), -1);
-	IF_ERR(!read_word(hdr, &fmt->adpcm.wav.cbSize), -1);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.wFormatTag), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.nChannels), goto Error);
+	IF_ERR2(!read_dword(hdr, &fmt->adpcm.wav.nSamplesPerSec), goto Error);
+	IF_ERR2(!read_dword(hdr, &fmt->adpcm.wav.nAvgBytesPerSec), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.nBlockAlign), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.wBitsPerSample), goto Error);
+	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.cbSize), goto Error);
 	// adpcm specific header info
-	IF_ERR(!read_word_s(hdr, &fmt->adpcm.wSamplesPerBlock), -1);
-	IF_ERR(!read_word_s(hdr, &fmt->adpcm.wNumCoef), -1);
+	IF_ERR2(!read_word_s(hdr, &fmt->adpcm.wSamplesPerBlock), goto Error);
+	IF_ERR2(!read_word_s(hdr, &fmt->adpcm.wNumCoef), goto Error);
 
 	// allocate memory for COEF struct and fill it
 	fmt->adpcm.aCoef = (ADPCMCOEFSET *)vm_malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
-	IF_ERR(fmt->adpcm.aCoef == NULL, -1);
+	IF_ERR2(fmt->adpcm.aCoef == NULL, goto Error);
 
-	for (int i=0; i<fmt->adpcm.wNumCoef; i++) {
-		IF_ERR(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef1), -1);
-		IF_ERR(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef2), -1);
+	for (i = 0; i < fmt->adpcm.wNumCoef; i++) {
+		IF_ERR2(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef1), goto Error);
+		IF_ERR2(!read_short(hdr, &fmt->adpcm.aCoef[i].iCoef2), goto Error);
 	}
 
 	// allocate memory for the ADPCM block header that's to be filled later
 	fmt->header = (ADPCMBLOCKHEADER *)vm_malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
-	IF_ERR(fmt->header == NULL, -1);
+	IF_ERR2(fmt->header == NULL, goto Error);
 
 	// sanity check, should always be 4
 	if (fmt->adpcm.wav.wBitsPerSample != 4) {
@@ -520,9 +550,10 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	}
 
 	fmt->sample_frame_size = dest_bps/8*pwfxSrc->nChannels;
+	fmt->dest_bps = (ushort)dest_bps;
 	
-	acm_stream_t *str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
-	IF_ERR(str == NULL, -1);
+	str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
+	IF_ERR2(str == NULL, goto Error);
 	str->fmt = fmt;
 	str->dest_bps = (ushort)dest_bps;
 	str->src_bps = pwfxSrc->wBitsPerSample;
@@ -535,6 +566,19 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	mmioClose( hdr, 0 );
 
 	return 0;
+
+Error:
+	if (fmt) {
+		adpcm_memory_free(fmt);
+	}
+
+	if (str) {
+		vm_free(str);
+	}
+
+	mmioClose( hdr, 0 );
+
+	return -1;
 }
 
 int ACM_stream_close(void *stream)
@@ -624,30 +668,4 @@ int ACM_convert(void *stream, ubyte *src, int src_len, ubyte *dest, int max_dest
 	mmioClose( rw, 0 );
 
 	return 0;
-}
-
-// ACM_init() - decoding should always work
-int ACM_init()
-{
-	if ( ACM_inited == 1 )
-		return 0;
-
-	ACM_inited = 1;
-
-	return 0;
-}
-
-// close out
-void ACM_close()
-{
-	if ( ACM_inited == 0 )
-		return;
-
-	ACM_inited = 0;
-}
-
-// Query if the ACM system is initialized
-int ACM_is_inited()
-{
-	return ACM_inited;
 }

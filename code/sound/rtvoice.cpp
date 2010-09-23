@@ -198,6 +198,7 @@ void rtvoice_stop_recording()
 		Rtv_record_timer_id = NULL;
 #else
 		timeKillEvent(Rtv_record_timer_id);
+		Rtv_record_timer_id = 0;
 #endif
 	}
 

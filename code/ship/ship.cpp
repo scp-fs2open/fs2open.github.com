@@ -2306,6 +2306,7 @@ strcpy_s(parse_error_text, temp_error);
 			sip->afterburner_fuel_capacity = 1.0f;
 		}
 	}
+	
 	if ( optional_string("$Trails:") ) {
 		bool trails_warning = true;
 
@@ -2314,17 +2315,17 @@ strcpy_s(parse_error_text, temp_error);
 			generic_bitmap_init(&sip->afterburner_trail, NULL);
 			stuff_string(sip->afterburner_trail.filename, F_NAME, MAX_FILENAME_LEN);
 		}
-
+		
 		if ( optional_string("+Width:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_width_factor);
 		}
-
+			
 		if ( optional_string("+Alpha:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_alpha_factor);
 		}
-
+			
 		if ( optional_string("+Life:") ) {
 			trails_warning = false;
 			stuff_float(&sip->afterburner_trail_life);

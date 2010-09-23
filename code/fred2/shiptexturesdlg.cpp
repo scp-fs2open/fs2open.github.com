@@ -53,7 +53,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CShipTexturesDlg message handlers
 
-void CShipTexturesDlg::OnOK()
+void CShipTexturesDlg::OnOK() 
 {
 	int i, k, write_index, z, not_found, temp_bmp, temp_frames, temp_fps;
 	CString missing_files, message;
@@ -78,10 +78,10 @@ void CShipTexturesDlg::OnOK()
 			{
 				// try loading it (bmpman should take care of eventually unloading them)
 				temp_bmp = bm_load( new_texture_name[i] );
-
+	
 				// if PCX not found, look for ANI
 				if (temp_bmp < 0)
-				{
+				{					
 					temp_bmp = bm_load_animation(new_texture_name[i],  &temp_frames, &temp_fps, NULL, 1);
 				}
 
@@ -160,8 +160,8 @@ void CShipTexturesDlg::OnOK()
 	CDialog::OnOK();
 }
 
-BOOL CShipTexturesDlg::OnInitDialog()
-{
+BOOL CShipTexturesDlg::OnInitDialog() 
+{	
 	int i, j, k, z, duplicate;
 	char *p = NULL;
 	char texture_file[MAX_FILENAME_LEN];
@@ -268,17 +268,17 @@ BOOL CShipTexturesDlg::OnInitDialog()
 
 	CDialog::OnInitDialog();
 	UpdateData(FALSE);
-
+ 
 	return TRUE;  // return TRUE unless you set the focus to a control
-				  // EXCEPTION: OCX Property Pages should return FALSE
+	              // EXCEPTION: OCX Property Pages should return FALSE
 }
 
-BOOL CShipTexturesDlg::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID, CCreateContext* pContext)
-{
+BOOL CShipTexturesDlg::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID, CCreateContext* pContext) 
+{	
 	return CDialog::Create(IDD, pParentWnd);
 }
 
-void CShipTexturesDlg::OnClose()
+void CShipTexturesDlg::OnClose() 
 {
 	int z;
 
@@ -292,7 +292,7 @@ void CShipTexturesDlg::OnClose()
 			return;
 		}
 	}
-
+	
 	CDialog::OnClose();
 }
 
@@ -301,7 +301,7 @@ int CShipTexturesDlg::query_modified()
 	return modified;
 }
 
-void CShipTexturesDlg::OnSelchangeOldTextureList()
+void CShipTexturesDlg::OnSelchangeOldTextureList() 
 {
 	UpdateData(TRUE);
 
@@ -312,7 +312,7 @@ void CShipTexturesDlg::OnSelchangeOldTextureList()
 	{
 		// assign it
 		strcpy_s(new_texture_name[active_texture_index], m_new_texture);
-
+	
 		// make it lowercase
 		strlwr(new_texture_name[active_texture_index]);
 

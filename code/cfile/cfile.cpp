@@ -1,14 +1,14 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
-#define _CFILE_INTERNAL
+#define _CFILE_INTERNAL 
 
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +42,7 @@ char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 #endif
 
 // During cfile_init, verify that Pathtypes[n].index == n for each item
-// Each path must have a valid parent that can be tracable all the way back to the root
+// Each path must have a valid parent that can be tracable all the way back to the root 
 // so that we can create directories when we need to.
 //
 // Please make sure extensions are all lower-case, or we'll break unix compatibility
@@ -142,7 +142,7 @@ int cfile_in_root_dir(char *exe_path)
 	tok = strtok(path_copy, DIR_SEPARATOR_STR);
 	if(tok == NULL){
 		return 1;
-	}
+	}	
 	do {
 		token_count++;
 		tok = strtok(NULL, DIR_SEPARATOR_STR);
@@ -172,7 +172,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 	int i;
 
 	// initialize encryption
-	encrypt_init();
+	encrypt_init();	
 
 	if ( !cfile_inited ) {
 		char buf[CFILE_ROOT_DIRECTORY_LEN];
@@ -183,20 +183,20 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 		i = strlen(buf);
 
-		// are we in a root directory?
+		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
 			MessageBox((HWND)NULL, "FreeSpace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
 			return 1;
-		}
+		}		
 
 		while (i--) {
 			if (buf[i] == DIR_SEPARATOR_CHAR){
 				break;
 			}
-		}
+		}						
 
-		if (i >= 2) {
-			buf[i] = 0;
+		if (i >= 2) {					
+			buf[i] = 0;						
 			cfile_chdir(buf);
 		} else {
 			MessageBox((HWND)NULL, "Error trying to determine executable root directory!", "Error", MB_OK);
@@ -226,7 +226,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 }
 
 // Call this if pack files got added or removed or the
-// cdrom changed.  This will refresh the list of filenames
+// cdrom changed.  This will refresh the list of filenames 
 // stored in packfiles and on the cdrom.
 void cfile_refresh()
 {
@@ -383,10 +383,10 @@ int cfile_flush_dir(int dir_type)
 	_finddata_t find;
 	find_handle = _findfirst( "*", &find );
 	if (find_handle != -1) {
-		do {
+		do {			
 			if (!(find.attrib & _A_SUBDIR) && !(find.attrib & _A_RDONLY)) {
 				// delete the file
-				cf_delete(find.name,dir_type);
+				cf_delete(find.name,dir_type);				
 
 				// increment the deleted count
 				del_count++;
@@ -406,10 +406,10 @@ int cfile_flush_dir(int dir_type)
 			stat(globinfo.gl_pathv[i], &statbuf);
 			if (S_ISREG(statbuf.st_mode)) {
 				// delete the file
-				cf_delete(globinfo.gl_pathv[i], dir_type);
+				cf_delete(globinfo.gl_pathv[i], dir_type);				
 
 				// increment the deleted count
-				del_count++;
+				del_count++;				
 			}
 		}
 		globfree(&globinfo);
@@ -561,11 +561,11 @@ int cf_rename(char *old_name, char *name, int dir_type)
 	int ret_code;
 	char old_longname[_MAX_PATH];
 	char new_longname[_MAX_PATH];
-
+	
 	cf_create_default_path_string( old_longname, sizeof(old_longname)-1, dir_type, old_name );
 	cf_create_default_path_string( new_longname, sizeof(old_longname)-1, dir_type, name );
 
-	ret_code = rename(old_longname, new_longname );
+	ret_code = rename(old_longname, new_longname );		
 	if(ret_code != 0){
 		switch(errno){
 		case EACCES :
@@ -577,7 +577,7 @@ int cf_rename(char *old_name, char *name, int dir_type)
 	}
 
 	return CF_RENAME_SUCCESS;
-
+	
 
 }
 
@@ -601,7 +601,7 @@ void cf_create_directory( int dir_type )
 
 	} while( current_dir != CF_TYPE_ROOT );
 
-
+	
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
@@ -651,17 +651,17 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 	// Check that all the parameters make sense
 	Assert(file_path && strlen(file_path));
 	Assert( mode != NULL );
-
+	
 	// Can only open read-only binary files in memory mapped mode.
 	if ( (type & CFILE_MEMORY_MAPPED) && strcmp(mode,"rb") ) {
-		Int3();
+		Int3();				
 		return NULL;
 	}
 
 	//===========================================================
 	// If in write mode, just try to open the file straight off
 	// the harddisk.  No fancy packfile stuff here!
-
+	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
 		// For write-only files, require a full path or a path type
 #ifdef SCP_UNIX
@@ -683,7 +683,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
 		// JOHN: TODO, you should create the path if it doesn't exist.
-
+		
 		//WMC - For some godawful reason, fread does not return the correct number of bytes read
 		//in text mode, which messes up FS2_Open's raw_position indicator in fgets. As a consequence, you
 		//_must_ open files that are gonna be read in binary mode.
@@ -720,9 +720,9 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		FILE *fp = fopen(longname, happy_mode);
 		if (fp)	{
 			return cf_open_fill_cfblock(fp, dir_type);
-		}
+ 		}
 		return NULL;
-	}
+	} 
 
 
 	//================================================
@@ -736,9 +736,9 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
 
 		// Fount it, now create a cfile out of it
-
+		
 		if ( type & CFILE_MEMORY_MAPPED ) {
-
+		
 			// Can't open memory mapped files out of pack files
 			if ( offset == 0 )	{
 #if defined _WIN32
@@ -755,7 +755,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 					return cf_open_mapped_fill_cfblock(fp, dir_type);
 				}
 #endif
-			}
+			} 
 
 		} else {
 
@@ -768,7 +768,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 				} else {
 					// Found it in a normal file
 					return cf_open_fill_cfblock(fp, dir_type);
-				}
+				} 
 			}
 		}
 
@@ -822,7 +822,7 @@ CFILE *cfopen_special(char *file_path, char *mode, const int size, const int off
 
 
 // ------------------------------------------------------------------------
-// ctmpfile()
+// ctmpfile() 
 //
 // Open up a temporary file.  A unique name is automatically generated.  The
 // file will be automatically deleted when file is closed.
@@ -849,7 +849,7 @@ CFILE *ctmpfile()
 //            failure ==> -1
 //
 int cfget_cfile_block()
-{
+{	
 	int i;
 	Cfile_block *cb;
 
@@ -866,7 +866,7 @@ int cfget_cfile_block()
 	// If we've reached this point, a free Cfile_block could not be found
 	nprintf(("Warning","A free Cfile_block could not be found.\n"));
 	Assert(0);	// out of free cfile blocks
-	return -1;
+	return -1;			
 }
 
 
@@ -882,7 +882,7 @@ int cfclose( CFILE * cfile )
 	Assert(cfile != NULL);
 	Cfile_block *cb;
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];
+	cb = &Cfile_block_list[cfile->id];	
 
 	result = 0;
 	if ( cb->data ) {
@@ -890,9 +890,9 @@ int cfclose( CFILE * cfile )
 #if defined _WIN32
 		result = UnmapViewOfFile((void*)cb->data);
 		Assert(result);
-		result = CloseHandle(cb->hInFile);
+		result = CloseHandle(cb->hInFile);		
 		Assert(result);	// Ensure file handle is closed properly
-		result = CloseHandle(cb->hMapFile);
+		result = CloseHandle(cb->hMapFile);		
 		Assert(result);	// Ensure file handle is closed properly
 		result = 0;
 #elif defined SCP_UNIX
@@ -926,7 +926,7 @@ int cf_is_valid(CFILE *cfile)
 		return 0;
 
 	//Is it used?
-	Cfile_block *cb = &Cfile_block_list[cfile->id];
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 	if(cb->type != CFILE_BLOCK_USED && (cb->fp != NULL || cb->data != NULL))
 		return 0;
 
@@ -940,7 +940,7 @@ int cf_is_valid(CFILE *cfile)
 // cf_open_fill_cfblock() will fill up a Cfile_block element in the Cfile_block_list[] array
 // for the case of a file being opened by cf_open();
 //
-// returns:   success ==> ptr to CFILE structure.
+// returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
 CFILE *cf_open_fill_cfblock(FILE *fp, int type)
@@ -961,7 +961,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->data = NULL;
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
-
+		
 		int pos = ftell(fp);
 		if(pos == -1L)
 			pos = 0;
@@ -975,14 +975,14 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 // cf_open_packed_cfblock() will fill up a Cfile_block element in the Cfile_block_list[] array
 // for the case of a file being opened by cf_open();
 //
-// returns:   success ==> ptr to CFILE structure.
+// returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
 CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 {
 	// Found it in a pack file
 	int cfile_block_index;
-
+	
 	cfile_block_index = cfget_cfile_block();
 	if ( cfile_block_index == -1 ) {
 		fclose(fp);
@@ -991,7 +991,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 		CFILE *cfp;
 		Cfile_block *cfbp;
 		cfbp = &Cfile_block_list[cfile_block_index];
-
+	
 		cfp = &Cfile_list[cfile_block_index];
 		cfp->id = cfile_block_index;
 		cfp->version = 0;
@@ -1011,7 +1011,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 // cf_open_mapped_fill_cfblock() will fill up a Cfile_block element in the Cfile_block_list[] array
 // for the case of a file being opened by cf_open_mapped();
 //
-// returns:   ptr CFILE structure.
+// returns:   ptr CFILE structure.  
 //
 #if defined _WIN32
 CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type)
@@ -1044,13 +1044,13 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
 #if defined _WIN32
 		cfbp->hMapFile = CreateFileMapping(cfbp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
-		if (cfbp->hMapFile == NULL) {
-			nprintf(("Error", "Could not create file-mapping object.\n"));
+		if (cfbp->hMapFile == NULL) { 
+			nprintf(("Error", "Could not create file-mapping object.\n")); 
 			return NULL;
-		}
-
+		} 
+	
 		cfbp->data = (ubyte*)MapViewOfFile(cfbp->hMapFile, FILE_MAP_READ, 0, 0, 0);
-		Assert( cfbp->data != NULL );
+		Assert( cfbp->data != NULL );		
 #elif defined SCP_UNIX
 		cfbp->fp = fp;
 		cfbp->data_length = filelength( fileno(fp) );
@@ -1060,7 +1060,7 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 								MAP_SHARED,				// flags
 								fileno(fp),				// fd
 								0);						// offset
-		Assert( cfbp->data != NULL );
+		Assert( cfbp->data != NULL );		
 #endif
 
 		return cfp;
@@ -1075,14 +1075,14 @@ int cf_get_dir_type(CFILE *cfile)
 // cf_returndata() returns the data pointer for a memory-mapped file that is associated
 // with the CFILE structure passed as a parameter
 //
-//
+// 
 
 void *cf_returndata(CFILE *cfile)
 {
 	Assert(cfile != NULL);
 	Cfile_block *cb;
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];
+	cb = &Cfile_block_list[cfile->id];	
 	Assert(cb->data != NULL);
 	return cb->data;
 }
@@ -1199,7 +1199,7 @@ void cfread_vector(vec3d *vec, CFILE *file, int ver, vec3d *deflt)
 	vec->xyz.y = cfread_float(file, ver, deflt ? deflt->xyz.y : 0.0f);
 	vec->xyz.z = cfread_float(file, ver, deflt ? deflt->xyz.z : 0.0f);
 }
-
+	
 void cfread_angles(angles *ang, CFILE *file, int ver, angles *deflt)
 {
 	if (file->version < ver) {
@@ -1321,12 +1321,12 @@ int cfwrite_string(char *buf, CFILE *file)
 {
 	if ( (!buf) || (buf && !buf[0]) ) {
 		return cfwrite_char(0, file);
-	}
+	} 
 	int len = strlen(buf);
 	if(!cfwrite(buf, len, 1, file)){
 		return 0;
 	}
-	return cfwrite_char(0, file);			// write out NULL termination
+	return cfwrite_char(0, file);			// write out NULL termination			
 }
 
 int cfwrite_string_len(char *buf, CFILE *file)
@@ -1338,7 +1338,7 @@ int cfwrite_string_len(char *buf, CFILE *file)
 	}
 	if (len){
 		return cfwrite(buf,len,1,file);
-	}
+	} 
 
 	return 1;
 }
@@ -1349,7 +1349,7 @@ int cfilelength( CFILE * cfile )
 	Assert(cfile != NULL);
 	Cfile_block *cb;
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];
+	cb = &Cfile_block_list[cfile->id];	
 
 	// TODO: return length of memory mapped file
 	Assert( !cb->data );
@@ -1363,7 +1363,7 @@ int cfilelength( CFILE * cfile )
 // cfwrite() writes to the file
 //
 // returns:   number of full elements actually written
-//
+//            
 //
 int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 {
@@ -1373,7 +1373,7 @@ int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 	if(buf == NULL || elsize == 0 || nelem == 0)
 		return 0;
 
-	Cfile_block *cb = &Cfile_block_list[cfile->id];
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 
 	if(cb->lib_offset != 0)
 	{
@@ -1398,7 +1398,7 @@ int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 		cb->raw_position += result;
 	}
 
-	return result;
+	return result;	
 }
 
 
@@ -1412,7 +1412,7 @@ int cfputc(int c, CFILE *cfile)
 	if(!cf_is_valid(cfile))
 		return EOF;
 
-	Cfile_block *cb = &Cfile_block_list[cfile->id];
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 
 	if(cb->lib_offset != 0)
 	{
@@ -1438,7 +1438,7 @@ int cfputc(int c, CFILE *cfile)
 		cb->raw_position += 1;
 	}
 
-	return result;
+	return result;	
 }
 
 
@@ -1455,7 +1455,7 @@ int cfputs(char *str, CFILE *cfile)
 	if(str == NULL)
 		return EOF;
 
-	Cfile_block *cb = &Cfile_block_list[cfile->id];
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 
 	if(cb->lib_offset != 0)
 	{
@@ -1478,7 +1478,7 @@ int cfputs(char *str, CFILE *cfile)
 		cb->raw_position += strlen(str);
 	}
 
-	return result;
+	return result;	
 }
 
 
@@ -1498,7 +1498,7 @@ int cfgetc(CFILE *cfile)
 		result = CF_EOF;
 	}
 
-	return result;
+	return result;	
 }
 
 
@@ -1546,7 +1546,7 @@ char *cfgets(char *buf, int n, CFILE *cfile)
 // 16 and 32 bit checksum stuff ----------------------------------------------------------
 
 // CRC code for mission validation.  given to us by Kevin Bentley on 7/20/98.   Some sort of
-// checksumming code that he wrote a while ago.
+// checksumming code that he wrote a while ago.  
 #define CRC32_POLYNOMIAL					0xEDB88320
 uint CRCTable[256];
 
@@ -1566,7 +1566,7 @@ ushort cf_add_chksum_short(ushort seed, ubyte *buffer, int size)
 		sum2 += sum1;
 	}
 	sum2 %= 255;
-
+	
 	return (ushort)((sum1 << 8) + sum2);
 }
 
@@ -1577,7 +1577,7 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, int size)
 	ubyte *p;
 
 	p = buffer;
-	crc = seed;
+	crc = seed;	
 
 	while (size--)
 		crc = (crc >> 8) ^ CRCTable[(crc ^ *p++) & 0xff];
@@ -1588,7 +1588,7 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, int size)
 void cf_chksum_long_init()
 {
 	int i, j;
-	uint crc;
+	uint crc;	
 
 	for (i = 0; i < 256; i++) {
 		crc = i;
@@ -1617,7 +1617,7 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 	// determine whether we're doing a short or long checksum
 	is_long = 0;
 	if(chk_short){
-		Assert(!chk_long);
+		Assert(!chk_long);		
 		*chk_short = 0;
 	} else {
 		Assert(chk_long);
@@ -1630,7 +1630,7 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 		cfseek(cfile, 0, SEEK_SET);
 		max_size = cfilelength(cfile);
 	}
-
+	
 	cf_total = 0;
 	do {
 		// determine how much we want to read
@@ -1732,17 +1732,17 @@ int cf_chksum_pack(char *filename, uint *chk_long, bool full)
 int cf_chksum_short(char *filename, ushort *chksum, int max_size, int cf_type)
 {
 	int ret_val;
-	CFILE *cfile = NULL;
-
+	CFILE *cfile = NULL;		
+	
 	// zero the checksum
 	*chksum = 0;
 
 	// attempt to open the file
 	cfile = cfopen(filename,"rt",CFILE_NORMAL,cf_type);
-	if(cfile == NULL){
+	if(cfile == NULL){		
 		return 0;
 	}
-
+	
 	// call the overloaded cf_chksum function()
 	ret_val = cf_chksum_do(cfile, chksum, NULL, max_size);
 
@@ -1760,13 +1760,13 @@ int cf_chksum_short(CFILE *file, ushort *chksum, int max_size)
 {
 	int ret_code;
 	int start_pos;
-
+	
 	// Returns current position of file.
 	start_pos = cftell(file);
 	if(start_pos == -1){
 		return 0;
 	}
-
+	
 	// move to the beginning of the file
 	if(cfseek(file, 0, CF_SEEK_SET)){
 		return 0;
@@ -1782,17 +1782,17 @@ int cf_chksum_short(CFILE *file, ushort *chksum, int max_size)
 int cf_chksum_long(char *filename, uint *chksum, int max_size, int cf_type)
 {
 	int ret_val;
-	CFILE *cfile = NULL;
-
+	CFILE *cfile = NULL;		
+	
 	// zero the checksum
 	*chksum = 0;
 
 	// attempt to open the file
 	cfile = cfopen(filename,"rt",CFILE_NORMAL,cf_type);
-	if(cfile == NULL){
+	if(cfile == NULL){		
 		return 0;
 	}
-
+	
 	// call the overloaded cf_chksum function()
 	ret_val = cf_chksum_do(cfile, NULL, chksum, max_size);
 
@@ -1801,7 +1801,7 @@ int cf_chksum_long(char *filename, uint *chksum, int max_size, int cf_type)
 	cfile = NULL;
 
 	// return the result
-	return ret_val;
+	return ret_val;	
 }
 
 // get the 32 bit CRC checksum of the passed file - return 0 if operation failed, 1 if succeeded
@@ -1810,13 +1810,13 @@ int cf_chksum_long(CFILE *file, uint *chksum, int max_size)
 {
 	int ret_code;
 	int start_pos;
-
+	
 	// Returns current position of file.
 	start_pos = cftell(file);
 	if(start_pos == -1){
 		return 0;
 	}
-
+	
 	// move to the beginning of the file
 	if(cfseek(file, 0, CF_SEEK_SET)){
 		return 0;
@@ -1838,7 +1838,7 @@ int cflush(CFILE *cfile)
 	Assert(cfile != NULL);
 	Cfile_block *cb;
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];
+	cb = &Cfile_block_list[cfile->id];	
 
 	// not supported for memory mapped files
 	Assert( !cb->data );

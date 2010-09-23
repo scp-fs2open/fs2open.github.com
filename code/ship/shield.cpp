@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
 */
@@ -101,17 +101,17 @@ void load_shield_hit_bitmap()
 
 	Shield_bitmaps_loaded = 1;
 
-	for (i = 0; i < Species_info.size(); i++ )
-	{
+	for (i = 0; i < Species_info.size(); i++ )	
+    {
 		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, NULL, 1);
 
-		// *This is disabled for TBP    -Et1
+        // *This is disabled for TBP    -Et1
 		// Changed to an assert by kazan
 
-		/*
+        /*
 		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
-		*/
+        */
 		Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
 	}
 
@@ -302,7 +302,7 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
 		else g3_rotate_vertex(&verts[j], &pnt);
 		verts[j].u = trip->verts[j].u;
 		verts[j].v = trip->verts[j].v;
-	}
+	}	
 
 	verts[0].r = r;
 	verts[0].g = g;
@@ -321,16 +321,16 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
 	vm_vec_perp(&norm, &trip->verts[0].pos, &trip->verts[1].pos, &trip->verts[2].pos);
 	vertex	*vertlist[4];
 	if ( vm_vec_dot(&norm, &trip->verts[1].pos ) < 0.0 )	{
-		vertlist[0] = &verts[3];
+		vertlist[0] = &verts[3]; 
 		vertlist[1] = &verts[2];
-		vertlist[2] = &verts[1];
-		vertlist[3] = &verts[0];
+		vertlist[2] = &verts[1]; 
+		vertlist[3] = &verts[0]; 
 		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
 	} else {
-		vertlist[0] = &verts[0];
+		vertlist[0] = &verts[0]; 
 		vertlist[1] = &verts[1];
-		vertlist[2] = &verts[2];
-		vertlist[3] = &verts[3];
+		vertlist[2] = &verts[2]; 
+		vertlist[3] = &verts[3]; 
 		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
 	}
 }
@@ -358,9 +358,9 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 		// Pnt is now the x,y,z world coordinates of this vert.
 		// For this example, I am just drawing a sphere at that point.
 
-		if (!Cmdline_nohtl) g3_transfer_vertex(&points[j],&pnt);
-		else g3_rotate_vertex(&points[j], &pnt);
-
+	 	if (!Cmdline_nohtl) g3_transfer_vertex(&points[j],&pnt);
+	 	else g3_rotate_vertex(&points[j], &pnt);
+			
 		points[j].u = trip->verts[j].u;
 		points[j].v = trip->verts[j].v;
 		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
@@ -387,9 +387,9 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 
 	if ( vm_vec_dot(&norm,(vec3d *)&verts[1]->x ) >= 0.0 )	{
 		vertex	*vertlist[3];
-		vertlist[0] = verts[2];
-		vertlist[1] = verts[1];
-		vertlist[2] = verts[0];
+		vertlist[0] = verts[2]; 
+		vertlist[1] = verts[1]; 
+		vertlist[2] = verts[0]; 
 		g3_draw_poly( 3, vertlist, flags);
 	} else {
 		g3_draw_poly( 3, verts, flags);
@@ -619,7 +619,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 	int	shnum;				//	shield hit number, index in Shield_hits.
 
 	shnum = get_global_shield_tri();
-
+	
 	Shield_hits[shnum].type = SH_TYPE_1;
 	// mprintf(("Creating hit #%i at time = %7.3f\n", shnum, f2fl(Missiontime)));
 
@@ -628,7 +628,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 			while ( (gi < MAX_SHIELD_TRI_BUFFER) && (Global_tris[gi].used) && (Global_tris[gi].creation_time + SHIELD_HIT_DURATION > Missiontime)) {
 				gi++;
 			}
-
+			
 			//	If couldn't find one, choose a random one.
 			if (gi == MAX_SHIELD_TRI_BUFFER)
 				gi = (int) (frand() * MAX_SHIELD_TRI_BUFFER);
@@ -658,7 +658,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 	Shield_hits[shnum].rgb[2] = 255;
 	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < Num_ship_classes)){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
-
+		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
 		Shield_hits[shnum].rgb[1] = sip->shield_color[1];
 		Shield_hits[shnum].rgb[2] = sip->shield_color[2];
@@ -677,8 +677,8 @@ float apply_damage_to_shield(object *objp, int quadrant, float damage)
 		return damage;
 	}
 
-	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;
-
+	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;	
+	
 	Assert(objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 	aip->last_hit_quadrant = quadrant;
@@ -696,7 +696,7 @@ float apply_damage_to_shield(object *objp, int quadrant, float damage)
 		//nprintf(("AI", "Applied %7.3f damage to quadrant #%i\n", damage, quadrant_num));
 		return 0.0f;
 	}
-
+		
 }
 /**
  * This function needs to be called by big ships which have shields. It should be able to be modified to deal with
@@ -728,7 +728,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 	Shield_hits[shnum].rgb[2] = 255;
 	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < Num_ship_classes)){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
-
+		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
 		Shield_hits[shnum].rgb[1] = sip->shield_color[1];
 		Shield_hits[shnum].rgb[2] = sip->shield_color[2];
@@ -742,7 +742,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 }
 
 // Algorithm for shrink-wrapping a texture across a triangular mesh.
-//
+// 
 // - Given a point of intersection, tcp (local to objnum)
 // - Vector to center of shield from tcp is v2c.
 // - Using v2c, compute right and down vectors.  These are the vectors of
@@ -753,7 +753,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 //   along right vector corresponds to O units in explosion texture space.
 // - For each edge, if either endpoint was outside texture bounds, recursively
 //   apply previous and current step.
-//
+// 
 // Output of above is a list of triangles with u,v coordinates.  These u,v
 // coordinates will have to be clipped against the explosion texture bounds.
 
@@ -802,7 +802,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	//nprintf(("AI", "\n"));
 	for (i=0; i<3; i++)
 		create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
-
+	
 	copy_shield_to_globals(objnum, shieldp);
 	// render_shield(orient, centerp);
 }
@@ -880,7 +880,7 @@ void create_shield_explosion_all(object *objp)
 	ship	*shipp;
 
 	if (Detail.shield_effects == 0){
-		return;
+		return;	
 	}
 
 	num = objp->instance;
@@ -921,7 +921,7 @@ void ship_draw_shield( object *objp)
 	int		model_num;
 	int		i;
 	vec3d	pnt;
-	polymodel * pm;
+	polymodel * pm; 
 
 	if (objp->flags & OF_NO_SHIELDS)
 		return;
@@ -966,7 +966,7 @@ void ship_draw_shield( object *objp)
 				intensity = 0;
 			else if (intensity > 255)
 				intensity = 255;
-
+			
 			gr_set_color(0, 0, intensity);
 
 			//	Process the vertices.
@@ -997,7 +997,7 @@ void ship_draw_shield( object *objp)
 }
 #endif
 
-// Returns true if the shield presents any opposition to something
+// Returns true if the shield presents any opposition to something 
 // trying to force through it.
 // If quadrant is -1, looks at entire shield, otherwise
 // just one quadrant
@@ -1031,7 +1031,7 @@ byte Bouncer2[BOUNCE_SIZE];
 byte * Bouncer = Bouncer1;
 byte * OldBouncer = Bouncer2;
 
-// To wiggle, add value to Bouncer[]
+// To wiggle, add value to Bouncer[] 
 
 void bounce_it()
 {
@@ -1039,7 +1039,7 @@ void bounce_it()
 
 
 	for (i=0; i<BOUNCE_SIZE; i++ )	{
-		int t = 0;
+ 		int t = 0;
 
 		t += OldBouncer[ LEFT ];
 		t += OldBouncer[ RIGHT ];
@@ -1048,7 +1048,7 @@ void bounce_it()
 
 		t = (t/2) - Bouncer[i];
 		tmp = t - t/16;		// 8
-
+		
 		if ( tmp < -127 ) tmp = -127;
 		if ( tmp > 127 ) tmp = 127;
 		Bouncer[i] = tmp;
@@ -1064,7 +1064,7 @@ void bounce_it()
 }
 */
 
-#else
+#else 
 
 // stub out shield functions for the demo
 void shield_hit_init() {}
@@ -1077,7 +1077,7 @@ void shield_hit_close() {}
 void ship_draw_shield( object *objp) {}
 void shield_hit_page_in() {}
 void render_shields() {}
-float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;}
+float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;} 
 int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
 
 #endif // DEMO

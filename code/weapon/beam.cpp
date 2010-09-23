@@ -3285,7 +3285,7 @@ int beam_will_tool_target(beam *b, object *objp)
 {
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 	float total_strength, damage_in_a_few_seconds, hp_limit, hp_pct;
-
+	
 	// sanity
 	if(objp == NULL){
 		return 0;
@@ -3298,7 +3298,7 @@ int beam_will_tool_target(beam *b, object *objp)
 	if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
 		return 0;
 	}
-
+	
 	ship *shipp = &Ships[objp->instance];
 	total_strength = objp->hull_strength;
 
@@ -3311,7 +3311,7 @@ int beam_will_tool_target(beam *b, object *objp)
 			hp_pct = total_strength / shipp->ship_max_hull_strength;
 			if (hp_limit >= hp_pct)
 				return 1;
-	}
+		}
 	}
 
 	// calculate total strength, factoring in shield

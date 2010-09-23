@@ -151,11 +151,11 @@ extern hud_frames Shield_mini_gauge;
 void hud_escort_init()
 {
 	int i;
-
+	
 	for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
 		if ( strlen(current_hud->Escort_filename[i]) ) {
 			Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
-
+			
 			if (Escort_gauges[i].first_frame == -1) {
 				Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
 				return;

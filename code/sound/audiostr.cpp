@@ -8,14 +8,12 @@
 #include <mmsystem.h>
 #endif
 
+#define NEED_STRHDL		// for STRHTL struct in audiostr.h
 
 #include "globalincs/pstypes.h"
 #include "sound/openal.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
-#include "sound/acm.h"
-#include "cfile/cfile.h"
-#include "sound/sound.h"
 #include "sound/acm.h"
 #include "cfile/cfile.h"
 #include "sound/sound.h"
@@ -1753,7 +1751,6 @@ int audiostream_open( char *filename, int type )
 		return -1;
 	} else {
 		return i;
-	}
 	}
 }
 

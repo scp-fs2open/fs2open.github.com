@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
 */
@@ -102,7 +102,7 @@ typedef struct bitmap_entry	{
 	bitmap	bm;
 
 	// Data for animations and user bitmaps
-	bm_extra_info	info;
+	bm_extra_info	info;		
 
 #ifdef BMPMAN_NDEBUG
 	// bookeeping

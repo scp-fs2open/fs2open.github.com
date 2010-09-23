@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
 */
@@ -18,7 +18,7 @@
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS
-//
+// 
 
 // muzzle flash info - read from a table
 typedef struct mflash_blob_info {
@@ -83,7 +83,7 @@ SCP_vector<mflash_info> Mflash_info;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH FUNCTIONS
-//
+// 
 
 void parse_mflash_tbl(char *filename)
 {
@@ -96,7 +96,7 @@ void parse_mflash_tbl(char *filename)
 	}
 
 	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
+	reset_parse();		
 
 	// header
 	required_string("#Muzzle flash types");
@@ -224,7 +224,7 @@ void mflash_level_close()
 
 // create a muzzle flash on the guy
 void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type, object *local)
-{
+{	
 	// mflash *mflashp;
 	mflash_info *mi;
 	mflash_blob_info *mbi;
@@ -240,7 +240,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	if ( (mflash_type < 0) || (mflash_type >= (int)Mflash_info.size()) )
 		return;
 
-	// create the actual animations
+	// create the actual animations	
 	mi = &Mflash_info[mflash_type];
 
 	if (local != NULL) {
@@ -287,7 +287,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 
 // lookup type by name
 int mflash_lookup(char *name)
-{
+{	
 	uint idx;
 
 	// look it up
@@ -297,5 +297,5 @@ int mflash_lookup(char *name)
 	}
 
 	// couldn't find it
-	return -1;
+	return -1;	
 }

@@ -1121,7 +1121,7 @@ int CShipEditorDlg::update_data(int redraw)
 				UpdateData(FALSE);
 			}
 
-			if(jumpnode_get_by_name(m_ship_name) != NULL)
+		if(jumpnode_get_by_name(m_ship_name) != NULL)
 		{
 			if (bypass_errors)
 				return 1;

@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
 */
@@ -42,7 +42,7 @@ float Flak_range = FLAK_RANGE_DEFAULT;
 //WMC - Made this generic weapon stuffs
 /*
 #define MAX_FLAK_INFO											350
-typedef struct flak_info {
+typedef struct flak_info {	
 	vec3d start_pos;							// initial pos
 	float range;								// range at which we'll detonate (-1 if unused);
 } flak_info;
@@ -95,7 +95,7 @@ void flak_create(weapon *wp)
 {
 	int idx;
 	int found;
-
+	
 	// make sure this is a valid flak weapon object
 	Assert(wp->objnum >= 0);
 	Assert(Objects[wp->objnum].type == OBJ_WEAPON);
@@ -139,13 +139,13 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	float final_range;
 	float det_range;
 	vec3d temp;
-
+	
 	// make sure this flak object is valid
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(objp->instance >= 0);
 	Assert(Weapons[objp->instance].weapon_info_index >= 0);
-	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_FLAK);
-
+	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_FLAK);	
+	
 	// if the flak index is invalid, do nothing - if this fails the flak simply becomes a non-rendering bullet
 	/*
 	if(Weapons[objp->instance].flak_index < 0){
@@ -166,7 +166,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	}
 
 	// add in some randomness
-	final_range += (Flak_range + (Flak_range * 0.65f * (1.0f - weapon_subsys_strength))) * frand_range(-1.0f, 1.0f);
+	final_range += (Flak_range + (Flak_range * 0.65f * (1.0f - weapon_subsys_strength))) * frand_range(-1.0f, 1.0f);	
 
 	// make sure we're firing at least 10 meters away
 	if(final_range < 10.0f){
@@ -180,18 +180,18 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 // add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
 // assumes dir is normalized
 void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength)
-{
-	vec3d rand_twist_pre, rand_twist_post;
+{			
+	vec3d rand_twist_pre, rand_twist_post;		
 	matrix temp;
 	vec3d final_aim;
 	float error_val;
-
-	// get the matrix needed to rotate the base direction to the actual direction
+	
+	// get the matrix needed to rotate the base direction to the actual direction		
 	vm_vector_2_matrix(&temp, dir, NULL, NULL);
 
-	// error value
+	// error value	
 	error_val = Flak_error + (Flak_error * 0.65f * (1.0f - weapon_subsys_strength));
-
+	
 	// scale the rvec by some random value and make it the "pre-twist" value
 	float rand_dist = frand_range(0.0f, error_val);
 	// no jitter - so do nothing
@@ -237,14 +237,14 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_wea
 	Flak_muzzle_mod++;
 	if(Flak_muzzle_mod >= 10000){
 		Flak_muzzle_mod = 0;
-	}
+	}	
 }
 
 // maybe detonate a flak shell early/late (call from weapon_process_pre(...))
 /*
 void flak_maybe_detonate(object *objp)
-{
-	vec3d temp;
+{			
+	vec3d temp;	
 
 	// multiplayer clients should never detonate flak early
 	// if(MULTIPLAYER_CLIENT){
@@ -254,7 +254,7 @@ void flak_maybe_detonate(object *objp)
 	// if the shell has gone past its range, blow it up
 	vm_vec_sub(&temp, &objp->pos, &Flak[Weapons[objp->instance].flak_index].start_pos);
 	if(vm_vec_mag(&temp) >= Flak[Weapons[objp->instance].flak_index].range){
-		weapon_detonate(objp);
+		weapon_detonate(objp);		
 	}
 }
 */
@@ -263,7 +263,7 @@ void flak_maybe_detonate(object *objp)
 void flak_set_range(object *objp, float range)
 {
 	Assert(objp->type == OBJ_WEAPON);
-	Assert(objp->instance >= 0);
+	Assert(objp->instance >= 0);	
 
 	// setup the flak info
 	Weapons[objp->instance].det_range = range;
@@ -274,14 +274,14 @@ void flak_set_range(object *objp, float range)
 float flak_get_range(object *objp)
 {
 	Assert(objp->type == OBJ_WEAPON);
-	Assert(objp->instance >= 0);
-
+	Assert(objp->instance >= 0);	
+	
 	return Weapons[objp->instance].det_range;
 }
 
 DCF(flak, "show flak dcf commands")
 {
-	dc_printf("flak_err <float>      : set the radius of error for flak targeting\n");
+	dc_printf("flak_err <float>      : set the radius of error for flak targeting\n");	
 	dc_printf("flak_range <float>		: set the radius of error for detonation of a flak shell\n");
 	dc_printf("flak_rad <float>      : set the radius for the muzzle flash on a flak gun\n");
 }
@@ -289,7 +289,7 @@ DCF(flak, "show flak dcf commands")
 DCF(flak_err, "set the radius of error for flak targeting")
 {
 	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
+	if(Dc_arg_type & ARG_FLOAT){		 
 		Flak_error = Dc_arg_float;
 	}
 }
@@ -297,7 +297,7 @@ DCF(flak_err, "set the radius of error for flak targeting")
 DCF(flak_range, "set the radius of error for detonation of a flak shell")
 {
 	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
+	if(Dc_arg_type & ARG_FLOAT){		 
 		Flak_range = Dc_arg_float;
 	}
 }
@@ -305,7 +305,7 @@ DCF(flak_range, "set the radius of error for detonation of a flak shell")
 DCF(flak_rad, "set the radius of flak gun muzzle flash")
 {
 	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
+	if(Dc_arg_type & ARG_FLOAT){		 
 		Flak_muzzle_radius = Dc_arg_float;
 	}
 }

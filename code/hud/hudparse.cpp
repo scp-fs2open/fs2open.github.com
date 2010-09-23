@@ -202,12 +202,12 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 	if(optional_string("+Size:"))
 	{
 		stuff_int_list(size_temp, 2, RAW_INTEGER_TYPE);
-
+		
 		if(cg->size_dest)
 		{
 			HUD_INT(dest_hud, cg->size_dest)[0] = size_temp[0];
 			HUD_INT(dest_hud, cg->size_dest)[1] = size_temp[1];
-
+			
 			size_defined = true;
 		}
 	}
@@ -337,7 +337,7 @@ static void parse_resolution_gauges(hud_info* dest_hud)
 		for(i = 0; i < Num_gauge_types; i++)
 		{
 			cg = &gauges[i];
-
+			
 			if(!parent && !stricmp(cg->fieldname, gaugename))
 			{
 				parent = cg;
@@ -414,18 +414,18 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 			buffer[0] = gr_screen.max_w;
 			buffer[1] = gr_screen.max_h;
 		}
-
+		
 		// In case of a second $Default: declaration (in a tbm or a ship gauge perhaps),
 		// check if it declares the same resolution as before. If not, reload defaults.
 		if(dest_hud->loaded && (buffer[0] != dest_hud->resolution[0]) || (buffer[1] != dest_hud->resolution[1]))
 		{
 			load_hud_defaults(dest_hud);
 		}
-
+		
 		//Set the resolution
 		memcpy(dest_hud->resolution, buffer, sizeof(buffer));
 		dest_hud->loaded = false;
-
+		
 		return dest_hud;
 	}
 	else
@@ -439,7 +439,7 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 			{
 				load_hud_defaults(dest_hud);
 			}
-
+			
 			//Set the resolution
 			memcpy(dest_hud->resolution, buffer, sizeof(buffer));
 			dest_hud->loaded = false;
@@ -726,9 +726,9 @@ void set_current_hud(int player_ship_num)
 	else
 	{
 		memcpy(&real_current_hud, &default_hud, sizeof(hud_info));
-	}
+	}	
 
-	current_hud = &real_current_hud;
+	current_hud = &real_current_hud;	
 	Custom_gauge_images_loaded = false;
 }
 

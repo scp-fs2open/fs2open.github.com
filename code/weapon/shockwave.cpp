@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
 */
@@ -50,7 +50,7 @@ typedef struct shockwave {
 	int			obj_sig_hitlist[SW_MAX_OBJS_HIT];
 	float		speed, radius;
 	float		inner_radius, outer_radius, damage;
-	int			weapon_info_index;	// -1 if shockwave not caused by weapon
+	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
 	int			damage_type_idx;			//What type of damage this shockwave does to armor
 	vec3d		pos;
 	float		blast;					// amount of blast to apply
@@ -85,7 +85,7 @@ int shockwave_load(char *s_name, bool shock_3D = false);
 // Function macros
 // -----------------------------------------------------------
 #define SW_INDEX(sw) (sw-Shockwaves)
-
+	
 // -----------------------------------------------------------
 // Externals
 // -----------------------------------------------------------
@@ -122,7 +122,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 //	shockwave_info	*si;
 	matrix			orient;
 
-	for (i = 0; i < MAX_SHOCKWAVES; i++) {
+ 	for (i = 0; i < MAX_SHOCKWAVES; i++) {
 		if ( !(Shockwaves[i].flags & SW_USED) )
 			break;
 	}
@@ -187,7 +187,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	if ( (parent_objnum != -1) && Objects[parent_objnum].type == OBJ_WEAPON ) {		// Goober5000: allow -1
 		sw->weapon_info_index = Weapons[Objects[parent_objnum].instance].weapon_info_index;
 	}
-	else {
+	else {		
 		sw->weapon_info_index = -1;
 	}
 
@@ -224,7 +224,7 @@ void shockwave_delete(object *objp)
 	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
 
 	Shockwaves[objp->instance].flags = 0;
-	Shockwaves[objp->instance].objnum = -1;
+	Shockwaves[objp->instance].objnum = -1;	
 	list_remove(&Shockwave_list, &Shockwaves[objp->instance]);
 }
 
@@ -235,7 +235,7 @@ void shockwave_delete(object *objp)
 void shockwave_delete_all()
 {
 	shockwave	*sw, *next;
-
+	
 	sw = GET_FIRST(&Shockwave_list);
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;
@@ -341,7 +341,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 */
 
 	shockwave_set_framenum(shockwave_objp->instance);
-
+		
 	sw->radius += (frametime * sw->speed);
 	if ( sw->radius > sw->outer_radius ) {
 		sw->radius = sw->outer_radius;
@@ -457,7 +457,7 @@ void shockwave_render(object *objp)
 		float model_Interp_scale_xyz = sw->radius / 50.0f;
 
 		model_set_warp_globals( model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, -1, 1.0f - (sw->radius/sw->outer_radius) );
-
+		
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
@@ -470,9 +470,9 @@ void shockwave_render(object *objp)
 		} else {
 			g3_rotate_vertex(&p, &sw->pos);
 		}
-
+	
 		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-		g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
 	}
 }
 
@@ -502,7 +502,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 
 	if (s_index < 0) {
 		shockwave_info si_tmp;
-
+	
 		strcpy_s(si_tmp.filename, s_name);
 
 		Shockwave_info.push_back( si_tmp );
@@ -531,7 +531,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 			return -1;
 		}
 	}
-
+	
 	return s_index;
 }
 
@@ -542,14 +542,14 @@ int shockwave_load(char *s_name, bool shock_3D)
 //
 void shockwave_level_init()
 {
-	int i;
+	int i;	
 
 	if ( !Default_shockwave_loaded ) {
 		i = -1;
-
+		
 		// try and load in a 3d shockwave first if enabled
 		// Goober5000 - check for existence of file before trying to load it
-		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check
+		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check 
 		// 	to use the static name instead, and added a check to override the command line if a 2d default filename is not found
 		//  Note - The 3d shockwave flag is forced on by TBP's flag as of rev 4983
 		if ( Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
@@ -575,9 +575,9 @@ void shockwave_level_init()
 			else
 				mprintf(("SHOCKWAVE =>  Default animation load: FAILED!!  Checking if 3d effect was already tried...\n"));
 		}
-
+			
 		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
-		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to
+		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to 
 		// spit out a more meaningful message.  Might as well not bother trying again if the command line option was checked as it should have tried the first time through
 		if ( i < 0 && !Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model as last resort... \n"));
@@ -625,7 +625,7 @@ void shockwave_level_close()
 		return;
 
 	shockwave_delete_all();
-
+	
 	uint i;
 
 	// unload default shockwave, and erase all others
@@ -654,7 +654,7 @@ void shockwave_level_close()
 // ------------------------------------------------------------------------------------
 // shockwave_close()
 //
-//	Called at game-shutdown to
+//	Called at game-shutdown to 
 //
 void shockwave_close()
 {
@@ -670,7 +670,7 @@ void shockwave_close()
 void shockwave_move_all(float frametime)
 {
 	shockwave	*sw, *next;
-
+	
 	sw = GET_FIRST(&Shockwave_list);
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;

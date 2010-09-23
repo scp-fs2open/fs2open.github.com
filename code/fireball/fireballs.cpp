@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
 
@@ -62,8 +62,8 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 {
 	int		sound_index;
 	float		range_multiplier = 1.0f;
-	object	*fireball_objp;
-
+	object	*fireball_objp;	
+		
 	Assert((fb != NULL) && (fb->objnum >= 0));
 	if((fb == NULL) || (fb->objnum < 0)){
 		return;
@@ -90,7 +90,7 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 // play warp out sound for warp effect
 void fireball_play_warphole_close_sound(fireball *fb)
 {
-	int	sound_index;
+	int	sound_index;	
 
 	object *fireball_objp;
 
@@ -315,7 +315,7 @@ void fireball_load_data()
 				Error(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
 			}
 		}
-	}
+	} 
 
 	if ( Warp_glow_bitmap == -1 )	{
 		Warp_glow_bitmap = bm_load( NOX("warpglow01") );
@@ -323,7 +323,7 @@ void fireball_load_data()
 	if ( Warp_ball_bitmap == -1 )	{
 		Warp_ball_bitmap = bm_load( NOX("warpball01") );
 	}
-
+	
 //	polymodel Warp_pm;
 
 }
@@ -346,7 +346,7 @@ void fireball_init()
 		fireball_parse_tbl();
 		fireball_load_data();
 	}
-
+	
 	// Reset everything between levels
 	Num_fireballs = 0;
 	for (i=0; i<MAX_FIREBALLS; i++ )	{
@@ -379,8 +379,8 @@ void fireball_render(object * obj)
 	fireball	*fb;
 	fireball_info *fd;
 
-	MONITOR_INC( NumFireballsRend, 1 );
-
+	MONITOR_INC( NumFireballsRend, 1 );	
+	
 	num = obj->instance;
 	fb = &Fireballs[num];
 	fd = &Fireball_info[fb->fireball_info_index];
@@ -417,14 +417,14 @@ void fireball_render(object * obj)
 			break;
 
 		case FIREBALL_WARP_EFFECT: {
-
+			
 				float percent_life = fb->time_elapsed / fb->total_time;
 
 				float rad;
 
-				// Code to make effect grow/shrink.
+				// Code to make effect grow/shrink. 
 				float t = fb->time_elapsed;
-
+			
 				if ( t < WARPHOLE_GROW_TIME )	{
 					rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
 					//rad = t*obj->radius/WARPHOLE_GROW_TIME;
@@ -443,7 +443,7 @@ void fireball_render(object * obj)
 			}
 			break;
 
-
+			
 		default:
 			Int3();
 	}
@@ -551,7 +551,7 @@ int fireball_is_perishable(object * obj)
 
 	fb = &Fireballs[num];
 
-	if ( fb->fireball_render_type == FIREBALL_MEDIUM_EXPLOSION )
+	if ( fb->fireball_render_type == FIREBALL_MEDIUM_EXPLOSION )	
 		return 1;
 
 	if ( !(fb->fireball_render_type == FIREBALL_WARP_EFFECT) )	{
@@ -617,7 +617,7 @@ int fireball_is_warp(object * obj)
 
 	fb = &Fireballs[num];
 
-	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT)
+	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT)	
 		return 1;
 
 	return 0;
@@ -653,7 +653,7 @@ void fireball_process_post(object * obj, float frame_time)
 	int			num, objnum;
 	fireball		*fb;
 
-	MONITOR_INC( NumFireballs, 1 );
+	MONITOR_INC( NumFireballs, 1 );	
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
@@ -757,7 +757,7 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 				ret_lod = 1;
 			} else {
 				ret_lod = 0;
-			}
+			}		
 		} else {
 			// less aggressive LOD for lower detail settings
 			if(w <= bm_size/8){
@@ -768,7 +768,7 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 				ret_lod = 1;
 			} else {
 				ret_lod = 0;
-			}
+			}		
 		}
 	}
 
@@ -839,7 +839,7 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 
 	fb = &Fireballs[n];
 
-	// get an lod to use
+	// get an lod to use	
 	fb_lod = fireball_get_lod(pos, fd, size);
 
 	// change lod if low res is desired
@@ -875,7 +875,7 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 			orient = Objects[parent_obj].orient;
 		}
 	}
-
+	
 	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, OF_RENDERS);
 
 	if (objnum < 0) {
@@ -890,10 +890,10 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 	fb->time_elapsed = 0.0f;
 	fb->objnum = objnum;
 	fb->current_bitmap = -1;
-
+	
 	switch( fb->fireball_render_type )	{
 
-		case FIREBALL_MEDIUM_EXPLOSION:
+		case FIREBALL_MEDIUM_EXPLOSION:	
 			fb->orient = (myrand()>>8) & 7;							// 0 - 7
 			break;
 
@@ -929,7 +929,7 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 	} else {
 		fb->total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
 	}
-
+	
 	fireball_set_framenum(n);
 
 	if ( velocity )	{
@@ -944,7 +944,7 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 		obj->phys_info.speed = vm_vec_mag(velocity);
 		vm_vec_zero(&obj->phys_info.max_rotvel);
 	}
-
+	
 	Num_fireballs++;
 	return objnum;
 }
@@ -1009,7 +1009,7 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 
 	if ( (idx < 0) || (idx >= Num_fireball_types) ) {
 		Int3();
-
+		
 		*red = 1.0f;
 		*green = 1.0f;
 		*blue = 1.0f;

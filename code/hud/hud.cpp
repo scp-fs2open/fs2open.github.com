@@ -1304,7 +1304,7 @@ void HUD_render_2d(float frametime)
 
 			// Inherit color if color parent is specified.
 			if (current_hud->custom_gauge_color_parents[i] >=0 && current_hud->custom_gauge_color_parents[i] < NUM_HUD_GAUGES)
-			{
+ 			{
 				gauge_color = &HUD_config.clr[current_hud->custom_gauge_color_parents[i]];
 			}
 			else
@@ -1332,8 +1332,8 @@ void HUD_render_2d(float frametime)
 				}
 				else
 				{
-				GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
-			}
+					GR_AABITMAP(image_ids[i].first_frame + current_hud->custom_gauge_frames[i], current_hud->custom_gauge_coords[i][0], current_hud->custom_gauge_coords[i][1]);
+				}
 			}
 
 			//So we're back to normal

@@ -1668,7 +1668,7 @@ int brief_text_colorize(char *src, int instance)
 			i++;   //Consume the $ character
 			active_color_index = brief_return_color_index(src[i]);
 			i++; // Consume the color identifier and focus on the white character (if any)
-
+ 
 			// Skip every whitespace until the next word is reached
 			while ( (i < src_len) && is_white_space(src[i]) )
 				i++;
@@ -1677,7 +1677,7 @@ int brief_text_colorize(char *src, int instance)
 			//(subtract 1 because the for loop will add it again)
 			i--;
 			continue;
-		}
+ 		}
 
 		// When the word is terminated reset color to white
 		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) )) {
@@ -1689,8 +1689,8 @@ int brief_text_colorize(char *src, int instance)
 		dest.letter = src[i];
 		dest.color = active_color_index;
 		dest_line.push_back(dest);
-	}
-	Colored_stream[instance].push_back(dest_line);
+	} 
+	Colored_stream[instance].push_back(dest_line); 	
 	return dest_line.size();
 }
 

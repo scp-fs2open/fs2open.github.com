@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
 
@@ -104,7 +104,7 @@ static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		options_buttons("OPT_03",	10,	444,	3,		-1),							// abort game button
 		options_buttons("OPT_04",	411,	444,	4,		-1),							// control config button
 		options_buttons("OPT_05",	506,	444,	5,		-1),							// hud config
-		options_buttons("OPT_06",	576,	434,	6,		-1),							// accept button
+		options_buttons("OPT_06",	576,	434,	6,		-1),							// accept button				
 
 		options_buttons("OMB_07",	51,	74,	7,		OPTIONS_TAB, 2),			// Briefing / debriefing voice toggle off
 		options_buttons("OMB_08",	106,	74,	8,		OPTIONS_TAB, 2),			// Briefing / debriefing voice toggle on
@@ -112,7 +112,7 @@ static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		options_buttons("OMB_19",	106,	266,	19,	OPTIONS_TAB, 2),			// Mouse on
 		options_buttons("OMB_26",	578,	149,	26,	OPTIONS_TAB, 1),			// Gamma Down
 		options_buttons("OMB_27",	607,	149,	27,	OPTIONS_TAB, 1),			// Gamma Up
-
+		
 		options_buttons("ODB_21",	597,	261,	21,	DETAIL_LEVELS_TAB, 2),	// Planets On
 		options_buttons("ODB_20",	539,	261,	20,	DETAIL_LEVELS_TAB, 2),	// Planets Off
 		options_buttons("ODB_23",	597,	307,	23,	DETAIL_LEVELS_TAB, 2),	// Target View Rendering On
@@ -133,7 +133,7 @@ static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		options_buttons("2_OPT_03",	16,	711,	3,		-1),						// abort game
 		options_buttons("2_OPT_04",	657,	711,	4,		-1),						// control config button
 		options_buttons("2_OPT_05",	809,	711,	5,		-1),						// hud config button
-		options_buttons("2_OPT_06",	922,	694,	6,		-1),						// accept button
+		options_buttons("2_OPT_06",	922,	694,	6,		-1),						// accept button		
 
 		options_buttons("2_OMB_07",	81,	118,	7,		OPTIONS_TAB, 2),			// Briefing / debriefing voice toggle off
 		options_buttons("2_OMB_08",	170,	118,	8,		OPTIONS_TAB, 2),			// Briefing / debriefing voice toggle on
@@ -141,7 +141,7 @@ static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		options_buttons("2_OMB_19",	170,	425,	19,	OPTIONS_TAB, 2),			// Mouse on
 		options_buttons("2_OMB_26",	925,	238,	26,	OPTIONS_TAB, 1),			// Gamma Down
 		options_buttons("2_OMB_27",	971,	238,	27,	OPTIONS_TAB, 1),			// Gamma Up
-
+		
 		options_buttons("2_ODB_21",	956,	417,	21,	DETAIL_LEVELS_TAB, 2),	// Planets On
 		options_buttons("2_ODB_20",	863,	417,	20,	DETAIL_LEVELS_TAB, 2),	// Planets Off
 		options_buttons("2_ODB_23",	956,	492,	23,	DETAIL_LEVELS_TAB, 2),	// Target View Rendering On
@@ -154,7 +154,7 @@ static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		options_buttons("2_ODB_16",	983,	183,	16,	DETAIL_LEVELS_TAB, 2),	// High Preset Detail
 		options_buttons("2_ODB_17",	983,	213,	17,	DETAIL_LEVELS_TAB, 2),	// Highest Preset Detail
 		options_buttons("2_ODB_18",	983,	243,	18,	DETAIL_LEVELS_TAB, 2),	// Custom Detail
-	}
+	}	
 };
 
 #define NUM_OPTIONS_SLIDERS			7
@@ -167,7 +167,7 @@ static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 #define OPT_SKILL_SLIDER				6
 
 op_sliders Options_sliders[GR_NUM_RESOLUTIONS][NUM_OPTIONS_SLIDERS] = {
-	{ // GR_640
+	{ // GR_640		
 		op_sliders("OMB_10",		31,	139,	-1,	-1,	10,	20,	10,
 					  "OMB_11",		11,	226,	137,
 					  "OMB_09",		9,		4,		137 ),								// sound fx volume slider
@@ -177,12 +177,12 @@ op_sliders Options_sliders[GR_NUM_RESOLUTIONS][NUM_OPTIONS_SLIDERS] = {
 		op_sliders("OMB_16",		31,	209,	-1,	-1,	16,	20,	10,
 					  "OMB_17",		17,	226,	206,
 					  "OMB_15",		15,	4,		206 ),								// voice volume slider
-		op_sliders("OMB_20",		6,		316,	-1,	-1,	20,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// mouse sensitivity
+		op_sliders("OMB_20",		6,		316,	-1,	-1,	20,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// mouse sensitivity	
 		op_sliders("OMB_28",		440,	259,	-1,	-1,	28,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// joystick sensitivity
 		op_sliders("OMB_29",		440,	290,	-1,	-1,	29,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// joystick deadzone
 		op_sliders("OMB_21",		440,	75,	-1,	-1,	21,	36,	5,	NULL, -1, -1, -1, NULL, -1, -1, -1)
-	},
-	{ // GR_1024
+	},	
+	{ // GR_1024		
 		op_sliders("2_OMB_10",		50,	223,	-1,	-1,	10,	32,	10,
 					  "2_OMB_11",		11,	361,	219,
 					  "2_OMB_09",		9,		7,		219 ),								// sound fx volume slider
@@ -192,7 +192,7 @@ op_sliders Options_sliders[GR_NUM_RESOLUTIONS][NUM_OPTIONS_SLIDERS] = {
 		op_sliders("2_OMB_16",		50,	335,	-1,	-1,	16,	32,	10,
 					  "2_OMB_17",		17,	361,	330,
 					  "2_OMB_15",		15,	7,		330 ),								// voice volume slider
-		op_sliders("2_OMB_20",		9,		505,	-1,	-1,	20,	32,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// mouse sensitivity
+		op_sliders("2_OMB_20",		9,		505,	-1,	-1,	20,	32,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// mouse sensitivity	
 		op_sliders("2_OMB_28",		704,	414,	-1,	-1,	28,	32,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// joystick sensitivity
 		op_sliders("2_OMB_29",		704,	464,	-1,	-1,	29,	32,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// joystick deadzone
 		op_sliders("2_OMB_21",		704,	120,	-1,	-1,	21,	60,	5,	NULL, -1, -1, -1, NULL, -1, -1, -1)
@@ -204,7 +204,7 @@ static struct {
 	char *mask_filename;
 	int bitmap;
 	int mask;
-
+	
 } Backgrounds[GR_NUM_RESOLUTIONS][NUM_TABS] = {
 //XSTR:OFF
 	{	// GR_640
@@ -318,8 +318,8 @@ op_sliders Detail_sliders[GR_NUM_RESOLUTIONS][NUM_DETAIL_SLIDERS] = {
 		op_sliders("ODB_11",	21,	260,	-1,	-1,	11,	20,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),			// debris
 		op_sliders("ODB_12",	21,	307,	-1,	-1,	12,	20,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),			// shield hit
 		op_sliders("ODB_13",	21,	354,	-1,	-1,	13,	20,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),			// stars
-		op_sliders("ODB_19",	518,	212,	-1,	-1,	19,	20,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),			// lighting
-	},
+		op_sliders("ODB_19",	518,	212,	-1,	-1,	19,	20,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),			// lighting		
+	},	
 	{ // GR_1024
 		op_sliders("2_ODB_07",	34,	114,	-1,	-1,	7,		32,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),		// model detail
 		op_sliders("2_ODB_08",	34,	190,	-1,	-1,	8,		32,	5, NULL, -1, -1, -1, NULL, -1, -1, -1),		// nebula detail
@@ -356,13 +356,13 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "Config",		1415,		504,	430,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][HUD_CONFIG_BUTTON].button },
 		{ "Accept",		1035,		573,	412,	UI_XSTR_COLOR_PINK,	-1, &Buttons[0][ACCEPT_BUTTON].button },
 
-		// text for the detail level screen
+		// text for the detail level screen 
 		{ "Preset Detail Levels",	1355,	455,	56,	UI_XSTR_COLOR_GREEN,	-1, &Detail_bogus },
 		{ "Low",			1160,		570,	82,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][LOW_DETAIL_N].button },
 		{ "Medium",		1161,		550,	100,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][MEDIUM_DETAIL_N].button },
 		{ "High",		1162,		568,	120,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][HIGH_DETAIL_N].button },
 		{ "Very High",	1163,		530,	139,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][VERY_HIGH_DETAIL_N].button },
-		{ "Custom",		1356,		546,	158,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][CUSTOM_DETAIL_N].button },
+		{ "Custom",		1356,		546,	158,	UI_XSTR_COLOR_GREEN, -1, &Buttons[0][CUSTOM_DETAIL_N].button },		
 		{ "Off",			1286,		509,	267,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][PLANETS_OFF].button },
 		{ "On",			1285,		573,	267,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][PLANETS_ON].button },
 		{ "Off",			1286,		509,	314,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][HUD_TARGETVIEW_RENDER_OFF].button },
@@ -412,13 +412,13 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "Config",		1415,		806,	696,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][HUD_CONFIG_BUTTON].button },
 		{ "Accept",		1035,		927,	672,	UI_XSTR_COLOR_PINK,	-1, &Buttons[1][ACCEPT_BUTTON].button },
 
-		// text for the detail level screen
+		// text for the detail level screen 
 		{ "Preset Detail Levels",	1355,	809,	90,	UI_XSTR_COLOR_GREEN,	-1, &Detail_bogus },
 		{ "Low",			1160,		944,	131,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][LOW_DETAIL_N].button },
 		{ "Medium",		1161,		924,	161,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][MEDIUM_DETAIL_N].button },
 		{ "High",		1162,		942,	192,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][HIGH_DETAIL_N].button },
 		{ "Very High",	1163,		903,	222,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][VERY_HIGH_DETAIL_N].button },
-		{ "Custom",		1356,		922,	252,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][CUSTOM_DETAIL_N].button },
+		{ "Custom",		1356,		922,	252,	UI_XSTR_COLOR_GREEN, -1, &Buttons[1][CUSTOM_DETAIL_N].button },		
 		{ "Off",			1286,		835,	427,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][PLANETS_OFF].button },
 		{ "On",			1285,		936,	427,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][PLANETS_ON].button },
 		{ "Off",			1286,		835,	503,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][HUD_TARGETVIEW_RENDER_OFF].button },
@@ -427,7 +427,7 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "On",			1285,		936,	578,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][WEAPON_EXTRAS_ON].button },
 		{ "Planets/Backgrounds",	1357,	808,	391, UI_XSTR_COLOR_GREEN, -1, &Detail_bogus },
 		{ "Target View Rendering",	1358,	799,	466, UI_XSTR_COLOR_GREEN, -1, &Detail_bogus },
-		{ "Weapon Extras",			1359,	850,	542, UI_XSTR_COLOR_GREEN, -1, &Detail_bogus },
+		{ "Weapon Extras",			1359,	850,	542, UI_XSTR_COLOR_GREEN, -1, &Detail_bogus },				
 		{ "Model Detail",					1360,	44,	99,	UI_XSTR_COLOR_GREEN, -1, &Detail_sliders[1][DETAIL_DISTANCE_SLIDER].slider },
 		{ "Nebula Detail",				1361,	44,	175,	UI_XSTR_COLOR_GREEN, -1, &Detail_sliders[1][NEBULA_DETAIL_SLIDER].slider },
 		{ "3D Hardware Textures",		1362,	44,	250,	UI_XSTR_COLOR_GREEN, -1, &Detail_sliders[1][HARDWARE_TEXTURES_SLIDER].slider },
@@ -541,13 +541,13 @@ void options_tab_setup(int set_palette)
 		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
 			Options_sliders[gr_screen.res][i].slider.enable();
 			Options_sliders[gr_screen.res][i].slider.unhide();
-		}
+		}		
 	} else {
 		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
 			Options_sliders[gr_screen.res][i].slider.hide();
 			Options_sliders[gr_screen.res][i].slider.disable();
-		}
-	}
+		}		
+	}	
 
 	if( ((Game_mode & GM_IN_MISSION) && (!popupdead_is_active())) || (Game_mode & GM_MULTIPLAYER) ){
 		Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.disable();
@@ -567,7 +567,7 @@ void options_tab_setup(int set_palette)
 			break;
 
 		case DETAIL_LEVELS_TAB:
-			options_detail_unhide_stuff();
+			options_detail_unhide_stuff();	
 			break;
 	}
 }
@@ -578,7 +578,7 @@ void options_tab_close()
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
-			options_multi_unselect();
+			options_multi_unselect();		
 #endif
 			break;
 
@@ -722,12 +722,12 @@ void options_change_gamma(float delta)
 
 void options_button_pressed(int n)
 {
-	int choice;
+	int choice;	
 
-	switch (n) {
+	switch (n) {		
 		case OPTIONS_TAB:
 		case MULTIPLAYER_TAB:
-		case DETAIL_LEVELS_TAB:
+		case DETAIL_LEVELS_TAB:	
 			if (Tab != n)
 				options_change_tab(n);
 
@@ -743,7 +743,7 @@ void options_button_pressed(int n)
 		case CONTROL_CONFIG_BUTTON:
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CONTROL_CONFIG);
-			break;
+			break;				
 
 		case HUD_CONFIG_BUTTON:
 #ifdef FS2_DEMO
@@ -764,7 +764,7 @@ void options_button_pressed(int n)
 
 		case ACCEPT_BUTTON:
 			options_accept();
-			break;
+			break;		
 
 			// BEGIN - detail level tab buttons
 
@@ -796,7 +796,7 @@ void options_button_pressed(int n)
 		case WEAPON_EXTRAS_OFF:
 			Detail.weapon_extras = 0;
 			gamesnd_play_iface(SND_USER_SELECT);
-			break;
+			break;		
 
 		case LOW_DETAIL_N:
 			options_detail_set_level(0);
@@ -1011,30 +1011,30 @@ void options_menu_init()
 	Backup_voice_volume = Master_voice_volume;
 	Backup_briefing_voice_enabled = Briefing_voice_enabled;
 	Backup_use_mouse_to_fly = Use_mouse_to_fly;
-
-	// create slider
+	
+	// create slider	
 	for ( i = 0; i < NUM_OPTIONS_SLIDERS; i++ ) {
 		 Options_sliders[gr_screen.res][i].slider.create(&Ui_window, Options_sliders[gr_screen.res][i].x, Options_sliders[gr_screen.res][i].y,
 																		Options_sliders[gr_screen.res][i].dots, Options_sliders[gr_screen.res][i].filename,
 																		Options_sliders[gr_screen.res][i].hotspot, Options_sliders[gr_screen.res][i].right_filename, Options_sliders[gr_screen.res][i].right_mask, Options_sliders[gr_screen.res][i].right_x, Options_sliders[gr_screen.res][i].right_y,
 																		Options_sliders[gr_screen.res][i].left_filename, Options_sliders[gr_screen.res][i].left_mask, Options_sliders[gr_screen.res][i].left_x, Options_sliders[gr_screen.res][i].left_y,
 																		Options_sliders[gr_screen.res][i].dot_w);
-	}
+	}	
 
 	// maybe disable the skill slider
 	if( ((Game_mode & GM_IN_MISSION) && (!popupdead_is_active())) || (Game_mode & GM_MULTIPLAYER) ) {
 		Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.disable();
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 0;
 	}
-
-	// setup slider values
+	
+	// setup slider values 
 	// note slider scale is 0-9, while Master_ values calc with 1-10 scale (hence the -1)
 	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = (int) (Master_sound_volume * 9.0f + 0.5f);
-	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = (int) (Master_event_music_volume * 9.0f + 0.5f);
+	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = (int) (Master_event_music_volume * 9.0f + 0.5f);	
 	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = (int) (Master_voice_volume * 9.0f + 0.5f);
 
-	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;
-	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Dead_zone_size / 5;
+	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;	
+	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Dead_zone_size / 5;	
 	Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos = Mouse_sensitivity;
 	Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos = Game_skill_level;
 
@@ -1050,9 +1050,9 @@ void options_menu_init()
 
 void options_menu_close()
 {
-	int i;
+	int i;	
 
-	Assert(Options_menu_inited);
+	Assert(Options_menu_inited);	
 
 	for (i=0; i<NUM_TABS; i++) {
 		if (Backgrounds[gr_screen.res][i].bitmap >= 0){
@@ -1076,11 +1076,11 @@ void options_menu_close()
 	common_free_interface_palette();		// restore game palette
 	write_pilot_file();
 	game_flush();
-
+	
 	// unpause all sounds, since we could be headed back to the game
 	beam_unpause_sounds();
 	//audiostream_unpause_all();
-
+	
 	Options_menu_inited = 0;
 	Options_multi_inited = 0;
 	Options_detail_inited = 0;
@@ -1121,7 +1121,7 @@ void draw_gamma_box()
 		BM_SELECT_TEX_FORMAT();
 
 		// set full white
-		r = g = b = a = 255;
+		r = g = b = a = 255;		
 		bm_set_components((ubyte*)&clr_full_white, &r, &g, &b, &a);
 
 		// set half white
@@ -1149,7 +1149,7 @@ void draw_gamma_box()
 		// always go back to screen format
 		BM_SELECT_SCREEN_FORMAT();
 
-		// if we're in bitmap poly mode
+		// if we're in bitmap poly mode		
 		int Gamma_bitmap = bm_create( 16, Options_gamma_coords[gr_screen.res][OPTIONS_W_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD], Gamma_data, 0 );
 		gr_set_bitmap(Gamma_bitmap);
 		gr_bitmap( Options_gamma_coords[gr_screen.res][OPTIONS_X_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_Y_COORD] );
@@ -1162,7 +1162,7 @@ void draw_gamma_box()
 
 void options_menu_do_frame(float frametime)
 {
-	int i, k, x, y;
+	int i, k, x, y;	
 
 	Assert(Options_menu_inited);
 	k = Ui_window.process() & ~KEY_DEBUGGED;
@@ -1221,9 +1221,9 @@ void options_menu_do_frame(float frametime)
 		case KEY_DELETE:
 			break;
 
-		case KEY_ENTER:
+		case KEY_ENTER:			
 			break;
-	}
+	}	
 
 	for (i=0; i<NUM_BUTTONS; i++) {
 		if (Buttons[gr_screen.res][i].button.pressed())
@@ -1243,7 +1243,7 @@ void options_menu_do_frame(float frametime)
 	if (i >= 0) {
 		gr_set_bitmap(i);
 		gr_bitmap(0, 0);
-	}
+	} 
 
 	Ui_window.draw();
 
@@ -1296,7 +1296,7 @@ void options_menu_do_frame(float frametime)
 		} else {
 			options_force_button_frame(MOUSE_OFF, 2);
 			options_force_button_frame(MOUSE_ON, 0);
-		}
+		}		
 
 		int w;
 		gr_get_string_size(&w, NULL, Skill_level_names(Game_skill_level));
@@ -1306,13 +1306,13 @@ void options_menu_do_frame(float frametime)
 		gr_string(x + (Options_skills_text_coords[gr_screen.res][OPTIONS_W_COORD] / 2) - (w/2), y, Skill_level_names(Game_skill_level));
 	}
 
-
+	
 	//==============================================================================
 	// Draw the gamma adjustment grid.
 	if (Tab == OPTIONS_TAB) {
 
 		draw_gamma_box();
-
+		
 		gr_set_color_fast(&Color_white);
 		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD]; //  + Options_gamma_num_coords[gr_screen.res][OPTIONS_W_COORD] / 2 - 12;
 		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD]; // + Options_gamma_num_coords[gr_screen.res][OPTIONS_H_COORD] / 2 - gr_get_font_height() / 2;
@@ -1325,7 +1325,7 @@ void options_menu_do_frame(float frametime)
 	if(Tab == MULTIPLAYER_TAB){
 		options_multi_vox_process_waveform();
 	}
-
+	
 /*  Debug code: Graphs the joystick range scaling
 {
 int joy_get_scaled_reading(int raw, int axn);
@@ -1342,7 +1342,7 @@ int joy_get_scaled_reading(int raw, int axn);
 		y = joy_get_scaled_reading(x * 256, 0) / 512;
 		gr_line(x, 128, x, 128 + y);
 	}
-}*/
+}*/	
 
 	gr_flip();
 }
@@ -1356,7 +1356,7 @@ void options_detail_synch_sliders()
 {
 	Detail_slider_pos[DETAIL_DISTANCE_SLIDER] = Detail_sliders[gr_screen.res][DETAIL_DISTANCE_SLIDER].slider.pos = Detail.detail_distance;
 	Detail_slider_pos[NEBULA_DETAIL_SLIDER] = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos = Detail.nebula_detail;
-	Detail_slider_pos[HARDWARE_TEXTURES_SLIDER] = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos = Detail.hardware_textures;
+	Detail_slider_pos[HARDWARE_TEXTURES_SLIDER] = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos = Detail.hardware_textures;	
 	Detail_slider_pos[SHARD_CULLING_SLIDER] = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos = Detail.num_small_debris;
 	Detail_slider_pos[SHIELD_DETAIL_SLIDER] = Detail_sliders[gr_screen.res][SHIELD_DETAIL_SLIDER].slider.pos = Detail.shield_effects;
 	Detail_slider_pos[NUM_STARS_SLIDER] = Detail_sliders[gr_screen.res][NUM_STARS_SLIDER].slider.pos = Detail.num_stars;
@@ -1391,7 +1391,7 @@ void options_detail_init()
 		b->button.link_hotspot(b->hotspot);
 	}
 
-	// create detail level sliders
+	// create detail level sliders	
 	for ( i = 0; i < NUM_DETAIL_SLIDERS; i++ ) {
 		Detail_sliders[gr_screen.res][i].slider.create(&Ui_window, Detail_sliders[gr_screen.res][i].x, Detail_sliders[gr_screen.res][i].y,
 																		Detail_sliders[gr_screen.res][i].dots, Detail_sliders[gr_screen.res][i].filename,
@@ -1422,7 +1422,7 @@ void options_detail_sliders_update()
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
 	neb2_set_detail_level(Detail.nebula_detail);
 
-	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
+	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;	
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;
 	Detail.shield_effects = Detail_sliders[gr_screen.res][SHIELD_DETAIL_SLIDER].slider.pos;
 	Detail.num_stars = Detail_sliders[gr_screen.res][NUM_STARS_SLIDER].slider.pos;
@@ -1466,7 +1466,7 @@ void options_force_button_frame(int n, int frame_num)
 // called once per frame to set lit buttons
 void options_detail_do_frame()
 {
-	options_detail_sliders_update();
+	options_detail_sliders_update();	
 
 	// force on/off buttons to draw their correct setting
 
@@ -1492,7 +1492,7 @@ void options_detail_do_frame()
 	} else {
 		options_force_button_frame(WEAPON_EXTRAS_OFF, 2);
 		options_force_button_frame(WEAPON_EXTRAS_ON, 0);
-	}
+	}	
 
 	int current_detail;
 

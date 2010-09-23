@@ -696,8 +696,6 @@ FS2_SOURCES =	\
 	ui/uidraw.cpp	\
 	ui/uimouse.cpp	\
 	ui/window.cpp	\
-	vcodec/codec1.cpp	\
-	vcodec/codec1.h	\
 	weapon/beam.cpp	\
 	weapon/beam.h	\
 	weapon/corkscrew.cpp	\

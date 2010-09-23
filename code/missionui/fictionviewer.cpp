@@ -420,7 +420,7 @@ int mission_has_fiction()
 	if (Fred_running)
 		return *Fiction_viewer_filename != 0;
 	else
-	return (Fiction_viewer_text != NULL);
+		return (Fiction_viewer_text != NULL);
 }
 
 char *fiction_file()
@@ -480,13 +480,13 @@ void fiction_viewer_load(char *filename, char *font_filename)
 	// we don't need to copy the text in Fred
 	if (!Fred_running)
 	{
-	// allocate space
-	file_length = cfilelength(fp);
-	Fiction_viewer_text = (char *) vm_malloc(file_length + 1);
-	Fiction_viewer_text[file_length] = '\0';
+		// allocate space
+		file_length = cfilelength(fp);
+		Fiction_viewer_text = (char *) vm_malloc(file_length + 1);
+		Fiction_viewer_text[file_length] = '\0';
 
-	// copy all the text
-	cfread(Fiction_viewer_text, file_length, 1, fp);
+		// copy all the text
+		cfread(Fiction_viewer_text, file_length, 1, fp);
 	}
 
 	// we're done, close it out

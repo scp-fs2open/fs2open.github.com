@@ -97,8 +97,8 @@ int bm_get_next_handle()
 // Returns true if bitmap n can free it's data.
 static void bm_free_data(int n, bool release = false)
 {
-	bitmap_entry	*be;
-	bitmap			*bmp;
+	bitmap_entry *be;
+	bitmap *bmp;
 
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
@@ -163,8 +163,8 @@ SkipFree:
 // NOTE: THIS SHOULD ONLY BE USED FROM bm_unload_fast()!!!
 static void bm_free_data_fast(int n)
 {
-	bitmap_entry	*be;
-	bitmap			*bmp;
+	bitmap_entry *be;
+	bitmap *bmp;
 
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
@@ -963,7 +963,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int *keyfram
 		bm_bitmaps[n+i].bm.w = (short) anim_width ;
 		bm_bitmaps[n+i].bm.rowsize = (short) anim_width;
 		bm_bitmaps[n+i].bm.h = (short) anim_height;
-		if ( reduced )	{
+		if ( reduced ) {
 			bm_bitmaps[n+i].bm.w /= 2;
 			bm_bitmaps[n+i].bm.rowsize /= 2;
 			bm_bitmaps[n+i].bm.h /= 2;
@@ -1764,7 +1764,7 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 
 int bm_release(int handle, int clear_render_targets)
 {
-	bitmap_entry	*be;
+	bitmap_entry *be;
 
 	int n = handle % MAX_BITMAPS;
 
@@ -1867,8 +1867,8 @@ int bm_release(int handle, int clear_render_targets)
 //
 int bm_unload( int handle, int clear_render_targets )
 {
-	bitmap_entry	*be;
-	bitmap			*bmp;
+	bitmap_entry *be;
+	bitmap *bmp;
 
 	int n = handle % MAX_BITMAPS;
 
@@ -1931,8 +1931,8 @@ int bm_unload( int handle, int clear_render_targets )
 // (NOTE that bm_free_data_fast() is used here and NOT bm_free_data()!)
 int bm_unload_fast( int handle, int clear_render_targets )
 {
-	bitmap_entry	*be;
-	bitmap			*bmp;
+	bitmap_entry *be;
+	bitmap *bmp;
 
 	int n = handle % MAX_BITMAPS;
 

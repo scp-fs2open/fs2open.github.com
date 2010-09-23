@@ -160,7 +160,7 @@ void hud_shield_level_init()
 			Shield_gauges[i].first_frame = -1;
 			Shield_gauges[i].num_frames  = 0;
 		}
-
+		
 		Hud_shield_inited = 1;
 	}
 	

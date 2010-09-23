@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
 */
@@ -11,7 +11,7 @@
 
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "render/3d.h"
+#include "render/3d.h" 
 #include "bmpman/bmpman.h"
 #include "particle/particle.h"
 #include "object/object.h"
@@ -32,7 +32,7 @@ typedef struct particle {
 	float	radius;				// radius
 	int		type;				// type										// -1 = None
 	int		optional_data;		// depends on type
-	int		nframes;			// If an ani, how many frames?
+	int		nframes;			// If an ani, how many frames?	
 
 	// new style data
 	float	tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
@@ -103,14 +103,14 @@ void particle_page_in()
 
 DCF(particles,"Turns particles on/off")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);
-		if ( Dc_arg_type & ARG_TRUE )	Particles_enabled = 1;
-		else if ( Dc_arg_type & ARG_FALSE ) Particles_enabled = 0;
-		else if ( Dc_arg_type & ARG_NONE ) Particles_enabled ^= 1;
-	}
-	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );
-	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );
+	if ( Dc_command )	{	
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
+		if ( Dc_arg_type & ARG_TRUE )	Particles_enabled = 1;	
+		else if ( Dc_arg_type & ARG_FALSE ) Particles_enabled = 0;	
+		else if ( Dc_arg_type & ARG_NONE ) Particles_enabled ^= 1;	
+	}	
+	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );	
+	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );	
 
 //	os_config_write_uint( NULL, "UseParticles", Particles_enabled );
 }
@@ -230,7 +230,7 @@ void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int typ
 	pinfo.lifetime = lifetime;
 	pinfo.rad = rad;
 	pinfo.type = type;
-	pinfo.optional_data = optional_data;
+	pinfo.optional_data = optional_data;	
 
 	// setup new data
 	pinfo.tracer_length = -1.0f;
@@ -254,7 +254,7 @@ MONITOR( NumParticles )
 
 void particle_move_all(float frametime)
 {
-	MONITOR_INC( NumParticles, Num_particles );
+	MONITOR_INC( NumParticles, Num_particles );	
 
 	if ( !Particles_enabled )
 		return;
@@ -353,7 +353,7 @@ void particle_render_all()
 	if ( !Particles_enabled )
 		return;
 
-	MONITOR_INC( NumParticlesRend, Num_particles );
+	MONITOR_INC( NumParticlesRend, Num_particles );	
 
 	if ( Particles.empty() )
 		return;
@@ -385,7 +385,7 @@ void particle_render_all()
 		rotate = 1;
 
 		// if this is a tracer style particle, calculate tracer vectors
-		if (p->tracer_length > 0.0f) {
+		if (p->tracer_length > 0.0f) {			
 			ts = p_pos;
 			temp = p->velocity;
 			vm_vec_normalize_quick(&temp);
@@ -495,7 +495,7 @@ void particle_emit( particle_emitter *pe, int type, int optional_data, float ran
 	// Account for detail
 	int percent = get_percent(Detail.num_particles);
 
-	//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000
+	//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000 
 	float min_dist = 125.0f;
 	float dist = vm_vec_dist_quick( &pe->pos, &Eye_position ) / range;
 	if ( dist > min_dist )	{
@@ -511,7 +511,7 @@ void particle_emit( particle_emitter *pe, int type, int optional_data, float ran
 
 	// How many to emit?
 	n = (rand() % (n2-n1+1)) + n1;
-
+	
 	if ( n < 1 ) return;
 
 

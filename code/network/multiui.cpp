@@ -5030,33 +5030,33 @@ void multi_create_accept_hit()
 	if ( (Netgame.type_flags & NG_TYPE_COOP) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
 		// check for time limit
 		if (Netgame.options.mission_time_limit != i2f(-1)) {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
-                             XSTR("A time limit is being used in a co-op game.\r\n"
-                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
-                                  "  Select \'Yes\' to continue with this time limit.\r\n"
-                                  "  Select \'No\' to continue without this time limit.", -1));
+			popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
+								XSTR("A time limit is being used in a co-op game.\r\n"
+									"  Select \'Cancel\' to go back to the mission select screen.\r\n"
+									"  Select \'Yes\' to continue with this time limit.\r\n"
+									"  Select \'No\' to continue without this time limit.", -1));
 
 			if (popup_choice == 0) {
-            return;
+				return;
 			} else if (popup_choice == 2) {
 				Netgame.options.mission_time_limit = i2f(-1);
-        }
-        }
+			}
+		}
 
 		// check kill limit (NOTE: <= 0 is considered no limit)
 		if ( (Netgame.options.kill_limit > 0) && (Netgame.options.kill_limit != 9999) ) {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
-                             XSTR("A kill limit is being used in a co-op game.\r\n"
-                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
-                                  "  Select \'Yes\' to continue with this kill limit.\r\n"
-                                  "  Select \'No\' to continue without this kill limit.", -1));
+			popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
+								XSTR("A kill limit is being used in a co-op game.\r\n"
+									"  Select \'Cancel\' to go back to the mission select screen.\r\n"
+									"  Select \'Yes\' to continue with this kill limit.\r\n"
+									"  Select \'No\' to continue without this kill limit.", -1));
 
 			if (popup_choice == 0) {
-            return;
+				return;
 			} else if (popup_choice == 2) {
-            Netgame.options.kill_limit = 9999;
-        }
-    }
+				Netgame.options.kill_limit = 9999;
+			}
+		}
     }
 
 	// if not on the standalone, move to the mission sync state which will take care of everything

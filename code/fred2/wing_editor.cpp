@@ -643,21 +643,21 @@ int wing_editor::update_data(int redraw)
 			}
 		}
 
-			if(jumpnode_get_by_name(m_wing_name) != NULL)
-			{
-				if (bypass_errors)
-					return 1;
+		if(jumpnode_get_by_name(m_wing_name) != NULL)
+		{
+			if (bypass_errors)
+				return 1;
 
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by a jump node\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			bypass_errors = 1;
+			z = MessageBox("This wing name is already being used by a jump node\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
-				if (z == IDCANCEL)
-					return -1;
+			if (z == IDCANCEL)
+				return -1;
 
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
+			m_wing_name = _T(Wings[cur_wing].name);
+			UpdateData(FALSE);
+		}
 
 		if (!stricmp(m_wing_name.Left(1), "<")) {
 			if (bypass_errors)

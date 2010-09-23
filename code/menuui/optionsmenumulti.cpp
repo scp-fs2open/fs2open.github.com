@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/
+*/ 
 
 
 
@@ -137,13 +137,13 @@ UI_XSTR Om_pro_text[GR_NUM_RESOLUTIONS][OM_PRO_NUM_TEXT] = {
 		{ "IP Address",	1380,	30,	128,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "add",				1381,	22,	235,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_ADD_IP].button },
 		{ "rem.",			1382,	68,	235,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_DELETE_IP].button },
-		{ "Broadcast Locally",	1397,	42,	260,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_LOCAL_BROADCAST].button },
+		{ "Broadcast Locally",	1397,	42,	260,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_LOCAL_BROADCAST].button },	
 		{ "PXO",				1383,	42,	291,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_VMT].button },
 		{ "Login",			1384,	14,	309,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Password",		1385,	14,	336,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Squadron",		1386,	14,	363,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Voice",			1528,	557,	60,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_VOX_TAB].button },
-		{ "General",		1388,	542,	77,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_GEN_TAB].button },
+		{ "General",		1388,	542,	77,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_GEN_TAB].button },	
 	},
 	{ // GR_1024
 		{ "TCP",				1378,	61,	113,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_TCP].button },
@@ -151,13 +151,13 @@ UI_XSTR Om_pro_text[GR_NUM_RESOLUTIONS][OM_PRO_NUM_TEXT] = {
 		{ "IP Address",	1380,	47,	206,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "add",				1381,	36,	375,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_ADD_IP].button },
 		{ "rem.",			1382,	109,	375,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_DELETE_IP].button },
-		{ "Broadcast Locally",	1397,	68,	417,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_LOCAL_BROADCAST].button },
+		{ "Broadcast Locally",	1397,	68,	417,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_LOCAL_BROADCAST].button },	
 		{ "PXO",				1383,	68,	467,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_VMT].button },
 		{ "Login",			1384,	23,	495,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Password",		1385,	23,	538,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Squadron",		1386,	23,	582,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Voice",			1528,	921,	96,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_VOX_TAB].button },
-		{ "General",		1388,	902,	123,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_GEN_TAB].button },
+		{ "General",		1388,	902,	123,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_GEN_TAB].button },	
 	}
 };
 
@@ -344,36 +344,36 @@ UI_GADGET Om_gen_bogus;
 #define OM_GEN_NUM_TEXT					14
 UI_XSTR Om_gen_text[GR_NUM_RESOLUTIONS][OM_GEN_NUM_TEXT] = {
 	{ // GR_640
-		{ "Object Update",	1391,		511,	104,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
+		{ "Object Update",	1391,		511,	104,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
 		{ "Low",					1160,		558,	127,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_LOW].button },
-		{ "Medium",				1161,		538,	149,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_MED].button },
-		{ "High",				1162,		556,	171,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_HIGH].button },
-		{ "Lan",					1392,		561,	193,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_LAN].button },
-		{ "Pilot / Squad Images",	1393,		463,	214,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
-		{ "Yes",					1394,		555,	257,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_PIX_YES].button },
-		{ "No",					1395,		604,	257,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_PIX_NO].button },
-		{ "Transfer Missions",		1396,		478,	271,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
-		{ "/multidata",		1397,		519,	292,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_XFER_MULTIDATA_YES].button },
-		{ "/missions",			1398,		527,	314,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_XFER_MULTIDATA_NO].button },
-		{ "Flush Cache",		1399,		529,	334,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
-		{ "Never",				1400,		548,	355,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_FLUSH_NO].button },
-		{ "Before Game",		1401,		502,	377,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_FLUSH_YES].button },
+		{ "Medium",				1161,		538,	149,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_MED].button },		
+		{ "High",				1162,		556,	171,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_HIGH].button },		
+		{ "Lan",					1392,		561,	193,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_OBJ_LAN].button },		
+		{ "Pilot / Squad Images",	1393,		463,	214,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
+		{ "Yes",					1394,		555,	257,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_PIX_YES].button },		
+		{ "No",					1395,		604,	257,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_PIX_NO].button },		
+		{ "Transfer Missions",		1396,		478,	271,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
+		{ "/multidata",		1397,		519,	292,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_XFER_MULTIDATA_YES].button },		
+		{ "/missions",			1398,		527,	314,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_XFER_MULTIDATA_NO].button },		
+		{ "Flush Cache",		1399,		529,	334,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
+		{ "Never",				1400,		548,	355,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_FLUSH_NO].button },		
+		{ "Before Game",		1401,		502,	377,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[0][OM_GEN_FLUSH_YES].button },		
 	},
 	{ // GR_1024
-		{ "Object Update",	1391,		818,	166,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
+		{ "Object Update",	1391,		818,	166,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
 		{ "Low",					1160,		913,	204,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_LOW].button },
-		{ "Medium",				1161,		892,	239,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_MED].button },
-		{ "High",				1162,		909,	274,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_HIGH].button },
-		{ "Lan",					1392,		916,	310,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_LAN].button },
-		{ "Pilot / Squad Images",	1393,		821,	345,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
-		{ "Yes",					1394,		887,	411,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_PIX_YES].button },
-		{ "No",					1395,		966,	411,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_PIX_NO].button },
-		{ "Transfer Missions",		1396,		844,	435,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
-		{ "/multidata",		1397,		858,	468,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_XFER_MULTIDATA_YES].button },
-		{ "/missions",			1398,		870,	503,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_XFER_MULTIDATA_NO].button },
-		{ "Flush Cache",		1399,		886,	533,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },
-		{ "Never",				1400,		897,	568,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_FLUSH_NO].button },
-		{ "Before Game",		1401,		849,	603,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_FLUSH_YES].button },
+		{ "Medium",				1161,		892,	239,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_MED].button },		
+		{ "High",				1162,		909,	274,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_HIGH].button },		
+		{ "Lan",					1392,		916,	310,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_OBJ_LAN].button },		
+		{ "Pilot / Squad Images",	1393,		821,	345,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
+		{ "Yes",					1394,		887,	411,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_PIX_YES].button },		
+		{ "No",					1395,		966,	411,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_PIX_NO].button },		
+		{ "Transfer Missions",		1396,		844,	435,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
+		{ "/multidata",		1397,		858,	468,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_XFER_MULTIDATA_YES].button },		
+		{ "/missions",			1398,		870,	503,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_XFER_MULTIDATA_NO].button },		
+		{ "Flush Cache",		1399,		886,	533,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_bogus },		
+		{ "Never",				1400,		897,	568,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_FLUSH_NO].button },		
+		{ "Before Game",		1401,		849,	603,	UI_XSTR_COLOR_GREEN,	-1,	&Om_gen_buttons[1][OM_GEN_FLUSH_YES].button },		
 	}
 };
 
@@ -464,10 +464,10 @@ UI_XSTR Om_vox_text[GR_NUM_RESOLUTIONS][OM_VOX_NUM_TEXT] = {
 #define OM_VOX_QOS_SLIDER				0
 
 op_sliders Om_vox_sliders[GR_NUM_RESOLUTIONS][NUM_OM_VOX_SLIDERS] = {
-	{ // GR_640
+	{ // GR_640				
 		op_sliders("OVB_18",	429,	162,	-1,	-1,	18,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// voice QOS
-	},
-	{ // GR_1024
+	},	
+	{ // GR_1024				
 		op_sliders("2_OVB_18",	686,	259,	-1,	-1,	18,	31,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// voice QOS
 	}
 };
@@ -602,7 +602,7 @@ void options_multi_unload_bmaps()
 	if(Om_background_0 != -1){
 		bm_release(Om_background_0);
 		Om_background_0 = -1;
-	}
+	} 
 	if(Om_background_1 != -1){
 		bm_release(Om_background_1);
 		Om_background_1 = -1;
@@ -624,9 +624,9 @@ void options_multi_add_notify(char *str)
 {
 	// copy the string
 	memset(Om_notify_string,0,255);
-	if(str != NULL){
+	if(str != NULL){		
 		strcpy_s(Om_notify_string,str);
-	}
+	} 		
 
 	// set the timestamp
 	Om_notify_stamp = timestamp(OM_NOTIFY_TIME);
@@ -642,7 +642,7 @@ void options_multi_notify_process()
 	int line_count;
 	int y_start;
 	int idx;
-
+	
 	// if there is no timestamp, do nothing
 	if(Om_notify_stamp == -1){
 		return;
@@ -655,18 +655,18 @@ void options_multi_notify_process()
 	}
 
 	// otherwise display the string
-	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);
+	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);	
 	y_start = OM_NOTIFY_Y;
 	gr_set_color_fast(&Color_bright);
 	for(idx=0;idx<line_count;idx++){
 		memset(line, 0, 255);
 		strncpy(line, p_str[idx], n_chars[idx]);
-
+				
 		gr_get_string_size(&w,NULL,line);
 		gr_string((600 - w)/2,y_start,line);
 
 		y_start += 10;
-	}
+	}	
 }
 
 
@@ -676,7 +676,7 @@ void options_multi_notify_process()
 void options_multi_load_protocol_controls()
 {
 	int idx;
-
+	
 	Assert(Om_window != NULL);
 
 	// instantiate all the buttons
@@ -699,7 +699,7 @@ void options_multi_load_protocol_controls()
 		Om_window->add_XSTR(&Om_pro_text[gr_screen.res][idx]);
 	}
 
-	// create the tracker input boxes
+	// create the tracker input boxes	
 	Om_tracker_login.create(Om_window, Om_tracker_login_coords[gr_screen.res][0], Om_tracker_login_coords[gr_screen.res][1], Om_tracker_login_coords[gr_screen.res][2], LOGIN_LEN - 1, Multi_tracker_login, UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_NO_BACK);
 	Om_tracker_passwd.create(Om_window, Om_tracker_passwd_coords[gr_screen.res][0], Om_tracker_passwd_coords[gr_screen.res][1], Om_tracker_passwd_coords[gr_screen.res][2], LOGIN_LEN - 1, Multi_tracker_passwd, UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_PASSWD | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_NO_BACK);
 	Om_tracker_squad_name.create(Om_window, Om_tracker_squad_name_coords[gr_screen.res][0], Om_tracker_squad_name_coords[gr_screen.res][1], Om_tracker_squad_name_coords[gr_screen.res][2], LOGIN_LEN - 1, Multi_tracker_squad_name, UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_NO_BACK);
@@ -708,11 +708,11 @@ void options_multi_load_protocol_controls()
 	Om_ip_button.create(Om_window, "", Ip_list_coords[gr_screen.res][0], Ip_list_coords[gr_screen.res][1], Ip_list_coords[gr_screen.res][2], Ip_list_coords[gr_screen.res][3], 0, 1);
 	Om_ip_button.hide();
 
-	// create the new ip address input box
+	// create the new ip address input box	
 	Om_ip_input.create(Om_window, Ip_input_coords[gr_screen.res][0], Ip_input_coords[gr_screen.res][1], Ip_input_coords[gr_screen.res][2], IP_STRING_LEN, IP_EMPTY_STRING, UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_KEYTHRU);
 	Om_ip_input.hide();
 	Om_ip_input.disable();
-
+	
 	// disable IPX button in demo
 #ifdef FS2_DEMO
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.disable();
@@ -727,7 +727,7 @@ void options_multi_load_protocol_controls()
 void options_multi_disable_protocol_controls()
 {
 	int idx;
-
+	
 	// hide and disable all the protocol buttons
 	for(idx=0;idx<OM_PRO_NUM_BUTTONS;idx++){
 		// hide the button
@@ -764,19 +764,19 @@ void options_multi_disable_protocol_controls()
 void options_multi_enable_protocol_controls()
 {
 	int idx;
-
+	
 	// unhide and enable all the protocol buttons
 	for(idx=0;idx<OM_PRO_NUM_BUTTONS;idx++){
 		// enable the button
 		Om_pro_buttons[gr_screen.res][idx].button.enable();
-
+		
 		// unhide the button
-		Om_pro_buttons[gr_screen.res][idx].button.unhide();
+		Om_pro_buttons[gr_screen.res][idx].button.unhide();		
 	}
 
 	// unhide and enable the tracker input boxes
 	if(Om_tracker_flag){
-		Om_tracker_login.enable();
+		Om_tracker_login.enable();	
 		Om_tracker_passwd.enable();
 		Om_tracker_squad_name.enable();
 	}
@@ -785,11 +785,11 @@ void options_multi_enable_protocol_controls()
 	Om_tracker_squad_name.unhide();
 
 	// enable the click detection button
-	Om_ip_button.enable();
+	Om_ip_button.enable();	
 
 	// bogus control
 	Om_pro_bogus.enable();
-	Om_pro_bogus.unhide();
+	Om_pro_bogus.unhide();	
 }
 
 // intialize the protocol section vars
@@ -804,13 +804,13 @@ void options_multi_init_protocol_vars()
 	// whether or not we're playing on the tracker
 	// ------------------- made to read the registry by Kazan -------------------
 	Om_tracker_flag = os_config_read_uint( "PXO", "FS2OpenPXO" , 0 );
-		 // (Multi_options_g.protocol == NET_TCP) && Multi_options_g.pxo ? 1 : 0;
+		 // (Multi_options_g.protocol == NET_TCP) && Multi_options_g.pxo ? 1 : 0;	
 
-	// load the ip address list
+	// load the ip address list	
 	Om_ip_disp_count = 0;
 	options_multi_protocol_load_ip_file();
-	Om_ip_selected = Om_num_ips - 1;
-	Om_ip_start = Om_num_ips - 1;
+	Om_ip_selected = Om_num_ips - 1;	
+	Om_ip_start = Om_num_ips - 1;			
 }
 
 // do frame for the protocol section
@@ -818,8 +818,8 @@ void options_multi_protocol_do(int key)
 {
 	// check for button presses
 	options_multi_protocol_check_buttons();
-
-	// force draw the correct "local broadcast" button
+	
+	// force draw the correct "local broadcast" button	
 	if(Om_local_broadcast){
 		Om_pro_buttons[gr_screen.res][OM_PRO_LOCAL_BROADCAST].button.draw_forced(2);
 	}
@@ -833,9 +833,9 @@ void options_multi_protocol_do(int key)
 	switch(key){
 	case KEY_ENTER:
 		// add a new ip string if we're in "input" mode
-		if(Om_input_mode){
+		if(Om_input_mode){			
 			options_multi_protocol_add_current_ip();
-
+			
 			// clear the text control and input mode
 			Om_ip_input.set_text("");
 			Om_ip_input.clear_focus();
@@ -909,7 +909,7 @@ void options_multi_protocol_do(int key)
 	options_multi_protocol_check_ip_list();
 
 	// draw the list of ip addresses
-	options_multi_protocol_display_ips();
+	options_multi_protocol_display_ips();	
 
 	// hack to play sound when input boxes gain focus
 	if (Om_tracker_login.has_focus()) {
@@ -939,7 +939,7 @@ void options_multi_protocol_accept()
 	Player->m_local_options.flags &= ~(MLO_FLAG_LOCAL_BROADCAST);
 	if(Om_local_broadcast){
 		Player->m_local_options.flags |= MLO_FLAG_LOCAL_BROADCAST;
-	}
+	}	
 
 	// active protocol
 	Multi_options_g.protocol = Om_protocol;
@@ -958,7 +958,7 @@ void options_multi_protocol_accept()
 
 	// write out the PXO squad name and passwd values to the registry
 	os_config_write_string( "PXO", "SquadName", Multi_tracker_squad_name );
-
+	
 	// save the ip address list
 	options_multi_protocol_save_ip_file();
 }
@@ -1015,7 +1015,7 @@ void options_multi_protocol_button_pressed(int n)
 			break;
 		}
 
-		if(!Om_local_broadcast){
+		if(!Om_local_broadcast){			
 			Om_local_broadcast = 1;
 		} else {
 			Om_local_broadcast = 0;
@@ -1025,7 +1025,7 @@ void options_multi_protocol_button_pressed(int n)
 		break;
 
 	// scroll ips down
-	case OM_PRO_SCROLL_IP_DOWN:
+	case OM_PRO_SCROLL_IP_DOWN:		
 		// don't process if we're in input mode
 		if(Om_input_mode){
 			break;
@@ -1035,7 +1035,7 @@ void options_multi_protocol_button_pressed(int n)
 		break;
 
 	// scroll ips up
-	case OM_PRO_SCROLL_IP_UP:
+	case OM_PRO_SCROLL_IP_UP:		
 		// don't process if we're in input mode
 		if(Om_input_mode){
 			break;
@@ -1074,11 +1074,11 @@ void options_multi_protocol_button_pressed(int n)
 #endif
 		break;
 
-	// general tab button
-	case OM_PRO_GEN_TAB:
+	// general tab button 
+	case OM_PRO_GEN_TAB:	
 		if(Om_mode != OM_MODE_GENERAL){
 			// set the general tab
-			Om_mode = OM_MODE_GENERAL;
+			Om_mode = OM_MODE_GENERAL;		
 
 			// disable the voice controls
 			options_multi_disable_vox_controls();
@@ -1086,7 +1086,7 @@ void options_multi_protocol_button_pressed(int n)
 			// enable the general controls
 			options_multi_enable_gen_controls();
 
-			// set the general screen mask
+			// set the general screen mask	
 			Assert(Om_mask_0 >= 0);
 			Om_window->set_mask_bmap(Om_mask_0, Om_background_0_mask_fname[gr_screen.res]);
 		}
@@ -1108,7 +1108,7 @@ void options_multi_protocol_button_pressed(int n)
 			// enable the voice controls
 			options_multi_enable_vox_controls();
 
-			// set the voice screen mask
+			// set the voice screen mask	
 			Assert(Om_mask_1 >= 0);
 			Om_window->set_mask_bmap(Om_mask_1, Om_background_1_mask_fname[gr_screen.res]);
 		}
@@ -1143,7 +1143,7 @@ void options_multi_protocol_load_ip_file()
 	Om_num_ips = 0;
 
 	// attempt to open the ip list file
-	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);
+	file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
 	if(file == NULL){
 		nprintf(("Network","Error loading tcp.cfg file!\n"));
 		return;
@@ -1196,7 +1196,7 @@ void options_multi_protocol_save_ip_file()
 		//Assert(psnet_is_valid_ip_string(Multi_ip_addrs[idx]));
 
 		cfputs(Om_ip_addrs[idx],file);
-
+				
 	   // make sure to tack on a newline if necessary
 		if(Om_ip_addrs[idx][strlen(&Om_ip_addrs[idx][0]) - 1] != '\n'){
 			cfputs(NOX("\n"),file);
@@ -1211,16 +1211,16 @@ void options_multi_protocol_display_ips()
 {
 	int idx;
 	int y_start = Ip_list_coords[gr_screen.res][1];
-
+		
 	// get the # of items we should be displaying based upon the # of addresses and the starting display point
 	if(Om_ip_start >= Ip_list_max_display[gr_screen.res]){
 		Om_ip_disp_count = Ip_list_max_display[gr_screen.res];
 	} else {
 		Om_ip_disp_count = Om_ip_start + 1;
 	}
-
+	
 	// display the addresses
-	for(idx=Om_ip_start; idx >= Om_ip_start - Om_ip_disp_count + 1 ; idx--){
+	for(idx=Om_ip_start; idx >= Om_ip_start - Om_ip_disp_count + 1 ; idx--){	
 		if(idx == Om_ip_selected){
 			gr_set_color_fast(&Color_bright);
 		} else {
@@ -1240,7 +1240,7 @@ void options_multi_protocol_scroll_ip_down()
 		Om_ip_start--;
 	} else {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-	}
+	}	
 }
 
 // scroll the list of ip addresses up
@@ -1257,14 +1257,14 @@ void options_multi_protocol_scroll_ip_up()
 // check the ip list to see if the user has selected a new item
 void options_multi_protocol_check_ip_list()
 {
-	int click_y;
+	int click_y;	
 	int item;
-
+	
 	if(Om_ip_button.pressed()){
-		// determine which item he clicked on
+		// determine which item he clicked on	
 		Om_ip_button.get_mouse_pos(NULL, &click_y);
 		item = click_y / 10;
-
+			
 		// determine if there is an item in this location, and select it if so
 		if(item < Om_ip_disp_count){
 			Om_ip_selected = Om_ip_start - item;
@@ -1276,27 +1276,27 @@ void options_multi_protocol_check_ip_list()
 void options_multi_protocol_delete_ip()
 {
 	int idx;
-
+	
 	// attempt to delete the currently highlighted item
-	if(Om_ip_selected != -1){
+	if(Om_ip_selected != -1){		
 
-		// move down all the other items
+		// move down all the other items				
 		for(idx=Om_ip_selected; idx < Om_num_ips; idx++){
 			strcpy_s(Om_ip_addrs[idx],Om_ip_addrs[idx+1]);
 		}
 
 		// make sure to decrement the starting index
-		Om_ip_start--;
-
-		// check to make sure that the selected item is valid
-		Om_num_ips--;
+		Om_ip_start--;			
+			
+		// check to make sure that the selected item is valid			
+		Om_num_ips--;			
 		if(Om_num_ips <= 0){
 			Om_ip_selected = -1;
 		} else {
 			if(Om_ip_selected > 0){
-				Om_ip_selected--;
-			}
-		}
+				Om_ip_selected--;	
+			} 
+		}						
 	}
 }
 
@@ -1310,7 +1310,7 @@ int options_multi_verify_ip()
 	if(!Ip_validated_already){
 		// see if its a valid ip address
 		result = psnet_is_valid_ip_string(Ip_str);
-
+	
 		// if the result is a valid ip string, return immediately
 		if(result){
 			return 10;
@@ -1318,7 +1318,7 @@ int options_multi_verify_ip()
 
 		// otherwise, change the popup text to indicate that it is invalid and wait for the user to click ok
 		popup_change_text(XSTR( "Ip string is invalid!", 386));
-	}
+	} 	
 
 	Ip_validated_already = 1;
 
@@ -1328,11 +1328,11 @@ int options_multi_verify_ip()
 
 // attempt to add the currently entered ip address
 void options_multi_protocol_add_current_ip()
-{
+{		
 	// get the entered string
 	Om_ip_input.get_text(Ip_str);
 
-	// this popup wil do several things.
+	// this popup wil do several things. 
 	// 1.) It will display a popup so the user isn't left scratching his head
 	// 2.) If the address
 	Ip_validated_already = 0;
@@ -1341,7 +1341,7 @@ void options_multi_protocol_add_current_ip()
 			strcpy_s(Om_ip_addrs[Om_num_ips],Ip_str);
 			Om_ip_start = Om_num_ips;
 			Om_num_ips++;
-
+			
 			// if this is the first item on the list, select it
 			if(Om_num_ips == 1){
 				Om_ip_selected = 0;
@@ -1349,7 +1349,7 @@ void options_multi_protocol_add_current_ip()
 		} else {
 			options_multi_add_notify(XSTR( "Max # of IP addresses reached!", 389));
 		}
-	}
+	} 			
 }
 
 // general options tab section -------------------------------------------
@@ -1358,11 +1358,11 @@ void options_multi_protocol_add_current_ip()
 void options_multi_load_gen_controls()
 {
 	int idx;
-
+	
 	Assert(Om_window != NULL);
 
 	// instantiate all the buttons
-	for(idx=0; idx<OM_GEN_NUM_BUTTONS; idx++){
+	for(idx=0; idx<OM_GEN_NUM_BUTTONS; idx++){				
 		// create the object
 		Om_gen_buttons[gr_screen.res][idx].button.create(Om_window, "", Om_gen_buttons[gr_screen.res][idx].x, Om_gen_buttons[gr_screen.res][idx].y, 1, 1, 0, 1);
 
@@ -1407,7 +1407,7 @@ void options_multi_enable_gen_controls()
 	int idx;
 
 	// go through all the controls
-	for(idx=0;idx<OM_GEN_NUM_BUTTONS;idx++){
+	for(idx=0;idx<OM_GEN_NUM_BUTTONS;idx++){		
 		Om_gen_buttons[gr_screen.res][idx].button.enable();
 		Om_gen_buttons[gr_screen.res][idx].button.unhide();
 	}
@@ -1423,7 +1423,7 @@ void options_multi_init_gen_vars()
 	// initialize the object update
 	Om_gen_obj_update = Player->m_local_options.obj_update_level;
 
-	// initialize the accept pix var
+	// initialize the accept pix var	
 	if(Player->m_local_options.flags & MLO_FLAG_ACCEPT_PIX){
 		Om_gen_pix = 1;
 	} else {
@@ -1461,7 +1461,7 @@ void options_multi_gen_accept()
 	Player->m_local_options.flags &= ~(MLO_FLAG_XFER_MULTIDATA);
 	if(Om_gen_xfer_multidata){
 		Player->m_local_options.flags |= MLO_FLAG_XFER_MULTIDATA;
-	}
+	} 
 
 	// apply the flush cache var
 	Player->m_local_options.flags &= ~(MLO_FLAG_FLUSH_CACHE);
@@ -1543,7 +1543,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// medium object update level
 	case OM_GEN_OBJ_MED:
 		if(Om_gen_obj_update != OBJ_UPDATE_MEDIUM){
@@ -1553,7 +1553,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// high object update level
 	case OM_GEN_OBJ_HIGH:
 		if(Om_gen_obj_update != OBJ_UPDATE_HIGH){
@@ -1573,7 +1573,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// accept pix
 	case OM_GEN_PIX_YES:
 		if(!Om_gen_pix){
@@ -1583,7 +1583,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// don't accept pix
 	case OM_GEN_PIX_NO:
 		if(Om_gen_pix){
@@ -1593,7 +1593,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// put missions in the multidate directory
 	case OM_GEN_XFER_MULTIDATA_YES:
 		if(!Om_gen_xfer_multidata){
@@ -1603,7 +1603,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// don't put missions in the multidata directory
 	case OM_GEN_XFER_MULTIDATA_NO:
 		if(Om_gen_xfer_multidata){
@@ -1613,7 +1613,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// flush the cache before each mission
 	case OM_GEN_FLUSH_YES:
 		if(!Om_gen_flush_cache){
@@ -1623,7 +1623,7 @@ void options_multi_gen_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// don't flush the cache before each mission
 	case OM_GEN_FLUSH_NO:
 		if(Om_gen_flush_cache){
@@ -1632,7 +1632,7 @@ void options_multi_gen_button_pressed(int n)
 		} else {
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
-		break;
+		break;	
 	}
 }
 
@@ -1642,7 +1642,7 @@ void options_multi_gen_button_pressed(int n)
 void options_multi_load_vox_controls()
 {
 	int idx;
-
+	
 	Assert(Om_window != NULL);
 
 	// instantiate all the buttons
@@ -1664,7 +1664,7 @@ void options_multi_load_vox_controls()
 	for(idx=0; idx<OM_VOX_NUM_TEXT; idx++){
 		Om_window->add_XSTR(&Om_vox_text[gr_screen.res][idx]);
 	}
-
+	
 	// sliders
 	for ( idx = 0; idx < NUM_OM_VOX_SLIDERS; idx++ ) {
 		 Om_vox_sliders[gr_screen.res][idx].slider.create(Om_window, Om_vox_sliders[gr_screen.res][idx].x, Om_vox_sliders[gr_screen.res][idx].y,
@@ -1672,7 +1672,7 @@ void options_multi_load_vox_controls()
 																		Om_vox_sliders[gr_screen.res][idx].hotspot, Om_vox_sliders[gr_screen.res][idx].right_filename, Om_vox_sliders[gr_screen.res][idx].right_mask, Om_vox_sliders[gr_screen.res][idx].right_x, Om_vox_sliders[gr_screen.res][idx].right_y,
 																		Om_vox_sliders[gr_screen.res][idx].left_filename, Om_vox_sliders[gr_screen.res][idx].left_mask, Om_vox_sliders[gr_screen.res][idx].left_x, Om_vox_sliders[gr_screen.res][idx].left_y,
 																		Om_vox_sliders[gr_screen.res][idx].dot_w);
-	}
+	}	
 
 	// create the player list select button
 	Om_vox_plist_button.create(Om_window, "", Om_vox_plist_coords[gr_screen.res][0], Om_vox_plist_coords[gr_screen.res][1], Om_vox_plist_coords[gr_screen.res][2], Om_vox_plist_coords[gr_screen.res][3], 0, 1);
@@ -1699,8 +1699,8 @@ void options_multi_load_vox_controls()
 			// increment the count
 			Om_vox_num_players++;
 		}
-	}
-
+	}	
+	
 	// bogus control
 	Om_vox_bogus.base_create(Om_window, UI_KIND_ICON, 0, 0, 0, 0);
 }
@@ -1718,13 +1718,13 @@ void options_multi_disable_vox_controls()
 
 	// hide the qos control
 	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.hide();
-	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.disable();
+	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.disable();	
 
 	// unset the sound buffer size so we don't display any waveforms
 	Om_vox_voice_buffer_size = -1;
 	Om_vox_voice_comp_size = -1;
 	Om_vox_playback_handle = -1;
-	Om_vox_test_status = OM_VOX_TEST_NONE;
+	Om_vox_test_status = OM_VOX_TEST_NONE;	
 
 	// disable the player list select button
 	Om_vox_plist_button.disable();
@@ -1740,20 +1740,20 @@ void options_multi_enable_vox_controls()
 	int idx;
 
 	// go through all the controls
-	for(idx=0; idx<OM_VOX_NUM_BUTTONS; idx++){
+	for(idx=0; idx<OM_VOX_NUM_BUTTONS; idx++){		
 		Om_vox_buttons[gr_screen.res][idx].button.enable();
 		Om_vox_buttons[gr_screen.res][idx].button.unhide();
 	}
 
-	// unhide the qos control
-	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.enable();
-	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.unhide();
+	// unhide the qos control	
+	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.enable();	
+	Om_vox_sliders[gr_screen.res][OM_VOX_QOS_SLIDER].slider.unhide();	
 
 	// unset the sound buffer size so we don't display any waveforms
 	Om_vox_voice_buffer_size = -1;
 	Om_vox_voice_comp_size = -1;
 	Om_vox_playback_handle = -1;
-	Om_vox_test_status = OM_VOX_TEST_NONE;
+	Om_vox_test_status = OM_VOX_TEST_NONE;	
 
 	// select the first player on the list
 	Om_vox_player_select = Om_vox_players[0];
@@ -1783,7 +1783,7 @@ void options_multi_vox_accept()
 {
 	int idx;
 	int voice_pref_flags;
-
+	
 	// set the accept voice flag
 	Player->m_local_options.flags &= ~(MLO_FLAG_NO_VOICE);
 	if(!Om_vox_accept_voice){
@@ -1805,7 +1805,7 @@ void options_multi_vox_accept()
 void options_multi_vox_do()
 {
 	int handle;
-
+	
 	// check for button presses
 	options_multi_vox_check_buttons();
 
@@ -1826,7 +1826,7 @@ void options_multi_vox_do()
 
 	// if we're currently doing a voice test recording, process some stuff
 	switch(Om_vox_test_status){
-	case OM_VOX_TEST_RECORDING:
+	case OM_VOX_TEST_RECORDING:	
 		multi_voice_test_process();
 
 		// force draw the mic test button
@@ -1835,7 +1835,7 @@ void options_multi_vox_do()
 		// if we are no longer recording, switch to playback if possible
 		if(!multi_voice_test_recording()){
 			Om_vox_test_status = OM_VOX_TEST_PLAYBACK;
-
+			
 			if(Om_vox_voice_comp_size != -1){
 				// stop any playing back sounds
 				rtvoice_stop_playback_all();
@@ -1858,11 +1858,11 @@ void options_multi_vox_do()
 			} else {
 				// mark us as doing nothing
 				Om_vox_test_status = OM_VOX_TEST_NONE;
-			}
+			}			
 		}
 		break;
-
-	case OM_VOX_TEST_PLAYBACK:
+	
+	case OM_VOX_TEST_PLAYBACK:			
 		// if we were playing a sound back, but now the sound is done
 		if ( (Om_vox_playback_handle != -1) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle)) ) {
 			// flush all playing sounds safely
@@ -1873,7 +1873,7 @@ void options_multi_vox_do()
 
 			// set this so we know not to display any more waveforms
 			Om_vox_voice_buffer_size = -1;
-			Om_vox_voice_comp_size = -1;
+			Om_vox_voice_comp_size = -1;			
 
 			// free the status up
 			Om_vox_test_status = OM_VOX_TEST_NONE;
@@ -1909,7 +1909,7 @@ void options_multi_vox_button_pressed(int n)
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
 		break;
-
+	
 	// don't accept voice button
 	case OM_VOX_VOICE_NO:
 		if(Om_vox_accept_voice){
@@ -1938,7 +1938,7 @@ void options_multi_vox_button_pressed(int n)
 	// scroll the player list down
 	case OM_VOX_PLIST_DOWN:
 		options_multi_vox_plist_scroll_down();
-		break;
+		break;		
 
 	// mic test button
 	case OM_VOX_VOICE_TEST:
@@ -1977,8 +1977,8 @@ void options_multi_vox_process_waveform()
 	int c_width = OM_VOX_WAVE_WIDTH;
 	int avg_len;
 	int buf_offset;
-	int idx,a_idx,running_avg;
-
+	int idx,a_idx,running_avg;	
+	
 	// if we're not in recording or playback mode
 	if(Om_vox_test_status == OM_VOX_TEST_NONE){
 		return;
@@ -2010,7 +2010,7 @@ void options_multi_vox_process_waveform()
 			// reset the running average
 			running_avg = 0;
 			for(a_idx = 0; a_idx < avg_len; a_idx++){
-				running_avg += (int)Om_vox_voice_buffer[buf_offset] - 128;
+				running_avg += (int)Om_vox_voice_buffer[buf_offset] - 128;			
 
 				// increment the buffer offset
 				buf_offset++;
@@ -2018,39 +2018,39 @@ void options_multi_vox_process_waveform()
 
 			running_avg /= avg_len;
 			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
-		}
+		}		
 
 		// if this packet would have been dropped, notify the user
 		if(multi_voice_test_packet_tossed()){
 			gr_set_color_fast(&Color_bright);
 			gr_string(OM_VOX_DROP_ICON_X,OM_VOX_DROP_ICON_Y, XSTR( "Packet Overflow", 393));
-		}
+		}		
 		break;
 
 	case OM_VOX_TEST_PLAYBACK:
 		// get the offset into the playing direct sound buffer
-		buf_offset = ds_get_play_position(ds_get_channel(Om_vox_playback_handle));
+		buf_offset = ds_get_play_position(ds_get_channel(Om_vox_playback_handle));		
 
 		// get the # of samples we'll average for one line
-		avg_len = (int)((float)OM_VOX_RECORD_INT * ((1024.0f * 11.0f) / 1000.0f)) / c_width;
+		avg_len = (int)((float)OM_VOX_RECORD_INT * ((1024.0f * 11.0f) / 1000.0f)) / c_width;				
 
 		// blit the waveform
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_red);		
 		for(idx=0; idx < c_width; idx++){
 			// reset the running average
 			running_avg = 0;
 			for(a_idx = 0; a_idx < avg_len; a_idx++){
 				if(buf_offset < (OM_VOX_COMP_SIZE - 2)){
-					running_avg += (int)Om_vox_comp_buffer[buf_offset] - 128;
+					running_avg += (int)Om_vox_comp_buffer[buf_offset] - 128;			
 
-					// increment the buffer offset
+					// increment the buffer offset				
 					buf_offset++;
 				}
 			}
 
-			running_avg /= avg_len;
+			running_avg /= avg_len;			
 			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
-		}
+		}				
 		break;
 	}
 }
@@ -2107,7 +2107,7 @@ void options_multi_vox_process_player_list()
 			break;
 		}
 	}
-}
+}	
 
 // get the index into the player list of the passed netplayer
 int options_multi_vox_plist_get(net_player *pl)
@@ -2162,7 +2162,7 @@ void options_multi_init(UI_WINDOW *options_window)
 	Om_window = options_window;
 
 	// load the background bitmaps
-	options_multi_load_bmaps();
+	options_multi_load_bmaps();	
 
 	// load the controls for the protocol area
 	options_multi_load_protocol_controls();
@@ -2202,7 +2202,7 @@ void options_multi_init(UI_WINDOW *options_window)
 
 // do frame for the multi options screen
 void options_multi_do(int key)
-{
+{		
 	// do frame for the protocol section
 	options_multi_protocol_do(key);
 
@@ -2218,8 +2218,8 @@ void options_multi_do(int key)
 		options_multi_vox_do();
 		break;
 	default :
-		Int3();
-	}
+		Int3();		
+	}	
 }
 
 // called when the entire options screen is closed
@@ -2240,7 +2240,7 @@ void options_multi_close()
 
 // called if the accept button on the main options screen was hit
 void options_multi_accept()
-{
+{	
 	// accept function for the protocol section
 	options_multi_protocol_accept();
 
@@ -2252,7 +2252,7 @@ void options_multi_accept()
 
 	// if Net_player is not null, copy these new settings to him
 	if(Net_player != NULL){
-		multi_options_local_load(&Net_player->p_info.options, NULL);
+		multi_options_local_load(&Net_player->p_info.options, NULL);		
 	}
 	multi_options_local_load(&Player->m_local_options, NULL);
 
@@ -2274,10 +2274,10 @@ void options_multi_select()
 	Om_mode = OM_MODE_GENERAL;
 
 	// clear any notification messages
-	Om_notify_stamp = -1;
+	Om_notify_stamp = -1;	
 
 	// enable all the protocol controls
-	options_multi_enable_protocol_controls();
+	options_multi_enable_protocol_controls();	
 
 	// enable the general tab controls
 	options_multi_enable_gen_controls();
@@ -2318,7 +2318,7 @@ void options_multi_unselect()
 	multi_voice_test_record_stop();
 }
 
-// set voice sound buffer for display
+// set voice sound buffer for display 
 void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double gain)
 {
 	if ( (sound_buf == NULL) || (buf_size <= 0) ) {

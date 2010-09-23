@@ -362,8 +362,7 @@ cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
-cmdline_parm atiswap_arg("-ati_swap", NULL);		// Cmdline_atiswap - Fix ATI color swap issue for screenshots.
-cmdline_parm no3dsound_arg("-no_3d_sound", NULL);	// Cmdline_no_3d_sound - Disable use of full 3D sounds
+cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 
 int Cmdline_d3d_lesstmem = 0;

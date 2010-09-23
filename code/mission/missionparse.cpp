@@ -964,8 +964,8 @@ void parse_cutscenes(mission *pm)
 			}
 			if (optional_string("$Campaign End Cutscene:")) {
 				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
+			}
 		}
-	}
 	}
 }
 
