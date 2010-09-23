@@ -4118,6 +4118,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 	int problem_count = 0;
 
+	if (&polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)] != NULL)
 	for (int i = 1; i < (n_vert-1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
@@ -4584,11 +4585,13 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 			for (i = 0; i < ibx_verts; i++) {
 				int ivert = cfread_int( ibuffer_info.read );
 
-				tlist->vert[i] = model_list->vert[ivert];
-				tlist->norm[i] = model_list->norm[ivert];
+				if (&model_list->vert[ivert] != NULL) {
+					tlist->vert[i] = model_list->vert[ivert];
+					tlist->norm[i] = model_list->norm[ivert];
 
-				if (Cmdline_normal) {
-					tlist->tsb[i] = model_list->tsb[ivert];
+					if (Cmdline_normal) {
+						tlist->tsb[i] = model_list->tsb[ivert];
+					}
 				}
 			}
 
