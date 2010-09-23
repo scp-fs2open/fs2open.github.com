@@ -10930,8 +10930,7 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 		return ade_set_error(L, "b", false);
 
 	// clear post processing settings
-	if(!Is_standalone)
-		gr_screen.gf_set_default_post_process();
+	gr_post_process_set_defaults();
 
 	//NOW do the loading stuff
 	game_stop_time();

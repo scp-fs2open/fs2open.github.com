@@ -829,6 +829,7 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 {
 	int _w, _h;
 	float x, y, w, h;
+	vertex verts[4];
 
 	if (gr_screen.mode == GR_STUB) {
 		return;
@@ -847,8 +848,35 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 		gr_resize_screen_posf(&w, &h);
 	}
 
-	// RT draws all hall interface stuff
-	g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
+	memset(verts, 0, sizeof(verts));
+
+	verts[0].sx = x;
+	verts[0].sy = y;
+	verts[0].u = 0.0f;
+	verts[0].v = 0.0f;
+
+	verts[1].sx = x + w;
+	verts[1].sy = y;
+	verts[1].u = 1.0f;
+	verts[1].v = 0.0f;
+
+	verts[2].sx = x + w;
+	verts[2].sy = y + h;
+	verts[2].u = 1.0f;
+	verts[2].v = 1.0f;
+
+	verts[3].sx = x;
+	verts[3].sy = y + h;
+	verts[3].u = 0.0f;
+	verts[3].v = 1.0f;
+
+	// turn off zbuffering
+	int saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+
+	gr_render(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_INTERFACE);
+
+	gr_zbuffer_set(saved_zbuffer_mode);
 }
 
 // NEW new bitmap functions -Bobboau
@@ -1076,64 +1104,45 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	gr_set_cull(cull);		
 }
 
-
-inline bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2)
+int poly_list::find_first_vertex(int idx)
 {
-	return (
-		(v1->x == v2->x) &&
-		(v1->y == v2->y) &&
-		(v1->z == v2->z) &&
-		(v1->u == v2->u) &&
-		(v1->v == v2->v) &&
-		(n1->xyz.x == n2->xyz.x) &&
-		(n1->xyz.y == n2->xyz.y) &&
-		(n1->xyz.z == n2->xyz.z)
-	);
-}
-
-//finds the first occorence of a vertex within a poly list
-int find_first_index(poly_list *plist, int idx)
-{
-	vec3d *p_norm = &plist->norm[0];
-	vertex *p_vert = &plist->vert[0];
-	vec3d *norm = &plist->norm[idx];
-	vertex *vert = &plist->vert[idx];
-	int i;
+	vec3d *o_norm = &norm[idx];
+	vertex *o_vert = &vert[idx];
+	vec3d *p_norm = &norm[0];
+	vertex *p_vert = &vert[0];
 
 	// we should always equal ourselves, so just use that as the stopping point
-	for (i = 0; i < idx; i++) {
-		if ( same_vert(p_vert, vert, p_norm, norm) ) {
+	for (int i = 0; i < idx; i++) {
+		if ( (*p_norm == *o_norm) && (*p_vert == *o_vert) ) {
 			return i;
 		}
 
-		p_norm++;
-		p_vert++;
+		++p_norm;
+		++p_vert;
 	}
 
 	return idx;
 }
 
-//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-int find_first_index_vb(poly_list *plist, int idx, poly_list *v)
+//given a list (plist) find the index within the indexed list that the vert at position idx within list is at 
+int poly_list::find_index(poly_list *plist, int idx)
 {
-	vec3d *p_norm = &plist->norm[idx];
-	vertex *p_vert = &plist->vert[idx];
-	vec3d *norm = &v->norm[0];
-	vertex *vert = &v->vert[0];
-	int i;
+	vec3d *o_norm = &plist->norm[idx];
+	vertex *o_vert = &plist->vert[idx];
+	vec3d *p_norm = &norm[0];
+	vertex *p_vert = &vert[0];
 
-	for (i = 0; i < v->n_verts; i++) {
-		if ( same_vert(vert, p_vert, norm, p_norm) ) {
+	for (int i = 0; i < n_verts; i++) {
+		if ( (*p_norm == *o_norm) && (*p_vert == *o_vert) ) {
 			return i;
 		}
 
-		vert++;
-		norm++;
+		++p_vert;
+		++p_norm;
 	}
 
 	return -1;
 }
-
 
 
 void poly_list::allocate(int _verts)
@@ -1163,11 +1172,9 @@ void poly_list::allocate(int _verts)
 		if (Cmdline_normal) {
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
-
 	}
 
 	n_verts = 0;
-	n_prim = 0;
 	currently_allocated = _verts;
 }
 
@@ -1199,6 +1206,9 @@ void poly_list::calculate_tangent()
 	vec3d tangent, binormal, cross;
 	float magg, scale;
 
+	if ( !Cmdline_normal ) {
+		return;
+	}
 
 	Assert( !(n_verts % 3) );
 
@@ -1278,17 +1288,16 @@ void poly_list::calculate_tangent()
 	}
 }
 
-poly_list poly_list_index_buffer_internal_list;
+static poly_list buffer_list_internal;
 
-void poly_list::make_index_buffer()
+void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 {
 	int nverts = 0;
 	int j, z = 0;
 	ubyte *nverts_good = NULL;
 
-	if (Cmdline_normal) {
-		calculate_tangent();
-	}
+	// calculate tangent space data (must be done early)
+	calculate_tangent();
 
 	// using vm_malloc() here rather than 'new' so we get the extra out-of-memory check
 	nverts_good = (ubyte *) vm_malloc(n_verts);
@@ -1296,41 +1305,54 @@ void poly_list::make_index_buffer()
 	Assert( nverts_good != NULL );
 	memset( nverts_good, 0, n_verts );
 
+	vertex_list.reserve(n_verts);
+
 	for (j = 0; j < n_verts; j++) {
-		if ( (find_first_index(this, j)) == j ) {
+		if (find_first_vertex(j) == j) {
 			nverts++;
 			nverts_good[j] = 1;
+
+			vertex_list.push_back(j);
 		}
 	}
 
-	poly_list_index_buffer_internal_list.n_verts = 0;
-	poly_list_index_buffer_internal_list.allocate(nverts);
+	// if there is nothig to change then bail
+	if (n_verts == nverts) {
+		if (nverts_good != NULL) {
+			vm_free(nverts_good);
+		}
+
+		return;
+	}
+
+	buffer_list_internal.n_verts = 0;
+	buffer_list_internal.allocate(nverts);
 
 	for (j = 0; j < n_verts; j++) {
 		if ( !nverts_good[j] ) {
 			continue;
 		}
 
-		poly_list_index_buffer_internal_list.vert[z] = vert[j];
-		poly_list_index_buffer_internal_list.norm[z] = norm[j];
+		buffer_list_internal.vert[z] = vert[j];
+		buffer_list_internal.norm[z] = norm[j];
 
 		if (Cmdline_normal) {
-			poly_list_index_buffer_internal_list.tsb[z] = tsb[j];
+			buffer_list_internal.tsb[z] = tsb[j];
 		}
 
-		poly_list_index_buffer_internal_list.n_verts++;
+		buffer_list_internal.n_verts++;
 
-	//	Assert( find_first_index(&poly_list_index_buffer_internal_list, z) == z );
+	//	Assert( find_first_index(&buffer_list_internal, z) == z );
 		z++;
 	}
 
-	Assert(nverts == poly_list_index_buffer_internal_list.n_verts);
+	Assert(nverts == buffer_list_internal.n_verts);
 
 	if (nverts_good != NULL) {
 		vm_free(nverts_good);
 	}
 
-	(*this) = poly_list_index_buffer_internal_list;
+	(*this) = buffer_list_internal;
 }
 
 poly_list& poly_list::operator = (poly_list &other_list)
@@ -1345,7 +1367,6 @@ poly_list& poly_list::operator = (poly_list &other_list)
 	}
 
 	n_verts = other_list.n_verts;
-	n_prim = other_list.n_prim;
 
 	return *this;
 }

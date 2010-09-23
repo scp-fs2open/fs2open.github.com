@@ -138,6 +138,7 @@ extern bool Normalmap_override;
 extern bool Heightmap_override;
 extern bool Glowpoint_override;
 extern bool GLSL_override;
+extern bool PostProcessing_override;
 
 // game skill levels 
 #define	NUM_SKILL_LEVELS	5

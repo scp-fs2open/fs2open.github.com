@@ -33,6 +33,7 @@
 #include "graphics/gropengldraw.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
+#include "graphics/gropenglpostprocessing.h"
 
 
 #if defined(_WIN32)
@@ -52,14 +53,10 @@ typedef int ( * PFNGLXSWAPINTERVALSGIPROC) (int interval);
 #pragma comment (lib, "glu32")
 #endif
 
+// minimum GL version we can reliably support is 1.2
+static const int MIN_REQUIRED_GL_VERSION = 12;
 
-#define REQUIRED_GL_MAJOR_VERSION	1
-#ifdef __APPLE__ // the Apple GL version is more advanced than the version number lets on
-#define REQUIRED_GL_MINOR_VERSION	1
-#else
-#define REQUIRED_GL_MINOR_VERSION	2
-#endif
-
+int GL_version = 0;
 
 bool GL_initted = 0;
 
@@ -1361,8 +1358,6 @@ void opengl_setup_viewport()
 // NOTE: This should only ever be called through os_cleanup(), or when switching video APIs
 void gr_opengl_shutdown()
 {
-	gr_opengl_post_process_release();
-
 	if (GL_cursor_pbo) {
 		vglDeleteBuffersARB(1, &GL_cursor_pbo);
 		GL_cursor_pbo = 0;
@@ -1376,7 +1371,8 @@ void gr_opengl_shutdown()
 	opengl_tcache_shutdown();
 	opengl_light_shutdown();
 	opengl_tnl_shutdown();
-	opengl::shader_manager::destroy();
+	opengl_post_process_shutdown();
+	opengl_shader_shutdown();
 
 	GL_initted = false;
 
@@ -1724,6 +1720,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_pixel				= gr_opengl_pixel;
 	gr_screen.gf_scaler				= gr_opengl_scaler;
 	gr_screen.gf_tmapper			= gr_opengl_tmapper;
+	gr_screen.gf_render				= gr_opengl_render;
 
 	gr_screen.gf_gradient			= gr_opengl_gradient;
 
@@ -1783,7 +1780,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
-	gr_screen.gf_make_buffer		= gr_opengl_make_buffer;
+	gr_screen.gf_config_buffer		= gr_opengl_config_buffer;
+	gr_screen.gf_pack_buffer		= gr_opengl_pack_buffer;
 	gr_screen.gf_destroy_buffer		= gr_opengl_destroy_buffer;
 	gr_screen.gf_render_buffer		= gr_opengl_render_buffer;
 	gr_screen.gf_set_buffer			= gr_opengl_set_buffer;
@@ -1799,13 +1797,12 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
 
-	gr_screen.gf_set_post_effect			= gr_opengl_set_post_effect;
-	gr_screen.gf_set_default_post_process	= gr_opengl_set_default_post_process;
+	gr_screen.gf_post_process_set_effect	= gr_opengl_post_process_set_effect;
+	gr_screen.gf_post_process_set_defaults	= gr_opengl_post_process_set_defaults;
 
-	gr_screen.gf_post_process_init		= gr_opengl_post_process_init;
-	gr_screen.gf_post_process_before	= gr_opengl_post_process_before;
-	gr_screen.gf_post_process_after		= gr_opengl_post_process_after;
-	gr_screen.gf_save_zbuffer			= gr_opengl_save_zbuffer;
+	gr_screen.gf_post_process_begin		= gr_opengl_post_process_begin;
+	gr_screen.gf_post_process_end		= gr_opengl_post_process_end;
+	gr_screen.gf_post_process_save_zbuffer	= gr_opengl_post_process_save_zbuffer;
 
 	gr_screen.gf_start_clip_plane	= gr_opengl_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
@@ -1864,8 +1861,10 @@ bool gr_opengl_init()
 	ver = (char *)glGetString(GL_VERSION);
 	sscanf(ver, "%d.%d", &major, &minor);
 
-	if ( (major < REQUIRED_GL_MAJOR_VERSION) || ((major <= REQUIRED_GL_MAJOR_VERSION) && (minor < REQUIRED_GL_MINOR_VERSION)) ) {
-		Error(LOCATION, "Current GL Version of %i.%i is less than the required version of %i.%i.\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
+	GL_version = (major * 10) + minor;
+
+	if (GL_version < MIN_REQUIRED_GL_VERSION) {
+		Error(LOCATION, "Current GL Version of %d.%d is less than the required version of %d.%d.\nSwitch video modes or update your drivers.", major, minor, (MIN_REQUIRED_GL_VERSION / 10), (MIN_REQUIRED_GL_VERSION % 10));
 	}
 
 	GL_initted = true;
@@ -1873,9 +1872,9 @@ bool gr_opengl_init()
 	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
 	opengl_setup_function_pointers();
 
-	mprintf(( "  OpenGL Vendor     : %s\n", glGetString(GL_VENDOR) ));
-	mprintf(( "  OpenGL Renderer   : %s\n", glGetString(GL_RENDERER) ));
-	mprintf(( "  OpenGL Version    : %s\n", ver ));
+	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
+	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
+	mprintf(( "  OpenGL Version   : %s\n", ver ));
 	mprintf(( "\n" ));
 
 	if (Cmdline_fullscreen_window || Cmdline_window) {
@@ -1893,18 +1892,6 @@ bool gr_opengl_init()
 	// init state system (must come AFTER light is set up)
 	GL_state.init();
 
-	// ready the texture system
-	opengl_tcache_init();
-
-	extern void opengl_tnl_init();
-	opengl_tnl_init();
-
-	// setup default shaders, and shader related items
-	opengl::shader_manager::create();
-
-	// must be called after extensions are setup
-	opengl_set_vsync( !Cmdline_no_vsync );
-
 	GLint max_texture_units = GL_supported_texture_units;
 
 	if (Use_GLSL) {
@@ -1917,9 +1904,22 @@ bool gr_opengl_init()
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable();
-	GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-	GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
-	GL_state.Texture.SetWrapR(GL_CLAMP_TO_EDGE);
+
+	// ready the texture system
+	opengl_tcache_init();
+
+	extern void opengl_tnl_init();
+	opengl_tnl_init();
+
+	// setup default shaders, and shader related items
+	opengl_shader_init();
+
+	// post processing effects, after shaders are initialized
+	opengl_post_process_init();
+
+	// must be called after extensions are setup
+	opengl_set_vsync( !Cmdline_no_vsync );
+
 
 	opengl_setup_viewport();
 
@@ -1960,13 +1960,22 @@ bool gr_opengl_init()
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
+
+	if ( Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+		mprintf(( "  Max render buffer size: %ix%i\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size ));
+	}
+
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  Post-processing enabled: %s\n", (Cmdline_postprocess) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	if (Use_GLSL) {
-		mprintf(( "  Using GLSL for model rendering.\n" ));
-		mprintf(( "  Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
+		if (Use_GLSL > 1) {
+			mprintf(( "  Using GLSL for model rendering.\n" ));
+		}
+
+		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
 	}
 
 	// This stops fred crashing if no textures are set

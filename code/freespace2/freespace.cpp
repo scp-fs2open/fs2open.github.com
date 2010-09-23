@@ -1546,11 +1546,7 @@ int game_start_mission()
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
 	// clear post processing settings
-	if(!Is_standalone)
-		gr_screen.gf_set_default_post_process();
-
-	// clear shader manager cache
-	gr_clear_shaders_cache();
+	gr_post_process_set_defaults();
 
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
@@ -2143,9 +2139,6 @@ void game_init()
 		mprintf(( "Using high memory settings...\n" ));
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
-
-	if(!Is_standalone)
-		gr_screen.gf_post_process_init();
 
 	//WMC - Initialize my new GUI system
 	//This may seem scary, but it should take up 0 processing time and very little memory
@@ -3847,7 +3840,7 @@ void game_render_frame( camid cid )
 	}
 	gr_zbuffer_clear(TRUE);
 
-	gr_screen.gf_post_process_before();
+	gr_post_process_begin();
 
 	clip_frame_view();
 
@@ -3900,7 +3893,7 @@ void game_render_frame( camid cid )
 	//This is so we can change the minimum clipping distance without messing everything up.
 	if(draw_viewer_last && Viewer_obj)
 	{
-		gr_screen.gf_save_zbuffer();
+		gr_post_process_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
 	}
@@ -3928,13 +3921,13 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
 	{
-		gr_screen.gf_save_zbuffer();
+		gr_post_process_save_zbuffer();
 		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 
-	gr_screen.gf_post_process_after();
+	gr_post_process_end();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){

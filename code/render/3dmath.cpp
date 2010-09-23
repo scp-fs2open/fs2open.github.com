@@ -148,7 +148,7 @@ ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
 
 	dest->flags = 0;	// not projected
 
-	vm_vec_copy_scale(&dest->real_pos, src,1);
+//	vm_vec_copy_scale(&dest->real_pos, src,1);
 
 	return codes;
 #endif

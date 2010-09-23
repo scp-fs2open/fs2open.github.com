@@ -11,6 +11,7 @@
 #include "globalincs/systemvars.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
+#include "model/model.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -21,9 +22,14 @@ uint gr_stub_lock()
 	return 1;
 }
 
-int gr_stub_make_buffer(poly_list *list, uint flags)
+extern bool gr_stub_pack_buffer(const int buffer_id, vertex_buffer *vb)
 {
-	return 0;
+	return false;
+}
+
+extern bool gr_stub_config_buffer(const int buffer_id, vertex_buffer *vb)
+{
+	return false;
 }
 
 int	gr_stub_make_light(light *light, int idx, int priority)
@@ -221,7 +227,7 @@ void gr_stub_rect(int x, int y, int w, int h, bool resize)
 {
 }
 
-void gr_stub_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+void gr_stub_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags)
 {
 }
 
@@ -326,6 +332,10 @@ void gr_stub_tmapper( int nverts, vertex **verts, uint flags )
 {
 }
 
+void gr_stub_render( int nverts, vertex *verts, uint flags )
+{
+}
+
 void gr_stub_translate_texture_matrix(int unit, vec3d *shift)
 {
 }
@@ -341,6 +351,26 @@ void gr_stub_zbuffer_clear(int mode)
 /*void gr_stub_shade(int x,int y,int w,int h)
 {
 }*/
+
+void gr_stub_post_process_set_effect(const char *name, int x)
+{
+}
+
+void gr_stub_post_process_set_defaults()
+{
+}
+
+void gr_stub_post_process_save_zbuffer()
+{
+}
+
+void gr_stub_post_process_begin()
+{
+}
+
+void gr_stub_post_process_end()
+{
+}
 
 void gr_stub_set_ambient_light(int red, int green, int blue)
 {
@@ -644,6 +674,7 @@ bool gr_stub_init()
 	gr_screen.gf_pixel				= gr_stub_pixel;
 	gr_screen.gf_scaler				= gr_stub_scaler;
 	gr_screen.gf_tmapper			= gr_stub_tmapper;
+	gr_screen.gf_render				= gr_stub_render;
 
 	gr_screen.gf_gradient			= gr_stub_gradient;
 
@@ -703,7 +734,8 @@ bool gr_stub_init()
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
 	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
-	gr_screen.gf_make_buffer		= gr_stub_make_buffer;
+	gr_screen.gf_config_buffer		= gr_stub_config_buffer;
+	gr_screen.gf_pack_buffer		= gr_stub_pack_buffer;
 	gr_screen.gf_destroy_buffer		= gr_stub_destroy_buffer;
 	gr_screen.gf_render_buffer		= gr_stub_render_buffer;
 	gr_screen.gf_set_buffer			= gr_stub_set_buffer;
@@ -718,6 +750,13 @@ bool gr_stub_init()
 	gr_screen.gf_set_light			= gr_stub_set_light;
 	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
+
+	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
+	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
+
+	gr_screen.gf_post_process_begin		= gr_stub_post_process_begin;
+	gr_screen.gf_post_process_end		= gr_stub_post_process_end;
+	gr_screen.gf_post_process_save_zbuffer	= gr_stub_post_process_save_zbuffer;
 
 	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;

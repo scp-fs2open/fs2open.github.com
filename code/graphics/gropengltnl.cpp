@@ -8,8 +8,6 @@
 */
 
 
-
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -32,6 +30,7 @@
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
+#include "model/model.h"
 
 
 extern int GLOWMAP;
@@ -68,181 +67,318 @@ GLint GL_max_elements_indices = 4096;
 
 
 struct opengl_vertex_buffer {
-	uint stride;		// the current stride
-	uint n_prim;
-	uint n_verts;
 	GLfloat *array_list;	// interleaved array
-	GLuint vbo;			// buffer for VBO
-	uint flags;			// FVF
-	uint vbo_size;
+	GLubyte *index_list;
 
-	opengl_vertex_buffer() { memset( this, 0, sizeof(opengl_vertex_buffer) ); }
+	GLuint vbo;			// buffer for VBO
+	GLuint ibo;
+
+	uint vbo_size;
+	uint ibo_size;
+
+	SCP_map<int, int> shader_ids;
+
+	opengl_vertex_buffer() :
+		array_list(NULL), index_list(NULL), vbo(0), ibo(0),
+		vbo_size(0), ibo_size(0)
+	{
+	}
+
+	void clear();
 };
 
+void opengl_vertex_buffer::clear()
+{
+	if (array_list) {
+		vm_free(array_list);
+	}
+
+	if (vbo) {
+		vglDeleteBuffersARB(1, &vbo);
+		GL_vertex_data_in -= vbo_size;
+	}
+
+	if (index_list) {
+		vm_free(index_list);
+	}
+
+	if (ibo) {
+		vglDeleteBuffersARB(1, &ibo);
+		GL_vertex_data_in -= ibo_size;
+	}
+
+	shader_ids.clear();
+}
 
 static SCP_vector<opengl_vertex_buffer> GL_vertex_buffers;
 static opengl_vertex_buffer *g_vbp = NULL;
 static int GL_vertex_buffers_in_use = 0;
 
 
-GLuint opengl_create_vbo(uint size, GLfloat *data)
+static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 {
-	if (data == NULL) {
-		return 0;
+	if ( !Use_VBOs ) {
+		return;
 	}
 
-	if (size == 0) {
-		return 0;
+	if ( !vbp ) {
+		return;
 	}
 
-	GLuint buffer_name = 0;
+	if ( !(vbp->vbo_size && vbp->ibo_size) ) {
+		return;
+	}
 
-	// clear any existing errors
-	glGetError();
+	// create vertex buffer
+	{
+		// clear any existing errors
+		glGetError();
 
-	vglGenBuffersARB(1, &buffer_name);
+		vglGenBuffersARB(1, &vbp->vbo);
 
-	// make sure we have one
-	if (buffer_name) {
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
-		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB);
+		// make sure we have one
+		if (vbp->vbo) {
+			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			vglBufferDataARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_size, vbp->array_list, GL_STATIC_DRAW_ARB);
 
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			vglDeleteBuffersARB(1, &buffer_name);
-			return 0;
+			// just in case
+			if ( opengl_check_for_errors() ) {
+				vglDeleteBuffersARB(1, &vbp->vbo);
+				vbp->vbo = 0;
+				return;
+			}
+
+			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+
+			vm_free(vbp->array_list);
+			vbp->array_list = NULL;	
+
+			GL_vertex_data_in += vbp->vbo_size;
 		}
-
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
 
-	return buffer_name;
+	// create index buffer
+	{
+		// clear any existing errors
+		glGetError();
+
+		vglGenBuffersARB(1, &vbp->ibo);
+
+		// make sure we have one
+		if (vbp->ibo) {
+			vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo);
+			vglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo_size, vbp->index_list, GL_STATIC_DRAW_ARB);
+
+			// just in case
+			if ( opengl_check_for_errors() ) {
+				vglDeleteBuffersARB(1, &vbp->ibo);
+				vbp->ibo = 0;
+				return;
+			}
+
+			vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+
+			vm_free(vbp->index_list);
+			vbp->index_list = NULL;
+
+			GL_vertex_data_in += vbp->ibo_size;
+		}
+	}
 }
 
-int gr_opengl_make_buffer(poly_list *list, uint flags)
+int gr_opengl_create_buffer()
 {
 	if (Cmdline_nohtl) {
 		return -1;
 	}
 
-	int i;
-	uint arsize = 0, list_size = 0;
 	opengl_vertex_buffer vbuffer;
 
-	// clear out any old errors before we continue with this
-	opengl_check_for_errors();
-
-	if ( !(flags & VERTEX_FLAG_POSITION) ) {
-		Int3();
-		return -1;
-	}
-
-	vbuffer.stride = 0;
-
-	// setup using flags...
-
-	// verts
-	Verify( list->vert != NULL );
-	vbuffer.stride += (3 * sizeof(GLfloat));
-
-	// normals
-	if (flags & VERTEX_FLAG_NORMAL) {
-		Verify( list->norm != NULL );
-		vbuffer.stride += (3 * sizeof(GLfloat));
-	}
-
-	// uv coords
-	if (flags & VERTEX_FLAG_UV1) {
-		vbuffer.stride += (2 * sizeof(GLfloat));
-	}
-
-	// tangent space data for normal maps (shaders only)
-	if (flags & VERTEX_FLAG_TANGENT) {
-		Verify( list->tsb != NULL );
-		Assert( Cmdline_normal );
-
-		vbuffer.stride += (4 * sizeof(GLfloat));
-	}
-
-	// total size of data
-	list_size = vbuffer.stride * list->n_verts;
-
-	// allocate the storage list
-	vbuffer.array_list = (GLfloat*)vm_malloc_q(list_size);
-
-	// return invalid if we don't have the memory
-	if (vbuffer.array_list == NULL) {
-		return -1;
-	}
-
-	memset( vbuffer.array_list, 0, list_size );
-
-	// generate the array
-	for (i = 0; i < list->n_verts; i++) {
-		vertex *vl = &list->vert[i];
-
-		// don't try to generate more data than what's available
-		Assert( ((arsize * sizeof(GLfloat)) + vbuffer.stride) <= list_size );
-
-		// NOTE: UV->NORM->TSB->VERT, This array order *must* be preserved!!
-
-		// tex coords
-		if (flags & VERTEX_FLAG_UV1) {
-			vbuffer.array_list[arsize++] = vl->u;
-			vbuffer.array_list[arsize++] = vl->v;
-		}
-
-		// normals
-		if (flags & VERTEX_FLAG_NORMAL) {
-			vec3d *nl = &list->norm[i];
-			vbuffer.array_list[arsize++] = nl->xyz.x;
-			vbuffer.array_list[arsize++] = nl->xyz.y;
-			vbuffer.array_list[arsize++] = nl->xyz.z;
-		}
-
-		// tangent space data
-		if (flags & VERTEX_FLAG_TANGENT) {
-			tsb_t *tsb = &list->tsb[i];
-			vbuffer.array_list[arsize++] = tsb->tangent.xyz.x;
-			vbuffer.array_list[arsize++] = tsb->tangent.xyz.y;
-			vbuffer.array_list[arsize++] = tsb->tangent.xyz.z;
-			vbuffer.array_list[arsize++] = tsb->scaler;
-		}
-
-		// verts
-		vbuffer.array_list[arsize++] = vl->x;
-		vbuffer.array_list[arsize++] = vl->y;
-		vbuffer.array_list[arsize++] = vl->z;
-	}
-
-	vbuffer.flags = flags;
-
-	vbuffer.n_prim = (list->n_verts / 3);
-	vbuffer.n_verts = list->n_verts;
-
-	// maybe load it into a vertex buffer object
-	if (Use_VBOs) {
-		vbuffer.vbo = opengl_create_vbo(list_size, vbuffer.array_list);
-
-		if (vbuffer.vbo) {
-			// figure up the size so we can know how much VBO data is in card memory
-			vbuffer.vbo_size = list_size;
-			GL_vertex_data_in += list_size;
-
-			vm_free(vbuffer.array_list);
-			vbuffer.array_list = NULL;
-		}
-	}
-
-	// allocate additional blocks if we need them to prevent memory fragmentation, 500 at a time
+	// allocate additional blocks if we need them to prevent memory fragmentation, 15 at a time
 	if ( GL_vertex_buffers.size() >= GL_vertex_buffers.capacity() ) {
-		GL_vertex_buffers.reserve( GL_vertex_buffers.size() + 500 );
+		GL_vertex_buffers.reserve( GL_vertex_buffers.size() + 15 );
 	}
 
 	GL_vertex_buffers.push_back( vbuffer );
 	GL_vertex_buffers_in_use++;
 
 	return (int)(GL_vertex_buffers.size() - 1);
+}
+
+bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb)
+{
+	if (Cmdline_nohtl) {
+		return false;
+	}
+
+	if (buffer_id < 0) {
+		return false;
+	}
+
+	Assert( buffer_id < (int)GL_vertex_buffers.size() );
+
+	if (vb == NULL) {
+		return false;
+	}
+
+	if ( !(vb->flags & VB_FLAG_POSITION) ) {
+		Int3();
+		return false;
+	}
+
+	opengl_vertex_buffer *m_vbp = &GL_vertex_buffers[buffer_id];
+
+
+	vb->stride = 0;
+
+	// position
+	Verify( vb->model_list->vert != NULL );
+	vb->stride += (3 * sizeof(GLfloat));
+
+	// normals
+	if (vb->flags & VB_FLAG_NORMAL) {
+		Verify( vb->model_list->norm != NULL );
+		vb->stride += (3 * sizeof(GLfloat));
+	}
+
+	// uv coords
+	if (vb->flags & VB_FLAG_UV1) {
+		vb->stride += (2 * sizeof(GLfloat));
+	}
+
+	// tangent space data for normal maps (shaders only)
+	if (vb->flags & VB_FLAG_TANGENT) {
+		Assert( Cmdline_normal );
+
+		Verify( vb->model_list->tsb != NULL );
+		vb->stride += (4 * sizeof(GLfloat));
+	}
+
+	// offsets for this chunk
+	vb->vertex_offset = m_vbp->vbo_size;
+	m_vbp->vbo_size += vb->stride * vb->model_list->n_verts;
+
+	for (size_t idx = 0; idx < vb->tex_buf.size(); idx++) {
+		buffer_data *bd = &vb->tex_buf[idx];
+
+		bd->index_offset = m_vbp->ibo_size;
+		m_vbp->ibo_size += bd->n_verts * ((bd->flags & VB_FLAG_LARGE_INDEX) ? sizeof(uint) : sizeof(ushort));
+	}
+
+	return true;
+}
+
+bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
+{
+	if (Cmdline_nohtl) {
+		return false;
+	}
+
+	if (buffer_id < 0) {
+		return false;
+	}
+
+	Assert( buffer_id < (int)GL_vertex_buffers.size() );
+
+	opengl_vertex_buffer *m_vbp = &GL_vertex_buffers[buffer_id];
+
+	// NULL means that we are done with the buffer and can create the IBO/VBO
+	// returns false here only for some minor error prevention
+	if (vb == NULL) {
+		opengl_gen_buffer(m_vbp);
+		return false;
+	}
+
+	int i, n_verts = 0;
+	size_t j;
+	uint arsize = 0;
+
+
+	if (m_vbp->array_list == NULL) {
+		m_vbp->array_list = (GLfloat*)vm_malloc_q(m_vbp->vbo_size);
+
+		// return invalid if we don't have the memory
+		if (m_vbp->array_list == NULL) {
+			return false;
+		}
+
+		memset(m_vbp->array_list, 0, m_vbp->vbo_size);
+	}
+
+	if (m_vbp->index_list == NULL) {
+		m_vbp->index_list = (GLubyte*)vm_malloc_q(m_vbp->ibo_size);
+
+		// return invalid if we don't have the memory
+		if (m_vbp->index_list == NULL) {
+			return false;
+		}
+
+		memset(m_vbp->index_list, 0, m_vbp->ibo_size);
+	}
+
+	// bump to our index in the array
+	GLfloat *array = m_vbp->array_list + (vb->vertex_offset / sizeof(GLfloat));
+
+	// generate the vertex array
+	n_verts = vb->model_list->n_verts;
+	for (i = 0; i < n_verts; i++) {
+		vertex *vl = &vb->model_list->vert[i];
+
+		// don't try to generate more data than what's available
+		Assert( ((arsize * sizeof(GLfloat)) + vb->stride) <= (m_vbp->vbo_size - vb->vertex_offset) );
+
+		// NOTE: UV->NORM->TSB->VERT, This array order *must* be preserved!!
+
+		// tex coords
+		if (vb->flags & VB_FLAG_UV1) {
+			array[arsize++] = vl->u;
+			array[arsize++] = vl->v;
+		}
+
+		// normals
+		if (vb->flags & VB_FLAG_NORMAL) {
+			vec3d *nl = &vb->model_list->norm[i];
+			array[arsize++] = nl->xyz.x;
+			array[arsize++] = nl->xyz.y;
+			array[arsize++] = nl->xyz.z;
+		}
+
+		// tangent space data
+		if (vb->flags & VB_FLAG_TANGENT) {
+			tsb_t *tsb = &vb->model_list->tsb[i];
+			array[arsize++] = tsb->tangent.xyz.x;
+			array[arsize++] = tsb->tangent.xyz.y;
+			array[arsize++] = tsb->tangent.xyz.z;
+			array[arsize++] = tsb->scaler;
+		}
+
+		// verts
+		array[arsize++] = vl->x;
+		array[arsize++] = vl->y;
+		array[arsize++] = vl->z;
+	}
+
+	// generate the index array
+	for (j = 0; j < vb->tex_buf.size(); j++) {
+		n_verts = vb->tex_buf[j].n_verts;
+		uint offset = vb->tex_buf[j].index_offset;
+		uint *index = vb->tex_buf[j].index;
+
+		// bump to our spot in the buffer
+		GLubyte *ibuf = m_vbp->index_list + offset;
+
+		if (vb->tex_buf[j].flags & VB_FLAG_LARGE_INDEX) {
+			memcpy(ibuf, index, n_verts * sizeof(uint));
+		} else {
+			ushort *mybuf = (ushort*)ibuf;
+
+			for (i = 0; i < n_verts; i++) {
+				mybuf[i] = (ushort)index[i];
+			}
+		}
+	}
+
+	return true;
 }
 
 void gr_opengl_set_buffer(int idx)
@@ -254,6 +390,15 @@ void gr_opengl_set_buffer(int idx)
 	g_vbp = NULL;
 
 	if (idx < 0) {
+		if (Use_VBOs) {
+			vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+		}
+
+		if ( (Use_GLSL > 1) && !GLSL_override ) {
+			opengl_shader_set_current();
+		}
+
 		return;
 	}
 
@@ -276,16 +421,7 @@ void gr_opengl_destroy_buffer(int idx)
 
 	opengl_vertex_buffer *vbp = &GL_vertex_buffers[idx];
 
-	if (vbp->array_list) {
-		vm_free(vbp->array_list);
-	}
-
-	if (vbp->vbo) {
-		vglDeleteBuffersARB(1, &vbp->vbo);
-		GL_vertex_data_in -= vbp->vbo_size;
-	}
-
-	memset( vbp, 0, sizeof(opengl_vertex_buffer) );
+	vbp->clear();
 
 	// we try to take advantage of the fact that there shouldn't be a lot of buffer
 	// deletions/additions going on all of the time, so a model_unload_all() and/or
@@ -310,7 +446,7 @@ void opengl_destroy_all_buffers()
 
 void opengl_tnl_init()
 {
-	GL_vertex_buffers.reserve(1000);
+	GL_vertex_buffers.reserve(MAX_POLYGON_MODELS);
 }
 
 void opengl_tnl_shutdown()
@@ -318,10 +454,12 @@ void opengl_tnl_shutdown()
 	opengl_destroy_all_buffers();
 }
 
-static void opengl_init_arrays(opengl_vertex_buffer *vbp)
+static void opengl_init_arrays(opengl_vertex_buffer *vbp, const vertex_buffer *bufferp)
 {
-	GLint offset = 0;
+	GLint offset = (GLint)bufferp->vertex_offset;
 	GLubyte *ptr = NULL;
+
+	// vertex buffer
 
 	if (vbp->vbo) {
 		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
@@ -329,71 +467,63 @@ static void opengl_init_arrays(opengl_vertex_buffer *vbp)
 		ptr = (GLubyte*)vbp->array_list;
 	}
 
-	if (vbp->flags & VERTEX_FLAG_UV1) {
+	if (bufferp->flags & VB_FLAG_UV1) {
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, vbp->stride, ptr + offset);
+		glTexCoordPointer(2, GL_FLOAT, bufferp->stride, ptr + offset);
 		offset += (2 * sizeof(GLfloat));
 	}
 
-	if (vbp->flags & VERTEX_FLAG_NORMAL) {
+	if (bufferp->flags & VB_FLAG_NORMAL) {
 		glEnableClientState(GL_NORMAL_ARRAY);
-		glNormalPointer(GL_FLOAT, vbp->stride, ptr + offset);
+		glNormalPointer(GL_FLOAT, bufferp->stride, ptr + offset);
 		offset += (3 * sizeof(GLfloat));
 	}
 
-	if (vbp->flags & VERTEX_FLAG_TANGENT) {
+	if (bufferp->flags & VB_FLAG_TANGENT) {
 		// we treat this as texture coords for ease of use
 		// NOTE: this is forced on tex unit 1!!!
 		vglClientActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(4, GL_FLOAT, vbp->stride, ptr + offset);
+		glTexCoordPointer(4, GL_FLOAT, bufferp->stride, ptr + offset);
 		offset += (4 * sizeof(GLfloat));
 	}
 
-	Assert( vbp->flags & VERTEX_FLAG_POSITION );
+	Assert( bufferp->flags & VB_FLAG_POSITION );
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, vbp->stride, ptr + offset);
+	glVertexPointer(3, GL_FLOAT, bufferp->stride, ptr + offset);
 	offset += (3 * sizeof(GLfloat));
 }
 
-#define DO_RENDER() {	\
-	if (sbuffer) {	\
-		vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
-	} else if (ibuffer) {	\
-		vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
-	} else {	\
-		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);	\
-	}	\
-}
+#define DO_RENDER()	\
+	vglDrawRangeElements(GL_TRIANGLES, start, end, count, element_type, ibuffer + (datap->index_offset + start))
 
 int GL_last_shader_flags = -1;
 int GL_last_shader_index = -1;
 
-static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags);
+static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags);
 
-static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
 	float u_scale, v_scale;
 	int render_pass = 0;
 	int shader_flags = 0;
+	int sdr_index = -1;
 	int r, g, b, a, tmap_type;
+	GLubyte *ibuffer = NULL;
 
-	int end = ((n_prim * 3) - 1);
-	int count = (end - start + 1);
+	int end = (datap->n_verts - 1);
+	int count = (end - (start*3) + 1);
+
+	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
 	opengl_vertex_buffer *vbp = g_vbp;
 	Assert( vbp );
 
-	int textured = ((flags & TMAP_FLAG_TEXTURED) && (vbp->flags & VERTEX_FLAG_UV1));
+	int textured = ((flags & TMAP_FLAG_TEXTURED) && (bufferp->flags & VB_FLAG_UV1));
 
 	// init lights
 	opengl_change_active_lights(0);
-	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f) );
-	gr_opengl_set_center_alpha(GL_center_alpha);
-
-	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
-	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 	// setup shader flags for the things that we want/need
 	if (lighting_is_enabled) {
@@ -412,7 +542,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 		if (GLOWMAP > 0) {
 			shader_flags |= SDR_FLAG_GLOW_MAP;
 		}
-	
+
 		if (lighting_is_enabled) {
 			if ( (SPECMAP > 0) && !Specmap_override ) {
 				shader_flags |= SDR_FLAG_SPEC_MAP;
@@ -421,10 +551,10 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 					shader_flags |= SDR_FLAG_ENV_MAP;
 				}
 			}
-		
+
 			if ( (NORMMAP > 0) && GL_state.Light(0) && !Normalmap_override ) {
 				shader_flags |= SDR_FLAG_NORMAL_MAP;
-		
+
 				if ( (HEIGHTMAP > 0) && !Heightmap_override ) {
 					shader_flags |= SDR_FLAG_HEIGHT_MAP;
 				}
@@ -432,27 +562,66 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 		}
 	}
 
-	opengl::shader_manager::get()->apply_main_shader(shader_flags);
-	opengl::shader *sdr = opengl::shader_manager::get()->get_main_shader();
+	// find proper shader
+	if (shader_flags == GL_last_shader_flags) {
+		sdr_index = GL_last_shader_index;
+	} else {
+		SCP_map<int, int>::iterator it;
 
-	if (!sdr) {
-		opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
-		return;
+		it = vbp->shader_ids.find(shader_flags);
+
+		if ( it != vbp->shader_ids.end() ) {
+			sdr_index = it->second;
+
+			GL_last_shader_index = sdr_index;
+			GL_last_shader_flags = shader_flags;
+		} else {
+			sdr_index = opengl_shader_get_index(shader_flags);
+
+			if (sdr_index < 0) {
+				opengl_render_pipeline_fixed(start, bufferp, datap, flags);
+				return;
+			}
+
+			vbp->shader_ids[shader_flags] = sdr_index;
+
+			GL_last_shader_index = sdr_index;
+			GL_last_shader_flags = shader_flags;
+		}
 	}
+
+	Assert( sdr_index >= 0 );
+
+	opengl_shader_set_current( &GL_shader[sdr_index] );
+
+
+	opengl_default_light_settings( !GL_center_alpha, (Interp_light > 0.25f) );
+	gr_opengl_set_center_alpha(GL_center_alpha);
+
+	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
+	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+
 
 	render_pass = 0;
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
+
 	// basic setup of all data
-	opengl_init_arrays(vbp);
+	opengl_init_arrays(vbp, bufferp);
+
+	if (vbp->ibo) {
+		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo);
+	} else {
+		ibuffer = (GLubyte*)vbp->index_list;
+	}
 
 	int n_lights = MIN(Num_active_gl_lights, GL_max_lights) - 1;
-	sdr->set_uniform(opengl::main_shader::n_lights, n_lights);
+	vglUniform1iARB( opengl_shader_get_uniform("n_lights"), n_lights );
 
 	// base texture
 	if (shader_flags & SDR_FLAG_DIFFUSE_MAP) {
-		sdr->set_uniform(opengl::main_shader::sBasemap, render_pass);
+		vglUniform1iARB( opengl_shader_get_uniform("sBasemap"), render_pass );
 
 		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 	
@@ -460,7 +629,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	}
 
 	if (shader_flags & SDR_FLAG_GLOW_MAP) {
-		sdr->set_uniform(opengl::main_shader::sGlowmap, render_pass);
+		vglUniform1iARB( opengl_shader_get_uniform("sGlowmap"), render_pass );
 
 		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -468,7 +637,7 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	}
 
 	if (shader_flags & SDR_FLAG_SPEC_MAP) {
-		sdr->set_uniform(opengl::main_shader::sSpecmap, render_pass);
+		vglUniform1iARB( opengl_shader_get_uniform("sSpecmap"), render_pass );
 
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -478,11 +647,9 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 			// 0 == env with non-alpha specmap, 1 == env with alpha specmap
 			int alpha_spec = bm_has_alpha_channel(SPECMAP);
 
-			sdr->set_uniform(opengl::main_shader::alpha_spec, alpha_spec);
-			sdr->set_uniformMatrix4f(opengl::main_shader::envMatrix, &GL_env_texture_matrix[0]);
-			sdr->set_uniform(opengl::main_shader::sEnvmap, render_pass);
-	
-			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
+			vglUniform1iARB( opengl_shader_get_uniform("alpha_spec"), alpha_spec );
+			vglUniformMatrix4fvARB( opengl_shader_get_uniform("envMatrix"), 1, GL_FALSE, &GL_env_texture_matrix[0] );
+			vglUniform1iARB( opengl_shader_get_uniform("sEnvmap"), render_pass );
 	
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
 	
@@ -491,14 +658,14 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	}
 
 	if (shader_flags & SDR_FLAG_NORMAL_MAP) {
-		sdr->set_uniform(opengl::main_shader::sNormalmap, render_pass);
+		vglUniform1iARB( opengl_shader_get_uniform("sNormalmap"), render_pass );
 
 		gr_opengl_tcache_set(NORMMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		render_pass++; // bump!
 
 		if (shader_flags & SDR_FLAG_HEIGHT_MAP) {
-			sdr->set_uniform(opengl::main_shader::sHeightmap, render_pass);
+			vglUniform1iARB( opengl_shader_get_uniform("sHeightmap"), render_pass );
 
 			gr_opengl_tcache_set(HEIGHTMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -508,7 +675,51 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 
 	// DRAW IT!!
 	DO_RENDER();
+/*
+	int n_light_passes = (MIN(Num_active_gl_lights, GL_max_lights) - 1) / 3;
 
+	if (lighting_is_enabled && n_light_passes > 0) {
+		shader_flags = SDR_FLAG_LIGHT;
+
+		if (textured) {
+			if ( !Basemap_override ) {
+				shader_flags |= SDR_FLAG_DIFFUSE_MAP;
+			}
+
+			if ( (SPECMAP > 0) && !Specmap_override ) {
+				shader_flags |= SDR_FLAG_SPEC_MAP;
+			}
+		}
+
+		opengl::shader_manager::get()->apply_main_shader(shader_flags);
+		sdr = opengl::shader_manager::get()->get_main_shader();
+
+		if (sdr) {
+			GL_state.BlendFunc(GL_ONE, GL_ONE);
+
+			int zbuf = gr_zbuffer_set(GR_ZBUFF_READ);
+
+			static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_zero );
+			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
+
+			GL_state.DepthMask(GL_FALSE);
+			GL_state.DepthFunc(GL_LEQUAL);
+
+			for (int i = 0; i < n_light_passes; i++) {
+				int offset = 3 * (i+1) - 1;
+				opengl_change_active_lights(0, offset);
+
+				n_lights = MIN(Num_active_gl_lights, GL_max_lights) - offset;
+				sdr->set_uniform(opengl::main_shader::n_lights, n_lights);
+
+				DO_RENDER();
+			}
+
+			gr_zbuffer_set(zbuf);
+		}
+	}
+*/
 /*
 	if (Num_active_gl_lights > 4) {
 		opengl_change_active_lights(0, 4);
@@ -530,7 +741,6 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 */
 
 	// make sure everthing gets turned back off
-	opengl::shader_manager::get()->apply_fixed_pipeline();
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 	GL_state.Texture.DisableAll();
 	vglClientActiveTextureARB(GL_TEXTURE1_ARB);
@@ -541,24 +751,28 @@ static void opengl_render_pipeline_program(int start, int n_prim, ushort *sbuffe
 	glDisableClientState(GL_NORMAL_ARRAY);
 }
 
-static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
 	float u_scale, v_scale;
 	int render_pass = 0;
 	int r, g, b, a, tmap_type;
+	GLubyte *ibuffer = NULL;
+	GLubyte *vbuffer = NULL;
 
 	bool rendered_env = false;
 	bool using_glow = false;
 	bool using_spec = false;
 	bool using_env = false;
 
-	int end = ((n_prim * 3) - 1);
+	int end = (datap->n_verts - 1);
 	int count = (end - start + 1);
+
+	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
 	opengl_vertex_buffer *vbp = g_vbp;
 	Assert( vbp );
 
-	int textured = ((flags & TMAP_FLAG_TEXTURED) && (vbp->flags & VERTEX_FLAG_UV1));
+	int textured = ((flags & TMAP_FLAG_TEXTURED) && (bufferp->flags & VB_FLAG_UV1));
 
 	if (textured ) {
 		if ( Cmdline_glow && (GLOWMAP > 0) ) {
@@ -589,7 +803,19 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 	// basic setup of all data
-	opengl_init_arrays(vbp);
+	opengl_init_arrays(vbp, bufferp);
+
+	if (vbp->ibo) {
+		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vbp->ibo);
+	} else {
+		ibuffer = (GLubyte*)vbp->index_list;
+	}
+
+	if ( !vbp->vbo ) {
+		vbuffer = (GLubyte*)vbp->array_list;
+	}
+
+	#define BUFFER_OFFSET(off) (vbuffer+bufferp->vertex_offset+(off))
 
 // -------- Begin 1st PASS (base texture, glow) ---------------------------------- //
 	if (textured) {
@@ -599,11 +825,7 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 		if ( !Basemap_override ) {
 			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			if (vbp->vbo) {
-				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-			} else {
-				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
-			}
+			glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 			gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -615,11 +837,7 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 		if (using_glow) {
 			vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			if (vbp->vbo) {
-				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-			} else {
-				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
-			}
+			glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 			// set glowmap on relevant ARB
 			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
@@ -686,11 +904,7 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 		// set specmap, for us to modulate against
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-		} else {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
-		}
+		glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 		// set specmap on relevant ARB
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
@@ -721,11 +935,7 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 		// now move the to the envmap
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-		} else {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
-		}
+		glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
 
@@ -810,11 +1020,7 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 
 		vglClientActiveTextureARB(GL_TEXTURE0_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-		} else {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
-		}
+		glTexCoordPointer( 2, GL_FLOAT, bufferp->stride, BUFFER_OFFSET(0) );
 
 		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -863,10 +1069,12 @@ static void opengl_render_pipeline_fixed(int start, int n_prim, ushort *sbuffer,
 }
 
 // start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags)
 {
 	Assert( GL_htl_projection_matrix_set );
 	Assert( GL_htl_view_matrix_set );
+
+	Verify( bufferp != NULL );
 
 	GL_CHECK_FOR_ERRORS("start of render_buffer()");
 
@@ -874,10 +1082,14 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 		GL_state.FrontFaceValue(GL_CW);
 	}
 
-	if ( Use_GLSL && !GLSL_override ) {
-		opengl_render_pipeline_program(start, n_prim, sbuffer, ibuffer, flags);
+	Assert( texi >= 0 );
+
+	const buffer_data *datap = &bufferp->tex_buf[texi];
+
+	if ( (Use_GLSL > 1) && !GLSL_override ) {
+		opengl_render_pipeline_program(start, bufferp, datap, flags);
 	} else {
-		opengl_render_pipeline_fixed(start, n_prim, sbuffer, ibuffer, flags);
+		opengl_render_pipeline_fixed(start, bufferp, datap, flags);
 	}
 
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");

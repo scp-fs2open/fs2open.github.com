@@ -1103,8 +1103,163 @@ void gr_opengl_tmapper(int nverts, vertex **verts, uint flags)
 	} else {
 		opengl_tmapper_internal(nverts, verts, flags);
 	}
-
 }
+
+void opengl_render_internal(int nverts, vertex *verts, uint flags)
+{
+	int alpha, tmap_type, r, g, b;
+	float u_scale = 1.0f, v_scale = 1.0f;
+	GLenum gl_mode = GL_TRIANGLE_FAN;
+	bool texture_matrix_set = false;
+
+	GL_CHECK_FOR_ERRORS("start of render()");
+
+	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
+
+	if (flags & TMAP_FLAG_TRILIST) {
+		gl_mode = GL_TRIANGLES;
+	} else if (flags & TMAP_FLAG_TRISTRIP) {
+		gl_mode = GL_TRIANGLE_STRIP;
+	} else if (flags & TMAP_FLAG_QUADLIST) {
+		gl_mode = GL_QUADS;
+	} else if (flags & TMAP_FLAG_QUADSTRIP) {
+		gl_mode = GL_QUAD_STRIP;
+	}
+
+	if (flags & TMAP_FLAG_TEXTURED) {
+		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
+			return;
+		}
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].u);
+
+		// adjust texture coords if needed
+		if ( (u_scale != 1.0f) || (v_scale != 1.0f) ) {
+			glMatrixMode(GL_TEXTURE);
+			glPushMatrix();
+			glScalef(u_scale, v_scale, 1.0f);
+
+			// switch back to the default modelview mode
+			glMatrixMode(GL_MODELVIEW);
+
+			texture_matrix_set = true;
+		}
+	}
+
+	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
+		glEnableClientState(GL_COLOR_ARRAY);
+
+		if (flags & TMAP_FLAG_ALPHA) {
+			glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+		} else {
+			glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+			glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+		}
+	}
+	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
+	else {
+		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+	}
+
+	float offset_z = -0.99f;
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, offset_z);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].sx);
+
+	gr_opengl_set_2d_matrix();
+
+	glDrawArrays(gl_mode, 0, nverts);
+
+	gr_opengl_end_2d_matrix();
+
+	GL_state.Texture.DisableAll();
+
+	if (texture_matrix_set) {
+		glMatrixMode(GL_TEXTURE);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	}
+
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
+	GL_CHECK_FOR_ERRORS("end of render()");
+}
+
+void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
+{
+	int alpha, tmap_type, r, g, b;
+	float u_scale = 1.0f, v_scale = 1.0f;
+	GLenum gl_mode = GL_TRIANGLE_FAN;
+
+	GL_CHECK_FOR_ERRORS("start of render3d()");
+
+	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
+
+	if (flags & TMAP_FLAG_TEXTURED) {
+		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
+			return;
+		}
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].u);
+	}
+
+	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
+	GLboolean lighting = GL_state.Lighting(GL_FALSE);
+
+	if (flags & TMAP_FLAG_TRILIST) {
+		gl_mode = GL_TRIANGLES;
+	} else if (flags & TMAP_FLAG_TRISTRIP) {
+		gl_mode = GL_TRIANGLE_STRIP;
+	} else if (flags & TMAP_FLAG_QUADLIST) {
+		gl_mode = GL_QUADS;
+	} else if (flags & TMAP_FLAG_QUADSTRIP) {
+		gl_mode = GL_QUAD_STRIP;
+	}
+
+	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), &verts[0].r);
+	}
+	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
+	else {
+		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+	}
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, sizeof(vertex), &verts[0].x);
+
+	glDrawArrays(gl_mode, 0, nverts);
+
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
+	GL_state.CullFace(cull_face);
+	GL_state.Lighting(lighting);
+
+	GL_CHECK_FOR_ERRORS("end of render3d()");
+}
+
+void gr_opengl_render(int nverts, vertex *verts, uint flags)
+{
+	if ( !Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT) ) {
+		opengl_render_internal3d(nverts, verts, flags);
+	} else {
+		opengl_render_internal(nverts, verts, flags);
+	}
+}
+
 
 #define FIND_SCALED_NUM(x, x0, x1, y0, y1) ( ((((x) - (x0)) * ((y1) - (y0))) / ((x1) - (x0))) + (y0) )
 

@@ -16,16 +16,28 @@
 #include "nebula/neb.h"
 #include "ship/ship.h"
 
+#include <list>
 
 
 typedef struct sorted_obj {
 	object			*obj;					// a pointer to the original object
-	float				z, min_z, max_z;	// The object's z values relative to viewer
+	float			z, min_z, max_z;		// The object's z values relative to viewer
+
+	sorted_obj() :
+		obj(NULL), z(0.0f), min_z(0.0f), max_z(1.0f)
+	{
+	}
+
+	bool operator < (const sorted_obj &other);
 } sorted_obj;
 
-int Num_sorted_objects = 0;
-sorted_obj Sorted_objects[MAX_OBJECTS];
-int Object_sort_order[MAX_OBJECTS];
+inline bool sorted_obj::operator < (const sorted_obj &other)
+{
+	return (max_z > other.max_z);
+}
+
+
+std::list<sorted_obj> Sorted_objects;
 
 
 // Used to (fairly) quicky find the 8 extreme
@@ -94,7 +106,7 @@ int obj_in_view_cone( object * objp )
 	}
 
 	if (and_codes)	{
-		//mprintf(( "All points offscreen, so don't render it.\n" ));
+		mprintf(( "All points offscreen, so don't render it.\n" ));
 		return 0;	//all points off screen
 	}
 
@@ -109,7 +121,7 @@ extern int Cmdline_nohtl;
 void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {
 	object *objp;
-	int i, j, incr;
+	int i;
 	float fog_near, fog_far;
 #ifdef DYN_CLIP_DIST
 	float closest_obj = Max_draw_distance;
@@ -117,33 +129,35 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 #endif
 
 	objp = Objects;
-	Num_sorted_objects = 0;
+
 	for (i=0;i<=Highest_object_index;i++,objp++) {
 		if ( (objp->type != OBJ_NONE) && (objp->flags&OF_RENDERS) )	{
 			objp->flags &= ~OF_WAS_RENDERED;
 
 			if ( obj_in_view_cone(objp) )	{
-				sorted_obj * osp = &Sorted_objects[Num_sorted_objects];
-				Object_sort_order[Num_sorted_objects] = Num_sorted_objects;
-				Num_sorted_objects++;
+				sorted_obj osp;
 
-				osp->obj = objp;
+				osp.obj = objp;
+
 				vec3d to_obj;
 				vm_vec_sub( &to_obj, &objp->pos, &Eye_position );
-				osp->z = vm_vec_dot( &Eye_matrix.vec.fvec, &to_obj );
+				osp.z = vm_vec_dot( &Eye_matrix.vec.fvec, &to_obj );
 /*
 				if ( objp->type == OBJ_SHOCKWAVE )
-					osp->z -= 2*objp->radius;
+					osp.z -= 2*objp->radius;
 */
 				// Make warp in effect draw after any ship in it
 				if ( objp->type == OBJ_FIREBALL )	{
 					//if ( fireball_is_warp(objp) )	{
-					osp->z -= 2*objp->radius;
+					osp.z -= 2*objp->radius;
 					//}
 				}
 					
-				osp->min_z = osp->z - objp->radius;
-				osp->max_z = osp->z + objp->radius;
+				osp.min_z = osp.z - objp->radius;
+				osp.max_z = osp.z + objp->radius;
+
+				Sorted_objects.push_back(osp);
+
 #ifdef DYN_CLIP_DIST
 				if(objp != Viewer_obj)
 				{
@@ -157,8 +171,10 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}	
 	}
 
-	if(!Num_sorted_objects)
+	if ( Sorted_objects.empty() )
 		return;
+
+	Sorted_objects.sort();
 
 #ifdef DYN_CLIP_DIST
 	if (!Cmdline_nohtl)
@@ -173,42 +189,20 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	}
 #endif
 
-
-	// Sort them by their maximum z value
-	if ( Num_sorted_objects > 1 ) {
-		incr = Num_sorted_objects / 2;
-		while( incr > 0 )	{
-			for (i=incr; i<Num_sorted_objects; i++ )	{
-				j = i - incr; 
-				while (j>=0 )	{
-					// compare element j and j+incr
-					if ( (Sorted_objects[Object_sort_order[j]].max_z < Sorted_objects[Object_sort_order[j+incr]].max_z)  ) {
-						// If not in correct order, them swap 'em
-						int tmp;
-						tmp = Object_sort_order[j];	
-						Object_sort_order[j] = Object_sort_order[j+incr];
-						Object_sort_order[j+incr] = tmp;
-						j -= incr;
-					} else {
-						break;
-					}
-				}
-			}
-			incr = incr / 2;
-		}
-	}
-
 	gr_zbuffer_set( GR_ZBUFF_FULL );	
 
 	// now draw them
- 	for (i=0; i<Num_sorted_objects; i++)	{
-		sorted_obj * os = &Sorted_objects[Object_sort_order[i]];
-		os->obj->flags |= OF_WAS_RENDERED;
+	std::list<sorted_obj>::iterator os;
+	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
+		object *obj = os->obj;
+
+		obj->flags |= OF_WAS_RENDERED;
+
 		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
-		if(os->obj == Viewer_obj
-			&& os->obj->type == OBJ_SHIP
-			&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK))
-			&& (Ship_info[Ships[os->obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL))
+		if ( (obj == Viewer_obj)
+			&& (obj->type == OBJ_SHIP)
+			&& (Ship_info[Ships[obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL)
+			&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)) )
 		{
 			(*draw_viewer_last) = true;
 			continue;
@@ -217,7 +211,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		// if we're fullneb, fire up the fog - this also generates a fog table
 		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
 			// get the fog values
-			neb2_get_fog_values(&fog_near, &fog_far, os->obj);
+			neb2_get_fog_values(&fog_near, &fog_far, obj);
 
 			// only reset fog if the fog mode has changed - since regenerating a fog table takes
 			// a bit of time
@@ -226,13 +220,15 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			}
 
 			// maybe skip rendering an object because its obscured by the nebula
-			if(neb2_skip_render(os->obj, os->z)){
+			if(neb2_skip_render(obj, os->z)){
 				continue;
 			}
 		}
 
-		(*render_function)(os->obj);
+		(*render_function)(obj);
 	}
+
+	Sorted_objects.clear();
 
 	//WMC - draw maneuvering thrusters
 	extern void batch_render_man_thrusters();

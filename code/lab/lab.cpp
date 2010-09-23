@@ -726,6 +726,24 @@ void labviewer_render_model(float frametime)
 	vec3d light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;
 	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+/*
+	light_add_directional(&light_dir, 0.05f, 0.0f, 0.0f, 1.0f);
+
+	light_add_directional(&light_dir, 0.05f, 0.0f, 0.0f, 1.0f);
+	light_dir = vmd_zero_vector;
+	light_dir.xyz.y = -1.0f;
+	light_add_directional(&light_dir, 0.65f, 1.0f, 0.0f, 0.0f);
+
+	light_add_directional(&light_dir, 0.05f, 1.0f, 0.0f, 0.0f);
+
+	light_add_directional(&light_dir, 0.05f, 1.0f, 0.0f, 0.0f);
+	light_dir = vmd_zero_vector;
+	light_dir.xyz.x = -1.0f;
+	light_dir.xyz.y = 1.0f;
+	light_add_directional(&light_dir, 0.65f, 0.0f, 1.0f, 0.0f);
+
+	light_add_directional(&light_dir, 0.05f, 0.0f, 1.0f, 0.0f);
+*/
 	// light_filter_reset();
 	light_rotate_all();
 	// lighting for techroom
@@ -988,7 +1006,11 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
+		gr_post_process_begin();
+
 		labviewer_render_model(frametime);
+
+		gr_post_process_end();
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
@@ -997,7 +1019,11 @@ void labviewer_do_render(float frametime)
 			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_model_filename, false);
 		}
 	} else if (Lab_bitmap_id >= 0) {
+		gr_post_process_begin();
+
 		labviewer_render_bitmap(frametime);
+
+		gr_post_process_end();
 
 		// print out the current bitmap filename, to help with... something
 		if ( strlen(Lab_bitmap_filename) ) {
@@ -1616,6 +1642,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
 	if (Use_GLSL) {
 		ADD_RENDER_BOOL("Fixed Render Pipeline", GLSL_override);
+		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
 	}
 	// map related flags
 	ADD_RENDER_BOOL("No Diffuse Map", Basemap_override);
@@ -2086,6 +2113,9 @@ void lab_init()
 
 		Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
 	}
+
+	// disable post-processing by default in the lab
+	PostProcessing_override = true;
 }
 
 #include "controlconfig/controlsconfig.h"
@@ -2237,6 +2267,7 @@ void lab_close()
 	Normalmap_override = false;
 	Heightmap_override = false;
 	Glowpoint_override = false;
+	PostProcessing_override = false;
 
 	// reset detail levels to default
 	Detail.hardware_textures = Lab_detail_texture_save;

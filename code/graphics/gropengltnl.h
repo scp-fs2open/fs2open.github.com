@@ -21,6 +21,7 @@ extern GLint GL_max_elements_vertices;
 extern GLint GL_max_elements_indices;
 
 struct poly_list;
+struct vertex_buffer;
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation);
 void gr_opengl_start_instance_angles(vec3d *pos, angles *rotation);
@@ -37,10 +38,11 @@ void gr_opengl_pop_scale_matrix();
 void gr_opengl_start_clip_plane();
 void gr_opengl_end_clip_plane();
 
-int gr_opengl_make_buffer(poly_list *list, uint flags);
+bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb);
+bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
-void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags);
+void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags);
 void gr_opengl_render_to_env(int FACE);
 
 void gr_opengl_start_state_block();
