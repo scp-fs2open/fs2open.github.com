@@ -60,7 +60,7 @@ extern GLenum GL_texture_target;
 extern GLenum GL_texture_face;
 extern GLfloat GL_anisotropy;
 extern bool GL_rendering_to_framebuffer;
-extern int GL_max_renderbuffer_size;
+extern GLint GL_max_renderbuffer_size;
 
 void opengl_switch_arb(int unit, int state);
 void opengl_tcache_init();
