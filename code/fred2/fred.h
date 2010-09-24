@@ -22,6 +22,8 @@
 #include "BgBitmapDlg.h"
 #include "BriefingEditorDlg.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/fsmemory.h"
 
 #define MODIFY(a, b) do {	\
 	if (a != (b)) {			\

@@ -314,6 +314,15 @@ void gr_opengl_post_process_end()
 	Post_in_frame = false;
 }
 
+void get_post_process_effect_names(SCP_vector<SCP_string> &names) 
+{
+	int idx;
+
+	for (idx = 0; idx < (int)Post_effects.size(); idx++) {
+		names.push_back(Post_effects[idx].name);
+	}
+}
+
 static bool opengl_post_compile_main_shader(int flags)
 {
 	char *vert = NULL, *frag = NULL;
