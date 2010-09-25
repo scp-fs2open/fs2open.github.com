@@ -22,10 +22,10 @@
 struct object;
 struct ship_subsys;
 
-#define	WP_UNUSED	-	1
-#define	WP_LASER		0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
-#define	WP_MISSILE		1
-#define	WP_BEAM			2
+#define	WP_UNUSED			-1
+#define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
+#define	WP_MISSILE			1
+#define	WP_BEAM				2
 extern char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
@@ -109,7 +109,7 @@ extern int Num_weapon_subtypes;
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
-#define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
+#define WIF_HURTS_BIG_SHIPS			(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
 
@@ -468,6 +468,7 @@ typedef struct weapon_info {
 	float			target_lead_scaler;
 	int				targeting_priorities[32];
 	int				num_targeting_priorities;
+
 } weapon_info;
 
 // Data structure to track the active missiles

@@ -1189,7 +1189,6 @@ int parse_weapon(int subtype, bool replace)
 	if ( optional_string("$Submodel Rotation Acceleration:") )
 		stuff_float(&wip->weapon_submodel_rotate_accell);
 
-
 	//	No POF or AVI file specified, render as special laser type.(?)
 	ubyte r,g,b;
 
@@ -2562,7 +2561,6 @@ void parse_weaponstbl(char *filename)
 		}
 		required_string("#End");
 	}
-
 
 	if(optional_string("#Secondary Weapons"))
 	{
