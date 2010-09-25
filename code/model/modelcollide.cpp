@@ -761,13 +761,16 @@ NoHit:
 		// or if it's set to no collision
 		if (!csm->blown_off && !csm->no_collisions)	{	
 			//instance for this subobject
-			matrix tm;
-
 			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient );
 			vm_vec_add2(&Mc_base, &saved_base );
 
-			vm_angles_2_matrix(&tm, &csm->angs);
-			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &tm);
+			// Submodel matrix rotation code copied over from examples from KeldorKatarn - Wanderer
+			matrix rotation_matrix = csm->orientation;
+			vm_rotate_matrix_by_angles(&rotation_matrix, &csm->angs);
+
+			matrix inv_orientation;
+			vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
+			vm_matrix_x_matrix(&Mc_orient, &rotation_matrix, &inv_orientation);
 
 			mc_check_subobj( i );
 		}
