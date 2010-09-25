@@ -376,7 +376,10 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		float			dist;
 
 		pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
-	
+		//Necessary sanity check
+		Assertion(aip->targeted_subsys->system_info->path_num <= pm->n_paths, "Invalid Path number %d for subsystem %s on ship %s (Model: %s)\n", aip->targeted_subsys->system_info->path_num, aip->targeted_subsys->system_info->name, Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].name, pm->filename );
+		if (aip->targeted_subsys->system_info->path_num > pm->n_paths)
+			return 0;
 		// If attacking a subsystem, ensure that we have an unobstructed line of sight... if not, then move
 		// towards path linked to subsystem
 		subsys_in_sight = 0;	// assume Pl_objp doesn't have line of sight to subys
@@ -420,12 +423,6 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			aip->path_goal_dist = 5;
 			subsys_path_num = aip->targeted_subsys->system_info->path_num;
-			//Let's do some sanity checking here
-			polymodel *pm;
-			ship *shipp;
-			shipp = &Ships[Objects[aip->target_objnum].instance];
-			pm = model_get(Ship_info[shipp->ship_info_index].model_num); 
-			Assertion(subsys_path_num <= pm->n_paths, "AI trying to request path number %d (associated with subsystem %s) from ship %s (Model: %s). Path number is invalid, as only %d paths could be found in the model.\n", subsys_path_num, aip->targeted_subsys->system_info->name, shipp->ship_name, pm->filename, pm->n_paths);
 			if ( ((aip->path_start) == -1 || (aip->mp_index != subsys_path_num)) && subsys_path_num <= pm->n_paths ) {
 				// maybe create a new path
 				if ( subsys_path_num >= 0 ) {
