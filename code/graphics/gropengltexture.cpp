@@ -1024,7 +1024,6 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	tcache_slot_opengl *t = &Textures[n];
 
 	GL_state.Texture.SetActiveUnit(tex_unit);
-	GL_state.Texture.SetTarget(t->texture_target);
 
 	if ( /*(bm_is_render_target(bitmap_handle) != RENDER_TARGET_DYNAMIC) &&*/
 		!bm_is_render_target(bitmap_handle) &&
@@ -1038,6 +1037,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
+		GL_state.Texture.SetTarget(t->texture_target);
 		GL_state.Texture.Enable(t->texture_id);
 
 		if ( (t->wrap_mode != GL_texture_addressing) && (bitmap_type != TCACHE_TYPE_AABITMAP)
