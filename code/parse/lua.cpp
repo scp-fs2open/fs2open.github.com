@@ -4181,6 +4181,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	obj = objh->objp;
 	int flags = 0;
 	int submodel = -1;
+	bool model_started = false;
 
 	switch(obj->type) {
 		case OBJ_SHIP:
@@ -4208,6 +4209,11 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	if (model_num < 0)
 		return ADE_RETURN_NIL;
 
+	if (obj->type == OBJ_SHIP) {
+		ship_model_start(obj);
+		model_started = true;
+	}
+
 	mc_info hull_check;
 
 	hull_check.model_num = model_num;
@@ -4219,9 +4225,14 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	hull_check.flags = flags;
 
 	if ( !model_collide(&hull_check) ) {
+		if (model_started)
+			ship_model_stop(obj);
 		return ADE_RETURN_NIL;
 	}
 	
+	if (model_started)
+		ship_model_stop(obj);
+
 	if (local)
 		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
 	else
