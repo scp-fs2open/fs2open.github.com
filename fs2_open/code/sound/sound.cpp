@@ -1396,34 +1396,38 @@ int snd_get_samples_per_measure(char *filename, float num_measures)
 
 void snd_adjust_audio_volume(int type, float percent, int time)
 {
-	Assert( type >= 0 && type < 4 );
+	Assert( type >= 0 && type < 3 );
 	
-	switch (type) {
-	case AAV_MUSIC:
-		aav_data[type].start_volume = aav_music_volume;
-		if (percent < aav_music_volume)
-			aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
-		else
-			aav_data[type].delta = percent - aav_music_volume;
-		break;
-	case AAV_VOICE:
-		aav_data[type].start_volume = aav_voice_volume;
-		if (percent < aav_voice_volume)
-			aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
-		else
-			aav_data[type].delta = percent - aav_voice_volume;
-		break;
-	case AAV_EFFECTS:
-		aav_data[type].start_volume = aav_effect_volume;
-		if (percent < aav_effect_volume)
-			aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
-		else
-			aav_data[type].delta = percent - aav_effect_volume;
-		break;
-	}
+	if ( type >= 0 && type < 3 ) {
+		switch (type) {
+		case AAV_MUSIC:
+			aav_data[type].start_volume = aav_music_volume;
+			if (percent < aav_music_volume)
+				aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_music_volume;
+			break;
+		case AAV_VOICE:
+			aav_data[type].start_volume = aav_voice_volume;
+			if (percent < aav_voice_volume)
+				aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_voice_volume;
+			break;
+		case AAV_EFFECTS:
+			aav_data[type].start_volume = aav_effect_volume;
+			if (percent < aav_effect_volume)
+				aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_effect_volume;
+			break;
+		default:
+			Int3();
+		}
 
-	aav_data[type].delta_time = time;
-	aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
+		aav_data[type].delta_time = time;
+		aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
+	}
 }
 
 void adjust_volume_on_frame(float* volume_now, aav* data)
