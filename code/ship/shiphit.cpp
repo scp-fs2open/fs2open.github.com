@@ -65,6 +65,8 @@ typedef struct spark_pair {
 vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
+static bool global_damage = false;
+
 //WMC - Camera rough draft stuff
 /*
 camid dead_get_camera()
@@ -484,7 +486,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	}
 #endif
 
-	create_subsys_debris(ship_obj, hitpos);
+	if (!global_damage) {
+		create_subsys_debris(ship_obj, hitpos);
+	}
 
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
@@ -2365,6 +2369,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 	// evaluate any possible player stats implications
 	scoring_eval_hit(ship_obj,other_obj);
 
+	global_damage = false;
 	ship_do_damage(ship_obj, other_obj, hitpos, damage, quadrant );
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
@@ -2391,6 +2396,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 	Assert(ship_obj);	// Goober5000 (but not other_obj in case of sexp)
 
 	vec3d tmp, world_hitpos;
+	global_damage = true;
 
 	if ( force_center )	{
 		int shield_quad;
@@ -2454,6 +2460,7 @@ void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage)
 	vm_vec_scale_add( &world_hitpos, &ship_obj->pos, &direction_vec, ship_obj->radius );
 
 	// Do damage to hull and not to shields
+	global_damage = true;
 	ship_do_damage(ship_obj, other_obj, &world_hitpos, damage, -1, 1);
 
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage

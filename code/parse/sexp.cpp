@@ -5969,10 +5969,14 @@ int sexp_get_object_coordinate(int n, int axis)
 
 			relative_location->xyz.x = (float) eval_num(n);
 			n = CDR(n);
-			relative_location->xyz.y = (float) eval_num(n);
-			n = CDR(n);
-			relative_location->xyz.z = (float) eval_num(n);
-			n = CDR(n);
+			if (n >= 0) {
+				relative_location->xyz.y = (float) eval_num(n);
+				n = CDR(n);
+				if (n >= 0) {
+					relative_location->xyz.z = (float) eval_num(n);
+					n = CDR(n);
+				}
+			}
 		}
 	}
 

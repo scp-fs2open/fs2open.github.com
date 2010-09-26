@@ -2900,7 +2900,7 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 			if(pm->n_paths <= path_num)
 				Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
 		//	Assert(pm->n_paths > path_num);
-			aip->goal_objnum = objp-Objects;
+			aip->goal_objnum = objnum;
 			aip->goal_signature = objp->signature;
 			if (exit_flag)
 				create_model_exit_path(pl_objp, objp, path_num);

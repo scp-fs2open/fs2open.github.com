@@ -75,6 +75,7 @@
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 #include "object/objcollide.h"
+#include "parse/scripting.h"
 
 
 
@@ -4532,10 +4533,13 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	swp->current_primary_bank = -1;
 	swp->current_secondary_bank = -1;
 
+	swp->previous_primary_bank = -1;
+	swp->previous_secondary_bank = -1;
 
 	if ( sip->num_primary_banks > 0 ) {
 		if ( swp->primary_bank_weapons[BANK_1] >= 0 ) {
 			swp->current_primary_bank = BANK_1;
+			swp->previous_primary_bank = BANK_1;
 		} else {
 			swp->current_primary_bank = -1;
 		}
@@ -4547,6 +4551,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	if ( sip->num_secondary_banks > 0 ) {
 		if ( swp->secondary_bank_weapons[BANK_1] >= 0 ) {
 			swp->current_secondary_bank = BANK_1;
+			swp->previous_secondary_bank = BANK_1;
 		} else {
 			swp->current_secondary_bank = -1;
 		}
@@ -9427,7 +9432,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				}
 
 				// now handle the energy as usual
-				// deplete the weapon reserve energy by the amount of energy used to fire the weapon				
+				// deplete the weapon reserve energy by the amount of energy used to fire the weapon	
+				// Only subtract the energy amount required for equipment operation once
 				shipp->weapon_energy -= points*numtimes * winfo_p->energy_consumed;
 				// note for later: option for fuel!
 				
@@ -9755,6 +9761,17 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			Player->stats.mp_shots_fired += num_fired;
 		}
 	}
+
+	object *objp = &Objects[shipp->objnum];
+	object* target;
+	if (Ai_info[shipp->ai_index].target_objnum != -1)
+		target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+	else
+		target = NULL;
+	if (objp == Player_obj && Player_ai->target_objnum != -1)
+		target = &Objects[Player_ai->target_objnum]; 
+	Script_system.SetHookObjects(2, "User", objp, "Target", target);
+	Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
 
 	return num_fired;
 }
@@ -10264,6 +10281,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 
 		int pnt_index=start_slot;
+		//If this is a tertiary weapon, only subtract one piece of ammo
 		for ( j = start_slot; j <= end_slot; j++ ) {
 			int	weapon_num;
 
@@ -10447,6 +10465,17 @@ done_secondary:
 		}
 
 	}	
+
+	object *objp = &Objects[shipp->objnum];
+	object* target;
+	if (Ai_info[shipp->ai_index].target_objnum != -1)
+		target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+	else
+		target = NULL;
+	if (objp == Player_obj && Player_ai->target_objnum != -1)
+		target = &Objects[Player_ai->target_objnum]; 
+	Script_system.SetHookObjects(2, "User", objp, "Target", target);
+	Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
 
 	return num_fired;
 }
@@ -10637,6 +10666,11 @@ int ship_select_next_primary(object *objp, int direction)
 		// make sure we're okay
 		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
 
+		if(swp->current_primary_bank != original_bank)
+			swp->previous_primary_bank = original_bank;
+		else
+			swp->previous_primary_bank = swp->current_primary_bank;
+
 		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
 		// so we should check if we actually changed banks
 		if ( (swp->current_primary_bank != original_bank) || ((shipp->flags & SF_PRIMARY_LINKED) != original_link_flag) )
@@ -10646,6 +10680,18 @@ int ship_select_next_primary(object *objp, int direction)
 				snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
 			}
 			ship_primary_changed(shipp);
+			object* objp = &Objects[shipp->objnum];
+			object* target;
+			if (Ai_info[shipp->ai_index].target_objnum != -1)
+				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+			else
+				target = NULL;
+			if (objp == Player_obj && Player_ai->target_objnum != -1)
+				target = &Objects[Player_ai->target_objnum]; 
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
 			return 1;
 		}
 
@@ -10663,6 +10709,18 @@ int ship_select_next_primary(object *objp, int direction)
 	}
 
 	ship_primary_changed(shipp);
+	object* target;
+	if (Ai_info[shipp->ai_index].target_objnum != -1)
+		target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+	else
+		target = NULL;
+	if (objp == Player_obj && Player_ai->target_objnum != -1)
+		target = &Objects[Player_ai->target_objnum]; 
+	Script_system.SetHookObjects(2, "User", objp, "Target", target);
+	Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
+	Script_system.SetHookObjects(2, "User", objp, "Target", target);
+	Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+
 	return 1;
 }
 
@@ -10729,11 +10787,28 @@ int ship_select_next_secondary(object *objp)
 
 		if ( swp->current_secondary_bank != original_bank )
 		{
+			if(swp->current_primary_bank != original_bank)
+				swp->previous_primary_bank = original_bank;
+			else
+				swp->previous_primary_bank = swp->current_primary_bank;
 			if ( objp == Player_obj )
 			{
 				snd_play( &Snds[SND_SECONDARY_CYCLE], 0.0f );
 			}
 			ship_secondary_changed(shipp);
+
+			object* objp = &Objects[shipp->objnum];
+			object* target;
+			if (Ai_info[shipp->ai_index].target_objnum != -1)
+				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+			else
+				target = NULL;
+			if (objp == Player_obj && Player_ai->target_objnum != -1)
+				target = &Objects[Player_ai->target_objnum]; 
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
 			return 1;
 		}
 	} // end if
