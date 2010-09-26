@@ -2266,6 +2266,8 @@ int beam_collide_ship(obj_pair *pair)
 	int	valid_hit_occurred = 0;
 	sip = &Ship_info[shipp->ship_info_index];
 	bwi = &Weapon_info[b->weapon_info_index];
+
+	ship_model_start(ship_objp);
 	polymodel *pm = model_get(model_num);
 
 	// get the widest portion of the beam
@@ -2354,6 +2356,8 @@ int beam_collide_ship(obj_pair *pair)
 		memcpy(&mc, &mc_hull_enter, sizeof(mc_info));
 		valid_hit_occurred = 1;
 	}
+
+	ship_model_stop(ship_objp);
 
 
 	// if we got a hit
