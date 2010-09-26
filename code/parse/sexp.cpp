@@ -8893,7 +8893,7 @@ void sexp_update_sound_environment(int node)
 	//From sexp help:
 	//{ OP_ADJUST_AUDIO_VOLUME, "adjust-audio-volume\r\n"
 	//	"Adjusts the relative volume of one sound type. Takes 2 or 3 arguments....\r\n"
-	//	"\t1:\tSound Type to adjust, either Master, Music, Voice or Effects\r\n"
+	//	"\t1:\tSound Type to adjust, either Music, Voice or Effects\r\n"
 	//	"\t2:\tPercentage of the users' settings to adjust to, 0 will be silence, 100 means the maximum volume as set by the user\r\n"
 	//	"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
 
@@ -8921,20 +8921,22 @@ void sexp_adjust_audio_volume(int node)
 
 	if (n > 0) {
 		int option = audio_volume_option_lookup(CTEXT(n));
-		n = CDR(n);
-
-		float target_volume = 1.0f;
-		if (n >= 0) {
-			target_volume = (float)eval_num(n) / 100;
-			CLAMP(target_volume, 0.0f, 1.0f);
+		if (option > 0) {
 			n = CDR(n);
+
+			float target_volume = 1.0f;
+			if (n >= 0) {
+				target_volume = (float)eval_num(n) / 100;
+				CLAMP(target_volume, 0.0f, 1.0f);
+				n = CDR(n);
+			}
+
+			int time = 0;
+			if (n >= 0)
+				time = eval_num(n);
+
+			snd_adjust_audio_volume(option, target_volume, time);
 		}
-
-		int time = 0;
-		if (n >= 0)
-			time = eval_num(n);
-
-		snd_adjust_audio_volume(option, target_volume, time);
 	}
 }
 
