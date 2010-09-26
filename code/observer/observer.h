@@ -33,8 +33,6 @@ typedef struct observer {
 #define MAX_OBSERVER_OBS 17
 extern observer Observers[MAX_OBSERVER_OBS];
 
-extern int Num_observer_obs;
-
 void observer_init();
 int observer_create(matrix *orient, vec3d *pos);  // returns objnum
 void observer_delete(object *obj);
