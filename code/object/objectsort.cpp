@@ -106,7 +106,7 @@ int obj_in_view_cone( object * objp )
 	}
 
 	if (and_codes)	{
-		mprintf(( "All points offscreen, so don't render it.\n" ));
+		//mprintf(( "All points offscreen, so don't render it.\n" ));
 		return 0;	//all points off screen
 	}
 
