@@ -420,7 +420,7 @@ void opengl_shader_init()
 			frag_name = "main-f.sdr";
 		}
 
-		mprintf(("  Compiling shader: %s (%s), %s (%s)\n", vert_name, GL_shader_file[idx + 1].vert, frag_name, GL_shader_file[idx + 1].frag ));
+		mprintf(("  Compiling shader: %s (%s), %s (%s)\n", vert_name, GL_shader_file[idx].vert, frag_name, GL_shader_file[idx].frag ));
 
 		// read vertex shader
 		if ( (vert = opengl_load_shader(vert_name, shader_file->flags, main_vert)) == NULL ) {
