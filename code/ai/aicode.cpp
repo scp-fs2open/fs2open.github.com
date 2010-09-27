@@ -13292,6 +13292,8 @@ void ai_warp_out(object *objp)
 		// flag us as trying to warp so that this function keeps getting called
 		// (in other words, if we can't warp just yet, we want to warp at the first
 		// opportunity)
+		if (aip->mode != AIM_WARP_OUT) 
+			aip->mode = AIM_WARP_OUT;
 		aip->submode = AIS_WARP_1;
 		aip->ai_flags |= AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
 
