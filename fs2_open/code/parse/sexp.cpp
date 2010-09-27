@@ -11261,7 +11261,6 @@ int sexp_weapon_fired_delay(int node, int op_num)
 int sexp_has_weapon(int node, int op_num)
 {
 	ship *shipp;
-	weapon_info * wip; 
 	int i;
 	int requested_bank;
 	int weapon_index;
