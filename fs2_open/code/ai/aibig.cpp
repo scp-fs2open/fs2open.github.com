@@ -377,8 +377,10 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 		pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
 		//Necessary sanity check
-		Assertion(aip->targeted_subsys->system_info->path_num <= pm->n_paths, "Invalid Path number %d for subsystem %s on ship %s (Model: %s)\n", aip->targeted_subsys->system_info->path_num, aip->targeted_subsys->system_info->name, Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].name, pm->filename );
-		if (aip->targeted_subsys->system_info->path_num > pm->n_paths)
+		polymodel	*pm_t;
+		pm_t = model_get(Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].model_num);
+		Assertion(aip->targeted_subsys->system_info->path_num <= pm_t->n_paths, "Invalid Path number %d for subsystem %s on ship %s (Model: %s)\n", aip->targeted_subsys->system_info->path_num, aip->targeted_subsys->system_info->name, Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].name, pm_t->filename );
+		if (aip->targeted_subsys->system_info->path_num > pm_t->n_paths)
 			return 0;
 		// If attacking a subsystem, ensure that we have an unobstructed line of sight... if not, then move
 		// towards path linked to subsystem
