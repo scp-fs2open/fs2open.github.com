@@ -761,12 +761,24 @@ NoHit:
 		// or if it's set to no collision
 		if (!csm->blown_off && !csm->no_collisions)	{	
 			//instance for this subobject
-			matrix tm;
+			matrix tm = IDENTITY_MATRIX;
 
 			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient );
 			vm_vec_add2(&Mc_base, &saved_base );
 
-			vm_angles_2_matrix(&tm, &csm->angs);
+			if( vm_matrix_same(&tm, &csm->orientation)) {
+				// if submodel orientation matrix is identity matrix then don't bother with matrix ops
+				vm_angles_2_matrix(&tm, &csm->angs);
+			} else {
+				matrix rotation_matrix = csm->orientation;
+				vm_rotate_matrix_by_angles(&rotation_matrix, &csm->angs);
+
+				matrix inv_orientation;
+				vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
+
+				vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
+			}
+
 			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &tm);
 
 			mc_check_subobj( i );
