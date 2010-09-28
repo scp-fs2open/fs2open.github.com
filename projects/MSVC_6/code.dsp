@@ -649,6 +649,10 @@ SOURCE=..\..\code\globalincs\def_files.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\fsmemory.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\globalincs\globals.h
 # End Source File
 # Begin Source File
@@ -2329,7 +2333,7 @@ SOURCE=..\..\code\sound\fsspeech.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Sound\openal.cpp
+SOURCE=..\..\code\Sound\midiseq.h
 # End Source File
 # Begin Source File
 
@@ -2345,10 +2349,27 @@ SOURCE=..\..\code\sound\phrases.xml
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
+# Begin Custom Build
+InputDir=\Users\Cliff\Desktop\fs2_antipodes\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
+InputDir=\Users\Cliff\Desktop\fs2_antipodes\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2366,7 +2387,41 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
+# Begin Custom Build
+InputDir=\Users\Cliff\Desktop\fs2_antipodes\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# Begin Custom Build
+InputDir=\Users\Cliff\Desktop\fs2_antipodes\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
 
 !ENDIF 
 

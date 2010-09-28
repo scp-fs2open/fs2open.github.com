@@ -62,7 +62,7 @@ LINK32=link.exe
 InputPath=.\Release\fs2_open_ant-6_r.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/fs2_open_ant-6_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy /y $(InputPath) "$(FS2PATH)/fs2_open_ant-6_r.exe"
 
 # End Custom Build
@@ -97,7 +97,7 @@ LINK32=link.exe
 InputPath=.\Debug\fs2_open_ant-6_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/fs2_open_ant-6_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy /y $(InputPath) "$(FS2PATH)/fs2_open_ant-6_d.exe"
 
 # End Custom Build
@@ -135,7 +135,7 @@ LINK32=link.exe
 InputPath=.\Release_Inferno\fs2_open_ant-6_INF_r.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_INF_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/fs2_open_ant-6_INF_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy /y $(InputPath) "$(FS2PATH)/fs2_open_ant-6_INF_r.exe"
 
 # End Custom Build
@@ -172,7 +172,7 @@ LINK32=link.exe
 InputPath=.\Debug_Inferno\fs2_open_ant-6_INF_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_trunk_INF_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/fs2_open_ant-6_INF_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy /y $(InputPath) "$(FS2PATH)/fs2_open_ant-6_INF_d.exe"
 
 # End Custom Build
