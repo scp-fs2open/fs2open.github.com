@@ -937,9 +937,11 @@ bool SetCmdlineParams()
 		}
  	}
 
-	// is this a standalone server??
-	if (standalone_arg.found()) {
-		Is_standalone = 1;
+	if (!Fred_running) { //There is no standalone FRED
+		// is this a standalone server??
+		if (standalone_arg.found()) {
+			Is_standalone = 1;
+		}
 	}
 
 	// object update control
