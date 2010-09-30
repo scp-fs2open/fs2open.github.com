@@ -66,7 +66,7 @@ typedef struct menu_music {
 	char filename[MAX_FILENAME_LEN];	// name music is stored on disk as
 } menu_music;
 
-#define MAX_SPOOLED_MUSIC	30			// max number of briefing/mainhall/credits tracks
+#define MAX_SPOOLED_MUSIC	50			// max number of briefing/mainhall/credits tracks
 
 // Goober5000 - spooled music flags
 #define SMF_VALID						(1 << 0)
