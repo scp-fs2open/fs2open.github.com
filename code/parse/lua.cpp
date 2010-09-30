@@ -9859,9 +9859,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			modelnum = targetp->jnp->get_modelnum();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
-		default:
-			// should never happen
-			Int3();
+		default: //Someone passed an invalid pointer.
 			if ( entered_frame )
 				g3_end_frame( );
 			return ADE_RETURN_NIL;

@@ -1088,7 +1088,6 @@ void game_level_init(int seed)
 
 	mission_brief_common_init();		// Free all existing briefing/debriefing text
 	weapon_level_init();
-	init_decals();
 
 	NavSystem_Init();				// zero out the nav system
 

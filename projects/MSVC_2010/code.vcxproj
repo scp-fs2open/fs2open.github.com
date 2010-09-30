@@ -997,7 +997,6 @@
     <ClCompile Include="..\..\code\network\psnet.cpp" />
     <ClCompile Include="..\..\code\network\psnet2.cpp" />
     <ClCompile Include="..\..\code\network\stand_gui.cpp" />
-    <ClCompile Include="..\..\code\decals\decals.cpp" />
     <ClCompile Include="..\..\code\ddsutils\ddsutils.cpp" />
     <ClCompile Include="..\..\code\pngutils\pngutils.cpp" />
     <ClCompile Include="..\..\code\Cmdline\cmdline.cpp" />
@@ -1266,7 +1265,6 @@
     <ClInclude Include="..\..\code\network\psnet.h" />
     <ClInclude Include="..\..\code\network\psnet2.h" />
     <ClInclude Include="..\..\code\network\stand_gui.h" />
-    <ClInclude Include="..\..\code\decals\decals.h" />
     <ClInclude Include="..\..\code\ddsutils\ddsutils.h" />
     <ClInclude Include="..\..\code\pngutils\pngutils.h" />
     <ClInclude Include="..\..\code\Cmdline\cmdline.h" />

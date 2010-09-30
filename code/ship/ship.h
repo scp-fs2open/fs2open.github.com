@@ -654,8 +654,6 @@ typedef struct ship {
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 
-//	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
-
 	// glow points
 	SCP_vector<bool> glow_point_bank_active;
 
@@ -666,8 +664,6 @@ typedef struct ship {
 	fix time_until_full_cloak;
 	int cloak_alpha;
 	fix time_until_uncloak;
-
-	decal_system ship_decal_system;
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
@@ -1225,7 +1221,6 @@ typedef struct ship_info {
 
 	int splodeing_texture;
 	char splodeing_texture_name[MAX_FILENAME_LEN];
-	int max_decals;
 
 	bool draw_primary_models[MAX_SHIP_PRIMARY_BANKS];
 	bool draw_secondary_models[MAX_SHIP_SECONDARY_BANKS];

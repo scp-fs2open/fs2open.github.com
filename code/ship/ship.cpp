@@ -2556,22 +2556,6 @@ strcpy_s(parse_error_text, temp_error);
 	}
 
 	// parse contrail info
-	if ( optional_string("$max decals:") ){
-		stuff_int(&sip->max_decals);
-	}
-	else if(first_time)
-	{
-		if(sip->flags & SIF_SMALL_SHIP){
-			sip->max_decals = 50;
-		}else if(sip->flags & SIF_BIG_SHIP){
-			sip->max_decals = 100;
-		}else if(sip->flags & SIF_HUGE_SHIP){
-			sip->max_decals = 300;
-		}else{
-			sip->max_decals = 10;
-		}
-	}
-
 	while ( optional_string("$Trail:") ) {
 		// setting '+ClearAll' resets the trails
 		if ( optional_string("+ClearAll")) {
@@ -4660,15 +4644,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->glow_point_bank_active.clear();
 
-//	for(i=0; i<MAX_SHIP_DECALS; i++)
-//		shipp->decals[i].is_valid = 0;
-
-	
-//	for(i = 1; i < MAX_SHIP_DECALS; i++){
-//		shipp->decals[i].timestamp = timestamp();
-//		shipp->decals[i].is_valid = 0;
-//	}
-
+	// cloak map texture data
 	shipp->cloak_stage = 0;
 	shipp->texture_translation_key=vmd_zero_vector;
 	shipp->current_translation=vmd_zero_vector;
@@ -4676,10 +4652,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->cloak_alpha=255;
 
 //	shipp->ab_count = 0;
-	shipp->ship_decal_system.n_decal_textures = 0;
-	shipp->ship_decal_system.decals = NULL;
-	shipp->ship_decal_system.decals_modified = false;
-	shipp->ship_decal_system.max_decals = sip->max_decals;
 
 	// fighter bay door stuff
 	shipp->bay_doors_status = MA_POS_NOT_SET;
@@ -5102,11 +5074,6 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		if (ship_system->awacs_intensity > 0) {
 			ship_system->system_info->flags |= MSS_FLAG_AWACS;
 		}
-
-		ship_system->system_info->model_decal_system.decals = NULL;
-		ship_system->system_info->model_decal_system.n_decal_textures = 0;
-		ship_system->system_info->model_decal_system.decals_modified = false;
-		ship_system->system_info->model_decal_system.max_decals = shipp->ship_decal_system.max_decals / 10;
 
 		// turn_rate, turn_accel
 		// model_set_instance_info
@@ -5796,9 +5763,6 @@ void ship_render(object * obj)
 				model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->ship_replacement_textures );
 			}
 
-	//		decal_render_all(obj);
-	//		mprintf(("out of the decal stuff\n"));
-
 			// always turn off fog after rendering a ship
 			gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	/*
@@ -6041,23 +6005,6 @@ void ship_subsystems_delete(ship *shipp)
 	}
 }
 
-void ship_clear_decals(ship	*shipp)
-{
-	clear_decals(&shipp->ship_decal_system);
-
-	ship_subsys *sys = GET_FIRST(&shipp->subsys_list);;
-	while(sys != END_OF_LIST(&shipp->subsys_list)){
-		model_subsystem* psub = sys->system_info;
-		if(!psub){
-			sys = GET_NEXT(sys);
-			continue;
-		}
-		clear_decals(&psub->model_decal_system);
-		sys = GET_NEXT(sys);
-	}
-}
-
-
 void ship_delete( object * obj )
 {
 	ship	*shipp;
@@ -6109,7 +6056,6 @@ void ship_delete( object * obj )
 	// remove textures from memory if we are done with them - taylor
 //	ship_page_out_textures(shipp->ship_info_index);
 	
-	ship_clear_decals(shipp);
 }
 
 // function used by ship_cleanup which is called if the ship is in a wing.
@@ -6324,7 +6270,6 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		ai_ship_destroy(shipnum, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 	}
 
-	ship_clear_decals(shipp);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
