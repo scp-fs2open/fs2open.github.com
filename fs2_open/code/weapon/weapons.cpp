@@ -983,13 +983,6 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->shots = 1;
 
-	generic_bitmap_init(&wip->decal_texture, NULL);
-	wip->decal_glow_texture_id = -1;
-	wip->decal_burn_texture_id = -1;
-	generic_bitmap_init(&wip->decal_backface_texture, NULL);
-	wip->decal_rad = -1;
-	wip->decal_burn_time = 1000;
-
 	wip->alpha_max = 1.0f;
 	wip->alpha_min = 0.0f;
 	wip->alpha_cycle = 0.0f;
@@ -2273,23 +2266,6 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->shots);
 	}
 
-	if ( optional_string("$decal:") ) {
-		required_string("+texture:");
-		stuff_string(fname, F_NAME, NAME_LENGTH);
-		generic_bitmap_init(&wip->decal_texture, fname);
-
-		if ( optional_string("+backface texture:") ) {
-			stuff_string(fname, F_NAME, NAME_LENGTH);
-			generic_bitmap_init(&wip->decal_backface_texture, fname);
-		}
-
-		required_string("+radius:");
-		stuff_float(&wip->decal_rad);
-
-		if ( optional_string("+burn time:") )
-			stuff_int(&wip->decal_burn_time);
-	}
-
 	if (optional_string("$Transparent:")) {
 		wip->wi_flags2 |= WIF2_TRANSPARENT;
 
@@ -2893,26 +2869,6 @@ void weapon_release_bitmaps()
 			}
 		}
 
-		if (wip->decal_texture.bitmap_id >= 0) {
-			bm_release(wip->decal_texture.bitmap_id);
-			wip->decal_texture.bitmap_id = -1;
-
-			if (wip->decal_glow_texture_id >= 0) {
-				bm_release(wip->decal_glow_texture_id);
-				wip->decal_glow_texture_id = -1;
-			}
-
-			if (wip->decal_burn_texture_id >= 0) {
-				bm_release(wip->decal_burn_texture_id);
-				wip->decal_burn_texture_id = -1;
-			}
-
-			if (wip->decal_backface_texture.bitmap_id >= 0) {
-				bm_release(wip->decal_backface_texture.bitmap_id);
-				wip->decal_backface_texture.bitmap_id = -1;
-			}
-		}
-
 		if (wip->thruster_flame.first_frame >= 0) {
 			bm_release(wip->thruster_flame.first_frame);
 			wip->thruster_flame.first_frame = -1;
@@ -3035,24 +2991,6 @@ void weapon_load_bitmaps(int weapon_index)
 		else if ( generic_anim_load(&wip->particle_spew_anim) ) {
 			mprintf(("Could not find a usable particle spew bitmap for '%s'!\n", wip->name));
 			Warning(LOCATION, "Could not find a usable particle spew bitmap (%s) for weapon '%s'!\n", wip->particle_spew_anim.filename, wip->name);
-		}
-	}
-
-	if ( (wip->decal_texture.bitmap_id < 0) && strlen(wip->decal_texture.filename) ) {
-		if ( generic_bitmap_load(&wip->decal_texture) ) {
-			// base texture loaded, so try glow and burn variants now
-			char tmp_name[MAX_FILENAME_LEN] = { '\0' };
-
-			strcpy_s(tmp_name, wip->decal_texture.filename);
-			strcat_s(tmp_name, "-glow");
-			wip->decal_glow_texture_id = bm_load(tmp_name);
-
-			strcpy_s(tmp_name, wip->decal_texture.filename);
-			strcat_s(tmp_name, "-burn");
-			wip->decal_burn_texture_id = bm_load(tmp_name);
-
-			// also grab the backface texture while we're here
-			generic_bitmap_load(&wip->decal_backface_texture);
 		}
 	}
 
@@ -5936,14 +5874,6 @@ void weapons_page_in()
 	
 		if (wip->wi_flags & WIF_PARTICLE_SPEW)
 			bm_page_in_texture(wip->particle_spew_anim.first_frame);
-
-		// page in decal textures
-		if (wip->decal_texture.bitmap_id != -1) {
-			bm_page_in_xparent_texture(wip->decal_texture.bitmap_id);
-			bm_page_in_xparent_texture(wip->decal_glow_texture_id);
-			bm_page_in_xparent_texture(wip->decal_burn_texture_id);
-			bm_page_in_xparent_texture(wip->decal_backface_texture.bitmap_id);
-		}
 
 		// muzzle flashes
 		if (wip->muzzle_flash >= 0)

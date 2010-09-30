@@ -400,13 +400,6 @@ typedef struct weapon_info {
 	int cs_crotate;
 	int cs_delay;
 
-	generic_bitmap decal_texture;
-	int decal_glow_texture_id;
-	int decal_burn_texture_id;
-	generic_bitmap decal_backface_texture;
-	int decal_burn_time;
-	float decal_rad;
-
 	//electronics info - phreak 5/3/03
 	int elec_time;				//how long it lasts, in milliseconds
 	float elec_eng_mult;		//multiplier on engine subsystem

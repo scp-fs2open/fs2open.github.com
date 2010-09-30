@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "graphics/2d.h"
-#include "decals/decals.h"
+#include "object/object.h"
 
 struct object;
 
@@ -186,8 +186,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_banks[MAX_SHIP_SECONDARY_BANKS];				// default secondary weapons -hoffoss
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
-
-	decal_system model_decal_system;
 
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
@@ -1156,8 +1154,6 @@ void model_page_out_textures(int model_num, bool release = false);
 void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = -1.0f);
 
 void model_set_replacement_textures(int *replacement_textures);
-
-int decal_make_model(polymodel * pm);
 
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);

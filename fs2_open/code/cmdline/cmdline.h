@@ -63,7 +63,6 @@ extern float static_point_factor;
 extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_cell;
-extern int Cmdline_decals;
 extern int Cmdline_env;
 extern int Cmdline_mipmap;
 extern int Cmdline_missile_lighting;

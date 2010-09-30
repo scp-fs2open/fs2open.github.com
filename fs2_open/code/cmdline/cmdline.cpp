@@ -250,7 +250,6 @@ cmdline_parm spec_point_arg("-spec_point", NULL);
 cmdline_parm spec_tube_arg("-spec_tube", NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor", NULL);	// Cmdline_ambient_factor
 cmdline_parm cell_arg("-cell", NULL);				// Cmdline_cell
-cmdline_parm decals("-decals", NULL);				// Cmdline_decals
 cmdline_parm env("-env", NULL);						// Cmdline_env
 cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
 cmdline_parm missile_lighting_arg("-missile_lighting", NULL);	// Cmdline_missile_lighting
@@ -270,7 +269,6 @@ float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
 int Cmdline_cell = 0;
-int Cmdline_decals = 0;
 int Cmdline_env = 0;
 int Cmdline_mipmap = 0;
 int Cmdline_missile_lighting = 0;
@@ -1346,13 +1344,6 @@ bool SetCmdlineParams()
 
 	if ( env.found() ) {
 		Cmdline_env = 1;
-	}
-
-	if ( decals.found() ) {
-		
-		#ifdef WIN32
-		MessageBox(NULL, "Decals have been disabled in builds after May 4, 2006.  Please remove the \"-decals\" command line from the launcher to prevent this message from appearing the the future.", "", MB_OK | MB_ICONINFORMATION);
-		#endif
 	}
 
 	if ( ballistic_gauge.found() ) {

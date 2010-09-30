@@ -175,9 +175,6 @@
     <Filter Include="Network">
       <UniqueIdentifier>{a398cd63-314d-40b6-8873-ddf4ff3f4fc9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Decals">
-      <UniqueIdentifier>{8bc44419-7657-4c95-8125-85fdbe456685}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ddsutils">
       <UniqueIdentifier>{9ecb8211-7db5-4b2f-bf0f-502f3c1b2341}</UniqueIdentifier>
     </Filter>
@@ -1011,9 +1008,6 @@
     <ClCompile Include="..\..\code\network\stand_gui.cpp">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\decals\decals.cpp">
-      <Filter>Decals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\ddsutils\ddsutils.cpp">
       <Filter>ddsutils</Filter>
     </ClCompile>
@@ -1807,9 +1801,6 @@
     </ClInclude>
     <ClInclude Include="..\..\code\network\stand_gui.h">
       <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\decals\decals.h">
-      <Filter>Decals</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\ddsutils\ddsutils.h">
       <Filter>ddsutils</Filter>

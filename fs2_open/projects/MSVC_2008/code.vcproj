@@ -3478,18 +3478,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Decals"
-			>
-			<File
-				RelativePath="..\..\code\decals\decals.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\decals\decals.h"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="ddsutils"
 			>
 			<File

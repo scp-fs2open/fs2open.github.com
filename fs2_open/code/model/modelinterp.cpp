@@ -3648,21 +3648,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if(!Cmdline_nohtl)gr_set_lighting(true,true);
 
-	if ( (objp != NULL) && Cmdline_decals) {
-		vec3d decal_z_corection = View_position;
-	//	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
-		if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
-			vm_vec_normalize(&decal_z_corection);
-		float corection = 0.2f;
-		vm_vec_scale(&decal_z_corection, corection);
-		g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
-		decal_render_all(objp);
-		g3_done_instance(use_api);
-		//Nasty hack to get the other Get_fog functions to work
-		neb2_get_fog_intensity(objp);
-	}
-
-
 	if(!Cmdline_nohtl){
 		gr_reset_lighting();
 		gr_set_lighting(false,false);
