@@ -1967,7 +1967,7 @@ bool object_get_gliding(object *objp)
 
 bool object_glide_forced(object *objp)
 {
-	return objp->phys_info.flags & PF_FORCE_GLIDE;
+	return (objp->phys_info.flags & PF_FORCE_GLIDE) != 0;
 }
 
 //Quickly finds an object by its signature
