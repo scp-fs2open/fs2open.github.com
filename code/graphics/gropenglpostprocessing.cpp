@@ -89,6 +89,9 @@ static bool opengl_post_pass_bloom()
 		return false;
 	}
 
+	// we need the scissor test disabled
+	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
+
 	// ------  begin bright pass ------
 
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Post_framebuffer_id[1]);
@@ -174,8 +177,9 @@ static bool opengl_post_pass_bloom()
 
 	// ------ end blur pass --------
 
-	// reset viewport and exit
+	// reset viewport, scissor test and exit
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+	GL_state.ScissorTest(scissor_test);
 
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
