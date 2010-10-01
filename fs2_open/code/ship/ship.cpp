@@ -2558,6 +2558,8 @@ strcpy_s(parse_error_text, temp_error);
 	if ( optional_string("$max decals:") ){
 		int bogus;
 		stuff_int(&bogus);
+		WarningEx(LOCATION, "The decal system has been deactivated in FSO builds. Entries will be discarded.\n");
+		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries will be discarded.\n"));
 		//Do nothing, left in for compatibility.
 	}
 

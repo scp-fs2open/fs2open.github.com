@@ -2271,6 +2271,8 @@ int parse_weapon(int subtype, bool replace)
 
 	//Left in for compatibility
 	if ( optional_string("$decal:") ) {
+		WarningEx(LOCATION, "The decal system has been deactivated in FSO builds. Entries will be discarded.\n");
+		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries will be discarded.\n"));
 		required_string("+texture:");
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
