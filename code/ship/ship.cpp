@@ -2555,6 +2555,12 @@ strcpy_s(parse_error_text, temp_error);
 		sip->flags |= SIF_STEALTH;
 	}
 
+	if ( optional_string("$max decals:") ){
+		int bogus;
+		stuff_int(&bogus);
+		//Do nothing, left in for compatibility.
+	}
+
 	// parse contrail info
 	while ( optional_string("$Trail:") ) {
 		// setting '+ClearAll' resets the trails

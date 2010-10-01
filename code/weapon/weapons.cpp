@@ -2269,6 +2269,21 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->shots);
 	}
 
+	//Left in for compatibility
+	if ( optional_string("$decal:") ) {
+		required_string("+texture:");
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( optional_string("+backface texture:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+		}
+
+		required_string("+radius:");
+
+		if ( optional_string("+burn time:") ) {}
+	}
+
+
 	if (optional_string("$Transparent:")) {
 		wip->wi_flags2 |= WIF2_TRANSPARENT;
 
