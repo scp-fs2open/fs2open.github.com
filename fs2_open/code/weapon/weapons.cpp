@@ -2192,8 +2192,11 @@ int parse_weapon(int subtype, bool replace)
 			}
 
 			// flicker
-			if ( optional_string("+Flicker:") )
+			if ( optional_string("+Flicker:") ) {
 				stuff_float(&bsip->flicker); 
+				//Sanity
+				CLAMP(bsip->flicker, 0.0f, 1.0f);
+			}
 
 			// zadd
 			if ( optional_string("+Zadd:") )
