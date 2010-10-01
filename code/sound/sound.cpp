@@ -320,11 +320,13 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	// ok, we got it, so set the proper filename for logging purposes
 	strcat_s(filename, audio_ext[rc]);
 
+	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
+
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
-		nprintf(("Sound", "Could not read sound file %s\n", filename));
+		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
  		return -1;
-	}		
+	}
 
 	// Load was a success, should be some sort of WAV or an OGG
 	si->format				= header->wFormatTag;		// 16-bit flag (wFormatTag)
@@ -359,8 +361,10 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if (fp != NULL)
 		cfclose(fp);
 
-	if ( rc == -1 )
+	if ( rc == -1 ) {
+		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", filename));
 		return -1;
+	}
 
 	strncpy( snd->filename, gs->filename, MAX_FILENAME_LEN );
 	snd->flags = SND_F_USED;
@@ -370,7 +374,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	gs->id_sig = snd->sig;
 	gs->id = (int)n;
 
-	nprintf(("Sound", "Loaded %s\n", filename));
+//	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", filename));
 
 	return (int)n;
 }
