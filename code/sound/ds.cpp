@@ -935,7 +935,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 	if ( (flags & DS_3D) && (n_channels > 1) ) {
 		ubyte *mono_buffer = NULL;
 
-		mono_buffer = (ubyte*)vm_malloc_q(size);
+		mono_buffer = (ubyte*)vm_malloc_q(size >> 1);
 
 		if (mono_buffer == NULL) {
 			if (convert_buffer) {
