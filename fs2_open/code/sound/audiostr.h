@@ -23,6 +23,7 @@
 // NOTE: the only difference between EVENTMUSIC and everything else is that EVENTMUSIC
 //       will always respect the file type, everything else will load first available type
 
+#define MAX_AUDIO_STREAMS	30
 
 #ifdef NEED_STRHDL
 #ifdef _WIN32
