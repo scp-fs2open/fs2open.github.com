@@ -30,6 +30,7 @@
 #define	PF_SPECIAL_WARP_OUT	(1 << 13)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
 #define PF_BOOSTER_ON		(1 << 14)
 #define PF_GLIDING			(1 << 15)
+#define PF_FORCE_GLIDE		(1 << 16)
 
 //information for physics sim for an object
 typedef struct physics_info {

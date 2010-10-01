@@ -471,6 +471,7 @@ sexp_oper Operators[] = {
 	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
 	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
 	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
+	{ "force-glide",			OP_FORCE_GLIDE,				2, 2 }, // The E
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -17523,6 +17524,34 @@ int sexp_script_eval(int node, int return_type)
 	return r;
 }
 
+void sexp_force_glide(int node)
+{
+	ship *shipp;
+	int sindex;
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+
+	if (sindex < 0) {
+		return;
+	}
+
+	shipp = &Ships[sindex];
+	if (shipp->objnum < 0) {
+		return;
+	}
+
+	//Can this ship glide?
+	if (!Ship_info[shipp->ship_info_index].can_glide)
+		return;
+
+	int glide = is_sexp_true(CDR(node));
+
+	object_set_gliding(&Objects[shipp->objnum], (glide > 0), true);
+
+	return;
+}
+
 //Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
 int get_generic_subsys(char *subsys_name) 
 {
@@ -19336,6 +19365,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_FORCE_GLIDE:
+				sexp_val = SEXP_TRUE;
+				sexp_force_glide(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -20108,6 +20142,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_WEAPONS:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_HUD_DISPLAY_GAUGE:
+		case OP_FORCE_GLIDE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -21721,6 +21756,12 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
+		case OP_FORCE_GLIDE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_BOOL;
+
 		default:
 			Int3();
 	}
@@ -22888,6 +22929,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
 		case OP_SET_ARMOR_TYPE:
+		case OP_FORCE_GLIDE:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -26006,6 +26048,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes at least 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
 	},
+
+	{OP_FORCE_GLIDE, "force-glide\r\n"
+		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode on his own,, and that a ship in glide mode cannot warp out or enter autopilot."
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tShip to force\r\n"
+		"\t2:\tTrue to activate glide, False to deactivate\r\n"
+	}
 };
 
 

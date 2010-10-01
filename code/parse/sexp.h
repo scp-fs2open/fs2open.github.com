@@ -596,6 +596,7 @@ struct ship;
 #define OP_ADJUST_AUDIO_VOLUME				(0x00d9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_SHIP_CHANGE_CALLSIGN				(0x00da | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// FUBAR
 #define OP_IS_FACING						(0x00db | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_FORCE_GLIDE						(0x00dc	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 
 /* made obsolete by Goober5000
 // debugging sexpressions
