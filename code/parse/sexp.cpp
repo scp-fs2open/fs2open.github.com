@@ -17537,12 +17537,13 @@ void sexp_force_glide(int node)
 		return;
 	}
 
-	bool glide = is_sexp_true(CDR(node));
 	//Can this ship glide?
 	if (!Ship_info[shipp->ship_info_index].can_glide)
 		return;
 
-	object_set_gliding(&Objects[shipp->objnum], glide, true);
+	int glide = is_sexp_true(CDR(node));
+
+	object_set_gliding(&Objects[shipp->objnum], (glide > 0), true);
 
 	return;
 }
