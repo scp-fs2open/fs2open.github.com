@@ -2195,7 +2195,10 @@ int parse_weapon(int subtype, bool replace)
 			if ( optional_string("+Flicker:") ) {
 				stuff_float(&bsip->flicker); 
 				//Sanity
-				CLAMP(bsip->flicker, 0.0f, 1.0f);
+				if (bsip->flicker < 0.0f || bsip->flicker > 1.0f) {
+					mprintf(("WARNING: Invalid value found for +Flicker on section %d of beam %s. Valid range is 0.0 to 1.0, values will be adjusted.\n"), wip->b_info.beam_num_sections, wip->name);
+					CLAMP(bsip->flicker, 0.0f, 1.0f);
+				}
 			}
 
 			// zadd
