@@ -782,10 +782,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	}
 
 	//Maybe treat the current collision as a landing
-	vec3d light_local_vel;
-	float light_uvec_dot_norm;
-	float light_fvec_dot_norm;
-	float light_rvec_dot_norm;
+	//Init values just to be safe
+	vec3d light_local_vel(ship_ship_hit_info->light_rel_vel);
+	float light_uvec_dot_norm = 0.0f;
+	float light_fvec_dot_norm = 0.0f;
+	float light_rvec_dot_norm = 0.0f;
 	bool subsys_landing_allowed = light->type == OBJ_SHIP && heavy->type == OBJ_SHIP && check_subsystem_landing_allowed(heavy_sip, ship_ship_hit_info);
 	if (subsys_landing_allowed) {
 		vm_vec_rotate(&light_local_vel, &ship_ship_hit_info->light_rel_vel, &light->orient);
@@ -927,7 +928,6 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * light->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
 	vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * light->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
 	//For landings, we want minimal movement on the light ship (just enough to keep the collision detection honest)
-	//TODO: Solution that works reliably landing on a moving ship
 	if (ship_ship_hit_info->is_landing) {
 		vm_vec_scale_add2(&light->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
 	}
