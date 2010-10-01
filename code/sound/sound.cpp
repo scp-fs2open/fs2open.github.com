@@ -279,8 +279,15 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
 			break;
 		} else if ( !stricmp( Sounds[n].filename, gs->filename) ) {
-			gs->sig = Sounds[n].sig;
-			return (int)n;
+			// extra check: make sure the sound is actually loaded in a compatible way (2D vs. 3D)
+			//
+			// NOTE: this will allow a duplicate 3D entry if 2D stereo entry exists,
+			//       but will not load a duplicate 2D entry to get stereo if 3D
+			//       version already loaded
+			if ( (Sounds[n].info.n_channels == 1) || !(gs->flags & GAME_SND_USE_DS3D) ) {
+				gs->sig = Sounds[n].sig;
+				return (int)n;
+			}
 		}
 	}
 
