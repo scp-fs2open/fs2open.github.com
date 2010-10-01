@@ -5456,7 +5456,7 @@ void ship_render(object * obj)
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				}
 				
-				if(pi->flags & PF_GLIDING) {	//Backslash - show thrusters according to thrust amount, not speed
+				if( (pi->flags & PF_GLIDING) || (pi->flags & PF_FORCE_GLIDE) ) {	//Backslash - show thrusters according to thrust amount, not speed
 					if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
 						render_amount = pi->side_thrust;
 					} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {

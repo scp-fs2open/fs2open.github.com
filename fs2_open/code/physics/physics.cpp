@@ -702,7 +702,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		pi->cur_glide_cap = velocity_ramp(pi->cur_glide_cap, dynamic_glide_cap_goal, ramp_time_const, sim_time);
 
 
-		if ( pi->flags & PF_GLIDING ) {
+		if ( (pi->flags & PF_GLIDING) || (pi->flags & PF_FORCE_GLIDE ) ) {
 			pi->desired_vel = pi->vel;
 
 			//SUSHI: A (hopefully better) approach to dealing with accelerations in glide mode
