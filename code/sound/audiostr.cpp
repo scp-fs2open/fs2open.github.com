@@ -30,8 +30,6 @@
 #define ASF_FREE	0
 #define ASF_USED	1
 
-#define MAX_AUDIO_STREAMS	30
-
 // constants
 #define BIGBUF_SIZE					176400
 ubyte *Wavedata_load_buffer = NULL;		// buffer used for cueing audiostreams

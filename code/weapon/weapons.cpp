@@ -2192,8 +2192,14 @@ int parse_weapon(int subtype, bool replace)
 			}
 
 			// flicker
-			if ( optional_string("+Flicker:") )
+			if ( optional_string("+Flicker:") ) {
 				stuff_float(&bsip->flicker); 
+				//Sanity
+				if (bsip->flicker < 0.0f || bsip->flicker > 1.0f) {
+					mprintf(("WARNING: Invalid value found for +Flicker on section %d of beam %s. Valid range is 0.0 to 1.0, values will be adjusted.\n"), wip->b_info.beam_num_sections, wip->name);
+					CLAMP(bsip->flicker, 0.0f, 1.0f);
+				}
+			}
 
 			// zadd
 			if ( optional_string("+Zadd:") )
@@ -2265,6 +2271,23 @@ int parse_weapon(int subtype, bool replace)
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
 	}
+
+	//Left in for compatibility
+	if ( optional_string("$decal:") ) {
+		WarningEx(LOCATION, "The decal system has been deactivated in FSO builds. Entries will be discarded.\n");
+		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries will be discarded.\n"));
+		required_string("+texture:");
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( optional_string("+backface texture:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+		}
+
+		required_string("+radius:");
+
+		if ( optional_string("+burn time:") ) {}
+	}
+
 
 	if (optional_string("$Transparent:")) {
 		wip->wi_flags2 |= WIF2_TRANSPARENT;
