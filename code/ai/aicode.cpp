@@ -6507,8 +6507,14 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip)
 	//This means that we get the same random values for a little bit.
 	//Using static_rand(shipnum) as a crude hash function to make sure that the seed is different for each ship and direction
 	//The *2 ensures that y and x stay separate.
-	side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
-	side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
+	if (strafeHoldDirAmount > 0) { //This may look unnecessary, but we're apparently still getting div by zero errors on Macs here.
+		side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
+		side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
+	} else {
+		Warning(LOCATION, "Division by zero in do_random_sidethrust averted. Please tell a coder.\n");
+		side_vec.x = 1.0f;
+		side_vec.y = 1.0f;
+	}
 	//Scale it up so that the longest dimension is length 1.0. This ensures we are always getting as much use out of sidethrust as possible.
 	vm_vec_boxscale(&side_vec, 1.0f);
 
