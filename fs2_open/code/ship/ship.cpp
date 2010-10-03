@@ -3029,13 +3029,13 @@ strcpy_s(parse_error_text, temp_error);
 						stuff_float(&tempf);
 
 						if (tempf < 0) {
-							mprintf(("RoF multiplier clamped to 0 for subsystem '%s' in ship class '%s'.\n", sp->subobj_name, sip->name);
+							mprintf(("RoF multiplier clamped to 0 for subsystem '%s' in ship class '%s'.\n", sp->subobj_name, sip->name));
 							sp->turret_rof_scaler = 0;
 						} else {
 							sp->turret_rof_scaler = tempf;
 						}
 					} else {
-						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in ship class '%s'.", sp->subobj_name, sip->name);)
+						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in ship class '%s'.", sp->subobj_name, sip->name);
 					}
 				}
 			}
