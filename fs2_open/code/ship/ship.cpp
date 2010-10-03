@@ -2857,6 +2857,8 @@ strcpy_s(parse_error_text, temp_error);
 				}
 				sp->optimum_range = 0.0f;
 				sp->favor_current_facing = 0.0f;
+
+				sp->turret_rof_scaler = 1.0f;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -3013,6 +3015,27 @@ strcpy_s(parse_error_text, temp_error);
 					}
 					if (j == num_groups) {
 						Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in ship class '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, sip->name);
+					}
+				}
+			}
+
+			if (optional_string("$ROF:")) {
+
+				if (optional_string("+Use firingpoints")) {
+					sp->turret_rof_scaler = 0;
+				} else {
+					if (optional_string("+Multiplier:")) {
+						float tempf;
+						stuff_float(&tempf);
+
+						if (tempf < 0) {
+							mprintf(("RoF multiplier clamped to 0 for subsystem '%s' in ship class '%s'.\n", sp->subobj_name, sip->name);
+							sp->turret_rof_scaler = 0;
+						} else {
+							sp->turret_rof_scaler = tempf;
+						}
+					} else {
+						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in ship class '%s'.", sp->subobj_name, sip->name);)
 					}
 				}
 			}
@@ -4923,6 +4946,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		for (j = 0; j < 32; j++) {
 			ship_system->target_priority[j] = ship_system->system_info->target_priority[j];
 		}
+
+		ship_system->rof_scaler = ship_system->system_info->turret_rof_scaler;
 
 		// zero flags
 		ship_system->flags = 0;
