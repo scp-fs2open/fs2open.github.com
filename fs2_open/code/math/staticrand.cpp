@@ -63,6 +63,7 @@ int static_rand_range(int num, int min, int max)
 {
 	int	rval = static_rand(num);
 	rval = (rval % (max - min + 1)) + min;
+	CLAMP(rval, min, max);
 	return rval;
 }
 
