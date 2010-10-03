@@ -3753,7 +3753,7 @@ void ship_parse_post_cleanup()
 			// be friendly; ensure ballistic flags check out
 			if (pbank_capacity_specified) {
 				if ( !(sip->flags & SIF_BALLISTIC_PRIMARIES) ) {
-					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
+					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\nTo fix this, add a ballistic primary to the list of allowed primaries.\n", sip->name);
 
 					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
 						sip->primary_bank_ammo_capacity[j] = 0;
