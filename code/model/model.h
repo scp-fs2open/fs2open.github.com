@@ -198,6 +198,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	float	optimum_range;
 	float	favor_current_facing;
+
+	float	turret_rof_scaler;
 } model_subsystem;
 
 typedef struct model_special {

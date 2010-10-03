@@ -313,6 +313,9 @@ typedef	struct ship_subsys {
 	fix		next_aim_pos_time;
 	vec3d	last_aim_enemy_pos;
 	vec3d	last_aim_enemy_vel;
+
+	//scaler for setting adjusted turret rof
+	float	rof_scaler;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -1665,6 +1668,9 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+
+// function for checking adjusted turret rof
+float get_adjusted_turret_rof(ship_subsys *ss);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);
