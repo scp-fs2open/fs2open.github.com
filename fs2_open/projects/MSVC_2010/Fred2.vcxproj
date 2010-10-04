@@ -310,6 +310,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Inferno|Win32'">
     <CustomBuildStep>
@@ -372,6 +376,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE|Win32'">
     <CustomBuildStep>
@@ -436,6 +444,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Inferno SSE2|Win32'">
     <CustomBuildStep>
@@ -500,6 +512,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">
     <CustomBuildStep>
@@ -564,6 +580,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">
     <CustomBuildStep>
@@ -628,6 +648,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <CustomBuildStep>
@@ -695,6 +719,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Inferno|Win32'">
     <CustomBuildStep>
@@ -762,6 +790,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Inferno SSE|Win32'">
     <CustomBuildStep>
@@ -830,6 +862,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Inferno SSE2|Win32'">
     <CustomBuildStep>
@@ -898,6 +934,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">
     <CustomBuildStep>
@@ -966,6 +1006,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">
     <CustomBuildStep>
@@ -1034,6 +1078,10 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
+      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\code\fred2\addvariabledlg.cpp" />
