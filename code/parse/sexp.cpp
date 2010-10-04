@@ -24454,8 +24454,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tMaximum length of time since order was given. Use 0 for any time in the mission.\r\n"
 		"\t4:\tName of the target of the order (optional).\r\n"
-		"\t2:\tName of player ship giving the order(optional).\r\n"
-		"\t3:\tName of the subsystem for Destroy Subsystem orders.(optional)" },
+		"\t5:\tName of player ship giving the order(optional).\r\n"
+		"\t6:\tName of the subsystem for Destroy Subsystem orders.(optional)" },
 
 	// Karajorma
 	{ OP_RESET_ORDERS, "Reset-Orders (Action training operator)\r\n"
