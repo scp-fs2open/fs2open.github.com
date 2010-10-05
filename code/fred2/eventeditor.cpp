@@ -1177,7 +1177,7 @@ int event_editor::save_message(int num)
 		// box list.
 		m_messages[num].persona_index = m_persona - 1;
 
-		if(m_message_team >= 2){
+		if(m_message_team >= MAX_TVT_TEAMS){
 			m_messages[num].multi_team = -1;
 			m_message_team = -1;
 		} else {
