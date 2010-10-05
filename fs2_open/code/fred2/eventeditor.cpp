@@ -715,6 +715,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	m_events[num].chain_delay = -1;
 	m_events[num].objective_text = NULL;
 	m_events[num].objective_key_text = NULL;
+	m_events[num].team = -1;
 	m_sig[num] = -1;
 
 	m_event_tree.item_index = -1;
