@@ -12110,7 +12110,7 @@ object *ship_find_repair_ship( object *requester_obj )
 	int num_support_ships = 0;
 	float min_dist = 99999.0f;
 	object *nearest_support_ship = NULL;
-	int min_time_till_available = 999999.0f;
+	float min_time_till_available = 999999.0f;
 	object *soonest_available_support_ship = NULL;
 
 	Assertion(requester_obj->type == OBJ_SHIP, "requester_obj not a ship. Has type of %08x", requester_obj->type);
