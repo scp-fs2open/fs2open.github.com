@@ -12410,16 +12410,23 @@ void sexp_ship_change_callsign(int node)
 			cindex = mission_parse_add_callsign(new_callsign);
 	}
 
+	// packets for multi
+	multi_start_packet();
+	multi_send_string(new_callsign); 
+
 	while ( node >= 0 )
 	{
 		sindex = ship_name_lookup(CTEXT(node));
 		if (sindex >= 0) 
 		{
 			shipp = &Ships[sindex];
-			shipp->callsign_index = cindex;
+			shipp->callsign_index = char (cindex);
+			multi_send_ship(shipp);
 		}
 		node = CDR(node);
 	}
+
+	multi_end_packet();
 }
 
 // Goober5000
@@ -13554,6 +13561,35 @@ void multi_sexp_change_subsystem_name()
 		subsystem_to_rename = ship_get_subsys(shipp, subsys_name);
 		if (subsystem_to_rename != NULL) {
 			ship_subsys_set_name(subsystem_to_rename, new_name);
+		}
+	}
+}
+
+void multi_sexp_ship_change_callsign()
+{
+	char new_callsign[TOKEN_LENGTH];
+	int cindex;
+	ship *shipp = NULL;
+
+	multi_get_string(new_callsign);
+	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	{
+		cindex = -1;
+	}
+	else
+	{
+		cindex = mission_parse_lookup_callsign(new_callsign);
+		if (cindex < 0) 
+		{
+			cindex = mission_parse_add_callsign(new_callsign);
+		}
+	}
+
+	while (multi_get_ship(shipp)) 
+	{
+		if (shipp != NULL) 
+		{
+			shipp->callsign_index = char (cindex);
 		}
 	}
 }
@@ -19470,6 +19506,10 @@ void multi_sexp_eval()
 			
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				multi_sexp_change_subsystem_name();
+				break;
+
+			case OP_SHIP_CHANGE_CALLSIGN:
+				multi_sexp_ship_change_callsign();
 				break;
 
 			case OP_SET_RESPAWNS:
