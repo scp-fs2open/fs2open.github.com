@@ -6384,11 +6384,11 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		shockwave_speed = 100.0f;
 	} else {
 		if (shipp->use_special_explosion) {
-			inner_rad = (float)shipp->special_exp_inner;
-			outer_rad = (float)shipp->special_exp_outer;
-			max_damage = (float)shipp->special_exp_damage;
-			max_blast = (float)shipp->special_exp_blast;
-			shockwave_speed = (float)shipp->special_exp_shockwave_speed;
+			inner_rad = shipp->special_exp_inner;
+			outer_rad = shipp->special_exp_outer;
+			max_damage = shipp->special_exp_damage;
+			max_blast = shipp->special_exp_blast;
+			shockwave_speed = shipp->special_exp_shockwave_speed;
 		} else {
 			inner_rad = sip->shockwave.inner_rad;
 			outer_rad = sip->shockwave.outer_rad;
@@ -15158,7 +15158,7 @@ float ship_get_exp_damage(object* objp)
 	ship *shipp = &Ships[objp->instance];
 
 	if (shipp->special_exp_damage >= 0) {
-		damage = (float)shipp->special_exp_damage;
+		damage = shipp->special_exp_damage;
 	} else {
 		damage = Ship_info[shipp->ship_info_index].shockwave.damage;
 	}

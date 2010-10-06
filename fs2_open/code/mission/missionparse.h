@@ -407,12 +407,12 @@ typedef struct p_object {
 	float	kamikaze_damage;					// base damage for a kamikaze attack
 
 	bool use_special_explosion;				// new special explosion/hitpoints system 
-	int special_exp_damage;
-	int special_exp_blast;
-	int special_exp_inner;
-	int special_exp_outer;
+	float special_exp_damage;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_blast;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_inner;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_outer;					// Changed from 'int' to 'float' by Zacam 10/2010
 	bool use_shockwave;
-	int special_exp_shockwave_speed;
+	float special_exp_shockwave_speed;		// Changed from 'int' to 'float' by Zacam 10/2010
 	int	special_hitpoints;
 	int	special_shield;
 

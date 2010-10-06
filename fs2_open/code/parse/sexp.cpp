@@ -9006,22 +9006,22 @@ void sexp_set_explosion_option(int node)
 		n = CDR(n);
 
 		if (option == EO_DAMAGE) {
-			shipp->special_exp_damage = val;
+			shipp->special_exp_damage = (float)val;
 		} else if (option == EO_BLAST) {
-			shipp->special_exp_blast = val;
+			shipp->special_exp_blast = (float)val;
 		} else if (option == EO_INNER_RADIUS) {
-			shipp->special_exp_inner = val;
+			shipp->special_exp_inner = (float)val;
 		} else if (option == EO_OUTER_RADIUS) {
-			shipp->special_exp_outer = val;
+			shipp->special_exp_outer = (float)val;
 		} else if (option == EO_SHOCKWAVE_SPEED) {
-			shipp->special_exp_shockwave_speed = val;
+			shipp->special_exp_shockwave_speed = (float)val;
 			shipp->use_shockwave = (val > 0);
 		}
 	}
 
 	// if all our values are the same as a standard exp, turn off the special exp
-	if ((shipp->special_exp_damage == (int) sci->damage) && (shipp->special_exp_blast == (int) sci->blast) && (shipp->special_exp_inner == (int) sci->inner_rad)
-		&& (shipp->special_exp_outer == (int) sci->outer_rad) && (shipp->special_exp_shockwave_speed == (int) sci->speed))
+	if ((shipp->special_exp_damage == sci->damage) && (shipp->special_exp_blast == sci->blast) && (shipp->special_exp_inner == sci->inner_rad)
+		&& (shipp->special_exp_outer == sci->outer_rad) && (shipp->special_exp_shockwave_speed == sci->speed))
 	{
 		shipp->use_special_explosion = false;
 		shipp->use_shockwave = false;
