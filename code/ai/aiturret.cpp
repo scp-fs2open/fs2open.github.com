@@ -1381,6 +1381,9 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		wait *= frand_range(0.9f, 1.1f);
 	}
 
+	if(turret->rof_scaler != 1.0f)
+		wait /= get_adjusted_turret_rof(turret);
+
 	(*fs_dest) = timestamp((int)wait);
 }
 
@@ -2243,4 +2246,29 @@ bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
 		in_fov = turret_std_fov_test(ss, gvec, v2e, size_mod);
 
 	return in_fov;
+}
+
+float get_adjusted_turret_rof(ship_subsys *ss)
+{
+	float tempf = ss->rof_scaler;
+
+	// optional reset switch (negative value)
+	if (tempf < 0) {
+		ss->rof_scaler = 1.0f;
+		return 1.0f;
+	}
+
+	if (tempf == 0) {
+		// special case returning the number of firingpoints
+		ss->rof_scaler = (float) ss->system_info->turret_num_firing_points;
+		tempf = ss->rof_scaler;
+
+		// safety check to avoid div/0 issues
+		if (tempf == 0) {
+			ss->rof_scaler = 1.0f;
+			return 1.0f;
+		}
+	}
+
+	return tempf;
 }

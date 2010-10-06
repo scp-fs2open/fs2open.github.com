@@ -6122,7 +6122,11 @@ void weapon_maybe_spew_particle(object *obj)
 			vm_vec_scale(&vel, wip->particle_spew_vel);
 
 			// emit the particle
-			vm_vec_add(&particle_pos, &obj->pos, &direct);
+			if (wip->wi_flags & WIF_CORKSCREW) {
+				vm_vec_add(&particle_pos, &obj->last_pos, &direct);
+			} else {
+				vm_vec_add(&particle_pos, &obj->pos, &direct);
+			}
 
 			if (wip->particle_spew_anim.first_frame < 0)
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);
