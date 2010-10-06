@@ -1927,11 +1927,11 @@ void beam_recalc_sounds(beam *b)
 void beam_get_binfo(beam *b, float accuracy, int num_shots)
 {
 	vec3d p2;
-	int model_num, idx;	
+	int model_num, idx;
 	vec3d oct1, oct2;
 	vec3d turret_point, turret_norm;
 	beam_weapon_info *bwi;
-	int miss_factor;
+	float miss_factor;
 
 	int temp = b->subsys->turret_next_fire_pos;
 
@@ -1944,10 +1944,10 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	b->subsys->turret_next_fire_pos = temp;
 
 	// get a model # to work with
-	model_num = beam_get_model(b->target);	
+	model_num = beam_get_model(b->target);
 	if(model_num < 0){
 		return;
-	}	
+	}
 
 	// get beam weapon info
 	Assert(b->weapon_info_index >= 0);
@@ -1962,8 +1962,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
 
-	// generate the proper amount of directional vectors	
-	switch(b->type){	
+	// generate the proper amount of directional vectors
+	switch(b->type){
 	// pick an accuracy. beam will be properly aimed at actual fire time
 	case BEAM_TYPE_A:
 		// determine the miss factor
@@ -1975,13 +1975,13 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + miss_factor * accuracy);
 		b->binfo.shot_count = 1;
 
-		// get random model points, this is useful for big ships, because we never miss when shooting at them			
+		// get random model points, this is useful for big ships, because we never miss when shooting at them
 		submodel_get_two_random_points(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b);
-		break;	
+		break;
 
 	// just 2 points in the "slash"
 	case BEAM_TYPE_B:
-		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);		
+		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);
 
 		// point 1
 		vm_vec_sub(&b->binfo.dir_a, &oct1, &turret_point);
@@ -1989,7 +1989,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 
 		// point 2
 		vm_vec_sub(&b->binfo.dir_b, &oct2, &turret_point);
-		vm_vec_normalize(&b->binfo.dir_b);	
+		vm_vec_normalize(&b->binfo.dir_b);
 		
 		// delta angle
 		b->binfo.delta_ang = fl_abs(vm_vec_delta_ang_norm(&b->binfo.dir_a, &b->binfo.dir_b, NULL));

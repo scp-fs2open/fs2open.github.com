@@ -482,12 +482,12 @@ typedef struct ship {
 	ship_spark	sparks[MAX_SHIP_HITS];
 	
 	bool use_special_explosion; 
-	int special_exp_damage;					// new special explosion/hitpoints system
-	int special_exp_blast;
-	int special_exp_inner;
-	int special_exp_outer;
+	float special_exp_damage;					// new special explosion/hitpoints system
+	float special_exp_blast;
+	float special_exp_inner;
+	float special_exp_outer;
 	bool use_shockwave;
-	int special_exp_shockwave_speed;
+	float special_exp_shockwave_speed;
 	int	special_hitpoints;
 	int	special_shield;
 
