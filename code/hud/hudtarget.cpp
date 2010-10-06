@@ -1760,7 +1760,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	int last_subsys_turret = FALSE;
 	if (Player_ai->targeted_subsys != NULL) {
 		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
-			if (Player_ai->targeted_subsys->weapons.num_primary_banks >= 0 || Player_ai->targeted_subsys->weapons.num_secondary_banks >= 0) {
+			if (Player_ai->targeted_subsys->weapons.num_primary_banks > 0 || Player_ai->targeted_subsys->weapons.num_secondary_banks > 0) {
 				last_subsys_turret = TRUE;
 			}
 		}
