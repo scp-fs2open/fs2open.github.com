@@ -4923,25 +4923,24 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			if ( (Detail.lighting > 2)  && (Interp_detail_level < 2) ) {
 				// likewise, etc.
 				texture_info *spec_map = &tmap->textures[TM_SPECULAR_TYPE];
-				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
-				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
-
-				if (Interp_new_replacement_textures != NULL) {
-					if (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
-						spec_map = &texture_info(Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
-					}
-
-					if (Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
-						norm_map = &texture_info(Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
-					}
-
-					if (Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE] >= 0) {
-						height_map = &texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
-					}
+				if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) ) {
+					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+					*spec_map = model_interp_get_texture(&tinfo, Interp_base_frametime);
 				}
-
 				SPECMAP = model_interp_get_texture(spec_map, Interp_base_frametime);
+
+				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
+				if ( (Interp_new_replacement_textures != NULL) &&  (Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) ) {
+					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
+					*norm_map = model_interp_get_texture(&tinfo, Interp_base_frametime);
+				}
 				NORMMAP = model_interp_get_texture(norm_map, Interp_base_frametime);
+
+				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
+				if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE] >= 0) ) {
+					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
+					*height_map = model_interp_get_texture(&tinfo, Interp_base_frametime);
+				}
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
 			}
 		}
