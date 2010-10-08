@@ -6113,10 +6113,14 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 	if (turn_time)
 	{
 		// set flag
-		bank = bank ? AITTV_IGNORE_BANK : 0;
+		int bankflag = 0;
+		if (!bank) 
+		{
+			bankflag = AITTV_IGNORE_BANK;
+		}
 
 		// turn
-		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bank));
+		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bankflag));
 
 		// return
 		return;
@@ -17259,9 +17263,9 @@ void sexp_show_subtitle_text(int node)
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
 	// calculate pixel positions
-	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
-	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
-	int width = gr_screen.max_w * (width_pct / 100.0f);
+	int x_pos = (int) (gr_screen.max_w * (x_pct / 100.0f));
+	int y_pos = (int) (gr_screen.max_h * (y_pct / 100.0f));
+	int width = (int) (gr_screen.max_w * (width_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
@@ -17377,10 +17381,10 @@ void sexp_show_subtitle_image(int node)
 		height_pct = 100;
 
 	// calculate pixel positions
-	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
-	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
-	int width = gr_screen.max_w * (width_pct / 100.0f);
-	int height = gr_screen.max_h * (height_pct / 100.0f);
+	int x_pos = (int)(gr_screen.max_w * (x_pct / 100.0f));
+	int y_pos = (int)(gr_screen.max_h * (y_pct / 100.0f));
+	int width = (int)(gr_screen.max_w * (width_pct / 100.0f));
+	int height = (int)(gr_screen.max_h * (height_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
@@ -24235,7 +24239,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
 		"\t5: Turn time in milliseconds (optional)\r\n"
-		"\t6: Bank (optional)" },
+		"\t6: Bank (optional). Enter a non-zero value to enable banking." },
 
 	// Goober5000
 	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
@@ -24244,7 +24248,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: The name of an object.\r\n"
 		"\t2: The object to face.\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
-		"\t4: Bank (optional)" },
+		"\t4: Bank (optional). Enter a non-zero value to enable banking." },
 
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"

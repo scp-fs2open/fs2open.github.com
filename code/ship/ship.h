@@ -215,9 +215,15 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
 #define SSF_NO_SS_TARGETING     (1 << 2)
-
 //nuke
 #define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
+#define SSF_FOV_REQUIRED		(1 << 4)
+#define SSF_FOV_EDGE_CHECK		(1 << 5)
+
+#define SSF_NO_REPLACE			(1 << 6)		// prevents 'destroyed' submodel from being rendered if subsys is destroyed.
+#define SSF_NO_LIVE_DEBRIS		(1 << 7)		// prevents subsystem from generating live debris
+#define SSF_VANISHED			(1 << 8)		// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
+#define SSF_MISSILES_IGNORE_IF_DEAD	(1 << 9)	// forces homing missiles to target hull if subsystem is dead before missile hits it.
 
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound

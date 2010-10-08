@@ -85,7 +85,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 
 	// get number of live debris objects to create
 	num_live_debris = pm->submodel[submodel_num].num_live_debris;
-	if (num_live_debris <= 0) {
+	if ((num_live_debris <= 0) || (subsys->flags & SSF_NO_LIVE_DEBRIS)) {
 		return;
 	}
 
@@ -313,18 +313,20 @@ void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys
 	shipfx_remove_submodel_ship_sparks(ship_p, psub->subobj_num);
 
 	// create debris shards
-	shipfx_blow_up_model(ship_obj, model_num, psub->subobj_num, 50, &subobj_pos );
+	if (!(subsys->flags & SSF_VANISHED)) {
+		shipfx_blow_up_model(ship_obj, model_num, psub->subobj_num, 50, &subobj_pos );
 
-	// create live debris objects, if any
-	// TODO:  some MULITPLAYER implcations here!!
-	shipfx_subsystem_maybe_create_live_debris(ship_obj, ship_p, subsys, exp_center, 1.0f);
-	
-	int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
-	if(fireball_type < 0) {
-		fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		// create live debris objects, if any
+		// TODO:  some MULITPLAYER implcations here!!
+		shipfx_subsystem_maybe_create_live_debris(ship_obj, ship_p, subsys, exp_center, 1.0f);
+		
+		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
+		if(fireball_type < 0) {
+			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		}
+		// create first fireball
+		fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_obj), psub->radius );
 	}
-	// create first fireball
-	fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_obj), psub->radius );
 }
 
 
