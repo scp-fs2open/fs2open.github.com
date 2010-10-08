@@ -120,48 +120,51 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	// create fireballs when subsys destroy for large ships.
 	object* objp = &Objects[ship_p->objnum];
-	if (objp->radius > 100.0f) {
-		// number of fireballs determined by radius of subsys
-		int num_fireballs;
-		if ( psub->radius < 3 ) {
-			num_fireballs = 1;
-		} else {
-			 num_fireballs = 5;
-		}
 
-		vec3d temp_vec, center_to_subsys, rand_vec;
-		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
-		for (i=0; i<num_fireballs; i++) {
-			if (i==0) {
-				// make first fireball at hitpos
-				if (hitpos) {
-					temp_vec = *hitpos;
-				} else {
-					temp_vec = g_subobj_pos;
-				}
+	if (!(subsys->flags & SSF_VANISHED)) {
+		if (objp->radius > 100.0f) {
+			// number of fireballs determined by radius of subsys
+			int num_fireballs;
+			if ( psub->radius < 3 ) {
+				num_fireballs = 1;
 			} else {
-				// make other fireballs at random positions, but try to keep on the surface
-				vm_vec_rand_vec_quick(&rand_vec);
-				float dot = vm_vec_dotprod(&center_to_subsys, &rand_vec);
-				vm_vec_scale_add2(&rand_vec, &center_to_subsys, -dot/vm_vec_mag_squared(&center_to_subsys));
-				vm_vec_scale_add(&temp_vec, &g_subobj_pos, &rand_vec, 0.5f*psub->radius);
+				 num_fireballs = 5;
 			}
 
-			// scale fireball size according to size of subsystem, but not less than 10
-			float fireball_rad = psub->radius * 0.2f;
-			if (fireball_rad < 10) {
-				fireball_rad = 10.0f;
-			}
+			vec3d temp_vec, center_to_subsys, rand_vec;
+			vm_vec_sub(&center_to_subsys, &g_subobj_pos, &objp->pos);
+			for (i=0; i<num_fireballs; i++) {
+				if (i==0) {
+					// make first fireball at hitpos
+					if (hitpos) {
+						temp_vec = *hitpos;
+					} else {
+						temp_vec = g_subobj_pos;
+					}
+				} else {
+					// make other fireballs at random positions, but try to keep on the surface
+					vm_vec_rand_vec_quick(&rand_vec);
+					float dot = vm_vec_dotprod(&center_to_subsys, &rand_vec);
+					vm_vec_scale_add2(&rand_vec, &center_to_subsys, -dot/vm_vec_mag_squared(&center_to_subsys));
+					vm_vec_scale_add(&temp_vec, &g_subobj_pos, &rand_vec, 0.5f*psub->radius);
+				}
 
-			vec3d fb_vel;
-			vm_vec_crossprod(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
-			vm_vec_add2(&fb_vel, &objp->phys_info.vel);
+				// scale fireball size according to size of subsystem, but not less than 10
+				float fireball_rad = psub->radius * 0.2f;
+				if (fireball_rad < 10) {
+					fireball_rad = 10.0f;
+				}
 
-			int fireball_type = fireball_ship_explosion_type(sip);
-			if(fireball_type < 0) {
-				fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+				vec3d fb_vel;
+				vm_vec_crossprod(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
+				vm_vec_add2(&fb_vel, &objp->phys_info.vel);
+
+				int fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+				}
+				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
 			}
-			fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
 		}
 	}
 
@@ -263,15 +266,17 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		subsys->submodel_info_2.blown_off = 1;
 	}
 
-	// play sound effect when subsys gets blown up
-	int sound_index=-1;
-	if ( Ship_info[ship_p->ship_info_index].flags & SIF_HUGE_SHIP ) {
-		sound_index=SND_CAPSHIP_SUBSYS_EXPLODE;
-	} else if ( Ship_info[ship_p->ship_info_index].flags & SIF_BIG_SHIP ) {
-		sound_index=SND_SUBSYS_EXPLODE;
-	}
-	if ( sound_index >= 0 ) {
-		snd_play_3d( &Snds[sound_index], &g_subobj_pos, &View_position );
+	if (!(subsys->flags & SSF_VANISHED)) {
+		// play sound effect when subsys gets blown up
+		int sound_index=-1;
+		if ( Ship_info[ship_p->ship_info_index].flags & SIF_HUGE_SHIP ) {
+			sound_index=SND_CAPSHIP_SUBSYS_EXPLODE;
+		} else if ( Ship_info[ship_p->ship_info_index].flags & SIF_BIG_SHIP ) {
+			sound_index=SND_SUBSYS_EXPLODE;
+		}
+		if ( sound_index >= 0 ) {
+			snd_play_3d( &Snds[sound_index], &g_subobj_pos, &View_position );
+		}
 	}
 
 	// make the shipsounds work as they should...
