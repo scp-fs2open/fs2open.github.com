@@ -108,6 +108,8 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
 #define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 #define MSS_FLAG_ALLOW_LANDING		(1 << 21)		// This subsystem can be landed on
+#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 22)		// Tells the game to use better FOV edge checking with this turret
+#define MSS_FLAG_FOV_REQUIRED		(1 << 23)		// Tells game not to allow this turret to attempt targeting objects out of FOV
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
