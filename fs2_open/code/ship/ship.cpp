@@ -4174,10 +4174,9 @@ void physics_ship_init(object *objp)
 	pi->afterburner_max_vel = sinfo->afterburner_max_vel;
 	pi->max_rotvel = sinfo->max_rotvel;
 	pi->max_rear_vel = sinfo->max_rear_vel;
-	pi->flags |= PF_ACCELERATES;
-
-
-
+	pi->flags |= PF_ACCELERATES;	
+	pi->flags &= ~PF_GLIDING; //Turn off glide
+	pi->flags &= ~PF_FORCE_GLIDE;
 
 	pi->forward_accel_time_const=sinfo->forward_accel;
 	pi->afterburner_forward_accel_time_const=sinfo->afterburner_forward_accel;
