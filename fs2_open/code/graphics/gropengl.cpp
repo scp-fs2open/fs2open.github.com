@@ -773,7 +773,7 @@ void gr_opengl_zbuffer_clear(int mode)
 // I feel dirty...
 static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 {
-	int x, y;
+	ushort x, y;
 	ushort base_ramp[256];
 
 	Assert( ramp != NULL );
@@ -804,12 +804,12 @@ static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 	// for everything else we need to actually figure it up
 	else {
 		double g = 1.0 / (double)gamma;
-		int val;
+		double val;
 
 		Assert( GL_original_gamma_ramp != NULL );
 
 		for (x = 0; x < 256; x++) {
-			val = (int) (pow(x/255.0, g) * 65535.0 + 0.5);
+			val = (pow(x/255.0, g) * 65535.0 + 0.5);
 			CLAMP( val, 0, 65535 );
 
 			base_ramp[x] = (ushort)val;
@@ -1527,7 +1527,7 @@ int opengl_init_display_device()
 			Cmdline_no_set_gamma = 1;
 		} else {
 			// assume identity ramp by default, to be overwritten by true ramp later
-			for (int x = 0; x < 256; x++) {
+			for (ushort x = 0; x < 256; x++) {
 				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
 			}
 		}
