@@ -6113,10 +6113,14 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 	if (turn_time)
 	{
 		// set flag
-		bank = bank ? AITTV_IGNORE_BANK : 0;
+		int bankflag = 0;
+		if (!bank) 
+		{
+			bankflag = AITTV_IGNORE_BANK;
+		}
 
 		// turn
-		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bank));
+		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bankflag));
 
 		// return
 		return;
@@ -24231,7 +24235,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
 		"\t5: Turn time in milliseconds (optional)\r\n"
-		"\t6: Bank (optional)" },
+		"\t6: Bank (optional). Enter a non-zero value to enable banking." },
 
 	// Goober5000
 	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
@@ -24240,7 +24244,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: The name of an object.\r\n"
 		"\t2: The object to face.\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
-		"\t4: Bank (optional)" },
+		"\t4: Bank (optional). Enter a non-zero value to enable banking." },
 
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
