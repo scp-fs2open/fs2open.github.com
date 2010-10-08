@@ -100,6 +100,101 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 	return 0;
 }
 
+bool is_object_radius_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos, vec3d *v2e, vec3d *predicted_pos, float distance)
+{
+	float target_dist = distance;
+	if (distance == 0.0f)
+		target_dist = vm_vec_dist(predicted_pos,tpos);
+
+	if (object_in_turret_fov(objp, ss, tvec, tpos, target_dist + objp->radius)) {
+		// so the targeted spot in not in fov but the enemy + radius is
+		// lets align the darn gun and try shooting there
+		vec3d temp_vec;
+		float multiplier = 0;
+		model_subsystem *tp = ss->system_info;
+
+		// project v2e_from_turret to turret normal
+		// substract resultant vector from the temp_vec (v2e_from_turret)
+		// adjust z component as necessary
+		// calculate multiplier for the resultant vector
+		// use multiplier and the z component and compose a new vector
+		float dot = vm_vec_dot(v2e, tvec);
+
+		vm_vec_scale_add(&temp_vec, v2e, tvec, -dot);
+
+		if (IS_VEC_NULL_SQ_SAFE(&temp_vec)) {
+			// return false, target is perfectly aligned over or below the turret
+			// safe bet is to allow turret to reacquire better target
+			return false;
+		}
+
+		// normalize the vec, it needs to be done regardless
+		vm_vec_normalize(&temp_vec);
+		bool fix_elevation = false;
+		bool fix_base_rot = false;
+
+		if (dot < tp->turret_fov) {
+			dot = tp->turret_fov;
+			fix_elevation = true;
+		}
+		if (dot > tp->turret_max_fov) {
+			dot = tp->turret_max_fov;
+			fix_elevation = true;
+		}
+
+		if (tp->flags & MSS_FLAG_TURRET_ALT_MATH) {
+			vec3d temp_vec2;
+			vm_vec_rotate(&temp_vec2, &temp_vec, &ss->world_to_turret_matrix);
+
+			// now in turrets frame of reference
+			// check if math is actually possible
+			if (!((temp_vec2.xyz.x == 0) && (temp_vec2.xyz.y == 0))) {
+				float temp_z = temp_vec2.xyz.z;
+				temp_vec2.xyz.z = 0.0f;
+				// make sure null vecs wont happen
+				if (!IS_VEC_NULL_SQ_SAFE(&temp_vec2)) {
+					vm_vec_normalize(&temp_vec2);
+					// only do this if it actually is required
+					if (-temp_vec2.xyz.y < tp->turret_y_fov) {
+						float check_pos = 1;
+
+						fix_base_rot = true;
+						temp_vec2.xyz.y = -tp->turret_y_fov;
+						if (temp_vec2.xyz.x < 0)
+						check_pos = -1;
+						temp_vec2.xyz.x = check_pos * sqrtf(1 - (temp_vec2.xyz.y*temp_vec2.xyz.y));
+
+						// restore z component
+						float scaler = sqrtf(1 - (temp_z*temp_z));
+						vm_vec_scale(&temp_vec2,scaler);
+						temp_vec2.xyz.z = temp_z;
+						// back to world frame
+						vm_vec_unrotate(&temp_vec, &temp_vec2, &ss->world_to_turret_matrix);
+					}
+				}
+			}
+		}
+
+		if (fix_elevation || fix_base_rot) {
+			if (fix_elevation) {
+				multiplier = sqrtf(1 - (dot*dot));
+				// keep the temp_vec scaled with the tweaked vector
+				vm_vec_scale(&temp_vec, multiplier);
+			}
+			vm_vec_scale_add(v2e, &temp_vec, tvec, dot);
+			// and we are done with v2e...
+			vm_vec_scale_add(predicted_pos, tpos, v2e, target_dist);
+			// and we are done with predicted position
+			return true;
+		} else {
+			mprintf(("Warning: Function 'is_object_radius_in_turret_fov' was called\nwithout need to fix turret alignments\n"));
+			return false;
+		}
+	}
+	// outside of the expanded radii, unable to align, return false
+	return false;
+}
+
 // return 1 if bomb_objp is headed towards ship_objp
 int bomb_headed_towards_ship(object *bomb_objp, object *ship_objp)
 {
@@ -357,9 +452,10 @@ extern int Player_attacking_enabled;
 void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 {
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
-	ship		*shipp;
+	ship *shipp;
 	ship_subsys *ss = eeo->turret_subsys;
 	float dist, dist_comp;
+	bool turret_has_no_target = false;
 
 	// Don't look for bombs when weapon system is not ok
 	if (objp->type == OBJ_WEAPON && !eeo->weapon_system_ok) {
@@ -476,7 +572,10 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	if ((objp->type == OBJ_WEAPON) && check_weapon) {
 		if ( Weapons[objp->instance].homing_object == &Objects[eeo->turret_parent_objnum] ) {
 			if ( dist_comp < eeo->nearest_homing_bomb_dist ) {
-				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
+				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+					turret_has_no_target = true;
+				}
+				if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
 					eeo->nearest_homing_bomb_dist = dist_comp;
 					eeo->nearest_homing_bomb_objnum = OBJ_INDEX(objp);
 				}
@@ -484,7 +583,10 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		// if not homing, check if bomb is flying towards ship
 		} else if ( bomb_headed_towards_ship(objp, &Objects[eeo->turret_parent_objnum]) ) {
 			if ( dist_comp < eeo->nearest_bomb_dist ) {
-				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
+				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+					turret_has_no_target = true;
+				}
+				if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
 					eeo->nearest_bomb_dist = dist_comp;
 					eeo->nearest_bomb_objnum = OBJ_INDEX(objp);
 				}
@@ -540,7 +642,10 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// maybe update nearest attacker
 		if ( dist_comp < eeo->nearest_attacker_dist ) {
-			if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
+			if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+				turret_has_no_target = true;
+			}
+			if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
 				// nprintf(("AI", "Nearest enemy = %s, dist = %7.3f, dot = %6.3f, fov = %6.3f\n", Ships[objp->instance].ship_name, dist, vm_vec_dot(&v2e, tvec), tp->turret_fov));
 				eeo->nearest_attacker_dist = dist_comp;
 				eeo->nearest_attacker_objnum = OBJ_INDEX(objp);
@@ -555,7 +660,10 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			dist_comp *= 0.9f + (0.01f * asteroid_time_to_impact(objp));
 
 			if (dist_comp < eeo->nearest_dist ) {
-				if ( (eeo->current_enemy == -1) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
+				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+					turret_has_no_target = true;
+				}
+				if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
 					eeo->nearest_dist = dist_comp;
 					eeo->nearest_objnum = OBJ_INDEX(objp);
 				}
@@ -945,7 +1053,13 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
 
 							in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
-							//	MODIFY FOR ATTACKING BIG SHIP
+
+							if (turret_subsys->flags & SSF_FOV_EDGE_CHECK) {
+								if (in_fov == false)
+									if (object_in_turret_fov(&Objects[aip->target_objnum], turret_subsys, tvec, tpos, dist + Objects[aip->target_objnum].radius))
+										in_fov = true;
+							}
+							// MODIFY FOR ATTACKING BIG SHIP
 							// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
 							if (in_fov) {
 								return aip->target_objnum;
@@ -1105,6 +1219,11 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		bool in_fov;
 
 		in_fov = turret_fov_test(ss, gvec, &v2e);
+
+		if (ss->flags & SSF_FOV_EDGE_CHECK) {
+			if (in_fov == false)
+				in_fov = is_object_radius_in_turret_fov(&Objects[ss->turret_enemy_objnum], ss, gvec, &gun_pos, &v2e, predicted_enemy_pos, 0.0f);
+		}
 
 		if (in_fov) {
 			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num,
@@ -2209,7 +2328,7 @@ bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 {
 	model_subsystem *tp = ss->system_info;
 	float dot = vm_vec_dot(v2e, gvec);
-	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov))
+	if (((dot + size_mod) >= tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov))
 		return true;
 	
 	return false;
@@ -2219,7 +2338,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 {
 	model_subsystem *tp = ss->system_info;
 	float dot = vm_vec_dot(v2e, gvec);
-	if (((dot + size_mod) > tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
+	if (((dot + size_mod) >= tp->turret_fov) && ((dot - size_mod) <= tp->turret_max_fov)) {
 		vec3d of_dst;
 		vm_vec_rotate( &of_dst, v2e, &ss->world_to_turret_matrix );
 		if ((of_dst.xyz.x == 0) && (of_dst.xyz.y == 0)) {
@@ -2229,7 +2348,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 			if (!IS_VEC_NULL_SQ_SAFE(&of_dst)) {
 				vm_vec_normalize(&of_dst);
 				// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
-				if ((-of_dst.xyz.y + size_mod) > tp->turret_y_fov)
+				if ((-of_dst.xyz.y + size_mod) >= tp->turret_y_fov)
 					return true;
 			}
 		}

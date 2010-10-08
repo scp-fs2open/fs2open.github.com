@@ -237,7 +237,9 @@ flag_def_list Subsystem_flags[] = {
 	{ "fire on target",			MSS_FLAG_FIRE_ON_TARGET,	0 },
 	{ "reset when idle",		MSS_FLAG_TURRET_RESET_IDLE,	0 },
 	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 },
-	{ "allow landing",			MSS_FLAG_ALLOW_LANDING,		0 }
+	{ "allow landing",			MSS_FLAG_ALLOW_LANDING,		0 },
+	{ "target requires fov",	MSS_FLAG_FOV_REQUIRED,		0 },
+	{ "fov edge checks",		MSS_FLAG_FOV_EDGE_CHECK,	0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -4959,6 +4961,10 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// Wanderer
 		if (model_system->flags & MSS_FLAG_NO_SS_TARGETING)
 			ship_system->flags |= SSF_NO_SS_TARGETING;
+		if ((The_mission.ai_profile->flags2 & AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS) || (model_system->flags & MSS_FLAG_FOV_EDGE_CHECK))
+			ship_system->flags |= SSF_FOV_EDGE_CHECK;
+		if ((The_mission.ai_profile->flags2 & AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV) || (model_system->flags & MSS_FLAG_FOV_REQUIRED))
+			ship_system->flags |= SSF_FOV_REQUIRED;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
