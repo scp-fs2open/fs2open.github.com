@@ -869,7 +869,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 			}
 
 			while (src_bytes_used < si->size) {
-				float **pcm;
+				float **pcm = NULL;
 
 				if (si->bits == 32) {
 					rc = ov_read_float(&si->ogg_info, &pcm, 1024, &section);

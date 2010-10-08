@@ -899,7 +899,6 @@ void message_load_wave(int index, const char *filename)
 // Goober5000
 bool message_filename_is_generic(char *filename)
 {
-	int i;
 	char truncated_filename[MAX_FILENAME_LEN];
 
 	// truncate any file extension
@@ -914,7 +913,7 @@ bool message_filename_is_generic(char *filename)
 	*ptr = '\0';
 
 	// test against the list
-	for (i = 0; i < generic_message_filenames.size(); i++)
+	for (unsigned int i = 0; i < generic_message_filenames.size(); i++)
 	{
 		if (!stricmp(generic_message_filenames[i].c_str(), truncated_filename))
 			return true;
