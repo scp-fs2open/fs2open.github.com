@@ -846,7 +846,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 			int sample_size = sizeof(float) * m_wfmt.nChannels;
 
 			while ( !m_abort_next_read && ((uint)actual_read < num_bytes_read)) {
-				float **pcm;
+				float **pcm = NULL;
 
 				if (m_wfmt.wBitsPerSample == 32) {
 					rc = ov_read_float(&m_snd_info.vorbis_file, &pcm, (num_bytes_read - actual_read) / sample_size, &section);
