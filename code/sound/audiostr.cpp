@@ -30,8 +30,6 @@
 #define ASF_FREE	0
 #define ASF_USED	1
 
-#define MAX_AUDIO_STREAMS	30
-
 // constants
 #define BIGBUF_SIZE					176400
 ubyte *Wavedata_load_buffer = NULL;		// buffer used for cueing audiostreams
@@ -848,7 +846,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 			int sample_size = sizeof(float) * m_wfmt.nChannels;
 
 			while ( !m_abort_next_read && ((uint)actual_read < num_bytes_read)) {
-				float **pcm;
+				float **pcm = NULL;
 
 				if (m_wfmt.wBitsPerSample == 32) {
 					rc = ov_read_float(&m_snd_info.vorbis_file, &pcm, (num_bytes_read - actual_read) / sample_size, &section);

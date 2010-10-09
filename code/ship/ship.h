@@ -106,6 +106,9 @@ typedef struct ship_weapon {
 	int current_secondary_bank;		// currently selected secondary bank
 	int current_tertiary_bank;
 
+	int previous_primary_bank;
+	int previous_secondary_bank;		// currently selected secondary bank
+
 	int next_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// next time this primary bank can fire
 	int last_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// last time this primary bank fired (mostly used by SEXPs)
 	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// next time this secondary bank can fire
@@ -216,6 +219,13 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
 //nuke
 #define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
+#define SSF_FOV_REQUIRED		(1 << 4)
+#define SSF_FOV_EDGE_CHECK		(1 << 5)
+
+#define SSF_NO_REPLACE			(1 << 6)		// prevents 'destroyed' submodel from being rendered if subsys is destroyed.
+#define SSF_NO_LIVE_DEBRIS		(1 << 7)		// prevents subsystem from generating live debris
+#define SSF_VANISHED			(1 << 8)		// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
+#define SSF_MISSILES_IGNORE_IF_DEAD	(1 << 9)	// forces homing missiles to target hull if subsystem is dead before missile hits it.
 
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
@@ -311,6 +321,9 @@ typedef	struct ship_subsys {
 	fix		next_aim_pos_time;
 	vec3d	last_aim_enemy_pos;
 	vec3d	last_aim_enemy_vel;
+
+	//scaler for setting adjusted turret rof
+	float	rof_scaler;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -477,12 +490,12 @@ typedef struct ship {
 	ship_spark	sparks[MAX_SHIP_HITS];
 	
 	bool use_special_explosion; 
-	int special_exp_damage;					// new special explosion/hitpoints system
-	int special_exp_blast;
-	int special_exp_inner;
-	int special_exp_outer;
+	float special_exp_damage;					// new special explosion/hitpoints system
+	float special_exp_blast;
+	float special_exp_inner;
+	float special_exp_outer;
 	bool use_shockwave;
-	int special_exp_shockwave_speed;
+	float special_exp_shockwave_speed;
 	int	special_hitpoints;
 	int	special_shield;
 
@@ -653,8 +666,6 @@ typedef struct ship {
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 
-//	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
-
 	// glow points
 	SCP_vector<bool> glow_point_bank_active;
 
@@ -665,8 +676,6 @@ typedef struct ship {
 	fix time_until_full_cloak;
 	int cloak_alpha;
 	fix time_until_uncloak;
-
-	decal_system ship_decal_system;
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
@@ -1224,7 +1233,6 @@ typedef struct ship_info {
 
 	int splodeing_texture;
 	char splodeing_texture_name[MAX_FILENAME_LEN];
-	int max_decals;
 
 	bool draw_primary_models[MAX_SHIP_PRIMARY_BANKS];
 	bool draw_secondary_models[MAX_SHIP_SECONDARY_BANKS];
@@ -1673,6 +1681,9 @@ int object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpos
 bool turret_std_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
 bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 0);
+
+// function for checking adjusted turret rof
+float get_adjusted_turret_rof(ship_subsys *ss);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

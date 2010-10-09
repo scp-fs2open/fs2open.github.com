@@ -3957,7 +3957,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 
 
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags)
 {
 	int i;
 	polymodel * pm;
@@ -3974,7 +3974,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	// Set the "blown out" flags	
 	sm->blown_off = sii->blown_off;
 
-	if ( sm->blown_off )	{
+	if ( (sm->blown_off) && (!(flags & SSF_NO_REPLACE)) )	{
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
@@ -3992,7 +3992,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
-		model_set_instance(model_num, sm->details[i], sii );
+		model_set_instance(model_num, sm->details[i], sii, flags );
 	}
 }
 

@@ -4182,6 +4182,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	obj = objh->objp;
 	int flags = 0;
 	int submodel = -1;
+	bool model_started = false;
 
 	switch(obj->type) {
 		case OBJ_SHIP:
@@ -4209,6 +4210,11 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	if (model_num < 0)
 		return ADE_RETURN_NIL;
 
+	if (obj->type == OBJ_SHIP) {
+		ship_model_start(obj);
+		model_started = true;
+	}
+
 	mc_info hull_check;
 
 	hull_check.model_num = model_num;
@@ -4220,9 +4226,14 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	hull_check.flags = flags;
 
 	if ( !model_collide(&hull_check) ) {
+		if (model_started)
+			ship_model_stop(obj);
 		return ADE_RETURN_NIL;
 	}
 	
+	if (model_started)
+		ship_model_stop(obj);
+
 	if (local)
 		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
 	else
@@ -8292,18 +8303,33 @@ public:
 
 ade_obj<track_h> l_Track("track", "Music track");
 */
-ADE_FUNC(playMusic, l_Audio, "string Filename", "Plays a music file using FS2Open's builtin music system", NULL, NULL)
+ADE_FUNC(playMusic, l_Audio, "string Filename", "Plays a music file using FS2Open's builtin music system", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
 	char *s;
 	if(!ade_get_args(L, "s", &s))
-		return ade_set_error(L, "b", false);
+		return ade_set_error(L, "i", -1);
 
 	int ah = audiostream_open(s, ASF_MENUMUSIC);
 	if(ah < 0)
-		return ade_set_error(L, "b", false);
+		return ade_set_error(L, "i", -1);
 
 	audiostream_play(ah);
+	return ade_set_args(L, "i", ah);
+}
+
+ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false]", "Stops a playing music file, provided audiohandle is valid", NULL, NULL)
+{
+	int ah;
+	bool fade = false;
+	if(!ade_get_args(L, "i|b", &ah, &fade))
+		return ADE_RETURN_NIL;
+
+	if (ah >= MAX_AUDIO_STREAMS || ah < 0 ) 
+		return ADE_RETURN_NIL;
+
+	audiostream_close_file(ah, fade);
 	return ADE_RETURN_NIL;
+	
 }
 
 //**********LIBRARY: Base
@@ -9849,9 +9875,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			modelnum = targetp->jnp->get_modelnum();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
-		default:
-			// should never happen
-			Int3();
+		default: //Someone passed an invalid pointer.
 			if ( entered_frame )
 				g3_end_frame( );
 			return ADE_RETURN_NIL;

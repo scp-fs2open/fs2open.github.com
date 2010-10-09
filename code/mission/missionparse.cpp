@@ -535,6 +535,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.max_hull_repair_val = 0.0f;
 	pm->support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_support_ships = -1;	// infinite
+	pm->support_ships.max_concurrent_ships = 1;
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
 	pm->support_ships.support_available_for_species = 0;
@@ -2448,12 +2449,12 @@ void fix_old_special_explosions(p_object *p_objp, int variable_index)
 
 	p_objp->use_special_explosion = true;
 
-	p_objp->special_exp_damage = atoi(Block_variables[variable_index+DAMAGE].text);
-	p_objp->special_exp_blast = atoi(Block_variables[variable_index+BLAST].text);
-	p_objp->special_exp_inner = atoi(Block_variables[variable_index+INNER_RAD].text);
-	p_objp->special_exp_outer = atoi(Block_variables[variable_index+OUTER_RAD].text);
+	p_objp->special_exp_damage = (float)atoi(Block_variables[variable_index+DAMAGE].text);
+	p_objp->special_exp_blast = (float)atoi(Block_variables[variable_index+BLAST].text);
+	p_objp->special_exp_inner = (float)atoi(Block_variables[variable_index+INNER_RAD].text);
+	p_objp->special_exp_outer = (float)atoi(Block_variables[variable_index+OUTER_RAD].text);
 	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
-	p_objp->special_exp_shockwave_speed = atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+	p_objp->special_exp_shockwave_speed = (float)atoi(Block_variables[variable_index+SHOCK_SPEED].text);
 }
 
 void fix_old_special_hits(p_object *p_objp, int variable_index)
@@ -2835,23 +2836,23 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		p_objp->use_special_explosion = true;
 
 		if (required_string("+Special Exp Damage:")) {
-			stuff_int(&p_objp->special_exp_damage);
+			stuff_float(&p_objp->special_exp_damage);
 		}
 
 		if (required_string("+Special Exp Blast:")) {
-			stuff_int(&p_objp->special_exp_blast);
+			stuff_float(&p_objp->special_exp_blast);
 		}
 
 		if (required_string("+Special Exp Inner Radius:")) {
-			stuff_int(&p_objp->special_exp_inner);
+			stuff_float(&p_objp->special_exp_inner);
 		}
 
 		if (required_string("+Special Exp Outer Radius:")) {
-			stuff_int(&p_objp->special_exp_outer);
+			stuff_float(&p_objp->special_exp_outer);
 		}
 
 		if (optional_string("+Special Exp Shockwave Speed:")) {
-			stuff_int(&p_objp->special_exp_shockwave_speed);
+			stuff_float(&p_objp->special_exp_shockwave_speed);
 			p_objp->use_shockwave = true;
 		}
 	}

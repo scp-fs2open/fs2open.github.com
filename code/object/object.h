@@ -311,8 +311,9 @@ int object_is_dead_docked(object *objp);
 void obj_move_one_docked_object(object *objp, object *parent_objp);
 
 //WMC
-void object_set_gliding(object *objp, bool enable=true);
+void object_set_gliding(object *objp, bool enable=true, bool force = false);
 bool object_get_gliding(object *objp);
+bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
 int object_get_model(object *objp);
 

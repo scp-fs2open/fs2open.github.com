@@ -656,9 +656,9 @@ int gr_create_font(char * typeface)
 	int i,x,y;
 	x = y = 0;
 	for (i=0; i<fnt->num_chars; i++ )	{
-		ubyte * fp;
+		ubyte * ubp;
 		int x1, y1;
-		fp = &fnt->pixel_data[fnt->char_data[i].offset];
+		ubp = &fnt->pixel_data[fnt->char_data[i].offset];
 		if ( x + fnt->char_data[i].byte_width >= fnt->bm_w )	{
 			x = 0;
 			y += fnt->h;
@@ -671,7 +671,7 @@ int gr_create_font(char * typeface)
 
 		for( y1=0; y1<fnt->h; y1++ )	{
 			for (x1=0; x1<fnt->char_data[i].byte_width; x1++ )	{
-				uint c = *fp++;
+				uint c = *ubp++;
 				if ( c > 14 ) c = 14;
 				fnt->bm_data[(x+x1)+(y+y1)*fnt->bm_w] = (unsigned char)(c);	
 			}

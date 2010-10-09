@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "graphics/2d.h"
-#include "decals/decals.h"
+#include "object/object.h"
 
 struct object;
 
@@ -108,6 +108,12 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
 #define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 #define MSS_FLAG_ALLOW_LANDING		(1 << 21)		// This subsystem can be landed on
+#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 22)		// Tells the game to use better FOV edge checking with this turret
+#define MSS_FLAG_FOV_REQUIRED		(1 << 23)		// Tells game not to allow this turret to attempt targeting objects out of FOV
+#define MSS_FLAG_NO_REPLACE			(1 << 24)		// set the subsys not to draw replacement ('destroyed') model
+#define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 25)		// sets the subsys not to release live debris
+#define MSS_FLAG_IGNORE_IF_DEAD		(1 << 26)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
+#define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -187,8 +193,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
-	decal_system model_decal_system;
-
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
@@ -200,6 +204,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	float	optimum_range;
 	float	favor_current_facing;
+
+	float	turret_rof_scaler;
 } model_subsystem;
 
 typedef struct model_special {
@@ -880,7 +886,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii);
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -1156,8 +1162,6 @@ void model_page_out_textures(int model_num, bool release = false);
 void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = -1.0f);
 
 void model_set_replacement_textures(int *replacement_textures);
-
-int decal_make_model(polymodel * pm);
 
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);

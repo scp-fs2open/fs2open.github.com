@@ -864,9 +864,10 @@ void brief_render_icon_line(int stage_num, int line_num)
 	brief_line	*bl;
 	brief_stage *bs;
 	brief_icon	*icon[2];
+	int			i;
 	vertex		icon_vertex[2];
 	int			icon_status[2] = {0,0};
-	int			icon_w, icon_h, i;
+	int			icon_w, icon_h;
 	float			icon_x[2], icon_y[2];
 
 	bl = &Briefing->stages[stage_num].lines[line_num];

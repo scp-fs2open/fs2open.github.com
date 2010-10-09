@@ -450,7 +450,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
-	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
+	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 7 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
@@ -471,6 +471,7 @@ sexp_oper Operators[] = {
 	{ "ship-maneuver",			OP_SHIP_MANEUVER,			10, 10 }, // Wanderer
 	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
 	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
+	{ "force-glide",			OP_FORCE_GLIDE,				2, 2 }, // The E
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -5969,10 +5970,14 @@ int sexp_get_object_coordinate(int n, int axis)
 
 			relative_location->xyz.x = (float) eval_num(n);
 			n = CDR(n);
-			relative_location->xyz.y = (float) eval_num(n);
-			n = CDR(n);
-			relative_location->xyz.z = (float) eval_num(n);
-			n = CDR(n);
+			if (n >= 0) {
+				relative_location->xyz.y = (float) eval_num(n);
+				n = CDR(n);
+				if (n >= 0) {
+					relative_location->xyz.z = (float) eval_num(n);
+					n = CDR(n);
+				}
+			}
 		}
 	}
 
@@ -6108,10 +6113,14 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 	if (turn_time)
 	{
 		// set flag
-		bank = bank ? AITTV_IGNORE_BANK : 0;
+		int bankflag = 0;
+		if (!bank) 
+		{
+			bankflag = AITTV_IGNORE_BANK;
+		}
 
 		// turn
-		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bank));
+		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bankflag));
 
 		// return
 		return;
@@ -8882,7 +8891,7 @@ void sexp_update_sound_environment(int node)
 	//From sexp help:
 	//{ OP_ADJUST_AUDIO_VOLUME, "adjust-audio-volume\r\n"
 	//	"Adjusts the relative volume of one sound type. Takes 2 or 3 arguments....\r\n"
-	//	"\t1:\tSound Type to adjust, either Master, Music, Voice or Effects\r\n"
+	//	"\t1:\tSound Type to adjust, either Music, Voice or Effects\r\n"
 	//	"\t2:\tPercentage of the users' settings to adjust to, 0 will be silence, 100 means the maximum volume as set by the user\r\n"
 	//	"\t3:\tFade time (optional), time in milliseconds to adjust the volume"},
 
@@ -8910,20 +8919,22 @@ void sexp_adjust_audio_volume(int node)
 
 	if (n > 0) {
 		int option = audio_volume_option_lookup(CTEXT(n));
-		n = CDR(n);
-
-		float target_volume = 1.0f;
-		if (n >= 0) {
-			target_volume = (float)eval_num(n) / 100;
-			CLAMP(target_volume, 0.0f, 1.0f);
+		if (option > 0) {
 			n = CDR(n);
+
+			float target_volume = 1.0f;
+			if (n >= 0) {
+				target_volume = (float)eval_num(n) / 100;
+				CLAMP(target_volume, 0.0f, 1.0f);
+				n = CDR(n);
+			}
+
+			int time = 0;
+			if (n >= 0)
+				time = eval_num(n);
+
+			snd_adjust_audio_volume(option, target_volume, time);
 		}
-
-		int time = 0;
-		if (n >= 0)
-			time = eval_num(n);
-
-		snd_adjust_audio_volume(option, target_volume, time);
 	}
 }
 
@@ -8992,22 +9003,22 @@ void sexp_set_explosion_option(int node)
 		n = CDR(n);
 
 		if (option == EO_DAMAGE) {
-			shipp->special_exp_damage = val;
+			shipp->special_exp_damage = (float)val;
 		} else if (option == EO_BLAST) {
-			shipp->special_exp_blast = val;
+			shipp->special_exp_blast = (float)val;
 		} else if (option == EO_INNER_RADIUS) {
-			shipp->special_exp_inner = val;
+			shipp->special_exp_inner = (float)val;
 		} else if (option == EO_OUTER_RADIUS) {
-			shipp->special_exp_outer = val;
+			shipp->special_exp_outer = (float)val;
 		} else if (option == EO_SHOCKWAVE_SPEED) {
-			shipp->special_exp_shockwave_speed = val;
+			shipp->special_exp_shockwave_speed = (float)val;
 			shipp->use_shockwave = (val > 0);
 		}
 	}
 
 	// if all our values are the same as a standard exp, turn off the special exp
-	if ((shipp->special_exp_damage == (int) sci->damage) && (shipp->special_exp_blast == (int) sci->blast) && (shipp->special_exp_inner == (int) sci->inner_rad)
-		&& (shipp->special_exp_outer == (int) sci->outer_rad) && (shipp->special_exp_shockwave_speed == (int) sci->speed))
+	if ((shipp->special_exp_damage == sci->damage) && (shipp->special_exp_blast == sci->blast) && (shipp->special_exp_inner == sci->inner_rad)
+		&& (shipp->special_exp_outer == sci->outer_rad) && (shipp->special_exp_shockwave_speed == sci->speed))
 	{
 		shipp->use_special_explosion = false;
 		shipp->use_shockwave = false;
@@ -10512,7 +10523,7 @@ void sexp_end_mission(int n)
 	}
 
 	// if the player is dead we may want to let the death screen handle things
-	if (!ignore_player_mortality && (Player_ship->flags && SF_DYING)) {
+	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
 	}
 
@@ -11248,7 +11259,6 @@ int sexp_weapon_fired_delay(int node, int op_num)
 int sexp_has_weapon(int node, int op_num)
 {
 	ship *shipp;
-	weapon_info * wip; 
 	int i;
 	int requested_bank;
 	int weapon_index;
@@ -12397,16 +12407,23 @@ void sexp_ship_change_callsign(int node)
 			cindex = mission_parse_add_callsign(new_callsign);
 	}
 
+	// packets for multi
+	multi_start_packet();
+	multi_send_string(new_callsign); 
+
 	while ( node >= 0 )
 	{
 		sindex = ship_name_lookup(CTEXT(node));
 		if (sindex >= 0) 
 		{
 			shipp = &Ships[sindex];
-			shipp->callsign_index = cindex;
+			shipp->callsign_index = char (cindex);
+			multi_send_ship(shipp);
 		}
 		node = CDR(node);
 	}
+
+	multi_end_packet();
 }
 
 // Goober5000
@@ -13541,6 +13558,35 @@ void multi_sexp_change_subsystem_name()
 		subsystem_to_rename = ship_get_subsys(shipp, subsys_name);
 		if (subsystem_to_rename != NULL) {
 			ship_subsys_set_name(subsystem_to_rename, new_name);
+		}
+	}
+}
+
+void multi_sexp_ship_change_callsign()
+{
+	char new_callsign[TOKEN_LENGTH];
+	int cindex;
+	ship *shipp = NULL;
+
+	multi_get_string(new_callsign);
+	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	{
+		cindex = -1;
+	}
+	else
+	{
+		cindex = mission_parse_lookup_callsign(new_callsign);
+		if (cindex < 0) 
+		{
+			cindex = mission_parse_add_callsign(new_callsign);
+		}
+	}
+
+	while (multi_get_ship(shipp)) 
+	{
+		if (shipp != NULL) 
+		{
+			shipp->callsign_index = char (cindex);
 		}
 	}
 }
@@ -15104,6 +15150,15 @@ void sexp_set_support_ship(int n)
 	// get max number of ships allowed
 	n = CDR(n);
 	The_mission.support_ships.max_support_ships = eval_num(n);
+
+	// get the number of concurrent ships allowed
+	n = CDR(n);
+	if ( n == -1 ) {
+		// 7th arg not specified, set default
+		The_mission.support_ships.max_concurrent_ships = 1;
+	} else {
+		The_mission.support_ships.max_concurrent_ships = eval_num(n);
+	}
 }
 
 // Goober5000
@@ -17197,9 +17252,9 @@ void sexp_show_subtitle_text(int node)
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
 	// calculate pixel positions
-	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
-	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
-	int width = gr_screen.max_w * (width_pct / 100.0f);
+	int x_pos = (int) (gr_screen.max_w * (x_pct / 100.0f));
+	int y_pos = (int) (gr_screen.max_h * (y_pct / 100.0f));
+	int width = (int) (gr_screen.max_w * (width_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
@@ -17315,10 +17370,10 @@ void sexp_show_subtitle_image(int node)
 		height_pct = 100;
 
 	// calculate pixel positions
-	int x_pos = gr_screen.max_w * (x_pct / 100.0f);
-	int y_pos = gr_screen.max_h * (y_pct / 100.0f);
-	int width = gr_screen.max_w * (width_pct / 100.0f);
-	int height = gr_screen.max_h * (height_pct / 100.0f);
+	int x_pos = (int)(gr_screen.max_w * (x_pct / 100.0f));
+	int y_pos = (int)(gr_screen.max_h * (y_pct / 100.0f));
+	int width = (int)(gr_screen.max_w * (width_pct / 100.0f));
+	int height = (int)(gr_screen.max_h * (height_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
@@ -17496,6 +17551,34 @@ int sexp_script_eval(int node, int return_type)
 		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
 
 	return r;
+}
+
+void sexp_force_glide(int node)
+{
+	ship *shipp;
+	int sindex;
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+
+	if (sindex < 0) {
+		return;
+	}
+
+	shipp = &Ships[sindex];
+	if (shipp->objnum < 0) {
+		return;
+	}
+
+	//Can this ship glide?
+	if (!Ship_info[shipp->ship_info_index].can_glide)
+		return;
+
+	int glide = is_sexp_true(CDR(node));
+
+	object_set_gliding(&Objects[shipp->objnum], (glide > 0), true);
+
+	return;
 }
 
 //Karajorma - Returns the subsystem type if the name of a subsystem is actually a generic type (e.g <all engines> or <all turrets> 
@@ -19311,6 +19394,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_FORCE_GLIDE:
+				sexp_val = SEXP_TRUE;
+				sexp_force_glide(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -19415,6 +19503,10 @@ void multi_sexp_eval()
 			
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				multi_sexp_change_subsystem_name();
+				break;
+
+			case OP_SHIP_CHANGE_CALLSIGN:
+				multi_sexp_ship_change_callsign();
 				break;
 
 			case OP_SET_RESPAWNS:
@@ -20083,6 +20175,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_WEAPONS:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_HUD_DISPLAY_GAUGE:
+		case OP_FORCE_GLIDE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -21447,6 +21540,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUPPORT_SHIP_CLASS;
 			if (argnum == 5)
 				return OPF_NUMBER;
+			if (argnum == 6)
+				return OPF_NUMBER;
 
 		case OP_KAMIKAZE:
 			if (argnum==0)
@@ -21693,6 +21788,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else
 				return OPF_POSITIVE;
+
+		case OP_FORCE_GLIDE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_BOOL;
 
 		default:
 			Int3();
@@ -22861,6 +22962,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_NEVER:
 		case OP_WARP_ALLOWED:
 		case OP_SET_ARMOR_TYPE:
+		case OP_FORCE_GLIDE:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -24126,7 +24228,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
 		"\t5: Turn time in milliseconds (optional)\r\n"
-		"\t6: Bank (optional)" },
+		"\t6: Bank (optional). Enter a non-zero value to enable banking." },
 
 	// Goober5000
 	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
@@ -24135,7 +24237,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: The name of an object.\r\n"
 		"\t2: The object to face.\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
-		"\t4: Bank (optional)" },
+		"\t4: Bank (optional). Enter a non-zero value to enable banking." },
 
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
@@ -24389,8 +24491,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tMaximum length of time since order was given. Use 0 for any time in the mission.\r\n"
 		"\t4:\tName of the target of the order (optional).\r\n"
-		"\t2:\tName of player ship giving the order(optional).\r\n"
-		"\t3:\tName of the subsystem for Destroy Subsystem orders.(optional)" },
+		"\t5:\tName of player ship giving the order(optional).\r\n"
+		"\t6:\tName of the subsystem for Destroy Subsystem orders.(optional)" },
 
 	// Karajorma
 	{ OP_RESET_ORDERS, "Reset-Orders (Action training operator)\r\n"
@@ -25296,7 +25398,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Departure location\r\n"
 		"\t4: Departure anchor\r\n"
 		"\t5: Ship class\r\n"
-		"\t6: Maximum number of support ships in this mission (use a negative number for infinity)\r\n"
+		"\t6: Maximum number of support ships consecutively in this mission (use a negative number for infinity)\r\n"
+		"\t7: Maximum number of support ships concurrently in this mission (optional, default 1)\r\n"
 		"\r\n"
 		"Note: The support ship will emerge from or depart into hyperspace if the location is set as hyperspace *or* the anchor is set as <no anchor>."
 	},
@@ -25978,6 +26081,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes at least 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
 	},
+
+	{OP_FORCE_GLIDE, "force-glide\r\n"
+		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode on his own,, and that a ship in glide mode cannot warp out or enter autopilot."
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tShip to force\r\n"
+		"\t2:\tTrue to activate glide, False to deactivate\r\n"
+	}
 };
 
 

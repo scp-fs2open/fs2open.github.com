@@ -99,7 +99,8 @@ typedef struct support_ship_info {
 	int		departure_anchor;				// departure anchor
 	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 	float	max_subsys_repair_val;			// same thing, except for subsystems -C
-	int		max_support_ships;				// max number of support ships
+	int		max_support_ships;				// max number of consecutive support ships
+	int		max_concurrent_ships;			// max number of concurrent support ships in mission per team
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
 	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
@@ -406,12 +407,12 @@ typedef struct p_object {
 	float	kamikaze_damage;					// base damage for a kamikaze attack
 
 	bool use_special_explosion;				// new special explosion/hitpoints system 
-	int special_exp_damage;
-	int special_exp_blast;
-	int special_exp_inner;
-	int special_exp_outer;
+	float special_exp_damage;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_blast;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_inner;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_outer;					// Changed from 'int' to 'float' by Zacam 10/2010
 	bool use_shockwave;
-	int special_exp_shockwave_speed;
+	float special_exp_shockwave_speed;		// Changed from 'int' to 'float' by Zacam 10/2010
 	int	special_hitpoints;
 	int	special_shield;
 

@@ -82,15 +82,17 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_CBString(pDX, IDC_WAVE_FILENAME, m_wave_filename);
 	DDX_LBIndex(pDX, IDC_MESSAGE_LIST, m_cur_msg);
 
+
 	// m_team == -1 maps to 2
 	if(m_team == -1){
-		m_team = 2;
+		m_team = MAX_TVT_TEAMS;
 	}
+
 	DDX_CBIndex(pDX, IDC_EVENT_TEAM, m_team);
 
 	// m_message_team == -1 maps to 2
 	if(m_message_team == -1){
-		m_message_team = 2;
+		m_message_team = MAX_TVT_TEAMS;
 	}
 	DDX_CBIndex(pDX, IDC_MESSAGE_TEAM, m_message_team);
 	//}}AFX_DATA_MAP
@@ -570,7 +572,7 @@ void event_editor::update_cur_message()
 			m_persona = 0;
 		}
 
-		if(m_messages[m_cur_msg].multi_team >= 2){
+		if(m_messages[m_cur_msg].multi_team >= MAX_TVT_TEAMS){
 			m_message_team = -1;
 			m_messages[m_cur_msg].multi_team = -1;
 		} else {
@@ -715,6 +717,7 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	m_events[num].chain_delay = -1;
 	m_events[num].objective_text = NULL;
 	m_events[num].objective_key_text = NULL;
+	m_events[num].team = -1;
 	m_sig[num] = -1;
 
 	m_event_tree.item_index = -1;
@@ -1174,7 +1177,7 @@ int event_editor::save_message(int num)
 		// box list.
 		m_messages[num].persona_index = m_persona - 1;
 
-		if(m_message_team >= 2){
+		if(m_message_team >= MAX_TVT_TEAMS){
 			m_messages[num].multi_team = -1;
 			m_message_team = -1;
 		} else {
@@ -1409,8 +1412,8 @@ void event_editor::OnSelchangeTeam()
 
 	UpdateData(TRUE);
 
-	// team == 2, means no team
-	if(m_team == 2){
+	// If the team isn't valid mark it as such. 
+	if((m_team >= MAX_TVT_TEAMS) || (m_team < -1) ){
 		m_team = -1;
 	}
 
@@ -1426,8 +1429,8 @@ void event_editor::OnSelchangeMessageTeam()
 
 	UpdateData(TRUE);
 
-	// team == 2, means no team
-	if(m_message_team == 2){
+	// If the team isn't valid mark it as such. 
+	if((m_message_team>= MAX_TVT_TEAMS) || (m_message_team < -1) ) {
 		m_message_team = -1;
 	}
 

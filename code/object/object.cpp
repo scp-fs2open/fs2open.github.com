@@ -1408,6 +1408,20 @@ void obj_move_all(float frametime)
 
 			// move post
 			obj_move_all_post(objp, frametime);
+
+			//Equipment script processing
+			if (objp->type == OBJ_SHIP) {
+				ship* shipp = &Ships[objp->instance];
+				object* target;
+				if (Ai_info[shipp->ai_index].target_objnum != -1)
+					target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+				else
+					target = NULL;
+				if (objp == Player_obj && Player_ai->target_objnum != -1)
+					target = &Objects[Player_ai->target_objnum]; 
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
+			}
 		}
 		objp = GET_NEXT(objp);
 	}
@@ -1923,14 +1937,22 @@ int object_is_dead_docked(object *objp)
 //Makes an object start 'gliding'
 //that is, it will continue on the same velocity that it was going,
 //regardless of orientation -WMC
-void object_set_gliding(object *objp, bool enable)
+void object_set_gliding(object *objp, bool enable, bool force)
 {
 	Assert(objp != NULL);
 
 	if(enable) {
-		objp->phys_info.flags |= PF_GLIDING;
+		if (!force) {
+			objp->phys_info.flags |= PF_GLIDING;
+		} else {
+			objp->phys_info.flags |= PF_FORCE_GLIDE;
+		}
 	} else {
-		objp->phys_info.flags &= ~PF_GLIDING;
+		if (!force) {
+			objp->phys_info.flags &= ~PF_GLIDING;
+		} else {
+			objp->phys_info.flags &= ~PF_FORCE_GLIDE;
+		}
 		vm_vec_rotate(&objp->phys_info.prev_ramp_vel, &objp->phys_info.vel, &objp->orient);	//Backslash
 	}
 }
@@ -1940,7 +1962,12 @@ bool object_get_gliding(object *objp)
 {
 	Assert(objp != NULL);
 
-	return ((objp->phys_info.flags & PF_GLIDING) != 0);
+	return ( ((objp->phys_info.flags & PF_GLIDING) != 0) || ((objp->phys_info.flags & PF_FORCE_GLIDE) != 0));
+}
+
+bool object_glide_forced(object *objp)
+{
+	return (objp->phys_info.flags & PF_FORCE_GLIDE) != 0;
 }
 
 //Quickly finds an object by its signature

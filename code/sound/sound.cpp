@@ -279,8 +279,15 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
 			break;
 		} else if ( !stricmp( Sounds[n].filename, gs->filename) ) {
-			gs->sig = Sounds[n].sig;
-			return (int)n;
+			// extra check: make sure the sound is actually loaded in a compatible way (2D vs. 3D)
+			//
+			// NOTE: this will allow a duplicate 3D entry if 2D stereo entry exists,
+			//       but will not load a duplicate 2D entry to get stereo if 3D
+			//       version already loaded
+			if ( (Sounds[n].info.n_channels == 1) || !(gs->flags & GAME_SND_USE_DS3D) ) {
+				gs->sig = Sounds[n].sig;
+				return (int)n;
+			}
 		}
 	}
 
@@ -320,11 +327,13 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	// ok, we got it, so set the proper filename for logging purposes
 	strcat_s(filename, audio_ext[rc]);
 
+	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
+
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
-		nprintf(("Sound", "Could not read sound file %s\n", filename));
+		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
  		return -1;
-	}		
+	}
 
 	// Load was a success, should be some sort of WAV or an OGG
 	si->format				= header->wFormatTag;		// 16-bit flag (wFormatTag)
@@ -359,8 +368,10 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if (fp != NULL)
 		cfclose(fp);
 
-	if ( rc == -1 )
+	if ( rc == -1 ) {
+		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", filename));
 		return -1;
+	}
 
 	strncpy( snd->filename, gs->filename, MAX_FILENAME_LEN );
 	snd->flags = SND_F_USED;
@@ -370,7 +381,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	gs->id_sig = snd->sig;
 	gs->id = (int)n;
 
-	nprintf(("Sound", "Loaded %s\n", filename));
+//	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", filename));
 
 	return (int)n;
 }
@@ -1396,34 +1407,38 @@ int snd_get_samples_per_measure(char *filename, float num_measures)
 
 void snd_adjust_audio_volume(int type, float percent, int time)
 {
-	Assert( type >= 0 && type < 4 );
+	Assert( type >= 0 && type < 3 );
 	
-	switch (type) {
-	case AAV_MUSIC:
-		aav_data[type].start_volume = aav_music_volume;
-		if (percent < aav_music_volume)
-			aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
-		else
-			aav_data[type].delta = percent - aav_music_volume;
-		break;
-	case AAV_VOICE:
-		aav_data[type].start_volume = aav_voice_volume;
-		if (percent < aav_voice_volume)
-			aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
-		else
-			aav_data[type].delta = percent - aav_voice_volume;
-		break;
-	case AAV_EFFECTS:
-		aav_data[type].start_volume = aav_effect_volume;
-		if (percent < aav_effect_volume)
-			aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
-		else
-			aav_data[type].delta = percent - aav_effect_volume;
-		break;
-	}
+	if ( type >= 0 && type < 3 ) {
+		switch (type) {
+		case AAV_MUSIC:
+			aav_data[type].start_volume = aav_music_volume;
+			if (percent < aav_music_volume)
+				aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_music_volume;
+			break;
+		case AAV_VOICE:
+			aav_data[type].start_volume = aav_voice_volume;
+			if (percent < aav_voice_volume)
+				aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_voice_volume;
+			break;
+		case AAV_EFFECTS:
+			aav_data[type].start_volume = aav_effect_volume;
+			if (percent < aav_effect_volume)
+				aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_effect_volume;
+			break;
+		default:
+			Int3();
+		}
 
-	aav_data[type].delta_time = time;
-	aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
+		aav_data[type].delta_time = time;
+		aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
+	}
 }
 
 void adjust_volume_on_frame(float* volume_now, aav* data)

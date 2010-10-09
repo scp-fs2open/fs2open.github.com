@@ -628,7 +628,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				}
 
 				//SUSHI: If gliding, don't do anything for speed matching
-				if (!(Objects[Player->objnum].phys_info.flags & PF_GLIDING)) {
+				if (!( (Objects[Player->objnum].phys_info.flags & PF_GLIDING) || (Objects[Player->objnum].phys_info.flags & PF_FORCE_GLIDE) )) {
 					//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 					pmax_speed = Ships[Player_obj->instance].current_max_speed;
 					if (pmax_speed > 0.0f) {
@@ -838,7 +838,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				// Only bother doing this if we need to.
 				if ( toggle_glide && press_glide ) {
 					// Overkill -- if gliding is toggled on and glide_when_pressed is pressed, turn glide off
-					if ( object_get_gliding(Player_obj) ) {
+					if ( object_get_gliding(Player_obj) && !object_glide_forced(Player_obj) ) {
 						object_set_gliding(Player_obj, false);
 						ci->forward_cruise_percent = savedspeed;
 						press_glide = !press_glide;
@@ -856,7 +856,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			// Probably don't need to do the second half of this check, but just in case...
 			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
 				// Only bother doing this if we need to.
-				if ( object_get_gliding(Player_obj) ) {
+				if ( object_get_gliding(Player_obj) && !object_glide_forced(Player_obj) ) {
 					object_set_gliding(Player_obj, false);
 					ci->forward_cruise_percent = savedspeed;
 					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );

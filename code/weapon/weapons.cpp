@@ -983,13 +983,6 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->shots = 1;
 
-	generic_bitmap_init(&wip->decal_texture, NULL);
-	wip->decal_glow_texture_id = -1;
-	wip->decal_burn_texture_id = -1;
-	generic_bitmap_init(&wip->decal_backface_texture, NULL);
-	wip->decal_rad = -1;
-	wip->decal_burn_time = 1000;
-
 	wip->alpha_max = 1.0f;
 	wip->alpha_min = 0.0f;
 	wip->alpha_cycle = 0.0f;
@@ -1188,7 +1181,6 @@ int parse_weapon(int subtype, bool replace)
 
 	if ( optional_string("$Submodel Rotation Acceleration:") )
 		stuff_float(&wip->weapon_submodel_rotate_accell);
-
 
 	//	No POF or AVI file specified, render as special laser type.(?)
 	ubyte r,g,b;
@@ -2200,8 +2192,14 @@ int parse_weapon(int subtype, bool replace)
 			}
 
 			// flicker
-			if ( optional_string("+Flicker:") )
+			if ( optional_string("+Flicker:") ) {
 				stuff_float(&bsip->flicker); 
+				//Sanity
+				if (bsip->flicker < 0.0f || bsip->flicker > 1.0f) {
+					mprintf(("WARNING: Invalid value found for +Flicker on section %d of beam %s. Valid range is 0.0 to 1.0, values will be adjusted.\n", wip->b_info.beam_num_sections, wip->name));
+					CLAMP(bsip->flicker, 0.0f, 1.0f);
+				}
+			}
 
 			// zadd
 			if ( optional_string("+Zadd:") )
@@ -2274,22 +2272,22 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->shots);
 	}
 
+	//Left in for compatibility
 	if ( optional_string("$decal:") ) {
+		WarningEx(LOCATION, "The decal system has been deactivated in FSO builds. Entries will be discarded.\n");
+		mprintf(("WARNING: The decal system has been deactivated in FSO builds. Entries will be discarded.\n"));
 		required_string("+texture:");
 		stuff_string(fname, F_NAME, NAME_LENGTH);
-		generic_bitmap_init(&wip->decal_texture, fname);
 
 		if ( optional_string("+backface texture:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-			generic_bitmap_init(&wip->decal_backface_texture, fname);
 		}
 
 		required_string("+radius:");
-		stuff_float(&wip->decal_rad);
 
-		if ( optional_string("+burn time:") )
-			stuff_int(&wip->decal_burn_time);
+		if ( optional_string("+burn time:") ) {}
 	}
+
 
 	if (optional_string("$Transparent:")) {
 		wip->wi_flags2 |= WIF2_TRANSPARENT;
@@ -2562,7 +2560,6 @@ void parse_weaponstbl(char *filename)
 		}
 		required_string("#End");
 	}
-
 
 	if(optional_string("#Secondary Weapons"))
 	{
@@ -2895,26 +2892,6 @@ void weapon_release_bitmaps()
 			}
 		}
 
-		if (wip->decal_texture.bitmap_id >= 0) {
-			bm_release(wip->decal_texture.bitmap_id);
-			wip->decal_texture.bitmap_id = -1;
-
-			if (wip->decal_glow_texture_id >= 0) {
-				bm_release(wip->decal_glow_texture_id);
-				wip->decal_glow_texture_id = -1;
-			}
-
-			if (wip->decal_burn_texture_id >= 0) {
-				bm_release(wip->decal_burn_texture_id);
-				wip->decal_burn_texture_id = -1;
-			}
-
-			if (wip->decal_backface_texture.bitmap_id >= 0) {
-				bm_release(wip->decal_backface_texture.bitmap_id);
-				wip->decal_backface_texture.bitmap_id = -1;
-			}
-		}
-
 		if (wip->thruster_flame.first_frame >= 0) {
 			bm_release(wip->thruster_flame.first_frame);
 			wip->thruster_flame.first_frame = -1;
@@ -3037,24 +3014,6 @@ void weapon_load_bitmaps(int weapon_index)
 		else if ( generic_anim_load(&wip->particle_spew_anim) ) {
 			mprintf(("Could not find a usable particle spew bitmap for '%s'!\n", wip->name));
 			Warning(LOCATION, "Could not find a usable particle spew bitmap (%s) for weapon '%s'!\n", wip->particle_spew_anim.filename, wip->name);
-		}
-	}
-
-	if ( (wip->decal_texture.bitmap_id < 0) && strlen(wip->decal_texture.filename) ) {
-		if ( generic_bitmap_load(&wip->decal_texture) ) {
-			// base texture loaded, so try glow and burn variants now
-			char tmp_name[MAX_FILENAME_LEN] = { '\0' };
-
-			strcpy_s(tmp_name, wip->decal_texture.filename);
-			strcat_s(tmp_name, "-glow");
-			wip->decal_glow_texture_id = bm_load(tmp_name);
-
-			strcpy_s(tmp_name, wip->decal_texture.filename);
-			strcat_s(tmp_name, "-burn");
-			wip->decal_burn_texture_id = bm_load(tmp_name);
-
-			// also grab the backface texture while we're here
-			generic_bitmap_load(&wip->decal_backface_texture);
 		}
 	}
 
@@ -3916,6 +3875,16 @@ void weapon_home(object *obj, int num, float frame_time)
 		if ( wp->target_sig > 0 ) {
 			if ( wp->homing_object->signature != wp->target_sig ) {
 				wp->homing_subsys = NULL;
+			}
+		}
+	}
+
+	// If target subsys is dead make missile pick random spot on target as attack point.
+	if (wp->homing_subsys != NULL) {
+		if (wp->homing_subsys->flags & SSF_MISSILES_IGNORE_IF_DEAD) {
+			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
+				wp->homing_object = &obj_used_list;
+				return;
 			}
 		}
 	}
@@ -5939,14 +5908,6 @@ void weapons_page_in()
 		if (wip->wi_flags & WIF_PARTICLE_SPEW)
 			bm_page_in_texture(wip->particle_spew_anim.first_frame);
 
-		// page in decal textures
-		if (wip->decal_texture.bitmap_id != -1) {
-			bm_page_in_xparent_texture(wip->decal_texture.bitmap_id);
-			bm_page_in_xparent_texture(wip->decal_glow_texture_id);
-			bm_page_in_xparent_texture(wip->decal_burn_texture_id);
-			bm_page_in_xparent_texture(wip->decal_backface_texture.bitmap_id);
-		}
-
 		// muzzle flashes
 		if (wip->muzzle_flash >= 0)
 			mflash_mark_as_used(wip->muzzle_flash);
@@ -6171,7 +6132,11 @@ void weapon_maybe_spew_particle(object *obj)
 			vm_vec_scale(&vel, wip->particle_spew_vel);
 
 			// emit the particle
-			vm_vec_add(&particle_pos, &obj->pos, &direct);
+			if (wip->wi_flags & WIF_CORKSCREW) {
+				vm_vec_add(&particle_pos, &obj->last_pos, &direct);
+			} else {
+				vm_vec_add(&particle_pos, &obj->pos, &direct);
+			}
 
 			if (wip->particle_spew_anim.first_frame < 0)
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);

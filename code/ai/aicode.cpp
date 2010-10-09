@@ -2900,7 +2900,7 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 			if(pm->n_paths <= path_num)
 				Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
 		//	Assert(pm->n_paths > path_num);
-			aip->goal_objnum = objp-Objects;
+			aip->goal_objnum = objnum;
 			aip->goal_signature = objp->signature;
 			if (exit_flag)
 				create_model_exit_path(pl_objp, objp, path_num);
@@ -6507,8 +6507,14 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip)
 	//This means that we get the same random values for a little bit.
 	//Using static_rand(shipnum) as a crude hash function to make sure that the seed is different for each ship and direction
 	//The *2 ensures that y and x stay separate.
-	side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
-	side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
+	if (strafeHoldDirAmount > 0) { //This may look unnecessary, but we're apparently still getting div by zero errors on Macs here.
+		side_vec.x = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) , -1.0f, 1.0f);
+		side_vec.y = static_randf_range((((Missiontime + static_rand(aip->shipnum)) >> 16) / strafeHoldDirAmount) * 2, -1.0f, 1.0f);
+	} else {
+		Warning(LOCATION, "Division by zero in do_random_sidethrust averted. Please tell a coder.\n");
+		side_vec.x = 1.0f;
+		side_vec.y = 1.0f;
+	}
 	//Scale it up so that the longest dimension is length 1.0. This ensures we are always getting as much use out of sidethrust as possible.
 	vm_vec_boxscale(&side_vec, 1.0f);
 
@@ -6573,13 +6579,13 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 				if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 					float percent_left;
 					ship	*shipp;
-					ship_info *sip;
+					ship_info *sip_local;
 
 					shipp = &Ships[Pl_objp->instance];
-					sip = &Ship_info[shipp->ship_info_index];
+					sip_local = &Ship_info[shipp->ship_info_index];
 
-					if (sip->afterburner_fuel_capacity > 0.0f) {
-						percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+					if (sip_local->afterburner_fuel_capacity > 0.0f) {
+						percent_left = 100.0f * shipp->afterburner_fuel / sip_local->afterburner_fuel_capacity;
 						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 							afterburners_start(Pl_objp);							
 							if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
@@ -6589,11 +6595,11 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 								float ab_time;
 
 								// Max afterburner speed - make sure we don't devide by 0 later
-								max_ab_vel = sip->afterburner_max_vel.xyz.z > 0.0f ? sip->afterburner_max_vel.xyz.z : sip->max_vel.xyz.z;
+								max_ab_vel = sip_local->afterburner_max_vel.xyz.z > 0.0f ? sip_local->afterburner_max_vel.xyz.z : sip_local->max_vel.xyz.z;
 								max_ab_vel = max_ab_vel > 0.0f ? max_ab_vel : 0.0001f;
 
 								// Time to exhaust 25% of the remaining fuel
-								time_to_exhaust_25pct_fuel = shipp->afterburner_fuel * 0.25f / sip->afterburner_burn_rate;
+								time_to_exhaust_25pct_fuel = shipp->afterburner_fuel * 0.25f / sip_local->afterburner_burn_rate;
 
 								// Time to fly 75% of the distance to the target
 								time_to_fly_75pct_of_distance = dist_to_enemy * 0.75f / max_ab_vel;
@@ -13290,6 +13296,8 @@ void ai_warp_out(object *objp)
 		// flag us as trying to warp so that this function keeps getting called
 		// (in other words, if we can't warp just yet, we want to warp at the first
 		// opportunity)
+		if (aip->mode != AIM_WARP_OUT) 
+			aip->mode = AIM_WARP_OUT;
 		aip->submode = AIS_WARP_1;
 		aip->ai_flags |= AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
 
