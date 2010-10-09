@@ -162,45 +162,6 @@ void HudGaugeRadarDradis::initForeground(char* fname_foreground, int _foreground
 	}
 }
 
-void HudGaugeRadarDradis::initRenderTexture(char* bm_target_name, int n_target_x, int n_target_y, int n_target_w, int n_target_h)
-{
-	if( strlen(bm_target_name) <= 0 ) {
-		return;
-	}
-
-	strcpy_s(texture_target_fname, bm_target_name);
-	target_x = n_target_x;
-	target_y = n_target_y;
-	target_w = n_target_w;
-	target_h = n_target_h;
-
-	// create a texture that will fit our gauge
-	if(target_w >= 16 && target_h >= 16) {
-		int texture_size = 16;
-
-		// get the bigger of the two
-		if(target_w > target_h) {
-			texture_size = target_w;
-		} else {
-			texture_size = target_h;
-		}
-
-		// now try to find the smallest power of two texture that can accomodate
-		int i = 4; // start at 2^4 (16)
-		while(texture_size > (int)pow(2.0, i)) {
-			i++;
-		}
-
-		texture_size = (int)pow(2.0, i);
-
-		texture_cache = bm_make_render_target(texture_size, texture_size, BMP_FLAG_RENDER_TARGET_DYNAMIC);
-		cache_w = target_w;
-		cache_h = target_h;
-		position[0] = 0;
-		position[1] = 0;
-	}
-}
-
 void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 {
 	*pos = b->position;
@@ -380,7 +341,6 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 
 void HudGaugeRadarDradis::setupViewHtl()
 {
-	setupRenderToCache();
 	setClip(position[0], position[1], Radar_radius[0], Radar_radius[1]);
 	gr_set_proj_matrix(.625f * PI_2, i2fl(Radar_radius[0])/i2fl(Radar_radius[1]), 0.001f, 5.0f);
 	gr_set_view_matrix(&Orb_eye_position, &vmd_identity_matrix);
@@ -403,9 +363,6 @@ void HudGaugeRadarDradis::doneDrawingHtl()
 	//hud_save_restore_camera_data(0);
 
 	gr_zbuffer_set(1);
-
-	doneRenderToCache();
-	renderToCockpit();
 }
 
 void HudGaugeRadarDradis::drawOutlinesHtl()

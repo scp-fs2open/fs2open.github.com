@@ -62,7 +62,6 @@ public:
 	void initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown);
 	void initBackground(char* fname_background, int _background_w, int _background_h);
 	void initForeground(char* fname_foreground, int n_foreground_w, int n_foreground_h);
-	void initRenderTexture(char* bm_target_name, int n_target_x, int n_target_y, int n_target_w, int n_target_h);
 
 	void blipDrawDistorted(blip *b, vec3d *pos, float alpha);
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);

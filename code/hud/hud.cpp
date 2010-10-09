@@ -676,9 +676,14 @@ void HudGauge::renderString(int x, int y, char *str)
 		gr_resize_screen_pos(&nx, &ny);
 	}
 
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
+
 	gr_set_screen_scale(base_w, base_h);
 	gr_unsize_screen_pos(&nx, &ny);
-	gr_string(x + nx, y + ny, str);
+	gr_string(x + nx, y + ny, str, resize);
 	gr_reset_screen_scale();
 }
 
@@ -696,10 +701,15 @@ void HudGauge::renderString(int x, int y, int gauge_id, char *str)
 
 	gr_unsize_screen_pos(&nx, &ny);
 
+	bool resize = true;
+	if(gr_screen.rendering_to_texture != -1) {
+		resize = false;
+	}
+
 	if(gauge_id > -2) {
-		emp_hud_string(x + nx, y + ny, gauge_id, str);
+		emp_hud_string(x + nx, y + ny, gauge_id, str, resize);
 	} else {
-		gr_string(x + nx, y + ny, str);
+		gr_string(x + nx, y + ny, str, resize);
 	}
 
 	gr_reset_screen_scale();
@@ -916,9 +926,11 @@ void HudGauge::setClip(int x, int y, int w, int h)
 
 	gr_set_screen_scale(base_w, base_h);
 
-	// bring the clip coords from base resolution scale to actual resolution scale.
-	gr_resize_screen_pos(&x, &y);
-	gr_resize_screen_pos(&w, &h);
+	if(gr_screen.rendering_to_texture == -1) {
+		// bring the clip coords from base resolution scale to actual resolution scale.
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
 
 	// clip the screen based on the actual resolution
 	gr_set_clip(hx+x, hy+y, w, h, false);
@@ -1013,88 +1025,155 @@ bool HudGauge::canRender()
 	return true;
 }
 
-void HudGauge::setupRenderToCache()
+void HudGauge::initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h)
 {
-	if(strlen(texture_target_fname) > 0 && texture_cache > -1) {// check if the player's ship has the proper replacement textures
-		bm_set_render_target(texture_cache, 0);
-		gr_set_cull(0);
-		gr_clear();
-	} 
+	if ( strlen(display_name) <= 0 ) {
+		return;
+	}
+
+	strcpy_s(texture_target_fname, display_name);
+	target_x = _target_x;
+	target_y = _target_y;
+	target_w = _target_w;
+	target_h = _target_h;
+
+	if ( _canvas_w > 0 || _canvas_h > 0 ) {
+		cache_w = _canvas_w;
+		cache_h = _canvas_h;
+	} else {
+		cache_w = _target_w;
+		cache_h = _target_h;
+	}
 }
 
-void HudGauge::doneRenderToCache()
+void HudGauge::createRenderCanvas()
 {
-	if(strlen(texture_target_fname) > 0 && texture_cache > -1) {
-		gr_set_cull(1);
+	if ( strlen(texture_target_fname) <= 0 ) {
+		return;
+	}
+
+	int texture_size;
+
+	// get the bigger of the two
+	if(target_w > target_h) {
+		texture_size = target_w;
+	} else {
+		texture_size = target_h;
+	}
+
+	// create a texture that will fit our gauge
+	// try to find the smallest power of two texture that can accomodate
+	int i = 4; // start at 2^4 (16)
+	while(texture_size > (int)pow(2.0, i)) {
+		i++;
+	}
+
+	texture_size = (int)pow(2.0, i);
+
+	texture_cache = bm_make_render_target(texture_size, texture_size, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+}
+
+void HudGauge::clearRenderCanvas()
+{
+	if ( texture_cache >= 0 ) {
+		bm_release(texture_cache);
+	}
+
+	texture_cache = -1;
+}
+
+bool HudGauge::setupRenderCanvas()
+{
+	// check if we're rendering to a canvas 
+
+	if( texture_cache >= 0) {
+		// have a render canvas so, prep this hud gauge to render to it.
+
+		bm_set_render_target(texture_cache);
+		//gr_set_cull(0);
+		gr_clear();
+
+		return true;
+	} else if ( strlen(texture_target_fname) > 0 ) {
+		// we don't have a render canvas but this gauge was intended to be rendered to one.
+		// return false to tell the caller to skip rendering this gauge
+
+		return false;
+	}
+
+	// don't need to do anything special for this gauge, so tell the caller that everything is fine
+	return true;
+}
+
+void HudGauge::doneRenderCanvas()
+{
+	if( texture_cache >= 0) {
+		//gr_set_cull(1);
 		bm_set_render_target(-1);
 	} 
 }
 
-void HudGauge::renderToCockpit()
+void HudGauge::setCockpitTarget(cockpit_display *display)
 {
-	if(strlen(texture_target_fname) <= 0) 
+	if ( !display ) {
 		return;
-
-	if(texture_cache < 0) 
-		return;
-
-	if(Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0) // might be good to spit out an error msg saying that this ship doesn't have a cockpit
-		return;
-
-	int i, tm_num, bmp_handle = -1;
-
-	// if no texture target has been found yet, find one.
-	if(texture_target < 0) {
-		polymodel *pm = model_get(Ship_info[Player_ship->ship_info_index].cockpit_model_num);
-
-		for (i = 0; i < pm->n_textures; i++)
-		{
-			tm_num = pm->maps[i].FindTexture(texture_target_fname);
-			if(tm_num > -1)
-			{
-				texture_target = i*TM_NUM_TYPES+tm_num;
-				bmp_handle = pm->maps[i].textures[tm_num].GetTexture();
-				break;
-			}
-		}
 	}
 
-	if (Player_ship->cockpit_replacement_textures /*cockpit_textures*/ == NULL) {
-		Player_ship->cockpit_replacement_textures/*cockpit_textures*/ = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+	if ( strcmp(texture_target_fname, display->name) ) {
+		return;
+	}
 
-		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			Player_ship->cockpit_replacement_textures[i]/*cockpit_textures[i]*/ = -1;
+	if ( display->target < 0 ) {
+		texture_cache = -1;
+		texture_target = -1;
+		return;
+	}
+
+	texture_target = display->target;
+	display_offset_x = display->offset[0];
+	display_offset_y = display->offset[1];
+}
+
+void HudGauge::resetCockpitTarget()
+{
+	texture_target = -1;
+}
+
+void HudGauge::renderToCockpit()
+{
+	if ( strlen(texture_target_fname) <= 0 ) {
+		return;
+	}
+
+	if ( texture_cache < 0 ) {
+		return;
+	}
+
+	if ( texture_target < 0 ) {
+		return;
+	}
+
+	if( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) { 
+		return;
 	}
 
 	HUD_reset_clip();
 
-	// we haven't created a render target for this cockpit texture yet so make it
-	if(Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/ == -1)
-	{
-		// get outta here if no valid bmp handle found 
-		if(bmp_handle == -1) 
-			return;
+	bm_set_render_target(texture_target);
 
-		int w, h;
-		bm_get_info(bmp_handle, &w, &h);
-		Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/ = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
-
-		// now copy the texture onto this render target
-		bm_set_render_target(Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/);
-		gr_set_bitmap(bmp_handle);
-		gr_bitmap_ex(0,0, w, h, 0, 0, true);
-	}
-	else {
-		bm_set_render_target(Player_ship->cockpit_replacement_textures[texture_target]/*cockpit_textures[texture_target]*/);
-	}
 	int w, h;
 
+	// get texture canvas dimensions so we can generate UVs
 	bm_get_info(texture_cache, &w, &h);
 
-	gr_set_bitmap(texture_cache);
 	int cull = gr_set_cull(0);
-	gr_bitmap_uv(target_x, target_y, target_w, target_h, 0.0f, 0.0f, i2fl(cache_w)/i2fl(w), i2fl(cache_h)/i2fl(h), false);
+
+	// draw it to the cockpit!
+	gr_set_bitmap( texture_cache, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+	gr_bitmap_uv(target_x+display_offset_x, target_y+display_offset_y, target_w, target_h, 0.0f, 0.0f, i2fl(cache_w)/i2fl(w), i2fl(cache_h)/i2fl(h), false);
+
 	gr_set_cull(cull);
+
 	bm_set_render_target(-1);
 }
 
@@ -1150,6 +1229,7 @@ void HUD_init()
 			num_gauges = Ship_info[i].hud_gauges.size();
 
 			for(int j = 0; j < num_gauges; j++) {
+				Ship_info[i].hud_gauges[j]->createRenderCanvas();
 				Ship_info[i].hud_gauges[j]->initialize();
 				Ship_info[i].hud_gauges[j]->resetTimers();
 			}
@@ -1161,6 +1241,22 @@ void HUD_init()
 	for(i = 0; i < num_gauges; i++) {
 		default_hud_gauges[i]->initialize();
 		default_hud_gauges[i]->resetTimers();
+	}
+}
+
+void hud_level_close()
+{
+	int num_gauges;
+
+	// do post mission cleanup for HUD
+	for (int i = 0; i < Num_ship_classes; i++) {
+		if(Ship_info[i].hud_enabled) {
+			num_gauges = Ship_info[i].hud_gauges.size();
+
+			for(int j = 0; j < num_gauges; j++) {
+				Ship_info[i].hud_gauges[j]->clearRenderCanvas();
+			}
+		}
 	}
 }
 
@@ -1624,6 +1720,8 @@ void hud_render_all()
 
 	ship_info* sip = &Ship_info[Player_ship->ship_info_index];
 
+	ship_render_backgrounds_cockpit_display(Player_ship);
+
 	// check if this ship has its own hud gauges. 
 	if(sip->hud_enabled) {
 		num_gauges = (int)sip->hud_gauges.size();
@@ -1631,7 +1729,11 @@ void hud_render_all()
 			if(sip->hud_gauges[i]->canRender()) {
 				sip->hud_gauges[i]->resetClip();
 				sip->hud_gauges[i]->setFont();
-				sip->hud_gauges[i]->render(flFrametime);
+				if ( sip->hud_gauges[i]->setupRenderCanvas() ) {
+					sip->hud_gauges[i]->render(flFrametime);
+					sip->hud_gauges[i]->doneRenderCanvas();
+					sip->hud_gauges[i]->renderToCockpit();
+				}
 			}
 		}
 	} else {
@@ -1644,6 +1746,8 @@ void hud_render_all()
 			}
 		}
 	}
+
+	ship_render_foregrounds_cockpit_display(Player_ship);
 
 	// set font back the way it was
 	gr_set_font(FONT1);

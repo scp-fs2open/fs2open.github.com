@@ -17,6 +17,7 @@
 #include "hud/hudparse.h"
 
 struct object;
+struct cockpit_display;
 
 typedef struct hud_anim {
 	char filename[MAX_FILENAME_LEN];
@@ -91,6 +92,7 @@ extern int Hud_max_targeting_range;
 void HUD_init_colors();
 void HUD_init();
 void hud_close();
+void hud_level_close();
 void hud_update_frame(float frametime);		// updates hud systems not dependant on rendering
 void hud_render_preprocess(float frametime);			// renders 3d dependant gauges
 void hud_render_all();
@@ -212,8 +214,8 @@ protected:
 	int texture_cache;
 	int cache_w, cache_h;
 	int target_x, target_y;
-	int target_w;
-	int target_h;
+	int target_w, target_h;
+	int display_offset_x, display_offset_y;
 public:
 	// constructors
 	HudGauge();
@@ -225,6 +227,7 @@ public:
 	void initBaseResolution(int w, int h);
 	void initSlew(bool slew);
 	void initFont(int font_num);
+	void initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int canvas_w, int canvas_h);
 
 	int getConfigType();
 	int getObjectType();
@@ -255,12 +258,18 @@ public:
 	virtual void pageIn();
 	virtual void initialize();
 
-	// rendering functions
+	void createRenderCanvas();
+	void clearRenderCanvas();
+	bool setupRenderCanvas();
+	void doneRenderCanvas();
+	void setCockpitTarget(cockpit_display *display);
+	void resetCockpitTarget();
+	void renderToCockpit();
+	
 	void setFont();
 	void setGaugeColor(int bright_index = -4);
-	void setupRenderToCache();
-	void doneRenderToCache();
-	void renderToCockpit();
+	
+	// rendering functions
 	void renderBitmap(int x, int y);
 	void renderBitmap(int frame, int x, int y);
 	void renderBitmapUv(int frame, int x, int y, int w, int h, float u0, float v0, float u1, float v1);
@@ -273,6 +282,7 @@ public:
 	void renderLine(int x1, int y1, int x2, int y2);
 	void renderGradientLine(int x1, int y1, int x2, int y2, bool resize = true);
 	void renderRect(int x, int y, int w, int h);
+
 	void unsize(int *x, int *y);
 	void unsize(float *x, float *y);
 	void resize(int *x, int *y);

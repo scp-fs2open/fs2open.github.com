@@ -2545,9 +2545,10 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index)
 	int foreground_size[2] = {0, 0};
 
 	// render to texture parameters
-	char texture_name[MAX_FILENAME_LEN] = "";
-	int target_coords[2] = {0, 0};
-	int target_size[2] = {0, 0};
+	char display_name[MAX_FILENAME_LEN] = "";
+	int display_offset[2] = {0, 0};
+	int display_size[2] = {0, 0};
+	int canvas_size[2] = {0, 0};
 
 	int font_num = FONT1;
 
@@ -2602,28 +2603,18 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index)
 	if(optional_string("Unknown Contact Filename:")) {
 		stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Background Filename:")) {
-		stuff_string(background_fname, F_NAME, MAX_FILENAME_LEN);
+	if(optional_string("Cockpit Target:") && ship_index >= 0) {
+		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
-		if(optional_string("Clip Size:")) {
-			stuff_int_list(background_size, 2);
+		if(optional_string("Canvas Size:")) {
+			stuff_int_list(canvas_size, 2);
 		}
-	}
-	if(optional_string("Foreground Filename:")) {
-		stuff_string(foreground_fname, F_NAME, MAX_FILENAME_LEN);
 
-		if(optional_string("Clip Size:")) {
-			stuff_int_list(foreground_size, 2);
-		}
-	}
-	if(optional_string("Texture Target:") && ship_index >= 0) {
-		stuff_string(texture_name, F_NAME, MAX_FILENAME_LEN);
+		required_string("Display Offset:");
+		stuff_int_list(display_offset, 2);
 
-		required_string("Clip Offset:");
-		stuff_int_list(target_coords, 2);
-
-		required_string("Clip Size:");
-		stuff_int_list(target_size, 2);
+		required_string("Display Size:");
+		stuff_int_list(display_size, 2);
 	}
 
 	HudGaugeRadarDradis* hud_gauge = new HudGaugeRadarDradis();
@@ -2633,7 +2624,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int font, int ship_index)
 	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
 	hud_gauge->initBackground(background_fname, background_size[0], background_size[1]);
 	hud_gauge->initForeground(foreground_fname, foreground_size[0], foreground_size[1]);
-	hud_gauge->initRenderTexture(texture_name, target_coords[0], target_coords[1], target_size[0], target_size[1]);
+	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initFont(font_num);
 
 	if(ship_index >= 0) {
