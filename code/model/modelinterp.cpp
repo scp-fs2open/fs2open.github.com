@@ -4895,7 +4895,7 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE]);
 			texture = model_interp_get_texture(&tinfo, Interp_base_frametime);
 		}
-		else if ( !no_texturing ) {
+		if ( !no_texturing ) {
 			// pick the texture, animating it if necessary
 			texture = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], Interp_base_frametime);
 

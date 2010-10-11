@@ -1662,10 +1662,10 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		GL_state.Texture.SetTarget(GL_texture_target);
 		GL_state.Texture.Enable(ts->texture_id);
 
-	//	GL_state.Texture.SetMinFilter(GL_LINEAR);
-	//	GL_state.Texture.SetMagFilter(GL_LINEAR);
-	//	GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-	//	GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		if (flags & BMP_FLAG_CUBEMAP) {
 			// if a cubemap then we have to initalize each face
@@ -1735,10 +1735,10 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	GL_state.Texture.SetTarget(GL_texture_target);
 	GL_state.Texture.Enable(ts->texture_id);
 
-//	GL_state.Texture.SetMinFilter(GL_LINEAR);
-//	GL_state.Texture.SetMagFilter(GL_LINEAR);
-//	GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-//	GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
 		// if a cubemap then we have to initalize each face
