@@ -366,6 +366,38 @@
 			<File
 				RelativePath="..\..\libpng\scripts\pngw32.def"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\libpng\pngwio.c"
@@ -404,46 +436,6 @@
 			<File
 				RelativePath="..\..\libpng\scripts\pngw32.rc"
 				>
-				<FileConfiguration
-					Name="Debug Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\libpng\scripts"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\libpng\scripts"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

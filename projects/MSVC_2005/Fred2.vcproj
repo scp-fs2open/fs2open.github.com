@@ -31,7 +31,7 @@
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
 				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_trunk_d_INF.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fred2_open_trunk_d_INF.exe"
+				Outputs="$(FS2PATH)/fred2_open_ant-6_d_INF.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -80,15 +80,15 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Debug_Inferno/fred2_open_trunk_d_INF.exe"
+				OutputFile="Debug_Inferno/fred2_open_ant-6_d_INF.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="Debug_Inferno/fred2_open_ant-6_d_INF.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug_Inferno\Profile\fred2/fred2_open_ant-6_d_INF.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -136,7 +136,7 @@
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
 				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_trunk_r_INF.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fred2_open_trunk_r_INF.exe"
+				Outputs="$(FS2PATH)/fred2_open_ant-6_r_INF.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -192,9 +192,10 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
-				ProgramDatabaseFile="Release_Inferno/fred2_open_ant-6_r_INF.pdb"
+				GenerateDebugInformation="false"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="false"
-				MapFileName=".\Release_Inferno\Profile\fred2/fred2_open_ant-6_r_INF.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -242,7 +243,7 @@
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
 				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_trunk_d.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fred2_open_trunk_d.exe"
+				Outputs="$(FS2PATH)/fred2_open_ant-6_d.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -291,15 +292,15 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
 				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Debug/fred2_open_trunk_d.exe"
+				OutputFile="Debug/fred2_open_ant-6_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/fred2_open_ant-6_d.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug\Profile\fred2/fred2_open_ant-6_d.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -347,7 +348,7 @@
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
 				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fred2_open_trunk_r.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fred2_open_trunk_r.exe"
+				Outputs="$(FS2PATH)/fred2_open_ant-6_r.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -403,9 +404,10 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
-				ProgramDatabaseFile=".\Release/fred2_open_ant-6_r.pdb"
+				GenerateDebugInformation="false"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="false"
-				MapFileName=".\Release\Profile\fred2/fred2_open_ant-6_r.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -531,42 +533,6 @@
 			<File
 				RelativePath="..\..\code\fred2\FRED.rc"
 				>
-				<FileConfiguration
-					Name="Debug Inferno|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\fred2"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\FREDDoc.cpp"

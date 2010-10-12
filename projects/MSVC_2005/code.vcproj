@@ -798,6 +798,9 @@
 		<Filter
 			Name="GlobalIncs"
 			>
+			<File
+				RelativePath="..\..\code\GlobalIncs\AlphaColors.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\..\code\GlobalIncs\AlphaColors.h"
@@ -2412,6 +2415,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\ship\ShipFX.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\ship\ShipFX.h"
 				>
 			</File>
@@ -2504,7 +2511,25 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"

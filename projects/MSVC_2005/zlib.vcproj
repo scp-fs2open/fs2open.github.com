@@ -360,6 +360,38 @@
 			<File
 				RelativePath="..\..\zlib\win32\zlib.def"
 				>
+				<FileConfiguration
+					Name="Debug Inferno|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\zlib\zutil.c"
@@ -418,42 +450,6 @@
 			<File
 				RelativePath="..\..\zlib\win32\zlib1.rc"
 				>
-				<FileConfiguration
-					Name="Debug Inferno|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\zlib\win32"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release Inferno|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\zlib\win32"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\zlib\win32"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\zlib\win32"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -465,6 +461,30 @@
 				>
 				<FileConfiguration
 					Name="Debug Inferno|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Inferno|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
 					ExcludedFromBuild="true"
 					>
 					<Tool
