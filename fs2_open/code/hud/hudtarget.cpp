@@ -4439,11 +4439,24 @@ void hud_cease_subsystem_targeting(int print_message)
 {
 	int ship_index;
 
+	Assertion(Player_ai->target_objnum >= 0,
+		"Player_ai->target_objnum (%d) less than zero.", Player_ai->target_objnum);
+	Assertion(Player_ai->target_objnum < MAX_OBJECTS,
+		"Player_ai->target_objnum (%d) is greater than or equal to MAX_OBJECTS (%d)",
+		Player_ai->target_objnum, MAX_OBJECTS);
+
 	ship_index = Objects[Player_ai->target_objnum].instance;
 	if ( ship_index < 0 )
 		return;
 
+	Assertion(ship_index < MAX_SHIPS, "ship_index (%d) is greater than or equal to MAX_SHIPS (%d)",
+		ship_index, MAX_SHIPS);
+	Assertion(Player_num >= 0, "Player_num (%d) is less than 0", Player_num);
+	Assertion(Player_num < MAX_PLAYERS, "Player_num (%d) is greater than or equal to MAX_PLAYERS (%d)",
+		Player_num, MAX_PLAYERS);
+
 	Ships[ship_index].last_targeted_subobject[Player_num] = NULL;
+	Verify(Player_ai != NULL);
 	Player_ai->targeted_subsys = NULL;
 	Player_ai->targeted_subsys_parent = -1;
 	if ( print_message ) {
