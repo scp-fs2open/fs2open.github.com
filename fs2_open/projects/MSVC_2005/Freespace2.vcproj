@@ -51,7 +51,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../lua,../../openal/include,../../speech/include"
-				PreprocessorDefinitions="_DEBUG;INF_BUILD;_WINDOWS;WIN32;USE_OPENAL;FS2_SPEECH;FS2_VOICER"
+				PreprocessorDefinitions="_DEBUG;INF_BUILD;_WINDOWS;WIN32;FS2_SPEECH;FS2_VOICER"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -86,9 +86,9 @@
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug_Inferno/fs2_open_trunk_INF_d.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug_Inferno\Profile\freespace2/fs2_open_trunk_INF_d.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -156,7 +156,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../lua,../../openal/include,../../speech/include"
-				PreprocessorDefinitions="_DEBUG;_WINDOWS;WIN32;USE_OPENAL;FS2_SPEECH;FS2_VOICER"
+				PreprocessorDefinitions="_DEBUG;_WINDOWS;WIN32;FS2_SPEECH;FS2_VOICER"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -191,9 +191,9 @@
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/fs2_open_trunk_d.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug\Profile\freespace2/fs2_open_trunk_d.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -263,7 +263,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../lua,../../openal/include,../../speech/include"
-				PreprocessorDefinitions="NDEBUG;INF_BUILD;_WINDOWS;WIN32;USE_OPENAL;FS2_SPEECH;FS2_VOICER"
+				PreprocessorDefinitions="NDEBUG;INF_BUILD;_WINDOWS;WIN32;FS2_SPEECH;FS2_VOICER"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -297,9 +297,10 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
-				ProgramDatabaseFile=".\Release_Inferno/fs2_open_trunk_INF_r.pdb"
+				GenerateDebugInformation="false"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="false"
-				MapFileName=".\Release_Inferno\Profile\freespace2/fs2_open_trunk_INF_r.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -369,7 +370,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../lua,../../openal/include,../../speech/include"
-				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;USE_OPENAL;FS2_SPEECH;FS2_VOICER"
+				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;FS2_SPEECH;FS2_VOICER"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -403,9 +404,10 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../openal/libs/win32,../../openal/libs/win64,../../speech/lib/i386"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
-				ProgramDatabaseFile=".\Release/fs2_open_trunk_r.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
+				GenerateDebugInformation="false"
 				GenerateMapFile="false"
-				MapFileName=".\Release\Profile\freespace2/fs2_open_trunk_r.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -447,46 +449,6 @@
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreeSpace.cpp"
 			>
-			<FileConfiguration
-				Name="Debug Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreeSpace.h"
@@ -495,42 +457,6 @@
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreeSpace.rc"
 			>
-			<FileConfiguration
-				Name="Debug Inferno|Win32"
-				>
-				<Tool
-					Name="VCResourceCompilerTool"
-					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\FREESPACE2"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCResourceCompilerTool"
-					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\FREESPACE2"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release Inferno|Win32"
-				>
-				<Tool
-					Name="VCResourceCompilerTool"
-					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\FREESPACE2"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCResourceCompilerTool"
-					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\FREESPACE2"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreespaceResource.h"
@@ -563,46 +489,6 @@
 		<File
 			RelativePath="..\..\code\FREESPACE2\LevelPaging.cpp"
 			>
-			<FileConfiguration
-				Name="Debug Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release Inferno|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\..\code\FREESPACE2\LevelPaging.h"
