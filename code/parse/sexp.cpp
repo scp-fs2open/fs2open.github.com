@@ -4859,7 +4859,8 @@ int sexp_mission_time()
 // next function returns the time into the mission, in milliseconds
 int sexp_mission_time_msecs()
 {
-	return f2i(Missiontime * 1000);
+	// multiplying by 1000 can go over the limit for LONG_MAX so cast to long long int first
+	return f2i((longlong)Missiontime * 1000);
 }
 
 // returns percent of length of distance to special warpout plane
