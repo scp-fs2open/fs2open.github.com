@@ -446,8 +446,8 @@ typedef struct ship {
 	char	wing_status_wing_pos;			// wing position (0-5) in wingman status gauge
 
 	// alternate indexes
-	char alt_type_index;								// only used for display purposes (read : safe)
-	char callsign_index;								// ditto
+	int	 alt_type_index;								// only used for display purposes (read : safe)
+	int	 callsign_index;								// ditto
 
 	// targeting laser info
 	char targeting_laser_bank;						// -1 if not firing, index into polymodel gun points if it _is_ firing

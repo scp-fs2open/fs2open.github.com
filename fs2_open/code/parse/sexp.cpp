@@ -12286,7 +12286,7 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name(ship *shipp, char alt_index)
+void sexp_ingame_ship_alt_name(ship *shipp, int alt_index)
 {
 	Assert((shipp != NULL) && (alt_index < Mission_alt_type_count));
 
@@ -12308,7 +12308,7 @@ void sexp_ingame_ship_alt_name(ship *shipp, char alt_index)
 }
 
 // Goober5000
-void sexp_parse_ship_alt_name(p_object *parse_obj, char alt_index)
+void sexp_parse_ship_alt_name(p_object *parse_obj, int alt_index)
 {
 	Assert((parse_obj != NULL) && (alt_index < Mission_alt_type_count));
 
@@ -12424,13 +12424,42 @@ void sexp_ship_change_callsign(int node)
 		if (sindex >= 0) 
 		{
 			shipp = &Ships[sindex];
-			shipp->callsign_index = char (cindex);
+			shipp->callsign_index = cindex;
 			multi_send_ship(shipp);
 		}
 		node = CDR(node);
 	}
 
 	multi_end_packet();
+}
+
+void multi_sexp_ship_change_callsign()
+{
+	char new_callsign[TOKEN_LENGTH];
+	int cindex;
+	ship *shipp = NULL;
+
+	multi_get_string(new_callsign);
+	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	{
+		cindex = -1;
+	}
+	else
+	{
+		cindex = mission_parse_lookup_callsign(new_callsign);
+		if (cindex < 0) 
+		{
+			cindex = mission_parse_add_callsign(new_callsign);
+		}
+	}
+
+	while (multi_get_ship(shipp)) 
+	{
+		if (shipp != NULL) 
+		{
+			shipp->callsign_index = cindex;
+		}
+	}
 }
 
 // Goober5000
@@ -13565,35 +13594,6 @@ void multi_sexp_change_subsystem_name()
 		subsystem_to_rename = ship_get_subsys(shipp, subsys_name);
 		if (subsystem_to_rename != NULL) {
 			ship_subsys_set_name(subsystem_to_rename, new_name);
-		}
-	}
-}
-
-void multi_sexp_ship_change_callsign()
-{
-	char new_callsign[TOKEN_LENGTH];
-	int cindex;
-	ship *shipp = NULL;
-
-	multi_get_string(new_callsign);
-	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
-	{
-		cindex = -1;
-	}
-	else
-	{
-		cindex = mission_parse_lookup_callsign(new_callsign);
-		if (cindex < 0) 
-		{
-			cindex = mission_parse_add_callsign(new_callsign);
-		}
-	}
-
-	while (multi_get_ship(shipp)) 
-	{
-		if (shipp != NULL) 
-		{
-			shipp->callsign_index = char (cindex);
 		}
 	}
 }
