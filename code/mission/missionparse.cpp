@@ -2568,7 +2568,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the alternate name
-		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
+		p_objp->alt_type_index = mission_parse_lookup_alt(name);
 		if(p_objp->alt_type_index < 0)
 			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name, name);
 		else
@@ -2583,7 +2583,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the callsign
-		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
+		p_objp->callsign_index = mission_parse_lookup_callsign(name);
 		if(p_objp->callsign_index < 0)
 			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name, name);
 		else
