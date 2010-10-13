@@ -425,8 +425,8 @@ typedef struct p_object {
 	uint	respawn_count;						// number of respawns for this object.  Applies only to player wing ships in multiplayer
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
-	char	alt_type_index;					// optional alt type index
-	char	callsign_index;					// optional callsign index
+	int		alt_type_index;					// optional alt type index
+	int		callsign_index;					// optional callsign index
 
 	float ship_max_hull_strength;
 	float ship_max_shield_strength;
