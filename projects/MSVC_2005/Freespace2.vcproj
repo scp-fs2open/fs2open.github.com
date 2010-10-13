@@ -29,7 +29,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_trunk_INF_d.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_ant-6_INF_d.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fs2_open_ant-6_INF_d.exe"
 			/>
 			<Tool
@@ -134,7 +134,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_trunk_d.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_ant-6_d.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fs2_open_ant-6_d.exe"
 			/>
 			<Tool
@@ -240,7 +240,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_trunk_INF_r.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_ant-6_INF_r.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fs2_open_ant-6_INF_r.exe"
 			/>
 			<Tool
