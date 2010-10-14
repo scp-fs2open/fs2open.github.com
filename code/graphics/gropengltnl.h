@@ -38,6 +38,7 @@ void gr_opengl_pop_scale_matrix();
 void gr_opengl_start_clip_plane();
 void gr_opengl_end_clip_plane();
 
+int gr_opengl_create_buffer();
 bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb);
 bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb);
 void gr_opengl_destroy_buffer(int idx);

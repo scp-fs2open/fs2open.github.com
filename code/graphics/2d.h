@@ -439,6 +439,7 @@ typedef struct screen {
 
 	void (*gf_set_texture_addressing)(int);
 
+	int (*gf_create_buffer)();
 	bool (*gf_pack_buffer)(const int buffer_id, vertex_buffer *vb);
 	bool (*gf_config_buffer)(const int buffer_id, vertex_buffer *vb);
 	void (*gf_destroy_buffer)(int);
@@ -734,6 +735,7 @@ __inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
+#define gr_create_buffer				GR_CALL(*gr_screen.gf_create_buffer)
 #define gr_pack_buffer					GR_CALL(*gr_screen.gf_pack_buffer)
 #define gr_config_buffer				GR_CALL(*gr_screen.gf_config_buffer)
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)

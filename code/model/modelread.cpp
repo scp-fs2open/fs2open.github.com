@@ -714,16 +714,14 @@ IBX ibuffer_info;
 
 void create_vertex_buffer(polymodel *pm)
 {
-	if (Cmdline_nohtl) {
+	if (Cmdline_nohtl || Is_standalone) {
 		return;
 	}
 
 	int i;
 
-	extern int gr_opengl_create_buffer();
-
 	// initialize empty buffer
-	pm->vertex_buffer_id = gr_opengl_create_buffer();
+	pm->vertex_buffer_id = gr_create_buffer();
 
 	if (pm->vertex_buffer_id < 0) {
 		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);

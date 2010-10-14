@@ -22,12 +22,20 @@ uint gr_stub_lock()
 	return 1;
 }
 
-extern bool gr_stub_pack_buffer(const int buffer_id, vertex_buffer *vb)
+// NOTE: should return a failure
+int gr_stub_create_buffer()
+{
+	return -1;
+}
+
+// NOTE: should return a failure
+bool gr_stub_pack_buffer(const int buffer_id, vertex_buffer *vb)
 {
 	return false;
 }
 
-extern bool gr_stub_config_buffer(const int buffer_id, vertex_buffer *vb)
+// NOTE: should return a failure
+bool gr_stub_config_buffer(const int buffer_id, vertex_buffer *vb)
 {
 	return false;
 }
@@ -734,6 +742,7 @@ bool gr_stub_init()
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
 	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
+	gr_screen.gf_create_buffer		= gr_stub_create_buffer;
 	gr_screen.gf_config_buffer		= gr_stub_config_buffer;
 	gr_screen.gf_pack_buffer		= gr_stub_pack_buffer;
 	gr_screen.gf_destroy_buffer		= gr_stub_destroy_buffer;

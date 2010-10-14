@@ -1780,6 +1780,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
+	gr_screen.gf_create_buffer		= gr_opengl_create_buffer;
 	gr_screen.gf_config_buffer		= gr_opengl_config_buffer;
 	gr_screen.gf_pack_buffer		= gr_opengl_pack_buffer;
 	gr_screen.gf_destroy_buffer		= gr_opengl_destroy_buffer;
