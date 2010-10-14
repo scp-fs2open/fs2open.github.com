@@ -4844,6 +4844,8 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		scale.xyz.z = Interp_warp_scale_z;
 	}
 
+	texture_info tex_replace[TM_NUM_TYPES];
+
 	int no_texturing = (Interp_flags & MR_NO_TEXTURING);
 	int zbuffer_save = gr_zbuffering_mode;
 
@@ -4891,13 +4893,14 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			texture = forced_texture;
 			alpha = forced_alpha;
 		}
-		else if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
-			texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE]);
-			texture = model_interp_get_texture(&tinfo, Interp_base_frametime);
-		}
-		if ( !no_texturing ) {
+		else if ( !no_texturing ) {
 			// pick the texture, animating it if necessary
-			texture = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], Interp_base_frametime);
+			if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+				tex_replace[TM_BASE_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+				texture = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], Interp_base_frametime);
+			} else {
+				texture = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], Interp_base_frametime);
+			}
 
 			if (texture < 0) {
 				continue;
@@ -4908,8 +4911,8 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 				texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
 
 				if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
-					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_GLOW_TYPE]);
-					GLOWMAP = model_interp_get_texture(&tinfo, Interp_base_frametime);
+					tex_replace[TM_GLOW_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_GLOW_TYPE]);
+					GLOWMAP = model_interp_get_texture(&tex_replace[TM_GLOW_TYPE], Interp_base_frametime);
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 					if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
@@ -4923,24 +4926,28 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 			if ( (Detail.lighting > 2)  && (Interp_detail_level < 2) ) {
 				// likewise, etc.
 				texture_info *spec_map = &tmap->textures[TM_SPECULAR_TYPE];
-				if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) ) {
-					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
-					*spec_map = model_interp_get_texture(&tinfo, Interp_base_frametime);
-				}
-				SPECMAP = model_interp_get_texture(spec_map, Interp_base_frametime);
-
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
-				if ( (Interp_new_replacement_textures != NULL) &&  (Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) ) {
-					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
-					*norm_map = model_interp_get_texture(&tinfo, Interp_base_frametime);
-				}
-				NORMMAP = model_interp_get_texture(norm_map, Interp_base_frametime);
-
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
-				if ( (Interp_new_replacement_textures != NULL) && (Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE] >= 0) ) {
-					texture_info tinfo = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
-					*height_map = model_interp_get_texture(&tinfo, Interp_base_frametime);
+
+				if (Interp_new_replacement_textures != NULL) {
+					if (Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
+						tex_replace[TM_SPECULAR_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+						spec_map = &tex_replace[TM_SPECULAR_TYPE];
+					}
+
+					if (Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
+						tex_replace[TM_NORMAL_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
+						norm_map = &tex_replace[TM_NORMAL_TYPE];
+					}
+
+					if (Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE] >= 0) {
+						tex_replace[TM_HEIGHT_TYPE] = texture_info(Interp_new_replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
+						height_map = &tex_replace[TM_HEIGHT_TYPE];
+					}
 				}
+
+				SPECMAP = model_interp_get_texture(spec_map, Interp_base_frametime);
+				NORMMAP = model_interp_get_texture(norm_map, Interp_base_frametime);
 				HEIGHTMAP = model_interp_get_texture(height_map, Interp_base_frametime);
 			}
 		}
