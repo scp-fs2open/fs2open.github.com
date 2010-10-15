@@ -4439,8 +4439,20 @@ void hud_cease_subsystem_targeting(int print_message)
 {
 	int ship_index;
 
-	Assertion(Player_ai->target_objnum >= 0,
-		"Player_ai->target_objnum (%d) less than zero.", Player_ai->target_objnum);
+	Verify(Player_ai != NULL);
+	Player_ai->targeted_subsys = NULL;
+	Player_ai->targeted_subsys_parent = -1;
+	if ( print_message != 0 ) {
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating sub-system targeting", 324));
+	}
+
+	hud_stop_looped_locking_sounds();
+	hud_lock_reset();
+
+	if (Player_ai->target_objnum < 0) {
+		// Player doesn't have a target so we can't do anything else
+		return;
+	}
 	Assertion(Player_ai->target_objnum < MAX_OBJECTS,
 		"Player_ai->target_objnum (%d) is greater than or equal to MAX_OBJECTS (%d)",
 		Player_ai->target_objnum, MAX_OBJECTS);
@@ -4456,15 +4468,6 @@ void hud_cease_subsystem_targeting(int print_message)
 		Player_num, MAX_PLAYERS);
 
 	Ships[ship_index].last_targeted_subobject[Player_num] = NULL;
-	Verify(Player_ai != NULL);
-	Player_ai->targeted_subsys = NULL;
-	Player_ai->targeted_subsys_parent = -1;
-	if ( print_message ) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating sub-system targeting", 324));
-	}
-
-	hud_stop_looped_locking_sounds();
-	hud_lock_reset();
 }
 
 // hud_cease_targeting() will cease all targeting (main target and subsystem)
