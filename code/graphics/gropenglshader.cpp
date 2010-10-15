@@ -506,6 +506,8 @@ void opengl_shader_init()
 						// but still allow for post-processing to work
 						mprintf(("  Shader in_error!  Disabling GLSL model rendering!\n"));
 						Use_GLSL = 1;
+						Cmdline_height = 0;
+						Cmdline_normal = 0;
 						break;;
 					}
 				}
