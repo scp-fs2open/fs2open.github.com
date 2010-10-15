@@ -377,127 +377,138 @@ void opengl_shader_init()
 		return;
 	}
 
-	// check if main shaders exist
-	bool main_vert = cf_exists_full("main-v.sdr", CF_TYPE_EFFECTS) != 0;
-	bool main_frag = cf_exists_full("main-f.sdr", CF_TYPE_EFFECTS) != 0;
+	if (Cmdline_no_glsl_model_rendering) {
+		Use_GLSL = 1;
+	} else {
+		// check if main shaders exist
+		bool main_vert = cf_exists_full("main-v.sdr", CF_TYPE_EFFECTS) != 0;
+		bool main_frag = cf_exists_full("main-f.sdr", CF_TYPE_EFFECTS) != 0;
 
-	GL_shader.reserve(Num_shader_files+1);
+		GL_shader.reserve(Num_shader_files+1);
 
-	for (idx = 0; idx < Num_shader_files; idx++) {
-		bool in_error = false;
-		opengl_shader_t new_shader;
-		opengl_shader_file_t *shader_file = &GL_shader_file[idx];
+		for (idx = 0; idx < Num_shader_files; idx++) {
+			bool in_error = false;
+			opengl_shader_t new_shader;
+			opengl_shader_file_t *shader_file = &GL_shader_file[idx];
 
-		if ( !Cmdline_glow && (shader_file->flags & SDR_FLAG_GLOW_MAP) ) {
-			continue;
-		}
-
-		if ( !Cmdline_spec && (shader_file->flags & SDR_FLAG_SPEC_MAP) ) {
-			continue;
-		}
-
-		if ( !Cmdline_env && (shader_file->flags & SDR_FLAG_ENV_MAP) ) {
-			continue;
-		}
-
-		if ( !Cmdline_normal && (shader_file->flags & SDR_FLAG_NORMAL_MAP) ) {
-			continue;
-		}
-
-		if ( !Cmdline_height && (shader_file->flags & SDR_FLAG_HEIGHT_MAP) ) {
-			continue;
-		}
-
-		// choose appropriate files
-		char *vert_name = shader_file->vert;
-		char *frag_name = shader_file->frag;
-
-		if (main_vert) {
-			vert_name = "main-v.sdr";
-		}
-
-		if (main_frag) {
-			frag_name = "main-f.sdr";
-		}
-
-		mprintf(("  Compiling shader: %s (%s), %s (%s)\n", vert_name, GL_shader_file[idx].vert, frag_name, GL_shader_file[idx].frag ));
-
-		// read vertex shader
-		if ( (vert = opengl_load_shader(vert_name, shader_file->flags, main_vert)) == NULL ) {
-			in_error = true;
-			goto Done;
-		}
-
-		// read fragment shader
-		if ( (frag = opengl_load_shader(frag_name, shader_file->flags, main_frag)) == NULL ) {
-			in_error = true;
-			goto Done;
-		}
-
-		Verify( vert != NULL );
-		Verify( frag != NULL );
-
-		new_shader.program_id = opengl_shader_create(vert, frag);
-
-		if ( !new_shader.program_id ) {
-			in_error = true;
-			goto Done;
-		}
-
-		new_shader.flags = shader_file->flags;
-
-		opengl_shader_set_current( &new_shader );
-
-		new_shader.uniforms.reserve(shader_file->num_uniforms);
-
-		for (i = 0; i < shader_file->num_uniforms; i++) {
-			opengl_shader_init_uniform( shader_file->uniforms[i] );
-		}
-
-		opengl_shader_set_current();
-
-		// add it to our list of embedded shaders
-		GL_shader.push_back( new_shader );
-
-	Done:
-		if (vert != NULL) {
-			vm_free(vert);
-			vert = NULL;
-		}
-
-		if (frag != NULL) {
-			vm_free(frag);
-			frag = NULL;
-		}
-
-		if (in_error) {
-			// shut off relevant usage things ...
-
-			if (shader_file->flags & SDR_FLAG_HEIGHT_MAP) {
-				mprintf(("  Shader in_error!  Disabling height maps!\n"));
-				Cmdline_height = 0;
+			if ( !Cmdline_glow && (shader_file->flags & SDR_FLAG_GLOW_MAP) ) {
+				continue;
 			}
 
-			if (shader_file->flags & SDR_FLAG_NORMAL_MAP) {
-				mprintf(("  Shader in_error!  Disabling normal maps and height maps!\n"));
-				Cmdline_height = 0;
-				Cmdline_normal = 0;
+			if ( !Cmdline_spec && (shader_file->flags & SDR_FLAG_SPEC_MAP) ) {
+				continue;
 			}
 
-			if (idx == 0) {
-				mprintf(("  Shader in_error!  Disabling GLSL!\n"));
+			if ( !Cmdline_env && (shader_file->flags & SDR_FLAG_ENV_MAP) ) {
+				continue;
+			}
 
-				Use_GLSL = 0;
-				Cmdline_height = 0;
-				Cmdline_normal = 0;
+			if ( !Cmdline_normal && (shader_file->flags & SDR_FLAG_NORMAL_MAP) ) {
+				continue;
+			}
 
-				GL_shader.clear();
-				break;;
-			} else if (idx == 1) {
-				// We died on a lighting shader, probably due to instruction count.
-				// Drop down to a special var that will use fixed-function rendering
-				// but still allow for post-processing to work
-				Use_GLSL = 1;
+			if ( !Cmdline_height && (shader_file->flags & SDR_FLAG_HEIGHT_MAP) ) {
+				continue;
+			}
+
+			// choose appropriate files
+			char *vert_name = shader_file->vert;
+			char *frag_name = shader_file->frag;
+
+			if (main_vert) {
+				vert_name = "main-v.sdr";
+			}
+
+			if (main_frag) {
+				frag_name = "main-f.sdr";
+			}
+
+			mprintf(("  Compiling shader: %s (%s), %s (%s)\n", vert_name, GL_shader_file[idx].vert, frag_name, GL_shader_file[idx].frag ));
+
+			// read vertex shader
+			if ( (vert = opengl_load_shader(vert_name, shader_file->flags, main_vert)) == NULL ) {
+				in_error = true;
+				goto Done;
+			}
+
+			// read fragment shader
+			if ( (frag = opengl_load_shader(frag_name, shader_file->flags, main_frag)) == NULL ) {
+				in_error = true;
+				goto Done;
+			}
+
+			Verify( vert != NULL );
+			Verify( frag != NULL );
+
+			new_shader.program_id = opengl_shader_create(vert, frag);
+
+			if ( !new_shader.program_id ) {
+				in_error = true;
+				goto Done;
+			}
+
+			new_shader.flags = shader_file->flags;
+
+			opengl_shader_set_current( &new_shader );
+
+			new_shader.uniforms.reserve(shader_file->num_uniforms);
+
+			for (i = 0; i < shader_file->num_uniforms; i++) {
+				opengl_shader_init_uniform( shader_file->uniforms[i] );
+			}
+
+			opengl_shader_set_current();
+
+			// add it to our list of embedded shaders
+			GL_shader.push_back( new_shader );
+
+		Done:
+			if (vert != NULL) {
+				vm_free(vert);
+				vert = NULL;
+			}
+
+			if (frag != NULL) {
+				vm_free(frag);
+				frag = NULL;
+			}
+
+			if (in_error) {
+				// shut off relevant usage things ...
+				bool dealt_with = false;
+
+				if (shader_file->flags & SDR_FLAG_HEIGHT_MAP) {
+					mprintf(("  Shader in_error!  Disabling height maps!\n"));
+					Cmdline_height = 0;
+					dealt_with = true;
+				}
+
+				if (shader_file->flags & SDR_FLAG_NORMAL_MAP) {
+					mprintf(("  Shader in_error!  Disabling normal maps and height maps!\n"));
+					Cmdline_height = 0;
+					Cmdline_normal = 0;
+					dealt_with = true;
+				}
+
+				if (!dealt_with) {
+					if (idx == 0) {
+						mprintf(("  Shader in_error!  Disabling GLSL!\n"));
+
+						Use_GLSL = 0;
+						Cmdline_height = 0;
+						Cmdline_normal = 0;
+
+						GL_shader.clear();
+						break;;
+					} else {
+						// We died on a lighting shader, probably due to instruction count.
+						// Drop down to a special var that will use fixed-function rendering
+						// but still allow for post-processing to work
+						mprintf(("  Shader in_error!  Disabling GLSL model rendering!\n"));
+						Use_GLSL = 1;
+						break;;
+					}
+				}
 			}
 		}
 	}
