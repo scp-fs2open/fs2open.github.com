@@ -311,6 +311,9 @@
 		<Unit filename="../../../code/globalincs/def_files.h">
 			<Option virtualFolder="globalincs/" />
 		</Unit>
+		<Unit filename="../../../code/globalincs/fsmemory.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
 		<Unit filename="../../../code/globalincs/fsmemory.h">
 			<Option virtualFolder="globalincs/" />
 		</Unit>

@@ -4,56 +4,22 @@
 
 #include <new>
 
-inline void * operator new (size_t size) throw (std::bad_alloc)
-{
-	void *p = vm_malloc_q(size);
+// throw
+extern void * operator new (size_t size) throw (std::bad_alloc);
 
-	if ( !p ) {
-		throw std::bad_alloc();
-	}
+extern void operator delete (void *p) throw();
 
-	return p;
-}
+extern void * operator new [] (size_t size) throw (std::bad_alloc);
 
-inline void operator delete (void *p) throw()
-{
-	vm_free(p);
-}
+extern void operator delete [] (void *p) throw();
 
-inline void * operator new [] (size_t size) throw (std::bad_alloc)
-{
-	void *p = vm_malloc_q(size);
+// no-throw
+extern void * operator new (size_t size, const std::nothrow_t&) throw();
 
-	if ( !p ) {
-		throw std::bad_alloc();
-	}
+extern void operator delete (void *p, const std::nothrow_t&) throw();
 
-	return p;
-}
+extern void * operator new [] (size_t size, const std::nothrow_t&) throw();
 
-inline void operator delete [] (void *p) throw()
-{
-	vm_free(p);
-}
-
-inline void * operator new (size_t size, const std::nothrow_t&) throw()
-{
-	return vm_malloc_q(size);
-}
-
-inline void operator delete (void *p, const std::nothrow_t&) throw()
-{
-	vm_free(p);
-}
-
-inline void * operator new [] (size_t size, const std::nothrow_t&) throw()
-{
-	return vm_malloc_q(size);
-}
-
-inline void operator delete [] (void *p, const std::nothrow_t&) throw()
-{
-	vm_free(p);
-}
+extern void operator delete [] (void *p, const std::nothrow_t&) throw();
 
 #endif	// _FSMEMORY_H

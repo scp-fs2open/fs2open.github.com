@@ -57,7 +57,6 @@
 // note: stay below 0xe000 so we don't collide with MFC defines..
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif

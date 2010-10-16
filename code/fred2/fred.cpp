@@ -37,7 +37,6 @@
 #endif
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -127,7 +126,7 @@ BOOL CFREDApp::InitInstance()
 
 
 	// disable the debug memory stuff
-	_CrtSetDbgFlag(~(_CRTDBG_ALLOC_MEM_DF) & _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
+//	_CrtSetDbgFlag(~(_CRTDBG_ALLOC_MEM_DF) & _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
 
 	// Standard initialization
 	// If you are not using these features and wish to reduce the size
