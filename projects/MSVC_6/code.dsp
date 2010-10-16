@@ -637,6 +637,10 @@ SOURCE=..\..\code\globalincs\def_files.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\fsmemory.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\globalincs\fsmemory.h
 # End Source File
 # Begin Source File
