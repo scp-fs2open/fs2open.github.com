@@ -324,6 +324,9 @@
     <ClCompile Include="..\..\code\globalincs\def_files.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\globalincs\fsmemory.cpp">
+      <Filter>GlobalIncs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
