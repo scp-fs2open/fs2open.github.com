@@ -2832,6 +2832,24 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 	return ade_set_args(L, "s", Iff_info[tdx].iff_name);
 }
 
+ADE_FUNC(getColor, l_Team, NULL, "Gets the IFF color of the specified Team", "number, number, number", "rgb color for the specified team or nil if invalid") {
+	int idx;
+	int r,g,b;
+	if(!ade_get_args(L, "o", l_Team.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_iffs)
+		return ADE_RETURN_NIL;
+
+	color* col = iff_get_color_by_team(idx, 0, 0);
+
+	r = col->red;
+	g = col->green;
+	b = col->blue;
+
+	return ade_set_args(L, "iii", r, g, b);
+}
+
 ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;
@@ -4232,7 +4250,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 
 	if (model_started)
 		ship_model_stop(obj);
-	
+
 	if (local)
 		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
 	else

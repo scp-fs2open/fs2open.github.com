@@ -79,6 +79,8 @@ enum
 #define BUILD_CAP_NO_D3D	(1<<1)
 #define BUILD_CAP_NEW_SND	(1<<2)
 
+#define PARSE_COMMAND_LINE_STRING	"-parse_cmdline_only"
+
 typedef struct
 {
 	// DO NOT CHANGE THE SIZE OF THIS STRING!
@@ -397,6 +399,7 @@ cmdline_parm window_arg("-window", NULL);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window",NULL);
 cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
 cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
+cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, NULL); 
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -605,8 +608,8 @@ void os_validate_parms(char *cmdline)
 	char *token;
 	int parm_found;
 
-   token = strtok(cmdline, seps);
-   while(token != NULL) {
+	token = strtok(cmdline, seps);
+	while(token != NULL) {
 	
 		if (token[0] == '-') {
 			parm_found = 0;
@@ -679,6 +682,12 @@ void os_init_cmdline(char *cmdline)
 {
 	FILE *fp;
 
+	bool parse_config = true;
+	
+	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) != NULL) {
+		parse_config =  false;
+	}
+
 	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
 	// the the parse_parms and validate_parms line.  Read these first so anything actually on
 	// the command line will take precedence
@@ -703,7 +712,7 @@ void os_init_cmdline(char *cmdline)
 #endif
 
 	// if the file exists, get a single line, and deal with it
-	if ( fp ) {
+	if ( fp && parse_config ) {
 		char *buf, *p;
 
 		size_t len = filelength( fileno(fp) ) + 2;

@@ -107,7 +107,7 @@ typedef struct ship_weapon {
 
 	int previous_primary_bank;
 	int previous_secondary_bank;		// currently selected secondary bank
-	
+
 	int next_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// next time this primary bank can fire
 	int last_primary_fire_stamp[MAX_SHIP_PRIMARY_BANKS];			// last time this primary bank fired (mostly used by SEXPs)
 	int next_secondary_fire_stamp[MAX_SHIP_SECONDARY_BANKS];		// next time this secondary bank can fire
