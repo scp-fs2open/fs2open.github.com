@@ -4536,6 +4536,12 @@ void parse_event(mission *pm)
 	event->team = -1;
 	if( optional_string("+Team:") ) {
 		stuff_int(&event->team);
+
+		// sanity check
+		if (event->team < -1 || event->team >= Num_iffs) {
+			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			event->team = -1;
+		}
 	}
 
 	event->timestamp = timestamp(-1);
@@ -4605,6 +4611,12 @@ void parse_goal(mission *pm)
 	goalp->team = 0;
 	if ( optional_string("+Team:") ){
 		stuff_int( &goalp->team );
+
+		// sanity check
+		if (goalp->team < -1 || goalp->team >= Num_iffs) {
+			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			goalp->team = -1;
+		}
 	}
 }
 
