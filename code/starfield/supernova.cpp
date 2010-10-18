@@ -27,8 +27,8 @@
 //
 
 // supernova time 1
-#define SUPERNOVA_SOUND_1_TIME					15.0f
-#define SUPERNOVA_SOUND_2_TIME					5.0f
+#define SUPERNOVA_SOUND_1_TIME		15.0f
+#define SUPERNOVA_SOUND_2_TIME		5.0f
 int Supernova_sound_1_played = 0;
 int Supernova_sound_2_played = 0;
 
@@ -66,12 +66,12 @@ void supernova_level_init()
 void supernova_start(int seconds)
 {
 	// bogus time
-	if((float)seconds < SUPERNOVA_CUT_TIME){
+	if((float)seconds < SUPERNOVA_CUT_TIME) {
 		return;
 	}
 
 	// no supernova in multiplayer
-	if(Game_mode & GM_MULTIPLAYER){
+	if(Game_mode & GM_MULTIPLAYER) {
 		return;
 	}
 
@@ -82,7 +82,7 @@ void supernova_start(int seconds)
 	Supernova_popup = 0;
 	Supernova_particle_stamp = -1;
 
-	Supernova_status = SUPERNOVA_STARTED;	
+	Supernova_status = SUPERNOVA_STARTED;
 }
 
 int sn_particles = 100;
@@ -92,21 +92,21 @@ DCF(sn_part, "")
 	sn_particles = Dc_arg_int;
 }
 void supernova_do_particles()
-{	
+{
 	int idx;
 	vec3d a, b, ta, tb;
 	vec3d norm, sun_temp;
 
 	// no player ship
-	if((Player_obj == NULL) || (Player_ship == NULL)){
+	if((Player_obj == NULL) || (Player_ship == NULL)) {
 		return;
 	}
 
 	// timestamp
-	if((Supernova_particle_stamp == -1) || timestamp_elapsed(Supernova_particle_stamp)){
+	if((Supernova_particle_stamp == -1) || timestamp_elapsed(Supernova_particle_stamp)) {
 		Supernova_particle_stamp = timestamp(sn_particles);
 
-		// get particle norm		
+		// get particle norm
 		stars_get_sun_pos(0, &sun_temp);
 		vm_vec_add2(&sun_temp, &Player_obj->pos);
 		vm_vec_sub(&norm, &Player_obj->pos, &sun_temp);
@@ -121,25 +121,25 @@ void supernova_do_particles()
 		whee.num_high = 5;
 		whee.num_low = 2;
 		whee.min_rad = 0.5f;
-		whee.max_rad = 1.25f;		
+		whee.max_rad = 1.25f;
 
 		// emit
-		for(idx=0; idx<10; idx++){			
+		for(idx=0; idx<10; idx++) {
 			submodel_get_two_random_points(Ship_info[Player_ship->ship_info_index].model_num, 0, &ta, &tb);
 
 			// rotate into world space
-			vm_vec_unrotate(&a, &ta, &Player_obj->orient);			
-			vm_vec_add2(&a, &Player_obj->pos);			
+			vm_vec_unrotate(&a, &ta, &Player_obj->orient);
+			vm_vec_add2(&a, &Player_obj->pos);
 			whee.pos = a;
 			whee.vel = norm;
-			vm_vec_scale(&whee.vel, 30.0f);						
-			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);			
-			whee.normal = norm;			
+			vm_vec_scale(&whee.vel, 30.0f);
+			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);
+			whee.normal = norm;
 			particle_emit(&whee, PARTICLE_FIRE, 0);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
-			whee.pos = b;			
+			whee.pos = b;
 			particle_emit(&whee, PARTICLE_FIRE, 0);
 		}
 	}
@@ -154,48 +154,48 @@ DCF(sn_shud, "")
 }
 
 void supernova_process()
-{	
-	int sn_stage;	
+{
+	int sn_stage;
 
 	// if the supernova is running
 	sn_stage = supernova_active();
-	if(sn_stage){
+	if(sn_stage) {
 		Supernova_time -= flFrametime;
 
 		// sound stuff
-		if((Supernova_time <= SUPERNOVA_SOUND_1_TIME) && !Supernova_sound_1_played){
+		if((Supernova_time <= SUPERNOVA_SOUND_1_TIME) && !Supernova_sound_1_played) {
 			Supernova_sound_1_played = 1;
 			snd_play(&Snds[SND_SUPERNOVA_1], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 		}
-		if((Supernova_time <= SUPERNOVA_SOUND_2_TIME) && !Supernova_sound_2_played){
+		if((Supernova_time <= SUPERNOVA_SOUND_2_TIME) && !Supernova_sound_2_played) {
 			Supernova_sound_2_played = 1;
 			snd_play(&Snds[SND_SUPERNOVA_2], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 		}
 
 		// if we've crossed from stage 1 to stage 2 kill all particles and stick a bunch on the player ship
-		if((sn_stage == 1) && (supernova_active() == 2)){
+		if((sn_stage == 1) && (supernova_active() == 2)) {
 			// first kill all active particles so we have a bunch of free ones
-			particle_kill_all();				
-		}		
+			particle_kill_all();
+		}
 
 		// if we're in stage 2, emit particles
-		if((sn_stage >= 2) && (sn_stage != 5)){
+		if((sn_stage >= 2) && (sn_stage != 5)) {
 			supernova_do_particles();
 		}
 
 		// if we've got negative. the supernova is done
-		if(Supernova_time < 0.0f){
+		if(Supernova_time < 0.0f) {
 			Supernova_finished = 1;
 			Supernova_fade_to_white += flFrametime;
 
 			// start the dead popup
-			if(Supernova_fade_to_white >= SUPERNOVA_FADE_TO_WHITE_TIME){
-				if(!Supernova_popup){
+			if(Supernova_fade_to_white >= SUPERNOVA_FADE_TO_WHITE_TIME) {
+				if(!Supernova_popup) {
 					// main freespace 2 campaign? if so - end it now
 					//
 					// don't actually check for a specific campaign here since others may want to end this way but we
 					// should test positive here if in campaign mode and sexp_end_campaign() got called - taylor
-					if (Campaign_ended_in_mission && (Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/){
+					if (Campaign_ended_in_mission && (Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/) {
 						gameseq_post_event(GS_EVENT_END_CAMPAIGN);
 					} else {
 						popupdead_start();
@@ -205,7 +205,7 @@ void supernova_process()
 				Supernova_finished = 2;
 			}
 		}
-	} 			
+	}
 }
 
 // is there a supernova active
@@ -215,30 +215,30 @@ int supernova_active()
 	if (Supernova_status == SUPERNOVA_NONE) {
 		return 0;
 	}
-	
+
 	// if the supernova has "finished". fade to white and dead popup
-	if(Supernova_finished == 1){
+	if(Supernova_finished == 1) {
 		Supernova_status = SUPERNOVA_HIT;
 		return 4;
 	}
-	if(Supernova_finished == 2){
+	if(Supernova_finished == 2) {
 		Supernova_status = SUPERNOVA_HIT;
 		return 5;
 	}
 
 	// no supernova
-	if( (Supernova_time_total <= 0.0f) || (Supernova_time <= 0.0f) ){
+	if( (Supernova_time_total <= 0.0f) || (Supernova_time <= 0.0f) ) {
 		return 0;
 	}	
 
-	// final stage, 
-	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)){		
+	// final stage,
+	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)) {
 		Supernova_status = SUPERNOVA_HIT;
 		return 3;
-	}	
+	}
 
 	// 2nd stage
-	if(Supernova_time < SUPERNOVA_CUT_TIME){
+	if(Supernova_time < SUPERNOVA_CUT_TIME) {
 		Supernova_status = SUPERNOVA_HIT;
 		return 2;
 	}
@@ -257,7 +257,7 @@ float supernova_time_left()
 float supernova_pct_complete()
 {
 	// bogus
-	if(!supernova_active()){
+	if(!supernova_active()) {
 		return -1.0f;
 	}
 
@@ -268,12 +268,12 @@ float supernova_pct_complete()
 int supernova_camera_cut()
 {
 	// if we're not in a supernova
-	if(!supernova_active()){
+	if(!supernova_active()) {
 		return 0;
 	}
 
 	// if we're past the critical time
-	if(Supernova_time <= SUPERNOVA_CUT_TIME){
+	if(Supernova_time <= SUPERNOVA_CUT_TIME) {
 		return 1;
 	}
 
@@ -289,50 +289,28 @@ DCF(sn_dist, "")
 	dc_get_arg(ARG_FLOAT);
 	sn_distance = Dc_arg_float;
 }
+
 DCF(sn_cam_dist, "")
 {
 	dc_get_arg(ARG_FLOAT);
 	sn_cam_distance = Dc_arg_float;
 }
-/*
-camid supernova_get_camera()
-{
-	static camid supernova_camera;
-	if(!supernova_camera.isValid())
-	{
-		supernova_camera = cam_create("Supernova camera");
-	}
 
-	return supernova_camera;
-}
-*/
 void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 {
 	// supernova camera pos
 	vec3d Supernova_camera_pos;
 	static matrix Supernova_camera_orient;
-	/*
-	static camid supernova_camera;
-	if(!supernova_camera.isValid())
-	{
-		supernova_camera = cam_create("Supernova camera");
-	}
-
-	if(!supernova_camera.isValid())
-		return supernova_camera;
-
-	camera *cam = supernova_camera.getCamera();
-	*/
 
 	vec3d at;
-	vec3d sun_temp, sun;
+	vec3d sun_temp, sun_vec;
 	vec3d view;
-	
-	// set the controls for the heart of the sun	
+
+	// set the controls for the heart of the sun
 	stars_get_sun_pos(0, &sun_temp);
 	vm_vec_add2(&sun_temp, &Player_obj->pos);
-	vm_vec_sub(&sun, &sun_temp, &Player_obj->pos);
-	vm_vec_normalize(&sun);
+	vm_vec_sub(&sun_vec, &sun_temp, &Player_obj->pos);
+	vm_vec_normalize(&sun_vec);
 
 	// always set the camera pos
 	vec3d move;
@@ -344,22 +322,22 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 	*eye_pos = Supernova_camera_pos;
 
 	// if we're no longer moving the camera
-	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)){
+	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)) {
 		// *eye_pos = Supernova_camera_pos;
 		//cam->set_rotation(&Supernova_camera_orient);
 		*eye_orient = Supernova_camera_orient;
-	} 
+	}
 	// otherwise move it
 	else {
-		// get a vector somewhere between the supernova shockwave and the player ship	
+		// get a vector somewhere between the supernova shockwave and the player ship
 		at = Player_obj->pos;
 		vm_vec_scale_add2(&at, &sun, sn_distance);
 		vm_vec_sub(&move, &Player_obj->pos, &at);
 		vm_vec_normalize(&move);
-				
+
 		// linearly move towards the player pos
 		float pct = ((SUPERNOVA_CUT_TIME - Supernova_time) / SUPERNOVA_CAMERA_MOVE_TIME);
-		vm_vec_scale_add2(&at, &move, sn_distance * pct);	
+		vm_vec_scale_add2(&at, &move, sn_distance * pct);
 
 		vm_vec_sub(&view, &at, &Supernova_camera_pos);
 		vm_vec_normalize(&view);
@@ -367,6 +345,5 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		//cam->set_rotation(&Supernova_camera_orient);
 		*eye_orient = Supernova_camera_orient;
 	}
-
 	//return supernova_camera;
 }

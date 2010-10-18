@@ -419,19 +419,16 @@ void opengl_extensions_init()
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
 
 		// we need enough texture slots for this stuff to work
-
-		if (max_texture_units < 4) {
-			Int3();
-			Use_GLSL = 0;
-		}
-
-		if (max_texture_units < 5) {
-			Cmdline_normal = 0;
-			Cmdline_height = 0;
-		}
-
+		
 		if (max_texture_units < 6) {
 			Cmdline_height = 0;
+		} else if (max_texture_units < 5) {
+			mprintf(( "Not enough texture units for height and normal map support. We need at least 5, we found %d.\n", max_texture_units ));
+			Cmdline_normal = 0;
+			Cmdline_height = 0;
+		} else if (max_texture_units < 4) {
+			mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
+			Use_GLSL = 0;
 		}
 	}
 }
