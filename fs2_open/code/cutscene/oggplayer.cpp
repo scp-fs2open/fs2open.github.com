@@ -360,8 +360,10 @@ static void OGG_video_init(theora_info *tinfo)
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
-		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);

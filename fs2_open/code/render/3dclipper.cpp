@@ -122,8 +122,8 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
 		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
 
-		tmp->u2 = on_pnt->u2 + (off_pnt->u2-on_pnt->u2) * ratio;
-		tmp->v2 = on_pnt->v2 + (off_pnt->v2-on_pnt->v2) * ratio;
+	//	tmp->u2 = on_pnt->u2 + (off_pnt->u2-on_pnt->u2) * ratio;
+	//	tmp->v2 = on_pnt->v2 + (off_pnt->v2-on_pnt->v2) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {

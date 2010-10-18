@@ -104,7 +104,14 @@ typedef struct vec3d {
 	};
 	inline void operator= (vertex&vert);
 	inline void set_screen_vert(vertex&vert);
+
+	bool operator == (const vec3d &other);
 } vec3d;
+
+inline bool vec3d::operator == (const vec3d &other)
+{
+	return ( (a1d[0] == other.a1d[0]) && (a1d[1] == other.a1d[1]) && (a1d[2] == other.a1d[2]) );
+}
 
 /*
 // A vector referenced as an array
@@ -147,17 +154,27 @@ typedef struct uv_pair {
 typedef struct vertex {
 	float		x, y, z;				// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
-	float		u, v, u2, v2, u3, v3, u4, v4;					// texture position
-	vec3d		real_pos;			// _real_ world position
-	ubyte spec_a, spec_r, spec_b, spec_g;	//specular highlights -Bobboau
+	float		u, v;					// texture position
+//	float		u2, v2, u3, v3, u4, v4;	// texture position
+//	vec3d		real_pos;			// _real_ world position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
+	ubyte		spec_r, spec_g, spec_b, spec_a;	//specular highlights -Bobboau
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
 	void operator=(vec3d&vec){
 		memcpy(&x,&vec, sizeof(vec3d));
 	}
+
+	bool operator == (const vertex &other);
 } vertex;
+
+inline bool vertex::operator == (const vertex &other)
+{
+	// NOTE: this is checking position and uv only!
+	return ( (x == other.x) && (y == other.y) && (z == other.z)
+				&& (u == other.u) && (v == other.v) );
+}
 
 inline void vec3d::operator= (vertex&vert){
 	memcpy(this,&vert.x,sizeof(vec3d));
@@ -676,6 +693,8 @@ void vm_free_all();
 	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),1)
 
 #endif
+
+#include "globalincs/fsmemory.h"
 
 //=========================================================
 // Scripting

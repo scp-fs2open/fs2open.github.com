@@ -98,9 +98,6 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
 		"glBufferSubDataARB", "glMapBufferARB", "glUnmapBufferARB" } },
 
-	// Mac-only extension that allows use of system copy of texture to avoid an additional API copy
-//	{ false, 0, 1, { "GL_APPLE_client_storage" }, 0, { NULL } },
-
 	// make me some mipmaps!
 	{ false, false, 1, { "GL_SGIS_generate_mipmap" }, 0, { NULL } },
 
@@ -147,7 +144,7 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_fragment_shader" }, 0, { NULL } },
 
 	// shader version 3.0 detection extensions (if any of these extensions exist then we should have a SM3.0 compatible card, hopefully)
-	{ false, false, 2, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program" }, 0, { NULL } }
+	{ false, false, 3, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } }
 };
 
 // ogl_funcion is:
@@ -370,9 +367,30 @@ void opengl_extensions_init()
 //	}
 
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
-			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) /*&& Is_Extension_Enabled(OGL_SM30)*/ )
+			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) )
 	{
-		Use_GLSL = 1;
+		int ver = 0, major = 0, minor = 0;
+		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
+
+		sscanf(glsl_ver, "%d.%d", &major, &minor);
+		ver = (major + 100) + minor;
+
+		// SM 4.0 compatible or better
+		if (ver >= 130) {
+			Use_GLSL = 4;
+		}
+		// SM 3.0 compatible
+		else if ( Is_Extension_Enabled(OGL_SM30) ) {
+			Use_GLSL = 3;
+		}
+		// SM 2.0 compatible
+		else if (ver >= 120) {
+			Use_GLSL = 2;
+		}
+		// we require GLSL 1.20 or higher
+		else {
+			Use_GLSL = 0;
+		}
 	}
 
 	// setup the best fog function found
@@ -393,6 +411,7 @@ void opengl_extensions_init()
 	if ( !Use_GLSL ) {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
+		Cmdline_postprocess = 0;
 	}
 
 	if (Use_GLSL) {

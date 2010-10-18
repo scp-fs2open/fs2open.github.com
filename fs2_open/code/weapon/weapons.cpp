@@ -2774,12 +2774,12 @@ void weapon_sort_by_type()
 		Weapon_info[weapon_index] = child_weapons[i];
 
 
-	delete [] lasers;
-	delete [] big_lasers;
-	delete [] beams;
-	delete [] missiles;
-	delete [] big_missiles;
-	delete [] child_weapons;
+	if (lasers)			delete [] lasers;
+	if (big_lasers)		delete [] big_lasers;
+	if (beams)			delete [] beams;
+	if (missiles)		delete [] missiles;
+	if (big_missiles)	delete [] big_missiles;
+	if (child_weapons)	delete [] child_weapons;
 }
 
 // do any post-parse cleaning on weapon entries

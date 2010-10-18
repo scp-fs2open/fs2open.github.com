@@ -2359,7 +2359,6 @@ int beam_collide_ship(obj_pair *pair)
 
 	ship_model_stop(ship_objp);
 
-
 	// if we got a hit
 	if (valid_hit_occurred) {
 		// add to the collision_list

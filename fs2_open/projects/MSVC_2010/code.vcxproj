@@ -769,6 +769,7 @@
     <ClCompile Include="..\..\code\globalincs\alphacolors.cpp" />
     <ClCompile Include="..\..\code\globalincs\crypt.cpp" />
     <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
+    <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings_test.cpp" />
@@ -1049,6 +1050,7 @@
     <ClInclude Include="..\..\code\globalincs\alphacolors.h" />
     <ClInclude Include="..\..\code\globalincs\crypt.h" />
     <ClInclude Include="..\..\code\globalincs\def_files.h" />
+    <ClInclude Include="..\..\code\globalincs\fsmemory.h" />
     <ClInclude Include="..\..\code\globalincs\globals.h" />
     <ClInclude Include="..\..\code\globalincs\linklist.h" />
     <ClInclude Include="..\..\code\globalincs\mspdb_callstack.h" />

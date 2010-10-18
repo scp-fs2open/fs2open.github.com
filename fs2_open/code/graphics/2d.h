@@ -105,21 +105,23 @@ typedef struct tsb_t {
 // this should be basicly just like it is in the VB
 // a list of triangles and their associated normals
 struct poly_list {
-	poly_list(): n_prim(0), n_verts(0), vert(NULL), norm(NULL), tsb(NULL), currently_allocated(0) {}
+	poly_list(): n_verts(0), vert(NULL), norm(NULL), tsb(NULL), currently_allocated(0) {}
 	~poly_list();
 	poly_list& operator = (poly_list&);
 
 	void allocate(int size);
-	void make_index_buffer();
+	void make_index_buffer(SCP_vector<int> &vertex_list);
 	void calculate_tangent();
-	int n_prim;
 	int n_verts;
 	vertex *vert;
 	vec3d *norm;
 	tsb_t *tsb;
 
+	int find_index(poly_list *plist, int idx);
+
 private:
 	int currently_allocated;
+	int find_first_vertex(int idx);
 };
 
 
@@ -130,18 +132,73 @@ struct colored_vector {
 	ubyte color[4];
 };
 
-bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2);
-
-//finds the first occorence of a vertex within a poly list
-int find_first_index(poly_list *plist, int idx);
-
-//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-int find_first_index_vb(poly_list *plist, int idx, poly_list *v);
-
 
 struct line_list {
 	int n_line;
 	vertex *vert;
+};
+
+struct buffer_data {
+	int flags;
+
+	int texture;		// this is the texture the vertex buffer will use
+	int n_verts;
+
+	size_t index_offset;
+
+	uint *index;
+
+	void release()
+	{
+		if (index) {
+			delete [] index;
+			index = NULL;
+		}
+	}
+
+	buffer_data() :
+		flags(0), texture(-1), n_verts(0), index_offset(0), index(NULL)
+	{
+	}
+};
+
+struct vertex_buffer {
+	int flags;
+
+	uint stride;
+	size_t vertex_offset;
+
+	poly_list *model_list;
+
+	SCP_vector<buffer_data> tex_buf;
+
+	vertex_buffer() :
+		flags(0), stride(0), vertex_offset(0), model_list(NULL)
+	{
+	}
+
+	~vertex_buffer()
+	{
+		clear();
+	}
+
+	void release()
+	{
+		if (model_list) {
+			delete model_list;
+			model_list = NULL;
+		}
+
+		for (size_t i = 0; i < tex_buf.size(); i++) {
+			tex_buf[i].release();
+		}
+	}
+
+	void clear()
+	{
+		release();
+		tex_buf.clear();
+	}
 };
 
 struct light;
@@ -296,6 +353,9 @@ typedef struct screen {
 	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
 	void (*gf_tmapper)(int nv, vertex *verts[], uint flags );
 
+	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
+	void (*gf_render)(int nv, vertex *verts, uint flags);
+
 	// dumps the current screen to a file
 	void (*gf_print_screen)(char * filename);
 
@@ -379,10 +439,13 @@ typedef struct screen {
 
 	void (*gf_set_texture_addressing)(int);
 
-	int	 (*gf_make_buffer)(poly_list*, uint flags);
+	int (*gf_create_buffer)();
+	bool (*gf_pack_buffer)(const int buffer_id, vertex_buffer *vb);
+	bool (*gf_config_buffer)(const int buffer_id, vertex_buffer *vb);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, int, ushort*, uint*, int);
+	void (*gf_render_buffer)(int, const vertex_buffer*, int, int);
+
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	
@@ -409,13 +472,12 @@ typedef struct screen {
 	void (*gf_set_ambient_light)(int,int,int);
 
 	// postprocessing effects
-	void (*gf_set_post_effect)(SCP_string&, int);
-	void (*gf_set_default_post_process)();
+	void (*gf_post_process_set_effect)(const char*, int);
+	void (*gf_post_process_set_defaults)();
 
-	void (*gf_post_process_init)();
-	void (*gf_post_process_before)();
-	void (*gf_post_process_after)();
-	void (*gf_save_zbuffer)();
+	void (*gf_post_process_begin)();
+	void (*gf_post_process_end)();
+	void (*gf_post_process_save_zbuffer)();
 
 	void (*gf_lighting)(bool,bool);
 	void (*gf_center_alpha)(int);
@@ -598,6 +660,7 @@ __inline void gr_pixel(int x, int y, bool resize = true)
 #define gr_scaler				GR_CALL(gr_screen.gf_scaler)
 #define gr_aascaler			GR_CALL(gr_screen.gf_aascaler)
 #define gr_tmapper			GR_CALL(gr_screen.gf_tmapper)
+#define gr_render			GR_CALL(gr_screen.gf_render)
 
 //#define gr_gradient			GR_CALL(gr_screen.gf_gradient)
 __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
@@ -672,11 +735,13 @@ __inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
-#define gr_make_buffer					GR_CALL(*gr_screen.gf_make_buffer)            
+#define gr_create_buffer				GR_CALL(*gr_screen.gf_create_buffer)
+#define gr_pack_buffer					GR_CALL(*gr_screen.gf_pack_buffer)
+#define gr_config_buffer				GR_CALL(*gr_screen.gf_config_buffer)
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
-__inline void gr_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer = NULL, int flags = TMAP_FLAG_TEXTURED)
+__inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags = TMAP_FLAG_TEXTURED)
 {
-	(*gr_screen.gf_render_buffer)(start, n_prim, sbuffer, ibuffer, flags);
+	(*gr_screen.gf_render_buffer)(start, bufferp, texi, flags);
 }
 
 #define gr_set_buffer					GR_CALL(*gr_screen.gf_set_buffer)      
@@ -701,7 +766,11 @@ __inline void gr_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibu
 #define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
 #define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
 
-#define gr_set_post_effect				GR_CALL(*gr_screen.gf_set_post_effect)
+#define gr_post_process_set_effect		GR_CALL(*gr_screen.gf_post_process_set_effect)
+#define gr_post_process_set_defaults	GR_CALL(*gr_screen.gf_post_process_set_defaults)
+#define gr_post_process_begin			GR_CALL(*gr_screen.gf_post_process_begin)
+#define gr_post_process_end				GR_CALL(*gr_screen.gf_post_process_end)
+#define gr_post_process_save_zbuffer	GR_CALL(*gr_screen.gf_post_process_save_zbuffer)
 
 #define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
 #define	gr_center_alpha					GR_CALL(*gr_screen.gf_center_alpha)
@@ -756,16 +825,17 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 // Moreover, it is _really_ intended for use with 45 degree angles. 
 void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize=true);
 
-#define VERTEX_FLAG_POSITION	(1<<0)	
-#define VERTEX_FLAG_RHW			(1<<1)	//incompatable with the next normal
-#define VERTEX_FLAG_NORMAL		(1<<2)	
-#define VERTEX_FLAG_DIFUSE		(1<<3)	
-#define VERTEX_FLAG_SPECULAR	(1<<4)	
-#define VERTEX_FLAG_UV1			(1<<5)	//how many UV coords, only use one of these
-#define VERTEX_FLAG_UV2			(1<<6)	
-#define VERTEX_FLAG_UV3			(1<<7)	
-#define VERTEX_FLAG_UV4			(1<<8)
-#define VERTEX_FLAG_TANGENT		(1<<9)
+#define VB_FLAG_POSITION	(1<<0)	
+#define VB_FLAG_RHW			(1<<1)	//incompatable with the next normal
+#define VB_FLAG_NORMAL		(1<<2)	
+#define VB_FLAG_DIFUSE		(1<<3)	
+#define VB_FLAG_SPECULAR	(1<<4)	
+#define VB_FLAG_UV1			(1<<5)	//how many UV coords, only use one of these
+#define VB_FLAG_UV2			(1<<6)	
+#define VB_FLAG_UV3			(1<<7)	
+#define VB_FLAG_UV4			(1<<8)
+#define VB_FLAG_TANGENT		(1<<9)
+#define VB_FLAG_LARGE_INDEX	(1<<10)
 
 void gr_clear_shaders_cache();
 

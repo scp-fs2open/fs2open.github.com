@@ -124,6 +124,7 @@ extern int Cmdline_no_fbo;
 extern int Cmdline_noglsl;
 extern int Cmdline_ati_color_swap;
 extern int Cmdline_no_3d_sound;
+extern int Cmdline_no_glsl_model_rendering;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
