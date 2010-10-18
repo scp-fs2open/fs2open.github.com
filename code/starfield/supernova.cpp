@@ -331,7 +331,7 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 	else {
 		// get a vector somewhere between the supernova shockwave and the player ship
 		at = Player_obj->pos;
-		vm_vec_scale_add2(&at, &sun, sn_distance);
+		vm_vec_scale_add2(&at, &sun_vec, sn_distance);
 		vm_vec_sub(&move, &Player_obj->pos, &at);
 		vm_vec_normalize(&move);
 
