@@ -378,6 +378,7 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
 	{ "turret-set-direction-preference",	OP_TURRET_SET_DIRECTION_PREFERENCE,		3, INT_MAX},	//FUBAR
+	{ "turret-set-rate_of_fire",			OP_TURRET_SET_RATE_OF_FIRE,			3, INT_MAX},	//FUBAR
 	{ "turret-set-optimum-range",			OP_TURRET_SET_OPTIMUM_RANGE,			3, INT_MAX},	//FUBAR
 	{ "turret-set-target-priorities",			OP_TURRET_SET_TARGET_PRIORITIES,	3, INT_MAX},	//FUBAR
 	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
@@ -14590,6 +14591,43 @@ void sexp_turret_set_direction_preference(int node)
 	}
 }
 
+void sexp_turret_set_rate_of_fire(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//store rof
+	float rof = (float)eval_num(CDR(node));
+
+	//Set rof
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// set the range
+		if(rof < 0)
+			turret->rof_scaler = turret->system_info->turret_rof_scaler ;
+		else
+			turret->rof_scaler = rof/100;
+		
+		// next
+		node = CDR(node);
+	}
+}
+
 void sexp_turret_set_optimum_range(int node)
 {	
 	int sindex;
@@ -18925,6 +18963,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_set_direction_preference(node);
 				break;
 
+			case OP_TURRET_SET_RATE_OF_FIRE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_rate_of_fire(node);
+				break;
+
 			case OP_TURRET_SET_OPTIMUM_RANGE:
 				sexp_val = SEXP_TRUE;
 				sexp_turret_set_optimum_range(node);
@@ -20059,6 +20102,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_LOCK_ALL:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -21305,6 +21349,15 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_NUMBER;
+			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_RATE_OF_FIRE:
 			if(argnum == 0) {
 				return OPF_SHIP;
 			} else if(argnum == 1) {
@@ -23015,6 +23068,7 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -25162,6 +25216,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets specified ship turrets direction preference to the specified value\r\n"
 		"\t1: Ship turrets are on\r\n"
 		"\t2: Preference to set, 0 to disable, or negative to reset to default\r\n"
+		"\trest: Turrets to set\r\n"},
+
+	{ OP_TURRET_SET_RATE_OF_FIRE, "turret-set-rate-of-fire\r\n"
+		"\tSets specified ship turrets rate of fire to the specified value\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\t2: Rate to set in percentage format (200 = 2x, 50 = .5x), 0 to set to number of fire points, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
 	{ OP_TURRET_SET_OPTIMUM_RANGE, "turret-set-optimum-range\r\n"
