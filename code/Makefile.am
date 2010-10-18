@@ -291,6 +291,8 @@ FS2_SOURCES =	\
 	globalincs/crypt.h	\
 	globalincs/def_files.cpp	\
 	globalincs/def_files.h	\
+	globalincs/fsmemory.cpp	\
+	globalincs/fsmemory.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
 	globalincs/pstypes.h	\

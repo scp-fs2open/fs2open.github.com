@@ -653,6 +653,8 @@
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
 		60584F4C11347FE10080E50C /* audiostr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F208C3D6A0003B1351 /* audiostr.cpp */; };
 		606034471134822A0032BB9A /* dscap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F908C3D6A0003B1351 /* dscap.cpp */; };
+		606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 606CBAE1126A1BFF007BE418 /* fsmemory.cpp */; };
+		60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B56A32124BBFD5005AF5A9 /* fsmemory.h */; };
 		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
 		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
@@ -1604,6 +1606,8 @@
 		34DCF87A08CFB21600A528A0 /* scramble */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = scramble; sourceTree = BUILT_PRODUCTS_DIR; };
 		34DCF88408CFB2B500A528A0 /* scramble.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = scramble.cpp; sourceTree = "<group>"; };
 		34DCF88508CFB2B500A528A0 /* scramble.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scramble.h; sourceTree = "<group>"; };
+		606CBAE1126A1BFF007BE418 /* fsmemory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsmemory.cpp; sourceTree = "<group>"; };
+		60B56A32124BBFD5005AF5A9 /* fsmemory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsmemory.h; sourceTree = "<group>"; };
 		60E7978A10F59C1C00904FA6 /* trackirglobal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = trackirglobal.cpp; path = external_dll/trackirglobal.cpp; sourceTree = "<group>"; };
 		60E7978C10F59C4100904FA6 /* externalcode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = externalcode.h; path = external_dll/externalcode.h; sourceTree = "<group>"; };
 		60E7978D10F59C4100904FA6 /* trackirpublic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = trackirpublic.h; path = external_dll/trackirpublic.h; sourceTree = "<group>"; };
@@ -2265,18 +2269,20 @@
 		3459535508C3D6A0003B1351 /* globalincs */ = {
 			isa = PBXGroup;
 			children = (
-				3468A8CE0991BD4200123C87 /* def_files.cpp */,
-				3468A8CF0991BD4200123C87 /* def_files.h */,
 				3459535608C3D6A0003B1351 /* alphacolors.cpp */,
 				3459535708C3D6A0003B1351 /* alphacolors.h */,
 				3459535808C3D6A0003B1351 /* crypt.cpp */,
 				3459535908C3D6A0003B1351 /* crypt.h */,
-				F0ED189E101064C70011978C /* safe_strings_test.cpp */,
-				F0ED189F101064C70011978C /* safe_strings.h */,
-				F0ED18A0101064C70011978C /* safe_strings.cpp */,
+				3468A8CE0991BD4200123C87 /* def_files.cpp */,
+				3468A8CF0991BD4200123C87 /* def_files.h */,
+				606CBAE1126A1BFF007BE418 /* fsmemory.cpp */,
+				60B56A32124BBFD5005AF5A9 /* fsmemory.h */,
 				3459535A08C3D6A0003B1351 /* globals.h */,
 				3459535B08C3D6A0003B1351 /* linklist.h */,
 				3459535C08C3D6A0003B1351 /* pstypes.h */,
+				F0ED189E101064C70011978C /* safe_strings_test.cpp */,
+				F0ED189F101064C70011978C /* safe_strings.h */,
+				F0ED18A0101064C70011978C /* safe_strings.cpp */,
 				3459535D08C3D6A0003B1351 /* systemvars.cpp */,
 				3459535E08C3D6A0003B1351 /* systemvars.h */,
 				3459535F08C3D6A0003B1351 /* version.cpp */,
@@ -3331,6 +3337,7 @@
 			files = (
 				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				3459586F08C3D8CB003B1351 /* freespace.h in Headers */,
+				60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3836,7 +3843,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 34BE723808C940D200673B45 /* Build configuration list for PBXProject "FS2_Open" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* FS2_Open */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -3914,6 +3928,7 @@
 			files = (
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				3459596B08C3D8CB003B1351 /* freespace.cpp in Sources */,
+				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

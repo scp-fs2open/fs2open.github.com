@@ -222,26 +222,6 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
-struct index_list {
-	uint *ibuffer;
-	ushort *sbuffer;
-
-	index_list(): ibuffer(NULL), sbuffer(NULL) { }
-	// the destuctor body is commented out so that we can use this dynamically without a clone()
-	// we kill it off with release() instead
-	~index_list() { }
-
-	void allocate(int size, bool large_buf);
-	void release();
-};
-
-struct buffer_data {
-	int texture;		// this is the texture the vertex buffer will use
-	int n_prim;
-	index_list index_buffer;
-
-	buffer_data(): texture(-1), n_prim(0) {}
-};
 
 // IBX stuff
 typedef struct IBX {
@@ -250,12 +230,6 @@ typedef struct IBX {
 	int size;			// file size used to make sure an IBX contains enough data for the whole model
 	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
-
-	// tangent space data
-	CFILE *tsb_read;	// reads tangent space data (TSB), if it already exists
-	CFILE *tsb_write;	// writes tangent space data, for new file
-	int tsb_size;
-	char tsb_name[MAX_FILENAME_LEN];	// filename of the tsb (tangent space model data)
 } IBX;
 
 
@@ -309,8 +283,8 @@ typedef struct bsp_info {
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 	
 	// buffers used by HT&L
-	int indexed_vertex_buffer;
-	SCP_vector<buffer_data> buffer;
+	vertex_buffer buffer;
+	
 //	int flat_buffer;
 //	int flat_line_buffer;
 
@@ -348,7 +322,6 @@ typedef struct bsp_info {
 		next_sibling = 0;
 		num_details = 0;
 		num_arcs = 0;
-		indexed_vertex_buffer = 0;
 		use_render_box = 0;
 		gun_rotation = false;
 		no_collisions = false;
@@ -706,6 +679,7 @@ typedef struct polymodel {
 
 	float gun_submodel_rotation;
 
+	int vertex_buffer_id;			// HTL vertex buffer id
 } polymodel;
 
 // Call once to initialize the model system

@@ -54,9 +54,6 @@ static int Subspace_model_inner = -1;
 static int Subspace_model_outer = -1;
 static int Rendering_to_env = 0;
 
-poly_list perspective_bitmap_list;
-int perspective_bitmap_buffer = -1;
-
 int Num_stars = 500;
 fix starfield_timestamp = 0;
 
@@ -102,9 +99,9 @@ typedef struct starfield_bitmap_instance {
 	float scale_x, scale_y;							// x and y scale
 	int div_x, div_y;								// # of x and y divisions
 	angles ang;										// angles from FRED
-	int n_prim;										// number of primitives in buffer
 	int star_bitmap_index;							// index into starfield_bitmap array
-	ushort *buffer;
+	int n_verts;
+	vertex *verts;
 
 	starfield_bitmap_instance() { memset(this, 0, sizeof(starfield_bitmap_instance)); star_bitmap_index = -1; };
 } starfield_bitmap_instance;
@@ -230,51 +227,47 @@ void stars_load_debris(int fullneb = 0)
 	}
 }
 
-// allocates the poly list for the current decal list
-void perspective_bitmap_allocate_poly_list(int x, int y)
+const int MAX_PERSPECTIVE_DIVISIONS = 5;
+const float p_phi = 10.0f, p_theta = 10.0f;
+
+extern void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
+
+static void starfield_create_bitmap_buffer(const int si_idx)
 {
-	perspective_bitmap_list.allocate(x*y*6);
-}
-
-static void starfield_kill_bitmap_buffer()
-{
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl)
-		return;
-
-	if (perspective_bitmap_buffer != -1) {
-		gr_destroy_buffer(perspective_bitmap_buffer);
-		perspective_bitmap_buffer = -1;
-	}
-}
-
-// draw a perspective bitmap based on angles and radius
-#define MAX_PERSPECTIVE_DIVISIONS			5
-void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
-static void starfield_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, ushort *index_buffer)
-{
-	float p_phi = 10.0f;
-	float p_theta = 10.0f;
-
 	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 
-	vertex v;
+	vertex v[4];
 	matrix m, m_bank;
 	int idx, s_idx;	
 	float ui, vi;	
 	angles bank_first;
-	
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl)
-		return;
 
-	Assert( index_buffer != NULL );
+	starfield_bitmap_instance *sbi = &Starfield_bitmap_instances[si_idx];
+
+	angles *a = &sbi->ang;
+	float scale_x = sbi->scale_x;
+	float scale_y = sbi->scale_y;
+	int div_x = sbi->div_x;
+	int div_y = sbi->div_y;
 
 	// cap division values
-	div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
-//	div_x = 1;
+//	div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
+	div_x = 1;
 	div_y = div_y > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_y;	
+
+	if (sbi->verts != NULL) {
+		delete [] sbi->verts;
+	}
+
+	sbi->verts = new(std::nothrow) vertex[div_x * div_y * 6];
+
+	if (sbi->verts == NULL) {
+		sbi->star_bitmap_index = -1;
+		return;
+	}
+
+	sbi->n_verts = div_x * div_y * 6;
 
 	// texture increment values
 	ui = 1.0f / (float)div_x;
@@ -314,177 +307,62 @@ static void starfield_create_perspective_bitmap_buffer(angles *a, float scale_x,
 			// rotate on the sphere
 			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);					
 		}
-	}		
+	}
 
-	int start = perspective_bitmap_list.n_verts;
-	int s = 0;
-	// render all polys
-	/*
-						y_dim		y_dim*2				y_dim*n
-1	(0*y_dim+0)----(1*y_dim+0)----(2*y_dim+0)-- ... --(y_dim*n+0)
-	  |					  |
-	  |					  |
-2	(0*y_dim+1)----(1*y_dim+1)----(2*y_dim+1)-- ... --(y_dim*n+1)
-	  |					  |
-	  |					  |
-3	(0*y_dim+2)----(1*y_dim+2)----(2*y_dim+2)-- ... --(y_dim*n+2)
-	  |					  |					  |
-	  .					  .					  .
-	  .					  .					  .
-	  |					  |					  |
-	(y_dim-1)------(1*y_dim*2-1)---(y_dim*3-1)-- ... --(y_dim*(n+1)-1)
+	memset(v, 0, sizeof(vertex) * 4);
 
-  (x_pos*y_dim+y_pos) until (y_pos = y_dim)
+	int j = 0;
 
-  */
-	for(idx=0; idx<div_x+1; idx++){
-		for(s_idx=0; s_idx<div_y+1; s_idx++){						
+	vertex *verts = sbi->verts;
+
+	for (idx = 0; idx < div_x; idx++){
+		for (s_idx = 0; s_idx < div_y; s_idx++) {
 			// stuff texture coords
-
-			v.u = ui * float(idx);
-			v.v = vi * float(s_idx);
-			v.spec_r=v.spec_g=v.spec_b=0;
-			g3_transfer_vertex(&v, &s_points[idx][s_idx]);
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts++] = v;
-
-			if((idx != div_x) && (s_idx != div_y)){
-
-			//	memset(&index_buffer[s], 0, sizeof(short) * 6);
-
-				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx +		start);	//0
-				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx +		start);	//2
-				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
-
-				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx +		start);	//0
-				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
-				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx + 1 +	start);	//1		
-
-			}
-
-/*			v[0].u = ui * float(idx);
+			v[0].u = ui * float(idx);
 			v[0].v = vi * float(s_idx);
-			v[0].spec_r=v[2].spec_g=v[3].spec_b=0;
-			
+
 			v[1].u = ui * float(idx+1);
 			v[1].v = vi * float(s_idx);
-			v[1].spec_r=v[2].spec_g=v[3].spec_b=0;
 
 			v[2].u = ui * float(idx+1);
 			v[2].v = vi * float(s_idx+1);
-			v[2].spec_r=v[2].spec_g=v[3].spec_b=0;
-
 
 			v[3].u = ui * float(idx);
 			v[3].v = vi * float(s_idx+1);
-			v[3].spec_r=v[2].spec_g=v[3].spec_b=0;
 
-			v[0].flags = 0;
-			v[1].flags = 0;
-			v[2].flags = 0;
-			v[3].flags = 0;
-			verts[0] = &v[0];
-			verts[1] = &v[1];
-			verts[2] = &v[2];
-			verts[3] = &v[3];
+			g3_transfer_vertex(&v[0], &s_points[idx][s_idx]);
+			g3_transfer_vertex(&v[1], &s_points[idx+1][s_idx]);
+			g3_transfer_vertex(&v[2], &s_points[idx+1][s_idx+1]);
+			g3_transfer_vertex(&v[3], &s_points[idx][s_idx+1]);
 
-			g3_transfer_vertex(verts[0], &s_points[idx][s_idx]);			
-			g3_transfer_vertex(verts[1], &s_points[idx+1][s_idx]);			
-			g3_transfer_vertex(verts[2], &s_points[idx+1][s_idx+1]);						
-			g3_transfer_vertex(verts[3], &s_points[idx][s_idx+1]);						
-
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts] = *verts[0];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 1] = *verts[1];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 2] = *verts[2];
-			perspective_bitmap_list.n_verts += 3;
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts] = *verts[0];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 1] = *verts[2];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 2] = *verts[3];
-			perspective_bitmap_list.n_verts += 3;
-*/
+			// poly 1
+			verts[j++] = v[0];
+			verts[j++] = v[1];
+			verts[j++] = v[2];
+			// poly 2
+			verts[j++] = v[0];
+			verts[j++] = v[2];
+			verts[j++] = v[3];
 		}
 	}
-	start += perspective_bitmap_list.n_verts;
-//	Assert(perspective_bitmap_list.n_verts == div_x * div_y * 6);
 
-	SAFEPOINT("buffer filled, creating");
-
+	Assert( j == sbi->n_verts );
 }
 
-static void starfield_update_index_buffers(int index, int nverts)
-{
-	Assert( (index >= 0) && (index < (int)Starfield_bitmap_instances.size()) );
-
-	if ( (index < 0) || (index >= (int)Starfield_bitmap_instances.size()) )
-		return;
-
-	bool change_up = false;
-
-	change_up = ((nverts <= 0) || (nverts != (Starfield_bitmap_instances[index].n_prim * 3)));
-
-	if ( change_up && (Starfield_bitmap_instances[index].buffer != NULL) ) {
-		vm_free(Starfield_bitmap_instances[index].buffer);
-		Starfield_bitmap_instances[index].buffer = NULL;
-	}
-
-	if (nverts <= 0) {
-		Starfield_bitmap_instances[index].n_prim = 0;
-		return;
-	}
-
-	if (Starfield_bitmap_instances[index].buffer == NULL) {
-		Starfield_bitmap_instances[index].buffer = (ushort*) vm_malloc( nverts * sizeof(ushort) );
-	}
-
-	Starfield_bitmap_instances[index].n_prim = nverts / 3;
-}
-	
 // take the Starfield_bitmap_instances[] and make all the vertex buffers that you'll need to draw it 
-static void starfield_generate_bitmap_instance_buffers()
+static void starfield_generate_bitmap_buffers()
 {
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl)
-		return;
+	int idx;
 
-	SAFEPOINT("entering starfield_generate_bitmap_instance_vertex_buffers");
-
-	int idx, vert_count = 0;
-
-	const int sb_instances = (int)Starfield_bitmap_instances.size();
+	int sb_instances = (int)Starfield_bitmap_instances.size();
 
 	for (idx = 0; idx < sb_instances; idx++) {
-		// make sure it's usable
-		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0)
+		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0) {
 			continue;
-
-		int nverts = Starfield_bitmap_instances[idx].div_x * Starfield_bitmap_instances[idx].div_y * 6;
-		vert_count += nverts * 2;
-
-		starfield_update_index_buffers(idx, nverts);
-	}
-
-	perspective_bitmap_list.allocate(vert_count);
-	perspective_bitmap_list.n_verts = 0;
-
-	for (idx = 0; idx < sb_instances; idx++) {
-		// make sure it's usable
-		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0)
-			continue;
-
-		if (Starfield_bitmap_instances[idx].buffer != NULL) {
-			starfield_create_perspective_bitmap_buffer(&Starfield_bitmap_instances[idx].ang, Starfield_bitmap_instances[idx].scale_x,
-					Starfield_bitmap_instances[idx].scale_y, Starfield_bitmap_instances[idx].div_x, Starfield_bitmap_instances[idx].div_y,
-					TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 0, Starfield_bitmap_instances[idx].buffer);
 		}
+
+		starfield_create_bitmap_buffer(idx);
 	}
-
-	if (perspective_bitmap_list.n_verts == 0)
-		return;
-
-	starfield_kill_bitmap_buffer();
-
-	perspective_bitmap_buffer = gr_make_buffer(&perspective_bitmap_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_UV1);
-	
-	SAFEPOINT("leaving starfield_generate_bitmap_instance_vertex_buffers");
 }
 
 static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
@@ -782,10 +660,9 @@ void stars_load_all_bitmaps()
 
 void stars_clear_instances()
 {
-	starfield_kill_bitmap_buffer();
-
 	for (uint i = 0; i < Starfield_bitmap_instances.size(); i++) {
-		starfield_update_index_buffers(i, 0);
+		delete [] Starfield_bitmap_instances[i].verts;
+		Starfield_bitmap_instances[i].verts = NULL;
 	}
 
 	Starfield_bitmap_instances.clear();
@@ -956,7 +833,7 @@ void stars_post_level_init()
 		stars_load_all_bitmaps();
 	}
 
-	starfield_generate_bitmap_instance_buffers();
+	starfield_generate_bitmap_buffers();
 }
 
 
@@ -1310,10 +1187,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 		return;
 
 	if ( !Cmdline_nohtl ) {
-		if (perspective_bitmap_buffer < 0)
-			return;
-
-		gr_set_lighting(false, false);
 		gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
 	}
 
@@ -1323,9 +1196,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 	// turn off zbuffering
 	int saved_zbuffer_mode = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);
-
-	// render all bitmaps
-	gr_set_buffer(perspective_bitmap_buffer);
 
 	int sb_instances = (int)Starfield_bitmap_instances.size();
 
@@ -1342,12 +1212,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 			continue;
 		}
 
-		if (!Cmdline_nohtl) {
-			if (Starfield_bitmap_instances[idx].buffer == NULL) {
-				Int3();
-				continue;
-			}
-		}
+		int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_TRILIST | TMAP_HTL_3D_UNLIT;
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
@@ -1356,24 +1221,16 @@ void stars_draw_bitmaps(int show_bitmaps)
 				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id);
 			}
 
-			if (Cmdline_nohtl) {
-				g3_draw_perspective_bitmap(&Starfield_bitmap_instances[idx].ang, Starfield_bitmap_instances[idx].scale_x, Starfield_bitmap_instances[idx].scale_y, Starfield_bitmap_instances[idx].div_x, Starfield_bitmap_instances[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
-			} else {
-				gr_render_buffer(0, Starfield_bitmap_instances[idx].n_prim, Starfield_bitmap_instances[idx].buffer);
-			}
+			tmap_flags |= TMAP_FLAG_XPARENT;
 		} else {				
 			if (Starfield_bitmaps[star_index].fps) {
 				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
 			} else {
 				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
 			}
-					
-			if (Cmdline_nohtl) {
-				g3_draw_perspective_bitmap(&Starfield_bitmap_instances[idx].ang, Starfield_bitmap_instances[idx].scale_x, Starfield_bitmap_instances[idx].scale_y, Starfield_bitmap_instances[idx].div_x, Starfield_bitmap_instances[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
-			} else {
-				gr_render_buffer(0, Starfield_bitmap_instances[idx].n_prim, Starfield_bitmap_instances[idx].buffer);
-			}
 		}
+
+		gr_render(Starfield_bitmap_instances[idx].n_verts, Starfield_bitmap_instances[idx].verts, tmap_flags);
 	}
 
 	// turn on culling
@@ -1385,49 +1242,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 	if ( !Cmdline_nohtl )
 		gr_end_instance_matrix();
 }
-
-/*
-void calculate_bitmap_matrix(starfield_bitmaps *bm, vec3d *v)
-{
-	vm_vector_2_matrix(&bm->m, v, NULL, NULL);
-	vm_orthogonalize_matrix(&bm->m);
-}
-
-void calculate_bitmap_points(starfield_bitmaps *bm, float bank)
-{
-	int i;
-	vec3d fvec, uvec, rvec, tmp;
-	angles tangles;
-
-	vm_orthogonalize_matrix(&bm->m);
-	if (bank) {
-		tangles.p = tangles.h = 0.0f;
-		tangles.b = bank;
-		vm_rotate_matrix_by_angles(&bm->m, &tangles);
-	}
-
-	fvec = bm->m.fvec;
-	vm_vec_scale(&fvec, bm->dist );
-	uvec = bm->m.uvec;
-	rvec = bm->m.rvec;
-
-	vm_vec_sub(&tmp, &fvec, &uvec);
-	vm_vec_sub(&bm->points[3], &tmp, &rvec);
-
-	vm_vec_sub(&tmp, &fvec, &uvec);
-	vm_vec_add(&bm->points[2], &tmp, &rvec);
-
-	vm_vec_add(&tmp, &fvec, &uvec);
-	vm_vec_add(&bm->points[1], &tmp, &rvec);
-
-	vm_vec_add(&tmp, &fvec, &uvec);
-	vm_vec_sub(&bm->points[0], &tmp, &rvec);
-
-	for (i=0; i<4; i++){
-		vm_vec_normalize(&bm->points[i]);
-	}
-}
-*/
 
 extern int Interp_subspace;
 extern float Interp_subspace_offset_u;
@@ -2480,7 +2294,6 @@ int stars_add_sun_entry(starfield_list_entry *sun)
 		for (i = 0; i < (int)Suns.size(); i++) {
 			if ( Suns[i].star_bitmap_index < 0 ) {
 				Suns[i] = sbi;
-                starfield_generate_bitmap_instance_buffers();
                 return i;
 			}
 		}
@@ -2488,7 +2301,7 @@ int stars_add_sun_entry(starfield_list_entry *sun)
 
     // ... or add a new one 
     Suns.push_back(sbi);
-    starfield_generate_bitmap_instance_buffers();
+
     return Suns.size() - 1;
 }
 
@@ -2538,16 +2351,17 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	// now check if we can make use of a previously discarded instance entry
 	for (int i = 0; i < (int)Starfield_bitmap_instances.size(); i++) {
 		if ( Starfield_bitmap_instances[i].star_bitmap_index < 0 ) {
-            starfield_update_index_buffers(i, 0);
+//            starfield_update_index_buffers(i, 0);
             Starfield_bitmap_instances[i] = sbi;
-            starfield_generate_bitmap_instance_buffers();
+			starfield_create_bitmap_buffer(i);
             return i;
 		}
 	}
 
 	// ... or add a new one
 	Starfield_bitmap_instances.push_back(sbi);
-	starfield_generate_bitmap_instance_buffers();
+	starfield_create_bitmap_buffer(Starfield_bitmap_instances.size() - 1);
+
     return Starfield_bitmap_instances.size() - 1;
 }
 
@@ -2634,7 +2448,10 @@ void stars_mark_instance_unused(int index, bool sun)
 		Starfield_bitmap_instances[index].star_bitmap_index = -1;
 	}
 
-	starfield_generate_bitmap_instance_buffers();
+	if ( !sun ) {
+		delete [] Starfield_bitmap_instances[index].verts;
+		Starfield_bitmap_instances[index].verts = NULL;
+	}
 }
 
 // retrieves the name from starfield_bitmap for the instance index
@@ -2747,7 +2564,9 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 		}
 	}
 
-	starfield_generate_bitmap_instance_buffers();
+	if ( !sun ) {
+		starfield_create_bitmap_buffer(index);
+	}
 }
 
 // erase an instance, note that this is very slow so it should only be done in FRED
@@ -2768,8 +2587,6 @@ void stars_delete_instance_FRED(int index, bool sun)
 	} else {
 		Starfield_bitmap_instances.erase( Starfield_bitmap_instances.begin() + index );
 	}
-
-	starfield_generate_bitmap_instance_buffers();
 }
 
 // Goober5000
@@ -2926,9 +2743,4 @@ void stars_pack_backgrounds()
 			}
 		}
 	}
-}
-
-DCF(sgbib, "")
-{
-    starfield_generate_bitmap_instance_buffers();
 }

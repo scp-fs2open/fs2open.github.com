@@ -13924,16 +13924,20 @@ void multi_sexp_set_ambient_light()
 	}
 }
 
-void sexp_set_post_effect(int node) {
-	Assert(node > -1);
+void sexp_set_post_effect(int node)
+{
+	char *name = CTEXT(node);
 
-	SCP_string effect = CTEXT(node);
-	node = CDR(node);
-	int amount = eval_num(node);
+	if (name == NULL) {
+		return;
+	}
+
+	int amount = eval_num(CDR(node));
+
 	if (amount < 0 || amount > 100)
 		amount = 0;
 
-	gr_set_post_effect(effect, amount);
+	gr_post_process_set_effect(name, amount);
 }
 
 // taylor - load and set a skybox model

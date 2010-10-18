@@ -823,6 +823,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\globalincs\fsmemory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\fsmemory.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\globalincs\globals.h"
 				>
 			</File>

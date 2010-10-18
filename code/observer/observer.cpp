@@ -19,8 +19,6 @@
 
 observer Observers[MAX_OBSERVER_OBS];
 
-int Num_observer_obs;
-
 void observer_init()
 {
 	int idx;
@@ -29,8 +27,6 @@ void observer_init()
 		Observers[idx].objnum = -1;
 		Observers[idx].target_objnum = -1;
 	}
-
-	Num_observer_obs = 0;
 }
 
 int observer_create(matrix *orient, vec3d *pos)

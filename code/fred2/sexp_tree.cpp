@@ -43,6 +43,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
 #include "graphics/gropenglshader.h"
+#include "graphics/gropenglpostprocessing.h"
 #include "sound/ds.h"
 
 #define TREE_NODE_INCREMENT	100
@@ -56,7 +57,6 @@
 // note: stay below 0xe000 so we don't collide with MFC defines..
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -5235,7 +5235,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sound_environment()
 	sexp_list_item head;
 
 	head.add_data(SEXP_NONE_STRING);
-	for (int i = 0; i  < EFX_presets.size(); i++) {
+	for (int i = 0; i  < (int)EFX_presets.size(); i++) {
 		// ugh
 		char *text = const_cast<char*>(EFX_presets[i].name.c_str());
 		head.add_data(text);
@@ -5732,9 +5732,11 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 {
 	unsigned int i;
 	sexp_list_item head;
-	SCP_vector<opengl::post_effect> &ppe_names = opengl::post_shader::get_effects();
-	for (i=0; i < ppe_names.size(); i++)
-		head.add_data(const_cast<char*>(ppe_names[i].name.c_str()));
+	SCP_vector<SCP_string> ppe_names;
+	get_post_process_effect_names(ppe_names);
+	for (i=0; i < ppe_names.size(); i++) {
+		head.add_data(const_cast<char*>(ppe_names[i].c_str()));
+	}
 
 	return head.next;
 }
