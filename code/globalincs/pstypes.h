@@ -261,6 +261,16 @@ extern int Global_error_count;
 // Goober5000 - define Verify for use in both release and debug mode
 #define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(0)
 
+// VerifyEx
+#ifndef _MSC_VER   // non MS compilers
+#	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(0)
+#else 
+#	if _MSC_VER >= 1400	// VC 2005 or greater
+#		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(0)
+#	else // everything else
+#		define VerifyEx(x, y) Verify(x)
+#	endif
+#endif
 
 //#define Int3() _asm { int 3 }
 

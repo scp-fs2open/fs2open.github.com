@@ -17486,7 +17486,26 @@ void sexp_force_perspective(int n)
 
 void sexp_set_camera_shudder(int n)
 {
-	game_shudder_apply(eval_num(n), (float) eval_num(CDR(n)) * 0.01f);
+	int time = eval_num(n); 
+	float intensity = (float) eval_num(CDR(n)) * 0.01f; 
+
+	game_shudder_apply(time, intensity);
+
+	multi_start_packet();
+	multi_send_int(time);
+	multi_send_float(intensity); 
+	multi_end_packet();
+}
+
+void multi_sexp_set_camera_shudder()
+{
+	int time;
+	float intensity;
+
+	multi_get_int(time);
+	if (multi_get_float(intensity)) {
+		game_shudder_apply(time, intensity);
+	}
 }
 
 void sexp_set_jumpnode_color(int n)
@@ -19624,6 +19643,10 @@ void multi_sexp_eval()
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
 				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
+				break;
+
+			case OP_SET_CAMERA_SHUDDER:
+				multi_sexp_set_camera_shudder();
 				break;
 
 			// bad sexp in the packet
