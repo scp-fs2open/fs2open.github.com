@@ -59,7 +59,7 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr);
 int stars_add_bitmap_entry(starfield_list_entry *bitmap);
 
 // get the number of entries that each vector contains
-// "sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
+// "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
 // "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries
 int stars_get_num_entries(bool is_a_sun, bool bitmap_count);
 
