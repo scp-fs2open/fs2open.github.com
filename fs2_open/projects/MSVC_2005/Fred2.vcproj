@@ -78,7 +78,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES /FORCE:MULTIPLE "
 				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="Debug_Inferno/fred2_open_3_6_13d_INF.exe"
 				LinkIncremental="2"
@@ -185,7 +185,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES /FORCE:MULTIPLE "
 				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="Release_Inferno/fred2_open_3_6_13r_INF.exe"
 				LinkIncremental="1"
@@ -290,7 +290,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES /FORCE:MULTIPLE "
 				AdditionalDependencies="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="Debug/fred2_open_3_6_13d.exe"
 				LinkIncremental="2"
@@ -397,7 +397,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES "
+				AdditionalOptions="/MAPINFO:EXPORTS /MAPINFO:LINES /FORCE:MULTIPLE "
 				AdditionalDependencies="wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
 				OutputFile="Release/fred2_open_3_6_13r.exe"
 				LinkIncremental="1"
