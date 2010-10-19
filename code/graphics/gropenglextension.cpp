@@ -421,7 +421,6 @@ void opengl_extensions_init()
 		// we need enough texture slots for this stuff to work
 		
 		if (max_texture_units < 6) {
-			mprintf(( "Not enough texture units for height map support. We need at least 6, we found %d.\n", max_texture_units ));
 			Cmdline_height = 0;
 		} else if (max_texture_units < 5) {
 			mprintf(( "Not enough texture units for height and normal map support. We need at least 5, we found %d.\n", max_texture_units ));
