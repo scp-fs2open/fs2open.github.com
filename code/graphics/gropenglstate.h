@@ -33,16 +33,6 @@ struct opengl_texture_unit {
 	GLenum texgen_mode_R;
 	GLenum texgen_mode_Q;
 
-	GLenum wrap_S;
-	GLenum wrap_T;
-	GLenum wrap_R;
-
-	GLenum mag_filter;
-	GLenum min_filter;
-	GLint max_level;
-
-	GLfloat aniso_filter;
-
 	GLenum env_mode;
 	GLenum env_combine_rgb;
 	GLenum env_combine_alpha;
@@ -95,9 +85,6 @@ class opengl_texture_state
 		inline void SetTexgenModeR(GLenum mode);
 		inline void SetTexgenModeQ(GLenum mode);
 		inline GLenum GetTarget();
-		inline void SetMagFilter(GLenum filter);
-		inline void SetMinFilter(GLenum filter);
-		inline void SetMaxLevel(GLint level);
 		inline void SetShaderMode(GLboolean mode);
 };
 
@@ -131,17 +118,17 @@ inline void opengl_texture_state::SetEnvCombineMode(GLenum cmode, GLenum cfunc)
 
 inline void opengl_texture_state::SetWrapS(GLenum mode)
 {
-	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_S, mode);
+//	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_S, mode);
 }
 
 inline void opengl_texture_state::SetWrapT(GLenum mode)
 {
-	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_T, mode);
+//	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_T, mode);
 }
 
 inline void opengl_texture_state::SetWrapR(GLenum mode)
 {
-	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_R, mode);
+//	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_R, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeS(GLenum mode)
@@ -167,23 +154,6 @@ inline void opengl_texture_state::SetTexgenModeQ(GLenum mode)
 inline GLenum opengl_texture_state::GetTarget()
 {
 	return units[active_texture_unit].texture_target;
-}
-
-inline void opengl_texture_state::SetMagFilter(GLenum filter)
-{
-	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_MAG_FILTER, filter);
-	Current_texture_source = (gr_texture_source)(-1);
-}
-
-inline void opengl_texture_state::SetMinFilter(GLenum filter)
-{
-	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_MIN_FILTER, filter);
-	Current_texture_source = (gr_texture_source)(-1);
-}
-
-inline void opengl_texture_state::SetMaxLevel(GLint level)
-{
-	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_MAX_LEVEL, level);
 }
 
 inline void opengl_texture_state::SetShaderMode(GLboolean mode)

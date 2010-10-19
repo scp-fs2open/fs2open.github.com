@@ -378,6 +378,7 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
 	{ "turret-set-direction-preference",	OP_TURRET_SET_DIRECTION_PREFERENCE,		3, INT_MAX},	//FUBAR
+	{ "turret-set-rate_of_fire",			OP_TURRET_SET_RATE_OF_FIRE,			3, INT_MAX},	//FUBAR
 	{ "turret-set-optimum-range",			OP_TURRET_SET_OPTIMUM_RANGE,			3, INT_MAX},	//FUBAR
 	{ "turret-set-target-priorities",			OP_TURRET_SET_TARGET_PRIORITIES,	3, INT_MAX},	//FUBAR
 	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
@@ -4859,7 +4860,8 @@ int sexp_mission_time()
 // next function returns the time into the mission, in milliseconds
 int sexp_mission_time_msecs()
 {
-	return f2i(Missiontime * 1000);
+	// multiplying by 1000 can go over the limit for LONG_MAX so cast to long long int first
+	return f2i((longlong)Missiontime * 1000);
 }
 
 // returns percent of length of distance to special warpout plane
@@ -12279,7 +12281,7 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name(ship *shipp, char alt_index)
+void sexp_ingame_ship_alt_name(ship *shipp, int alt_index)
 {
 	Assert((shipp != NULL) && (alt_index < Mission_alt_type_count));
 
@@ -12301,7 +12303,7 @@ void sexp_ingame_ship_alt_name(ship *shipp, char alt_index)
 }
 
 // Goober5000
-void sexp_parse_ship_alt_name(p_object *parse_obj, char alt_index)
+void sexp_parse_ship_alt_name(p_object *parse_obj, int alt_index)
 {
 	Assert((parse_obj != NULL) && (alt_index < Mission_alt_type_count));
 
@@ -12417,13 +12419,42 @@ void sexp_ship_change_callsign(int node)
 		if (sindex >= 0) 
 		{
 			shipp = &Ships[sindex];
-			shipp->callsign_index = char (cindex);
+			shipp->callsign_index = cindex;
 			multi_send_ship(shipp);
 		}
 		node = CDR(node);
 	}
 
 	multi_end_packet();
+}
+
+void multi_sexp_ship_change_callsign()
+{
+	char new_callsign[TOKEN_LENGTH];
+	int cindex;
+	ship *shipp = NULL;
+
+	multi_get_string(new_callsign);
+	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
+	{
+		cindex = -1;
+	}
+	else
+	{
+		cindex = mission_parse_lookup_callsign(new_callsign);
+		if (cindex < 0) 
+		{
+			cindex = mission_parse_add_callsign(new_callsign);
+		}
+	}
+
+	while (multi_get_ship(shipp)) 
+	{
+		if (shipp != NULL) 
+		{
+			shipp->callsign_index = cindex;
+		}
+	}
 }
 
 // Goober5000
@@ -13562,35 +13593,6 @@ void multi_sexp_change_subsystem_name()
 	}
 }
 
-void multi_sexp_ship_change_callsign()
-{
-	char new_callsign[TOKEN_LENGTH];
-	int cindex;
-	ship *shipp = NULL;
-
-	multi_get_string(new_callsign);
-	if (!new_callsign || !stricmp(new_callsign, SEXP_ANY_STRING))
-	{
-		cindex = -1;
-	}
-	else
-	{
-		cindex = mission_parse_lookup_callsign(new_callsign);
-		if (cindex < 0) 
-		{
-			cindex = mission_parse_add_callsign(new_callsign);
-		}
-	}
-
-	while (multi_get_ship(shipp)) 
-	{
-		if (shipp != NULL) 
-		{
-			shipp->callsign_index = char (cindex);
-		}
-	}
-}
-
 // Goober5000
 void sexp_change_ship_class(int n)
 {
@@ -13916,16 +13918,20 @@ void multi_sexp_set_ambient_light()
 	}
 }
 
-void sexp_set_post_effect(int node) {
-	Assert(node > -1);
+void sexp_set_post_effect(int node)
+{
+	char *name = CTEXT(node);
 
-	SCP_string effect = CTEXT(node);
-	node = CDR(node);
-	int amount = eval_num(node);
+	if (name == NULL) {
+		return;
+	}
+
+	int amount = eval_num(CDR(node));
+
 	if (amount < 0 || amount > 100)
 		amount = 0;
 
-	gr_set_post_effect(effect, amount);
+	gr_post_process_set_effect(name, amount);
 }
 
 // taylor - load and set a skybox model
@@ -14572,6 +14578,43 @@ void sexp_turret_set_direction_preference(int node)
 				CAP(dirpref, 1, 100);
 				turret->favor_current_facing = 1.0f + (((float) (100 - dirpref)) / 10.0f);
 			}
+		
+		// next
+		node = CDR(node);
+	}
+}
+
+void sexp_turret_set_rate_of_fire(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//store rof
+	float rof = (float)eval_num(CDR(node));
+
+	//Set rof
+	while(node != -1){
+		// get the subsystem
+		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+		if(turret == NULL){
+			node = CDR(node);
+			continue;
+		}
+
+		// set the range
+		if(rof < 0)
+			turret->rof_scaler = turret->system_info->turret_rof_scaler ;
+		else
+			turret->rof_scaler = rof/100;
 		
 		// next
 		node = CDR(node);
@@ -17474,7 +17517,26 @@ void sexp_force_perspective(int n)
 
 void sexp_set_camera_shudder(int n)
 {
-	game_shudder_apply(eval_num(n), (float) eval_num(CDR(n)) * 0.01f);
+	int time = eval_num(n); 
+	float intensity = (float) eval_num(CDR(n)) * 0.01f; 
+
+	game_shudder_apply(time, intensity);
+
+	multi_start_packet();
+	multi_send_int(time);
+	multi_send_float(intensity); 
+	multi_end_packet();
+}
+
+void multi_sexp_set_camera_shudder()
+{
+	int time;
+	float intensity;
+
+	multi_get_int(time);
+	if (multi_get_float(intensity)) {
+		game_shudder_apply(time, intensity);
+	}
 }
 
 void sexp_set_jumpnode_color(int n)
@@ -18894,6 +18956,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_set_direction_preference(node);
 				break;
 
+			case OP_TURRET_SET_RATE_OF_FIRE:
+				sexp_val = SEXP_TRUE;
+				sexp_turret_set_rate_of_fire(node);
+				break;
+
 			case OP_TURRET_SET_OPTIMUM_RANGE:
 				sexp_val = SEXP_TRUE;
 				sexp_turret_set_optimum_range(node);
@@ -19614,6 +19681,10 @@ void multi_sexp_eval()
 				muli_sexp_toggle_cutscene_bars(op_num == OP_CUTSCENES_SET_CUTSCENE_BARS );
 				break;
 
+			case OP_SET_CAMERA_SHUDDER:
+				multi_sexp_set_camera_shudder();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -20024,6 +20095,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_LOCK_ALL:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -21270,6 +21342,15 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_NUMBER;
+			} else {
+				return OPF_SUBSYSTEM;
+			}
+
+		case OP_TURRET_SET_RATE_OF_FIRE:
 			if(argnum == 0) {
 				return OPF_SHIP;
 			} else if(argnum == 1) {
@@ -22980,6 +23061,7 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
+		case OP_TURRET_SET_RATE_OF_FIRE:
 		case OP_TURRET_SET_OPTIMUM_RANGE:
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -25127,6 +25209,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets specified ship turrets direction preference to the specified value\r\n"
 		"\t1: Ship turrets are on\r\n"
 		"\t2: Preference to set, 0 to disable, or negative to reset to default\r\n"
+		"\trest: Turrets to set\r\n"},
+
+	{ OP_TURRET_SET_RATE_OF_FIRE, "turret-set-rate-of-fire\r\n"
+		"\tSets specified ship turrets rate of fire to the specified value\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\t2: Rate to set in percentage format (200 = 2x, 50 = .5x), 0 to set to number of fire points, or negative to reset to default\r\n"
 		"\trest: Turrets to set\r\n"},
 
 	{ OP_TURRET_SET_OPTIMUM_RANGE, "turret-set-optimum-range\r\n"

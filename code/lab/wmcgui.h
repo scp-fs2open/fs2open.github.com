@@ -217,6 +217,7 @@ class GUIObject : public LinkedList
 	friend class Checkbox;
 	friend class Button;
 	friend class ImageAnim;
+	friend class HUDGauge;
 	friend class GUIScreen;
 	friend class GUISystem;
 private:

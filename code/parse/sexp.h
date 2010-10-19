@@ -597,6 +597,7 @@ struct ship;
 #define OP_SHIP_CHANGE_CALLSIGN				(0x00da | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// FUBAR
 #define OP_IS_FACING						(0x00db | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_FORCE_GLIDE						(0x00dc	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_TURRET_SET_RATE_OF_FIRE			(0x00dd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 
 /* made obsolete by Goober5000
 // debugging sexpressions

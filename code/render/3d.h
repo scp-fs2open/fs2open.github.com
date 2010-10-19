@@ -237,7 +237,6 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a);
 
 // draw a 2d bitmap on a poly
 int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_tmap_flags = 0);
-int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, float u0, float v0, float u1, float v1, uint additional_tmap_flags = 0);
 
 // Enables clipping with an arbritary plane.   This will be on
 // until g3_stop_clip_plane is called or until next frame.

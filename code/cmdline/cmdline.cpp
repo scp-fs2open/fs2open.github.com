@@ -79,6 +79,8 @@ enum
 #define BUILD_CAP_NO_D3D	(1<<1)
 #define BUILD_CAP_NEW_SND	(1<<2)
 
+#define PARSE_COMMAND_LINE_STRING	"-parse_cmdline_only"
+
 typedef struct
 {
 	// DO NOT CHANGE THE SIZE OF THIS STRING!
@@ -164,6 +166,7 @@ Flag exe_params[] =
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-ati_swap",			"Fix Color issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://scp.indiegames.us/mantis/view.php?id=1669", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+	{ "-disable_glsl_model","Don't use shaders for model rendering", true, 0,		EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
@@ -362,6 +365,7 @@ cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
 cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
+cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_load_all_weapons = 0;
@@ -375,6 +379,7 @@ int Cmdline_no_fbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
+int Cmdline_no_glsl_model_rendering = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -394,6 +399,7 @@ cmdline_parm window_arg("-window", NULL);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window",NULL);
 cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
 cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
+cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, NULL); 
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -602,8 +608,8 @@ void os_validate_parms(char *cmdline)
 	char *token;
 	int parm_found;
 
-   token = strtok(cmdline, seps);
-   while(token != NULL) {
+	token = strtok(cmdline, seps);
+	while(token != NULL) {
 	
 		if (token[0] == '-') {
 			parm_found = 0;
@@ -676,6 +682,12 @@ void os_init_cmdline(char *cmdline)
 {
 	FILE *fp;
 
+	bool parse_config = true;
+	
+	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) != NULL) {
+		parse_config =  false;
+	}
+
 	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
 	// the the parse_parms and validate_parms line.  Read these first so anything actually on
 	// the command line will take precedence
@@ -700,7 +712,7 @@ void os_init_cmdline(char *cmdline)
 #endif
 
 	// if the file exists, get a single line, and deal with it
-	if ( fp ) {
+	if ( fp && parse_config ) {
 		char *buf, *p;
 
 		size_t len = filelength( fileno(fp) ) + 2;
@@ -1250,6 +1262,10 @@ bool SetCmdlineParams()
 
 	if ( noglsl_arg.found() ) {
 		Cmdline_noglsl = 1;
+	}
+
+	if (no_glsl_models_arg.found() ) {
+		Cmdline_no_glsl_model_rendering = 1;
 	}
 
 	if ( img2dds_arg.found() )

@@ -14,7 +14,7 @@
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "starfield/starfield.h"
-#include "freespace2/freespace.h"	
+#include "freespace2/freespace.h"
 #include "io/timer.h"
 #include "starfield/nebula.h"
 #include "lighting/lighting.h"
@@ -27,19 +27,19 @@
 #include "hud/hudtarget.h"
 
 
-#define MAX_DEBRIS_VCLIPS	4
+#define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
 #define DEBRIS_ROT_RANGE			8
-#define DEBRIS_ROT_RANGE_SCALER	10000
-#define RND_MAX_MASK	0x3fff
-#define HALF_RND_MAX 0x2000
+#define DEBRIS_ROT_RANGE_SCALER		10000
+#define RND_MAX_MASK				0x3fff
+#define HALF_RND_MAX				0x2000
 
 typedef struct {
 	vec3d pos;
 	vec3d last_pos;
 	int active;
 	int vclip;
-	float size;	
+	float size;
 } old_debris;
 
 const int MAX_DEBRIS = 200;
@@ -53,9 +53,6 @@ float BASE_SIZE_NEB = 0.5f;
 static int Subspace_model_inner = -1;
 static int Subspace_model_outer = -1;
 static int Rendering_to_env = 0;
-
-poly_list perspective_bitmap_list;
-int perspective_bitmap_buffer = -1;
 
 int Num_stars = 500;
 fix starfield_timestamp = 0;
@@ -77,22 +74,22 @@ typedef struct flare_bitmap {
 
 // global info (not individual instances)
 typedef struct starfield_bitmap {
-	char filename[MAX_FILENAME_LEN];					// bitmap filename
-	char glow_filename[MAX_FILENAME_LEN];				// only for suns
-	int bitmap_id;										// bitmap handle
+	char filename[MAX_FILENAME_LEN];				// bitmap filename
+	char glow_filename[MAX_FILENAME_LEN];			// only for suns
+	int bitmap_id;									// bitmap handle
 	int n_frames;
 	int fps;
-	int glow_bitmap;									// only for suns
+	int glow_bitmap;								// only for suns
 	int glow_n_frames;
 	int glow_fps;
-	int xparent;	
-	float r, g, b, i, spec_r, spec_g, spec_b;			// only for suns
-	int glare;											// only for suns
-	int flare;											// Is there a lens-flare for this sun?
-	flare_info flare_infos[MAX_FLARE_COUNT];			// each flare can use a texture in flare_bmp, with different scale
-	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];			// bitmaps for different lens flares (can be re-used)
-	int n_flares;										// number of flares actually used
-	int n_flare_bitmaps;								// number of flare bitmaps available
+	int xparent;
+	float r, g, b, i, spec_r, spec_g, spec_b;		// only for suns
+	int glare;										// only for suns
+	int flare;										// Is there a lens-flare for this sun?
+	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
+	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];		// bitmaps for different lens flares (can be re-used)
+	int n_flares;									// number of flares actually used
+	int n_flare_bitmaps;							// number of flare bitmaps available
 	int used_this_level;
 	int preload;
 } starfield_bitmap;
@@ -102,9 +99,9 @@ typedef struct starfield_bitmap_instance {
 	float scale_x, scale_y;							// x and y scale
 	int div_x, div_y;								// # of x and y divisions
 	angles ang;										// angles from FRED
-	int n_prim;										// number of primitives in buffer
 	int star_bitmap_index;							// index into starfield_bitmap array
-	ushort *buffer;
+	int n_verts;
+	vertex *verts;
 
 	starfield_bitmap_instance() { memset(this, 0, sizeof(starfield_bitmap_instance)); star_bitmap_index = -1; };
 } starfield_bitmap_instance;
@@ -230,63 +227,59 @@ void stars_load_debris(int fullneb = 0)
 	}
 }
 
-// allocates the poly list for the current decal list
-void perspective_bitmap_allocate_poly_list(int x, int y)
+const int MAX_PERSPECTIVE_DIVISIONS = 5;
+const float p_phi = 10.0f, p_theta = 10.0f;
+
+extern void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
+
+static void starfield_create_bitmap_buffer(const int si_idx)
 {
-	perspective_bitmap_list.allocate(x*y*6);
-}
-
-static void starfield_kill_bitmap_buffer()
-{
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl)
-		return;
-
-	if (perspective_bitmap_buffer != -1) {
-		gr_destroy_buffer(perspective_bitmap_buffer);
-		perspective_bitmap_buffer = -1;
-	}
-}
-
-// draw a perspective bitmap based on angles and radius
-#define MAX_PERSPECTIVE_DIVISIONS			5
-void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
-static void starfield_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, ushort *index_buffer)
-{
-	float p_phi = 10.0f;
-	float p_theta = 10.0f;
-
 	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 
-	vertex v;
+	vertex v[4];
 	matrix m, m_bank;
-	int idx, s_idx;	
-	float ui, vi;	
+	int idx, s_idx;
+	float ui, vi;
 	angles bank_first;
-	
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl)
-		return;
 
-	Assert( index_buffer != NULL );
+	starfield_bitmap_instance *sbi = &Starfield_bitmap_instances[si_idx];
+
+	angles *a = &sbi->ang;
+	float scale_x = sbi->scale_x;
+	float scale_y = sbi->scale_y;
+	int div_x = sbi->div_x;
+	int div_y = sbi->div_y;
 
 	// cap division values
-	div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
-//	div_x = 1;
-	div_y = div_y > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_y;	
+//	div_x = div_x > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_x;
+	div_x = 1;
+	div_y = div_y > MAX_PERSPECTIVE_DIVISIONS ? MAX_PERSPECTIVE_DIVISIONS : div_y;
+
+	if (sbi->verts != NULL) {
+		delete [] sbi->verts;
+	}
+
+	sbi->verts = new(std::nothrow) vertex[div_x * div_y * 6];
+
+	if (sbi->verts == NULL) {
+		sbi->star_bitmap_index = -1;
+		return;
+	}
+
+	sbi->n_verts = div_x * div_y * 6;
 
 	// texture increment values
 	ui = 1.0f / (float)div_x;
 	vi = 1.0f / (float)div_y;	
 
 	// adjust for aspect ratio
-    //scale_x *= (gr_screen.clip_aspect + 0.55f); // fudge factor
-    //scale_x *= (gr_screen.clip_aspect + (0.7333333f/gr_screen.clip_aspect)); // fudge factor
-    scale_x *= 1.883333f; //fudge factor
+	//scale_x *= (gr_screen.clip_aspect + 0.55f); // fudge factor
+	//scale_x *= (gr_screen.clip_aspect + (0.7333333f/gr_screen.clip_aspect)); // fudge factor
+	scale_x *= 1.883333f; //fudge factor
 
 	float s_phi = 0.5f + (((p_phi * scale_x) / 360.0f) / 2.0f);
-	float s_theta = (((p_theta * scale_y) / 360.0f) / 2.0f);	
+	float s_theta = (((p_theta * scale_y) / 360.0f) / 2.0f);
 	float d_phi = -(((p_phi * scale_x) / 360.0f) / (float)(div_x));
 	float d_theta = -(((p_theta * scale_y) / 360.0f) / (float)(div_y));
 
@@ -300,191 +293,76 @@ static void starfield_create_perspective_bitmap_buffer(angles *a, float scale_x,
 	float b_save = a->b;
 	a->b = 0.0f;
 	vm_angles_2_matrix(&m, a);
-	a->b = b_save;	
+	a->b = b_save;
 
-	// generate the bitmap points	
-	for(idx=0; idx<=div_x; idx++){
-		for(s_idx=0; s_idx<=div_y; s_idx++){				
-			// get world spherical coords			
-			stars_project_2d_onto_sphere(&s_points[idx][s_idx], 1000.0f, s_phi + ((float)idx*d_phi), s_theta + ((float)s_idx*d_theta));			
+	// generate the bitmap points
+	for(idx=0; idx<=div_x; idx++) {
+		for(s_idx=0; s_idx<=div_y; s_idx++) {
+			// get world spherical coords
+			stars_project_2d_onto_sphere(&s_points[idx][s_idx], 1000.0f, s_phi + ((float)idx*d_phi), s_theta + ((float)s_idx*d_theta));
 			
 			// bank the bitmap first
 			vm_vec_rotate(&t_points[idx][s_idx], &s_points[idx][s_idx], &m_bank);
 
 			// rotate on the sphere
-			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);					
+			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);
 		}
-	}		
+	}
 
-	int start = perspective_bitmap_list.n_verts;
-	int s = 0;
-	// render all polys
-	/*
-						y_dim		y_dim*2				y_dim*n
-1	(0*y_dim+0)----(1*y_dim+0)----(2*y_dim+0)-- ... --(y_dim*n+0)
-	  |					  |
-	  |					  |
-2	(0*y_dim+1)----(1*y_dim+1)----(2*y_dim+1)-- ... --(y_dim*n+1)
-	  |					  |
-	  |					  |
-3	(0*y_dim+2)----(1*y_dim+2)----(2*y_dim+2)-- ... --(y_dim*n+2)
-	  |					  |					  |
-	  .					  .					  .
-	  .					  .					  .
-	  |					  |					  |
-	(y_dim-1)------(1*y_dim*2-1)---(y_dim*3-1)-- ... --(y_dim*(n+1)-1)
+	memset(v, 0, sizeof(vertex) * 4);
 
-  (x_pos*y_dim+y_pos) until (y_pos = y_dim)
+	int j = 0;
 
-  */
-	for(idx=0; idx<div_x+1; idx++){
-		for(s_idx=0; s_idx<div_y+1; s_idx++){						
+	vertex *verts = sbi->verts;
+
+	for (idx = 0; idx < div_x; idx++) {
+		for (s_idx = 0; s_idx < div_y; s_idx++) {
 			// stuff texture coords
-
-			v.u = ui * float(idx);
-			v.v = vi * float(s_idx);
-			v.spec_r=v.spec_g=v.spec_b=0;
-			g3_transfer_vertex(&v, &s_points[idx][s_idx]);
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts++] = v;
-
-			if((idx != div_x) && (s_idx != div_y)){
-
-			//	memset(&index_buffer[s], 0, sizeof(short) * 6);
-
-				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx +		start);	//0
-				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx +		start);	//2
-				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
-
-				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx +		start);	//0
-				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
-				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx + 1 +	start);	//1		
-
-			}
-
-/*			v[0].u = ui * float(idx);
+			v[0].u = ui * float(idx);
 			v[0].v = vi * float(s_idx);
-			v[0].spec_r=v[2].spec_g=v[3].spec_b=0;
-			
+
 			v[1].u = ui * float(idx+1);
 			v[1].v = vi * float(s_idx);
-			v[1].spec_r=v[2].spec_g=v[3].spec_b=0;
 
 			v[2].u = ui * float(idx+1);
 			v[2].v = vi * float(s_idx+1);
-			v[2].spec_r=v[2].spec_g=v[3].spec_b=0;
-
 
 			v[3].u = ui * float(idx);
 			v[3].v = vi * float(s_idx+1);
-			v[3].spec_r=v[2].spec_g=v[3].spec_b=0;
 
-			v[0].flags = 0;
-			v[1].flags = 0;
-			v[2].flags = 0;
-			v[3].flags = 0;
-			verts[0] = &v[0];
-			verts[1] = &v[1];
-			verts[2] = &v[2];
-			verts[3] = &v[3];
+			g3_transfer_vertex(&v[0], &s_points[idx][s_idx]);
+			g3_transfer_vertex(&v[1], &s_points[idx+1][s_idx]);
+			g3_transfer_vertex(&v[2], &s_points[idx+1][s_idx+1]);
+			g3_transfer_vertex(&v[3], &s_points[idx][s_idx+1]);
 
-			g3_transfer_vertex(verts[0], &s_points[idx][s_idx]);			
-			g3_transfer_vertex(verts[1], &s_points[idx+1][s_idx]);			
-			g3_transfer_vertex(verts[2], &s_points[idx+1][s_idx+1]);						
-			g3_transfer_vertex(verts[3], &s_points[idx][s_idx+1]);						
-
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts] = *verts[0];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 1] = *verts[1];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 2] = *verts[2];
-			perspective_bitmap_list.n_verts += 3;
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts] = *verts[0];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 1] = *verts[2];
-			perspective_bitmap_list.vert[perspective_bitmap_list.n_verts + 2] = *verts[3];
-			perspective_bitmap_list.n_verts += 3;
-*/
+			// poly 1
+			verts[j++] = v[0];
+			verts[j++] = v[1];
+			verts[j++] = v[2];
+			// poly 2
+			verts[j++] = v[0];
+			verts[j++] = v[2];
+			verts[j++] = v[3];
 		}
 	}
-	start += perspective_bitmap_list.n_verts;
-//	Assert(perspective_bitmap_list.n_verts == div_x * div_y * 6);
 
-	SAFEPOINT("buffer filled, creating");
-
+	Assert( j == sbi->n_verts );
 }
 
-static void starfield_update_index_buffers(int index, int nverts)
-{
-	Assert( (index >= 0) && (index < (int)Starfield_bitmap_instances.size()) );
-
-	if ( (index < 0) || (index >= (int)Starfield_bitmap_instances.size()) )
-		return;
-
-	bool change_up = false;
-
-	change_up = ((nverts <= 0) || (nverts != (Starfield_bitmap_instances[index].n_prim * 3)));
-
-	if ( change_up && (Starfield_bitmap_instances[index].buffer != NULL) ) {
-		vm_free(Starfield_bitmap_instances[index].buffer);
-		Starfield_bitmap_instances[index].buffer = NULL;
-	}
-
-	if (nverts <= 0) {
-		Starfield_bitmap_instances[index].n_prim = 0;
-		return;
-	}
-
-	if (Starfield_bitmap_instances[index].buffer == NULL) {
-		Starfield_bitmap_instances[index].buffer = (ushort*) vm_malloc( nverts * sizeof(ushort) );
-	}
-
-	Starfield_bitmap_instances[index].n_prim = nverts / 3;
-}
-	
 // take the Starfield_bitmap_instances[] and make all the vertex buffers that you'll need to draw it 
-static void starfield_generate_bitmap_instance_buffers()
+static void starfield_generate_bitmap_buffers()
 {
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl)
-		return;
+	int idx;
 
-	SAFEPOINT("entering starfield_generate_bitmap_instance_vertex_buffers");
-
-	int idx, vert_count = 0;
-
-	const int sb_instances = (int)Starfield_bitmap_instances.size();
+	int sb_instances = (int)Starfield_bitmap_instances.size();
 
 	for (idx = 0; idx < sb_instances; idx++) {
-		// make sure it's usable
-		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0)
+		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0) {
 			continue;
-
-		int nverts = Starfield_bitmap_instances[idx].div_x * Starfield_bitmap_instances[idx].div_y * 6;
-		vert_count += nverts * 2;
-
-		starfield_update_index_buffers(idx, nverts);
-	}
-
-	perspective_bitmap_list.allocate(vert_count);
-	perspective_bitmap_list.n_verts = 0;
-
-	for (idx = 0; idx < sb_instances; idx++) {
-		// make sure it's usable
-		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0)
-			continue;
-
-		if (Starfield_bitmap_instances[idx].buffer != NULL) {
-			starfield_create_perspective_bitmap_buffer(&Starfield_bitmap_instances[idx].ang, Starfield_bitmap_instances[idx].scale_x,
-					Starfield_bitmap_instances[idx].scale_y, Starfield_bitmap_instances[idx].div_x, Starfield_bitmap_instances[idx].div_y,
-					TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 0, Starfield_bitmap_instances[idx].buffer);
 		}
+
+		starfield_create_bitmap_buffer(idx);
 	}
-
-	if (perspective_bitmap_list.n_verts == 0)
-		return;
-
-	starfield_kill_bitmap_buffer();
-
-	perspective_bitmap_buffer = gr_make_buffer(&perspective_bitmap_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_UV1);
-	
-	SAFEPOINT("leaving starfield_generate_bitmap_instance_vertex_buffers");
 }
 
 static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
@@ -496,7 +374,7 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	memset( sbm, 0, sizeof(starfield_bitmap) );
 
 	sbm->bitmap_id = -1;
-	sbm->glow_bitmap = -1;		
+	sbm->glow_bitmap = -1;
 	sbm->glow_n_frames = 1;
 
 	for (i = 0; i < MAX_FLARE_BMP; i++) {
@@ -782,10 +660,9 @@ void stars_load_all_bitmaps()
 
 void stars_clear_instances()
 {
-	starfield_kill_bitmap_buffer();
-
 	for (uint i = 0; i < Starfield_bitmap_instances.size(); i++) {
-		starfield_update_index_buffers(i, 0);
+		delete [] Starfield_bitmap_instances[i].verts;
+		Starfield_bitmap_instances[i].verts = NULL;
 	}
 
 	Starfield_bitmap_instances.clear();
@@ -921,7 +798,7 @@ void stars_post_level_init()
 	memset( &odebris, 0, sizeof(old_debris) * MAX_DEBRIS );
 
 	
-	for (i=0; i<8; i++ )	{
+	for (i=0; i<8; i++ ) {
 		ubyte intensity = (ubyte)((i + 1) * 24);
 		gr_init_alphacolor(&star_aacolors[i], 255, 255, 255, intensity, AC_TYPE_BLEND );
 		gr_init_color(&star_colors[i], intensity, intensity, intensity );
@@ -956,7 +833,7 @@ void stars_post_level_init()
 		stars_load_all_bitmaps();
 	}
 
-	starfield_generate_bitmap_instance_buffers();
+	starfield_generate_bitmap_buffers();
 }
 
 
@@ -970,11 +847,11 @@ extern object * Player_obj;
 float Star_amount = STAR_AMOUNT_DEFAULT;
 float Star_dim = STAR_DIM_DEFAULT;
 float Star_cap = STAR_CAP_DEFAULT;
-float Star_max_length = STAR_MAX_LENGTH_DEFAULT;	
+float Star_max_length = STAR_MAX_LENGTH_DEFAULT;
 
 #define STAR_FLAG_TAIL			(1<<0)	// Draw a tail when moving
 #define STAR_FLAG_DIM			(1<<1)	// Dim as you move
-#define STAR_FLAG_ANTIALIAS	(1<<2)	// Draw the star using antialiased lines
+#define STAR_FLAG_ANTIALIAS		(1<<2)	// Draw the star using antialiased lines
 #define STAR_FLAG_DEFAULT		(STAR_FLAG_TAIL | STAR_FLAG_DIM)
 
 uint Star_flags = STAR_FLAG_DEFAULT;
@@ -982,64 +859,64 @@ uint Star_flags = STAR_FLAG_DEFAULT;
 //XSTR:OFF
 DCF(stars,"Set parameters for starfield")
 {
-	if ( Dc_command )	{
+	if ( Dc_command ) {
 		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "tail" ))	{
+		if ( !strcmp( Dc_arg, "tail" )) {
 			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
+			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) ) {
 				Dc_help = 1;
 			} else {
 				Star_amount = Dc_arg_float;
 			} 
-		} else if ( !strcmp( Dc_arg, "len" ))	{
+		} else if ( !strcmp( Dc_arg, "len" )) {
 			dc_get_arg(ARG_FLOAT);
 			Star_max_length = Dc_arg_float;
-		} else if ( !strcmp( Dc_arg, "dim" ))	{
+		} else if ( !strcmp( Dc_arg, "dim" )) {
 			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f )	{
+			if ( Dc_arg_float < 0.0f ) {
 				Dc_help = 1;
 			} else {
 				Star_dim = Dc_arg_float;
 			} 
-		} else if ( !strcmp( Dc_arg, "flag" ))	{
+		} else if ( !strcmp( Dc_arg, "flag" )) {
 			dc_get_arg(ARG_STRING);
-			if ( !strcmp( Dc_arg, "tail" ))	{
+			if ( !strcmp( Dc_arg, "tail" )) {
 				Star_flags ^= STAR_FLAG_TAIL;
-			} else if ( !strcmp( Dc_arg, "dim" ))	{
+			} else if ( !strcmp( Dc_arg, "dim" )) {
 				Star_flags ^= STAR_FLAG_DIM;
-			} else if ( !strcmp( Dc_arg, "aa" ))	{
+			} else if ( !strcmp( Dc_arg, "aa" )) {
 				Star_flags ^= STAR_FLAG_ANTIALIAS;
 			} else {
-				Dc_help = 1;	
+				Dc_help = 1;
 			}
-		} else if ( !strcmp( Dc_arg, "cap" ))	{
+		} else if ( !strcmp( Dc_arg, "cap" )) {
 			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 255.0f) )	{
+			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 255.0f) ) {
 				Dc_help = 1;
 			} else {
 				Star_cap = Dc_arg_float;
 			} 
-		} else if ( !strcmp( Dc_arg, "m0" )  )	{
+		} else if ( !strcmp( Dc_arg, "m0" )) {
 			Star_amount = 0.0f;
 			Star_dim = 0.0f;
 			Star_cap = 0.0f;
 			Star_flags = 0;
 			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "m1" ) || !strcmp( Dc_arg, "default" ))	{
+		} else if ( !strcmp( Dc_arg, "m1" ) || !strcmp( Dc_arg, "default" )) {
 			Star_amount = STAR_AMOUNT_DEFAULT;
 			Star_dim = STAR_DIM_DEFAULT;
 			Star_cap = STAR_CAP_DEFAULT;
 			Star_flags = STAR_FLAG_DEFAULT;
 			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "m2" ))	{
+		} else if ( !strcmp( Dc_arg, "m2" )) {
 			Star_amount = 0.75f;
 			Star_dim = 20.0f;
 			Star_cap = 75.0f;
 			Star_flags = STAR_FLAG_TAIL|STAR_FLAG_DIM|STAR_FLAG_ANTIALIAS;
 			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "num" ))	{
+		} else if ( !strcmp( Dc_arg, "num" )) {
 			dc_get_arg(ARG_INT);
-			if ( (Dc_arg_int < 0) || (Dc_arg_int > MAX_STARS) )	{
+			if ( (Dc_arg_int < 0) || (Dc_arg_int > MAX_STARS) ) {
 				Dc_help = 1;
 			} else {
 				Num_stars = Dc_arg_int;
@@ -1050,7 +927,7 @@ DCF(stars,"Set parameters for starfield")
 		}
 	}
 
-	if ( Dc_help )	{
+	if ( Dc_help ) {
 		dc_printf( "Usage: stars keyword\nWhere keyword can be in the following forms:\n" );
 		dc_printf( "stars default   Resets stars to all default values\n" );
 		dc_printf( "stars num X     Sets number of stars to X.  Between 0 and %d.\n", MAX_STARS );
@@ -1068,7 +945,7 @@ DCF(stars,"Set parameters for starfield")
 		Dc_status = 0;	// don't print status if help is printed.  Too messy.
 	}
 
-	if ( Dc_status )	{
+	if ( Dc_status ) {
 		dc_printf( "Num_stars: %d\n", Num_stars );
 		dc_printf( "Tail: %.2f\n", Star_amount );
 		dc_printf( "Dim: %.2f\n", Star_dim );
@@ -1126,7 +1003,7 @@ void stars_draw_sun(int show_sun)
 	int idx;
 	vec3d sun_pos;
 	vec3d sun_dir;
-	vertex sun_vex;	
+	vertex sun_vex;
 	starfield_bitmap *bm;
 	float local_scale;
 
@@ -1158,7 +1035,7 @@ void stars_draw_sun(int show_sun)
 		sun_pos.xyz.y = 1.0f;
 		stars_get_sun_pos(idx, &sun_pos);
 		
-		// get the direction		
+		// get the direction
 		sun_dir = sun_pos;
 		vm_vec_normalize(&sun_dir);
 
@@ -1236,7 +1113,7 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 // draw the corresponding glow for sun_n
 void stars_draw_sun_glow(int sun_n)
 {
-	starfield_bitmap *bm;		
+	starfield_bitmap *bm;
 	vec3d sun_pos, sun_dir;
 	vertex sun_vex;	
 	float local_scale;
@@ -1266,9 +1143,9 @@ void stars_draw_sun_glow(int sun_n)
 	sun_pos.xyz.y = 1.0f;
 	stars_get_sun_pos(sun_n, &sun_pos);	
 
-	// get the direction		
+	// get the direction
 	sun_dir = sun_pos;
-	vm_vec_normalize(&sun_dir);	
+	vm_vec_normalize(&sun_dir);
 
 	// if supernova
 	if ( supernova_active() && (sun_n == 0) )
@@ -1310,10 +1187,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 		return;
 
 	if ( !Cmdline_nohtl ) {
-		if (perspective_bitmap_buffer < 0)
-			return;
-
-		gr_set_lighting(false, false);
 		gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
 	}
 
@@ -1323,9 +1196,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 	// turn off zbuffering
 	int saved_zbuffer_mode = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);
-
-	// render all bitmaps
-	gr_set_buffer(perspective_bitmap_buffer);
 
 	int sb_instances = (int)Starfield_bitmap_instances.size();
 
@@ -1342,12 +1212,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 			continue;
 		}
 
-		if (!Cmdline_nohtl) {
-			if (Starfield_bitmap_instances[idx].buffer == NULL) {
-				Int3();
-				continue;
-			}
-		}
+		int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_TRILIST | TMAP_HTL_3D_UNLIT;
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
@@ -1356,24 +1221,16 @@ void stars_draw_bitmaps(int show_bitmaps)
 				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id);
 			}
 
-			if (Cmdline_nohtl) {
-				g3_draw_perspective_bitmap(&Starfield_bitmap_instances[idx].ang, Starfield_bitmap_instances[idx].scale_x, Starfield_bitmap_instances[idx].scale_y, Starfield_bitmap_instances[idx].div_x, Starfield_bitmap_instances[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
-			} else {
-				gr_render_buffer(0, Starfield_bitmap_instances[idx].n_prim, Starfield_bitmap_instances[idx].buffer);
-			}
-		} else {				
+			tmap_flags |= TMAP_FLAG_XPARENT;
+		} else {
 			if (Starfield_bitmaps[star_index].fps) {
 				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
 			} else {
 				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
 			}
-					
-			if (Cmdline_nohtl) {
-				g3_draw_perspective_bitmap(&Starfield_bitmap_instances[idx].ang, Starfield_bitmap_instances[idx].scale_x, Starfield_bitmap_instances[idx].scale_y, Starfield_bitmap_instances[idx].div_x, Starfield_bitmap_instances[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
-			} else {
-				gr_render_buffer(0, Starfield_bitmap_instances[idx].n_prim, Starfield_bitmap_instances[idx].buffer);
-			}
 		}
+
+		gr_render(Starfield_bitmap_instances[idx].n_verts, Starfield_bitmap_instances[idx].verts, tmap_flags);
 	}
 
 	// turn on culling
@@ -1385,49 +1242,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 	if ( !Cmdline_nohtl )
 		gr_end_instance_matrix();
 }
-
-/*
-void calculate_bitmap_matrix(starfield_bitmaps *bm, vec3d *v)
-{
-	vm_vector_2_matrix(&bm->m, v, NULL, NULL);
-	vm_orthogonalize_matrix(&bm->m);
-}
-
-void calculate_bitmap_points(starfield_bitmaps *bm, float bank)
-{
-	int i;
-	vec3d fvec, uvec, rvec, tmp;
-	angles tangles;
-
-	vm_orthogonalize_matrix(&bm->m);
-	if (bank) {
-		tangles.p = tangles.h = 0.0f;
-		tangles.b = bank;
-		vm_rotate_matrix_by_angles(&bm->m, &tangles);
-	}
-
-	fvec = bm->m.fvec;
-	vm_vec_scale(&fvec, bm->dist );
-	uvec = bm->m.uvec;
-	rvec = bm->m.rvec;
-
-	vm_vec_sub(&tmp, &fvec, &uvec);
-	vm_vec_sub(&bm->points[3], &tmp, &rvec);
-
-	vm_vec_sub(&tmp, &fvec, &uvec);
-	vm_vec_add(&bm->points[2], &tmp, &rvec);
-
-	vm_vec_add(&tmp, &fvec, &uvec);
-	vm_vec_add(&bm->points[1], &tmp, &rvec);
-
-	vm_vec_add(&tmp, &fvec, &uvec);
-	vm_vec_sub(&bm->points[0], &tmp, &rvec);
-
-	for (i=0; i<4; i++){
-		vm_vec_normalize(&bm->points[i]);
-	}
-}
-*/
 
 extern int Interp_subspace;
 extern float Interp_subspace_offset_u;
@@ -1450,29 +1264,29 @@ float Subspace_glow_rate = 1.0f;
 //XSTR:OFF
 DCF(subspace_set,"Set parameters for subspace effect")
 {
-	if ( Dc_command )	{
+	if ( Dc_command ) {
 		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "u" ))	{
+		if ( !strcmp( Dc_arg, "u" )) {
 			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f )	{
+			if ( Dc_arg_float < 0.0f ) {
 				Dc_help = 1;
 			} else {
 				subspace_u_speed = Dc_arg_float;
 			} 
-		} else if ( !strcmp( Dc_arg, "v" ))	{
+		} else if ( !strcmp( Dc_arg, "v" )) {
 			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f )	{
+			if ( Dc_arg_float < 0.0f ) {
 				Dc_help = 1;
 			} else {
 				subspace_v_speed = Dc_arg_float;
-			} 
+			}
 		} else {
 			// print usage, not stats
 			Dc_help = 1;
 		}
 	}
 
-	if ( Dc_help )	{
+	if ( Dc_help ) {
 		dc_printf( "Usage: subspace keyword\nWhere keyword can be in the following forms:\n" );
 		dc_printf( "subspace u X    Where X is how fast u moves.\n", MAX_STARS );
 		dc_printf( "subspace v X    Where X is how fast v moves.\n" );
@@ -1480,7 +1294,7 @@ DCF(subspace_set,"Set parameters for subspace effect")
 		Dc_status = 0;	// don't print status if help is printed.  Too messy.
 	}
 
-	if ( Dc_status )	{
+	if ( Dc_status ) {
 		dc_printf( "u: %.2f\n", subspace_u_speed );
 		dc_printf( "v: %.2f\n", subspace_v_speed );
 	}
@@ -1517,7 +1331,7 @@ void subspace_render()
 		if ( Subspace_glow_frame > 100.0f )
 			Subspace_glow_frame = 0.0f;
 
-		while ( Subspace_glow_frame > total_time )	{
+		while ( Subspace_glow_frame > total_time ) {
 			Subspace_glow_frame -= total_time;
 		}
 
@@ -1529,21 +1343,21 @@ void subspace_render()
 			framenum = NOISE_NUM_FRAMES-1;
 
 		subspace_offset_u += flFrametime*subspace_u_speed;
-		if (subspace_offset_u > 1.0f )	{
+		if (subspace_offset_u > 1.0f ) {
 			subspace_offset_u -= 1.0f;
 		}
 
 		subspace_offset_u_inner += flFrametime*subspace_u_speed*3.0f;
-		if (subspace_offset_u > 1.0f )	{
+		if (subspace_offset_u > 1.0f ) {
 			subspace_offset_u -= 1.0f;
 		}
 
 		subspace_offset_v += flFrametime*subspace_v_speed;
-		if (subspace_offset_v > 1.0f )	{
+		if (subspace_offset_v > 1.0f ) {
 			subspace_offset_v -= 1.0f;
 		}
 	}
-	
+
 
 	matrix tmp;
 	angles angs = { 0.0f, 0.0f, 0.0f };
@@ -1560,7 +1374,7 @@ void subspace_render()
 	mst.primary_glow_bitmap = Subspace_glow_bitmap;
 	mst.glow_noise = Noise[framenum];
 
-	int saved_gr_zbuffering = 	gr_zbuffer_get();
+	int saved_gr_zbuffering = gr_zbuffer_get();
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
@@ -1573,7 +1387,7 @@ void subspace_render()
 	model_set_thrust( Subspace_model_inner, &mst );
 
 	render_flags |= MR_SHOW_THRUSTERS;
-	model_set_alpha(1.0f);	
+	model_set_alpha(1.0f);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
@@ -1582,10 +1396,10 @@ void subspace_render()
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
-		
-	Interp_subspace = 1;	
+
+	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u_inner;
-	Interp_subspace_offset_v = 0.0f;	
+	Interp_subspace_offset_v = 0.0f;
 
 	angs.b = -subspace_offset_v * PI2;
 
@@ -1596,7 +1410,7 @@ void subspace_render()
 	model_set_thrust( Subspace_model_inner, &mst );
 
 	render_flags |= MR_SHOW_THRUSTERS;
-	model_set_alpha(1.0f);	
+	model_set_alpha(1.0f);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
@@ -1608,52 +1422,23 @@ void subspace_render()
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
-/*
-	// add some directional lighting from the ends of subspace
-	if ( !Rendering_to_env ) {
-		int i, j;
-		thruster_bank *bank;
-
-		polymodel *pm = model_get(Subspace_model_inner);
-		Assert( pm != NULL );
-
-		for (i = 0; i < pm->n_thrusters; i++) {
-			bank = &pm->thrusters[i];
-
-			for (j = 0; j < bank->num_points; j++) {
-				light_add_directional(&bank->points[j].pnt, 0.65f, 1.0f, 1.0f, 1.0f, 0.7f, 0.7f, 0.7f, true);
-			}
-		}
-	}*/
 }
 
 
 #ifdef NEW_STARS
 //each star is actualy a line
 //so each star point is actualy two points
-struct star_point{
-	star_point(){
+struct star_point {
+	star_point() {
 		memset(p1.color,INT_MAX,4);
-//		memset(p2.color,0,4);
 		p2.color[0]=64;
 		p2.color[1]=64;
 		p2.color[2]=64;
 		p2.color[3]=64;
 	}
 	colored_vector p1,p2;
-	void set(vertex* P1,vertex* P2, color*Col){
-		
-//		if(resize || gr_screen.rendering_to_texture != -1)
-/*		{
-			extern bool gr_resize_screen_posf(float *x, float *y);
-
-			gr_resize_screen_posf(&P1->x, &P1->y);
-			gr_resize_screen_posf(&P2->x, &P2->y);
-		}
-*/ 
-
+	void set(vertex* P1,vertex* P2, color*Col) {
 		p1.vec.set_screen_vert(*P1);
-
 		p2.vec.set_screen_vert(*P2);
 		if(gr_screen.mode == GR_OPENGL)
 			memcpy(p1.color, &Col->red,3);
@@ -1663,7 +1448,7 @@ struct star_point{
 	};
 };
 
-class star_point_list{
+class star_point_list {
 	int n_points;
 	star_point *point_list;
 public:
@@ -1676,7 +1461,7 @@ public:
 		point_list = new star_point[size];
 		n_points = size;
 	}
-	star_point* operator[] (int idx){
+	star_point* operator[] (int idx) {
 		return &point_list[idx];
 	}
 	colored_vector* get_buffer(){return &point_list->p1;};
@@ -1687,19 +1472,7 @@ star_point_list star_list;
 void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interface figured out-Bobboau
 {
 	star_list.allocate(Num_stars);
-	//make sure our star buffer is big enough
 
-/*	
-	if(!last_stars_filled){
-		star* star = Stars;
-		for(int i = 0; i< Num_stars; i++){
-			vertex p2;
-			star++;
-			g3_rotate_faraway_vertex(&p2, &star->pos);
-			star->last_star_pos = p2;
-		}
-	}
-*/
 	//Num_stars = 1;
 	int i;
 	star *sp;
@@ -1707,10 +1480,10 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 	float ratio;
 	int color;
 	float colorf;
-	vertex p1, p2;			
+	vertex p1, p2;
 	int can_draw = 1;
 
-	if ( !last_stars_filled )	{
+	if ( !last_stars_filled ) {
 		for (sp=Stars,i=0; i<Num_stars; i++, sp++ ) {
 			vertex p2;
 			g3_rotate_faraway_vertex(&p2, &sp->pos);
@@ -1723,14 +1496,14 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 	int tmp_num_stars;
 
 	tmp_num_stars = (Detail.num_stars*Num_stars)/MAX_DETAIL_LEVEL;
-	if (tmp_num_stars < 0 )	{
+	if (tmp_num_stars < 0 ) {
 		tmp_num_stars = 0;
-	} else if ( tmp_num_stars > Num_stars )	{
+	} else if ( tmp_num_stars > Num_stars ) {
 		tmp_num_stars = Num_stars;
 	}
-		int stars_to_draw = 0;
-	for (sp=Stars,i=0; i<tmp_num_stars; i++, sp++ ) {			
-
+	
+	int stars_to_draw = 0;
+	for (sp=Stars,i=0; i<tmp_num_stars; i++, sp++ ) {
 		can_draw=1;
 		memset(&p1, 0, sizeof(vertex));
 		memset(&p2, 0, sizeof(vertex));
@@ -1740,22 +1513,22 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 		// words, when the ship translates, the stars do not change.
 
 		g3_rotate_faraway_vertex(&p2, &sp->pos);
-		if ( p2.codes )	{
+		if ( p2.codes ) {
 			can_draw = 0;
 		} else {
 			g3_project_vertex(&p2);
-			if ( p2.flags & PF_OVERFLOW )	{
+			if ( p2.flags & PF_OVERFLOW ) {
 				can_draw = 0;
 			}
 		}
 
 		
 
-		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) )	{
+		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) ) {
 
 			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
 
-			if ( dist > Star_max_length )	{
+			if ( dist > Star_max_length ) {
  				ratio = Star_max_length / dist;
 				dist = Star_max_length;
 			} else {
@@ -1771,11 +1544,11 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 			p1.flags = 0;	// not projected
 			g3_code_vertex( &p1 );
 
-			if ( p1.codes )	{
+			if ( p1.codes ) {
 				can_draw = 0;
 			} else {
 				g3_project_vertex(&p1);
-				if ( p1.flags & PF_OVERFLOW )	{
+				if ( p1.flags & PF_OVERFLOW ) {
 					can_draw = 0;
 				}
 			}
@@ -1800,8 +1573,7 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 		p1.sy-=1.5f;
 		p2.sx+=1.5f;
 		p2.sy+=1.5f;
-				star_list[stars_to_draw++]->set(&p2,&p1,&sp->col);
-
+		star_list[stars_to_draw++]->set(&p2,&p1,&sp->col);
 	}
 	gr_set_color_fast( &Stars->col );
 	gr_zbuffer_set(GR_ZBUFF_NONE);
@@ -1818,7 +1590,7 @@ void stars_draw_stars()
 	float dist = 0.0f;
 	float ratio;
 	vDist vDst;
-	vertex p1, p2;			
+	vertex p1, p2;
 	int can_draw = 1;
 
 	if ( !last_stars_filled ) {
@@ -1836,7 +1608,7 @@ void stars_draw_stars()
 	CLAMP(tmp_num_stars, 0, Num_stars);
 
 
-	for (i = 0; i < tmp_num_stars; i++) {			
+	for (i = 0; i < tmp_num_stars; i++) {
 		sp = &Stars[i];
 
 		can_draw = 1;
@@ -1852,15 +1624,15 @@ void stars_draw_stars()
 			can_draw = 0;
 		} else {
 			g3_project_vertex(&p2);
-			if ( p2.flags & PF_OVERFLOW )	{
+			if ( p2.flags & PF_OVERFLOW ) {
 				can_draw = 0;
 			}
 		}
 
-		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) )	{
+		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) ) {
 			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
 
-			if ( dist > Star_max_length )	{
+			if ( dist > Star_max_length ) {
  				ratio = Star_max_length / dist;
 				dist = Star_max_length;
 			} else {
@@ -1880,7 +1652,7 @@ void stars_draw_stars()
 				can_draw = 0;
 			} else {
 				g3_project_vertex(&p1);
-				if ( p1.flags & PF_OVERFLOW )	{
+				if ( p1.flags & PF_OVERFLOW ) {
 					can_draw = 0;
 				}
 			}
@@ -1936,7 +1708,7 @@ void stars_draw_debris()
 			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
-			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
 				d->size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
 			} else {
 				d->size = i2fl(myrand() % 4)*BASE_SIZE;
@@ -1956,13 +1728,13 @@ void stars_draw_debris()
 			frame %= Debris_vclips[d->vclip].nframes;
 
 			if ( (The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
-				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);	
+				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);
 			} else {
-				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
+				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 			}
 
 			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
-			g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );					
+			g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );
 		}
 
 		vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
@@ -1998,7 +1770,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		nebula_render();
 	}
 
-	// draw background stuff	
+	// draw background stuff
 	if ( (Neb2_render_mode != NEB2_RENDER_POLY) && (Neb2_render_mode != NEB2_RENDER_LAME) && show_stars ) {
 		// semi-hack, do we don't fog the background
 		int neb_save = Neb2_render_mode;
@@ -2027,8 +1799,8 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	}
 
 	//if we're not drawing them, quit here
-	if (show_suns){
-		stars_draw_sun( show_suns );	
+	if (show_suns) {
+		stars_draw_sun( show_suns );
 		stars_draw_bitmaps( show_suns );
 	}
 
@@ -2104,7 +1876,7 @@ void stars_page_in()
 			Subspace_glow_bitmap = bm_load( NOX("SunGlow01"));
 		}
 
-		bm_page_in_xparent_texture(Subspace_glow_bitmap);	
+		bm_page_in_xparent_texture(Subspace_glow_bitmap);
 	} else {
 		Subspace_model_inner = -1;
 		Subspace_model_outer = -1;
@@ -2329,7 +2101,7 @@ void stars_draw_background()
 	// draw the model at the player's eye with no z-buffering
 	model_set_alpha(1.0f);
 
-	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, Nmodel_flags);	
+	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, Nmodel_flags);
 
 	if (Nmodel_bitmap >= 0) {
 		model_set_forced_texture(-1);
@@ -2402,24 +2174,24 @@ int stars_find_sun(char *name)
 
 // add an instance for a sun (something actually used in a mission)
 // NOTE that we assume a duplicate is ok here
-int stars_add_sun_entry(starfield_list_entry *sun)
+int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 {
 	int idx, i;
 	starfield_bitmap_instance sbi;
 
-	Assert(sun != NULL);
+	Assert(sun_ptr != NULL);
 
 	// copy information
 	memset(&sbi, 0, sizeof(starfield_bitmap_instance));
-	sbi.ang.p = sun->ang.p;
-	sbi.ang.b = sun->ang.b;
-	sbi.ang.h = sun->ang.h;
-	sbi.scale_x = sun->scale_x;
-	sbi.scale_y = sun->scale_y;
-	sbi.div_x = sun->div_x;
-	sbi.div_y = sun->div_y;
+	sbi.ang.p = sun_ptr->ang.p;
+	sbi.ang.b = sun_ptr->ang.b;
+	sbi.ang.h = sun_ptr->ang.h;
+	sbi.scale_x = sun_ptr->scale_x;
+	sbi.scale_y = sun_ptr->scale_y;
+	sbi.div_x = sun_ptr->div_x;
+	sbi.div_y = sun_ptr->div_y;
 
-	idx = stars_find_sun(sun->filename);
+	idx = stars_find_sun(sun_ptr->filename);
 
 	if (idx == -1) {
 		Warning(LOCATION, "Trying to add a sun that does not exist in stars.tbl!");
@@ -2480,16 +2252,15 @@ int stars_add_sun_entry(starfield_list_entry *sun)
 		for (i = 0; i < (int)Suns.size(); i++) {
 			if ( Suns[i].star_bitmap_index < 0 ) {
 				Suns[i] = sbi;
-                starfield_generate_bitmap_instance_buffers();
-                return i;
+				return i;
 			}
 		}
 	}
 
-    // ... or add a new one 
-    Suns.push_back(sbi);
-    starfield_generate_bitmap_instance_buffers();
-    return Suns.size() - 1;
+	// ... or add a new one 
+	Suns.push_back(sbi);
+
+	return Suns.size() - 1;
 }
 
 // add an instance for a starfield bitmap (something actually used in a mission)
@@ -2538,27 +2309,28 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	// now check if we can make use of a previously discarded instance entry
 	for (int i = 0; i < (int)Starfield_bitmap_instances.size(); i++) {
 		if ( Starfield_bitmap_instances[i].star_bitmap_index < 0 ) {
-            starfield_update_index_buffers(i, 0);
-            Starfield_bitmap_instances[i] = sbi;
-            starfield_generate_bitmap_instance_buffers();
-            return i;
+			// starfield_update_index_buffers(i, 0);
+			Starfield_bitmap_instances[i] = sbi;
+			starfield_create_bitmap_buffer(i);
+			return i;
 		}
 	}
 
 	// ... or add a new one
 	Starfield_bitmap_instances.push_back(sbi);
-	starfield_generate_bitmap_instance_buffers();
-    return Starfield_bitmap_instances.size() - 1;
+	starfield_create_bitmap_buffer(Starfield_bitmap_instances.size() - 1);
+
+	return Starfield_bitmap_instances.size() - 1;
 }
 
 // get the number of entries that each vector contains
-// "sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
+// "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
 // "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries
-int stars_get_num_entries(bool sun, bool bitmap_count)
+int stars_get_num_entries(bool is_a_sun, bool bitmap_count)
 {
 	// try for instance counts first
 	if (!bitmap_count) {
-		if (sun) {
+		if (is_a_sun) {
 			return (int)Suns.size();
 		} else {
 			return (int)Starfield_bitmap_instances.size();
@@ -2566,7 +2338,7 @@ int stars_get_num_entries(bool sun, bool bitmap_count)
 	}
 	// looks like we want bitmap counts (probably only FRED uses this)
 	else {
-		if (sun) {
+		if (is_a_sun) {
 			return (int)Sun_bitmaps.size();
 		} else {
 			return (int)Starfield_bitmaps.size();
@@ -2576,9 +2348,9 @@ int stars_get_num_entries(bool sun, bool bitmap_count)
 
 
 // get a starfield_bitmap entry providing only an instance
-starfield_bitmap *stars_get_bitmap_entry(int index, bool sun)
+starfield_bitmap *stars_get_bitmap_entry(int index, bool is_a_sun)
 {
-	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
+	int max_index = (is_a_sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
 	//WMC - Commented out because it keeps happening, and I don't know what this means.
 	//Assert( (index >= 0) && (index < max_index) );
@@ -2586,9 +2358,9 @@ starfield_bitmap *stars_get_bitmap_entry(int index, bool sun)
 	if ( (index < 0) || (index >= max_index) )
 		return NULL;
 
-	if (sun && (Suns[index].star_bitmap_index >= 0)) {
+	if (is_a_sun && (Suns[index].star_bitmap_index >= 0)) {
 		return &Sun_bitmaps[Suns[index].star_bitmap_index];
-	} else if (!sun && (Starfield_bitmap_instances[index].star_bitmap_index >= 0)) {
+	} else if (!is_a_sun && (Starfield_bitmap_instances[index].star_bitmap_index >= 0)) {
 		return &Starfield_bitmaps[Starfield_bitmap_instances[index].star_bitmap_index];
 	}
 
@@ -2602,16 +2374,16 @@ bool stars_sun_has_glare(int index)
 }
 
 // get a starfield_bitmap_instance, obviously
-starfield_bitmap_instance *stars_get_instance(int index, bool sun)
+starfield_bitmap_instance *stars_get_instance(int index, bool is_a_sun)
 {
-	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
+	int max_index = (is_a_sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
 	Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return NULL;
 
-	if (sun) {
+	if (is_a_sun) {
 		return &Suns[index];
 	} else {
 		return &Starfield_bitmap_instances[index];
@@ -2619,38 +2391,41 @@ starfield_bitmap_instance *stars_get_instance(int index, bool sun)
 }
 
 // set an instace to not render
-void stars_mark_instance_unused(int index, bool sun)
+void stars_mark_instance_unused(int index, bool is_a_sun)
 {
-	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
+	int max_index = (is_a_sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
 	Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return;
 
-	if (sun) {
+	if (is_a_sun) {
 		Suns[index].star_bitmap_index =  -1;
 	} else {
 		Starfield_bitmap_instances[index].star_bitmap_index = -1;
 	}
 
-	starfield_generate_bitmap_instance_buffers();
+	if ( !is_a_sun ) {
+		delete [] Starfield_bitmap_instances[index].verts;
+		Starfield_bitmap_instances[index].verts = NULL;
+	}
 }
 
 // retrieves the name from starfield_bitmap for the instance index
 // NOTE: it's unsafe to return NULL here so use <none> for invalid entries
-const char *stars_get_name_from_instance(int index, bool sun)
+const char *stars_get_name_from_instance(int index, bool is_a_sun)
 {
-	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
+	int max_index = (is_a_sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
 	Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return NOX("<none>");
 
-	if (sun && (Suns[index].star_bitmap_index >= 0)) {
+	if (is_a_sun && (Suns[index].star_bitmap_index >= 0)) {
 		return Sun_bitmaps[Suns[index].star_bitmap_index].filename;
-	} else if (!sun && (Starfield_bitmap_instances[index].star_bitmap_index >= 0)) {
+	} else if (!is_a_sun && (Starfield_bitmap_instances[index].star_bitmap_index >= 0)) {
 		return Starfield_bitmaps[Starfield_bitmap_instances[index].star_bitmap_index].filename;
 	}
 
@@ -2686,19 +2461,19 @@ void stars_set_nebula(bool activate)
 
 // retrieves the name from starfield_bitmap, really only used by FRED2
 // NOTE: it is unsafe to return NULL here, but because that's bad anyway it really shouldn't happen, so we do return NULL.
-const char *stars_get_name_FRED(int index, bool sun)
+const char *stars_get_name_FRED(int index, bool is_a_sun)
 {
 	if (!Fred_running)
 		return NULL;
 
-	int max_index = (sun) ? (int)Sun_bitmaps.size() : (int)Starfield_bitmaps.size();
+	int max_index = (is_a_sun) ? (int)Sun_bitmaps.size() : (int)Starfield_bitmaps.size();
 
 	Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return NULL;
 
-	if (sun) {
+	if (is_a_sun) {
 		return Sun_bitmaps[index].filename;
 	} else {
 		return Starfield_bitmaps[index].filename;
@@ -2706,21 +2481,21 @@ const char *stars_get_name_FRED(int index, bool sun)
 }
 
 // modify an existing starfield bitmap instance, or add a new one if needed
-void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *sbi_new, bool sun)
+void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *sbi_new, bool is_a_sun)
 {
 	if (!Fred_running)
 		return;
 
 	starfield_bitmap_instance sbi;
 	int idx;
-	int add_new = index > ((sun) ? (int)Sun_bitmaps.size() : (int)Starfield_bitmaps.size());
+	int add_new = index > ((is_a_sun) ? (int)Sun_bitmaps.size() : (int)Starfield_bitmaps.size());
 
 	Assert( index >= 0 );
 	Assert( sbi_new != NULL );
 
 	memcpy( &sbi, sbi_new, sizeof(starfield_bitmap_instance) );
 
-	if (sun) {
+	if (is_a_sun) {
 		idx = stars_find_sun((char*)name);
 	} else {
 		idx = stars_find_bitmap((char*)name);
@@ -2734,42 +2509,42 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 	sbi.star_bitmap_index = idx;
 
 	if (add_new) {
-		if (sun) {
+		if (is_a_sun) {
 			Suns.push_back( sbi );
 		} else {
 			Starfield_bitmap_instances.push_back( sbi );
 		}
 	} else {
-		if (sun) {
+		if (is_a_sun) {
 			Suns[index] = sbi;
 		} else {
 			Starfield_bitmap_instances[index] = sbi;
 		}
 	}
 
-	starfield_generate_bitmap_instance_buffers();
+	if ( !is_a_sun ) {
+		starfield_create_bitmap_buffer(index);
+	}
 }
 
 // erase an instance, note that this is very slow so it should only be done in FRED
-void stars_delete_instance_FRED(int index, bool sun)
+void stars_delete_entry_FRED(int index, bool is_a_sun)
 {
 	if (!Fred_running)
 		return;
 
-	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
+	int max_index = (is_a_sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
 
 	Assert( (index >= 0) && (index < max_index) );
 
 	if ( (index < 0) || (index >= max_index) )
 		return;
 
-	if (sun) {
+	if (is_a_sun) {
 		Suns.erase( Suns.begin() + index );
 	} else {
 		Starfield_bitmap_instances.erase( Starfield_bitmap_instances.begin() + index );
 	}
-
-	starfield_generate_bitmap_instance_buffers();
 }
 
 // Goober5000
@@ -2926,9 +2701,4 @@ void stars_pack_backgrounds()
 			}
 		}
 	}
-}
-
-DCF(sgbib, "")
-{
-    starfield_generate_bitmap_instance_buffers();
 }

@@ -1112,12 +1112,15 @@ int ds_init()
 	ds_sound_device = alcOpenDevice( (const ALCchar*) playback_device.c_str() );
 
 	if (ds_sound_device == NULL) {
+		mprintf(("  Failed to open playback_device (%s) returning error (%s)\n", playback_device.c_str(), openal_error_string(1)));
 		goto AL_InitError;
 	}
 
 	ds_sound_context = alcCreateContext(ds_sound_device, attrList);
 
 	if (ds_sound_context == NULL) {
+		mprintf(("  Failed to create context for playback_device (%s) with attrList = { 0x%x, %d, %d } returning error (%s)\n",
+			playback_device.c_str(), attrList[0], attrList[1], attrList[2], openal_error_string(1)));
 		goto AL_InitError;
 	}
 

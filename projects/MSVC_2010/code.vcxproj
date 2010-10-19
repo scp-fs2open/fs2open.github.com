@@ -769,6 +769,7 @@
     <ClCompile Include="..\..\code\globalincs\alphacolors.cpp" />
     <ClCompile Include="..\..\code\globalincs\crypt.cpp" />
     <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
+    <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings_test.cpp" />
@@ -997,7 +998,6 @@
     <ClCompile Include="..\..\code\network\psnet.cpp" />
     <ClCompile Include="..\..\code\network\psnet2.cpp" />
     <ClCompile Include="..\..\code\network\stand_gui.cpp" />
-    <ClCompile Include="..\..\code\decals\decals.cpp" />
     <ClCompile Include="..\..\code\ddsutils\ddsutils.cpp" />
     <ClCompile Include="..\..\code\pngutils\pngutils.cpp" />
     <ClCompile Include="..\..\code\Cmdline\cmdline.cpp" />
@@ -1050,6 +1050,7 @@
     <ClInclude Include="..\..\code\globalincs\alphacolors.h" />
     <ClInclude Include="..\..\code\globalincs\crypt.h" />
     <ClInclude Include="..\..\code\globalincs\def_files.h" />
+    <ClInclude Include="..\..\code\globalincs\fsmemory.h" />
     <ClInclude Include="..\..\code\globalincs\globals.h" />
     <ClInclude Include="..\..\code\globalincs\linklist.h" />
     <ClInclude Include="..\..\code\globalincs\mspdb_callstack.h" />
@@ -1265,7 +1266,6 @@
     <ClInclude Include="..\..\code\network\psnet.h" />
     <ClInclude Include="..\..\code\network\psnet2.h" />
     <ClInclude Include="..\..\code\network\stand_gui.h" />
-    <ClInclude Include="..\..\code\decals\decals.h" />
     <ClInclude Include="..\..\code\ddsutils\ddsutils.h" />
     <ClInclude Include="..\..\code\pngutils\pngutils.h" />
     <ClInclude Include="..\..\code\Cmdline\cmdline.h" />

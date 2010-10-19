@@ -428,18 +428,6 @@ SOURCE=..\..\code\debugconsole\timerbar.cpp
 SOURCE=..\..\code\debugconsole\timerbar.h
 # End Source File
 # End Group
-# Begin Group "Decals"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\decals\decals.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\decals\decals.h
-# End Source File
-# End Group
 # Begin Group "Demo"
 
 # PROP Default_Filter ""
@@ -646,6 +634,14 @@ SOURCE=..\..\code\globalincs\def_files.cpp
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\def_files.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\fsmemory.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\fsmemory.h
 # End Source File
 # Begin Source File
 
@@ -2383,7 +2379,41 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
 
+# Begin Custom Build
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# Begin Custom Build
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
 
 !ENDIF 
 

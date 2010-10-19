@@ -248,8 +248,6 @@
 		34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531308C3D69F003B1351 /* timerbar.cpp */; };
 		34C71B0408C41AB100459F5B /* dbugfile.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531208C3D69F003B1351 /* dbugfile.h */; };
 		34C71B0608C41AB200459F5B /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531008C3D69F003B1351 /* console.cpp */; };
-		34C71B0708C41AB500459F5B /* decals.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531708C3D69F003B1351 /* decals.h */; };
-		34C71B0808C41AB500459F5B /* decals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531608C3D69F003B1351 /* decals.cpp */; };
 		34C71B0908C41AB800459F5B /* demo.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531A08C3D69F003B1351 /* demo.h */; };
 		34C71B0A08C41AB800459F5B /* demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531908C3D69F003B1351 /* demo.cpp */; };
 		34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459532D08C3D6A0003B1351 /* exceptionhandler.h */; };
@@ -655,8 +653,8 @@
 		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
 		60584F4C11347FE10080E50C /* audiostr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F208C3D6A0003B1351 /* audiostr.cpp */; };
 		606034471134822A0032BB9A /* dscap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F908C3D6A0003B1351 /* dscap.cpp */; };
-		60997BCE1213616B00D41028 /* radardradis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60997BCC1213616B00D41028 /* radardradis.cpp */; };
-		60997BCF1213616B00D41028 /* radardradis.h in Headers */ = {isa = PBXBuildFile; fileRef = 60997BCD1213616B00D41028 /* radardradis.h */; };
+		606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 606CBAE1126A1BFF007BE418 /* fsmemory.cpp */; };
+		60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B56A32124BBFD5005AF5A9 /* fsmemory.h */; };
 		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
 		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
@@ -1000,8 +998,6 @@
 		3459531208C3D69F003B1351 /* dbugfile.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = dbugfile.h; sourceTree = "<group>"; };
 		3459531308C3D69F003B1351 /* timerbar.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = timerbar.cpp; sourceTree = "<group>"; };
 		3459531408C3D69F003B1351 /* timerbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = timerbar.h; sourceTree = "<group>"; };
-		3459531608C3D69F003B1351 /* decals.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = decals.cpp; sourceTree = "<group>"; };
-		3459531708C3D69F003B1351 /* decals.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = decals.h; sourceTree = "<group>"; };
 		3459531908C3D69F003B1351 /* demo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = demo.cpp; sourceTree = "<group>"; };
 		3459531A08C3D69F003B1351 /* demo.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = demo.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
@@ -1610,8 +1606,8 @@
 		34DCF87A08CFB21600A528A0 /* scramble */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = scramble; sourceTree = BUILT_PRODUCTS_DIR; };
 		34DCF88408CFB2B500A528A0 /* scramble.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = scramble.cpp; sourceTree = "<group>"; };
 		34DCF88508CFB2B500A528A0 /* scramble.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scramble.h; sourceTree = "<group>"; };
-		60997BCC1213616B00D41028 /* radardradis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = radardradis.cpp; sourceTree = "<group>"; };
-		60997BCD1213616B00D41028 /* radardradis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = radardradis.h; sourceTree = "<group>"; };
+		606CBAE1126A1BFF007BE418 /* fsmemory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsmemory.cpp; sourceTree = "<group>"; };
+		60B56A32124BBFD5005AF5A9 /* fsmemory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsmemory.h; sourceTree = "<group>"; };
 		60E7978A10F59C1C00904FA6 /* trackirglobal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = trackirglobal.cpp; path = external_dll/trackirglobal.cpp; sourceTree = "<group>"; };
 		60E7978C10F59C4100904FA6 /* externalcode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = externalcode.h; path = external_dll/externalcode.h; sourceTree = "<group>"; };
 		60E7978D10F59C4100904FA6 /* trackirpublic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = trackirpublic.h; path = external_dll/trackirpublic.h; sourceTree = "<group>"; };
@@ -1958,7 +1954,6 @@
 				3459530908C3D69F003B1351 /* ddsutils */,
 				3459530C08C3D69F003B1351 /* debris */,
 				3459530F08C3D69F003B1351 /* debugconsole */,
-				3459531508C3D69F003B1351 /* decals */,
 				3459531808C3D69F003B1351 /* demo */,
 				3459531B08C3D69F003B1351 /* directx */,
 				3459532B08C3D6A0003B1351 /* exceptionhandler */,
@@ -2176,15 +2171,6 @@
 			path = debugconsole;
 			sourceTree = "<group>";
 		};
-		3459531508C3D69F003B1351 /* decals */ = {
-			isa = PBXGroup;
-			children = (
-				3459531608C3D69F003B1351 /* decals.cpp */,
-				3459531708C3D69F003B1351 /* decals.h */,
-			);
-			path = decals;
-			sourceTree = "<group>";
-		};
 		3459531808C3D69F003B1351 /* demo */ = {
 			isa = PBXGroup;
 			children = (
@@ -2283,18 +2269,20 @@
 		3459535508C3D6A0003B1351 /* globalincs */ = {
 			isa = PBXGroup;
 			children = (
-				3468A8CE0991BD4200123C87 /* def_files.cpp */,
-				3468A8CF0991BD4200123C87 /* def_files.h */,
 				3459535608C3D6A0003B1351 /* alphacolors.cpp */,
 				3459535708C3D6A0003B1351 /* alphacolors.h */,
 				3459535808C3D6A0003B1351 /* crypt.cpp */,
 				3459535908C3D6A0003B1351 /* crypt.h */,
-				F0ED189E101064C70011978C /* safe_strings_test.cpp */,
-				F0ED189F101064C70011978C /* safe_strings.h */,
-				F0ED18A0101064C70011978C /* safe_strings.cpp */,
+				3468A8CE0991BD4200123C87 /* def_files.cpp */,
+				3468A8CF0991BD4200123C87 /* def_files.h */,
+				606CBAE1126A1BFF007BE418 /* fsmemory.cpp */,
+				60B56A32124BBFD5005AF5A9 /* fsmemory.h */,
 				3459535A08C3D6A0003B1351 /* globals.h */,
 				3459535B08C3D6A0003B1351 /* linklist.h */,
 				3459535C08C3D6A0003B1351 /* pstypes.h */,
+				F0ED189E101064C70011978C /* safe_strings_test.cpp */,
+				F0ED189F101064C70011978C /* safe_strings.h */,
+				F0ED18A0101064C70011978C /* safe_strings.cpp */,
 				3459535D08C3D6A0003B1351 /* systemvars.cpp */,
 				3459535E08C3D6A0003B1351 /* systemvars.h */,
 				3459535F08C3D6A0003B1351 /* version.cpp */,
@@ -3351,7 +3339,7 @@
 			files = (
 				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				3459586F08C3D8CB003B1351 /* freespace.h in Headers */,
-				60997BCF1213616B00D41028 /* radardradis.h in Headers */,
+				60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3393,7 +3381,6 @@
 				34C71B0008C41AAD00459F5B /* debris.h in Headers */,
 				34C71B0208C41AB000459F5B /* timerbar.h in Headers */,
 				34C71B0408C41AB100459F5B /* dbugfile.h in Headers */,
-				34C71B0708C41AB500459F5B /* decals.h in Headers */,
 				34C71B0908C41AB800459F5B /* demo.h in Headers */,
 				34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */,
 				34C71B0E08C41AC100459F5B /* fireballs.h in Headers */,
@@ -3858,7 +3845,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 34BE723808C940D200673B45 /* Build configuration list for PBXProject "FS2_Open" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* FS2_Open */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -3936,7 +3930,7 @@
 			files = (
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				3459596B08C3D8CB003B1351 /* freespace.cpp in Sources */,
-				60997BCE1213616B00D41028 /* radardradis.cpp in Sources */,
+				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3977,7 +3971,6 @@
 				34C71B0108C41AAD00459F5B /* debris.cpp in Sources */,
 				34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */,
 				34C71B0608C41AB200459F5B /* console.cpp in Sources */,
-				34C71B0808C41AB500459F5B /* decals.cpp in Sources */,
 				34C71B0A08C41AB800459F5B /* demo.cpp in Sources */,
 				34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */,
 				34C71B0D08C41AC100459F5B /* warpineffect.cpp in Sources */,

@@ -258,8 +258,6 @@ FS2_SOURCES =	\
 	debugconsole/dbugfile.h	\
 	debugconsole/timerbar.cpp	\
 	debugconsole/timerbar.h	\
-	decals/decals.cpp	\
-	decals/decals.h	\
 	demo/demo.cpp	\
 	demo/demo.h	\
 	exceptionhandler/exceptionhandler.cpp	\
@@ -293,6 +291,8 @@ FS2_SOURCES =	\
 	globalincs/crypt.h	\
 	globalincs/def_files.cpp	\
 	globalincs/def_files.h	\
+	globalincs/fsmemory.cpp	\
+	globalincs/fsmemory.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
 	globalincs/pstypes.h	\

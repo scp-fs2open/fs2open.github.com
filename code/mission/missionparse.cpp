@@ -2568,7 +2568,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the alternate name
-		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
+		p_objp->alt_type_index = mission_parse_lookup_alt(name);
 		if(p_objp->alt_type_index < 0)
 			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name, name);
 		else
@@ -2583,7 +2583,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the callsign
-		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
+		p_objp->callsign_index = mission_parse_lookup_callsign(name);
 		if(p_objp->callsign_index < 0)
 			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name, name);
 		else
@@ -4536,6 +4536,12 @@ void parse_event(mission *pm)
 	event->team = -1;
 	if( optional_string("+Team:") ) {
 		stuff_int(&event->team);
+
+		// sanity check
+		if (event->team < -1 || event->team >= Num_iffs) {
+			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			event->team = -1;
+		}
 	}
 
 	event->timestamp = timestamp(-1);
@@ -4605,6 +4611,12 @@ void parse_goal(mission *pm)
 	goalp->team = 0;
 	if ( optional_string("+Team:") ){
 		stuff_int( &goalp->team );
+
+		// sanity check
+		if (goalp->team < -1 || goalp->team >= Num_iffs) {
+			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			goalp->team = -1;
+		}
 	}
 }
 

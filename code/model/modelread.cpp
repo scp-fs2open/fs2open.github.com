@@ -68,6 +68,8 @@ char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
 
+static uint Global_checksum = 0;
+
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
 
@@ -78,7 +80,9 @@ int Model_ram = 0;			// How much RAM the models use total
 
 static int Model_signature = 0;
 
-void generate_vertex_buffers(bsp_info*, polymodel*);
+void interp_configure_vertex_buffers(polymodel*, int);
+void interp_pack_vertex_buffers(polymodel*, int);
+
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
 void model_set_bay_path_nums(polymodel *pm);
 
@@ -220,20 +224,19 @@ void model_unload(int modelnum, int force)
 	if (pm->submodel) {
 		for (i = 0; i < pm->n_models; i++) {
 			if ( !Cmdline_nohtl ) {
-				for (j = 0; j < (int)pm->submodel[i].buffer.size(); j++) {
-					pm->submodel[i].buffer[j].index_buffer.release();
-				}
-
 				pm->submodel[i].buffer.clear();
-				gr_destroy_buffer(pm->submodel[i].indexed_vertex_buffer);
 			}
-			
+
 			if ( pm->submodel[i].bsp_data )	{
 				vm_free(pm->submodel[i].bsp_data);
 			}
 		}
 
 		vm_free(pm->submodel);
+	}
+
+	if ( !Cmdline_nohtl ) {
+		gr_destroy_buffer(pm->vertex_buffer_id);
 	}
 
 	if ( pm->xc ) {
@@ -707,6 +710,135 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
+IBX ibuffer_info;
+
+void create_vertex_buffer(polymodel *pm)
+{
+	if (Cmdline_nohtl || Is_standalone) {
+		return;
+	}
+
+	int i;
+
+	// initialize empty buffer
+	pm->vertex_buffer_id = gr_create_buffer();
+
+	if (pm->vertex_buffer_id < 0) {
+		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);
+	}
+
+	// clear struct and prepare for IBX usage
+	memset( &ibuffer_info, 0, sizeof(IBX) );
+
+	// Begin IBX code
+	if ( !Cmdline_noibx ) {
+		// use the same filename as the POF but with an .bx extension
+		strcpy_s( ibuffer_info.name, pm->filename );
+		char *pb = strchr( ibuffer_info.name, '.' );
+		if ( pb ) *pb = 0;
+		strcat_s( ibuffer_info.name, NOX(".bx") );
+
+		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+		// check if it's a zero size file and if so bail out to create a new one
+		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
+			cfclose( ibuffer_info.read );
+			ibuffer_info.read = NULL;
+		}
+
+		if (ibuffer_info.read != NULL) {
+			bool ibx_valid = false;
+
+			// grab a checksum of the IBX, for debugging purposes
+			uint ibx_checksum = 0;
+			cfseek(ibuffer_info.read, 0, SEEK_SET);
+			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
+			cfseek(ibuffer_info.read, 0, SEEK_SET);
+
+			// get the file size that we use to safety check with.
+			// be sure to subtract from this when we read something out
+			ibuffer_info.size = cfilelength( ibuffer_info.read );
+
+			// file id
+			int ibx = cfread_int( ibuffer_info.read );
+			ibuffer_info.size -= sizeof(int); // subtract
+
+			// make sure the file is valid
+			switch (ibx) {
+				// "XB  " - ("  BX" in file)
+				case 0x58422020:
+					ibx_valid = true;
+					break;
+			}
+
+			if (ibx_valid) {
+				// file is valid so grab the checksum out of the .bx and verify it matches the POF
+				uint ibx_sum = cfread_uint( ibuffer_info.read );
+				ibuffer_info.size -= sizeof(uint); // subtract
+
+				if (ibx_sum != Global_checksum) {
+					// bah, it's invalid for this POF
+					ibx_valid = false;
+
+					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
+				}
+			}
+
+
+			if ( !ibx_valid ) {
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+				ibuffer_info.size = 0;
+			} else {
+				mprintf(("IBX: Found a good IBX to read for '%s'.\n", pm->filename));
+				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", Global_checksum, ibx_checksum, pm->filename));
+			}
+		}
+
+		// if the read file is absent or invalid then write out the new info
+		if (ibuffer_info.read == NULL) {
+			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+			if (ibuffer_info.write != NULL) {
+				mprintf(("IBX: Starting a new IBX for '%s'.\n", pm->filename));
+
+				// file id, default to version 1
+				cfwrite_int( 0x58422020, ibuffer_info.write ); // "XB  " - ("  BX" in file)
+
+				// POF checksum
+				cfwrite_uint( Global_checksum, ibuffer_info.write );
+			}
+		}
+	} // End IBX code
+
+	// determine the size and configuration of each buffer segment
+	for (i = 0; i < pm->n_models; i++) {
+		interp_configure_vertex_buffers(pm, i);
+	}
+
+	// these must be reset to NULL for the tests to work correctly later
+	if (ibuffer_info.read != NULL) {
+		cfclose( ibuffer_info.read );
+	}
+
+	if (ibuffer_info.write != NULL) {
+		cfclose( ibuffer_info.write );
+	}
+
+	memset( &ibuffer_info, 0, sizeof(IBX) );
+
+	// now actually fill the buffer with our info ...
+	for (i = 0; i < pm->n_models; i++) {
+		interp_pack_vertex_buffers(pm, i);
+
+		// release temporary memory
+		pm->submodel[i].buffer.release();
+	}
+
+	// ... and then finalize buffer
+	gr_pack_buffer(pm->vertex_buffer_id, NULL);
+}
+
 // Goober5000
 bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 {
@@ -806,8 +938,6 @@ int Bogus_warning_flag_1903 = 0;
 void parse_triggers(int &n_trig, queued_animation **triggers, char *props);
 
 
-IBX ibuffer_info;
-
 //reads a binary file containing a 3d model
 int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
 {
@@ -837,167 +967,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		return -1;
 	}		
 
-	// Begin IBX code - taylor
-	if ( !Cmdline_nohtl && !Cmdline_noibx ) {
-		// generate checksum for the POF
-		uint pof_checksum = 0;
-		cfseek(fp, 0, SEEK_SET);	
-		cf_chksum_long(fp, &pof_checksum);
-		cfseek(fp, 0, SEEK_SET);
+	// generate checksum for the POF
+	cfseek(fp, 0, SEEK_SET);	
+	cf_chksum_long(fp, &Global_checksum);
+	cfseek(fp, 0, SEEK_SET);
 
-		// clear struct and prepare for IBX usage
-		memset( &ibuffer_info, 0, sizeof(IBX) );
-
-		// get name for tangent space file
-		strcpy_s( ibuffer_info.tsb_name, filename );
-		char *pb = strchr( ibuffer_info.tsb_name, '.' );
-		if ( pb ) *pb = 0;
-		strcat_s( ibuffer_info.tsb_name, NOX(".tsb") );
-
-		// use the same filename as the POF but with an .ibx extension
-		strcpy_s( ibuffer_info.name, filename );
-		pb = strchr( ibuffer_info.name, '.' );
-		if ( pb ) *pb = 0;
-		strcat_s( ibuffer_info.name, NOX(".ibx") );
-
-		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-		// check if it's a zero size file and if so bail out to create a new one
-		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
-			cfclose( ibuffer_info.read );
-			ibuffer_info.read = NULL;
-		}
-
-		if ( Cmdline_normal && (ibuffer_info.read != NULL) ) {
-			ibuffer_info.tsb_read = cfopen( ibuffer_info.tsb_name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-			if ( (ibuffer_info.tsb_read == NULL) || !cfilelength(ibuffer_info.tsb_read) ) {
-				if (ibuffer_info.tsb_read != NULL)
-					cfclose( ibuffer_info.tsb_read);
-
-				ibuffer_info.tsb_read = NULL;
-
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-			}
-		}
-
-		if (ibuffer_info.read != NULL) {
-			bool ibx_valid = false;
-			bool tsb_valid = true;	// the TSB is assumed valid by default
-
-			// grab a checksum of the IBX, for debugging purposes
-			uint ibx_checksum = 0;
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-
-			// get the file size that we use to safety check with.
-			// be sure to subtract from this when we read something out
-			ibuffer_info.size = cfilelength( ibuffer_info.read );
-
-			// file id
-			int ibx = cfread_int( ibuffer_info.read );
-			ibuffer_info.size -= sizeof(int); // subtract
-
-			// make sure the file is valid
-			switch (ibx)
-			{
-				// "XBI " - (" IBX" in file)
-				case 0x58424920:
-				// "XBI2" - ("2IBX" in file)
-				case 0x58424932:
-					ibx_valid = true;
-					break;
-			}
-
-			if (ibx_valid) {
-				// file is valid so grab the checksum out of the .ibx and verify it matches the POF
-				uint ibx_sum = cfread_uint( ibuffer_info.read );
-				ibuffer_info.size -= sizeof(uint); // subtract
-
-				if (ibx_sum != pof_checksum) {
-					// bah, it's invalid for this POF
-					ibx_valid = false;
-
-					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
-				}
-
-				if (ibuffer_info.tsb_read != NULL) {
-					// get the file size that we use to safety check with.
-					// be sure to subtract from this when we read something out
-					ibuffer_info.tsb_size = cfilelength( ibuffer_info.tsb_read );
-
-					// check file id
-					int tsb = cfread_int( ibuffer_info.tsb_read );
-					ibuffer_info.tsb_size -= sizeof(int);
-
-					// "BST2" - ("2TSB" in file)
-					if (tsb != 0x42535432)
-						tsb_valid = false;
-
-					// if it's valid then check for the correct IBX checksum
-					if (tsb_valid) {
-						uint tsb_sum = cfread_uint( ibuffer_info.tsb_read );
-						ibuffer_info.tsb_size -= sizeof(uint);
-
-						if (tsb_sum != ibx_checksum)
-							tsb_valid = false;
-					}
-
-					if ( !tsb_valid )
-						mprintf(("IBX:  Warning!  Found invalid TSB file: '%s'\n", ibuffer_info.tsb_name));
-				}
-			}
-
-
-			if ( !ibx_valid || !tsb_valid ) {
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-				ibuffer_info.size = 0;
-
-				if (ibuffer_info.tsb_read != NULL) {
-					cfclose( ibuffer_info.tsb_read);
-					ibuffer_info.tsb_read = NULL;
-					ibuffer_info.tsb_size = 0;
-				}
-			} else {
-				mprintf(("IBX: Found a good %s to read for '%s'.\n", (ibuffer_info.tsb_read != NULL) ? "IBX/TSB" : "IBX", filename));
-				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
-			}
-		}
-
-		// if the read file is absent or invalid then write out the new info
-		if (ibuffer_info.read == NULL) {
-			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-			if (ibuffer_info.write != NULL) {
-				mprintf(("IBX: Starting a new IBX for '%s'.\n", filename));
-
-				// file id, default to version 1
-				cfwrite_int( 0x58424920, ibuffer_info.write ); // "XBI " - (" IBX" in file)
-
-				// POF checksum
-				cfwrite_uint( pof_checksum, ibuffer_info.write );
-
-
-				// tangent space data
-				if (Cmdline_normal) {
-					ibuffer_info.tsb_write = cfopen( ibuffer_info.tsb_name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-					if (ibuffer_info.tsb_write != NULL) {
-						mprintf(("IBX: Starting a new TSB for '%s'.\n", filename));
-
-						// file id
-						cfwrite_int( 0x42535432, ibuffer_info.tsb_write );	// "BST2" - ("2TSB" in file)
-
-						// POF checksum (NOTE: This gets replaced by the IBX checksum after it's been created!)
-						cfwrite_uint( pof_checksum, ibuffer_info.tsb_write );
-					}
-				}
-			}
-		}
-	} // End IBX code
 
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
@@ -1084,7 +1058,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				for ( i = 0; i < pm->n_models; i++ )
 				{
 					/* HACK: This is an almighty hack because it is late at night and I don't want to screw up a vm_free */
-					new ( &( pm->submodel[ i ].buffer ) ) SCP_vector<buffer_data>( );
+					new ( &( pm->submodel[ i ].buffer ) ) vertex_buffer( );
 					pm->submodel[ i ].Reset( );
 				}
 
@@ -1548,9 +1522,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
 		//key_getch();
 
-				if(!Cmdline_nohtl) {
-					generate_vertex_buffers(&pm->submodel[n], pm);
-				}
 				break;
 
 			}
@@ -1989,7 +1960,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				n = cfread_int(fp);
 				pm->n_textures = n;
 				// Don't overwrite memory!!
-				Assert(n <= MAX_MODEL_TEXTURES);
+				Verify(pm->n_textures <= MAX_MODEL_TEXTURES);
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )
 				{
@@ -2203,43 +2174,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #endif
 
 	cfclose(fp);
-
-	// these must be reset to NULL for the tests to work correctly later
-	if (ibuffer_info.read != NULL)
-		cfclose( ibuffer_info.read );
-
-	if (ibuffer_info.tsb_read != NULL)
-		cfclose( ibuffer_info.tsb_read );
-
-	if (ibuffer_info.write != NULL) {
-		// if we switched to v2 at any point during IBX creation, make sure to update the header
-		if (ibuffer_info.version == 2) {
-			cfseek( ibuffer_info.write, 0, CF_SEEK_SET );
-			cfwrite_int( 0x58424932, ibuffer_info.write ); // "XBI2" - ("2IBX" in file)
-		}
-
-		cfclose( ibuffer_info.write );
-	}
-
-	if (ibuffer_info.tsb_write != NULL) {
-		// update TSB with IBX checksum, for data sanity reasons
-		CFILE *cfp = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-		Assert( cfp );
-
-		uint ibx_checksum = 0;
-		cfseek(cfp, 0, SEEK_SET);
-		cf_chksum_long(cfp, &ibx_checksum);
-		cfseek(cfp, 0, SEEK_SET);
-
-		cfseek( ibuffer_info.tsb_write, sizeof(int), CF_SEEK_SET );
-		// write new checksum
-		cfwrite_int( ibx_checksum, ibuffer_info.tsb_write );
-
-		cfclose( cfp );
-		cfclose( ibuffer_info.tsb_write );
-	}
-
-	memset( &ibuffer_info, 0, sizeof(IBX) );
 
 	// mprintf(("Done processing chunks\n"));
 	return 1;
@@ -2504,6 +2438,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	create_family_tree(pm);
 //	dump_object_tree(pm);
+
+	// maybe generate vertex buffers
+	create_vertex_buffer(pm);
 
 //==============================
 // Find all the lower detail versions of the hires model
