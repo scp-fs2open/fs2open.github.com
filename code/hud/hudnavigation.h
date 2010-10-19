@@ -9,7 +9,7 @@
 #define _HUD_NAV_
 
 // Draws the Navigation stuff on the HUD
-void HUD_Draw_Navigation();
+void hud_draw_navigation();
 
 
 #endif

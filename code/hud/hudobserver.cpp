@@ -39,7 +39,7 @@ void hud_observer_init(ship *shipp,ai_info *aip)
 	HUD_config.popup_flags2 = 0x0;
 
 	// shutdown any playing static animations
-	hud_targetbox_static_init();
+	hud_init_target_static();
 }
 
 void hud_obs_render_player(int loc,net_player *pl)

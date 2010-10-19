@@ -2810,6 +2810,8 @@
 		345954CB08C3D6A0003B1351 /* radar */ = {
 			isa = PBXGroup;
 			children = (
+				60997BCC1213616B00D41028 /* radardradis.cpp */,
+				60997BCD1213616B00D41028 /* radardradis.h */,
 				345954CC08C3D6A0003B1351 /* radar.cpp */,
 				345954CD08C3D6A0003B1351 /* radar.h */,
 				345954CE08C3D6A0003B1351 /* radarorb.cpp */,

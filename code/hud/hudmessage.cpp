@@ -15,6 +15,7 @@
 
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
+#include "hud/hudconfig.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
@@ -35,8 +36,8 @@
 #include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
-
-
+#include "anim/packunpack.h" // for talking heads
+#include "anim/animplay.h"
 
 
 /* replaced with those static ints that follow
@@ -135,8 +136,6 @@ struct scrollback_buttons {
 
 int Scroll_time_id;
 
-int MSG_WINDOW_X_START = 5;
-int MSG_WINDOW_Y_START = 5;
 int MSG_WINDOW_WIDTH;		// initialed in hud_init_msg_window()
 int MSG_WINDOW_HEIGHT;
 int MSG_WINDOW_FONT_HEIGHT;
@@ -292,18 +291,9 @@ void hud_init_msg_window()
 	HUD_msg_inited = TRUE;
 }
 
-// ---------------------------------------------------------------------------------------
-// hud_show_msg_window() will display the active HUD messages on the HUD.  It will scroll
-// the messages up when a new message arrives.  
-//
-void hud_show_msg_window()
+void hud_update_msg_window()
 {
 	int i, index;
-
-	hud_set_default_color();
-	gr_set_font(FONT1);
-
-	HUD_set_clip(MSG_WINDOW_X_START,MSG_WINDOW_Y_START, MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
 
 	if ( OLD_ACTIVE_BUFFER_LINES != ACTIVE_BUFFER_LINES ) {
 		// the size of the message window has changed, the best thing to do is to put all
@@ -379,40 +369,49 @@ void hud_show_msg_window()
 				}
 
 			}
-
-			if ( hud_gauge_active(HUD_MESSAGE_LINES) ) {
-				if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) ) {
-					// set the appropriate color					
-					if(HUD_active_msgs_list[i].msg.source){
-						hud_set_gauge_color(HUD_MESSAGE_LINES, HUD_C_BRIGHT);
-					} else {
-						hud_set_gauge_color(HUD_MESSAGE_LINES);
-					}
-
-					// print the message out
-					gr_printf(MSG_WINDOW_X_START + HUD_active_msgs_list[i].msg.x - 2, HUD_active_msgs_list[i].y, "%s", HUD_active_msgs_list[i].msg.text);
-				}
-			}
 		}
-
 	} // end for
 
 	if (Scroll_in_progress)
 		Scroll_time_id = timestamp(SCROLL_TIME);
-
-	HUD_reset_clip();
 }
 
-void hud_show_fixed_text()
+HudGaugeMessages::HudGaugeMessages():
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
-	HUD_ft	*hp;
+}
 
-	hp = &HUD_fixed_text[0];
+void HudGaugeMessages::pageIn()
+{
+}
 
-	if (!timestamp_elapsed(hp->end_time)) {
-		//gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
-		gr_printf(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
-	}
+// ---------------------------------------------------------------------------------------
+// hud_show_msg_window() will display the active HUD messages on the HUD.  It will scroll
+// the messages up when a new message arrives.  
+//
+void HudGaugeMessages::render(float frametime)
+{
+	int i;
+
+	hud_set_default_color();
+
+	setClip(position[0], position[1], MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
+
+	for ( i=0; i < ACTIVE_BUFFER_LINES; i++ ) {
+		if ( !timestamp_elapsed(HUD_active_msgs_list[i].total_life) ) {
+			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) ) {
+				// set the appropriate color					
+				if(HUD_active_msgs_list[i].msg.source){
+					setGaugeColor(HUD_C_BRIGHT);
+				} else {
+					setGaugeColor();
+				}
+
+				// print the message out
+				renderPrintf(HUD_active_msgs_list[i].msg.x, HUD_active_msgs_list[i].y, "%s", HUD_active_msgs_list[i].msg.text);
+			}
+		}
+	} // end for
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
@@ -1187,4 +1186,101 @@ void hud_scrollback_do_frame(float frametime)
 void hud_scrollback_exit()
 {
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+}
+
+HudGaugeTalkingHead::HudGaugeTalkingHead():
+HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, true, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+{
+}
+
+void HudGaugeTalkingHead::initialize()
+{
+	head_anim = NULL;
+	msg_id = -1;
+}
+
+void HudGaugeTalkingHead::initHeaderOffsets(int x, int y)
+{
+	Header_offsets[0] = x;
+	Header_offsets[1] = y;
+}
+
+void HudGaugeTalkingHead::initAnimOffsets(int x, int y)
+{
+	Anim_offsets[0] = x;
+	Anim_offsets[1] = y;
+}
+
+void HudGaugeTalkingHead::initAnimSizes(int w, int h)
+{
+	Anim_size[0] = w;
+	Anim_size[1] = h;
+}
+
+void HudGaugeTalkingHead::initBitmaps(char *fname)
+{
+	Head_frame.first_frame = bm_load_animation(fname, &Head_frame.num_frames);
+	if ( Head_frame.first_frame == -1 ) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname);
+	}
+}
+
+anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_data)
+{
+	anim_play_struct aps;
+
+	anim_play_init(&aps, anim_data, position[0] + Anim_offsets[0] + HUD_offset_x, position[1] + Anim_offsets[1] + HUD_offset_y, base_w, base_h);
+	aps.start_at = anim_start_frame;
+
+	// aps.color = &HUD_color_defaults[HUD_color_alpha];
+	aps.color = &HUD_config.clr[HUD_TALKING_HEAD]; 
+	// I'd much rather use gr_init_color and retrieve the colors from this object but no, aps.color just happens to be a pointer.
+	// So, just give it the address from the player's HUD configuration. You win, aps.color. I'll take care of you next time. (Swifty)
+
+	return anim_play(&aps);
+}
+
+void HudGaugeTalkingHead::render(float frametime)
+{
+	if ( Head_frame.first_frame == -1 ){
+		return;
+	}
+
+	if(msg_id != -1 && head_anim != NULL) {
+		if(anim_playing(head_anim)) {
+			// draw frame
+			// hud_set_default_color();
+			setGaugeColor();
+
+			// clear
+			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
+			gr_clear();
+			resetClip();
+
+			renderBitmap(Head_frame.first_frame, position[0], position[1]);		
+
+			// draw title
+			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
+		} else {
+			anim_stop_playing(head_anim);
+		}
+	}
+	// check playing messages to see if we have any messages with talking animations that need to be created.
+	for (int i = 0; i < Num_messages_playing; i++ ) {
+		if(Playing_messages[i].play_anim && Playing_messages[i].id != msg_id ) {
+			if(head_anim) {
+				if(anim_playing(head_anim)) {
+					anim_stop_playing(head_anim);
+				}
+			}
+			head_anim = createAnim(Playing_messages[i].start_frame, Playing_messages[i].anim_data);
+			msg_id = Playing_messages[i].id;
+			return;
+		}
+	}
+}
+
+void HudGaugeTalkingHead::pageIn()
+{
+	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
 }

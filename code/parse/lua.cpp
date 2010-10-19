@@ -12,6 +12,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "hud/hudbrackets.h"
+#include "hud/hudescort.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"
 #include "iff_defs/iff_defs.h"

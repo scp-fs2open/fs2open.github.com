@@ -24,6 +24,8 @@ typedef struct {
 	anim *anim_info;
 	int x;
 	int y;
+	int base_w;
+	int base_h;
 	int start_at;
 	int stop_at;
 	int screen_id;
@@ -50,7 +52,7 @@ void				anim_level_init();
 void				anim_level_close();
 void				anim_render_all(int screen_id, float frametime);
 void				anim_render_one(int screen_id, anim_instance *ani, float frametime);
-void				anim_play_init(anim_play_struct *aps, anim *a_info, int x, int y);
+void				anim_play_init(anim_play_struct *aps, anim *a_info, int x, int y, int max_x = -1, int max_y = -1);
 anim_instance *anim_play(anim_play_struct *aps);
 void				anim_ignore_next_frametime();
 int				anim_stop_playing(anim_instance* anim_instance);

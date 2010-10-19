@@ -8488,11 +8488,12 @@ void multi_sexp_hud_disable_except_messages()
 void sexp_hud_set_text_num(int n)
 {
 	char* gaugename = CTEXT(n);
+	char tmp[256] = "";
 
-	gauge_info* cg = hud_get_gauge(gaugename);
-	if(cg)
-	{
-		sprintf( HUD_CHAR(current_hud, cg->text_dest), "%d", eval_num(CDR(n)) );
+	HudGauge* cg = hud_get_gauge(gaugename);
+	if(cg) {
+		sprintf( tmp, "%d", eval_num(CDR(n)) );
+		cg->updateCustomGaugeText(tmp);
 	}
 }
 
@@ -8501,10 +8502,9 @@ void sexp_hud_set_text(int n)
 	char* gaugename = CTEXT(n);
 	char* text = CTEXT(CDR(n));
 
-	gauge_info* cg = hud_get_gauge(gaugename);
-	if(cg)
-	{
-		strcpy(HUD_CHAR(current_hud, cg->text_dest), text);
+	HudGauge* cg = hud_get_gauge(gaugename);
+	if(cg) {
+		cg->updateCustomGaugeText(text);
 	}
 }
 
@@ -8514,11 +8514,9 @@ void sexp_hud_set_coords(int n)
 	int coord_x = eval_num(CDR(n));
 	int coord_y = eval_num(CDR(CDR(n)));
 
-	gauge_info * cg = hud_get_gauge(gaugename);
-	if(cg)
-	{
-		HUD_INT(current_hud, cg->coord_dest)[0] = coord_x;
-		HUD_INT(current_hud, cg->coord_dest)[1] = coord_y;
+	HudGauge* cg = hud_get_gauge(gaugename);
+	if(cg) {
+		cg->updateCustomGaugeCoords(coord_x, coord_y);
 	}
 }
 
@@ -8527,12 +8525,10 @@ void sexp_hud_set_frame(int n)
 	char* gaugename = CTEXT(n);
 	int frame_num = eval_num(CDR(n));
 
-	gauge_info * cg = hud_get_gauge(gaugename);
-	if(cg)
-	{
-		*HUD_INT(current_hud, cg->frame_dest) = frame_num;
+	HudGauge* cg = hud_get_gauge(gaugename);
+	if(cg) {
+		cg->updateCustomGaugeFrame(frame_num);
 	}
-	return;
 }
 
 void sexp_hud_set_color(int n)
@@ -8542,12 +8538,9 @@ void sexp_hud_set_color(int n)
 	ubyte green = (ubyte) eval_num(CDR(CDR(n)));
 	ubyte blue = (ubyte) eval_num(CDR(CDR(CDR(n))));
 
-	gauge_info * cg = hud_get_gauge(gaugename);
-	if(cg)
-	{
-		HUD_COLOR(current_hud, cg->color_dest)->red = red;
-		HUD_COLOR(current_hud, cg->color_dest)->green = green;
-		HUD_COLOR(current_hud, cg->color_dest)->blue = blue;
+	HudGauge* cg = hud_get_gauge(gaugename);
+	if(cg) {
+		cg->updateColor(red, green, blue, (HUD_color_alpha+1)*16);
 	}
 }
 

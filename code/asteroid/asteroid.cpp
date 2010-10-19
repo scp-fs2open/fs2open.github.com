@@ -1935,23 +1935,10 @@ void asteroid_show_brackets()
 		g3_rotate_vertex(&asteroid_vertex,&asteroid_objp->pos);
 		g3_project_vertex(&asteroid_vertex);
 
-		if (!(asteroid_vertex.flags & PF_OVERFLOW)) {
-			gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
-			hud_show_brackets(asteroid_objp, &asteroid_vertex);
-			if ( Cmdline_targetinfo ) {
-				hud_show_lead_indicator_quick(&asteroid_objp->pos, asteroid_objp);
-			}
-		}
-
-		// if asteroid is not on screen, draw an offscreen indicator
-		if ( hud_gauge_active(HUD_OFFSCREEN_INDICATOR) ) {
-			if (asteroid_vertex.codes != 0) {
-				float dist;
-//				dist = vm_vec_dist_quick(&Player_obj->pos, &asteroid_objp->pos);
-				dist = hud_find_target_distance( asteroid_objp, Player_obj );
-				gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
-				hud_draw_offscreen_indicator(&asteroid_vertex, &asteroid_objp->pos, dist);
-			}
+		if ( Cmdline_targetinfo ) {
+			hud_target_add_display_list(asteroid_objp, &asteroid_vertex, &asteroid_objp->pos, 0, NULL, NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
+		} else {
+			hud_target_add_display_list(asteroid_objp, &asteroid_vertex, &asteroid_objp->pos, 0, NULL, NULL, TARGET_DISPLAY_DIST);
 		}
 	}
 }
