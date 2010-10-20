@@ -1229,7 +1229,7 @@ anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_
 {
 	anim_play_struct aps;
 
-	anim_play_init(&aps, anim_data, position[0] + Anim_offsets[0] + HUD_offset_x, position[1] + Anim_offsets[1] + HUD_offset_y, base_w, base_h);
+	anim_play_init(&aps, anim_data, position[0] + Anim_offsets[0] + fl2i(HUD_offset_x), position[1] + Anim_offsets[1] + fl2i(HUD_offset_y), base_w, base_h);
 	aps.start_at = anim_start_frame;
 
 	// aps.color = &HUD_color_defaults[HUD_color_alpha];
