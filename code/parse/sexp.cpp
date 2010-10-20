@@ -490,6 +490,7 @@ sexp_oper Operators[] = {
 	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
 	{ "hud-set-text",			OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
 	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
+	{ "hud-set-message",			OP_HUD_SET_MESSAGE,				2, 2 },
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
@@ -8506,6 +8507,31 @@ void sexp_hud_set_text(int n)
 	if(cg) {
 		cg->updateCustomGaugeText(text);
 	}
+}
+
+void sexp_hud_set_message(int n)
+{
+	char* gaugename = CTEXT(n);
+	char* text = CTEXT(CDR(n));
+	char* message;
+
+	for (int i = 0; i < Num_messages; i++) {
+		if ( !stricmp(text, Messages[i].name) ) {
+			message = Messages[i].message;
+			
+			sexp_replace_variable_names_with_values(message, MESSAGE_LENGTH);
+
+			HudGauge* cg = hud_get_gauge(gaugename);
+			if(cg) {
+				cg->updateCustomGaugeText(message);
+			} else {
+				WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+			}
+			return;
+		}
+	}
+
+	WarningEx(LOCATION, "sexp_hud_set_message couldn't find a message by the name of %s in the mission\n", text);
 }
 
 void sexp_hud_set_coords(int n)
@@ -18435,6 +18461,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_SET_MESSAGE:
+				sexp_hud_set_message(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -20938,6 +20969,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HUD_SET_TEXT:
 			return OPF_STRING;
 
+		case OP_HUD_SET_MESSAGE:
+			if(argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_MESSAGE;
+
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
@@ -23167,6 +23204,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_DISPLAY_GAUGE:
+		case OP_HUD_SET_MESSAGE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -25780,6 +25818,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the text value of a given HUD gauge to a number. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tNumber to be set"
+	},
+
+	{ OP_HUD_SET_MESSAGE, "hud-set-message\r\n"
+		"\tSets the text value of a given HUD gauge to a message from the mission's message list. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tMessage"
 	},
 
 	//WMC
