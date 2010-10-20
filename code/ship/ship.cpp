@@ -6254,8 +6254,8 @@ void ship_render_backgrounds_cockpit_display(ship *shipp)
 		return;
 	}
 
-	int cull = gr_set_cull(0);
-	for ( int i = 0; i < (int)shipp->displays.size(); i++ ) {
+	int i, cull = gr_set_cull(0);
+	for ( i = 0; i < (int)shipp->displays.size(); i++ ) {
 		if ( !bm_set_render_target(shipp->displays[i].target) ) {
 			continue;
 		}
@@ -6265,7 +6265,7 @@ void ship_render_backgrounds_cockpit_display(ship *shipp)
 		gr_bitmap(0, 0, false);
 	}
 
-	for ( int i = 0; i < (int)shipp->displays.size(); i++ ) {
+	for ( i = 0; i < (int)shipp->displays.size(); i++ ) {
 		if ( shipp->displays[i].background >= 0 ) {
 			if ( !bm_set_render_target(shipp->displays[i].target) ) {
 				continue;

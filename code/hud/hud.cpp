@@ -1224,7 +1224,7 @@ void HUD_init()
 	int i, num_gauges;
 
 	// go through all HUD gauges and call their initialization functions
-	for (int i = 0; i < Num_ship_classes; i++) {
+	for (i = 0; i < Num_ship_classes; i++) {
 		if(Ship_info[i].hud_enabled) {
 			num_gauges = Ship_info[i].hud_gauges.size();
 
@@ -1262,10 +1262,10 @@ void hud_level_close()
 
 void hud_close()
 {
-	int num_gauges = 0;
+	int i, num_gauges = 0;
 
 	// for all ships, delete all hud gauge objects
-	for (int i = 0; i < Num_ship_classes; i++) {
+	for (i = 0; i < Num_ship_classes; i++) {
 		num_gauges = (int)Ship_info[i].hud_gauges.size();
 
 		for(int j = 0; j < num_gauges; j++) {
@@ -1277,7 +1277,7 @@ void hud_close()
 
 	num_gauges = (int)default_hud_gauges.size();
 
-	for(int i = 0; i < num_gauges; i++) {
+	for(i = 0; i < num_gauges; i++) {
 		delete default_hud_gauges[i];
 		default_hud_gauges[i] = NULL;
 	}
@@ -3627,8 +3627,8 @@ void hud_page_in()
 	hudtarget_page_in();
 
 	// go through all hud gauges to page them in 
-	int num_gauges = 0;
-	for (int i = 0; i < Num_ship_classes; i++) {
+	int i, num_gauges = 0;
+	for (i = 0; i < Num_ship_classes; i++) {
 		if(Ship_info[i].hud_enabled) {
 			if(Ship_info[i].hud_gauges.size() > 0) {
 				num_gauges = Ship_info[i].hud_gauges.size();
@@ -3642,7 +3642,7 @@ void hud_page_in()
 
 	num_gauges = default_hud_gauges.size();
 
-	for(int i = 0; i < num_gauges; i++) {
+	for(i = 0; i < num_gauges; i++) {
 		default_hud_gauges[i]->pageIn();
 	}
 }
