@@ -12954,10 +12954,6 @@ void ai_sentrygun()
 //	Execute behavior given by aip->mode.
 void ai_execute_behavior(ai_info *aip)
 {
-
-	//Default to glide OFF
-	Pl_objp->phys_info.flags &= ~PF_GLIDING;
-
 	switch (aip->mode) {
 	case AIM_CHASE:
 		if (En_objp) {
@@ -13935,6 +13931,9 @@ void ai_frame(int objnum)
 
 	// Set globals defining the current object and its enemy object.
 	Pl_objp = &Objects[objnum];
+
+	//Default to glide OFF
+	Pl_objp->phys_info.flags &= ~PF_GLIDING;
 
 	// warping out?
 	if ((aip->mode == AIM_WARP_OUT) || (aip->ai_flags & AIF_TRYING_UNSUCCESSFULLY_TO_WARP))
