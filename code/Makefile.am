@@ -615,6 +615,8 @@ FS2_SOURCES =	\
 	popup/popupdead.h	\
 	radar/radar.cpp	\
 	radar/radar.h	\
+	radar/radardradis.cpp	\
+	radar/radardradis.h	\
 	radar/radarorb.cpp	\
 	radar/radarorb.h	\
 	radar/radarsetup.cpp	\
