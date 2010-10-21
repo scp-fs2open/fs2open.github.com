@@ -3937,12 +3937,10 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 		break;
 	case OBJ_WEAPON:
-		// don't home on countermeasures, that's handled elsewhere
-		if (Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE)
+		// don't home on countermeasures or non-bombs, that's handled elsewhere
+		if ( (Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE) || !(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
 			break;
 
-		// only allowed to home on bombs
-		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB);
 		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			find_homing_object_by_sig(obj, wp->target_sig);
 		} else {
