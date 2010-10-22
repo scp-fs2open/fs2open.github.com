@@ -809,6 +809,7 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index)
 	int gauge_type = HUD_CENTER_RETICLE;
 	bool slew = false;
 	int font_num = FONT1;
+	int txtoffset_x = 0, txtoffset_y = 0;
 	ubyte r = 255, g = 255, b = 255;
 
 	if(check_base_res(base_w, base_h)) {
@@ -832,6 +833,14 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index)
 
 		required_string("Text:");
 		stuff_string(text, F_NAME, MAX_FILENAME_LEN);
+
+		if (optional_string("X Offset:")) {
+			stuff_int(&txtoffset_x);
+		}
+
+		if (optional_string("Y Offset:")) {
+			stuff_int(&txtoffset_y);
+		}
 
 		required_string("Gauge Type:");
 		stuff_string(gauge_string, F_NAME, MAX_FILENAME_LEN);
@@ -857,7 +866,7 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index)
 		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	HudGauge* hud_gauge = new HudGauge(gauge_type, slew, r, g, b, name, text, filename);
+	HudGauge* hud_gauge = new HudGauge(gauge_type, slew, r, g, b, name, text, filename, txtoffset_x, txtoffset_y);
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
