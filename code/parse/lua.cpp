@@ -6370,6 +6370,32 @@ ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptexture
 	return ade_set_args(L, "o", l_ShipTextures.Set(object_h(dh->objp)));
 }
 
+ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected-by-gravity\" flag", "boolean", "True if flag is set, false if flag is not set and nil on error") 
+{
+	object_h *objh=NULL;
+	bool set = false;
+
+	if (!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &set))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+	
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR)
+		if(set)
+			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
+		else
+			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+
+	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+
 ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct", "boolean", "True if successful, false or nil otherwise")
 {
 	object_h *victim,*killer=NULL;
