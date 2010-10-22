@@ -447,8 +447,8 @@ void set_current_hud()
 			if(Ship_info[Player_ship->ship_info_index].hud_gauges[i]->configOverride()) {
 				config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
 
-				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive((bool)hud_config_show_flag_is_set(config_type));
-				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp((bool)hud_config_popup_flag_is_set(config_type));
+				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
+				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateColor(
 					HUD_config.clr[config_type].red, 
 					HUD_config.clr[config_type].green, 
@@ -464,8 +464,8 @@ void set_current_hud()
 			if(default_hud_gauges[i]->configOverride()) {
 				config_type = default_hud_gauges[i]->getConfigType();
 
-				default_hud_gauges[i]->updateActive((bool)hud_config_show_flag_is_set(config_type));
-				default_hud_gauges[i]->updatePopUp((bool)hud_config_popup_flag_is_set(config_type));
+				default_hud_gauges[i]->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
+				default_hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
 				default_hud_gauges[i]->updateColor(
 					HUD_config.clr[config_type].red, 
 					HUD_config.clr[config_type].green, 
