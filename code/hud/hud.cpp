@@ -454,6 +454,11 @@ char* HudGauge::getCustomGaugeName()
 	return custom_name;
 }
 
+char* HudGauge::getCustomGaugeText()
+{
+	return custom_text;
+}
+
 void HudGauge::updateCustomGaugeCoords(int _x, int _y)
 {
 	if(!custom_gauge) {

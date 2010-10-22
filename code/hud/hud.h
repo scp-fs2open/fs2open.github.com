@@ -250,6 +250,7 @@ public:
 	void updateCustomGaugeCoords(int _x, int _y);
 	void updateCustomGaugeFrame(int frame_offset);
 	void updateCustomGaugeText(char* txt);
+	char* getCustomGaugeText();
 
 	void startPopUp(int time=4000);
 	int popUpActive();
