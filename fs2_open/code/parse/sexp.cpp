@@ -2401,10 +2401,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					//if ( !stricmp(CTEXT(node), "<any allied>") )
 					//	return SEXP_CHECK_INVALID_MSG_SOURCE;
 
-					if ( stricmp(CTEXT(node), "<any wingman>"))  // not a special token?
-						if ((ship_name_lookup(CTEXT(node)) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
-							if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
-								return SEXP_CHECK_INVALID_MSG_SOURCE;
+					if ( stricmp(CTEXT(node), "<any wingman>"))  
+						if ( stricmp(CTEXT(node), "<none>") ) // not a special token?
+							if ((ship_name_lookup(CTEXT(node)) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
+								if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+									return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
 
 				break;
@@ -9384,6 +9385,8 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 
 	} else if ( !stricmp(who_from, "<any wingman>") || (wing_name_lookup(who_from) != -1) ) {
 		source = MESSAGE_SOURCE_WINGMAN;
+	} else if ( !stricmp(who_from, "<none>") ) {
+		source = MESSAGE_SOURCE_NONE;
 	} else {
 		// Message from a apecific ship
 		source = MESSAGE_SOURCE_SHIP;
