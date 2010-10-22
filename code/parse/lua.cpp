@@ -9446,16 +9446,18 @@ ADE_FUNC(getScreenHeight, l_Graphics, NULL, "Gets screen height", "number", "Hei
 }
 
 ADE_FUNC(getVectorFromCoords, l_Graphics,
-		 "[number X=center, number Y=center, number Depth]",
-		 "Returns a normalized vector through screen coordinates x and y. "
-		 "If depth is specified, vector is extended to Depth units into space",
+		 "[number X=center, number Y=center, number Depth, boolean normalize = false]",
+		 "Returns a vector through screen coordinates x and y. "
+		 "If depth is specified, vector is extended to Depth units into space"
+		 "If normalize is true, vector will be normalized.",
 		 "vector",
 		 "Vector, or zero vector on failure")
 {
 	int x = gr_screen.max_w/2;
 	int y = gr_screen.max_h/2;
 	float depth = 0.0f;
-	ade_get_args(L, "|iif", &x, &y, &depth);
+	bool normalize = false; 
+	ade_get_args(L, "|iifb", &x, &y, &depth, &normalize);
 
 	vec3d pos = vmd_zero_vector;
 
@@ -9470,6 +9472,9 @@ ADE_FUNC(getVectorFromCoords, l_Graphics,
 
 	if(depth)
 		vm_vec_scale(&pos, depth);
+
+	if (normalize)
+		vm_vec_normalize_quick(&pos);
 
 	vm_vec_add2(&pos, &View_position);
 
