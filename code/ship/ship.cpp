@@ -6148,7 +6148,7 @@ void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int co
 		return;
 	}
 
-	int i, tm_num, diffuse_target, glow_target, bmp_handle = -1;
+	int i, tm_num, diffuse_target = -1, glow_target = -1, bmp_handle = -1;
 	int w, h;
 	cockpit_display new_display;
 
@@ -6172,18 +6172,20 @@ void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int co
 		return;
 	}
 
-	// create a render target for this cockpit texture
-	if ( shipp->cockpit_replacement_textures[diffuse_target] < 0 || shipp->cockpit_replacement_textures[glow_target] < 0) {
+	if (glow_target != -1 && diffuse_target != -1) {
+		// create a render target for this cockpit texture
+		if ( shipp->cockpit_replacement_textures[diffuse_target] < 0 || shipp->cockpit_replacement_textures[glow_target] < 0) {
 
-		bm_get_info(bmp_handle, &w, &h);
-		shipp->cockpit_replacement_textures[diffuse_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
+			bm_get_info(bmp_handle, &w, &h);
+			shipp->cockpit_replacement_textures[diffuse_target] = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC);
 
-		// if no render target was made, bail
-		if ( shipp->cockpit_replacement_textures[diffuse_target] < 0 ) {
-			return;
+			// if no render target was made, bail
+			if ( shipp->cockpit_replacement_textures[diffuse_target] < 0 ) {
+				return;
+			}
+
+			shipp->cockpit_replacement_textures[glow_target] = shipp->cockpit_replacement_textures[diffuse_target];
 		}
-
-		shipp->cockpit_replacement_textures[glow_target] = shipp->cockpit_replacement_textures[diffuse_target];
 	}
 
 	new_display.background = -1;

@@ -9196,8 +9196,6 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 	char* name;
 	if (!ade_get_args(L, "s", &name))
 		return ADE_RETURN_NIL;
-
-	int num_gauges;
 	HudGauge* gauge = NULL;
 
 	gauge = hud_get_gauge(name);
