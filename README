@@ -1,7 +1,10 @@
 The "projects" directory contains ready projects for:
 Microsoft Visual C++ 6
 Microsoft Visual C++ 2005
-Anjuta 1 (please see README with project before using)
+Microsoft Visual C++ 2008
+Micrsofot Visual C++ 2010
+Apple Xcode
+Code::Blocks
 
 
 See the ChangeLog to see what's new.
