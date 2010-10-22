@@ -1460,7 +1460,9 @@ void message_queue_process()
 		}
 	}
 
-	HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
+	if ( !stricmp(who_from, "<none>") ) {
+		HUD_sourced_printf( q->source, NOX("%s"), buf );
+	} else HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
 
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
@@ -1744,6 +1746,8 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 				// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
 				Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
+			} else if ( m_source == MESSAGE_SOURCE_NONE ) {
+				who_from = "<none>";
 			}
 
 			// not multiplayer or this message is for me, then queue it
