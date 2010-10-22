@@ -4214,7 +4214,7 @@ void HudGaugeLeadSight::render(float frametime)
 	weapon_info	*wip;
 	weapon_info	*tmp=NULL;
 	float		dist_to_target, prange, srange;
-	int			bank_to_fire, indicator_frame, frame_offset;
+	int			bank_to_fire;
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -4784,10 +4784,6 @@ HudGaugeReticleTriangle(HUD_OBJECT_TARGET_TRI, HUD_TARGET_TRIANGLE)
 
 void HudGaugeTargetTriangle::render(float frametime)
 {
-	float x3,y3,x4,y4;
-	float xpos,ypos,ang;
-	float px, py;
-
 	if ( Player_ai->target_objnum == -1)
 		return;
 
@@ -4796,38 +4792,12 @@ void HudGaugeTargetTriangle::render(float frametime)
 		g3_start_frame(0);
 
 	object *targetp = &Objects[Player_ai->target_objnum];
-	//vertex hostile_vertex;
 
 	// draw the targeting triangle that orbits the outside of the outer circle of the reticle
 	if (!Player->target_is_dying && maybeFlashSexp() != 1) {
 
 		hud_set_iff_color(targetp, 1);
 		renderTriangle(&targetp->pos, 1, 0, 0);
-		/*g3_rotate_vertex(&hostile_vertex, &targetp->pos);
-		g3_project_vertex(&hostile_vertex);
-
-		px = hostile_vertex.x;
-		py = hostile_vertex.y;
-
-		gr_unsize_screen_posf( &px, &py );
-
-		ang = atan2_safe(py,px);
-		renderPrintf(position[0], position[1], "%d", fl2i((360*ang)/(2*PI)));
-		xpos = Hud_reticle_center[gr_screen.res][0] + (float)cos(ang)*(Outer_circle_radius[gr_screen.res]+4);
-		ypos = Hud_reticle_center[gr_screen.res][1] - (float)sin(ang)*(Outer_circle_radius[gr_screen.res]+4);
-
-		xpos += HUD_offset_x + HUD_nose_x;
-		ypos += HUD_offset_y + HUD_nose_y;
-			
-		x3 = xpos - Target_triangle_base * (float)sin(-ang);
-		y3 = ypos + Target_triangle_base * (float)cos(-ang);
-		x4 = xpos + Target_triangle_base * (float)sin(-ang);
-		y4 = ypos - Target_triangle_base * (float)cos(-ang);
-
-		xpos += Target_triangle_height * (float)cos(ang);
-		ypos -= Target_triangle_height * (float)sin(ang);
-
-		hud_tri(xpos,ypos,x3,y3,x4,y4);*/
 	}
 
 	if(!in_frame)
