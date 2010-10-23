@@ -5852,6 +5852,10 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_FICTION_VIEWER);
 			break;
 
+		case GS_EVENT_SCRIPTING:
+			gameseq_set_state(GS_STATE_SCRIPTING);
+			break;
+
 		default:
 			Int3();
 			break;
@@ -6260,6 +6264,10 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_LAB:
 			lab_close();
+			break;
+
+		case GS_STATE_SCRIPTING:
+			scripting_state_close();
 			break;
 	}
 
@@ -6765,6 +6773,10 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_LAB:
 			lab_init();
 			break;
+
+		case GS_STATE_SCRIPTING:
+			scripting_state_init();
+			break;
 	} // end switch
 
 	//WMC - now do user scripting stuff
@@ -7102,6 +7114,11 @@ void game_do_state(int state)
 		case GS_STATE_LAB:
 			game_set_frametime(GS_STATE_LAB);
 			lab_do_frame(flFrametime);
+			break;
+
+		case GS_STATE_SCRIPTING:
+			game_set_frametime(GS_STATE_SCRIPTING);
+			scripting_state_do_frame(flFrametime);
 			break;
 
    } // end switch(gs_current_state)

@@ -66,6 +66,10 @@ struct image_desc
 #define CHA_ONWPSELECTED	24
 #define CHA_ONWPDESELECTED	25
 
+// management stuff
+void scripting_state_init();
+void scripting_state_close();
+void scripting_state_do_frame(float frametime);
 
 struct script_condition
 {
