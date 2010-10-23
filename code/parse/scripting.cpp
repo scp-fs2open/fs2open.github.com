@@ -13,6 +13,7 @@
 #include "weapon/weapon.h"
 #include "io/key.h"
 #include "controlconfig/controlsconfig.h"
+#include "freespace2/freespace.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -73,6 +74,7 @@ flag_def_list Script_actions[] =
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
+int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
@@ -1309,4 +1311,46 @@ bool script_state::IsOverride(script_hook &hd)
 	RunBytecodeSub(hd.o_language, hd.o_index, 'b', &b);
 
 	return b;
+}
+
+void scripting_state_init()
+{
+	// nothing to do here
+	if (scripting_state_inited)
+		return;
+
+	gr_set_clear_color(0, 0, 0);
+
+	scripting_state_inited = 1;
+}
+
+void scripting_state_close()
+{
+	if (!scripting_state_inited)
+		return;
+
+	game_flush();
+
+	scripting_state_inited = 0;
+}
+
+void scripting_state_do_frame(float frametime)
+{
+	// just incase something is wrong
+	if (!scripting_state_inited)
+		return;
+
+	gr_reset_clip();
+	gr_clear();
+	gr_flip();
+
+	// process keys
+	int k = game_check_key() & ~KEY_DEBUGGED;	
+
+	switch (k)
+	{
+		case KEY_ESC:
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			return;
+	}
 }
