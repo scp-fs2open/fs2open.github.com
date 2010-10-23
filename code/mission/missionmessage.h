@@ -47,6 +47,7 @@ extern SCP_vector<message_extra> Message_waves;
 #define MESSAGE_SOURCE_WINGMAN	2
 #define MESSAGE_SOURCE_COMMAND	3
 #define MESSAGE_SOURCE_SPECIAL	4
+#define MESSAGE_SOURCE_NONE		5
 
 // define used for sender of a message when you want it to be Terran Command
 #define DEFAULT_COMMAND			"Command"
