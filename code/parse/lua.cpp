@@ -8590,7 +8590,7 @@ ADE_FUNC(getNumStates, l_Base, NULL, "Number of states", "Gets the number of dif
 	return ade_set_args(L, "i", Num_gs_state_text);
 }*/
 
-ADE_FUNC(postGameEvent, l_Base, "event Event", "Sets current game event. Note that you can crash FreeSpace 2 by posting an event at an improper time, so test extensively if you use it.", "boolean", "True if event was posted, false if passed event was invalid")
+ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Note that you can crash FreeSpace 2 by posting an event at an improper time, so test extensively if you use it.", "boolean", "True if event was posted, false if passed event was invalid")
 {
 	gameevent_h *gh = NULL;
 	if(!ade_get_args(L, "o", l_GameEvent.GetPtr(&gh)))
@@ -8666,7 +8666,7 @@ ADE_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the na
 //**********SUBLIBRARY: Base/Events
 ade_lib l_Base_Events("GameEvents", &l_Base, NULL, "Freespace 2 game events");
 
-ADE_INDEXER(l_Base_Events, "number Index/string Name", "Array of game events", "event", "Game event, or invalid gameevent handle if index is invalid")
+ADE_INDEXER(l_Base_Events, "number Index/string Name", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
 {
 	char *name;
 	if(!ade_get_args(L, "*s", &name))
@@ -8696,7 +8696,7 @@ ADE_FUNC(__len, l_Base_Events, NULL, "Number of events", "number", "Number of ev
 //**********SUBLIBRARY: Base/States
 ade_lib l_Base_States("GameStates", &l_Base, NULL, "Freespace 2 states");
 
-ADE_INDEXER(l_Base_States, "number Index/string Name", "Array of game states", "state", "Game state, or invalid gamestate handle if index is invalid")
+ADE_INDEXER(l_Base_States, "number Index/string Name", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
 {
 	char *name;
 	if(!ade_get_args(L, "*s", &name))
