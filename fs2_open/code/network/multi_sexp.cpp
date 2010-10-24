@@ -11,7 +11,6 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 
-#define SEND_PACKET_NOW  384 // (MAX_PACKET_SIZE/4)*3 used to tell when a packet is 3/4 full.
 #define PACKET_TERMINATOR	255
 int TEMP_DATA_SIZE = -1;
 
@@ -41,9 +40,10 @@ int offset = 0;
 int Multi_sexp_bytes_left = 0;			// number of bytes in incoming packet that still require processing
 
 int op_num = -1;
+bool packet_flagged_invalid = false;
 
 //forward declarations
-void multi_sexp_maybe_send_packet(); 
+void multi_sexp_ensure_space_remains(int data_size); 
 
 
 /**************************
@@ -83,6 +83,13 @@ void multi_end_packet()
 {
 	if (!MULTIPLAYER_MASTER) {
 		return;
+	}	
+
+	// something is wrong with the packet, blast it clean and start again
+	if (packet_flagged_invalid) {
+		initalise_sexp_packet();
+		packet_flagged_invalid = false;
+		return;
 	}
 
 	//write TERMINATOR into the Type and data buffers
@@ -97,11 +104,9 @@ void multi_end_packet()
 	packet_size = temp_packet_size; 
 
 	current_argument_count = 0; 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
-void multi_sexp_maybe_send_packet() 
+void multi_sexp_ensure_space_remains(int data_size) 
 {
 	if (!MULTIPLAYER_MASTER) {
 		return;
@@ -112,9 +117,10 @@ void multi_sexp_maybe_send_packet()
 	int i, j; 
 
 	//If the index of the data buffer isn't high enough yet, bail
-	if (packet_size < SEND_PACKET_NOW) {
+	if (packet_size + data_size + HEADER_LENGTH < MAX_PACKET_SIZE) {
 		return;
 	}
+
 	//iterate back through the types array until we find a TERMINATOR and store the corresponding data index 
 	for (i = packet_size-1; i > 0; i--) {
 		if ( type[i] == TYPE_DATA_TERMINATES) {
@@ -126,10 +132,10 @@ void multi_sexp_maybe_send_packet()
 	// we want the number of bytes not the index of the last one
 	sub_packet_size = packet_end + 1; 
 
-	Assert (packet_end > 8); // At very least must include OP, COUNT, TERMINATOR 
-	// in the case of a corrupt packet, wipe everything and start again
-	if (packet_end < 9) {
-		initalise_sexp_packet(); 
+	// At very least must include OP, COUNT, TERMINATOR 
+	if (packet_end < 9 && !packet_flagged_invalid) {
+		Warning(LOCATION, "Sexp %s has attempted to write too much data to a single packet. It is advised that you split this SEXP up into smaller ones",  Operators[Current_sexp_operator.back()].text ); 
+		packet_flagged_invalid = true;
 		return;
 	}
 
@@ -172,6 +178,7 @@ void multi_sexp_flush_packet()
 		return;
 	}
 	Assert (type[packet_size -1] == TYPE_DATA_TERMINATES); 
+	Assert (!packet_flagged_invalid);
 
 	send_sexp_packet(data, packet_size);
 
@@ -185,9 +192,11 @@ void multi_sexp_flush_packet()
 
 void multi_send_int(int value) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
+
+	multi_sexp_ensure_space_remains(sizeof(value)); 
 
 	//Write INT into the Type buffer.
 	type[packet_size] = TYPE_INT; 
@@ -195,56 +204,56 @@ void multi_send_int(int value)
 	ADD_INT(value); 
 	//Increment the COUNT by 4 (i.e the size of an int).
 	current_argument_count += sizeof(int); 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_ship(int shipnum) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
 
+	multi_sexp_ensure_space_remains(sizeof(shipnum)); 
+
 	multi_send_ship(&Ships[shipnum]);
-	
-	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_ship(ship *shipp) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
+
+	multi_sexp_ensure_space_remains(sizeof(ushort)); 
 
 	//write into the Type buffer.
 	type[packet_size] = TYPE_SHIP; 
 	//write the into the data buffer
 	ADD_USHORT(Objects[shipp->objnum].net_signature); 
 	current_argument_count += sizeof(ushort); 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_parse_object(p_object *pobjp) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
+
+	multi_sexp_ensure_space_remains(sizeof(ushort)); 
 
 	//write into the Type buffer.
 	type[packet_size] = TYPE_PARSE_OBJECT; 
 	//write the into the data buffer
 	ADD_USHORT(pobjp->net_signature); 
 	current_argument_count += sizeof(ushort); 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_string(char *string) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
+
+	multi_sexp_ensure_space_remains(strlen(string)+4); 
 
 	int start_size = packet_size; 
 	//write into the Type buffer.
@@ -252,15 +261,15 @@ void multi_send_string(char *string)
 	//write the into the data buffer
 	ADD_STRING(string); 
 	current_argument_count += packet_size - start_size; 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_bool(bool value) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
+
+	multi_sexp_ensure_space_remains(sizeof(value)); 
 
 	//Write INT into the Type buffer.
 	type[packet_size] = TYPE_BOOLEAN; 
@@ -268,15 +277,15 @@ void multi_send_bool(bool value)
 	ADD_DATA(value); 
 	//Increment the COUNT 
 	current_argument_count += sizeof(value); 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
 void multi_send_float(float value) 
 {
-	if (!MULTIPLAYER_MASTER) {
+	if (!MULTIPLAYER_MASTER || packet_flagged_invalid) {
 		return;
 	}
+
+	multi_sexp_ensure_space_remains(sizeof(value)); 
 
 	//Write INT into the Type buffer.
 	type[packet_size] = TYPE_FLOAT; 
@@ -284,8 +293,6 @@ void multi_send_float(float value)
 	ADD_FLOAT(value); 
 	//Increment the COUNT 
 	current_argument_count += sizeof(float); 
-
-	multi_sexp_maybe_send_packet(); 
 }
 
 
