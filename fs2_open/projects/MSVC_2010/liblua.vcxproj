@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug Inferno SSE2|Win32">
@@ -696,7 +696,6 @@
     <ClCompile Include="..\..\lua\ltablib.c" />
     <ClCompile Include="..\..\lua\ltests.c" />
     <ClCompile Include="..\..\lua\ltm.c" />
-    <ClCompile Include="..\..\lua\luac.c" />
     <ClCompile Include="..\..\lua\lundump.c" />
     <ClCompile Include="..\..\lua\lvm.c" />
     <ClCompile Include="..\..\lua\lzio.c" />
