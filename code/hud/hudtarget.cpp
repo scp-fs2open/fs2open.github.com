@@ -972,7 +972,7 @@ void hud_make_shader(shader *sh, ubyte r, ubyte g, ubyte b, float dimmer = 1000.
 	R = ubyte(r * tmp);
 	G = ubyte(r * tmp);
 	B = ubyte(r * tmp);
-	A = ubyte((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
+	A = ubyte((float(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
 	gr_create_shader( sh, R, G, B, A );
 }
