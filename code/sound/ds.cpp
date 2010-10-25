@@ -2321,7 +2321,7 @@ void ds_eax_close()
 //
 int ds_eax_init()
 {
-	const char *err;
+	const char *err = NULL;
 	if (Ds_eax_inited) {
 		return 0;
 	}
