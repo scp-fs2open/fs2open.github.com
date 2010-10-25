@@ -216,8 +216,6 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		// not connected, and haven't failed to connect, so keep in the loop
 		return 0;
 	}
-
-	return -1;
 }
 
 int FS2NetD_GetData(char *buffer, int blen)
