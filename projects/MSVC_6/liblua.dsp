@@ -243,10 +243,6 @@ SOURCE=..\..\lua\ltm.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\lua\lua.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\lua\lundump.c
 # End Source File
 # Begin Source File

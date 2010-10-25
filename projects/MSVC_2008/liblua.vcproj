@@ -1110,10 +1110,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lua\lua.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\lua\luac.c"
 				>
 			</File>

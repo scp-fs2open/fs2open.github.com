@@ -126,9 +126,6 @@ int multi_update_error_verifying()
 	default:
 		return MULTI_UPDATE_MAIN_MENU;
 	}
-
-	// should never happen, but if so, move back to the main menu
-	return MULTI_UPDATE_MAIN_MENU;
 }
 
 // check to see if the version of FS on this machine is not recent. run in a popup

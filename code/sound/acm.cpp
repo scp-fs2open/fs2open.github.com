@@ -17,7 +17,7 @@
 #endif
 
 
-typedef struct adpcmcoef_tag{
+typedef struct adpcmcoef_tag {
 	short iCoef1;
 	short iCoef2;
 } ADPCMCOEFSET;
@@ -136,18 +136,22 @@ static int read_adpcm_block_headers(HMMIO rw, adpcm_fmt_t *fmt)
 	fmt->bytes_remaining -= fmt->adpcm.wav.nBlockAlign;
 	fmt->bytes_processed += fmt->adpcm.wav.nBlockAlign;
 
-	for (i = 0; i < max; i++)
+	for (i = 0; i < max; i++) {
 		IF_ERR(!read_ubyte(rw, &fmt->header[i].bPredictor), 0);
+	}
 
-	for (i = 0; i < max; i++)
+	for (i = 0; i < max; i++) {
 		IF_ERR(!read_ushort(rw, &fmt->header[i].iDelta), 0);
+	}
 
-	for (i = 0; i < max; i++)
+	for (i = 0; i < max; i++) {
 		IF_ERR(!read_short(rw, &fmt->header[i].iSamp1), 0);
+	}
 
-	for (i = 0; i < max; i++)
+	for (i = 0; i < max; i++) {
 		IF_ERR(!read_short(rw, &fmt->header[i].iSamp2), 0);
-	
+	}
+
 	fmt->samples_left_in_block = fmt->adpcm.wSamplesPerBlock;
 	fmt->nibble_state = 0;
 
@@ -181,8 +185,9 @@ static void do_adpcm_nibble(ubyte nib, ADPCMBLOCKHEADER *header, int lPredSamp)
 
 	delta = (header->iDelta * AdaptionTable[nib]) / FIXED_POINT_ADAPTION_BASE;
 
-	if (delta < SMALLEST_ADPCM_DELTA)
+	if (delta < SMALLEST_ADPCM_DELTA) {
 		delta = SMALLEST_ADPCM_DELTA;
+	}
 
 	header->iDelta = delta;
 	header->iSamp2 = header->iSamp1;
@@ -269,28 +274,31 @@ static uint read_sample_fmt_adpcm(ubyte *data, HMMIO rw, adpcm_fmt_t *fmt)
 		// write ongoing sample frame before reading more data...
 		switch (fmt->samples_left_in_block) {
 			case 0:  // need to read a new block...
-				if (!read_adpcm_block_headers(rw, fmt))
+
+				if (!read_adpcm_block_headers(rw, fmt)) {
 					return(bw);		// EOF
+				}
 
 				// only write first sample frame for now.
 				put_adpcm_sample_frame2(data + bw, fmt);
 				fmt->samples_left_in_block--;
 				bw += fmt->sample_frame_size;
-				break;
+			break;
 
 			case 1:  // output last sample frame of block...
 				put_adpcm_sample_frame1(data + bw, fmt);
 				fmt->samples_left_in_block--;
 				bw += fmt->sample_frame_size;
-				break;
+			break;
 
 			default: // output latest sample frame and read a new one...
 				put_adpcm_sample_frame1(data + bw, fmt);
 				fmt->samples_left_in_block--;
 				bw += fmt->sample_frame_size;
 
-				if (!decode_adpcm_sample_frame(rw, fmt))
+				if (!decode_adpcm_sample_frame(rw, fmt)) {
 					return(bw);
+				}
 		}
 	}
 
@@ -306,12 +314,12 @@ static void adpcm_memory_free(adpcm_fmt_t *fmt)
 		vm_free(fmt->adpcm.aCoef);
 		fmt->adpcm.aCoef = NULL;
 	}
-	
+
 	if (fmt->header != NULL) {
 		vm_free(fmt->header);
 		fmt->header = NULL;
 	}
-	
+
 	if (fmt != NULL) {
 		vm_free(fmt);
 		fmt = NULL;
@@ -323,25 +331,24 @@ static void adpcm_memory_free(adpcm_fmt_t *fmt)
 //
 // Convert an ADPCM wave file to a PCM wave file using the Audio Compression Manager
 //
-// parameters:	*pwfxSrc   => address of WAVEFORMATEX structure describing the source wave
-//				*src	   => pointer to raw source wave data
-//				src_len    => num bytes of source wave data
-//				**dest     => pointer to pointer to dest buffer for wave data
-//							  (mem is allocated in this function if *dest is NULL)
-//				max_dest_bytes   => Maximum memory allocated to dest
-//				*dest_len        => returns num bytes of wave data in converted form (OUTPUT PARAMETER)
-//				*src_bytes_used  =>	returns num bytes of src actually used in the conversion
-//				dest_bps         => bits per sample that data should be uncompressed to
+// parameters:	*pwfxSrc			=> address of WAVEFORMATEX structure describing the source wave
+//				*src				=> pointer to raw source wave data
+//				src_len				=> num bytes of source wave data
+//				**dest				=> pointer to pointer to dest buffer for wave data
+//										(mem is allocated in this function if *dest is NULL)
+//				max_dest_bytes		=> Maximum memory allocated to dest
+//				*dest_len			=> returns num bytes of wave data in converted form (OUTPUT PARAMETER)
+//				*src_bytes_used		=> returns num bytes of src actually used in the conversion
+//				dest_bps			=> bits per sample that data should be uncompressed to
 //
-// returns:	   0 => success
-//			   -1 => could not convert wav file
-//
+// returns:		0 => success
+//				1 => could not convert wav file
 //
 // NOTES:
 // 1. Storage for the decompressed audio will be allocated in this function if *dest in NULL.
 //    The caller is responsible for freeing this memory later.
 //
-int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, ubyte **dest, int max_dest_bytes, int *dest_len, unsigned int *src_bytes_used, unsigned short dest_bps)
+int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, ubyte **dest, int max_dest_bytes, int *dest_len, unsigned int *src_bytes_used, int dest_bps)
 {
 	Assert( src != NULL );
 	Assert( src_len > 0 );
@@ -430,8 +437,9 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	fmt->bytes_processed = 0;
 
 	// really fix and REMOVE
-	if (fmt->adpcm.wav.wBitsPerSample != 4)
+	if (fmt->adpcm.wav.wBitsPerSample != 4) {
 		fmt->adpcm.wav.wBitsPerSample = INTEL_SHORT(fmt->adpcm.wav.wBitsPerSample);
+	}
 
 	// sanity check, should always be 4
 	if (fmt->adpcm.wav.wBitsPerSample != 4) {
@@ -455,7 +463,6 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 		// remainder since we don't have enough frame size left over for a decode
 		// but we should have decoded most of the data already
 		mprintf(("ACM ERROR: Have leftover data after decode!!\n"));
-
 		fmt->bytes_processed += left_over;
 	}
 
@@ -551,7 +558,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 
 	fmt->sample_frame_size = dest_bps/8*pwfxSrc->nChannels;
 	fmt->dest_bps = (ushort)dest_bps;
-	
+
 	str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
 	IF_ERR2(str == NULL, goto Error);
 	str->fmt = fmt;
@@ -582,7 +589,7 @@ Error:
 }
 
 int ACM_stream_close(void *stream)
-{ 
+{
 	if (stream == NULL) {
 		Int3();
 		return 0;

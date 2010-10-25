@@ -46,7 +46,7 @@ static int channel_next_sig = 1;
 const int BUFFER_BUMP = 50;
 SCP_vector<sound_buffer> sound_buffers;
 
-extern int Snd_sram;					// mem (in bytes) used up by storing sounds in system memory
+extern int Snd_sram;				// mem (in bytes) used up by storing sounds in system memory
 
 static int Ds_use_eax = 0;
 
@@ -63,7 +63,6 @@ int Ds_float_supported = 0;
 EFXREVERBPROPERTIES::EFXREVERBPROPERTIES(const EFXREVERBPROPERTIES_list &list)
 {
 	name = list.name;
-
 	flDensity = list.flDensity;
 	flDiffusion = list.flDiffusion;
 	flGain = list.flGain;
@@ -90,7 +89,6 @@ EFXREVERBPROPERTIES::EFXREVERBPROPERTIES(const EFXREVERBPROPERTIES_list &list)
 	flHFReference = list.flHFReference;
 	flLFReference = list.flLFReference;
 	flRoomRolloffFactor = list.flRoomRolloffFactor;
-
 	iDecayHFLimit = list.iDecayHFLimit;
 }
 
@@ -136,7 +134,6 @@ typedef ALvoid (AL_APIENTRY * ALEFFECTI) (ALuint, ALenum, ALint);
 typedef ALvoid (AL_APIENTRY * ALEFFECTF) (ALuint, ALenum, ALfloat);
 typedef ALvoid (AL_APIENTRY * ALEFFECTFV) (ALuint, ALenum, ALfloat*);
 typedef ALvoid (AL_APIENTRY * ALGETEFFECTF) (ALuint, ALenum, ALfloat*);
-
 typedef ALvoid (AL_APIENTRY * ALGENAUXILIARYEFFECTSLOTS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALDELETEAUXILIARYEFFECTSLOTS) (ALsizei, ALuint*);
 typedef ALboolean (AL_APIENTRY * ALISAUXILIARYEFFECTSLOT) (ALuint);
@@ -148,9 +145,12 @@ typedef ALvoid (AL_APIENTRY * ALAUXILIARYEFFECTSLOTFV) (ALuint, ALenum, ALfloat*
 
 ALGENFILTERS v_alGenFilters = NULL;
 ALDELETEFILTERS v_alDeleteFilters = NULL;
+
 ALFILTERI v_alFilteri = NULL;
+
 ALGENEFFECTS v_alGenEffecs = NULL;
 ALDELETEEFFECTS v_alDeleteEffects = NULL;
+
 ALEFFECTI v_alEffecti = NULL;
 ALEFFECTF v_alEffectf = NULL;
 ALEFFECTFV v_alEffectfv = NULL;
@@ -158,6 +158,7 @@ ALGETEFFECTF v_alGetEffectf = NULL;
 
 ALGENAUXILIARYEFFECTSLOTS v_alGenAuxiliaryEffectSlots = NULL;
 ALDELETEAUXILIARYEFFECTSLOTS v_alDeleteAuxiliaryEffectSlots = NULL;
+
 ALISAUXILIARYEFFECTSLOT v_alIsAuxiliaryEffectSlot = NULL;
 ALAUXILIARYEFFECTSLOTI v_alAuxiliaryEffectSloti = NULL;
 ALAUXILIARYEFFECTSLOTIV v_alAuxiliaryEffectSlotiv = NULL;
@@ -168,20 +169,17 @@ ALCdevice *ds_sound_device = NULL;
 ALCcontext *ds_sound_context = NULL;
 
 ALuint AL_EFX_aux_id = 0;
+
 static ALuint AL_EFX_effect_id = 0;
-
 static int Ds_active_env = -1;
-
 
 
 static void *al_load_function(const char *func_name)
 {
 	void *func = alGetProcAddress(func_name);
-
 	if ( !func ) {
 		throw func_name;
 	}
-
 	return func;
 }
 
@@ -233,13 +231,13 @@ int ds_initialized = FALSE;
 // Parse a wave file.
 //
 // parameters:		filename			=> file of sound to parse
-//						dest				=> address of pointer of where to store raw sound data (output parm)
+//						dest			=> address of pointer of where to store raw sound data (output parm)
 //						dest_size		=> number of bytes of sound data stored (output parm)
 //						header			=> address of pointer to a WAVEFORMATEX struct (output parm)
 //						ovf				=> pointer to a OggVorbis_File struct, OGG vorbis only (output parm)
 //
 // returns:			0					=> wave file successfully parsed
-//						-1					=> error
+//					-1					=> error
 //
 //	NOTE: memory is malloced for the header and dest (if not OGG) in this function.  It is the responsibility
 //			of the caller to free this memory later.
@@ -255,8 +253,9 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 	*dest = NULL;
 	*dest_size = 0;
 
-	if (fp == NULL)
+	if (fp == NULL) {
 		return -1;
+	}
 
 
 	// if we should have a Vorbis file then try for it
@@ -309,33 +308,30 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			// we're all good, can leave now
 			return 0;
 		}
-	}
-	// otherwise we assime Wave format
-	else {
+	} else { // otherwise we assime Wave format
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		// IMPORTANT!! Look at snd_load before even THINKING about changing this.
 		cfseek( fp, 12, CF_SEEK_SET );
 
 		// Now read RIFF tags until the end of file
-
 		while (1) {
-			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 )
+			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 ) {
 				break;
+			}
 
 			tag = INTEL_INT( tag );
 
-			if ( cfread( &size, sizeof(uint), 1, fp ) != 1 )
+			if ( cfread( &size, sizeof(uint), 1, fp ) != 1 ) {
 				break;
+			}
 
 			size = INTEL_INT( size );
 
 			next_chunk = cftell(fp) + size;
 
-			switch (tag)
-			{
-				case 0x20746d66:		// The 'fmt ' tag
-				{
+			switch (tag) {
+				case 0x20746d66: { // The 'fmt ' tag
 					//nprintf(("Sound", "SOUND => size of fmt block: %d\n", size));
 					PCM_header.wf.wFormatTag		= cfread_ushort(fp);
 					PCM_header.wf.nChannels			= cfread_ushort(fp);
@@ -351,10 +347,8 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 								nprintf(("Sound", "SOUND ==> %d-bit PCM is not supported!\n", PCM_header.wBitsPerSample));
 								return -1;
 							}
-
 							// fix block align
 							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
-
 							break;
 						}
 
@@ -377,10 +371,8 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 									PCM_header.wBitsPerSample = 8;
 									break;
 							}
-
 							// fix block align
 							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
-
 							break;
 						}
 
@@ -394,8 +386,9 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 						}
 					}
 
-					if (PCM_header.wf.wFormatTag == WAVE_FORMAT_ADPCM)
+					if (PCM_header.wf.wFormatTag == WAVE_FORMAT_ADPCM) {
 						cbExtra = cfread_ushort(fp);
+					}
 
 					// Allocate memory for WAVEFORMATEX structure + extra bytes
 					if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ) {
@@ -404,20 +397,18 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 						(*header)->cbSize = cbExtra;
 
 						// Read those extra bytes, append to WAVEFORMATEX structure
-						if (cbExtra != 0)
+						if (cbExtra != 0) {
 							cfread( ((ubyte *)(*header) + sizeof(WAVEFORMATEX)), cbExtra, 1, fp);
+						}
 					} else {
 						// malloc failed
 						return -1;
 					}
-
 					got_fmt = true;
-	
 					break;
 				}
 
-				case 0x61746164:		// the 'data' tag
-				{
+				case 0x61746164: { // the 'data' tag
 					*dest_size = size;
 
 					(*dest) = (ubyte *)vm_malloc(size);
@@ -430,14 +421,15 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 					break;
 				}
 
-				default:	// unknown, skip it
+				default: // unknown, skip it
 					break;
 			}
 
 			// This is here so that we can avoid reading data that we don't understand or properly handle.
 			// We could do this just as well by checking the RIFF size, but this is easier - taylor
-			if (got_fmt && got_data)
+			if (got_fmt && got_data) {
 				break;
+			}
 
 			cfseek( fp, next_chunk, CF_SEEK_SET );
 		}
@@ -467,10 +459,9 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 	int				rval = -1;
 
-
-	if ( (real_filename == NULL) || (s_info == NULL) )
+	if ( (real_filename == NULL) || (s_info == NULL) ) {
 		return -1;
-
+	}
 
 	// remove extension
 	strcpy_s( filename, real_filename );
@@ -479,15 +470,16 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 
 	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 
-	if (rc < 0)
+	if (rc < 0) {
 		return -1;
+	}
 
 	// open the file
 	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
 
-	if (fp == NULL)
+	if (fp == NULL) {
 		return -1;
-
+	}
 
 	// Ogg Vorbis
 	if (rc == 0) {
@@ -509,15 +501,15 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 			switch (Ds_sound_quality) {
 				case DS_SQ_HIGH:
 					s_info->bits = Ds_float_supported ? 32 : 16;
-					break;
+				break;
 
 				case DS_SQ_MEDIUM:
 					s_info->bits = 16;
-					break;
+				break;
 
 				default:
 					s_info->bits = 8;
-					break;
+				break;
 			}
 
 			s_info->n_block_align = (ushort)((s_info->bits / 8) * s_info->n_channels);
@@ -526,7 +518,7 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 			s_info->size = (uint)(ov_pcm_total(&ovf, -1) * s_info->n_block_align);
 
 			ov_clear(&ovf);
-	
+
 			// we're all good, can leave now
 			rval = 0;
 			goto Done;
@@ -542,21 +534,21 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 		// Now read RIFF tags until the end of file
 
 		while (1) {
-			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 )
+			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 ) {
 				break;
+			}
 
 			tag = INTEL_INT( tag );
 
-			if ( cfread( &size, sizeof(uint), 1, fp ) != 1 )
+			if ( cfread( &size, sizeof(uint), 1, fp ) != 1 ) {
 				break;
+			}
 
 			size = INTEL_INT( size );
-
 			next_chunk = cftell(fp) + size;
 
-			switch (tag)
-			{
-				case 0x20746d66:		// The 'fmt ' tag
+			switch (tag) {
+				case 0x20746d66: // The 'fmt ' tag
 					PCM_header.wf.wFormatTag		= cfread_ushort(fp);
 					PCM_header.wf.nChannels			= cfread_ushort(fp);
 					PCM_header.wf.nSamplesPerSec	= cfread_uint(fp);
@@ -571,11 +563,9 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 								nprintf(("Sound", "SOUND ==> %d-bit PCM is not supported!\n", PCM_header.wBitsPerSample));
 								goto Done;
 							}
-
 							// fix block align
 							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
-
-							break;
+						break;
 						}
 
 						case WAVE_FORMAT_IEEE_FLOAT: {
@@ -587,26 +577,24 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 							switch (Ds_sound_quality) {
 								case DS_SQ_HIGH:
 									PCM_header.wBitsPerSample = Ds_float_supported ? 32 : 16;
-									break;
+								break;
 
 								case DS_SQ_MEDIUM:
 									PCM_header.wBitsPerSample = 16;
-									break;
+								break;
 
 								default:
 									PCM_header.wBitsPerSample = 8;
-									break;
+								break;
 							}
-
 							// fix block align
 							PCM_header.wf.nBlockAlign = (PCM_header.wBitsPerSample / 8) * PCM_header.wf.nChannels;
-
-							break;
+						break;
 						}
 
 						case WAVE_FORMAT_ADPCM:
 							// block align doesn't get fixed here
-							break;
+						break;
 
 						default: {
 							nprintf(("Sound", "SOUND ==> Format '%d' is not supported!\n", PCM_header.wf.wFormatTag));
@@ -622,28 +610,24 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 					s_info->n_block_align = PCM_header.wf.nBlockAlign;
 
 					got_fmt = true;
-	
-					break;
+				break;
 
-				case 0x61746164:		// the 'data' tag
+				case 0x61746164: // the 'data' tag
 					s_info->size = size;
 					got_data = true;
-
-					break;
+				break;
 
 				default:
-					break;
+			break;
 			}
 
 			if (got_fmt && got_data) {
 				rval = 0;
 				goto Done;
 			}
-
 			cfseek( fp, next_chunk, CF_SEEK_SET );
 		}
 	}
-
 Done:
 	cfclose(fp);
 	return rval;
@@ -652,7 +636,7 @@ Done:
 // ---------------------------------------------------------------------------------------
 // ds_get_sid()
 //
-//	
+//
 int ds_get_sid()
 {
 	sound_buffer new_buffer;
@@ -680,16 +664,16 @@ int ds_get_sid()
 // duplicated as needed and placed in the Channels[] array to be played.
 // 
 //
-// parameters:  
-//					 sid				  => pointer to software id for sound ( output parm)
-//					 final_size		  => pointer to storage to receive uncompressed sound size (output parm)
-//              header          => pointer to a WAVEFORMATEX structure
-//					 si				  => sound_info structure, contains details on the sound format
-//					 flags			  => buffer properties ( DS_HARDWARE , DS_3D )
+// parameters:
+//	sid				=> pointer to software id for sound ( output parm)
+//	final_size		=> pointer to storage to receive uncompressed sound size (output parm)
+//	header			=> pointer to a WAVEFORMATEX structure
+//	si				=> sound_info structure, contains details on the sound format
+//	flags			=> buffer properties ( DS_HARDWARE , DS_3D )
 //
-// returns:     -1           => sound effect could not loaded into a secondary buffer
-//               0           => sound effect successfully loaded into a secondary buffer
-//
+// returns:
+//	1				=> sound effect could not loaded into a secondary buffer
+//	0				=> sound effect successfully loaded into a secondary buffer
 //
 // NOTE: this function is slow, especially when sounds are loaded into hardware.  Don't call this
 // function from within gameplay.
@@ -752,7 +736,6 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 #endif
 
 			data = si->data;
-
 			break;
 		}
 
@@ -778,8 +761,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 			data = convert_buffer;
 
 			nprintf(( "Sound", "SOUND ==> Coverted sound from ADPCM to PCM successfully\n" ));
-
-			break;
+		break;
 		}
 
 		case WAVE_FORMAT_IEEE_FLOAT: {
@@ -843,14 +825,12 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 				for (int i = 0; i < end; i++) {
 					int i_val = (int)(in_p[i] * 127.0f + 0.5f) + 128;
 					CLAMP(i_val, 0, 255);
-
 					*out_p++ = (ubyte)i_val;
 				}
 
 				data = convert_buffer;
 			}
-
-			break;
+		break;
 		}
 
 		case OGG_FORMAT_VORBIS: {
@@ -908,7 +888,6 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 					} else {
 						src_bytes_used += rc;
 					}
-
 					last_section = section;
 				}
 			}
@@ -923,8 +902,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 			ov_clear(&si->ogg_info);
 
 			nprintf(( "Sound", "SOUND ==> Coverted sound from OGG successfully\n" ));
-
-			break;
+		break;
 		}
 
 		default:
@@ -954,31 +932,26 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 			for (int i = 0; i < end; i += 2) {
 				float i_val = (in_p[i] + in_p[i+1]) * 0.5f;
 				CLAMP(i_val, -1.0f, 1.0f);
-
 				*out_p++ = i_val;
 			}
 		} else if (bits == 16) {
 			short *in_p = (short*)data;
 			short *out_p = (short*)mono_buffer;
-
 			int end = size / sizeof(short);
 
 			for (int i = 0; i < end; i += 2) {
 				int i_val = (in_p[i] + in_p[i+1]) >> 1;
 				CLAMP(i_val, -32768, 32767);
-
 				*out_p++ = (short)i_val;
 			}
 		} else {
 			Assert( bits == 8 );
-
 			ubyte *in_p = (ubyte*)data;
 			ubyte *out_p = (ubyte*)mono_buffer;
 
 			for (int i = 0; i < size; i += 2) {
 				int i_val = (in_p[i] + in_p[i+1]) >> 1;
 				CLAMP(i_val, 0, 255);
-
 				*out_p++ = (ubyte)i_val;
 			}
 		}
@@ -986,27 +959,23 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 		n_channels = 1;
 		size >>= 1;
 		bps >>= 1;
-
 		data = mono_buffer;
 
 		if (convert_buffer) {
 			vm_free(convert_buffer);
 			convert_buffer = NULL;
 		}
-
 		nprintf(("Sound", "SOUND ==> Converted 3D sound from stereo to mono\n"));
 	}
 
 	/* format is now in pcm */
 	frequency = si->sample_rate;
-
 	format = openal_get_format(bits, n_channels);
 
 	if (format == AL_INVALID_VALUE) {
 		if (convert_buffer) {
 			vm_free(convert_buffer);
 		}
-
 		return -1;
 	}
 
@@ -1033,9 +1002,9 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 	si->n_block_align = (bits / 8) * n_channels;
 	si->avg_bytes_per_sec = bps;
 
-	if ( convert_buffer )
+	if ( convert_buffer ) {
 		vm_free( convert_buffer );
-
+	}
 	return 0;
 }
 
@@ -1085,22 +1054,19 @@ int ds_init()
 	switch (Ds_sound_quality) {
 		case DS_SQ_HIGH:
 			sample_rate = 48000;
-			break;
+		break;
 
 		case DS_SQ_MEDIUM:
 			sample_rate = 44100;
-			break;
+		break;
 
 		default:
 			sample_rate = 22050;
-			break;
+		break;
 	}
 
 	sample_rate = os_config_read_uint("Sound", "SampleRate", sample_rate);
-
 	attrList[1] = sample_rate;
-
-
 	std::string playback_device;
 	std::string capture_device;
 
@@ -1209,7 +1175,6 @@ int ds_init()
 
 	return 0;
 
-
 AL_InitError:
 	alcMakeContextCurrent(NULL);
 
@@ -1291,9 +1256,9 @@ void ds_close_channel_fast(int i)
 //
 void ds_close_all_channels()
 {
-	int		i;
+	int i;
 
-	for (i = 0; i < MAX_CHANNELS; i++)	{
+	for (i = 0; i < MAX_CHANNELS; i++) {
 		ds_close_channel(i);
 	}
 }
@@ -1374,11 +1339,11 @@ void ds_close()
 // on volume levels.
 //
 //	input:		new_volume	=>		volume for sound to play at
-//					snd_id		=>		which kind of sound to play
-//					priority		=>		DS_MUST_PLAY
-//											DS_LIMIT_ONE
-//											DS_LIMIT_TWO
-//											DS_LIMIT_THREE
+//				snd_id		=>		which kind of sound to play
+//				priority	=>		DS_MUST_PLAY
+//									DS_LIMIT_ONE
+//									DS_LIMIT_TWO
+//									DS_LIMIT_THREE
 //
 //	returns:		channel number to play sound on
 //					-1 if no channel could be found
@@ -1389,11 +1354,11 @@ void ds_close()
 
 int ds_get_free_channel(float new_volume, int snd_id, int priority)
 {
-	int				i, first_free_channel, limit = 100;
-	int				instance_count;	// number of instances of sound already playing
-	int				lowest_vol_index = -1, lowest_instance_vol_index = -1;
-	float			lowest_vol = 1.0f, lowest_instance_vol = 1.0f;
-	channel			*chp;
+	int			i, first_free_channel, limit = 100;
+	int			instance_count;	// number of instances of sound already playing
+	int			lowest_vol_index = -1, lowest_instance_vol_index = -1;
+	float		lowest_vol = 1.0f, lowest_instance_vol = 1.0f;
+	channel		*chp;
 	int status;
 
 	instance_count = 0;
@@ -1403,24 +1368,28 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 	switch (priority) {
 		case DS_MUST_PLAY:
 			limit = 100;
-			break;
+		break;
+
 		case DS_LIMIT_ONE:
 			limit = 1;
-			break;
+		break;
+
 		case DS_LIMIT_TWO:
 			limit = 2;
-			break;
+		break;
+
 		case DS_LIMIT_THREE:
 			limit = 3;
-			break;
+		break;
+
 		default:
 			Int3();			// get Alan
 			limit = 100;
-			break;
+		break;
 	}
 
 	// Look for a channel to use to play this sample
-	for ( i = 0; i < MAX_CHANNELS; i++ )	{
+	for ( i = 0; i < MAX_CHANNELS; i++ ) {
 		chp = &Channels[i];
 
 		// source not created yet
@@ -1428,7 +1397,6 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 			if (first_free_channel == -1) {
 				first_free_channel = i;
 			}
-
 			continue;
 		}
 
@@ -1437,7 +1405,6 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 			if (first_free_channel == -1) {
 				first_free_channel = i;
 			}
-
 			continue;
 		}
 
@@ -1449,7 +1416,6 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 			if (first_free_channel == -1) {
 				first_free_channel = i;
 			}
-
 			continue;
 		} else {
 			if ( chp->snd_id == snd_id ) {
@@ -1490,7 +1456,6 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 	if ( (first_free_channel >= 0) && (Channels[first_free_channel].source_id == 0) ) {
 		OpenAL_ErrorCheck( alGenSources(1, &Channels[first_free_channel].source_id), return -1 );
 	}
-
 	return first_free_channel;
 }
 
@@ -1511,7 +1476,7 @@ int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nsec
 	}
 
 	OpenAL_ErrorCheck( alGenBuffers(1, &i), return -1 );
-	
+
 	sound_buffers[sid].buf_id = i;
 	sound_buffers[sid].channel_id = -1;
 	sound_buffers[sid].frequency = frequency;
@@ -1552,7 +1517,6 @@ void ds_stop_easy(int sid)
 
 	if (cid != -1) {
 		ALuint source_id = Channels[cid].source_id;
-
 		OpenAL_ErrorPrint( alSourceStop(source_id) );
 	}
 }
@@ -1560,17 +1524,19 @@ void ds_stop_easy(int sid)
 //	Play a sound without the usual baggage (used for playing back real-time voice)
 //
 // parameters:  
-//					sid			=> software id of sound
-//					volume      => volume of sound effect in linear scale
+//		sid			=> software id of sound
+//		volume		=> volume of sound effect in linear scale
 int ds_play_easy(int sid, float volume)
 {
-	if (!ds_initialized)
+	if (!ds_initialized) {
 		return -1;
+	}
 
 	int ch_idx = ds_get_free_channel(volume, -1, DS_MUST_PLAY);
 
-	if (ch_idx < 0)
+	if (ch_idx < 0) {
 		return -1;
+	}
 
 	ALuint source_id = Channels[ch_idx].source_id;
 
@@ -1578,7 +1544,6 @@ int ds_play_easy(int sid, float volume)
 
 	if (Channels[ch_idx].sid != sid) {
 		ALuint buffer_id = sound_buffers[sid].buf_id;
-
 		OpenAL_ErrorCheck( alSourcei(source_id, AL_BUFFER, buffer_id), return -1 );
 	}
 
@@ -1606,36 +1571,37 @@ int ds_play_easy(int sid, float volume)
 // Play a DirectSound secondary buffer.  
 // 
 //
-// parameters:  
-//					sid			=> software id of sound
-//					snd_id		=>	what kind of sound this is
-//					priority		=>		DS_MUST_PLAY
-//											DS_LIMIT_ONE
-//											DS_LIMIT_TWO
-//											DS_LIMIT_THREE
-//					volume      => volume of sound effect in DirectSound units
-//					pan         => pan of sound in DirectSound units
-//             looping     => whether the sound effect is looping or not
+// parameters:
+//		sid			=> software id of sound
+//		snd_id		=>	what kind of sound this is
+//		priority	=>		DS_MUST_PLAY
+//							DS_LIMIT_ONE
+//							DS_LIMIT_TWO
+//							DS_LIMIT_THREE
+//		volume		=> volume of sound effect in DirectSound units
+//		pan			=> pan of sound in DirectSound units
+//		looping		=> whether the sound effect is looping or not
 //
-// returns:    -1          => sound effect could not be started
-//              >=0        => sig for sound effect successfully started
+// returns:		1		=> sound effect could not be started
+//				>=0		=> sig for sound effect successfully started
 //
 int ds_play(int sid, int snd_id, int priority, float volume, float pan, int looping, bool is_voice_msg)
 {
 	int ch_idx;
 
-	if (!ds_initialized)
+	if (!ds_initialized) {
 		return -1;
+	}
 
 	ch_idx = ds_get_free_channel(volume, snd_id, priority);
 
 	if (ch_idx < 0) {
-//		nprintf(( "Sound", "SOUND ==> Not playing sound requested at volume %.2f\n", ds_get_percentage_vol(volume) ));
 		return -1;
 	}
 
-	if (Channels[ch_idx].source_id == 0)
+	if (Channels[ch_idx].source_id == 0) {
 		return -1;
+	}
 
 	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, pan, 0.0f, 0.0f) );
 	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
@@ -1647,9 +1613,10 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 
 	ALint status;
 	OpenAL_ErrorCheck( alGetSourcei(Channels[ch_idx].source_id, AL_SOURCE_STATE, &status), return -1 );
-		
-	if (status == AL_PLAYING)
+
+	if (status == AL_PLAYING) {
 		OpenAL_ErrorPrint( alSourceStop(Channels[ch_idx].source_id) );
+	}
 
 
 	OpenAL_ErrorCheck( alSourcei(Channels[ch_idx].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
@@ -1658,8 +1625,9 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 
 	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
 
-	if (Ds_eax_inited)
+	if (Ds_eax_inited) {
 		OpenAL_ErrorPrint( alSource3i(Channels[ch_idx].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+	}
 
 	OpenAL_ErrorPrint( alSourcePlay(Channels[ch_idx].source_id) );
 
@@ -1674,8 +1642,9 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 	Channels[ch_idx].looping = looping;
 	Channels[ch_idx].priority = priority;
 
-	if (channel_next_sig < 0)
+	if (channel_next_sig < 0) {
 		channel_next_sig = 1;
+	}
 
 	return Channels[ch_idx].sig;
 }
@@ -1738,7 +1707,7 @@ void ds_stop_channel_all()
 {
 	int i;
 
-	for ( i=0; i<MAX_CHANNELS; i++ )	{
+	for ( i=0; i<MAX_CHANNELS; i++ ) {
 		if ( Channels[i].source_id != 0 ) {
 			OpenAL_ErrorPrint( alSourceStop(Channels[i].source_id) );
 		}
@@ -1748,9 +1717,9 @@ void ds_stop_channel_all()
 // ---------------------------------------------------------------------------------------
 // ds_set_volume()
 //
-//	Set the volume for a channel.  The volume is expected to be in linear scale
+// Set the volume for a channel.  The volume is expected to be in linear scale
 //
-//	If the sound is a 3D sound buffer, this is like re-establishing the maximum 
+// If the sound is a 3D sound buffer, this is like re-establishing the maximum 
 // volume.
 //
 void ds_set_volume( int channel, float vol )
@@ -1805,8 +1774,9 @@ int ds_get_pitch(int channel)
 
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return -1 );
 
-	if (status == AL_PLAYING)
+	if (status == AL_PLAYING) {
 		OpenAL_ErrorPrint( alGetSourcef(Channels[channel].source_id, AL_PITCH, &alpitch) );
+	}
 
 	// convert OpenAL values to DirectSound values and return
 	pitch = fl2i( pow(10.0, (alpitch + 2.0)) );
@@ -1827,11 +1797,13 @@ void ds_set_pitch(int channel, int pitch)
 		return;
 	}
 
-	if ( pitch < MIN_PITCH )
+	if ( pitch < MIN_PITCH ) {
 		pitch = MIN_PITCH;
+	}
 
-	if ( pitch > MAX_PITCH )
+	if ( pitch > MAX_PITCH ) {
 		pitch = MAX_PITCH;
+	}
 
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return );
 
@@ -1844,7 +1816,7 @@ void ds_set_pitch(int channel, int pitch)
 // ---------------------------------------------------------------------------------------
 // ds_chg_loop_status()
 //
-//	
+//
 void ds_chg_loop_status(int channel, int loop)
 {
 	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
@@ -1862,30 +1834,30 @@ void ds_chg_loop_status(int channel, int loop)
 // Starts a ds3d sound playing
 // 
 //	input:
+//		sid				=>	software id for sound to play
+//		snd_id			=> identifies what type of sound is playing
+//		pos				=>	world pos of sound
+//		vel				=>	velocity of object emitting sound
+//		min				=>	distance at which sound doesn't get any louder
+//		max				=>	distance at which sound becomes inaudible
+//		looping			=>	boolean, whether to loop the sound or not
+//		max_volume		=>	volume (0 to 1) for 3d sound at maximum
+//		estimated_vol	=>	manual estimated volume
+//		priority		=>		DS_MUST_PLAY
+//								DS_LIMIT_ONE
+//								DS_LIMIT_TWO
+//								DS_LIMIT_THREE
 //
-//					sid				=>	software id for sound to play
-//					snd_id			=> identifies what type of sound is playing
-//					pos				=>	world pos of sound
-//					vel				=>	velocity of object emitting sound
-//					min				=>	distance at which sound doesn't get any louder
-//					max				=>	distance at which sound becomes inaudible
-//					looping			=>	boolean, whether to loop the sound or not
-//					max_volume		=>	volume (0 to 1) for 3d sound at maximum
-//					estimated_vol	=>	manual estimated volume
-//					priority		=>		DS_MUST_PLAY
-//											DS_LIMIT_ONE
-//											DS_LIMIT_TWO
-//											DS_LIMIT_THREE
-//
-//	returns:			0				=> sound started successfully
-//						-1				=> sound could not be played
+//	returns:	0		=> sound started successfully
+//				-1		=> sound could not be played
 //
 int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, int priority )
 {
-	int				channel;
+	int channel;
 
-	if (!ds_initialized)
+	if (!ds_initialized) {
 		return -1;
+	}
 
 	channel = ds_get_free_channel(estimated_vol, snd_id, priority);
 
@@ -1908,14 +1880,16 @@ int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max,
 	ALint status;
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return -1 );
 	
-	if (status == AL_PLAYING)
+	if (status == AL_PLAYING) {
 		OpenAL_ErrorPrint( alSourceStop(Channels[channel].source_id) );
+	}
 
 
 	OpenAL_ErrorCheck( alSourcei(Channels[channel].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
 
-	if (Ds_eax_inited)
+	if (Ds_eax_inited) {
 		OpenAL_ErrorPrint( alSource3i(Channels[channel].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+	}
 
 	OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
 
@@ -2062,10 +2036,9 @@ int ds_get_size(int sid, int *size)
 		if (size) {
 			*size = (int) data_size;
 		}
-
 		return 0;
-	}
 
+	}
 	return -1;
 }
 
@@ -2327,9 +2300,9 @@ int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id)
 //
 void ds_eax_close()
 {
- 	if (Ds_eax_inited == 0) {
- 		return;
- 	}
+	if (Ds_eax_inited == 0) {
+		return;
+	}
 
 	v_alAuxiliaryEffectSloti(AL_EFX_aux_id, AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
 
@@ -2348,6 +2321,7 @@ void ds_eax_close()
 //
 int ds_eax_init()
 {
+	const char *err = NULL;
 	if (Ds_eax_inited) {
 		return 0;
 	}
@@ -2370,7 +2344,7 @@ int ds_eax_init()
 		v_alAuxiliaryEffectSlotiv = (ALAUXILIARYEFFECTSLOTIV) al_load_function("alAuxiliaryEffectSlotiv");
 		v_alAuxiliaryEffectSlotf = (ALAUXILIARYEFFECTSLOTF) al_load_function("alAuxiliaryEffectSlotf");
 		v_alAuxiliaryEffectSlotfv = (ALAUXILIARYEFFECTSLOTFV) al_load_function("alAuxiliaryEffectSlotfv");
-	} catch (const char *err) {
+	} catch (...) {
 		mprintf(("\n  EFX:  Unable to load function: %s()\n", err));
 
 		Ds_eax_inited = 0;
@@ -2429,8 +2403,9 @@ int ds_eax_is_inited()
 //
 void ds_do_frame()
 {
-	if (!ds_initialized)
+	if (!ds_initialized) {
 		return;
+	}
 
 	int i;
 	channel *cp = NULL;

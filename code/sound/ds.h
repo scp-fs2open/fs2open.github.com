@@ -37,55 +37,55 @@ extern int Ds_sound_quality;
 extern int Ds_float_supported;
 
 // limits placed on how many concurrent sounds of the same type can play simultaneously
-#define DS_MUST_PLAY				0
-#define DS_LIMIT_ONE				1
-#define DS_LIMIT_TWO				2
-#define DS_LIMIT_THREE			3
+#define DS_MUST_PLAY	0
+#define DS_LIMIT_ONE	1
+#define DS_LIMIT_TWO	2
+#define DS_LIMIT_THREE	3
 
 #define DS_3D		(1<<0)
 
 typedef struct sound_info {
-	int	format;		// WAVE_FORMAT_* defines from mmreg.h
+	int format;		// WAVE_FORMAT_* defines from mmreg.h
 	OggVorbis_File ogg_info;
-	uint	size;
-	int	sample_rate;
-	int	avg_bytes_per_sec;
-	int	n_block_align;
-	int	bits;
-	int	n_channels;
-	int	duration;	// time in ms for duration of sound
-	ubyte	*data;
+	uint size;
+	int sample_rate;
+	int avg_bytes_per_sec;
+	int n_block_align;
+	int bits;
+	int n_channels;
+	int duration;	// time in ms for duration of sound
+	ubyte *data;
 } sound_info;
 
-extern int							ds_initialized;
+extern int ds_initialized;
 
-int	ds_init();
-void	ds_close();
-int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg = false, OggVorbis_File *ovf = NULL);
-int	ds_parse_sound_info(char *real_filename, sound_info *s_info);
-int	ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int flags);
-void	ds_unload_buffer(int sid);
-int	ds_play(int sid, int snd_id, int priority, float volume, float pan, int looping, bool is_voice_msg = false);
-int	ds_get_channel(int sig);
-int	ds_is_channel_playing(int channel);
-void	ds_stop_channel(int channel);
-void	ds_stop_channel_all();
-void	ds_set_volume( int channel, float vol );
-void	ds_set_pan( int channel, float pan );
-int	ds_get_pitch(int channel);
-void	ds_set_pitch(int channel, int pitch);
-void	ds_chg_loop_status(int channel, int loop);
-void  ds_set_position(int channel, unsigned int offset);
+int ds_init();
+void ds_close();
+int ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg = false, OggVorbis_File *ovf = NULL);
+int ds_parse_sound_info(char *real_filename, sound_info *s_info);
+int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int flags);
+void ds_unload_buffer(int sid);
+int ds_play(int sid, int snd_id, int priority, float volume, float pan, int looping, bool is_voice_msg = false);
+int ds_get_channel(int sig);
+int ds_is_channel_playing(int channel);
+void ds_stop_channel(int channel);
+void ds_stop_channel_all();
+void ds_set_volume( int channel, float vol );
+void ds_set_pan( int channel, float pan );
+int ds_get_pitch(int channel);
+void ds_set_pitch(int channel, int pitch);
+void ds_chg_loop_status(int channel, int loop);
+void ds_set_position(int channel, unsigned int offset);
 unsigned int ds_get_play_position(int channel);
 unsigned int ds_get_write_position(int channel);
-int	ds_get_data(int sid, char *data);
-int	ds_get_size(int sid, int *size);
+int ds_get_data(int sid, char *data);
+int ds_get_size(int sid, int *size);
 
-int	ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nseconds);
-int	ds_lock_data(int sid, unsigned char *data, int size);
-int	ds_play_easy(int sid, float volume);
-void	ds_stop_easy(int sid);
-int	ds_get_channel_size(int channel);
+int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nseconds);
+int ds_lock_data(int sid, unsigned char *data, int size);
+int ds_play_easy(int sid, float volume);
+void ds_stop_easy(int sid);
+int ds_get_channel_size(int channel);
 
 int ds_get_sound_id(int channel);
 
@@ -108,7 +108,6 @@ void ds_do_frame();
 typedef struct EFXREVERBPROPERTIES_list
 {
 	char *name;
-
 	float flDensity;
 	float flDiffusion;
 	float flGain;
@@ -137,7 +136,6 @@ typedef struct EFXREVERBPROPERTIES_list
 typedef struct EFXREVERBPROPERTIES
 {
 	SCP_string name;
-
 	float flDensity;
 	float flDiffusion;
 	float flGain;
@@ -161,55 +159,51 @@ typedef struct EFXREVERBPROPERTIES
 	float flLFReference;
 	float flRoomRolloffFactor;
 	int	iDecayHFLimit;
-
 	EFXREVERBPROPERTIES()
 	{
 	}
-
 	EFXREVERBPROPERTIES(const EFXREVERBPROPERTIES_list &list);
 } EFXREVERBPROPERTIES;
 
 extern SCP_vector<EFXREVERBPROPERTIES> EFX_presets;
 
-
-typedef struct 
+typedef struct
 {
-    unsigned int environment;          // 0 to EAX_ENVIRONMENT_COUNT-1
-    float fVolume;                      // 0 to 1
-    float fDecayTime_sec;               // seconds, 0.1 to 100
-    float fDamping;                     // 0 to 1
+	unsigned int environment;	// 0 to EAX_ENVIRONMENT_COUNT-1
+	float fVolume;				// 0 to 1
+	float fDecayTime_sec;		// seconds, 0.1 to 100
+	float fDamping;				// 0 to 1
 } EAX_REVERBPROPERTIES;
 
 enum
 {
-    EAX_ENVIRONMENT_GENERIC,
-    EAX_ENVIRONMENT_PADDEDCELL,
-    EAX_ENVIRONMENT_ROOM,
-    EAX_ENVIRONMENT_BATHROOM,
-    EAX_ENVIRONMENT_LIVINGROOM,
-    EAX_ENVIRONMENT_STONEROOM,
-    EAX_ENVIRONMENT_AUDITORIUM,
-    EAX_ENVIRONMENT_CONCERTHALL,
-    EAX_ENVIRONMENT_CAVE,
-    EAX_ENVIRONMENT_ARENA,
-    EAX_ENVIRONMENT_HANGAR,
-    EAX_ENVIRONMENT_CARPETEDHALLWAY,
-    EAX_ENVIRONMENT_HALLWAY,
-    EAX_ENVIRONMENT_STONECORRIDOR,
-    EAX_ENVIRONMENT_ALLEY,
-    EAX_ENVIRONMENT_FOREST,
-    EAX_ENVIRONMENT_CITY,
-    EAX_ENVIRONMENT_MOUNTAINS,
-    EAX_ENVIRONMENT_QUARRY,
-    EAX_ENVIRONMENT_PLAIN,
-    EAX_ENVIRONMENT_PARKINGLOT,
-    EAX_ENVIRONMENT_SEWERPIPE,
-    EAX_ENVIRONMENT_UNDERWATER,
-    EAX_ENVIRONMENT_DRUGGED,
-    EAX_ENVIRONMENT_DIZZY,
-    EAX_ENVIRONMENT_PSYCHOTIC,
-
-    EAX_ENVIRONMENT_COUNT           // total number of environments
+	EAX_ENVIRONMENT_GENERIC,
+	EAX_ENVIRONMENT_PADDEDCELL,
+	EAX_ENVIRONMENT_ROOM,
+	EAX_ENVIRONMENT_BATHROOM,
+	EAX_ENVIRONMENT_LIVINGROOM,
+	EAX_ENVIRONMENT_STONEROOM,
+	EAX_ENVIRONMENT_AUDITORIUM,
+	EAX_ENVIRONMENT_CONCERTHALL,
+	EAX_ENVIRONMENT_CAVE,
+	EAX_ENVIRONMENT_ARENA,
+	EAX_ENVIRONMENT_HANGAR,
+	EAX_ENVIRONMENT_CARPETEDHALLWAY,
+	EAX_ENVIRONMENT_HALLWAY,
+	EAX_ENVIRONMENT_STONECORRIDOR,
+	EAX_ENVIRONMENT_ALLEY,
+	EAX_ENVIRONMENT_FOREST,
+	EAX_ENVIRONMENT_CITY,
+	EAX_ENVIRONMENT_MOUNTAINS,
+	EAX_ENVIRONMENT_QUARRY,
+	EAX_ENVIRONMENT_PLAIN,
+	EAX_ENVIRONMENT_PARKINGLOT,
+	EAX_ENVIRONMENT_SEWERPIPE,
+	EAX_ENVIRONMENT_UNDERWATER,
+	EAX_ENVIRONMENT_DRUGGED,
+	EAX_ENVIRONMENT_DIZZY,
+	EAX_ENVIRONMENT_PSYCHOTIC,
+	EAX_ENVIRONMENT_COUNT		// total number of environments
 };
 
 #define EAX_MAX_ENVIRONMENT (EAX_ENVIRONMENT_COUNT - 1)
