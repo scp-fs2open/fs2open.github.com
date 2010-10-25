@@ -1670,24 +1670,24 @@ int CFred_mission_save::save_objects()
 
 					required_string_fred("+Special Exp Damage:"); 
 					parse_comments();
-					fout(" %d", Ships[i].special_exp_damage);
+					fout(" %f", Ships[i].special_exp_damage);
 
 					required_string_fred("+Special Exp Blast:"); 
 					parse_comments();
-					fout(" %d", Ships[i].special_exp_blast);
+					fout(" %f", Ships[i].special_exp_blast);
 
 					required_string_fred("+Special Exp Inner Radius:"); 
 					parse_comments();
-					fout(" %d", Ships[i].special_exp_inner);
+					fout(" %f", Ships[i].special_exp_inner);
 
 					required_string_fred("+Special Exp Outer Radius:"); 
 					parse_comments();
-					fout(" %d", Ships[i].special_exp_outer);
+					fout(" %f", Ships[i].special_exp_outer);
 
 					if (Ships[i].use_shockwave && (Ships[i].special_exp_shockwave_speed > 0)) {
 						optional_string_fred("+Special Exp Shockwave Speed:"); 
 						parse_comments();
-						fout(" %d", Ships[i].special_exp_shockwave_speed);
+						fout(" %f", Ships[i].special_exp_shockwave_speed);
 					}
 					else {
 						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
@@ -1698,20 +1698,20 @@ int CFred_mission_save::save_objects()
 					fout_version("\n$Special Explosion:");
 
 					fout_version("\n+Special Exp Damage:"); 
-					fout(" %d", Ships[i].special_exp_damage);
+					fout(" %f", Ships[i].special_exp_damage);
 
 					fout_version("\n+Special Exp Blast:"); 
-					fout(" %d", Ships[i].special_exp_blast);
+					fout(" %f", Ships[i].special_exp_blast);
 
 					fout_version("\n+Special Exp Inner Radius:"); 
-					fout(" %d", Ships[i].special_exp_inner);
+					fout(" %f", Ships[i].special_exp_inner);
 
 					fout_version("\n+Special Exp Outer Radius:"); 
-					fout(" %d", Ships[i].special_exp_outer);
+					fout(" %f", Ships[i].special_exp_outer);
 
 					if (Ships[i].use_shockwave && (Ships[i].special_exp_shockwave_speed > 0)) {
 						fout_version("\n+Special Exp Shockwave Speed:"); 
-						fout(" %d", Ships[i].special_exp_shockwave_speed);
+						fout(" %f", Ships[i].special_exp_shockwave_speed);
 					}
 
 					fso_comment_pop();
