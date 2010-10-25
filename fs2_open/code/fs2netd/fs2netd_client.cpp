@@ -823,7 +823,7 @@ void fs2netd_gameserver_start()
 	Multi_tracker_game_data.flags = Netgame.flags;
 	Multi_tracker_game_data.type_flags = Netgame.type_flags;
 	Multi_tracker_game_data.players = (short)multi_num_players();
-	Multi_tracker_game_data.max_players = Netgame.max_players;
+	Multi_tracker_game_data.max_players = (short)Netgame.max_players;
 	Multi_tracker_game_data.mode = (ubyte)Netgame.mode;
 	Multi_tracker_game_data.rank_base = (ubyte)Netgame.rank_base;
 	Multi_tracker_game_data.game_state = (ubyte)Netgame.game_state;
