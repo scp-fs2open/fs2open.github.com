@@ -2343,8 +2343,8 @@ int ds_eax_init()
 		v_alAuxiliaryEffectSlotiv = (ALAUXILIARYEFFECTSLOTIV) al_load_function("alAuxiliaryEffectSlotiv");
 		v_alAuxiliaryEffectSlotf = (ALAUXILIARYEFFECTSLOTF) al_load_function("alAuxiliaryEffectSlotf");
 		v_alAuxiliaryEffectSlotfv = (ALAUXILIARYEFFECTSLOTFV) al_load_function("alAuxiliaryEffectSlotfv");
-	} catch (const char *err) {
-		mprintf(("\n  EFX:  Unable to load function: %s()\n", err));
+	} catch (...) {
+		mprintf(("\n  EFX:  Unable to load function: %s()\n", const char err));
 
 		Ds_eax_inited = 0;
 		return -1;
