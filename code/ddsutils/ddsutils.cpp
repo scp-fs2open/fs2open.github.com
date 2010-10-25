@@ -495,7 +495,4 @@ const char *dds_error_string(int code)
 		default:
 			return "Abort, retry, fail?";
 	}
-
-	//get a warning otherwise
-	return "Abort, retry, fail?";
 }

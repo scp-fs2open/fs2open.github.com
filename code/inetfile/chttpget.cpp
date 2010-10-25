@@ -597,8 +597,6 @@ uint ChttpGet::ReadDataChannel()
 		m_State = HTTP_STATE_FILE_RECEIVED;
 		return 1;
 	}
-
-	return 1;
 }	
 
 
