@@ -135,10 +135,10 @@ const static float Default_fog_near = 10.0f;
 const static float Default_fog_far = 500.0f;
 
 // fog near and far values for rendering the background nebula
-#define NEB_BACKG_FOG_NEAR_GLIDE				2.5f
-#define NEB_BACKG_FOG_NEAR_D3D				4.5f
-#define NEB_BACKG_FOG_FAR_GLIDE				10.0f
-#define NEB_BACKG_FOG_FAR_D3D					10.0f
+#define NEB_BACKG_FOG_NEAR_GLIDE		2.5f
+#define NEB_BACKG_FOG_NEAR_D3D			4.5f
+#define NEB_BACKG_FOG_FAR_GLIDE			10.0f
+#define NEB_BACKG_FOG_FAR_D3D			10.0f
 float Neb_backg_fog_near = NEB_BACKG_FOG_NEAR_GLIDE;
 float Neb_backg_fog_far = NEB_BACKG_FOG_FAR_GLIDE;
 
@@ -162,61 +162,61 @@ cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
 
 // nebula detail level
 typedef struct neb2_detail {
-	float max_alpha_glide;					// max alpha for this detail level in Glide
-	float max_alpha_d3d;						// max alpha for this detail level in D3d
-	float break_alpha;						// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-	float break_x, break_y;					// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
-	float cube_dim;							// total dimension of player poof cube
-	float cube_inner;							// inner radius of the player poof cube
-	float cube_outer;							// outer radius of the player pood cube
-	float prad;									// radius of the poofs
-	float wj, hj, dj;							// width, height, depth jittering. best left at 1.0	
+	float max_alpha_glide;		// max alpha for this detail level in Glide
+	float max_alpha_d3d;		// max alpha for this detail level in D3d
+	float break_alpha;			// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+	float break_x, break_y;		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+	float cube_dim;				// total dimension of player poof cube
+	float cube_inner;			// inner radius of the player poof cube
+	float cube_outer;			// outer radius of the player pood cube
+	float prad;					// radius of the poofs
+	float wj, hj, dj;			// width, height, depth jittering. best left at 1.0	
 } neb2_detail;
 neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
 	{ // lowest detail level
-		0.575f,										// max alpha for this detail level in Glide
-		0.71f,									// max alpha for this detail level in D3d
-		0.13f,									// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		150.0f, 150.0f / 1.3333f,			// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
-		510.0f,									// total dimension of player poof cube
-		50.0f,									// inner radius of the player poof cube
-		250.0f,									// outer radius of the player pood cube
-		120.0f,									// radius of the poofs
-		1.0f, 1.0f, 1.0f						// width, height, depth jittering. best left at 1.0	
+		0.575f,							// max alpha for this detail level in Glide
+		0.71f,							// max alpha for this detail level in D3d
+		0.13f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		150.0f, 150.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		510.0f,							// total dimension of player poof cube
+		50.0f,							// inner radius of the player poof cube
+		250.0f,							// outer radius of the player pood cube
+		120.0f,							// radius of the poofs
+		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
 	},	
 	{ // 2nd lowest detail level
-		0.575f,										// max alpha for this detail level in Glide
-		0.71f,									// max alpha for this detail level in D3d
-		0.125f,									// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		300.0f, 300.0f / 1.3333f,			// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
-		550.0f,									// total dimension of player poof cube
-		100.0f,									// inner radius of the player poof cube
-		250.0f,									// outer radius of the player pood cube
-		125.0f,									// radius of the poofs
-		1.0f, 1.0f, 1.0f						// width, height, depth jittering. best left at 1.0	
+		0.575f,							// max alpha for this detail level in Glide
+		0.71f,							// max alpha for this detail level in D3d
+		0.125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		550.0f,							// total dimension of player poof cube
+		100.0f,							// inner radius of the player poof cube
+		250.0f,							// outer radius of the player pood cube
+		125.0f,							// radius of the poofs
+		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
 	},
 	{ // 2nd highest detail level
-		0.575f,										// max alpha for this detail level in Glide
-		0.71f,									// max alpha for this detail level in D3d
-		0.1f,										// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		300.0f, 300.0f / 1.3333f,			// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
-		550.0f,									// total dimension of player poof cube
-		150.0f,									// inner radius of the player poof cube
-		250.0f,									// outer radius of the player pood cube
-		125.0f,									// radius of the poofs
-		1.0f, 1.0f, 1.0f						// width, height, depth jittering. best left at 1.0	
+		0.575f,							// max alpha for this detail level in Glide
+		0.71f,							// max alpha for this detail level in D3d
+		0.1f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		300.0f, 300.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		550.0f,							// total dimension of player poof cube
+		150.0f,							// inner radius of the player poof cube
+		250.0f,							// outer radius of the player pood cube
+		125.0f,							// radius of the poofs
+		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
 	},
 	{ // higest detail level
-		0.475f,									// max alpha for this detail level in Glide
-		0.575f,									// max alpha for this detail level in D3d
-		0.05f,									// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		200.0f, 200.0f / 1.3333f,			// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
-		750.0f,									// total dimension of player poof cube
-		200.0f,									// inner radius of the player poof cube
-		360.0f,									// outer radius of the player pood cube
-		150.0f,									// radius of the poofs
-		1.0f, 1.0f, 1.0f						// width, height, depth jittering. best left at 1.0	
-	},		
+		0.475f,							// max alpha for this detail level in Glide
+		0.575f,							// max alpha for this detail level in D3d
+		0.05f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+		200.0f, 200.0f / 1.3333f,		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen 
+		750.0f,							// total dimension of player poof cube
+		200.0f,							// inner radius of the player poof cube
+		360.0f,							// outer radius of the player pood cube
+		150.0f,							// radius of the poofs
+		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
+	},
 };
 neb2_detail *Nd = &Neb2_detail[MAX_DETAIL_LEVEL - 2];
 
@@ -260,7 +260,7 @@ void neb2_init()
 	int rval;
 	char name[MAX_FILENAME_LEN];
 
-	if ((rval = setjmp(parse_abort)) != 0) {
+	if ( ( rval = setjmp(parse_abort) ) != 0 ) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "nebula.tbl", rval));
 		return;
 	}
@@ -271,55 +271,31 @@ void neb2_init()
 
 	// background bitmaps
 	Neb2_bitmap_count = 0;
-	while(!optional_string("#end")){
+	while ( !optional_string("#end") ) {
 		// nebula
 		required_string("+Nebula:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		
-		if(Neb2_bitmap_count < MAX_NEB2_BITMAPS){
+
+		if ( Neb2_bitmap_count < MAX_NEB2_BITMAPS ) {
 			strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
-		}
-		else {
+		} else {
 			WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebulas (%d)!\nSkipping %s.", MAX_NEB2_BITMAPS, name);
 		}
 	}
 
 	// poofs
 	Neb2_poof_count = 0;
-	while(!optional_string("#end")){
+	while ( !optional_string("#end") ) {
 		// nebula
 		required_string("+Poof:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-		if(Neb2_poof_count < MAX_NEB2_POOFS){
+		if ( Neb2_poof_count < MAX_NEB2_POOFS ) {
 			strcpy_s(Neb2_poof_filenames[Neb2_poof_count++], name);
-		}
-		else {
+		} else {
 			WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebula poofs (%d)!\nSkipping %s.", MAX_NEB2_POOFS, name);
 		}
 	}
-
-	//Distance
-	//WMC - Obsolete! Obsolete! Obsolete!
-	/*
-	if(optional_string("#Fog Distance"))
-	{
-		char buf[32];
-		int len = sizeof(Neb_ship_fog_vals_d3d)/sizeof(Neb_ship_fog_vals_d3d[0]);
-
-		for(int i = 0; i < len; i++)
-		{
-			Assert( i < (int)(sizeof(Ship_type_names) / sizeof(Ship_type_names[0])) );
-
-			//Create the var string and parse it if necessary
-			sprintf(buf, "$%s:", Ship_type_names[i]);
-			if(optional_string(buf)) {
-				stuff_float_list((float *)&(Neb_ship_fog_vals_d3d[i]), 2);
-			}
-		}
-
-		required_string("#End");
-	}*/
 
 	// should always have 6 neb poofs
 	Assert(Neb2_poof_count == 6);
@@ -329,11 +305,11 @@ void neb2_init()
 void neb2_set_detail_level(int level)
 {
 	// sanity
-	if(level < 0){
+	if (level < 0) {
 		Nd = &Neb2_detail[0];
 		return;
 	}
-	if(level >= MAX_DETAIL_LEVEL){
+	if (level >= MAX_DETAIL_LEVEL) {
 		Nd = &Neb2_detail[MAX_DETAIL_LEVEL-1];
 		return;
 	}
@@ -359,11 +335,12 @@ void neb2_level_init()
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_post_level_init()
 {
-	int idx;		
+	int idx;
 
 	// standalone servers can bail here
-	if (Game_mode & GM_STANDALONE_SERVER)
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
+	}
 
 	// if the mission is not a fullneb mission, skip
 	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
@@ -419,23 +396,23 @@ void neb2_post_level_init()
 	}
 
 	// load in all nebula bitmaps
-	for(idx=0; idx<Neb2_poof_count; idx++){
-		if(Neb2_poofs[idx] < 0){
+	for (idx=0; idx<Neb2_poof_count; idx++) {
+		if (Neb2_poofs[idx] < 0) {
 			Neb2_poofs[idx] = bm_load(Neb2_poof_filenames[idx]);
 		}
 	}
 
-	pneb_tried = 0;		
-	pneb_tossed_alpha = 0;		
+	pneb_tried = 0;
+	pneb_tossed_alpha = 0;
 	pneb_tossed_dot = 0;
-	neb_tried = 0;		
-	neb_tossed_alpha = 0;		
+	neb_tried = 0;
+	neb_tossed_alpha = 0;
 	neb_tossed_dot = 0;
 	neb_tossed_count = 0;
 
 	// setup proper fogging values
 	Neb_backg_fog_near = NEB_BACKG_FOG_NEAR_D3D;
-	Neb_backg_fog_far = NEB_BACKG_FOG_FAR_D3D;					
+	Neb_backg_fog_far = NEB_BACKG_FOG_FAR_D3D;
 
 	// regen the nebula
 	neb2_eye_changed();
@@ -451,22 +428,24 @@ void neb2_post_level_init()
 void neb2_level_close()
 {
 	int idx;
-	
+
 	// standalone servers can bail here
-	if (Game_mode & GM_STANDALONE_SERVER)
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
+	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) )
+	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
 		return;
+	}
 
 	// unload all nebula bitmaps
-	for(idx=0; idx<Neb2_poof_count; idx++){
-		if(Neb2_poofs[idx] >= 0){
+	for (idx=0; idx<Neb2_poof_count; idx++) {
+		if (Neb2_poofs[idx] >= 0) {
 			bm_release(Neb2_poofs[idx]);
 			Neb2_poofs[idx] = -1;
 		}
-	}	
+	}
 
 	// unflag the mission as being fullneb so stuff doesn't fog in the techdata room :D
 	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
@@ -481,35 +460,35 @@ void neb2_level_close()
 void neb2_render_setup(camid cid)
 {
 	// standalone servers can bail here
-	if (Game_mode & GM_STANDALONE_SERVER)
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
+	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) )
+	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) ) {
 		return;
-
+	}
 
 	if (Neb2_render_mode == NEB2_RENDER_HTL) {
 		// RT The background needs to be the same colour as the fog and this seems
 		// to be the ideal place to do it
-		ubyte tr = gr_screen.current_clear_color.red;  
+		ubyte tr = gr_screen.current_clear_color.red;
 		ubyte tg = gr_screen.current_clear_color.green;
-		ubyte tb = gr_screen.current_clear_color.blue; 
+		ubyte tb = gr_screen.current_clear_color.blue;
 
 		neb2_get_fog_color(
 			&gr_screen.current_clear_color.red,
 			&gr_screen.current_clear_color.green,
 			&gr_screen.current_clear_color.blue);
-		
+
 		gr_clear();
-		
+
 		gr_screen.current_clear_color.red   = tr;
 		gr_screen.current_clear_color.green = tg;
 		gr_screen.current_clear_color.blue  = tb;
 
-		return;	 
+		return;
 	}
-
 
 	// pre-render the real background nebula
 	neb2_pre_render(cid);
@@ -523,8 +502,9 @@ void neb2_page_in()
 	// load in all nebula bitmaps
 	if ( (The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used ) {
 		for (idx = 0; idx < Neb2_poof_count; idx++) {
-			if ( (Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx)) )
+			if ( (Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx)) ) {
 				bm_page_in_texture(Neb2_poofs[idx]);
+			}
 		}
 	}
 }
@@ -534,7 +514,7 @@ int neb_skip_opt = 1;
 DCF(neb_skip, "")
 {
 	neb_skip_opt = !neb_skip_opt;
-	if(neb_skip_opt){
+	if (neb_skip_opt) {
 		dc_printf("Using neb object skipping!\n");
 	} else {
 		dc_printf("Not using neb object skipping!\n");
@@ -542,15 +522,15 @@ DCF(neb_skip, "")
 }
 int neb2_skip_render(object *objp, float z_depth)
 {
-	float fog_near, fog_far;		
+	float fog_near, fog_far;
 
 	// if we're never skipping
-	if(!neb_skip_opt){
+	if (!neb_skip_opt) {
 		return 0;
 	}
 
 	// lame rendering
-	if(Neb2_render_mode == NEB2_RENDER_LAME){
+	if (Neb2_render_mode == NEB2_RENDER_LAME) {
 		return 0;
 	}
 
@@ -558,110 +538,96 @@ int neb2_skip_render(object *objp, float z_depth)
 	neb2_get_fog_values(&fog_near, &fog_far, objp);
 
 	// by object type
-	switch( objp->type )	{
+	switch( objp->type ) {
 	// some objects we always render
-	case OBJ_SHOCKWAVE:
-	case OBJ_JUMP_NODE:
-	case OBJ_NONE:
-	case OBJ_GHOST:
-	case OBJ_BEAM:
-	case OBJ_WAYPOINT:
-		return 0;			
-		
-	// any weapon over 500 meters away 
-	case OBJ_WEAPON:		
-		if(z_depth >= 500.0f){
-			return 1;
-		}
-		break;
+		case OBJ_SHOCKWAVE:
+		case OBJ_JUMP_NODE:
+		case OBJ_NONE:
+		case OBJ_GHOST:
+		case OBJ_BEAM:
+		case OBJ_WAYPOINT:
+		return 0;
 
-	// any small ship over the fog limit, or any cruiser 50% further than the fog limit
-	case OBJ_SHIP:	
-		ship_info *sip;
-		if((objp->instance >= 0) && (Ships[objp->instance].ship_info_index >= 0)){
-			sip = &Ship_info[Ships[objp->instance].ship_info_index];
-		} else {
+		// any weapon over 500 meters away
+		case OBJ_WEAPON:
+			if (z_depth >= 500.0f) {
+				return 1;
+			}
+			break;
+
+		// any small ship over the fog limit, or any cruiser 50% further than the fog limit
+		case OBJ_SHIP:
+			ship_info *sip;
+			if ( (objp->instance >= 0) && (Ships[objp->instance].ship_info_index >= 0) ) {
+				sip = &Ship_info[Ships[objp->instance].ship_info_index];
+			} else {
+				return 0;
+			}
+
+			// small ships over the fog limit by a small factor
+			if ( (sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f)) ) {
+				return 1;
+			}
+
+			// big ships
+			if ( (sip->flags & SIF_BIG_SHIP) && (z_depth >= (fog_far * 2.0f)) ) {
+				return 1;
+			}
+
+			// huge ships
+			if ( (sip->flags & SIF_HUGE_SHIP) && (z_depth >= (fog_far * 3.0f)) ) {
+				return 1;
+			}
+			break;
+
+		// any fireball over the fog limit for small ships
+		case OBJ_FIREBALL:
 			return 0;
-		}
+			break;
 
-		// small ships over the fog limit by a small factor
-		if((sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f))){
-			return 1;
-		}
+		// any debris over the fog limit for small ships
+		case OBJ_DEBRIS:
+			return 0;
+			break;
 
-		// big ships
-		if((sip->flags & SIF_BIG_SHIP) && (z_depth >= (fog_far * 2.0f))){
-			return 1;
-		}
+		// any asteroids 50% farther than the fog limit for small ships
+		case OBJ_ASTEROID:
+			if (z_depth >= (fog_far * 1.5f)) {
+				return 1;
+			}
+			break;
 
-		// huge ships
-		if((sip->flags & SIF_HUGE_SHIP) && (z_depth >= (fog_far * 3.0f))){
-			return 1;
-		}
-		break;
-
-	// any fireball over the fog limit for small ships
-	case OBJ_FIREBALL:		
-		/*
-		if(z_depth >= fog_far){
-			return 1;
-		}
-		*/
-		return 0;
-		break;	
-
-	// any debris over the fog limit for small ships
-	case OBJ_DEBRIS:		
-		/*
-		if(z_depth >= fog_far){
-			return 1;
-		}
-		*/
-		return 0;
-		break;
-
-	// any asteroids 50% farther than the fog limit for small ships
-	case OBJ_ASTEROID:		
-		if(z_depth >= (fog_far * 1.5f)){
-			return 1;
-		}
-		break;
-/*
-	// any countermeasures over 100 meters away
-	case OBJ_CMEASURE:		
-		if(z_depth >= 100.0f){
-			return 1;
-		}
-		break;	
-*/
-	// hmmm. unknown object type - should probably let it through
-	default:
-		Int3();
+		// hmmm. unknown object type - should probably let it through
+		default:
+			Int3();
 		return 0;
 	}
-
 	return 0;
 }
 
 // extend LOD 
 float neb2_get_lod_scale(int objnum)
-{	
+{
 	ship *shipp;
 	ship_info *sip;
 
 	// bogus
-	if((objnum < 0) || (objnum >= MAX_OBJECTS) || (Objects[objnum].type != OBJ_SHIP) || (Objects[objnum].instance < 0) || (Objects[objnum].instance >= MAX_SHIPS)){
+	if ( (objnum < 0) 
+		|| (objnum >= MAX_OBJECTS) 
+		|| (Objects[objnum].type != OBJ_SHIP) 
+		|| (Objects[objnum].instance < 0) 
+		|| (Objects[objnum].instance >= MAX_SHIPS)) {
 		return 1.0f;
 	}
 	shipp = &Ships[Objects[objnum].instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
 	// small ship?
-	if(sip->flags & SIF_SMALL_SHIP){
+	if (sip->flags & SIF_SMALL_SHIP) {
 		return 1.8f;
-	} else if(sip->flags & SIF_BIG_SHIP){
+	} else if (sip->flags & SIF_BIG_SHIP) {
 		return 1.4f;
-	}	
+	}
 
 	// hmm
 	return 1.0f;
@@ -674,21 +640,21 @@ float neb2_get_lod_scale(int objnum)
 
 // return the alpha the passed poof should be rendered with, for a 2 shell nebula
 float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_num, vec3d *v)
-{			
+{
 	float dist;
 	float alpha;
 	vec3d eye_pos;
 
 	// get the eye position
 	neb2_get_eye_pos(&eye_pos);
-	
+
 	// determine what alpha to draw this bitmap with
 	// higher alpha the closer the bitmap gets to the eye
-	dist = vm_vec_dist_quick(&eye_pos, v);	
+	dist = vm_vec_dist_quick(&eye_pos, v);
 
 	// if the point is inside the inner radius, alpha is based on distance to the player's eye, 
 	// becoming more transparent as it gets close
-	if(dist <= inner_radius){
+	if (dist <= inner_radius) {
 		// alpha per meter between the magic # and the inner radius
 		alpha = Nd->max_alpha_glide / (inner_radius - magic_num);
 
@@ -696,9 +662,9 @@ float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_
 		alpha *= (dist - magic_num);
 		return alpha < 0.0f ? 0.0f : alpha;
 	}
-	// if the point is outside the inner radius, it starts out as completely transparent at max 	
-	// outer radius, and becomes more opaque as it moves towards inner radius	
-	else if(dist <= outer_radius){				
+	// if the point is outside the inner radius, it starts out as completely transparent at max
+	// outer radius, and becomes more opaque as it moves towards inner radius
+	else if (dist <= outer_radius) {
 		// alpha per meter between the outer radius and the inner radius
 		alpha = Nd->max_alpha_glide / (outer_radius - inner_radius);
 
@@ -707,30 +673,30 @@ float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_
 	}
 
 	// otherwise transparent
-	return 0.0f;	
+	return 0.0f;
 }
 
 // return an alpha value for a bitmap offscreen based upon "break" value
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
-{	
+{
 	float alpha = 0.0f;
 	float per_pixel_x = incoming_alpha / (float)Nd->break_x;
 	float per_pixel_y = incoming_alpha / (float)Nd->break_y;
-	int off_x = ((sx < 0.0f) || (sx > (float)gr_screen.max_w));	
+	int off_x = ((sx < 0.0f) || (sx > (float)gr_screen.max_w));
 	int off_y = ((sy < 0.0f) || (sy > (float)gr_screen.max_h));
 	float off_x_amount = 0.0f;
 	float off_y_amount = 0.0f;
 
 	// determine how many pixels outside we are
-	if(off_x){
-		if(sx < 0.0f){
+	if (off_x) {
+		if (sx < 0.0f) {
 			off_x_amount = fl_abs(sx);
 		} else {
 			off_x_amount = sx - (float)gr_screen.max_w;
 		}
 	}
-	if(off_y){
-		if(sy < 0.0f){
+	if (off_y) {
+		if (sy < 0.0f) {
 			off_y_amount = fl_abs(sy);
 		} else {
 			off_y_amount = sy - (float)gr_screen.max_h;
@@ -738,24 +704,24 @@ float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
 	}
 
 	// if offscreen X
-	if(off_x){
+	if (off_x) {
 		// offscreen X and Y - and Y is greater
-		if(off_y && (off_y_amount > off_x_amount)){			
+		if (off_y && (off_y_amount > off_x_amount)) {
 			alpha = incoming_alpha - (off_y_amount * per_pixel_y);
 		} else {
 			alpha = incoming_alpha - (off_x_amount * per_pixel_x);
 		}
 	}
 	// offscreen y
-	else if(off_y){
+	else if (off_y) {
 		alpha = incoming_alpha - (off_y_amount * per_pixel_y);
 	}
 	// should never get here
-	else { 		
+	else {
 		Int3();
 	}
 
-	return alpha < 0.0f ? 0.0f : alpha;			
+	return alpha < 0.0f ? 0.0f : alpha;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -775,32 +741,25 @@ int crossed_border()
 	neb2_get_eye_pos(&eye_pos);
 
 	// check left, right (0, and 1, x and -x)
-	if(cube_cen.xyz.x - eye_pos.xyz.x > ws){
-		// -x
+	if (cube_cen.xyz.x - eye_pos.xyz.x > ws) {
 		return 0;
-	} else if(eye_pos.xyz.x - cube_cen.xyz.x > ws){
-		// +x
+	} else if (eye_pos.xyz.x - cube_cen.xyz.x > ws) {
 		return 1;
 	}
 
 	// check up, down (2, and 3, y and -y)
-	if(cube_cen.xyz.y - eye_pos.xyz.y > hs){
-		// -y
+	if (cube_cen.xyz.y - eye_pos.xyz.y > hs) {
 		return 2;
-	} else if(eye_pos.xyz.y - cube_cen.xyz.y > hs){
-		// +y
+	} else if (eye_pos.xyz.y - cube_cen.xyz.y > hs) {
 		return 3;
 	}
 
 	// check front, back (4, and 5, z and -z)
-	if(cube_cen.xyz.z - eye_pos.xyz.z > ds){
-		// -z
+	if (cube_cen.xyz.z - eye_pos.xyz.z > ds) {
 		return 4;
-	} else if(eye_pos.xyz.z - cube_cen.xyz.z > ds){
-		// +z
+	} else if (eye_pos.xyz.z - cube_cen.xyz.z > ds) {
 		return 5;
 	}
-
 	// nothing
 	return -1;
 }
@@ -809,30 +768,30 @@ void neb2_copy(int xyz, int src, int dest)
 {
 	int idx1, idx2;
 
-	switch(xyz){
-	case 0:
-		for(idx1=0; idx1<Neb2_slices; idx1++){
-			for(idx2=0; idx2<Neb2_slices; idx2++){
-				Neb2_cubes[dest][idx1][idx2] = Neb2_cubes[src][idx1][idx2];				
+	switch(xyz) {
+		case 0:
+			for (idx1=0; idx1<Neb2_slices; idx1++) {
+				for(idx2=0; idx2<Neb2_slices; idx2++) {
+					Neb2_cubes[dest][idx1][idx2] = Neb2_cubes[src][idx1][idx2];
+				}
 			}
-		}
-		break;
-	case 1:
-		for(idx1=0; idx1<Neb2_slices; idx1++){
-			for(idx2=0; idx2<Neb2_slices; idx2++){				
-				Neb2_cubes[idx1][dest][idx2] = Neb2_cubes[idx1][src][idx2];				
+			break;
+		case 1:
+			for (idx1=0; idx1<Neb2_slices; idx1++) {
+				for (idx2=0; idx2<Neb2_slices; idx2++) {
+					Neb2_cubes[idx1][dest][idx2] = Neb2_cubes[idx1][src][idx2];
+				}
 			}
-		}
-		break;
-	case 2:
-		for(idx1=0; idx1<Neb2_slices; idx1++){
-			for(idx2=0; idx2<Neb2_slices; idx2++){
-				Neb2_cubes[idx1][idx2][dest] = Neb2_cubes[idx1][idx2][src];				
+			break;
+		case 2:
+			for (idx1=0; idx1<Neb2_slices; idx1++) {
+				for (idx2=0; idx2<Neb2_slices; idx2++) {
+					Neb2_cubes[idx1][idx2][dest] = Neb2_cubes[idx1][idx2][src];
+				}
 			}
-		}
-		break;
-	default:
-		Int3();
+			break;
+		default:
+			Int3();
 		break;
 	}
 }
@@ -842,7 +801,7 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 	int idx1, idx2;	
 	float h_incw, h_inch, h_incd;
 	float ws, hs, ds;
-	vec3d cube_corner;	
+	vec3d cube_corner;
 	vec3d *v;
 
 	ws = Nd->cube_dim / (float)Neb2_slices;
@@ -851,73 +810,73 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 	h_inch = hs / 2.0f;
 	ds = Nd->cube_dim / (float)Neb2_slices;	
 	h_incd = ds / 2.0f;
-	cube_corner = *cube_center;		
-	cube_corner.xyz.x -= (Nd->cube_dim / 2.0f);			
-	cube_corner.xyz.y -= (Nd->cube_dim / 2.0f);	
-	cube_corner.xyz.z -= (Nd->cube_dim / 2.0f);	
-	switch(xyz){
-	case 0:
-		for(idx1=0; idx1<Neb2_slices; idx1++){
-			for(idx2=0; idx2<Neb2_slices; idx2++){
-				v = &Neb2_cubes[src][idx1][idx2].pt;
+	cube_corner = *cube_center;
+	cube_corner.xyz.x -= (Nd->cube_dim / 2.0f);
+	cube_corner.xyz.y -= (Nd->cube_dim / 2.0f);
+	cube_corner.xyz.z -= (Nd->cube_dim / 2.0f);
+	switch(xyz) {
+		case 0:
+			for (idx1=0; idx1<Neb2_slices; idx1++) {
+				for (idx2=0; idx2<Neb2_slices; idx2++) {
+					v = &Neb2_cubes[src][idx1][idx2].pt;
 
-				v->xyz.x = h_incw + (ws * (float)src) + frand_range(-Nd->wj, Nd->wj);
-				v->xyz.y = h_inch + (hs * (float)idx1) + frand_range(-Nd->hj, Nd->hj);
-				v->xyz.z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
-				vm_vec_add2(v, &cube_corner);
+					v->xyz.x = h_incw + (ws * (float)src) + frand_range(-Nd->wj, Nd->wj);
+					v->xyz.y = h_inch + (hs * (float)idx1) + frand_range(-Nd->hj, Nd->hj);
+					v->xyz.z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
+					vm_vec_add2(v, &cube_corner);
 
-				// set the bitmap
-				Neb2_cubes[src][idx1][idx2].bmap = neb2_get_bitmap();
+					// set the bitmap
+					Neb2_cubes[src][idx1][idx2].bmap = neb2_get_bitmap();
 
-				// set the rotation speed
-				Neb2_cubes[src][idx1][idx2].rot = 0.0f;
-				Neb2_cubes[src][idx1][idx2].rot_speed = frand_range(-max_rotation, max_rotation);
-				Neb2_cubes[src][idx1][idx2].flash = 0.0f;
+					// set the rotation speed
+					Neb2_cubes[src][idx1][idx2].rot = 0.0f;
+					Neb2_cubes[src][idx1][idx2].rot_speed = frand_range(-max_rotation, max_rotation);
+					Neb2_cubes[src][idx1][idx2].flash = 0.0f;
+				}
 			}
-		}
-		break;
-	case 1:
-		for(idx1=0; idx1<Neb2_slices; idx1++){
-			for(idx2=0; idx2<Neb2_slices; idx2++){
-				v = &Neb2_cubes[idx1][src][idx2].pt;
-				
-				v->xyz.x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
-				v->xyz.y = h_inch + (hs * (float)src) + frand_range(-Nd->hj, Nd->hj);
-				v->xyz.z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
-				vm_vec_add2(v, &cube_corner);
+			break;
+		case 1:
+			for (idx1=0; idx1<Neb2_slices; idx1++) {
+				for (idx2=0; idx2<Neb2_slices; idx2++) {
+					v = &Neb2_cubes[idx1][src][idx2].pt;
 
-				// set the bitmap
-				Neb2_cubes[idx1][src][idx2].bmap = neb2_get_bitmap();
+					v->xyz.x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
+					v->xyz.y = h_inch + (hs * (float)src) + frand_range(-Nd->hj, Nd->hj);
+					v->xyz.z = h_incd + (ds * (float)idx2) + frand_range(-Nd->dj, Nd->dj);
+					vm_vec_add2(v, &cube_corner);
 
-				// set the rotation speed
-				Neb2_cubes[idx1][src][idx2].rot = 0.0f;
-				Neb2_cubes[idx1][src][idx2].rot_speed = frand_range(-max_rotation, max_rotation);
-				Neb2_cubes[src][idx1][idx2].flash = 0.0f;
+					// set the bitmap
+					Neb2_cubes[idx1][src][idx2].bmap = neb2_get_bitmap();
+
+					// set the rotation speed
+					Neb2_cubes[idx1][src][idx2].rot = 0.0f;
+					Neb2_cubes[idx1][src][idx2].rot_speed = frand_range(-max_rotation, max_rotation);
+					Neb2_cubes[src][idx1][idx2].flash = 0.0f;
+				}
 			}
-		}
-		break;
-	case 2:
-		for(idx1=0; idx1<Neb2_slices; idx1++){
-			for(idx2=0; idx2<Neb2_slices; idx2++){
-				v = &Neb2_cubes[idx1][idx2][src].pt;
+			break;
+		case 2:
+			for (idx1=0; idx1<Neb2_slices; idx1++) {
+				for (idx2=0; idx2<Neb2_slices; idx2++) {
+					v = &Neb2_cubes[idx1][idx2][src].pt;
 
-				v->xyz.x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
-				v->xyz.y = h_inch + (hs * (float)idx2) + frand_range(-Nd->hj, Nd->hj);
-				v->xyz.z = h_incd + (ds * (float)src) + frand_range(-Nd->dj, Nd->dj);
-				vm_vec_add2(v, &cube_corner);
-				
-				// set the bitmap
-				Neb2_cubes[idx1][idx2][src].bmap = neb2_get_bitmap();
+					v->xyz.x = h_incw + (ws * (float)idx1) + frand_range(-Nd->wj, Nd->wj);
+					v->xyz.y = h_inch + (hs * (float)idx2) + frand_range(-Nd->hj, Nd->hj);
+					v->xyz.z = h_incd + (ds * (float)src) + frand_range(-Nd->dj, Nd->dj);
+					vm_vec_add2(v, &cube_corner);
 
-				// set the rotation speed
-				Neb2_cubes[idx1][idx2][src].rot = 0.0f;
-				Neb2_cubes[idx1][idx2][src].rot_speed = frand_range(-max_rotation, max_rotation);
-				Neb2_cubes[src][idx1][idx2].flash = 0.0f;
+					// set the bitmap
+					Neb2_cubes[idx1][idx2][src].bmap = neb2_get_bitmap();
+
+					// set the rotation speed
+					Neb2_cubes[idx1][idx2][src].rot = 0.0f;
+					Neb2_cubes[idx1][idx2][src].rot_speed = frand_range(-max_rotation, max_rotation);
+					Neb2_cubes[src][idx1][idx2].flash = 0.0f;
+				}
 			}
-		}
-		break;
-	default:
-		Int3();
+			break;
+		default:
+			Int3();
 		break;
 	}
 }
@@ -926,20 +885,20 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 void neb2_regen()
 {
 	int idx;
-	vec3d eye_pos;	
+	vec3d eye_pos;
 	matrix eye_orient;
 
 	mprintf(("Regenerating local nebula!\n"));
 
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);
-	neb2_get_eye_orient(&eye_orient);	
+	neb2_get_eye_orient(&eye_orient);
 
 	// determine the corner of the cube
 	cube_cen = eye_pos;
-		
+
 	// generate slices of the cube
-	for(idx=0; idx<Neb2_slices; idx++){
+	for (idx=0; idx<Neb2_slices; idx++) {
 		neb2_gen_slice(0, idx, &cube_cen);
 	}
 }
@@ -965,113 +924,113 @@ void neb2_render_player()
 	vec3d eye_pos;
 	matrix eye_orient;
 
-
 	// standalone servers can bail here
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) {
 		return;
-	}		
+	}
 
-	if(Neb2_regen){
+	if (Neb2_regen) {
 		neb2_regen();
 		Neb2_regen = 0;
 	}
 
 	// don't render in lame mode
-	if((Neb2_render_mode == NEB2_RENDER_LAME) || (Neb2_render_mode == NEB2_RENDER_NONE)){
+	if ((Neb2_render_mode == NEB2_RENDER_LAME) || (Neb2_render_mode == NEB2_RENDER_NONE)) {
 		return;
 	}
 
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);
 	neb2_get_eye_orient(&eye_orient);
-	
-	// maybe swap stuff around if the player crossed a "border"	
-	for(idx2=0; idx2<3; idx2++){
-		switch(crossed_border()){
-		case -1:
+
+	// maybe swap stuff around if the player crossed a "border"
+	for (idx2=0; idx2<3; idx2++) {
+		switch(crossed_border()) {
+			case -1:
 			break;
-		// -x
-		case 0 :
-			cube_cen.xyz.x -= Nd->cube_dim / (float)Neb2_slices;
-			for(idx1=Neb2_slices-1; idx1>0; idx1--){
-				neb2_copy(0, idx1-1, idx1);
-			}
-			neb2_gen_slice(0, 0, &cube_cen);				
+
+			case 0 :
+				cube_cen.xyz.x -= Nd->cube_dim / (float)Neb2_slices;
+				for (idx1=Neb2_slices-1; idx1>0; idx1--) {
+					neb2_copy(0, idx1-1, idx1);
+				}
+				neb2_gen_slice(0, 0, &cube_cen);
 			break;
-		// x
-		case 1 :
-			cube_cen.xyz.x += Nd->cube_dim / (float)Neb2_slices;
-			for(idx1=0; idx1<Neb2_slices-1; idx1++){
-				neb2_copy(0, idx1+1, idx1);
-			}				
-			neb2_gen_slice(0, Neb2_slices - 1, &cube_cen);				
+
+			case 1 :
+				cube_cen.xyz.x += Nd->cube_dim / (float)Neb2_slices;
+				for (idx1=0; idx1<Neb2_slices-1; idx1++) {
+					neb2_copy(0, idx1+1, idx1);
+				}
+				neb2_gen_slice(0, Neb2_slices - 1, &cube_cen);
 			break;
-		// -y
-		case 2 :			
-			cube_cen.xyz.y -= Nd->cube_dim / (float)Neb2_slices;
-			for(idx1=Neb2_slices-1; idx1>0; idx1--){
-				neb2_copy(1, idx1-1, idx1);
-			}				
-			neb2_gen_slice(1, 0, &cube_cen);				
+
+			case 2 :
+				cube_cen.xyz.y -= Nd->cube_dim / (float)Neb2_slices;
+				for (idx1=Neb2_slices-1; idx1>0; idx1--) {
+					neb2_copy(1, idx1-1, idx1);
+				}
+				neb2_gen_slice(1, 0, &cube_cen);
 			break;
-		// y
-		case 3 :						
-			cube_cen.xyz.y += Nd->cube_dim / (float)Neb2_slices;
-			for(idx1=0; idx1<Neb2_slices-1; idx1++){
-				neb2_copy(1, idx1+1, idx1);
-			}				
-			neb2_gen_slice(1, Neb2_slices - 1, &cube_cen);				
+
+			case 3 :
+				cube_cen.xyz.y += Nd->cube_dim / (float)Neb2_slices;
+				for (idx1=0; idx1<Neb2_slices-1; idx1++) {
+					neb2_copy(1, idx1+1, idx1);
+				}
+				neb2_gen_slice(1, Neb2_slices - 1, &cube_cen);
 			break;
-		// -z
-		case 4 :			
-			cube_cen.xyz.z -= Nd->cube_dim / (float)Neb2_slices;
-			for(idx1=Neb2_slices-1; idx1>0; idx1--){
-				neb2_copy(2, idx1-1, idx1);
-			}								
-			neb2_gen_slice(2, 0, &cube_cen);				
+
+			case 4 :
+				cube_cen.xyz.z -= Nd->cube_dim / (float)Neb2_slices;
+				for (idx1=Neb2_slices-1; idx1>0; idx1--) {
+					neb2_copy(2, idx1-1, idx1);
+				}
+				neb2_gen_slice(2, 0, &cube_cen);
 			break;
-		// z
-		case 5 :						
-			cube_cen.xyz.z += Nd->cube_dim / (float)Neb2_slices;
-			for(idx1=0; idx1<Neb2_slices-1; idx1++){
-				neb2_copy(2, idx1+1, idx1);
-			}												
-			neb2_gen_slice(2, Neb2_slices - 1, &cube_cen);				
+
+			case 5 :
+				cube_cen.xyz.z += Nd->cube_dim / (float)Neb2_slices;
+				for (idx1=0; idx1<Neb2_slices-1; idx1++) {
+					neb2_copy(2, idx1+1, idx1);
+				}
+				neb2_gen_slice(2, Neb2_slices - 1, &cube_cen);
 			break;
-		}	
-	}	
+		}
+	}
 
 	// if we've switched nebula rendering off
-	if(Neb2_render_mode == NEB2_RENDER_NONE){
+	if (Neb2_render_mode == NEB2_RENDER_NONE) {
 		return;
-	}	
-	
+	}
+
 	frame_rendered = 0;
 	// render the nebula
-	for(idx1=0; idx1<Neb2_slices; idx1++){
-		for(idx2=0; idx2<Neb2_slices; idx2++){
-			for(idx3=0; idx3<Neb2_slices; idx3++){
+	for (idx1=0; idx1<Neb2_slices; idx1++) {
+		for (idx2=0; idx2<Neb2_slices; idx2++) {
+			for (idx3=0; idx3<Neb2_slices; idx3++) {
 
 				// Miss this one out if the id is -1
-				if(Neb2_cubes[idx1][idx2][idx3].bmap == -1)
+				if (Neb2_cubes[idx1][idx2][idx3].bmap == -1) {
 					continue;
+				}
 
-				pneb_tried++;				
+				pneb_tried++;
 
 				// rotate the poof
 				Neb2_cubes[idx1][idx2][idx3].rot += (Neb2_cubes[idx1][idx2][idx3].rot_speed * flFrametime);
-				if(Neb2_cubes[idx1][idx2][idx3].rot >= 360.0f){
+				if (Neb2_cubes[idx1][idx2][idx3].rot >= 360.0f) {
 					Neb2_cubes[idx1][idx2][idx3].rot = 0.0f;
-				}				
-				
+				}
+
 				// optimization 1 - don't draw backfacing poly's
 				// useless
-				if(vm_vec_dot_to_point(&eye_orient.vec.fvec, &eye_pos, &Neb2_cubes[idx1][idx2][idx3].pt) <= 0.0f){
+				if (vm_vec_dot_to_point(&eye_orient.vec.fvec, &eye_pos, &Neb2_cubes[idx1][idx2][idx3].pt) <= 0.0f) {
 					pneb_tossed_dot++;
 					continue;
 				}
@@ -1082,64 +1041,54 @@ void neb2_render_player()
 				ptemp = p;
 				g3_project_vertex(&ptemp);
 
-				// get the proper alpha value				
+				// get the proper alpha value
 				alpha = neb2_get_alpha_2shell(Nd->cube_inner, Nd->cube_outer, Nd->prad/4.0f, &Neb2_cubes[idx1][idx2][idx3].pt);
 
 				// optimization 2 - don't draw 0.0f or less poly's
 				// this amounts to big savings
-				if(alpha <= Nd->break_alpha){
+				if (alpha <= Nd->break_alpha) {
 					pneb_tossed_alpha++;
 					continue;
 				}
 
-				// drop poly's which are offscreen at all				
-				// if the poly's are offscreen						
-				if((ptemp.sx < 0.0f) || (ptemp.sx > (float)gr_screen.max_w) || (ptemp.sy < 0.0f) || (ptemp.sy > (float)gr_screen.max_h) ){
+				// drop poly's which are offscreen at all
+				// if the poly's are offscreen
+				if ( (ptemp.sx < 0.0f) || (ptemp.sx > (float)gr_screen.max_w) || (ptemp.sy < 0.0f) || (ptemp.sy > (float)gr_screen.max_h) ) {
 					alpha = neb2_get_alpha_offscreen(ptemp.sx, ptemp.sy, alpha);
-				}				
+				}
 
 				// optimization 2 - don't draw 0.0f or less poly's
 				// this amounts to big savings
-				if(alpha <= Nd->break_alpha){
+				if (alpha <= Nd->break_alpha) {
 					pneb_tossed_alpha++;
 					continue;
 				}
-	
-				// set the bitmap and render				
+
+				// set the bitmap and render
 				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
-/*#ifndef NDEBUG
-				//	float this_area;
-				float frame_area = max_area;
-				float total_area = 0.0f;
-
-				this_area = g3_draw_rotated_bitmap_area(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED, max_area);				
-				total_area += this_area;
-				frame_area -= this_area;
-				frame_rendered++;			
-#else */
-				if (!Cmdline_nohtl) gr_set_lighting(false, false);
-				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-//#endif
+				if (!Cmdline_nohtl) gr_set_lighting(false, false); {
+					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+					g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
+				}
 			}
 		}
-	}	
+	}
 
 	frames_total += frame_rendered;
 	frame_count++;
-	frame_avg = (float)frames_total / (float)frame_count;	
+	frame_avg = (float)frames_total / (float)frame_count;
 
 	// gr_set_color_fast(&Color_bright_red);
 	// gr_printf(30, 100, "Area %.3f", total_area);
 #ifdef NEB2_THUMBNAIL
 	extern int tbmap;
-	if(tbmap != -1){
+	if (tbmap != -1) {
 		gr_set_bitmap(tbmap);
 		gr_bitmap(0, 0);
 	}
 #endif
-}	
+}
 
 // call this when the player's viewpoint has changed, this will cause the code to properly reset
 // the eye's local poofs
@@ -1150,22 +1099,22 @@ void neb2_eye_changed()
 
 /*
 //Object types
-#define OBJ_NONE				0		//unused object
-#define OBJ_SHIP				1		//a ship
-#define OBJ_WEAPON			2		//a laser, missile, etc
-#define OBJ_FIREBALL			3		//an explosion
-#define OBJ_START				4		//a starting point marker (player start, etc)
-#define OBJ_WAYPOINT			5		//a waypoint object, maybe only ever used by Fred
-#define OBJ_DEBRIS			6		//a flying piece of ship debris
-#define OBJ_CMEASURE			7		//a countermeasure, such as chaff
-#define OBJ_GHOST				8		//so far, just a placeholder for when a player dies.
-#define OBJ_POINT				9		//generic object type to display a point in Fred.
-#define OBJ_SHOCKWAVE		10		// a shockwave
-#define OBJ_WING				11		// not really a type used anywhere, but I need it for Fred.
-#define OBJ_OBSERVER       12    // used for multiplayer observers (possibly single player later)
-#define OBJ_ASTEROID			13		//	An asteroid, you know, a big rock, like debris, sort of.
-#define OBJ_JUMP_NODE		14		// A jump node object, used only in Fred.
-#define OBJ_BEAM				15		// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
+#define OBJ_NONE		0	//unused object
+#define OBJ_SHIP		1	//a ship
+#define OBJ_WEAPON		2	//a laser, missile, etc
+#define OBJ_FIREBALL	3	//an explosion
+#define OBJ_START		4	//a starting point marker (player start, etc)
+#define OBJ_WAYPOINT	5	//a waypoint object, maybe only ever used by Fred
+#define OBJ_DEBRIS		6	//a flying piece of ship debris
+#define OBJ_CMEASURE	7	//a countermeasure, such as chaff
+#define OBJ_GHOST		8	//so far, just a placeholder for when a player dies.
+#define OBJ_POINT		9	//generic object type to display a point in Fred.
+#define OBJ_SHOCKWAVE	10	// a shockwave
+#define OBJ_WING		11	// not really a type used anywhere, but I need it for Fred.
+#define OBJ_OBSERVER	12	// used for multiplayer observers (possibly single player later)
+#define OBJ_ASTEROID	13	// An asteroid, you know, a big rock, like debris, sort of.
+#define OBJ_JUMP_NODE	14	// A jump node object, used only in Fred.
+#define OBJ_BEAM		15	// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
 */
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
@@ -1176,39 +1125,29 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 	*fnear = 10.0f;
 	*ffar = 1000.0f;
 
-	if (objp == NULL)
+	if (objp == NULL) {
 		return;
+	}
 
 	//Otherwise, use defaults
 	*fnear = Default_fog_near;
 	*ffar = Default_fog_far;
 
 	// determine what fog index to use
-	if(objp->type == OBJ_SHIP)
-	{
+	if(objp->type == OBJ_SHIP) {
 		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS))
-		{
+		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS)) {
 			type_index = ship_query_general_type(objp->instance);
-			if(type_index > 0)
-			{
+			if(type_index > 0) {
 				*fnear = Ship_types[type_index].fog_start_dist;
 				*ffar = Ship_types[type_index].fog_complete_dist;
 			}
 		}
-	}
-	else if(objp->type == OBJ_FIREBALL)
-	{//mostly here for the warp effect
+	} else if (objp->type == OBJ_FIREBALL) { //mostly here for the warp effect
 		*fnear = objp->radius*2;
 		*ffar = (objp->radius*objp->radius*200)+objp->radius*200;
 		return;
-		//we want these to show up realy far away, this seems like a good value-Bobboau
-/*	}else if(objp->type == OBJ_BEAM){
-		*fnear = 10.0f;
-		*ffar = 10000.0f;
-		return;
-	// fog everything else like a fighter
-*/	}
+	}
 }
 
 float nNf_near, nNf_far;
@@ -1222,9 +1161,9 @@ float neb2_get_fog_intensity(object *obj)
 
 	// get the fog pct
 	pct = vm_vec_dist_quick(&Eye_position, &obj->pos) / (nNf_far - nNf_near);
-	if(pct < 0.0f){
+	if (pct < 0.0f) {
 		return 0.0f;
-	} else if(pct > 1.0f){
+	} else if (pct > 1.0f) {
 		return 1.0f;
 	}
 
@@ -1237,14 +1176,11 @@ float neb2_get_fog_intensity(vec3d *pos)
 {
 	float pct;
 
-	// get near and far fog values based upon object type and rendering mode
-//	neb2_get_fog_values(&f_near, &f_far, pos);
-
 	// get the fog pct
 	pct = vm_vec_dist_quick(&Eye_position, pos) / ((nNf_far*2) - nNf_near);
-	if(pct < 0.0f){
+	if (pct < 0.0f) {
 		return 0.0f;
-	} else if(pct > 1.0f){
+	} else if (pct > 1.0f) {
 		return 1.0f;
 	}
 
@@ -1254,7 +1190,7 @@ float neb2_get_fog_intensity(vec3d *pos)
 // fogging stuff --------------------------------------------------------------------
 
 // do a pre-render of the background nebula
-#define ESIZE					32
+#define ESIZE		32
 ubyte tpixels[ESIZE * ESIZE * 4];		// for 32 bits
 int last_esize = -1;
 int this_esize = ESIZE;
@@ -1270,36 +1206,37 @@ int tbmap = -1;
 void neb2_pre_render(camid cid)
 {
 	// if the mission is not a fullneb mission, skip
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
+	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) {
 		return;
+	}
 
 	// bail early in lame and poly modes
-	if (Neb2_render_mode != NEB2_RENDER_POF)
+	if (Neb2_render_mode != NEB2_RENDER_POF) {
 		return;
-
+	}
 
 	// set the view clip
 	gr_screen.clip_width = this_esize;
 	gr_screen.clip_height = this_esize;
-	g3_start_frame(1);							// Turn on zbuffering
+	g3_start_frame(1);						// Turn on zbuffering
 	g3_set_view(cid.getCamera());
-	gr_set_clip(0, 0, this_esize, this_esize);		
+	gr_set_clip(0, 0, this_esize, this_esize);
 
 	// render the background properly
 	// hack - turn off nebula stuff
 	int neb_save = Neb2_render_mode;
 	Neb2_render_mode = NEB2_RENDER_NONE;
 
-	// draw background stuff nebula			
-	stars_draw_background();		
+	// draw background stuff nebula
+	stars_draw_background();
 
 	Neb2_render_mode = neb_save;
 	
 	// grab the region
-	gr_get_region(0, this_esize, this_esize, (ubyte*)tpixels);	
+	gr_get_region(0, this_esize, this_esize, (ubyte*)tpixels);
 
 #ifdef NEB2_THUMBNAIL
-	if(tbmap == -1){
+	if (tbmap == -1) {
 		tbmap = bm_create(16, this_esize, this_esize, tpixels, 0);
 		bm_lock(tbmap, 16, 0);
 		bm_unlock(tbmap);
@@ -1314,13 +1251,13 @@ void neb2_pre_render(camid cid)
 	gr_clear();	
 
 	// if the size has changed between frames, make a new bitmap
-	if(this_esize != last_esize){
-		last_esize = this_esize;						
-		
+	if (this_esize != last_esize) {
+		last_esize = this_esize;
+
 		// recalculate ex_scale and ey_scale values for looking up color values
 		ex_scale = (float)this_esize / (float)gr_screen.max_w;
 		ey_scale = (float)this_esize / (float)gr_screen.max_h;
-	}	
+	}
 }
 
 // wacky scheme for smoothing colors
@@ -1334,7 +1271,7 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 	Assert( Neb2_render_mode != NEB2_RENDER_HTL );
 
 	int ra, ga, ba;
-	ubyte rv, gv, bv;	
+	ubyte rv, gv, bv;
 	ubyte avg_count;
 	int xs, ys;
 
@@ -1345,20 +1282,20 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 		*b = Neb2_background_color[2];
 
 		return;
-	}		
-	
+	}
+
 	// get the proper pixel index to be looking up
-	rv = gv = bv = 0;	
-	
+	rv = gv = bv = 0;
+
 	// select screen format
 	BM_SELECT_SCREEN_FORMAT();
 
-	// pixel plus all immediate neighbors (on the small screen - should be more effective than 2 or 1)	
+	// pixel plus all immediate neighbors (on the small screen - should be more effective than 2 or 1)
 	xs = (int)(ex_scale * x);
-	ys = (int)(ey_scale * y);		
+	ys = (int)(ey_scale * y);
 
 	// sometimes goes over by 1 in direct3d
-	if(ys >= (this_esize - 1)){
+	if (ys >= (this_esize - 1)) {
 		ys--;
 	}
 
@@ -1368,63 +1305,62 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 	ga = gv;
 	ba = bv;
 	avg_count++;
-	if(xs > 0){			
+	if (xs > 0) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs - 1, ys)], &rv, &gv, &bv, NULL);	// left
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
 	}
-	if(xs < this_esize - 1){			
+	if (xs < this_esize - 1) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs + 1, ys)], &rv, &gv, &bv, NULL);	// right
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
 	}
-	if(ys > 0){			
+	if (ys > 0) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs, ys - 1)], &rv, &gv, &bv, NULL);	// top
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
-	}				
-	if(ys < this_esize - 2){			
+	}
+	if (ys < this_esize - 2) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs, ys + 1)], &rv, &gv, &bv, NULL);	// bottom
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
 	}
-		
-	if((xs > 0) && (ys > 0)){			
+	if ( (xs > 0) && (ys > 0) ) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs - 1, ys - 1)], &rv, &gv, &bv, NULL);	// upper left
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
 	}
-	if((xs < this_esize - 1) && (ys < this_esize - 1)){			
+	if ( (xs < this_esize - 1) && (ys < this_esize - 1) ) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs + 1, ys + 1)], &rv, &gv, &bv, NULL);	// lower right
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
 	}
-	if((ys > 0) && (xs < this_esize - 1)){			
+	if ( (ys > 0) && (xs < this_esize - 1) ) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs + 1, ys - 1)], &rv, &gv, &bv, NULL);	// lower left
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
 	}
-	if((ys < this_esize - 1) && (xs > 0)){			
+	if ( (ys < this_esize - 1) && (xs > 0) ) {
 		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs - 1, ys + 1)], &rv, &gv, &bv, NULL);	// upper right
 		ra += rv;
 		ba += bv;
 		ga += gv;
 		avg_count++;
-	}		
+	}
 
 	rv = (ubyte)(ra / (int)avg_count);
 	gv = (ubyte)(ga / (int)avg_count);
@@ -1475,9 +1411,9 @@ int neb2_get_bitmap()
 	count = (int)frand_range(1.0f, 5.0f);
 
 	// very ad-hoc
-	while(count > 0){
+	while(count > 0) {
 		// don't cycle too many times
-		huh = 0;		
+		huh = 0;
 		do {
 			if(neb2_choose == MAX_NEB2_POOFS - 1){
 				neb2_choose = 0;
@@ -1486,15 +1422,15 @@ int neb2_get_bitmap()
 			}
 
 			huh++;
-		} while(!(Neb2_poof_flags & (1<<neb2_choose)) && (huh < 10));
-
+		}
+		while(!(Neb2_poof_flags & (1<<neb2_choose)) && (huh < 10));
 		count--;
 	}
 
 	// bitmap 0
-	if(Neb2_poofs[neb2_choose] < 0){	
+	if (Neb2_poofs[neb2_choose] < 0) {
 		return Neb2_poofs[0];
-	} 
+	}
 	return Neb2_poofs[neb2_choose];
 }
 
@@ -1555,30 +1491,6 @@ DCF(neb2_jitter, "")
 	dc_get_arg(ARG_FLOAT);
 	Nd->hj = Nd->dj = Nd->wj = Dc_arg_float;
 }
-//WMC - unfortunately, this has to go bye-bye
-//I don't think anyone used it anyway so I'm not going to try to resurrect it
-/*
-DCF(neb2_fog, "")
-{
-	int index;
-	float fnear, ffar;
-	dc_get_arg(ARG_INT);
-	index = Dc_arg_int;
-	dc_get_arg(ARG_FLOAT);
-	fnear = Dc_arg_float;
-	dc_get_arg(ARG_FLOAT);
-	ffar = Dc_arg_float;
-
-	if((index >= 1) && (index <= 11) && (fnear >= 0.0f) && (ffar >= 0.0f) && (ffar > fnear)){
-		if(index == 11){
-			Neb_backg_fog_near = fnear;
-			Neb_backg_fog_far = ffar;
-		} else {
-			Neb_ship_fog_vals_d3d[index][0] = fnear;
-			Neb_ship_fog_vals_d3d[index][1] = ffar;
-		}
-	}
-}*/
 
 DCF(neb2_max_alpha, "")
 {
@@ -1604,19 +1516,18 @@ DCF(neb2_smooth, "")
 	int index;
 	dc_get_arg(ARG_INT);
 	index = Dc_arg_int;
-	if((index >= 0) && (index <= 3)){
+	if ( (index >= 0) && (index <= 3) ) {
 		wacky_scheme = index;
 	}
 }
 
 DCF(neb2_select, "")
 {
-	dc_get_arg(ARG_INT);	
+	dc_get_arg(ARG_INT);
 	int bmap = Dc_arg_int;
-	if((bmap >= 0) && (bmap < Neb2_poof_count)){
+	if ( (bmap >= 0) && (bmap < Neb2_poof_count) ) {
 		dc_get_arg(ARG_INT);
-
-		if(Dc_arg_int){
+		if (Dc_arg_int) {
 			Neb2_poof_flags |= (1<<bmap);
 		} else {
 			Neb2_poof_flags &= ~(1<<bmap);
@@ -1640,30 +1551,29 @@ DCF(neb2_mode, "")
 {
 	dc_get_arg(ARG_INT);
 
-	switch (Dc_arg_int)
-	{
+	switch (Dc_arg_int) {
 		case NEB2_RENDER_NONE:
 			Neb2_render_mode = NEB2_RENDER_NONE;
-			break;
+		break;
 
 		case NEB2_RENDER_POLY:
 			Neb2_render_mode = NEB2_RENDER_POLY;
-			break;
+		break;
 
 		case NEB2_RENDER_POF:
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, "Eraseme3");
-			break;
+		break;
 
 		case NEB2_RENDER_LAME:
 			Neb2_render_mode = NEB2_RENDER_LAME;
-			break;
+		break;
 
 		case NEB2_RENDER_HTL:
 			if (!Cmdline_nohtl) {
 				Neb2_render_mode = NEB2_RENDER_HTL;
 			}
-			break;
+		break;
 	}
 }
 
@@ -1692,261 +1602,16 @@ DCF(neb2_background, "")
 
 DCF(neb2_fog_color, "")
 {
-	int r, g, b;
+	ubyte r, g, b;
 
-	dc_get_arg(ARG_INT);
-	r = Dc_arg_int;
-	dc_get_arg(ARG_INT);
-	g = Dc_arg_int;
-	dc_get_arg(ARG_INT);
-	b = Dc_arg_int;
+	dc_get_arg(ARG_UBYTE);
+	r = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	g = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	b = Dc_arg_ubyte;
 
 	Neb2_fog_color_r = r;
 	Neb2_fog_color_g = g;
 	Neb2_fog_color_b = b;
 }
-
-//WMC - Going bye-bye for ship types too
-/*
-DCF(neb2_fog_vals, "")
-{
-	dc_printf("neb2_fog : \n");
-	{
-		dc_printf("(1)cargo containers : %f, %f\n", Neb_ship_fog_vals_d3d[1][0], Neb_ship_fog_vals_d3d[1][1]);
-		dc_printf("(2)fighters/bombers : %f, %f\n", Neb_ship_fog_vals_d3d[2][0], Neb_ship_fog_vals_d3d[2][1]);
-		dc_printf("(3)cruisers : %f, %f\n", Neb_ship_fog_vals_d3d[3][0], Neb_ship_fog_vals_d3d[3][1]);
-		dc_printf("(4)freighters : %f, %f\n", Neb_ship_fog_vals_d3d[4][0], Neb_ship_fog_vals_d3d[4][1]);
-		dc_printf("(5)cap ships : %f, %f\n", Neb_ship_fog_vals_d3d[5][0], Neb_ship_fog_vals_d3d[5][1]);
-		dc_printf("(6)transports : %f, %f\n", Neb_ship_fog_vals_d3d[6][0], Neb_ship_fog_vals_d3d[6][1]);
-		dc_printf("(7)support ships : %f, %f\n", Neb_ship_fog_vals_d3d[7][0], Neb_ship_fog_vals_d3d[7][1]);
-		dc_printf("(8)navbuoys : %f, %f\n", Neb_ship_fog_vals_d3d[8][0], Neb_ship_fog_vals_d3d[8][1]);
-		dc_printf("(9)sentry guns : %f, %f\n", Neb_ship_fog_vals_d3d[9][0], Neb_ship_fog_vals_d3d[9][1]);
-		dc_printf("(10)escape pods : %f, %f\n", Neb_ship_fog_vals_d3d[10][0], Neb_ship_fog_vals_d3d[10][1]);
-		dc_printf("(11)background polys : %f, %f\n\n", Neb_backg_fog_near, Neb_backg_fog_far);		
-	}
-	dc_printf("neb2_max_alpha   : %f\n", Nd->max_alpha_glide);
-	dc_printf("neb2_break_alpha : %f\n", Nd->break_alpha);
-	dc_printf("neb2_break_off   : %d\n", (int)Nd->break_y);
-	dc_printf("neb2_smooth      : %d\n", wacky_scheme);
-	dc_printf("neb2_toggle      : %s\n", Neb2_render_mode ? "on" : "off");
-	dc_printf("neb2_rot			 : %f\n", max_rotation);
-	dc_printf("neb2_prad			 : %f\n", Nd->prad);
-	dc_printf("neb2_cdim			 : %f\n", Nd->cube_dim);
-	dc_printf("neb2_couter      : %f\n", Nd->cube_outer);
-	dc_printf("neb2_cinner		 : %f\n", Nd->cube_inner);
-	dc_printf("neb2_jitter		 : %f\n", Nd->wj);
-	dc_printf("neb2_ff			 : %f\n", neb2_flash_fade);
-	dc_printf("neb2_background	 : %d %d %d\n", Neb2_background_color[0], Neb2_background_color[1], Neb2_background_color[2]);
-}*/
-
-/* Obsolete !?
-DCF(neb2_create, "create a basic nebula")
-{
-	int points = 0;
-	float rad1 = 0.0f;
-	float rad2 = 0.0f;
-	
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		points = Dc_arg_int;
-	}
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		rad1 = Dc_arg_float;
-	}
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		rad2 = Dc_arg_float;
-	}
-	neb2_create(&vmd_zero_vector, points, rad1, -1.0f, rad2);
-}
-
-DCF(neb2_del, "delete existing nebulae")
-{
-	for(int idx=0; idx<MAX_OBJECTS; idx++){
-		if(Objects[idx].type == OBJ_NEB2){
-			obj_delete(idx);			
-		}
-	}
-}
-
-int magic0 = 15;
-float magic1 = 1000.0f;
-float magic2 = -1.0f;
-float magic3 = 700.0f;
-DCF(neb2_def, "create a default nebula")
-{
-	vec3d a,b,c,d,e,f;
-	vm_vec_make(&a, 0.0f, 0.0f, 0.0f);
-	vm_vec_make(&b, 3600.0f, 700.0f, 0.0f);
-	vm_vec_make(&c, -3000.0f, 20.0f, 480.0f);
-	vm_vec_make(&d, -4000.0f, 100.0f, 100.0f);
-	vm_vec_make(&e, 0.0f, 3000.0f, -400.0f);
-	vm_vec_make(&f, 670.0f, -2500.0f, -1600.0f);
-
-	neb2_create(&a, magic0, magic1, magic2, magic3);
-	neb2_create(&b, magic0, magic1, magic2, magic3);
-	neb2_create(&c, magic0, magic1, magic2, magic3);
-	neb2_create(&d, magic0, magic1, magic2, magic3);
-	neb2_create(&e, magic0, magic1, magic2, magic3);
-	neb2_create(&f, magic0, magic1, magic2, magic3);
-}
-
-DCF(neb2_plr, "regenerate the player's nebula")
-{
-	Neb2_regen = 0;
-}
-
-DCF(neb2_stats, "display info about the nebula rendering")
-{
-	dc_printf("Player poofs tried : %d\n", pneb_tried);
-	dc_printf("Player poofs tossed (alpha): %d\n", pneb_tossed_alpha);
-	dc_printf("Player poofs tossed (dot): %d\n", pneb_tossed_dot);
-	dc_printf("Player poofs tossed (off): %d\n", pneb_tossed_off);
-
-	dc_printf("Poofs tried : %d\n", neb_tried);
-	dc_printf("Poofs tossed (alpha): %d\n", neb_tossed_alpha);
-	dc_printf("Poofs tossed (dot): %d\n", neb_tossed_dot);
-	dc_printf("Poofs tossed (count): %d\n", neb_tossed_count);
-
-	dc_printf("Avg poofs/frame: %f\n", frame_avg);
-}
-
-// create a nebula object, return objnum of the nebula or -1 on fail
-// NOTE : in most cases you will want to pass -1.0f for outer_radius. Trust me on this
-int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_radius, float max_poof_radius)
-{	
-	Int3();
-	return -1;
-}
-
-// delete a nebula object
-void neb2_delete(object *objp)
-{	
-	Int3();
-}
-
-// renders a nebula object
-void neb2_render(object *objp)
-{	
-	Int3();
-}
-
-// preprocess the nebula object before simulation
-void neb2_process_pre(object *objp)
-{
-	Int3();
-}
-
-// process the nebula object after simulating, but before rendering
-void neb2_process_post(object *objp)
-{	
-	Int3();
-}
-*/
-
-/*
-// add N poofs to the inner shell of the nebula
-// if orient and ang are specified, generate the poofs so that they are "visible" around
-// the orient fvec in a cone of ang degrees
-void neb2_add_inner(neb2 *neb, int num_poofs, matrix *orient, float ang)
-{	
-	int idx;
-	vec3d pt, pt2, pt3;
-	int final_index = (neb->num_poofs + num_poofs) > neb->max_poofs ? neb->max_poofs : (neb->num_poofs + num_poofs);
-
-	// add the points a pick a random bitmap
-	for(idx=neb->num_poofs; idx<final_index; idx++){
-		if(orient != NULL){
-			// put a point directly in front of the player, between 0 and inner_radius distance away
-			vm_vec_copy_scale(&pt, &orient->fvec, frand_range(neb->magic_num, neb->inner_radius));
-
-			// rotate the point by -ang <-> ang around the up vector
-			vm_rot_point_around_line(&pt2, &pt, fl_radian(frand_range(-ang, ang)), &vmd_zero_vector, &orient->uvec);
-
-			// rotate the point by -ang <-> ang around the right vector
-			vm_rot_point_around_line(&pt3, &pt2, fl_radian(frand_range(-ang, ang)), &vmd_zero_vector, &orient->rvec);
-
-			// now add in the center of the nebula so its placed properly (ie, not around the origin)
-			vm_vec_add(&neb->pts[idx], &pt3, &Objects[neb->objnum].pos);
-		} else {
-			neb->pts[idx].xyz.x = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.xyz.x;
-			neb->pts[idx].xyz.y = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.xyz.y;
-			neb->pts[idx].xyz.z = frand_range(-1.0f * neb->inner_radius, neb->inner_radius) + Objects[neb->objnum].pos.xyz.z;
-		}
-
-		neb->bmaps[idx] = (int)frand_range(0.0f, (float)2);
-		neb->num_poofs++;
-	}
-}
-
-// add N poofs to the outer shell of the nebula
-// if orient and ang are specified, generate the poofs so that they are "visible" around
-// the orient fvec in a cone of ang degrees
-void neb2_add_outer(neb2 *neb, int num_poofs, matrix *orient, float ang)
-{
-	int idx;
-	float phi, theta;
-	vec3d pt, pt2, pt3;
-	int final_index = (neb->num_poofs + num_poofs) > neb->max_poofs ? neb->max_poofs : (neb->num_poofs + num_poofs);
-
-	// add the points a pick a random bitmap
-	for(idx=neb->num_poofs; idx<final_index; idx++){
-		if(orient != NULL){
-			// put a point directly in front of the player, at outer_radius distance away
-			vm_vec_copy_scale(&pt, &orient->fvec, neb->outer_radius);
-
-			// rotate the point by -ang <-> ang around the up vector
-			vm_rot_point_around_line(&pt2, &pt, fl_radian(frand_range(-ang, ang)), &vmd_zero_vector, &orient->uvec);
-
-			// rotate the point by -ang <-> ang around the right vector
-			vm_rot_point_around_line(&pt3, &pt2, fl_radian(frand_range(-ang, ang)), &vmd_zero_vector, &orient->rvec);
-
-			// now add in the center of the nebula so its placed properly (ie, not around the origin)
-			vm_vec_add(&neb->pts[idx], &pt, &Objects[neb->objnum].pos);
-		} else {
-			// get a random point on the very outer radius, using spherical coords
-			phi = fl_radian(frand_range(0.0f, 360.0f));
-			theta = fl_radian(frand_range(0.0f, 360.f));
-	
-			neb->pts[idx].xyz.x = neb->outer_radius * (float)sin(phi) * (float)cos(theta);
-			neb->pts[idx].xyz.y = neb->outer_radius * (float)sin(phi) * (float)sin(theta);
-			neb->pts[idx].xyz.z = neb->outer_radius * (float)cos(phi);			
-		}
-
-		// pick a random bitmap and increment the # of poofs
-		neb->bmaps[idx] = (int)frand_range(0.0f, (float)2);
-		neb->num_poofs++;
-	}
-}
-
-// return the alpha the passed poof should be rendered with, for a 1 shell nebula
-float neb2_get_alpha_1shell(neb2 *neb, int poof_index)
-{
-	float dist;
-	float alpha;
-	vec3d eye_pos;
-
-	// get the eye position
-	neb2_get_eye_pos(&eye_pos);
-	
-	// determine what alpha to draw this bitmap with
-	// higher alpha the closer the bitmap gets to the eye
-	dist = vm_vec_dist_quick(&eye_pos, &neb->pts[poof_index]);
-	
-	// at poof radius or greater, alpha should be 1.0
-	// scale from 0.0 to 1.0 between radius and magic
-	if(dist >= neb->max_poof_radius){
-		return max_alpha - 0.0001f;
-	} else if(dist > neb->magic_num){
-		// alpha per meter between the magic # and the max radius
-		alpha = max_alpha / (neb->max_poof_radius - neb->magic_num);
-
-		// above value times the # of meters away we are
-		return alpha * (dist - neb->magic_num);
-	} 	
-	
-	// otherwise transparent
-	return 0.0f;
-}
-*/

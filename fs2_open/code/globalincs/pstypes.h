@@ -14,15 +14,15 @@
 
 
 // Build defines.  Comment in/out for whatever build is necessary:
-// #define OEM_BUILD						// enable for OEM builds
-// #define MULTIPLAYER_BETA_BUILD				// enable for multiplayer beta build
-// #define E3_BUILD							// enable for 3dfx E3 build						
+// #define OEM_BUILD				// enable for OEM builds
+// #define MULTIPLAYER_BETA_BUILD	// enable for multiplayer beta build
+// #define E3_BUILD					// enable for 3dfx E3 build
 // #define PRESS_TOUR_BUILD			// enable for press tour build
 // #define FS2_DEMO					// enable demo build for FS2
-// #define PD_BUILD						// fred documentation/evaluation build
-//	#define FRENCH_BUILD				// build for French (obsolete)
+// #define PD_BUILD					// fred documentation/evaluation build
+// #define FRENCH_BUILD			// build for French (obsolete)
 // #define GERMAN_BUILD				// build for German (this is now used)
-#define RELEASE_REAL					// this means that it is an actual release candidate, not just an optimized/release build
+#define RELEASE_REAL				// this means that it is an actual release candidate, not just an optimized/release build
 
 // uncomment this #define for DVD version (makes popups say DVD instead of CD 2 or whatever): JCF 5/10/2000
 // #define DVD_MESSAGE_HACK
@@ -116,7 +116,7 @@ inline bool vec3d::operator == (const vec3d &other)
 /*
 // A vector referenced as an array
 typedef struct vectora {
-	float	xyz[3];
+	float xyz[3];
 } vectora;
 */
 
@@ -152,9 +152,9 @@ typedef struct uv_pair {
 // Used to store rotated points for mines.
 // Has flag to indicate if projected.
 typedef struct vertex {
-	float		x, y, z;				// world space position
+	float		x, y, z;			// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
-	float		u, v;					// texture position
+	float		u, v;				// texture position
 //	float		u2, v2, u3, v3, u4, v4;	// texture position
 //	vec3d		real_pos;			// _real_ world position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
@@ -162,7 +162,7 @@ typedef struct vertex {
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
-	void operator=(vec3d&vec){
+	void operator=(vec3d&vec) {
 		memcpy(&x,&vec, sizeof(vec3d));
 	}
 
@@ -176,11 +176,11 @@ inline bool vertex::operator == (const vertex &other)
 				&& (u == other.u) && (v == other.v) );
 }
 
-inline void vec3d::operator= (vertex&vert){
+inline void vec3d::operator= (vertex&vert) {
 	memcpy(this,&vert.x,sizeof(vec3d));
 }
 //set the vector to the vertex screen position
-inline void vec3d::set_screen_vert(vertex&vert){
+inline void vec3d::set_screen_vert(vertex&vert) {
 	memcpy(this,&vert.sx,sizeof(vec3d));
 }
 
@@ -237,7 +237,7 @@ extern int Global_error_count;
 #	else
 #		if _MSC_VER >= 1400	// VC 2005 or greater
 #			define Assertion(x, y, ...) do { ASSUME(x); } while (0)
-#		else 
+#		else
 #			define Assertion(x, y) do {} while (0)
 #		endif
 #	endif
@@ -248,7 +248,7 @@ extern int Global_error_count;
 	// Assertion can only use its proper fuctionality in compilers that support variadic macro
 #	ifndef _MSC_VER   // non MS compilers
 #		define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y , ##__VA_ARGS__ ); } } while (0)
-#	else 
+#	else
 #		if _MSC_VER >= 1400	// VC 2005 or greater
 #			define Assertion(x, y, ...) do { if (!(x)){ WinAssert(#x,__FILE__,__LINE__, y, __VA_ARGS__ ); } ASSUME(x); } while (0)
 #		else // everything else
@@ -280,11 +280,11 @@ extern int Global_error_count;
 
 	// define to call from Warning function above since it calls Int3, so without this, we
 	// get put into infinite dialog boxes
-   #ifdef _WIN32
-	  #define AsmInt3() _asm { int 3 }
-   #else
-     #define AsmInt3() exit(EXIT_FAILURE)
-   #endif
+	#ifdef _WIN32
+		#define AsmInt3() _asm { int 3 }
+	#else
+		#define AsmInt3() exit(EXIT_FAILURE)
+	#endif
 
 #else
 	#if defined(NDEBUG)
@@ -329,15 +329,15 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 /*
 DCF(toggle_it,"description")
 {
-	if (Dc_command)	{
+	if (Dc_command) {
 		This_var = !This_var;
 	}
 
-	if (Dc_help)	{
+	if (Dc_help) {
 		dc_printf( "Usage: sample\nToggles This_var on/off.\n" );
 	}
 
-	if (Dc_status)	{
+	if (Dc_status) {
 		dc_printf( "The status is %d.\n", This_var );
 	}
 */
@@ -350,10 +350,10 @@ class debug_command {
 	debug_command(char *name,char *help,void (*func)());	// constructor
 };
 
-#define DCF(function_name,help_text)			\
+#define DCF(function_name,help_text)	\
 		void dcf_##function_name();	\
 		debug_command dc_##function_name(#function_name,help_text,dcf_##function_name);	\
-		void dcf_##function_name()		
+		void dcf_##function_name()
 
 // Starts the debug console
 extern void debug_console( void (*func)() = NULL );
@@ -371,17 +371,18 @@ extern void debug_console( void (*func)() = NULL );
 // if (dc_status) { print out status }
 // with the last two being optional
 
-extern int Dc_command;	// If this is set, then process the command
-extern int Dc_help;		// If this is set, then print out the help text in the form, "usage: ... \nLong description\n" );
-extern int Dc_status;		// If this is set, then print out the current status of the command.
+extern int Dc_command;			// If this is set, then process the command
+extern int Dc_help;				// If this is set, then print out the help text in the form, "usage: ... \nLong description\n" );
+extern int Dc_status;			// If this is set, then print out the current status of the command.
 
-void dc_get_arg(uint flags);		// Gets the next argument.   If it doesn't match the flags, this function will print an error and not return.
-extern char *Dc_arg;		// The (lowercased) string value of the argument retrieved from dc_arg
-extern char *Dc_arg_org;	// Dc_arg before it got converted to lowercase
-extern uint Dc_arg_type;	// The type of dc_arg.
-extern char *Dc_command_line;		// The rest of the command line, from the end of the last processed arg on.
-extern int Dc_arg_int;		// If Dc_arg_type & ARG_INT or ARG_HEX is set, then this is the value
-extern float Dc_arg_float;	// If Dc_arg_type & ARG_FLOAT is set, then this is the value
+void dc_get_arg(uint flags);	// Gets the next argument.   If it doesn't match the flags, this function will print an error and not return.
+extern char *Dc_arg;			// The (lowercased) string value of the argument retrieved from dc_arg
+extern char *Dc_arg_org;		// Dc_arg before it got converted to lowercase
+extern uint Dc_arg_type;		// The type of dc_arg.
+extern char *Dc_command_line;	// The rest of the command line, from the end of the last processed arg on.
+extern int Dc_arg_int;			// If Dc_arg_type & ARG_INT or ARG_HEX is set, then this is the value
+extern ubyte Dc_arg_ubyte;		// If Dc_arg_type & ARG_UBYTE is set, then this is the value
+extern float Dc_arg_float;		// If Dc_arg_type & ARG_FLOAT is set, then this is the value
 
 // Outputs text to the console
 void dc_printf( char *format, ... );
@@ -390,20 +391,21 @@ void dc_printf( char *format, ... );
 // This is because some things can fit into two categories.
 // Like 1 can be an integer, a float, a string, or a true boolean
 // value.
-#define ARG_NONE		(1<<0)	// no argument
-#define ARG_ANY		0xFFFFFFFF	// Anything.
-#define ARG_STRING	(1<<1)	// any valid string
-#define ARG_QUOTE		(1<<2)	// a quoted string
-#define ARG_INT		(1<<3)	// a valid integer
-#define ARG_FLOAT		(1<<4)	// a valid floating point number
+#define ARG_NONE		(1<<0)		// no argument
+#define ARG_ANY			0xFFFFFFFF	// Anything.
+#define ARG_STRING		(1<<1)		// any valid string
+#define ARG_QUOTE		(1<<2)		// a quoted string
+#define ARG_INT			(1<<3)		// a valid integer
+#define ARG_FLOAT		(1<<4)		// a valid floating point number
 
 // some specific commonly used predefined types. Can add up to (1<<31)
-#define ARG_HEX		(1<<5)	// a valid hexadecimal integer. Note that ARG_INT will always be set also in this case.
-#define ARG_TRUE		(1<<6)	// on, true, non-zero number
-#define ARG_FALSE		(1<<7)	// off, false, zero
-#define ARG_PLUS		(1<<8)	// Plus sign
-#define ARG_MINUS		(1<<9)	// Minus sign
-#define ARG_COMMA		(1<<10)	// a comma
+#define ARG_HEX			(1<<5)		// a valid hexadecimal integer. Note that ARG_INT will always be set also in this case.
+#define ARG_TRUE		(1<<6)		// on, true, non-zero number
+#define ARG_FALSE		(1<<7)		// off, false, zero
+#define ARG_PLUS		(1<<8)		// Plus sign
+#define ARG_MINUS		(1<<9)		// Minus sign
+#define ARG_COMMA		(1<<10)		// a comma
+#define ARG_UBYTE		(1<<11)		// a valid ubyte
 
 // A shortcut for boolean only variables.
 // Example:  
@@ -433,13 +435,13 @@ void dc_printf( char *format, ... );
 #include "math/floating.h"
 
 // Some constants for stuff
-#define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
-#define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
+#define MAX_FILENAME_LEN	32		// Length for filenames, ie "title.pcx"
+#define MAX_PATH_LEN		128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
 
 // contants and defined for byteswapping routines (useful for mac)
 
 #define SWAPSHORT(x)	(							\
-						((ubyte)x << 8) |					\
+						((ubyte)x << 8) |			\
 						(((ushort)x) >> 8)			\
 						)
 						
@@ -553,10 +555,10 @@ extern void game_busy(char *filename = NULL);
 
 class monitor {
 	public:
-	char	*name;			
-	int	value;			// Value that gets cleared to 0 each frame.
+	char	*name;
+	int	value;					// Value that gets cleared to 0 each frame.
 	int	min, max, sum, cnt;		// Min & Max of value.  Sum is used to calculate average 
-	monitor(char *name);	// constructor
+	monitor(char *name);		// constructor
 };
 
 // Creates a monitor variable
@@ -586,9 +588,9 @@ char *XSTR(char *str, int index);
 // Caps V between MN and MX.
 template <class T> void CAP( T& v, T mn, T mx )
 {
-	if ( v < mn )	{
+	if ( v < mn ) {
 		v = mn;
-	} else if ( v > mx )	{
+	} else if ( v > mx ) {
 		v = mx;
 	}
 }
@@ -602,7 +604,7 @@ template <class T> void CAP( T& v, T mn, T mx )
 
 // here is the define for the stamp for this set of code
 #define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Asimov.  I liked them." 
-#define STAMP_STRING_LENGTH	80
+#define STAMP_STRING_LENGTH			80
 #define DEFAULT_CHECKSUM_STRING		"\001\001\001\001"
 #define DEFAULT_TIME_STRING			"\002\002\002\002"
 
@@ -662,7 +664,6 @@ void vm_free_all();
 	// quiet macro versions which don't report errors
 	#define vm_malloc_q(size) _vm_malloc((size),__FILE__,__LINE__,1)
 	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__,1)
-	
 #else
 	// Release versions
 
