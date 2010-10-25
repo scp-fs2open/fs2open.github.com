@@ -1004,19 +1004,19 @@ void hud_target_hotkey_select( int k )
 
 color HUD_color_homing_indicator;
 
-void hud_make_shader(shader *sh, int r, int g, int b, float dimmer = 1000.0f)
+void hud_make_shader(shader *sh, ubyte r, ubyte g, ubyte b, float dimmer = 1000.0f)
 {
 //	float rf,gf,bf,cf;
-	int R = 255, G = 255, B = 255, A = 255;
+	ubyte R = 255, G = 255, B = 255, A = 255;
 
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
 	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
-	R = fl2i(r * tmp);
-	G = fl2i(r * tmp); // fl2i(g * tmp);  WTF??
-	B = fl2i(r * tmp); // fl2i(b * tmp);  WTF??
-	A = fl2i((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
+	R = ubyte(r * tmp);
+	G = ubyte(r * tmp); // fl2i(g * tmp);  WTF??
+	B = ubyte(r * tmp); // fl2i(b * tmp);  WTF??
+	A = ubyte((float(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
 	gr_create_shader( sh, R, G, B, A );
 }
