@@ -152,7 +152,7 @@ public:
 	bool Parse();
 	int GetImageHandle(int id, int handle_num);
 	int GetCoords(int id, int *x, int *y);
-	
+
 	int GetObjectCoords(int *x, int *y, int *w, int *h);
 };
 
@@ -226,10 +226,10 @@ private:
 
 	int Coords[4];					//Upper left corner (x, y) and lower right corner (x, y)
 	int	ChildCoords[4];				//Coordinates where children may frolick
-	
+
 	int Type;
 	std::string Name;
-	
+
 	int LastStatus;
 	int Status;
 	int Style;
@@ -260,7 +260,7 @@ protected:
 	virtual void DoRefreshSkin(){}
 	virtual void DoMove(int dx, int dy){}
 	virtual int DoMouseOver(float frametime){return OF_FALSE;}
- 	virtual int DoMouseDown(float frametime){return OF_FALSE;} 
+	virtual int DoMouseDown(float frametime){return OF_FALSE;}
 	virtual int DoMouseUp(float frametime){return OF_FALSE;}	//In other words, a click
 	virtual int DoMouseOut(float frametime){return OF_FALSE;}
 	virtual int DoKeyState(float frametime){return OF_FALSE;}
@@ -498,11 +498,11 @@ private:
 	LinkedList Children;
 public:
 	//Get
-	TreeItem *	GetParentItem(){return Parent;}
-	int			GetData(){return Data;}
-	bool		HasChildren(){return NOT_EMPTY(&Children);}
+	TreeItem * GetParentItem(){return Parent;}
+	int GetData(){return Data;}
+	bool HasChildren(){return NOT_EMPTY(&Children);}
 	
-	void 		ClearAllItems();
+	void ClearAllItems();
 	
 	TreeItem();
 	~TreeItem();
@@ -574,7 +574,7 @@ class Text : public GUIObject
 	int SaveType;
 	union
 	{
-		short int *siSavePointer;
+		short *siSavePointer;
 		int *iSavePointer;
 		ubyte *ubSavePointer;
 		float *flSavePointer;
@@ -655,8 +655,9 @@ public:
 		FlagPtr = in_flag_ptr;
 		Flag = in_flag;
 
-		if ( (FlagPtr != NULL) && (*FlagPtr & Flag) )
+		if ( (FlagPtr != NULL) && (*FlagPtr & Flag) ) {
 			IsChecked = true;
+		}
 	}
 
 	void SetFlag(uint* in_flag_ptr, int in_flag) {

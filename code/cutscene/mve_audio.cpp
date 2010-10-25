@@ -22,36 +22,35 @@ static int audio_exp_table[256] =
 
 static int getWord(unsigned char **fin)
 {
-    int value = ((*fin)[1] << 8) | (*fin)[0];
-    *fin += 2;
-    return value;
+	int value = ((*fin)[1] << 8) | (*fin)[0];
+	*fin += 2;
+	return value;
 }
 
 static void sendWord(short **fout, int nOffset)
 {
-    *(*fout)++ = nOffset;
+	*(*fout)++ = (short)nOffset;
 }
 
 static void processSwath(short *fout, unsigned char *data, int swath, int *offsets)
 {
-    int i;
-    for (i=0; i<swath; i++)
-    {
-        offsets[i&1] += audio_exp_table[data[i]];
-        sendWord(&fout, offsets[i&1]);
-    }
+	int i;
+	for (i=0; i<swath; i++) {
+		offsets[i&1] += audio_exp_table[data[i]];
+		sendWord(&fout, offsets[i&1]);
+	}
 }
 
-void mveaudio_uncompress(short *buffer, unsigned char *data, int length)
+void mveaudio_uncompress(short *buffer, unsigned char *data)
 {
-    int nCurOffsets[2];
-    int swath;
+	int nCurOffsets[2];
+	int swath;
 
-    data += 4;
-    swath = getWord(&data) / 2;
-    nCurOffsets[0] = getWord(&data);
-    nCurOffsets[1] = getWord(&data);
-    sendWord(&buffer, nCurOffsets[0]);
-    sendWord(&buffer, nCurOffsets[1]);
-    processSwath(buffer, data, swath, nCurOffsets);
+	data += 4;
+	swath = getWord(&data) / 2;
+	nCurOffsets[0] = getWord(&data);
+	nCurOffsets[1] = getWord(&data);
+	sendWord(&buffer, nCurOffsets[0]);
+	sendWord(&buffer, nCurOffsets[1]);
+	processSwath(buffer, data, swath, nCurOffsets);
 }

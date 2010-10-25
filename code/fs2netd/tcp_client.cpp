@@ -549,7 +549,7 @@ void FS2NetD_SendServerStart()
 	PXO_ADD_INT( Netgame.type_flags );
 
 	PXO_ADD_SHORT( (short)multi_num_players() );
-	PXO_ADD_SHORT( Netgame.max_players );
+	PXO_ADD_SHORT( (short)Netgame.max_players );
 
 	tvar = (ubyte)Netgame.mode;
 	PXO_ADD_DATA( tvar );

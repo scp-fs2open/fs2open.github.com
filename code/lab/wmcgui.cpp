@@ -25,9 +25,8 @@ GUISystem GUI_system;
 ClassInfoEntry::ClassInfoEntry()
 {
 	CIEType = CIE_NONE;
-	
-	for(uint i = 0; i < CIE_NUM_HANDLES; i++)
-	{
+
+	for (uint i = 0; i < CIE_NUM_HANDLES; i++) {
 		IMG_HANDLE_SET_INVALID(Handles[i].Image);
 	}
 
@@ -36,14 +35,13 @@ ClassInfoEntry::ClassInfoEntry()
 ClassInfoEntry::~ClassInfoEntry()
 {
 	//Unload image handles
-	if(CIEType == CIE_IMAGE_NMCSD || CIEType == CIE_IMAGE || CIEType == CIE_IMAGE_BORDER)
-	{
+	if (CIEType == CIE_IMAGE_NMCSD || CIEType == CIE_IMAGE || CIEType == CIE_IMAGE_BORDER) {
 		int i = 0;
 		int num = sizeof(Handle)/sizeof(int);
-		for(; i < num; i++)
-		{
-			if(IMG_HANDLE_IS_VALID(Handles[i].Image))
+		for (; i < num; i++) {
+			if (IMG_HANDLE_IS_VALID(Handles[i].Image)) {
 				IMG_UNLOAD(Handles[i].Image);
+			}
 		}
 	}
 }
@@ -52,8 +50,7 @@ bool ObjectClassInfoEntry::Parse()
 {
 	//Do we actually have a tag?
 	//This is hackish, but it should get the job done
-	if(check_for_string("<") && !check_for_string("</"))
-	{
+	if (check_for_string("<") && !check_for_string("</")) {
 		char buf[NAME_LENGTH];
 		char buf2[NAME_LENGTH+3];	//for the end tag and name buffer
 
@@ -64,34 +61,23 @@ bool ObjectClassInfoEntry::Parse()
 		stuff_string(buf, F_NAME, sizeof(buf), ">");
 		parse_advance(1);	//skip the end ">"
 
-		if(optional_string("+Name:"))
-		{
+		if (optional_string("+Name:")) {
 			stuff_string(buf2, F_NAME, sizeof(buf2));
 			Name = buf2;
 		}
-		if(optional_string("+Coords:"))
-		{
+		if (optional_string("+Coords:")) {
 			stuff_int_list(Coords, 2, RAW_INTEGER_TYPE);
 		}
-		if(optional_string("+Size:"))
-		{
+		if (optional_string("+Size:")) {
 			stuff_int_list(&Coords[2], 2, RAW_INTEGER_TYPE);
 		}
-
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
 
 		//This is where you add specific classes to parse.
 		//Follow the current classes' example, this basically involves
 		//a !stricmp(), a resize() (to the number of entries) and multiple Entries[ID].Parse()
 		
 		//=================================================
-		if(!stricmp(buf, "Window"))
-		{
+		if (!stricmp(buf, "Window")) {
 			Object = GT_WINDOW;
 			Entries.resize(WCI_NUM_ENTRIES);
 
@@ -101,9 +87,7 @@ bool ObjectClassInfoEntry::Parse()
 			Entries[WCI_CLOSE].Parse("Closer", CIE_IMAGE_NMCSD);
 			Entries[WCI_BODY].Parse("Body", CIE_IMAGE);
 			Entries[WCI_BORDER].Parse("Border", CIE_IMAGE_BORDER);
-		}
-		else if(!stricmp(buf, "Button"))
-		{
+		} else if (!stricmp(buf, "Button")) {
 			Object = GT_BUTTON;
 			Entries.resize(BCI_NUM_ENTRIES);
 
@@ -116,8 +100,7 @@ bool ObjectClassInfoEntry::Parse()
 		//Make sure that the next token isn't an end tag, but
 		//is a tag
 		ObjectClassInfoEntry temp_ocie;
-		while(temp_ocie.Parse())
-		{
+		while (temp_ocie.Parse()) {
 			Subentries.push_back(temp_ocie);
 			temp_ocie = ObjectClassInfoEntry();
 		}
@@ -136,20 +119,17 @@ bool ObjectClassInfoEntry::Parse()
 
 bool ScreenClassInfoEntry::Parse()
 {
-	if(check_for_string("#") && !check_for_string("#End"))
-	{
+	if (check_for_string("#") && !check_for_string("#End")) {
 		char buf[NAME_LENGTH];
 
 		//Find the name of the thing we're parsing
 		parse_advance(1);
 		stuff_string(buf, F_NAME, sizeof(buf));
-
 		Name = buf;
 
 		//Parse all objects for this screen
 		ObjectClassInfoEntry temp_ocie;
-		while(temp_ocie.Parse())
-		{
+		while (temp_ocie.Parse()) {
 			Entries.push_back(temp_ocie);
 			temp_ocie = ObjectClassInfoEntry();
 		}
@@ -164,8 +144,7 @@ void GUISystem::ParseClassInfo(char* filename)
 {
 	int rval;
 
-	if(ClassInfoParsed)
-	{
+	if (ClassInfoParsed) {
 		Warning(LOCATION, "Class info is being parsed twice");
 		DestroyClassInfo();
 	}
@@ -173,8 +152,7 @@ void GUISystem::ParseClassInfo(char* filename)
 	// open localization
 	lcl_ext_open();
 
-	if((rval = setjmp(parse_abort)) != 0)
-	{
+	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("WMCGUI: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		lcl_ext_close();
 		return;
@@ -183,15 +161,14 @@ void GUISystem::ParseClassInfo(char* filename)
 	read_file_text(filename);
 	reset_parse();
 	ScreenClassInfo.Parse();
-	
+
 	bool flag;
-	do
-	{
+	do {
 		ScreenClassInfoEntry* sciep = new ScreenClassInfoEntry;
 		flag = sciep->Parse();
-		if(flag)
+		if (flag) {
 			list_append(&ScreenClassInfo, sciep);
-
+		}
 	} while(flag);
 
 	// close localization
@@ -205,103 +182,88 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 	char buf[MAX_FILENAME_LEN];
 	strcpy_s(buf, "+");
 	strcat_s(buf, tag);
-	if(in_type != CIE_IMAGE_BORDER)
+	if (in_type != CIE_IMAGE_BORDER) {
 		strcat_s(buf, ":");
+	}
 
-	if(optional_string(buf))
-	{
+	if(optional_string(buf)) {
 		CIEType = in_type;
-		if(in_type == CIE_IMAGE || in_type == CIE_IMAGE_NMCSD)
-		{
+		if (in_type == CIE_IMAGE || in_type == CIE_IMAGE_NMCSD) {
 			int num_frames;
 			stuff_string(buf, F_NAME, sizeof(buf));
 			Handles[CIE_HANDLE_N].Image = IMG_LOAD_ANIM(buf, &num_frames, NULL);
-			if(IMG_HANDLE_IS_VALID(Handles[CIE_HANDLE_N].Image) && num_frames)
-			{
-				if(num_frames > 1)
+			if (IMG_HANDLE_IS_VALID(Handles[CIE_HANDLE_N].Image) && num_frames) {
+				if (num_frames > 1) {
 					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_M].Image, 1);
-				if(num_frames > 2)
+				}
+				if (num_frames > 2) {
 					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_C].Image, 2);
-				if(num_frames > 3)
+				}
+				if (num_frames > 3) {
 					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_S].Image, 3);
-				if(num_frames > 4)
+				}
+				if (num_frames > 4) {
 					IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_D].Image, 4);
-				
+				}
 				IMG_HANDLE_SET_FRAME(Handles[CIE_HANDLE_N].Image, Handles[CIE_HANDLE_N].Image, 0);
-			}
-			else
+			} else {
 				Handles[CIE_HANDLE_N].Image = IMG_LOAD(buf);
-			if(in_type == CIE_IMAGE_NMCSD)
-			{
-				if(optional_string("+Mouseover:"))
-				{
+			}
+			if (in_type == CIE_IMAGE_NMCSD) {
+				if (optional_string("+Mouseover:")) {
 					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_M].Image = IMG_LOAD(buf);
 				}
-				if(optional_string("+Clicked:"))
-				{
+				if (optional_string("+Clicked:")) {
 					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_C].Image = IMG_LOAD(buf);
 				}
-				if(optional_string("+Selected:"))
-				{
+				if (optional_string("+Selected:")) {
 					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_S].Image = IMG_LOAD(buf);
 				}
-				if(optional_string("+Disabled:"))
-				{
+				if (optional_string("+Disabled:")) {
 					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_D].Image = IMG_LOAD(buf);
 				}
 			}
-			if(optional_string("+Coords:"))
+			if(optional_string("+Coords:")) {
 				stuff_int_list(Coords, 2, RAW_INTEGER_TYPE);
-		}
-		else if(in_type == CIE_IMAGE_BORDER)
-		{
-			if(optional_string("+Top Left:"))
-			{
+			}
+		} else if (in_type == CIE_IMAGE_BORDER) {
+			if (optional_string("+Top Left:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_TL].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Top Mid:"))
-			{
+			if (optional_string("+Top Mid:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_TM].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Top Right:"))
-			{
+			if (optional_string("+Top Right:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_TR].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Mid Left:"))
-			{
+			if (optional_string("+Mid Left:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_ML].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Mid Right:"))
-			{
+			if (optional_string("+Mid Right:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_MR].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Bottom left:"))
-			{
+			if (optional_string("+Bottom left:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_BL].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Bottom Mid:"))
-			{
+			if (optional_string("+Bottom Mid:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_BM].Image = IMG_LOAD(buf);
 			}
-			if(optional_string("+Bottom Right:"))
-			{
+			if (optional_string("+Bottom Right:")) {
 				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_BR].Image = IMG_LOAD(buf);
 			}
-		}
-		else if(in_type == CIE_COORDS)
-		{
+		} else if (in_type == CIE_COORDS) {
 			stuff_int_list(Coords, 2, RAW_INTEGER_TYPE);
 		}
 	}
@@ -309,17 +271,13 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 #ifndef NDEBUG
 	//Do a little extra checking in debug mode
 	//This makes sure the skinnger knows if they did something bad
-	if(CIEType == CIE_IMAGE || CIEType == CIE_IMAGE_NMCSD)
-	{
+	if (CIEType == CIE_IMAGE || CIEType == CIE_IMAGE_NMCSD) {
 		int w,h,cw,ch;
 		IMG_INFO(Handles[0].Image, &w, &h);
-		for(uint i = 1; i < CIE_NUM_HANDLES; i++)
-		{
-			if(IMG_HANDLE_IS_VALID(Handles[i].Image))
-			{
+		for (uint i = 1; i < CIE_NUM_HANDLES; i++) {
+			if (IMG_HANDLE_IS_VALID(Handles[i].Image)) {
 				IMG_INFO(Handles[i].Image, &cw, &ch);
-				if(cw != w || ch != h)
-				{
+				if (cw != w || ch != h) {
 					Warning(LOCATION, "Grouped image size unequal; Handle number %d under $%s: has a different size than base image type", i, tag);
 				}
 			}
@@ -331,13 +289,11 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 int ClassInfoEntry::GetCoords(int *x, int *y)
 {
 	int rval = CIE_GC_NONE_SET;
-	if(Coords[0]!=INT_MAX && x!=NULL)
-	{
+	if (Coords[0]!=INT_MAX && x!=NULL) {
 		*x=Coords[0];
 		rval |= CIE_GC_X_SET;
 	}
-	if(Coords[1]!=INT_MAX && x!=NULL)
-	{
+	if (Coords[1]!=INT_MAX && x!=NULL) {
 		*y=Coords[1];
 		rval |= CIE_GC_Y_SET;
 	}
@@ -358,23 +314,19 @@ int ObjectClassInfoEntry::GetCoords(int id, int *x, int *y)
 int ObjectClassInfoEntry::GetObjectCoords(int *x, int *y, int *w, int *h)
 {
 	int rval = CIE_GC_NONE_SET;
-	if(Coords[0] != INT_MAX && x != NULL)
-	{
+	if (Coords[0] != INT_MAX && x != NULL) {
 		*x = Coords[0];
 		rval |= CIE_GC_X_SET;
 	}
-	if(Coords[1] != INT_MAX && y != NULL)
-	{
+	if (Coords[1] != INT_MAX && y != NULL) {
 		*y = Coords[1];
 		rval |= CIE_GC_Y_SET;
 	}
-	if(Coords[2] != INT_MAX && w != NULL)
-	{
+	if (Coords[2] != INT_MAX && w != NULL) {
 		*w = Coords[2];
 		rval |= CIE_GC_W_SET;
 	}
-	if(Coords[3] != INT_MAX && h != NULL)
-	{
+	if (Coords[3] != INT_MAX && h != NULL) {
 		*h = Coords[3];
 		rval |= CIE_GC_H_SET;
 	}
@@ -394,13 +346,10 @@ GUIScreen::GUIScreen(std::string in_Name)
 	OwnerSystem = NULL;
 
 	//Get class info
-	if(OwnerSystem != NULL)
-	{
+	if (OwnerSystem != NULL) {
 		OwnerSystem->PushScreen(this);
 		ScreenClassInfo = OwnerSystem->GetScreenClassInfo(Name);
-	}
-	else
-	{
+	} else {
 		ScreenClassInfo = NULL;
 	}
 }
@@ -409,26 +358,10 @@ GUIScreen::~GUIScreen()
 {
 	GUIObject* cgp = (GUIObject*)GET_FIRST(&Guiobjects);
 	GUIObject* cgp_next;
-	for(; cgp != END_OF_LIST(&Guiobjects); cgp = cgp_next)
-	{
+	for (; cgp != END_OF_LIST(&Guiobjects); cgp = cgp_next) {
 		cgp_next = (GUIObject*)GET_NEXT(cgp);
 		delete cgp;
 	}
-
-	//Get it out of the system
-	// nm; I just realized the linked list class should do this -WMC
-	/*
-	if(OwnerSystem != NULL && NOT_EMPTY(&OwnerSystem->Screens))
-	{
-		GUIScreen *csp_next;
-		for(GUIScreen *csp = (GUIScreen*)GET_FIRST(&OwnerSystem->Screens); csp != END_OF_LIST(&OwnerSystem->Screens); csp = csp_next)
-		{
-			csp_next = (GUIScreen*)GET_NEXT(csp);
-			if(csp == this)
-				list_remove(&OwnerSystem->Screens, csp);
-		}
-	}
-	*/
 }
 
 ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
@@ -436,57 +369,53 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 	size_t len;
 	uint i;
 
-	if(cgp->Parent != NULL && cgp->Parent->InfoEntry != NULL)
-	{
+	if (cgp->Parent != NULL && cgp->Parent->InfoEntry != NULL) {
 		len = cgp->Parent->InfoEntry->Subentries.size();
 
-		for(i = 0; i < len; i++)
-		{
-			if(cgp->Parent->InfoEntry->Subentries[i].Name == cgp->Name)
+		for (i = 0; i < len; i++) {
+			if (cgp->Parent->InfoEntry->Subentries[i].Name == cgp->Name) {
 				return &cgp->Parent->InfoEntry->Subentries[i];
+			}
 		}
 
-		for(i = 0; i < len; i++)
-		{
-			if( cgp->Parent->InfoEntry->Subentries[i].Name.size() == 0 && 
-				cgp->Parent->InfoEntry->Subentries[i].Object == cgp->Type )
+		for (i = 0; i < len; i++) {
+			if ( cgp->Parent->InfoEntry->Subentries[i].Name.size() == 0 
+			&& cgp->Parent->InfoEntry->Subentries[i].Object == cgp->Type ) {
 				return &cgp->Parent->InfoEntry->Subentries[i];
+			}
 		}
-	}
-	else if(cgp->Parent == NULL && ScreenClassInfo != NULL)
-	{
+	} else if (cgp->Parent == NULL && ScreenClassInfo != NULL) {
 		len = ScreenClassInfo->Entries.size();
-		for(i = 0; i < len; i++)
-		{
-			if(ScreenClassInfo->Entries[i].Name == cgp->Name)
+		for (i = 0; i < len; i++) {
+			if (ScreenClassInfo->Entries[i].Name == cgp->Name) {
 				return &ScreenClassInfo->Entries[i];
+			}
 		}
 
-		for(i = 0; i < len; i++)
-		{
-			if(	ScreenClassInfo->Entries[i].Name.size() == 0 && 
-				ScreenClassInfo->Entries[i].Object == cgp->Type )
+		for (i = 0; i < len; i++) {
+			if( ScreenClassInfo->Entries[i].Name.size() == 0 && 
+				ScreenClassInfo->Entries[i].Object == cgp->Type ) {
 				return &ScreenClassInfo->Entries[i];
+			}
 		}
 	}
 
 	//Generic templates - ie if you want every single OK button to look the same,
 	//or every single window to look the same.
-	if(OwnerSystem != NULL)
-	{
+	if (OwnerSystem != NULL) {
 		len = OwnerSystem->GetClassInfo()->Entries.size();
 
-		for(i = 0; i < len; i++)
-		{
-			if(OwnerSystem->GetClassInfo()->Entries[i].Name == cgp->Name)
+		for (i = 0; i < len; i++) {
+			if (OwnerSystem->GetClassInfo()->Entries[i].Name == cgp->Name) {
 				return &OwnerSystem->GetClassInfo()->Entries[i];
+			}
 		}
 
-		for(i = 0; i < len; i++)
-		{
+		for (i = 0; i < len; i++) {
 			if( OwnerSystem->GetClassInfo()->Entries[i].Name.size() == 0 && 
-				OwnerSystem->GetClassInfo()->Entries[i].Object == cgp->Type)
+				OwnerSystem->GetClassInfo()->Entries[i].Object == cgp->Type) {
 				return &OwnerSystem->GetClassInfo()->Entries[i];
+			}
 		}
 	}
 
@@ -499,29 +428,25 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 //a pointer to the original object with that name
 GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 {
-	if(new_gauge == NULL)
+	if(new_gauge == NULL) {
 		return NULL;
+	}
 
 	Assert(this != NULL);
 
 	//First - do we have anything with the same name.
-	for(GUIObject *tgp = (GUIObject*) GET_FIRST(&Guiobjects); tgp != END_OF_LIST(&Guiobjects); tgp = (GUIObject*) GET_NEXT(tgp))
-	{
-		if(tgp->Name == new_gauge->Name)
-		{
+	for (GUIObject *tgp = (GUIObject*) GET_FIRST(&Guiobjects); tgp != END_OF_LIST(&Guiobjects); tgp = (GUIObject*) GET_NEXT(tgp)) {
+		if (tgp->Name == new_gauge->Name) {
 			//Get rid of the new gauge
 			//We don't want it; breaks skinning
 			delete new_gauge;
 
-			if(tgp->Type == new_gauge->Type)
-			{
+			if (tgp->Type == new_gauge->Type) {
 				//If the type of the existing object is the same
 				//as the new one, we can safely pass this one off
 				delete new_gauge;
 				return tgp;
-			}
-			else
-			{
+			} else {
 				//This is icky; we might cast a pointer after this.
 				//So return NULL with a warning
 				Warning(LOCATION, "Attempt to create another object with name '%s'; new object type was %d, existing object type was %d. This may cause null pointer issues.", tgp->Name.c_str(), new_gauge->Type, tgp->Type);
@@ -535,85 +460,6 @@ GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 	list_append(&Guiobjects, new_gauge);
 	new_gauge->OwnerSystem = OwnerSystem;
 	new_gauge->OwnerScreen = this;
-
-	//If no position specified, try to find an empty spot.
-	//ALTERNATE IDEA:
-	//Try corners of windows.
-	/*
-	int TempX = -1;
-	int TempY = -1;
-	int TempTotal = 0;
-	GUIObject *agp, *bgp, *dgp;
-	bool problem = false;
-	//Do X first
-	if(new_gauge->Coords[0] < 0)
-	{
-		for(GUIObject *agp = (GUIObject*) GET_FIRST(&Guiobjects); agp != END_OF_LIST(&Guiobjects); agp = (GUIObject*) GET_NEXT(agp))
-		{
-			problem = false;
-			
-			TempX = agp->Coords[2] + 1;
-			
-			//More than 50% offscreen? This is unacceptable.
-			TempTotal = TempX + new_gauge->Coords[2];
-			if(TempTotal > gr_screen.max_w)
-			{
-				if((float)(TempTotal - gr_screen.max_w)/(float)TempTotal < 0.5f)
-					continue;
-			}
-
-			if(new_gauge->Coords[1] < 0)
-			{
-				for(GUIObject *bgp = (GUIObject*) GET_FIRST(&Guiobjects); bgp != END_OF_LIST(&Guiobjects); bgp = (GUIObject*) GET_NEXT(bgp))
-				{
-					problem = false;
-					
-					TempY = bgp->Coords[3] + 1;
-					for(GUIObject *dgp = (GUIObject*) GET_FIRST(&Guiobjects); dgp != END_OF_LIST(&Guiobjects); dgp = (GUIObject*) GET_NEXT(dgp))
-					{
-							if(TempX > dgp->Coords[0] && TempX < dgp->Coords[2])
-							{
-								problem = true;
-								break;
-							}
-					}
-				}
-			}
-			else
-			{
-				for(GUIObject *dgp = (GUIObject*) GET_FIRST(&Guiobjects); dgp != END_OF_LIST(&Guiobjects); dgp = (GUIObject*) GET_NEXT(dgp))
-				{
-					if(		TempX > dgp->Coords[0]
-						&& TempX < dgp->Coords[2]
-						&& new_gauge->Coords[1] > dgp->Coords[1]
-						&& new_gauge->Coords[1] < dgp->Coords[3])
-					{
-						problem = true;
-						break;
-					}
-				}
-			}
-
-			if(!problem)
-				break;
-		}
-	}
-
-	//Set actual coordinates
-	if(Coords[0] < 0)
-	{
-		if(TempX < 0)
-			Coords[0] = 0;
-		else
-			Coords[0] = TempX;
-	}
-	if(Coords[1] < 0)
-	{
-		if(TempY < 0)
-			Coords[1] = 0;
-		else
-			Coords[1] = TempY;
-	}*/
 
 	//For skinning
 	new_gauge->SetCIPointer();
@@ -636,8 +482,7 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 	GUIObject* cgp_prev;
 	bool SomethingPressed = false;
 
-	if(NOT_EMPTY(&Guiobjects) && doevents)
-	{
+	if (NOT_EMPTY(&Guiobjects) && doevents) {
 		//Note that children WILL be changing this variable as they go along,
 		//as they use up statuses.
 		int status = OwnerSystem->GetStatus();
@@ -645,24 +490,20 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		//Pass the status on
 		cgp = (GUIObject*)GET_LAST(&Guiobjects);
 		cgp->Status |= (status & GST_KEYBOARD_STATUS);
-		for(; cgp != END_OF_LIST(&Guiobjects); cgp = cgp_prev)
-		{
+		for (; cgp != END_OF_LIST(&Guiobjects); cgp = cgp_prev) {
 			//In case an object deletes itself
 			cgp_prev = (GUIObject*)GET_PREV(cgp);
 			cgp->LastStatus = cgp->Status;
 			cgp->Status = 0;
 
 			//If we are moving something, nothing else can get click events
-			if(OwnerSystem->GetGraspedObject() == NULL)
-			{
-				if(OwnerSystem->GetMouseX() >= cgp->Coords[0]
+			if (OwnerSystem->GetGraspedObject() == NULL) {
+				if (OwnerSystem->GetMouseX() >= cgp->Coords[0]
 					&& OwnerSystem->GetMouseX() <= cgp->Coords[2]
 					&& OwnerSystem->GetMouseY() >= cgp->Coords[1]
-					&& OwnerSystem->GetMouseY() <= cgp->Coords[3])
-				{
+					&& OwnerSystem->GetMouseY() <= cgp->Coords[3]) {
 					cgp->Status |= (status & GST_MOUSE_STATUS);
-					if(status & GST_MOUSE_PRESS)
-					{
+					if (status & GST_MOUSE_PRESS) {
 						SomethingPressed = true;
 					}
 				}
@@ -672,8 +513,7 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		}
 	}
 
-	for(uint i = DeletionCache.size(); i > 0; i--)
-	{
+	for (uint i = DeletionCache.size(); i > 0; i--) {
 		delete DeletionCache[i-1];
 		DeletionCache.pop_back();
 	}
@@ -686,8 +526,9 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 	cgp = (GUIObject*)GET_FIRST(&Guiobjects);
 
 	while (cgp != END_OF_LIST(&Guiobjects)) {
-		if ( !doevents )
+		if ( !doevents ) {
 			cgp->Status = 0;
+		}
 
 		cgp->OnDraw(frametime);
 
@@ -697,10 +538,11 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 	// reset zbuffer to saved value
 	gr_zbuffer_set(saved_zbuf);
 
-	if(SomethingPressed)
+	if(SomethingPressed) {
 		return GSOF_SOMETHINGPRESSED;
-	else
+	} else {
 		return GSOF_NOTHINGPRESSED;
+	}
 }
 
 //*****************************GUISystem*******************************
@@ -708,28 +550,7 @@ GUISystem::GUISystem()
 {
 	GraspedGuiobject=ActiveObject=NULL;
 	Status=LastStatus=0;
-
 	MouseX = MouseY = 0;
-
-	//Fill out Guiobjects with some handy info
-	//On 2nd thought, don't. This is hackish.
-	/*
-	Guiobjects.OwnerSystem=this;
-	Guiobjects.Coords[0] = 0;
-	Guiobjects.Coords[1] = 0;
-	Guiobjects.Coords[2] = gr_screen.clip_width;
-	Guiobjects.Coords[3] = gr_screen.clip_height;
-	Guiobjects.ChildCoords[0] = gr_screen.clip_left;
-	Guiobjects.ChildCoords[1] = gr_screen.clip_top;
-	Guiobjects.ChildCoords[2] = gr_screen.clip_right;
-	Guiobjects.ChildCoords[3] = gr_screen.clip_bottom;*/
-
-	//Make ClassInfo all NULL
-	/*
-	for(uint i = 0; i < GT_NUM_TYPES; i++)
-	{
-		ClassInfo[i] = NULL;
-	}*/
 	ClassInfoParsed = false;
 }
 
@@ -737,8 +558,7 @@ GUISystem::~GUISystem()
 {
 	GUIScreen* csp = (GUIScreen*)GET_FIRST(&Screens);
 	GUIScreen* csp_next;
-	for(; csp != END_OF_LIST(&Screens); csp = csp_next)
-	{
+	for (; csp != END_OF_LIST(&Screens); csp = csp_next) {
 		csp_next = (GUIScreen*)GET_NEXT(csp);
 		delete csp;
 	}
@@ -748,11 +568,9 @@ GUISystem::~GUISystem()
 GUIScreen *GUISystem::PushScreen(GUIScreen *csp)
 {
 	Assert(csp != NULL);
-
 	list_append(&Screens, csp);
 	csp->OwnerSystem = this;
 	csp->ScreenClassInfo = GetScreenClassInfo(csp->Name);
-
 	return csp;
 }
 
@@ -762,11 +580,9 @@ GUIScreen *GUISystem::PushScreen(GUIScreen *csp)
 void GUISystem::PullScreen(GUIScreen *in_screen)
 {
 	GUIScreen *csp_next;
-	for(GUIScreen *csp = (GUIScreen*)GET_FIRST(&Screens); csp != END_OF_LIST(&Screens); csp = csp_next)
-	{
+	for (GUIScreen *csp = (GUIScreen*)GET_FIRST(&Screens); csp != END_OF_LIST(&Screens); csp = csp_next) {
 		csp_next = (GUIScreen*)GET_NEXT(csp);
-		if(csp == in_screen)
-		{
+		if (csp == in_screen) {
 			csp->prev->next = csp->next;
 			csp->next->prev = csp->prev;
 			csp->next = csp;
@@ -779,10 +595,10 @@ void GUISystem::PullScreen(GUIScreen *in_screen)
 ScreenClassInfoEntry *GUISystem::GetScreenClassInfo(const std::string & screen_name)
 {
 	ScreenClassInfoEntry *sciep;
-	for(sciep = (ScreenClassInfoEntry*)GET_FIRST(&ScreenClassInfo); sciep != END_OF_LIST(&ScreenClassInfo); sciep = (ScreenClassInfoEntry*)GET_NEXT(sciep))
-	{
-		if(sciep->GetName() == screen_name)
+	for (sciep = (ScreenClassInfoEntry*)GET_FIRST(&ScreenClassInfo); sciep != END_OF_LIST(&ScreenClassInfo); sciep = (ScreenClassInfoEntry*)GET_NEXT(sciep)) {
+		if (sciep->GetName() == screen_name) {
 			return sciep;
+		}
 	}
 
 	return NULL;
@@ -796,35 +612,37 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 
 	bool something_pressed = false;
 	int unused_queue;
-	if(clearandflip)
+	if (clearandflip) {
 		gr_clear();
+	}
 
-	if(NOT_EMPTY(&Screens))
-	{
-		if(doevents)
-		{
+	if (NOT_EMPTY(&Screens)) {
+		if (doevents) {
 			KeyPressed = game_check_key();
 
 			//Add keyboard event stuff
-			if(KeyPressed)
-			{
+			if (KeyPressed) {
 				Status |= GST_KEYBOARD_KEYPRESS;
 
-				if(KeyPressed & KEY_CTRLED)
+				if (KeyPressed & KEY_CTRLED) {
 					Status |= GST_KEYBOARD_CTRL;
-				if(KeyPressed & KEY_ALTED)
+				}
+				if (KeyPressed & KEY_ALTED) {
 					Status |= GST_KEYBOARD_ALT;
-				if(KeyPressed & KEY_SHIFTED)
+				}
+				if (KeyPressed & KEY_SHIFTED) {
 					Status |= GST_KEYBOARD_SHIFT;
+				}
 			}
 
 			//Add mouse event stuff
-			if(mouse_down(MOUSE_LEFT_BUTTON))
+			if (mouse_down(MOUSE_LEFT_BUTTON)) {
 				Status |= GST_MOUSE_LEFT_BUTTON;
-			else if(mouse_down(MOUSE_MIDDLE_BUTTON))
+			} else if (mouse_down(MOUSE_MIDDLE_BUTTON)) {
 				Status |= GST_MOUSE_MIDDLE_BUTTON;
-			else if(mouse_down(MOUSE_RIGHT_BUTTON))
+			} else if (mouse_down(MOUSE_RIGHT_BUTTON)) {
 				Status |= GST_MOUSE_RIGHT_BUTTON;
+			}
 
 			//Now that we are done setting status, add all that stuff to the unused queue
 			//Children will be changing this function as they do stuff with statuses
@@ -833,48 +651,44 @@ int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 			mouse_get_pos(&MouseX, &MouseY);
 
 			//Handle any grasped object (we are in the process of moving this)
-			if(GraspedGuiobject != NULL)
-			{
-				if(Status & GraspingButton)
-				{
+			if (GraspedGuiobject != NULL) {
+				if (Status & GraspingButton) {
 					something_pressed = true;
 					GraspedGuiobject->SetPosition(MouseX - GraspedDiff[0], MouseY - GraspedDiff[1]);
 					GraspedGuiobject->Status = (Status & GST_MOUSE_STATUS);
-				}
-				else
-				{
+				} else {
 					GraspedGuiobject = NULL;
 				}
 			}
 		}
 
 		GUIScreen *csp_prev;	//so screens can delete themselves
-		for(GUIScreen* csp = (GUIScreen*)GET_LAST(&Screens); csp != END_OF_LIST(&Screens); csp = csp_prev)
-		{
+		for (GUIScreen* csp = (GUIScreen*)GET_LAST(&Screens); csp != END_OF_LIST(&Screens); csp = csp_prev) {
 			csp_prev = (GUIScreen*)GET_PREV(csp);
-			if(csp->OnFrame(frametime, doevents) == GSOF_SOMETHINGPRESSED)
+			if (csp->OnFrame(frametime, doevents) == GSOF_SOMETHINGPRESSED) {
 				something_pressed = true;
+			}
 		}
 	}
 
-	if(clearandflip)
+	if (clearandflip) {
 		gr_flip();
+	}
 
-	if(something_pressed)
+	if (something_pressed) {
 		return GSOF_SOMETHINGPRESSED;
-	else
+	} else {
 		return GSOF_NOTHINGPRESSED;
+	}
 }
 
 void GUISystem::SetActiveObject(GUIObject *cgp)
 {
-	if(cgp != NULL)
-	{
+	if (cgp != NULL) {
 		ActiveObject = cgp;
 		//Move everything to the end of the list
 		//This way, it gets precedence
-		while(cgp->Parent != NULL)
-		{
+		while (cgp->Parent != NULL) {
 			list_move_append(&cgp->Parent->Children, cgp);
 			cgp = cgp->Parent;
 		}
@@ -887,8 +701,9 @@ void GUISystem::SetActiveObject(GUIObject *cgp)
 void GUISystem::SetGraspedObject(GUIObject *cgp, int button)
 {
 	//Protect thyself!
-	if(cgp == NULL)
+	if (cgp == NULL) {
 		return;
+	}
 
 	GraspedGuiobject = cgp;
 	GraspingButton = button;
@@ -899,8 +714,7 @@ void GUISystem::SetGraspedObject(GUIObject *cgp, int button)
 void GUISystem::DestroyClassInfo()
 {
 	ScreenClassInfoEntry *sciep, *next_sciep;
-	for(sciep = (ScreenClassInfoEntry*)GET_FIRST(&ScreenClassInfo); sciep != END_OF_LIST(&ScreenClassInfo); sciep = next_sciep)
-	{
+	for (sciep = (ScreenClassInfoEntry*)GET_FIRST(&ScreenClassInfo); sciep != END_OF_LIST(&ScreenClassInfo); sciep = next_sciep) {
 		next_sciep = (ScreenClassInfoEntry*)GET_NEXT(sciep);
 		delete sciep;
 	}
@@ -922,12 +736,14 @@ GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width,
 
 	//These would make no sense
 	//x_coord and y_coord of < 0 mean to let the parent handle placement.
-	if(x_width == 0 || y_height == 0)
+	if (x_width == 0 || y_height == 0) {
 		return;
+	}
 	
 	//No! Bad!
-	if(in_Name.length() < 1)
+	if (in_Name.length() < 1) {
 		return;
+	}
 
 	Name = in_Name;
 	Coords[0] = x_coord;
@@ -937,10 +753,12 @@ GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width,
 
 	Style = in_style;
 
-	if(x_width > 0)
+	if (x_width > 0) {
 		Style |= GS_NOAUTORESIZEX;
-	if(y_height > 0)
+	}
+	if (y_height > 0) {
 		Style |= GS_NOAUTORESIZEY;
+	}
 
 	Type = GT_NONE;
 	InfoEntry = NULL;
@@ -948,8 +766,9 @@ GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width,
 
 GUIObject::~GUIObject()
 {
-	if (CloseFunction != NULL)
+	if (CloseFunction != NULL) {
 		CloseFunction(this);
+	}
 
 	DeleteChildren();
 
@@ -960,17 +779,16 @@ GUIObject::~GUIObject()
 
 void GUIObject::DeleteChildren(GUIObject* exception)
 {
-	if ( EMPTY(&Children) )
+	if ( EMPTY(&Children) ) {
 		return;
+	}
 
 	GUIObject* cgp = (GUIObject*)GET_FIRST(&Children);
 	GUIObject* cgp_temp;
 
-	while (cgp != END_OF_LIST(&Children))
-	{
+	while (cgp != END_OF_LIST(&Children)) {
 		cgp_temp = cgp;
 		cgp = (GUIObject*)GET_NEXT(cgp);
-
 		delete cgp_temp;
 	}
 
@@ -979,9 +797,10 @@ void GUIObject::DeleteChildren(GUIObject* exception)
 
 GUIObject* GUIObject::AddChildInternal(GUIObject *cgp)
 {
-	if(cgp == NULL)
+	if (cgp == NULL) {
 		return NULL;
-	
+	}
+
 	cgp->Style |= GS_INTERNALCHILD;
 
 	//Add to end of child list
@@ -1009,12 +828,14 @@ GUIObject* GUIObject::AddChildInternal(GUIObject *cgp)
 
 GUIObject* GUIObject::AddChild(GUIObject* cgp)
 {
-	if(cgp == NULL)
+	if (cgp == NULL) {
 		return NULL;
+	}
 	
 	//AddInternalChild must be used
-	if(cgp->Style & GS_INTERNALCHILD)
+	if (cgp->Style & GS_INTERNALCHILD) {
 		return NULL;
+	}
 
 	//Add to end of child list
 	list_append(&Children, cgp);
@@ -1035,26 +856,25 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	cgp->GetOIECoords(&cgp->Coords[0], &cgp->Coords[1], &cgp->Coords[2], &cgp->Coords[3]);
 	//In case we need to resize
 	cgp->OnRefreshSize();
-	
+
 	return cgp;
 }
 
 void GUIObject::Delete()
 {
-	if(OwnerScreen != NULL)
+	if (OwnerScreen != NULL) {
 		OwnerScreen->DeleteObject(this);
-	else
+	} else {
 		delete this;
+	}
 }
 
 void GUIObject::OnDraw(float frametime)
 {
 	DoDraw(frametime);
-	if(!(Style & GS_HIDDEN))
-	{
+	if (!(Style & GS_HIDDEN)) {
 		GUIObject *cgp_prev;
-		for(GUIObject* cgp = (GUIObject*)GET_LAST(&Children); cgp != END_OF_LIST(&Children); cgp = cgp_prev)
-		{
+		for (GUIObject* cgp = (GUIObject*)GET_LAST(&Children); cgp != END_OF_LIST(&Children); cgp = cgp_prev) {
 			cgp_prev = (GUIObject*)GET_PREV(cgp);
 			cgp->OnDraw(frametime);
 		}
@@ -1068,97 +888,75 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 	GUIObject *cgp_prev;	//Elements will move themselves to the end of the list if they become active
 	GUIObject *cgp = (GUIObject*)GET_LAST(&Children);
 
-	for ( ; (cgp != NULL) && (cgp != END_OF_LIST(&Children)); cgp = cgp_prev)
-	{
+	for ( ; (cgp != NULL) && (cgp != END_OF_LIST(&Children)); cgp = cgp_prev) {
 		cgp_prev = (GUIObject*)GET_PREV(cgp);
 		cgp->LastStatus = cgp->Status;
 		cgp->Status = 0;
 
-		if(Status & GST_MOUSE_OVER)
-		{
-			if(OwnerSystem->GetMouseX() >= cgp->Coords[0]
+		if (Status & GST_MOUSE_OVER) {
+			if (OwnerSystem->GetMouseX() >= cgp->Coords[0]
 				&& OwnerSystem->GetMouseX() <= cgp->Coords[2]
 				&& OwnerSystem->GetMouseY() >= cgp->Coords[1]
-				&& OwnerSystem->GetMouseY() <= cgp->Coords[3])
-			{
+				&& OwnerSystem->GetMouseY() <= cgp->Coords[3]) {
 				cgp->Status |= (Status & GST_MOUSE_STATUS);
 			}
 		}
-		if(cgp == GET_LAST(&Children))
-		{
+		if (cgp == GET_LAST(&Children)) {
 			cgp->Status |= (Status & GST_KEYBOARD_STATUS);
 		}
 		cgp->OnFrame(frametime, &Status);
 	}
 
-	if(Status)
-	{
+	if (Status) {
 		//MOUSE OVER
-		if(Status & GST_MOUSE_OVER)
-		{
+		if (Status & GST_MOUSE_OVER) {
 			rval = DoMouseOver(frametime);
 
-			/*if(rval == OF_DESTROYED)
-				return OF_DESTROYED;*/
-			if(rval == OF_TRUE)
+			if (rval == OF_TRUE) {
 				(*unused_queue) &= ~GST_MOUSE_OVER;
+			}
 		}
 
 		//MOUSE DOWN
-		if(Status & GST_MOUSE_PRESS)
-		{
+		if (Status & GST_MOUSE_PRESS) {
 			rval = DoMouseDown(frametime);
 
-			/*if(rval == OF_DESTROYED)
-				return OF_DESTROYED;*/
-			if(rval == OF_TRUE)
+			if (rval == OF_TRUE) {
 				(*unused_queue) &= ~(GST_MOUSE_LEFT_BUTTON | GST_MOUSE_RIGHT_BUTTON | GST_MOUSE_MIDDLE_BUTTON);
+			}
 		}
 
 		//MOUSE UP
-		if((LastStatus & GST_MOUSE_PRESS) && !(OwnerSystem->GetStatus() & GST_MOUSE_PRESS))
-		{
+		if ((LastStatus & GST_MOUSE_PRESS) && !(OwnerSystem->GetStatus() & GST_MOUSE_PRESS)) {
 			rval = DoMouseUp(frametime);
 
-			/*if(rval == OF_DESTROYED)
-				return OF_DESTROYED;*/
-			if(rval == OF_TRUE)
+			if (rval == OF_TRUE) {
 				(*unused_queue) &= ~(GST_MOUSE_LEFT_BUTTON | GST_MOUSE_RIGHT_BUTTON | GST_MOUSE_MIDDLE_BUTTON);
+			}
 		}
 
 		//KEY STATE
-		if((Status & GST_KEYBOARD_CTRL) || (Status & GST_KEYBOARD_ALT) || (Status & GST_KEYBOARD_SHIFT))
-		{
+		if ((Status & GST_KEYBOARD_CTRL) || (Status & GST_KEYBOARD_ALT) || (Status & GST_KEYBOARD_SHIFT)) {
 			rval = DoKeyState(frametime);
 
-			/*if(rval == OF_DESTROYED)
-				return OF_DESTROYED;*/
-			if(rval == OF_TRUE)
+			if (rval == OF_TRUE) {
 				(*unused_queue) &= ~(GST_KEYBOARD_CTRL | GST_KEYBOARD_ALT | GST_KEYBOARD_SHIFT);
+			}
 		}
 
 		//KEYPRESS
-		if(Status & GST_KEYBOARD_KEYPRESS)
-		{
+		if (Status & GST_KEYBOARD_KEYPRESS) {
 			rval = DoKeyPress(frametime);
 
-			/*if(rval == OF_DESTROYED)
-				return OF_DESTROYED;*/
-			if(rval == OF_TRUE)
+			if (rval == OF_TRUE) {
 				(*unused_queue) &= ~GST_KEYBOARD_KEYPRESS;
+			}
 		}
 	}
 
-	if(!(Status & GST_MOUSE_OVER) && (LastStatus & GST_MOUSE_OVER))
-	{
+	if (!(Status & GST_MOUSE_OVER) && (LastStatus & GST_MOUSE_OVER)) {
 		rval = DoMouseOut(frametime);
 	}
-
-	/*if(rval == OF_DESTROYED)
-				return OF_DESTROYED;*/
-
-	/*if(!child_keypress && (Status & GST_KEY_PRESSED))
-		rval = DoKeyPress(OwnerSystem->CurrentKeyChar,frametime);*/
 
 	return DoFrame(frametime);
 }
@@ -1174,8 +972,7 @@ void GUIObject::OnMove(int dx, int dy)
 	ChildCoords[2]+=dx;
 	ChildCoords[3]+=dy;
 
-	for(GUIObject *cgp = (GUIObject*)GET_FIRST(&Children); cgp != END_OF_LIST(&Children); cgp = (GUIObject*)GET_NEXT(cgp))
-	{
+	for (GUIObject *cgp = (GUIObject*)GET_FIRST(&Children); cgp != END_OF_LIST(&Children); cgp = (GUIObject*)GET_NEXT(cgp)) {
 		cgp->OnMove(dx, dy);
 	}
 
@@ -1184,22 +981,21 @@ void GUIObject::OnMove(int dx, int dy)
 
 int GUIObject::GetCIECoords(int id, int *x, int *y)
 {
-	if(InfoEntry!=NULL)
-	{
+	if (InfoEntry!=NULL) {
 		int rv = InfoEntry->GetCoords(id, x, y);
-		if(rv & CIE_GC_X_SET)
-		{
-			if(*x < 0)
+		if (rv & CIE_GC_X_SET) {
+			if (*x < 0) {
 				*x += Coords[2];
-			else
+			} else {
 				*x += Coords[0];
+			}
 		}
-		if(rv & CIE_GC_Y_SET)
-		{
-			if(*y < 0)
+		if (rv & CIE_GC_Y_SET) {
+			if (*y < 0) {
 				*y += Coords[3];
-			else
+			} else {
 				*y += Coords[1];
+			}
 		}
 
 		return rv;
@@ -1210,50 +1006,44 @@ int GUIObject::GetCIECoords(int id, int *x, int *y)
 
 int GUIObject::GetOIECoords(int *x1, int *y1, int *x2, int *y2)
 {
-	if(InfoEntry != NULL)
-	{
+	if (InfoEntry != NULL) {
 		int rv = InfoEntry->GetObjectCoords(x1, y1, x2, y2);
-		if(Parent != NULL)
-		{
-			if(rv & CIE_GC_X_SET)
-			{
-				if(*x1 < 0)
+		if (Parent != NULL) {
+			if (rv & CIE_GC_X_SET) {
+				if (*x1 < 0) {
 					*x1 += Parent->ChildCoords[2];
-				else
+				} else {
 					*x1 += Parent->ChildCoords[0];
+				}
 			}
-			if(rv & CIE_GC_Y_SET)
-			{
-				if(*y1 < 0)
+			if (rv & CIE_GC_Y_SET) {
+				if (*y1 < 0) {
 					*y1 += Parent->ChildCoords[3];
-				else
+				} else {
 					*y1 += Parent->ChildCoords[1];
+				}
 			}
-		}
-		else
-		{
-			if(rv & CIE_GC_X_SET)
-			{
-				if(*x1 < 0)
+		} else {
+			if (rv & CIE_GC_X_SET) {
+				if (*x1 < 0) {
 					*x1 += gr_screen.clip_right;
-				else
+				} else {
 					*x1 += gr_screen.clip_left;
+				}
 			}
-			if(rv & CIE_GC_Y_SET)
-			{
-				if(*y1 < 0)
+			if (rv & CIE_GC_Y_SET) {
+				if (*y1 < 0) {
 					*y1 += gr_screen.clip_bottom;
-				else
+				} else {
 					*y1 += gr_screen.clip_top;
+				}
 			}
 		}
-		if(rv & CIE_GC_W_SET)
-		{
+		if (rv & CIE_GC_W_SET) {
 			*x2 = *x1 + *x2;
 			Style |= GS_NOAUTORESIZEX;
 		}
-		if(rv & CIE_GC_H_SET)
-		{
+		if (rv & CIE_GC_H_SET) {
 			*y2 = *y1 + *y2;
 			Style |= GS_NOAUTORESIZEY;
 		}
@@ -1267,8 +1057,9 @@ int GUIObject::GetOIECoords(int *x1, int *y1, int *x2, int *y2)
 //Call this after an object's type is set to enable the GUIObject CIE functions
 void GUIObject::SetCIPointer()
 {
-	if(OwnerScreen)
+	if (OwnerScreen) {
 		InfoEntry=OwnerScreen->GetObjectClassInfo(this);
+	}
 }
 
 void GUIObject::SetPosition(int x, int y)
@@ -1277,22 +1068,26 @@ void GUIObject::SetPosition(int x, int y)
 	dx = x - Coords[0];
 	dy = y - Coords[1];
 
-	if(dx == 0 && dy == 0)
+	if (dx == 0 && dy == 0) {
 		return;
+	}
 
-	if(Parent != NULL)
-	{
+	if (Parent != NULL) {
 		//Don't let stuff get moved outside client window
-		if(Coords[2] + dx > Parent->Coords[2])
+		if (Coords[2] + dx > Parent->Coords[2]) {
 			dx = Parent->Coords[2] - Coords[2];
-		if(Coords[3] + dy > gr_screen.clip_bottom)
+		}
+		if (Coords[3] + dy > gr_screen.clip_bottom) {
 			dy = Parent->Coords[3] - Coords[3];
+		}
 
 		//Check these last, so we're sure we can move stuff around still
-		if(Coords[0] + dx < gr_screen.clip_left)
+		if (Coords[0] + dx < gr_screen.clip_left) {
 			dx = Parent->Coords[0] - Coords[0];
-		if(Coords[1] + dy < gr_screen.clip_top)
+		}
+		if (Coords[1] + dy < gr_screen.clip_top) {
 			dy = Parent->Coords[1] - Coords[1];
+		}
 	}
 
 	OnMove(dx, dy);
@@ -1307,139 +1102,138 @@ int Window::DoRefreshSize()
 	int CornerWidths[4];
 
 	//Determine left border's width
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &BorderSizes[0], NULL);
-	else
+	} else {
 		BorderSizes[0] = W_BORDERHEIGHT;
+	}
 
 	//Determine right border's width
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &BorderSizes[2], NULL);
-	else
+	} else {
 		BorderSizes[2] = W_BORDERWIDTH;
+	}
 
 	//Determine top border height
 	bool custom_top = true;
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL), NULL, &BorderSizes[1]);
-	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR)))
+	} else if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), NULL, &BorderSizes[1]);
-	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM)))
+	} else if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), NULL,  &BorderSizes[1]);
-	else
-	{
+	} else {
 		custom_top = false;
 		BorderSizes[1] = W_BORDERHEIGHT;
 	}
 
 	//Determine bottom border height
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &BorderSizes[3]);
-	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR)))
+	} else if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), NULL, &BorderSizes[3]);
-	else if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
+	} else if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), NULL,  &BorderSizes[3]);
-	else
+	} else {
 		BorderSizes[3] = W_BORDERHEIGHT;
+	}
 
 
 	//Determine corner sizes
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[0], NULL);
-	else
+	} else {
 		CornerWidths[0] = BorderSizes[0];
+	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR))){ 
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &CornerWidths[1], NULL);
-	else
+	} else {
 		CornerWidths[1] = BorderSizes[2];
+	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[2], NULL);
-	else
+	} else {
 		CornerWidths[2] = BorderSizes[0];
+	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR)))
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), &CornerWidths[3], NULL);
-	else
+	} else {
 		CornerWidths[3] = BorderSizes[2];
+	}
 
 
 	//Do child stuff
 	ChildCoords[0] = Coords[0] + BorderSizes[0];
-	if(custom_top || (Style & WS_NOTITLEBAR))
+	if (custom_top || (Style & WS_NOTITLEBAR)) {
 		ChildCoords[1] = Coords[1] + BorderSizes[1];	//Set earlier on
-	else
+	} else {
 		ChildCoords[1] = Coords[1] + gr_get_font_height() + 5 + 3*W_BORDERHEIGHT;
+	}
 	ChildCoords[2] = Coords[2] - BorderSizes[2];
 	ChildCoords[3] = Coords[3] - BorderSizes[3];
 
-	if(!(Style & GS_NOAUTORESIZEX))
-	{
+	if (!(Style & GS_NOAUTORESIZEX)) {
 		ChildCoords[2] = Coords[2] = 0;
 	}
-	if(!(Style & GS_NOAUTORESIZEY))
-	{
+	if (!(Style & GS_NOAUTORESIZEY)) {
 		ChildCoords[3] = Coords[3] = 0;
 	}
 
-	for(GUIObject *cgp = (GUIObject*)GET_FIRST(&Children); cgp != END_OF_LIST(&Children); cgp = (GUIObject*)GET_NEXT(cgp))
-	{
+	for (GUIObject *cgp = (GUIObject*)GET_FIRST(&Children); cgp != END_OF_LIST(&Children); cgp = (GUIObject*)GET_NEXT(cgp)) {
 		//SetPosition children around so they're within the upper-left corner of dialog
-		if(cgp->Coords[0] < ChildCoords[0])
+		if (cgp->Coords[0] < ChildCoords[0]) {
 			cgp->SetPosition(ChildCoords[0], cgp->Coords[1] + BorderSizes[0]);
-		if(cgp->Coords[1] < ChildCoords[1])
+		}
+		if (cgp->Coords[1] < ChildCoords[1]) {
 			cgp->SetPosition(cgp->Coords[0], Coords[1] + BorderSizes[1]);
+		}
 
 		//Resize window to fit children
-		if(cgp->Coords[2] > ChildCoords[2] && !(Style & GS_NOAUTORESIZEX))
-		{
+		if (cgp->Coords[2] > ChildCoords[2] && !(Style & GS_NOAUTORESIZEX)) {
 			ChildCoords[2] = cgp->Coords[2];
 			Coords[2] = cgp->Coords[2] + BorderSizes[2];
 		}
-		if(cgp->Coords[3] > ChildCoords[3] && !(Style & GS_NOAUTORESIZEY))
-		{
+		if (cgp->Coords[3] > ChildCoords[3] && !(Style & GS_NOAUTORESIZEY)) {
 			ChildCoords[3] = cgp->Coords[3];
 			Coords[3] = cgp->Coords[3] + BorderSizes[3];
 		}
 	}
 
 	//Find caption coordinates
-	if(!(Style & WS_NOTITLEBAR))
-	{
+	if (!(Style & WS_NOTITLEBAR)) {
 		int close_w = 0,close_h = 0;
 		int hide_w = 0, hide_h = 0;
 
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE))) {
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE))) {
 			IMG_INFO(GetCIEImageHandle(WCI_CLOSE), &close_w, &close_h);
 		} else {
 			gr_get_string_size(&close_w, &close_h, "X");
 		}
 
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE))) {
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE))) {
 			IMG_INFO(GetCIEImageHandle(WCI_HIDE), &hide_w, &hide_h);
 		} else {
 			gr_get_string_size(&hide_w, &hide_h, "-");
 		}
 		
 		int caption_min_size;
-		if(Caption.size() > 0)
-		{
+		if (Caption.size() > 0) {
 			gr_get_string_size(&w, &h, (char *)Caption.c_str());
 			caption_min_size = w + close_w + hide_w + 5;
-		}
-		else
-		{
+		} else {
 			caption_min_size = close_w + hide_w;
 		}
 
-		if((Coords[2] - Coords[0]) < (caption_min_size))
+		if ((Coords[2] - Coords[0]) < (caption_min_size)) {
 				Coords[2] = Coords[0] + caption_min_size + BorderSizes[0] + BorderSizes[2];
+		}
 
-		if(Caption.size() > 0)
-		{
-			if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION)))
-			{
+		if (Caption.size() > 0) {
+			if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION))) {
 				int cw, ch;
 				CaptionCoords[0] = Coords[0] + BorderSizes[0];
 				CaptionCoords[1] = Coords[1] + BorderSizes[1];
@@ -1450,9 +1244,7 @@ int Window::DoRefreshSize()
 				num = (float) w / cw;
 				CaptionRectList = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[1], w, ch, 0, 0, 1.0f, 1.0f);
 				h = ch;
-			}
-			else
-			{
+			} else {
 				h += 5;
 				CaptionCoords[0] = Coords[0] + (((Coords[2]-Coords[0]) - w - (close_w + hide_w)) / 2);
 				CaptionCoords[1] = Coords[1] + BorderSizes[1];
@@ -1477,28 +1269,24 @@ int Window::DoRefreshSize()
 	}
 
 	//Do bitmap stuff
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM), &w, &h);
 		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
 		BorderRectLists[CIE_HANDLE_TM] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[1], fl2i(w*num),h,0,0,num,1.0f);
 		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
 	}
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), &w, &h);
 		num = (float)((Coords[2]-CornerWidths[3])-(Coords[0]+CornerWidths[2])) / (float)w;
 		BorderRectLists[CIE_HANDLE_BM] = bitmap_rect_list(Coords[0] + CornerWidths[2], Coords[3]-h, fl2i(w*num),h,0,0,num,1.0f);
 		//gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
 	}
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML), &w, &h);
 		num = (float)((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / (float)h;
 		BorderRectLists[CIE_HANDLE_ML] = bitmap_rect_list(Coords[0], Coords[1] + BorderSizes[1], w,fl2i(h*num),0,0,1.0f,num);
 	}
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR), &w, &h);
 		num = (float)((Coords[3]-BorderSizes[3])-(Coords[1]+BorderSizes[1])) / (float)h;
 		BorderRectLists[CIE_HANDLE_MR] = bitmap_rect_list(Coords[2]-w, Coords[1] + BorderSizes[1], w,fl2i(h*num),0,0,1.0f,num);
@@ -1509,25 +1297,23 @@ int Window::DoRefreshSize()
 
 int Window::DoMouseOver(float frametime)
 {
-	if(OwnerSystem->GetMouseX() >= HideCoords[0]
+	if (OwnerSystem->GetMouseX() >= HideCoords[0]
 		&& OwnerSystem->GetMouseX() <= HideCoords[2]
 		&& OwnerSystem->GetMouseY() >= HideCoords[1]
-		&& OwnerSystem->GetMouseY() <= HideCoords[3])
-	{
+		&& OwnerSystem->GetMouseY() <= HideCoords[3]) {
 		HideHighlight = true;
-	}
-	else
+	} else {
 		HideHighlight = false;
+	}
 
-	if(OwnerSystem->GetMouseX() >= CloseCoords[0]
+	if (OwnerSystem->GetMouseX() >= CloseCoords[0]
 		&& OwnerSystem->GetMouseX() <= CloseCoords[2]
 		&& OwnerSystem->GetMouseY() >= CloseCoords[1]
-		&& OwnerSystem->GetMouseY() <= CloseCoords[3])
-	{
+		&& OwnerSystem->GetMouseY() <= CloseCoords[3]) {
 		CloseHighlight = true;
-	}
-	else
+	} else {
 		CloseHighlight = false;
+	}
 
 	return OF_TRUE;
 }
@@ -1536,10 +1322,11 @@ int Window::DoMouseDown(float frametime)
 {
 	OwnerSystem->SetActiveObject(this);
 
-	if(Style & WS_NONMOVEABLE)
+	if (Style & WS_NONMOVEABLE) {
 		return OF_TRUE;
+	}
 
-	if((OwnerSystem->GetGraspedObject() == NULL)
+	if ((OwnerSystem->GetGraspedObject() == NULL)
 		&& (Status & GST_MOUSE_LEFT_BUTTON)
 		&& OwnerSystem->GetMouseX() >= CaptionCoords[0]
 		&& ((OwnerSystem->GetMouseX() < CaptionCoords[2]) || ((Style & WS_NOTITLEBAR) && OwnerSystem->GetMouseX() <= Coords[2]))
@@ -1556,31 +1343,26 @@ int Window::DoMouseDown(float frametime)
 
 int Window::DoMouseUp(float frametime)
 {
-	if (Style & WS_NONMOVEABLE)
+	if (Style & WS_NONMOVEABLE) {
 		return OF_TRUE;
+	}
 
-	if(CloseHighlight)
-	{
+	if (CloseHighlight) {
 		Delete();
 		return OF_TRUE;
 	}
 
-	if(HideHighlight)
-	{
-		if(Style & GS_HIDDEN)
-		{
+	if (HideHighlight) {
+		if (Style & GS_HIDDEN) {
 			Coords[3] = UnhiddenHeight;
 			Style &= ~GS_HIDDEN;
-		}
-		else
-		{
+		} else {
 			UnhiddenHeight = Coords[3];
 			Coords[3] = Coords[1] + (CaptionCoords[3] - CaptionCoords[1]) + BorderSizes[1] + BorderSizes[3];
 			Style |= GS_HIDDEN;
 		}
 
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
-		{
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM))) {
 			int h;
 			IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM), NULL, &h);
 			BorderRectLists[CIE_HANDLE_BM].screen_rect.y = Coords[3] - h;
@@ -1614,15 +1396,13 @@ void Window::DoMove(int dx, int dy)
 	CaptionCoords[3] += dy;
 
 	// change the hidden height too if needed
-	if (Style & GS_HIDDEN)
-	{
+	if (Style & GS_HIDDEN) {
 		UnhiddenHeight += dy;
 	}
 
 	//Handle moving the border around
 	uint i;
-	for(i = 0; i < 8; i++)
-	{
+	for (i = 0; i < 8; i++) {
 		BorderRectLists[i].screen_rect.x += dx;
 		BorderRectLists[i].screen_rect.y += dy;
 	}
@@ -1647,8 +1427,7 @@ void Window::DoDraw(float frametime)
 	int w, h;
 
 	// if the window has no title bar, and no content, then don't draw any of it
-	if ( (Style & WS_NOTITLEBAR) && !HasChildren() )
-	{
+	if ( (Style & WS_NOTITLEBAR) && !HasChildren() ) {
 		return;
 	}
 
@@ -1658,127 +1437,101 @@ void Window::DoDraw(float frametime)
 
 	gr_set_color_fast(&Color_text_normal);
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TL));
 		IMG_DRAW(Coords[0], Coords[1]);
 	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR));
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TR), &w, NULL);
 		IMG_DRAW(Coords[2] - w, Coords[1]);
 	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL))) {
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL), NULL, &h);
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BL));
 		IMG_DRAW(Coords[0], Coords[3] - h);
 	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR));
 		IMG_INFO(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BR), &w, &h);
 		//IMG_DRAW(Coords[2] - w, Coords[3] - h, false);
 		IMG_DRAW(Coords[2]-w, Coords[3] - h);
 	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_TM));
 		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_TM], 1, false);
-	}
-	else
-	{
+	} else {
 		gr_line(Coords[0] + BorderSizes[0], Coords[1], Coords[2] - BorderSizes[2], Coords[1], false);
 	}
 
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM))) {
 		IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM));
 		gr_bitmap_list(&BorderRectLists[CIE_HANDLE_BM], 1, false);
-	}
-	else
-	{
+	} else {
 		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3], false);
 	}
 
-	if(!(Style & GS_HIDDEN))
-	{
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML)))
-		{
+	if (!(Style & GS_HIDDEN)) {
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML))) {
 			IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_ML));
 			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_ML], 1, false);
-		}
-		else
-		{
+		} else {
 			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3], false);
 		}
 
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
-		{
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR))) {
 			IMG_SET(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR));
 			gr_bitmap_list(&BorderRectLists[CIE_HANDLE_MR], 1, false);
-		}
-		else
-		{
+		} else {
 			gr_line(Coords[2], Coords[1] + BorderSizes[1], Coords[2], Coords[3] - BorderSizes[3], false);
 		}
 	}
 
-	if(!(Style & WS_NOTITLEBAR))
-	{
+	if (!(Style & WS_NOTITLEBAR)) {
 		//Draw the caption background
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION)))
-		{
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION))) {
 			IMG_SET(GetCIEImageHandle(WCI_CAPTION));
 			gr_bitmap_list(&CaptionRectList, 1, false);
-		}
-		else
-		{
+		} else {
 			draw_open_rect(Coords[0], Coords[1], Coords[2], CaptionCoords[3]);
 		}
 
 		//Close button
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE)))
-		{
-			if(CloseHighlight && IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M)))
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE))) {
+			if (CloseHighlight && IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M))) {
 				IMG_SET(GetCIEImageHandle(WCI_CLOSE, CIE_HANDLE_M));
-			else
+			} else {
 				IMG_SET(GetCIEImageHandle(WCI_CLOSE));
-
+			}
 			IMG_DRAW(CloseCoords[0], CloseCoords[1]);
-		}
-		else
-		{
-			if(CloseHighlight)
+		} else {
+			if (CloseHighlight) {
 				gr_set_color_fast(&Color_text_active);
-			else
+			} else {
 				gr_set_color_fast(&Color_text_normal);
-		
+			}
 			gr_string(CloseCoords[0], CloseCoords[1], "X", false);
 		}
 		
 
 		//Hide button
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE)))
-		{
-			if(HideHighlight && IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M)))
+		if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE))) {
+			if (HideHighlight && IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M))) {
 				IMG_SET(GetCIEImageHandle(WCI_HIDE, CIE_HANDLE_M));
-			else
+			} else {
 				IMG_SET(GetCIEImageHandle(WCI_HIDE));
+			}
 			IMG_DRAW(HideCoords[0], HideCoords[1]);
-		}
-		else
-		{
-			if(HideHighlight)
+		} else {
+			if (HideHighlight) {
 				gr_set_color_fast(&Color_text_active);
-			else
+			} else {
 				gr_set_color_fast(&Color_text_normal);
-
+			}
 			gr_string(HideCoords[0], HideCoords[1], "-", false);
 		}
 
@@ -1791,8 +1544,9 @@ void Window::DoDraw(float frametime)
 
 void Window::ClearContent()
 {
-	if ( !HasChildren() )
+	if ( !HasChildren() ) {
 		return;
+	}
 
 	LinkedList *cgp = GET_FIRST(&Children);
 	LinkedList *cgp_next;
@@ -1837,27 +1591,20 @@ Button::Button(std::string in_caption, int x_coord, int y_coord, void (*in_funct
 int Button::DoRefreshSize()
 {
 	int w, h;
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON))) {
 		IMG_INFO(GetCIEImageHandle(BCI_BUTTON), &w, &h);
-		if(!(Style & GS_NOAUTORESIZEX))
-		{
+		if (!(Style & GS_NOAUTORESIZEX)) {
 			Coords[2] = Coords[0] + w;
 		}
-		if(!(Style & GS_NOAUTORESIZEY))
-		{
+		if (!(Style & GS_NOAUTORESIZEY)) {
 			Coords[3] = Coords[1] + h;
 		}
-	}
-	else
-	{
+	} else {
 		gr_get_string_size(&w, &h, (char *)Caption.c_str());
-		if(!(Style & GS_NOAUTORESIZEX))
-		{
+		if (!(Style & GS_NOAUTORESIZEX)) {
 			Coords[2] = Coords[0] + w;
 		}
-		if(!(Style & GS_NOAUTORESIZEY))
-		{
+		if (!(Style & GS_NOAUTORESIZEY)) {
 			Coords[3] = Coords[1] + h;
 		}
 	}
@@ -1867,27 +1614,25 @@ int Button::DoRefreshSize()
 
 void Button::DoDraw(float frametime)
 {
-	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON)))
-	{
+	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON))) {
 		IMG_SET(GetCIEImageHandle(BCI_BUTTON));
 
-		if((Status & GST_MOUSE_OVER) && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_M)))
+		if ((Status & GST_MOUSE_OVER) && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_M))) {
 			IMG_SET(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_M));
-		else if((Status & GST_MOUSE_LEFT_BUTTON) && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_C)))
+		} else if ((Status & GST_MOUSE_LEFT_BUTTON) && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_C))) {
 			IMG_SET(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_C));
-		else if((Style & BS_STICKY) && IsDown && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_S)))
+		} else if((Style & BS_STICKY) && IsDown && IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_S))) {
 			IMG_SET(GetCIEImageHandle(BCI_BUTTON, CIE_HANDLE_S));
-
+		}
 		IMG_DRAW(Coords[0], Coords[1]);
-	}
-	else
-	{
-		if(Status == 0)
+	} else {
+		if (Status == 0) {
 			gr_set_color_fast(&Color_text_normal);
-		else if(Status & GST_MOUSE_OVER)
+		} else if (Status & GST_MOUSE_OVER) {
 			gr_set_color_fast(&Color_text_active);
-		else
+		} else {
 			gr_set_color_fast(&Color_text_selected);
+		}
 		draw_open_rect(Coords[0], Coords[1], Coords[2], Coords[3], false);
 
 		int half_x, half_y;
@@ -1902,29 +1647,32 @@ int Button::DoMouseDown(float frametime)
 {
 	OwnerSystem->SetActiveObject(this);
 
-	if(!(Style & BS_STICKY))
+	if (!(Style & BS_STICKY)) {
 		IsDown = true;
+	}
 	return OF_TRUE;
 }
 
 int Button::DoMouseUp(float frametime)
 {
-	if(function != NULL)
-	{
+	if (function != NULL) {
 		function(this);
 	}
-	if(!(Style & BS_STICKY))
+
+	if (!(Style & BS_STICKY)) {
 		IsDown = false;
-	else
+	} else {
 		IsDown = !IsDown;
+	}
 
 	return OF_TRUE;
 }
 
 int Button::DoMouseOut(float frametime)
 {
-	if(!(Style & BS_STICKY))
+	if (!(Style & BS_STICKY)) {
 		IsDown = false;
+	}
 
 	return OF_TRUE;
 }
@@ -1946,8 +1694,7 @@ void TreeItem::ClearAllItems()
 {
 	LinkedList* cgp = GET_FIRST(&Children);
 	LinkedList* cgp_next;
-	for(; cgp != END_OF_LIST(&Children); cgp = cgp_next)
-	{
+	for (; cgp != END_OF_LIST(&Children); cgp = cgp_next) {
 		cgp_next = GET_NEXT(cgp);
 		delete cgp;
 	}
@@ -1968,34 +1715,28 @@ void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
 	int w, h;
 
 	int temp_largest = DrawData[1];
-	for(TreeItem* tip = (TreeItem*)GET_FIRST(items); tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip))
-	{
-		if(!DrawData[3])
-		{
+	for (TreeItem* tip = (TreeItem*)GET_FIRST(items); tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip)) {
+		if (!DrawData[3]) {
 			gr_get_string_size(&w, &h, (char*)tip->Name.c_str());
-			if((w + DrawData[0]) > temp_largest)
+			if ((w + DrawData[0]) > temp_largest) {
 					temp_largest = w + DrawData[0];
+			}
 
 			//This should really be moved to where we handle the scrolling code
 			//I'm not doing that right now. :)
 			//Or at least this should be called from that
-			if(((DrawData[2] + h) > Coords[3] && (Style & GS_NOAUTORESIZEY))
-				|| (temp_largest > Coords[2] && (Style & GS_NOAUTORESIZEX))
-				//|| ((Coords[0] + w) > OwnerSystem->Guiobjects.Coords[2])
-				//|| ((Coords[1] + h) > OwnerSystem->Guiobjects.Coords[3])
-				)
-			{
+			if ( ((DrawData[2] + h) > Coords[3] && (Style & GS_NOAUTORESIZEY)) || (temp_largest > Coords[2] && (Style & GS_NOAUTORESIZEX)) ) {
 				DrawData[3] = 1;
 				tip->ShowThis = false;
-			}
-			else
+			} else {
 				tip->ShowThis = true;
+			}
 
 			//Do we care?
-			if(tip->ShowThis)
-			{
-				if((w + DrawData[0]) > DrawData[1])
+			if (tip->ShowThis) {
+				if ((w + DrawData[0]) > DrawData[1]) {
 					DrawData[1] = w + DrawData[0];
+				}
 
 				tip->Coords[0] = Coords[0] + DrawData[0];
 				tip->Coords[1] = Coords[1] + DrawData[2];
@@ -2004,8 +1745,7 @@ void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
 
 				DrawData[2] += h;
 
-				if(NOT_EMPTY(&tip->Children) && tip->ShowChildren)
-				{
+				if (NOT_EMPTY(&tip->Children) && tip->ShowChildren) {
 					//Indent
 					DrawData[0] += TI_INDENT_PER_LEVEL;
 					CalcItemsSize((TreeItem*)&tip->Children, DrawData);
@@ -2013,8 +1753,7 @@ void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
 				}
 			}
 		}
-		if(DrawData[3] || !tip->ShowThis)
-		{
+		if (DrawData[3] || !tip->ShowThis) {
 			tip->ShowThis = false;
 			tip->ShowChildren = false;
 			tip->Coords[0] = tip->Coords[1] = tip->Coords[2] = tip->Coords[3] = -1;
@@ -2033,34 +1772,23 @@ int Tree::DoRefreshSize()
 	CalcItemsSize(&Items, DrawData);
 
 	//CalcItemsSize takes into account limited height/width
-	if(!(Style & GS_NOAUTORESIZEX))
-	{
+	if (!(Style & GS_NOAUTORESIZEX)) {
 		Coords[2] = Coords[0] + DrawData[1] + TI_BORDER_WIDTH;
 	}
-	if(!(Style & GS_NOAUTORESIZEY))
-	{
+	if (!(Style & GS_NOAUTORESIZEY)) {
 		Coords[3] = Coords[1] + DrawData[2] + TI_BORDER_HEIGHT;
-		if(Parent != NULL)
-		{
-			if(DrawData[2] >= Parent->ChildCoords[3])
-			{
-				//The parent must resize.
+		if (Parent != NULL) {
+			if(DrawData[2] >= Parent->ChildCoords[3]) {
 			}
 		}
 	}
-/*
-	if(!(Style & GS_NOAUTORESIZEX))
-	{
-		Coords[2] = Coords[0] + DrawData[1];
-	}
-*/
+
 	return OF_TRUE;
 }
 
 Tree::Tree(std::string in_name, int x_coord, int y_coord, void* in_associateditem, int x_width, int y_height, int in_style)
 :GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
 {
-
 	AssociatedItem = in_associateditem;
 
 	SelectedItem = NULL;
@@ -2072,21 +1800,19 @@ Tree::Tree(std::string in_name, int x_coord, int y_coord, void* in_associatedite
 
 void Tree::DrawItems(TreeItem *items)
 {
-	for(TreeItem* tip = (TreeItem*)GET_FIRST(items); tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip))
-	{
-		if(tip->ShowThis)
-		{
-			if(SelectedItem == tip)
+	for (TreeItem* tip = (TreeItem*)GET_FIRST(items); tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip)) {
+		if (tip->ShowThis) {
+			if (SelectedItem == tip) {
 				gr_set_color_fast(&Color_text_selected);
-			else if(HighlightedItem == tip)
+			} else if (HighlightedItem == tip) {
 				gr_set_color_fast(&Color_text_active);
-			else
+			} else {
 				gr_set_color_fast(&Color_text_normal);
+			}
 
 			gr_string(tip->Coords[0], tip->Coords[1], (char*)tip->Name.c_str(), false);
 
-			if(NOT_EMPTY(&tip->Children) && tip->ShowChildren)
-			{
+			if (NOT_EMPTY(&tip->Children) && tip->ShowChildren) {
 				DrawItems((TreeItem*)&tip->Children);
 			}
 		}
@@ -2096,8 +1822,9 @@ void Tree::DrawItems(TreeItem *items)
 void Tree::DoDraw(float frametime)
 {
 
-	if(EMPTY(&Items))
+	if (EMPTY(&Items)) {
 		return;
+	}
 
 	DrawItems(&Items);
 
@@ -2109,32 +1836,31 @@ TreeItem* Tree::HitTest(TreeItem *items)
 {
 	TreeItem *hti = NULL;	//Highlighted item
 
-	for(TreeItem *tip = (TreeItem*)GET_FIRST(items);tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip))
-	{
-		if(OwnerSystem->GetMouseX() >= tip->Coords[0]
+	for (TreeItem *tip = (TreeItem*)GET_FIRST(items);tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip)) {
+		if (OwnerSystem->GetMouseX() >= tip->Coords[0]
 			&& OwnerSystem->GetMouseX() <= tip->Coords[2]
 			&& OwnerSystem->GetMouseY() >= tip->Coords[1]
-			&& OwnerSystem->GetMouseY() <= tip->Coords[3])
-			{
-				hti = tip;
-			}
+			&& OwnerSystem->GetMouseY() <= tip->Coords[3]) {
 
-			if(hti != NULL)
-				return hti;
-			else if(NOT_EMPTY(&tip->Children) && tip->ShowChildren)
-				hti = HitTest((TreeItem*)&tip->Children);
+			hti = tip;
+		}
 
-			if(hti != NULL)
-				return hti;
+		if (hti != NULL) {
+			return hti;
+		} else if (NOT_EMPTY(&tip->Children) && tip->ShowChildren) {
+			hti = HitTest((TreeItem*)&tip->Children);
+		}
+
+		if (hti != NULL) {
+			return hti;
+		}
 	}
-
 	return hti;
 }
 
 int Tree::DoMouseOver(float frametime)
 {
 	HighlightedItem = HitTest(&Items);
-
 	return OF_TRUE;
 }
 
@@ -2148,16 +1874,13 @@ int Tree::DoMouseUp(float frametime)
 {
 	OwnerSystem->SetActiveObject(this);
 
-	if(HighlightedItem != NULL)
-	{
+	if (HighlightedItem != NULL) {
 		SelectedItem = HighlightedItem;
 		SelectedItem->ShowChildren = !SelectedItem->ShowChildren;
-		if(NOT_EMPTY(&SelectedItem->Children))
-		{
+		if (NOT_EMPTY(&SelectedItem->Children)) {
 			OnRefreshSize();	//Unfortunately
 		}
-		if(SelectedItem->Function != NULL)
-		{
+		if (SelectedItem->Function != NULL) {
 			SelectedItem->Function(this);
 		}
 	}
@@ -2167,17 +1890,16 @@ int Tree::DoMouseUp(float frametime)
 
 void Tree::MoveTreeItems(int dx, int dy, TreeItem *items)
 {
-	for(TreeItem *tip = (TreeItem*)GET_FIRST(items);tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip))
-	{
-		if(tip->ShowThis)
-		{
+	for (TreeItem *tip = (TreeItem*)GET_FIRST(items);tip != END_OF_LIST(items); tip = (TreeItem*)GET_NEXT(tip)) {
+		if (tip->ShowThis) {
 			tip->Coords[0] += dx;
 			tip->Coords[1] += dy;
 			tip->Coords[2] += dx;
 			tip->Coords[3] += dy;
 
-			if(NOT_EMPTY(&tip->Children) && tip->ShowChildren)
+			if (NOT_EMPTY(&tip->Children) && tip->ShowChildren) {
 				MoveTreeItems(dx, dy, (TreeItem*)&tip->Children);
+			}
 		}
 	}
 }
@@ -2197,10 +1919,11 @@ TreeItem* Tree::AddItem(TreeItem *parent, std::string in_name, int in_data, bool
 	ni->DeleteData = in_delete_data;
 	ni->Function = in_function;
 
-	if (parent != NULL)
+	if (parent != NULL) {
 		list_append(&parent->Children, ni);
-	else
+	} else {
 		list_append(&Items, ni);
+	}
 
 	OnRefreshSize();
 
@@ -2213,8 +1936,7 @@ void Tree::ClearItems()
 
 	LinkedList* cgp = GET_FIRST(&Items);
 	LinkedList* cgp_next;
-	for(; cgp != END_OF_LIST(&Items); cgp = cgp_next)
-	{
+	for (; cgp != END_OF_LIST(&Items); cgp = cgp_next) {
 		cgp_next = GET_NEXT(cgp);
 		delete cgp;
 	}
@@ -2224,62 +1946,56 @@ void Tree::ClearItems()
 int Text::DoRefreshSize()
 {
 	int width;
-	if(Style & GS_NOAUTORESIZEX)
+	if (Style & GS_NOAUTORESIZEX) {
 		width = Coords[2] - Coords[0];
-	else if(Parent != NULL && (Parent->Style & GS_NOAUTORESIZEX))
+	} else if (Parent != NULL && (Parent->Style & GS_NOAUTORESIZEX)) {
 		width = Parent->ChildCoords[2] - Coords[0];
-	else
+	} else {
 		width = gr_screen.clip_right - Coords[0];
+	}
 
 	NumLines = split_str((char*)Content.c_str(), width, LineLengths, LineStartPoints, MAX_TEXT_LINES);
 
 	//Find the shortest width we need to show all the shortened strings
 	int longest_width = 0;
 	int width_test;
-	for(int i = 0; i < NumLines; i++)
-	{
+	for (int i = 0; i < NumLines; i++) {
 		gr_get_string_size(&width_test, NULL, LineStartPoints[i], LineLengths[i]);
-		if(width_test > longest_width)
+		if (width_test > longest_width) {
 			longest_width = width_test;
+		}
 	}
-	if(longest_width < width)
+	if (longest_width < width) {
 		width = longest_width;
+	}
 
 	//Resize along the Y axis
-	if(Style & GS_NOAUTORESIZEY)
-	{
+	if (Style & GS_NOAUTORESIZEY) {
 		int new_height = (Coords[3] - Coords[1]) / gr_get_font_height();
 
-		if(new_height < NumLines)
+		if (new_height < NumLines) {
 			NumLines = new_height;
-	}
-	else
-	{
+		}
+	} else {
 		Coords[3] = Coords[1] + gr_get_font_height() * NumLines;
-		if(Parent != NULL)
-		{
-			if(Coords[3] >= Parent->ChildCoords[3] && (Parent->Style & GS_NOAUTORESIZEY))
-			{
+		if (Parent != NULL) {
+			if (Coords[3] >= Parent->ChildCoords[3] && (Parent->Style & GS_NOAUTORESIZEY)) {
 				Coords[3] = Coords[1] + (Parent->ChildCoords[3] - Coords[1]);
 				NumLines = (Coords[3] - Coords[1]) / gr_get_font_height();
 			}
 		}
 	}
 
-	if(!(Style & GS_NOAUTORESIZEX))
-	{
+	if (!(Style & GS_NOAUTORESIZEX)) {
 		Coords[2] = Coords[0] + width;
 	}
 
-	if(Style & T_EDITTABLE)
-	{
+	if (Style & T_EDITTABLE) {
 		ChildCoords[0] = Coords[0] + 1;
 		ChildCoords[1] = Coords[1] + 1;
 		ChildCoords[2] = Coords[2] - 1;
 		ChildCoords[3] = Coords[3] - 1;
-	}
-	else
-	{
+	} else {
 		ChildCoords[0] = Coords[0];
 		ChildCoords[1] = Coords[1];
 		ChildCoords[2] = Coords[2];
@@ -2293,41 +2009,36 @@ int Text::DoRefreshSize()
 int Text::DoMouseDown(float frametime)
 {
 	//Make this the active object
-	if(Style & T_EDITTABLE)
-	{
+	if (Style & T_EDITTABLE) {
 		OwnerSystem->SetActiveObject(this);
-
 		//For now, always set the cursor pos to the end
 		CursorPos = Content.size();
-
 		return OF_TRUE;
-	}
-	else
-	{
+	} else {
 		return OF_FALSE;
 	}
 }
 
 void Text::DoDraw(float frametime)
 {
-	if(OwnerSystem->GetActiveObject() != this)
+	if (OwnerSystem->GetActiveObject() != this) {
 		gr_set_color_fast(&Color_text_normal);
-	else
+	} else {
 		gr_set_color_fast(&Color_text_active);
+	}
 
-	if(Style & T_EDITTABLE)
-	{
+	if (Style & T_EDITTABLE) {
 		draw_open_rect(Coords[0], Coords[1], Coords[2], Coords[3]);
 	}
 
 	//Don't draw anything. Besides, it crashes
-	if(!Content.length())
+	if (!Content.length()) {
 		return;
+	}
 
 	int font_height = gr_get_font_height();
 
-	for(int i = 0; i < NumLines; i++)
-	{
+	for (int i = 0; i < NumLines; i++) {
 		gr_string(ChildCoords[0], ChildCoords[1] + (i*font_height), (char*)Content.substr(LineStartPoints[i] - Content.c_str(), LineLengths[i]).c_str(), false);
 	}
 }
@@ -2336,66 +2047,61 @@ extern int keypad_to_ascii(int c);
 
 int Text::DoKeyPress(float frametime)
 {
-	if(!(Style & T_EDITTABLE))
+	if (!(Style & T_EDITTABLE)) {
 		return OF_FALSE;
+	}
 
-	switch(OwnerSystem->GetKeyPressed())
-	{
+	switch(OwnerSystem->GetKeyPressed()) {
 		case KEY_BACKSP:
 			Content = Content.substr(0, Content.length() - 1);
-			break;
+		break;
+
 		case KEY_ENTER:
-			if(SaveType & T_ST_ONENTER)
-			{
-				if(Save())
+			if (SaveType & T_ST_ONENTER) {
+				if (Save()) {
 					OwnerSystem->SetActiveObject(Parent);
-				else
+				} else {
 					Load();
+				}
 			}
-			break;
+		break;
+
 		case KEY_ESC:
 			Load();
 			OwnerSystem->SetActiveObject(Parent);
-			break;
-		default:
-			{
-				//Figure out what key, exactly, we have
-				int symbol = keypad_to_ascii(OwnerSystem->GetKeyPressed());
-				if(symbol == -1)
-					symbol = key_to_ascii(OwnerSystem->GetKeyPressed());
-				//Is it ok with us?
-				if(iscntrl(symbol))
-				{
-					return OF_FALSE;	//Guess not
-				}
-				else if(SaveType & T_ST_INT)
-				{
-					if(!isdigit(symbol) && symbol != '-')
-						return OF_FALSE;
-				}
-				else if(SaveType & T_ST_FLOAT)
-				{
-					if(!isdigit(symbol) && symbol != '.' && symbol != '-')
-						return OF_FALSE;
-				}
-				else if(SaveType & T_ST_UBYTE)
-				{
-					if(!isdigit(symbol))
-						return OF_FALSE;
-				}
-				else if(!isalnum(symbol) && symbol != ' ')
-				{
+		break;
+
+		default: {
+			//Figure out what key, exactly, we have
+			int symbol = keypad_to_ascii(OwnerSystem->GetKeyPressed());
+			if (symbol == -1) {
+				symbol = key_to_ascii(OwnerSystem->GetKeyPressed());
+			}
+			//Is it ok with us?
+			if (iscntrl(symbol)) {
+				return OF_FALSE;	//Guess not
+			} else if (SaveType & T_ST_INT) {
+				if (!isdigit(symbol) && symbol != '-') {
 					return OF_FALSE;
 				}
-
-				//We can add the letter to the box. Cheers.
-				//If this warning bothers you, go ahead and cast it.
-				Content += symbol;
-				if(SaveType & T_ST_REALTIME)
-				{
-					Save();
+			} else if (SaveType & T_ST_FLOAT) {
+				if (!isdigit(symbol) && symbol != '.' && symbol != '-') {
+					return OF_FALSE;
 				}
+			} else if (SaveType & T_ST_UBYTE) {
+				if (!isdigit(symbol)) {
+					return OF_FALSE;
+				}
+			} else if (!isalnum(symbol) && symbol != ' ') {
+				return OF_FALSE;
 			}
+
+			//We can add the letter to the box. Cheers.
+			Content += char(symbol);
+			if (SaveType & T_ST_REALTIME) {
+				Save();
+			}
+		}
 	}
 	OnRefreshSize();
 	return OF_TRUE;
@@ -2405,19 +2111,15 @@ Text::Text(std::string in_name, std::string in_content, int x_coord, int y_coord
 :GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
 {
 	Content = in_content;
-
 	NumLines = 0;
-
 	SaveType = T_ST_NONE;
 	CursorPos = -1;	//Not editing
-
 	Type = GT_TEXT;
 }
 
 void Text::SetText(std::string in_content)
 {
 	Content = in_content;
-
 	OnRefreshSize();
 }
 
@@ -2426,7 +2128,6 @@ void Text::SetText(int the_int)
 	char buf[33];
 	sprintf(buf, "%d", the_int);
 	Content = buf;
-
 	OnRefreshSize();
 }
 
@@ -2435,14 +2136,12 @@ void Text::SetText(float the_float)
 	char buf[32];
 	sprintf(buf, "%f", the_float);
 	Content = buf;
-
 	OnRefreshSize();
 }
 
 void Text::AddLine(std::string in_line)
 {
 	Content += in_line;
-
 	OnRefreshSize();
 }
 
@@ -2452,12 +2151,13 @@ void Text::SetSaveLoc(int *int_ptr, int save_method, int max_value, int min_valu
 	Assert(min_value < max_value);	//Mmm-hmm.
 
 	SaveType = T_ST_INT;
-	if(save_method == T_ST_CLOSE)
+	if (save_method == T_ST_CLOSE) {
 		SaveType |= T_ST_CLOSE;
-	else if(save_method == T_ST_REALTIME)
+	} else if (save_method == T_ST_REALTIME) {
 		SaveType |= T_ST_REALTIME;
-	else if(save_method == T_ST_ONENTER)
+	} else if (save_method == T_ST_ONENTER) {
 		SaveType |= T_ST_ONENTER;
+	}
 
 	iSavePointer = int_ptr;
 	SaveMax = max_value;
@@ -2470,12 +2170,13 @@ void Text::SetSaveLoc(short int *sint_ptr, int save_method, short int max_value,
 	Assert(min_value < max_value);	//Mmm-hmm.
 
 	SaveType = T_ST_SINT;
-	if(save_method == T_ST_CLOSE)
+	if (save_method == T_ST_CLOSE) {
 		SaveType |= T_ST_CLOSE;
-	else if(save_method == T_ST_REALTIME)
+	} else if (save_method == T_ST_REALTIME) {
 		SaveType |= T_ST_REALTIME;
-	else if(save_method == T_ST_ONENTER)
+	} else if (save_method == T_ST_ONENTER) {
 		SaveType |= T_ST_ONENTER;
+	}
 
 	siSavePointer = sint_ptr;
 	SaveMax = max_value;
@@ -2488,12 +2189,13 @@ void Text::SetSaveLoc(float *ptr, int save_method, float max_value, float min_va
 	Assert(min_value < max_value);	//Causes problems with floats
 
 	SaveType = T_ST_FLOAT;
-	if(save_method == T_ST_CLOSE)
+	if (save_method == T_ST_CLOSE) {
 		SaveType |= T_ST_CLOSE;
-	else if(save_method == T_ST_REALTIME)
+	} else if (save_method == T_ST_REALTIME) {
 		SaveType |= T_ST_REALTIME;
-	else if(save_method == T_ST_ONENTER)
+	} else if (save_method == T_ST_ONENTER) {
 		SaveType |= T_ST_ONENTER;
+	}
 
 	flSavePointer = ptr;
 	flSaveMax = max_value;
@@ -2505,13 +2207,13 @@ void Text::SetSaveLoc(char *ptr, int save_method, uint max_length, uint min_leng
 	Assert(ptr != NULL);		//Naughty.
 
 	SaveType = T_ST_CHAR;
-
-	if(save_method == T_ST_CLOSE)
+	if (save_method == T_ST_CLOSE) {
 		SaveType |= T_ST_CLOSE;
-	else if(save_method == T_ST_REALTIME)
+	} else if (save_method == T_ST_REALTIME) {
 		SaveType |= T_ST_REALTIME;
-	else if(save_method == T_ST_ONENTER)
+	} else if (save_method == T_ST_ONENTER) {
 		SaveType |= T_ST_ONENTER;
+	}
 
 	chSavePointer = ptr;
 	uSaveMax = max_length;
@@ -2522,21 +2224,22 @@ void Text::SetSaveStringAlloc(char **ptr, int save_method, int mem_flags, uint m
 {
 	Assert(ptr != NULL);		//Naughty.
 
-	if(mem_flags == T_ST_NEW)
+	if (mem_flags == T_ST_NEW) {
 		SaveType = T_ST_NEW;
-	else if(mem_flags == T_ST_MALLOC)
+	} else if (mem_flags == T_ST_MALLOC) {
 		SaveType = T_ST_MALLOC;
-	else
+	} else {
 		return;	//This MUST use some sort of mem allocation
+	}
 
 	SaveType |= T_ST_CHAR;
-
-	if(save_method == T_ST_CLOSE)
+	if (save_method == T_ST_CLOSE) {
 		SaveType |= T_ST_CLOSE;
-	else if(save_method == T_ST_REALTIME)
+	} else if (save_method == T_ST_REALTIME) {
 		SaveType |= T_ST_REALTIME;
-	else if(save_method == T_ST_ONENTER)
+	} else if (save_method == T_ST_ONENTER) {
 		SaveType |= T_ST_ONENTER;
+	}
 
 	chpSavePointer = ptr;
 	uSaveMax = max_length;
@@ -2549,12 +2252,13 @@ void Text::SetSaveLoc(ubyte *ptr, int save_method, int max_value, int min_value)
 	Assert(min_value < max_value);	//Mmm-hmm.
 
 	SaveType = T_ST_UBYTE;
-	if(save_method == T_ST_CLOSE)
+	if (save_method == T_ST_CLOSE) {
 		SaveType |= T_ST_CLOSE;
-	else if(save_method == T_ST_REALTIME)
+	} else if (save_method == T_ST_REALTIME) {
 		SaveType |= T_ST_REALTIME;
-	else if(save_method == T_ST_ONENTER)
+	} else if (save_method == T_ST_ONENTER) {
 		SaveType |= T_ST_ONENTER;
+	}
 
 	ubSavePointer = ptr;
 	SaveMax = max_value;
@@ -2563,72 +2267,54 @@ void Text::SetSaveLoc(ubyte *ptr, int save_method, int max_value, int min_value)
 
 bool Text::Save()
 {
-	if(SaveType == T_ST_NONE)
+	if (SaveType == T_ST_NONE) {
 		return false;
+	}
 
-	if(SaveType & T_ST_INT)
-	{
+	if (SaveType & T_ST_INT) {
 		int the_int =  atoi(Content.c_str());
-		if(the_int <= SaveMax && the_int >= SaveMin)
-		{
+		if (the_int <= SaveMax && the_int >= SaveMin) {
 			*iSavePointer = the_int;
 			return true;
 		}
-	}
-	else if(SaveType & T_ST_SINT)
-	{
-		int the_sint =  atoi(Content.c_str());
-		if(the_sint <= SaveMax && the_sint >= SaveMin)
-		{
+	} else if (SaveType & T_ST_SINT) {
+		short the_sint =  (short)atoi(Content.c_str());
+		if (the_sint <= SaveMax && the_sint >= SaveMin) {
 			*siSavePointer = the_sint;
 			return true;
 		}
-	}
-	else if(SaveType & T_ST_FLOAT)
-	{
+	} else if (SaveType & T_ST_FLOAT) {
 		float the_float = (float)atof(Content.c_str());
-		if(the_float <= flSaveMax && the_float >= flSaveMin)
-		{
+		if (the_float <= flSaveMax && the_float >= flSaveMin) {
 			*flSavePointer = the_float;
 			return true;
 		}
-	}
-	else if(SaveType & T_ST_CHAR)
-	{
+	} else if (SaveType & T_ST_CHAR) {
 		size_t len = Content.length();
-		if(SaveType & T_ST_NEW
-			&& len < uSaveMax)
-		{
-			if(*chpSavePointer != NULL)
+		if (SaveType & T_ST_NEW && len < uSaveMax) {
+			if (*chpSavePointer != NULL) {
 				delete[] *chpSavePointer;
+			}
 
 			*chpSavePointer = new char[len + 1];
-
 			strcpy(*chpSavePointer, Content.c_str());
 			return true;
-		}
-		else if(SaveType & T_ST_MALLOC
-			&& len < uSaveMax)
-		{
-			if(*chpSavePointer != NULL)
+		} else if (SaveType & T_ST_MALLOC && len < uSaveMax) {
+			if (*chpSavePointer != NULL) {
 				vm_free(*chpSavePointer);
+			}
 
 			*chpSavePointer = (char*)vm_malloc(sizeof(char) * (len + 1));
-
 			strcpy(*chpSavePointer, Content.c_str());
 			return true;
-		}
-		else if(len < uSaveMax)
-		{
+		} else if (len < uSaveMax) {
 			strcpy(chSavePointer, Content.c_str());
 			return true;
 		}
-	}
-	else if(SaveType & T_ST_UBYTE)
-	{
+
+	} else if (SaveType & T_ST_UBYTE) {
 		int the_int = atoi(Content.c_str());
-		if(the_int <= SaveMax && the_int >= SaveMin)
-		{
+		if (the_int <= SaveMax && the_int >= SaveMin) {
 			*ubSavePointer = (ubyte)the_int;
 			return true;
 		}
@@ -2639,21 +2325,23 @@ bool Text::Save()
 
 void Text::Load()
 {
-	if(SaveType == T_ST_NONE)
+	if (SaveType == T_ST_NONE) {
 		return;
+	}
 
-	if(SaveType & T_ST_INT)
+	if (SaveType & T_ST_INT) {
 		SetText(*iSavePointer);
-	else if(SaveType & T_ST_FLOAT)
+	} else if (SaveType & T_ST_FLOAT) {
 		SetText(*flSavePointer);
-	else if((SaveType & T_ST_CHAR) && (SaveType & (T_ST_MALLOC | T_ST_NEW)))
+	} else if ((SaveType & T_ST_CHAR) && (SaveType & (T_ST_MALLOC | T_ST_NEW))) {
 		SetText(*chpSavePointer);
-	else if(SaveType & T_ST_CHAR)
+	} else if (SaveType & T_ST_CHAR) {
 		SetText(chSavePointer);
-	else if(SaveType & T_ST_UBYTE)
+	} else if (SaveType & T_ST_UBYTE) {
 		SetText(*ubSavePointer);
-	else
+	} else {
 		Warning(LOCATION, "Unknown type (or no type) given in Text::Load() - nothing happened.");
+	}
 }
 
 //*****************************Checkbox*******************************
@@ -2690,12 +2378,11 @@ int Checkbox::DoRefreshSize()
 	CheckCoords[2] = Coords[0] + w;
 	CheckCoords[3] = Coords[1] + h;
 
-	if(!(Style & GS_NOAUTORESIZEX))
-	{
+	if (!(Style & GS_NOAUTORESIZEX)) {
 		Coords[2] = Coords[0] + tw;
 	}
-	if(!(Style & GS_NOAUTORESIZEY))
-	{
+
+	if (!(Style & GS_NOAUTORESIZEY)) {
 		Coords[3] = Coords[1] + th;
 	}
 
@@ -2712,19 +2399,19 @@ void Checkbox::DoMove(int dx, int dy)
 
 void Checkbox::DoDraw(float frametime)
 {
-	if(HighlightStatus == 1)
+	if (HighlightStatus == 1) {
 		gr_set_color_fast(&Color_text_active);
-	else if(HighlightStatus == 2)
+	} else if (HighlightStatus == 2) {
 		gr_set_color_fast(&Color_text_selected);
-	else
+	} else {
 		gr_set_color_fast(&Color_text_normal);
+	}
 
 	draw_open_rect(CheckCoords[0], CheckCoords[1], CheckCoords[2], CheckCoords[3], false);
 
 	if ( (IsChecked && ((FlagPtr == NULL) && (BoolFlagPtr == NULL)))
 		|| ((FlagPtr != NULL) && ((*FlagPtr) & Flag))
-		|| ((BoolFlagPtr != NULL) && (*BoolFlagPtr)) )
-	{
+		|| ((BoolFlagPtr != NULL) && (*BoolFlagPtr)) ) {
 		gr_string(CheckCoords[0], CheckCoords[1], "X", false);
 	}
 
@@ -2737,8 +2424,7 @@ int Checkbox::DoMouseOver(float frametime)
 	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
 		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
 		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
-		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) )
-	{
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) ) {
 		HighlightStatus = 1;
 	}
 
@@ -2752,8 +2438,7 @@ int Checkbox::DoMouseDown(float frametime)
 	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
 		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
 		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
-		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) )
-	{
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) ) {
 		HighlightStatus = 2;
 	}
 
@@ -2765,8 +2450,7 @@ int Checkbox::DoMouseUp(float frametime)
 	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
 		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
 		&& (OwnerSystem->GetMouseY() >= CheckCoords[1])
-		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) )
-	{
+		&& (OwnerSystem->GetMouseY() <= CheckCoords[3]) ) {
 		HighlightStatus = 1;
 
 		if (function != NULL) {
@@ -2817,57 +2501,45 @@ ImageAnim::ImageAnim(std::string in_name, std::string in_imagename, int x_coord,
 void ImageAnim::DoDraw(float frametime)
 {
 	//Do nothing if nothing to draw
-	if(ImageHandle == -1)
+	if (ImageHandle == -1) {
 		return;
+	}
 
-	if(PlayType != PT_STOPPED)
-	{
-		if(PlayType == PT_PLAYING)
+	if (PlayType != PT_STOPPED) {
+		if (PlayType == PT_PLAYING) {
 			ElapsedTime += frametime;
-		else if(PlayType == PT_PLAYING_REVERSE)
+		} else if (PlayType == PT_PLAYING_REVERSE) {
 			ElapsedTime -= frametime;
+		}
 
 		Progress = ElapsedTime/TotalTime;
 	}
 
 	int CurrentFrame = fl2i(Progress * TotalFrames);
-	if(Progress > 1.0f)
-	{
-		if(ImageFlags & IF_BOUNCE)
-		{
+	if (Progress > 1.0f) {
+		if (ImageFlags & IF_BOUNCE) {
 			Progress = 1.0f;
 			CurrentFrame = TotalFrames;
 			PlayType = PT_PLAYING_REVERSE;
-		}
-		else if(ImageFlags & IF_REPEAT)
-		{
+		} else if (ImageFlags & IF_REPEAT) {
 			Progress = 0.0f;
 			CurrentFrame = 0;
 			PlayType = PT_PLAYING;
-		}
-		else
-		{
+		} else {
 			Progress = 1.0f;
 			CurrentFrame = TotalFrames;
 			PlayType = PT_STOPPED;
 		}
-	}
-	else if(Progress < 1.0f)
-	{
-		if(ImageFlags & IF_BOUNCE)
-		{
+	} else if (Progress < 1.0f) {
+		if (ImageFlags & IF_BOUNCE) {
 			Progress = 0.0f;
 			CurrentFrame = 0;
 			PlayType = PT_PLAYING;
-		}
-		else if(ImageFlags & IF_REPEAT && ImageFlags & (IF_REVERSED))
-		{
+		} else if (ImageFlags & IF_REPEAT && ImageFlags & (IF_REVERSED)) {
 			Progress = 1.0f;
 			CurrentFrame = TotalFrames;
 			PlayType = PT_PLAYING_REVERSE;
-		}
-		else
-		{
+		} else {
 			Progress = 0.0f;
 			CurrentFrame = 0;
 			PlayType = PT_STOPPED;
@@ -2889,17 +2561,16 @@ int ImageAnim::DoRefreshSize()
 
 void ImageAnim::SetImage(std::string in_imagename)
 {
-	if(in_imagename.size())
-	{
+	if (in_imagename.size()) {
 		ImageHandle = IMG_LOAD_ANIM((char*)in_imagename.c_str(), &TotalFrames, &FPS);
 		TotalTime = (float) (TotalFrames/FPS);
-		if(IMG_HANDLE_IS_INVALID(ImageHandle))
-		{
+		if (IMG_HANDLE_IS_INVALID(ImageHandle)) {
 			ImageHandle = IMG_LOAD((char*)in_imagename.c_str());
-			if(IMG_HANDLE_IS_VALID(ImageHandle))
+			if (IMG_HANDLE_IS_VALID(ImageHandle)) {
 				TotalFrames = 1;
-			else
+			} else {
 				TotalFrames = 0;
+			}
 			FPS = 0;
 			TotalTime = 0.0f;
 		}
@@ -2914,24 +2585,27 @@ void ImageAnim::SetImage(std::string in_imagename)
 
 void ImageAnim::Play(bool in_isreversed)
 {
-	if(ImageFlags & IF_REVERSED)
+	if (ImageFlags & IF_REVERSED) {
 		PlayType = PT_PLAYING;
+	}
 }
 
 void ImageAnim::Pause()
 {
-	if(PlayType == PT_PLAYING)
+	if (PlayType == PT_PLAYING) {
 		PlayType = PT_STOPPED;
-	else
+	} else {
 		PlayType = PT_STOPPED_REVERSE;
+	}
 }
 
 void ImageAnim::Stop()
 {
-	if(ImageFlags & IF_REVERSED)
+	if (ImageFlags & IF_REVERSED) {
 		PlayType = PT_STOPPED_REVERSE;
-	else
+	} else {
 		PlayType = PT_STOPPED;
+	}
 
 	Progress = 0.0f;
 	ElapsedTime = 0.0f;

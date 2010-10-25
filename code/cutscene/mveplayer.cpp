@@ -59,7 +59,7 @@ typedef struct MVE_AUDIO_T {
 mve_audio_t *mas;  // mve_audio_stream
 
 // audio decompressor
-extern void mveaudio_uncompress(short *buffer, unsigned char *data, int length);
+extern void mveaudio_uncompress(short *buffer, unsigned char *data);
 
 // video variables
 int g_width, g_height;
@@ -137,8 +137,9 @@ static void mve_timer_start(void)
 
 static int mve_do_timer_wait(void)
 {
-	if (!timer_started)
+	if (!timer_started) {
 		return 0;
+	}
 
 #ifdef SCP_UNIX
 	int nsec = 0;
@@ -147,11 +148,13 @@ static int mve_do_timer_wait(void)
 
 	gettimeofday(&tv, NULL);
 
-	if (tv.tv_sec > timer_expire.tv_sec)
+	if (tv.tv_sec > timer_expire.tv_sec) {
 		goto end;
+	}
 
-	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) )
+	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) ) {
 		goto end;
+	}
 
 	ts.tv_sec = timer_expire.tv_sec - tv.tv_sec;
 	ts.tv_nsec = 1000 * (timer_expire.tv_usec - tv.tv_usec);
@@ -170,25 +173,24 @@ static int mve_do_timer_wait(void)
 	}
 
 end:
-    timer_expire.tv_usec += micro_frame_delay;
+	timer_expire.tv_usec += micro_frame_delay;
 
-    if (timer_expire.tv_usec > 1000000) {
-        nsec = timer_expire.tv_usec / 1000000;
-        timer_expire.tv_sec += nsec;
-        timer_expire.tv_usec -= nsec * 1000000;
-    }
+	if (timer_expire.tv_usec > 1000000) {
+		nsec = timer_expire.tv_usec / 1000000;
+		timer_expire.tv_sec += nsec;
+		timer_expire.tv_usec -= nsec * 1000000;
+	}
 #else
 	int tv, ts, ts2;
 
 	tv = timer_get_microseconds();
 
-	if (tv > timer_expire)
+	if (tv > timer_expire) {
 		goto end;
+	}
 
 	ts = timer_expire - tv;
-
 	ts2 = ts/1000;
-
 	Sleep(ts2);
 
 end:
@@ -216,8 +218,9 @@ static void mve_timer_stop()
 // setup the audio information from the data stream
 void mve_audio_createbuf(ubyte minor, ubyte *data)
 {
-	if (audiobuf_created)
+	if (audiobuf_created) {
 		return;
+	}
 
 	// if game sound disabled don't try and play movie audio
 	if (!Sound_enabled) {
@@ -225,29 +228,29 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 		return;
 	}
 
-    int flags, desired_buffer, sample_rate;
+	int flags, desired_buffer, sample_rate;
 
-    mas = (mve_audio_t *) vm_malloc ( sizeof(mve_audio_t) );
+	mas = (mve_audio_t *) vm_malloc ( sizeof(mve_audio_t) );
 	memset(mas, 0, sizeof(mve_audio_t));
 
 	mas->format = AL_INVALID;
 
-    flags = mve_get_ushort(data + 2);
-    sample_rate = mve_get_ushort(data + 4);
-    desired_buffer = mve_get_int(data + 6);
+	flags = mve_get_ushort(data + 2);
+	sample_rate = mve_get_ushort(data + 4);
+	desired_buffer = mve_get_int(data + 6);
 
-    mas->channels = (flags & 0x0001) ? 2 : 1;
+	mas->channels = (flags & 0x0001) ? 2 : 1;
 	mas->bitsize = (flags & 0x0002) ? 16 : 8;
 
 	mas->sample_rate = sample_rate;
 
-    if (minor > 0) {
-    	mve_audio_compressed = flags & 0x0004 ? 1 : 0;
-    } else {
+	if (minor > 0) {
+		mve_audio_compressed = flags & 0x0004 ? 1 : 0;
+	} else {
 		mve_audio_compressed = 0;
-    }
+	}
 
-    if (mas->bitsize == 16) {
+	if (mas->bitsize == 16) {
 		if (mas->channels == 2) {
 			mas->format = AL_FORMAT_STEREO16;
 		} else if (mas->channels == 1) {
@@ -276,7 +279,7 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 
 	memset(mas->audio_buffer, 0, MVE_AUDIO_BUFFERS * sizeof(ALuint));
 
-    mve_audio_buffer_tail = 0;
+	mve_audio_buffer_tail = 0;
 
 	audiobuf_created = 1;
 }
@@ -288,9 +291,9 @@ void mve_audio_play()
 		ALint status, bqueued;
 
 		OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_SOURCE_STATE, &status), return );
-	
+
 		OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_QUEUED, &bqueued), return );
-	
+
 		mve_audio_playing = 1;
 
 		if (status != AL_PLAYING && bqueued > 0) {
@@ -302,8 +305,9 @@ void mve_audio_play()
 // call this in shutdown to stop and close audio
 static void mve_audio_stop()
 {
-	if (!audiobuf_created)
+	if (!audiobuf_created) {
 		return;
+	}
 
 	ALint p = 0;
 
@@ -343,13 +347,15 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_PROCESSED, &bprocessed), return 0 );
 
-			while (bprocessed-- > 2)
+			while (bprocessed-- > 2) {
 				OpenAL_ErrorPrint( alSourceUnqueueBuffers(mas->source_id, 1, &bid) );
+			}
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_QUEUED, &bqueued), return 0 );
-		    
-			if (bqueued == 0) 
+
+			if (bqueued == 0) {
 				mprintf(("MVE: Buffer underun (First is normal)\n"));
+			}
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_SOURCE_STATE, &status), return 0 );
 
@@ -362,37 +368,34 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 				/* HACK: +4 mveaudio_uncompress adds 4 more bytes */
 				if (major == 8) {
-				    if (mve_audio_compressed) {
+					if (mve_audio_compressed) {
 						nsamp += 4;
-
 						buf = (short *)vm_malloc(nsamp);
-						mveaudio_uncompress(buf, data, -1); /* XXX */
+						mveaudio_uncompress(buf, data); /* XXX */
 					} else {
 						nsamp -= 8;
 						data += 8;
-
 						buf = (short *)vm_malloc(nsamp);
 						memcpy(buf, data, nsamp);
-					}	              
+					}
 				} else {
 					buf = (short *)vm_malloc(nsamp);
-
 					memset(buf, 0, nsamp); /* XXX */
 				}
-
 
 				if (!mas->audio_buffer[mve_audio_buffer_tail]) {
 					OpenAL_ErrorCheck( alGenBuffers(1,&mas->audio_buffer[mve_audio_buffer_tail]), { vm_free(buf); return 0; } );
 				}
 
 				OpenAL_ErrorCheck( alBufferData(mas->audio_buffer[mve_audio_buffer_tail], mas->format, buf, nsamp, mas->sample_rate), { vm_free(buf); return 0; } );
-	    
+
 				OpenAL_ErrorCheck( alSourceQueueBuffers(mas->source_id, 1, &mas->audio_buffer[mve_audio_buffer_tail]), { vm_free(buf); return 0;} );
 
 				//fprintf(stderr,"Queued buffer %d(%d)\n", mve_audio_buftail, mas->audio_buffer[mve_audio_buftail]);
 
-				if (++mve_audio_buffer_tail == MVE_AUDIO_BUFFERS)
+				if (++mve_audio_buffer_tail == MVE_AUDIO_BUFFERS) {
 					mve_audio_buffer_tail = 0;
+				}
 
 				bqueued++;
 				vm_free(buf);
@@ -411,8 +414,9 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 int mve_video_createbuf(ubyte minor, ubyte *data)
 {
-	if (videobuf_created)
+	if (videobuf_created) {
 		return 1;
+	}
 
 	short w, h;
 	short count, truecolor;
@@ -442,11 +446,11 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		return 0;
 	}
 
-	if (truecolor)
+	if (truecolor) {
 		g_vBackBuf2 = (ushort *)g_vBackBuf1 + (g_width * g_height);
-	else
+	} else {
 		g_vBackBuf2 = (ubyte *)g_vBackBuf1 + (g_width * g_height);
-		
+	}
 	memset(g_vBackBuf1, 0, g_width * g_height * 4);
 
 	g_truecolor = truecolor;
@@ -458,10 +462,11 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
 		float movie_ratio = (float)g_width / (float)g_height;
 
-		if (screen_ratio > movie_ratio)
+		if (screen_ratio > movie_ratio) {
 			scale_by = (float)gr_screen.max_h / (float)g_height;
-		else
+		} else {
 			scale_by = (float)gr_screen.max_w / (float)g_width;
+		}
 
 		// don't bother setting anything if we aren't going to need it
 		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
@@ -507,26 +512,26 @@ static void mve_convert_and_draw()
 	ubyte r, g, b;
 	ushort bit_16;
 
-	if (g_truecolor)
+	if (g_truecolor) {
 		pSrcs = pixels;
-	else
+	} else {
 		pSrcs8 = pixels8;
-
+	}
 	pDests = pixelbuf;
 
 	if (gr_screen.mode != GR_OPENGL) {
-		if (g_screenWidth > g_width)
+		if (g_screenWidth > g_width) {
 			pDests += ((g_screenWidth - g_width) / 2) / 2;
-
-		if (g_screenHeight > g_height)
+		}
+		if (g_screenHeight > g_height) {
 			pDests += ((g_screenHeight - g_height) / 2) * g_screenWidth;
+		}
 	}
 
 	for (y=0; y<g_height; y++) {
 		for (x = 0; x < g_width; x++) {
 			if (g_truecolor) {
 				Assert( pSrcs != NULL );
-
 				pDests[x] = (1<<15)|*pSrcs;
 				pSrcs++;
 			} else {
@@ -621,8 +626,9 @@ void mve_video_display()
 
 int mve_video_init(ubyte *data)
 {
-	if (video_inited)
+	if (video_inited) {
 		return 1;
+	}
 
 	short width, height;
 
@@ -681,9 +687,8 @@ int mve_video_init(ubyte *data)
 	}
 
 	memset(g_palette, 0, 768);
-	
 	video_inited = 1;
-	
+
 	return 1;
 }
 
@@ -723,10 +728,11 @@ void mve_video_data(ubyte *data, int len)
 		g_vBackBuf2 = temp;
 	}
 
-	if (g_truecolor)
+	if (g_truecolor) {
 		decodeFrame16((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
-	else
+	} else {
 		decodeFrame8((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
+	}
 }
 
 void mve_end_chunk()
@@ -755,8 +761,9 @@ void mve_play(MVESTREAM *mve)
 	int init_timer = 0, timer_error = 0;
 	int cont = 1;
 
-	if (!timer_started)
+	if (!timer_started) {
 		mve_timer_start();
+	}
 
 	while (cont && mve_playing && !timer_error) {
 		cont = mve_play_next_chunk(mve);
@@ -795,6 +802,5 @@ void mve_shutdown()
 	}
 
 	mve_audio_stop();
-
 	mve_timer_stop();
 }
