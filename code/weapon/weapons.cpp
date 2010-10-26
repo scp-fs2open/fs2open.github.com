@@ -801,6 +801,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->mass = 1.0f;
 	wip->max_speed = 10.0f;
 	wip->free_flight_time = 0.0f;
+	wip->free_flight_speed = 0.25f;
 	wip->fire_wait = 1.0f;
 	wip->damage = 0.0f;
 	
@@ -1556,6 +1557,14 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&(wip->free_flight_time));
 	} else if(first_time && is_homing) {
 		wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
+	}
+
+	if(optional_string("$Free Flight Speed:")) {
+		stuff_float(&wip->free_flight_speed);
+		if (wip->free_flight_speed < 0.01f) {
+			nprintf(("Warning", "Free Flight Speed value is too low. Resetting to default (25% of maximum)\n"));
+			wip->free_flight_speed = 0.25f;
+		}
 	}
 
 	//Launch sound
@@ -3841,10 +3850,10 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 
 		if (obj->phys_info.speed > max_speed) {
-			obj->phys_info.speed -= frame_time * 4;
+			obj->phys_info.speed -= frame_time / wip->free_flight_speed;
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
-		} else if ((obj->phys_info.speed < max_speed/4) && (wip->wi_flags & WIF_HOMING_HEAT)) {
-			obj->phys_info.speed = max_speed/4;
+		} else if ((obj->phys_info.speed < max_speed * wip->free_flight_speed) && (wip->wi_flags & WIF_HOMING_HEAT)) {
+			obj->phys_info.speed = max_speed * wip->free_flight_speed;
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 		}
 
