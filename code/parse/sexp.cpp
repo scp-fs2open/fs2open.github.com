@@ -8514,13 +8514,17 @@ void sexp_hud_set_message(int n)
 {
 	char* gaugename = CTEXT(n);
 	char* text = CTEXT(CDR(n));
-	char* message;
+	char message[MESSAGE_LENGTH];
 
 	for (int i = 0; i < Num_messages; i++) {
 		if ( !stricmp(text, Messages[i].name) ) {
-			message = Messages[i].message;
-			
-			sexp_replace_variable_names_with_values(message, MESSAGE_LENGTH);
+			strcpy_s(message, Messages[i].message);
+
+			sexp_replace_variable_names_with_values(message, NAME_LENGTH);
+
+			if (strlen(message) > NAME_LENGTH) {
+				WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
+			}
 
 			HudGauge* cg = hud_get_gauge(gaugename);
 			if(cg) {
