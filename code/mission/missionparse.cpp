@@ -4539,7 +4539,10 @@ void parse_event(mission *pm)
 
 		// sanity check
 		if (event->team < -1 || event->team >= Num_iffs) {
-			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			if (Fred_running)
+				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			else
+				nprintf(("Warning", "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.\n"));
 			event->team = -1;
 		}
 	}
