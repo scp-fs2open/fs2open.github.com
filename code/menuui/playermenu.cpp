@@ -169,7 +169,7 @@ int Player_select_clone_flag;						// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];	// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
 
-ubyte Player_select_force_main_hall = 0;
+int Player_select_force_main_hall = -1;
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
 
@@ -595,7 +595,7 @@ void player_select_close()
 	}
 
 	if (Player_select_force_main_hall >= 0) {
-		Player->main_hall = Player_select_force_main_hall;
+		Player->main_hall = (ubyte)Player_select_force_main_hall;
 	}
 
 	// free memory from all parsing so far, all tbls found during game_init()
