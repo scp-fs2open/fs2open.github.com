@@ -1263,6 +1263,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			anim_stop_playing(head_anim);
+			head_anim = NULL; // Nothing to see here anymore, move along
 		}
 	}
 	// check playing messages to see if we have any messages with talking animations that need to be created.
