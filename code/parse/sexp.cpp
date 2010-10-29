@@ -3572,7 +3572,13 @@ int div_sexps(int n)
 			sum = atoi(CTEXT(n));
 
 		while (Sexp_nodes[n].rest != -1) {
-			sum /= eval_sexp(Sexp_nodes[n].rest);
+			int div = eval_sexp(Sexp_nodes[n].rest);
+			if (div == 0) {
+				Warning(LOCATION, "Division by zero in sexp. Please check all uses of the / operator for possible causes.\n");
+				Int3();
+				n = Sexp_nodes[n].rest;
+				continue;
+			} 
 			n = Sexp_nodes[n].rest;
 		}
 	}
