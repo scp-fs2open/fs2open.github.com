@@ -378,7 +378,7 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
 	{ "turret-set-direction-preference",	OP_TURRET_SET_DIRECTION_PREFERENCE,		3, INT_MAX},	//FUBAR
-	{ "turret-set-rate_of_fire",			OP_TURRET_SET_RATE_OF_FIRE,			3, INT_MAX},	//FUBAR
+	{ "turret-set-rate-of-fire",			OP_TURRET_SET_RATE_OF_FIRE,			3, INT_MAX},	//FUBAR
 	{ "turret-set-optimum-range",			OP_TURRET_SET_OPTIMUM_RANGE,			3, INT_MAX},	//FUBAR
 	{ "turret-set-target-priorities",			OP_TURRET_SET_TARGET_PRIORITIES,	3, INT_MAX},	//FUBAR
 	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
