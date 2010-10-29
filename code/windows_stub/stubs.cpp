@@ -560,8 +560,6 @@ void *_vm_malloc( int size, char *filename, int line, int quiet )
 void *_vm_malloc( int size, int quiet )
 #endif
 {
-	Assert( size > 0 );
-
 	void *ptr = malloc( size );
 
 	if (!ptr)	{
