@@ -4538,7 +4538,7 @@ void parse_event(mission *pm)
 		stuff_int(&event->team);
 
 		// sanity check
-		if (event->team < -1 || event->team >= Num_iffs) {
+		if (event->team < -1 || event->team >= MAX_TVT_TEAMS) {
 			if (Fred_running)
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
 			else
