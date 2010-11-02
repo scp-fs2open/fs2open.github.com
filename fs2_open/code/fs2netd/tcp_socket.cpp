@@ -27,6 +27,9 @@
 #include <unistd.h>
 #include <cerrno>
 #include <sys/ioctl.h>
+#ifdef SCP_SOLARIS
+#include <sys/filio.h>
+#endif
 #include <ctype.h>
 
 #define WSAGetLastError()  (errno)

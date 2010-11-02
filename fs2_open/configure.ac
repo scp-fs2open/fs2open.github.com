@@ -106,6 +106,7 @@ dnl environments are supported
 fs2_os_win32="no"
 fs2_os_unix="no"
 fs2_os_osx="no"
+fs2_os_solaris="no"
 
 dnl case $host_os in
 case "$target" in
@@ -136,6 +137,11 @@ case "$target" in
 		fs2_os_osx="yes"
 		D_LDFLAGS="$D_LDFLAGS -lobjc -fPIC -Wl,-noprebind"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_MACOSX"
+		;;
+	*-*-solaris*)
+		# Solaris
+		echo "Using Solaris 10 defines (for $host_os)"
+		fs2_os_solaris="yes"
 		;;
 	*)
 		# Unknown
@@ -232,8 +238,9 @@ fi
 
 dnl generate appropriate conditionals for Makefile.am
 AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
-AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx" = "yes")
+AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_solaris" = "yes")
 AM_CONDITIONAL(FS2_OS_OSX,     test "$fs2_os_osx"   = "yes")
+AM_CONDITIONAL(FS2_OS_SOLARIS, test "$fs2_os_solaris"   = "yes")
 
 AM_CONDITIONAL(FS2_DEVIL,      test "$fs2_devil"      = "yes")
 AM_CONDITIONAL(FS2_SPEECH,     test "$fs2_speech"     = "yes")
@@ -309,6 +316,13 @@ elif test "$fs2_os_osx" = "yes" ; then
 		[AC_CHECK_HEADER(/System/Library/Frameworks/SDL.framework/Headers/SDL.h,
 			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
 			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])])
+elif test "$fs2_os_solaris" = "yes" ; then
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/usr/include/SDL"
+	FS2_LDFLAGS="$FS2_LDFLAGS -lpng -lpng12 -ljpeg -lpthread -logg -lSDL -ltheora -lopenal -lsocket -lvorbisfile -lvorbis -lnsl -lGL -lGLU"
+	AC_DEFINE([SCP_UNIX])
+	AC_DEFINE([SCP_SOLARIS])
+	AC_DEFINE([NO_DIRECT3D])
+	## don't need the CFLAGS here if recent SDL is used
 fi
 
 dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
