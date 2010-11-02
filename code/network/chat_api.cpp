@@ -15,6 +15,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#ifdef SCP_SOLARIS
+#include <sys/filio.h>
+#endif
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <errno.h>
