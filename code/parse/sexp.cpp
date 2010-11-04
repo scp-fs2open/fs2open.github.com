@@ -11777,7 +11777,7 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 
 //FUBAR
 //generic function to deal with subsystem flag sexps.
-//setit only passed for backward compatibility with targetable/untargetable.
+//setit only passed for backward compatibility with older sexps.
 void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = false, bool setit = false)
 {	
 	ship *shipp = NULL;
@@ -11790,8 +11790,10 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 	}
 
 	//replace or not
-	// OP_SHIP_SUBSYS_UNTARGETABLE & OP_SHIP_SUBSYS_TARGETABLE will have already passed us this data we don't need to set it for them. 
-	if (!(ss_flag == SSF_UNTARGETABLE))
+	// OP_SHIP_SUBSYS_TARGETABLE/UNTARGETABLE, OP_SHIP_SUBSYS_TARGETABLE and OP_TURRET_SUBSYS_TARGET_ENABLE/DISABLE 
+	// will have already passed us this data we don't need to set it for them. 
+	// backward compatibility hack for older sexps
+	if (!((ss_flag == SSF_UNTARGETABLE) || (ss_flag == SSF_NO_SS_TARGETING)))
 	{
 		node = CDR(node);
 		setit = (is_sexp_true(node) ? true : false);
@@ -14848,60 +14850,6 @@ void sexp_ship_turret_target_order(int node)
 
 		// next item
 		turret = GET_NEXT(turret);
-	}
-}
-
-void sexp_turret_subsystem_targeting_disable(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
-
-	// get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
-			continue;
-		}
-
-		// flag the turret
-		turret->flags |= SSF_NO_SS_TARGETING;
-	}
-}
-
-void sexp_turret_subsystem_targeting_enable(int node)
-{	
-	int sindex;
-	ship_subsys *turret = NULL;	
-
-	// get the ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	node = CDR(node);
-	for ( ; node >= 0; node = CDR(node) ) {
-		// get the subsystem
-		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
-			continue;
-		}
-
-		// remove the flag from the turret
-		turret->flags &= ~(SSF_NO_SS_TARGETING);
 	}
 }
 
@@ -18394,6 +18342,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TURRET_SUBSYS_TARGET_DISABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_SS_TARGETING, false, true);
+				break;
+
+			case OP_TURRET_SUBSYS_TARGET_ENABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_SS_TARGETING, false, false);
+				break;
+
 			case OP_SHIP_SUBSYS_NO_REPLACE:
 				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_REPLACE, true);
 				sexp_val = SEXP_TRUE;
@@ -19097,16 +19055,6 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_SHIP_TURRET_TARGET_ORDER:
 				sexp_val = SEXP_TRUE;
 				sexp_ship_turret_target_order(node);
-				break;
-
-			case OP_TURRET_SUBSYS_TARGET_DISABLE:
-				sexp_val = SEXP_TRUE;
-				sexp_turret_subsystem_targeting_disable(node);
-				break;
-
-			case OP_TURRET_SUBSYS_TARGET_ENABLE:
-				sexp_val = SEXP_TRUE;
-				sexp_turret_subsystem_targeting_enable(node);
 				break;
 
 			case OP_ADD_REMOVE_ESCORT:
@@ -21472,7 +21420,7 @@ int query_operator_argument_type(int op, int argnum)
 			if(argnum == 0){
 				return OPF_SHIP;
 			} else {
-				return OPF_SUBSYSTEM;
+				return OPF_SUBSYS_OR_GENERIC;
 			}
 		
 		case OP_TURRET_CHANGE_WEAPON:
