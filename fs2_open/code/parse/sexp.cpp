@@ -353,6 +353,10 @@ sexp_oper Operators[] = {
 	{ "ship-targetable-as-bomb",	OP_SHIP_BOMB_TARGETABLE,			1, INT_MAX	},
 	{ "ship-untargetable-as-bomb",	OP_SHIP_BOMB_UNTARGETABLE,			1, INT_MAX	},
 	{ "ship-subsys-targetable",		OP_SHIP_SUBSYS_TARGETABLE,		2, INT_MAX },	// Goober5000
+	{ "ship-subsys-no-replace",		OP_SHIP_SUBSYS_NO_REPLACE,		3, INT_MAX },	// FUBAR
+	{ "ship-subsys-no-live-debris",	OP_SHIP_SUBSYS_NO_LIVE_DEBRIS,	3, INT_MAX },	// FUBAR
+	{ "ship-subsys-vanished",		OP_SHIP_SUBSYS_VANISHED,		3, INT_MAX },	// FUBAR
+	{ "ship-subsys-ignore_if_dead",	OP_SHIP_SUBSYS_IGNORE_IF_DEAD,	3, INT_MAX },	// FUBAR
 	{ "ship-subsys-untargetable",	OP_SHIP_SUBSYS_UNTARGETABLE,	2, INT_MAX },	// Goober5000
 	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
 	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
@@ -11029,7 +11033,6 @@ void multi_sexp_deal_with_ship_flag()
 		}
 	}
 }
-
 // modified by Goober5000; now it should work properly
 // function to deal with breaking/fixing the warp engines on ships/wings.
 // --repairable is true when we are breaking the warp drive (can be repaired)
@@ -11772,48 +11775,118 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 	}
 }
 
-// Goober5000
-void sexp_ship_subsys_untargetable(int n, int untargetable)
-{
-	char *subsys;
-	ship_subsys *ss; 
-
-	// get the ship
-	int ship_num = ship_name_lookup(CTEXT(n));
-	if (ship_num < 0)
+//FUBAR
+//generic function to deal with subsystem flag sexps.
+//setit only passed for backward compatibility with targetable/untargetable.
+void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = false, bool setit = false)
+{	
+	ship *shipp = NULL;
+	ship_subsys *ss = NULL;	
+	
+	// get ship
+	shipp = sexp_get_ship_from_node(node); 
+	if (shipp == NULL) {
 		return;
-	n = CDR(n);
+	}
 
-	// get the subsystems
-	for (; n >= 0; n = CDR(n))
+	//replace or not
+	// OP_SHIP_SUBSYS_UNTARGETABLE & OP_SHIP_SUBSYS_TARGETABLE will have already passed us this data we don't need to set it for them. 
+	if (!(ss_flag == SSF_UNTARGETABLE))
 	{
-		subsys = CTEXT(n);
+		node = CDR(node);
+		setit = (is_sexp_true(node) ? true : false);
+	}
+	
+	//multiplayer packet start
+	if (sendit)
+	{
+		multi_start_packet(); 
+		multi_send_ship(shipp);
+		multi_send_bool(setit);
+	}
 
+	//Process subsystems
+	while(node != -1)
+	{
 		// deal with generic subsystem names
-		int generic_type = get_generic_subsys(subsys);
+		int generic_type = get_generic_subsys(CTEXT(node));
 		if (generic_type) {
-			for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
+			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
 				if (generic_type == ss->system_info->type) {
-					if (untargetable)
-						ss->flags |= SSF_UNTARGETABLE;
+					if (setit)
+						ss->flags |= ss_flag;
 					else
-						ss->flags &= ~SSF_UNTARGETABLE;
+						ss->flags &= ~ss_flag;
 				}
 			}
 		}
-		else {
-			ss = ship_get_subsys(&Ships[ship_num], subsys);
-			if (ss == NULL)
+		else
+		{
+			// get the subsystem
+			ss = ship_get_subsys(shipp, CTEXT(node));
+			if(ss == NULL)
+			{
+				node = CDR(node);
 				continue;
-
-			if (untargetable)
-				ss->flags |= SSF_UNTARGETABLE;
+			}
+ 
+			// set the flag
+			if(setit)
+				ss->flags |= ss_flag;
 			else
-				ss->flags &= ~SSF_UNTARGETABLE;
+				ss->flags &= ~ss_flag;
+		}
+
+		// multiplayer send subsystem name
+		if (sendit)
+			multi_send_string(CTEXT(node));
+
+		// next
+		node = CDR(node);
+	}
+
+	// mulitplayer end of packet
+	if (sendit)
+		multi_end_packet();
+}
+void multi_sexp_deal_with_subsys_flag(int ss_flag)
+{
+	bool setit = false;
+	ship_subsys *ss = NULL;
+    ship *shipp = NULL;
+	char ss_name[MAX_NAME_LEN];
+
+	multi_get_ship(shipp);
+	multi_get_bool(setit);
+ 
+	while (multi_get_string(ss_name)) 
+	{
+		// deal with generic subsystem names
+		int generic_type = get_generic_subsys(ss_name);
+		if (generic_type) {
+			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+				if (generic_type == ss->system_info->type) {
+					if (setit)
+						ss->flags |= ss_flag;
+					else
+						ss->flags &= ~ss_flag;
+				}
+			}
+		}
+		else
+		{
+			ss = ship_get_subsys(shipp, ss_name);
+			if(ss != NULL)
+			{	
+				// set the flag
+				if(setit)
+					ss->flags |= ss_flag;
+				else
+					ss->flags &= ~ss_flag;
+			}
 		}
 	}
 }
-
 // Goober5000
 void sexp_ship_tag( int n, int tag )
 {
@@ -18312,8 +18385,32 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SHIP_SUBSYS_TARGETABLE:
+				sexp_ship_deal_with_subsystem_flag(node, SSF_UNTARGETABLE, true, false);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_SUBSYS_UNTARGETABLE:
-				sexp_ship_subsys_untargetable(node, (op_num == OP_SHIP_SUBSYS_UNTARGETABLE));
+				sexp_ship_deal_with_subsystem_flag(node, SSF_UNTARGETABLE, true, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_SUBSYS_NO_REPLACE:
+				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_REPLACE, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
+				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_LIVE_DEBRIS, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_SUBSYS_VANISHED:
+				sexp_ship_deal_with_subsystem_flag(node, SSF_VANISHED, true);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
+				sexp_ship_deal_with_subsystem_flag(node, SSF_MISSILES_IGNORE_IF_DEAD, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -19588,6 +19685,23 @@ void multi_sexp_eval()
 				multi_sexp_change_subsystem_name();
 				break;
 
+			case OP_SHIP_SUBSYS_NO_REPLACE:
+				multi_sexp_deal_with_subsys_flag(SSF_NO_REPLACE);
+				break;
+			case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
+				multi_sexp_deal_with_subsys_flag(SSF_NO_LIVE_DEBRIS);
+				break;
+			case OP_SHIP_SUBSYS_VANISHED:
+				multi_sexp_deal_with_subsys_flag(SSF_VANISHED);
+				break;
+			case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
+				multi_sexp_deal_with_subsys_flag(SSF_MISSILES_IGNORE_IF_DEAD);
+				break;
+			case OP_SHIP_SUBSYS_TARGETABLE:
+			case OP_SHIP_SUBSYS_UNTARGETABLE:
+				multi_sexp_deal_with_subsys_flag(SSF_UNTARGETABLE);
+				break;
+
 			case OP_SHIP_CHANGE_CALLSIGN:
 				multi_sexp_ship_change_callsign();
 				break;
@@ -20095,6 +20209,10 @@ int query_operator_return_type(int op)
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
 		case OP_FRIENDLY_STEALTH_VISIBLE:
+		case OP_SHIP_SUBSYS_NO_REPLACE:
+		case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
+		case OP_SHIP_SUBSYS_VANISHED:
+		case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
 		case OP_SHIP_SUBSYS_TARGETABLE:
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
 		case OP_RED_ALERT:
@@ -20487,6 +20605,17 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
 			if (argnum == 0)
 				return OPF_SHIP;
+			else
+				return OPF_SUBSYS_OR_GENERIC;
+
+		case OP_SHIP_SUBSYS_NO_REPLACE:
+		case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
+		case OP_SHIP_SUBSYS_VANISHED:
+		case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_BOOL;
 			else
 				return OPF_SUBSYS_OR_GENERIC;
 
@@ -23054,6 +23183,10 @@ int get_subcategory(int sexp_id)
 		case OP_FRIENDLY_STEALTH_VISIBLE:
 		case OP_SHIP_SUBSYS_TARGETABLE:
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
+		case OP_SHIP_SUBSYS_NO_REPLACE:
+		case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
+		case OP_SHIP_SUBSYS_VANISHED:
+		case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -24936,6 +25069,41 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses the specified ship subsystem(s) to not be targetable on radar.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of a ship\r\n"
+		"\tRest: Name of the ship's subsystem(s)" },
+
+	// FUBAR
+	{ OP_SHIP_SUBSYS_NO_REPLACE, "ship-subsys-no-replace\r\n"
+		"\tCauses the -destroyed version of specified ship subsystem(s) to not render when it's destroyed.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\t2:\tTrue = Do not render or False = render if exists\r\n"
+		"\tRest: Name of the ship's subsystem(s)" 
+		"\tNote: If subsystem is already dead it will vanish or reappear out of thin air" },
+
+
+	// FUBAR
+	{ OP_SHIP_SUBSYS_NO_LIVE_DEBRIS, "ship-subsys-no-live-debris\r\n"
+		"\tCauses the specified ship subsystem(s) to not render live debris when it's destroyed.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\t2:\tTrue = Do not render or False = render if exists\r\n"
+		"\tRest: Name of the ship's subsystem(s)" },
+
+	// FUBAR
+	{ OP_SHIP_SUBSYS_VANISHED, "ship-subsys-vanished\r\n"
+		"\tCauses the subsystem to vanish without a trace it's destroyed.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\t2:\tTrue = vanish or False = don't vanish\r\n"
+		"\tRest: Name of the ship's subsystem(s)" 
+		"\tNote: Useful for replacing subsystems with actual docked models." },
+
+	// FUBAR
+	{ OP_SHIP_SUBSYS_IGNORE_IF_DEAD, "ship-subsys-ignore-if-dead\r\n"
+		"\tCauses secondary weapons to ignore dead ship subsystem(s)and home on hull instead.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\t2:\tTrue = Ignore dead or False = don't ignore\r\n"
 		"\tRest: Name of the ship's subsystem(s)" },
 
 	// Goober5000
