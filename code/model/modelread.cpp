@@ -1095,7 +1095,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
 
-						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
 							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
 							Int3();
 						}
@@ -1115,7 +1115,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
 
-						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
 							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
 							Int3();
 						}
