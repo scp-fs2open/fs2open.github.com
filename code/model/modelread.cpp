@@ -931,10 +931,6 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 }
 
 
-//	Debug thing so we don't repeatedly show warning messages.
-#ifndef NDEBUG
-int Bogus_warning_flag_1903 = 0;
-#endif
 void parse_triggers(int &n_trig, queued_animation **triggers, char *props);
 
 
@@ -1098,6 +1094,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
+
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
+							Int3();
+						}
 					} else {
 						// old code where mass wasn't based on area, so do the calculation manually
 
@@ -1114,6 +1115,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
 
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
+							Int3();
+						}
+
 						// John remove this with change to bspgen
 						vm_vec_scale( &pm->moment_of_inertia.vec.rvec, mass_ratio );
 						vm_vec_scale( &pm->moment_of_inertia.vec.uvec, mass_ratio );
@@ -1129,14 +1135,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 
 				} else {
-#ifndef NDEBUG
-					if (stricmp("fighter04.pof", filename)) {
-						if (Bogus_warning_flag_1903 == 0) {
-							Warning(LOCATION, "Ship %s is old.  Cannot compute mass.\nSetting to 50.0f.  Talk to John.", filename);
-							Bogus_warning_flag_1903 = 1;
-						}
-					}
-#endif
 					pm->mass = 50.0f;
 					vm_vec_zero( &pm->center_of_mass );
 					vm_set_identity( &pm->moment_of_inertia );
