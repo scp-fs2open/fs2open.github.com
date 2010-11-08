@@ -59,6 +59,9 @@ int gamesnd_get_by_name(char* name)
 
 int gamesnd_get_by_tbl_index(int index)
 {
+	//if we get passed -1, don't bother trying to look it up.
+	if (index == -1)
+		return -1;
 	Assert( Snds.size() <= INT_MAX );
 	for(int i = 0; i < (int)Snds.size(); i++) {
 		if ( Snds[i].sig == index )

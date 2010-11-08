@@ -1049,9 +1049,8 @@ int snd_get_duration(int snd_id)
 		return 0;
 
 	Assertion( !Sounds.empty(), "Sounds vector is empty. Why are we trying to look up an index?\n" );
-	Assertion(snd_id < Sounds.size(), "Passed snd_id is invalid. (Passed id: %d, number of elements in Sounds[]: %d)\n", snd_id, Sounds.size());
 	
-	if ( Sounds.empty() || snd_id >= Sounds.size() )
+	if ( Sounds.empty() )
 		return 0;
 
 	Assertion(Sounds[snd_id].duration > 0, "Sound duration for sound %s is bogus (%d)\n", Sounds[snd_id].filename, Sounds[snd_id].duration);
