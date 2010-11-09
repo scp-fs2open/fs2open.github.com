@@ -299,7 +299,14 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 				(*header)->nAvgBytesPerSec = ovf->vi->rate * (*header)->nBlockAlign;
 
 				//WMC - Total samples * channels * bits/sample
-				*dest_size = (uint)(ov_pcm_total(ovf, -1) * (*header)->nBlockAlign);
+
+				ogg_int64_t pcm_total_size = ov_pcm_total(ovf, -1);
+				if (pcm_total_size > 0) {
+					*dest_size = (uint)(pcm_total_size * (*header)->nBlockAlign);
+				} else {
+					nprintf(("Sound", "SOUND ==> Size returned for this file is invalid. Please reencode the file, as it will not work correctly.\n"));
+					return -1;
+				}
 			} else {
 				Assert( 0 );
 				return -1;
