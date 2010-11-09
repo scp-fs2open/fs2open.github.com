@@ -494,7 +494,8 @@ sexp_oper Operators[] = {
 	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
 	{ "hud-set-text",			OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
 	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
-	{ "hud-set-message",			OP_HUD_SET_MESSAGE,				2, 2 },
+	{ "hud-set-message",			OP_HUD_SET_MESSAGE,				2, 2 }, //The E
+	{ "hud-set-directive",			OP_HUD_SET_DIRECTIVE,			2, 2 }, //The E
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
@@ -8547,6 +8548,27 @@ void sexp_hud_set_message(int n)
 	}
 
 	WarningEx(LOCATION, "sexp_hud_set_message couldn't find a message by the name of %s in the mission\n", text);
+}
+
+void sexp_hud_set_directive(int n)
+{
+	char* gaugename = CTEXT(n);
+	char* text = CTEXT(CDR(n));
+	char message[MESSAGE_LENGTH];
+
+	message_translate_tokens(message, text);
+
+	if (strlen(message) > NAME_LENGTH) {
+		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
+	}
+
+	HudGauge* cg = hud_get_gauge(gaugename);
+	if(cg) {
+		cg->updateCustomGaugeText(message);
+	} else {
+		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+	}
+	return;
 }
 
 void sexp_hud_set_coords(int n)
@@ -19555,6 +19577,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_force_glide(node);
 				break;
 
+			case OP_HUD_SET_DIRECTIVE:
+				sexp_val = SEXP_TRUE;
+				sexp_hud_set_directive(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -20359,6 +20386,7 @@ int query_operator_return_type(int op)
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_FORCE_GLIDE:
+		case OP_HUD_SET_DIRECTIVE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -22004,6 +22032,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_HUD_SET_DIRECTIVE:
+			return OPF_STRING;
+
 		default:
 			Int3();
 	}
@@ -23300,6 +23331,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_HUD_SET_MESSAGE:
+		case OP_HUD_SET_DIRECTIVE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -26349,6 +26381,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tShip to force\r\n"
 		"\t2:\tTrue to activate glide, False to deactivate\r\n"
+	},
+
+	{OP_HUD_SET_DIRECTIVE, "hud-set-directive\r\n"
+		"\tSets the text of a given custom hud gauge to the provided text."
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tHUD Gauge name"
+		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences."
 	}
 };
 
