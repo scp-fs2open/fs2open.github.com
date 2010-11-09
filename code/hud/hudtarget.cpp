@@ -5859,9 +5859,9 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			}
 			if(gr_screen.max_w_unscaled == 640) {
 				gr_force_fit_string(shortened_name, NAME_LENGTH, 55);
-				gr_string(currentx, currenty, shortened_name);
+				renderString(currentx, currenty, shortened_name);
 			} else {
-				gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
 			}
 
 			//Next 'line'
