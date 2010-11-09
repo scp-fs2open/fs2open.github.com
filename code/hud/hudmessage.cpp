@@ -377,7 +377,7 @@ void hud_update_msg_window()
 }
 
 HudGaugeMessages::HudGaugeMessages():
-HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ), 255, 255, 255)
 {
 }
 
@@ -1189,7 +1189,7 @@ void hud_scrollback_exit()
 }
 
 HudGaugeTalkingHead::HudGaugeTalkingHead():
-HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, true, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, true, false, true, (VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ), 255, 255, 255)
 {
 }
 
