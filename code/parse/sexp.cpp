@@ -8556,19 +8556,25 @@ void sexp_hud_set_directive(int n)
 	char* text = CTEXT(CDR(n));
 	char message[MESSAGE_LENGTH];
 
-	message_translate_tokens(message, text);
+	for (int i = 0; i < Num_messages; i++) {
+		if ( !stricmp(text, Messages[i].name) ) {
+			strcpy_s(message, Messages[i].message);
 
-	if (strlen(message) > NAME_LENGTH) {
-		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
-	}
+			message_translate_tokens(message, text);
+			
+			if (strlen(message) > NAME_LENGTH) {
+				WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
+			}
 
-	HudGauge* cg = hud_get_gauge(gaugename);
-	if(cg) {
-		cg->updateCustomGaugeText(message);
-	} else {
-		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+			HudGauge* cg = hud_get_gauge(gaugename);
+			if(cg) {
+				cg->updateCustomGaugeText(message);
+			} else {
+				WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+			}
+			return;
+		}
 	}
-	return;
 }
 
 void sexp_hud_set_coords(int n)
