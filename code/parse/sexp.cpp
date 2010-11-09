@@ -8560,11 +8560,9 @@ void sexp_hud_set_directive(int n)
 		if ( !stricmp(text, Messages[i].name) ) {
 			strcpy_s(message, Messages[i].message);
 
-			message_translate_tokens(message, text);
-			
-			if (strlen(message) > NAME_LENGTH) {
-				WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", Messages[i].name);
-			}
+	if (strlen(message) > NAME_LENGTH) {
+		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to 32 Characters or less.", message);
+	}
 
 			HudGauge* cg = hud_get_gauge(gaugename);
 			if(cg) {
