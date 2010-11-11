@@ -6341,7 +6341,7 @@ void hud_update_weapon_flash()
 	sw = &Ships[Player_obj->instance].weapons;
 	num_weapons = sw->num_primary_banks + sw->num_secondary_banks;
 
-	if ( num_weapons >= MAX_WEAPON_FLASH_LINES ) {
+	if ( num_weapons > MAX_WEAPON_FLASH_LINES ) {
 		Int3();	// Get Alan
 		return;
 	}
