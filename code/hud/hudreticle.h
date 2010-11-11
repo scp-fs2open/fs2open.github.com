@@ -28,15 +28,28 @@ extern int Hud_reticle_center[GR_NUM_RESOLUTIONS][2];
 #define LINK_TWO_SECONDARY		3
 #define LINK_THREE_SECONDARY	4
 
+struct firepoint {
+	vec2d xy;
+	int active;
+};
+
 class HudGaugeReticle: public HudGauge
 {
 protected:
 	hud_frames crosshair; 
+	bool firepoint_display;
+	SCP_vector<firepoint> fp;
+
+	int firepoint_size;
+	int firepoint_scale_x;
+	int firepoint_scale_y;
 public:
 	HudGaugeReticle();
 	void render(float frametime);
 	void initBitmaps(char *fname);
 	void pageIn();
+	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
+	void getFirepointStatus();
 };
 
 class HudGaugeThrottle: public HudGauge

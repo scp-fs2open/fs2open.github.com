@@ -914,6 +914,21 @@ void HudGauge::renderRect(int x, int y, int w, int h)
 	gr_reset_screen_scale();
 }
 
+void HudGauge::renderCircle(int x, int y, int diameter) {
+	int nx = 0, ny = 0;
+
+	if(reticle_follow) {
+		nx = HUD_nose_x;
+		ny = HUD_nose_y;
+		gr_resize_screen_pos(&nx, &ny);
+	} 
+
+	gr_set_screen_scale(base_w, base_h);
+	gr_unsize_screen_pos(&nx, &ny);
+	gr_circle(x+nx, y+ny, diameter);
+	gr_reset_screen_scale();
+}
+
 void HudGauge::setClip(int x, int y, int w, int h)
 {
 	int nx = 0, ny = 0;

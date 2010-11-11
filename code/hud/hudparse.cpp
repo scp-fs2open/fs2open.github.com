@@ -1658,6 +1658,10 @@ void load_gauge_center_reticle(int base_w, int base_h, int font, int ship_index)
 	int base_res[2];
 	char fname[MAX_FILENAME_LEN];
 	int font_num = FONT1;
+	bool firepoints = false;
+	int scaleX = 15;
+	int scaleY = 10;
+	int size = 5;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -1717,11 +1721,24 @@ void load_gauge_center_reticle(int base_w, int base_h, int font, int ship_index)
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	if(optional_string("Firepoint display:")) 
+		stuff_boolean(&firepoints);
+
+	if (optional_string("Firepoint size:"))
+		stuff_int(&size);
+
+	if (optional_string("Firepoint X coordinate multiplier:"))
+		stuff_int(&scaleX);
+
+	if (optional_string("Firepoint Y coordinate multiplier:"))
+		stuff_int(&scaleY);
+
 	HudGaugeReticle* hud_gauge = new HudGaugeReticle();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFont(font_num);
+	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

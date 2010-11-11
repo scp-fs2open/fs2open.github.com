@@ -284,6 +284,7 @@ public:
 	void renderLine(int x1, int y1, int x2, int y2);
 	void renderGradientLine(int x1, int y1, int x2, int y2, bool resize = true);
 	void renderRect(int x, int y, int w, int h);
+	void renderCircle(int x, int y, int diameter);
 
 	void unsize(int *x, int *y);
 	void unsize(float *x, float *y);

@@ -256,11 +256,77 @@ void HudGaugeReticle::initBitmaps(char *fname)
 	}
 }
 
+void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size) {
+	firepoint_display = firepoint;
+	firepoint_scale_x = scaleX;
+	firepoint_scale_y = scaleY;
+	firepoint_size = size;
+}
+
 void HudGaugeReticle::render(float frametime)
 {
 	setGaugeColor(HUD_C_BRIGHT);
 
 	renderBitmap(crosshair.first_frame, position[0], position[1]);
+
+	if (firepoint_display) {
+		fp.clear();
+		getFirepointStatus();
+		
+		if (fp.size() > 0) {
+			int ax, ay;
+			bm_get_info(crosshair.first_frame, &ax, &ay);
+			int centerX = position[0] + (ax / 2);
+			int centerY = position[1] + (ay / 2);
+
+			for (int i = 0; i < fp.size(); i++) {
+				if (fp[i].active == 2)
+					setGaugeColor(HUD_C_BRIGHT);
+				else if (fp[i].active == 1)
+					setGaugeColor(HUD_C_NORMAL);
+				else
+					setGaugeColor(HUD_C_DIM);
+			
+				renderCircle((int) centerX + (fp[i].xy.x * firepoint_scale_x), (int) centerY + (fp[i].xy.y * firepoint_scale_y), firepoint_size);
+			}
+		}
+	}
+}
+
+void HudGaugeReticle::getFirepointStatus() {
+	//First, get the player ship
+	ship_info* pship;
+	ship* shipp;
+	polymodel* pm;
+
+	Assert(Objects[Player->objnum].type == OBJ_SHIP);
+
+	if (Objects[Player->objnum].type == OBJ_SHIP) {
+		shipp = &Ships[Objects[Player->objnum].instance];
+		pship = &Ship_info[shipp->ship_info_index];
+	
+		//Get the player eyepoint
+		pm = model_get(pship->model_num);
+
+		if (pm->n_guns > 0) { 
+			eye eyepoint = pm->view_positions[shipp->current_viewpoint];
+			vec2d ep = {eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y};
+
+			for (int i = 0; i < pm->n_guns; i++) {
+				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
+					vec2d coords = {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y};
+					int isactive = 0;
+					if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) || !timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]) )
+						isactive = 1;
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
+						isactive = 2;
+
+					firepoint tmp = {coords, isactive};
+					fp.push_back(tmp);
+				}
+			}
+		}
+	}
 }
 
 void HudGaugeReticle::pageIn()
