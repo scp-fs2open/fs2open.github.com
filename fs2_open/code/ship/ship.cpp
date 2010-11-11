@@ -8380,7 +8380,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
 	}
 
-	CLAMP(hull_pct, 0.1f, 1.0f);
+	// extra check
+	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
+	if (hull_pct <= 0.0f) hull_pct = 0.1f;
+	if (hull_pct > 1.0f) hull_pct = 1.0f;
 
 	// shield
 	if (sp->special_shield > 0) {
@@ -8391,7 +8394,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		shield_pct = 0.0f;
 	}
 
-	CLAMP(shield_pct, 0.0f, 1.0f);
+	// extra check
+	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
+	if (shield_pct < 0.0f) shield_pct = 0.0f;
+	if (shield_pct > 1.0f) shield_pct = 1.0f;
 
 	// subsystems
 	int num_saved_subsystems = 0;
@@ -8416,7 +8422,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		else
 			subsys_pcts[num_saved_subsystems] = ss->max_hits;
 
-		CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
+		// extra check
+		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
+		if (subsys_pcts[num_saved_subsystems] < 0.0f) subsys_pcts[num_saved_subsystems] = 0.0f;
+		if (subsys_pcts[num_saved_subsystems] > 1.0f) subsys_pcts[num_saved_subsystems] = 1.0f;
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
