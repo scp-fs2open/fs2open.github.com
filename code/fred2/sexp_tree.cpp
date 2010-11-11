@@ -5207,6 +5207,7 @@ sexp_list_item *sexp_tree::get_listing_opf_who_from()
 	//head.add_data("<any allied>");
 	head.add_data("#Command");
 	head.add_data("<any wingman>");
+	head.add_data("<none>");
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
