@@ -1285,3 +1285,25 @@ void HudGaugeTalkingHead::pageIn()
 {
 	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
 }
+
+HudGaugeFixedMessages::HudGaugeFixedMessages():
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_WARP_CHASE | VM_PADLOCK_ANY ), 255, 255, 255)
+{
+}
+
+void HudGaugeFixedMessages::render(float frametime) {
+	HUD_ft	*hp;
+
+	hp = &HUD_fixed_text[0];
+
+	if (!timestamp_elapsed(hp->end_time)) {
+		gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
+		
+		renderString(position[0], position[1], hp->text);
+		//renderString(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
+	}
+}
+
+void HudGaugeFixedMessages::pageIn()
+{
+}

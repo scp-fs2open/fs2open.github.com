@@ -25,7 +25,7 @@ void hud_positions_init();
 void set_current_hud();
 void load_missing_retail_gauges();
 
-#define NUM_HUD_OBJECT_ENTRIES			53
+#define NUM_HUD_OBJECT_ENTRIES			54
 int parse_gauge_type();
 void load_gauge(int gauge, int base_w = -1, int base_h = -1, int font = -1, int ship_idx = -1);
 
@@ -175,5 +175,8 @@ void load_gauge_missile_tri(int base_w, int base_h, int font, int ship_idx = -1)
 
 #define HUD_OBJECT_KILLS				48
 void load_gauge_kills(int base_w, int base_h, int font, int ship_idx = -1);
+
+#define HUD_OBJECT_FIXED_MESSAGES		49
+void load_gauge_fixed_messages(int base_w, int base_h, int font, int ship_idx = -1);
 
 #endif // _HUDPARSE_H

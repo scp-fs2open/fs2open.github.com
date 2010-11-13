@@ -48,7 +48,7 @@ bool Hud_retail = true;
 
 int Hud_font = -1;
 
-int num_default_gauges = 42;
+int num_default_gauges = 43;
 static int retail_gauges[] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
@@ -91,7 +91,8 @@ static int retail_gauges[] = {
 	HUD_OBJECT_ORIENTATION_TEE,
 	HUD_OBJECT_BRACKETS,
 	HUD_OBJECT_OFFSCREEN,
-	HUD_OBJECT_KILLS
+	HUD_OBJECT_KILLS,
+	HUD_OBJECT_FIXED_MESSAGES
 };
 
 int parse_ship_start()
@@ -633,6 +634,9 @@ int parse_gauge_type()
 	if(optional_string("+Weapon Linking:"))
 		return HUD_OBJECT_WEAPON_LINKING;
 
+	if(optional_string("+Fixed Messages:"))
+		return HUD_OBJECT_FIXED_MESSAGES;
+
 	return -1;
 }
 
@@ -644,6 +648,9 @@ void load_gauge(int gauge, int base_w, int base_h, int font, int ship_idx)
 		break;
 	case HUD_OBJECT_MESSAGES:
 		load_gauge_messages(base_w, base_h, font, ship_idx);
+		break;
+	case HUD_OBJECT_FIXED_MESSAGES:
+		load_gauge_fixed_messages(base_w, base_h, font, ship_idx);
 		break;
 	case HUD_OBJECT_TRAINING_MESSAGES:
 		load_gauge_training_messages(base_w, base_h, font, ship_idx);
@@ -4137,6 +4144,55 @@ void load_gauge_messages(int base_w, int base_h, int font, int ship_index)
 	}
 
 	HudGaugeMessages* hud_gauge = new HudGaugeMessages();
+	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initFont(font_num);
+
+	if(ship_index >= 0) {
+		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);
+	} else {
+		default_hud_gauges.push_back(hud_gauge);
+	}
+}
+
+void load_gauge_fixed_messages(int base_w, int base_h, int font, int ship_index)
+{
+	int coords[2];
+	int base_res[2];
+
+	gr_set_font(FONT1);
+	int h = gr_get_font_height();
+
+	coords[0] = 0x8000; //Magic number, means "Center on X"
+	coords[1] = 5 + (h * 3);
+	int font_num = FONT1;
+
+	if(gr_screen.res == GR_640) {
+		base_res[0] = 640;
+		base_res[1] = 480;
+	} else {
+		base_res[0] = 1024;
+		base_res[1] = 768;
+	}
+
+	if(check_base_res(base_w, base_h)) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if(optional_string("Position:")) {
+			stuff_int_list(coords, 2);
+		}
+	}
+
+	if ( optional_string("Font:") ) {
+		stuff_int(&font_num);
+	} else {
+		if ( font >=0 ) {
+			font_num = font;
+		}
+	}
+
+	HudGaugeFixedMessages* hud_gauge = new HudGaugeFixedMessages();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);

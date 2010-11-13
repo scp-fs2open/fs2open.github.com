@@ -125,4 +125,12 @@ public:
 	anim_instance* createAnim(int anim_start_frame, anim* anim_data);
 };
 
+class HudGaugeFixedMessages: public HudGauge
+{
+public:
+	HudGaugeFixedMessages();
+	void render(float frametime);
+	void pageIn();
+};
+
 #endif
