@@ -1407,7 +1407,6 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 		g3_project_vertex(&subobj_vertex);
 		*sx = (int) subobj_vertex.sx;
 		*sy = (int) subobj_vertex.sy;
-		gr_unsize_screen_pos( sx, sy );
 	}
 
 	return rval;
