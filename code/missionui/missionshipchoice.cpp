@@ -2418,7 +2418,7 @@ int create_default_player_ship(int use_last_flown)
 
 	// find the ship that matches the string stored in default_player_ship
 
-	if ( use_last_flown ) {
+	if ( use_last_flown && !(Players[Player_num].last_ship_flown_si_index == -1) ) {
 		player_ship_class = Players[Player_num].last_ship_flown_si_index;
 	}
 	else {
