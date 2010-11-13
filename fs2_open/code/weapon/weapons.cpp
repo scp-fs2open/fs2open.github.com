@@ -458,7 +458,7 @@ missile_obj *missile_obj_return_address(int index)
 int weapon_info_lookup(const char *name)
 {
 	// bogus
-	if (name != NULL)
+	if (name == NULL)
 		return -1;
 
 	for (int i=0; i<Num_weapon_types; i++)
