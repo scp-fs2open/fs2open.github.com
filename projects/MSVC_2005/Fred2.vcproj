@@ -667,6 +667,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\soundenvironmentdlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\StarfieldEditor.cpp"
 				>
 			</File>
@@ -921,6 +925,10 @@
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\ShipTexturesDlg.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\soundenvironmentdlg.h"
 				>
 			</File>
 			<File

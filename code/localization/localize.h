@@ -86,9 +86,11 @@ void lcl_ext_close();
 
 // Goober5000
 void lcl_replace_stuff(char *text, unsigned int max_len);
+void lcl_replace_stuff(SCP_string &text);
 
 // Karajorma
 void lcl_fred_replace_stuff(char *text, unsigned int max_len);
+void lcl_fred_replace_stuff(SCP_string &text);
 
 // get the localized version of the string. if none exists, return the original string
 // valid input to this function includes :

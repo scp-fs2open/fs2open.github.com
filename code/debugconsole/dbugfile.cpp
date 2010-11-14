@@ -235,6 +235,8 @@ void dbugfile_sprintf(int line, char *file, const char *format, ...)
 		}
 
 		p++;
+		if (!*p)
+			break;	// stupid edge case
 
 		switch(*p)
 		{
@@ -257,7 +259,6 @@ void dbugfile_sprintf(int line, char *file, const char *format, ...)
 				i += sprintf(buffer+i,"%x", ival);
 				break;
 			}
-
 			case 'f':
 			{
 				dval = va_arg(ap, double);
@@ -270,6 +271,12 @@ void dbugfile_sprintf(int line, char *file, const char *format, ...)
 				{
 					*(buffer + i++) = *sval;
 				}
+				break;
+			}
+			case '%':
+			{
+				buffer[i] = '%';	// escaped %
+				i++;
 				break;
 			}
 			default:

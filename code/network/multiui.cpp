@@ -147,7 +147,7 @@ void multi_common_set_text(char *str,int auto_scroll)
 {
 	// make sure it fits
 	// store the entire string as well
-	if(strlen(str) > MULTI_COMMON_MAX_TEXT){
+	if(strlen(str) >= MULTI_COMMON_MAX_TEXT){
 		return ;
 	} else {
 		strcpy_s(Multi_common_all_text,str);
@@ -166,7 +166,7 @@ void multi_common_add_text(char *str,int auto_scroll)
 {
 	// make sure it fits
 	// store the entire string as well
-	if((strlen(str) + strlen(Multi_common_all_text)) > MULTI_COMMON_MAX_TEXT){
+	if((strlen(str) + strlen(Multi_common_all_text)) >= MULTI_COMMON_MAX_TEXT){
 		return ;
 	} else {
 		strcat_s(Multi_common_all_text,str);

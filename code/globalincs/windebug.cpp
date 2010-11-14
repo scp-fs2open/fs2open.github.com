@@ -1749,11 +1749,6 @@ void _vm_free( void *ptr )
 #endif
 {
 	if ( !ptr ) {
-		#ifndef NDEBUG
-			mprintf(("Why are you trying to free a NULL pointer?  [%s(%d)]\n", clean_filename(filename), line));
-		#else
-			mprintf(("Why are you trying to free a NULL pointer?\n"));
-		#endif
 		return;
 	}
 

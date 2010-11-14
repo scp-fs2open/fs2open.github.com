@@ -2668,6 +2668,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_EXPLOSION_OPTION:
 		case OPF_AUDIO_VOLUME_OPTION:
 		case OPF_WEAPON_BANK_NUMBER:
+		case OPF_MESSAGE_OR_STRING:
 			return 1;
 
 		case OPF_SHIP:
@@ -4387,6 +4388,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_WEAPON_BANK_NUMBER:
 			list = get_listing_opf_weapon_banks();
+			break;
+
+		case OPF_MESSAGE_OR_STRING:
+			list = get_listing_opf_message();
 			break;
 
 		default:

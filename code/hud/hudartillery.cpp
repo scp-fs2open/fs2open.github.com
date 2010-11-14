@@ -103,7 +103,7 @@ void ssm_init()
 
 			// see if we have a valid weapon
 			s->weapon_info_index = -1;
-			s->weapon_info_index = weapon_name_lookup(weapon_name);
+			s->weapon_info_index = weapon_info_lookup(weapon_name);
 			if(s->weapon_info_index >= 0){
 				// valid
 				Ssm_info_count++;
