@@ -107,8 +107,6 @@ static int Hud_mission_log_time2_coords[GR_NUM_RESOLUTIONS][2] = {
 #define SHOW_OBJS_BUTTON	4
 #define ACCEPT_BUTTON		5
 
-#define HUD_MESSAGE_TOTAL_LIFE	14000	// total time a HUD message is alive (in milliseconds)
-
 #define HUD_MSG_LENGTH_MAX		2048
 //#define HUD_MSG_MAX_PIXEL_W	439	// maximum number of pixels wide message display area is
 //#define HUD_MSG_MAX_PIXEL_W	619	// maximum number of pixels wide message display area is
@@ -134,23 +132,7 @@ struct scrollback_buttons {
 	scrollback_buttons(char *name, int x1, int y1, int x2, int y2, int h) : filename(name), x(x1), y(y1), xt(x2), yt(y2), hotspot(h) {}
 };
 
-int Scroll_time_id;
-
-int MSG_WINDOW_WIDTH;		// initialed in hud_init_msg_window()
-int MSG_WINDOW_HEIGHT;
-int MSG_WINDOW_FONT_HEIGHT;
-int ACTIVE_BUFFER_LINES	= 4;				// number of HUD messages that can be shown at one time + 1
-int OLD_ACTIVE_BUFFER_LINES;
-
-int Hud_list_start;			// points to the next msg to be printed in the queue
-int Hud_list_end;				// points to the last msg in the queue
-
-int Active_index=0;
-int Scroll_needed=0;
-int Scroll_in_progress=0;
-
-HUD_message_data HUD_pending[SCROLL_BUFFER_LINES];
-Hud_display_info HUD_active_msgs_list[MAX_ACTIVE_BUFFER_LINES];
+SCP_vector<HUD_message_data> HUD_msg_buffer;
 
 int HUD_msg_inited = FALSE;
 
@@ -239,32 +221,7 @@ void HUD_init_fixed_text()
 //
 void hud_init_msg_window()
 {
-	int i, h;
-
-	MSG_WINDOW_WIDTH = gr_screen.clip_width_unscaled - 20;
-
-	Hud_list_start = 0;
-	Hud_list_end = 0;
-
-	for (i=0; i<SCROLL_BUFFER_LINES; i++)
-		HUD_pending[i].text[0] = HUD_pending[i].text[MAX_HUD_LINE_LEN - 1] = 0;
-	
-	for ( i=0; i < MAX_ACTIVE_BUFFER_LINES; i++ ) {
-		HUD_active_msgs_list[i].total_life = 1;
-	}
-
-	Scroll_time_id = 1;
-
-	// determine the height of the msg window, which depends on the font height	
-	gr_set_font(FONT1);
-	h = gr_get_font_height();
-
-	//ACTIVE_BUFFER_LINES = Players[Player_num].HUD_config.num_msg_window_lines;
-//	ACTIVE_BUFFER_LINES = HUD_config.num_msg_window_lines;
-	ACTIVE_BUFFER_LINES = 4;
-
-	MSG_WINDOW_FONT_HEIGHT = h;
-	MSG_WINDOW_HEIGHT = MSG_WINDOW_FONT_HEIGHT * (ACTIVE_BUFFER_LINES-1);
+	int i;
 
 	// starting a mission, free the scroll-back buffers, but only if we've been
 	// through this function once already
@@ -281,99 +238,13 @@ void hud_init_msg_window()
 		list_append(&Msg_scrollback_free_list, &Msg_scrollback_lines[i]);
 	}
 
-	Active_index=0;
-	Scroll_needed=0;
-	Scroll_in_progress=0;
-
-	OLD_ACTIVE_BUFFER_LINES = ACTIVE_BUFFER_LINES;
-
 	HUD_init_fixed_text();
 	HUD_msg_inited = TRUE;
 }
 
-void hud_update_msg_window()
+void hud_clear_msg_buffer()
 {
-	int i, index;
-
-	if ( OLD_ACTIVE_BUFFER_LINES != ACTIVE_BUFFER_LINES ) {
-		// the size of the message window has changed, the best thing to do is to put all
-		// the blank out the current hud messages.  There is no need to add them to the 
-		// scrollback buffer, since they are already there!
-	
-		for ( i=0; i < ACTIVE_BUFFER_LINES; i++ ) {
-			if ( !timestamp_elapsed(HUD_active_msgs_list[i].total_life) ) {
-				HUD_active_msgs_list[i].total_life = 1;
-				Active_index=0;
-			}
-		}
-	}
-	
-	OLD_ACTIVE_BUFFER_LINES = ACTIVE_BUFFER_LINES;
-
-	// check if there is a message to display on the HUD, and if there is room to display it
-	if ( Hud_list_start != Hud_list_end && !Scroll_needed) {
-
-		Hud_list_start++;
-
-		// if the pointer exceeds the array size, wrap around to element 1.  element 0 is not used.		
-		if (Hud_list_start >= SCROLL_BUFFER_LINES)
-			Hud_list_start = 1;
-
-		HUD_active_msgs_list[Active_index].msg = HUD_pending[Hud_list_start];
-		HUD_active_msgs_list[Active_index].total_life = timestamp(HUD_MESSAGE_TOTAL_LIFE);
-
-		for (i=Active_index+1; i < Active_index+ACTIVE_BUFFER_LINES; i++) {
-			index = i % ACTIVE_BUFFER_LINES;
-
-			// determine if there are any existing messages, if so need to scroll them up
-
-			if ( !timestamp_elapsed(HUD_active_msgs_list[index].total_life) ) {
-				HUD_active_msgs_list[index].target_y -=  MSG_WINDOW_FONT_HEIGHT;
-				Scroll_needed=1;
-			}
-
-		}
-
-		if (Scroll_needed) {
-			HUD_active_msgs_list[Active_index].y = (ACTIVE_BUFFER_LINES-1)*MSG_WINDOW_FONT_HEIGHT;
-			HUD_active_msgs_list[Active_index].target_y = HUD_active_msgs_list[Active_index].y - MSG_WINDOW_FONT_HEIGHT;
-		}
-		else {
-			HUD_active_msgs_list[Active_index].y = (ACTIVE_BUFFER_LINES-2)*MSG_WINDOW_FONT_HEIGHT;
-			HUD_active_msgs_list[Active_index].target_y = HUD_active_msgs_list[Active_index].y;
-		}
-
-		Active_index++;
-		if (Active_index >= ACTIVE_BUFFER_LINES) Active_index = 0;
-
-		if (Hud_list_end == Hud_list_start) {	// just printed the last msg
-			Hud_list_start = Hud_list_end = 0;
-		}
-	}
-
-	Scroll_in_progress=0;
-	Scroll_needed = 0;
-
-	for ( i=0; i < ACTIVE_BUFFER_LINES; i++ ) {
-
-		if ( !timestamp_elapsed(HUD_active_msgs_list[i].total_life) ) {
-
-			if (HUD_active_msgs_list[i].y > HUD_active_msgs_list[i].target_y) {
-				Scroll_needed=1;
-				if (timestamp_elapsed(Scroll_time_id) ){
-					HUD_active_msgs_list[i].y -= SCROLL_STEP_SIZE;
-					if (HUD_active_msgs_list[i].y < HUD_active_msgs_list[i].target_y)
-						HUD_active_msgs_list[i].y = HUD_active_msgs_list[i].target_y;
-
-					Scroll_in_progress=1;
-				}
-
-			}
-		}
-	} // end for
-
-	if (Scroll_in_progress)
-		Scroll_time_id = timestamp(SCROLL_TIME);
+	HUD_msg_buffer.clear();
 }
 
 HudGaugeMessages::HudGaugeMessages():
@@ -381,37 +252,197 @@ HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, true, false, true, (VM_DEAD_VIE
 {
 }
 
+void HudGaugeMessages::initMaxLines(int lines)
+{
+	Max_lines = lines + 1; // One additional line that's not displayed to scroll offscreen.
+}
+
+void HudGaugeMessages::initMaxWidth(int width)
+{
+	Window_width = Max_width = width;
+}
+
+void HudGaugeMessages::initScrollTime(int ms)
+{
+	Scroll_time = ms;
+}
+
+void HudGaugeMessages::initStepSize(int h)
+{
+	Step_size = h;
+}
+
+void HudGaugeMessages::initTotalLife(int ms)
+{
+	Total_life = ms;
+}
+
+void HudGaugeMessages::initLineHeight(int h)
+{
+	Line_h = h;
+}
+
+void HudGaugeMessages::initialize()
+{
+	// calculate the window height based on the number of lines, and line height
+	Window_height = Max_lines * Line_h;
+
+	active_messages.clear();
+	pending_messages = SCP_queue<HUD_message_data>(); // there's no clear() method for queues :\
+
+	Scroll_needed = false;
+	Scroll_in_progress = false;
+	Scroll_time_id = 1;
+}
+
 void HudGaugeMessages::pageIn()
 {
 }
 
+void HudGaugeMessages::processMessageBuffer()
+{
+	int sw, x, offset = 0;
+	size_t i;
+	char *msg;
+	char *split_str, *ptr;
+
+	for ( i = 0; i < HUD_msg_buffer.size(); i++ ) {
+		msg = new char [HUD_msg_buffer[i].text.size()+1];
+		strcpy(msg, HUD_msg_buffer[i].text.c_str());
+
+		ptr = strstr(msg, NOX(": ")) + 2;
+
+		if ( ptr ) {
+			gr_get_string_size(&sw, NULL, msg, ptr - msg);
+			offset = sw;
+		}
+
+		x = 0;
+		split_str = msg;
+
+		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != NULL) {		// the 7 is a fudge hack
+			// make sure that split went ok, if not then bail
+			if (ptr == msg) {
+				Int3();
+				break;
+			}
+
+			addPending(split_str, HUD_msg_buffer[i].source, x);
+			split_str = ptr;
+			x = offset;
+		}
+
+		addPending(split_str, HUD_msg_buffer[i].source, x);
+
+		delete msg;
+	}
+}
+
+void HudGaugeMessages::addPending(char *text, int source, int x)
+{
+	Assert(text != NULL);
+
+	HUD_message_data new_message;
+
+	new_message.text = text;
+	new_message.source = source;
+	new_message.x = x;
+
+	pending_messages.push(new_message);
+}
+
+void HudGaugeMessages::scrollMessages()
+{
+	// check if there is a message to display on the HUD, and if there is room to display it
+	if ( !pending_messages.empty() && !Scroll_needed ) {
+		Hud_display_info new_active_msg;
+
+		new_active_msg.msg = pending_messages.front();
+		new_active_msg.total_life = timestamp(Total_life);
+
+		pending_messages.pop();
+
+		for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m ) {
+			// determine if there are any existing messages, if so need to scroll them up
+			if ( !timestamp_elapsed(m->total_life) ) {
+				m->target_y -= Line_h;
+				Scroll_needed = true;
+			}
+		}
+
+		if (Scroll_needed) {
+			new_active_msg.y = (Max_lines-1)*Line_h;
+			new_active_msg.target_y = new_active_msg.y - Line_h;
+		} else {
+			new_active_msg.y = (Max_lines-2)*Line_h;
+			new_active_msg.target_y = new_active_msg.y;
+		}
+
+		active_messages.push_back(new_active_msg);
+	}
+
+	Scroll_in_progress = false;
+	Scroll_needed = false;
+
+	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ) {
+		if ( !timestamp_elapsed(m->total_life) ) {
+			if ( m->y > m->target_y ) {
+				Scroll_needed = true;
+
+				if ( timestamp_elapsed(Scroll_time_id) ) {
+					m->y -= Step_size;
+
+					if ( m->y < m->target_y ) {
+						m->y = m->target_y;
+					}
+
+					Scroll_in_progress = true;
+				}
+			}
+		} else {
+			*m = active_messages.back();
+			active_messages.pop_back();
+
+			continue;
+		}
+
+		++m;
+	}
+
+	if (Scroll_in_progress) {
+		Scroll_time_id = timestamp(Scroll_time);
+	}
+}
+
 // ---------------------------------------------------------------------------------------
-// hud_show_msg_window() will display the active HUD messages on the HUD.  It will scroll
+// HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
 // the messages up when a new message arrives.  
 //
 void HudGaugeMessages::render(float frametime)
 {
-	int i;
+	processMessageBuffer();
+	scrollMessages();
 
 	hud_set_default_color();
 
-	setClip(position[0], position[1], MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
+	// dependant on max_width, max_lines, and line_height
+	setClip(position[0], position[1], Window_width, Window_height+2);
 
-	for ( i=0; i < ACTIVE_BUFFER_LINES; i++ ) {
-		if ( !timestamp_elapsed(HUD_active_msgs_list[i].total_life) ) {
+	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
+		if ( !timestamp_elapsed(m->total_life) ) {
 			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) ) {
 				// set the appropriate color					
-				if(HUD_active_msgs_list[i].msg.source){
+				if ( m->msg.source ) {
 					setGaugeColor(HUD_C_BRIGHT);
 				} else {
 					setGaugeColor();
 				}
 
 				// print the message out
-				renderPrintf(HUD_active_msgs_list[i].msg.x, HUD_active_msgs_list[i].y, "%s", HUD_active_msgs_list[i].msg.text);
+				renderPrintf(m->msg.x, m->y, "%s", m->msg.text.c_str());
 			}
 		}
-	} // end for
+	}
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
@@ -456,41 +487,6 @@ void HUD_fixed_printf(float duration, char * format, ...)
 void HUD_fixed_printf_reset()
 {
 	HUD_init_fixed_text();
-}
-
-
-// --------------------------------------------------------------------------------------
-// HUD_printf_line() 
-//
-//	Print a single line of text to the HUD.  We know that the text will fit on the screen,
-// since that was taken care of in HUD_printf();
-//
-void HUD_printf_line(char *text, int source, int time = 0, int x = 0)
-{
-	Assert(text != NULL);
-
-	// if the pointer exceeds the array size, wrap around to element 1.  element 0 is not used.		
-	Hud_list_end++;
-	if (Hud_list_end >= SCROLL_BUFFER_LINES)
-		Hud_list_end = 1;
-
-	if (Hud_list_end == Hud_list_start) {
-		nprintf(("Warning", "HUD ==> Exceeded msg scroll buffer, discarding message %s\n", text));
-		Hud_list_end--;
-		if (Hud_list_end == 0)
-			Hud_list_end = SCROLL_BUFFER_LINES - 1;
-		return;
-	}
-
-	if ( strlen(text) > MAX_HUD_LINE_LEN - 1 ){
-		nprintf(("Warning", "HUD_printf_line() ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN, text));
-	}
-
-	strncpy(HUD_pending[Hud_list_end].text, text, MAX_HUD_LINE_LEN - 1);
-	HUD_pending[Hud_list_end].text[MAX_HUD_LINE_LEN - 1] = 0;
-	HUD_pending[Hud_list_end].source = source;
-	HUD_pending[Hud_list_end].time = time;
-	HUD_pending[Hud_list_end].x = x;
 }
 
 // converts a TEAM_* define to a HUD_SOURCE_* define
@@ -573,11 +569,6 @@ void HUD_sourced_printf(int source, char *format, ...)
 
 void hud_sourced_print(int source, char *msg)
 {
-	char *ptr, *str;
-	//char *src_str, *msg_str;
-	int sw, t, x, offset = 0;
-	//int fudge = (gr_screen.res == GR_640) ? 15 : 50;		// prevents string from running off screen
-
 	if ( !strlen(msg) ) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
 		return;
@@ -586,34 +577,13 @@ void hud_sourced_print(int source, char *msg)
 	// add message to the scrollback log first
 	hud_add_msg_to_scrollback(msg, source, timestamp());
 
-	ptr = strstr(msg, NOX(": ")) + 2;
-	if (ptr) {
-		gr_get_string_size(&sw, NULL, msg, ptr - msg);			// get width of the speaker field
-		//if (sw < MSG_WINDOW_WIDTH - 20)
-		offset = sw;
-	}
+	HUD_message_data new_msg;
 
-	x = 0;
-	t = timestamp();
-	str = msg;
+	new_msg.text = SCP_string(msg);
+	new_msg.source = source;
+	new_msg.x = 0;
 
-	//Because functions to get font size don't compensate for *actual* screen size
-	int pretend_width = (gr_screen.res == GR_640) ? 620 : 1004;
-
-	while ((ptr = split_str_once(str, pretend_width - x - 7)) != NULL) {		// the 7 is a fudge hack
-		// make sure that split went ok, if not then bail
-		if (ptr == str) {
-			Int3();
-			break;
-		}
-
-		HUD_printf_line(str, source, t, x);
-		str = ptr;
-		x = offset;
-		t = 0;
-	}
-
-	HUD_printf_line(str, source, t, x);
+	HUD_msg_buffer.push_back(new_msg);
 }
 
 int hud_query_scrollback_size()

@@ -4114,16 +4114,28 @@ void load_gauge_messages(int base_w, int base_h, int font, int ship_index)
 	int coords[2];
 	int base_res[2];
 
+	int max_lines = 3;
+	int max_width;
+	int scroll_time = 30;
+	int step_size = 3;
+	int total_life = 14000;
+	int line_height = 12;
+
 	coords[0] = 5;
 	coords[1] = 5;
 	int font_num = FONT1;
+	bool slew = false;
 
 	if(gr_screen.res == GR_640) {
 		base_res[0] = 640;
 		base_res[1] = 480;
+
+		max_width = 620;
 	} else {
 		base_res[0] = 1024;
 		base_res[1] = 768;
+
+		max_width = 1004;
 	}
 
 	if(check_base_res(base_w, base_h)) {
@@ -4143,10 +4155,39 @@ void load_gauge_messages(int base_w, int base_h, int font, int ship_index)
 		}
 	}
 
+	if ( optional_string("Slew:") ) {
+		stuff_boolean(&slew);
+	}
+	if ( optional_string("Max Lines:") ) {
+		stuff_int(&max_lines);
+	}
+	if ( optional_string("Max Width:") ) {
+		stuff_int(&max_width);
+	}
+	if ( optional_string("Line Height:") ) {
+		stuff_int(&line_height);
+	}
+	if ( optional_string("Total Lifetime:") ) {
+		stuff_int(&total_life);
+	}
+	if ( optional_string("Scroll Time:") ) {
+		stuff_int(&scroll_time);
+	}
+	if ( optional_string("Step Size:") ) {
+		stuff_int(&step_size);
+	}
+
 	HudGaugeMessages* hud_gauge = new HudGaugeMessages();
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
+	hud_gauge->initSlew(slew);
+	hud_gauge->initMaxLines(max_lines);
+	hud_gauge->initMaxWidth(max_width);
+	hud_gauge->initScrollTime(scroll_time);
+	hud_gauge->initStepSize(step_size);
+	hud_gauge->initTotalLife(total_life);
+	hud_gauge->initLineHeight(line_height);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

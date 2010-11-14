@@ -15,11 +15,7 @@
 #include "hud/hud.h"
 #include "anim/packunpack.h"
 
-#define SCROLL_BUFFER_LINES		128			// maximum number of HUD messages that can be stored
-#define SCROLL_TIME					30				// time in milliseconds between scrolling a message
-#define SCROLL_STEP_SIZE			3
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
-#define MAX_ACTIVE_BUFFER_LINES	10
 
 #define HUD_SOURCE_COMPUTER		0
 #define HUD_SOURCE_TRAINING		1
@@ -32,13 +28,9 @@
 
 #define HUD_SOURCE_TEAM_OFFSET	8	// must be higher than any previous hud source
 
-
-extern int ACTIVE_BUFFER_LINES;					// user-preferred number of message buffer lines
-
-typedef struct {
-	char text[MAX_HUD_LINE_LEN];
+typedef struct HUD_message_data {
+	SCP_string text;
 	int source;  // where this message came from so we can color code it
-	int time;  // timestamp message was originally sent
 	int x;
 } HUD_message_data;
 
@@ -62,17 +54,6 @@ typedef struct Hud_display_info {
 	int total_life;			// timestamp id to control how long a HUD message stays alive	
 } Hud_display_info;
 
-extern HUD_message_data HUD_pending[SCROLL_BUFFER_LINES];
-extern Hud_display_info HUD_active_msgs_list[MAX_ACTIVE_BUFFER_LINES];
-extern int Hud_list_start;				// points to the next msg to be printed in the queue
-extern int Hud_list_end;				// points to the last msg in the queue
-extern int Scroll_time_id;
-extern int Active_index;
-extern int Scroll_needed;
-extern int Scroll_in_progress;
-
-extern int MSG_WINDOW_HEIGHT;			// extern'ed since needed in save/restore code
-extern int MSG_WINDOW_FONT_HEIGHT;	// extern'ed since needed in save/restore code
 
 void hud_scrollback_init();
 void hud_scrollback_close();
@@ -80,7 +61,7 @@ void hud_scrollback_do_frame(float frametime);
 void hud_scrollback_exit();
 
 void hud_init_msg_window();
-void hud_update_msg_window();
+void hud_clear_msg_buffer();
 int HUD_team_get_source(int team);
 int HUD_source_get_team(int team);
 void HUD_printf(char *format, ...);
@@ -97,9 +78,39 @@ void hud_free_scrollback_list();
 
 class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES
 {
+protected:
+	// User-defined properties
+	int Max_lines;
+	int Max_width; // 620 for GR_640 and 1004 for GR_1024
+	int Scroll_time;
+	int Step_size;
+	int Total_life;
+	int Line_h;
+
+	int Window_width;
+	int Window_height;
+
+	SCP_vector<Hud_display_info> active_messages;
+	SCP_queue<HUD_message_data> pending_messages;
+
+	bool Scroll_needed;
+	bool Scroll_in_progress;
+	int Scroll_time_id;
 public:
 	HudGaugeMessages();
+
+	void initLineHeight(int h);
+	void initMaxLines(int lines);
+	void initMaxWidth(int width);
+	void initScrollTime(int ms);
+	void initStepSize(int h);
+	void initTotalLife(int ms);
+
+	void processMessageBuffer();
+	void addPending(char *text, int source, int x = 0);
+	void scrollMessages();
 	void render(float frametime);
+	void initialize();
 	void pageIn();
 };
 

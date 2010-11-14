@@ -1387,7 +1387,6 @@ void hud_update_frame(float frametime)
 	hud_update_objective_message();
 	hud_support_view_update();
 	message_training_update_frame();
-	hud_update_msg_window();
 
 	// if emp is active we have to allow targeting by the "random emp" system
 	// we will intercept player targeting requests in hud_sensors_ok() when checking key commands
@@ -1767,6 +1766,7 @@ void hud_render_all()
 		}
 	}
 
+	hud_clear_msg_buffer();
 	ship_render_foregrounds_cockpit_display(Player_ship);
 
 	// set font back the way it was
