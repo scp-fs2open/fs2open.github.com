@@ -2490,6 +2490,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			case OPF_CARGO:
 			case OPF_STRING:
+			case OPF_MESSAGE_OR_STRING:
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 				break;
@@ -12551,12 +12552,26 @@ void multi_sexp_ship_change_callsign()
 // Goober5000
 void sexp_set_death_message(int n)
 {
-	strcpy_s(Player->death_message, CTEXT(n));
+	int i;
 
-	extern void lcl_replace_stuff(char *text, unsigned int max_len);
-	lcl_replace_stuff(Player->death_message, 256);
+	// we'll suppose it's the string for now
+	Player->death_message = CTEXT(n);
 
-	sexp_replace_variable_names_with_values(Player->death_message, 256);
+	// but use an actual message if one exists
+	for (i=0; i<Num_messages; i++)
+	{
+		if (!stricmp(Messages[i].name, CTEXT(n)))
+		{
+			Player->death_message = Messages[i].message;
+			break;
+		}
+	}
+
+	// apply localization
+	extern void lcl_replace_stuff(SCP_string &text);
+	lcl_replace_stuff(Player->death_message);
+
+	sexp_replace_variable_names_with_values(Player->death_message);
 }
 
 int sexp_key_pressed(int node)
@@ -20644,8 +20659,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_SET_DEATH_MESSAGE:
-			if (argnum == 0)
-				return OPF_STRING;
+			return OPF_MESSAGE_OR_STRING;
 
 		case OP_DISTANCE:
 			return OPF_SHIP_WING_POINT;
@@ -22627,10 +22641,9 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 	if (strchr(text, '$') != NULL)
 	{
 		// we want to use the same variable substitution that's in messages etc.
-		char buf[TOKEN_LENGTH];
-		strcpy_s(buf, text);
-		sexp_replace_variable_names_with_values(buf, TOKEN_LENGTH);
-		strcpy_s(Sexp_variables[index].text, buf);
+		SCP_string temp_text = text;
+		sexp_replace_variable_names_with_values(temp_text);
+		strcpy(Sexp_variables[index].text, temp_text.substr(0, TOKEN_LENGTH).c_str());
 	}
 	else
 	{
@@ -22887,8 +22900,27 @@ int get_index_sexp_variable_name_special(const char *startpos)
 		}
 	}
 
-    // not found
-    return -1;
+	// not found
+	return -1;
+}
+
+// Goober5000 - tests whether a variable name starts here
+// return index of sexp_variable_name, -1 if not found
+int get_index_sexp_variable_name_special(SCP_string &text, size_t startpos)
+{
+	for (int i = MAX_SEXP_VARIABLES - 1; i >= 0; i--) {
+		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
+			// check case sensitive
+			// check that the variable name starts here, as opposed to farther down the string
+			size_t pos = text.find(Sexp_variables[i].variable_name, startpos);
+			if (pos != SCP_string::npos && pos == startpos) {
+				return i;
+			}
+		}
+	}
+
+	// not found
+	return -1;
 }
 
 // Goober5000
@@ -22926,6 +22958,42 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 			}
 		}
 	} while (pos != NULL);
+
+	return replaced_anything;
+}
+
+// Goober5000
+bool sexp_replace_variable_names_with_values(SCP_string &text)
+{
+	bool replaced_anything = false;
+
+	size_t lookHere = 0;
+	size_t foundHere;
+
+	do {
+		// look for the meta-character
+		foundHere = text.find('$', lookHere);
+
+		// found?
+		if (foundHere != SCP_string::npos)
+		{
+			// see if a variable starts at the next char
+			int var_index = get_index_sexp_variable_name_special(text, foundHere+1);
+			if (var_index >= 0)
+			{
+				// replace $variable with the value
+				text.replace(foundHere, strlen(Sexp_variables[var_index].variable_name)+1, Sexp_variables[var_index].text);
+				replaced_anything = true;
+
+				lookHere = foundHere + strlen(Sexp_variables[var_index].text);
+			}
+			// no match... so keep iterating along the string
+			else
+			{
+				lookHere = foundHere + 1;
+			}
+		}
+	} while (foundHere != SCP_string::npos);
 
 	return replaced_anything;
 }
