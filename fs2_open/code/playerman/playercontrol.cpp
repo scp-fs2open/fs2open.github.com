@@ -35,6 +35,7 @@
 #include "camera/camera.h"
 #include "network/multiutil.h"
 #include "network/multi_oo.h"
+#include "parse/parselo.h"
 
 #ifndef NDEBUG
 #include "io/key.h"
@@ -1327,7 +1328,7 @@ void player_level_init()
 	Player_all_alone_msg_inited=0;
 	Player->flags &= ~PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 
-	Player->death_message[0] = '\0';
+	Player->death_message = "";
 
 	// Player->insignia_bitmap = -1;
 }
@@ -1698,8 +1699,8 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 void player_generate_death_message(player *player_p)
 {
 	char weapon_name[NAME_LENGTH];
-	char *msg = player_p->death_message;
-	weapon_name[0] = 0;	
+	weapon_name[0] = 0;
+	SCP_string &msg = player_p->death_message;
 	int ship_index;
 
 	player_generate_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species, weapon_name);
@@ -1759,7 +1760,7 @@ void player_generate_death_message(player *player_p)
 		case OBJ_BEAM:
 			if (strlen(player_p->killer_parent_name) <= 0)
 			{
-				Int3();
+				Warning(LOCATION, "Killer_parent_name not specified for beam!");
 				sprintf(msg, XSTR( "%s was killed by a beam from an unknown source", 1081), player_p->callsign);
 			}
 			else
@@ -1778,7 +1779,7 @@ void player_generate_death_message(player *player_p)
 			break;
 
 		default:
-			sprintf(msg, XSTR( "%s was killed", 99), player_p->callsign);
+			sprintf(msg, XSTR( "%s was killed by unknown causes", 99), player_p->callsign);
 			break;
 	}
 }
@@ -1786,10 +1787,10 @@ void player_generate_death_message(player *player_p)
 // display what/who killed the player
 void player_show_death_message()
 {
-	char *msg = Player->death_message;
+	SCP_string &msg = Player->death_message;
 
 	// make sure we don't already have a death message
-	if (!strlen(msg))
+	if (msg.empty())
 	{
 		// check if player killed self
 		if (Player->flags & PLAYER_KILLED_SELF)
@@ -1797,15 +1798,15 @@ void player_show_death_message()
 			// reasons he killed himself
 			if (Player->flags & PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE)
 			{
-				sprintf(msg, XSTR("You have killed yourself with a shockwave from your own weapon", 1421));			
+				msg = XSTR("You have killed yourself with a shockwave from your own weapon", 1421);
 			}
 			else if (Player->flags & PLAYER_FLAGS_KILLED_SELF_MISSILES)
 			{
-				sprintf(msg, XSTR("You have killed yourself with your own missiles", 1422));			
+				msg = XSTR("You have killed yourself with your own missiles", 1422);
 			}
 			else
 			{
-				sprintf(msg, XSTR("You have killed yourself", 100));
+				msg = XSTR("You have killed yourself", 100);
 			}
 	
 			Player->flags &= ~PLAYER_KILLED_SELF;
@@ -1817,7 +1818,7 @@ void player_show_death_message()
 	}
 
 	// display the message
-	HUD_fixed_printf(30.0f, msg);
+	HUD_fixed_printf(30.0f, const_cast<char *>(msg.c_str()));
 }
 
 /*

@@ -194,11 +194,17 @@ extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_l
 // Goober5000 - returns number of replacements or -1 for exceeded length
 extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
 
+extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
+
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
 
 // Goober5000 (ditto)
 extern bool can_construe_as_integer(const char *text);
+
+// Goober5000 (ditto for C++)
+extern void sprintf(SCP_string &dest, const char *format, ...);
 
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);

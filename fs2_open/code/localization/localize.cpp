@@ -532,62 +532,55 @@ void lcl_ext_close()
 	Lcl_ext_file = NULL;
 }
 
-// Goober5000 - replace stuff in the string, e.g. $callsign with player's callsign
-// now will also replace $rank with rank, e.g. "Lieutenant"
-// now will also replace $quote with double quotation marks
-// now will also replace $semicolon with semicolon mark
-#define LCL_NUM_REPLACEMENTS 4
 void lcl_replace_stuff(char *text, unsigned int max_len)
 {
 	Assert(text);	// Goober5000
 
+	// delegate to SCP_string for the replacements
+	SCP_string temp_text = text;
+	lcl_replace_stuff(temp_text);
+
+	// fill up the original string
+	strcpy(text, temp_text.substr(0, max_len).c_str());
+}
+
+// Goober5000 - replace stuff in the string, e.g. $callsign with player's callsign
+// now will also replace $rank with rank, e.g. "Lieutenant"
+// now will also replace $quote with double quotation marks
+// now will also replace $semicolon with semicolon mark
+void lcl_replace_stuff(SCP_string &text)
+{
 	if (Fred_running)
 		return;
 
-	if (!Player)
-		return;
-
-	int i;
-	char replace[LCL_NUM_REPLACEMENTS][2][NAME_LENGTH];
-
-	// fill replacements array (this is if we want to add more in the future)
-	strcpy_s(replace[0][0], "$callsign");
-	strcpy_s(replace[0][1], Player->callsign);
-	strcpy_s(replace[1][0], "$rank");
-	strcpy_s(replace[1][1], Ranks[Player->stats.rank].name);
-	strcpy_s(replace[2][0], "$quote");
-	strcpy_s(replace[2][1], "\"");
-	strcpy_s(replace[3][0], "$semicolon");
-	strcpy_s(replace[3][1], ";");
-
-	// do all replacements
-	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)
+	if (Player != NULL)
 	{
-		// replace all instances of that string
-		replace_all(text, replace[i][0], replace[i][1], max_len);
+		replace_all(text, "$callsign", Player->callsign);
+		replace_all(text, "$rank", Ranks[Player->stats.rank].name);
 	}
+	replace_all(text, "$quote", "\"");
+	replace_all(text, "$semicolon", ";");
 }
 
-#define LCL_NUM_FRED_REPLACEMENTS 2
 void lcl_fred_replace_stuff(char *text, unsigned int max_len)
 {
-	Assert(text);	
+	Assert(text);	// Goober5000
 
-	int i;
-	char replace[LCL_NUM_FRED_REPLACEMENTS][2][NAME_LENGTH];
+	// delegate to SCP_string for the replacements
+	SCP_string temp_text = text;
+	lcl_fred_replace_stuff(temp_text);
 
-	// fill replacements array (this is if we want to add more in the future)
-	strcpy_s(replace[0][0], "$quote");
-	strcpy_s(replace[0][1], "\"");
-	strcpy_s(replace[1][0], "$semicolon");
-	strcpy_s(replace[1][1], ";");
+	// fill up the original string
+	strcpy(text, temp_text.substr(0, max_len).c_str());
+}
 
-	// do all replacements
-	for (i = 0; i < LCL_NUM_FRED_REPLACEMENTS; i++)
-	{
-		// replace all instances of that string
-		replace_all(text, replace[i][1], replace[i][0], max_len);
-	}
+void lcl_fred_replace_stuff(SCP_string &text)
+{
+	if (!Fred_running)
+		return;
+
+	replace_all(text, "\"", "$quote");
+	replace_all(text, ";", "$semicolon");
 }
 
 // get the localized version of the string. if none exists, return the original string

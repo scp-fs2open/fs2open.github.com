@@ -1229,6 +1229,7 @@ void event_editor::OnDeleteMsg()
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->DeleteString(m_cur_msg);
 	sprintf(buf, "<%s>", m_messages[m_cur_msg].name);
 	update_sexp_references(m_messages[m_cur_msg].name, buf, OPF_MESSAGE);
+	update_sexp_references(m_messages[m_cur_msg].name, buf, OPF_MESSAGE_OR_STRING);
 
 	m_messages.erase(m_messages.begin() + m_cur_msg); 
 

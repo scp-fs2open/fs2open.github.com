@@ -365,6 +365,7 @@ int CMessageEditorDlg::update(int num)
 
 		if (i == Num_messages) {  // update name if no conflicts, otherwise keep old name
 			update_sexp_references(Messages[num].name, ptr, OPF_MESSAGE);
+			update_sexp_references(Messages[num].name, ptr, OPF_MESSAGE_OR_STRING);
 			string_copy(Messages[num].name, m_message_name, NAME_LENGTH - 1);
 
 			list = (CListBox *) GetDlgItem(IDC_MESSAGE_LIST);
@@ -469,6 +470,7 @@ void CMessageEditorDlg::OnDelete()
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->DeleteString(m_cur_msg);
 	sprintf(buf, "<%s>", Messages[m_cur_msg].name);
 	update_sexp_references(Messages[m_cur_msg].name, buf, OPF_MESSAGE);
+	update_sexp_references(Messages[m_cur_msg].name, buf, OPF_MESSAGE_OR_STRING);
 
 	for (i=m_cur_msg; i<Num_messages-1; i++)
 		Messages[i] = Messages[i + 1];

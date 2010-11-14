@@ -201,7 +201,7 @@ typedef struct player {
 	int				num_variables;
 	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
 
-	char death_message[256];								// Goober5000
+	SCP_string		death_message;								// Goober5000
 
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
 	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls).
