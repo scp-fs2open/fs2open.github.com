@@ -24,8 +24,16 @@ GNU General Public License, version 2.0
 http://sevenzipjbind.sourceforge.net/
 GNU Lesser General Public License, version 2.1
 
+CJWizard
+http://code.google.com/p/cjwizard/
+Apache License, version 2.0
+
 Apache Log4J
 http://logging.apache.org/log4j/
+Apache License, version 2.0
+
+Apache Commons Logging (a dependency of CJWizard)
+http://commons.apache.org/
 Apache License, version 2.0
 
 Non-FS2SCP-controlled components provide source code at their respective websites.  However, the

@@ -2,5 +2,10 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
+	<classpathentry kind="lib" path="lib/sevenzipjbinding-AllPlatforms.jar"/>
+	<classpathentry kind="lib" path="lib/sevenzipjbinding.jar"/>
+	<classpathentry kind="lib" path="lib/CJWizards-0.2.jar" sourcepath="/CJWizards-0.21"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
