@@ -691,6 +691,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\external_dll\trackirglobal.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\external_dll\trackirpublic.h"
 				>
 			</File>
