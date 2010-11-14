@@ -53,6 +53,9 @@
       </fileset>
     </unzip>
 
+	<!-- ditto with config files -->
+	<copy todir="${build}" file="log4j.xml"/>
+
     <!-- jar it up -->
     <jar jarfile="${dist}/FreeSpaceOpenInstaller.jar">
       <fileset dir="${build}" excludes="**/svn*"/>
