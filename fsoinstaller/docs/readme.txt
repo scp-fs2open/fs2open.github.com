@@ -33,7 +33,7 @@ http://logging.apache.org/log4j/
 Apache License, version 2.0
 
 Apache Commons Logging (a dependency of CJWizard)
-http://commons.apache.org/
+http://commons.apache.org/logging/
 Apache License, version 2.0
 
 Non-FS2SCP-controlled components provide source code at their respective websites.  However, the
