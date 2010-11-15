@@ -815,6 +815,7 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index)
 	char filename[MAX_FILENAME_LEN];
 	int gauge_type = HUD_CENTER_RETICLE;
 	bool slew = false;
+	bool active_by_default = true;
 	int font_num = FONT1;
 	int txtoffset_x = 0, txtoffset_y = 0;
 	ubyte r = 255, g = 255, b = 255;
@@ -869,6 +870,10 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index)
 			stuff_ubyte(&b);
 		}
 
+		if(optional_string("Active by default:")) {
+			stuff_boolean(&active_by_default);
+		}
+
 		required_string("Filename:");
 		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -877,6 +882,7 @@ void load_gauge_custom(int base_w, int base_h, int font, int ship_index)
 	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initFont(font_num);
+	hud_gauge->updateActive(active_by_default);
 
 	if(ship_index >= 0) {
 		Ship_info[ship_index].hud_gauges.push_back(hud_gauge);

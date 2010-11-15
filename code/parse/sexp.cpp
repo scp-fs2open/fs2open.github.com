@@ -501,6 +501,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
 	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
+	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,		2, 2 },
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -8628,6 +8629,18 @@ void sexp_hud_display_gauge(int n) {
 
 	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
+	} 
+}
+
+void sexp_hud_gauge_set_active(int n) {
+	HudGauge* hg;
+	char* name = CTEXT(n);
+	bool active = eval_sexp(CDR(n));
+
+	hg = hud_get_gauge(name);
+
+	if (hg != NULL) {
+		hg->updateActive(active);
 	}
 }
 
@@ -19597,6 +19610,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hud_set_directive(node);
 				break;
 
+			case OP_HUD_GAUGE_SET_ACTIVE:
+				sexp_val = SEXP_TRUE;
+				sexp_hud_gauge_set_active(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -20402,6 +20420,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_FORCE_GLIDE:
 		case OP_HUD_SET_DIRECTIVE:
+		case OP_HUD_GAUGE_SET_ACTIVE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -22049,6 +22068,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HUD_SET_DIRECTIVE:
 			return OPF_STRING;
 
+		case OP_HUD_GAUGE_SET_ACTIVE:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_BOOL;
+
 		default:
 			Int3();
 	}
@@ -23400,6 +23425,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_DISPLAY_GAUGE:
 		case OP_HUD_SET_MESSAGE:
 		case OP_HUD_SET_DIRECTIVE:
+		case OP_HUD_GAUGE_SET_ACTIVE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -26456,6 +26482,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name"
 		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences."
+	},
+
+	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active\r\n"
+		"\tActivates or deactivates a given custom gauge"
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tHUD Gauge name"
+		"\t2:\tBoolean, whether or nt to display this gauge"
 	}
 };
 
