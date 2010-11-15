@@ -128,8 +128,9 @@ done
 
 #conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
-# if user passed --noconfigure as first parameter don't run configure
-if test ! x$1 = x--noconfigure; then
+# to not run configure, call autogen.sh as,
+# NOCONFIGURE=1 ./autogen.sh
+if test x$NOCONFIGURE = x; then
   echo Running $srcdir/configure $conf_flags "$@" ...
   $srcdir/configure $conf_flags "$@" \
   && echo Now type \`make\' to compile $PKG_NAME.
