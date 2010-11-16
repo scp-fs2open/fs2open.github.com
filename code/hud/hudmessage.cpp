@@ -334,7 +334,7 @@ void HudGaugeMessages::processMessageBuffer()
 
 		addPending(split_str, HUD_msg_buffer[i].source, x);
 
-		delete msg;
+		delete[] msg;
 	}
 }
 
