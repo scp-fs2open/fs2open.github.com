@@ -279,7 +279,7 @@ void HudGaugeReticle::render(float frametime)
 			int centerX = position[0] + (ax / 2);
 			int centerY = position[1] + (ay / 2);
 
-			for (int i = 0; i < fp.size(); i++) {
+			for (uint i = 0; i < fp.size(); i++) {
 				if (fp[i].active == 2)
 					setGaugeColor(HUD_C_BRIGHT);
 				else if (fp[i].active == 1)
@@ -287,7 +287,7 @@ void HudGaugeReticle::render(float frametime)
 				else
 					setGaugeColor(HUD_C_DIM);
 			
-				renderCircle((int) centerX + (fp[i].xy.x * firepoint_scale_x), (int) centerY + (fp[i].xy.y * firepoint_scale_y), firepoint_size);
+				renderCircle((int) (centerX + (fp[i].xy.x * firepoint_scale_x)), (int) (centerY + (fp[i].xy.y * firepoint_scale_y)), firepoint_size);
 			}
 		}
 	}
@@ -313,13 +313,17 @@ void HudGaugeReticle::getFirepointStatus() {
 			vec2d ep = {eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y};
 
 			for (int i = 0; i < pm->n_guns; i++) {
+				int isactive = 0;
+
+				if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) )
+					isactive = 1;
+				else if (!timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
+					isactive = 1;
+				else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
+					isactive = 2;
+
 				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
 					vec2d coords = {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y};
-					int isactive = 0;
-					if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) || !timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]) )
-						isactive = 1;
-					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
-						isactive = 2;
 
 					firepoint tmp = {coords, isactive};
 					fp.push_back(tmp);
