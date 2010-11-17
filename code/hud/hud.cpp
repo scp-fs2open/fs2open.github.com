@@ -1655,7 +1655,7 @@ void hud_render_preprocess(float frametime)
 }
 
 HudGaugeMissionTime::HudGaugeMissionTime():
-HudGauge(HUD_OBJECT_MISSION_TIME, HUD_MISSION_TIME, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_MISSION_TIME, HUD_MISSION_TIME, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -1878,7 +1878,7 @@ void hud_damage_popup_init()
 }
 
 HudGaugeDamage::HudGaugeDamage():
-HudGauge(HUD_OBJECT_DAMAGE, HUD_DAMAGE_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_DAMAGE, HUD_DAMAGE_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -2280,7 +2280,7 @@ void hud_start_text_flash(char *txt, int t, int interval)
 }
 
 HudGaugeTextWarnings::HudGaugeTextWarnings():
-HudGauge(HUD_OBJECT_TEXT_WARNINGS, HUD_TEXT_FLASH, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_TEXT_WARNINGS, HUD_TEXT_FLASH, true, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 	
 }
@@ -2334,7 +2334,7 @@ void HudGaugeTextWarnings::render(float frametime)
 }
 
 HudGaugeKills::HudGaugeKills():
-HudGauge(HUD_OBJECT_KILLS, HUD_KILLS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_KILLS, HUD_KILLS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -2394,7 +2394,7 @@ void HudGaugeKills::render(float frametime)
 }
 
 HudGaugeLag::HudGaugeLag():
-HudGauge(HUD_OBJECT_LAG, HUD_LAG_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_LAG, HUD_LAG_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 
 }
@@ -2691,7 +2691,7 @@ void hud_support_view_update()
 }
 
 HudGaugeSupport::HudGaugeSupport():
-HudGauge(HUD_OBJECT_SUPPORT, HUD_SUPPORT_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+HudGauge(HUD_OBJECT_SUPPORT, HUD_SUPPORT_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
 }
 
@@ -3200,7 +3200,7 @@ void hud_add_objective_messsage(int type, int status)
 }
 
 HudGaugeObjectiveNotify::HudGaugeObjectiveNotify():
-HudGauge(HUD_OBJECT_OBJ_NOTIFY, HUD_OBJECTIVES_NOTIFY_GAUGE, true, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+HudGauge(HUD_OBJECT_OBJ_NOTIFY, HUD_OBJECTIVES_NOTIFY_GAUGE, true, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
@@ -3714,7 +3714,7 @@ void HudGaugeMultiMsg::render(float frametime)
 }
 
 HudGaugeVoiceStatus::HudGaugeVoiceStatus():
-HudGauge(HUD_OBJECT_VOICE_STATUS, HUD_MESSAGE_LINES, false, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY,255, 255, 255) 
+HudGauge(HUD_OBJECT_VOICE_STATUS, HUD_MESSAGE_LINES, false, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255) 
 {
 }
 
