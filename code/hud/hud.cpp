@@ -319,7 +319,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), config_override(true), reticle_follow(false), active(false), pop_up(false), disabled_views(0), texture_target(-1), 
-texture_cache(-1), target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1)
+texture_cache(-1), target_x(-1), target_y(-1), target_w(-1), target_h(-1), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -344,7 +344,7 @@ HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _allow_override, b
 				   int r, int g, int b):
 base_w(0), base_h(0), gauge_object(_gauge_object), gauge_config(_gauge_config), config_override(_allow_override), reticle_follow(_slew), 
 message_gauge(_message), active(true), pop_up(false), disabled_views(_disabled_views), texture_target(-1), texture_cache(-1), target_x(-1), target_y(-1), 
-target_w(-1), target_h(-1), textoffset_x(0), textoffset_y(0), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1)
+target_w(-1), target_h(-1), textoffset_x(0), textoffset_y(0), cache_w(-1), cache_h(-1), custom_gauge(false), font_num(FONT1), off_by_default(false)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
 
@@ -378,7 +378,7 @@ target_w(-1), target_h(-1), textoffset_x(0), textoffset_y(0), cache_w(-1), cache
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 gauge_object(HUD_OBJECT_CUSTOM), base_w(0), base_h(0), gauge_config(_gauge_config), config_override(true), reticle_follow(_slew), message_gauge(false), 
 active(true), pop_up(false), disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), texture_target(-1), texture_cache(-1), 
-target_x(-1), target_y(-1), target_w(-1), target_h(-1), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), cache_w(-1), cache_h(-1), custom_gauge(true), font_num(FONT1)
+target_x(-1), target_y(-1), target_w(-1), target_h(-1), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), cache_w(-1), cache_h(-1), custom_gauge(true), font_num(FONT1), off_by_default(false)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -580,6 +580,16 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 void HudGauge::updateActive(bool show)
 {
 	active = show;
+}
+
+void HudGauge::initRenderStatus(bool render)
+{
+	off_by_default = !render;
+}
+
+bool HudGauge::isOffbyDefault()
+{
+	return off_by_default;
 }
 
 void HudGauge::updatePopUp(bool pop_up_flag)

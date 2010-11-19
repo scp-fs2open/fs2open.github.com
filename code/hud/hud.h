@@ -192,6 +192,7 @@ protected:
 	bool config_override;
 	bool reticle_follow;
 	bool active;
+	bool off_by_default;
 	bool pop_up;
 	int popup_timer;
 	bool message_gauge;
@@ -229,9 +230,11 @@ public:
 	void initSlew(bool slew);
 	void initFont(int font_num);
 	void initCockpitTarget(char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int canvas_w, int canvas_h);
+	void initRenderStatus(bool render);
 
 	int getConfigType();
 	int getObjectType();
+	bool isOffbyDefault();
 	
 	bool configOverride();
 	void updateColor(int r, int g, int b, int a);
