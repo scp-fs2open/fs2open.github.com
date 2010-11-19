@@ -317,7 +317,7 @@ void HudGaugeReticle::getFirepointStatus() {
 
 				if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) )
 					isactive = 1;
-				else if (!timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
+				else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
 					isactive = 1;
 				else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
 					isactive = 2;
