@@ -1239,13 +1239,17 @@ void HudGaugeTalkingHead::render(float frametime)
 	// check playing messages to see if we have any messages with talking animations that need to be created.
 	for (int i = 0; i < Num_messages_playing; i++ ) {
 		if(Playing_messages[i].play_anim && Playing_messages[i].id != msg_id ) {
+			msg_id = Playing_messages[i].id;
 			if(head_anim) {
 				if(anim_playing(head_anim)) {
 					anim_stop_playing(head_anim);
 				}
-			}
-			head_anim = createAnim(Playing_messages[i].start_frame, Playing_messages[i].anim_data);
-			msg_id = Playing_messages[i].id;
+			} 
+			if (Playing_messages[i].anim_data)
+				head_anim = createAnim(Playing_messages[i].start_frame, Playing_messages[i].anim_data);	
+			else
+				head_anim = NULL;
+
 			return;
 		}
 	}

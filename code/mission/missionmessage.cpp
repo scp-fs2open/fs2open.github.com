@@ -1399,7 +1399,7 @@ void message_queue_process()
 
 	// set up module globals for this message
 	m = &Messages[q->message_num];
-	//Playing_messages[Num_messages_playing].anim = NULL;
+	Playing_messages[Num_messages_playing].anim_data = NULL;
 	Playing_messages[Num_messages_playing].wave  = -1;
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
