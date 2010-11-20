@@ -3519,7 +3519,7 @@ CombinedVariable::CombinedVariable(int n_Int, ubyte type_override)
 CombinedVariable::CombinedVariable(char *n_String)
 {
 	Type = TYPE_STRING;
-	StorageUnion.su_String = (char *)malloc(strlen(n_String)+1);
+	StorageUnion.su_String = (char *)vm_malloc(strlen(n_String)+1);
 	strcpy(StorageUnion.su_String, n_String);
 }
 
@@ -3527,7 +3527,7 @@ CombinedVariable::~CombinedVariable()
 {
 	if(Type == TYPE_STRING)
 	{
-		free(StorageUnion.su_String);
+		vm_free(StorageUnion.su_String);
 	}
 }
 
