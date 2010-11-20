@@ -115,7 +115,7 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 	else
 	{
 		// create a bit array to mark the objects we check
-		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Parse_objects.size()));
+		ubyte *visited_bitstring = (ubyte *) vm_malloc(calculate_num_bytes(Parse_objects.size()));
 
 		// clear it
 		memset(visited_bitstring, 0, calculate_num_bytes(Parse_objects.size()));
@@ -124,7 +124,7 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
 
 		// destroy the bit array
-		free(visited_bitstring);
+		vm_free(visited_bitstring);
 		visited_bitstring = NULL;
 	}
 }

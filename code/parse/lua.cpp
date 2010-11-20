@@ -51,7 +51,7 @@ SCP_vector<ade_table_entry> Ade_table_entries;
 //*************************Lua classes************************
 
 //Library class
-//This is what you define a variable of to make new libraryes
+//This is what you define a variable of to make new libraries
 class ade_lib : public ade_lib_handle {
 public:
 	ade_lib(char *in_name, ade_lib_handle *parent=NULL, char *in_shortname=NULL, char *in_desc=NULL) {
@@ -3883,6 +3883,9 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 				tinfo = &tmap->textures[tnum];
 		}
 	}
+	
+	if(tinfo == NULL)
+		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	//LuaError(L, "%d: %d", lua_type(L,lua_upvalueindex(2)), lua_toboolean(L,lua_upvalueindex(2)));
 	if (ADE_SETTING_VAR) {
@@ -6370,7 +6373,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 		return ADE_RETURN_NIL;
 
 	if(!killer->IsValid())
-		killer = NULL;
+		return ADE_RETURN_NIL;
 
 	//Ripped straight from shiphit.cpp
 	float percent_killed = -get_hull_pct(victim->objp);
@@ -8791,7 +8794,11 @@ int l_cf_get_path_id(char* n_path)
 	uint i;
 
 	size_t path_len = strlen(n_path);
-	char *buf = (char*) malloc((strlen(n_path)+1) * sizeof(char));
+	char *buf = (char*) vm_malloc((strlen(n_path)+1) * sizeof(char));
+	
+	if (!buf) 
+		return CF_TYPE_INVALID;
+		
 	strcpy(buf, n_path);
 
 	//Remove trailing slashes
@@ -8812,10 +8819,15 @@ int l_cf_get_path_id(char* n_path)
 	}
 	for(i = 0; i < CF_MAX_PATH_TYPES; i++)
 	{
-		if(Pathtypes[i].path != NULL && !stricmp(buf, Pathtypes[i].path))
+		if(Pathtypes[i].path != NULL && !stricmp(buf, Pathtypes[i].path)) {
+			vm_free(buf);
+			buf = NULL;
 			return Pathtypes[i].index;
+		}
 	}
 
+	vm_free(buf);
+	buf = NULL;
 	return CF_TYPE_INVALID;
 }
 
