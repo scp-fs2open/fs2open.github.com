@@ -436,6 +436,55 @@ void load_missing_retail_gauges()
 	}
 }
 
+// Called once after mission load is complete. Sets initial gauge activity states.
+void init_hud() {
+	int i, num_gauges, config_type;
+
+	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
+
+		for(i = 0; i < num_gauges; i++) {
+			if(Ship_info[Player_ship->ship_info_index].hud_gauges[i]->configOverride()) {
+				config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
+
+				if ( !Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type) )
+					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(true);
+				else
+					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(false);
+
+				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
+				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateColor(
+					HUD_config.clr[config_type].red, 
+					HUD_config.clr[config_type].green, 
+					HUD_config.clr[config_type].blue, 
+					HUD_config.clr[config_type].alpha
+					);
+			}
+		}
+	} else {
+		num_gauges = default_hud_gauges.size();
+
+		for(i = 0; i < num_gauges; i++) {
+			if(default_hud_gauges[i]->configOverride()) {
+				config_type = default_hud_gauges[i]->getConfigType();
+
+				if ( !default_hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type) )
+					default_hud_gauges[i]->updateActive(true);
+				else
+					default_hud_gauges[i]->updateActive(false);
+
+				default_hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
+				default_hud_gauges[i]->updateColor(
+					HUD_config.clr[config_type].red, 
+					HUD_config.clr[config_type].green, 
+					HUD_config.clr[config_type].blue, 
+					HUD_config.clr[config_type].alpha
+					);
+			}
+		}
+	}
+}
+
 void set_current_hud()
 {
 	int i, num_gauges, config_type;
@@ -448,7 +497,7 @@ void set_current_hud()
 			if(Ship_info[Player_ship->ship_info_index].hud_gauges[i]->configOverride()) {
 				config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
 
-				if (!Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type))
+				if ( (!Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type)) || Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isActive())
 					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(true);
 				else
 					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(false);
@@ -470,7 +519,7 @@ void set_current_hud()
 			if(default_hud_gauges[i]->configOverride()) {
 				config_type = default_hud_gauges[i]->getConfigType();
 
-				if (!default_hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type))
+				if ( (!default_hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type)) || default_hud_gauges[i]->isActive())
 					default_hud_gauges[i]->updateActive(true);
 				else
 					default_hud_gauges[i]->updateActive(false);

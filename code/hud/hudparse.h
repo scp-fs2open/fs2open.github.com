@@ -23,6 +23,7 @@ extern int Hud_reticle_style;
 int hud_get_gauge_index(char* name);
 void hud_positions_init();
 void set_current_hud();
+void init_hud();
 void load_missing_retail_gauges();
 
 #define NUM_HUD_OBJECT_ENTRIES			54

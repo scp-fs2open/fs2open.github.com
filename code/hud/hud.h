@@ -235,6 +235,7 @@ public:
 	int getConfigType();
 	int getObjectType();
 	bool isOffbyDefault();
+	bool isActive();
 	
 	bool configOverride();
 	void updateColor(int r, int g, int b, int a);
