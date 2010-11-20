@@ -9682,6 +9682,7 @@ void sexp_sabotage_subsystem(int n)
 			ss = ship_get_indexed_subsys( shipp, index );
 		}
 
+		Verify(ss != NULL);
 		sabotage_hits = ss->max_hits * ((float)percentage / 100.0f);
 		ss->current_hits -= sabotage_hits;
 		if ( ss->current_hits < 0.0f )
@@ -9787,6 +9788,7 @@ void sexp_repair_subsystem(int n)
 			ss = ship_get_indexed_subsys( shipp, index );
 		}
 	
+		Verify(ss != NULL);
 		repair_hits = ss->max_hits * ((float)percentage / 100.0f);
 		ss->current_hits += repair_hits;
 		if ( ss->current_hits > ss->max_hits )
@@ -9901,6 +9903,7 @@ void sexp_set_subsystem_strength(int n)
 		}
 		
 		// maybe blow up subsys
+		Verify(ss != NULL);
 		if (ss->current_hits > 0) {
 			if (percentage < 1) {
 				do_subobj_destroyed_stuff(shipp, ss, NULL);
@@ -10978,7 +10981,8 @@ void multi_sexp_deal_with_ship_flag()
 	{
 
 		if (ship_arrived) {
-			multi_get_ship(shipp); 
+			multi_get_ship(shipp);
+			Verify(shipp != NULL);
 			if (shipp != NULL) {
 				if (set_it) {
 					Objects[shipp->objnum].flags |= object_flag;

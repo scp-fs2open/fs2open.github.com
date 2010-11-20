@@ -3946,8 +3946,8 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 		}
 
 		if(Game_mode & GM_MULTIPLAYER){
-			Assert(pl != NULL);
-
+			
+			Verify(pl != NULL);
 			// if the pool we're using has changed, synch stuff up
 			if(pl->p_info.team == Net_player->p_info.team){
 				wl_synch_interface();			

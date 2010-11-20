@@ -1238,7 +1238,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		frame_data = anim_get_next_raw_buffer(the_anim_instance, 0 ,flags & BMP_AABITMAP ? 1 : 0, bm->bpp);
 
 		if ( frame_data == NULL ) {
-			// Error(LOCATION,"Fatal error locking .ani file: %s\n", be->filename);
+			Error(LOCATION,"Fatal error locking .ani file: %s\n", be->filename);
 		}		
 		
 		ubyte *dptr, *sptr;

@@ -223,7 +223,7 @@ extern int Global_error_count;
 
 /*******************NEVER UNCOMMENT Assert ************************************************/
 // Please never uncomment the functionality of Assert in debug
-// The code, as with all developement like this is littered with Asserts which are designed to throw
+// The code, as with all development like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
 
 #define ASSUME(x)

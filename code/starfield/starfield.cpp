@@ -2370,6 +2370,7 @@ starfield_bitmap *stars_get_bitmap_entry(int index, bool is_a_sun)
 bool stars_sun_has_glare(int index)
 {
 	starfield_bitmap *sb = stars_get_bitmap_entry(index, true);
+	Verify(sb != NULL);
 	return (sb && sb->glare);
 }
 
