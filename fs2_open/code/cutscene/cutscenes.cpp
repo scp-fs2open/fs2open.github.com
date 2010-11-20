@@ -661,7 +661,7 @@ void cutscenes_screen_do_frame()
 		y = 0;
 		z = Text_offset;
 		while (y + font_height <= Cutscene_desc_coords[gr_screen.res][3]) {
-			if (z >= Text_size)
+			if (z >= Text_size || z >= MAX_TEXT_LINES-1)
 				break;
 
 			len = Text_line_size[z];
