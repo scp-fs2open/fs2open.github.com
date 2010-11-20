@@ -5787,6 +5787,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		aip->current_target_is_locked = 0;
 	}
 
+	Verify(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS);
 	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 	// phreak -- rapid dumbfire? let it rip!
@@ -5958,7 +5959,6 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 
 	//nprintf(("AI", "Frame %i: Current bank = %i, ammo remaining = %i\n", Framecount, current_bank, swp->secondary_bank_ammo[current_bank]));
 	if (current_bank == -1) {
-		swp->next_secondary_fire_stamp[current_bank] = timestamp(500);
 		return rval;
 	}
 
