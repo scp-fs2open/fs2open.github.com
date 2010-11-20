@@ -10014,7 +10014,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 		int *linelengths = new int[MAX_TEXT_LINES];
 		char **linestarts = new char*[MAX_TEXT_LINES];
 
-		int num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
