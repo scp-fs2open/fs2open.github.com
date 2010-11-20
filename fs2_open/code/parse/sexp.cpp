@@ -3212,12 +3212,12 @@ bool generate_special_explosion_block_variables()
 
 		//if we haven't added this entry already, do so
 		if (!already_added) {
-			sprintf(Block_variables[current_index+INNER_RAD].text, "%d", shipp->special_exp_inner);
-			sprintf(Block_variables[current_index+OUTER_RAD].text, "%d", shipp->special_exp_outer);
-			sprintf(Block_variables[current_index+DAMAGE].text, "%d", shipp->special_exp_damage);
-			sprintf(Block_variables[current_index+BLAST].text, "%d", shipp->special_exp_blast);
+			sprintf(Block_variables[current_index+INNER_RAD].text, "%f", shipp->special_exp_inner);
+			sprintf(Block_variables[current_index+OUTER_RAD].text, "%f", shipp->special_exp_outer);
+			sprintf(Block_variables[current_index+DAMAGE].text, "%f", shipp->special_exp_damage);
+			sprintf(Block_variables[current_index+BLAST].text, "%f", shipp->special_exp_blast);
 			sprintf(Block_variables[current_index+PROPAGATE].text, "%d", (shipp->use_shockwave ? 1:0) );
-			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%d", shipp->special_exp_shockwave_speed);
+			sprintf(Block_variables[current_index+SHOCK_SPEED].text, "%f", shipp->special_exp_shockwave_speed);
 
 			// add the names
 			for (i = current_index; i < (current_index + BLOCK_EXP_SIZE); i++ ) {
