@@ -2294,7 +2294,8 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 
 	//	If got hit by a weapon, tell the AI so it can react.  Only do this line in single player,
 	// or if I am the master in a multiplayer game
-	if ( other_obj->type == OBJ_WEAPON && ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER )) {
+	// Added OBJ_BEAM for traitor detection - FUBAR
+	if ( ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_BEAM)) && ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER )) {
 		//	If weapon hits ship on same team and that ship not targeted and parent of weapon not player,
 		//	don't do damage.
 		//	Ie, player can always do damage.  AI can only damage team if that ship is targeted.
@@ -2314,7 +2315,8 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 	}
 
 	// only want to check the following in single player or if I am the multiplayer game server
-	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON)) ){
+	// Added OBJ_BEAM for traitor detection - FUBAR
+	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK) && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_BEAM)) ){
 		ai_ship_hit(ship_obj, other_obj, hitpos, quadrant, hit_normal);
 	}
 

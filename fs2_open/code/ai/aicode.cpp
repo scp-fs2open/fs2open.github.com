@@ -14704,7 +14704,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 
 		Assert(objp_hitter->type == OBJ_SHIP);
 		Assert(objp_hit->type == OBJ_SHIP);
-		Assert(objp_weapon->type == OBJ_WEAPON);
+		Assert((objp_weapon->type == OBJ_WEAPON) || (objp_weapon->type == OBJ_BEAM));  //beam added for tritor detection - FUBAR
 
 		ship	*shipp_hitter = &Ships[objp_hitter->instance];
 		ship	*shipp_hit = &Ships[objp_hit->instance];
@@ -14740,7 +14740,10 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 
 		float	damage;		//	Damage done by weapon.  Gets scaled down based on size of ship.
 
-		damage = Weapon_info[Weapons[objp_weapon->instance].weapon_info_index].damage;
+		if (objp_weapon->type == OBJ_BEAM)  // added beam for traitor detection -FUBAR
+			damage = beam_get_ship_damage(&Beams[objp_weapon->instance], objp_hit);
+		else  
+			damage = Weapon_info[Weapons[objp_weapon->instance].weapon_info_index].damage;
 		
 		// wacky stuff here
 		ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
@@ -15000,7 +15003,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	if (objp_ship->flags & OF_PLAYER_SHIP) {
 		//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
 		//This is all copypasted from code below
-		if (hit_objp->type == OBJ_WEAPON) {
+		// Added OBJ_BEAM for traitor detection - FUBAR
+		if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
 			hitter_objnum = hit_objp->parent;
 			Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
 			objp_hitter = &Objects[hitter_objnum];
@@ -15030,7 +15034,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		}
 	}
 
-	if (hit_objp->type == OBJ_WEAPON) {
+	// Added OBJ_BEAM for traitor detection - FUBAR
+	if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
 		//	Make sure the object that fired this weapon is still alive.  If not, abort.
 		// Assert(hit_objp->parent >= 0);
 		if(hit_objp->parent < 0){
@@ -15083,6 +15088,11 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		Int3();	//	Hmm, what kind of object hit this if not weapon or ship?  Get MikeK.
 		return;
 	}
+
+	// traitor detection was the only reason for OBJ_BEAM to make it this far.
+	// so bail if it wasn't fired by a player.  
+	if ((hit_objp->type == OBJ_BEAM) && (!(objp_hitter->flags & OF_PLAYER_SHIP))) 
+		return;						
 
 	//	Collided into a protected ship, don't attack it.
 	if (hit_objp->flags & OF_PROTECTED)
