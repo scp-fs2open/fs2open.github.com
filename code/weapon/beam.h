@@ -238,4 +238,9 @@ void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float
 void beam_test(int whee);
 void beam_test_new(int whee);
 
+// return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
+float beam_get_ship_damage(beam *b, object *objp);
+
+
+
 #endif

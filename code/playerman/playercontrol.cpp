@@ -2131,7 +2131,7 @@ camid player_get_cam()
 				Viewer_obj = NULL;
 				return cam_get_current();
 		} else if (Viewer_mode & VM_EXTERNAL) {
-			Assert(viewer_obj != NULL);
+			Verify(viewer_obj != NULL);
 			matrix	tm, tm2;
 
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);

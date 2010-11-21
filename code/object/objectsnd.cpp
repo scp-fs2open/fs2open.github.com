@@ -354,7 +354,7 @@ int obj_snd_stop_lowest_vol(float new_vol)
 		}
 	}
 
-	Assert(lowest_vol_osp != NULL);
+	Verify(lowest_vol_osp != NULL);
 	objp = &Objects[lowest_vol_osp->objnum];
 
 	if ( (lowest_vol < new_vol) && (objp != NULL) ) {

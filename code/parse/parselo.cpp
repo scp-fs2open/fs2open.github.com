@@ -829,7 +829,7 @@ void stuff_string_until(char *pstr, char *endstr, int len)
 
 //WMC
 //Used for allocating large blocks, eg of Python code
-//Returns a null-terminated string allocated with malloc(),
+//Returns a null-terminated string allocated with vm_malloc(),
 //or NULL on failure
 //Does depth checks for the start and end strings
 //extra_chars indicates extra malloc space that should be allocated.

@@ -703,7 +703,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = model_get(Debris[heavy->instance].model_num);
 		} else {
 			// we should have caught this already
-			Int3();
+			Error(LOCATION, "Collision with heavy object of unknown type.");
 			pm = NULL;
 		}
 
