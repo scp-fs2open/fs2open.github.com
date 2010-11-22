@@ -5787,15 +5787,16 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		aip->current_target_is_locked = 0;
 	}
 
-	Verify(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS);
-	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+	if (swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS) 
+	{
+		weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
-	// phreak -- rapid dumbfire? let it rip!
-	if ((aip->ai_profile_flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
-	{	
-		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
+		// phreak -- rapid dumbfire? let it rip!
+		if ((aip->ai_profile_flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
+		{	
+			aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
+		}
 	}
-
 
 	ship_secondary_changed(&Ships[objp->instance]);	// AL: let multiplayer know if secondary bank has changed
 	// nprintf(("AI", "Ship %s selected weapon %s\n", Ships[objp->instance].ship_name, Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name));
