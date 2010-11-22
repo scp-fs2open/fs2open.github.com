@@ -238,7 +238,7 @@ void parse_ai_profiles_tbl(char *filename)
 				parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
 				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 				//While we're at it, verify the range
-				for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
 						profile->glide_attack_percent[i] = 0.0f;
 						Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_attack_percent[i]);
@@ -251,7 +251,7 @@ void parse_ai_profiles_tbl(char *filename)
 				parse_float_list(profile->circle_strafe_percent, NUM_SKILL_LEVELS);
 				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 				//While we're at it, verify the range
-				for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
 						profile->circle_strafe_percent[i] = 0.0f;
 						Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->circle_strafe_percent[i]);
@@ -264,7 +264,7 @@ void parse_ai_profiles_tbl(char *filename)
 				parse_float_list(profile->glide_strafe_percent, NUM_SKILL_LEVELS);
 				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 				//While we're at it, verify the range
-				for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
 						profile->glide_strafe_percent[i] = 0.0f;
 						Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_strafe_percent[i]);
@@ -277,7 +277,7 @@ void parse_ai_profiles_tbl(char *filename)
 				parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
 				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 				//While we're at it, verify the range
-				for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
 					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
 						profile->random_sidethrust_percent[i] = 0.0f;
 						Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
