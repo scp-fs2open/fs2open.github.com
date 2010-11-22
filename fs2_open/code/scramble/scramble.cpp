@@ -231,7 +231,7 @@ void scramble_file(char *src_filename, char *dest_filename, int preprocess)
 	// write out scrambled data
 	fwrite( scramble_text, scramble_len, 1, fp );
 
-	free(text);
+	vm_free(text);
 	vm_free(scramble_text);
 	fclose(fp);
 }
