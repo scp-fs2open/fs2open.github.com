@@ -3148,7 +3148,9 @@ void sprintf(SCP_string &dest, const char *format, ...)
 		{
 			case 'd':
 			{
-				dest += va_arg(ap, int);
+				ival = va_arg(ap, int);
+				sprintf(buf, "%d", ival);
+				dest += buf;
 				break;
 			}
 			case 'c':
@@ -3159,14 +3161,14 @@ void sprintf(SCP_string &dest, const char *format, ...)
 			case 'x':
 			{
 				ival = va_arg(ap, int);
-				sprintf(buf,"%x", ival);
+				sprintf(buf, "%x", ival);
 				dest += buf;
 				break;
 			}
 			case 'f':
 			{
 				dval = va_arg(ap, double);
-				sprintf(buf,"%f", dval);
+				sprintf(buf, "%f", dval);
 				dest += buf;
 				break;
 			}
