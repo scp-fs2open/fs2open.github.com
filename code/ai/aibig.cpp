@@ -552,7 +552,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			object *objp;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 				if ((objp->type == OBJ_WEAPON) && (iff_x_attacks_y(Ships[Pl_objp->instance].team, Weapons[objp->instance].team)))
-					if (Weapon_info[objp->instance].subtype == WP_LASER) {
+					if (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_LASER) {
 						vec3d	in_vec;
 						float		dist;
 
@@ -1772,7 +1772,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
 	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
-		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
+		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target
 	if ( !attack_turret_on_different_ship )
