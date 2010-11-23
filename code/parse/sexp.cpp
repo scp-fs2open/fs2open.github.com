@@ -22964,14 +22964,29 @@ int get_index_sexp_variable_from_node (int node)
 	return var_index; 
 }
 
-
 // return index of sexp_variable_name, -1 if not found
-int get_index_sexp_variable_name(const char *temp_name)
+int get_index_sexp_variable_name(const char *text)
 {
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
 			// check case sensitive
-			if ( !strcmp(Sexp_variables[i].variable_name, temp_name) ) {
+			if ( !strcmp(Sexp_variables[i].variable_name, text) ) {
+				return i;
+			}
+		}
+	}
+
+	// not found
+	return -1;
+}
+
+// return index of sexp_variable_name, -1 if not found
+int get_index_sexp_variable_name(SCP_string &text)
+{
+	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
+		if (Sexp_variables[i].type & SEXP_VARIABLE_SET) {
+			// check case sensitive
+			if ( text == Sexp_variables[i].variable_name ) {
 				return i;
 			}
 		}

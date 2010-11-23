@@ -1023,8 +1023,10 @@ void flush_sexp_tree(int node);
 // sexp_variable
 void sexp_modify_variable(char *text, int index, bool sexp_callback = true);
 int get_index_sexp_variable_from_node (int node);
-int get_index_sexp_variable_name(const char *temp_name);
+int get_index_sexp_variable_name(const char *text);
+int get_index_sexp_variable_name(SCP_string &text);	// Goober5000
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000
+int get_index_sexp_variable_name_special(SCP_string &text, size_t startpos);	// Goober5000
 bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000
 bool sexp_replace_variable_names_with_values(SCP_string &text);	// Goober5000
 int get_nth_variable_index(int nth, int variable_type);	// Karajorma
