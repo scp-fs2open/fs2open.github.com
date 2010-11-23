@@ -8635,7 +8635,7 @@ void sexp_hud_display_gauge(int n) {
 void sexp_hud_gauge_set_active(int n) {
 	HudGauge* hg;
 	char* name = CTEXT(n);
-	bool active = eval_sexp(CDR(n));
+	bool active = (is_sexp_true(CDR(n)) != 0);
 
 	hg = hud_get_gauge(name);
 
