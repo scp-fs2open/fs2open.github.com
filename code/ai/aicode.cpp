@@ -10625,7 +10625,6 @@ void ai_dock()
 
 			//nprintf(("AI", "Dock 2: dist = %7.3f\n", vm_vec_dist_quick(&Pl_objp->pos, &goal_point)));
 			float	tolerance;
-			Verify(goal_objp != NULL);
 			if (goal_objp->flags & OF_PLAYER_SHIP)
 				tolerance = 6*flFrametime + 1.0f;
 			else

@@ -265,12 +265,12 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 				// Go through all subsystems and look for submodel the subsystems with "parent" submodel.
 				ship_subsys	*pss = NULL;
 				for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-					Verify(pss != NULL);
 					if (pss->system_info->subobj_num == parent) {
 						break;
 					}
 				}
 
+				Assert (pss != NULL);
 				if (pss != NULL) {
 					if (pss->system_info != NULL) {
 						vec3d exp_center, tmp = ZERO_VECTOR;

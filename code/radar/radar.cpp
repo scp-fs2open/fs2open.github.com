@@ -372,7 +372,6 @@ void radar_plot_object_std( object *objp )
 
 	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
 	// is not active
-	Verify(Player_ship != NULL);
 	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
 	{
 		if (!(The_mission.flags & MISSION_FLAG_FULLNEB))

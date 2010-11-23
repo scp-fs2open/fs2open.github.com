@@ -2015,7 +2015,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
 	if ( mission->num_saved_variables > 0) {
 		mission->saved_variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_saved_variables);
-		Verify( mission->saved_variables != NULL );
+		Assert( mission->saved_variables != NULL );
 	}
 
 	// copy the needed variable info
