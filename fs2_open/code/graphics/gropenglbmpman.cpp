@@ -217,9 +217,8 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	}
 
 	if ( (the_anim_instance = init_anim_instance(the_anim, bpp)) == NULL ) {
-		Warning(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
 		anim_free(the_anim);
-		return 1;
 	}
 
 	int can_drop_frames = 0;

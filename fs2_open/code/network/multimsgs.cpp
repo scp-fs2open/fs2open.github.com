@@ -2490,7 +2490,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	model = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	pm = model_get(model);
 	debris_signature = 0;
-	if ( (pm != NULL) && !vaporized ) {
+	if ( pm && !vaporized ) {
 		debris_signature = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 		multi_set_network_signature( (ushort)(debris_signature + pm->num_debris_objects), MULTI_SIG_DEBRIS );
 		Ships[objp->instance].arrival_distance = debris_signature;
@@ -5119,7 +5119,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 
 		// get a shipname if we can.
 		other_objp = multi_get_network_object( other_net_signature );
-		if ( (other_objp != NULL) && (other_objp->type == OBJ_SHIP) ) {
+		if ( other_objp && (other_objp->type == OBJ_SHIP) ) {
 			// get a pointer to the shipname in question.  Use the ship_name value in the
 			// ship.  We are only using this for HUD display, so I think that using this
 			// method will be fine.

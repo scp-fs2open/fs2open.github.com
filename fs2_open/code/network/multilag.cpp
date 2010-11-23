@@ -255,7 +255,7 @@ int multi_lag_recvfrom(uint s, char *buf, int len, int flags, struct sockaddr *f
 	}
 
 	// if this happens, it means that the multi_lag_select() returned an improper value
-	Verify(item != NULL);
+	Assert(item);
 	// stuff the data
 	Assert(item->data_len <= len);
 	memcpy(buf, item->data, item->data_len);
