@@ -52,7 +52,6 @@
 #define MAX_RANDOM_INTERCOM_SOUNDS				10
 #define MAX_MISC_ANIMATIONS						10
 #define MAX_DOOR_ANIMATIONS						10
-#define MAX_DOOR_SOUNDS							10
 
 #define MISC_ANIM_MODE_LOOP						0				// loop the animation
 #define MISC_ANIM_MODE_HOLD						1				// play to the end and hold the animation
@@ -130,18 +129,12 @@ typedef struct main_hall_defines {
 	// first pair : coords of where to play a given door anim
 	// second pair : center of a given door anim in windowed mode
 	int door_anim_coords[MAX_DOOR_ANIMATIONS][4];
-	
-
-	// door sounds ------------------------
-
-	// # of door sounds
-	int num_door_sounds;
 
 	// sounds for each region (open/close)
-	int door_sounds[MAX_DOOR_SOUNDS][2];
+	int door_sounds[MAX_DOOR_ANIMATIONS][2];
 
 	// pan values for the door sounds
-	float door_sound_pan[MAX_DOOR_SOUNDS];
+	float door_sound_pan[MAX_DOOR_ANIMATIONS];
 
 	
 	// region descriptions ----------------
@@ -311,7 +304,7 @@ void main_hall_mouse_grab_region(int region);
 #define ALLENDER_REGION		4
 
 // handles to the sound instances of the doors opening/closing
-int Main_hall_door_sound_handles[MAX_DOOR_SOUNDS] = {		
+int Main_hall_door_sound_handles[MAX_DOOR_ANIMATIONS] = {		
 	-1,-1,-1,-1,-1,-1
 };
 
@@ -648,7 +641,7 @@ void main_hall_init(int main_hall_num)
 	strcpy_s(Main_hall_campaign_cheat, "");
 
 	// zero out the door sounds
-	for(idx=0;idx<Main_hall->num_door_sounds;idx++){
+	for(idx=0;idx<Main_hall->num_door_animations;idx++){
 		Main_hall_door_sound_handles[idx] = -1;
 	}
 
@@ -1078,7 +1071,7 @@ void main_hall_close()
 	}	
 
 	// stop any playing door sounds
-	for(idx=0;idx<Main_hall->num_door_sounds-2;idx++){	// don't cut off the glow sounds (requested by Dan)
+	for(idx=0;idx<Main_hall->num_door_animations-2;idx++){	// don't cut off the glow sounds (requested by Dan)
 		if((Main_hall_door_sound_handles[idx] != -1) && snd_is_playing(Main_hall_door_sound_handles[idx])){
 			snd_stop(Main_hall_door_sound_handles[idx]);
 			Main_hall_door_sound_handles[idx] = -1;
@@ -1420,7 +1413,7 @@ void main_hall_cull_door_sounds()
 {
 	int idx;
 	// basically just set the handle of any finished sound to be -1, so that we know its free any where else in the code we may need it
-	for(idx=0;idx<Main_hall->num_door_sounds;idx++){
+	for(idx=0;idx<Main_hall->num_door_animations;idx++){
 		if((Main_hall_door_sound_handles[idx] != -1) && !snd_is_playing(Main_hall_door_sound_handles[idx])){			
 			Main_hall_door_sound_handles[idx] = -1;
 		}
@@ -1686,19 +1679,23 @@ void main_hall_read_table()
 
 			// intercom sounds
 			required_string("+Num Intercom Sounds:");
-			stuff_int(&m->num_random_intercom_sounds);		
-			for(idx=0; idx<m->num_random_intercom_sounds; idx++){			
+			stuff_int(&m->num_random_intercom_sounds);
+			if (m->num_random_intercom_sounds > MAX_RANDOM_INTERCOM_SOUNDS) {
+				Warning(LOCATION, "Num Intercom Sounds exceeds maximum!");
+				m->num_random_intercom_sounds = MAX_RANDOM_INTERCOM_SOUNDS;
+			}
+			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom delay
 				required_string("+Intercom delay:");
 				stuff_int(&m->intercom_delay[idx][0]);
 				stuff_int(&m->intercom_delay[idx][1]);
 			}
-			for(idx=0; idx<m->num_random_intercom_sounds; idx++){			
+			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom sound id
 				required_string("+Intercom sound:");
 				stuff_int(&m->intercom_sounds[idx]);			
 			}			
-			for(idx=0; idx<m->num_random_intercom_sounds; idx++){			
+			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom pan
 				required_string("+Intercom pan:");
 				stuff_float(&m->intercom_sound_pan[idx]);			
@@ -1707,6 +1704,10 @@ void main_hall_read_table()
 			// misc animations
 			required_string("+Num Misc Animations:");
 			stuff_int(&m->num_misc_animations);
+			if (m->num_misc_animations > MAX_MISC_ANIMATIONS) {
+				Warning(LOCATION, "Num Misc Animations exceeds maximum!");
+				m->num_misc_animations = MAX_MISC_ANIMATIONS;
+			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim names
 				required_string("+Misc anim:");
@@ -1765,6 +1766,10 @@ void main_hall_read_table()
 			// door animations
 			required_string("+Num Door Animations:");
 			stuff_int(&m->num_door_animations);
+			if (m->num_door_animations > MAX_DOOR_ANIMATIONS) {
+				Warning(LOCATION, "Num Door Animations exceeds maximum!");
+				m->num_door_animations = MAX_DOOR_ANIMATIONS;
+			}
 			for(idx=0; idx<m->num_door_animations; idx++){
 				// door name
 				required_string("+Door anim:");
