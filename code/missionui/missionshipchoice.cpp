@@ -2038,7 +2038,6 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				}
 
 				if ( ws->status & WING_SLOT_LOCKED ) {
-					Verify(icon != NULL);
 					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
 					else
