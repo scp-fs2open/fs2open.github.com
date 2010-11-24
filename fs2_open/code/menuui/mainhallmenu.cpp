@@ -1198,73 +1198,76 @@ void main_hall_stop_music()
 // render all playing misc animations
 void main_hall_render_misc_anims(float frametime)
 {
-	int idx,s_idx;
+	int idx, s_idx;
 
 	// render all other animations
-	for(idx=0;idx<MAX_MISC_ANIMATIONS;idx++){
+	for (idx = 0; idx < MAX_MISC_ANIMATIONS; idx++) {
 		// render it
-		if(Main_hall_misc_anim[idx].num_frames > 0){
-			//animation is paused
-			if(Main_hall_misc_anim[idx].direction & GENERIC_ANIM_DIRECTION_PAUSED) {
-			// if the timestamp is -1, then reset it to some random value (based on MIN and MAX) and continue
-			if(Main_hall->misc_anim_delay[idx][0] == -1){
-				Main_hall->misc_anim_delay[idx][0] = timestamp(Main_hall->misc_anim_delay[idx][1] + 
-					 									      (int)(((float)rand()/(float)RAND_MAX) * (float)(Main_hall->misc_anim_delay[idx][2] - Main_hall->misc_anim_delay[idx][1])));
+		if (Main_hall_misc_anim[idx].num_frames > 0) {
+			// animation is paused
+			if (Main_hall_misc_anim[idx].direction & GENERIC_ANIM_DIRECTION_PAUSED) {
+				// if the timestamp is -1, then reset it to some random value (based on MIN and MAX) and continue
+				if (Main_hall->misc_anim_delay[idx][0] == -1) {
+					Main_hall->misc_anim_delay[idx][0] = timestamp(Main_hall->misc_anim_delay[idx][1] + 
+						 									      (int)(((float)rand()/(float)RAND_MAX) * (float)(Main_hall->misc_anim_delay[idx][2] - Main_hall->misc_anim_delay[idx][1])));
 
-			// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
+				// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay[idx][0])) {
 					Main_hall_misc_anim[idx].direction &= ~GENERIC_ANIM_DIRECTION_PAUSED;
 					Main_hall_misc_anim[idx].current_frame = 0;
 					Main_hall_misc_anim[idx].anim_time = 0.0;
 				
-				// kill the timestamp	
-				Main_hall->misc_anim_delay[idx][0] = -1;				
+					// kill the timestamp	
+					Main_hall->misc_anim_delay[idx][0] = -1;				
 
-				// reset the "should be playing" flags
-				for(s_idx=1;s_idx<10;s_idx++){
-					Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
-				}
-			}
-		} 		
-		else {
-			for(s_idx=Main_hall->misc_anim_special_sounds[idx][0]; s_idx > 0; s_idx--){
-				// if we've passed the trigger point, then play the sound and break out of the loop
-					if((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]){
-					Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
-
-					// if the sound is already playing, then kill it. This is a pretty safe thing to do since we can assume that
-					// by the time we get to this point again, the sound will have been long finished
-					if(snd_is_playing(Main_hall->misc_anim_sound_handles[idx][s_idx])){
-						snd_stop(Main_hall->misc_anim_sound_handles[idx][s_idx]);
-						Main_hall->misc_anim_sound_handles[idx][s_idx] = -1;
+					// reset the "should be playing" flags
+					for (s_idx=1;s_idx<10;s_idx++) {
+						Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
 					}
-					// play the sound
-					Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds[idx][s_idx]],Main_hall->misc_anim_sound_pan[idx]);					
-					break;
 				}
 			}
-				if(Main_hall_misc_anim[idx].current_frame == Main_hall_misc_anim[idx].num_frames - 1) {
-				Main_hall->misc_anim_delay[idx][0] = -1;				
+			// animation is not paused
+			else {
+				for (s_idx = Main_hall->misc_anim_special_sounds[idx][0]; s_idx > 0; s_idx--) {
+					// if we've passed the trigger point, then play the sound and break out of the loop
+					if ((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]) {
+						Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
+
+						// if the sound is already playing, then kill it. This is a pretty safe thing to do since we can assume that
+						// by the time we get to this point again, the sound will have been long finished
+						if (snd_is_playing(Main_hall->misc_anim_sound_handles[idx][s_idx])) {
+							snd_stop(Main_hall->misc_anim_sound_handles[idx][s_idx]);
+							Main_hall->misc_anim_sound_handles[idx][s_idx] = -1;
+						}
+
+						// play the sound
+						Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds[idx][s_idx]],Main_hall->misc_anim_sound_pan[idx]);					
+						break;
+					}
+				}
+
+				if (Main_hall_misc_anim[idx].current_frame == Main_hall_misc_anim[idx].num_frames - 1) {
+					Main_hall->misc_anim_delay[idx][0] = -1;				
 
 					//this helps the above code reset the timers
 					//MISC_ANIM_MODE_HOLD simply stops on the last frame, so we don't care
 					//MISC_ANIM_MODE_LOOPED just loops so we don't care either
-					if(Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_TIMED) {
+					if (Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_TIMED) {
 						Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_PAUSED;
 					}
 					//don't reset sound for MISC_ANIM_MODE_HOLD
-					if(Main_hall->misc_anim_modes[idx] != MISC_ANIM_MODE_HOLD) {
-				// reset the "should be playing" flags
-				for(s_idx=1;s_idx<10;s_idx++){
-					Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
+					if (Main_hall->misc_anim_modes[idx] != MISC_ANIM_MODE_HOLD) {
+						// reset the "should be playing" flags
+						for (s_idx=1;s_idx<10;s_idx++) {
+							Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
+						}
+					}
 				}
-			}			
-
 			}
-		}			
 
-			if(Main_hall_frame_skip || Main_hall_paused)
+			if (Main_hall_frame_skip || Main_hall_paused) {
 				frametime = 0;
+			}
 			generic_anim_render(&Main_hall_misc_anim[idx], frametime, Main_hall->misc_anim_coords[idx][0], Main_hall->misc_anim_coords[idx][1]);
 		}
 	}
