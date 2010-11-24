@@ -94,6 +94,9 @@ typedef struct main_hall_defines {
 	// Time until we will next play a given misc animation, min delay, and max delay
 	int misc_anim_delay[MAX_MISC_ANIMATIONS][3];
 
+	// Goober5000, used in preference to the flag in generic_anim
+	int misc_anim_paused[MAX_MISC_ANIMATIONS];
+
 	//	coords of where to play the misc anim
 	int misc_anim_coords[MAX_MISC_ANIMATIONS][2];
 	
