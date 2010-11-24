@@ -10978,20 +10978,23 @@ void multi_sexp_deal_with_ship_flag()
 	{
 
 		if (ship_arrived) {
-			multi_get_ship(shipp); 
-			if (shipp != NULL) {
-				if (set_it) {
-					Objects[shipp->objnum].flags |= object_flag;
-					// Objects[shipp->objnum].flags2 |= object_flag2;
-					shipp->flags |= ship_flag;
-					shipp->flags2 |= ship_flag2;
-				}
-				else {
-					Objects[shipp->objnum].flags &= ~object_flag;
-					// Objects[shipp->objnum].flags2 &= ~object_flag2;
-					shipp->flags &= ~ship_flag;
-					shipp->flags2 &= ~ship_flag2;
-				}
+			multi_get_ship(shipp);
+			if (shipp == NULL) {
+				WarningEx(LOCATION, "Null ship pointer in multi_sexp_deal_with_ship_flag(), tell a coder.\n");
+				return;
+			}
+			
+			if (set_it) {
+				Objects[shipp->objnum].flags |= object_flag;
+				// Objects[shipp->objnum].flags2 |= object_flag2;
+				shipp->flags |= ship_flag;
+				shipp->flags2 |= ship_flag2;
+			}
+			else {
+				Objects[shipp->objnum].flags &= ~object_flag;
+				// Objects[shipp->objnum].flags2 &= ~object_flag2;
+				shipp->flags &= ~ship_flag;
+				shipp->flags2 &= ~ship_flag2;
 			}
 
 			// deal with side effects of these flags
