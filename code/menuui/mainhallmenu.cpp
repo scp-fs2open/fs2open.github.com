@@ -1199,20 +1199,9 @@ void main_hall_stop_music()
 void main_hall_render_misc_anims(float frametime)
 {
 	int idx,s_idx;
-/*
-	// HACKETY HACK HACK - always render misc anim 3 first, if it is playing
-	if(Main_hall_misc_anim_instance[2] != NULL){
-		anim_render_one(GS_STATE_MAIN_MENU,Main_hall_misc_anim_instance[2],frametime);
-	}
-*/
+
 	// render all other animations
 	for(idx=0;idx<MAX_MISC_ANIMATIONS;idx++){
-/*
-		// skip anim 3, which was previously rendered, if at all
-		if(idx == 2){
-			continue;
-		}
-*/
 		// render it
 		if(Main_hall_misc_anim[idx].num_frames > 0){
 			//animation is paused
@@ -1222,7 +1211,7 @@ void main_hall_render_misc_anims(float frametime)
 				Main_hall->misc_anim_delay[idx][0] = timestamp(Main_hall->misc_anim_delay[idx][1] + 
 					 									      (int)(((float)rand()/(float)RAND_MAX) * (float)(Main_hall->misc_anim_delay[idx][2] - Main_hall->misc_anim_delay[idx][1])));
 
-			// if the timestamp is not -1 and has popped, play the anim and make the timestap -1
+			// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay[idx][0])) {
 					Main_hall_misc_anim[idx].direction &= ~GENERIC_ANIM_DIRECTION_PAUSED;
 					Main_hall_misc_anim[idx].current_frame = 0;
