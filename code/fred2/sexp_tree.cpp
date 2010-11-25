@@ -5741,13 +5741,11 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 {
 	unsigned int i;
 	sexp_list_item head;
-	char tmp[32][NAME_LENGTH];
 
 	SCP_vector<SCP_string> ppe_names;
 	get_post_process_effect_names(ppe_names);
 	for (i=0; i < ppe_names.size(); i++) {
-		strcpy(tmp[i], ppe_names[i].c_str());
-		head.add_data(tmp[i]);
+		head.add_data_dup(const_cast<char*>(ppe_names[i].c_str()));
 	}
 
 	return head.next;
