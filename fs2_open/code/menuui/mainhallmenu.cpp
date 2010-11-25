@@ -96,6 +96,9 @@ typedef struct main_hall_defines {
 	// Goober5000, used in preference to the flag in generic_anim
 	int misc_anim_paused[MAX_MISC_ANIMATIONS];
 
+	// Goober5000, used when we want to play one of several anims
+	int misc_anim_group[MAX_MISC_ANIMATIONS];
+
 	//	coords of where to play the misc anim
 	int misc_anim_coords[MAX_MISC_ANIMATIONS][2];
 	
@@ -1182,6 +1185,8 @@ void main_hall_stop_music()
 void main_hall_render_misc_anims(float frametime)
 {
 	int idx, s_idx;
+	Assert(MAX_MISC_ANIMATIONS <= 32); // otherwise the bitfield trick won't work and we'll need to use an array of booleans
+	int jdx, group_anims_weve_checked = 0;
 
 	// render all misc animations
 	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
@@ -1189,10 +1194,48 @@ void main_hall_render_misc_anims(float frametime)
 		if (Main_hall_misc_anim[idx].num_frames > 0) {
 			// animation is paused
 			if (Main_hall->misc_anim_paused[idx]) {
-				// if the timestamp is -1, then reset it to some random value (based on MIN and MAX) and continue
+				// if the timestamp is -1, then regenerate it
 				if (Main_hall->misc_anim_delay[idx][0] == -1) {
-					Main_hall->misc_anim_delay[idx][0] = timestamp(Main_hall->misc_anim_delay[idx][1] + 
-						 									      (int)(((float)rand()/(float)RAND_MAX) * (float)(Main_hall->misc_anim_delay[idx][2] - Main_hall->misc_anim_delay[idx][1])));
+					int regen_idx = -1;
+
+					// if this is part of a group, we should do additional checking
+					if (Main_hall->misc_anim_group[idx] >= 0) {
+						// make sure we haven't already checked it
+						if (!(group_anims_weve_checked & (1<<idx))) {
+							int group_indexes[MAX_MISC_ANIMATIONS];
+							int num_group_indexes = 0;
+							bool all_neg1 = true;
+
+							// okay... now we need to make sure all anims in this group are paused and -1
+							for (jdx = 0; jdx < Main_hall->num_misc_animations; jdx++) {
+								if (Main_hall->misc_anim_group[jdx] == Main_hall->misc_anim_group[idx]) {
+									group_anims_weve_checked |= (1<<jdx);
+									group_indexes[num_group_indexes] = jdx;
+									num_group_indexes++;
+
+									if (!Main_hall->misc_anim_paused[jdx] || Main_hall->misc_anim_delay[jdx][0] != -1) {
+										all_neg1 = false;
+									}
+								}
+							}
+
+							// if the entire group is paused and off, pick a random one to regenerate
+							if (all_neg1) {
+								regen_idx = group_indexes[rand() % num_group_indexes];
+							}
+						}
+					}
+					// not part of a group, so just handle this index
+					else {
+						regen_idx = idx;
+					}
+
+					// reset it to some random value (based on MIN and MAX) and continue
+					if (regen_idx >= 0) {
+						int min = Main_hall->misc_anim_delay[regen_idx][1];
+						int max = Main_hall->misc_anim_delay[regen_idx][2];
+						Main_hall->misc_anim_delay[regen_idx][0] = timestamp(min + (int) (frand() * (max - min)));
+					}
 
 				// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay[idx][0])) {
@@ -1712,6 +1755,14 @@ void main_hall_read_table()
 				// anim names
 				required_string("+Misc anim:");
 				stuff_string(m->misc_anim_name[idx], F_NAME, MAX_FILENAME_LEN);
+			}
+			for(idx=0; idx<m->num_misc_animations; idx++){
+				// anim groups, optionally
+				if (optional_string("+Misc anim group:")){
+					stuff_int(&m->misc_anim_group[idx]);
+				} else {
+					m->misc_anim_group[idx] = -1;
+				}
 			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim delay
