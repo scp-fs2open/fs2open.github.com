@@ -547,10 +547,10 @@ void main_hall_init(int main_hall_num)
 
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);
-	bg_type = bm_get_type(Main_hall_bitmap);
 	if(Main_hall_bitmap < 0){
 		nprintf(("General","WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap));
 	}
+	bg_type = bm_get_type(Main_hall_bitmap);
 
 	// set the interface palette 
 #ifndef HARDWARE_ONLY
@@ -1183,8 +1183,8 @@ void main_hall_render_misc_anims(float frametime)
 {
 	int idx, s_idx;
 
-	// render all other animations
-	for (idx = 0; idx < MAX_MISC_ANIMATIONS; idx++) {
+	// render all misc animations
+	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
 		// render it
 		if (Main_hall_misc_anim[idx].num_frames > 0) {
 			// animation is paused
