@@ -874,6 +874,13 @@ void opengl_post_process_init()
 {
 	Post_initialized = 0;
 
+	//We need to read the tbl first. This is mostly for FRED's benefit, as otherwise the list of post effects for the sexp doesn't get updated.
+	if ( !opengl_post_init_table() ) {
+		mprintf(("  Unable to read post-processing table! Disabling post-processing...\n\n"));
+		Cmdline_postprocess = 0;
+		return;
+	}
+
 	if ( !Cmdline_postprocess ) {
 		return;
 	}
@@ -888,12 +895,6 @@ void opengl_post_process_init()
 	//    - the NPOT extension
 	//    - GL version 2.0+ (which should work for non-reporting ATI cards since we don't use mipmaps)
 	if ( !(Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) || (GL_version >= 20)) ) {
-		Cmdline_postprocess = 0;
-		return;
-	}
-
-	if ( !opengl_post_init_table() ) {
-		mprintf(("  Unable to read post-processing table! Disabling post-processing...\n\n"));
 		Cmdline_postprocess = 0;
 		return;
 	}

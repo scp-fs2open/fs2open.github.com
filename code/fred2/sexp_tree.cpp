@@ -2582,6 +2582,9 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "Music";
 			break;
 
+		case OPF_POST_EFFECT:
+			str = "<Effect Name>";
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -5738,10 +5741,11 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 {
 	unsigned int i;
 	sexp_list_item head;
+
 	SCP_vector<SCP_string> ppe_names;
 	get_post_process_effect_names(ppe_names);
 	for (i=0; i < ppe_names.size(); i++) {
-		head.add_data(const_cast<char*>(ppe_names[i].c_str()));
+		head.add_data_dup(const_cast<char*>(ppe_names[i].c_str()));
 	}
 
 	return head.next;
