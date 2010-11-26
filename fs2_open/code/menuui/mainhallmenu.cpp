@@ -50,7 +50,7 @@
 // MAIN HALL DATA DEFINES
 //
 #define MAX_RANDOM_INTERCOM_SOUNDS				10
-#define MAX_MISC_ANIMATIONS						10
+#define MAX_MISC_ANIMATIONS						32
 #define MAX_DOOR_ANIMATIONS						10
 
 #define MISC_ANIM_MODE_LOOP						0				// loop the animation
