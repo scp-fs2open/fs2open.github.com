@@ -95,6 +95,54 @@ static int retail_gauges[] = {
 	HUD_OBJECT_FIXED_MESSAGES
 };
 
+flag_def_list Hud_gauge_types[] = {
+	{ "Messages",			HUD_OBJECT_MESSAGES,			0},
+	{ "Training messages",	HUD_OBJECT_TRAINING_MESSAGES,	0},
+	{ "Support",			HUD_OBJECT_SUPPORT,				0},
+	{ "Damage",				HUD_OBJECT_DAMAGE,				0},
+	{ "Wingman status",		HUD_OBJECT_WINGMAN_STATUS,		0},
+	{ "Auto speed",			HUD_OBJECT_AUTO_SPEED,			0},
+	{ "Auto target",		HUD_OBJECT_AUTO_TARGET,			0},
+	{ "Countermeasures",	HUD_OBJECT_CMEASURES,			0},
+	{ "Talking head",		HUD_OBJECT_TALKING_HEAD,		0},
+	{ "Directives",			HUD_OBJECT_DIRECTIVES,			0},
+	{ "Weapons",			HUD_OBJECT_WEAPONS,				0},
+	{ "Objective notifier",	HUD_OBJECT_OBJ_NOTIFY,			0},
+	{ "Comm menu",			HUD_OBJECT_SQUAD_MSG,			0},
+	{ "Lag indicator",		HUD_OBJECT_LAG,					0},
+	{ "Mini shield",		HUD_OBJECT_MINI_SHIELD,			0},
+	{ "Player shield",		HUD_OBJECT_PLAYER_SHIELD,		0},
+	{ "Target shield",		HUD_OBJECT_TARGET_SHIELD,		0},
+	{ "Escort list",		HUD_OBJECT_ESCORT,				0},
+	{ "Afterburner energy", HUD_OBJECT_AFTERBURNER,			0},
+	{ "Mission time",		HUD_OBJECT_MISSION_TIME,		0},
+	{ "Ets weapons",		HUD_OBJECT_ETS_WEAPONS,			0},
+	{ "Ets shields",		HUD_OBJECT_ETS_SHIELDS,			0},
+	{ "Ets engines",		HUD_OBJECT_ETS_ENGINES,			0},
+	{ "Extra target data",	HUD_OBJECT_EXTRA_TARGET_DATA,	0},
+	{ "Target monitor",		HUD_OBJECT_TARGET_MONITOR,		0},
+	{ "Weapon energy",		HUD_OBJECT_WEAPON_ENERGY,		0},
+	{ "Text warnings",		HUD_OBJECT_TEXT_WARNINGS,		0},
+	{ "Multiplayer messages", HUD_OBJECT_MULTI_MSG,			0},
+	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},
+	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},
+	{ "Center reticle",		HUD_OBJECT_CENTER_RETICLE,		0},
+	{ "Throttle",			HUD_OBJECT_THROTTLE,			0},
+	{ "Threat indicator",	HUD_OBJECT_THREAT,				0},
+	{ "Lead indicator",		HUD_OBJECT_LEAD,				0},
+	{ "Lock indicator",		HUD_OBJECT_LOCK,				0},
+	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
+	{ "Target direction",	HUD_OBJECT_TARGET_TRI,			0},
+	{ "Hostile direction",	HUD_OBJECT_HOSTILE_TRI,			0},
+	{ "Orientation",		HUD_OBJECT_ORIENTATION_TEE,		0},
+	{ "Targeting brackets",	HUD_OBJECT_BRACKETS,			0},
+	{ "Offscreen indicator", HUD_OBJECT_OFFSCREEN,			0},
+	{ "Kills",				HUD_OBJECT_KILLS,				0},
+	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0}
+};
+
+int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
+
 int parse_ship_start()
 {
 	char shipname[NAME_LENGTH];
@@ -497,7 +545,7 @@ void set_current_hud()
 			if(Ship_info[Player_ship->ship_info_index].hud_gauges[i]->configOverride()) {
 				config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
 
-				if ( (!Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type)) || Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isActive())
+				if ( ( (!Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() || Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isActive()) && hud_config_show_flag_is_set(config_type)) )
 					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(true);
 				else
 					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(false);
@@ -519,7 +567,7 @@ void set_current_hud()
 			if(default_hud_gauges[i]->configOverride()) {
 				config_type = default_hud_gauges[i]->getConfigType();
 
-				if ( (!default_hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type)) || default_hud_gauges[i]->isActive())
+				if ( ( (!default_hud_gauges[i]->isOffbyDefault() || default_hud_gauges[i]->isActive()) && hud_config_show_flag_is_set(config_type)) )
 					default_hud_gauges[i]->updateActive(true);
 				else
 					default_hud_gauges[i]->updateActive(false);
