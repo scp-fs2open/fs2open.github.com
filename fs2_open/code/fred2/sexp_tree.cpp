@@ -2584,6 +2584,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 
 		case OPF_POST_EFFECT:
 			str = "<Effect Name>";
+			break;
 
 		default:
 			str = "<new default required!>";
