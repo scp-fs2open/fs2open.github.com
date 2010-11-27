@@ -405,7 +405,6 @@ public:
 	void initBitmaps(char *fname);
 	void render(float frametime);
 	void renderSight(int indicator_frame, vec3d *target_pos, vec3d *lead_target_pos);
-	int pickFrame(float prange, float srange, float dist_to_target);
 	void pageIn();
 };
 

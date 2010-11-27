@@ -4171,32 +4171,6 @@ void HudGaugeLeadSight::renderSight(int frame_offset, vec3d *target_pos, vec3d *
 	}
 }
 
-int HudGaugeLeadSight::pickFrame(float prange, float srange, float dist_to_target)
-{
-	int frame_offset=-1;
-	int in_prange=0, in_srange=0;
-
-	if ( dist_to_target < prange ) {
-		in_prange=1;
-	}
-
-	if ( dist_to_target < srange ) {
-		in_srange=1;
-	}
-
-	if ( in_prange && in_srange ) {
-		frame_offset=1;
-	} else if ( in_prange && !in_srange ) {
-		frame_offset=2;
-	} else if ( !in_prange && in_srange ) {
-		frame_offset=0;
-	} else {
-		frame_offset=-1;
-	}
-
-	return frame_offset;
-}
-
 void HudGaugeLeadSight::pageIn()
 {
 	bm_page_in_aabitmap(Lead_sight.first_frame, Lead_sight.num_frames);
@@ -4287,24 +4261,21 @@ void HudGaugeLeadSight::render(float frametime)
 			srange = -1.0f;
 		}
 	}
-
-	/*frame_offset = pickFrame(prange, srange, dist_to_target);
 	
-	if ( frame_offset < 0 ) {
-		return;
-	}*/
+	bool in_frame;
+	if ( dist_to_target < prange ) {
+		// fire it up
+		in_frame = g3_in_frame() > 0;
+		if(!in_frame) {
+			g3_start_frame(0);
+		}
 
-	// fire it up
-	bool in_frame = g3_in_frame() > 0;
-	if(!in_frame) {
-		g3_start_frame(0);
-	}
+		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		renderSight(1, &target_pos, &lead_target_pos); // render the primary weapon lead sight
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderSight(1, &target_pos, &lead_target_pos); // render the primary weapon lead sight
-
-	if(!in_frame) {
-		g3_end_frame();
+		if(!in_frame) {
+			g3_end_frame();
+		}
 	}
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
@@ -4324,8 +4295,10 @@ void HudGaugeLeadSight::render(float frametime)
 		if (dist_to_target > max_dist) {
 			return;
 		}
+	} else {
+		return;
 	}
-
+	
 	// fire it up
 	in_frame = g3_in_frame() > 0;
 	if(!in_frame) {
