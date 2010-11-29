@@ -2584,6 +2584,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 
 		case OPF_POST_EFFECT:
 			str = "<Effect Name>";
+			break;
 
 		default:
 			str = "<new default required!>";
@@ -4991,6 +4992,8 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_with_bay()
 	object *objp;
 	sexp_list_item head;
 
+	head.add_data("<no anchor>");
+
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
 		if ( (objp->type == OBJ_SHIP) || (objp->type == OBJ_START) )
@@ -5002,8 +5005,6 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_with_bay()
 			}
 		}
 	}
-
-	head.add_data("<no anchor>");
 
 	return head.next;
 }
@@ -5058,7 +5059,7 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
-			head.add_data(tmp);
+			head.add_data_dup(tmp);
 		}
 	}
 
@@ -5247,7 +5248,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sound_environment()
 	for (int i = 0; i  < (int)EFX_presets.size(); i++) {
 		// ugh
 		char *text = const_cast<char*>(EFX_presets[i].name.c_str());
-		head.add_data(text);
+		head.add_data_dup(text);
 	}
 
 	return head.next;

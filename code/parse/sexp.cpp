@@ -3503,17 +3503,17 @@ int add_sexps(int n)
 	int	sum = 0, val;
 
 	if (n != -1) {
-		if ( CAR(n) != -1)
+		if ( CAR(n) != -1) {
 			sum = eval_sexp( CAR(n) );
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )
+				return SEXP_NAN;
+			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
+				return SEXP_NAN_FOREVER;
+		}
 		else
 			sum = atoi( CTEXT(n) );
-
-		// be sure to check for the NAN value when doing arithmetic -- this value should
-		// get propagated to the next highest function.
-		if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )
-			return SEXP_NAN;
-		else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
-			return SEXP_NAN_FOREVER;
 
 		while (CDR(n) != -1) {
 			val = eval_sexp( CDR(n) );
@@ -3521,7 +3521,7 @@ int add_sexps(int n)
 			// get propagated to the next highest function.
 			if ( Sexp_nodes[CDR(n)].value == SEXP_NAN )
 				return SEXP_NAN;
-			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
+			else if ( Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_NAN_FOREVER;
 			sum += val;
 			n = CDR(n);
