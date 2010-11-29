@@ -193,6 +193,7 @@ protected:
 	bool reticle_follow;
 	bool active;
 	bool off_by_default;
+	bool sexp_override;
 	bool pop_up;
 	int popup_timer;
 	bool message_gauge;
@@ -241,6 +242,8 @@ public:
 	void updateColor(int r, int g, int b, int a);
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
+	void updateSexpOverride(bool sexp);
+
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions
@@ -478,6 +481,9 @@ public:
 HudGauge* hud_get_gauge(char* name);
 
 extern SCP_vector<HudGauge*> default_hud_gauges;
+
+extern flag_def_list Hud_gauge_types[];
+extern int Num_hud_gauge_types;
 
 #endif	/* __HUD_H__ */
 

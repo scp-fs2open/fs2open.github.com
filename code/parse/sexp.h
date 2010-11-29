@@ -38,10 +38,11 @@ struct ship;
 #endif
 */
 
-#define MAX_SEXP_VARIABLES 100
+#define MAX_SEXP_VARIABLES 250
 
 #define	MAX_SEXP_TEXT	2000
 #define	MAX_OPERATORS	1024  // Yes, this is used, but not by the Sexp code.
+#define MAX_EVENT_SIZE	16384
 
 // Operator argument formats (data types of an argument)
 #define	OPF_NONE				1		// argument cannot exist at this position if it's this
@@ -121,6 +122,7 @@ struct ship;
 #define OPF_AUDIO_VOLUME_OPTION 75		// The E
 #define OPF_WEAPON_BANK_NUMBER	76		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
 #define OPF_MESSAGE_OR_STRING	77		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
+#define OPF_HUD_GAUGE			78		// The E
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -606,6 +608,7 @@ struct ship;
 #define OP_SHIP_SUBSYS_IGNORE_IF_DEAD		(0x00e2	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 #define OP_HUD_SET_DIRECTIVE				(0x00e3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_HUD_GAUGE_SET_ACTIVE				(0x00e4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
+#define OP_HUD_ACTIVATE_GAUGE_TYPE			(0x00e5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 
 /* made obsolete by Goober5000
 // debugging sexpressions

@@ -263,6 +263,7 @@ public:
 	sexp_list_item *get_listing_opf_explosion_option();
 	sexp_list_item *get_listing_opf_adjust_audio_volume();
 	sexp_list_item *get_listing_opf_weapon_banks();
+	sexp_list_item *get_listing_hud_gauge();
 
 	int m_mode;
 	int item_index;

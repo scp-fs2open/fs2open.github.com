@@ -502,6 +502,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
 	{ "hud-display-gauge",			OP_HUD_DISPLAY_GAUGE,		2, 2 },
 	{ "hud-gauge-set-active",			OP_HUD_GAUGE_SET_ACTIVE,		2, 2 },
+	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,		2, 2},
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -717,6 +718,8 @@ int Num_sound_environment_options = 3;
 char *Adjust_audio_options[] = { "Music", "Voice", "Effects" };
 int Num_adjust_audio_options = 3;
 int audio_volume_option_lookup(char *text);
+
+int hud_gauge_type_lookup(char* name);
 
 // for explosions - Goober5000
 #define EO_DAMAGE			0
@@ -2461,7 +2464,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_AUDIO_VOLUME_OPTION:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
 				if (audio_volume_option_lookup(CTEXT(node)) == -1)
+					return SEXP_CHECK_TYPE_MISMATCH;
+				break;
+
+			case OPF_HUD_GAUGE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (hud_gauge_type_lookup(CTEXT(node)) == -1)
 					return SEXP_CHECK_TYPE_MISMATCH;
 				break;
 
@@ -2857,7 +2873,7 @@ int get_sexp(char *token)
 			int len = strcspn(Mp + 1, "\"");
 			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
-			Assert(len < TOKEN_LENGTH);  // token is too long.
+			Assertion(len < TOKEN_LENGTH, "Token %s is too long. Needs to be shorter than 31 characters.", Mp);  // token is too long.
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
@@ -8641,6 +8657,35 @@ void sexp_hud_gauge_set_active(int n) {
 
 	if (hg != NULL) {
 		hg->updateActive(active);
+	}
+}
+
+int hud_gauge_type_lookup(char* name) {
+	for(int i = 0; i < Num_hud_gauge_types; i++) {
+		if(!stricmp(name, Hud_gauge_types[i].name))
+			return Hud_gauge_types[i].def;
+	}
+	return -1;
+}
+
+void sexp_hud_activate_gauge_type(int n) {
+	int config_type = hud_gauge_type_lookup(CTEXT(n));
+	bool active = (is_sexp_true(CDR(n)) != 0);
+	
+	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+		int num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
+
+		for(int i = 0; i < num_gauges; i++) {
+			if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType() == config_type)
+				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateSexpOverride(!active);
+		}
+	} else {
+		int num_gauges = default_hud_gauges.size();
+
+		for(int i = 0; i < num_gauges; i++) {
+			if (default_hud_gauges[i]->getConfigType() == config_type)
+				default_hud_gauges[i]->updateSexpOverride(!active);
+		}
 	}
 }
 
@@ -19618,6 +19663,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hud_gauge_set_active(node);
 				break;
 
+			case OP_HUD_ACTIVATE_GAUGE_TYPE:
+				sexp_val = SEXP_TRUE;
+				sexp_hud_activate_gauge_type(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -19670,8 +19720,8 @@ int eval_sexp(int cur_node, int referenced_node)
 			// make sure everything works okay
 			if (arg_num == -1)
 			{
-				char sexp_text[4096];
-				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE, 4096);
+				char sexp_text[MAX_EVENT_SIZE];
+				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
 				Error(LOCATION, "Error finding sexp argument.  Received value %d for sexp:\n%s", sexp_val, sexp_text);
 			}
 
@@ -20424,6 +20474,7 @@ int query_operator_return_type(int op)
 		case OP_FORCE_GLIDE:
 		case OP_HUD_SET_DIRECTIVE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
+		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -22077,6 +22128,12 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_HUD_ACTIVATE_GAUGE_TYPE:
+			if (argnum == 0)
+				return OPF_HUD_GAUGE;
+			else
+				return OPF_BOOL;
+
 		default:
 			Int3();
 	}
@@ -23444,6 +23501,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_MESSAGE:
 		case OP_HUD_SET_DIRECTIVE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
+		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -26498,15 +26556,22 @@ sexp_help_struct Sexp_help[] = {
 	{OP_HUD_SET_DIRECTIVE, "hud-set-directive\r\n"
 		"\tSets the text of a given custom hud gauge to the provided text."
 		"Takes 2 Arguments...\r\n"
-		"\t1:\tHUD Gauge name"
-		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences."
+		"\t1:\tHUD Gauge name\r\n"
+		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences.\r\n"
 	},
 
 	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active\r\n"
-		"\tActivates or deactivates a given custom gauge"
+		"\tActivates or deactivates a given custom gauge."
 		"Takes 2 Arguments...\r\n"
-		"\t1:\tHUD Gauge name"
-		"\t2:\tBoolean, whether or nt to display this gauge"
+		"\t1:\tHUD Gauge name\r\n"
+		"\t2:\tBoolean, whether or not to display this gauge\r\n"
+	},
+
+	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type\r\n"
+		"\tActivates or deactivates all hud gauges of a given type."
+		"Takes 2 Arguments...\r\n"
+		"\t1:\tGauge Type\r\n"
+		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	}
 };
 
