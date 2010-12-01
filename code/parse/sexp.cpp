@@ -8672,19 +8672,21 @@ void sexp_hud_activate_gauge_type(int n) {
 	int config_type = hud_gauge_type_lookup(CTEXT(n));
 	bool active = (is_sexp_true(CDR(n)) != 0);
 	
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
-		int num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
+	if (config_type != -1) { 
+		if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+			int num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
-		for(int i = 0; i < num_gauges; i++) {
-			if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType() == config_type)
-				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateSexpOverride(!active);
-		}
-	} else {
-		int num_gauges = default_hud_gauges.size();
+			for(int i = 0; i < num_gauges; i++) {
+				if (Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getObjectType() == config_type)
+					Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateSexpOverride(!active);
+			}
+		} else {
+			int num_gauges = default_hud_gauges.size();
 
-		for(int i = 0; i < num_gauges; i++) {
-			if (default_hud_gauges[i]->getConfigType() == config_type)
-				default_hud_gauges[i]->updateSexpOverride(!active);
+			for(int i = 0; i < num_gauges; i++) {
+				if (default_hud_gauges[i]->getObjectType() == config_type)
+					default_hud_gauges[i]->updateSexpOverride(!active);
+			}
 		}
 	}
 }
