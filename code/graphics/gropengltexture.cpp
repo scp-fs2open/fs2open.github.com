@@ -965,7 +965,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	}
 
 	if ( (final_h < 1) || (final_w < 1) )       {
-		mprintf(("Bitmap is to small at %dx%d.\n", final_w, final_h ));
+		mprintf(("Bitmap %s is too small at %dx%d.\n", bm_get_filename(bitmap_handle), final_w, final_h ));
 		return 0;
 	}
 
@@ -1054,7 +1054,8 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	}
 	// gah
 	else {
-		Int3();
+		//Int3();
+		mprintf(("Texturing disabled for texture %s due to internal error.\n", bm_get_filename(bitmap_handle)));
 		GL_state.Texture.Disable();
 
 		return 0;
