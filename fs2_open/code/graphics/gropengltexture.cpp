@@ -940,6 +940,9 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 			max_w /= (16 >> Detail.hardware_textures);
 			max_h /= (16 >> Detail.hardware_textures);
 
+			CLAMP(max_w, GL_min_texture_width, GL_max_texture_width);
+			CLAMP(max_h, GL_min_texture_height, GL_max_texture_height);
+
 			resize = 1;
 		} else {
 			// we have mipmap levels so use those as a resize point (image should already be power-of-2)
