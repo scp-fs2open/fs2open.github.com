@@ -4539,7 +4539,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	{
 		float weapon_size;
 		weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
-		Assert( weapon_size > 0.0f );
+		Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
 		if (Fred_running)
 		{
 			swp->secondary_bank_ammo[i] = 100;
