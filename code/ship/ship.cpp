@@ -4588,7 +4588,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	{
 		float weapon_size;
 		weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
-		Assert( weapon_size > 0.0f );
+		Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
 		if (Fred_running)
 		{
 			swp->secondary_bank_ammo[i] = 100;
@@ -8069,7 +8069,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	// Primary banks
 	if ( pm->n_guns > sip->num_primary_banks ) {
 		Assert(pm->n_guns <= MAX_SHIP_PRIMARY_BANKS);
-		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks specified for %s\n", pm->n_guns, sip->num_primary_banks, sip->name);
+		Error(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks specified for %s\nThis must be fixed, as it will cause crashes.\n", pm->n_guns, sip->num_primary_banks, sip->name);
 		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a laser
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
@@ -8092,11 +8092,11 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	// Secondary banks
 	if ( pm->n_missiles > sip->num_secondary_banks ) {
 		Assert(pm->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
-		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks specified for %s\n", pm->n_missiles, sip->num_secondary_banks, sip->name);
+		Assertion(pm->n_missiles == sip->num_secondary_banks, "There are %d secondary banks in model,\nbut only %d secondary banks specified for %s\nThis must be fixed, as it will cause crashes.\n", pm->n_missiles, sip->num_secondary_banks, sip->name);
 		for ( i = sip->num_secondary_banks; i < pm->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a missile
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
-				Assert(Player_weapon_precedence[j] > 0);
+				Assertion((Player_weapon_precedence[j] > 0), "Error reading player weapon precedence list. Check weapons.tbl for $Player Weapon Precedence entry, and correct as necessary.\n");
 				int weapon_id = Player_weapon_precedence[j];
 				if (Weapon_info[weapon_id].subtype == WP_MISSILE) {
 					swp->secondary_bank_weapons[i] = weapon_id;
