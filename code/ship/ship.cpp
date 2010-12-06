@@ -7886,6 +7886,9 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->last_secondary_fire_stamp[i] = -1;
 		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
 	}
+
+	//Countermeasures
+	shipp->current_cmeasure = sip->cmeasure_type;
 }
 
 
