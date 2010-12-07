@@ -8134,7 +8134,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	if ( sip->num_detail_levels < pm->n_detail_levels )
 	{
-		Warning(LOCATION, "For ship '%s', detail level/nmismatch. Table has %d,/nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
 
 		for (i=0; i<pm->n_detail_levels; i++ )	{
 			sip->detail_distance[i] = 0;
