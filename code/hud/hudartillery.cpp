@@ -21,6 +21,7 @@
 #include "ai/ai.h"
 #include "globalincs/alphacolors.h"
 #include "network/multi.h"
+#include "hud/hudmessage.h"
 
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -100,6 +101,14 @@ void ssm_init()
 			stuff_float(&s->radius);
 			required_string("+Offset:");
 			stuff_float(&s->offset);
+			if (optional_string("+HUD Message:")) 
+				stuff_boolean(&s->send_message);
+			else
+				s->send_message = true;
+			if (optional_string("+Custom Message:")) {
+				stuff_string(s->message, F_NAME, NAME_LENGTH);
+				s->use_custom_message = true;
+			}
 
 			// see if we have a valid weapon
 			s->weapon_info_index = -1;
@@ -215,6 +224,13 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 	for(idx=0; idx<MAX_SSM_COUNT; idx++){
 		ssm->done_flags[idx] = 0;
 		ssm->fireballs[idx] = -1;
+	}
+	
+	if(Ssm_info[ssm_index].send_message) {
+		if (!Ssm_info[ssm_index].use_custom_message)
+			HUD_printf(XSTR("Firing artillery", 1570));
+		else
+			HUD_printf(Ssm_info[ssm_index].message);
 	}
 }
 
