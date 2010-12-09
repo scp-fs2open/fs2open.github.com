@@ -4845,7 +4845,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
 				}
 			}
-			if((ship_system->system_info->flags & MSS_FLAG_ROTATES) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
+			if((ship_system->flags & SSF_ROTATES) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
 			{
 				obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
 				ship_system->subsys_snd_flags |= SSSF_ROTATE;
@@ -5028,6 +5028,10 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_MISSILES_IGNORE_IF_DEAD;
 		if (model_system->flags & MSS_FLAG_ALLOW_VANISHING)
 			ship_system->flags |= SSF_VANISHED;
+		if (model_system->flags & MSS_FLAG_ROTATES)
+			ship_system->flags |= SSF_ROTATES;
+
+		ship_system->turn_rate = model_system->turn_rate;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
@@ -12708,7 +12712,7 @@ void ship_assign_sound(ship *sp)
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
 				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
 			}
-			if((moveup->system_info->rotation_snd != -1) && (moveup->system_info->flags & MSS_FLAG_ROTATES))
+			if((moveup->system_info->rotation_snd != -1) && (moveup->flags & SSF_ROTATES))
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
 				moveup->subsys_snd_flags |= SSSF_ROTATE;
@@ -16038,7 +16042,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	Assert(pss);
 
 	// check if we actually can rotate
-	if ( !(psub->flags & MSS_FLAG_ROTATES) ){
+	if ( !(pss->flags & SSF_ROTATES) ){
 		return;
 	}
 

@@ -246,7 +246,7 @@ typedef struct cockpit_display_info {
 #define SSF_NO_LIVE_DEBRIS		(1 << 7)		// prevents subsystem from generating live debris
 #define SSF_VANISHED			(1 << 8)		// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
 #define SSF_MISSILES_IGNORE_IF_DEAD	(1 << 9)	// forces homing missiles to target hull if subsystem is dead before missile hits it.
-
+#define SSF_ROTATES				(1 << 10)
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
 #define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
@@ -344,6 +344,7 @@ typedef	struct ship_subsys {
 
 	//scaler for setting adjusted turret rof
 	float	rof_scaler;
+	float	turn_rate;
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
