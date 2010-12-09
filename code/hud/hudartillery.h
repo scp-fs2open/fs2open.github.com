@@ -31,6 +31,9 @@ typedef struct ssm_info {
 	float			warp_time;							// how long the warp effect lasts
 	float			radius;								// radius around the shooting ship	
 	float			offset;								// offset in front of the shooting ship
+	char		message[NAME_LENGTH];
+	bool		use_custom_message;
+	bool		send_message;
 } ssm_info;
 
 // creation info for the strike (useful for multiplayer)

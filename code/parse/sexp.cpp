@@ -14653,6 +14653,7 @@ void sexp_set_armor_type(int node)
 		return;
 	}
 	shipp = &Ships[sindex];
+	sip = &Ship_info[shipp->ship_info_index];
 
 	// set or reset
 	node = CDR(node);
@@ -14679,7 +14680,7 @@ void sexp_set_armor_type(int node)
 		{
 			// we are setting the ship itself
 			if (!rset)
-				shipp->armor_type_idx = sip[shipp->objnum].armor_type_idx;
+				shipp->armor_type_idx = sip->armor_type_idx;
 			else
 				shipp->armor_type_idx = armor;
 		}
@@ -14687,7 +14688,7 @@ void sexp_set_armor_type(int node)
 		{
 			// we are setting the ships shields
 			if (!rset)
-				shipp->shield_armor_type_idx = sip[shipp->objnum].shield_armor_type_idx;
+				shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 			else
 				shipp->shield_armor_type_idx = armor;
 		}

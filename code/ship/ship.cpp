@@ -5823,7 +5823,7 @@ void ship_render(object * obj)
 					
 					if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
 						for(k = 0; k < bank->num_slots; k++) {
-							model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
+							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
 						}
 					} else {
 						num_secondaries_rendered = 0;
@@ -8069,7 +8069,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	// Primary banks
 	if ( pm->n_guns > sip->num_primary_banks ) {
 		Assert(pm->n_guns <= MAX_SHIP_PRIMARY_BANKS);
-		Error(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks specified for %s\nThis must be fixed, as it will cause crashes.\n", pm->n_guns, sip->num_primary_banks, sip->name);
+		Error(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks specified for %s.\nThis must be fixed, as it will cause crashes.\n", pm->n_guns, sip->num_primary_banks, sip->name);
 		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a laser
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
@@ -8092,7 +8092,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	// Secondary banks
 	if ( pm->n_missiles > sip->num_secondary_banks ) {
 		Assert(pm->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
-		Assertion(pm->n_missiles == sip->num_secondary_banks, "There are %d secondary banks in model,\nbut only %d secondary banks specified for %s\nThis must be fixed, as it will cause crashes.\n", pm->n_missiles, sip->num_secondary_banks, sip->name);
+		Error(LOCATION, "There are %d secondary banks in the model file,\nbut only %d secondary banks specified for %s.\nThis must be fixed, as it will cause crashes.\n", pm->n_missiles, sip->num_secondary_banks, sip->name);
 		for ( i = sip->num_secondary_banks; i < pm->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a missile
 			for ( j = 0; j < Num_player_weapon_precedence; j++ ) {
@@ -8162,6 +8162,9 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		swp->last_secondary_fire_stamp[i] = -1;
 		swp->burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
 	}
+
+	//Countermeasures
+	shipp->current_cmeasure = sip->cmeasure_type;
 }
 
 
@@ -8407,7 +8410,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	if ( sip->num_detail_levels < pm->n_detail_levels )
 	{
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm->n_detail_levels );
+		Warning(LOCATION, "For ship '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
 
 		for (i=0; i<pm->n_detail_levels; i++ )	{
 			sip->detail_distance[i] = 0;
@@ -13365,6 +13368,9 @@ int ship_engine_ok_to_warp(ship *sp)
 	if (sp->flags & SF_DISABLED)
 		return 0;
 
+	if (sp->flags & SF_WARP_BROKEN || sp->flags & SF_WARP_NEVER)
+		return 0;
+
 	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
 
 	// if at 0% strength, can't warp
@@ -15720,8 +15726,6 @@ void ship_update_artillery_lock()
 
 		// TEST CODE
 		if(aip->artillery_lock_time >= 2.0f){
-			HUD_printf(XSTR("Firing artillery", 1570));
-
 			ssm_create(&Objects[aip->artillery_objnum], &cinfo->hit_point_world, 0, NULL, shipp->team);				
 
 			// reset the artillery			
