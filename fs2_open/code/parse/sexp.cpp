@@ -14899,7 +14899,7 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 		// set rotate or not, depending on flag
 		if (locked)
 		{
-			rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
+			rotate->flags &= ~SSF_ROTATES;
 			if (rotate->subsys_snd_flags & SSSF_ROTATE)
 			{
 				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
@@ -14908,7 +14908,7 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 		}
 		else
 		{
-			rotate->system_info->flags |= MSS_FLAG_ROTATES;
+			rotate->flags |= SSF_ROTATES;
 			if (rotate->system_info->rotation_snd >= 0)
 			{
 				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
@@ -14943,7 +14943,7 @@ void sexp_reverse_rotating_subsystem(int node)
 			continue;
 
 		// switch direction of rotation
-		rotate->system_info->turn_rate *= -1.0f;
+		rotate->turn_rate *= -1.0f;
 		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
 		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
 	}
