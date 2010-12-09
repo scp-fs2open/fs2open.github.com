@@ -13090,6 +13090,9 @@ int ship_engine_ok_to_warp(ship *sp)
 	if (sp->flags & SF_DISABLED)
 		return 0;
 
+	if (sp->flags & SF_WARP_BROKEN || sp->flags & SF_WARP_NEVER)
+		return 0;
+
 	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
 
 	// if at 0% strength, can't warp
