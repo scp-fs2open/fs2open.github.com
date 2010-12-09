@@ -774,7 +774,7 @@ void wl_render_overhead_view(float frametime)
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
 	if (ship_class < 0 || ship_class > Num_ship_classes)
 	{
-		Warning(LOCATION, "ivalid ship class (%d) passed for render_overhead_view", ship_class);
+		Warning(LOCATION, "Invalid ship class (%d) passed for render_overhead_view", ship_class);
 		return;
 	}
 	ship_info * sip = &Ship_info[ship_class];
@@ -968,8 +968,29 @@ void wl_render_overhead_view(float frametime)
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
 
-						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, xc - 4, Wl_bank_coords[gr_screen.res][x][1] + 12);
-						gr_curve(xc - 5, Wl_bank_coords[gr_screen.res][x][1] + 12, 5, 1);
+						//get the curve right.
+						int curve;
+						if ((xc > Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 < yc))
+							curve = 1;
+						else if ((xc < Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 < yc))
+							curve = 0;
+						else if ((xc > Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 > yc))
+							curve = 2;
+						else
+							curve = 3;
+
+						int lineend;
+						if (curve == 1 || curve == 3)
+							lineend = xc - 4;
+						else
+							lineend = xc + 4;
+
+						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, lineend, Wl_bank_coords[gr_screen.res][x][1] + 12);
+						
+						if (curve == 0 || curve == 2)
+							lineend = xc;
+						
+						gr_curve(lineend, Wl_bank_coords[gr_screen.res][x][1] + 12, 5, curve);
 						gr_line(xc, Wl_bank_coords[gr_screen.res][x][1] + 17, xc, yc);
 						gr_circle(xc, yc, 5);
 
@@ -1027,8 +1048,31 @@ void wl_render_overhead_view(float frametime)
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
 
-						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, xc + 4, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12);
-						gr_curve(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, 5, 0);
+						//get the curve right.
+						int curve;
+						if ((xc > Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 < yc))
+							curve = 1;
+						else if ((xc < Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 < yc))
+							curve = 0;
+						else if ((xc > Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 > yc))
+							curve = 2;
+						else
+							curve = 3;
+
+						int lineend;
+						if (curve == 1 || curve == 3)
+							lineend = xc - 4;
+						else
+							lineend = xc + 4;
+
+						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, lineend, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12);
+						
+						if (curve == 1 || curve == 3)
+							lineend = xc + 5;
+						else
+							lineend = xc;
+						
+						gr_curve(lineend, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, 5, curve);
 						gr_line(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 17, xc, yc);
 						gr_circle(xc, yc, 5);
 					}
