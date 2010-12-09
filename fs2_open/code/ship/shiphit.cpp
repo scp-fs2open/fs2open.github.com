@@ -500,25 +500,24 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	int	count = 0;
 	for ( subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
 	{
-		#ifndef NDEBUG
-			//	Debug option.  If damage is negative of subsystem type, then just destroy that subsystem.
-			if (damage < 0.0f) {
-				// single player or multiplayer
-				Assert(Player_ai->targeted_subsys != NULL);
-				if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
-					Assert(subsys->system_info->type == (int) -damage);
-					ship_p->subsys_info[subsys->system_info->type].current_hits -= subsys->current_hits;
-					if (ship_p->subsys_info[subsys->system_info->type].current_hits < 0) {
-						ship_p->subsys_info[subsys->system_info->type].current_hits = 0.0f;
-					}
-					subsys->current_hits = 0.0f;
-					do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
-					continue;
-				} else {
-					continue;
+		//Deal with cheat correctly. If damage is the negative of the subsystem type, then we'll just kill the subsystem
+		//See process_debug_keys() in keycontrol.cpp for details. 
+		if (damage < 0.0f) {
+			// single player or multiplayer
+			Assert(Player_ai->targeted_subsys != NULL);
+			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
+				Assert(subsys->system_info->type == (int) -damage);
+				ship_p->subsys_info[subsys->system_info->type].current_hits -= subsys->current_hits;
+				if (ship_p->subsys_info[subsys->system_info->type].current_hits < 0) {
+					ship_p->subsys_info[subsys->system_info->type].current_hits = 0.0f;
 				}
+				subsys->current_hits = 0.0f;
+				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
+				continue;
+			} else {
+				continue;
 			}
-		#endif
+		}
 		
 		if (subsys->current_hits > 0.0f) {
 			float	dist;
