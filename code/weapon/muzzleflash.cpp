@@ -183,10 +183,20 @@ void mflash_page_in(bool load_all)
 			continue;
 
 		// blobs
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
+		int original_num_blobs = Mflash_info[i].blobs.size();
+		int original_idx = 1;
+		for ( idx = 0; idx < Mflash_info[i].blobs.size(); ) {
 			Mflash_info[i].blobs[idx].anim_id = bm_load_either(Mflash_info[i].blobs[idx].name, &num_frames, &fps, NULL, 1);
-			Assertion( (Mflash_info[i].blobs[idx].anim_id >= 0), "Failed to load muzzle flash animation %s\n", Mflash_info[i].blobs[idx].name );
-			bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
+			if ( Mflash_info[i].blobs[idx].anim_id >= 0 ) {
+				bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
+				++idx;
+			}
+			else {
+				Warning(LOCATION, "Muzleflash \"%s\", blob [%d/%d]\nMuzzleflash blob \"%s\" not found!  Deleting.", 
+					Mflash_info[i].name, original_idx, original_num_blobs, Mflash_info[i].blobs[idx].name);
+				Mflash_info[i].blobs.erase( Mflash_info[i].blobs.begin() + idx );
+			}
+			++original_idx;
 		}
 	}
 }
