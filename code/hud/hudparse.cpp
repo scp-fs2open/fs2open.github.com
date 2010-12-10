@@ -40,6 +40,7 @@
 extern int ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
+float Hud_speed_multiplier = 1.0f;	//The E
 
 // Goober5000
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
@@ -195,6 +196,17 @@ void parse_hud_gauges_tbl(char *filename)
 			Hud_unit_multiplier = 1.0f;
 		}
 	}
+
+	if(optional_string("$Speed Unit Multiplier:")) {
+		stuff_float(&Hud_speed_multiplier);
+
+		if (Hud_speed_multiplier <= 0.0f) {
+			Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
+			Hud_speed_multiplier = 1.0f;
+		}
+	} else {
+		Hud_speed_multiplier = Hud_unit_multiplier;
+	} 
 
 	if (optional_string("$Wireframe Targetbox:")) {
 		stuff_int(&Targetbox_wire);

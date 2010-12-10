@@ -1562,8 +1562,8 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 		}
 	}
 
-	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed speed scale
-		displayed_target_speed = current_target_speed * Hud_unit_multiplier;
+	if ( Hud_speed_multiplier > 0.0f ) {	// use a different displayed speed scale
+		displayed_target_speed = current_target_speed * Hud_speed_multiplier;
 	} else {
 		displayed_target_speed = current_target_speed;
 	}

@@ -11,6 +11,7 @@
 //Variables
 extern int Num_custom_gauges;
 extern float Hud_unit_multiplier;
+extern float Hud_speed_multiplier;
 
 #define NUM_HUD_RETICLE_STYLES	2
 

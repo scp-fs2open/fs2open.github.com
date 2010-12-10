@@ -422,8 +422,8 @@ void HudGaugeThrottle::render(float frametime)
 	absolute_speed = Player_obj->phys_info.speed;
 
 	// scale by distance modifier from hud_guages.tbl for display purposes
-	absolute_displayed_speed = absolute_speed * Hud_unit_multiplier;
-	max_displayed_speed = max_speed * Hud_unit_multiplier;
+	absolute_displayed_speed = absolute_speed * Hud_speed_multiplier;
+	max_displayed_speed = max_speed * Hud_speed_multiplier;
 
 	desired_speed = Player->ci.forward * max_speed;
 	if ( desired_speed < 0.0f ){		// so ships that go backwards don't force the indicators below where they can go
