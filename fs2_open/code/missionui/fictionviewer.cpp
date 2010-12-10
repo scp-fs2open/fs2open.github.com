@@ -164,6 +164,27 @@ static char *Fiction_viewer_text = NULL;
 
 static int Fiction_viewer_ui = -1;
 
+static void use_fv_font()
+{
+	// save old font and set new one
+	if (Fiction_viewer_fontnum >= 0)
+	{
+		Fiction_viewer_old_fontnum = gr_get_current_fontnum();
+		gr_set_font(Fiction_viewer_fontnum);
+	}
+	else
+	{
+		Fiction_viewer_old_fontnum = -1;
+	}
+}
+
+static void use_std_font()
+{
+	// restore the old font
+	if (Fiction_viewer_old_fontnum >= 0)
+		gr_set_font(Fiction_viewer_old_fontnum);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // FICTION VIEWER FUNCTIONS
 //
@@ -268,16 +289,8 @@ void fiction_viewer_init()
 		return;
 	}
 
-	// save old font and set new one
-	if (Fiction_viewer_fontnum >= 0)
-	{
-		Fiction_viewer_old_fontnum = gr_get_current_fontnum();
-		gr_set_font(Fiction_viewer_fontnum);
-	}
-	else
-	{
-		Fiction_viewer_old_fontnum = -1;
-	}
+	// set up fiction viewer font
+	use_fv_font();
 
 	// calculate text area lines from font
 	Fiction_viewer_text_max_lines = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3] / gr_get_font_height();
@@ -337,8 +350,7 @@ void fiction_viewer_close()
 	Fiction_viewer_window.destroy();
 
 	// restore the old font
-	if (Fiction_viewer_old_fontnum >= 0)
-		gr_set_font(Fiction_viewer_old_fontnum);
+	use_std_font();
 
 	// free the bitmap
 	if (Fiction_viewer_bitmap >= 0)
@@ -401,6 +413,8 @@ void fiction_viewer_do_frame(float frametime)
 	// maybe output the "more" indicator
 	if ((Fiction_viewer_text_max_lines + Top_fiction_viewer_text_line) < Num_brief_text_lines[0])
 	{
+		use_std_font();
+
 		// can be scrolled down
 		int more_txt_x = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][0] + (Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][2]/2) - 10;
 		int more_txt_y = Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][1] + Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][3];				// located below text, centered
@@ -410,6 +424,8 @@ void fiction_viewer_do_frame(float frametime)
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h);
 		gr_set_color_fast(&Color_red);
 		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+
+		use_fv_font();
 	}
 
 	gr_flip();
