@@ -1594,7 +1594,7 @@ unsigned int DistanceTo(char *nav)
 
 unsigned int DistanceTo(int nav)
 {
-	if (nav >= MAX_NAVPOINTS && nav < 0)
+	if (nav >= MAX_NAVPOINTS || nav < 0)
 		return 0xFFFFFFFF;
 
 	return (uint)vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
@@ -1611,7 +1611,7 @@ bool IsVisited(char *nav)
 
 bool IsVisited(int nav)
 {
-	if (nav >= MAX_NAVPOINTS && nav < 0)
+	if (nav >= MAX_NAVPOINTS || nav < 0)
 		return 0;
 
 	if (Navs[nav].flags & NP_VISITED)
