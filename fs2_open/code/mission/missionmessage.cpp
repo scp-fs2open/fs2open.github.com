@@ -1206,6 +1206,7 @@ void message_queue_process()
 			if ((Playing_messages[i].builtin_type != MESSAGE_OOPS) && (Playing_messages[i].builtin_type != MESSAGE_HAMMER_SWINE)) {
 				if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
 					message_kill_playing(i);
+					Message_shipnum = -1;
 					i++;
 					continue;
 				}
