@@ -1084,7 +1084,7 @@ int parse_ship_template()
 		if( optional_string("+Use Template:") ) {
 			char template_name[SHIP_MULTITEXT_LENGTH];
 			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
-			int template_id = ship_template_lookup( template_name);
+			template_id = ship_template_lookup( template_name);
 			
 			if ( template_id != -1 ) {
 				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
@@ -15859,7 +15859,7 @@ float ship_class_get_length(ship_info *sip)
 // Goober5000
 void ship_set_new_ai_class(int ship_num, int new_ai_class)
 {
-	Assert(ship_num >= 0);
+	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
 	Assert(new_ai_class >= 0);
 
 	ai_info *aip = &Ai_info[Ships[ship_num].ai_index];

@@ -6455,7 +6455,7 @@ void mission_eval_arrivals()
 	// better effect
 	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM)
 	{
-		int rship, use_terran_cmd;
+		int use_terran_cmd;
 
 		// use terran command 25% of time
 		use_terran_cmd = ((frand() - 0.75) > 0.0f)?1:0;
