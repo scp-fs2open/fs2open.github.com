@@ -8724,10 +8724,9 @@ void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
 	ADD_USHORT(val);
 
 	for (i =0; i < num_ubytes; i++) {
+		Assert (packet_size < MAX_PACKET_SIZE); 
 		data[packet_size] = sexp_packet[i]; 
 		packet_size++; 
-
-		Assert (packet_size <= MAX_PACKET_SIZE); 
 	}
 
 	// send to all
