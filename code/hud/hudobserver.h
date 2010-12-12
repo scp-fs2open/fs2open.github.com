@@ -12,8 +12,6 @@
 #ifndef _HUD_OBSERVER_FILE
 #define _HUD_OBSERVER_FILE
 
-#include "hud/hud.h"
-
 // prototypes
 struct ship;
 struct ai_info;

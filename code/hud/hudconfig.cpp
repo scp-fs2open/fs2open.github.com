@@ -1541,7 +1541,6 @@ void hud_config_close()
 {
 //	common_free_interface_palette();		// restore game palette
 	hud_config_unload_gauges();
-	hud_init_popup_timers();				// ensure no popup gauges are active
 
 	hud_config_color_close();
 

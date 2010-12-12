@@ -130,6 +130,21 @@ typedef struct MissionMessage {
 
 extern SCP_vector<MMessage> Messages;
 
+typedef struct pmessage {
+	//anim_instance *anim;		// handle of anim currently playing
+	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
+	int start_frame;			// the start frame needed to play the animation
+	bool play_anim;			// used to tell HUD gauges if they should be playing or not
+	int wave;					// handle of wave currently playing
+	int id;						// id of message currently playing
+	int priority;				// priority of message currently playing
+	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
+	int builtin_type;			// if a builtin message, type of the message
+} pmessage;
+
+extern pmessage Playing_messages[2];
+
+extern int Num_messages_playing;
 extern int Num_messages;
 extern int Num_builtin_messages;				// from messages.tbl -- index of message location to load mission specific messages into
 extern int Message_shipnum;					// used to display info on hud when message is sent

@@ -147,8 +147,90 @@ static int Directive_coords[GR_NUM_RESOLUTIONS][NUM_DIRECTIVE_COORDS][2] =
 	}
 };
 
-// displays (renders) the training objectives list
-void training_obj_display()
+HudGaugeDirectives::HudGaugeDirectives():
+HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, true, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+{
+}
+
+void HudGaugeDirectives::initHeaderOffsets(int x, int y)
+{
+	header_offsets[0] = x;
+	header_offsets[1] = y;
+}
+
+void HudGaugeDirectives::initMiddleFrameOffsetY(int y)
+{
+	middle_frame_offset_y = y;
+}
+
+void HudGaugeDirectives::initTextStartOffsets(int x, int y)
+{
+	text_start_offsets[0] = x;
+	text_start_offsets[1] = y;
+}
+
+void HudGaugeDirectives::initTextHeight(int h)
+{
+	text_h = h;
+}
+
+void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+{
+	directives_top.first_frame = bm_load_animation(fname_top, &directives_top.num_frames);
+	if ( directives_top.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_top);
+	}
+
+	directives_middle.first_frame = bm_load_animation(fname_middle, &directives_middle.num_frames);
+	if ( directives_middle.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_middle);
+	}
+
+	directives_bottom.first_frame = bm_load_animation(fname_bottom, &directives_bottom.num_frames);
+	if ( directives_bottom.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_bottom);
+	}
+}
+
+bool HudGaugeDirectives::canRender()
+{
+	if(hud_disabled_except_messages() && !message_gauge) {
+		return false;
+	}
+
+	if (hud_disabled()) {
+		return false;
+	}
+
+	// force the directives list to display in training missions even if this gauge isn't active.
+	if(!active && !(The_mission.game_type & MISSION_TYPE_TRAINING))
+		return false;
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void HudGaugeDirectives::pageIn()
+{
+	bm_page_in_aabitmap(directives_top.first_frame, directives_top.num_frames);
+	bm_page_in_aabitmap(directives_middle.first_frame, directives_middle.num_frames);
+	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
+}
+
+void HudGaugeDirectives::render(float frametime)
 {
 	char buf[256], *second_line;
 	int i, t, x, y, z, height, end, offset, bx, by, y_count;
@@ -156,13 +238,6 @@ void training_obj_display()
 
 	if (!Training_obj_num_lines){
 		return;
-	}
-
-	if ( !hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
-		// Always draw the directives display if this is a training mission
-		if ( !(The_mission.game_type & MISSION_TYPE_TRAINING) ) {
-			return;
-		}
 	}
 
 	// don't ever display directives display in multiplayer missions
@@ -181,23 +256,23 @@ void training_obj_display()
 
 	// draw top of objective display
 	// hud_set_default_color();
-	hud_set_gauge_color(HUD_DIRECTIVES_VIEW);
+	setGaugeColor();
 
-	GR_AABITMAP(Directive_gauge[0].first_frame, Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TOP][0]+fl2i(HUD_offset_x), Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TOP][1]+fl2i(HUD_offset_y));
+	renderBitmap(directives_top.first_frame, position[0], position[1]);
 	// gr_set_bitmap(Directive_gauge[0].first_frame);
 	// gr_aabitmap(Directive_coords[DIRECTIVE_COORDS_TOP][0]+fl2i(HUD_offset_x), Directive_coords[DIRECTIVE_COORDS_TOP][1]+fl2i(HUD_offset_y));
 
 	// print out title
-	emp_hud_printf(Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TITLE][0]+fl2i(HUD_offset_x), Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TITLE][1]+fl2i(HUD_offset_y), EG_OBJ_TITLE, XSTR( "directives", 422));
+	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[0], EG_OBJ_TITLE, XSTR( "directives", 422));
 	// gr_printf(Directive_coords[DIRECTIVE_COORDS_TITLE][0]+fl2i(HUD_offset_x), Directive_coords[DIRECTIVE_COORDS_TITLE][1]+fl2i(HUD_offset_y), XSTR( "directives", 422));
 	
-	bx = DIRECTIVE_X+fl2i(HUD_offset_x);
-	by = Directive_coords[gr_screen.res][DIRECTIVE_COORDS_MIDDLE][1]+fl2i(HUD_offset_y);
+	bx = position[0];
+	by = position[1] + middle_frame_offset_y;
 
 	y_count = 0;
 	for (i=0; i<end; i++) {
-		x = DIRECTIVE_X + 3 + fl2i(HUD_offset_x);
-		y = Training_obj_window_coords[gr_screen.res][1] + fl2i(HUD_offset_y) + y_count * height + height / 2 + 1;
+		x = position[0] + text_start_offsets[0];
+		y = position[1] + text_start_offsets[1] + y_count * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
 		c = &Color_normal;
@@ -212,7 +287,7 @@ void training_obj_display()
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
-			if(MULTI_TEAM && (Net_player != NULL)){
+			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
@@ -251,34 +326,34 @@ void training_obj_display()
 
 		// blit the background frames
 		// hud_set_default_color();
-		hud_set_gauge_color(HUD_DIRECTIVES_VIEW);
+		setGaugeColor();
 
-		GR_AABITMAP(Directive_gauge[1].first_frame, bx, by);
+		renderBitmap(directives_middle.first_frame, bx, by);
 		// gr_set_bitmap(Directive_gauge[1].first_frame);
 		// gr_aabitmap(bx, by);
 		
-		by += DIRECTIVE_H;
+		by += text_h;
 
 		if ( second_line ) {
-			GR_AABITMAP(Directive_gauge[1].first_frame, bx, by);
+			renderBitmap(directives_middle.first_frame, bx, by);
 			// gr_set_bitmap(Directive_gauge[1].first_frame);
 			// gr_aabitmap(bx, by);
 			
-			by += DIRECTIVE_H;
+			by += text_h;
 		}
 
 		// blit the text
 		gr_set_color_fast(c);
 		
-		emp_hud_string(x, y, EG_OBJ1 + i, buf);
+		renderString(x, y, EG_OBJ1 + i, buf);
 		// gr_printf(x, y, buf);
 		
 		y_count++;
 
 		if ( second_line ) {
-			y = Training_obj_window_coords[gr_screen.res][1] + fl2i(HUD_offset_y) + y_count * height + height / 2 + 1;
+			y = position[1] + text_start_offsets[1] + y_count * text_h;
 			
-			emp_hud_string(x+12, y, EG_OBJ1 + i + 1, second_line);
+			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
 			// gr_printf(x+12, y, second_line);
 			
 			y_count++;
@@ -287,9 +362,9 @@ void training_obj_display()
 
 	// draw the bottom of objective display
 	// hud_set_default_color();
-	hud_set_gauge_color(HUD_DIRECTIVES_VIEW);
+	setGaugeColor();
 
-	GR_AABITMAP(Directive_gauge[2].first_frame, bx, by);
+	renderBitmap(directives_bottom.first_frame, bx, by);
 	// gr_set_bitmap(Directive_gauge[2].first_frame);
 	// gr_aabitmap(bx, by);
 }
@@ -910,19 +985,20 @@ void message_training_queue_check()
 	}
 }
 
-// displays (renders) the training message to the screen
-void message_training_display()
+void message_training_update_frame()
 {
-	char *str, buf[256];
-	int i, z, x, y, height, mode, count;
+	int i, z;
+
+	if ((Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+		return;
+	}
+	
+	if ( hud_disabled() && !hud_disabled_except_messages()) {
+		return;
+	}
 
 	Training_message_visible = 0;
 	message_training_queue_check();
-	
-	if ( !hud_disabled_except_messages() ) {
-		training_obj_display();
-	}
-	
 
 	if (Training_failure){
 		return;
@@ -944,23 +1020,97 @@ void message_training_display()
 		drop_leading_white_space(Training_lines[i]);
 	}
 
+	Training_message_visible = 1;
+
+	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
+		if (Training_voice_type)
+			z = audiostream_is_playing(Training_voice_handle);
+		else
+			z = snd_is_playing(Training_voice_handle);
+
+		if (!z)
+			Training_message_timestamp = timestamp(2000);  // 2 second delay
+ 	}
+
+	Training_message_method = 0;
+}
+
+HudGaugeTrainingMessages::HudGaugeTrainingMessages():
+HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, true, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+{
+}
+
+bool HudGaugeTrainingMessages::canRender()
+{
+	if(hud_disabled_except_messages() && !message_gauge) {
+		return false;
+	}
+
+	if (hud_disabled()) {
+		return false;
+	}
+
+	// Gauge should display even if it's disabled.
+	//if(!active)
+	//	return false;
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void HudGaugeTrainingMessages::pageIn()
+{
+}
+
+// displays (renders) the training message to the screen
+void HudGaugeTrainingMessages::render(float frametime)
+{
+	char *str, buf[256];
+	int i, z, x, y, height, mode, count;
+
+	if (Training_failure){
+		return;
+	}
+
+	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
+		return;
+	}
+
+	if (Training_num_lines <= 0){
+		return;
+	}
+
+	gr_set_screen_scale(base_w, base_h);
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(Training_message_window_coords[gr_screen.res][0], Training_message_window_coords[gr_screen.res][1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
+	gr_shade(position[0], position[1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
+	gr_reset_screen_scale();
 
 	gr_set_color_fast(&Color_bright_blue);
 	mode = count = 0;
-	Training_message_visible = 1;
 	for (i=0; i<Training_num_lines; i++) {  // loop through all lines of message
 		str = Training_lines[i];
 		z = 0;
-		x = Training_message_window_coords[gr_screen.res][0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
-		y = Training_message_window_coords[gr_screen.res][1] + i * height + height / 2 + 1;
+		x = position[0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
+		y = position[1] + i * height + height / 2 + 1;
 
 		while (*str) {  // loop through each character of each line
 			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
 				buf[z] = 0;
-				gr_printf(x, y, buf);
+				renderPrintf(x, y, buf);
 				gr_get_string_size(&z, NULL, buf);
 				x += z;
 				z = 0;
@@ -982,27 +1132,16 @@ void message_training_display()
 
 		if (z) {
 			buf[z] = 0;
-			gr_printf(x, y, "%s", buf);
+			renderPrintf(x, y, "%s", buf);
 		}
 	}
 
-	Training_message_method = 0;
 //	if (Training_message_method) {
 //		char *message = "Press a key to continue";
 
 //		gr_get_string_size(&i, NULL, message);
 //		gr_printf(TRAINING_MESSAGE_WINDOW_X + TRAINING_MESSAGE_WINDOW_WIDTH / 2 - i / 2, TRAINING_MESSAGE_WINDOW_Y + (Training_num_lines + 2) * height, message);
 //	}
-
-	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
-		if (Training_voice_type)
-			z = audiostream_is_playing(Training_voice_handle);
-		else
-			z = snd_is_playing(Training_voice_handle);
-
-		if (!z)
-			Training_message_timestamp = timestamp(2000);  // 2 second delay
- 	}
 }
 
 // processes a new training message to get hilighting information and store it in internal structures.

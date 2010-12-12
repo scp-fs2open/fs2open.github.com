@@ -18,6 +18,7 @@
 #include "io/key.h"
 #include "gamesequence/gamesequence.h"
 #include "ui/ui.h"
+#include "hud/hudparse.h"
 #include "globalincs/alphacolors.h"
 #include "cfile/cfilesystem.h"
 
@@ -114,6 +115,7 @@ int mission_load(char *filename_ext)
 
 	ml_update_recent_missions(filename_ext);  // update recently played missions list
 	write_pilot_file();
+	init_hud();
 	return 0;
 }
 

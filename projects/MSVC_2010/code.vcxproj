@@ -900,6 +900,7 @@
     <ClCompile Include="..\..\code\popup\popup.cpp" />
     <ClCompile Include="..\..\code\popup\popupdead.cpp" />
     <ClCompile Include="..\..\code\Radar\radar.cpp" />
+    <ClCompile Include="..\..\code\radar\radardradis.cpp" />
     <ClCompile Include="..\..\code\radar\radarorb.cpp" />
     <ClCompile Include="..\..\code\radar\radarsetup.cpp" />
     <ClCompile Include="..\..\code\render\3dclipper.cpp" />
@@ -1181,6 +1182,7 @@
     <ClInclude Include="..\..\code\popup\popup.h" />
     <ClInclude Include="..\..\code\popup\popupdead.h" />
     <ClInclude Include="..\..\code\Radar\radar.h" />
+    <ClInclude Include="..\..\code\radar\radardradis.h" />
     <ClInclude Include="..\..\code\radar\radarorb.h" />
     <ClInclude Include="..\..\code\radar\radarsetup.h" />
     <ClInclude Include="..\..\code\render\3d.h" />

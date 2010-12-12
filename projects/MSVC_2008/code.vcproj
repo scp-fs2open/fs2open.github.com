@@ -2581,6 +2581,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\radar\radardradis.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\radar\radardradis.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\radar\radarorb.cpp"
 				>
 			</File>

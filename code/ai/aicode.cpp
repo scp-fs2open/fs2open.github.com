@@ -10686,8 +10686,6 @@ void ai_dock()
 				//	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, aip->dockee_index, 1);
 				//	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, 1);
 					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
-					hud_maybe_flash_docking_text(Pl_objp);
-					hud_maybe_flash_docking_text(goal_objp);
 					// ai_dock_shake(Pl_objp, goal_objp);
 
 					if ((Pl_objp == Player_obj) || (goal_objp == Player_obj))

@@ -540,6 +540,8 @@ extern screen gr_screen;
 #define GR_ZBUFF_READ	(1<<1)
 #define GR_ZBUFF_FULL	(GR_ZBUFF_WRITE|GR_ZBUFF_READ)
 
+void gr_set_screen_scale(int x, int y);
+void gr_reset_screen_scale();
 bool gr_unsize_screen_pos(int *x, int *y);
 bool gr_resize_screen_pos(int *x, int *y);
 bool gr_unsize_screen_posf(float *x, float *y);
@@ -817,6 +819,7 @@ void gr_set_shader(shader *shade);
 
 // new bitmap functions
 void gr_bitmap(int x, int y, bool resize = true);
+void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool resize = true);
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling);
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 

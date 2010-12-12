@@ -12,6 +12,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "hud/hudbrackets.h"
+#include "hud/hudescort.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"
 #include "iff_defs/iff_defs.h"
@@ -1702,6 +1703,41 @@ ADE_VIRTVAR(Name, l_GameState,"string", "Game state name", "string", "Game state
 	}
 
 	return ade_set_args(L, "s", GS_state_text[sdx]);
+}
+
+//**********HANDLE: HUD Gauge
+ade_obj<HudGauge> l_HudGauge("HudGauge", "HUD Gauge handle");
+
+ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if handle is invalid")
+{
+	HudGauge* gauge;
+
+	if (!ade_get_args(L, "o", l_HudGauge.GetPtr(&gauge)))
+		return ADE_RETURN_NIL;
+
+	if (gauge->getConfigType() != HUD_OBJECT_CUSTOM)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "s", gauge->getCustomGaugeName());
+}
+
+ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if handle is invalid")
+{
+	HudGauge* gauge;
+	char* text = NULL;
+
+	if (!ade_get_args(L, "o|s", l_HudGauge.GetPtr(&gauge), text))
+		return ADE_RETURN_NIL;
+
+	if (gauge->getConfigType() != HUD_OBJECT_CUSTOM)
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR && text != NULL)
+	{
+		gauge->updateCustomGaugeText(text);
+	}
+
+	return ade_set_args(L, "s", gauge->getCustomGaugeText());
 }
 
 //**********HANDLE: model
@@ -9135,7 +9171,7 @@ ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number
 	return ade_set_args(L, "f", gTirDll_TrackIR.GetZ());
 }
 
-//**********LIBRARY: Controls library
+//**********LIBRARY: HUD library
 ade_lib l_HUD("HUD", NULL, "hu", "HUD library");
 
 ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "If the HUD is drawn or not")
@@ -9191,6 +9227,21 @@ ADE_FUNC(getHUDGaugeColor, l_HUD, "number (index number of the gauge)", "Color u
 	color c = HUD_config.clr[idx];
 	
 	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);	
+}
+
+ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specified HUD gauge", "HudGauge", "HUD Gauge handle, or nil if invalid")
+{
+	char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ADE_RETURN_NIL;
+	HudGauge* gauge = NULL;
+
+	gauge = hud_get_gauge(name);
+
+	if (gauge == NULL)
+		return ADE_RETURN_NIL;
+	else
+		return ade_set_args(L, "o", l_HudGauge.Set(*gauge));
 }
 
 //**********LIBRARY: Graphics

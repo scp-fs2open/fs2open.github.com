@@ -458,7 +458,7 @@ int emp_should_blit_gauge()
 }
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, char *str)
+void emp_hud_string(int x, int y, int gauge_id, char *str, bool resize)
 {
 	char tmp[256] = "";
 
@@ -478,7 +478,7 @@ void emp_hud_string(int x, int y, int gauge_id, char *str)
 	}
 
 	// print the string out
-	gr_string(x, y, tmp);
+	gr_string(x, y, tmp, resize);
 }
 
 // emp hud printf

@@ -13,6 +13,7 @@
 #define _HUD_SQUADMSG
 
 #include "network/multi.h"
+#include "hud/hud.h"
 
 #define SM_MODE_TYPE_SELECT			1		//am I going to message a ship or a wing
 #define SM_MODE_SHIP_SELECT			2		//choosing actual ship
@@ -57,6 +58,8 @@ struct object;
 // out of order, but it was this way in the original source
 #define DISABLE_SUBSYSTEM_ITEM		(1<<15)
 
+// used for Message box gauge
+#define NUM_MBOX_FRAMES		3
 
 // data structure to hold character string of commands for comm menu
 typedef struct comm_order {
@@ -158,5 +161,40 @@ void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );
+
+class HudGaugeSquadMessage: public HudGauge
+{
+protected:
+	hud_frames Mbox_gauge[NUM_MBOX_FRAMES];
+
+	int Header_offsets[2];
+	int Item_start_offsets[2];
+	int Middle_frame_start_offset_y;
+	int Item_h;
+	int Item_offset_x;
+
+	int Pgup_offsets[2];
+	int Pgdn_offsets[2];
+
+	int flash_timer[2];
+	bool flash_flag;
+public:
+	HudGaugeSquadMessage();
+	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
+	void initHeaderOffsets(int x, int y);
+	void initItemStartOffsets(int x, int y);
+	void initMiddleFrameStartOffsetY(int y);
+	void initItemHeight(int h);
+	void initItemOffsetX(int x);
+	void initPgUpOffsets(int x, int y);
+	void initPgDnOffsets(int x, int y);
+
+	void render(float frametime);
+	bool canRender();
+	void pageIn();
+	void initialize();
+	void startFlashPageScroll(int duration = 1400);
+	bool maybeFlashPageScroll(bool flash_fast = false);
+};
 
 #endif

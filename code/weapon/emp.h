@@ -102,7 +102,7 @@ void emp_process_local();
 int emp_should_blit_gauge();
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, char *str);
+void emp_hud_string(int x, int y, int gauge_id, char *str, bool resize);
 
 // emp hud printf
 void emp_hud_printf(int x, int y, int gauge_id, char *format, ...);

@@ -50,90 +50,6 @@ int Weapon_energy_cheat = 0;
 #define HAS_SHIELDS			(1<<1)
 #define HAS_WEAPONS			(1<<2)
 
-int ETS_bar_h[GR_NUM_RESOLUTIONS] = {
-	41,
-	41
-};
-
-typedef struct ets_gauge_info
-{
-	char	letter;
-	int	letter_coords[2];
-	int	top_coords[2];
-	int	bottom_coords[2];
-} ets_gauge_info;
-
-ets_gauge_info Ets_gauge_info_german[GR_NUM_RESOLUTIONS][3] =
-{
-	{ // GR_640
-		{ 'G', {525,422}, {523,380}, {523,430}, },
-		{ 'S', {542,422}, {540,380}, {540,430}, },
-		{ 'A', {559,422}, {557,380}, {557,430} }
-	},
-	{ // GR_1024
-		{ 'G', {882,690}, {880,648}, {880,698}, },
-		{ 'S', {900,690}, {898,648}, {898,698}, },
-		{ 'A', {917,690}, {916,648}, {916,698} }
-	}
-};
-ets_gauge_info Ets_gauge_info_french[GR_NUM_RESOLUTIONS][3] =
-{
-	{ // GR_640
-		{ 'C', {525,422}, {523,380}, {523,430}, },
-		{ 'B', {542,422}, {540,380}, {540,430}, },
-		{ 'M', {560,422}, {557,380}, {557,430} }
-	}, 
-	{ // GR_1024
-		{ 'C', {882,690}, {880,648}, {880,698}, },
-		{ 'B', {900,690}, {898,648}, {898,698}, },
-		{ 'M', {918,690}, {916,648}, {916,698} }
-	},
-};
-ets_gauge_info Ets_gauge_info_english[GR_NUM_RESOLUTIONS][3] =
-{
-	{ // GR_640
-		{ 'G', {525,422}, {523,380}, {523,430}, },
-		{ 'S', {542,422}, {540,380}, {540,430}, },
-		{ 'E', {560,422}, {557,380}, {557,430} }
-	},
-	{ // GR_1024
-		{ 'G', {882,690}, {880,648}, {880,698}, },
-		{ 'S', {900,690}, {898,648}, {898,698}, },
-		{ 'E', {918,690}, {916,648}, {916,698} }
-	}
-};
-ets_gauge_info *Ets_gauge_info = NULL;
-
-char Ets_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"energy1",
-	"energy1"
-};
-
-hud_frames Ets_gauge;
-
-static int Hud_ets_inited = 0;
-
-void hud_init_ets()
-{
-	if ( Hud_ets_inited )
-		return;
-
-	Ets_gauge.first_frame = bm_load_animation(Ets_fname[gr_screen.res], &Ets_gauge.num_frames);
-	if ( Ets_gauge.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: Ets_fname[gr_screen.res]\n");
-	}
-
-	if(Lcl_gr){
-		Ets_gauge_info = Ets_gauge_info_german[gr_screen.res];
-	} else if(Lcl_fr){
-		Ets_gauge_info = Ets_gauge_info_french[gr_screen.res];
-	} else {
-		Ets_gauge_info = Ets_gauge_info_english[gr_screen.res];
-	}
-	
-	Hud_ets_inited = 1;
-}
-
 // -------------------------------------------------------------------------------------------------
 // ets_init_ship() is called by a ship when it is created (effectively, for every ship at the start
 // of a mission).  This will set the default charge rates for the different systems and initialize
@@ -358,139 +274,6 @@ void ai_manage_ets(object* obj)
 		else if ( ship_p->weapon_recharge_index < DEFAULT_CHARGE_INDEX )
 			increase_recharge_rate(obj, WEAPONS);
 	}
-}
-
-// -------------------------------------------------------------------------------------------------
-// hud_show_ets() will display the charge rates for the three systems, and the reserve
-// energy for shields and weapons.  hud_show_ets() is called once per frame.
-//
-void hud_show_ets()
-{
-	int i, j, index, y_start, y_end, clip_h, w, h, x, y;
-
-	ship* ship_p = &Ships[Player_obj->instance];	
-
-	if ( Ets_gauge.first_frame < 0 ) {
-		return;
-	}
-
-	// if at least two gauges are not shown, don't show any
-	i = 0;
-	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags & OF_NO_SHIELDS) i++;
-	if (!ship_has_engine_power(ship_p)) i++;
-	if (i >= 2) return;
-
-	hud_set_gauge_color(HUD_ETS_GAUGE);
-
-	// draw the letters for the gauges first, before any clipping occurs
-	i = 0;
-	for ( j = 0; j < 3; j++ )
-	{
-		if (j == 0 && !ship_has_energy_weapons(ship_p))
-		{
-			continue;
-		}
-		if (j == 1 && Player_obj->flags & OF_NO_SHIELDS)
-		{
-			continue;
-		}
-		if (j == 2 && !ship_has_engine_power(ship_p))
-		{
-			continue;
-		}
-		Assert(Ets_gauge_info != NULL);
-		gr_printf(Ets_gauge_info[i].letter_coords[0], Ets_gauge_info[i].letter_coords[1], NOX("%c"), Ets_gauge_info[j].letter); 
-		i++;
-	}
-
-	// draw the three energy gauges
-	i = 0;
-	index = 0;
-	for ( j = 0; j < 3; j++ ) {
-		switch (j) {
-		case 0:
-			index = ship_p->weapon_recharge_index;
-			if ( !ship_has_energy_weapons(ship_p) )
-			{
-				continue;
-			}
-			break;
-		case 1:
-			index = ship_p->shield_recharge_index;
-			if ( Player_obj->flags & OF_NO_SHIELDS )
-			{
-				continue;
-			}
-			break;
-		case 2:
-			index = ship_p->engine_recharge_index;
-			if ( !ship_has_engine_power(ship_p) )
-			{
-				continue;
-			}
-			break;
-		}
-
-		clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h[gr_screen.res] );
-
-		bm_get_info(Ets_gauge.first_frame,&w,&h);
-
-		if ( index < NUM_ENERGY_LEVELS-1 ) {
-			// some portion of dark needs to be drawn
-
-			hud_set_gauge_color(HUD_ETS_GAUGE);
-
-			// draw the top portion
-
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].top_coords[0];
-			y = Ets_gauge_info[i].top_coords[1];
-			
-			GR_AABITMAP_EX(Ets_gauge.first_frame,x,y,w,clip_h,0,0);			
-
-			// draw the bottom portion
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].bottom_coords[0];
-			y = Ets_gauge_info[i].bottom_coords[1];
-
-			y_start = y + (ETS_bar_h[gr_screen.res] - clip_h);
-			y_end = y + ETS_bar_h[gr_screen.res];
-			
-			GR_AABITMAP_EX(Ets_gauge.first_frame, x, y_start, w, y_end-y_start, 0, ETS_bar_h[gr_screen.res]-clip_h);			
-		}
-
-		if ( index > 0 ) {
-			if ( hud_gauge_maybe_flash(HUD_ETS_GAUGE) == 1 ) {
-				hud_set_gauge_color(HUD_ETS_GAUGE, HUD_C_DIM);
-				// hud_set_dim_color();
-			} else {
-				hud_set_gauge_color(HUD_ETS_GAUGE, HUD_C_BRIGHT);
-				// hud_set_bright_color();
-			}
-			// some portion of recharge needs to be drawn
-
-			// draw the top portion
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].top_coords[0];
-			y = Ets_gauge_info[i].top_coords[1];
-
-			y_start = y + clip_h;
-			y_end = y + ETS_bar_h[gr_screen.res];
-			
-			GR_AABITMAP_EX(Ets_gauge.first_frame+1, x, y_start, w, y_end-y_start, 0, clip_h);			
-
-			// draw the bottom portion
-			Assert(Ets_gauge_info != NULL);
-			x = Ets_gauge_info[i].bottom_coords[0];
-			y = Ets_gauge_info[i].bottom_coords[1];
-			
-			GR_AABITMAP_EX(Ets_gauge.first_frame+2, x,y,w,ETS_bar_h[gr_screen.res]-clip_h,0,0);			
-		}
-		i++;
-	}
-
-	// hud_set_default_color();
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -863,7 +646,218 @@ void transfer_energy_to_weapons(object* obj)
 	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, sinfo_p->max_weapon_reserve, 1.0f);
 }
 
-void hudets_page_in()
+HudGaugeEts::HudGaugeEts():
+System_type(0), 
+HudGauge(HUD_OBJECT_ETS_ENGINES, HUD_ETS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
-	bm_page_in_aabitmap( Ets_gauge.first_frame, Ets_gauge.num_frames );
+}
+
+HudGaugeEts::HudGaugeEts(int _gauge_object, int _system_type):
+System_type(_system_type), 
+HudGauge(_gauge_object, HUD_ETS_GAUGE, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+{
+}
+
+void HudGaugeEts::initBarHeight(int _ets_h)
+{
+	ETS_bar_h = _ets_h;
+}
+
+void HudGaugeEts::initLetterOffsets(int _x, int _y)
+{
+	Letter_offsets[0] = _x;
+	Letter_offsets[1] = _y;
+}
+
+void HudGaugeEts::initTopOffsets(int _x, int _y)
+{
+	Top_offsets[0] = _x;
+	Top_offsets[1] = _y;
+}
+
+void HudGaugeEts::initBottomOffsets(int _x, int _y)
+{
+	Bottom_offsets[0] = _x;
+	Bottom_offsets[1] = _y;
+}
+
+void HudGaugeEts::initLetter(char _letter)
+{
+	Letter = _letter;
+}
+
+void HudGaugeEts::initBitmaps(char *fname)
+{
+	Ets_bar.first_frame = bm_load_animation(fname, &Ets_bar.num_frames);
+	if ( Ets_bar.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname);
+	}
+}
+
+void HudGaugeEts::render(float frametime)
+{
+}
+
+void HudGaugeEts::pageIn()
+{
+	bm_page_in_aabitmap( Ets_bar.first_frame, Ets_bar.num_frames );
+}
+
+void HudGaugeEts::blitGauge(int index)
+{
+	int y_start, y_end, clip_h, w, h, x, y;
+
+	// draw the letters for the gauges first, before any clipping occurs
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter); 
+
+	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
+
+	bm_get_info(Ets_bar.first_frame,&w,&h);
+
+	if ( index < NUM_ENERGY_LEVELS-1 ) {
+		// some portion of dark needs to be drawn
+
+		setGaugeColor();
+
+		// draw the top portion
+		x = position[0] + Top_offsets[0];
+		y = position[1] + Top_offsets[1];
+		
+		renderBitmapEx(Ets_bar.first_frame,x,y,w,clip_h,0,0);			
+
+		// draw the bottom portion
+		x = position[0] + Bottom_offsets[0];
+		y = position[1] + Bottom_offsets[1];
+
+		y_start = y + (ETS_bar_h - clip_h);
+		y_end = y + ETS_bar_h;
+		
+		renderBitmapEx(Ets_bar.first_frame, x, y_start, w, y_end-y_start, 0, ETS_bar_h-clip_h);			
+	}
+
+	if ( index > 0 ) {
+		if ( maybeFlashSexp() == 1 ) {
+			setGaugeColor(HUD_C_DIM);
+			// hud_set_dim_color();
+		} else {
+			setGaugeColor(HUD_C_BRIGHT);
+			// hud_set_bright_color();
+		}
+		// some portion of recharge needs to be drawn
+
+		// draw the top portion
+		x = position[0] + Top_offsets[0];
+		y = position[1] + Top_offsets[1];
+
+		y_start = y + clip_h;
+		y_end = y + ETS_bar_h;
+		
+		renderBitmapEx(Ets_bar.first_frame+1, x, y_start, w, y_end-y_start, 0, clip_h);			
+
+		// draw the bottom portion
+		x = position[0] + Bottom_offsets[0];
+		y = position[1] + Bottom_offsets[1];
+		
+		renderBitmapEx(Ets_bar.first_frame+2, x,y,w,ETS_bar_h-clip_h,0,0);			
+	}
+}
+
+HudGaugeEtsWeapons::HudGaugeEtsWeapons():
+HudGaugeEts(HUD_OBJECT_ETS_WEAPONS, (int)WEAPONS)
+{
+}
+
+void HudGaugeEtsWeapons::render(float frametime)
+{
+	int i;
+
+	ship* ship_p = &Ships[Player_obj->instance];	
+
+	if ( Ets_bar.first_frame < 0 ) {
+		return;
+	}
+
+	// if at least two gauges are not shown, don't show any
+	i = 0;
+	if (!ship_has_energy_weapons(ship_p)) i++;
+	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (!ship_has_engine_power(ship_p)) i++;
+	if (i >= 2) return;
+
+	// now actually check if this 
+	if (!ship_has_energy_weapons(ship_p))
+	{
+		return;
+	}
+
+	setGaugeColor();
+
+	// draw the gauges for the weapon system
+	blitGauge(ship_p->weapon_recharge_index);
+}
+
+HudGaugeEtsShields::HudGaugeEtsShields():
+HudGaugeEts(HUD_OBJECT_ETS_SHIELDS, (int)SHIELDS)
+{
+}
+
+void HudGaugeEtsShields::render(float frametime)
+{
+	int i;
+
+	ship* ship_p = &Ships[Player_obj->instance];	
+
+	if ( Ets_bar.first_frame < 0 ) {
+		return;
+	}
+
+	// if at least two gauges are not shown, don't show any
+	i = 0;
+	if (!ship_has_energy_weapons(ship_p)) i++;
+	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (!ship_has_engine_power(ship_p)) i++;
+	if (i >= 2) return;
+
+	setGaugeColor();
+
+	// draw the letters for the gauges first, before any clipping occurs
+	if (Player_obj->flags & OF_NO_SHIELDS) {
+		return;
+	}
+
+	// draw the gauges for the weapon system
+	blitGauge(ship_p->shield_recharge_index);
+}
+
+HudGaugeEtsEngines::HudGaugeEtsEngines():
+HudGaugeEts(HUD_OBJECT_ETS_ENGINES, (int)ENGINES)
+{
+}
+
+void HudGaugeEtsEngines::render(float frametime)
+{
+	int i;
+
+	ship* ship_p = &Ships[Player_obj->instance];	
+
+	if ( Ets_bar.first_frame < 0 ) {
+		return;
+	}
+
+	// if at least two gauges are not shown, don't show any
+	i = 0;
+	if (!ship_has_energy_weapons(ship_p)) i++;
+	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (!ship_has_engine_power(ship_p)) i++;
+	if (i >= 2) return;
+
+	setGaugeColor();
+
+	// draw the letters for the gauges first, before any clipping occurs
+	if (!ship_has_engine_power(ship_p)) {
+		return;
+	}
+
+	// draw the gauges for the weapon system
+	blitGauge(ship_p->engine_recharge_index);
 }

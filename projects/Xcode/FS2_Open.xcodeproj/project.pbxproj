@@ -654,6 +654,8 @@
 		606034471134822A0032BB9A /* dscap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F908C3D6A0003B1351 /* dscap.cpp */; };
 		606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 606CBAE1126A1BFF007BE418 /* fsmemory.cpp */; };
 		60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B56A32124BBFD5005AF5A9 /* fsmemory.h */; };
+		60C1FF00126E63B5005D5132 /* radardradis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60C1FEFE126E63B5005D5132 /* radardradis.cpp */; };
+		60C1FF01126E63B5005D5132 /* radardradis.h in Headers */ = {isa = PBXBuildFile; fileRef = 60C1FEFF126E63B5005D5132 /* radardradis.h */; };
 		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
 		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
 		60FAF4E4113431A100CE910F /* openal.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E1113431A100CE910F /* openal.h */; };
@@ -1606,6 +1608,8 @@
 		34DCF88508CFB2B500A528A0 /* scramble.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scramble.h; sourceTree = "<group>"; };
 		606CBAE1126A1BFF007BE418 /* fsmemory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsmemory.cpp; sourceTree = "<group>"; };
 		60B56A32124BBFD5005AF5A9 /* fsmemory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsmemory.h; sourceTree = "<group>"; };
+		60C1FEFE126E63B5005D5132 /* radardradis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = radardradis.cpp; sourceTree = "<group>"; };
+		60C1FEFF126E63B5005D5132 /* radardradis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = radardradis.h; sourceTree = "<group>"; };
 		60E7978A10F59C1C00904FA6 /* trackirglobal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = trackirglobal.cpp; path = external_dll/trackirglobal.cpp; sourceTree = "<group>"; };
 		60E7978C10F59C4100904FA6 /* externalcode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = externalcode.h; path = external_dll/externalcode.h; sourceTree = "<group>"; };
 		60E7978D10F59C4100904FA6 /* trackirpublic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = trackirpublic.h; path = external_dll/trackirpublic.h; sourceTree = "<group>"; };
@@ -2809,6 +2813,8 @@
 			children = (
 				345954CC08C3D6A0003B1351 /* radar.cpp */,
 				345954CD08C3D6A0003B1351 /* radar.h */,
+				60C1FEFE126E63B5005D5132 /* radardradis.cpp */,
+				60C1FEFF126E63B5005D5132 /* radardradis.h */,
 				345954CE08C3D6A0003B1351 /* radarorb.cpp */,
 				345954CF08C3D6A0003B1351 /* radarorb.h */,
 				345954D008C3D6A0003B1351 /* radarsetup.cpp */,
@@ -3335,6 +3341,7 @@
 				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				3459586F08C3D8CB003B1351 /* freespace.h in Headers */,
 				60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */,
+				60C1FF01126E63B5005D5132 /* radardradis.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3925,6 +3932,7 @@
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				3459596B08C3D8CB003B1351 /* freespace.cpp in Sources */,
 				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
+				60C1FF00126E63B5005D5132 /* radardradis.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

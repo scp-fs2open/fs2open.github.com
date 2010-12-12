@@ -1044,6 +1044,9 @@
     <ClCompile Include="..\..\code\external_dll\trackirglobal.cpp">
       <Filter>ExternalDLL</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\radar\radardradis.cpp">
+      <Filter>Radar</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1849,6 +1852,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\globalincs\fsmemory.h">
       <Filter>GlobalIncs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\radar\radardradis.h">
+      <Filter>Radar</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
