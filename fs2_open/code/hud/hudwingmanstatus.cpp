@@ -34,29 +34,6 @@
 #define WINGMAN_STATUS_DOTS				3
 #define WINGMAN_STATUS_NAMES				4
 
-static char *Wingman_status_filenames[GR_NUM_RESOLUTIONS][HUD_WINGMAN_STATUS_NUM_FRAMES] =
-{
-//XSTR:OFF
-	{ // GR_640
-		"wingman1",
-		"wingman2",
-		"wingman3",
-		"wingman4",
-		"wingman5",
-	}, 
-	{ // GR_1024
-		"wingman1",
-		"wingman2",
-		"wingman3",
-		"wingman4",
-		"wingman5",
-	}
-//XSTR:ON
-};
-
-static hud_frames Wingman_status_frames[HUD_WINGMAN_STATUS_NUM_FRAMES];
-static int Wingman_status_gauge_loaded=0;
-
 #define HUD_WINGMAN_STATUS_NONE			0		// wingman doesn't exist
 #define HUD_WINGMAN_STATUS_DEAD			1		// wingman has died
 #define HUD_WINGMAN_STATUS_ALIVE			2		// wingman is in the mission
@@ -78,178 +55,6 @@ static int HUD_wingman_update_timer;
 static int HUD_wingman_flash_duration[MAX_SQUADRON_WINGS][MAX_SHIPS_PER_WING];
 static int HUD_wingman_flash_next[MAX_SQUADRON_WINGS][MAX_SHIPS_PER_WING];
 static int HUD_wingman_flash_is_bright;
-
-
-// coords to draw wingman status icons, for 1-5 wings (0-4)
-int HUD_wingman_left_coords[GR_NUM_RESOLUTIONS][5][2] = {
-	{ // GR_640
-		{550, 144},				// where to draw the left part of gauge if we have 1 wing
-		{550, 144},				// "" 2 wings
-		{515, 144},				// "" 3 wings
-		{480, 144},				// "" 4 wings
-		{445, 144}				// "" 5 wings
-	},
-	{ // GR_1024
-		{932, 144},
-		{932, 144},
-		{897, 144},
-		{862, 144},
-		{827, 144}
-	},
-};
-int HUD_wingman_middle_coords[GR_NUM_RESOLUTIONS][5][2] = {
-	{ // GR_640
-		{0, 0},					// we never draw this for 1 wing
-		{0, 0},					// we never draw this for 2 wings
-		{586, 144},				// where to draw the _first_ middle gauge for 3 wings
-		{551, 144},				// "" 4 wings
-		{516, 144}				// "" 5 wings
-	}, 
-	{ // GR_1024
-		{0, 0},
-		{0, 0},
-		{968, 144},
-		{933, 144},
-		{898, 144}
-	}
-};
-int HUD_wingman_right_coords[GR_NUM_RESOLUTIONS][5][2] = {
-	{ // GR_640
-		{621, 144},			// always drawn in the same spot
-		{621, 144},
-		{621, 144},
-		{621, 144},
-		{621, 144},
-	}, 
-	{ // GR_1024
-		{1003, 144},
-		{1003, 144},
-		{1003, 144},
-		{1003, 144},
-		{1003, 144},
-	}
-};
-
-int HUD_wingman_status_name_coords[GR_NUM_RESOLUTIONS][MAX_SQUADRON_WINGS][2] =
-{
-	{ // GR_640
-		{459,185},
-		{494,185},
-		{529,185},
-		{564,185},
-		{599,185},
-	},
-	{ // GR_1024
-		{841,185},
-		{876,185},
-		{911,185},
-		{946,185},
-		{981,185},
-	}
-};
-
-// special coordinates if only one wing is present
-int HUD_wingman_status_single_coords[GR_NUM_RESOLUTIONS][MAX_SHIPS_PER_WING][2] = 
-{
-	{ // GR_640
-		{589,159},				// where to draw dots if we have only one wing present (special case)
-		{582,167},
-		{596,167},
-		{589,175},
-		{578,175},
-		{600,175},
-	}, 
-	{ // GR_1024
-		{971,159},
-		{964,167},
-		{978,167},
-		{971,175},
-		{960,175},
-		{982,175},
-	}
-};
-
-int HUD_wingman_status_coords[GR_NUM_RESOLUTIONS][MAX_SQUADRON_WINGS][MAX_SHIPS_PER_WING][2] = 
-{
-	// we will only ever display up to 5 wings
-	{	// GR_640
-		// 1 wing present
-		{{467,159},						// ship 1
-		{460,167},						// ship 2
-		{474,167},						// ship 3
-		{467,175},						// ship 4
-		{456,175},						// ship 5
-		{478,175}},						// ship 6
-
-		// 2 wings present
-		{{502,159},
-		{495,167},
-		{509,167},
-		{502,175},
-		{491,175},
-		{513,175}},
-
-		// 3 wings present
-		{{537,159},
-		{530,167},
-		{544,167},
-		{537,175},
-		{526,175},
-		{548,175}},
-
-		// 4 wings present
-		{{572,159},
-		{565,167},
-		{579,167},
-		{572,175},
-		{561,175},
-		{583,175}},
-	
-		// 5 wings present
-		{{607,159},
-		{600,167},
-		{614,167},
-		{607,175},
-		{596,175},
-		{618,175}},
-	}, 
-	{	// GR_1024
-		{{849,159},
-		{842,167},
-		{856,167},
-		{849,175},
-		{838,175},
-		{860,175}},
-
-		{{884,159},
-		{877,167},
-		{891,167},
-		{884,175},
-		{873,175},
-		{895,175}},
-
-		{{919,159},
-		{912,167},
-		{926,167},
-		{919,175},
-		{908,175},
-		{930,175}},
-
-		{{954,159},
-		{947,167},
-		{961,167},
-		{954,175},
-		{943,175},
-		{965,175}},
-	
-		{{989,159},
-		{982,167},
-		{996,167},
-		{989,175},
-		{978,175},
-		{1000,175}},
-	} 
-};
 
 // flag a player wing ship as destroyed
 void hud_set_wingman_status_dead(int wing_index, int wing_pos)
@@ -349,18 +154,6 @@ void hud_init_wingman_status_gauge()
 {
 	int	i, j;
 
-	if ( !Wingman_status_gauge_loaded ) {
-
-		for ( i = 0; i < HUD_WINGMAN_STATUS_NUM_FRAMES; i++ ) {
-			Wingman_status_frames[i].first_frame = bm_load_animation(Wingman_status_filenames[gr_screen.res][i], &Wingman_status_frames[i].num_frames);
-			if ( Wingman_status_frames[i].first_frame == -1 ) {
-				Warning(LOCATION, NOX("Error loading Wingman_status_filenames[gr_screen.res][i]'\n"));
-				return;
-			}
-		}
-		Wingman_status_gauge_loaded = 1;
-	}
-
 	hud_wingman_status_init_flash();
 
 	HUD_wingman_update_timer=timestamp(0);	// update status right away
@@ -411,98 +204,178 @@ void hud_wingman_status_update()
 	}
 }
 
-void hud_wingman_status_blit_left_frame(int num_wings_to_draw)
+HudGaugeWingmanStatus::HudGaugeWingmanStatus():
+HudGauge(HUD_OBJECT_WINGMAN_STATUS, HUD_WINGMEN_STATUS, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+{
+}
+
+void HudGaugeWingmanStatus::initialize()
+{
+	initFlash();
+}
+void HudGaugeWingmanStatus::initHeaderOffsets(int x, int y)
+{
+	header_offsets[0] = x;
+	header_offsets[1] = y;
+}
+
+void HudGaugeWingmanStatus::initLeftFrameEndX(int x)
+{
+	left_frame_end_x = x;
+}
+
+void HudGaugeWingmanStatus::initSingleWingOffsets(int x, int y)
+{
+	single_wing_offsets[0] = x;
+	single_wing_offsets[1] = y;
+}
+
+void HudGaugeWingmanStatus::initMultipleWingOffsets(int x, int y)
+{
+	multiple_wing_offsets[0] = x;
+	multiple_wing_offsets[1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingWidth(int w)
+{
+	wing_width = w;
+}
+
+void HudGaugeWingmanStatus::initWingNameOffsets(int x, int y)
+{
+	wing_name_offsets[0] = x;
+	wing_name_offsets[1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingmate1Offsets(int x, int y)
+{
+	wingmate_offsets[0][0] = x;
+	wingmate_offsets[0][1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingmate2Offsets(int x, int y)
+{
+	wingmate_offsets[1][0] = x;
+	wingmate_offsets[1][1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingmate3Offsets(int x, int y)
+{
+	wingmate_offsets[2][0] = x;
+	wingmate_offsets[2][1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingmate4Offsets(int x, int y)
+{
+	wingmate_offsets[3][0] = x;
+	wingmate_offsets[3][1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingmate5Offsets(int x, int y)
+{
+	wingmate_offsets[4][0] = x;
+	wingmate_offsets[4][1] = y;
+}
+
+void HudGaugeWingmanStatus::initWingmate6Offsets(int x, int y)
+{
+	wingmate_offsets[5][0] = x;
+	wingmate_offsets[5][1] = y;
+}
+
+void HudGaugeWingmanStatus::initBitmaps(char *fname_left, char *fname_middle, char *fname_right, char *fname_dots)
+{
+	Wingman_status_left.first_frame = bm_load_animation(fname_left, &Wingman_status_left.num_frames);
+	if ( Wingman_status_left.first_frame == -1 ) {
+		Warning(LOCATION, "Error loading %s\n", fname_left);
+	}
+
+	Wingman_status_middle.first_frame = bm_load_animation(fname_middle, &Wingman_status_middle.num_frames);
+	if ( Wingman_status_middle.first_frame == -1 ) {
+		Warning(LOCATION, "Error loading %s\n", fname_middle);
+	}
+
+	Wingman_status_right.first_frame = bm_load_animation(fname_right, &Wingman_status_right.num_frames);
+	if ( Wingman_status_right.first_frame == -1 ) {
+		Warning(LOCATION, "Error loading %s\n", fname_right);
+	}
+
+	Wingman_status_dots.first_frame = bm_load_animation(fname_dots, &Wingman_status_dots.num_frames);
+	if ( Wingman_status_dots.first_frame == -1 ) {
+		Warning(LOCATION, "Error loading %s\n", fname_dots);
+	}
+}
+
+void HudGaugeWingmanStatus::initGrowMode(int mode) {
+	grow_mode = mode;
+}
+
+void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 {
 	int sx, sy, bitmap;
 
-	// draw left side of frame
 	if((num_wings_to_draw < 1) || (num_wings_to_draw > 5)){
 		Int3();
 		return;
 	}
-	sx = HUD_wingman_left_coords[gr_screen.res][num_wings_to_draw - 1][0];	
-	sy = HUD_wingman_left_coords[gr_screen.res][num_wings_to_draw - 1][1];		
-	bitmap = Wingman_status_frames[BACKGROUND_LEFT].first_frame;
+
+	if((num_wings_to_draw > 2) && (grow_mode == GROW_LEFT)) {
+		// make some room for the spacers
+		sx = position[0] - (num_wings_to_draw - 2)*wing_width; 
+	} else {
+		sx = position[0];
+	}
+	sy = position[1];
+
+	bitmap = Wingman_status_left.first_frame;
 
 	if ( bitmap > -1 ) {
-		GR_AABITMAP(bitmap, sx, sy);
-		// gr_set_bitmap(bitmap);
-		// gr_aabitmap(sx, sy);
-	}
-
-	// write "wingmen" on gauge
-	gr_string(sx+2, sy+2, XSTR( "wingmen", 352));
-}
-
-void hud_wingman_status_blit_middle_frame(int num_wings_to_draw)
-{
-	int sx, sy, bitmap;
-	int idx;
-
-	bitmap = Wingman_status_frames[BACKGROUND_MIDDLE].first_frame;
-	if ( bitmap < 0 ) {
-		return;
-	}
-
-	// don't draw for 1 or 2 wings
-	if((Num_wings == 1) || (Num_wings == 2)){
-		return;
-	}
-
-	// draw left side of frame
-	if((num_wings_to_draw < 1) || (num_wings_to_draw > 5)){
-		Int3();
-		return;
-	}	
-	sx = -1;
-	sy = -1;
-	for(idx=num_wings_to_draw; idx>=3; idx--){
-		sx = HUD_wingman_middle_coords[gr_screen.res][idx - 1][0];	
-		sy = HUD_wingman_middle_coords[gr_screen.res][idx - 1][1];		
-		GR_AABITMAP(bitmap, sx, sy);	
-	}	
-}
-
-void hud_wingman_status_blit_right_frame(int num_wings_to_draw)
-{
-	int sx, sy, bitmap;
-
-	// draw left side of frame
-	if((num_wings_to_draw < 1) || (num_wings_to_draw > 5)){
-		Int3();
-		return;
-	}
-
-	sx = HUD_wingman_right_coords[gr_screen.res][num_wings_to_draw - 1][0];	
-	sy = HUD_wingman_right_coords[gr_screen.res][num_wings_to_draw - 1][1];			
-	bitmap = Wingman_status_frames[BACKGROUND_RIGHT].first_frame;
-
-	if ( bitmap > -1 ) {
-		GR_AABITMAP(bitmap, sx, sy);		
-	}
-}
-
-void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wings_to_draw)
-{
-	int i, sx, sy, is_bright, bitmap = -1, screen_pos;
-
-	// yeah... somebody must have been drunk
-	//Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame;
-
-	if ( Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame < 0 ) {
-		return;
+		renderBitmap(bitmap, sx, sy);
 	}
 	
-	if ( Wingman_status_frames[WINGMAN_STATUS_NAMES].first_frame < 0 ) {
+	//Tell renderDots() where to start
+	actual_origin[0] = sx;
+	actual_origin[1] = sy;
+
+	// write "wingmen" on gauge
+	renderString(sx+header_offsets[0], sy+header_offsets[1], XSTR( "wingmen", 352));
+
+	// bring us to the end of the left portion so we can draw the last or middle bits depending on how many wings we have to draw
+	sx += left_frame_end_x;
+
+	bitmap = Wingman_status_middle.first_frame;
+
+	if(num_wings_to_draw > 2 && bitmap > 0) {
+		for(int i = 0; i < num_wings_to_draw - 2; i++){
+			renderBitmap(bitmap, sx, sy);
+			sx += wing_width;
+		}
+	}
+
+	bitmap = Wingman_status_right.first_frame;
+	renderBitmap(bitmap, sx, sy);
+}
+
+void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num_wings_to_draw)
+{
+	int i, sx, sy, is_bright, bitmap = -1;
+
+	if ( Wingman_status_dots.first_frame < 0 ) {
 		return;
 	}
 
-	screen_pos = screen_index + (MAX_SQUADRON_WINGS - num_wings_to_draw);
+	if(num_wings_to_draw == 1) {
+		sx = position[0] + single_wing_offsets[0];
+		sy = position[1] + single_wing_offsets[1];
+	} else {
+		sx = actual_origin[0] + multiple_wing_offsets[0] + (screen_index - 1)*wing_width; // wing_width = 35
+		sy = actual_origin[1] + multiple_wing_offsets[1];
+	}
 	
 	// draw wingman dots
 	for ( i = 0; i < MAX_SHIPS_PER_WING; i++ ) {
 
-		if ( hud_wingman_status_maybe_flash(wing_index, i) ) {
+		if ( maybeFlashStatus(wing_index, i) ) {
 			is_bright=1;
 		} else {
 			is_bright=0;
@@ -511,10 +384,10 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 		switch( HUD_wingman_status[wing_index].status[i] ) {
 
 		case HUD_WINGMAN_STATUS_ALIVE:
-			bitmap = Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame;
+			bitmap = Wingman_status_dots.first_frame;
 			if ( HUD_wingman_status[wing_index].hull[i] > 0.5f ) {
 				// use gauge color
-				hud_set_gauge_color(HUD_WINGMEN_STATUS, is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
+				setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
 			} else {
 				gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
 			}
@@ -522,12 +395,12 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 
 		case HUD_WINGMAN_STATUS_DEAD:
 			gr_set_color_fast(&Color_red);
-			bitmap = Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame+1;
+			bitmap = Wingman_status_dots.first_frame+1;
 			break;
 
 		case HUD_WINGMAN_STATUS_NOT_HERE:
-			hud_set_gauge_color(HUD_WINGMEN_STATUS, is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
-			bitmap = Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame+1;
+			setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
+			bitmap = Wingman_status_dots.first_frame+1;
 			break;
 
 		default:
@@ -536,29 +409,16 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 
 		}	// end swtich
 
-		if ( num_wings_to_draw == 1 ) {
-			sx = HUD_wingman_status_single_coords[gr_screen.res][i][0];
-			sy = HUD_wingman_status_single_coords[gr_screen.res][i][1]; 
-		} else {
-			sx = HUD_wingman_status_coords[gr_screen.res][screen_pos][i][0];
-			sy = HUD_wingman_status_coords[gr_screen.res][screen_pos][i][1]; 
-		}
-
 		if ( bitmap > -1 ) {
-			GR_AABITMAP(bitmap, sx, sy);			
+			renderBitmap(bitmap, sx + wingmate_offsets[i][0], sy + wingmate_offsets[i][1]);
 		}
 	}
 
 	// draw wing name
-	// Goober5000 - add 12 to now make these coordinates specify the center rather than the left side
-	if ( num_wings_to_draw == 1 ) {
-		sx = HUD_wingman_status_single_coords[gr_screen.res][0][0] - 8 + 12;
-		sy = HUD_wingman_status_single_coords[gr_screen.res][0][1] + 26;
-	} else {
-		sx = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][0] + 12;
-		sy = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][1]; 
-	}
-	hud_set_gauge_color(HUD_WINGMEN_STATUS);
+	sx += wing_name_offsets[0];
+	sy += wing_name_offsets[1];
+	
+	setGaugeColor();
 
 	// Goober5000 - get the lowercase abbreviation
 	char abbrev[4];
@@ -570,7 +430,7 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 	// Goober5000 - center it (round the offset rather than truncate it)
 	int abbrev_width;
 	gr_get_string_size(&abbrev_width, NULL, abbrev);
-	gr_string(sx - (int)((float)abbrev_width/2.0f+0.5f), sy, abbrev);
+	renderString(sx - (int)((float)abbrev_width/2.0f+0.5f), sy, abbrev);
 }
 
 int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
@@ -605,8 +465,7 @@ int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
 	return 0;
 }
 
-// Draw the wingman status gauge
-void hud_wingman_status_render()
+void HudGaugeWingmanStatus::render(float frametime)
 {
 	int i, count, num_wings_to_draw = 0;
 
@@ -621,12 +480,10 @@ void hud_wingman_status_render()
 	}
 
 	// hud_set_default_color();
-	hud_set_gauge_color(HUD_WINGMEN_STATUS);
+	setGaugeColor();
 
 	// blit the background frames
-	hud_wingman_status_blit_left_frame(num_wings_to_draw);
-	hud_wingman_status_blit_middle_frame(num_wings_to_draw);
-	hud_wingman_status_blit_right_frame(num_wings_to_draw);
+	renderBackground(num_wings_to_draw);
 
 	count = 0;
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
@@ -634,7 +491,7 @@ void hud_wingman_status_render()
 			continue;
 		}
 
-		hud_wingman_status_blit_dots(i, count, num_wings_to_draw);
+		renderDots(i, count, num_wings_to_draw);
 		count++;
 	}
 }
@@ -652,6 +509,19 @@ void hud_wingman_status_init_flash()
 	}
 
 	HUD_wingman_flash_is_bright = 0;
+}
+
+void HudGaugeWingmanStatus::initFlash()
+{
+	int i, j;
+
+	for ( i = 0; i < MAX_SQUADRON_WINGS; i++ ) {
+		for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
+			next_flash[i][j] = timestamp(0);
+		}
+	}
+
+	flash_status = 0;
 }
 
 // start the targetbox item flashing for TBOX_FLASH_DURATION
@@ -677,6 +547,27 @@ int hud_wingman_status_maybe_flash(int wing_index, int wing_pos)
 
 		if ( HUD_wingman_flash_is_bright & (1<<index) ) {
 			draw_bright=1;
+		}
+	}
+
+	return draw_bright;
+}
+
+bool HudGaugeWingmanStatus::maybeFlashStatus(int wing_index, int wing_pos)
+{
+	int index;
+	bool draw_bright = false;
+
+	index = wing_index*MAX_SHIPS_PER_WING + wing_pos;
+
+	if ( !timestamp_elapsed(HUD_wingman_flash_duration[wing_index][wing_pos]) ) {
+		if ( timestamp_elapsed(next_flash[wing_index][wing_pos]) ) {
+			next_flash[wing_index][wing_pos] = timestamp(TBOX_FLASH_INTERVAL);
+			flash_status ^= (1<<index);	// toggle between default and bright frames
+		}
+
+		if ( flash_status & (1<<index) ) {
+			draw_bright = true;
 		}
 	}
 
@@ -728,15 +619,10 @@ void hud_wingman_status_set_index(int shipnum)
 	shipp->wing_status_wing_pos = (char)wing_pos;
 }
 
-void hudwingmanstatus_page_in()
+void HudGaugeWingmanStatus::pageIn()
 {
-	int i;
-	for ( i = 0; i < HUD_WINGMAN_STATUS_NUM_FRAMES; i++ ) {
-		bm_page_in_aabitmap( Wingman_status_frames[i].first_frame, Wingman_status_frames[i].num_frames );
-	}
-}
-
-int get_blip_bitmap()
-{
-	return Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame+1;
+	bm_page_in_aabitmap( Wingman_status_left.first_frame, Wingman_status_left.num_frames);
+	bm_page_in_aabitmap( Wingman_status_middle.first_frame, Wingman_status_middle.num_frames);
+	bm_page_in_aabitmap( Wingman_status_right.first_frame, Wingman_status_right.num_frames);
+	bm_page_in_aabitmap( Wingman_status_dots.first_frame, Wingman_status_dots.num_frames);
 }

@@ -2586,6 +2586,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<Effect Name>";
 			break;
 
+		case OPF_HUD_GAUGE:
+			str = "Messages";
+			break;
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -2673,6 +2677,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_AUDIO_VOLUME_OPTION:
 		case OPF_WEAPON_BANK_NUMBER:
 		case OPF_MESSAGE_OR_STRING:
+		case OPF_HUD_GAUGE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4398,6 +4403,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_message();
 			break;
 
+		case OPF_HUD_GAUGE:
+			list = get_listing_hud_gauge();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5270,6 +5279,16 @@ sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
 
 	for (int i = 0; i < Num_adjust_audio_options; i++)
 		head.add_data(Adjust_audio_options[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_hud_gauge() 
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_hud_gauge_types; i++)
+		head.add_data(Hud_gauge_types[i].name);
 
 	return head.next;
 }

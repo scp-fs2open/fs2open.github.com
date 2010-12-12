@@ -28,6 +28,7 @@
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
 #include "fireball/fireballs.h"
+#include "hud/hud.h"
 
 #include <string>
 
@@ -211,10 +212,31 @@ extern SCP_vector<ArmorType> Armor_types;
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
+// Swifty: Cockpit displays
+typedef struct cockpit_display {
+	int target;
+	int source;
+	int foreground;
+	int background;
+	int offset[2];
+	int size[2];
+	char name[MAX_FILENAME_LEN];
+} cockpit_display;
+
+typedef struct cockpit_display_info {
+	char name[MAX_FILENAME_LEN];
+	char filename[MAX_FILENAME_LEN];
+	char fg_filename[MAX_FILENAME_LEN];
+	char bg_filename[MAX_FILENAME_LEN];
+	int offset[2];
+	int size[2];
+} cockpit_display_info;
+
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
 #define SSF_NO_SS_TARGETING     (1 << 2)
+
 //nuke
 #define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
 #define SSF_FOV_REQUIRED		(1 << 4)
@@ -651,6 +673,9 @@ typedef struct ship {
 	
 	// Goober5000 - revised nameplate implementation
 	int *ship_replacement_textures;
+	int *cockpit_replacement_textures;
+
+	SCP_vector<cockpit_display> displays;
 
 	// Goober5000 - index into pm->view_positions[]
 	// apparently, early in FS1 development, there was a field called current_eye_index
@@ -1271,6 +1296,12 @@ typedef struct ship_info {
 	float piercing_damage_draw_limit;
 
 	int damage_lightning_type;
+
+	SCP_vector<HudGauge*> hud_gauges;
+	bool hud_enabled;
+	bool hud_retail;
+
+	SCP_vector<cockpit_display_info> displays;
 } ship_info;
 
 extern int Num_wings;
@@ -1773,6 +1804,15 @@ extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_s
 // Goober5000 - shortcut hud stuff
 extern int ship_has_energy_weapons(ship *shipp);
 extern int ship_has_engine_power(ship *shipp);
+
+// Swifty - Cockpit displays
+void ship_init_cockpit_displays(ship *shipp, int cockpit_model_num);
+void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int cockpit_model_num);
+void ship_clear_cockpit_displays(ship *shipp);
+void ship_set_hud_cockpit_targets(ship *shipp);
+void ship_clear_hud_cockpit_targets(ship *shipp);
+void ship_render_backgrounds_cockpit_display(ship *shipp);
+void ship_render_foregrounds_cockpit_display(ship *shipp);
 
 //WMC - Warptype stuff
 int warptype_match(char *p);

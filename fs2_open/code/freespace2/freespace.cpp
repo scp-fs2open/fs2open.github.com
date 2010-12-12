@@ -308,10 +308,6 @@ char Game_current_mission_filename[MAX_FILENAME_LEN];
 int game_single_step = 0;
 int last_single_step=0;
 
-extern int MSG_WINDOW_X_START;	// used to position mission_time and shields output
-extern int MSG_WINDOW_Y_START;
-extern int MSG_WINDOW_HEIGHT;
-
 int game_zbuffer = 1;
 //static int Game_music_paused;
 static int Game_paused;
@@ -994,6 +990,7 @@ void game_level_close()
 		cam_close();
 		subtitles_close();
 		trail_level_close();
+		hud_level_close();
 
 		// be sure to not only reset the time but the lock as well
 		set_time_compression(1.0f, 0.0f);
@@ -1101,9 +1098,6 @@ void game_level_init(int seed)
 	debris_init();
 //	cmeasure_init();			//WMC - cmeasures are now weapons
 	shield_hit_init();				//	Initialize system for showing shield hits
-
-	if ( !Is_standalone )
-		radar_mission_init();
 
 	mission_init_goals();
 	mission_log_init();
@@ -2175,8 +2169,6 @@ void game_init()
 	key_init();
 	mouse_init();
 	gamesnd_parse_soundstbl();
-
-	select_radar_mode(Cmdline_orb_radar);
 
 	gameseq_init();
 
@@ -4264,7 +4256,7 @@ void game_simulation_frame()
 		// process some stuff every frame (before frame is rendered)
 		emp_process_local();
 
-		hud_update_frame();						// update hud systems
+		hud_update_frame(flFrametime);						// update hud systems
 
 		if (!physics_paused)	{
 			// Move particle system
@@ -4395,34 +4387,24 @@ int game_actually_playing()
 		return 1;
 }
 
-// Draw the 2D HUD gauges
-void game_render_hud_2d()
+void game_render_hud(camid cid)
 {
-	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
-		return;
-	}
-	
-	HUD_render_2d(flFrametime);
 	gr_reset_clip();
-}
 
-// Draw the 3D-dependant HUD gauges
-void game_render_hud_3d(camid cid)
-{
-	if(!cid.isValid())
-		return;
+	if(cid.isValid()) {
+		g3_start_frame(0);		// 0 = turn zbuffering off
+		g3_set_view( cid.getCamera() );
 
-	g3_start_frame(0);		// 0 = turn zbuffering off
-	g3_set_view( cid.getCamera() );
+		hud_render_preprocess(flFrametime);
 
-	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_active() < 3)/* && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) )*/ ) {
-		HUD_render_3d(flFrametime);
+		g3_end_frame();
 	}
+
+	// main HUD rendering function
+	hud_render_all();
 
 	// Diminish the palette effect
 	game_flash_diminish(flFrametime);
-
-	g3_end_frame();
 }
 
 //100% blackness
@@ -4704,22 +4686,23 @@ void game_frame(int paused)
 				Scripting_didnt_draw_hud = 0;
 			Script_system.RemHookVar("Self");
 
-			if(Scripting_didnt_draw_hud)
-			{
-				hud_show_target_model();
+			if(Scripting_didnt_draw_hud) {
+				game_render_hud(cid);
 			}
-
-			if(Scripting_didnt_draw_hud)
-			{
-				hud_show_radar();
-			}
+			HUD_reset_clip();
 
 			if( (Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) ) {
-				hud_maybe_clear_head_area();
 				anim_render_all(0, flFrametime);
 			}
-			
 
+			Script_system.SetHookObject("Self", Viewer_obj);
+			if (!hud_disabled_except_messages() && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
+			{
+				Script_system.RunBytecode(Script_hudhook);
+				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			}
+			Script_system.RemHookVar("Self");
+			
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
 				if(Game_mode & GM_MULTIPLAYER){
@@ -4748,26 +4731,6 @@ void game_frame(int paused)
 			game_show_eye_pos(cid);
 
 			game_show_time_left();
-
-			// Draw the 2D HUD gauges
-			if(Scripting_didnt_draw_hud)
-			{
-				if(supernova_active() <	3){
-					game_render_hud_2d();
-				}
-
-				// Draw 3D HUD gauges			
-				game_render_hud_3d(cid);
-			}
-
-
-			Script_system.SetHookObject("Self", Viewer_obj);
-			if (!hud_disabled_except_messages() && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
-			{
-				Script_system.RunBytecode(Script_hudhook);
-				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
-			}
-			Script_system.RemHookVar("Self");
 
 			gr_reset_clip();
 			game_render_post_frame();
@@ -6520,6 +6483,12 @@ void game_enter_state( int old_state, int new_state )
 			}			
 			player_restore_target_and_weapon_link_prefs();
 
+			if ( !Is_standalone )
+				radar_mission_init();
+
+			//Set the current hud
+			set_current_hud();
+
 			Game_mode |= GM_IN_MISSION;
 
 #ifndef NDEBUG
@@ -7705,6 +7674,7 @@ void game_shutdown(void)
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();
+	hud_close();
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system

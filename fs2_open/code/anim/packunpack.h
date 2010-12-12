@@ -71,6 +71,7 @@ typedef struct anim {
 typedef struct anim_instance {
 	anim_instance *next, *prev;
 	int		x,y;				// coordinates anim is played at (top left corner of anim)
+	int		base_w, base_h;		// coordinate scale this anim is played in. 
 	vec3d	*world_pos;		// world (x,y,z) position of explosion
 	float		radius;			// radius of image, needed for scaling
 	int		frame_num;		// current frame, or last frame if between frames (first frame is 0)

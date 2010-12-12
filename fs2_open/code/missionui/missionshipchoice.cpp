@@ -1013,7 +1013,7 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Max Velocity",742));	
 	y_start += 10;
-	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
+	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z * Hud_speed_multiplier);
 	gr_set_color_fast(text);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str);	
 	y_start += 10;

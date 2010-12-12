@@ -1310,6 +1310,12 @@
 		<Unit filename="../../../code/radar/radar.h">
 			<Option virtualFolder="radar/" />
 		</Unit>
+		<Unit filename="../../../code/radar/radardradis.cpp">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radardradis.h">
+			<Option virtualFolder="radar/" />
+		</Unit>
 		<Unit filename="../../../code/radar/radarorb.cpp">
 			<Option virtualFolder="radar/" />
 		</Unit>

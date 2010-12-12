@@ -85,6 +85,26 @@ float Max_draw_distance = Default_max_draw_distance;
 static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
 static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
 
+float Gr_save_resize_X = 1.0f, Gr_save_resize_Y = 1.0f;
+float Gr_save_unsize_X = 1.0f, Gr_save_unsize_Y = 1.0f;
+
+void gr_set_screen_scale(int w, int h)
+{
+	Gr_resize_X = (float)gr_screen.max_w / (float)w;
+	Gr_resize_Y = (float)gr_screen.max_h / (float)h;
+
+	Gr_unsize_X = (float)w / (float)gr_screen.max_w;
+	Gr_unsize_Y = (float)h / (float)gr_screen.max_h;
+}
+
+void gr_reset_screen_scale()
+{
+	Gr_resize_X = Gr_save_resize_X;
+	Gr_resize_Y = Gr_save_resize_Y;
+
+	Gr_unsize_X = Gr_save_unsize_X;
+	Gr_unsize_Y = Gr_save_unsize_Y;
+}
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
@@ -391,11 +411,11 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		mode = GR_OPENGL;
 	}
 
-	Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
-	Gr_resize_Y = (float)height / ((res == GR_1024) ?  768.0f : 480.0f);
+	Gr_save_resize_X = Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
+	Gr_save_resize_Y = Gr_resize_Y = (float)height / ((res == GR_1024) ?  768.0f : 480.0f);
 
-	Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
-	Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
+	Gr_save_unsize_X = Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
+	Gr_save_unsize_Y = Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
 
 
 	gr_screen.signature = Gr_signature++;
@@ -875,6 +895,57 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 	verts[3].sy = y + h;
 	verts[3].u = 0.0f;
 	verts[3].v = 1.0f;
+
+	// turn off zbuffering
+	int saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+
+	gr_render(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_INTERFACE);
+
+	gr_zbuffer_set(saved_zbuffer_mode);
+}
+
+void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool allow_scaling)
+{
+	float x, y, w, h;
+	vertex verts[4];
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	x = i2fl(_x);
+	y = i2fl(_y);
+	w = i2fl(_w);
+	h = i2fl(_h);
+
+	// I will tidy this up later - RT
+	if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		gr_resize_screen_posf(&x, &y);
+		gr_resize_screen_posf(&w, &h);
+	}
+
+	memset(verts, 0, sizeof(verts));
+
+	verts[0].sx = x;
+	verts[0].sy = y;
+	verts[0].u = _u0;
+	verts[0].v = _v0;
+
+	verts[1].sx = x + w;
+	verts[1].sy = y;
+	verts[1].u = _u1;
+	verts[1].v = _v0;
+
+	verts[2].sx = x + w;
+	verts[2].sy = y + h;
+	verts[2].u = _u1;
+	verts[2].v = _v1;
+
+	verts[3].sx = x;
+	verts[3].sy = y + h;
+	verts[3].u = _u0;
+	verts[3].v = _v1;
 
 	// turn off zbuffering
 	int saved_zbuffer_mode = gr_zbuffer_get();

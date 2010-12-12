@@ -122,16 +122,19 @@ SCP_vector<message_extra> Message_waves;
 // variables to keep track of messages that are currently playing
 int Num_messages_playing;						// number of is a message currently playing?
 
-typedef struct pmessage {
-	anim_instance *anim;		// handle of anim currently playing
+/*typedef struct pmessage {
+	//anim_instance *anim;		// handle of anim currently playing
+	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
+	int start_frame;			// the start frame needed to play the animation
+	bool play_anim;			// used to tell HUD gauges if they should be playing or not
 	int wave;					// handle of wave currently playing
 	int id;						// id of message currently playing
 	int priority;				// priority of message currently playing
 	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
 	int builtin_type;			// if a builtin message, type of the message
-} pmessage;
+} pmessage;*/
 
-LOCAL pmessage Playing_messages[MAX_PLAYING_MESSAGES];
+pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
 
@@ -584,7 +587,10 @@ void messages_init()
 	Message_shipnum = -1;
 	Num_messages_playing = 0;
 	for ( i = 0; i < MAX_PLAYING_MESSAGES; i++ ) {
-		Playing_messages[i].anim = NULL;
+		//Playing_messages[i].anim = NULL;
+		Playing_messages[i].anim_data = NULL;
+		Playing_messages[i].start_frame = -1;
+		Playing_messages[i].play_anim = false;
 		Playing_messages[i].wave = -1;
 		Playing_messages[i].id = -1;
 		Playing_messages[i].priority = -1;
@@ -721,9 +727,12 @@ void message_kill_all( int kill_all )
 
 	// kill sounds for all voices currently playing
 	for ( i = 0; i < Num_messages_playing; i++ ) {
-		if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
+		/*if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
 			anim_stop_playing( Playing_messages[i].anim );
 			Playing_messages[i].anim=NULL;
+		}*/
+		if ( Playing_messages[i].play_anim) {
+			Playing_messages[i].play_anim = false;
 		}
 
 		if ( kill_all ) {
@@ -747,10 +756,14 @@ void message_kill_playing( int message_num )
 {
 	Assert( message_num < Num_messages_playing );
 
-	if ( (Playing_messages[message_num].anim != NULL) && anim_playing(Playing_messages[message_num].anim) ) {
+	/*if ( (Playing_messages[message_num].anim != NULL) && anim_playing(Playing_messages[message_num].anim) ) {
 		anim_stop_playing( Playing_messages[message_num].anim );
 		Playing_messages[message_num].anim=NULL;
+	}*/
+	if ( Playing_messages[message_num].play_anim) {
+		Playing_messages[message_num].play_anim = false;
 	}
+
 	if ( (Playing_messages[message_num].wave != -1 ) && snd_is_playing(Playing_messages[message_num].wave) )
 		snd_stop( Playing_messages[message_num].wave );
 
@@ -1143,18 +1156,9 @@ void message_play_anim( message_q *q )
 			return;
 		}
 
-		int anim_start_frame;
-		anim_play_struct aps;
-
-		// figure out anim start frame
-		anim_start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
-		anim_play_init(&aps, anim_info->anim_data, Head_coords[gr_screen.res][0], Head_coords[gr_screen.res][1]);
-		aps.start_at = anim_start_frame;
-
-		// aps.color = &HUD_color_defaults[HUD_color_alpha];
-		aps.color = &HUD_config.clr[HUD_TALKING_HEAD];
-
-		Playing_messages[Num_messages_playing].anim = anim_play(&aps);
+		Playing_messages[Num_messages_playing].anim_data = anim_info->anim_data;
+		Playing_messages[Num_messages_playing].start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
+		Playing_messages[Num_messages_playing].play_anim = true;
 	}
 }
 
@@ -1182,8 +1186,8 @@ void message_queue_process()
 			int ani_done, wave_done, j;
 
 			ani_done = 1;
-			if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
-				ani_done = 0;
+			//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+			//	ani_done = 0;
 
 			wave_done = 1;
 
@@ -1197,9 +1201,10 @@ void message_queue_process()
 
 			// AL 1-20-98: If voice message is done, kill the animation early
 			if ( (Playing_messages[i].wave != -1) && wave_done ) {
-				if ( !ani_done ) {
+				/*if ( !ani_done ) {
 					anim_stop_playing( Playing_messages[i].anim );
-				}
+				}*/
+				Playing_messages[i].play_anim = false;
 			}
 
 			//if player is a traitor remove all messages that aren't traitor related
@@ -1395,7 +1400,7 @@ void message_queue_process()
 
 	// set up module globals for this message
 	m = &Messages[q->message_num];
-	Playing_messages[Num_messages_playing].anim = NULL;
+	Playing_messages[Num_messages_playing].anim_data = NULL;
 	Playing_messages[Num_messages_playing].wave  = -1;
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
@@ -2108,7 +2113,8 @@ int message_anim_is_playing()
 	int i;
 
 	for (i = 0; i < Num_messages_playing; i++ ) {
-		if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+		//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+		if(Playing_messages[i].play_anim)
 			return 1;
 	}
 

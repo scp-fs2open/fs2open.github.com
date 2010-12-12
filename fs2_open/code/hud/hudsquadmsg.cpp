@@ -115,6 +115,7 @@ typedef struct mmode_item {
 #define MAX_MENU_ITEMS		50				// max number of items in the menu
 #define MAX_MENU_DISPLAY	10				// max number that can be displayed
 
+char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1;					// number of items for a message menu
 int First_menu_item= -1;							// index of first item in the menu
@@ -235,44 +236,6 @@ char *comm_order_get_text(int item)
 }
 
 SCP_vector<squadmsg_history> Squadmsg_history; 
-
-// used for Message box gauge
-#define NUM_MBOX_FRAMES		3
-
-static hud_frames Mbox_gauge[NUM_MBOX_FRAMES];
-static int Mbox_frames_loaded = 0;
-static char *Mbox_fnames[GR_NUM_RESOLUTIONS][NUM_MBOX_FRAMES] =
-{
-//XSTR:OFF
-	{ // GR_640
-		"message1",		// top part of menu
-		"message2",		// middle part
-		"message3"		// bottom part
-	}, 
-	{ // GR_1024
-		"message1",		// top part of menu
-		"message2",		// middle part
-		"message3"		// bottom part
-	}
-//XSTR:ON
-};
-
-static int Mbox_title_coord[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		447, 6
-	},
-	{ // GR_1024
-		829, 6
-	}
-};
-static int Mbox_item_coord[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		449, 18
-	},
-	{ // GR_1024
-		831, 18
-	}
-};
 
 // forward declarations
 void hud_add_issued_order(char *name, int order);
@@ -689,133 +652,6 @@ int hud_squadmsg_get_key()
 	}
 
 	return -1;
-}
-
-// function which will essentially print out the contents of the current state of the messaging
-// menu.  Parameters will be a title.  The menu items and the number of items will be
-// in global vars since they don't get recomputed every frame.
-void hud_squadmsg_display_menu( char *title )
-{
-	int bx, by, sx, sy, i, nitems, none_valid, messaging_allowed;
-
-	// hud_set_bright_color();
-	hud_set_gauge_color(HUD_MESSAGE_BOX, HUD_C_BRIGHT);
-	if ( title ) {
-		gr_string(Mbox_title_coord[gr_screen.res][0], Mbox_title_coord[gr_screen.res][1], title);
-	}
-
-	if ( Num_menu_items < MAX_MENU_DISPLAY )
-		nitems = Num_menu_items;
-	else {
-		if ( First_menu_item == 0 )					// First_menu_item == 0 means first page of items
-			nitems = MAX_MENU_DISPLAY;
-		else if ( (Num_menu_items - First_menu_item) <= MAX_MENU_DISPLAY )	// check if remaining items fit on one page
-			nitems = Num_menu_items - First_menu_item;
-		else {
-			nitems = MAX_MENU_DISPLAY;
-		}
-	}
-
-	sx = Mbox_item_coord[gr_screen.res][0];
-	sy = Mbox_item_coord[gr_screen.res][1];
-	bx = Mbox_bmap_coords[gr_screen.res][0];	// global x-offset where bitmap gets drawn
-	by = Mbox_bmap_coords[gr_screen.res][1];		// global y-offset where bitmap gets drawn
-
-	none_valid = 1;		// variable to tell us whether all items in the menu are valid or not
-
-	// use another variable to tell us whether we can message or not.
-	messaging_allowed = 1;
-
-	if ( (Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player) ){
-		messaging_allowed = 0;
-	}
-
-	for ( i = 0; i < nitems; i++ ) {
-		int item_num;
-		char *text = MsgItems[First_menu_item+i].text;
-
-		// blit the background
-		// hud_set_default_color();
-		hud_set_gauge_color(HUD_MESSAGE_BOX);
-		if ( Mbox_gauge[1].first_frame >= 0 ) {
-			GR_AABITMAP(Mbox_gauge[1].first_frame, bx, by);			
-		}
-		by += Mbox_item_h[gr_screen.res];
-
-		// set the text color
-		if ( MsgItems[First_menu_item+i].active ) {
-			// hud_set_bright_color();
-			hud_set_gauge_color(HUD_MESSAGE_BOX, HUD_C_BRIGHT);
-		} else {
-			/*
-			dim_index = MIN(5, HUD_color_alpha - 2);
-			if ( dim_index < 0 ) {
-				dim_index = 0;
-			}
-			gr_set_color_fast(&HUD_color_defaults[dim_index]);
-			*/
-
-			hud_set_gauge_color(HUD_MESSAGE_BOX, HUD_C_DIM);
-		}
-
-		// first do the number
-		item_num = (i+1) % MAX_MENU_DISPLAY;
-		emp_hud_printf(sx, sy, EG_SQ1 + i, NOX("%1d."), item_num );		
-
-		// then the text
-		emp_hud_string(sx+Mbox_item_xoffset[gr_screen.res], sy, EG_SQ1 + i, text);		
-
-		sy += Mbox_item_h[gr_screen.res];
-
-		// if we have at least one item active, then set the variable so we don't display any
-		// message about no active items
-		if ( MsgItems[First_menu_item+i].active )
-			none_valid = 0;
-	}
-
-	// maybe draw an extra line in to make room for [pgdn], or for the 'no active items'
-	// display
-	if ( !messaging_allowed || none_valid || ((First_menu_item + nitems) < Num_menu_items) || (Msg_shortcut_command != -1) ) {
-		// blit the background
-		// hud_set_default_color();
-		hud_set_gauge_color(HUD_MESSAGE_BOX);
-		if ( Mbox_gauge[1].first_frame >= 0 ) {
-
-			GR_AABITMAP(Mbox_gauge[1].first_frame, bx, by);			
-		}
-		by += Mbox_item_h[gr_screen.res];
-	}
-
-	// draw the bottom of the frame
-	// hud_set_default_color();
-	hud_set_gauge_color(HUD_MESSAGE_BOX);
-	if ( Mbox_gauge[2].first_frame >= 0 ) {
-
-		GR_AABITMAP(Mbox_gauge[2].first_frame, bx, by);		
-	}
-
-	// determine if we should put the text "[more]" at top or bottom to indicate you can page up or down
-	hud_targetbox_start_flash(TBOX_FLASH_SQUADMSG);
-	hud_targetbox_maybe_flash(TBOX_FLASH_SQUADMSG);
-	if ( First_menu_item > 0 ) {
-		gr_printf( Menu_pgup_coords[gr_screen.res][0], Menu_pgup_coords[gr_screen.res][1], XSTR( "[pgup]", 312) );
-	}
-
-	if ( (First_menu_item + nitems) < Num_menu_items ) {
-		gr_printf( Menu_pgdn_coords[gr_screen.res][0], Menu_pgdn_coords[gr_screen.res][1], XSTR( "[pgdn]", 313));
-	}
-
-	if ( messaging_allowed ) {
-		if ( none_valid ){
-			gr_printf( sx, by - Mbox_item_h[gr_screen.res] + 2, XSTR( "No valid items", 314));
-		} else if ( !none_valid && (Msg_shortcut_command != -1) ){
-			gr_printf( sx, by - Mbox_item_h[gr_screen.res] + 2, "%s", comm_order_get_text(Msg_shortcut_command));
-		}
-	} else {
-		// if this player is not allowed to message, then display message saying so
-		gr_printf( sx, by - Mbox_item_h[gr_screen.res] + 2, XSTR( "Not allowed to message", 315));
-	}
-
 }
 
 // function to return true or false if the given ship can rearm, or be repaired
@@ -1860,7 +1696,7 @@ void hud_squadmsg_type_select( )
 	}
 
 do_main_menu:
-	hud_squadmsg_display_menu( XSTR( "Message What", 316) );
+	strcpy_s(Squad_msg_title, XSTR( "Message What", 316));
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {							// when k != -1, we have a key that associates with menu item
 		Assert ( k < Num_menu_items );
@@ -1895,7 +1731,7 @@ void hud_squadmsg_ship_select()
 		hud_squadmsg_count_ships( 1 );
 	}
 
-	hud_squadmsg_display_menu( XSTR( "Select Ship", 317) );
+	strcpy_s(Squad_msg_title, XSTR( "Select Ship", 317));
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {						// if true, we have selected a ship.
 		if ( Msg_shortcut_command == -1 ) {
@@ -1922,7 +1758,7 @@ void hud_squadmsg_wing_select()
 		hud_squadmsg_count_wings( 1 );
 	}
 
-	hud_squadmsg_display_menu( XSTR( "Select Wing", 318) );
+	strcpy_s(Squad_msg_title, XSTR( "Select Wing", 318));
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {						// if true, we have selected a ship.
 		if ( Msg_shortcut_command == -1 ) {									// do normal menu stuff when no hoykey active
@@ -2083,8 +1919,8 @@ void hud_squadmsg_reinforcement_select()
 		}
 	}
 
-//	hud_squadmsg_display_menu( "Select Reinforcement" );
-	hud_squadmsg_display_menu( XSTR( "Select Ship/Wing", 319) );	// AL 11-14-97: Reinforcement didn't fit, so using this for now
+//	hud_squadmsg_display_menu( "Select Reinforcement" );	
+	strcpy_s(Squad_msg_title, XSTR( "Select Ship/Wing", 319)); // AL 11-14-97: Reinforcement didn't fit, so using this for now
 	k = hud_squadmsg_get_key();
 	if (k != -1) {
 		int rnum;
@@ -2192,7 +2028,7 @@ void hud_squadmsg_ship_command()
 		}
 	}
 
-	hud_squadmsg_display_menu( XSTR( "What Command", 321) );
+	strcpy_s( Squad_msg_title, XSTR( "What Command", 321) );
 	k = hud_squadmsg_get_key();
 
 	// when we get a valid goal, we must add the goal to the ai ship's goal list
@@ -2255,7 +2091,8 @@ void hud_squadmsg_wing_command()
 		}
 	}
 
-	hud_squadmsg_display_menu( XSTR( "What Command", 321) );
+	
+	strcpy_s(Squad_msg_title, XSTR( "What Command", 321) );
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {
 
@@ -2316,19 +2153,6 @@ void hud_squadmsg_save_keys( int do_scroll )
 // which only need to be inited once per mission.
 void hud_init_squadmsg( void ) 
 {
-	int i;
-
-	if ( !Mbox_frames_loaded ) {
-		for ( i = 0; i < NUM_MBOX_FRAMES; i++ ) {
-			Mbox_gauge[i].first_frame = bm_load_animation(Mbox_fnames[gr_screen.res][i], &Mbox_gauge[i].num_frames);
-			if ( Mbox_gauge[i].first_frame == -1 ) {
-				Warning(LOCATION, "Could not load in ani: %s\n", Mbox_fnames[gr_screen.res][i]);
-				return;
-			}
-		}
-		Mbox_frames_loaded = 1;
-	}
-
 	Msg_eat_key_timestamp = timestamp(0);
 	Squadmsg_history.clear();
 }
@@ -2488,10 +2312,6 @@ int hud_squadmsg_do_frame( )
 		target_changed = 1;
 	}
 
-	// setup color/font info 
-	// hud_set_default_color();
-	hud_set_gauge_color(HUD_MESSAGE_BOX);
-
 	// check for multiplayer mode - this is really a special case checker for support ship requesting and aborting
 	if(MULTIPLAYER_CLIENT && (Squad_msg_mode == SM_MODE_REPAIR_REARM || Squad_msg_mode == SM_MODE_REPAIR_REARM_ABORT)){
 		char *subsys_name;
@@ -2519,11 +2339,6 @@ int hud_squadmsg_do_frame( )
 		hud_squadmsg_toggle();
 		
 		return 1;
-	}
-
-	// draw top of frame
-	if ( Mbox_gauge[0].first_frame >= 0 ) {
-		GR_AABITMAP(Mbox_gauge[0].first_frame, Mbox_top_coords[gr_screen.res][0], Mbox_top_coords[gr_screen.res][1]);		
 	}
 
 	switch( Squad_msg_mode ) {
@@ -2693,12 +2508,265 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 	return 0;
 }
 
-
-void hudsquadmsg_page_in() 
+HudGaugeSquadMessage::HudGaugeSquadMessage():
+HudGauge(HUD_OBJECT_SQUAD_MSG, HUD_MESSAGE_BOX, true, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
 {
-	int i;
+}
 
-	for ( i = 0; i < NUM_MBOX_FRAMES; i++ ) {
+void HudGaugeSquadMessage::initialize()
+{
+	flash_timer[0] = timestamp(1);
+	flash_timer[1] = timestamp(1);
+	flash_flag = false;
+}
+
+void HudGaugeSquadMessage::initHeaderOffsets(int x, int y)
+{
+	Header_offsets[0] = x;
+	Header_offsets[1] = y;
+}
+
+void HudGaugeSquadMessage::initItemStartOffsets(int x, int y)
+{
+	Item_start_offsets[0] = x;
+	Item_start_offsets[1] = y;
+}
+
+void HudGaugeSquadMessage::initMiddleFrameStartOffsetY(int y)
+{
+	Middle_frame_start_offset_y = y;
+}
+
+void HudGaugeSquadMessage::initItemHeight(int h)
+{
+	Item_h = h;
+}
+
+void HudGaugeSquadMessage::initItemOffsetX(int x)
+{
+	Item_offset_x = x;
+}
+
+void HudGaugeSquadMessage::initPgUpOffsets(int x, int y)
+{
+	Pgup_offsets[0] = x;
+	Pgup_offsets[1] = y;
+}
+
+void HudGaugeSquadMessage::initPgDnOffsets(int x, int y)
+{
+	Pgdn_offsets[0] = x;
+	Pgdn_offsets[1] = y;
+}
+
+void HudGaugeSquadMessage::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+{
+	Mbox_gauge[0].first_frame = bm_load_animation(fname_top, &Mbox_gauge[0].num_frames);
+	if ( Mbox_gauge[0].first_frame == -1 ) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname_top);
+	}
+	
+	Mbox_gauge[1].first_frame = bm_load_animation(fname_middle, &Mbox_gauge[1].num_frames);
+	if ( Mbox_gauge[1].first_frame == -1 ) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname_middle);
+	}
+
+	Mbox_gauge[2].first_frame = bm_load_animation(fname_bottom, &Mbox_gauge[2].num_frames);
+	if ( Mbox_gauge[2].first_frame == -1 ) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname_bottom);
+	}
+}
+
+void HudGaugeSquadMessage::startFlashPageScroll(int duration)
+{
+	flash_timer[0] = timestamp(duration);
+}
+
+bool HudGaugeSquadMessage::maybeFlashPageScroll(bool flash_fast)
+{
+	bool draw_bright = false;
+
+	if(!timestamp_elapsed(flash_timer[0])) {
+		if(timestamp_elapsed(flash_timer[1])) {
+			if(flash_fast) {
+				flash_timer[1] = timestamp(fl2i(TBOX_FLASH_INTERVAL/2.0f));
+			} else {
+				flash_timer[1] = timestamp(TBOX_FLASH_INTERVAL);
+			}
+			flash_flag = !flash_flag;
+		}
+
+		if(flash_flag) {
+			draw_bright = true;
+		} 
+	}
+
+	return draw_bright;
+}
+
+bool HudGaugeSquadMessage::canRender()
+{
+	if(hud_disabled_except_messages() && !message_gauge) {
+		return false;
+	}
+
+	if (hud_disabled()) {
+		return false;
+	}
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if (!( Players->flags & PLAYER_FLAGS_MSG_MODE )) {
+		return false;
+	}
+
+	return true;
+}
+
+void HudGaugeSquadMessage::render(float frametime)
+{
+	char *title;
+	int bx, by, sx, sy, i, nitems, none_valid, messaging_allowed;
+
+	title = Squad_msg_title;
+
+	// setup color/font info 
+	// hud_set_default_color();
+	setGaugeColor();
+
+	// draw top of frame
+	if ( Mbox_gauge[0].first_frame >= 0 ) {
+		renderBitmap(Mbox_gauge[0].first_frame, position[0], position[1]);
+	}
+
+	// hud_set_bright_color();
+	setGaugeColor(HUD_C_BRIGHT);
+	if ( title ) {
+		renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], title);
+	}
+
+	if ( Num_menu_items < MAX_MENU_DISPLAY )
+		nitems = Num_menu_items;
+	else {
+		if ( First_menu_item == 0 )					// First_menu_item == 0 means first page of items
+			nitems = MAX_MENU_DISPLAY;
+		else if ( (Num_menu_items - First_menu_item) <= MAX_MENU_DISPLAY )	// check if remaining items fit on one page
+			nitems = Num_menu_items - First_menu_item;
+		else {
+			nitems = MAX_MENU_DISPLAY;
+		}
+	}
+
+	sx = position[0] + Item_start_offsets[0];
+	sy = position[1] + Item_start_offsets[1];
+	bx = position[0];	// global x-offset where bitmap gets drawn
+	by = position[1] + Middle_frame_start_offset_y;		// global y-offset where bitmap gets drawn
+
+	none_valid = 1;		// variable to tell us whether all items in the menu are valid or not
+
+	// use another variable to tell us whether we can message or not.
+	messaging_allowed = 1;
+
+	if ( (Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player) ){
+		messaging_allowed = 0;
+	}
+
+	for ( i = 0; i < nitems; i++ ) {
+		int item_num;
+		char *text = MsgItems[First_menu_item+i].text;
+
+		// blit the background
+		// hud_set_default_color();
+		setGaugeColor();
+		if ( Mbox_gauge[1].first_frame >= 0 ) {
+			renderBitmap(Mbox_gauge[1].first_frame, bx, by);
+		}
+		by += Item_h;
+
+		// set the text color
+		if ( MsgItems[First_menu_item+i].active ) {
+			// hud_set_bright_color();
+			setGaugeColor(HUD_C_BRIGHT);
+		} else {
+			/*
+			dim_index = MIN(5, HUD_color_alpha - 2);
+			if ( dim_index < 0 ) {
+				dim_index = 0;
+			}
+			gr_set_color_fast(&HUD_color_defaults[dim_index]);
+			*/
+
+			setGaugeColor(HUD_C_DIM);
+		}
+
+		// first do the number
+		item_num = (i+1) % MAX_MENU_DISPLAY;
+		renderPrintf(sx, sy, EG_SQ1 + i, NOX("%1d."), item_num);
+
+		// then the text
+		renderString(sx + Item_offset_x, sy, EG_SQ1 + i, text);
+
+		sy += Item_h;
+
+		// if we have at least one item active, then set the variable so we don't display any
+		// message about no active items
+		if ( MsgItems[First_menu_item+i].active )
+			none_valid = 0;
+	}
+
+	// maybe draw an extra line in to make room for [pgdn], or for the 'no active items'
+	// display
+	if ( !messaging_allowed || none_valid || ((First_menu_item + nitems) < Num_menu_items) || (Msg_shortcut_command != -1) ) {
+		// blit the background
+		// hud_set_default_color();
+		setGaugeColor();
+		if ( Mbox_gauge[1].first_frame >= 0 ) {		
+			renderBitmap(Mbox_gauge[1].first_frame, bx, by);
+		}
+		by += Item_h;
+	}
+
+	// draw the bottom of the frame
+	// hud_set_default_color();
+	setGaugeColor();
+	if ( Mbox_gauge[2].first_frame >= 0 ) {
+	
+		renderBitmap(Mbox_gauge[2].first_frame, bx, by);
+	}
+
+	// determine if we should put the text "[more]" at top or bottom to indicate you can page up or down
+	startFlashPageScroll();
+	maybeFlashPageScroll();
+	if ( First_menu_item > 0 ) {
+		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], XSTR( "[pgup]", 312) );
+	}
+
+	if ( (First_menu_item + nitems) < Num_menu_items ) {
+		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], XSTR( "[pgdn]", 313));
+	}
+
+	if ( messaging_allowed ) {
+		if ( none_valid ){
+			renderPrintf( sx, by - Item_h + 2, XSTR( "No valid items", 314));
+		} else if ( !none_valid && (Msg_shortcut_command != -1) ){
+			renderPrintf( sx, by - Item_h + 2, "%s", comm_order_get_text(Msg_shortcut_command));
+		}
+	} else {
+		// if this player is not allowed to message, then display message saying so
+		renderPrintf( sx, by - Item_h + 2, XSTR( "Not allowed to message", 315));
+	}
+
+}
+
+void HudGaugeSquadMessage::pageIn() 
+{
+	for (int i = 0; i < NUM_MBOX_FRAMES; i++ ) {
 		bm_page_in_aabitmap( Mbox_gauge[i].first_frame, Mbox_gauge[i].num_frames );
 	}
 }

@@ -28,7 +28,7 @@
 #include "network/multi.h"
 
 
-
+vec3d lock_world_pos;
 
 static float Lock_start_dist;
 static int Rotate_time_id = 1;	// timer id for controlling how often to rotate triangles around lock indicator
@@ -154,15 +154,77 @@ void hud_draw_diamond(int x, int y, int width, int height)
 	gr_line(x4,y4,x1,y1);
 }
 
+HudGaugeLock::HudGaugeLock():
+HudGauge(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, true, false, false, VM_DEAD_VIEW, 255, 255, 255)
+{
+}
+
+void HudGaugeLock::initGaugeHalfSize(int w, int h)
+{
+	Lock_gauge_half_w = w;
+	Lock_gauge_half_h = h;
+}
+
+void HudGaugeLock::initSpinHalfSize(int w, int h)
+{
+	Lockspin_half_w = w;
+	Lockspin_half_h = h;
+}
+
+void HudGaugeLock::initTriHeight(float h)
+{
+	Lock_triangle_height = h;
+}
+
+void HudGaugeLock::initTriBase(float length)
+{
+	Lock_triangle_base = length;
+}
+
+void HudGaugeLock::initTargetBoxSize(int w, int h)
+{
+	Lock_target_box_width = w;
+	Lock_target_box_height = h;
+}
+
+void HudGaugeLock::initLoopLockedAnim(bool loop)
+{
+	loop_locked_anim = loop;
+}
+
+void HudGaugeLock::initBitmaps(char *lock_gauge_fname, char *lock_anim_fname)
+{
+	hud_anim_init(&Lock_gauge, 0, 0, lock_gauge_fname);
+	hud_anim_load(&Lock_gauge);
+
+	hud_anim_init(&Lock_anim, 0, 0, lock_anim_fname);
+	hud_anim_load(&Lock_anim);
+}
+
+void HudGaugeLock::initialize()
+{
+	Lock_gauge_draw_stamp = -1;
+	Lock_gauge_draw = 0;
+	Rotate_time_id = 1;
+}
+
 // hud_show_lock_indicator() will display the lock indicator for homing missiles.
 // lock_point_pos should be the world coordinates of the target being locked. Assuming all the 
 // necessary locking calculations are done for this frame, this function will compute 
 // where the indicator should be relative to the player's viewpoint and will render accordingly.
-void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
+void HudGaugeLock::render(float frametime)
 {
 	int			target_objnum, sx, sy;
 	object		*targetp;
 	vertex lock_point;
+
+	if (Player_ai->target_objnum == -1) {
+		return;
+	}
+
+	if (Player->target_is_dying) {
+		return;
+	}
 
 	if (!Players[Player_num].lock_indicator_visible){
 		return;
@@ -178,13 +240,24 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 		return;
 	}
 
+	bool in_frame = g3_in_frame() > 0;
+	if(!in_frame)
+		g3_start_frame(0);
+	gr_set_screen_scale(base_w, base_h);
+
 	// Get the target's current position on the screen. If he's not on there,
 	// we're not going to draw the lock indicator even if he's in front 
 	// of our ship, so bail out. 
-	g3_rotate_vertex(&lock_point, lock_point_pos); 
+	g3_rotate_vertex(&lock_point, &lock_world_pos); 
 	g3_project_vertex(&lock_point);
-	if (lock_point.codes & PF_OVERFLOW)
+	if (lock_point.codes & PF_OVERFLOW) {
+		gr_reset_screen_scale();
+
+		if(!in_frame)
+			g3_end_frame();
+
 		return;
+	}
 
 	hud_set_iff_color(targetp);
 //	nprintf(("Alan","lockx: %d, locky: %d TargetX: %d, TargetY: %d\n", Players[Player_num].lock_indicator_x, Players[Player_num].lock_indicator_y, Player->current_target_sx, Player->current_target_sy));
@@ -197,7 +270,7 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 		gr_unsize_screen_pos(&sx, &sy);
 
 		// show the rotating triangles if target is locked
-		hud_draw_lock_triangles(sx, sy, frametime);
+		renderLockTriangles(sx, sy, frametime);
 	} else {
 		sx = fl2i(lock_point.sx) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
 		sy = fl2i(lock_point.sy) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
@@ -213,14 +286,18 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 		hud_draw_diamond(sx, sy, Lock_target_box_width[gr_screen.res], Lock_target_box_height[gr_screen.res]);
 	}
 	*/
-	Lock_gauge.sx = sx - Lock_gauge_half_w[Hud_reticle_style][gr_screen.res];
-	Lock_gauge.sy = sy - Lock_gauge_half_h[gr_screen.res];
+	Lock_gauge.sx = sx - Lock_gauge_half_w;
+	Lock_gauge.sy = sy - Lock_gauge_half_h;
 	if(Player_ai->current_target_is_locked){
-		Lock_gauge.time_elapsed = 0.0f;			
-		hud_anim_render(&Lock_gauge, 0.0f, 1);		
+		Lock_gauge.time_elapsed = 0.0f;	
+		hud_anim_render(&Lock_gauge, 0.0f, 1);
 	} else {
 		hud_anim_render(&Lock_gauge, frametime, 1);
 	}
+
+	gr_reset_screen_scale();
+	if(!in_frame)
+		g3_end_frame();
 }
 
 // Reset data used for player lock indicator
@@ -400,7 +477,6 @@ void hud_lock_check_if_target_in_lock_cone(vec3d *lock_world_pos)
 	} else {
 		Player->target_in_lock_cone = 0;
 	}
-
 }
 
 // return 1 if current secondary weapon is different than previous secondary weapon
@@ -445,7 +521,6 @@ void hud_do_lock_indicator(float frametime)
 {
 	ship_weapon *swp;
 	weapon_info	*wip;
-	vec3d		lock_world_pos;
 
 	// if i'm a multiplayer observer, bail here
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
@@ -572,14 +647,12 @@ void hud_do_lock_indicator(float frametime)
 			Missile_lock_loop = -1;
 		}
 	}
-
-	hud_show_lock_indicator(frametime, &lock_world_pos);
 }
 
 // hud_draw_lock_triangles() will draw the 4 rotating triangles around a lock indicator
 // (This is done when a lock has been acquired)
 #define ROTATE_DELAY 40
-void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
+void HudGaugeLock::renderLockTrianglesOld(int center_x, int center_y, int radius)
 {
 	static float ang = 0.0f;
 
@@ -596,34 +669,34 @@ void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
 		// draw the orbiting triangles
 
 		//ang = atan2(target_point.y,target_point.x);
-		xpos = center_x + (float)cos(ang)*(radius + Lock_triangle_height[gr_screen.res] + 2);
-		ypos = center_y - (float)sin(ang)*(radius + Lock_triangle_height[gr_screen.res] + 2);
+		xpos = center_x + (float)cos(ang)*(radius + Lock_triangle_height + 2);
+		ypos = center_y - (float)sin(ang)*(radius + Lock_triangle_height + 2);
 			
-		x3 = xpos - Lock_triangle_base[gr_screen.res] * (float)sin(-ang);
-		y3 = ypos + Lock_triangle_base[gr_screen.res] * (float)cos(-ang);
-		x4 = xpos + Lock_triangle_base[gr_screen.res] * (float)sin(-ang);
-		y4 = ypos - Lock_triangle_base[gr_screen.res] * (float)cos(-ang);
+		x3 = xpos - Lock_triangle_base * (float)sin(-ang);
+		y3 = ypos + Lock_triangle_base * (float)cos(-ang);
+		x4 = xpos + Lock_triangle_base * (float)sin(-ang);
+		y4 = ypos - Lock_triangle_base * (float)cos(-ang);
 
-		xpos = xpos - Lock_triangle_base[gr_screen.res] * (float)cos(ang);
-		ypos = ypos + Lock_triangle_base[gr_screen.res] * (float)sin(ang);
+		xpos = xpos - Lock_triangle_base * (float)cos(ang);
+		ypos = ypos + Lock_triangle_base * (float)sin(ang);
 
 		hud_tri(x3, y3, xpos, ypos, x4, y4);
 	} // end for
 }
 
 // draw a frame of the rotating lock triangles animation
-void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
+void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frametime)
 {
 	if ( Lock_anim.first_frame == -1 ) {
-		hud_draw_lock_triangles_old(center_x, center_y, Lock_target_box_width[gr_screen.res]/2);
+		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
 	} else {
 		// render the anim
-		Lock_anim.sx = center_x - Lockspin_half_w[Hud_reticle_style][gr_screen.res];
-		Lock_anim.sy = center_y - Lockspin_half_h[Hud_reticle_style][gr_screen.res];
+		Lock_anim.sx = center_x - Lockspin_half_w;
+		Lock_anim.sy = center_y - Lockspin_half_h;
 
 		// if it's still animating
 		if(Lock_anim.time_elapsed < Lock_anim.total_time){
-			if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+			if(loop_locked_anim) {
 				hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
 			} else {
 				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
@@ -641,13 +714,9 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 			// maybe draw the anim
 			Lock_gauge.time_elapsed = 0.0f;			
 			if(Lock_gauge_draw){
-				if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
-					hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
-				} else {
-					hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
-				}
-			}			
-		}		
+				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			}
+		}
 	}
 }
 
@@ -1083,7 +1152,8 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	}
 }
 
-void hudlock_page_in()
+void HudGaugeLock::pageIn()
 {
 	bm_page_in_aabitmap( Lock_gauge.first_frame, Lock_gauge.num_frames );
+	bm_page_in_aabitmap( Lock_anim.first_frame, Lock_anim.num_frames );
 }
