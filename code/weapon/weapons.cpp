@@ -5459,8 +5459,8 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 	
 		if ( objp->type == OBJ_WEAPON ) {
 			// only apply to missiles with hitpoints
-			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE))
+			weapon_info* wip2 = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+			if (wip2->weapon_hitpoints <= 0 || !(wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE))
 				continue;
 		}
 
