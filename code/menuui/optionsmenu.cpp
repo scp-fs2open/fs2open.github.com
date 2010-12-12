@@ -15,7 +15,7 @@
 #include "bmpman/bmpman.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
-#include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
@@ -1074,7 +1074,7 @@ void options_menu_close()
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
+	Pilot.save_player();
 	game_flush();
 	
 	// unpause all sounds, since we could be headed back to the game

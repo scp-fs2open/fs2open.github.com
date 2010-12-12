@@ -94,6 +94,7 @@ void	hud_config_popup_flag_set(int i);
 void	hud_config_popup_flag_clear(int i);
 
 void hud_config_record_color(int color);
+void hud_config_set_color(int color);
 
 // load up the given hcf file
 void hud_config_color_load(char *name);

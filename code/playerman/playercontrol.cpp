@@ -1339,7 +1339,6 @@ void player_init()
 {
 	Player_num = 0;
 	Player = &Players[Player_num];
-	Player->num_campaigns = 0;
 	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 	Player->failures_this_session = 0;
 	Player->show_skip_popup = (ubyte) 1;

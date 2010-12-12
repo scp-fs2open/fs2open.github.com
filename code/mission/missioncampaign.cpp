@@ -43,14 +43,9 @@
 #include "menuui/techmenu.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/redalert.h"
+#include "pilotfile/pilotfile.h"
+#include "popup/popup.h"
 
-
-
-// mission disk stuff
-#define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75
-#define CAMPAIGN_SAVEFILE_MAX_WEAPONS_OLD						44
-
-#define CAMPAIGN_INITIAL_RELEASE_FILE_VERSION				6
 
 // campaign wasn't ended
 int Campaign_ended_in_mission = 0;
@@ -62,6 +57,7 @@ char *Campaign_file_names[MAX_CAMPAIGNS] = { NULL };
 char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
 int	Num_campaigns;
 int Campaign_file_missing;
+int Campaign_load_failure = 0;
 int Campaign_names_inited = 0;
 
 // stuff used for campaign list building
@@ -91,20 +87,6 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 // the campaign!!!!!
 campaign Campaign;
 
-// variables with deal with the campaign save file
-// bumped to 13 by Goober5000 for persistent variables
-// bumped to 14 by taylor for ship/weapon table handling
-// bumped to 15 by taylor to move stuff from pilot file
-#define CAMPAIGN_FILE_VERSION							15
-//#define CAMPAIGN_FILE_COMPATIBLE_VERSION		CAMPAIGN_INITIAL_RELEASE_FILE_VERSION
-#define CAMPAIGN_FILE_COMPATIBLE_VERSION				12  // 12 is the version of the original FS2
-#define CAMPAIGN_FILE_ID								0xbeefcafe
-
-// variables with deal with the campaign stats save file
-// bumped to 2 by taylor for ship/weapon table handling
-#define CAMPAIGN_STATS_FILE_VERSION					2
-#define CAMPAIGN_STATS_FILE_COMPATIBLE_VERSION	1
-#define CAMPAIGN_STATS_FILE_ID						0xabbadaad
 
 // mission_campaign_get_name returns a string (which is malloced in this routine) of the name
 // of the given freespace campaign file.  In the type field, we return if the campaign is a single
@@ -454,19 +436,15 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		// close localization
 		lcl_ext_close();
 
-		// Ok, we have a problem.  We have a campaign set in the pilot file but can't find
-		// the actual campaign.  In this case we bypass the norm and try to access the campaign
-		// savefile anyway.  We HAVE to do this or we get data loss at some point. - taylor
-		if ( !Fred_running && !(pl->flags & PLAYER_FLAGS_IS_MULTI) ) {
-			if ( mission_campaign_savefile_load(filename, pl) ) {
-				Campaign_file_missing = 1;
-				return CAMPAIGN_ERROR_MISSING;
-			}
-		}
-
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
-	
+
+		if ( !Fred_running && !(Game_mode & GM_MULTIPLAYER) ) {
+			Campaign_file_missing = 1;
+			Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
+			return CAMPAIGN_ERROR_MISSING;
+		}
+
 		return CAMPAIGN_ERROR_CORRUPT;
 
 	} else {
@@ -578,6 +556,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 						// close localization
 						lcl_ext_close();
 
+						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
 				}
@@ -616,6 +595,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 						// close localization
 						lcl_ext_close();
 
+						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
 				}
@@ -637,21 +617,24 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			if (Fred_running) {
 				cm->num_goals = -1;
 				cm->num_events = -1;
-				cm->num_saved_variables = -1;
+				cm->num_variables = -1;
 				cm->notes = NULL;
 
 			} else {
 				cm->num_goals = 0;
 				cm->num_events = 0;
-				cm->num_saved_variables = -1;
+				cm->num_variables = -1;
 			}
 
 			cm->goals = NULL;
 			cm->events = NULL;
-			cm->saved_variables = NULL;
+			cm->variables = NULL;
 			Campaign.num_missions++;
 		}
 	}
+
+	// close localization
+	lcl_ext_close();
 
 	// set up the other variables for the campaign stuff.  After initializing, we must try and load
 	// the campaign save file for this player.  Since all campaign loads go through this routine, I
@@ -665,18 +648,20 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	// loading the campaign will get us to the current and next mission that the player must fly
 	// plus load all of the old goals that future missions might rely on.
 	if (!Fred_running && load_savefile && (Campaign.type == CAMPAIGN_TYPE_SINGLE)) {
-		if (pl == NULL) {
-			Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
-			pl = &Players[Player_num];
+		// savefile can fail to load for numerous otherwise non-fatal reasons
+		// if it doesn't load in that case then it will be (re)created at save
+		if ( !Pilot.load_savefile(Campaign.filename) ) {
+			// but if the data is invalid for the savefile then it is fatal
+			if ( Pilot.is_invalid() ) {
+				Campaign.filename[0] = 0;
+				Campaign.num_missions = 0;
+				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
+				return CAMPAIGN_ERROR_SAVEFILE;
+			} else {
+				Pilot.save_savefile();
+			}
 		}
-
-		Assert( pl != NULL );
-
-		mission_campaign_savefile_load(Campaign.filename, pl);
 	}
-
-	// close localization
-	lcl_ext_close();
 
 	// all is good here, move along
 	Campaign_file_missing = 0;
@@ -734,266 +719,6 @@ void mission_campaign_init()
 	Campaign_file_missing = 0;
 }
 
-// Fill in the root of the campaign save filename
-void mission_campaign_savefile_generate_root(char *filename, player *pl)
-{
-	char base[_MAX_FNAME];
-
-	Assert ( strlen(Campaign.filename) != 0 );
-
-	if (pl == NULL) {
-		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
-		pl = &Players[Player_num];
-	}
-
-	Assert( pl != NULL );
-
-	// build up the filename for the save file.  There could be a problem with filename length,
-	// but this problem can get fixed in several ways -- ignore the problem for now though.
-	_splitpath( Campaign.filename, NULL, NULL, base, NULL );
-
-	Assert ( (strlen(base) + strlen(pl->callsign) + 1) < _MAX_FNAME );
-
-	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
-}
-
-// mission_campaign_savefile_save saves the state of the campaign.  This function will probably always be called
-// then the player is done flying a mission in the campaign path.  It will save the missions played, the
-// state of the goals, etc.
-int mission_campaign_savefile_save()
-{
-	char filename[_MAX_FNAME];
-	CFILE *fp;
-	int i,j;
-
-	// never try to save the campaign file for the standalone server or in multiplayer
-	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
-		return 0;
-	}
-
-	Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
-	player *pl = &Players[Player_num];
-
-	Assert( pl != NULL );
-
-	// if this is a multi pilot then we shouldn't even be here!!
-	if (pl->flags & PLAYER_FLAGS_IS_MULTI)
-		return 0;
-
-	// catch a case where the campaign hasn't been switched yet after being unavailable
-	if ( strlen(Campaign.filename) == 0 )
-		return 0;
-
-	// make sure that we don't try to save if the campaign is missing since it's
-	// a pretty good bet that the data isn't sane.
-	if ( Campaign_file_missing )
-		return 0;
-
-	memset(filename, 0, _MAX_FNAME);
-	mission_campaign_savefile_generate_root(filename, pl);
-
-	// name the file differently depending on whether we're in single player or multiplayer mode
-	// single player : *.csg
-	strcat_s( filename, NOX("cs2"));	// use new filename with new format - taylor
-
-	fp = cfopen(filename,"wb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
-
-	if (!fp)
-		return errno;
-
-	// Write out campaign file info
-	cfwrite_int( CAMPAIGN_FILE_ID,fp );
-	cfwrite_int( CAMPAIGN_FILE_VERSION,fp );
-
-	// put in the file signature (single or multiplayer campaign) - see MissionCampaign.h for the #defines
-	cfwrite_int( CAMPAIGN_SINGLE_PLAYER_SIG, fp );
-
-	// do we need to write out the filename of the campaign?
-	cfwrite_string_len( Campaign.filename, fp );
-	cfwrite_int( Campaign.prev_mission, fp );
-	cfwrite_int( Campaign.next_mission, fp );
-	cfwrite_int( Campaign.loop_reentry, fp );
-	cfwrite_int( Campaign.loop_enabled, fp );
-
-	// write out the information for ships/weapons which this player is allowed to use
-	cfwrite_int(Num_ship_classes, fp);
-	cfwrite_int(Num_weapon_types, fp);
-
-	for ( i = 0; i < Num_ship_classes; i++ ){
-		cfwrite_char( Campaign.ships_allowed[i], fp );
-		cfwrite_string_len( Ship_info[i].name, fp );
-	}
-
-	for ( i = 0; i < Num_weapon_types; i++ ){
-		cfwrite_char( Campaign.weapons_allowed[i], fp );
-		cfwrite_string_len( Weapon_info[i].name, fp );
-	}
-
-	// write out the completed mission matrix.  Used to tell which missions the player
-	// can replay in the simulator.  Also, each completed mission contains a list of the goals
-	// that were in the mission along with the goal completion status.
-	cfwrite_int( Campaign.num_missions_completed, fp );
-	for (i = 0; i < MAX_CAMPAIGN_MISSIONS; i++ ) {
-		if ( Campaign.missions[i].completed ) {
-			cfwrite_int( i, fp );
-			cfwrite_int( Campaign.missions[i].num_goals, fp );
-			for ( j = 0; j < Campaign.missions[i].num_goals; j++ ) {
-				cfwrite_string_len( Campaign.missions[i].goals[j].name, fp );
-				cfwrite_char( Campaign.missions[i].goals[j].status, fp );
-			}
-			cfwrite_int( Campaign.missions[i].num_events, fp );
-			for ( j = 0; j < Campaign.missions[i].num_events; j++ ) {
-				cfwrite_string_len( Campaign.missions[i].events[j].name, fp );
-				cfwrite_char( Campaign.missions[i].events[j].status, fp );
-			}
-
-			// write out campaign-persistent variables - Goober5000
-			cfwrite_int( Campaign.missions[i].num_saved_variables, fp );
-			for ( j = 0; j < Campaign.missions[i].num_saved_variables; j++ ) {
-				cfwrite_int( Campaign.missions[i].saved_variables[j].type, fp );
-				cfwrite_string_len( Campaign.missions[i].saved_variables[j].text, fp );
-				cfwrite_string_len( Campaign.missions[i].saved_variables[j].variable_name, fp );
-			}
-
-			// write out the stats information to disk.	
-			scoring_struct stats_tmp;
-			memset( &stats_tmp, 0, sizeof(scoring_struct) );
-			memcpy( &stats_tmp, &Campaign.missions[i].stats, sizeof(scoring_struct) );
-
-			// swap values if needed
-			for ( j = 0; j < Num_ship_classes; j++ )
-				stats_tmp.kills[j] = INTEL_INT(Campaign.missions[i].stats.kills[j]);
-
-			stats_tmp.score = INTEL_INT(Campaign.missions[i].stats.score);
-			stats_tmp.rank = INTEL_INT(Campaign.missions[i].stats.rank);
-			stats_tmp.assists = INTEL_INT(Campaign.missions[i].stats.assists);
-			stats_tmp.kill_count = INTEL_INT(Campaign.missions[i].stats.kill_count);
-			stats_tmp.kill_count_ok = INTEL_INT(Campaign.missions[i].stats.kill_count_ok);
-			stats_tmp.p_shots_fired = INTEL_INT(Campaign.missions[i].stats.p_shots_fired);
-			stats_tmp.s_shots_fired = INTEL_INT(Campaign.missions[i].stats.s_shots_fired);
-			stats_tmp.p_shots_hit = INTEL_INT(Campaign.missions[i].stats.p_shots_hit);
-			stats_tmp.s_shots_hit = INTEL_INT(Campaign.missions[i].stats.s_shots_hit);
-			stats_tmp.p_bonehead_hits = INTEL_INT(Campaign.missions[i].stats.p_bonehead_hits);
-			stats_tmp.s_bonehead_hits = INTEL_INT(Campaign.missions[i].stats.s_bonehead_hits);
-			stats_tmp.bonehead_kills = INTEL_INT(Campaign.missions[i].stats.bonehead_kills);
-
-			for ( j = 0; j < MAX_MEDALS; j++ )
-				stats_tmp.medals[j] = INTEL_INT(Campaign.missions[i].stats.medals[j]);
-
-			// save to file
-			cfwrite( &stats_tmp, sizeof(scoring_struct), 1, fp );
-
-			// write flags
-			cfwrite_int(Campaign.missions[i].flags, fp);
-		}
-	}
-
-	// our current mainhall
-	cfwrite_ubyte((ubyte) pl->main_hall, fp);
-
-	// red-alert status
-	red_alert_write_wingman_status_campaign(fp);
-
-	// start techroom data -----------------------------------------------------
-	ubyte out;
-
-	// write the ship and weapon count
-	cfwrite_int(Intel_info_size, fp);
-
-	// write all ship flags out
-	for (i=0; i<Num_ship_classes; i++) {
-		out = (Ship_info[i].flags & SIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;		
-		cfwrite_ubyte(out, fp);				
-	}
-
-	// write all weapon types out
-	for (i=0; i<Num_weapon_types; i++) {
-		out = (Weapon_info[i].wi_flags & WIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;
-		cfwrite_ubyte(out, fp);
-	}	
-
-	// write all intel entry flags out
-	for (i=0; i<Intel_info_size; i++) {
-		out = (Intel_info[i].flags & IIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;
-		cfwrite_ubyte(out, fp);
-	}
-	// end techroom data -------------------------------------------------------
-
-	// begin player loadout ----------------------------------------------------
-	wss_unit *slot;	
-
-	cfwrite_string_len(Player_loadout.filename, fp);
-	cfwrite_string_len(Player_loadout.last_modified, fp);
-
-	// write ship pool
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		cfwrite_int(Player_loadout.ship_pool[i], fp);
-	}
-
-	// write weapons pool
-	for ( i = 0; i < Num_weapon_types; i++ ) {
-		cfwrite_int(Player_loadout.weapon_pool[i], fp);
-	}
-
-	// write ship loadouts
-	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		slot = &Player_loadout.unit_data[i];
-		cfwrite_int(slot->ship_class, fp);
-
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			cfwrite_int(slot->wep[j], fp);
-			cfwrite_int(slot->wep_count[j], fp);
-		}
-	}
-	// end player loadout ------------------------------------------------------
-
-	// begin player stats ------------------------------------------------------
-	cfwrite_int(pl->stats.score, fp);
-	cfwrite_int(pl->stats.rank, fp);
-	cfwrite_int(pl->stats.assists, fp);
-
-	Assert(Num_medals == MAX_MEDALS);
-
-	for (i=0; i<Num_medals; i++){
-		cfwrite_int(pl->stats.medals[i], fp);
-	}
-
-	for(;i<MAX_MEDALS;i++){
-		cfwrite_int(0, fp);
-	}
-
-	int total = MAX_SHIP_CLASSES;
-	while (total && !pl->stats.kills[total - 1]){  // find last used element
-		total--;
-	}
-
-	cfwrite_int(total, fp);
-	for (i=0; i<total; i++){
-		cfwrite_ushort((ushort)pl->stats.kills[i], fp);
-	//	cfwrite_string_len(Ship_info[i].name, fp);
-	}
-
-	cfwrite_int(pl->stats.kill_count, fp);
-	cfwrite_int(pl->stats.kill_count_ok, fp);
-
-	cfwrite_uint(pl->stats.p_shots_fired, fp);
-	cfwrite_uint(pl->stats.s_shots_fired, fp);
-	cfwrite_uint(pl->stats.p_shots_hit, fp);
-	cfwrite_uint(pl->stats.s_shots_hit, fp);
-	cfwrite_uint(pl->stats.p_bonehead_hits, fp);
-	cfwrite_uint(pl->stats.s_bonehead_hits, fp);
-	cfwrite_uint(pl->stats.bonehead_kills, fp);
-	// end stats ---------------------------------------------------------------
-
-	// write the cutscenes which have been viewed
-	cfwrite_int(Cutscenes_viewable, fp);
-
-	cfclose( fp );
-
-	return 0;
-}
-
-
 // The following function always only ever ever ever called by CSFE!!!!!
 int campaign_savefile_save(char *pname)
 {
@@ -1004,7 +729,7 @@ int campaign_savefile_save(char *pname)
 
 	strcpy_s(Player->callsign, pname);
 	//memcpy(&Campaign, camp, sizeof(campaign));
-	return mission_campaign_savefile_save();
+	return (int)Pilot.save_savefile();
 }
 
 
@@ -1014,7 +739,7 @@ int campaign_savefile_save(char *pname)
 
 // mission_campaign_savefile_delete deletes any save file in the players directory for the given
 // campaign filename
-void mission_campaign_savefile_delete( char *cfilename, int is_multi )
+void mission_campaign_savefile_delete( char *cfilename )
 {
 	char filename[_MAX_FNAME], base[_MAX_FNAME];
 
@@ -1024,28 +749,9 @@ void mission_campaign_savefile_delete( char *cfilename, int is_multi )
 		return;	// no such thing as a multiplayer campaign savefile
 	}
 
-	sprintf( filename, NOX("%s.%s.cs2"), Player->callsign, base ); // only support the new filename here - taylor
+	sprintf( filename, NOX("%s.%s.csg"), Player->callsign, base ); // only support the new filename here - taylor
 
-	cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-}
-
-// same as mission_campaign_savefile_delete() except that it deletes old format .csg and .css
-void mission_campaign_savefile_delete_old( char *cfilename)
-{
-	char filename[_MAX_FNAME], base[_MAX_FNAME];
-	char filename2[_MAX_FNAME];
-
-	_splitpath( cfilename, NULL, NULL, base, NULL );
-
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
-		return;	// no such thing as a multiplayer campaign savefile
-	}
-
-	sprintf( filename, NOX("%s.%s.csg"), Player->callsign, base );
-	sprintf( filename2, NOX("%s.%s.css"), Player->callsign, base );
-
-	cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-	cf_delete( filename2, CF_TYPE_SINGLE_PLAYERS );
+	cf_delete( filename, CF_TYPE_PLAYERS );
 }
 
 void campaign_delete_save( char *cfn, char *pname)
@@ -1057,19 +763,15 @@ void campaign_delete_save( char *cfn, char *pname)
 // next function deletes all the save files for this particular pilot.  Just call cfile function
 // which will delete multiple files
 // Player_select_mode tells us whether we are deleting single or multiplayer files
-void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi )
+void mission_campaign_delete_all_savefiles( char *pilot_name )
 {
 	int dir_type, num_files, i;
 	char *names[MAX_CAMPAIGNS], file_spec[MAX_FILENAME_LEN + 2], *ext;
 	char filename[1024];
 	int (*filter_save)(char *filename);
 
-	if ( is_multi ) {
-		return;				// can't have multiplayer campaign save files
-	}
-
-	ext = NOX(".cs2");
-	dir_type = CF_TYPE_SINGLE_PLAYERS;
+	ext = NOX(".csg");
+	dir_type = CF_TYPE_PLAYERS;
 
 	sprintf(file_spec, NOX("%s.*%s"), pilot_name, ext);
 
@@ -1088,594 +790,6 @@ void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi )
 	}
 }
 
-// mission_campaign_savefile_load takes a filename of a campaign file as a parameter and loads all
-// of the information stored in the campaign file.
-int mission_campaign_savefile_load( char *cfilename, player *pl )
-{
-	char filename[_MAX_FNAME], base[_MAX_FNAME];
-	int id, version, i, num, j, num_stats_blocks, idx;
-	int type_sig;
-	ubyte sw;
-	char s_name[MAX_SHIP_CLASSES][NAME_LENGTH];
-	char w_name[MAX_WEAPON_TYPES][NAME_LENGTH];
-	int n_ships;
-	CFILE *fp;
-	int force_update = 0;
-	int kill_count[MAX_SHIP_CLASSES];
-	int k_count;
-	int sid = -1, wid = -1;
-	int set_defaults = 1; // should we zero out tech values or not (yes by default)
-
-	Assert ( strlen(cfilename) != 0 );
-
-	if ( !strlen(cfilename) )
-		return 0;
-
-	if (pl == NULL) {
-		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
-		pl = &Players[Player_num];
-	}
-
-	Assert( pl != NULL );
-
-	// if this pilot is multi then we shouldn't even be here!!
-	if (pl->flags & PLAYER_FLAGS_IS_MULTI)
-		return 0;
-
-	// little quick hackery to avoid overwriting current techroom/campaing data with what's in the campaign file
-	// if and only if this campaign is what's currently active (shouldn't do this from the pilotselect screen though)
-	extern int Player_select_screen_active;
-	if (!Player_select_screen_active && !strcmp(cfilename, pl->current_campaign)) {
-		set_defaults = 0;
-	}
-
-	// probably only called from single player games anymore!!! should be anyway
-//	Assert( Game_mode & GM_NORMAL );		// get allender or DaveB.  trying to save campaign in multiplayer
-
-	// build up the filename for the save file.  There could be a problem with filename length,
-	// but this problem can get fixed in several ways -- ignore the problem for now though.
-	_splitpath( cfilename, NULL, NULL, base, NULL );
-
-	Assert ( (strlen(base) + strlen(pl->callsign) + 1) < _MAX_FNAME );
-
-	// support new filenames by default - taylor
-	if(Game_mode & GM_MULTIPLAYER)
-		sprintf( filename, NOX("%s.%s.ms2"), pl->callsign, base );
-	else
-		sprintf( filename, NOX("%s.%s.cs2"), pl->callsign, base );
-
-	fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS );
-
-	// if we didn't open the new formats try the old ones - taylor
-	if ( !fp ) {
-		if(Game_mode & GM_MULTIPLAYER)
-			sprintf( filename, NOX("%s.%s.msg"), pl->callsign, base );
-		else
-			sprintf( filename, NOX("%s.%s.csg"), pl->callsign, base );
-
-		fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS );
-
-		if ( !fp )
-			return 0;
-	}
-
-	id = cfread_int( fp );
-
-	if ( id != (int)CAMPAIGN_FILE_ID ) {
-		Warning(LOCATION, "Campaign save file has invalid signature");
-		cfclose( fp );
-		return 0;
-	}
-
-	version = cfread_int( fp );
-	if ( version < CAMPAIGN_FILE_COMPATIBLE_VERSION ) {
-		Warning(LOCATION, "Campaign save file too old -- not compatible.  Deleting file.\nYou can continue from here without trouble\n\n");
-		cfclose( fp );
-		cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-		return 0;
-	}
-
-	// verify that we are loading the correct type of campaign file for the mode that we are in.
-	if(version >= 3)
-		type_sig = cfread_int( fp );
-	else
-		type_sig = (int)CAMPAIGN_SINGLE_PLAYER_SIG;
-
-	// the actual check
-	Assert( ((Game_mode & GM_MULTIPLAYER) && (type_sig == (int)CAMPAIGN_MULTI_PLAYER_SIG)) || (!(Game_mode & GM_MULTIPLAYER) && (type_sig == (int)CAMPAIGN_SINGLE_PLAYER_SIG)) );
-
-	Campaign.type = type_sig == (int)CAMPAIGN_SINGLE_PLAYER_SIG ? CAMPAIGN_TYPE_SINGLE : CAMPAIGN_TYPE_MULTI_COOP;
-
-	// read in the filename of the campaign and compare the filenames to be sure that
-	// we are reading data that really belongs to this campaign.  I think that this check
-	// is redundant.
-	cfread_string_len( filename, _MAX_FNAME, fp );
-	/*if ( stricmp( filename, cfilename) ) {	//	Used to be !stricmp.  How did this ever work? --MK, 11/9/97
-		Warning(LOCATION, "Campaign save file appears corrupt because of mismatching filenames.");
-		cfclose(fp);
-		return;
-	}*/
-
-	Campaign.prev_mission = cfread_int( fp );
-	Campaign.next_mission = cfread_int( fp );
-	Campaign.loop_reentry = cfread_int( fp );
-	Campaign.loop_enabled = cfread_int( fp );
-
-	//  load information about ships/weapons allowed	
-	int ship_count, weapon_count;
-
-	// if earlier than mission disk version, use old MAX_SHIP_CLASSES, otherwise read from the file		
-	if(version <= CAMPAIGN_INITIAL_RELEASE_FILE_VERSION){
-		ship_count = CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD;
-		weapon_count = CAMPAIGN_SAVEFILE_MAX_WEAPONS_OLD;
-	} else {
-		ship_count = cfread_int(fp);
-		weapon_count = cfread_int(fp);
-	}
-
-	Assert(ship_count <= MAX_SHIP_CLASSES);
-	Assert(weapon_count <= MAX_WEAPON_TYPES);
-
-	memset( s_name, 0, sizeof(char) * MAX_SHIP_CLASSES * NAME_LENGTH );
-	memset( w_name, 0, sizeof(char) * MAX_WEAPON_TYPES * NAME_LENGTH );
-
-	for ( i = 0; i < ship_count; i++ ){
-		if (version >= 14) {
-			sw = cfread_ubyte( fp );
-			cfread_string_len(s_name[i], NAME_LENGTH, fp);
-			sid = ship_info_lookup(s_name[i]);
-			if (sid == -1)
-				continue;
-
-			Campaign.ships_allowed[sid] = sw;
-		} else {
-			Campaign.ships_allowed[i] = cfread_ubyte( fp );
-		}
-	}
-
-	for ( i = 0; i < weapon_count; i++ ){
-		if (version >= 14) {
-			sw = cfread_ubyte( fp );
-			cfread_string_len(w_name[i], NAME_LENGTH, fp);
-			wid = weapon_info_lookup(w_name[i]);
-			if (wid == -1)
-				continue;
-
-			Campaign.weapons_allowed[wid] = sw;
-		} else {
-			Campaign.weapons_allowed[i] = cfread_ubyte( fp );
-		}
-	}	
-
-	// read in the completed mission matrix.  Used to tell which missions the player
-	// can replay in the simulator.  Also, each completed mission contains a list of the goals
-	// that were in the mission along with the goal completion status.
-	Campaign.num_missions_completed = cfread_int( fp );
-	for (i = 0; i < Campaign.num_missions_completed; i++ ) {
-		num = cfread_int( fp );
-		Campaign.missions[num].completed = 1;
-		Campaign.missions[num].num_goals = cfread_int( fp );
-		
-		// be sure to malloc out space for the goals stuff, then zero the memory!!!  Don't do malloc
-		// if there are no goals
-		if ( Campaign.missions[num].num_goals > 0 ) {
-			Campaign.missions[num].goals = (mgoal *)vm_malloc( Campaign.missions[num].num_goals * sizeof(mgoal) );
-
-			Assert( Campaign.missions[num].goals != NULL );
-
-			if (Campaign.missions[num].goals != NULL)
-				memset( Campaign.missions[num].goals, 0, sizeof(mgoal) * Campaign.missions[num].num_goals );
-
-			// now read in the goal information for this mission
-			for ( j = 0; j < Campaign.missions[num].num_goals; j++ ) {
-				cfread_string_len( Campaign.missions[num].goals[j].name, NAME_LENGTH, fp );
-				Campaign.missions[num].goals[j].status = cfread_char( fp );
-			}
-		}
-
-		// get the events from the savefile
-		Campaign.missions[num].num_events = cfread_int( fp );
-		
-		// be sure to malloc out space for the events stuff, then zero the memory!!!  Don't do malloc
-		// if there are no events
-		if ( Campaign.missions[num].num_events > 0 ) {
-			Campaign.missions[num].events = (mevent *)vm_malloc( Campaign.missions[num].num_events * sizeof(mevent) );
-
-			Assert( Campaign.missions[num].events != NULL );
-
-			if (Campaign.missions[num].events != NULL)
-				memset( Campaign.missions[num].events, 0, sizeof(mevent) * Campaign.missions[num].num_events );
-	
-			// now read in the event information for this mission
-			for ( j = 0; j < Campaign.missions[num].num_events; j++ ) {
-				cfread_string_len( Campaign.missions[num].events[j].name, NAME_LENGTH, fp );
-				Campaign.missions[num].events[j].status = cfread_char( fp );
-			}
-		}
-
-		// Goober5000 - get the variables from the savefile -------------------------
-		if (version >= 13) {
-			Campaign.missions[num].num_saved_variables = cfread_int( fp );
-		
-			// be sure to malloc out space for the variables stuff, then zero the memory!!!  Don't do malloc
-			// if there are no variables
-			if ( Campaign.missions[num].num_saved_variables > 0 ) {
-				Campaign.missions[num].saved_variables = (sexp_variable *)vm_malloc( Campaign.missions[num].num_saved_variables * sizeof(sexp_variable) );
-
-				Assert( Campaign.missions[num].saved_variables != NULL );
-
-				if (Campaign.missions[num].saved_variables != NULL)
-					memset( Campaign.missions[num].saved_variables, 0, sizeof(sexp_variable) * Campaign.missions[num].num_saved_variables );
-
-				// now read in the variable information for this mission
-				for ( j = 0; j < Campaign.missions[num].num_saved_variables; j++ ) {
-					Campaign.missions[num].saved_variables[j].type = cfread_int( fp );
-					cfread_string_len( Campaign.missions[num].saved_variables[j].text, TOKEN_LENGTH, fp );
-					cfread_string_len( Campaign.missions[num].saved_variables[j].variable_name, TOKEN_LENGTH, fp );
-				}
-			}
-		}
-
-		// mission specific stats - taylor
-		if (version >= 15) {
-			cfread( &Campaign.missions[num].stats, sizeof(scoring_struct), 1, fp );
-
-			// copy current values to temp and swap if needed
-			for ( j = 0; j < ship_count; j++ )
-				kill_count[j] = INTEL_INT(Campaign.missions[num].stats.kills[j]);
-
-			// translate to new tables
-			for ( j = 0; j < ship_count; j++ ) {
-				int kn = ship_info_lookup(s_name[j]);
-				Campaign.missions[num].stats.kills[kn] = kill_count[j];
-			}
-
-			// swap values
-			Campaign.missions[num].stats.score = INTEL_INT(Campaign.missions[num].stats.score);
-			Campaign.missions[num].stats.rank = INTEL_INT(Campaign.missions[num].stats.rank);
-			Campaign.missions[num].stats.assists = INTEL_INT(Campaign.missions[num].stats.assists);
-			Campaign.missions[num].stats.kill_count = INTEL_INT(Campaign.missions[num].stats.kill_count);
-			Campaign.missions[num].stats.kill_count_ok = INTEL_INT(Campaign.missions[num].stats.kill_count_ok);
-			Campaign.missions[num].stats.p_shots_fired = INTEL_INT(Campaign.missions[num].stats.p_shots_fired);
-			Campaign.missions[num].stats.s_shots_fired = INTEL_INT(Campaign.missions[num].stats.s_shots_fired);
-			Campaign.missions[num].stats.p_shots_hit = INTEL_INT(Campaign.missions[num].stats.p_shots_hit);
-			Campaign.missions[num].stats.s_shots_hit = INTEL_INT(Campaign.missions[num].stats.s_shots_hit);
-			Campaign.missions[num].stats.p_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.p_bonehead_hits);
-			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits);
-			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills);
-
-			for (j=0; j < MAX_MEDALS; j++) {
-				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]);
-			}
-		}
-
-		// done with variables ------------------------------------------------------
-
-		// now read flags
-		Campaign.missions[num].flags = cfread_int(fp);
-	}
-	
-	// total stuff, moved here from pilot file ---------------------------------
-	if (version >= 15) {
-		// which mainhall are we on?
-		pl->main_hall = cfread_ubyte(fp);
-	
-		// red-alert wingman status
-		red_alert_read_wingman_status_campaign(fp, s_name, w_name);
-
-		// begin techroom data -------------------------------------------------
-		int intel_count;
-		ubyte in;
-
-		intel_count = cfread_int(fp);
-		Assert(intel_count <= MAX_INTEL_ENTRIES);
-
-		// zero out all data so that we can start anew
-		if (set_defaults) {
-			for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
-				Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
-			}
-		
-			for (idx=0; idx<MAX_WEAPON_TYPES; idx++) {
-				Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
-			}
-
-			for (idx=0; idx<MAX_INTEL_ENTRIES; idx++) {
-				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
-			}
-		}
-
-		// read all ships in
-		for (idx=0; idx<ship_count; idx++) {
-			in = cfread_ubyte(fp);
-
-			sid = ship_info_lookup(s_name[idx]);
-			if (sid == -1)
-				continue;
-
-			if (in) {
-				Ship_info[sid].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
-			} else if (set_defaults) {
-				Ship_info[sid].flags &= ~SIF_IN_TECH_DATABASE;
-			}
-		}
-
-		// read all weapons in
-		for (idx=0; idx<weapon_count; idx++) {
-			in = cfread_ubyte(fp);
-
-			wid = weapon_info_lookup(w_name[idx]);
-			if (wid == -1)
-				continue;
-
-			if (in) {
-				Weapon_info[wid].wi_flags |= WIF_IN_TECH_DATABASE;
-			} else if (set_defaults) {
-				Weapon_info[wid].wi_flags &= ~WIF_IN_TECH_DATABASE;
-			}	
-		}
-	
-		// read all intel entries in
-		for (idx=0; idx<intel_count; idx++) {
-			in = cfread_ubyte(fp);
-
-			if (idx >= Intel_info_size)
-				continue;
-
-			if (in) {
-				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
-			} else if (set_defaults) {
-				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
-			}
-		}
-
-		// end techroom data ---------------------------------------------------
-
-		// begin player loadout ------------------------------------------------
-		char trash[MAX_FILENAME_LEN+DATE_TIME_LENGTH];
-		int pool_count;
-		wss_unit *slot;
-
-		if (set_defaults) {
-			cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, fp);
-			cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, fp);
-		} else {
-			cfread_string_len(trash, MAX_FILENAME_LEN, fp);
-			cfread_string_len(trash + MAX_FILENAME_LEN, DATE_TIME_LENGTH, fp);
-		}
-
-		// read in ship pool
-		for ( i = 0; i < ship_count; i++ ) {
-			pool_count = cfread_int(fp);
-			// don't set this again and again (for WMC)
-			if (set_defaults) {
-				sid = ship_info_lookup(s_name[i]);
-
-				if (sid < 0)
-					continue;
-
-				Player_loadout.ship_pool[sid] = pool_count;
-			}
-		}
-
-		// read in weapons pool
-		for ( i = 0; i < weapon_count; i++ ) {
-			pool_count = cfread_int(fp);
-			// don't set this again and again (for WMC)
-			if (set_defaults) {
-				wid = weapon_info_lookup(w_name[i]);
-
-				if (wid < 0)
-					continue;
-
-				Player_loadout.weapon_pool[wid] = pool_count;
-			}
-		}
-
-		int wep_tmp = -1;
-		int shp_tmp = -1;
-
-		// read in loadout info
-		for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-			slot = &Player_loadout.unit_data[i];
-			shp_tmp = cfread_int(fp);
-			// don't set this again and again (for WMC)
-			if (set_defaults) {
-				slot->ship_class = ship_info_lookup(s_name[shp_tmp]); // -1 should be ok here
-			}
-
-			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				wep_tmp = cfread_int(fp);
-				// don't set this again and again (for WMC)
-				if (set_defaults) {
-					slot->wep_count[j] = cfread_int(fp);
-					slot->wep[j] = weapon_info_lookup(w_name[wep_tmp]); // -1 should be ok here
-				} else {
-					// we need to read some dummy info for the wep_counts
-					wep_tmp = cfread_int(fp);
-				}
-			}
-		}
-		// end player loadout --------------------------------------------------
-
-		// begin total pilot stats ---------------------------------------------
-		// init a blank stats block before loading new
-		init_scoring_element( &pl->stats );
-
-		// TODO: need to work out the best way to not overwrite current values with this
-		//       stuff but still handle garbage collection, future stats changes properly
-		//       (don't forget to make NUM_MEDALS non-breaking on next update either!!)
-		pl->stats.score = cfread_int(fp);
-		pl->stats.rank = cfread_int(fp);
-		pl->stats.assists = cfread_int(fp);
-
-		for (i=0; i < Num_medals; i++) {
-			pl->stats.medals[i] = cfread_int(fp);
-		}
-
-		int k_total = cfread_int(fp);
-
-		for (i=0; i<k_total; i++) {
-			k_count = cfread_ushort(fp);
-
-			sid = ship_info_lookup(s_name[i]);
-			if (sid == -1)
-				continue;
-
-			pl->stats.kills[sid] = k_count;
-		}
-
-		pl->stats.kill_count = cfread_int(fp);
-		pl->stats.kill_count_ok = cfread_int(fp);
-	
-		pl->stats.p_shots_fired = cfread_uint(fp);
-		pl->stats.s_shots_fired = cfread_uint(fp);
-		pl->stats.p_shots_hit = cfread_uint(fp);
-		pl->stats.s_shots_hit = cfread_uint(fp);
-	
-		pl->stats.p_bonehead_hits = cfread_uint(fp);
-		pl->stats.s_bonehead_hits = cfread_uint(fp);
-		pl->stats.bonehead_kills = cfread_uint(fp);
-		// end total pilot stats -----------------------------------------------
-
-		// cutscenes
-		if (set_defaults) {
-			Cutscenes_viewable = cfread_int(fp);
-		}
-	}
-	// done with total stuff ---------------------------------------------------
-
-	// do we need to update to new format?
-	if ( version < CAMPAIGN_FILE_VERSION )
-		force_update = 1;
-
-	cfclose( fp );
-
-	if (version < 15) {
-		// 4/17/98
-		// now, try and read in the campaign stats saved information.  This code was added for the 1.03 patch
-		// since the stats data was never written out to disk.  We try and open the file, and if we cannot find
-		// it, then simply return
-		sprintf( filename, NOX("%s.%s.css"), pl->callsign, base );
-
-		fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS );
-		if ( !fp )
-			goto Done;
-
-		id = cfread_int( fp );
-		if ( id != (int)CAMPAIGN_STATS_FILE_ID ) {
-			Warning(LOCATION, "Campaign stats save file has invalid signature");
-			cfclose( fp );
-			goto Done;
-		}
-
-		version = cfread_int( fp );
-		if ( version < CAMPAIGN_STATS_FILE_COMPATIBLE_VERSION ) {
-			Warning(LOCATION, "Campaign save file too old -- not compatible.  Deleting file.\nYou can continue from here without trouble\n\n");
-			cfclose( fp );
-			cf_delete( filename, CF_TYPE_SINGLE_PLAYERS );
-			goto Done;
-		}
-
-		
-		if (version >= 2) {
-			// read in number of ships that were written to the file
-			n_ships = cfread_int( fp );
-
-			Assert( n_ships <= MAX_SHIP_CLASSES );
-
-			// read in ship names
-			for ( i = 0; i < n_ships; i++ ) {
-				cfread_string_len( s_name[i], NAME_LENGTH, fp );
-			}
-		}
-
-		const int ORIG_MAX_SHIP_CLASSES = 130;
-		int read_size = 0;
-
-		// figure out the size of data we need to read each pass
-		if (version >= 2) {
-			// basic size, start with current and subtract what we don't want
-			read_size = sizeof(scoring_struct);
-
-			// if MAX_SHIP_CLASSES has changed from what we expect then come up with a modified size:
-			// new_max_ship_types - old_max_ship_types * sizeof(int) * 3-times-MAX_SHIP_CLASSES-is-used
-			if (MAX_SHIP_CLASSES > ORIG_MAX_SHIP_CLASSES)
-				read_size -= (MAX_SHIP_CLASSES - ORIG_MAX_SHIP_CLASSES) * sizeof(int) * 3;
-		} else {
-			// basic size, start with current and subtract what we don't want
-			read_size = sizeof(scoring_struct);
-			// we moved to int from ushort for kills[MAX_SHIP_CLASSES], m_kills[MAX_SHIP_CLASSES] & m_okKills[MAX_SHIP_CLASSES]
-			read_size -= (sizeof(int) - sizeof(ushort)) * 3 * ORIG_MAX_SHIP_CLASSES;
-			// we moved to int from ushort for m_dogfight_kills[MAX_PLAYERS]
-			read_size -= (sizeof(int) - sizeof(ushort)) * MAX_PLAYERS;
-
-			// if MAX_SHIP_CLASSES has changed from what we expect then come up with a modified size:
-			// new_max_ship_types - old_max_ship_types * sizeof(ushort) * 3-times-MAX_SHIP_CLASSES-is-used
-			// we moved from ushort to int for these 3 so take that into account
-			if (MAX_SHIP_CLASSES > ORIG_MAX_SHIP_CLASSES)
-				read_size -= (MAX_SHIP_CLASSES - ORIG_MAX_SHIP_CLASSES) * (sizeof(int) - sizeof(ushort)) * 3;
-		}
-
-		Assert( read_size );
-
-		num_stats_blocks = cfread_int( fp );
-		for (i = 0; i < num_stats_blocks; i++ ) {
-			num = cfread_int( fp );
-			cfread( &Campaign.missions[num].stats, read_size, 1, fp );
-
-			if (version >= 2) {
-				// copy current values to temp and swap if needed
-				for ( j = 0; j < MAX_SHIP_CLASSES; j++ )
-					kill_count[j] = INTEL_INT(Campaign.missions[num].stats.kills[j]);
-
-				// translate to new tables
-				for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
-					idx = ship_info_lookup(s_name[j]);
-					Campaign.missions[num].stats.kills[idx] = kill_count[j];
-				}
-			}
-
-			// swap values
-			Campaign.missions[num].stats.score = INTEL_INT(Campaign.missions[num].stats.score);
-			Campaign.missions[num].stats.rank = INTEL_INT(Campaign.missions[num].stats.rank);
-			Campaign.missions[num].stats.assists = INTEL_INT(Campaign.missions[num].stats.assists);
-			Campaign.missions[num].stats.kill_count = INTEL_INT(Campaign.missions[num].stats.kill_count);
-			Campaign.missions[num].stats.kill_count_ok = INTEL_INT(Campaign.missions[num].stats.kill_count_ok);
-			Campaign.missions[num].stats.p_shots_fired = INTEL_INT(Campaign.missions[num].stats.p_shots_fired);
-			Campaign.missions[num].stats.s_shots_fired = INTEL_INT(Campaign.missions[num].stats.s_shots_fired);
-			Campaign.missions[num].stats.p_shots_hit = INTEL_INT(Campaign.missions[num].stats.p_shots_hit);
-			Campaign.missions[num].stats.s_shots_hit = INTEL_INT(Campaign.missions[num].stats.s_shots_hit);
-			Campaign.missions[num].stats.p_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.p_bonehead_hits);
-			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits);
-			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills);
-
-			for (j=0; j < MAX_MEDALS; j++) {
-				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]);
-			}
-		}
-
-		// do we need to update to new format?
-		if ( version < CAMPAIGN_STATS_FILE_VERSION )
-			force_update = 1;
-
-		cfclose(fp);
-	} // version < 15
-
-Done:
-	// -- taylor --
-	// force a save to update a campaign file to newest version since this
-	// normally isn't done until a campaign mission is successfully completed
-	if ( force_update ) {
-		mission_campaign_savefile_save();
-		// now delete old files
-		mission_campaign_savefile_delete_old(cfilename);
-	}
-
-	return 1;
-}
-
-
 // the following code only ever called by CSFE!!!!
 void campaign_savefile_load(char *fname, char *pname)
 {
@@ -1685,8 +799,10 @@ void campaign_savefile_load(char *fname, char *pname)
 	}
 	else
 		Game_mode |= GM_MULTIPLAYER;
+
 	strcpy_s(Player->callsign, pname);
-	mission_campaign_savefile_load(fname);
+
+	Pilot.load_savefile(fname);
 }
 
 // mission_campaign_next_mission sets up the internal veriables of the campaign
@@ -1729,7 +845,8 @@ int mission_campaign_previous_mission()
 	Campaign.next_mission = Campaign.current_mission;
 	Campaign.num_missions_completed--;
 	Campaign.missions[Campaign.next_mission].completed = 0;
-	mission_campaign_savefile_save();
+
+	Pilot.save_savefile();
 
 	// reset the player stats to be the stats from this level
 	memcpy( &Player->stats, &Campaign.missions[Campaign.current_mission].stats, sizeof(Player->stats) );
@@ -2007,15 +1124,15 @@ void mission_campaign_store_goals_and_events_and_variables()
 	}
 
 	// Goober5000 - handle campaign-persistent variables -------------------------------------
-	if (mission->saved_variables != NULL) {
-		vm_free( mission->saved_variables );
-		mission->saved_variables = NULL;
+	if (mission->variables != NULL) {
+		vm_free( mission->variables );
+		mission->variables = NULL;
 	}
-
-	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
-	if ( mission->num_saved_variables > 0) {
-		mission->saved_variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_saved_variables);
-		Assert( mission->saved_variables != NULL );
+/*
+	mission->num_variables = sexp_campaign_persistent_variable_count();
+	if ( mission->num_variables > 0) {
+		mission->variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_variables);
+		Assert( mission->variables != NULL );
 	}
 
 	// copy the needed variable info
@@ -2023,11 +1140,81 @@ void mission_campaign_store_goals_and_events_and_variables()
 	for (i = 0; i < sexp_variable_count(); i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
 		{
-			mission->saved_variables[j].type = Sexp_variables[i].type;
-			strcpy_s(mission->saved_variables[j].text, Sexp_variables[i].text);
-			strcpy_s(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
+			mission->variables[j].type = Sexp_variables[i].type;
+			strcpy_s(mission->variables[j].text, Sexp_variables[i].text);
+			strcpy_s(mission->variables[j].variable_name, Sexp_variables[i].variable_name);
 			j++;
 		}
+	}
+*/
+	int num_mission_variables = sexp_campaign_persistent_variable_count();
+
+	if (num_mission_variables > 0) {
+		int variable_count = 0;
+		int total_variables = Campaign.num_variables;
+
+		// get count of new variables
+		for (i = 0; i < sexp_variable_count(); i++) {
+			if ( !(Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
+				continue;
+			}
+
+			for (j = 0; j < Campaign.num_variables; j++) {
+				if ( stricmp(Sexp_variables[i].variable_name, Campaign.variables[j].variable_name) ) {
+					total_variables++;
+					break;
+				}
+			}
+		}
+
+		// allocate new storage
+		sexp_variable *n_variables = (sexp_variable *) vm_malloc(total_variables * sizeof(sexp_variable));
+		Assert( n_variables );
+
+		// copy existing variables over
+		if (Campaign.num_variables > 0) {
+			Assert( Campaign.variables );
+			memcpy(n_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
+
+			variable_count = Campaign.num_variables;
+
+			vm_free(Campaign.variables);
+			Campaign.variables = NULL;
+		}
+
+		// update/add variables
+		for (i = 0; i < sexp_variable_count(); i++) {
+			if ( !(Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
+				continue;
+			}
+
+			bool add_it = true;
+
+			// maybe update...
+			for (j = 0; j < Campaign.num_variables; j++) {
+				if ( !stricmp(Sexp_variables[i].variable_name, Campaign.variables[j].variable_name) ) {
+					n_variables[j].type = Sexp_variables[i].type;
+					strcpy_s(n_variables[j].text, Sexp_variables[i].text);
+					add_it = false;
+					break;
+				}
+			}
+
+			// otherwise add...
+			if (add_it) {
+				n_variables[variable_count].type = Sexp_variables[i].type;
+				strcpy_s(n_variables[variable_count].text, Sexp_variables[i].text);
+				strcpy_s(n_variables[variable_count].variable_name, Sexp_variables[i].variable_name);
+				variable_count++;
+			}
+		}
+
+		Assert( variable_count == total_variables );
+		Assert( Campaign.variables == NULL );
+
+		// update with new data/count
+		Campaign.variables = n_variables;
+		Campaign.num_variables = total_variables;
 	}
 	// --------------------------------------------------------------------------
 }
@@ -2092,7 +1279,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		// save the state of the campaign in the campaign save file and move to the end_game state
 		if (Campaign.type == CAMPAIGN_TYPE_SINGLE) {
-			mission_campaign_savefile_save();
+			Pilot.save_savefile();
 		}
 
 	} else {
@@ -2111,11 +1298,11 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission->num_events = 0;
 
 		// Goober5000
-		if (mission->saved_variables != NULL) {
-			vm_free( mission->saved_variables );
-			mission->saved_variables = NULL;
+		if (mission->variables != NULL) {
+			vm_free( mission->variables );
+			mission->variables = NULL;
 		}
-		mission->num_saved_variables = 0;
+		mission->num_variables = 0;
 
 		Sexp_nodes[mission->formula].value = SEXP_UNKNOWN;
 	}
@@ -2162,9 +1349,9 @@ void mission_campaign_close()
 		}
 
 		// Goober5000
-		if ( Campaign.missions[i].saved_variables != NULL ) {
-			vm_free ( Campaign.missions[i].saved_variables );
-			Campaign.missions[i].saved_variables = NULL;
+		if ( Campaign.missions[i].variables != NULL ) {
+			vm_free ( Campaign.missions[i].variables );
+			Campaign.missions[i].variables = NULL;
 		}
 
 		// the next three are strdup'd return values from parselo.cpp - taylor
@@ -2189,7 +1376,7 @@ void mission_campaign_close()
 
 		Campaign.missions[i].num_goals = 0;
 		Campaign.missions[i].num_events = 0;
-		Campaign.missions[i].num_saved_variables = 0;	// Goober5000
+		Campaign.missions[i].num_variables = 0;	// Goober5000
 	}
 
 	Campaign.num_missions = 0;
@@ -2468,27 +1655,58 @@ void mission_campaign_save_persistent( int type, int sindex )
 // returns 0: loaded, !0: error
 int mission_load_up_campaign( player *pl )
 {
+	int rc = -1, idx;
+
 	if ( pl == NULL )
 		pl = Player;
 
+	// find best campaign to use:
+	//   1) last used
+	//   2) builtin
+	//   3) anything else
+
+	// last used...
 	if ( strlen(pl->current_campaign) ) {
-		return mission_campaign_load(pl->current_campaign, pl);
-	} else {
-		int rc = mission_campaign_load(BUILTIN_CAMPAIGN, pl);
+		rc = mission_campaign_load(pl->current_campaign, pl);
+	}
 
-		// if the builtin campaign is missing/corrupt then try and fall back on whatever is available
-		if (rc) {
-			// no descriptions, and no sorting since we want the actual first entry found
-			mission_campaign_build_list(false, false);
+	// builtin...
+	if (rc < 0) {
+		rc = mission_campaign_load(BUILTIN_CAMPAIGN, pl);
+	}
 
-			if ( (Campaign_file_names[0] != NULL) && strlen(Campaign_file_names[0]) )
-				rc = mission_campaign_load(Campaign_file_names[0], pl);
+	// everything else...
+	if (rc < 0) {
+		// no descriptions, no sorting
+		mission_campaign_build_list(false, false);
 
-			mission_campaign_free_list();
+		for (idx = 0; (idx < Num_campaigns) && (rc < 0); idx++) {
+			if ( (Campaign_file_names[idx] == NULL) || !strlen(Campaign_file_names[idx]) ) {
+				continue;
+			}
+
+			// skip current and builtin since they already didn't work
+			if ( !stricmp(Campaign_file_names[idx], pl->current_campaign) ) {
+				continue;
+			}
+
+			if ( !stricmp(Campaign_file_names[idx], BUILTIN_CAMPAIGN) ) {
+				continue;
+			}
+
+			// try to load it, whatever "it" is
+			rc = mission_campaign_load(Campaign_file_names[idx], pl);
 		}
 
-		return rc;
+		mission_campaign_free_list();
 	}
+
+	// update pilot with the new current campaign
+	if (rc == 0) {
+		strcpy_s(pl->current_campaign, Campaign.filename);
+	}
+
+	return rc;
 }
 
 // for end of campaign in the single player game.  Called when the end of campaign state is
@@ -2648,7 +1866,7 @@ void mission_campaign_jump_to_mission(char *name)
 // Goober5000
 void mission_campaign_save_player_persistent_variables()
 {
-	int i, j, index;
+	int i;
 
 	// make sure we are actually playing a campaign
 	if (!(Game_mode & GM_CAMPAIGN_MODE))
@@ -2659,43 +1877,51 @@ void mission_campaign_save_player_persistent_variables()
 		return;
 
 	// now save variables
-	for (i=0; i<sexp_variable_count(); i++)
-	{
-		// if we get to save it
-		if (Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT)
-		{
-			index = -1;
+	for (i = 0; i < sexp_variable_count(); i++) {
+		// we only want the player persistent ones
+		if ( !(Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT) ) {
+			continue;
+		}
 
-			// search for the previous instance of this variable
-			for (j=0; j<Player->num_variables; j++)
-			{
-				// found
-				if (!(stricmp(Sexp_variables[i].variable_name, Player->player_variables[j].variable_name)))
-				{
-					index = j;
-					break;
-				}
+		bool found = false;
+
+		// check if variable already exists and updated it
+		for (size_t j = 0; j < Player->variables.size(); j++) {
+			if ( !(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name)) ) {
+				Player->variables[j] = Sexp_variables[i];
+
+				found = true;
+				break;
 			}
+		}
 
-			// if not found, allocate new variable
-			if (index < 0)
-			{
-				// check first for overflow
-				if (Player->num_variables == MAX_SEXP_VARIABLES)
-				{
-					Error(LOCATION, "Too many player-persistent variables (last valid variable: %s, max number of variables: %d).  The remaining ones will not be saved.  Press OK to continue.", Player->player_variables[Player->num_variables-1].variable_name, Player->num_variables);
-					return;
-				}
-
-				// set index and increment
-				index = Player->num_variables;
-				Player->num_variables++;
-			}
-
-			// finally, save this variable
-			Player->player_variables[index].type = Sexp_variables[i].type;
-			strcpy_s(Player->player_variables[index].text, Sexp_variables[i].text);
-			strcpy_s(Player->player_variables[index].variable_name, Sexp_variables[i].variable_name);
+		// if not found then add new entry
+		if ( !found ) {
+			Player->variables.push_back( Sexp_variables[i] );
 		}
 	}
 }
+
+void mission_campaign_load_failure_popup()
+{
+	if (Campaign_load_failure == 0) {
+		return;
+	}
+
+	if (Campaign_load_failure == CAMPAIGN_ERROR_CORRUPT) {
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nRequested campaign is corrupt and cannot be loaded.\n\n"
+			"Please select a different campaign in the Campaign Room.", -1));
+	} else if (Campaign_load_failure == CAMPAIGN_ERROR_SEXP_EXHAUSTED) {
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nRequested campaign requires too many SEXPs and cannot be loaded.\n\n"
+			"Please select a different campaign in the Campaign Room.", -1));
+	} else if (Campaign_load_failure == CAMPAIGN_ERROR_MISSING) {
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("The currently active campaign cannot be found.\n\nPlease select another in the Campaign Room.", -1));
+	} else if (Campaign_load_failure == CAMPAIGN_ERROR_SAVEFILE) {
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR("Error!\n\nThe pilot savefile "
+			"for this campaign is invalid for the current mod.\n\nPlease select another campaign or switch to the correct "
+			"mod in order to use this campaign.", -1));
+	}
+
+	Campaign_load_failure = 0;
+}
+

@@ -40,6 +40,6 @@ extern cf_pathtype Pathtypes[CF_MAX_PATH_TYPES];
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if result would be too long (invalid result)
 int cf_create_default_path_string( char *path, uint path_max, int pathtype, char *filename=NULL, bool localize = false);
-
+int cf_create_default_path_string( SCP_string &path, int pathtype, char *filename=NULL, bool localize = false );
 
 #endif	//_CFILESYSTEM_H

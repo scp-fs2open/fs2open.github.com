@@ -601,6 +601,14 @@ FS2_SOURCES =	\
 	particle/particle.h	\
 	pcxutils/pcxutils.cpp	\
 	pcxutils/pcxutils.h	\
+	pilotfile/pilotfile.cpp	\
+	pilotfile/pilotfile.h	\
+	pilotfile/pilotfile_convert.cpp	\
+	pilotfile/pilotfile_convert.h	\
+	pilotfile/plr.cpp	\
+	pilotfile/csg.cpp	\
+	pilotfile/plr_convert.cpp	\
+	pilotfile/csg_convert.cpp	\
 	pngutils/pngutils.cpp	\
 	pngutils/pngutils.h	\
 	physics/physics.cpp	\

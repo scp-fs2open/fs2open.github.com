@@ -718,6 +718,9 @@ void main_hall_do(float frametime)
 	// handle any sound details
 	main_hall_cull_door_sounds();	
 
+	// do any campaign load failure handling
+	mission_campaign_load_failure_popup();
+
 	// process any keypresses/mouse events
 	snazzy_action = -1;
 	code = snazzy_menu_do(Main_hall_mask_data, Main_hall_mask_w, Main_hall_mask_h, Main_hall_num_options, Main_hall_region, &snazzy_action, 1, &key);
@@ -771,7 +774,7 @@ void main_hall_do(float frametime)
 
 		// clicked on the readyroom region
 		case READY_ROOM_REGION:
-			if (Campaign_file_missing) {
+/*			if (Campaign_file_missing) {
 				// error popup for a missing campaign file, don't try to enter ready room in this case
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.\n\n Please select another in the Campaign Room.", -1));
 				break;
@@ -780,7 +783,7 @@ void main_hall_do(float frametime)
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "No active campaign is available.  Please choose one in the Campaign Room.", -1));
 				break;
 			}
-
+*/
 #ifdef MULTIPLAYER_BETA_BUILD
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			Player->flags |= PLAYER_FLAGS_IS_MULTI;

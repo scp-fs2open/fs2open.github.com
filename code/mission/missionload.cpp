@@ -113,8 +113,8 @@ int mission_load(char *filename_ext)
 		Assert(!ret);
 	}
 
-	ml_update_recent_missions(filename_ext);  // update recently played missions list
-	write_pilot_file();
+//	ml_update_recent_missions(filename_ext);  // update recently played missions list
+//	write_pilot_file();
 	init_hud();
 	return 0;
 }

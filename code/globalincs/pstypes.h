@@ -191,6 +191,12 @@ typedef struct flag_def_list {
 	ubyte var;
 } def_list;
 
+// weapon count list (mainly for pilot files)
+typedef struct wep_t {
+	int index;
+	int count;
+} wep_t;
+
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
 void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... );

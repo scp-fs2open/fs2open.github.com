@@ -16,6 +16,9 @@
 #include <time.h>
 #include "globalincs/pstypes.h"
 
+#include <stdexcept>
+
+
 #define CF_EOF (-1)
 
 #define CF_SEEK_SET (0)
@@ -98,6 +101,11 @@ typedef struct {
 // to add file to list, or 0 to not add it.
 extern int (*Get_file_list_filter)(char *filename);
 
+// extra check for child directory under CF_TYPE_*
+// NOTE: if specified cf_get_file_list() will not search pack files!
+// NOTE: specified string must not contain ':' or spaces or begin with DIR_SEPARATOR!
+extern const char *Get_file_list_child;
+
 // cfile directory. valid after cfile_init() returns successfully
 #define CFILE_ROOT_DIRECTORY_LEN			256
 extern char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN];
@@ -135,6 +143,11 @@ int cflush(CFILE *cfile);
 // open a file.  Once set, you can use minimum version numbers with the read functions.
 void cf_set_version( CFILE * cfile, int version );
 
+// will throw an error if cfread*() functions read past this mark
+// converted to raw offsets when used, but gets passed actual length from current position
+// setting 'len' to zero will disable the check
+void cf_set_max_read_len(CFILE *cfile, size_t len);
+
 // Deletes a file. Returns 0 on error, 1 if successful
 int cf_delete(char *filename, int dir_type);
 
@@ -168,7 +181,7 @@ int cfilelength(CFILE *fp);
 int cfread(void *buf, int elsize, int nelem, CFILE *fp);
 
 // cfwrite() writes to the file
-int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile);
+int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile);
 
 // Reads/writes RLE compressed data.
 int cfread_compressed(void *buf, int elsize, int nelem, CFILE *cfile);
@@ -278,11 +291,13 @@ int cfwrite_string(char *buf, CFILE *file);
 
 // write a fixed length that is null-terminatedm, and has the length
 // stored in file
-int cfwrite_string_len(char *buf, CFILE *file);
+int cfwrite_string_len(const char *buf, CFILE *file);
 
+int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, char *filter, int sort = CF_SORT_NONE, SCP_vector<file_list_info> *info = NULL );
 int cf_get_file_list( int max, char **list, int type, char *filter, int sort = CF_SORT_NONE, file_list_info *info = NULL );
 int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int type, char *filter, int sort = CF_SORT_NONE, file_list_info *info = NULL );
 void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NULL );
+void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_list_info> *info = NULL );
 
 // Searches for a file.   Follows all rules and precedence and searches
 // CD's and pack files.
@@ -322,5 +337,45 @@ int cfile_push_chdir(int type);
 // restore directory on top of the stack
 int cfile_pop_dir();
 
+namespace cfile
+{
+	// exceptions and other errors
+	class cfile_error : public std::exception
+	{
+		public:
+			cfile_error() : m_excuse("CFILE Exception")
+			{
+			}
+
+			cfile_error(const std::string &excuse) : m_excuse(excuse)
+			{
+			}
+
+			~cfile_error() throw()
+			{
+			}
+
+			virtual const char *what() const throw()
+			{
+				return m_excuse.c_str();
+			}
+
+		private:
+			std::string m_excuse;
+	};
+
+	class max_read_length : public cfile_error
+	{
+		public:
+			max_read_length(const std::string &excuse) : cfile_error(excuse)
+			{
+			}
+
+			max_read_length() : cfile_error("Attempted to read beyond length limit")
+			{
+			}
+	};
+
+};
 
 #endif	/* __CFILE_H__ */

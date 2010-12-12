@@ -37,7 +37,8 @@ typedef struct Cfile_block {
 	int		lib_offset;
 	int		raw_position;
 	int		size;				// for packed files
-	
+
+	size_t	max_read_len;	// max read offset, for special error handling
 } Cfile_block;
 
 #define MAX_CFILE_BLOCKS	64

@@ -158,8 +158,11 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 #include "fs2netd/fs2netd_client.h"
+#include "pilotfile/pilotfile.h"
 
 #include "globalincs/pstypes.h"
+
+#include <stdexcept>
 
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
@@ -2238,6 +2241,9 @@ void game_init()
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	game_title_screen_close();
+
+	// convert old pilot files (if they need it)
+	convert_pilot_files();
 
 #ifdef _WIN32
 	timeBeginPeriod(1);	
@@ -7586,6 +7592,9 @@ int main(int argc, char *argv[])
 			free(argptr);
 			argptr = NULL;
 		}
+	} catch (std::exception &ex) {
+		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
+		result = EXIT_FAILURE;
 	} catch ( ... ) {
 		fprintf(stderr, "Caught exception in main()!\n");
 		result = EXIT_FAILURE;
@@ -7668,8 +7677,7 @@ void game_shutdown(void)
    // if the player has left the "player select" screen and quit the game without actually choosing
 	// a player, Player will be NULL, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=NULL) && !Is_standalone){
-		write_pilot_file();
-		mission_campaign_savefile_save();
+		Pilot.save_player();
 	}
 
 	// load up common multiplayer icons

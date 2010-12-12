@@ -2272,6 +2272,42 @@
 			</File>
 		</Filter>
 		<Filter
+			Name="PilotFile"
+			>
+			<File
+				RelativePath="..\..\code\pilotfile\csg.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\csg_convert.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\pilotfile.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\pilotfile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\pilotfile_convert.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\pilotfile_convert.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\plr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\pilotfile\plr_convert.cpp"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="Playerman"
 			>
 			<File

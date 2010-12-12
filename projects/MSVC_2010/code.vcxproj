@@ -895,6 +895,12 @@
     <ClCompile Include="..\..\code\Particle\particle.cpp" />
     <ClCompile Include="..\..\code\PcxUtils\pcxutils.cpp" />
     <ClCompile Include="..\..\code\Physics\physics.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\csg.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\csg_convert.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\pilotfile.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\pilotfile_convert.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\plr.cpp" />
+    <ClCompile Include="..\..\code\PilotFile\plr_convert.cpp" />
     <ClCompile Include="..\..\code\playerman\managepilot.cpp" />
     <ClCompile Include="..\..\code\playerman\playercontrol.cpp" />
     <ClCompile Include="..\..\code\popup\popup.cpp" />
@@ -1177,6 +1183,8 @@
     <ClInclude Include="..\..\code\Particle\particle.h" />
     <ClInclude Include="..\..\code\PcxUtils\pcxutils.h" />
     <ClInclude Include="..\..\code\Physics\physics.h" />
+    <ClCompile Include="..\..\code\PilotFile\pilotfile.h" />
+    <ClCompile Include="..\..\code\PilotFile\pilotfile_convert.h" />
     <ClInclude Include="..\..\code\playerman\managepilot.h" />
     <ClInclude Include="..\..\code\playerman\player.h" />
     <ClInclude Include="..\..\code\popup\popup.h" />

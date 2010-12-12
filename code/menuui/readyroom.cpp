@@ -23,6 +23,7 @@
 #include "freespace2/freespace.h"
 #include "playerman/player.h"
 #include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
@@ -1119,6 +1120,8 @@ void sim_room_init()
 	} else {
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
+
+		mission_campaign_load_failure_popup();
 	}
 
 	Num_campaign_missions = 0;
@@ -1215,8 +1218,7 @@ void sim_room_close()
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
-	mission_campaign_savefile_save();
+	Pilot.save_player();
 
 	// unload special mission icons
 	sim_room_unload_mission_icons();
@@ -1594,6 +1596,8 @@ int campaign_room_reset_campaign(int n)
 		mission_campaign_load(filename);
 		mission_campaign_next_mission();
 
+		vm_free(filename);
+
 		return 0;
 	}
 
@@ -1626,9 +1630,6 @@ void campaign_room_commit()
 
 		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
 		strcpy_s(Player->current_campaign, Campaign.filename);  // track new campaign for player
-
-		// Goober5000 - reset player-persistent variables
-		Player->num_variables = 0;
 	}
 
 	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
@@ -1690,9 +1691,6 @@ int campaign_room_button_pressed(int n)
 					// reset tech database to what's in the tables
 					tech_reset_to_default();
 				}
-
-				// Goober5000 - reset player-persistent variables
-				Player->num_variables = 0;
 			}
 
 			break;
@@ -1759,6 +1757,8 @@ void campaign_room_init()
 	} else {
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
+
+		mission_campaign_load_failure_popup();
 	}
 
 	// we need descriptions too, so "true" it
@@ -1801,8 +1801,7 @@ void campaign_room_close()
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
-	mission_campaign_savefile_save();
+	Pilot.save_player();
 }
 
 void campaign_room_do_frame(float frametime)

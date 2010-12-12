@@ -26,6 +26,8 @@
 #include "cfile/cfilearchive.h"
 #include "luaconf.h"
 
+#include <sstream>
+
 
 #define CHECK_POSITION
 
@@ -203,6 +205,15 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 			return 0;
 		}
 		//mprintf(( "CFILE: EOF encountered in file\n" ));
+	}
+
+	if (cb->max_read_len) {
+		if ( (size_t)(cb->raw_position+size) > cb->max_read_len ) {
+			std::ostringstream s_buf;
+			s_buf << "Attempted to read " << size << "-byte(s) beyond length limit";
+
+			throw cfile::max_read_length(s_buf.str());
+		}
 	}
 
 	int bytes_read = fread( buf, 1, size, cb->fp );

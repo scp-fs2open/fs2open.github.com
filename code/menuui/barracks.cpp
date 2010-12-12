@@ -14,6 +14,7 @@
 
 #include "menuui/barracks.h"
 #include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "ui/ui.h"
 #include "graphics/font.h"
 #include "io/key.h"
@@ -36,7 +37,7 @@
 
 
 //Returns 0 on failure, 1 on success
-int delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
+int delete_pilot_file( char *pilot_name );		// manage_pilot.cpp
 
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
@@ -270,7 +271,7 @@ static int Num_stat_lines;
 static char (*Stat_labels)[STAT_COLUMN1_W];
 static char (*Stats)[STAT_COLUMN2_W];
 
-extern int Player_sel_mode;
+static int Player_sel_mode;
 
 static player *Cur_pilot;
 static int Num_pilots;
@@ -511,8 +512,7 @@ int barracks_new_pilot_selected()
 
 	// save the previous pilot first, so changes to it are kept
 	if (strlen(Cur_pilot->callsign)) {
-		write_pilot_file();
-		mission_campaign_savefile_save();
+		Pilot.save_player(Cur_pilot);
 	}
 
 	// check if we have a valid pilot hilighted.  If so, attempt to active it
@@ -521,27 +521,11 @@ int barracks_new_pilot_selected()
 		return -1;
 	}
 
-	// check to see if we are going to try and upgrade or not
-	if ( pilot_file_upgrade_check(Pilots[Selected_line], !Player_sel_mode) )
-		return -1;
-
-	if (read_pilot_file(Pilots[Selected_line], !Player_sel_mode, Cur_pilot)) {
+	if ( !Pilot.load_player(Pilots[Selected_line], Cur_pilot) ) {
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
 	} else {
-		// we need to load up the current campaign file now so we can get at the stats - taylor
-		// had to change this to import the values to a specific player rather than global
-		if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
-			mission_load_up_campaign(Cur_pilot);
-
-		/*	if (Campaign_file_missing) {
-				// error popup for a missing campaign file, abort loading of pilot in this case
-				// TODO: need to handle reading of info without the risk of saving improper data later
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign for this pilot cannot be found.  Unable to safely open pilot.", -1));
-				Cur_pilot->callsign[0] = 0; // this indicates no pilot active
-				return -1;
-			} */
-		}
+		Pilot.load_savefile(Cur_pilot->current_campaign);
 	}
 
 	// init stuff to reflect new pilot
@@ -602,8 +586,7 @@ void barracks_create_new_pilot()
 	
 	// only write pilot file if there is an active pilot
 	if (strlen(Player->callsign)) {
-		write_pilot_file();
-		mission_campaign_savefile_save();
+		Pilot.save_player(Player);
 	}
 
 	// move other pilot names and ranks down to make room for the new one
@@ -633,8 +616,6 @@ void barracks_create_new_pilot()
 // exiting screen without canceling, so load in the new pilot selected here
 int barracks_pilot_accepted()
 {
-	char str[CALLSIGN_LEN + 1];
-
 	// check if pilot active.  If not, don't allow accept.
 	if (!Cur_pilot->callsign[0]){
 		return -1;
@@ -647,14 +628,10 @@ int barracks_pilot_accepted()
 
 	// MWA -- I think that we should be writing Cur_pilot here.
 	//write_pilot_file(!is_pilot_multi(Cur_pilot));
-	write_pilot_file( Cur_pilot );
-	
-	// when we store the LastPlayer key, we have to mark it as being single or multiplayer, so we know where to look for him
-	// (since we could have a single and a multiplayer pilot with the same callsign)
-	// we'll distinguish them by putting an M and the end of the multiplayer callsign and a P at the end of a single player
-	strcpy_s(str, Cur_pilot->callsign);
-	strcat_s(str, is_pilot_multi(Cur_pilot) ? NOX("M") : NOX("S"));
-	os_config_write_string( NULL, "LastPlayer", str );
+	Pilot.save_player(Cur_pilot);
+
+	os_config_write_string(NULL, "LastPilot", Cur_pilot->callsign);
+
 	return 0;
 }
 
@@ -821,6 +798,14 @@ void barracks_delete_pilot()
 		return;
 	}
 
+	if (Player_sel_mode == PLAYER_SELECT_MODE_MULTI) {
+		gamesnd_play_iface(SND_GENERAL_FAIL);
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
+					"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
+					"deleted from the single-player menu.", -1));
+		return;
+	}
+
 	int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 65));
 	if (popup_rval != 1) {
 		return;
@@ -832,7 +817,7 @@ void barracks_delete_pilot()
 
 	strcpy_s(buf, Pilots[Selected_line]);
 
-	del_rval = delete_pilot_file(buf, (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) ? 1 : 0);
+	del_rval = delete_pilot_file(buf);
 
 	if ( !del_rval ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", -1));
@@ -867,17 +852,19 @@ void barracks_delete_pilot()
 // Filter out pilots of wrong type (which shouldn't be in the directory we are checking, but just to be safe..)
 int barracks_pilot_filter(char *filename)
 {
-	int r, rank;
+	bool r = false;
+	int rank = 0;
 
-	r = verify_pilot_file(filename, Player_sel_mode == PLAYER_SELECT_MODE_SINGLE, &rank);
+	r = Pilot.verify(filename, &rank);
+
 	if (rank >= Rank_pips_count)
 		rank = Rank_pips_count - 1;
 
-	if (!r) {
+	if (r) {
 		Pilot_ranks[Num_pilots++] = rank;
 	}
 
-	return !r;
+	return (int)r;
 }
 
 // callback handler for the squadon selection buttons when they are disabled (in single player)
@@ -899,31 +886,12 @@ void barracks_init_player_stuff(int mode)
 	Num_pilots = 0;
 	Get_file_list_filter = barracks_pilot_filter;
 
+	Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+
 	// single player specific stuff
 	if (mode == PLAYER_SELECT_MODE_SINGLE) {
-		int old_pilot_num = 0;
-		int new_pilot_num = 0;
-		char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
-		char *old_pilots[MAX_PILOTS];
-
 		Game_mode &= ~GM_MULTIPLAYER;
 		Game_mode |= GM_NORMAL;
-
-		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
-		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
-
-		new_pilot_num = MIN((Num_pilots + old_pilot_num), MAX_PILOTS);
-
-		for (i = Num_pilots; i<new_pilot_num;) {
-			for (j = 0; j<old_pilot_num; j++) {
-				if ( i >= MAX_PILOTS )
-					break;
-
-				strcpy( Pilots[i], old_pilots[j] );
-				Num_pilots++;
-				i++;
-			}
-		}
 
 		// disable squad logo switching		
 		Buttons[gr_screen.res][B_SQUAD_PREV_BUTTON].button.hide();
@@ -937,8 +905,6 @@ void barracks_init_player_stuff(int mode)
 	else {
 		Game_mode &= ~GM_NORMAL;
 		Game_mode |= GM_MULTIPLAYER;
-
-		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
 		// enable squad logo switching
 		Buttons[gr_screen.res][B_SQUAD_PREV_BUTTON].button.enable();
@@ -1064,56 +1030,19 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_PILOT_CONVERT_BUTTON: {
-#if defined(DEMO) || defined(OEM_BUILD)
-			game_feature_not_in_demo_popup();
-#else
-			char temp[256], *str;
-			char old_pic[256] = "";
-			char old_squad_pic[256] = "";
-			char old_squad[256] = "";
-			int z;
-
-			if (!barracks_new_pilot_selected()) {
-				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE)
-					str = XSTR( "multiplayer", 68);
-				else
-					str = XSTR( "single player", 69);
-
-				sprintf(temp, XSTR( "This will overwrite your %s pilot.  Proceed?", 70), str);
-				if (!verify_pilot_file(Cur_pilot->callsign, Player_sel_mode == PLAYER_SELECT_MODE_MULTI)) {
-					z = popup(0, 2, POPUP_CANCEL, POPUP_OK, temp);
-					if (z != 1)
-						break;
-				}
-
-				strcpy_s(old_pic, Cur_pilot->image_filename);
-				strcpy_s(old_squad_pic, Cur_pilot->squad_filename);
-				strcpy_s(old_squad, Cur_pilot->squad_name);
-				init_new_pilot(Cur_pilot, 0);
-				strcpy_s(Cur_pilot->image_filename, old_pic);
-				strcpy_s(Cur_pilot->squad_filename, old_squad_pic);
-				strcpy_s(Cur_pilot->squad_name, old_squad);
-				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
-					Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
-					write_pilot_file();
-					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
-
-				} else {
-					// make sure we don't carry over the multi flag
-					if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI)
-						Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
-
-					write_pilot_file();
-					mission_campaign_savefile_save();
-					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
-				}
-
-				gamesnd_play_iface(SND_USER_SELECT);
-
+			// no actual conversion with new pilot code, just switch to multi
+			if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
+				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				// make sure we don't carry over the multi flag
+				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI)
+					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+
+				barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 			}
-#endif
+
+			gamesnd_play_iface(SND_USER_SELECT);
+
 			break;
 		}
 
@@ -1186,7 +1115,7 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 		if (cur_pilot_idx >= Num_pilots)
 			break;
 
-		if (!stricmp(Cur_pilot->callsign, Pilots[cur_pilot_idx]) && (is_pilot_multi(Cur_pilot) == multi)) {
+		if (!stricmp(Cur_pilot->callsign, Pilots[cur_pilot_idx]) && multi) {
 			if ((cur_pilot_idx == Selected_line) || (cur_pilot_idx == prospective_pilot)) {
 				gr_set_color_fast(&Color_text_active_hi);
 			} else {
@@ -1285,7 +1214,7 @@ void barracks_accept_new_pilot_callsign()
 				}
 
 				Num_pilots--;
-				delete_pilot_file(name, Player_sel_mode == PLAYER_SELECT_MODE_SINGLE ? 1 : 0);
+				delete_pilot_file(name);
 				z = 0;
 			}
 			return;
@@ -1315,7 +1244,7 @@ void barracks_accept_new_pilot_callsign()
 	}
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
-		write_pilot_file(Cur_pilot);
+		Pilot.save_player(Cur_pilot);
 	}
 
 	Selected_line = 0;
@@ -1383,8 +1312,7 @@ void barracks_init()
 	UI_WINDOW *w = &Ui_window;
 
 	// save current pilot file, so we don't possibly loose it.
-	write_pilot_file();
-	mission_campaign_savefile_save();
+	Pilot.save_player();
 
 	// create interface
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -1508,7 +1436,7 @@ void barracks_init()
 #elif defined(E3_BUILD) || defined(PRESS_TOUR_BUILD)
 	barracks_init_player_stuff(0);
 #else
-	barracks_init_player_stuff(is_pilot_multi(Player));	
+	barracks_init_player_stuff((Game_mode & GM_MULTIPLAYER) == GM_MULTIPLAYER);
 #endif
 }
 

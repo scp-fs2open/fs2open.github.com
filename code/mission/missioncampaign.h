@@ -36,6 +36,7 @@ struct sexp_variable;
 #define CAMPAIGN_ERROR_CORRUPT			-1
 #define CAMPAIGN_ERROR_SEXP_EXHAUSTED	-2
 #define CAMPAIGN_ERROR_MISSING			-3
+#define CAMPAIGN_ERROR_SAVEFILE			-4
 
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
@@ -95,8 +96,8 @@ typedef struct cmission {
 	mgoal			*goals;					// malloced array of mgoals (of num_goals size) which has the goal completion status
 	int				num_events;				// number of events this mission had
 	mevent			*events;				// malloced array of mevents (of num_events size) which has event completion status
-	int				num_saved_variables;	// number of variables this mission had - Goober5000
-	sexp_variable	*saved_variables;		// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
+	int				num_variables;			// number of variables this mission had - Goober5000
+	sexp_variable	*variables;				// malloced array of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
 	int				has_mission_loop;		// whether current mission has side loop
 	int				mission_loop_formula;// formula to determine whether to allow a side loop
 	char			*mission_loop_desc;	// message in popup
@@ -129,6 +130,9 @@ typedef struct campaign {
 	ubyte		ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
 	ubyte		weapons_allowed[MAX_WEAPON_TYPES];	// which weapons the player can use
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];		// decription of the missions
+	int				num_variables;						// number of variables this campaign had - Goober5000
+	sexp_variable	*variables;							// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
+
 } campaign;
 
 extern campaign Campaign;
@@ -173,9 +177,8 @@ int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile 
 extern int mission_campaign_save( void );
 
 // declaration for local campaign save game load function
-extern int mission_campaign_savefile_load( char *cfilename, player *pl = NULL );
-extern void mission_campaign_savefile_delete( char *cfilename, int is_multi = -1 );
-extern void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi );
+extern void mission_campaign_savefile_delete( char *cfilename );
+extern void mission_campaign_delete_all_savefiles( char *pilot_name );
 
 // if a given campaign is a multiplayer campaign, we can load and save the multiplayer info portion with these functions
 extern int mission_campaign_parse_is_multi(char *filename, char *name);
@@ -255,6 +258,8 @@ void mission_campaign_end_do();
 
 // Goober5000 - save persistent variables
 extern void mission_campaign_save_player_persistent_variables();
+
+extern void mission_campaign_load_failure_popup();
 
 // End CSFE stuff
 #endif

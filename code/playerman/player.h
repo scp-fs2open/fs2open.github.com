@@ -86,15 +86,15 @@ typedef struct campaign_stats {
 } campaign_stats;
 
 typedef struct player {
+	void reset();
+
 	char				callsign[CALLSIGN_LEN + 1];
 	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels
 	int				short_callsign_width;					// useful for mutliplayer chat boxes.
 	char				image_filename[MAX_FILENAME_LEN];	// filename of the image for this pilot
 	char				squad_filename[MAX_FILENAME_LEN];	// filename of the squad image for this pilot
 	char				squad_name[NAME_LENGTH + 1];			// pilot's squadron name
-	int				num_campaigns;								// tells how many array entries in the campaigns field
 	char				current_campaign[MAX_FILENAME_LEN]; // Name of the currently active campaign, or zero-length string if none
-	campaign_info	*campaigns;									// holds information regarding all active campaigns the player is playing
 	int				readyroom_listing_mode;
 
 	ubyte			main_hall;							// Goober5000 - now allows 256 halls; I didn't make this int because it would mess up the file compatibility
@@ -198,8 +198,7 @@ typedef struct player {
 	ubyte				show_skip_popup;							// false if dude clicked "don't show this again" -- persists for current mission only
 
 	// player-persistent variables - Goober5000
-	int				num_variables;
-	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
+	SCP_vector<sexp_variable>	variables;
 
 	SCP_string		death_message;								// Goober5000
 

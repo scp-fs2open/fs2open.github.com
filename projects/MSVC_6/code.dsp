@@ -2084,6 +2084,42 @@ SOURCE=..\..\code\Physics\Physics.cpp
 SOURCE=..\..\code\Physics\Physics.h
 # End Source File
 # End Group
+# Begin Group "PilotFile"
+
+# PROP Default Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\csg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\csg_convert.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\pilotfile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\pilotfile.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\pilotfile_convert.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\pilotfile_convert.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\plr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pilotfile\plr_convert.cpp
+# End Source File
+# End Group
 # Begin Group "Playerman"
 
 # PROP Default_Filter ""
