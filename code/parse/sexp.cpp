@@ -1386,6 +1386,22 @@ int query_sexp_args_count(int node, bool only_valid_args = false)
 	return count;
 }
 
+
+//returns 0 if the number of arguments for the supplied operation is wrong, 1 otherwise.
+//Needed to fix bug with sexps like send-message list which have arguments that need to be supplied as a block
+int check_operator_argument_count(int count, int op)
+{
+	if (count < Operators[op].min || count > Operators[op].max)
+		return 0;
+
+	//send-message-list has arguments as blocks of 4
+	if (op == OP_SEND_MESSAGE_LIST)
+		if (count % 4 != 0)
+			return 0;
+
+	return 1;
+}
+
 // returns 0 if ok, negative if there's an error in expression..
 // See the returns types in sexp.h
 
@@ -1440,7 +1456,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	}
 
 	count = query_sexp_args_count(op_node);
-	if (count < Operators[op].min || count > Operators[op].max)
+
+	if (!check_operator_argument_count(count, op))
 		return SEXP_CHECK_BAD_ARG_COUNT;  // incorrect number of arguments
 
 	// Goober5000 - if this is a list of stuff that has the special argument as
@@ -8111,10 +8128,14 @@ void sexp_change_iff_color(int n)
 	{
 		n = CDR(n);
 		if(n == -1){
-			Warning(LOCATION, "Detected incomplete color parameter list in sexp-change_iff_color");
+			Warning(LOCATION, "Detected incomplete color parameter list in sexp-change_iff_color\n");
 			return;
 		}
 		rgb[i] = eval_num(n);
+		if (rgb[i] > 255) {
+			Warning(LOCATION, "Invalid argument for iff color in sexp-change-iff-color. Valid range is 0 to 255.\n");
+			rgb[i] = 255;
+		}
 	}
 	alternate_iff_color = iff_init_color(rgb[0],rgb[1],rgb[2]);
 
