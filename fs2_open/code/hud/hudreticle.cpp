@@ -323,9 +323,7 @@ void HudGaugeReticle::getFirepointStatus() {
 					isactive = 2;
 
 				for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
-					vec2d coords = {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y};
-
-					firepoint tmp = {coords, isactive};
+					firepoint tmp = { {ep.x - pm->gun_banks[i].pnt[j].xyz.x, ep.y - pm->gun_banks[i].pnt[j].xyz.y}, isactive};
 					fp.push_back(tmp);
 				}
 			}
