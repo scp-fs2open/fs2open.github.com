@@ -32,6 +32,12 @@
 // 4996 deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
 #pragma warning(disable: 4002 4100 4127 4201 4290 4390 4410 4511 4512 4514 4611 4663 4710 4711 4725 4786 4996)
 
+#ifdef NDEBUG
+// Try/Catch in MSVC is not handling these right, so for Release Builds
+// we are disabling unreferenced local variable warnings from showing. Zacam.
+#pragma warning(disable: 4101)
+#endif
+
 #endif
 
 #if !defined BYTE_ORDER
