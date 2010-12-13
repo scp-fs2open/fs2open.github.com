@@ -1068,12 +1068,6 @@
     <ClCompile Include="..\..\code\radar\radardradis.cpp">
       <Filter>Radar</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\PilotFile\pilotfile.h">
-      <Filter>PilotFile</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\PilotFile\pilotfile_convert.h">
-      <Filter>PilotFile</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1882,6 +1876,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\radar\radardradis.h">
       <Filter>Radar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\PilotFile\pilotfile_convert.h">
+      <Filter>PilotFile</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
+      <Filter>PilotFile</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

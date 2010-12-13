@@ -826,8 +826,8 @@
     <ClInclude Include="..\..\code\Particle\particle.h" />
     <ClInclude Include="..\..\code\PcxUtils\pcxutils.h" />
     <ClInclude Include="..\..\code\Physics\physics.h" />
-    <ClCompile Include="..\..\code\PilotFile\pilotfile.h" />
-    <ClCompile Include="..\..\code\PilotFile\pilotfile_convert.h" />
+    <ClInclude Include="..\..\code\PilotFile\pilotfile.h" />
+    <ClInclude Include="..\..\code\PilotFile\pilotfile_convert.h" />
     <ClInclude Include="..\..\code\playerman\managepilot.h" />
     <ClInclude Include="..\..\code\playerman\player.h" />
     <ClInclude Include="..\..\code\popup\popup.h" />
