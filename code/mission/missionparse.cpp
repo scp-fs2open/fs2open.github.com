@@ -2797,12 +2797,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		}
 	}
 
-	// set certain flags that used to be in ship_info - Goober5000
-	if (Ship_info[p_objp->ship_class].flags & SIF_STEALTH)
-		p_objp->flags |= P_SF2_STEALTH;
-	if (Ship_info[p_objp->ship_class].flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
-		p_objp->flags |= P_SF2_DONT_COLLIDE_INVIS;
-
 
 	// always store respawn priority, just for ease of implementation
 	p_objp->respawn_priority = 0;
