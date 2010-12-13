@@ -88,16 +88,6 @@
 
 #define MAX_POLYGON_MODELS  300
 
-
-// from scoring.h
-// ARGH. IMPORTANT : do not change NUM_MEDALS without talking to DaveB first. It will affect the size of the scoring struct and hence, will break
-// a lot of PXO related stuff. SEE ALSO : MAX_SHIP_CLASSES
-#ifdef FS2_DEMO
-	//#define NUM_MEDALS			16
-#else 
-	//#define NUM_MEDALS			18
-#endif
-
 #define MAX_MEDALS			18
 #define NUM_MEDALS_FS1		16
 extern int Num_medals;

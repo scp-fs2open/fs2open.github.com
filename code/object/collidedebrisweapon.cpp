@@ -85,8 +85,6 @@ int collide_debris_weapon( obj_pair * pair )
 // Returns 1 if all future collisions between these can be ignored
 int collide_asteroid_weapon( obj_pair * pair )
 {
-#ifndef FS2_DEMO
-
 	if (!Asteroids_enabled)
 		return 0;
 
@@ -131,10 +129,6 @@ int collide_asteroid_weapon( obj_pair * pair )
 	} else {
 		return weapon_will_never_hit( weapon, pasteroid, pair );
 	}
-
-#else
-	return 0;
-#endif
 }				
 
 

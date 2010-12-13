@@ -80,12 +80,7 @@ void init_new_pilot(player *p, int reset)
 	if (reset) {
 		hud_set_default_hud_config(p);		// use a default hud config
 
-		// in the demo, load up the hardcoded hcf file
-#ifdef FS2_DEMO
-		hud_config_color_load("hud_1.hcf");
-#else
 		hud_config_color_load("hud_3.hcf");
-#endif
 
 		control_config_reset_defaults();		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults

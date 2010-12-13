@@ -195,7 +195,6 @@ void launch_context_help()
 	switch (Source_game_state) {
 
 		case GS_STATE_MAIN_MENU:
-#if !defined(PRESS_TOUR_BUILD) && !defined(PD_BUILD)
 			int main_hall_num;
 			main_hall_num = (main_hall_id() == 0) ? MH_OVERLAY : MH2_OVERLAY;
 			if ( !help_overlay_active(main_hall_num) ) {
@@ -204,7 +203,6 @@ void launch_context_help()
 			else {
 				help_overlay_set_state(main_hall_num, 0);
 			}
-#endif
 			break;
 
 		case GS_STATE_GAME_PLAY:

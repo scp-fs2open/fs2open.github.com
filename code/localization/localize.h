@@ -115,11 +115,7 @@ char* lcl_fix_umlauts(char *str, int which_way);
 void lcl_fix_polish(char *str);
 
 // macro for launcher xstrs
-#if defined(GERMAN_BUILD)
-#define LXSTR(str, i)		(lcl_fix_umlauts(XSTR(str, i), LCL_TO_ANSI))
-#else
 #define LXSTR(str, i)		(XSTR(str, i))
-#endif	// defined(GERMAN_BUILD)
 
 void lcl_translate_wep_name(char *name);
 void lcl_translate_ship_name(char *name);

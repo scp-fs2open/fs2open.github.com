@@ -346,12 +346,6 @@ void multi_pinfo_popup_init(net_player *np)
 		Multi_pinfo_window.add_XSTR(&Multi_pinfo_text[gr_screen.res][idx]);
 	}
 
-	// disable medals button for the demo
-#ifdef FS2_DEMO
-	Multi_pinfo_buttons[gr_screen.res][MPI_MEDALS].button.hide();
-	Multi_pinfo_buttons[gr_screen.res][MPI_MEDALS].button.disable();
-#endif
-
 	// initialize strings	
 	Multi_pinfo_stats_labels[0] = vm_strdup(XSTR("Rank", 1007));
 	Multi_pinfo_stats_labels[1] = vm_strdup(XSTR("Missions Flown", 1008));
@@ -643,9 +637,6 @@ void multi_pinfo_popup_button_pressed(int n)
 // display the medals screen for this player
 void multi_pinfo_do_medals()
 {
-#ifdef FS2DEMO
-	game_feature_not_in_demo_popup();
-#else
 	int ret_code;
 
 	// initialize the medals screen
@@ -666,7 +657,6 @@ void multi_pinfo_do_medals()
 
 	// restore the proper palette
 	multi_pinfo_set_palette();
-#endif
 }
 
 // load up and use the proper palette

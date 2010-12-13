@@ -402,38 +402,6 @@ int sim_room_line_add(int type, char *name, char *filename, int x, int y, int fl
 	return Num_lines++;
 }
 
-// filter out all multiplayer campaigns
-int campaign_room_campaign_filter(char *filename)
-{
-	Int3();
-
-	return 0;
-
-	// obsolete, moved all of this to global mission_campaign_build_list() - taylor
-
-/*	int type, max_players;
-	char name[NAME_LENGTH], *desc = NULL;
-
-	#ifdef OEM_BUILD
-	// also need to check if this is the builtin campaign
-	if ( game_find_builtin_mission(filename) && mission_campaign_get_info(filename, name, &type, &max_players, &desc) ) {
-	#else
-	if ( mission_campaign_get_info(filename, name, &type, &max_players, &desc) ) {
-	#endif
-		if ( type == CAMPAIGN_TYPE_SINGLE ) {			
-			Campaign_file_names_temp[Num_campaigns] = vm_strdup(filename);
-			Campaign_descs_temp[Num_campaigns++] = desc;
-			return 1;			
-		}
-	}
-
-	if (desc){
-		vm_free(desc);
-	}
-
-	return 0;*/
-}
-
 // build up a list of all missions in all campaigns.
 int sim_room_campaign_mission_filter(char *filename)
 {
@@ -905,31 +873,14 @@ int readyroom_continue_campaign()
 	int mc_rval = mission_campaign_next_mission();
 	if (mc_rval == -1)
 	{  // is campaign and next mission valid?
-#ifdef FS2_DEMO
-		int reset_campaign = 0;
-		reset_campaign = popup(PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Demo Campaign Is Over.  Would you like to play the campaign again?", 111) );
-		if ( reset_campaign == 1 ) {
-			mission_campaign_savefile_delete(Campaign.filename);
-			mission_campaign_load(Campaign.filename);
-			mission_campaign_next_mission();
-		} else {
-			return -1;
-		}
-#else
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		popup(0, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
 		return -1;
-#endif
 	}
 	else if(mc_rval == -2)
 	{
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		popup(0, 1, POPUP_OK, NOX("The current campaign has no missions") );
-		return -1;
-	}
-
-	// CD CHECK
-	if(!game_do_cd_mission_check(Game_current_mission_filename)){		
 		return -1;
 	}
 
@@ -950,13 +901,9 @@ void sim_room_commit()
 	strncpy(Game_current_mission_filename, sim_room_lines[Selected_line].filename, MAX_FILENAME_LEN);
 
 	Game_mode &= ~(GM_CAMPAIGN_MODE);						// be sure this bit is clear
-
-	// CD CHECK
-	if(game_do_cd_mission_check(Game_current_mission_filename)){		
-		// don't resume savegame, proceed to briefing
-		gameseq_post_event(GS_EVENT_START_GAME);
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
-	}
+	
+	gameseq_post_event(GS_EVENT_START_GAME);
+	gamesnd_play_iface(SND_COMMIT_PRESSED);
 }
 
 int sim_room_button_pressed(int n)
@@ -974,17 +921,11 @@ int sim_room_button_pressed(int n)
 
 		case MISSION_TAB:
 			Simroom_show_all = 0;
-#ifdef OEM_BUILD
-			game_feature_not_in_demo_popup();
-//			gamesnd_play_iface(SND_GENERAL_FAIL);
-			break;
-#else
 			Player->readyroom_listing_mode = MODE_MISSIONS;
 			Selected_line = Scroll_offset = 0;
 			gamesnd_play_iface(SND_USER_SELECT);
 			sim_room_build_listing();
 			break;
-#endif
 
 		case CAMPAIGN_TAB:
 			if ( !strlen(Campaign.filename) ) {

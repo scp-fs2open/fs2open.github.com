@@ -73,11 +73,7 @@ struct campaign_info;
 
 // number of times dude can fail a mission in a session before 
 // having the opportunity to skip it
-#ifdef RELEASE_REAL
-	#define PLAYER_MISSION_FAILURE_LIMIT		5
-#else
-	#define PLAYER_MISSION_FAILURE_LIMIT		5
-#endif  // RELEASE_REAL
+#define PLAYER_MISSION_FAILURE_LIMIT		5
 
 
 typedef struct campaign_stats {

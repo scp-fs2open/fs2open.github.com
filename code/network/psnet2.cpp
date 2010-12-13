@@ -502,10 +502,6 @@ void psnet_init( int protocol, int port_num )
 	Ipx_active = 0;
 #endif
 
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	return;
-#endif
-
 	// GAME PORT INITIALIZATION STUFF
 	if ( Network_status == NETWORK_STATUS_RUNNING ){
 		ml_string("Skipping psnet_init() because network already running");

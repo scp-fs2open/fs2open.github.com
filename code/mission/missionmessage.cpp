@@ -104,13 +104,8 @@ SCP_vector<message_extra> Message_waves;
 
 #define MAX_PLAYING_MESSAGES		2
 
-#ifdef FS2_DEMO
-	#define MAX_WINGMAN_HEADS			1
-	#define MAX_COMMAND_HEADS			1
-#else
 #define MAX_WINGMAN_HEADS			2
 #define MAX_COMMAND_HEADS			3
-#endif
 
 //XSTR:OFF
 #define HEAD_PREFIX_STRING			"head-"
@@ -1437,9 +1432,7 @@ void message_queue_process()
 	}
 
 	// play animation for head
-	#ifndef DEMO // do we want this for FS2_DEMO
-		message_play_anim(q);
-	#endif
+	message_play_anim(q);
 	
 	// distort the message if comms system is damaged
 	message_maybe_distort_text(buf);

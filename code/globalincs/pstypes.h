@@ -12,26 +12,6 @@
 #ifndef _PSTYPES_H
 #define _PSTYPES_H
 
-
-// Build defines.  Comment in/out for whatever build is necessary:
-// #define OEM_BUILD				// enable for OEM builds
-// #define MULTIPLAYER_BETA_BUILD	// enable for multiplayer beta build
-// #define E3_BUILD					// enable for 3dfx E3 build
-// #define PRESS_TOUR_BUILD			// enable for press tour build
-// #define FS2_DEMO					// enable demo build for FS2
-// #define PD_BUILD					// fred documentation/evaluation build
-// #define FRENCH_BUILD			// build for French (obsolete)
-// #define GERMAN_BUILD				// build for German (this is now used)
-#define RELEASE_REAL				// this means that it is an actual release candidate, not just an optimized/release build
-
-// uncomment this #define for DVD version (makes popups say DVD instead of CD 2 or whatever): JCF 5/10/2000
-// #define DVD_MESSAGE_HACK
-
-
-//  #if defined(MULTIPLAYER_BETA_BUILD) || defined(E3_BUILD) || defined(RELEASE_REAL)
-//  	#define GAME_CD_CHECK
-//  #endif
-
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
@@ -46,11 +26,7 @@
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 
-#if defined(DEMO) || defined(OEM_BUILD) // no change for FS2_DEMO
-	#define MAX_PLAYERS	1
-#else
-	#define MAX_PLAYERS	12
-#endif
+#define MAX_PLAYERS	12
 
 #define USE_INLINE_ASM 1		// Define this to use inline assembly
 #define STRUCT_CMP(a, b) memcmp((void *) &a, (void *) &b, sizeof(a))
@@ -280,29 +256,15 @@ extern int Global_error_count;
 
 //#define Int3() _asm { int 3 }
 
-#ifdef INTERPLAYQA
-	// Interplay QA version of Int3
+#if defined(NDEBUG)
+	// No debug version of Int3
 	#define Int3() do { } while (0) 
-
-	// define to call from Warning function above since it calls Int3, so without this, we
-	// get put into infinite dialog boxes
-	#ifdef _WIN32
-		#define AsmInt3() _asm { int 3 }
-	#else
-		#define AsmInt3() exit(EXIT_FAILURE)
-	#endif
-
 #else
-	#if defined(NDEBUG)
-		// No debug version of Int3
-		#define Int3() do { } while (0) 
-	#else
-		void debug_int3(char *file, int line);
+	void debug_int3(char *file, int line);
 
-		// Debug version of Int3
-		#define Int3() debug_int3(__FILE__, __LINE__)
-	#endif	// NDEBUG && DEMO
-#endif	// INTERPLAYQA
+	// Debug version of Int3
+	#define Int3() debug_int3(__FILE__, __LINE__)
+#endif	// NDEBUG && DEMO
 
 #ifndef MIN
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))

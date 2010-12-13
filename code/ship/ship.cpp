@@ -7233,12 +7233,6 @@ void ship_init_thrusters()
 	{
 		species_info *species = &Species_info[i];
 
-		// AL 29-3-98: Don't want to include Shivan thrusters in the demo build
-#ifdef DEMO // N/A FS2_DEMO
-		if (!stricmp(species->species_name, "Shivan"))
-			continue;
-#endif
-
 		generic_anim_load(&species->thruster_info.flames.normal);
 		generic_anim_load(&species->thruster_info.flames.afterburn);
 
@@ -15645,9 +15639,6 @@ DCF(art, "")
 }
 void ship_update_artillery_lock()
 {
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-	return;
-#else
 	ai_info *aip = NULL;
 	weapon_info *tlaser = NULL;
 	mc_info *cinfo = NULL;
@@ -15736,7 +15727,6 @@ void ship_update_artillery_lock()
 			aip->artillery_lock_time = 0.0f;			
 		}
 	}
-#endif
 }
 
 // checks if a world point is inside the extended bounding box of a ship

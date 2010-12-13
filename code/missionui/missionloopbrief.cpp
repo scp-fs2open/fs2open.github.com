@@ -102,13 +102,8 @@ void loop_brief_button_pressed(int i)
 {	
 	switch(i){
 	case LOOP_BRIEF_DECLINE:		
-		// CD CHECK
-		if(game_do_cd_mission_check(Game_current_mission_filename)){
-			gameseq_post_event(GS_EVENT_START_GAME);
-			gamesnd_play_iface(SND_USER_SELECT);
-		} else {
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-		}		
+		gameseq_post_event(GS_EVENT_START_GAME);
+		gamesnd_play_iface(SND_USER_SELECT);
 		break;
 
 	case LOOP_BRIEF_ACCEPT:
@@ -116,14 +111,9 @@ void loop_brief_button_pressed(int i)
 		Campaign.loop_enabled = 1;
 		Campaign.loop_reentry = Campaign.next_mission;			// save reentry pt, so we can break out of loop
 		Campaign.next_mission = Campaign.loop_mission;		
-		
-		// CD CHECK
-		if(game_do_cd_mission_check(Game_current_mission_filename)){
-			gameseq_post_event(GS_EVENT_START_GAME);
-			gamesnd_play_iface(SND_USER_SELECT);
-		} else {
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-		}		
+
+		gameseq_post_event(GS_EVENT_START_GAME);
+		gamesnd_play_iface(SND_USER_SELECT);
 		break;
 	}
 }

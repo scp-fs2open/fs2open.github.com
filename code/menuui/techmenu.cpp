@@ -984,33 +984,21 @@ int techroom_button_pressed(int num)
 
 		case SIMULATOR_TAB:
 			fsspeech_stop();
-#if !defined(E3_BUILD) && !defined(PD_BUILD)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
 			return 1;
-#else
-			return 0;
-#endif
 
 		case CUTSCENES_TAB:
 			fsspeech_stop();
-#if !defined(E3_BUILD) && !defined(PD_BUILD)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN);
 			return 1;
-#else
-			return 0;
-#endif
 
 		case CREDITS_TAB:
 			fsspeech_stop();
-#if !defined(E3_BUILD) && !defined(PD_BUILD)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
 			return 1;
-#else 
-			return 0;
-#endif
 
 		case PREV_ENTRY_BUTTON:
 			tech_prev_entry();

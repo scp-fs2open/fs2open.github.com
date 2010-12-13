@@ -30,8 +30,6 @@
 
 int	Show_shield_mesh = 0;
 
-#ifndef DEMO // not for FS2_DEMO
-
 //	One unit in 3d means this in the shield hit texture map.
 //#define	SHIELD_HIT_SCALE	0.075f			//	Scale decreased by MK on 12/18/97, made about 1/4x as large. Note, larger constant means smaller effect
 #define	SHIELD_HIT_SCALE	0.15f			//	Doubled on 12/23/97 by MK.  Was overflowing.  See todo item #924.
@@ -92,8 +90,6 @@ extern void create_shield_from_triangle(int trinum, matrix *orient, shield_info 
 
 void load_shield_hit_bitmap()
 {
-	#ifndef DEMO // not for FS2_DEMO
-
 	uint i;
 	// Check if we've already allocated the shield effect bitmaps
 	if ( Shield_bitmaps_loaded )
@@ -114,8 +110,6 @@ void load_shield_hit_bitmap()
         */
 		Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
 	}
-
-	#endif
 }
 
 void shield_hit_page_in()
@@ -1018,70 +1012,6 @@ int ship_is_shield_up( object *obj, int quadrant )
 	}
 	return 0;	// no shield strength
 }
-
-
-/*
-//-- CODE TO "BOUNCE" AN ARRAY FROM A GIVEN POINT.
-//-- LIKE A MATTRESS.
-#define BOUNCE_SIZE ???
-
-byte Bouncer1[BOUNCE_SIZE];
-byte Bouncer2[BOUNCE_SIZE];
-
-byte * Bouncer = Bouncer1;
-byte * OldBouncer = Bouncer2;
-
-// To wiggle, add value to Bouncer[] 
-
-void bounce_it()
-{
-	int i, tmp;
-
-
-	for (i=0; i<BOUNCE_SIZE; i++ )	{
- 		int t = 0;
-
-		t += OldBouncer[ LEFT ];
-		t += OldBouncer[ RIGHT ];
-		t += OldBouncer[ UP ];
-		t += OldBouncer[ DOWN ];
-
-		t = (t/2) - Bouncer[i];
-		tmp = t - t/16;		// 8
-		
-		if ( tmp < -127 ) tmp = -127;
-		if ( tmp > 127 ) tmp = 127;
-		Bouncer[i] = tmp;
-	}
-
-	if ( Bouncer == Bouncer1 )	{
-		OldBouncer = Bouncer1;
-		Bouncer = Bouncer2;
-	} else {
-		OldBouncer = Bouncer2;
-		Bouncer = Bouncer1;
-	}
-}
-*/
-
-#else 
-
-// stub out shield functions for the demo
-void shield_hit_init() {}
-void create_shield_explosion_all(object *objp) {}
-void shield_frame_init() {}
-void add_shield_point(int objnum, int tri_num, vec3d *hit_pos) {}
-void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos) {}
-void shield_point_multi_setup() {}
-void shield_hit_close() {}
-void ship_draw_shield( object *objp) {}
-void shield_hit_page_in() {}
-void render_shields() {}
-float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;} 
-int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
-
-#endif // DEMO
-
 
 //	return quadrant containing hit_pnt.
 //	\  1  /.

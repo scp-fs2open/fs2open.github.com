@@ -3633,12 +3633,6 @@ void multi_create_game_init()
 		Multi_create_sw_checkbox.hide();
 		Multi_create_sw_checkbox.disable();
 	}
-	
-#ifdef FS2_DEMO
-	// disable squad war button in demo
-	Multi_create_sw_checkbox.hide();
-	Multi_create_sw_checkbox.disable();
-#endif
 
 	// initialize the mission type filtering mode
 	Multi_create_filter = MISSION_TYPE_MULTI;
@@ -4501,17 +4495,6 @@ void multi_create_list_load_missions()
 		// tack on any necessary file extension
 		filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
 
-		// for multiplayer beta builds, only accept builtin missions
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-		if(game_find_builtin_mission(filename) == NULL){
-			continue;
-		}
-#elif defined(PD_BUILD)
-		if((game_find_builtin_mission(filename) == NULL) && !strstr(filename, "peterdrake")){
-			continue;
-		}
-#endif
-
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
 		}
@@ -4596,17 +4579,6 @@ void multi_create_list_load_campaigns()
 		
 		// tack on any necessary file extension
 		filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
-
-		// for multiplayer beta builds, only accept builtin missions
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-		if(game_find_builtin_mission(filename) == NULL){
-			continue;
-		}
-#elif defined(PD_BUILD)
-		if((game_find_builtin_mission(filename) == NULL) && !strstr(filename, "peterdrake")){
-			continue;
-		}
-#endif
 
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
@@ -5321,12 +5293,10 @@ int multi_create_ok_to_commit()
 		if(MULTI_IS_TRACKER_GAME){
 			// don't allow squad war matches to continue
 			if(Netgame.type_flags & NG_TYPE_SW){
-#ifdef RELEASE_REAL
 				// if this is squad war, don't allow it to continue			
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("One or more players has hacked data files. You cannot play a SquadWar match unless all clients have legal data", 1272));
 
 				return 0;
-#endif
 			}
 			// otherwise, warn the players that stats will not saved
 			else {
@@ -5377,15 +5347,8 @@ int multi_create_ok_to_commit()
 	if(!multi_create_verify_cds()){
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 
-#ifdef MULTIPLAYER_BETA_BUILD
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "You need 1 CD for every player!");			
-#else 
-	#ifdef DVD_MESSAGE_HACK
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 DVD for every 4 players!", 794));			
-	#else
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
-	#endif
-#endif
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
+
 		return 0;
 	}	
 	
@@ -5430,19 +5393,12 @@ int multi_create_verify_cds()
 		}
 	}
 
-	// for the beta, everyone must have a CD
-#ifdef MULTIPLAYER_BETA_BUILD
-	if(multi_cd_count < player_count){
-		return 0;
-	}
-#else
 	// determine if we have enough
 	float ratio = (float)player_count / (float)multi_cd_count;
 	// greater than a 4 to 1 ratio
 	if(ratio > 4.0f){
 		return 0;
 	} 
-#endif
 
 	// we meet the conditions
 	return 1;

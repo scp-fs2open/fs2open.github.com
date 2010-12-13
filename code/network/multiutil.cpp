@@ -1345,24 +1345,6 @@ int multi_is_builtin_mission()
 // verify that the player has a valid mission file and do 1 of 3 things
 void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 {   	
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-	net_player *pl;
-   int player;
-
-	player = find_player_id(player_id);
-	Assert(player >= 0);
-	if(player < 0){
-		return;
-	}
-	pl = &Net_players[player];
-
-	// all missions should be builtin, so if we don't have a match, kick the player
-	if((sum_sig != Multi_current_file_checksum) || (length_sig != Multi_current_file_length)){
-		multi_kick_player(player, 0, KICK_REASON_CANT_XFER);
-	} else {
-		pl->flags |= NETINFO_FLAG_MISSION_OK;
-	}
-#else
 	net_player *pl;
    int player;
 	int ok;	
@@ -1423,7 +1405,6 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 			pl->flags |= NETINFO_FLAG_MISSION_OK;			
 		}
 	}
-#endif
 }
 
 // check to see if every client has NETINFO_FLAG_MISSION_OK

@@ -26,31 +26,14 @@
 char *Osreg_company_name = "Volition";
 char *Osreg_class_name = "FreeSpace2Class";
 
-#if defined(FS2_DEMO)
-	char *Osreg_app_name = "FreeSpace2Demo";
-	char *Osreg_title = "FreeSpace 2 Demo";
-#ifdef __APPLE__
-	char *Osreg_user_dir = "Library/FS2_Open Demo";
-#else
-	char *Osreg_user_dir = ".freespace2_demo";
-#endif // __APPLE__
-	#define PROFILE_NAME "FreeSpace2Demo.ini"
-
-#elif defined(OEM_BUILD)
-	char *Osreg_app_name = "FreeSpace2OEM";
-	char *Osreg_title = "FreeSpace 2 OEM";
-	#define PROFILE_NAME "FreeSpace2OEM.ini"
-
-#else
-	char *Osreg_app_name = "FreeSpace2";
-	char *Osreg_title = "FreeSpace 2";
+char *Osreg_app_name = "FreeSpace2";
+char *Osreg_title = "FreeSpace 2";
 #ifdef __APPLE__
 	char *Osreg_user_dir = "Library/FS2_Open";
 #else
 	char *Osreg_user_dir = ".fs2_open";
 #endif // __APPLE__
 	#define PROFILE_NAME "fs2_open.ini"
-#endif
 
 #define DEFAULT_SECTION "Default"
 

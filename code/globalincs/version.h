@@ -45,16 +45,8 @@
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
 
-#ifdef MULTIPLAYER_BETA_BUILD
-	#define MOTD_URL						"http://www.pxo.net/files/fs2beta/motd.txt"
-	#define VERSION_URL					"http://www.pxo.net/files/fs2beta/version.nfo"
-#elif defined(FS2_DEMO)
-	#define MOTD_URL						"http://www.pxo.net/files/fs2demo/motd.txt"
-	#define VERSION_URL					"http://www.pxo.net/files/fs2demo/version.nfo"
-#else
-	#define MOTD_URL						"http://www.pxo.net/files/fs2/motd.txt"
-	#define VERSION_URL					"http://www.pxo.net/files/fs2/version.nfo"
-#endif
+#define MOTD_URL						"http://www.pxo.net/files/fs2/motd.txt"
+#define VERSION_URL					"http://www.pxo.net/files/fs2/version.nfo"
 
 #define VERSION_FILE_COMMENT_CHAR ';'
 #define NO_VERSION_IN_REGISTRY		-2

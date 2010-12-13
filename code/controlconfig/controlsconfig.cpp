@@ -347,31 +347,6 @@ int Config_allowed[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-
-/*
-// old invalid demo keys
-#define INVALID_DEMO_KEYS_MAX	14
-int Invalid_demo_keys[] = {
-	INCREASE_SHIELD,
-	DECREASE_SHIELD,
-	SHIELD_EQUALIZE,
-	SHIELD_XFER_TOP,
-	SHIELD_XFER_BOTTOM,
-	SHIELD_XFER_LEFT,
-	SHIELD_XFER_RIGHT,
-	XFER_SHIELD,
-	XFER_LASER,
-	MULTI_MESSAGE_ALL,
-	MULTI_MESSAGE_FRIENDLY,
-	MULTI_MESSAGE_HOSTILE,
-	MULTI_MESSAGE_TARGET,
-	MULTI_OBSERVER_ZOOM_TO
-};
-*/
-#define INVALID_DEMO_KEYS_MAX	0
-int Invalid_demo_keys[INVALID_DEMO_KEYS_MAX+1];		// +1 is only to prevent a 0-size array;
-
-
 #ifndef NDEBUG
 int Show_controls_info = 0;
 
@@ -417,16 +392,6 @@ int control_config_detect_axis()
 
 int control_config_valid_action(int n)
 {
-//WMC - Invalid_demo_keys is never even filled!!
-/*
-#ifdef FS2_DEMO
-	int i;
-
-	for (i=0; i<INVALID_DEMO_KEYS_MAX; i++)
-		if (n == Invalid_demo_keys[i])
-			return 0;
-#endif
-*/
 	return 1;
 }
 

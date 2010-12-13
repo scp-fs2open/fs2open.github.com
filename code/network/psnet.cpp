@@ -673,10 +673,6 @@ void psnet_init( int protocol, int port_num )
 	// IPX socket structure
 	//SOCKADDR_IPX ipx_addr;
 
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	return;
-#endif
-
 	// GAME PORT INITIALIZATION STUFF
 	if ( Network_status == NETWORK_STATUS_RUNNING )
 		return;
