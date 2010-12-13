@@ -4442,6 +4442,13 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->num_hits = 0;
 	shipp->flags = 0;
 	shipp->flags2 = 0;
+
+	// set certain flags that used to be in ship_info - Goober5000
+	if (sip->flags & SIF_STEALTH)
+		shipp->flags2 |= SF2_STEALTH;
+	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
+		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+
 	shipp->wash_killed = 0;
 	shipp->time_cargo_revealed = 0;
 	shipp->time_first_tagged = 0;
@@ -8902,6 +8909,19 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}//end AB trails -Bobboau
+
+	// Goober5000 - check other class-specific flags too
+
+	if (sip->flags & SIF_STEALTH)			// changing TO a stealthy ship class
+		sp->flags2 |= SF2_STEALTH;
+	else if (sip_orig->flags & SIF_STEALTH)	// changing FROM a stealthy ship class
+		sp->flags2 &= ~SF2_STEALTH;
+
+	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)				// changing TO a don't-collide-invisible ship class
+		sp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+	else if (sip_orig->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)	// changing FROM a don't-collide-invisible ship class
+		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
+
 
 	// Chief1983: Make sure that when changing to a new ship with secondaries, you switch to bank 0.  They still won't 
 	// fire if the SF2_SECONDARIES_LOCKED flag is on as this should have carried over.
