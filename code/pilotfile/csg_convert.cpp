@@ -150,8 +150,8 @@ void pilotfile_convert::csg_import_ships_weapons()
 	int weap_count = cfread_int(cfp);
 
 	for (idx = 0; idx < ship_count; idx++) {
-		unsigned char allowed = cfread_ubyte(cfp);
-		csg->ships_allowed.push_back( (bool)allowed );
+		ubyte allowed = cfread_ubyte(cfp);
+		csg->ships_allowed.push_back( (allowed != 0) );
 
 		cfread_string_len(name, sizeof(name) - 1, cfp);
 
@@ -166,8 +166,8 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 
 	for (idx = 0; idx < weap_count; idx++) {
-		unsigned char allowed = cfread_ubyte(cfp);
-		csg->weapons_allowed.push_back( (bool)allowed );
+		ubyte allowed = cfread_ubyte(cfp);
+		csg->weapons_allowed.push_back( allowed != 0 );
 
 		cfread_string_len(name, sizeof(name) - 1, cfp);
 

@@ -50,7 +50,7 @@ typedef struct HUD_CONFIG_TYPE {
 	int show_flags2;				// whether to show gauge
 	int popup_flags;				// whether gauge is popup 	
 	int popup_flags2;				// whether gauge is popup 		
-	int num_msg_window_lines;	
+	ubyte num_msg_window_lines;	
 	int rp_flags;					// see RP_ flags above
 	int rp_dist;					// one of RR_ #defines above
 	int is_observer;				// 1 or 0, observer mode or not, respectively
