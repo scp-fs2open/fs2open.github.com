@@ -1049,6 +1049,7 @@ void options_menu_close()
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
 	Pilot.save_player();
+	Pilot.save_savefile();
 	game_flush();
 	
 	// unpause all sounds, since we could be headed back to the game
