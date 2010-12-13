@@ -51,14 +51,7 @@
 // ****************************************************************
 #define MAX_SHIP_CLASSES_MULTI	130
 
-#ifdef INF_BUILD
 #define MAX_SHIP_CLASSES		250
-#else
-#define MAX_SHIP_CLASSES		130
-#endif
-
-
-
 
 #define MAX_WINGS				75
 
@@ -86,22 +79,14 @@
 // upped 5/6/98 from 200 - DB
 #define MAX_WEAPONS	700
 
-#ifdef INF_BUILD
 #define MAX_WEAPON_TYPES				300
-#else
-#define MAX_WEAPON_TYPES				200
-#endif
 
 
 // from model.h
 
 #define MAX_MODEL_TEXTURES	64
 
-#ifdef INF_BUILD
-	#define MAX_POLYGON_MODELS  300
-#else
-	#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
-#endif
+#define MAX_POLYGON_MODELS  300
 
 
 // from scoring.h

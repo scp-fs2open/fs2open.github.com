@@ -69,13 +69,6 @@ AC_ARG_ENABLE(speech,
 		[fs2_speech=no],
 )
 
-AC_ARG_ENABLE(inferno,
-	AC_HELP_STRING([--enable-inferno],
-		[Make an Inferno build]),
-		[fs2_inferno=$enableval],
-		[fs2_inferno=no],
-)
-
 AC_ARG_ENABLE(gprof,
 	AC_HELP_STRING([--enable-gprof],
 		[Build with GProf support]),
@@ -157,10 +150,6 @@ esac
 
 dnl define compiler switches
 
-if test "$fs2_inferno" = "yes" ; then
-	AC_DEFINE([INF_BUILD])
-fi
-
 if test "fs2_demo" = "yes" ; then
 	AC_DEFINE([FS2_DEMO])
 fi
@@ -195,17 +184,9 @@ if test "$fs2_debug" = "yes" ; then
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_d"])
-		else
-			AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
-		fi
+		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
 	else
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["fs2_open_INF_d"])
-		else
-			AC_SUBST(FS2_BINARY, ["fs2_open_d"])
-		fi
+		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
 	fi
 else
 	AC_DEFINE([NDEBUG])
@@ -213,17 +194,9 @@ else
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["wxFRED2_INF_r"])
-		else
-			AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
-		fi
+		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
 	else
-		if test "$fs2_inferno" = "yes" ; then
-			AC_SUBST(FS2_BINARY, ["fs2_open_INF_r"])
-		else
-			AC_SUBST(FS2_BINARY, ["fs2_open_r"])
-		fi
+		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
 	fi
 fi
 
@@ -484,6 +457,5 @@ echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug
 echo DEMO build ............. : $fs2_demo
-echo Inferno build .......... : $fs2_inferno
 echo GProf support .......... : $fs2_gprof
 echo

@@ -6402,19 +6402,13 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	switch(stats_code){
 	case STATS_ALLTIME:	
 		// alltime kills
-#ifdef INF_BUILD
+
 		idx = 0; 
 		while(idx<MAX_SHIP_CLASSES)
 		{
 			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, (short)idx);
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
-#else
-		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-			u_tmp = (ushort)sc->kills[idx];
-			ADD_USHORT(u_tmp);
-		}
-#endif
 
 		// medal information
 		for(idx=0;idx<MAX_MEDALS;idx++){
@@ -6443,19 +6437,13 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 	case STATS_MISSION:	
 		// mission OKkills	
-#ifdef INF_BUILD
+
 		idx = 0; 
 		while(idx<MAX_SHIP_CLASSES)
 		{
 			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, (short)idx);
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
-#else		
-		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-			u_tmp = (ushort)sc->m_okKills[idx];
-			ADD_USHORT(u_tmp);			
-		}
-#endif
 	
 		ADD_INT(sc->m_score);
 		ADD_INT(sc->m_assists);
@@ -6488,7 +6476,6 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_INT(sc->m_assists);
 		break;
 	
-#ifdef INF_BUILD		
 	case STATS_MISSION_CLASS_KILLS:
 		ADD_SHORT(offset);
 		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
@@ -6504,7 +6491,6 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			ADD_USHORT((ushort)sc->kills[idx]);			
 		}
 		break;
-#endif
 	}
 
 	Assert(packet_size < MAX_PACKET_SIZE);
@@ -6554,8 +6540,6 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	// get the stats code
 	GET_DATA(val);	
 	switch(val){
-
-#ifdef INF_BUILD
 	short si_offset;
 
 	case STATS_ALLTIME_KILLS:
@@ -6575,18 +6559,9 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 			sc->m_okKills[idx] = u_tmp;
 		}
 		break;
-#endif
 
 	case STATS_ALLTIME:
 		ml_string("Received STATS_ALLTIME\n");
-
-#ifndef INF_BUILD
-		// kills - alltime
-		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
-			GET_USHORT(u_tmp);
-			sc->kills[idx] = u_tmp;
-		}
-#endif
 
 		// read in the stats
 		for (idx=0; idx<MAX_MEDALS; idx++) {
@@ -6616,14 +6591,6 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	case STATS_MISSION:
 		ml_string("Received STATS_MISSION\n");
 
-#ifndef INF_BUILD
-		// kills - mission OK			
-		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
-			GET_USHORT(u_tmp);
-			sc->m_okKills[idx] = u_tmp;			
-		}
-#endif
-		
 		GET_INT(sc->m_score);
 		GET_INT(sc->m_assists);
 		GET_INT(sc->m_kill_count);

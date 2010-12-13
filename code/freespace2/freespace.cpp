@@ -8370,10 +8370,6 @@ void get_version_string(char *str, int max_size)
 		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 	}
 
-#ifdef INF_BUILD
-	strcat_s( str, max_size, " Inferno" );
-#endif
-
 #ifdef FS2_DEMO
 	strcat_s( str, max_size, " Demo" );
 #endif

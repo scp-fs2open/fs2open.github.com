@@ -19,8 +19,6 @@ CFG=libpng - Win32 Release
 !MESSAGE 
 !MESSAGE "libpng - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "libpng - Win32 Debug" (based on "Win32 (x86) Static Library")
-!MESSAGE "libpng - Win32 Release Inferno" (based on "Win32 (x86) Static Library")
-!MESSAGE "libpng - Win32 Debug Inferno" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -80,64 +78,12 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"Debug\libpng.lib"
 
-!ELSEIF  "$(CFG)" == "libpng - Win32 Release Inferno"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir "libpng___Win32_Release_Inferno"
-# PROP BASE Intermediate_Dir "libpng___Win32_Release_Inferno"
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 0
-# PROP Output_Dir "Release_Inferno"
-# PROP Intermediate_Dir "Release_Inferno\Profile\libpng"
-# PROP Target_Dir ""
-# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
-# SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /G5 /MT /W3 /O2 /I "..\.." /I "..\..\zlib" /D "PNG_NO_MMX_CODE" /D "WIN32" /D "NDEBUG" /D "_CRT_SECURE_NO_WARNINGS" /FD /c
-# SUBTRACT CPP /YX /Yc /Yu
-# ADD BASE RSC /l 0x409 /d "NDEBUG"
-# ADD RSC /l 0x409 /i "..\.." /d "NDEBUG"
-BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo
-LIB32=link.exe -lib
-# ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo
-
-!ELSEIF  "$(CFG)" == "libpng - Win32 Debug Inferno"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 1
-# PROP BASE Output_Dir "libpng___Win32_Debug_Inferno"
-# PROP BASE Intermediate_Dir "libpng___Win32_Debug_Inferno"
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 1
-# PROP Output_Dir "Debug_Inferno"
-# PROP Intermediate_Dir "Debug_Inferno\Profile\libpng"
-# PROP Target_Dir ""
-# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
-# SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /ZI /Od /I "..\.." /I "..\..\zlib" /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "PNG_NO_MMX_CODE" /D PNG_DEBUG=1 /D "_CRT_SECURE_NO_WARNINGS" /FD /GZ /c
-# SUBTRACT CPP /YX /Yc /Yu
-# ADD BASE RSC /l 0x409 /d "_DEBUG"
-# ADD RSC /l 0x409 /d "_DEBUG"
-BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo
-LIB32=link.exe -lib
-# ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"Debug_Inferno\libpng.lib"
-
 !ENDIF 
 
 # Begin Target
 
 # Name "libpng - Win32 Release"
 # Name "libpng - Win32 Debug"
-# Name "libpng - Win32 Release Inferno"
-# Name "libpng - Win32 Debug Inferno"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
