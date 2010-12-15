@@ -797,7 +797,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 
 	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
 
-	for (i=0;i<nv;i++)	{
+	for (i = 0; i < nv; i++) {
 		Interp_list[i] = &Interp_points[verts[i*2]];
 
 		if ( Interp_flags & MR_NO_LIGHTING )	{
@@ -838,13 +838,13 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 	}
 
 	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))	{
-		int i, j;
+		int j;
 
 		if ( Interp_flags & MR_SHOW_OUTLINE )	{
 			gr_set_color_fast( &Interp_outline_color );
 		}
 
-		for (i=0; i<nv; i++ )	{
+		for (i = 0; i < nv; i++) {
 			j = (i + 1) % nv;
 			g3_draw_line(Interp_list[i], Interp_list[j]);
 		}
