@@ -396,7 +396,7 @@ void load_missing_retail_gauges()
 		int num_loaded_gauges = (int)default_hud_gauges.size();
 
 		for(int i = 0; i < num_default_gauges; i++) {
-			bool retail_gauge_loaded = false;
+			retail_gauge_loaded = false;
 
 			for(int j = 0; j < num_loaded_gauges; j++) {
 				if(retail_gauges[i] == default_hud_gauges[j]->getObjectType()) {
