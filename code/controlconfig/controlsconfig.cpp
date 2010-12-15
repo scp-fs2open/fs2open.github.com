@@ -414,8 +414,9 @@ void control_config_conflict_check()
 		}
 	}
 
-	for (i=0; i<NUM_TABS; i++)
+	for (i=0; i<NUM_TABS; i++) {
 		Conflicts_tabs[i] = 0;
+	}
 
 	for (i=0; i<CCFG_MAX-1; i++) {
 		if (control_config_valid_action(i)) {
@@ -431,34 +432,6 @@ void control_config_conflict_check()
 							Conflicts_tabs[ Control_config[i].tab ] = 1;
 							Conflicts_tabs[ Control_config[j].tab ] = 1;
 						}
-
-		/*				if ((a >= 0) && (a & KEY_SHIFTED) && (shift >= 0)) {
-							Conflicts[i].key = shift;
-							Conflicts[shift].key = i;
-							Conflicts_tabs[ Control_config[i].tab ] = 1;
-							Conflicts_tabs[ Control_config[shift].tab ] = 1;
-						}
-
-						if ((b >= 0) && (b & KEY_SHIFTED) && (shift >= 0)) {
-							Conflicts[j].key = shift;
-							Conflicts[shift].key = j;
-							Conflicts_tabs[ Control_config[j].tab ] = 1;
-							Conflicts_tabs[ Control_config[shift].tab ] = 1;
-						}
-
-						if ((a >= 0) && (a & KEY_ALTED) && (alt >= 0)) {
-							Conflicts[i].key = alt;
-							Conflicts[alt].key = i;
-							Conflicts_tabs[ Control_config[i].tab ] = 1;
-							Conflicts_tabs[ Control_config[alt].tab ] = 1;
-						}
-
-						if ((b >= 0) && (b & KEY_ALTED) && (alt >= 0)) {
-							Conflicts[j].key = alt;
-							Conflicts[alt].key = j;
-							Conflicts_tabs[ Control_config[j].tab ] = 1;
-							Conflicts_tabs[ Control_config[alt].tab ] = 1;
-						}*/
 					}
 
 					if ((Control_config[i].joy_id >= 0) && (Control_config[i].joy_id == Control_config[j].joy_id)) {
@@ -472,8 +445,9 @@ void control_config_conflict_check()
 		}
 	}
 
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++)
+	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 		Conflicts_axes[i] = -1;
+	}
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS-1; i++) {
 		for (j=i+1; j<NUM_JOY_AXIS_ACTIONS; j++) {
@@ -498,10 +472,11 @@ void control_config_list_prepare()
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
 
-			if (Control_config[z].hasXSTR)
+			if (Control_config[z].hasXSTR) {
 				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z);
-			else
+			} else {
 				Cc_lines[Num_cc_lines].label = Control_config[z].text;
+			}
 
 
 			Cc_lines[Num_cc_lines].cc_index = z;
@@ -526,8 +501,9 @@ int cc_line_query_visible(int n)
 {
 	int y;
 
-	if ((n < 0) || (n >= Num_cc_lines))
+	if ((n < 0) || (n >= Num_cc_lines)) {
 		return 0;
+	}
 	
 	y = Cc_lines[n].y - Cc_lines[Scroll_offset].y;
 	if ((y < 0) || (y + gr_get_font_height() > Control_list_coords[gr_screen.res][CONTROL_H_COORD])){
@@ -569,8 +545,9 @@ void free_undo_block()
 	config_item_undo *ptr;
 
 	ptr = Config_item_undo;
-	if (!ptr)
+	if (!ptr) {
 		return;
+	}
 
 	Config_item_undo = ptr->next;
 	if (ptr->size) {
@@ -591,24 +568,28 @@ int control_config_undo_last()
 		return -1;
 	}
 
-	if (Config_item_undo->index[0] & JOY_AXIS)
+	if (Config_item_undo->index[0] & JOY_AXIS) {
 		tab = SHIP_TAB;
-	else
+	} else {
 		tab = Control_config[Config_item_undo->index[0]].tab;
+	}
 
 	for (i=1; i<Config_item_undo->size; i++) {
 		if (Config_item_undo->index[i] & JOY_AXIS) {
-			if (tab != SHIP_TAB)
+			if (tab != SHIP_TAB) {
 				tab = -1;
+			}
 
 		} else {
-			if (Control_config[Config_item_undo->index[i]].tab != tab)
+			if (Control_config[Config_item_undo->index[i]].tab != tab) {
 				tab = -1;
+			}
 		}
 	}
 
-	if (tab >= 0)
+	if (tab >= 0) {
 		Tab = tab;
+	}
 
 	for (i=0; i<Config_item_undo->size; i++) {
 		z = Config_item_undo->index[i];
@@ -710,11 +691,13 @@ int control_config_remove_binding()
 	ptr->index[0] = z;
 	ptr->list[0] = Control_config[z];
 
-	if (Selected_item && (Control_config[z].joy_id >= 0))  // if not just key selected (which would be 0)
+	if (Selected_item && (Control_config[z].joy_id >= 0)) {  // if not just key selected (which would be 0)
 		Control_config[z].joy_id = (short) -1;
+	}
 
-	if ((Selected_item != 1) && (Control_config[z].key_id >= 0))  // if not just joy button selected (1)
+	if ((Selected_item != 1) && (Control_config[z].key_id >= 0)) {  // if not just joy button selected (1)
 		Control_config[z].key_id = (short) -1;
+	}
 
 	control_config_conflict_check();
 	control_config_list_prepare();
@@ -743,9 +726,11 @@ int control_config_clear_other()
 			return -1;
 		}
 
-		for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++)
-			if ((Axis_map_to[i] == Axis_map_to[z]) && (i != z))
+		for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
+			if ((Axis_map_to[i] == Axis_map_to[z]) && (i != z)) {
 				total++;
+			}
+		}
 
 		if (!total) {
 			gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -753,7 +738,7 @@ int control_config_clear_other()
 		}
 
 		ptr = get_undo_block(total);
-		for (i=j=0; i<NUM_JOY_AXIS_ACTIONS; i++)
+		for (i=j=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 			if ((Axis_map_to[i] == Axis_map_to[z]) && (i != z)) {
 				memset( &item, 0, sizeof(config_item) );
 
@@ -766,18 +751,20 @@ int control_config_clear_other()
 
 				Axis_map_to[i] = -1;
 			}
-
+		}
 		control_config_conflict_check();
 		control_config_list_prepare();
 		gamesnd_play_iface(SND_USER_SELECT);
 		return 0;
 	}
 
-	for (i=0; i<CCFG_MAX; i++)
-		if ( (Control_config[i].key_id == Control_config[z].key_id) || (Control_config[i].joy_id == Control_config[z].joy_id) )
-			if (i != z)
+	for (i=0; i<CCFG_MAX; i++) {
+		if ( (Control_config[i].key_id == Control_config[z].key_id) || (Control_config[i].joy_id == Control_config[z].joy_id) ) {
+			if (i != z) {
 				total++;
-
+			}
+		}
+	}
 	if (!total) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 		return -1;
@@ -790,19 +777,23 @@ int control_config_clear_other()
 
 	// now, back up the old bindings so we can undo if we want to
 	ptr = get_undo_block(total);
-	for (i=j=0; i<CCFG_MAX; i++)
-		if ( (Control_config[i].key_id == Control_config[z].key_id) || (Control_config[i].joy_id == Control_config[z].joy_id) )
+	for (i=j=0; i<CCFG_MAX; i++) {
+		if ( (Control_config[i].key_id == Control_config[z].key_id) || (Control_config[i].joy_id == Control_config[z].joy_id) ) {
 			if (i != z) {
 				ptr->index[j] = i;
 				ptr->list[j] = Control_config[i];
 				j++;
 
-				if (Control_config[i].key_id == Control_config[z].key_id)
+				if (Control_config[i].key_id == Control_config[z].key_id) {
 					Control_config[i].key_id = (short) -1;
-				if (Control_config[i].joy_id == Control_config[z].joy_id)
-					Control_config[i].joy_id = (short) -1;
-			}
+				}
 
+				if (Control_config[i].joy_id == Control_config[z].joy_id) {
+					Control_config[i].joy_id = (short) -1;
+				}
+			}
+		}
+	}
 	control_config_conflict_check();
 	control_config_list_prepare();
 	gamesnd_play_iface(SND_USER_SELECT);
@@ -815,9 +806,11 @@ int control_config_clear_all()
 	config_item_undo *ptr;
 
 	// first, determine how many bindings need to be changed
-	for (i=0; i<CCFG_MAX; i++)
-		if ((Control_config[i].key_id >= 0) || (Control_config[i].joy_id >= 0))
+	for (i=0; i<CCFG_MAX; i++) {
+		if ((Control_config[i].key_id >= 0) || (Control_config[i].joy_id >= 0)) {
 			total++;
+		}
+	}
 
 	if (!total) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -852,11 +845,13 @@ int control_config_axis_default(int axis)
 	Assert(axis >= 0);
 
 	if ( axis > 1 ) {
-		if (Axis_map_to_defaults[axis] < 0)
+		if (Axis_map_to_defaults[axis] < 0) {
 			return -1;
+		}
 
-		if (!joystick.axis_valid[Axis_map_to_defaults[axis]])
+		if (!joystick.axis_valid[Axis_map_to_defaults[axis]]) {
 			return -1;
+		}
 	}
 
 	return Axis_map_to_defaults[axis];
@@ -869,13 +864,17 @@ int control_config_do_reset()
 	config_item item;
 
 	// first, determine how many bindings need to be changed
-	for (i=0; i<CCFG_MAX; i++)
-		if ((Control_config[i].key_id != Control_config[i].key_default) || (Control_config[i].joy_id != Control_config[i].joy_default))
+	for (i=0; i<CCFG_MAX; i++) {
+		if ((Control_config[i].key_id != Control_config[i].key_default) || (Control_config[i].joy_id != Control_config[i].joy_default)) {
 			total++;
+		}
+	}
 
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++)
-		if ((Axis_map_to[i] != control_config_axis_default(i)) || (Invert_axis[i] != Invert_axis_defaults[i]))
+	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
+		if ((Axis_map_to[i] != control_config_axis_default(i)) || (Invert_axis[i] != Invert_axis_defaults[i])) {
 			total++;
+		}
+	}
 
 	if (!total) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -892,7 +891,7 @@ int control_config_do_reset()
 		}
 	}
 
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++)
+	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 		if ((Axis_map_to[i] != control_config_axis_default(i)) || (Invert_axis[i] != Invert_axis_defaults[i])) {
 			memset( &item, 0, sizeof(config_item) );
 
@@ -903,7 +902,7 @@ int control_config_do_reset()
 			ptr->list[j] = item;
 			j++;
 		}
-
+	}
 	Assert(j == total);
 	control_config_reset_defaults();
 	control_config_conflict_check();
@@ -934,28 +933,32 @@ void control_config_scroll_screen_up()
 	if (Scroll_offset) {
 		Scroll_offset--;
 		Assert(Selected_line > Scroll_offset);
-		while (!cc_line_query_visible(Selected_line))
+		while (!cc_line_query_visible(Selected_line)) {
 			Selected_line--;
+		}
 
 		Selected_item = -1;
 		gamesnd_play_iface(SND_SCROLL);
 
-	} else
+	} else {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
+	}
 }
 
 void control_config_scroll_line_up()
 {
 	if (Selected_line) {
 		Selected_line--;
-		if (Selected_line < Scroll_offset)
+		if (Selected_line < Scroll_offset) {
 			Scroll_offset = Selected_line;
+		}
 
 		Selected_item = -1;
 		gamesnd_play_iface(SND_SCROLL);
 
-	} else
+	} else {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
+	}
 }
 
 void control_config_scroll_screen_down()
@@ -970,8 +973,9 @@ void control_config_scroll_screen_down()
 		Selected_item = -1;
 		gamesnd_play_iface(SND_SCROLL);
 
-	} else
+	} else {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
+	}
 }
 
 void control_config_scroll_line_down()
@@ -979,14 +983,16 @@ void control_config_scroll_line_down()
 	if (Selected_line < Num_cc_lines - 1) {
 		Selected_line++;
 		Assert(Selected_line > Scroll_offset);
-		while (!cc_line_query_visible(Selected_line))
+		while (!cc_line_query_visible(Selected_line)) {
 			Scroll_offset++;
+		}
 
 		Selected_item = -1;
 		gamesnd_play_iface(SND_SCROLL);
 
-	} else
+	} else {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
+	}
 }
 
 void control_config_toggle_modifier(int bit)
@@ -1028,12 +1034,12 @@ void control_config_do_bind()
 		return;
 	}
 
-	for (i=0; i<NUM_BUTTONS; i++)
+	for (i=0; i<NUM_BUTTONS; i++) {
 		if (i != CANCEL_BUTTON) {
 			CC_Buttons[gr_screen.res][i].button.reset_status();
 			CC_Buttons[gr_screen.res][i].button.disable();
 		}
-
+	}
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
 	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
@@ -1105,9 +1111,11 @@ int control_config_accept()
 {
 	int i;
 
-	for (i=0; i<NUM_TABS; i++)
-		if (Conflicts_tabs[i])
+	for (i=0; i<NUM_TABS; i++) {
+		if (Conflicts_tabs[i]) {
 			break;
+		}
+	}
 
 	if (i < NUM_TABS) {
 		gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -1124,8 +1132,9 @@ void control_config_cancel_exit()
 {
 	int i;
 
-	for (i=0; i<CCFG_MAX; i++)
+	for (i=0; i<CCFG_MAX; i++) {
 		Control_config[i] = Control_config_backup[i];
+	}
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
@@ -1215,8 +1224,9 @@ char *control_config_tooltip_handler(char *str)
 
 	if (!stricmp(str, NOX("@conflict"))) {
 		for (i=0; i<NUM_TABS; i++) {
-			if (Conflicts_tabs[i])
+			if (Conflicts_tabs[i]) {
 				return XSTR( "Conflict!", 205);
+			}
 		}
 	}
 
@@ -1229,8 +1239,9 @@ void control_config_init()
 	ui_button_info *b;
 
 	// make backup of all controls
-	for (i=0; i<CCFG_MAX; i++)
+	for (i=0; i<CCFG_MAX; i++) {
 		Control_config_backup[i] = Control_config[i];
+	}
 
 	common_set_interface_palette(NOX("ControlConfigPalette"));  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -1415,12 +1426,15 @@ void control_config_do_frame(float frametime)
 				control_config_do_cancel();
 
 			} else {
-				if (k == KEY_ENTER)
+				if (k == KEY_ENTER) {
 					bind = 1;
+				}
 
-				for (i=0; i<JOY_TOTAL_BUTTONS; i++)
-					if (joy_down_count(i, 1))
+				for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
+					if (joy_down_count(i, 1)) {
 						bind = 1;
+					}
+				}
 
 				if (bind) {
 					if (Axis_override >= 0) {
@@ -1476,9 +1490,11 @@ void control_config_do_frame(float frametime)
 						break;
 				}
 
-				if (Cc_lines[Selected_line].cc_index == BANK_WHEN_PRESSED || /*Cc_lines[Selected_line].cc_index == SLIDE_WHEN_PRESSED ||*/ Cc_lines[Selected_line].cc_index == GLIDE_WHEN_PRESSED)  // a special hack just for Mike K.
-					if ( (Last_key >= 0) && (k <= 0) && !keyd_pressed[Last_key] )	//Backslash - ok it's not just for Mike K. any more :-P  but seriously, this is so we can bind such controls to Shift or Alt.  Does this actually get used?
+				if (Cc_lines[Selected_line].cc_index == BANK_WHEN_PRESSED || Cc_lines[Selected_line].cc_index == GLIDE_WHEN_PRESSED) {
+					if ( (Last_key >= 0) && (k <= 0) && !keyd_pressed[Last_key] ) {
 						k = Last_key;
+					}
+				}
 
 				if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
 					popup(0, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
@@ -1499,7 +1515,7 @@ void control_config_do_frame(float frametime)
 					control_config_do_cancel();
 				}
 
-				for (i=0; i<JOY_TOTAL_BUTTONS; i++)
+				for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
 					if (joy_down_count(i, 1)) {
 						z = Cc_lines[Selected_line].cc_index;
 						Assert(!(z & JOY_AXIS));
@@ -1513,6 +1529,7 @@ void control_config_do_frame(float frametime)
 						control_config_do_cancel();
 						break;
 					}
+				}
 
 				if (Bind_time + 375 < timer_get_milliseconds()) {
 					for (i=0; i<NUM_BUTTONS; i++){
@@ -1522,7 +1539,7 @@ void control_config_do_frame(float frametime)
 					}
 
 					if (i == NUM_BUTTONS) {  // no buttons pressed
-						for (i=0; i<MOUSE_NUM_BUTTONS; i++)
+						for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
 							if (mouse_down(1 << i)) {
 								z = Cc_lines[Selected_line].cc_index;
 								Assert(!(z & JOY_AXIS));
@@ -1540,6 +1557,7 @@ void control_config_do_frame(float frametime)
 
 								break;
 							}
+						}
 					}
 				}
 			}
@@ -1571,30 +1589,33 @@ void control_config_do_frame(float frametime)
 			control_config_do_cancel();
 
 		} else {
-			if ((k > 0) && !Config_allowed[k & KEY_MASK])
+			if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
 				k = 0;
+			}
 
 			k &= (KEY_MASK | KEY_SHIFTED | KEY_ALTED);
 			z = -1;
 			if (k > 0) {
-				for (i=0; i<CCFG_MAX; i++)
+				for (i=0; i<CCFG_MAX; i++) {
 					if (Control_config[i].key_id == k) {
 						z = i;
 						break;
 					}
+				}
 			}
 
-			for (i=0; i<JOY_TOTAL_BUTTONS; i++)
+			for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
 				if (joy_down_count(i, 1)) {
 					j = i;
-					for (i=0; i<CCFG_MAX; i++)
+					for (i=0; i<CCFG_MAX; i++) {
 						if (Control_config[i].joy_id == j) {
 							z = i;
 							break;
 						}
-
+					}
 					break;
 				}
+			}
 
 			// check if not on enabled button
 			for (j=0; j<NUM_BUTTONS; j++){
@@ -1604,9 +1625,9 @@ void control_config_do_frame(float frametime)
 			}
 
 			if (j == NUM_BUTTONS) {  // no buttons pressed
-				for (j=0; j<MOUSE_NUM_BUTTONS; j++)
+				for (j=0; j<MOUSE_NUM_BUTTONS; j++) {
 					if (mouse_down(1 << j)) {
-						for (i=0; i<CCFG_MAX; i++)
+						for (i=0; i<CCFG_MAX; i++) {
 							if (Control_config[i].joy_id == j) {
 								z = i;
 								for (j=0; j<NUM_BUTTONS; j++){
@@ -1614,21 +1635,22 @@ void control_config_do_frame(float frametime)
 								}
 								break;
 							}
-
+						}
 						break;
 					}
+				}
 			}
 
 			if (z >= 0) {
 				Tab = Control_config[z].tab;
 				control_config_list_prepare();
 				Selected_line = Scroll_offset = 0;
-				for (i=0; i<Num_cc_lines; i++)
+				for (i=0; i<Num_cc_lines; i++) {
 					if (Cc_lines[i].cc_index == z) {
 						Selected_line = i;
 						break;
 					}
-
+				}
 				while (!cc_line_query_visible(Selected_line)) {
 					Scroll_offset++;
 					Assert(Scroll_offset < Num_cc_lines);
@@ -1683,8 +1705,9 @@ void control_config_do_frame(float frametime)
 
 			case KEY_SHIFTED | KEY_TAB:  // activate previous tab
 				Tab--;
-				if (Tab < 0)
+				if (Tab < 0) {
 					Tab = NUM_TABS - 1;
+				}
 
 				Scroll_offset = Selected_line = 0;
 				control_config_list_prepare();
@@ -1693,8 +1716,9 @@ void control_config_do_frame(float frametime)
 
 			case KEY_TAB:  // activate next tab
 				Tab++;
-				if (Tab >= NUM_TABS)
+				if (Tab >= NUM_TABS) {
 					Tab = 0;
+				}
 
 				Scroll_offset = Selected_line = 0;
 				control_config_list_prepare();
@@ -1707,8 +1731,9 @@ void control_config_do_frame(float frametime)
 					Selected_item = 1;
 					if (Cc_lines[Selected_line].jw < 1) {
 						Selected_item = 0;
-						if (Cc_lines[Selected_line].kw < 1)
+						if (Cc_lines[Selected_line].kw < 1) {
 							Selected_item = -1;
+						}
 					}
 				}
 
@@ -1717,13 +1742,13 @@ void control_config_do_frame(float frametime)
 
 			case KEY_RIGHT:
 				Selected_item++;
-				if ((Selected_item == 1) && (Cc_lines[Selected_line].jw < 1))
+				if ((Selected_item == 1) && (Cc_lines[Selected_line].jw < 1)) {
 					Selected_item = -1;
-				else if (!Selected_item && (Cc_lines[Selected_line].kw < 1))
+				} else if (!Selected_item && (Cc_lines[Selected_line].kw < 1)) {
 					Selected_item = -1;
-				else if (Selected_item > 1)
+				} else if (Selected_item > 1) {
 					Selected_item = -1;
-
+				}
 				gamesnd_play_iface(SND_SCROLL);
 				break;
 
@@ -1744,24 +1769,28 @@ void control_config_do_frame(float frametime)
 	}
 
 	for (i=0; i<LIST_BUTTONS_MAX; i++) {
-		if (List_buttons[i].is_mouse_on())
+		if (List_buttons[i].is_mouse_on()) {
 			select_tease_line = i + Scroll_offset;
+		}
 	
 		if (List_buttons[i].pressed()) {
 			Selected_line = i + Scroll_offset;
 			Selected_item = -1;
 			List_buttons[i].get_mouse_pos(&x, &y);
-			if ((x >= Cc_lines[Selected_line].kx) && (x < Cc_lines[Selected_line].kx + Cc_lines[Selected_line].kw))
+			if ((x >= Cc_lines[Selected_line].kx) && (x < Cc_lines[Selected_line].kx + Cc_lines[Selected_line].kw)) {
 				Selected_item = 0;
+			}
 
-			if ((x >= Cc_lines[Selected_line].jx) && (x < Cc_lines[Selected_line].jx + Cc_lines[Selected_line].jw))
+			if ((x >= Cc_lines[Selected_line].jx) && (x < Cc_lines[Selected_line].jx + Cc_lines[Selected_line].jw)) {
 				Selected_item = 1;
+			}
 
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
 
-		if (List_buttons[i].double_clicked())
+		if (List_buttons[i].double_clicked()) {
 			control_config_do_bind();
+		}
 	}
 
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
@@ -1862,18 +1891,20 @@ void control_config_do_frame(float frametime)
 
 	} else if (!(z & JOY_AXIS) && ((Conflicts[z].key >= 0) || (Conflicts[z].joy >= 0))) {
 		i = Conflicts[z].key;
-		if (i < 0)
+		if (i < 0) {
 			i = Conflicts[z].joy;
+		}
 
 		gr_set_color_fast(&Color_text_normal);
 		str = XSTR( "Control conflicts with:", 209);
 		gr_get_string_size(&w, NULL, str);
 		gr_printf(x - w / 2, y - font_height, str);
 
-		if (Control_config[i].hasXSTR)
+		if (Control_config[i].hasXSTR) {
 			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
-		else
+		} else {
 			strcpy_s(buf, Control_config[i].text);
+		}
 
 		gr_force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
@@ -1883,17 +1914,10 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 		gr_get_string_size(&w, NULL, bound_string);
 		gr_printf(x - w / 2, y - font_height / 2, bound_string);
-		if (timestamp_elapsed(bound_timestamp))
+		if (timestamp_elapsed(bound_timestamp)) {
 			*bound_string = 0;
+		}
 	}
-
-//	gr_set_color_fast(&Color_text_heading);
-//	gr_printf(LIST_X + 20, HEADING_Y, Heading[Tab]);
-
-//	gr_get_string_size(&w, &h, Heading[Tab]);
-//	y = HEADING_Y + h / 2 - 1;
-//	gr_line(LIST_X, y, LIST_X + 18, y);
-//	gr_line(LIST_X + w + 21, y, LIST_X + LIST_W, y);
 
 	if (Cc_lines[Num_cc_lines - 1].y + font_height > Cc_lines[Scroll_offset].y + Control_list_coords[gr_screen.res][CONTROL_H_COORD]) {
 		gr_set_color_fast(&Color_white);
@@ -1951,8 +1975,9 @@ void control_config_do_frame(float frametime)
 					} else if (Selected_item == 1) {
 						gr_set_color_fast(&Color_text_normal);
 
-					} else
+					} else {
 						gr_set_color_fast(c);
+					}
 
 					gr_printf(x, y, buf);
 
@@ -1973,9 +1998,9 @@ void control_config_do_frame(float frametime)
 				if (j >= 0) {
 					strcpy_s(buf, Joy_button_text[j]);
 					if (Conflicts[z].joy >= 0) {
-						if (c == &Color_text_normal)
+						if (c == &Color_text_normal) {
 							gr_set_color_fast(&Color_text_error);
-						else {
+						} else {
 							gr_set_color_fast(&Color_text_error_hi);
 							conflict++;
 						}
@@ -1983,8 +2008,9 @@ void control_config_do_frame(float frametime)
 					} else if (!Selected_item) {
 						gr_set_color_fast(&Color_text_normal);
 
-					} else
+					} else {
 						gr_set_color_fast(c);
+					}
 
 					gr_force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
 					gr_printf(x, y, buf);
@@ -1997,8 +2023,9 @@ void control_config_do_frame(float frametime)
 		} else {
 			x = Control_list_key_x[gr_screen.res];
 			j = Axis_map_to[z & ~JOY_AXIS];
-			if (Binding_mode && (line == Selected_line))
+			if (Binding_mode && (line == Selected_line)) {
 				j = Axis_override;
+			}
 
 			if (j < 0) {
 				gr_set_color_fast(&Color_grey);
@@ -2006,10 +2033,10 @@ void control_config_do_frame(float frametime)
 
 			} else {
 				if (Conflicts_axes[z & ~JOY_AXIS] >= 0) {
-					if (c == &Color_text_normal)
+					if (c == &Color_text_normal) {
 						gr_set_color_fast(&Color_text_error);
 
-					else {
+					} else {
 						gr_set_color_fast(&Color_text_error_hi);
 						conflict++;
 					}
@@ -2017,8 +2044,9 @@ void control_config_do_frame(float frametime)
 				} else if (!Selected_item) {
 					gr_set_color_fast(&Color_text_normal);
 
-				} else
+				} else {
 					gr_set_color_fast(c);
+				}
 
 				gr_string(x, y, Joy_axis_text[j]);
 			}
@@ -2030,8 +2058,9 @@ void control_config_do_frame(float frametime)
 	CC_Buttons[gr_screen.res][CLEAR_OTHER_BUTTON].button.enable(conflict);
 
 	i = line - Scroll_offset;
-	while (i < LIST_BUTTONS_MAX)
+	while (i < LIST_BUTTONS_MAX) {
 		List_buttons[i++].disable();
+	}
 
 	// blit help overlay if active
 	help_overlay_maybe_blit(CONTROL_CONFIG_OVERLAY);
@@ -2044,8 +2073,9 @@ void clear_key_binding(short key)
 	int i;
 
 	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_id == key)
+		if (Control_config[i].key_id == key) {
 			Control_config[i].key_id = -1;
+		}
 	}
 }
 
@@ -2057,19 +2087,23 @@ float check_control_timef(int id)
 	Assert(Control_config[id].type == CC_TYPE_CONTINUOUS);
 
 	// first, see if control actually used (makes sure modifiers match as well)
-	if (!check_control(id))
+	if (!check_control(id)) {
 		return 0.0f;
+	}
 
 	t1 = key_down_timef(Control_config[id].key_id);
-	if (t1)
+	if (t1) {
 		control_used(id);
+	}
 
 	t2 = joy_down_time(Control_config[id].joy_id);
-	if (t2)
+	if (t2) {
 		control_used(id);
+	}
 
-	if (t1 + t2)
+	if (t1 + t2) {
 		return t1 + t2;
+	}
 
 	return 1.0f;
 }
@@ -2092,8 +2126,9 @@ int check_control(int id, int key)
 	static int last_key = 0;
 
 	Control_check_count++;
-	if (key < 0)
+	if (key < 0) {
 		key = last_key;
+	}
 
 	last_key = key;
 
@@ -2108,26 +2143,30 @@ int check_control(int id, int key)
 			return 1;
 		}
 
-		if ((Control_config[id].joy_id >= 0) && (Control_config[id].joy_id < MOUSE_NUM_BUTTONS))
+		if ((Control_config[id].joy_id >= 0) && (Control_config[id].joy_id < MOUSE_NUM_BUTTONS)) {
 			if (mouse_down(1 << Control_config[id].joy_id) || mouse_down_count(1 << Control_config[id].joy_id)) {
 				control_used(id);
 				return 1;
 			}
+		}
 
 		// check what current modifiers are pressed
 		mask = 0;
-		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT))
+		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT)) {
 			mask |= KEY_SHIFTED;
+		}
 
-		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT))
+		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT)) {
 			mask |= KEY_ALTED;
+		}
 
 		z = Control_config[id].key_id;
 		if (z >= 0) {
 			if ( (z != KEY_LALT) && (z != KEY_RALT) && (z != KEY_LSHIFT) && (z != KEY_RSHIFT) ) {
 				// if current modifiers don't match action's modifiers, don't register control active.
-				if ((z & (KEY_SHIFTED | KEY_ALTED)) != mask)
+				if ((z & (KEY_SHIFTED | KEY_ALTED)) != mask) {
 					return 0;
+				}
 			}
 
 			z &= KEY_MASK;
@@ -2161,35 +2200,45 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 
 	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1 (fixed point)
 	*h = 0;
-	if (Axis_map_to[0] >= 0)
+	if (Axis_map_to[0] >= 0) {
 		*h = joy_get_scaled_reading(axes_values[Axis_map_to[0]], Axis_map_to[0]);
+	}
 
 	*p = 0;
-	if (Axis_map_to[1] >= 0)
+	if (Axis_map_to[1] >= 0) {
 		*p = joy_get_scaled_reading(axes_values[Axis_map_to[1]], Axis_map_to[1]);
+	}
 
 	*b = 0;
-	if (Axis_map_to[2] >= 0)
+	if (Axis_map_to[2] >= 0) {
 		*b = joy_get_scaled_reading(axes_values[Axis_map_to[2]], Axis_map_to[2]);
+	}
 
 	*ta = 0;
-	if (Axis_map_to[3] >= 0)
+	if (Axis_map_to[3] >= 0) {
 		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]], Axis_map_to[3]);
+	}
 
 	*tr = 0;
-	if (Axis_map_to[4] >= 0)
+	if (Axis_map_to[4] >= 0) {
 		*tr = joy_get_scaled_reading(axes_values[Axis_map_to[4]], Axis_map_to[4]);
+	}
 
-	if (Invert_axis[0])
+	if (Invert_axis[0]) {
 		*h = -(*h);
-	if (Invert_axis[1])
+	}
+	if (Invert_axis[1]) {
 		*p = -(*p);
-	if (Invert_axis[2])
+	}
+	if (Invert_axis[2]) {
 		*b = -(*b);
-	if (Invert_axis[3])
+	}
+	if (Invert_axis[3]) {
 		*ta = F1_0 - *ta;
-	if (Invert_axis[4])
+	}
+	if (Invert_axis[4]) {
 		*tr = -(*tr);
+	}
 
 	return;
 }
@@ -2203,8 +2252,9 @@ void control_config_clear_used_status()
 {
 	int i;
 
-	for (i=0; i<CCFG_MAX; i++)
+	for (i=0; i<CCFG_MAX; i++) {
 		Control_config[i].used = 0;
+	}
 }
 
 void control_config_clear()
@@ -2212,47 +2262,12 @@ void control_config_clear()
 	int i;
 
 	// Reset keyboard defaults
-	for (i=0; i<CCFG_MAX; i++)
+	for (i=0; i<CCFG_MAX; i++) {
 		Control_config[i].key_id = Control_config[i].joy_id = -1;
+	}
 }
 
 int control_config_handle_conflict()
-{/*
-	if ((Selected_item == -1) && ((Conflicts[z].key >= 0) || (Conflicts[z].joy >= 0))) {  // we are deleting a conflict
-		j = Conflicts[z].joy;
-		if ((j >= 0) && (Control_config[j].joy_id < 0))
-			j = -1;
-
-		k = Conflicts[z].key;
-		if ((k >= 0) && (Control_config[k].key_id < 0))
-			k = -1;
-
-		if ((j >= 0) && (k >= 0) && (j != k)) {  // deleting 2 conflicts, each in different actions
-			ptr = get_undo_block(2);
-			ptr->index[0] = j;
-			ptr->list[0] = Control_config[j];
-			Control_config[j].joy_id = (short) -1;
-
-			ptr->index[1] = k;
-			ptr->list[1] = Control_config[k];
-			Control_config[k].key_id = (short) -1;
-
-		} else {  // only 1 action in conflict with selected action (might be both controls, though)
-			z = j;
-			if (j < 0)
-				z = k;
-
-			Assert(z >= 0);
-			ptr = get_undo_block(1);
-			ptr->index[0] = z;
-			ptr->list[0] = Control_config[z];
-
-			if (j >= 0)
-				Control_config[z].joy_id = (short) -1;
-
-			if (k >= 0)
-				Control_config[z].key_id = (short) -1;
-		}*/
-
+{
 	return 0;
 }
