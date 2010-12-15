@@ -584,11 +584,11 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	int idx, list_size;
+	int idx, list_size, list_axis;
 	short id1, id2, id3;
+	int axi, inv;
 
 	list_size = (int)cfread_ushort(cfp);
-
 	for (idx = 0; idx < list_size; idx++) {
 		id1 = cfread_short(cfp);
 		id2 = cfread_short(cfp);
@@ -597,6 +597,17 @@ void pilotfile::plr_read_controls()
 		if (idx < CCFG_MAX) {
 			Control_config[idx].key_id = id1;
 			Control_config[idx].joy_id = id2;
+		}
+	}
+
+	list_axis = cfread_int(cfp);
+	for (idx = 0; idx < list_axis; idx++) {
+		axi = cfread_int(cfp);
+		inv = cfread_int(cfp);
+
+		if (idx < NUM_JOY_AXIS_ACTIONS) {
+			Axis_map_to[idx] = axi;
+			Invert_axis[idx] = inv;
 		}
 	}
 }
@@ -614,6 +625,13 @@ void pilotfile::plr_write_controls()
 		cfwrite_short(Control_config[idx].joy_id, cfp);
 		// placeholder? for future mouse_id?
 		cfwrite_short(-1, cfp);
+	}
+
+	cfwrite_int(NUM_JOY_AXIS_ACTIONS, cfp);
+
+	for (idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
+		cfwrite_int(Axis_map_to[idx], cfp);
+		cfwrite_int(Invert_axis[idx], cfp);
 	}
 
 	endSection();
