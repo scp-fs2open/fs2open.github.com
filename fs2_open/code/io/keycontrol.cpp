@@ -1587,38 +1587,6 @@ void game_process_cheats(int k)
 		}
 	}
 #endif
-	/*
-//#ifdef INTERPLAYQA
-	if ( !strcmp(Cheat_code_in_game, cryptstring) ) {
-		HUD_printf(XSTR( "Cheats enabled.", 31));
-		Cheats_enabled = 1;
-		if (Player->flags & PLAYER_FLAGS_MSG_MODE){
-			hud_squadmsg_toggle();
-		}
-	} else if ( !strcmp(Cheat_code_movies, cryptstring) ) {
-		HUD_printf(XSTR( "All movies available in Tech Room", 32));
-		All_movies_enabled = 1;
-		if (Player->flags & PLAYER_FLAGS_MSG_MODE){
-			hud_squadmsg_toggle();
-		}
-	} else if( !strcmp(Cheat_code_pirate, cryptstring) ){
-		HUD_printf(NOX("Walk the plank"));
-		
-		for(int idx=0; idx<1; idx++){
-			vec3d add;
-			add.xyz.x = frand_range(-1000.0f, 1000.0f);
-			add.xyz.y = frand_range(-1000.0f, 1000.0f);
-			add.xyz.z = frand_range(-1000.0f, 1000.0f);
-
-			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_classes - 1);			
-
-			if(objnum >= 0){
-				shipfx_warpin_start(&Objects[objnum]);
-			}
-		}
-	}
-#endif
-	*/
 }
 
 void game_process_keys()
