@@ -136,10 +136,10 @@ struct plr_data {
 	int readyroom_listing_mode;
 	int voice_enabled;
 	int auto_advance;
-	int use_mouse_to_fly;
-	int mouse_sensitivity;
-	int joy_sensitivity;
-	int dead_zone;
+	int Use_mouse_to_fly;
+	int Mouse_sensitivity;
+	int Joy_sensitivity;
+	int Dead_zone_size;
 
 	// multiplayer settings/options
 	int net_protocol;

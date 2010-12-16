@@ -7,7 +7,7 @@
  */
 
 #include "pilotfile/pilotfile_convert.h"
-#include "network/psnet.h"
+#include "network/psnet2.h"
 #include "cfile/cfilesystem.h"
 
 
@@ -42,10 +42,10 @@ plr_data::plr_data()
 	readyroom_listing_mode = 0;
 	voice_enabled = 1;
 	auto_advance = 1;
-	use_mouse_to_fly = 0;
-	mouse_sensitivity = 4;
-	joy_sensitivity = 9;
-	dead_zone = 10;
+	Use_mouse_to_fly = 0;
+	Mouse_sensitivity = 4;
+	Joy_sensitivity = 9;
+	Dead_zone_size = 10;
 
 	// multiplayer settings/options
 	net_protocol = 1;
@@ -517,10 +517,10 @@ void pilotfile_convert::plr_import()
 	}
 
 	// some input options
-	plr->use_mouse_to_fly = cfread_int(cfp);
-	plr->mouse_sensitivity = cfread_int(cfp);
-	plr->joy_sensitivity = cfread_int(cfp);
-	plr->dead_zone = cfread_int(cfp);
+	plr->Use_mouse_to_fly = cfread_int(cfp);
+	plr->Mouse_sensitivity = cfread_int(cfp);
+	plr->Joy_sensitivity = cfread_int(cfp);
+	plr->Dead_zone_size = cfread_int(cfp);
 
 	// variables
 	plr_import_variables();
@@ -764,6 +764,12 @@ void pilotfile_convert::plr_export_controls()
 		cfwrite_short(-1, cfp);
 	}
 
+	// extra joystick stuff
+	for (idx = 0; idx < 5; idx++) {
+		cfwrite_int(plr->joy_axis_map_to[idx], cfp);
+		cfwrite_int(plr->joy_invert_axis[idx], cfp);
+	}
+
 	endSection();
 }
 
@@ -782,10 +788,10 @@ void pilotfile_convert::plr_export_settings()
 	cfwrite_int(plr->skill_level, cfp);
 
 	// input options
-	cfwrite_int(plr->use_mouse_to_fly, cfp);
-	cfwrite_int(plr->mouse_sensitivity, cfp);
-	cfwrite_int(plr->joy_sensitivity, cfp);
-	cfwrite_int(plr->dead_zone, cfp);
+	cfwrite_int(plr->Use_mouse_to_fly, cfp);
+	cfwrite_int(plr->Mouse_sensitivity, cfp);
+	cfwrite_int(plr->Joy_sensitivity, cfp);
+	cfwrite_int(plr->Dead_zone_size, cfp);
 
 	// detail
 	cfwrite_int(plr->detail_setting, cfp);
