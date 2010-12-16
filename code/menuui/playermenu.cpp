@@ -1231,10 +1231,10 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 	}
 
 	if (Dc_command) {
-		dc_get_arg(ARG_UBYTE | ARG_NONE);
+		dc_get_arg(ARG_INT | ARG_NONE);
 
-		if (Dc_arg_type & ARG_UBYTE) {
-			ubyte idx = Dc_arg_ubyte;
+		if (Dc_arg_type & ARG_INT) {
+			int idx = Dc_arg_int;
 
 			if (idx < 0 || idx >= MAIN_HALLS_MAX) {
 				dc_printf("Main hall index out of range\n");
