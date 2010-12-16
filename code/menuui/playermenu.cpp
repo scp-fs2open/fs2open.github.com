@@ -483,8 +483,9 @@ void player_select_close()
 	Player_select_screen_active = 0;
 
 	//New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI)
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;
+	}
 
 	//WMC - Set appropriate game mode
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {

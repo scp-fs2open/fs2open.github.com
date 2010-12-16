@@ -134,10 +134,10 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 };
 
 // button defines
-#define BARRACKS_NUM_BUTTONS		19
+#define BARRACKS_NUM_BUTTONS		18
 
 // pilot selection buttons
-#define B_PILOT_CREATE_BOTTON			0	// B_PILOT_CREATE_BOTTON
+#define B_PILOT_CREATE_BUTTON			0	// B_PILOT_CREATE_BUTTON
 #define B_PILOT_SCROLL_UP_BUTTON		1	// B_PILOT_SCROLL_UP_BUTTON
 #define B_PILOT_SCROLL_DOWN_BUTTON	2	// B_PILOT_SCROLL_DOWN_BUTTON
 #define B_PILOT_DELETE_BUTTON			11	// B_PILOT_B_PILOT_DELETE_BUTTON
@@ -145,11 +145,11 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 #define B_PILOT_CLONE_BUTTON			13	// B_PILOT_B_PILOT_CLONE_BUTTON
 #define B_PILOT_SINGLE_MODE_BUTTON	14	// B_PILOT_SINGLE_MODE_BUTTON
 #define B_PILOT_MULTI_MODE_BUTTON	15	// B_PILOT_MULTI_MODE_BUTTON
-#define B_PILOT_CONVERT_BUTTON		16	// B_PILOT_B_PILOT_CONVERT_BUTTON
+//#define B_PILOT_CONVERT_BUTTON		16	// B_PILOT_B_PILOT_CONVERT_BUTTON
 
 // squad logo picture buttons
-#define B_SQUAD_PREV_BUTTON			17
-#define B_SQUAD_NEXT_BUTTON			18
+#define B_SQUAD_PREV_BUTTON			16
+#define B_SQUAD_NEXT_BUTTON			17
 
 // pilot picture buttons
 #define B_PIC_PREV_PILOT_BUTTON		3	// B_PILOT_B_PIC_PREV_PILOT_BUTTON
@@ -222,9 +222,9 @@ static barracks_buttons Buttons[GR_NUM_RESOLUTIONS][BARRACKS_NUM_BUTTONS] = {
 			barracks_buttons("BAB_13", 66,	122,	69,	157,	13),
 			barracks_buttons("BAB_14", 323,	0,		324,	25,	14),
 			barracks_buttons("BAB_15", 372,	0,		374,	25,	15),
-			barracks_buttons("BAB_16", 180,	122,	182,	157,	16),
-			barracks_buttons("BAB_17", 559,	306,	0,		0,		17),
-			barracks_buttons("BAB_18", 598,	306,	0,		0,		18)
+//			barracks_buttons("BAB_16", 180,	122,	182,	157,	16),
+			barracks_buttons("BAB_17", 559,	306,	0,		0,		16),
+			barracks_buttons("BAB_18", 598,	306,	0,		0,		17)
 	},
 	{		// GR_1024
 			barracks_buttons("2_BAB_00", 14,		196,	35,	252,	0),
@@ -243,9 +243,9 @@ static barracks_buttons Buttons[GR_NUM_RESOLUTIONS][BARRACKS_NUM_BUTTONS] = {
 			barracks_buttons("2_BAB_13", 107,	196,	128,	252,	13),
 			barracks_buttons("2_BAB_14", 517,	0,		532,	40,	14),
 			barracks_buttons("2_BAB_15", 596,	0,		614,	40,	15),
-			barracks_buttons("2_BAB_16", 289,	196,	309,	252,	16),
-			barracks_buttons("2_BAB_17", 896,	491,	0,		0,		17),
-			barracks_buttons("2_BAB_18", 958,	491,	0,		0,		18)
+//			barracks_buttons("2_BAB_16", 289,	196,	309,	252,	16),
+			barracks_buttons("2_BAB_17", 896,	491,	0,		0,		16),
+			barracks_buttons("2_BAB_18", 958,	491,	0,		0,		17)
 	}
 //XSTR:ON
 };
@@ -485,7 +485,7 @@ void barracks_set_hotkeys(bool pilot_text_enter_mode)
 	Buttons[gr_screen.res][B_PILOT_SCROLL_UP_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_UP : -1);
 	Buttons[gr_screen.res][B_PILOT_SCROLL_DOWN_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_DOWN : -1);
 
-	Buttons[gr_screen.res][B_PILOT_CREATE_BOTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_C : -1);
+	Buttons[gr_screen.res][B_PILOT_CREATE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_C : -1);
 	Buttons[gr_screen.res][B_PILOT_SET_ACTIVE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_ENTER : -1);
 	Buttons[gr_screen.res][B_PILOT_DELETE_BUTTON].button.set_hotkey(pilot_text_enter_mode ? KEY_DELETE : -1);
 
@@ -902,7 +902,7 @@ void barracks_init_player_stuff(int mode)
 		Buttons[gr_screen.res][B_SQUAD_NEXT_BUTTON].button.set_disabled_action(barracks_squad_change_popup);
 	}
 	// multiplayer specific stuff
-	else {
+	else if (mode == PLAYER_SELECT_MODE_MULTI) {
 		Game_mode &= ~GM_NORMAL;
 		Game_mode |= GM_MULTIPLAYER;
 
@@ -974,14 +974,8 @@ void barracks_button_pressed(int n)
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 
 				// if it's just the missing campaign file that failed for us then don't give the second popup
-				if (Campaign_file_missing)
+				if (Campaign_file_missing) {
 					break;
-
-				// throw up a popup telling the player that he should create a pilot first
-				if(Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must create a single player pilot.", 66));
-				} else {
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must create a multi player pilot.", 67));
 				}
 			} else {
 				gamesnd_play_iface(SND_SCROLL);
@@ -993,7 +987,7 @@ void barracks_button_pressed(int n)
 			}
 			break;
 
-		case B_ACCEPT_BUTTON:			
+		case B_ACCEPT_BUTTON:
 			if (Num_pilots && !barracks_pilot_accepted()) {
 				gamesnd_play_iface(SND_COMMIT_PRESSED);
 
@@ -1007,14 +1001,8 @@ void barracks_button_pressed(int n)
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 
 				// if it's just the missing campaign file that failed for us then don't give the second popup
-				if (Campaign_file_missing)
+				if (Campaign_file_missing) {
 					break;
-
-				// throw up a popup telling the player that he should create a pilot first
-				if(Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must create a single player pilot.", 66));
-				} else {
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must create a multi player pilot.", 67));
 				}
 			}
 			break;
@@ -1029,24 +1017,25 @@ void barracks_button_pressed(int n)
 			barracks_create_new_pilot();
 			break;
 
+/*	New Pilot code no longer needs a conversion function.
 		case B_PILOT_CONVERT_BUTTON: {
 			// no actual conversion with new pilot code, just switch to multi
 			if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			} else {
 				// make sure we don't carry over the multi flag
-				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI)
+				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI) {
 					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
-
+				}
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 			}
 
 			gamesnd_play_iface(SND_USER_SELECT);
 
 			break;
-		}
+		}*/
 
-		case B_PILOT_CREATE_BOTTON:
+		case B_PILOT_CREATE_BUTTON:
 			Clone_flag = 0;
 			barracks_create_new_pilot();
 			break;
@@ -1073,8 +1062,13 @@ void barracks_button_pressed(int n)
 		case B_PILOT_SINGLE_MODE_BUTTON:
 			if (Player_sel_mode != PLAYER_SELECT_MODE_SINGLE) {
 				gamesnd_play_iface(SND_USER_SELECT);
+				// make sure we don't carry over the multi flag
+				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI) {
+					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+				}
+				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
-			}						
+			}
 			break;
 
 		case B_PILOT_MULTI_MODE_BUTTON:
@@ -1085,6 +1079,8 @@ void barracks_button_pressed(int n)
 
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
 				gamesnd_play_iface(SND_USER_SELECT);
+				Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
+				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			}
 			break;
@@ -1344,7 +1340,7 @@ void barracks_init()
 	w->add_XSTR("Clone",  1040, Buttons[gr_screen.res][13].text_x,  Buttons[gr_screen.res][13].text_y, &Buttons[gr_screen.res][13].button, UI_XSTR_COLOR_GREEN);
 	w->add_XSTR("Single", 1041, Buttons[gr_screen.res][14].text_x,  Buttons[gr_screen.res][14].text_y,  &Buttons[gr_screen.res][14].button, UI_XSTR_COLOR_GREEN);
 	w->add_XSTR("Multi",  1042, Buttons[gr_screen.res][15].text_x,  Buttons[gr_screen.res][15].text_y,  &Buttons[gr_screen.res][15].button, UI_XSTR_COLOR_GREEN);
-	w->add_XSTR("Convert",1043, Buttons[gr_screen.res][16].text_x,  Buttons[gr_screen.res][16].text_y, &Buttons[gr_screen.res][16].button, UI_XSTR_COLOR_GREEN);	
+//	w->add_XSTR("Convert",1043, Buttons[gr_screen.res][16].text_x,  Buttons[gr_screen.res][16].text_y, &Buttons[gr_screen.res][16].button, UI_XSTR_COLOR_GREEN);	
 	for(i=0; i<BARRACKS_NUM_TEXT; i++) {
 		w->add_XSTR(&Barracks_text[gr_screen.res][i]);
 	}
