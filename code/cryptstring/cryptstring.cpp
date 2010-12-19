@@ -15,7 +15,7 @@
 #include "globalincs/crypt.h"
 
 
-// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// we end up #include'ing SDL.h which on Windows and Mac will redefine main() which is something
 // that we don't want since we don't actually link against SDL, this solves the problem...
 #ifdef main
 #undef main

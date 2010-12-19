@@ -38,7 +38,7 @@
 
 #define NUM_SYSTEM_KEYS			14
 #define NUM_BUTTONS				19
-#define NUM_TABS					4
+#define NUM_TABS				4
 
 // coordinate indicies
 #define CONTROL_X_COORD 0
@@ -59,28 +59,28 @@ char* Conflict_background_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 // control list area
 int Control_list_coords[GR_NUM_RESOLUTIONS][4] = {
 	{
-		32, 58, 198, 259			// GR_640
+		32, 58, 198, 259	// GR_640
 	},
 	{
-		32, 94, 904, 424			// GR_1024
+		32, 94, 904, 424	// GR_1024
 	}
 };
 
 // width of the control name section of the list
 int Control_list_ctrl_w[GR_NUM_RESOLUTIONS] = {
-	350,		// GR_640
+	350,	// GR_640
 	600		// GR_1024
 };
 
 // x start position of the binding area section of the list
 int Control_list_key_x[GR_NUM_RESOLUTIONS] = {
-	397,		// GR_640
+	397,	// GR_640
 	712		// GR_1024
 };
 
 // width of the binding area section of the list
 int Control_list_key_w[GR_NUM_RESOLUTIONS] = {
-	198,		// GR_640
+	198,	// GR_640
 	230		// GR_1024
 };
 
@@ -120,7 +120,7 @@ int Conflict_stamp = -1;
 int Conflict_bright = 0;
 
 #define LIST_BUTTONS_MAX	42
-#define JOY_AXIS				0x80000
+#define JOY_AXIS			0x80000
 
 static int Num_cc_lines;
 static struct {
@@ -140,18 +140,13 @@ struct config_item_undo {
 
 config_item Control_config_backup[CCFG_MAX];
 
-#ifdef GRAVIS_OEM
-int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
-int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
-#else
 int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
 int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
-#endif
 
 // all this stuff is localized/externalized
 #define NUM_AXIS_TEXT			6
 #define NUM_MOUSE_TEXT			5
-#define NUM_MOUSE_AXIS_TEXT	2
+#define NUM_MOUSE_AXIS_TEXT		2
 #define NUM_INVERT_TEXT			2	
 char *Joy_axis_action_text[NUM_JOY_AXIS_ACTIONS];
 char *Joy_axis_text[NUM_AXIS_TEXT];
@@ -188,24 +183,24 @@ static struct {
 int Conflicts_axes[NUM_JOY_AXIS_ACTIONS];
 
 #define TARGET_TAB				0
-#define SHIP_TAB					1
+#define SHIP_TAB				1
 #define WEAPON_TAB				2
-#define COMPUTER_TAB				3
+#define COMPUTER_TAB			3
 #define SCROLL_UP_BUTTON		4
 #define SCROLL_DOWN_BUTTON		5
 #define ALT_TOGGLE				6
-#define SHIFT_TOGGLE				7
+#define SHIFT_TOGGLE			7
 #define INVERT_AXIS				8
 #define CANCEL_BUTTON			9
 #define UNDO_BUTTON				10
-#define RESET_BUTTON				11
+#define RESET_BUTTON			11
 #define SEARCH_MODE				12
 #define BIND_BUTTON				13
 #define HELP_BUTTON				14
 #define ACCEPT_BUTTON			15
 #define CLEAR_OTHER_BUTTON		16
 #define CLEAR_ALL_BUTTON		17
-#define CLEAR_BUTTON				18
+#define CLEAR_BUTTON			18
 
 ui_button_info CC_Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	{ // GR_640
@@ -390,11 +385,6 @@ int control_config_detect_axis()
 	return axis;
 }
 
-int control_config_valid_action(int n)
-{
-	return 1;
-}
-
 void control_config_conflict_check()
 {
 	int i, j, a, b, c, shift = -1, alt = -1;
@@ -419,28 +409,24 @@ void control_config_conflict_check()
 	}
 
 	for (i=0; i<CCFG_MAX-1; i++) {
-		if (control_config_valid_action(i)) {
-			for (j=i+1; j<CCFG_MAX; j++) {
-				if (control_config_valid_action(j)) {
-					if (Control_config[i].key_id >= 0) {
-						c = 0;
-						a = Control_config[i].key_id;
-						b = Control_config[j].key_id;
-						if (a == b) {
-							Conflicts[i].key = j;
-							Conflicts[j].key = i;
-							Conflicts_tabs[ Control_config[i].tab ] = 1;
-							Conflicts_tabs[ Control_config[j].tab ] = 1;
-						}
-					}
-
-					if ((Control_config[i].joy_id >= 0) && (Control_config[i].joy_id == Control_config[j].joy_id)) {
-						Conflicts[i].joy = j;
-						Conflicts[j].joy = i;
-						Conflicts_tabs[ Control_config[i].tab ] = 1;
-						Conflicts_tabs[ Control_config[j].tab ] = 1;
-					}
+		for (j=i+1; j<CCFG_MAX; j++) {
+			if (Control_config[i].key_id >= 0) {
+				c = 0;
+				a = Control_config[i].key_id;
+				b = Control_config[j].key_id;
+				if (a == b) {
+					Conflicts[i].key = j;
+					Conflicts[j].key = i;
+					Conflicts_tabs[ Control_config[i].tab ] = 1;
+					Conflicts_tabs[ Control_config[j].tab ] = 1;
 				}
+			}
+
+			if ((Control_config[i].joy_id >= 0) && (Control_config[i].joy_id == Control_config[j].joy_id)) {
+				Conflicts[i].joy = j;
+				Conflicts[j].joy = i;
+				Conflicts_tabs[ Control_config[i].tab ] = 1;
+				Conflicts_tabs[ Control_config[j].tab ] = 1;
 			}
 		}
 	}
@@ -468,7 +454,7 @@ void control_config_list_prepare()
 
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
-		if ((Control_config[z].tab == Tab) && control_config_valid_action(z)) {
+		if ((Control_config[z].tab == Tab)) {
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
 
@@ -477,7 +463,6 @@ void control_config_list_prepare()
 			} else {
 				Cc_lines[Num_cc_lines].label = Control_config[z].text;
 			}
-
 
 			Cc_lines[Num_cc_lines].cc_index = z;
 			Cc_lines[Num_cc_lines++].y = y;
