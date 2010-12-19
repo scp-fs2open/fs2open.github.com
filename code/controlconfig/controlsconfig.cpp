@@ -140,13 +140,8 @@ struct config_item_undo {
 
 config_item Control_config_backup[CCFG_MAX];
 
-#ifdef GRAVIS_OEM
-int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
-int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
-#else
 int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
 int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
-#endif
 
 // all this stuff is localized/externalized
 #define NUM_AXIS_TEXT			6
