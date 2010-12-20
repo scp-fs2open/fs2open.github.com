@@ -1003,6 +1003,7 @@ int event_music_primary_goal_failed()
 	}
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = next_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1076,6 +1077,7 @@ int event_music_player_death()
 		return 0;	// already playing
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = SONG_DEAD_1;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1433,6 +1435,7 @@ void event_music_change_pattern(int new_pattern)
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = new_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
