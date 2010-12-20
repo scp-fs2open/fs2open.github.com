@@ -508,11 +508,13 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 			model_set_detail_level(target_sip->hud_target_lod);
 		}
 
+		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
+		
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
-			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 		} else {
-			model_render( target_sip->model_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->ship_replacement_textures);
+			model_render( target_sip->model_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->ship_replacement_textures);
 		}
 		ship_model_stop( target_objp );
 
@@ -599,8 +601,10 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
 
+		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
+		
 		// This calls the colour that doesn't get reset
-		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
+		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		renderTargetClose();
 	}
 	renderTargetForeground();
@@ -709,7 +713,9 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			model_set_detail_level(hud_target_lod);
 		}
 
-		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
+		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
+		
+		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
 		renderTargetClose();
 	}
 	renderTargetForeground(); 
@@ -795,7 +801,9 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 				flags |=MR_NO_POLYS;
 		}
 
-		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags |MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
+		if(Targetbox_wire != 2) flags |= MR_NO_LIGHTING;
+		
+		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		renderTargetClose();
 	}
 	renderTargetForeground();
@@ -890,7 +898,7 @@ void hud_targetbox_switch_wireframe_mode()
 {
 	//0==standard
 	//1==wireframe only
-	//2==wireframe with textures
+	//2==standard with lighting
 	Targetbox_wire++;
 		if (Targetbox_wire==3)
 			Targetbox_wire=0;
