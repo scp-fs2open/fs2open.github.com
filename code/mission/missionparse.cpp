@@ -5170,9 +5170,14 @@ void parse_variables()
 			// variable AND it is not a block variable, override its initial value
 			// with the previous mission's value
 			if ( !stricmp(Sexp_variables[j].variable_name, Campaign.variables[i].variable_name) ) {
-				Sexp_variables[j].type = Campaign.variables[i].type;
-				strcpy_s(Sexp_variables[j].text, Campaign.variables[i].text);
-				break;
+				if (Sexp_variables[j].type  & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) {
+					Sexp_variables[j].type = Campaign.variables[i].type;
+					strcpy_s(Sexp_variables[j].text, Campaign.variables[i].text);
+					break;
+				}
+				else {
+					WarningEx(LOCATION, "Variable %s has the same name as a campaign persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+				}
 			}
 		}
 	}
@@ -5186,9 +5191,14 @@ void parse_variables()
 			// variable AND it is not a block variable, override its initial value
 			// with the previous mission's value
 			if ( !stricmp(Sexp_variables[j].variable_name, Player->variables[i].variable_name) ) {
-				Sexp_variables[j].type = Player->variables[i].type;
-				strcpy_s(Sexp_variables[j].text, Player->variables[i].text);
-				break;
+				if (Sexp_variables[j].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
+					Sexp_variables[j].type = Player->variables[i].type;
+					strcpy_s(Sexp_variables[j].text, Player->variables[i].text);
+					break;
+				}
+				else {
+					WarningEx(LOCATION, "Variable %s has the same name as a player persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+				}
 			}
 		}
 	}
