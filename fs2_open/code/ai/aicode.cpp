@@ -6320,7 +6320,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 	if ( !(MULTI_TEAM) )
 	{
 		if (iff_x_attacks_y(shipp->team, Player_ship->team))
-			range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
+			range_time += aip->ai_in_range_time;
 	}
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
 
