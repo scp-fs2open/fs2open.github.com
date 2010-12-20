@@ -797,7 +797,7 @@ void outwnd_copy_marked_selection(HWND hwnd)
 
 	} else {
 		i = marked_top;
-		strcpy(ptr, outtext[i] + marked_left);
+		strcpy_s(ptr, outtext[i] + marked_left);
 		strcat(ptr, "\r\n");
 		i++;
 

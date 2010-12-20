@@ -1491,7 +1491,7 @@ void memblockinfo_sort_get_entry(int index, char *filename, int *size)
 {
 	Assert(index < MAX_MEM_MODULES);
 
-	strcpy(filename, mem_block_list[index].filename);
+	strcpy_s(filename, mem_block_list[index].filename);
 	*size = mem_block_list[index].size;
 }
 

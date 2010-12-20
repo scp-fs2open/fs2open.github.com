@@ -1661,7 +1661,7 @@ void multi_pxo_underscore_nick(char *string1,char *string2)
 
 	// copy the nickname
 	memset(nick_temp,0,512);
-	strcpy(nick_temp,string1);
+	strcpy_s(nick_temp,string1);
 
 	// get the first token
 	tok = strtok(nick_temp," ");

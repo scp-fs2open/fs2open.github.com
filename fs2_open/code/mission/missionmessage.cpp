@@ -915,7 +915,7 @@ bool message_filename_is_generic(char *filename)
 	char truncated_filename[MAX_FILENAME_LEN];
 
 	// truncate any file extension
-	strcpy(truncated_filename, filename);
+	strcpy_s(truncated_filename, filename);
 	char *ptr = strchr(truncated_filename, '.');
 
 	// extension must be a recognized sound file
