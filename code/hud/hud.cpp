@@ -2142,7 +2142,7 @@ void HudGaugeDamage::render(float frametime)
 			renderString(sx, sy, n_firstline);
 		} else {
 			char temp_name[NAME_LENGTH];
-			strcpy(temp_name, hud_subsys_list[best_index].name);
+			strcpy_s(temp_name, hud_subsys_list[best_index].name);
 			hud_targetbox_truncate_subsys_name(temp_name);
 			renderString(sx, sy, temp_name);
 		}
@@ -2281,7 +2281,7 @@ void hud_num_make_mono(char *num_str)
 // flashing text gauge
 void hud_init_text_flash_gauge()
 {
-	strcpy(Hud_text_flash, "");
+	strcpy_s(Hud_text_flash, "");
 	Hud_text_flash_timer = timestamp(0);
 	Hud_text_flash_interval = 0;
 }

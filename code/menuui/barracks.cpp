@@ -1302,7 +1302,7 @@ void barracks_accept_new_pilot_callsign()
 	}
 
 	strcpy(Pilots[0], buf);
-	strcpy(Cur_pilot->callsign, buf);
+	strcpy_s(Cur_pilot->callsign, buf);
 	init_new_pilot(Cur_pilot, !Clone_flag);
 	
 	// again, make sure we set his flags correctly to ensure that he gets saved to the proper directory and gets

@@ -630,7 +630,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 	char text_buf[256];
 	if (in_text != NULL && strlen(in_text) > 0)
 	{
-		strcpy(text_buf, in_text);
+		strcpy_s(text_buf, in_text);
 		sexp_replace_variable_names_with_values(text_buf, 256);
 		in_text = text_buf;
 	}

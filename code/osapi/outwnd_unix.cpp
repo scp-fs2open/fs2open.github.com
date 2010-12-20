@@ -74,19 +74,19 @@ void load_filter_info(void)
 		Outwnd_no_filter_file = 1;
 
 		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
-		strcpy( new_filter.name, "error" );
+		strcpy_s( new_filter.name, "error" );
 		new_filter.enabled = true;
 
 		OutwndFilter.push_back( new_filter );
 
 		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
-		strcpy( new_filter.name, "general" );
+		strcpy_s( new_filter.name, "general" );
 		new_filter.enabled = true;
 
 		OutwndFilter.push_back( new_filter );
 
 		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
-		strcpy( new_filter.name, "warning" );
+		strcpy_s( new_filter.name, "warning" );
 		new_filter.enabled = true;
 
 		OutwndFilter.push_back( new_filter );
@@ -111,7 +111,7 @@ void load_filter_info(void)
 			inbuf[z] = 0;
 
 		Assert( strlen(inbuf+1) < NAME_LENGTH );
-		strcpy(new_filter.name, inbuf + 1);
+		strcpy_s(new_filter.name, inbuf + 1);
 
 		if ( !stricmp(new_filter.name, "error") ) {
 			new_filter.enabled = true;
@@ -225,7 +225,7 @@ void outwnd_print(char *id, char *tmp)
 		Assert( strlen(id)+1 < NAME_LENGTH );
 		outwnd_filter_struct new_filter;
 
-		strcpy(new_filter.name, id);
+		strcpy_s(new_filter.name, id);
 		new_filter.enabled = true;
 
 		OutwndFilter.push_back( new_filter );
@@ -299,7 +299,7 @@ void safe_point_print(char *format, ...)
 	va_start(args, format);
 	vsnprintf(tmp, sizeof(tmp)-1,format, args);
 	va_end(args);
-	strcpy(safe_string, tmp);
+	strcpy_s(safe_string, tmp);
 }
 
 void safe_point(char *file, int line, char *format, ...)
