@@ -1152,20 +1152,26 @@ void mission_campaign_store_goals_and_events_and_variables()
 	if (num_mission_variables > 0) {
 		int variable_count = 0;
 		int total_variables = Campaign.num_variables;
+		int matching_variables = 0;
+		int persistent_variables_in_mission = 0;
 
 		// get count of new variables
 		for (i = 0; i < sexp_variable_count(); i++) {
-			if ( !(Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
-				continue;
-			}
+			if ( Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT ) {
+				persistent_variables_in_mission++;
 
-			for (j = 0; j < Campaign.num_variables; j++) {
-				if ( stricmp(Sexp_variables[i].variable_name, Campaign.variables[j].variable_name) ) {
-					total_variables++;
-					break;
+				// see if we already have a variable with this name
+				for (j = 0; j < Campaign.num_variables; j++) {
+					if (!(stricmp(Sexp_variables[i].variable_name, Campaign.variables[j].variable_name) )) {
+						matching_variables++;
+						break;
+					}
 				}
 			}
 		}
+		
+		Assert(persistent_variables_in_mission >= matching_variables); 
+		total_variables += (persistent_variables_in_mission - matching_variables);
 
 		// allocate new storage
 		sexp_variable *n_variables = (sexp_variable *) vm_malloc(total_variables * sizeof(sexp_variable));
@@ -1192,7 +1198,8 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 			// maybe update...
 			for (j = 0; j < Campaign.num_variables; j++) {
-				if ( !stricmp(Sexp_variables[i].variable_name, Campaign.variables[j].variable_name) ) {
+				if ( !stricmp(Sexp_variables[i].variable_name, n_variables[j].variable_name) ) {
+					Assertion ((n_variables[j].type == Sexp_variables[i].type), "Attempting to copy string variable %s to a slot already occupied by a campaign persistent variable of a different type.", Sexp_variables[i].variable_name); 
 					n_variables[j].type = Sexp_variables[i].type;
 					strcpy_s(n_variables[j].text, Sexp_variables[i].text);
 					add_it = false;
