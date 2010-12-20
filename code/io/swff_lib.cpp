@@ -2323,27 +2323,27 @@ BOOL SWFF_GetJoyData(int nJoyID, JOYINFOEX * pjix, char *pszErr)
 	switch(joyGetPosEx(nJoyID, pjix))
 	{
 		case JOYERR_NOERROR: // no problem
-			strcpy_s(pszErr,"SUCCESS");
+			strcpy(pszErr,"SUCCESS");
 			break;
 		 
 		case MMSYSERR_NODRIVER:
-			strcpy_s(pszErr,"The joystick driver is not present.");
+			strcpy(pszErr,"The joystick driver is not present.");
 			return FALSE;
 		 
 		case MMSYSERR_INVALPARAM:
-			strcpy_s(pszErr,"An invalid parameter was passed.");
+			strcpy(pszErr,"An invalid parameter was passed.");
 			return FALSE;
 		 
 		case MMSYSERR_BADDEVICEID:        
-			strcpy_s(pszErr,"The specified joystick identifier is invalid.");
+			strcpy(pszErr,"The specified joystick identifier is invalid.");
 			return FALSE;
 		 
 		case JOYERR_UNPLUGGED:        
-			strcpy_s(pszErr,"Your joystick is unplugged.");
+			strcpy(pszErr,"Your joystick is unplugged.");
 			return FALSE;
 		 
 		default:
-			strcpy_s(pszErr,"Unknown joystick error.");
+			strcpy(pszErr,"Unknown joystick error.");
 			return FALSE;
 	 
 	 }   // end of switch
@@ -2421,67 +2421,67 @@ void SWFF_ErrorCodeToString(HRESULT hResult, TCHAR * pszCodeString)
 
 	switch(hResult)
 	{
-		case S_FALSE: strcpy_s(pszCodeString, "S_FALSE"); break;
-		case DI_POLLEDDEVICE: strcpy_s(pszCodeString, "DI_POLLEDDEVICE"); break;
-//		case DI_DOWNLOADSKIPPED: strcpy_s(pszCodeString, "DI_DOWNLOADSKIPPED"); break;
-//		case DI_EFFECTRESTARTED: strcpy_s(pszCodeString, "DI_EFFECTRESTARTED"); break;
-		case DIERR_OLDDIRECTINPUTVERSION: strcpy_s(pszCodeString, "DIERR_OLDDIRECTINPUTVERSION" ); break;
-		case DIERR_BETADIRECTINPUTVERSION: strcpy_s(pszCodeString, "DIERR_BETADIRECTINPUTVERSION" ); break;
-		case DIERR_BADDRIVERVER: strcpy_s(pszCodeString, "DIERR_BADDRIVERVER" ); break;
-		case DIERR_DEVICENOTREG: strcpy_s(pszCodeString, "DIERR_DEVICENOTREG" ); break;
-		case DIERR_NOTFOUND: strcpy_s(pszCodeString, "DIERR_NOTFOUND" ); break;
-		case DIERR_INVALIDPARAM: strcpy_s(pszCodeString, "DIERR_INVALIDPARAM" ); break;
-		case DIERR_NOINTERFACE: strcpy_s(pszCodeString, "DIERR_NOINTERFACE" ); break;
-		case DIERR_GENERIC: strcpy_s(pszCodeString, "DIERR_GENERIC" ); break;
-		case DIERR_OUTOFMEMORY: strcpy_s(pszCodeString, "DIERR_OUTOFMEMORY" ); break;
-		case DIERR_UNSUPPORTED: strcpy_s(pszCodeString, "DIERR_UNSUPPORTED" ); break;
-		case DIERR_NOTINITIALIZED: strcpy_s(pszCodeString, "DIERR_NOTINITIALIZED" ); break;
-		case DIERR_ALREADYINITIALIZED: strcpy_s(pszCodeString, "DIERR_ALREADYINITIALIZED" ); break;
-		case DIERR_NOAGGREGATION: strcpy_s(pszCodeString, "DIERR_NOAGGREGATION" ); break;
-		case DIERR_INPUTLOST: strcpy_s(pszCodeString, "DIERR_INPUTLOST" ); break;
-		case DIERR_ACQUIRED: strcpy_s(pszCodeString, "DIERR_ACQUIRED" ); break;
-		case DIERR_NOTACQUIRED: strcpy_s(pszCodeString, "DIERR_NOTACQUIRED" ); break;
-		case E_ACCESSDENIED: strcpy_s(pszCodeString, "E_ACCESSDENIED: DIERR_OTHERAPPHASPRIO, DIERR_READONLY, DIERR_HANDLEEXISTS"); break;
-		case E_PENDING: strcpy_s(pszCodeString, "E_PENDING" ); break;
-		case DIERR_INSUFFICIENTPRIVS: strcpy_s(pszCodeString, "DIERR_INSUFFICIENTPRIVS" ); break;
-		case DIERR_DEVICEFULL: strcpy_s(pszCodeString, "DIERR_DEVICEFULL" ); break;
-		case DIERR_MOREDATA: strcpy_s(pszCodeString, "DIERR_MOREDATA" ); break;
-		case DIERR_NOTDOWNLOADED: strcpy_s(pszCodeString, "DIERR_NOTDOWNLOADED" ); break;
-		case DIERR_HASEFFECTS: strcpy_s(pszCodeString, "DIERR_HASEFFECTS" ); break;
-		case DIERR_NOTEXCLUSIVEACQUIRED: strcpy_s(pszCodeString, "DIERR_NOTEXCLUSIVEACQUIRED"); break;
-		case DIERR_INCOMPLETEEFFECT: strcpy_s(pszCodeString, "DIERR_INCOMPLETEEFFECT" ); break;
-		case DIERR_NOTBUFFERED: strcpy_s(pszCodeString, "DIERR_NOTBUFFERED" ); break;
-		case DIERR_EFFECTPLAYING: strcpy_s(pszCodeString, "DIERR_EFFECTPLAYING"); break;
-		case SFERR_INVALID_OBJECT: strcpy_s(pszCodeString, "SFERR_INVALID_OBJECT" ); break;
-		case SFERR_END_OF_LIST: strcpy_s(pszCodeString, "SFERR_END_OF_LIST" ); break;
-		case SFERR_DEVICE_NACK: strcpy_s(pszCodeString, "SFERR_DEVICE_NACK" ); break;
-		case SFERR_RAW_OUT_DATAEVENT_CREATION: strcpy_s(pszCodeString, "SFERR_RAW_OUT_DATAEVENT_CREATION" ); break;
-		case SFERR_RAW_OUT_THREAD_CREATION: strcpy_s(pszCodeString, "SFERR_RAW_OUT_THREAD_CREATION" ); break;
-		case SFERR_SYSTEM_INIT: strcpy_s(pszCodeString, "SFERR_SYSTEM_INIT" ); break;
-		case SFERR_DRIVER_ERROR: strcpy_s(pszCodeString, "SFERR_DRIVER_ERROR" ); break;
-		case SFERR_NON_FF_DEVICE: strcpy_s(pszCodeString, "SFERR_NON_FF_DEVICE" ); break;
-		case SFERR_INVALID_HAL_OBJECT: strcpy_s(pszCodeString, "SFERR_INVALID_HAL_OBJECT" ); break;
-//		case VFX_ERR_FILE_NOT_FOUND: strcpy_s(pszCodeString, "VFX_ERR_FILE_NOT_FOUND" ); break;
-//		case VFX_ERR_FILE_CANNOT_OPEN: strcpy_s(pszCodeString, "VFX_ERR_FILE_CANNOT_OPEN" ); break;
-//		case VFX_ERR_FILE_CANNOT_CLOSE: strcpy_s(pszCodeString, "VFX_ERR_FILE_CANNOT_CLOSE" ); break;
-//		case VFX_ERR_FILE_CANNOT_READ: strcpy_s(pszCodeString, "VFX_ERR_FILE_CANNOT_READ" ); break;
-//		case VFX_ERR_FILE_CANNOT_WRITE: strcpy_s(pszCodeString, "VFX_ERR_FILE_CANNOT_WRITE" ); break;
-//		case VFX_ERR_FILE_CANNOT_SEEK: strcpy_s(pszCodeString, "VFX_ERR_FILE_CANNOT_SEEK" ); break;
-		case VFX_ERR_FILE_UNKNOWN_ERROR: strcpy_s(pszCodeString, "VFX_ERR_FILE_UNKNOWN_ERROR" ); break;
-		case VFX_ERR_FILE_BAD_FORMAT: strcpy_s(pszCodeString, "VFX_ERR_FILE_BAD_FORMAT" ); break;
-//		case VFX_ERR_FILE_ACCESS_DENIED: strcpy_s(pszCodeString, "VFX_ERR_FILE_ACCESS_DENIED" ); break;
-//		case VFX_ERR_FILE_SHARING_VIOLATION: strcpy_s(pszCodeString, "VFX_ERR_FILE_SHARING_VIOLATION" ); break;
-//		case VFX_ERR_FILE_NETWORK_ERROR: strcpy_s(pszCodeString, "VFX_ERR_FILE_NETWORK_ERROR" ); break;
-//		case VFX_ERR_FILE_TOO_MANY_OPEN_FILES: strcpy_s(pszCodeString, "VFX_ERR_FILE_TOO_MANY_OPEN_FILES" ); break;
-//		case VFX_ERR_FILE_INVALID: strcpy_s(pszCodeString, "VFX_ERR_FILE_INVALID" ); break;
-		case VFX_ERR_FILE_END_OF_FILE: strcpy_s(pszCodeString, "VFX_ERR_FILE_END_OF_FILE" ); break;
-		case SWDEV_ERR_INVALID_ID : strcpy_s(pszCodeString, "SWDEV_ERR_INVALID_ID" ); break;
-		case SWDEV_ERR_INVALID_PARAM : strcpy_s(pszCodeString, "SWDEV_ERR_INVALID_PARAM" ); break;
-		case SWDEV_ERR_CHECKSUM : strcpy_s(pszCodeString, "SWDEV_ERR_CHECKSUM" ); break;
-		case SWDEV_ERR_TYPE_FULL : strcpy_s(pszCodeString, "SWDEV_ERR_TYPE_FULL" ); break;
-		case SWDEV_ERR_UNKNOWN_CMD : strcpy_s(pszCodeString, "SWDEV_ERR_UNKNOWN_CMD" ); break;
-		case SWDEV_ERR_PLAYLIST_FULL : strcpy_s(pszCodeString, "SWDEV_ERR_PLAYLIST_FULL" ); break;
-		case SWDEV_ERR_PROCESSLIST_FULL : strcpy_s(pszCodeString, "SWDEV_ERR_PROCESSLIST_FULL" ); break;
+		case S_FALSE: strcpy(pszCodeString, "S_FALSE"); break;
+		case DI_POLLEDDEVICE: strcpy(pszCodeString, "DI_POLLEDDEVICE"); break;
+//		case DI_DOWNLOADSKIPPED: strcpy(pszCodeString, "DI_DOWNLOADSKIPPED"); break;
+//		case DI_EFFECTRESTARTED: strcpy(pszCodeString, "DI_EFFECTRESTARTED"); break;
+		case DIERR_OLDDIRECTINPUTVERSION: strcpy(pszCodeString, "DIERR_OLDDIRECTINPUTVERSION" ); break;
+		case DIERR_BETADIRECTINPUTVERSION: strcpy(pszCodeString, "DIERR_BETADIRECTINPUTVERSION" ); break;
+		case DIERR_BADDRIVERVER: strcpy(pszCodeString, "DIERR_BADDRIVERVER" ); break;
+		case DIERR_DEVICENOTREG: strcpy(pszCodeString, "DIERR_DEVICENOTREG" ); break;
+		case DIERR_NOTFOUND: strcpy(pszCodeString, "DIERR_NOTFOUND" ); break;
+		case DIERR_INVALIDPARAM: strcpy(pszCodeString, "DIERR_INVALIDPARAM" ); break;
+		case DIERR_NOINTERFACE: strcpy(pszCodeString, "DIERR_NOINTERFACE" ); break;
+		case DIERR_GENERIC: strcpy(pszCodeString, "DIERR_GENERIC" ); break;
+		case DIERR_OUTOFMEMORY: strcpy(pszCodeString, "DIERR_OUTOFMEMORY" ); break;
+		case DIERR_UNSUPPORTED: strcpy(pszCodeString, "DIERR_UNSUPPORTED" ); break;
+		case DIERR_NOTINITIALIZED: strcpy(pszCodeString, "DIERR_NOTINITIALIZED" ); break;
+		case DIERR_ALREADYINITIALIZED: strcpy(pszCodeString, "DIERR_ALREADYINITIALIZED" ); break;
+		case DIERR_NOAGGREGATION: strcpy(pszCodeString, "DIERR_NOAGGREGATION" ); break;
+		case DIERR_INPUTLOST: strcpy(pszCodeString, "DIERR_INPUTLOST" ); break;
+		case DIERR_ACQUIRED: strcpy(pszCodeString, "DIERR_ACQUIRED" ); break;
+		case DIERR_NOTACQUIRED: strcpy(pszCodeString, "DIERR_NOTACQUIRED" ); break;
+		case E_ACCESSDENIED: strcpy(pszCodeString, "E_ACCESSDENIED: DIERR_OTHERAPPHASPRIO, DIERR_READONLY, DIERR_HANDLEEXISTS"); break;
+		case E_PENDING: strcpy(pszCodeString, "E_PENDING" ); break;
+		case DIERR_INSUFFICIENTPRIVS: strcpy(pszCodeString, "DIERR_INSUFFICIENTPRIVS" ); break;
+		case DIERR_DEVICEFULL: strcpy(pszCodeString, "DIERR_DEVICEFULL" ); break;
+		case DIERR_MOREDATA: strcpy(pszCodeString, "DIERR_MOREDATA" ); break;
+		case DIERR_NOTDOWNLOADED: strcpy(pszCodeString, "DIERR_NOTDOWNLOADED" ); break;
+		case DIERR_HASEFFECTS: strcpy(pszCodeString, "DIERR_HASEFFECTS" ); break;
+		case DIERR_NOTEXCLUSIVEACQUIRED: strcpy(pszCodeString, "DIERR_NOTEXCLUSIVEACQUIRED"); break;
+		case DIERR_INCOMPLETEEFFECT: strcpy(pszCodeString, "DIERR_INCOMPLETEEFFECT" ); break;
+		case DIERR_NOTBUFFERED: strcpy(pszCodeString, "DIERR_NOTBUFFERED" ); break;
+		case DIERR_EFFECTPLAYING: strcpy(pszCodeString, "DIERR_EFFECTPLAYING"); break;
+		case SFERR_INVALID_OBJECT: strcpy(pszCodeString, "SFERR_INVALID_OBJECT" ); break;
+		case SFERR_END_OF_LIST: strcpy(pszCodeString, "SFERR_END_OF_LIST" ); break;
+		case SFERR_DEVICE_NACK: strcpy(pszCodeString, "SFERR_DEVICE_NACK" ); break;
+		case SFERR_RAW_OUT_DATAEVENT_CREATION: strcpy(pszCodeString, "SFERR_RAW_OUT_DATAEVENT_CREATION" ); break;
+		case SFERR_RAW_OUT_THREAD_CREATION: strcpy(pszCodeString, "SFERR_RAW_OUT_THREAD_CREATION" ); break;
+		case SFERR_SYSTEM_INIT: strcpy(pszCodeString, "SFERR_SYSTEM_INIT" ); break;
+		case SFERR_DRIVER_ERROR: strcpy(pszCodeString, "SFERR_DRIVER_ERROR" ); break;
+		case SFERR_NON_FF_DEVICE: strcpy(pszCodeString, "SFERR_NON_FF_DEVICE" ); break;
+		case SFERR_INVALID_HAL_OBJECT: strcpy(pszCodeString, "SFERR_INVALID_HAL_OBJECT" ); break;
+//		case VFX_ERR_FILE_NOT_FOUND: strcpy(pszCodeString, "VFX_ERR_FILE_NOT_FOUND" ); break;
+//		case VFX_ERR_FILE_CANNOT_OPEN: strcpy(pszCodeString, "VFX_ERR_FILE_CANNOT_OPEN" ); break;
+//		case VFX_ERR_FILE_CANNOT_CLOSE: strcpy(pszCodeString, "VFX_ERR_FILE_CANNOT_CLOSE" ); break;
+//		case VFX_ERR_FILE_CANNOT_READ: strcpy(pszCodeString, "VFX_ERR_FILE_CANNOT_READ" ); break;
+//		case VFX_ERR_FILE_CANNOT_WRITE: strcpy(pszCodeString, "VFX_ERR_FILE_CANNOT_WRITE" ); break;
+//		case VFX_ERR_FILE_CANNOT_SEEK: strcpy(pszCodeString, "VFX_ERR_FILE_CANNOT_SEEK" ); break;
+		case VFX_ERR_FILE_UNKNOWN_ERROR: strcpy(pszCodeString, "VFX_ERR_FILE_UNKNOWN_ERROR" ); break;
+		case VFX_ERR_FILE_BAD_FORMAT: strcpy(pszCodeString, "VFX_ERR_FILE_BAD_FORMAT" ); break;
+//		case VFX_ERR_FILE_ACCESS_DENIED: strcpy(pszCodeString, "VFX_ERR_FILE_ACCESS_DENIED" ); break;
+//		case VFX_ERR_FILE_SHARING_VIOLATION: strcpy(pszCodeString, "VFX_ERR_FILE_SHARING_VIOLATION" ); break;
+//		case VFX_ERR_FILE_NETWORK_ERROR: strcpy(pszCodeString, "VFX_ERR_FILE_NETWORK_ERROR" ); break;
+//		case VFX_ERR_FILE_TOO_MANY_OPEN_FILES: strcpy(pszCodeString, "VFX_ERR_FILE_TOO_MANY_OPEN_FILES" ); break;
+//		case VFX_ERR_FILE_INVALID: strcpy(pszCodeString, "VFX_ERR_FILE_INVALID" ); break;
+		case VFX_ERR_FILE_END_OF_FILE: strcpy(pszCodeString, "VFX_ERR_FILE_END_OF_FILE" ); break;
+		case SWDEV_ERR_INVALID_ID : strcpy(pszCodeString, "SWDEV_ERR_INVALID_ID" ); break;
+		case SWDEV_ERR_INVALID_PARAM : strcpy(pszCodeString, "SWDEV_ERR_INVALID_PARAM" ); break;
+		case SWDEV_ERR_CHECKSUM : strcpy(pszCodeString, "SWDEV_ERR_CHECKSUM" ); break;
+		case SWDEV_ERR_TYPE_FULL : strcpy(pszCodeString, "SWDEV_ERR_TYPE_FULL" ); break;
+		case SWDEV_ERR_UNKNOWN_CMD : strcpy(pszCodeString, "SWDEV_ERR_UNKNOWN_CMD" ); break;
+		case SWDEV_ERR_PLAYLIST_FULL : strcpy(pszCodeString, "SWDEV_ERR_PLAYLIST_FULL" ); break;
+		case SWDEV_ERR_PROCESSLIST_FULL : strcpy(pszCodeString, "SWDEV_ERR_PROCESSLIST_FULL" ); break;
 		default: sprintf(pszCodeString, "%x", hResult); break;
 	}
 

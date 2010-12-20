@@ -630,7 +630,7 @@ void std_multi_setup_goal_tree()
    // add the primary goal tag
    new_item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 	new_item.pszText = goal_name;
-	strcpy_s(new_item.pszText,XSTR("Primary Objectives",917));
+	strcpy(new_item.pszText,XSTR("Primary Objectives",917));
 	new_item.iImage = 0;
 	new_item.iSelectedImage = 0;		
 	tree_insert.hParent      = NULL;
@@ -640,7 +640,7 @@ void std_multi_setup_goal_tree()
 
 	// add the secondary goal tag
 	new_item.pszText = goal_name;
-	strcpy_s(new_item.pszText,XSTR("Secondary Objectives",918));
+	strcpy(new_item.pszText,XSTR("Secondary Objectives",918));
 	new_item.iImage = 0;
 	new_item.iSelectedImage = 0;	
 	tree_insert.hInsertAfter = TVI_LAST;
@@ -649,7 +649,7 @@ void std_multi_setup_goal_tree()
 
 	// add the bonus goal tag
 	new_item.pszText = goal_name;
-	strcpy_s(new_item.pszText,XSTR("Bonus Objectives",919));
+	strcpy(new_item.pszText,XSTR("Bonus Objectives",919));
 	new_item.iImage = 0;
 	new_item.iSelectedImage = 0;			
 	tree_insert.item = new_item;
@@ -702,7 +702,7 @@ void std_multi_add_goals()
 
 		// set the goal name
 		new_item.pszText = goal_name;
-		strcpy_s(new_item.pszText,Mission_goals[idx].name);
+		strcpy(new_item.pszText,Mission_goals[idx].name);
 		
 		// set the correct image indices
 		new_item.iImage = (goal_flags & (1<<0)) ? 3 : 0;
@@ -719,7 +719,7 @@ void std_multi_add_goals()
 		// insert the "none" item 
 		tree_insert.hParent = Goal_items[0];
 		new_item.pszText = goal_name;
-		strcpy_s(new_item.pszText,XSTR("none",920));
+		strcpy(new_item.pszText,XSTR("none",920));
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
@@ -729,7 +729,7 @@ void std_multi_add_goals()
 		// insert the "none" item
 		tree_insert.hParent = Goal_items[1];
 		new_item.pszText = goal_name;
-		strcpy_s(new_item.pszText,XSTR("none",920));
+		strcpy(new_item.pszText,XSTR("none",920));
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
@@ -739,7 +739,7 @@ void std_multi_add_goals()
 		// insert the "none" item
 		tree_insert.hParent = Goal_items[1];
 		new_item.pszText = goal_name;
-		strcpy_s(new_item.pszText,XSTR("none",920));
+		strcpy(new_item.pszText,XSTR("none",920));
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
@@ -996,7 +996,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 	lookup.mask = TVIF_TEXT;
 	lookup.pszText = goal_name_text;
 	lookup.cchTextMax = NAME_LENGTH;
-	strcpy_s(lookup.pszText,goal_string);
+	strcpy(lookup.pszText,goal_string);
 
 	// search through all the items
 	done=0;
@@ -2054,7 +2054,7 @@ void std_build_title_string(char *str)
 	snprintf(temp, sizeof(temp)-1, "%s %s", XSTR("FreeSpace Standalone", 935), ver_str);
 
 	// output first part
-	strcpy_s(str, temp);
+	strcpy(str, temp);
 
 #ifdef STANDALONE_ONLY_BUILD
 	memset(temp, 0, 256);
