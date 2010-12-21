@@ -6367,9 +6367,9 @@ void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *targ
 	}
 
 	if(name) {
-		strcpy(element.name, name);
+		strcpy_s(element.name, name);
 	} else {
-		strcpy(element.name, "");
+		strcpy_s(element.name, "");
 	}
 
 	target_display_list.push_back(element);

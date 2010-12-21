@@ -323,7 +323,7 @@ expression::expression(char* in_str):variable(VAR_EXP),head(NULL){
 	postfix(str);
 	char* is = new char[str.length()+1];
 	char* os = is;
-	strcpy(is, str.c_str());
+	strcpy_s(is, str.c_str());
 	//second step is makeing a tree from the prefix expression
 	//in infix the operator precededs the operands
 	head = parse_next(is);

@@ -8931,6 +8931,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = false;
 	}
 	model_anim_set_initial_states(sp);
+
+	//Reassign sound stuff
+	ship_assign_sound(sp);
 }
 
 #ifndef NDEBUG
@@ -13857,7 +13860,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DESTROY_SUBSYSTEM: {
 			if ( aip->targeted_subsys != NULL ) {
 				char subsys_name[NAME_LENGTH];
-				strcpy(subsys_name, aip->targeted_subsys->system_info->subobj_name);
+				strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name);
 				hud_targetbox_truncate_subsys_name(subsys_name);
 				sprintf(outbuf, XSTR( "atk %s %s", 496), ship_name, subsys_name);
 			} else {
