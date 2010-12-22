@@ -33,6 +33,8 @@ static mc_info		*Mc;				// The mc_info passed into model_collide
 static polymodel	*Mc_pm;			// The polygon model we're checking
 static int			Mc_submodel;	// The current submodel we're checking
 
+static polymodel_instance *Mc_pmi;
+
 static matrix		Mc_orient;		// A matrix to rotate a world point into the current
 											// submodel's frame of reference.
 static vec3d		Mc_base;			// A point used along with Mc_orient.
@@ -755,11 +757,24 @@ NoHit:
 	// Check all of this subobject's children
 	i = sm->first_child;
 	while ( i >= 0 )	{
+		angles angs;
+		bool blown_off;
+		bool collision_checked;
 		bsp_info * csm = &Mc_pm->submodel[i];
+		
+		if ( Mc_pmi ) {
+			angs = Mc_pmi->submodel[i].angs;
+			blown_off = Mc_pmi->submodel[i].blown_off;
+			collision_checked = Mc_pmi->submodel[i].collision_checked;
+		} else {
+			angs = csm->angs;
+			blown_off = csm->blown_off ? true : false;
+			collision_checked = false;
+		}
 
 		// Don't check it or its children if it is destroyed
 		// or if it's set to no collision
-		if (!csm->blown_off && !csm->no_collisions)	{	
+		if ( !blown_off && !collision_checked && !csm->no_collisions )	{	
 			//instance for this subobject
 			matrix tm = IDENTITY_MATRIX;
 
@@ -768,10 +783,10 @@ NoHit:
 
 			if( vm_matrix_same(&tm, &csm->orientation)) {
 				// if submodel orientation matrix is identity matrix then don't bother with matrix ops
-				vm_angles_2_matrix(&tm, &csm->angs);
+				vm_angles_2_matrix(&tm, &angs);
 			} else {
 				matrix rotation_matrix = csm->orientation;
-				vm_rotate_matrix_by_angles(&rotation_matrix, &csm->angs);
+				vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
 
 				matrix inv_orientation;
 				vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
@@ -816,6 +831,12 @@ int model_collide(mc_info * mc_info)
 	Mc_base = *Mc->pos;
 	Mc_mag = vm_vec_dist( Mc->p0, Mc->p1 );
 	Mc_edge_time = FLT_MAX;
+
+	if ( Mc->model_instance_num >= 0 ) {
+		Mc_pmi = model_get_instance(Mc->model_instance_num);
+	} else {
+		Mc_pmi = NULL;
+	}
 
 	// DA 11/19/98 - disable this check for rotating submodels
 	// Don't do check if for very small movement
@@ -895,7 +916,11 @@ int model_collide(mc_info * mc_info)
 			vm_vec_unrotate(&Mc->hit_point_world, &Mc->hit_point, Mc->orient);
 			vm_vec_add2(&Mc->hit_point_world, Mc->pos);
 		} else {
-			model_find_world_point(&Mc->hit_point_world, &Mc->hit_point,Mc->model_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+			if ( Mc_pmi ) {
+				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_num, Mc->model_instance_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+			} else {
+				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+			}
 		}
 	}
 

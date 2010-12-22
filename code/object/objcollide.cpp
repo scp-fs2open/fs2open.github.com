@@ -877,8 +877,7 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 
 	Assert(goalobjp->type == OBJ_SHIP);
 
-	ship_model_start(goalobjp);
-
+	mc.model_instance_num = Ships[goalobjp->instance].model_instance_num;
 	mc.model_num = Ship_info[Ships[goalobjp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &goalobjp->orient;	// The object's orient
 	mc.pos = &goalobjp->pos;			// The object's position
@@ -888,8 +887,6 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 	mc.radius = radius;
 
 	model_collide(&mc);
-
-	ship_model_stop(goalobjp);
 
 	return mc.num_hits;
 }
