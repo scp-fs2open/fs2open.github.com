@@ -732,6 +732,8 @@ typedef struct ship {
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
 	int shield_armor_type_idx;
+
+	int model_instance_num;
 } ship;
 
 struct ai_target_priority {
@@ -1548,6 +1550,7 @@ int ship_is_shield_up( object *obj, int quadrant );
 // the actual functions in ship.cpp for more details.
 extern void ship_model_start(object *objp);
 extern void ship_model_stop(object *objp);
+void ship_model_update_instance(object *objp);
 
 //============================================
 extern int ship_find_num_crewpoints(object *objp);

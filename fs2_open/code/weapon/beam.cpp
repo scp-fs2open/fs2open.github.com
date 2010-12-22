@@ -2267,8 +2267,8 @@ int beam_collide_ship(obj_pair *pair)
 	sip = &Ship_info[shipp->ship_info_index];
 	bwi = &Weapon_info[b->weapon_info_index];
 
-	ship_model_start(ship_objp);
 	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 	// get the widest portion of the beam
 	widest = beam_get_widest(b);
@@ -2277,6 +2277,7 @@ int beam_collide_ship(obj_pair *pair)
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
 	// set up collision structs, part 1
+	mc.model_instance_num = shipp->model_instance_num;
 	mc.model_num = model_num;
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
@@ -2357,8 +2358,6 @@ int beam_collide_ship(obj_pair *pair)
 		valid_hit_occurred = 1;
 	}
 
-	ship_model_stop(ship_objp);
-
 	// if we got a hit
 	if (valid_hit_occurred) {
 		// add to the collision_list
@@ -2425,6 +2424,7 @@ int beam_collide_asteroid(obj_pair *pair)
 #endif
 
 	// do the collision		
+	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
@@ -2494,6 +2494,7 @@ int beam_collide_missile(obj_pair *pair)
 #endif
 
 	// do the collision		
+	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
@@ -2559,7 +2560,8 @@ int beam_collide_debris(obj_pair *pair)
 	Beam_test_ints++;
 #endif
 
-	// do the collision		
+	// do the collision	
+	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;

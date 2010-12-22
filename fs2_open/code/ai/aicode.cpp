@@ -6687,6 +6687,7 @@ int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d 
 	mc_info	mc;
 	polymodel *pm = model_get(Ship_info[Ships[big_objp->instance].ship_info_index].model_num);
 
+	mc.model_instance_num = -1;
 	mc.model_num = pm->id;				// Fill in the model to check
 	mc.orient = &big_objp->orient;			// The object's orient
 	mc.pos = &big_objp->pos;					// The object's position
