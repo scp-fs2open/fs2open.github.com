@@ -130,13 +130,11 @@ void pilotfile::csg_read_info()
 	idx = cfread_int(cfp);
 
 	// check the idx is within bounds
-	Assertion ((idx < (int)ship_list.size() && (idx >= 0)), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
-	p->last_ship_flown_si_index = ship_list[idx].index;
-
-	if (p->last_ship_flown_si_index < 0) {
-		// really shouldn't happen if things are ok, so just fail if we get here
-		m_data_invalid = true;
-	}
+	Assertion ((idx < (int)ship_list.size()), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
+	if (idx != -1)
+		p->last_ship_flown_si_index = ship_list[idx].index;
+	else
+		p->last_ship_flown_si_index = -1;
 
 	// progression state
 	Campaign.prev_mission = cfread_int(cfp);
