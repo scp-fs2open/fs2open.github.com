@@ -1205,8 +1205,10 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_SHIP:
 		{
-			if ( !physics_paused || (objp==Player_obj) )
+			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
+				ship_model_update_instance(objp);
+			}
 
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{

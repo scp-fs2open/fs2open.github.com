@@ -83,6 +83,22 @@ typedef struct submodel_instance_info {
 	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
 } submodel_instance_info;
 
+typedef struct submodel_instance {
+	bool blown_off;
+	angles angs;
+	angles prev_angs;
+	//int num_arcs;
+	bool collision_checked;
+	//submodel_instance_info *sii;
+} submodel_instance;
+
+typedef struct polymodel_instance {
+	int model_num;
+	int root_submodel_num;
+	submodel_instance *submodel;
+	//float gun_submodel_rotation;
+} polymodel_instance;
+
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
@@ -697,6 +713,8 @@ void model_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
+int model_create_instance(int model_num, int submodel_num = -1);
+
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
 
@@ -705,6 +723,8 @@ void model_notify_dead_ship(int objnum);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
+
+polymodel_instance* model_get_instance(int model_instance_num);
 
 // routine to copy susbsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
@@ -833,11 +853,14 @@ extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_mod
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
 extern void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
+void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos );
 
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
 void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
+
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
 void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_submodesl, object *objp);
@@ -853,6 +876,9 @@ extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, i
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
 
+void model_clear_submodel_instance( submodel_instance *sm_instance );
+void model_clear_submodel_instances( int model_instance_num );
+
 // Sets rotating submodel turn info to that stored in model
 void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel);
 
@@ -861,6 +887,9 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
+void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -902,6 +931,7 @@ int submodel_get_num_polys(int model_num, int submodel_num);
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
 void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num);
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num);
 
 
 // This is the interface to model_check_collision.  Rather than passing all these
@@ -909,6 +939,7 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 // the input values and call model_check_collision
 typedef struct mc_info {
 	// Input values
+	int		model_instance_num;
 	int		model_num;			// What model to check
 	int		submodel_num;		// What submodel to check if MC_SUBMODEL is set
 	matrix	*orient;				// The orient of the model

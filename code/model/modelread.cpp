@@ -55,6 +55,7 @@ int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 // info for special polygon lists
 
 polymodel *Polygon_models[MAX_POLYGON_MODELS];
+SCP_vector<polymodel_instance*> Polygon_model_instances;
 
 static int model_initted = 0;
 extern int Cmdline_nohtl;
@@ -2575,6 +2576,48 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	return pm->id;
 }
 
+int model_create_instance(int model_num, int submodel_num)
+{
+	int i = 0;
+	int open_slot = -1;
+
+	// go through model instances and find an empty slot
+	for ( i = 0; i < (int)Polygon_model_instances.size(); i++) {
+		if ( !Polygon_model_instances[i] ) {
+			open_slot = i;
+		}
+	}
+
+	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
+
+	// if not found, create a slot
+	if ( open_slot < 0 ) {
+		Polygon_model_instances.push_back( pmi );
+		open_slot = Polygon_model_instances.size() - 1;
+	} else {
+		Polygon_model_instances[open_slot] = pmi;
+	}
+
+	polymodel *pm = model_get(model_num);
+
+	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
+
+	for ( i = 0; i < pm->n_models; i++ ) {
+		model_clear_submodel_instance( &pmi->submodel[i] );
+	}
+
+	pmi->model_num = model_num;
+
+	if ( submodel_num < 0 ) {
+		// if using default arguments, use detail0 as the root submodel
+		pmi->root_submodel_num = pm->detail[0];
+	} else {
+		pmi->root_submodel_num = submodel_num;
+	}
+
+	return open_slot;
+}
+
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
 // second last to last point.
 void model_maybe_fixup_subsys_path(polymodel *pm, int path_num)
@@ -2791,6 +2834,16 @@ polymodel * model_get(int model_num)
 	return Polygon_models[num];
 }
 
+polymodel_instance* model_get_instance(int model_instance_num)
+{
+	Assert( model_instance_num >= 0 );
+	Assert( model_instance_num < Polygon_model_instances.size() );
+	if ( model_instance_num < 0 || model_instance_num >= (int)Polygon_model_instances.size() ) {
+		return NULL;
+	} 
+
+	return Polygon_model_instances[model_instance_num];
+}
 
 /*
 // Finds the 3d bounding box of a model.  If submodel_num is -1,
@@ -3059,6 +3112,42 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 		// to the parent - KeldorKatarn
 		matrix rotation_matrix = pm->submodel[mn].orientation;
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tvec, &vec, &m);
+		vec = tvec;
+
+		mn = pm->submodel[mn].parent;
+	}
+
+	// now instance for the entire object
+	vm_vec_unrotate(w_vec, &vec, &ship_obj->orient);
+}
+
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num)
+{
+	vec3d tvec, vec;
+	matrix m;
+	int mn;
+
+	Assert(ship_obj->type == OBJ_SHIP);
+
+	polymodel_instance *pmi = model_get_instance(Ships[ship_obj->instance].model_instance_num);
+	polymodel *pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+	vec = *m_vec;
+	mn = sub_model_num;
+
+	// instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
 
 		matrix inv_orientation;
 		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
@@ -3643,6 +3732,43 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	vm_vec_add2(outpnt,objpos);
 }
 
+void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+{
+	vec3d pnt;
+	vec3d tpnt;
+	matrix m;
+	int mn;
+	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+
+	pnt = *mpnt;
+	mn = sub_model_num;
+
+	//instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tpnt, &pnt, &m);
+
+		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+
+		mn = pm->submodel[mn].parent;
+	}
+
+	//now instance for the entire object
+	vm_vec_unrotate(outpnt,&pnt,objorient);
+	vm_vec_add2(outpnt,objpos);
+}
+
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
@@ -3677,6 +3803,39 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 	// to the parent - KeldorKatarn
 	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
 	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[submodel_num].angs);
+
+	matrix inv_orientation;
+	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+
+	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+	vm_vec_rotate(out, &tempv2, &m);
+}
+
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos)
+{
+	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
+
+	vec3d tempv1, tempv2;
+	matrix m;
+
+	// get into ship RF
+	vm_vec_sub(&tempv1, world_pt, pos);
+	vm_vec_rotate(&tempv2, &tempv1, orient);
+
+	if (pm->submodel[submodel_num].parent == -1) {
+		*out  = tempv2;
+		return;
+	}
+
+	// put into submodel RF
+	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
+
+	// By using this kind of computation, the rotational angles can always
+	// be computed relative to the submodel itself, instead of relative
+	// to the parent - KeldorKatarn
+	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
+	vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
 
 	matrix inv_orientation;
 	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
@@ -3871,6 +4030,26 @@ void model_clear_instance_info( submodel_instance_info * sii )
 	sii->turn_accel = 0.0f;
 }
 
+void model_clear_submodel_instance( submodel_instance *sm_instance )
+{
+	sm_instance->angs.p = 0.0f;
+	sm_instance->angs.b = 0.0f;
+	sm_instance->angs.h = 0.0f;
+	sm_instance->blown_off = false;
+	sm_instance->collision_checked = false;
+}
+
+void model_clear_submodel_instances( int model_instance_num )
+{
+	int i;
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
+
+	for ( i = 0; i < pm->n_models; i++ ) {
+		model_clear_submodel_instance(&pmi->submodel[i]);
+	}
+}
+
 // initialization during ship set
 void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
 {
@@ -3931,7 +4110,94 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	}
 }
 
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii)
+{
+	int i;
+	polymodel *pm;
+	polymodel_instance *pmi;
 
+	pmi = model_get_instance(model_instance_num);
+	pm = model_get(pmi->model_num);
+
+	Assert( sub_model_num >= 0 );
+	Assert( sub_model_num < pm->n_models );
+
+	if ( sub_model_num < 0 ) return;
+	if ( sub_model_num >= pm->n_models ) return;
+
+	submodel_instance *smi = &pmi->submodel[sub_model_num];
+	bsp_info *sm = &pm->submodel[sub_model_num];
+
+	// Set the "blown out" flags	
+	smi->blown_off = sii->blown_off ? true : false;
+
+	if ( smi->blown_off )	{
+		if ( sm->my_replacement > -1 )	{
+			pmi->submodel[sm->my_replacement].blown_off = false;
+			pmi->submodel[sm->my_replacement].angs = sii->angs;
+			pmi->submodel[sm->my_replacement].prev_angs = sii->prev_angs;
+		}
+	} else {
+		if ( sm->my_replacement > -1 )	{
+			pmi->submodel[sm->my_replacement].blown_off = true;
+		}
+	}
+
+	// Set the angles
+	smi->angs = sii->angs;
+	smi->prev_angs = sii->prev_angs;
+
+	// For all the detail levels of this submodel, set them also.
+	for (i=0; i<sm->num_details; i++ )	{
+		model_update_instance(model_instance_num, sm->details[i], sii );
+	}
+}
+
+void model_instance_dumb_rotation_sub(polymodel_instance * pmi, polymodel *pm, int mn)
+{
+	while ( mn >= 0 )	{
+
+		bsp_info * sm = &pm->submodel[mn];
+		submodel_instance *smi = &pmi->submodel[mn];
+
+		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
+			float *ang;
+			int axis = sm->movement_axis;
+			switch ( axis ) {
+			case MOVEMENT_AXIS_X:
+				ang = &smi->angs.p;
+					break;
+			case MOVEMENT_AXIS_Z:
+				ang = &smi->angs.b;
+					break;
+			default:
+			case MOVEMENT_AXIS_Y:
+				ang = &smi->angs.h;
+					break;
+			}
+			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
+			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
+			//this keeps ang from getting bigger than 2PI
+		}
+
+		if ( pm->submodel[mn].first_child > -1 )
+			model_instance_dumb_rotation_sub(pmi, pm, pm->submodel[mn].first_child);
+
+		mn = pm->submodel[mn].next_sibling;
+	}
+}
+
+void model_instance_dumb_rotation(int model_instance_num)
+{
+	polymodel *pm;
+	polymodel_instance *pmi;
+
+	pmi = model_get_instance(model_instance_num);
+	pm = model_get(pmi->model_num);
+	int mn = pm->detail[0];
+
+	model_instance_dumb_rotation_sub(pmi, pm, mn);
+}
 
 void model_do_childeren_dumb_rotation(polymodel * pm, int mn){
 	while ( mn >= 0 )	{

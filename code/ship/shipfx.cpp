@@ -1351,6 +1351,7 @@ int shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )	{
 			objp = &Objects[so->objnum];
 
+			mc.model_instance_num = -1;
 			mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 			mc.orient = &objp->orient;
 			mc.pos = &objp->pos;
@@ -1397,6 +1398,7 @@ int shipfx_in_shadow( object * src_obj )
 			if ( src_obj != objp )	{
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
+				mc.model_instance_num = -1;
 				mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 				mc.orient = &objp->orient;
 				mc.pos = &objp->pos;
@@ -1442,8 +1444,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		if ( src_obj != objp )	{
 			vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
-			ship_model_start(objp);
-
+			mc.model_instance_num = Ships[objp->instance].model_instance_num;
 			mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 			mc.orient = &objp->orient;
 			mc.pos = &objp->pos;
@@ -1455,8 +1456,6 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	//			mc.radius = src_obj->radius;
 
 			int hit = model_collide(&mc);
-
-			ship_model_stop(objp);
 
 			if (hit) {
 				return 1;
@@ -1477,6 +1476,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
 		vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
+		mc.model_instance_num = -1;
 		mc.model_num = db->model_num;	// Fill in the model to check
 		mc.submodel_num = db->submodel_num;
 		model_clear_instance( mc.model_num );
@@ -1510,6 +1510,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
+		mc.model_instance_num = -1;
 		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
 		mc.submodel_num = -1;
 		model_clear_instance( mc.model_num );

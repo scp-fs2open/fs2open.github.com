@@ -8185,8 +8185,7 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 
 	num = obj->instance;
 
-	ship_model_start(obj);	// are these needed in this fast case? probably not.
-
+	mc.model_instance_num = Ships[num].model_instance_num;
 	mc.model_num = Ship_info[Ships[num].ship_info_index].model_num;	// Fill in the model to check
 	mc.orient = &obj->orient;					// The object's orient
 	mc.pos = &obj->pos;							// The object's position
@@ -8197,8 +8196,6 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 	model_collide(&mc);
 	if (mc.num_hits)
 		*hitpos = mc.hit_point_world;
-	
-	ship_model_stop(obj);	// are these needed in this fast case? probably not.
 
 	return mc.num_hits;
 }
@@ -8535,6 +8532,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	model_anim_set_initial_states(shipp);
 
+	shipp->model_instance_num = model_create_instance(sip->model_num);
 	ship_init_cockpit_displays(shipp, sip->cockpit_model_num);
 /*
 	polymodel *pm = model_get(shipp->modelnum);
@@ -8931,9 +8929,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = false;
 	}
 	model_anim_set_initial_states(sp);
-
-	//Reassign sound stuff
-	ship_assign_sound(sp);
 }
 
 #ifndef NDEBUG
@@ -11506,6 +11501,56 @@ void ship_model_stop(object *objp)
 	model_clear_instance(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 }
 
+//=======================================================================================
+// Like ship_model_start but fills submodel instances instead of the submodels themselves
+void ship_model_update_instance(object *objp)
+{
+	model_subsystem	*psub;
+	ship		*shipp;
+	ship_subsys	*pss;
+	int model_instance_num;
+
+	Assert(objp != NULL);
+	Assert(objp->instance >= 0);
+	Assert(objp->type == OBJ_SHIP);
+
+	shipp = &Ships[objp->instance];
+	model_instance_num = shipp->model_instance_num;
+
+	// Then, clear all the angles in the model to zero
+	model_clear_submodel_instances(model_instance_num);
+
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+		psub = pss->system_info;
+		switch (psub->type) {
+			case SUBSYSTEM_RADAR:
+			case SUBSYSTEM_NAVIGATION:
+			case SUBSYSTEM_COMMUNICATION:
+			case SUBSYSTEM_UNKNOWN:
+			case SUBSYSTEM_ENGINE:
+			case SUBSYSTEM_SENSORS:
+			case SUBSYSTEM_WEAPONS:
+			case SUBSYSTEM_SOLAR:
+			case SUBSYSTEM_GAS_COLLECT:
+			case SUBSYSTEM_ACTIVATION:
+				break;
+			case SUBSYSTEM_TURRET:
+				Assertion( !(psub->flags & MSS_FLAG_ROTATES), "Turret %s on ship %s has the $rotate or $triggered subobject property defined. Please fix the model.\n", psub->name, Ship_info[shipp->ship_info_index].name ); // Turrets can't rotate!!! See John!
+				break;
+			default:
+				Error(LOCATION, "Illegal subsystem type.\n");
+		}
+
+		if ( psub->subobj_num >= 0 )	{
+			model_update_instance(model_instance_num, psub->subobj_num, &pss->submodel_info_1 );
+		}
+
+		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
+			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2 );
+		}
+	}
+	model_instance_dumb_rotation(model_instance_num);
+}
 
 //==========================================================
 // Finds the number of crew points in a ship
@@ -13517,8 +13562,7 @@ int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, v
 	vm_vec_normalized_dir(&eye_to_pos, subsys_pos, eye_pos);
 	vm_vec_scale_add(&terminus, eye_pos, &eye_to_pos, 100000.0f);
 
-	ship_model_start(objp);
-
+	mc.model_instance_num = Ships[objp->instance].model_instance_num;
 	mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &objp->orient;										// The object's orientation
 	mc.pos = &objp->pos;												// The object's position
@@ -13527,8 +13571,6 @@ int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, v
 	mc.flags = MC_CHECK_MODEL;	
 
 	model_collide(&mc);
-
-	ship_model_stop(objp);
 
 	if ( !mc.num_hits ) {
 		return 0;
