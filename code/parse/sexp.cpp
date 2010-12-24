@@ -14297,8 +14297,11 @@ void sexp_beam_free(int node)
 		}
 
 		// flag it as beam free :)
-		turret->weapons.flags |= SW_FLAG_BEAM_FREE;
-		turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+		if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE))
+		{
+			turret->weapons.flags |= SW_FLAG_BEAM_FREE;
+			turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+		}
 	}
 }
 
@@ -14324,7 +14327,8 @@ void sexp_beam_free_all(int node)
 
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
 			// just mark all turrets as beam free
-			if (subsys->system_info->type == SUBSYSTEM_TURRET) {
+			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (!(subsys->weapons.flags & SW_FLAG_BEAM_FREE)))
+			{
 				subsys->weapons.flags |= SW_FLAG_BEAM_FREE;
 				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
@@ -14417,8 +14421,11 @@ void sexp_turret_free(int node)
 		}
 
 		// flag turret as no longer locked :)
-		turret->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
-		turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+		if (turret->weapons.flags & SW_FLAG_TURRET_LOCK) 
+		{
+			turret->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+			turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+		}
 	}
 }
 
@@ -14444,7 +14451,7 @@ void sexp_turret_free_all(int node)
 
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
 			// just mark all turrets as free
-			if (subsys->system_info->type == SUBSYSTEM_TURRET) {
+			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (subsys->weapons.flags & SW_FLAG_TURRET_LOCK)) {
 				subsys->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
 				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
@@ -21589,6 +21596,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TURRET_LOCK:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+			if(argnum == 0){
+				return OPF_SHIP;
+			} else {
+				return OPF_SUBSYSTEM;
+			}
+
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			if(argnum == 0){
