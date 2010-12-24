@@ -528,7 +528,6 @@ FS2_SOURCES =	\
 	network/multi_obj.h	\
 	network/multi_observer.cpp	\
 	network/multi_observer.h	\
-	network/multi_oo.h	\
 	network/multi_options.cpp	\
 	network/multi_options.h	\
 	network/multi_pause.cpp	\
@@ -554,8 +553,6 @@ FS2_SOURCES =	\
 	network/multi_voice.h	\
 	network/multi_xfer.cpp	\
 	network/multi_xfer.h	\
-	network/psnet.cpp	\
-	network/psnet.h	\
 	network/psnet2.cpp	\
 	network/psnet2.h	\
 	network/stand_gui.cpp	\

@@ -594,7 +594,7 @@ typedef struct join_request {
 // network buffer for sending and receiving packets
 typedef struct network_buffer {
 	int	size;										// size of the buffer
-	ubyte	data[MAX_PACKET_SIZE];				// MAX_PACKET_SIZE from psnet.h
+	ubyte	data[MAX_PACKET_SIZE];				// MAX_PACKET_SIZE from psnet2.h
 } network_buffer;
 // -------------------------------------------------------------------------------------
 

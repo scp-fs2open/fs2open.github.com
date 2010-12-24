@@ -21,7 +21,7 @@
 #include "palman/palman.h"
 #include "weapon/trails.h"
 #include "ai/ai.h"
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "hud/hudparse.h"
 #include "render/3d.h"
 #include "weapon/shockwave.h"

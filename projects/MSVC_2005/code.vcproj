@@ -1710,14 +1710,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\Network\multi_oo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Network\multi_oo.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\Network\multi_options.cpp"
 				>
 			</File>
@@ -1859,14 +1851,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Network\MultiUtil.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Network\PsNet.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Network\PsNet.h"
 				>
 			</File>
 			<File

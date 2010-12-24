@@ -1001,12 +1001,6 @@
 		<Unit filename="../../../code/network/multi_observer.h">
 			<Option virtualFolder="network/" />
 		</Unit>
-		<Unit filename="../../../code/network/multi_oo.cpp">
-			<Option virtualFolder="network/" />
-		</Unit>
-		<Unit filename="../../../code/network/multi_oo.h">
-			<Option virtualFolder="network/" />
-		</Unit>
 		<Unit filename="../../../code/network/multi_options.cpp">
 			<Option virtualFolder="network/" />
 		</Unit>
@@ -1107,12 +1101,6 @@
 			<Option virtualFolder="network/" />
 		</Unit>
 		<Unit filename="../../../code/network/multiutil.h">
-			<Option virtualFolder="network/" />
-		</Unit>
-		<Unit filename="../../../code/network/psnet.cpp">
-			<Option virtualFolder="network/" />
-		</Unit>
-		<Unit filename="../../../code/network/psnet.h">
 			<Option virtualFolder="network/" />
 		</Unit>
 		<Unit filename="../../../code/network/psnet2.cpp">

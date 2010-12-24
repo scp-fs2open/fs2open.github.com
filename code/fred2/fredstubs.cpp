@@ -15,7 +15,7 @@
 #include "ship/ship.h"
 #include "graphics/2d.h"
 #include "mission/missionparse.h"
-#include "network/psnet.h"
+#include "network/psnet2.h"
 #include "stats/scoring.h"
 #include "cfile/cfile.h"
 

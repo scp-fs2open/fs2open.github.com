@@ -51,7 +51,7 @@
 #include "pilotfile/pilotfile.h"
 #include "stats/stats.h"
 #include "network/multi_pmsg.h"
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "network/multi_log.h"
 #include "globalincs/alphacolors.h"
 #include "anim/animplay.h"

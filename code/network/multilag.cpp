@@ -17,7 +17,7 @@
 #include "network/multilag.h"
 #include "io/timer.h"
 #include "globalincs/linklist.h"
-#include "network/psnet.h"
+#include "network/psnet2.h"
 
 
 

@@ -1009,9 +1009,8 @@ void multi_process_reliable_details()
 	int sock_status;
 
 	// run reliable sockets
-#ifdef PSNET2
 	psnet_rel_work();
-#endif
+
 	
 	// server operations
 	if ( MULTIPLAYER_MASTER ){

@@ -12,7 +12,7 @@
 #ifndef MULTI_UTIL_H
 #define MULTI_UTIL_H
 
-#include "network/psnet.h"
+#include "network/psnet2.h"
 
 // prototypes instead of headers :)
 struct net_player;

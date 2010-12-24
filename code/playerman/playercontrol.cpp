@@ -34,7 +34,7 @@
 #include "object/objectdock.h"
 #include "camera/camera.h"
 #include "network/multiutil.h"
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "parse/parselo.h"
 
 #ifndef NDEBUG
