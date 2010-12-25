@@ -8935,6 +8935,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = false;
 	}
 	model_anim_set_initial_states(sp);
+
+	//Reassign sound stuff
+	ship_assign_sound(sp);
 }
 
 #ifndef NDEBUG
