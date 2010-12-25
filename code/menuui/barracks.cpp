@@ -134,7 +134,7 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 };
 
 // button defines
-#define BARRACKS_NUM_BUTTONS		18
+#define BARRACKS_NUM_BUTTONS		19
 
 // pilot selection buttons
 #define B_PILOT_CREATE_BUTTON			0	// B_PILOT_CREATE_BUTTON
@@ -145,11 +145,11 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 #define B_PILOT_CLONE_BUTTON			13	// B_PILOT_B_PILOT_CLONE_BUTTON
 #define B_PILOT_SINGLE_MODE_BUTTON	14	// B_PILOT_SINGLE_MODE_BUTTON
 #define B_PILOT_MULTI_MODE_BUTTON	15	// B_PILOT_MULTI_MODE_BUTTON
-//#define B_PILOT_CONVERT_BUTTON		16	// B_PILOT_B_PILOT_CONVERT_BUTTON
+#define B_PILOT_CONVERT_BUTTON		16	// B_PILOT_B_PILOT_CONVERT_BUTTON
 
 // squad logo picture buttons
-#define B_SQUAD_PREV_BUTTON			16
-#define B_SQUAD_NEXT_BUTTON			17
+#define B_SQUAD_PREV_BUTTON			17
+#define B_SQUAD_NEXT_BUTTON			18
 
 // pilot picture buttons
 #define B_PIC_PREV_PILOT_BUTTON		3	// B_PILOT_B_PIC_PREV_PILOT_BUTTON
@@ -222,9 +222,9 @@ static barracks_buttons Buttons[GR_NUM_RESOLUTIONS][BARRACKS_NUM_BUTTONS] = {
 			barracks_buttons("BAB_13", 66,	122,	69,	157,	13),
 			barracks_buttons("BAB_14", 323,	0,		324,	25,	14),
 			barracks_buttons("BAB_15", 372,	0,		374,	25,	15),
-//			barracks_buttons("BAB_16", 180,	122,	182,	157,	16),
-			barracks_buttons("BAB_17", 559,	306,	0,		0,		16),
-			barracks_buttons("BAB_18", 598,	306,	0,		0,		17)
+			barracks_buttons("BAB_16", 180,	122,	182,	157,	16),
+			barracks_buttons("BAB_17", 559,	306,	0,		0,		17),
+			barracks_buttons("BAB_18", 598,	306,	0,		0,		18)
 	},
 	{		// GR_1024
 			barracks_buttons("2_BAB_00", 14,		196,	35,	252,	0),
@@ -243,9 +243,9 @@ static barracks_buttons Buttons[GR_NUM_RESOLUTIONS][BARRACKS_NUM_BUTTONS] = {
 			barracks_buttons("2_BAB_13", 107,	196,	128,	252,	13),
 			barracks_buttons("2_BAB_14", 517,	0,		532,	40,	14),
 			barracks_buttons("2_BAB_15", 596,	0,		614,	40,	15),
-//			barracks_buttons("2_BAB_16", 289,	196,	309,	252,	16),
-			barracks_buttons("2_BAB_17", 896,	491,	0,		0,		16),
-			barracks_buttons("2_BAB_18", 958,	491,	0,		0,		17)
+			barracks_buttons("2_BAB_16", 289,	196,	309,	252,	16),
+			barracks_buttons("2_BAB_17", 896,	491,	0,		0,		17),
+			barracks_buttons("2_BAB_18", 958,	491,	0,		0,		18)
 	}
 //XSTR:ON
 };
@@ -763,7 +763,7 @@ void barracks_prev_squad_pic()
 	gamesnd_play_iface(SND_SCROLL);
 }
 
-// show next pilot pic
+// show next squad pic
 void barracks_next_squad_pic()
 {
 	// check if no pilot images or no pilot selected
@@ -1017,9 +1017,12 @@ void barracks_button_pressed(int n)
 			barracks_create_new_pilot();
 			break;
 
-/*	New Pilot code no longer needs a conversion function.
 		case B_PILOT_CONVERT_BUTTON: {
-			// no actual conversion with new pilot code, just switch to multi
+	/*	New Pilot code no longer needs a conversion function. */
+			popup(PF_TITLE_BIG | PF_TITLE_BLUE | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK,
+				XSTR("Disabled!\n\n\nMulti and Single Player Pilot files are now identical.\n\n"
+				"Conversion between the two is no longer necessary.", -1));
+		/*	// no actual conversion with new pilot code
 			if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			} else {
@@ -1030,10 +1033,9 @@ void barracks_button_pressed(int n)
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 			}
 
-			gamesnd_play_iface(SND_USER_SELECT);
-
+			gamesnd_play_iface(SND_USER_SELECT);	*/
 			break;
-		}*/
+		}
 
 		case B_PILOT_CREATE_BUTTON:
 			Clone_flag = 0;
