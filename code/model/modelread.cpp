@@ -2837,7 +2837,7 @@ polymodel * model_get(int model_num)
 polymodel_instance* model_get_instance(int model_instance_num)
 {
 	Assert( model_instance_num >= 0 );
-	Assert( model_instance_num < Polygon_model_instances.size() );
+	Assert( model_instance_num < (int)Polygon_model_instances.size() );
 	if ( model_instance_num < 0 || model_instance_num >= (int)Polygon_model_instances.size() ) {
 		return NULL;
 	} 
