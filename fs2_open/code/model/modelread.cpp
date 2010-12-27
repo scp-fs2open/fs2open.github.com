@@ -3866,16 +3866,15 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
 	return found;
 }
 
-void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_submodels, object *objp)
+void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp)
 {
 	Assert(objp->type == OBJ_SHIP);
-
+	
 	// Check if not currently rotating - then treat as part of superstructure.
 	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	polymodel *pm = model_get(modelnum);
 	bsp_info *child_submodel;
-
-	*num_rotating_submodels = 0;
+	
 	child_submodel = &pm->submodel[pm->detail[0]];
 
 	int i = child_submodel->first_child;
@@ -3898,8 +3897,7 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 						// found the correct subsystem - now check delta rotation angle not too large
 						float delta_angle = get_submodel_delta_angle(&subsys->submodel_info_1);
 						if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-							Assert(*num_rotating_submodels < MAX_ROTATING_SUBMODELS-1);
-							submodel_list[(*num_rotating_submodels)++] = i;
+							submodel_vector->push_back(i);
 						}
 						break;
 					}
@@ -3913,14 +3911,14 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 //#define MODEL_CHECK
 #ifdef MODEL_CHECK
 	ship *pship = &Ships[objp->instance];
-	for (int idx=0; idx<*num_rotating_submodels; idx++) {
-		int valid = rotating_submodel_has_ship_subsys(submodel_list[idx], pship);
+	for (size_t idx=0; idx<submodel_vector->size(); idx++) {
+		int valid = rotating_submodel_has_ship_subsys(submodel_vector[idx], pship);
 //		Assert( valid );
 		if ( !valid ) {
 
-			Warning( LOCATION, "Ship %s has rotating submodel [%s] without ship subsystem\n", pship->ship_name, pm->submodel[submodel_list[idx]].name );
-			pm->submodel[submodel_list[idx]].movement_type &= ~MOVEMENT_TYPE_ROT;
-			*num_rotating_submodels = 0;
+			Warning( LOCATION, "Ship %s has rotating submodel [%s] without ship subsystem\n", pship->ship_name, pm->submodel[submodel_vector[idx]].name );
+			pm->submodel[submodel_vector[idx]].movement_type &= ~MOVEMENT_TYPE_ROT;
+			submodel_vector->erase(submodel_vector->begin()+i);
 		}
 	}
 #endif

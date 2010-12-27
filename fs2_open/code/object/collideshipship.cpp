@@ -247,8 +247,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	// first test against the sphere - if this fails then don't do any submodel tests
 	mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
 
-	int submodel_list[MAX_ROTATING_SUBMODELS];
-	int num_rotating_submodels = 0;
+	SCP_vector<int> submodel_vector;
 	int valid_hit_occured = 0;
 	polymodel *pm;
 	polymodel_instance *pmi;
@@ -261,41 +260,40 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		// Do collision the cool new way
 		if ( ship_ship_hit_info->collide_rotate ) {
 
-			model_get_rotating_submodel_list(submodel_list, &num_rotating_submodels, heavy_obj);
+			model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
 			pm = model_get(Ship_info[heavy_shipp->ship_info_index].model_num);
 			pmi = model_get_instance(heavy_shipp->model_instance_num);
 
 			// turn off all rotating submodels and test for collision
-			int i;
-			for (i=0; i<num_rotating_submodels; i++) {
-				pmi->submodel[submodel_list[i]].collision_checked = true;
+			for (size_t j=0; j<submodel_vector.size(); j++) {
+				pmi->submodel[submodel_vector[j]].collision_checked = true;
 			}
 
 			// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
 			mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
 			// check each submodel in turn
-			for (i=0; i<num_rotating_submodels; i++) {
+			for (size_t i=0; i<submodel_vector.size(); i++) {
 				// turn on submodel for collision test
-				pmi->submodel[submodel_list[i]].collision_checked = false;
+				pmi->submodel[submodel_vector[i]].collision_checked = false;
 
 				// set angles for last frame
-				angles copy_angles = pmi->submodel[submodel_list[i]].angs;
+				angles copy_angles = pmi->submodel[submodel_vector[i]].angs;
 
 				// find the start and end positions of the sphere in submodel RF
-				pmi->submodel[submodel_list[i]].angs = pmi->submodel[submodel_list[i]].prev_angs;
-				world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel_list[i], &heavy_obj->last_orient, &heavy_obj->last_pos);
+				pmi->submodel[submodel_vector[i]].angs = pmi->submodel[submodel_vector[i]].prev_angs;
+				world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel_vector[i], &heavy_obj->last_orient, &heavy_obj->last_pos);
 
-				pmi->submodel[submodel_list[i]].angs = copy_angles;
-				world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel_list[i], &heavy_obj->orient, &heavy_obj->pos);
+				pmi->submodel[submodel_vector[i]].angs = copy_angles;
+				world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel_vector[i], &heavy_obj->orient, &heavy_obj->pos);
 
 				mc.p0 = &p0;
 				mc.p1 = &p1;
 				// mc.pos = zero	// in submodel RF
 
 				mc.orient = &vmd_identity_matrix;
-				mc.submodel_num = submodel_list[i];
+				mc.submodel_num = submodel_vector[i];
 
 				if ( model_collide(&mc) ) {
 					if (mc.hit_dist < ship_ship_hit_info->hit_time ) {
@@ -339,17 +337,17 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 						// set submodel angle at time of collision
 						// TODO: generalize... what happens when angle passes 0 or 2PI
 						angles temp_angs;
-						vm_vec_sub(&diff, (vec3d*)&pm->submodel[submodel_list[i]].angs, (vec3d*)&pm->submodel[submodel_list[i]].sii->prev_angs);
-						vm_vec_scale_add((vec3d*)&temp_angs, (vec3d *)&pm->submodel[submodel_list[i]].sii->prev_angs, &diff, mc.hit_dist);
-						pm->submodel[submodel_list[i]].angs = temp_angs;
+						vm_vec_sub(&diff, (vec3d*)&pm->submodel[submodel_vector[i]].angs, (vec3d*)&pm->submodel[submodel_vector[i]].sii->prev_angs);
+						vm_vec_scale_add((vec3d*)&temp_angs, (vec3d *)&pm->submodel[submodel_vector[i]].sii->prev_angs, &diff, mc.hit_dist);
+						pm->submodel[submodel_vector[i]].angs = temp_angs;
 
 						// find intersection point in submodel RF - THEN advance to end of frametime.
 						vec3d temp = int_light_pos;
-						world_find_model_point(&int_submodel_pos, &int_light_pos, pm, submodel_list[i], &int_heavy_orient, &int_heavy_pos);
+						world_find_model_point(&int_submodel_pos, &int_light_pos, pm, submodel_vector[i], &int_heavy_orient, &int_heavy_pos);
 						vec3d temp2;
 
 						// Advance to end of frametime
-						pm->submodel[submodel_list[i]].angs = copy_angles;
+						pm->submodel[submodel_vector[i]].angs = copy_angles;
 						model_find_world_point(&ship_ship_hit_info->light_collision_cm_pos, &int_submodel_pos, mc.model_num, mc.hit_submodel, mc.orient, &zero);
 						vm_vec_sub(&temp2, &ship_ship_hit_info->light_collision_cm_pos, &ship_ship_hit_info->hit_pos);
 		*/
@@ -359,7 +357,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 					}
 				}
 				// Don't look at this submodel again
-				pmi->submodel[submodel_list[i]].collision_checked = true;
+				pmi->submodel[submodel_vector[i]].collision_checked = true;
 			}
 
 		}
