@@ -1632,8 +1632,8 @@ void brief_set_text_color(int color_index)
 }
 
 // Returns true when a character is a word separator.
-// @param character is the character to be analysed
-// @return true when the given character is a word separator, and false when the caracter is part of a word.
+// @param character is the character to be analysed.
+// @return true when the given character is a word separator, and false when the character is part of a word.
 bool is_a_word_separator(char character){
 	return character<=33					//  2 characters including (space) and !
 		|| (35<=character && character<=38)	//  4 characters #$%&
