@@ -128,7 +128,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 25)		// sets the subsys not to release live debris
 #define MSS_FLAG_IGNORE_IF_DEAD		(1 << 26)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
 #define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
-#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applys armor damage to subsystem instead of subsystem damage - FUBAR
+#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
