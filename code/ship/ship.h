@@ -1809,7 +1809,7 @@ extern int ship_has_energy_weapons(ship *shipp);
 extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
-void ship_init_cockpit_displays(ship *shipp, int cockpit_model_num);
+void ship_init_cockpit_displays(ship *shipp);
 void ship_add_cockpit_display(ship *shipp, cockpit_display_info *display, int cockpit_model_num);
 void ship_clear_cockpit_displays(ship *shipp);
 void ship_set_hud_cockpit_targets(ship *shipp);
