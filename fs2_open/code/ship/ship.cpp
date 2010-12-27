@@ -4734,6 +4734,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	// Goober5000 - revised texture replacement
 	shipp->ship_replacement_textures = NULL;
 	shipp->cockpit_replacement_textures = NULL;
+	shipp->displays.clear();
 
 	shipp->glow_point_bank_active.clear();
 
