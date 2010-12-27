@@ -6299,7 +6299,6 @@ void HudGaugeWeapons::render(float frametime)
 	if(ns==0)
 	{
 		renderString(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_S1, XSTR( "<none>", 329));	
-		y += secondary_text_h;		// bump the bottom of the gauge down so it fits "<none>" without any overlap.
 	}
 
 	y -= 0;
