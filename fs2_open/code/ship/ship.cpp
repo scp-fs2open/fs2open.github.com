@@ -6100,8 +6100,10 @@ void ship_render_cockpit(object *objp)
 	*/
 }
 
-void ship_init_cockpit_displays(ship *shipp, int cockpit_model_num)
+void ship_init_cockpit_displays(ship *shipp)
 {
+	int cockpit_model_num = Ship_info[shipp->ship_info_index].cockpit_model_num;
+
 	// don't bother creating cockpit texture replacements if this ship has no cockpit
 	if ( cockpit_model_num < 0 ) {
 		return;
@@ -6115,19 +6117,19 @@ void ship_init_cockpit_displays(ship *shipp, int cockpit_model_num)
 	// ship's cockpit texture replacements haven't been setup yet, so do it.
 	if (shipp->cockpit_replacement_textures == NULL) {
 		shipp->cockpit_replacement_textures = (int *) vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+
+		int i;
+
+		for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ ) {
+			shipp->cockpit_replacement_textures[i] = -1;
+		}
+
+		for ( i = 0; i < (int)Ship_info[shipp->ship_info_index].displays.size(); i++ ) {
+			ship_add_cockpit_display(shipp, &Ship_info[shipp->ship_info_index].displays[i], cockpit_model_num);
+		}
+
+		ship_set_hud_cockpit_targets(shipp);
 	}
-
-	int i;
-
-	for ( i = 0; i < MAX_REPLACEMENT_TEXTURES; i++ ) {
-		shipp->cockpit_replacement_textures[i] = -1;
-	}
-
-	for ( i = 0; i < (int)Ship_info[shipp->ship_info_index].displays.size(); i++ ) {
-		ship_add_cockpit_display(shipp, &Ship_info[shipp->ship_info_index].displays[i], cockpit_model_num);
-	}
-
-	ship_set_hud_cockpit_targets(shipp);
 }
 
 void ship_clear_cockpit_displays(ship *shipp)
@@ -8539,7 +8541,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	model_anim_set_initial_states(shipp);
 
 	shipp->model_instance_num = model_create_instance(sip->model_num);
-	ship_init_cockpit_displays(shipp, sip->cockpit_model_num);
 /*
 	polymodel *pm = model_get(shipp->modelnum);
 	if(shipp->debris_flare)vm_free(shipp->debris_flare);
