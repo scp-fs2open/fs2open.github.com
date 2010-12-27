@@ -204,7 +204,7 @@ extern object *Viewer_obj;	// Which object is the viewer. Can be NULL.
 extern object *Player_obj;	// Which object is the player. Has to be valid.
 
 // Use this instead of "objp - Objects" to get an object number
-// given it's pointer.  This way, we can replace it will a macro
+// given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 #define OBJ_INDEX(objp) (objp-Objects)
 

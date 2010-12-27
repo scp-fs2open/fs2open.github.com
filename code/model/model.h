@@ -41,8 +41,6 @@ extern int model_render_flags_size;
 #define MOVEMENT_AXIS_Y		2
 #define MOVEMENT_AXIS_Z		1
 
-#define MAX_ROTATING_SUBMODELS 50
-
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
 // always the last subsystem in the list.  Also, make sure that MAX is correct.
@@ -130,6 +128,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 25)		// sets the subsys not to release live debris
 #define MSS_FLAG_IGNORE_IF_DEAD		(1 << 26)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
 #define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
+#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -863,7 +862,7 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos);
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
-void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_submodesl, object *objp);
+void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
 
 // For a rotating submodel, find a point on the axis
 void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num);
