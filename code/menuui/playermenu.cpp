@@ -228,7 +228,7 @@ void player_select_init()
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
-	Player_select_force_main_hall = 0;
+	Player_select_force_main_hall = -1;
 
 	Player_select_screen_active = 1;
 
