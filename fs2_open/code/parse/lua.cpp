@@ -4226,7 +4226,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 {
 	object_h *objh = NULL;
 	object *obj = NULL;
-	int model_num = -1, temp = 0;
+	int model_num = -1, model_instance_num = -1, temp = 0;
 	vec3d *v3a, *v3b;
 	bool local = false;
 	if(!ade_get_args(L, "ooo|b", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b), &local))
@@ -4238,7 +4238,6 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	obj = objh->objp;
 	int flags = 0;
 	int submodel = -1;
-	bool model_started = false;
 
 	switch(obj->type) {
 		case OBJ_SHIP:
@@ -4267,13 +4266,13 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 		return ADE_RETURN_NIL;
 
 	if (obj->type == OBJ_SHIP) {
-		ship_model_start(obj);
-		model_started = true;
+		model_instance_num = Ships[obj->instance].model_instance_num;
 	}
 
 	mc_info hull_check;
 
 	hull_check.model_num = model_num;
+	hull_check.model_instance_num = model_instance_num;
 	hull_check.submodel_num = submodel;
 	hull_check.orient = &obj->orient;
 	hull_check.pos = &obj->pos;
@@ -4282,13 +4281,8 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	hull_check.flags = flags;
 
 	if ( !model_collide(&hull_check) ) {
-		if (model_started)
-			ship_model_stop(obj);
 		return ADE_RETURN_NIL;
 	}
-
-	if (model_started)
-		ship_model_stop(obj);
 
 	if (local)
 		return ade_set_args(L, "o", l_Vector.Set(hull_check.hit_point));
