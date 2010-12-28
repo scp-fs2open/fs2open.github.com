@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.6.1
+# Nightly build script version 1.6.2
+# 1.6.2 - Fix a problem with stoprevision not working.
 # 1.6.1 - Ability to use the SMF package's version setting
 # 1.6.0 - Added stoprevision command line support, shifted around some debug output
 # 1.5.1 - Fix problems with VS2008, to allow spaces in config names.
@@ -54,7 +55,7 @@ my @archiveslist;
 my $exportpath;
 my $stoprevision = '';
 
-GetOptions ('stoprevision:s' => \$stoprevision);
+GetOptions ('stoprevision=s' => \$stoprevision);
 
 if(updatesvn() != 1)
 {
