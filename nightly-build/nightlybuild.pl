@@ -1,6 +1,7 @@
 #!/usr/bin/perl -W
 
-# Nightly build script version 1.6.0
+# Nightly build script version 1.6.1
+# 1.6.1 - Ability to use the SMF package's version setting
 # 1.6.0 - Added stoprevision command line support, shifted around some debug output
 # 1.5.1 - Fix problems with VS2008, to allow spaces in config names.
 # 1.5.0 - Big update to allow for building more configs and grouping them into different archives, all in the same post.
@@ -506,5 +507,6 @@ sub post
 	Smf::set_board($CONFIG->{$OS}->{builds_forum});
 	Smf::set_username($CONFIG->{forum}->{username});
 	Smf::set_password($CONFIG->{forum}->{password});
+	Smf::set_smfversion($CONFIG->{forum}->{smfversion});
 	Smf::post($subject, $message);
 }

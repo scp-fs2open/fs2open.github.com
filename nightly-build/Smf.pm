@@ -1,11 +1,16 @@
 package Smf;
 
+# SMF Automation 1.1
+# 1.1 - SMF 2.0 support
+# 1.0 - Initial release
+
 use strict;
 use warnings;
 
 use WWW::Mechanize;
 
 my $SLEEPTIME = 10; # Set to a high enough value to keep the warning from occuring
+my $smfversion = "1";
 
 # These must be defined before posting
 my $homeurl;
@@ -41,6 +46,11 @@ sub set_password
 sub set_sleeptime
 {
 	$SLEEPTIME = shift;
+}
+
+sub set_smfversion
+{
+	$smfversion = shift;
 }
 
 sub init_mech
@@ -89,7 +99,15 @@ sub post
 #	$form = $mech->current_form();
 #	print $form->dump;
 	
-	$mech->click("post");
+	if($smfversion == "1")
+	{
+		$mech->click("post");
+	}
+	else
+	{
+		# SMF2+ handling
+		$mech->click_button('value'=>'Post');
+	}
 	
 	# More debugging
 #	print $mech->content() . "\n";
