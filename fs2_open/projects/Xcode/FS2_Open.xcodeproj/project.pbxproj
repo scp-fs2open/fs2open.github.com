@@ -1474,8 +1474,6 @@
 		3459556508C3D6A0003B1351 /* shieldsystemeditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = shieldsystemeditor.h; sourceTree = "<group>"; };
 		3459556608C3D6A0003B1351 /* voiceactingmanagereditor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = voiceactingmanagereditor.cpp; sourceTree = "<group>"; };
 		3459556708C3D6A0003B1351 /* voiceactingmanagereditor.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = voiceactingmanagereditor.h; sourceTree = "<group>"; };
-		3459556808C3D6A0003B1351 /* voicefilemanager.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = voicefilemanager.cpp; sourceTree = "<group>"; };
-		3459556908C3D6A0003B1351 /* voicefilemanager.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = voicefilemanager.h; sourceTree = "<group>"; };
 		3459556A08C3D6A0003B1351 /* wxfred.xrc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = wxfred.xrc; sourceTree = "<group>"; };
 		3459556B08C3D6A0003B1351 /* wxfred2.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = wxfred2.cpp; sourceTree = "<group>"; };
 		3459556C08C3D6A0003B1351 /* wxfred2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = wxfred2.h; sourceTree = "<group>"; };
@@ -3032,8 +3030,6 @@
 				3459556508C3D6A0003B1351 /* shieldsystemeditor.h */,
 				3459556608C3D6A0003B1351 /* voiceactingmanagereditor.cpp */,
 				3459556708C3D6A0003B1351 /* voiceactingmanagereditor.h */,
-				3459556808C3D6A0003B1351 /* voicefilemanager.cpp */,
-				3459556908C3D6A0003B1351 /* voicefilemanager.h */,
 				3459556A08C3D6A0003B1351 /* wxfred.xrc */,
 				3459556B08C3D6A0003B1351 /* wxfred2.cpp */,
 				3459556C08C3D6A0003B1351 /* wxfred2.h */,
