@@ -50,9 +50,11 @@ int Use_mouse_to_fly = 0;
 int Mouse_hidden = 0;
 int Keep_mouse_centered = 0;
 
+#ifdef WIN32
 int di_init();
 void di_cleanup();
 void mouse_eval_deltas_di();
+#endif
 
 void mouse_force_pos(int x, int y);
 
@@ -86,8 +88,10 @@ void mouse_close()
 	if (!mouse_inited)
 		return;
 
+#ifdef WIN32
 	if (Mouse_mode == MOUSE_MODE_DI)
 		di_cleanup();
+#endif
 
 	mouse_inited = 0;
 
@@ -396,10 +400,12 @@ void mouse_eval_deltas()
 	if (!mouse_inited)
 		return;
 
+#ifdef WIN32
 	if (Mouse_mode == MOUSE_MODE_DI) {
 		mouse_eval_deltas_di();
 		return;
 	}
+#endif
 
 	cx = gr_screen.max_w / 2;
 	cy = gr_screen.max_h / 2;
@@ -442,6 +448,7 @@ void mouse_eval_deltas()
 	}
 }
 
+#ifdef WIN32
 #include "directx/vdinput.h"
 
 static LPDIRECTINPUT			Di_mouse_obj = NULL;
@@ -510,7 +517,7 @@ void mouse_eval_deltas_di()
 	// JH: Dang!  This makes the mouse readings in DirectInput act screwy!
 //	mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
 }
-
+#endif //#ifdef WIN32
 
 int mouse_get_pos(int *xpos, int *ypos)
 {
@@ -617,6 +624,7 @@ void mouse_set_pos(int xpos, int ypos)
 	}
 }
 
+#ifdef WIN32
 int di_init()
 {
 	HRESULT hr;
@@ -704,7 +712,7 @@ void di_cleanup()
 
 	Di_mouse_inited = 0;
 }
-
+#endif //ifdef WIN32
 
 // portable routine to get the mouse position, relative
 // to current window
