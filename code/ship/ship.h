@@ -119,8 +119,12 @@ typedef struct ship_weapon {
 	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
 	int primary_bank_start_ammo[MAX_SHIP_PRIMARY_BANKS];	// Number of missiles starting in primary bank
 	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
-	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
+	// end ballistic primary support
+
+	// dynamic weapon linking - by RSAXVC
+	int primary_bank_slot_count[MAX_SHIP_PRIMARY_BANKS];	// Fire this many slots at a time
+	// end dynamic weapon linking
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
 	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank
@@ -428,6 +432,7 @@ typedef struct ship_subsys_info {
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
 #define SF2_FORCE_SHIELDS_ON				(1<<20)
+#define SF2_SHIP_SELECTIVE_LINKING			(1<<21)		// RSAXVC - Allow pilot to pick firing configuration
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -854,8 +859,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_NO_PRIMARY_LINKING				(1 << 10)	// Chief - slated for 3.7 originally, but this looks pretty simple to implement.
 #define SIF2_NO_PAIN_FLASH					(1 << 11)	// The E - disable red pain flash
 #define SIF2_ALLOW_LANDINGS					(1 << 12)	// SUSHI: Automatically set if any subsystems allow landings (as a shortcut)
+#define SIF2_DYN_PRIMARY_LINKING			(1 << 13)	// RSAXVC - Dynamically generate weapon linking options
 // !!! IF YOU ADD A FLAG HERE BUMP MAX_SHIP_FLAGS !!!
-#define	MAX_SHIP_FLAGS	13		//	Number of distinct flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	14		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 

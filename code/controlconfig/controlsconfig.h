@@ -211,8 +211,11 @@ typedef struct config_item {
 //Gliding
 #define TOGGLE_GLIDING									117
 
+//Inflight configurable firing sequence
+#define CYCLE_PRIMARY_WEAPON_SEQUENCE					118
+
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 118
+#define CCFG_MAX 119
 
 extern int Failed_key_index;
 extern int Invert_heading;

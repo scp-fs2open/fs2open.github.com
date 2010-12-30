@@ -60,6 +60,120 @@
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 
+#define MAX_NUM_SLOTS 6
+
+struct ftable
+{
+int count;
+int table[ MAX_NUM_SLOTS ];
+};
+
+#define MAX_SLOT_COUNT 25
+
+class factor_table
+	{
+	public:
+		factor_table();
+		~factor_table(){ delete[] table; };
+		int getNextSlots( int slots_on_ship, int cur_slots );
+
+	private:
+		ftable * table;
+	};
+
+factor_table ftables;
+
+static bool isAPrimeFactor( int factor, int product )
+{
+return ( (float)product / (float)factor ) == (product / factor);
+}
+
+factor_table::factor_table()
+{
+table = new ftable[ MAX_NUM_SLOTS ];
+
+memset( table, 0x00, sizeof( ftable ) * MAX_NUM_SLOTS );
+for( int i = 0 ; i < MAX_NUM_SLOTS; ++i )
+	{
+	table[ i ].count = 0;
+	for( int j = 1; j <= i; ++j )
+		{
+		if( isAPrimeFactor( j, i ) )
+			{
+			table[ i ].table[ table[ i ].count ] = j;
+			table[ i ].count ++;
+			}
+		}
+	}
+}
+
+int factor_table::getNextSlots(int slots_on_ship, int cur_slots)
+{
+Assert( slots_on_ship <= MAX_NUM_SLOTS );
+Assert( slots_on_ship >= 0 );
+
+for( int i = 0; i < table[ slots_on_ship ].count; ++i )
+	{
+	if( table[ slots_on_ship ].table[ i ] == cur_slots )
+		{
+		if( table[ slots_on_ship ].count == i + 1 )
+			{
+			//Overflow back to 1
+			return 1;
+			}
+		else
+			{
+			//Next block in the table
+			return table[ slots_on_ship ].table[ i + 1 ];
+			}
+		}
+	}
+//Did not find cur_slots, try and get back on track
+
+Assert( 0 );
+return 1;
+}
+
+//Dynamic weapon link tables
+/*
+static const ftable ftables[]=
+{
+	{ 0, { }            },  //Alignment placeholder
+	{ 1, { 1 }          },  //1 gun
+	{ 2, { 1, 2 }       },  //2 guns
+	{ 2, { 1, 3 }       },  //3 guns
+	{ 3, { 1, 2, 4}     },  //4 guns
+	{ 2, { 1, 5 }       },  //5 guns
+	{ 4, { 1, 2, 3, 6 } }   //6 guns
+};*/
+
+/*
+char getNextSlots( char slots_on_ship, char cur_slots )
+{
+Assert( slots_on_ship <= MAX_NUM_SLOTS );
+Assert( slots_on_ship >= 0 );
+
+for( int i = 0; i < ftables[ slots_on_ship ].count; ++i )
+	{
+	if( ftables[ slots_on_ship ].table[ i ] == cur_slots )
+		{
+		if( ftables[ slots_on_ship ].count == i + 1 )
+			{
+			//Overflow back to 0
+			return 0;
+			}
+		else
+			{
+			//Next block in the table
+			return ftables[ slots_on_ship ].table[ i + 1 ];
+			}
+		}
+	}
+//Did not find cur_slots, try and get back on track
+Assert( 0 );
+return 0;
+}*/
+
 // --------------------------------------------------------------
 // Global to file 
 // --------------------------------------------------------------
@@ -206,8 +320,9 @@ int Normal_key_set[] = {
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
-	
-	TOGGLE_GLIDING
+
+	TOGGLE_GLIDING,
+	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
 int Dead_key_set[] = {
@@ -341,7 +456,8 @@ int Non_critical_key_set[] = {
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
-	TOGGLE_GLIDING
+	TOGGLE_GLIDING,
+	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
 
@@ -1718,6 +1834,18 @@ int button_function_critical(int n, net_player *p = NULL)
 	}
 	
 	switch (n) {
+		// cycle num primaries to fire at once
+		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
+			{
+			ship * shipp = &Ships[objp->instance];
+			ship_weapon *swp = &shipp->weapons;
+			ship_info	*sip = &Ship_info[shipp->ship_info_index];
+			polymodel *pm = model_get( sip->model_num );
+			shipp->last_fired_point[ swp->current_primary_bank ] = ( shipp->last_fired_point[ swp->current_primary_bank ] + 1 ) % ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+			swp->primary_bank_slot_count[ swp->current_primary_bank ]  = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+			}
+			break;
+
 		// cycle to next primary weapon
 		case CYCLE_NEXT_PRIMARY:			
 			if (at_self) {
@@ -2224,6 +2352,10 @@ int button_function(int n)
 
 	// now handle keys the regular way
 	switch (n) {
+		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
+			return button_function_critical(CYCLE_PRIMARY_WEAPON_SEQUENCE);
+			break;
+
 		// cycle to next primary weapon
 		case CYCLE_NEXT_PRIMARY:			
 			return button_function_critical(CYCLE_NEXT_PRIMARY);
