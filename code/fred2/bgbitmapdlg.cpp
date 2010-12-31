@@ -661,9 +661,9 @@ void bg_bitmap_dlg::sun_data_save_current()
 
 		// store the data
 		strcpy_s(sle->filename, s_name);
-		sle->ang.p = (float) fl_radian(s_pitch);
-		sle->ang.b = (float) fl_radian(s_bank);
-		sle->ang.h = (float) fl_radian(s_heading);
+		sle->ang.p = (float) fl_radians(s_pitch);
+		sle->ang.b = (float) fl_radians(s_bank);
+		sle->ang.h = (float) fl_radians(s_heading);
 		sle->scale_x = (float) s_scale;
 		sle->scale_y = 1.0f;
 		sle->div_x = 1;
@@ -825,9 +825,9 @@ void bg_bitmap_dlg::bitmap_data_save_current()
 
 		// store the data
 		strcpy_s(sle->filename, b_name);
-		sle->ang.p = (float) fl_radian(b_pitch);
-		sle->ang.b = (float) fl_radian(b_bank);
-		sle->ang.h = (float) fl_radian(b_heading);
+		sle->ang.p = (float) fl_radians(b_pitch);
+		sle->ang.b = (float) fl_radians(b_bank);
+		sle->ang.h = (float) fl_radians(b_heading);
 		sle->scale_x = (float) b_scale_x;
 		sle->scale_y = (float) b_scale_y;
 		sle->div_x = b_div_x;
