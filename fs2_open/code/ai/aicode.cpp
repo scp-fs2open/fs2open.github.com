@@ -5422,13 +5422,16 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	//	Don't want all ships always linking weapons at start, so asynchronize.
-	if (Missiontime < i2f(30))
-		return;
-	else if (Missiontime < i2f(120))
+	if (The_mission.ai_profile->flags2 & AIPF2_ALLOW_PRIMARY_LINK_DELAY)
 	{
-		int r = static_rand((Missiontime >> 17) ^ OBJ_INDEX(objp));
-		if ( (r&3) != 0)
+		if (Missiontime < i2f(30))
 			return;
+		else if (Missiontime < i2f(120))
+		{
+			int r = static_rand((Missiontime >> 17) ^ OBJ_INDEX(objp));
+			if ( (r&3) != 0)
+				return;
+		}
 	}
 
 	// get energy level
@@ -6334,11 +6337,13 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 		vec3d	gun_pos, pnt;
 		polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
-		//	Compute position of gun in absolute space and use that as fire position.
-		if(pm->gun_banks != NULL){
+		//	Compute position of gun in absolute space and use that as fire position 
+		//  ...unless we want to just use the ship center
+		if(pm->gun_banks != NULL && !(The_mission.ai_profile->flags2 & AIPF2_AI_AIMS_FROM_SHIP_CENTER)){
 			pnt = pm->gun_banks[0].pnt[0];
 		} else {
-			pnt = Objects[shipp->objnum].pos;
+			//Use the convergence offset, if there is one
+			vm_vec_copy_scale(&pnt, &Ship_info[shipp->ship_info_index].convergence_offset, 1.0f);
 		}
 		vm_vec_unrotate(&gun_pos, &pnt, &pobjp->orient);
 		vm_vec_add2(&gun_pos, &pobjp->pos);
