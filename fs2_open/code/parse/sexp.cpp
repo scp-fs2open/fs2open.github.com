@@ -10469,11 +10469,11 @@ void sexp_add_background_bitmap(int n)
 	}
 
 	// angles
-	sle.ang.p = fl_radian(eval_num(n) % 360);
+	sle.ang.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.b = fl_radian(eval_num(n) % 360);
+	sle.ang.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.h = fl_radian(eval_num(n) % 360);
+	sle.ang.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	// scale
@@ -10563,11 +10563,11 @@ void sexp_add_sun_bitmap(int n)
 	}
 
 	// angles
-	sle.ang.p = fl_radian(eval_num(n) % 360);
+	sle.ang.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.b = fl_radian(eval_num(n) % 360);
+	sle.ang.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.h = fl_radian(eval_num(n) % 360);
+	sle.ang.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	// scale

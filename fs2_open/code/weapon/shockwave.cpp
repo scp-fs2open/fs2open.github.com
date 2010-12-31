@@ -472,7 +472,7 @@ void shockwave_render(object *objp)
 		}
 	
 		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-		g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
+		g3_draw_rotated_bitmap(&p, fl_radians(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
 	}
 }
 

@@ -3191,9 +3191,9 @@ strcpy_s(parse_error_text, temp_error);
 							current_trigger->absolute = true;
 							stuff_vector(&current_trigger->angle );
 		
-							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.z);
 						}else{
 							current_trigger->absolute = false;
 							if(!optional_string("+relative_angle:"))
@@ -3201,23 +3201,23 @@ strcpy_s(parse_error_text, temp_error);
 
 							stuff_vector(&current_trigger->angle );
 		
-							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
 						}
 		
 						if(optional_string("+velocity:")){
 							stuff_vector(&current_trigger->vel );
-							current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
-							current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
-							current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
+							current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
+							current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
+							current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 						}
 		
 						if(optional_string("+acceleration:")){
 							stuff_vector(&current_trigger->accel );
-							current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
-							current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
-							current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
+							current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
+							current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
+							current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
 						}
 
 						if(optional_string("+time:"))
@@ -3238,30 +3238,30 @@ strcpy_s(parse_error_text, temp_error);
 							current_trigger->absolute = true;
 							stuff_vector(&current_trigger->angle );
 		
-							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.z);
 						}else{
 							current_trigger->absolute = false;
 							required_string("+relative_angle:");
 							stuff_vector(&current_trigger->angle );
 		
-							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
 						}
 		
 						required_string("+velocity:");
 						stuff_vector(&current_trigger->vel );
-						current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
-						current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
-						current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
+						current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
+						current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
+						current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
 		
 						required_string("+acceleration:");
 						stuff_vector(&current_trigger->accel );
-						current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
-						current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
-						current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
+						current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
+						current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
+						current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
 
 						if(optional_string("+time:"))
 							stuff_int(&current_trigger->end );

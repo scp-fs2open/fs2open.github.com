@@ -201,7 +201,7 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 	vm_vec_copy_scale(&rand_twist_pre, &temp.vec.rvec, rand_dist);
 
 	// now rotate the twist vector around the x axis (the base aim axis) at a random angle
-	vm_rot_point_around_line(&rand_twist_post, &rand_twist_pre, fl_radian(359.0f * frand_range(0.0f, 1.0f)), &vmd_zero_vector, dir);
+	vm_rot_point_around_line(&rand_twist_post, &rand_twist_pre, fl_radians(359.0f * frand_range(0.0f, 1.0f)), &vmd_zero_vector, dir);
 
 	// add the resulting vector to the base aim vector and normalize
 	final_aim = *dir;
