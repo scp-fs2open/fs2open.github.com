@@ -822,7 +822,7 @@ void stars_post_level_init()
 			def_sun.scale_y = 1.0f;
 			def_sun.div_x = 1;
 			def_sun.div_y = 1;
-			def_sun.ang.h = fl_radian(60.0f);
+			def_sun.ang.h = fl_radians(60.0f);
 
 			Suns.push_back(def_sun);
 		}

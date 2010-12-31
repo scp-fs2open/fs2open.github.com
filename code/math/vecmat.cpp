@@ -2670,13 +2670,13 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float max_angle, matrix *orient)
 	}
 	
 	// axis 1
-	vm_rot_point_around_line(&t1, in, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
+	vm_rot_point_around_line(&t1, in, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
 	
 	// axis 2
-	vm_rot_point_around_line(&t2, &t1, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
+	vm_rot_point_around_line(&t2, &t1, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
 
 	// axis 3
-	vm_rot_point_around_line(out, &t2, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
+	vm_rot_point_around_line(out, &t2, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
 void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle, matrix *orient){
@@ -2698,21 +2698,21 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle,
 	if(temp_ang < 0)temp_ang -= (min_angle);
 	else temp_ang += (min_angle);
 
-	vm_rot_point_around_line(&t1, in, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.fvec);
+	vm_rot_point_around_line(&t1, in, fl_radians(temp_ang), &vmd_zero_vector, &rot->vec.fvec);
 	
 	// axis 2
 	temp_ang = (frand_range(-dif_angle, dif_angle));
 	if(temp_ang < 0)temp_ang -= (min_angle);
 	else temp_ang += (min_angle);
 
-	vm_rot_point_around_line(&t2, &t1, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.rvec);
+	vm_rot_point_around_line(&t2, &t1, fl_radians(temp_ang), &vmd_zero_vector, &rot->vec.rvec);
 
 	// axis 3
 	temp_ang = (frand_range(-dif_angle, dif_angle));
 	if(temp_ang < 0)temp_ang -= (min_angle);
 	else temp_ang += (min_angle);
 
-	vm_rot_point_around_line(out, &t2, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.uvec);
+	vm_rot_point_around_line(out, &t2, fl_radians(temp_ang), &vmd_zero_vector, &rot->vec.uvec);
 }
 
 
@@ -2726,7 +2726,7 @@ void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, float radius
 	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : frand_range(0.0f, radius));
 
 	// rotate to a random point on the circle
-	vm_rot_point_around_line(out, &temp, fl_radian(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
