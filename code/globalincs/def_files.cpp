@@ -994,6 +994,13 @@ $perform less checks for death screams:	NO								\n\
 ;; (including capships).												\n\
 $all ships manage shields:				NO								\n\
 																		\n\
+;; If set, ai aims using ship center instead of first gunpoint			\n\
+$ai aims from ship center:			NO									\n\
+																		\n\
+;; If set, prevents fighters from linking their weapons in the first	\n\
+;; few minutes of the mission											\n\
+$allow primary link delay:				YES								\n\
+																		\n\
 #End																	\n\
 ";
 
