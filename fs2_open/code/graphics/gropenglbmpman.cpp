@@ -213,12 +213,14 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	alpha = (bpp == 32);
 
 	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
-		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		nprintf(("BMPMAN", "Error opening %s in bm_lock\n", be->filename));
+		return 1;
 	}
 
 	if ( (the_anim_instance = init_anim_instance(the_anim, bpp)) == NULL ) {
-		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		nprintf(("BMPMAN", "Error opening %s in bm_lock\n", be->filename));
 		anim_free(the_anim);
+		return 1;
 	}
 
 	int can_drop_frames = 0;
