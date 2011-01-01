@@ -212,15 +212,19 @@ sexp_oper Operators[] = {
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
 	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
 
-	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	3	},	// WMC
-	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	3	},	// WMC
-	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,				2,	3	},	// WMC
 	{ "get-object-x",				OP_GET_OBJECT_X,				1,	5	},	// Goober5000
 	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	5	},	// Goober5000
 	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	5	},	// Goober5000
 	{ "set-object-position",		OP_SET_OBJECT_POSITION,			4,	4	},	// WMC
-	{ "set-object-facing",			OP_SET_OBJECT_FACING,				4,	6	},	// Goober5000
-	{ "set-object-facing-object",	OP_SET_OBJECT_FACING_OBJECT,		2,	4	},	// Goober5000
+	{ "get-object-pitch",				OP_GET_OBJECT_PITCH,			1,	1	},	// Goober5000
+	{ "get-object-bank",				OP_GET_OBJECT_BANK,				1,	1	},	// Goober5000
+	{ "get-object-heading",				OP_GET_OBJECT_HEADING,			1,	1	},	// Goober5000
+	{ "set-object-orientation",		OP_SET_OBJECT_ORIENTATION,			4,	4	},	// Goober5000
+	{ "set-object-facing",			OP_SET_OBJECT_FACING,					4,	6	},	// Goober5000
+	{ "set-object-facing-object",	OP_SET_OBJECT_FACING_OBJECT,			2,	4	},	// Goober5000
+	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,			2,	3	},	// WMC
+	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,			2,	3	},	// WMC
+	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,			2,	3	},	// WMC
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
@@ -5998,6 +6002,32 @@ int sexp_calculate_coordinate(vec3d *origin, matrix *orient, vec3d *relative_loc
 }
 
 // Goober5000
+int sexp_calculate_angle(matrix *orient, int axis)
+{
+	Assert(orient != NULL);
+	Assert(axis >= 0 && axis <= 2);
+
+	angles a;
+	vm_extract_angles_matrix(&a, orient);
+
+	// blugh
+	float rad;
+	switch (axis)
+	{
+		case 0:	rad = a.p;
+		case 1:	rad = a.b;
+		case 2:	rad = a.h;
+		default: rad = 0.0f;
+	}
+
+	int deg = fl_degrees(rad);
+	if (deg < 0)
+		deg += 360;
+
+	return deg;
+}
+
+// Goober5000
 int sexp_get_object_coordinate(int n, int axis) 
 {
 	Assert(n >= 0);
@@ -6060,6 +6090,30 @@ int sexp_get_object_coordinate(int n, int axis)
 	}
 
 	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
+}
+
+// Goober5000
+int sexp_get_object_angle(int n, int axis) 
+{
+	Assert(n >= 0);
+
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_EXITED:
+			return SEXP_NAN_FOREVER;
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			return sexp_calculate_angle(&oswpt.objp->orient, axis);
+
+		default:
+			return SEXP_NAN;
+	}
 }
 
 void set_object_for_clients(object *objp)
@@ -6151,7 +6205,72 @@ void sexp_set_object_position(int n)
 }
 
 // Goober5000
-void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int bank)
+void sexp_set_object_orientation(int n) 
+{
+	angles a;
+	matrix target_orient;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	a.p = fl_radians(eval_num(n));
+	n = CDR(n);
+	a.b = fl_radians(eval_num(n));
+	n = CDR(n);
+	a.h = fl_radians(eval_num(n));
+	n = CDR(n);
+
+	vm_angles_2_matrix(&target_orient, &a);
+
+	// retime all collision checks so they're performed
+	obj_all_collisions_retime();
+
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_TEAM:
+		{
+			// move everything on the team
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				object *objp = &Objects[so->objnum];
+
+				if (Ships[objp->instance].team == oswpt.team)
+				{
+					objp->orient = target_orient;
+					set_object_for_clients(objp);
+				}
+			}
+
+			return;
+		}
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			oswpt.objp->orient = target_orient;
+			set_object_for_clients(oswpt.objp);
+			return;
+		}
+
+		case OSWPT_TYPE_WING:
+		{
+			// move everything in the wing
+			for (int i = 0; i < oswpt.wingp->current_count; i++)
+			{
+				object *objp = &Objects[Ships[oswpt.wingp->ship_index[i]].objnum];
+				objp->orient = target_orient;
+				set_object_for_clients(objp);
+			}
+
+			return;
+		}
+	}
+}
+
+// Goober5000
+// this is different from sexp_set_object_orientation
+void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, int bank)
 {
 	Assert(objp && location);
 
@@ -6211,7 +6330,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 				object *objp = &Objects[so->objnum];
 
 				if (obj_team(objp) == oswpt->team)
-					sexp_set_object_orient(objp, location, turn_time, bank);
+					sexp_set_object_orient_sub(objp, location, turn_time, bank);
 			}
 
 			break;
@@ -6219,7 +6338,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WAYPOINT:
-			sexp_set_object_orient(oswpt->objp, location, turn_time, bank);
+			sexp_set_object_orient_sub(oswpt->objp, location, turn_time, bank);
 			break;
 
 		case OSWPT_TYPE_WING:
@@ -6228,7 +6347,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 			{
 				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
 
-				sexp_set_object_orient(objp, location, turn_time, bank);
+				sexp_set_object_orient_sub(objp, location, turn_time, bank);
 			}
 
 			break;
@@ -10469,11 +10588,11 @@ void sexp_add_background_bitmap(int n)
 	}
 
 	// angles
-	sle.ang.p = fl_radian(eval_num(n) % 360);
+	sle.ang.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.b = fl_radian(eval_num(n) % 360);
+	sle.ang.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.h = fl_radian(eval_num(n) % 360);
+	sle.ang.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	// scale
@@ -10563,11 +10682,11 @@ void sexp_add_sun_bitmap(int n)
 	}
 
 	// angles
-	sle.ang.p = fl_radian(eval_num(n) % 360);
+	sle.ang.p = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.b = fl_radian(eval_num(n) % 360);
+	sle.ang.b = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
-	sle.ang.h = fl_radian(eval_num(n) % 360);
+	sle.ang.h = fl_radians(eval_num(n) % 360);
 	n = CDR(n);
 
 	// scale
@@ -18949,8 +19068,19 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_object_coordinate(node, op_num - OP_GET_OBJECT_X);
 				break;
 
+			case OP_GET_OBJECT_PITCH:
+			case OP_GET_OBJECT_BANK:
+			case OP_GET_OBJECT_HEADING:
+				sexp_val = sexp_get_object_angle(node, op_num - OP_GET_OBJECT_PITCH);
+				break;
+
 			case OP_SET_OBJECT_POSITION:
 				sexp_set_object_position(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_OBJECT_ORIENTATION:
+				sexp_set_object_orientation(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -20187,6 +20317,9 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
+		case OP_GET_OBJECT_PITCH:
+		case OP_GET_OBJECT_BANK:
+		case OP_GET_OBJECT_HEADING:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
@@ -20394,6 +20527,7 @@ int query_operator_return_type(int op)
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
+		case OP_SET_OBJECT_ORIENTATION:
 		case OP_SET_OBJECT_FACING:
 		case OP_SET_OBJECT_FACING_OBJECT:
 		case OP_SHIP_MANEUVER:
@@ -20845,8 +20979,19 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
+		case OP_GET_OBJECT_PITCH:
+		case OP_GET_OBJECT_BANK:
+		case OP_GET_OBJECT_HEADING:
+			return OPF_SHIP_WING_POINT;
+
 		case OP_SET_OBJECT_POSITION:
-			if(argnum==0)
+			if(argnum == 0)
+				return OPF_SHIP_WING_POINT;
+			else
+				return OPF_NUMBER;
+
+		case OP_SET_OBJECT_ORIENTATION:
+			if (argnum == 0)
 				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_NUMBER;
@@ -23467,6 +23612,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
+		case OP_SET_OBJECT_ORIENTATION:
 		case OP_SET_OBJECT_FACING:
 		case OP_SET_OBJECT_FACING_OBJECT:
 		case OP_SET_OBJECT_SPEED_X:
@@ -23634,6 +23780,9 @@ int get_subcategory(int sexp_id)
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
+		case OP_GET_OBJECT_PITCH:
+		case OP_GET_OBJECT_BANK:
+		case OP_GET_OBJECT_HEADING:
 		case OP_NUM_WITHIN_BOX:
 		case OP_SPECIAL_WARP_DISTANCE:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
@@ -23818,14 +23967,38 @@ sexp_help_struct Sexp_help[] = {
 		"\t4: The relative Y coordinate (optional).\r\n"
 		"\t5: The relative Z coordinate (optional).\r\n" },
 
-		// Goober5000
+	// Goober5000
 	{ OP_SET_OBJECT_POSITION, "set-object-position\r\n"
 		"\tInstantaneously sets an object's spatial coordinates."
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of an object.\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
 		"\t2: The new X coordinate.\r\n"
 		"\t3: The new Y coordinate.\r\n"
 		"\t4: The new Z coordinate." },
+
+	// Goober5000
+	{ OP_GET_OBJECT_PITCH, "get-object-pitch\r\n"
+		"\tReturns the pitch angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n" },
+
+	// Goober5000
+	{ OP_GET_OBJECT_BANK, "get-object-bank\r\n"
+		"\tReturns the bank angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n" },
+
+	// Goober5000
+	{ OP_GET_OBJECT_HEADING, "get-object-heading\r\n"
+		"\tReturns the heading angle, in degrees, of a particular object.  The returned value will be between 0 and 360.  Takes 1 argument...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n" },
+
+	// Goober5000
+	{ OP_SET_OBJECT_ORIENTATION, "set-object-orientation\r\n"
+		"\tInstantaneously sets an object's spatial orientation."
+		"Takes 4 arguments...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t2: The new pitch angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360.\r\n"
+		"\t3: The new bank angle, in degrees.  The angle can be any can be any number; it does not have to be between 0 and 360.\r\n"
+		"\t4: The new heading angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360." },
 
 	{ OP_TRUE, "True (Boolean operator)\r\n"
 		"\tA true boolean state\r\n\r\n"

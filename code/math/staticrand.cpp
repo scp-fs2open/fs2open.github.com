@@ -104,13 +104,13 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 	}
 	
 	// axis 1
-	vm_rot_point_around_line(&t1, in, fl_radian(static_randf_range(num,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
+	vm_rot_point_around_line(&t1, in, fl_radians(static_randf_range(num,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
 	
 	// axis 2
-	vm_rot_point_around_line(&t2, &t1, fl_radian(static_randf_range(num+1,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
+	vm_rot_point_around_line(&t2, &t1, fl_radians(static_randf_range(num+1,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
 
 	// axis 3
-	vm_rot_point_around_line(out, &t2, fl_radian(static_randf_range(num+2,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
+	vm_rot_point_around_line(out, &t2, fl_radians(static_randf_range(num+2,-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
 /////////////////////////////////////////////////////////////////////

@@ -1201,12 +1201,14 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	nframes = bm_bitmaps[first_frame].info.ani.num_frames;
 
 	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
-		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		nprintf(("BMPMAN", "Error opening %s in bm_lock\n", be->filename));
+		return;
 	}
 
 	if ( (the_anim_instance = init_anim_instance(the_anim, bpp)) == NULL ) {
-		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		nprintf(("BMPMAN", "Error opening %s in bm_lock\n", be->filename));
 		anim_free(the_anim);
+		return;
 	}
 
 	int can_drop_frames = 0;

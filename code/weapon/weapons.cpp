@@ -6103,19 +6103,19 @@ void weapon_maybe_spew_particle(object *obj)
 			//	randomly perturb x, y and z
 			
 			// uvec
-			ang = fl_radian(frand_range(-90.0f, 90.0f));
+			ang = fl_radians(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.fvec);			
 			direct = direct_temp;
 			vm_vec_scale(&direct, wip->particle_spew_scale);
 
 			// rvec
-			ang = fl_radian(frand_range(-90.0f, 90.0f));
+			ang = fl_radians(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.rvec);			
 			direct = direct_temp;
 			vm_vec_scale(&direct, wip->particle_spew_scale);
 
 			// fvec
-			ang = fl_radian(frand_range(-90.0f, 90.0f));
+			ang = fl_radians(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.uvec);			
 			direct = direct_temp;
 			vm_vec_scale(&direct, wip->particle_spew_scale);
