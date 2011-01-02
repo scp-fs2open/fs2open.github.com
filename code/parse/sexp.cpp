@@ -6020,7 +6020,7 @@ int sexp_calculate_angle(matrix *orient, int axis)
 		default: rad = 0.0f;
 	}
 
-	int deg = fl_degrees(rad);
+	int deg = static_cast<int>(fl_degrees(rad));
 	if (deg < 0)
 		deg += 360;
 
