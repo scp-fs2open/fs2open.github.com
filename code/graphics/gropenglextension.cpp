@@ -362,9 +362,9 @@ void opengl_extensions_init()
 		Use_VBOs = 1;
 	}
 
-//	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
-//		Use_PBOs = 1;
-//	}
+	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
+		Use_PBOs = 1;
+	}
 
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
 			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) )
@@ -373,22 +373,22 @@ void opengl_extensions_init()
 		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
 
 		sscanf(glsl_ver, "%d.%d", &major, &minor);
-		ver = (major + 100) + minor;
+		ver = (major * 100) + minor;
 
 		// SM 4.0 compatible or better
-		if (ver >= 130) {
+		if (ver >= 400) {
 			Use_GLSL = 4;
 		}
 		// SM 3.0 compatible
-		else if ( Is_Extension_Enabled(OGL_SM30) ) {
+		else if ( ver >= 130 ) {
 			Use_GLSL = 3;
 		}
 		// SM 2.0 compatible
-		else if (ver >= 120) {
+		else if (ver >= 110) {
 			Use_GLSL = 2;
 		}
-		// we require GLSL 1.20 or higher
-		else {
+		// we require GLSL 1.10 or higher
+		else if (ver < 110) {
 			Use_GLSL = 0;
 		}
 	}
