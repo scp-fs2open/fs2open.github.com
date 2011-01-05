@@ -432,7 +432,7 @@ typedef struct {
 float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, bool *hull_should_apply_armor)
 {
 	vec3d			g_subobj_pos;
-	float				damage_left;
+	float				damage_left, damage_if_hull;
 	int				weapon_info_index;
 	ship_subsys		*subsys;
 	ship				*ship_p;
@@ -465,10 +465,12 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			return damage;
 		else {
 			damage_left = shockwave_get_damage(other_obj->instance) / 4.0f;
+			damage_if_hull = damage_left;
 		}
 		hitpos2 = other_obj->pos;
 	} else {
 		damage_left = damage;
+		damage_if_hull = damage;
 		hitpos2 = *hitpos;
 	}
 
@@ -479,6 +481,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			return damage_left;
 		}
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
+		damage_if_hull *= Weapon_info[weapon_info_index].armor_factor;
 	}
 
 
@@ -609,15 +612,22 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
 		if ((dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;
+			damage_if_hull *= 4.0f * Weapon_info[weapon_info_index].armor_factor;			
 		}
 
 //		if (damage_left > 100.0f)
 //			nprintf(("AI", "Applying %7.3f damage to subsystem %7.3f units away.\n", damage_left, dist));
 
 		if ( dist < range/2.0f ) {
-			damage_to_apply = damage_left;
+			if (subsys->flags & SSF_DAMAGE_AS_HULL)
+				damage_to_apply = damage_if_hull;
+			else
+				damage_to_apply = damage_left;
 		} else if ( dist < range ) {
-			damage_to_apply = damage_left * (1.0f - dist/range);
+			if (subsys->flags & SSF_DAMAGE_AS_HULL)
+				damage_to_apply = damage_if_hull * (1.0f - dist/range);
+			else
+				damage_to_apply = damage_left * (1.0f - dist/range);
 		}
 
 		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
@@ -650,7 +660,10 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsys->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
-						subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
+						if (subsys->flags & SSF_DAMAGE_AS_HULL)
+							subsystem_factor = Weapon_info[weapon_info_index].armor_factor;
+						else
+							subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
 					}
 					if (subsystem_factor > 0.0f) 
 						damage -= ((MIN(subsys->current_hits, damage_to_apply)) / subsystem_factor);
