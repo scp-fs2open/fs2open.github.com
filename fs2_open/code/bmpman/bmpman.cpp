@@ -1378,9 +1378,6 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		Assert( (bpp == 16) || (bpp == 24 ) || (bpp == 32) );
 	}
 
-	// should never try to make an aabitmap out of a targa
-	Assert(!(flags & BMP_AABITMAP));
-
 	// allocate bitmap data
 	byte_size = (bpp >> 3);
 
@@ -1500,9 +1497,6 @@ void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );
 
-	// should never try to make an aabitmap out of a png
-	Assert(!(flags & BMP_AABITMAP));
-
 	// allocate bitmap data
 	Assert( bmp->w * bmp->h > 0 );
 
@@ -1546,9 +1540,6 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
-
-	// should never try to make an aabitmap out of a jpeg
-	Assert(!(flags & BMP_AABITMAP));
 
 	d_size = (bpp >> 3);
 
