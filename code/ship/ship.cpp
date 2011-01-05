@@ -243,7 +243,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "no replace",				MSS_FLAG_NO_REPLACE,		0 },
 	{ "no live debris",			MSS_FLAG_NO_LIVE_DEBRIS,	0 },
 	{ "ignore if dead",			MSS_FLAG_IGNORE_IF_DEAD,	0 },
-	{ "allow vanishing",		MSS_FLAG_ALLOW_VANISHING,	0 }
+	{ "allow vanishing",		MSS_FLAG_ALLOW_VANISHING,	0 },
+	{ "damage as hull",			MSS_FLAG_DAMAGE_AS_HULL,	0 },
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -5037,6 +5038,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_MISSILES_IGNORE_IF_DEAD;
 		if (model_system->flags & MSS_FLAG_ALLOW_VANISHING)
 			ship_system->flags |= SSF_VANISHED;
+		if (model_system->flags & MSS_FLAG_DAMAGE_AS_HULL)
+			ship_system->flags |= SSF_DAMAGE_AS_HULL;
 		if (model_system->flags & MSS_FLAG_ROTATES)
 			ship_system->flags |= SSF_ROTATES;
 
