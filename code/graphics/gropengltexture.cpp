@@ -578,10 +578,29 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 			Assert( texmem != NULL );
 
+			int luminance = 0;
 			for (i = 0; i < tex_h; i++) {
 				for (j = 0; j < tex_w; j++) {
 					if ( (i < bmap_h) && (j < bmap_w) ) {
-						*texmemp++ = GL_xlat[bmp_data[i*bmap_w+j]];
+						if ( byte_mult > 1 ) {
+							luminance = 0;
+
+							if ( byte_mult > 3 ) {
+								for (k = 0; k < 3; k++) {
+									luminance += bmp_data[(i*bmap_w+j)*byte_mult+k];
+								}
+
+								*texmemp++ = (ubyte)((luminance / 3) * (bmp_data[(i*bmap_w+j)*byte_mult+3]/255.0f));
+							} else {
+								for (k = 0; k < byte_mult; k++) {
+									luminance += bmp_data[(i*bmap_w+j)*byte_mult+k]; 
+								}
+
+								*texmemp++ = (ubyte)(luminance / byte_mult);
+							}
+						} else {
+							*texmemp++ = GL_xlat[bmp_data[i*bmap_w+j]];
+						}
 					} else {
 						*texmemp++ = 0;
 					}
