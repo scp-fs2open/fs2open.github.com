@@ -368,6 +368,8 @@ struct ship;
 #define OP_DO_FOR_VALID_ARGUMENTS			(0x000c | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_FOR_EACH_OF						(0x000f | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_COUNTER						(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -926,18 +928,24 @@ typedef struct sexp_variable {
 	char	variable_name[TOKEN_LENGTH];
 } sexp_variable;
 
+
+#define ARG_ITEM_F_DUP	(1<<0)
+
 // Goober5000 - adapted from sexp_list_item in Sexp_tree.h
 class arg_item
 {
 	public:
 		char *text;
 		arg_item *next;
+		int flags;
 		int nesting_level;
 
-		arg_item() : text(NULL), next(NULL) {}
+		arg_item() : flags(0), nesting_level(0), text(NULL), next(NULL) {}
 		void add_data(char *str);
+		void add_data_dup(char *str);
+		void add_data_set_dup(char *str);
 		void expunge();
-		int empty();
+		int is_empty();
 		arg_item *get_next();
 		void clear_nesting_level(); 
 };

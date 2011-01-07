@@ -271,6 +271,8 @@ sexp_oper Operators[] = {
 	{ "random-multiple-of",			OP_RANDOM_MULTIPLE_OF,		1, INT_MAX, },	// Karajorma
 	{ "number-of",					OP_NUMBER_OF,				2, INT_MAX, },	// Goober5000
 	{ "in-sequence",				OP_IN_SEQUENCE,				1, INT_MAX, },	// Karajorma
+	{ "for-each-of",				OP_FOR_EACH_OF,				1, INT_MAX, },	// Goober5000
+	{ "for-counter",				OP_FOR_COUNTER,				2, 3,		},	// Goober5000
 	{ "invalidate-argument",		OP_INVALIDATE_ARGUMENT,		1, INT_MAX, },	// Goober5000
 	{ "invalidate-all-arguments",	OP_INVALIDATE_ALL_ARGUMENTS,	0, 0, },	// Karajorma
 	{ "validate-argument",			OP_VALIDATE_ARGUMENT,		1, INT_MAX, },	// Karajorma
@@ -791,6 +793,38 @@ void arg_item::add_data(char *str)
 	item->next = ptr;
 }
 
+void arg_item::add_data_dup(char *str)
+{
+	arg_item *item, *ptr;
+
+	// create item
+	item = new arg_item;
+	item->text = strdup(str);
+	item->flags |= ARG_ITEM_F_DUP;
+	item->nesting_level = Sexp_current_argument_nesting_level;
+
+	// prepend item to existing list
+	ptr = this->next;
+	this->next = item;
+	item->next = ptr;
+}
+
+void arg_item::add_data_set_dup(char *str)
+{
+	arg_item *item, *ptr;
+
+	// create item
+	item = new arg_item;
+	item->text = str;
+	item->flags |= ARG_ITEM_F_DUP;
+	item->nesting_level = Sexp_current_argument_nesting_level;
+
+	// prepend item to existing list
+	ptr = this->next;
+	this->next = item;
+	item->next = ptr;
+}
+
 arg_item* arg_item::get_next()
 {
 	if (this->next != NULL) {
@@ -810,7 +844,11 @@ void arg_item::expunge()
 	while (this->next != NULL)
 	{
 		ptr = this->next->next;
+
+		if (this->next->flags & ARG_ITEM_F_DUP)
+			free(this->next->text);
 		delete this->next;
+
 		this->next = ptr;
 	}
 }
@@ -823,12 +861,16 @@ void arg_item::clear_nesting_level()
 	while (this->next != NULL && this->next->nesting_level >= Sexp_current_argument_nesting_level )
 	{
 		ptr = this->next->next;
+
+		if (this->next->flags & ARG_ITEM_F_DUP)
+			free(this->next->text);
 		delete this->next;
+
 		this->next = ptr;
 	}
 }
 
-int arg_item::empty()
+int arg_item::is_empty()
 {
 	return (this->next == NULL);
 }
@@ -7641,7 +7683,8 @@ int eval_cond(int n)
 }
 
 // Goober5000
-int test_argument_list_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+// NOTE: if you change this function, check to see if the following function should also be changed!
+int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
 	int val, num_valid_arguments;
 	Assert(n != -1 && condition_node != -1);
@@ -7705,8 +7748,91 @@ int test_argument_list_for_condition(int n, int condition_node, int *num_true, i
 
 	// now we write from the temporary store into the real one, reversing the order. We do this because 
 	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
-	while(!Applicable_arguments_temp.empty()) {
+	while (!Applicable_arguments_temp.empty())
+	{
 		Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
+		Applicable_arguments_temp.pop_back(); 
+	}
+
+	return num_valid_arguments;
+}
+
+// Goober5000
+// NOTE: if you change this function, check to see if the previous function should also be changed!
+int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+{
+	int val, num_valid_arguments;
+	Assert(condition_node != -1);
+	Assert((num_true != NULL) && (num_false != NULL) && (num_known_true != NULL) && (num_known_false != NULL));
+
+	// ensure special argument list is empty
+	Sexp_applicable_argument_list.clear_nesting_level();
+	Applicable_arguments_temp.clear();
+
+	// ditto for counters
+	num_valid_arguments = 0;
+	*num_true = 0;
+	*num_false = 0;
+	*num_known_true = 0;
+	*num_known_false = 0;
+
+	// loop through all arguments
+	for (unsigned int i = 0; i < argument_vector.size(); i++)
+	{
+		// since we can't see or modify the validity, assume all are valid
+		{
+			// flush conditional to avoid short-circuiting
+			flush_sexp_tree(condition_node);
+
+			// evaluate conditional for current argument
+			Sexp_replacement_arguments.push_back(argument_vector[i]);
+			val = eval_sexp(condition_node);
+
+			switch (val)
+			{
+				case SEXP_TRUE:
+					(*num_true)++;
+					Applicable_arguments_temp.push_back(argument_vector[i]);
+					break;
+
+				case SEXP_FALSE:
+					(*num_false)++;
+					break;
+
+				case SEXP_KNOWN_TRUE:
+					(*num_known_true)++;
+					Applicable_arguments_temp.push_back(argument_vector[i]);
+					break;
+
+				case SEXP_KNOWN_FALSE:
+					(*num_known_false)++;
+					break;
+			}
+
+			// if the argument was already dup'd, but not added as an applicable argument,
+			// we need to free it here before we cause a memory leak
+			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && already_dupped)
+				free(argument_vector[i]);
+
+			// clear argument, but not list, as we'll need it later
+			Sexp_replacement_arguments.pop_back();
+
+			// increment
+			num_valid_arguments++;
+		}
+	}
+
+	// now we write from the temporary store into the real one, reversing the order. We do this because 
+	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
+	while (!Applicable_arguments_temp.empty())
+	{
+		// we need to dup the strings regardless, since we're not using Sexp_nodes[n].text as a string buffer,
+		// but we need to know whether the calling function dup'd them, or whether we should dup them here
+		if (already_dupped)
+			Sexp_applicable_argument_list.add_data_set_dup(Applicable_arguments_temp.back());
+		else
+			Sexp_applicable_argument_list.add_data_dup(Applicable_arguments_temp.back());
+
 		Applicable_arguments_temp.pop_back(); 
 	}
 
@@ -7723,7 +7849,7 @@ int eval_any_of(int arg_handler_node, int condition_node)
 	n = CDR(arg_handler_node);
 
 	// test the whole argument list
-	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_or algorithm
 	if (num_known_true)
@@ -7746,7 +7872,7 @@ int eval_every_of(int arg_handler_node, int condition_node)
 	n = CDR(arg_handler_node);
 
 	// test the whole argument list
-	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_and algorithm
 	if (num_known_false)
@@ -7773,7 +7899,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 	n = CDR(n);
 
 	// test the whole argument list
-	num_valid_arguments = test_argument_list_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_or algorithm, modified
 	// (true if at least threshold arguments are true)
@@ -7923,11 +8049,81 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	return val;
 }
 
+// is there a better place to put this?  seems useful...
+// credit to http://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+template <typename T>
+T sign(T t) 
+{
+    if (t == 0)
+        return T(0);
+    else
+        return (t < 0) ? T(-1) : T(1);
+}
+
+// Goober5000
+int eval_for_counter(int arg_handler_node, int condition_node)
+{
+	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
+	int i, counter_start, counter_stop, counter_step;
+	char buf[NAME_LENGTH];
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// determine the counter parameters
+	n = CDR(arg_handler_node);
+	counter_start = eval_num(n);
+	n = CDR(n);
+	counter_stop = eval_num(n);
+	n = CDR(n);
+	counter_step = (n >= 0) ? eval_num(n) : 1;
+
+	// a bunch of error checking
+	if (counter_step == 0)
+	{
+		Warning(LOCATION, "A counter increment of 0 is illegal!  (start=%d, stop=%d, increment=%d)", counter_start, counter_stop, counter_step);
+		return SEXP_KNOWN_FALSE;
+	}
+	else if (counter_start == counter_stop)
+	{
+		Warning(LOCATION, "The counter start and stop values are identical!  (start=%d, stop=%d, increment=%d)", counter_start, counter_stop, counter_step);
+		return SEXP_KNOWN_FALSE;
+	}
+	else if (sign(counter_stop - counter_start) != sign(counter_step))
+	{
+		Warning(LOCATION, "The counter cannot complete with the given values!  (start=%d, stop=%d, increment=%d)", counter_start, counter_stop, counter_step);
+		return SEXP_KNOWN_FALSE;
+	}
+
+	// build a vector of counter values
+	SCP_vector<char*> argument_vector;
+	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
+	{
+		sprintf(buf, "%d", i);
+		argument_vector.push_back(strdup(buf));
+	}
+
+	// test the whole argument vector
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+
+	// use the sexp_or algorithm
+	if (num_known_true)
+		return SEXP_KNOWN_TRUE;
+	else if (num_known_false == num_valid_arguments)
+		return SEXP_KNOWN_FALSE;
+	else if (num_true)
+		return SEXP_TRUE;
+	else
+		return SEXP_FALSE;
+}
+
 void sexp_change_all_argument_validity(int n, bool invalidate)
 {
 	int arg_handler, arg_n;
 
 	arg_handler = get_handler_for_x_of_operator(n);
+
+	// can't change validity of for-counter
+	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
+		return;
 		
 	while (n != -1)
 	{
@@ -7956,6 +8152,10 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
+	// can't change validity of for-counter
+	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
+		return;
+		
 	// loop through arguments
 	while (n != -1)
 	{
@@ -8069,6 +8269,8 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
+		case OP_FOR_EACH_OF:
+		case OP_FOR_COUNTER:
 			return true;
 
 		default:
@@ -18439,6 +18641,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Goober5000
 			case OP_ANY_OF:
+			case OP_FOR_EACH_OF:
 				sexp_val = eval_any_of( cur_node, referenced_node );
 				break;
 
@@ -18461,6 +18664,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Karajorma
 			case OP_IN_SEQUENCE:
 				sexp_val = eval_in_sequence( cur_node, referenced_node );
+				break;
+
+			// Goober5000
+			case OP_FOR_COUNTER:
+				sexp_val = eval_for_counter( cur_node, referenced_node );
 				break;
 
 			// Karajorma
@@ -20671,6 +20879,8 @@ int query_operator_return_type(int op)
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_NUMBER_OF:
 		case OP_IN_SEQUENCE:
+		case OP_FOR_EACH_OF:
+		case OP_FOR_COUNTER:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default:
@@ -21191,6 +21401,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
+		case OP_FOR_EACH_OF:
 			return OPF_ANYTHING;
 
 		case OP_NUMBER_OF:
@@ -21198,6 +21409,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_ANYTHING;
+
+		case OP_FOR_COUNTER:
+			return OPF_NUMBER;
 
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
@@ -24471,6 +24685,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ANY_OF, "Any-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"In practice, this will behave like a standard \"for-each\" statement, evaluating the action operators for each argument that satisfies the condition.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -24509,6 +24724,24 @@ sexp_help_struct Sexp_help[] = {
 		"in which " SEXP_ARGUMENT_STRING " is used. The same argument will be returned by all subsequent calls\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_FOR_EACH_OF, "For-Each-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Each argument will be tested against the condition, and if the condition is satisfied, the argument will then be used in the action operators.  "
+		"This behavior is exactly equivalent to the Any-of operator, but is provided as syntactic sugar.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_FOR_COUNTER, "For-Counter (Conditional operator)\r\n"
+		"\tSupplies counter values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will count up from the start value to the stop value, and each value will be provided as an argument to the action operators.  "
+		"The default increment is 1, but if the optional increment parameter is provided, the counter will increment by that number.  The stop value will be supplied if appropriate; e.g. counting from 0 to 10 by 2 will supply 0, 2, 4, 6, 8, and 10; "
+		"but counting by 3 will supply 0, 3, 6, and 9.\r\n\r\n"
+		"Note that the counter values are all treated as valid arguments, and it is impossible to validate a counter argument.  If you want to invalidate a counter value, use For-Each-of and list the values explicitly.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tCounter start value\r\n"
+		"\t2:\tCounter stop value\r\n"
+		"\t3:\tCounter increment (optional)" },
 
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
