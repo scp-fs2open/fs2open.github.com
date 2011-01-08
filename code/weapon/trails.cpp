@@ -200,7 +200,7 @@ void trail_render( trail * trailp )
 	if (num_sections <= 0)
 		return;
 
-	Assert(ti->texture.bitmap_id != -1);
+	Assertion(ti->texture.bitmap_id != -1, "Weapon trail %s could not be loaded", ti->texture.filename); // We can leave this as an assert, but tell them how to fix it. --Chief
 
 	memset( &top, 0, sizeof(vertex) );
 	memset( &bot, 0, sizeof(vertex) );

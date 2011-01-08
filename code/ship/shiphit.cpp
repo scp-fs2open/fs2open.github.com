@@ -221,9 +221,11 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	// Don't log or display info about the activation subsytem
 	int display = (psub->type != SUBSYSTEM_ACTIVATION);
-	if (display) {
+	if (display) 
+	{
 		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name, log_index );
-		if ( ship_obj == Player_obj ) {
+		if ( ship_obj == Player_obj  && !(subsys->flags & SSF_VANISHED))
+		{
 			snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
 			if (strlen(psub->alt_dmg_sub_name))
 				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);

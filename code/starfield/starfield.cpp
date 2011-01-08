@@ -590,6 +590,7 @@ void stars_load_all_bitmaps()
 	// pre-load all starfield bitmaps.  ONLY SHOULD DO THIS FOR FRED!!
 	// this can get nasty when a lot of bitmaps are in use so spare it for
 	// the normal game and only do this in FRED
+	int mprintf_count = 0;
 	for (idx = 0; idx < (int)Starfield_bitmaps.size(); idx++) {
 		sb = &Starfield_bitmaps[idx];
 
@@ -601,10 +602,14 @@ void stars_load_all_bitmaps()
 				sb->bitmap_id = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, NULL, 1);
 
 				if (sb->bitmap_id < 0) {
-					Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", sb->filename);
+					mprintf(("Unable to load starfield bitmap: '%s'!\n", sb->filename));
+					mprintf_count++;
 				}
 			}
 		}
+	}
+	if (mprintf_count > 0) {
+		Warning(LOCATION, "Unable to load %d starfield bitmap(s)!\n", mprintf_count);
 	}
 
 	for (idx = 0; idx < (int)Sun_bitmaps.size(); idx++) {
