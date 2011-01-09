@@ -779,6 +779,11 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
+	wip->num_detail_levels = -1;
+	for ( i = 0; i < MAX_MODEL_DETAIL_LEVELS; i++ )
+	{
+		wip->detail_distance[i] = -1;
+	}
 
 	generic_anim_init(&wip->laser_bitmap);
 	generic_anim_init(&wip->laser_glow_bitmap);
@@ -1171,6 +1176,10 @@ int parse_weapon(int subtype, bool replace)
 	// a special LOD level to use when rendering the weapon in the hud targetbox
 	if ( optional_string( "$POF target LOD:" ) )
 		stuff_int(&wip->hud_target_lod);
+
+	if(optional_string("$Detail distance:")) {
+		wip->num_detail_levels = stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	}
 
 	if ( optional_string("$External Model File:") )
 		stuff_string(wip->external_model_name, F_NAME, MAX_FILENAME_LEN);	
@@ -4986,7 +4995,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		pm = model_get(Weapon_info[wp->weapon_info_index].model_num);
 
 		for (i=0; i<pm->n_detail_levels; i++){
-			pm->detail_depth[i] = (objp->radius*20.0f + 20.0f) * i;
+			if (wip->detail_distance[i] >= 0)
+				pm->detail_depth[i] = i2fl(wip->detail_distance[i]);
+			else
+				pm->detail_depth[i] = (objp->radius*20.0f + 20.0f) * i;
 		}
 
 #ifndef NDEBUG
