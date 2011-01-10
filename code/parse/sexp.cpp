@@ -280,7 +280,6 @@ sexp_oper Operators[] = {
 	{ "random-multiple-of",			OP_RANDOM_MULTIPLE_OF,		1, INT_MAX, },	// Karajorma
 	{ "number-of",					OP_NUMBER_OF,				2, INT_MAX, },	// Goober5000
 	{ "in-sequence",				OP_IN_SEQUENCE,				1, INT_MAX, },	// Karajorma
-	{ "for-each-of",				OP_FOR_EACH_OF,				1, INT_MAX, },	// Goober5000
 	{ "for-counter",				OP_FOR_COUNTER,				2, 3,		},	// Goober5000
 	{ "invalidate-argument",		OP_INVALIDATE_ARGUMENT,		1, INT_MAX, },	// Goober5000
 	{ "invalidate-all-arguments",	OP_INVALIDATE_ALL_ARGUMENTS,	0, 0, },	// Karajorma
@@ -8393,7 +8392,6 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
-		case OP_FOR_EACH_OF:
 		case OP_FOR_COUNTER:
 			return true;
 
@@ -18798,7 +18796,6 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Goober5000
 			case OP_ANY_OF:
-			case OP_FOR_EACH_OF:
 				sexp_val = eval_any_of( cur_node, referenced_node );
 				break;
 
@@ -21045,7 +21042,6 @@ int query_operator_return_type(int op)
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_NUMBER_OF:
 		case OP_IN_SEQUENCE:
-		case OP_FOR_EACH_OF:
 		case OP_FOR_COUNTER:
 			return OPR_FLEXIBLE_ARGUMENT;
 
@@ -21581,7 +21577,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
-		case OP_FOR_EACH_OF:
 			return OPF_ANYTHING;
 
 		case OP_NUMBER_OF:
@@ -22290,7 +22285,7 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_SUPERNOVA_START:
-			return OPF_NUMBER;
+			return OPF_POSITIVE;
 
 		case OP_SHIELD_RECHARGE_PCT:
 		case OP_WEAPON_RECHARGE_PCT:
@@ -24950,18 +24945,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Goober5000
-	{ OP_FOR_EACH_OF, "For-Each-of (Conditional operator)\r\n"
-		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Each argument will be tested against the condition, and if the condition is satisfied, the argument will then be used in the action operators.  "
-		"This behavior is exactly equivalent to the Any-of operator, but is provided as syntactic sugar.\r\n\r\n"
-		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
-
-	// Goober5000
 	{ OP_FOR_COUNTER, "For-Counter (Conditional operator)\r\n"
 		"\tSupplies counter values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will count up from the start value to the stop value, and each value will be provided as an argument to the action operators.  "
 		"The default increment is 1, but if the optional increment parameter is provided, the counter will increment by that number.  The stop value will be supplied if appropriate; e.g. counting from 0 to 10 by 2 will supply 0, 2, 4, 6, 8, and 10; "
 		"but counting by 3 will supply 0, 3, 6, and 9.\r\n\r\n"
-		"Note that the counter values are all treated as valid arguments, and it is impossible to validate a counter argument.  If you want to invalidate a counter value, use For-Each-of and list the values explicitly.\r\n\r\n"
+		"Note that the counter values are all treated as valid arguments, and it is impossible to invalidate a counter argument.  If you want to invalidate a counter value, use Any-of and list the values explicitly.\r\n\r\n"
+		"This sexp will usually need to be accompanied by the string-to-int sexp, as the counter variables are provided in string format but are most useful in integer format.\r\n\r\n"
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tCounter start value\r\n"
 		"\t2:\tCounter stop value\r\n"

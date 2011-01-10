@@ -381,8 +381,7 @@ struct ship;
 #define OP_DO_FOR_VALID_ARGUMENTS			(0x000c | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
-#define OP_FOR_EACH_OF						(0x000f | OP_CATEGORY_CONDITIONAL)	// Goober5000
-#define OP_FOR_COUNTER						(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_COUNTER						(0x000f | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
