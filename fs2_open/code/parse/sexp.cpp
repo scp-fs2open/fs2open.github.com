@@ -3787,7 +3787,7 @@ int pow_sexp(int node)
 		return 0;
 	}
 
-	double pow_result = pow(num_1, num_2);
+	double pow_result = pow(static_cast<double>(num_1), num_2);
 
 	if (pow_result > static_cast<double>(INT_MAX))
 	{
