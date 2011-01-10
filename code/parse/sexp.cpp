@@ -114,6 +114,14 @@ sexp_oper Operators[] = {
 	{ "min",				OP_MIN,				1,	INT_MAX },	// Goober5000
 	{ "max",				OP_MAX,				1,	INT_MAX },	// Goober5000
 	{ "avg",				OP_AVG,				1,	INT_MAX },	// Goober5000
+	{ "pow",				OP_POW,				2,	2 },	// Goober5000
+	{ "set-bit",			OP_SET_BIT,			2,	2 },	// Goober5000
+	{ "unset-bit",			OP_UNSET_BIT,		2,	2 },	// Goober5000
+	{ "is-bit-set",			OP_IS_BIT_SET,		2,	2 },	// Goober5000
+	{ "bitwise-and",		OP_BITWISE_AND,		2,	INT_MAX },	// Goober5000
+	{ "bitwise-or",			OP_BITWISE_OR,		2,	INT_MAX },	// Goober5000
+	{ "bitwise-not",		OP_BITWISE_NOT,		1,	1 },	// Goober5000
+	{ "bitwise-xor",		OP_BITWISE_XOR,		2,	2 },	// Goober5000
 
 	{ "true",							OP_TRUE,							0,	0,			},
 	{ "false",							OP_FALSE,						0,	0,			},
@@ -121,6 +129,7 @@ sexp_oper Operators[] = {
 	{ "and-in-sequence",				OP_AND_IN_SEQUENCE,			2, INT_MAX, },
 	{ "or",								OP_OR,							2,	INT_MAX,	},
 	{ "not",								OP_NOT,							1, 1,			},
+	{ "xor",								OP_XOR,							2, 2,			},	// Goober5000
 	{ "=",								OP_EQUALS,						2,	INT_MAX,	},
 	{ "!=",								OP_NOT_EQUAL,						2,	INT_MAX,	},	// Goober5000
 	{ ">",								OP_GREATER_THAN,				2,	INT_MAX,	},
@@ -3766,6 +3775,108 @@ int avg_sexp(int n)
 	return (int) floor(((double) avg_val / num) + 0.5);
 }
 
+// Goober5000
+int pow_sexp(int node)
+{
+	int num_1 = eval_num(node);
+	int num_2 = eval_num(CDR(node));
+
+	// this is disallowed in FRED, but can still happen through careless arithmetic
+	if (num_2 < 0)
+	{
+		Warning(LOCATION, "Power function pow(%d, %d) attempted to raise to a negative power!", num_1, num_2);
+		return 0;
+	}
+
+	double pow_result = pow(num_1, num_2);
+
+	if (pow_result > static_cast<double>(INT_MAX))
+	{
+		nprintf(("SEXP", "Power function pow(%d, %d) is greater than INT_MAX!  Returning INT_MAX.", num_1, num_2));
+		return INT_MAX;
+	}
+	else if (pow_result < static_cast<double>(INT_MIN))
+	{
+		nprintf(("SEXP", "Power function pow(%d, %d) is less than INT_MIN!  Returning INT_MIN.", num_1, num_2));
+		return INT_MIN;
+	}
+
+	return static_cast<int>(pow_result);
+}
+
+// Goober5000
+int sexp_set_bit(int node, bool set_it)
+{
+	int val = eval_num(node);
+	int bit_index = eval_num(CDR(node));
+
+	if (bit_index < 0 || bit_index > 31)
+	{
+		Warning(LOCATION, "Bit index %d out of range!  Must be between 0 and 31.", bit_index);
+		return SEXP_NAN;
+	}
+
+	if (set_it)
+		return val | (1<<bit_index);
+	else
+		return val & ~(1<<bit_index);
+}
+
+// Goober5000
+int sexp_is_bit_set(int node)
+{
+	int val = eval_num(node);
+	int bit_index = eval_num(CDR(node));
+
+	if (bit_index < 0 || bit_index > 31)
+	{
+		Warning(LOCATION, "Bit index %d out of range!  Must be between 0 and 31.", bit_index);
+		return SEXP_NAN;
+	}
+
+	if (val & (1<<bit_index))
+		return SEXP_TRUE;
+	else
+		return SEXP_FALSE;
+}
+
+// Goober5000
+int sexp_bitwise_and(int node)
+{
+	int val = eval_num(node);
+
+	for (int n = CDR(node); n != -1; n = CDR(n))
+		val &= eval_num(n);
+
+	return val;
+}
+
+// Goober5000
+int sexp_bitwise_or(int node)
+{
+	int val = eval_num(node);
+
+	for (int n = CDR(node); n != -1; n = CDR(n))
+		val |= eval_num(n);
+
+	return val;
+}
+
+// Goober5000
+int sexp_bitwise_not(int node)
+{
+	int result = ~(eval_num(node));
+
+	// clear the sign bit
+	return result & INT_MAX;
+}
+
+// Goober5000
+int sexp_bitwise_xor(int node)
+{
+	return eval_num(node) ^ eval_num(CDR(node));
+}
+
 // seeding added by Karajorma and Goober5000
 int rand_sexp(int n, bool multiple)
 {
@@ -4004,6 +4115,19 @@ int sexp_not(int n)
 	}
 
 	return !result;
+}
+
+int sexp_xor(int node)
+{
+	int num_true = 0;
+
+	for (int n = node; n != -1; n = CDR(n))
+	{
+		if (is_sexp_true(n))
+			num_true++;
+	}
+
+	return (num_true == 1);
 }
 
 // Goober5000
@@ -18269,6 +18393,35 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = avg_sexp(node);
 				break;
 
+			case OP_POW:
+				sexp_val = pow_sexp(node);
+				break;
+
+			case OP_SET_BIT:
+			case OP_UNSET_BIT:
+				sexp_val = sexp_set_bit(node, op_num == OP_SET_BIT);
+				break;
+
+			case OP_IS_BIT_SET:
+				sexp_val = sexp_is_bit_set(node);
+				break;
+
+			case OP_BITWISE_AND:
+				sexp_val = sexp_bitwise_and(node);
+				break;
+
+			case OP_BITWISE_OR:
+				sexp_val = sexp_bitwise_or(node);
+				break;
+
+			case OP_BITWISE_NOT:
+				sexp_val = sexp_bitwise_not(node);
+				break;
+
+			case OP_BITWISE_XOR:
+				sexp_val = sexp_bitwise_xor(node);
+				break;
+
 			// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -18288,6 +18441,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_AND_IN_SEQUENCE:
 				sexp_val = sexp_and_in_sequence(node);
+				break;
+
+			case OP_XOR:
+				sexp_val = sexp_xor(node);
 				break;
 
 			case OP_EQUALS:
@@ -20419,6 +20576,7 @@ int query_operator_return_type(int op)
 		case OP_AND_IN_SEQUENCE:
 		case OP_OR:
 		case OP_NOT:
+		case OP_XOR:
 		case OP_EQUALS:
 		case OP_GREATER_THAN:
 		case OP_LESS_THAN:
@@ -20510,6 +20668,7 @@ int query_operator_return_type(int op)
 		case OP_IS_FACING:
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
+		case OP_IS_BIT_SET:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -20522,6 +20681,7 @@ int query_operator_return_type(int op)
 		case OP_MIN:
 		case OP_MAX:
 		case OP_AVG:
+		case OP_POW:
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
@@ -20536,6 +20696,12 @@ int query_operator_return_type(int op)
 			return OPR_NUMBER;
 
 		case OP_ABS:
+		case OP_SET_BIT:
+		case OP_UNSET_BIT:
+		case OP_BITWISE_AND:
+		case OP_BITWISE_OR:
+		case OP_BITWISE_NOT:
+		case OP_BITWISE_XOR:
 		case OP_TIME_SHIP_DESTROYED:
 		case OP_TIME_SHIP_ARRIVED:
 		case OP_TIME_SHIP_DEPARTED:
@@ -20937,6 +21103,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AND_IN_SEQUENCE:
 		case OP_OR:
 		case OP_NOT:
+		case OP_XOR:
 			return OPF_BOOL;
 
 		case OP_PLUS:
@@ -20958,6 +21125,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AVG:
 			return OPF_NUMBER;
 
+		case OP_POW:
+			if (argnum == 0)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
+
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
@@ -20973,6 +21146,13 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_MISSION_SET_NEBULA:	//WMC
 		case OP_MISSION_SET_SUBSPACE:
+		case OP_SET_BIT:
+		case OP_UNSET_BIT:
+		case OP_IS_BIT_SET:
+		case OP_BITWISE_AND:
+		case OP_BITWISE_OR:
+		case OP_BITWISE_NOT:
+		case OP_BITWISE_XOR:
 			return OPF_POSITIVE;
 
 		case OP_AI_WARP:								// this operator is obsolete
@@ -24124,6 +24304,46 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_AVG, "Average value (Arithmetic operator)\r\n"
 		"\tReturns the average (rounded to the nearest integer) of a set of numbers.  Takes 1 or more numeric arguments.\r\n" },
 
+	// Goober5000
+	{ OP_POW, "Power (Arithmetic operator)\r\n"
+		"\tRaises one number to the power of the next number.  If the result will be larger than INT_MAX or smaller than INT_MIN, the appropriate limit will be returned.  Takes 2 numeric arguments.\r\n" },
+
+	// Goober5000
+	{ OP_SET_BIT, "set-bit\r\n"
+		"\tTurns on (sets to 1) a certain bit in the provided number, returning the result.  This allows numbers to store up to 32 boolean flags, from 2^0 to 2^31.  Takes 2 numeric arguments...\r\n"
+		"\t1: The number whose bit should be set\r\n"
+		"\t2: The index of the bit to set.  Valid indexes are between 0 and 31, inclusive.\r\n" },
+
+	// Goober5000
+	{ OP_UNSET_BIT, "unset-bit\r\n"
+		"\tTurns off (sets to 0) a certain bit in the provided number, returning the result.  This allows numbers to store up to 32 boolean flags, from 2^0 to 2^31.  Takes 2 numeric arguments...\r\n"
+		"\t1: The number whose bit should be unset\r\n"
+		"\t2: The index of the bit to unset.  Valid indexes are between 0 and 31, inclusive.\r\n" },
+
+	// Goober5000
+	{ OP_IS_BIT_SET, "is-bit-set\r\n"
+		"\tReturns true if the specified bit is set (equal to 1) in the provided number.  Takes 2 numeric arguments...\r\n"
+		"\t1: The number whose bit should be tested\r\n"
+		"\t2: The index of the bit to test.  Valid indexes are between 0 and 31, inclusive.\r\n" },
+
+	// Goober5000
+	{ OP_BITWISE_AND, "bitwise-and\r\n"
+		"\tPerforms the bitwise AND operator on its arguments.  This is the same as if the logical AND operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
+
+	// Goober5000
+	{ OP_BITWISE_OR, "bitwise-or\r\n"
+		"\tPerforms the bitwise OR operator on its arguments.  This is the same as if the logical OR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
+
+	// Goober5000
+	{ OP_BITWISE_NOT, "bitwise-not\r\n"
+		"\tPerforms the bitwise NOT operator on its argument.  This is the same as if the logical NOT operator was performed on each successive bit.\r\n\r\n"
+		"Note that the operation is performed as if on an unsigned integer whose maximum value is INT_MAX.  In other words, there is no need to worry about the sign bit.\r\n\r\n"
+		"Takes only 1 argument.\r\n" },
+
+	// Goober5000
+	{ OP_BITWISE_XOR, "bitwise-xor\r\n"
+		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
+
 	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
 		"\tSets the X speed of a ship, wing, or waypoint."
 		"Takes 2 or 3 arguments...\r\n"
@@ -24229,6 +24449,10 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_OR, "Or (Boolean operator)\r\n"
 		"\tOr is true if any of its arguments are true.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more boolean arguments." },
+
+	{ OP_XOR, "Xor (Boolean operator)\r\n"
+		"\tXor is true if exactly one of its arguments is true.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 boolean arguments." },
 
 	{ OP_EQUALS, "Equals (Boolean operator)\r\n"
 		"\tIs true if all of its arguments are equal.\r\n\r\n"
