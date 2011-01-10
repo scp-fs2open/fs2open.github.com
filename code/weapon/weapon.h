@@ -18,6 +18,7 @@
 #include "weapon/trails.h"
 #include "weapon/shockwave.h"
 #include "graphics/generic.h"
+#include "model/model.h"
 
 struct object;
 struct ship_subsys;
@@ -263,7 +264,8 @@ typedef struct weapon_info {
 	char external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
 	int external_model_num;					//the model rendered on the weapon points of a ship
 	int hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
-
+	int num_detail_levels;					// number of LODs defined in table (optional)
+	int		detail_distance[MAX_MODEL_DETAIL_LEVELS]; // LOD distances define in table (optional)
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
