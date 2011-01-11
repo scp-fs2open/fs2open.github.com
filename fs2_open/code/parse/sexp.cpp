@@ -6179,10 +6179,10 @@ int sexp_calculate_angle(matrix *orient, int axis)
 	float rad;
 	switch (axis)
 	{
-		case 0:	rad = a.p;
-		case 1:	rad = a.b;
-		case 2:	rad = a.h;
-		default: rad = 0.0f;
+		case 0:	rad = a.p; break;
+		case 1:	rad = a.b; break;
+		case 2:	rad = a.h; break;
+		default: rad = 0.0f; break;
 	}
 
 	int deg = static_cast<int>(fl_degrees(rad));
