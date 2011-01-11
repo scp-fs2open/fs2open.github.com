@@ -3720,7 +3720,7 @@ HudGauge* hud_get_gauge(char* name)
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():
-HudGauge(HUD_OBJECT_MULTI_MSG, HUD_MESSAGE_LINES, false, false, true, 0, 255, 255, 255)
+HudGauge(HUD_OBJECT_MULTI_MSG, HUD_MESSAGE_LINES, true, false, true, 0, 255, 255, 255)
 {
 }
 
@@ -3740,7 +3740,7 @@ void HudGaugeMultiMsg::render(float frametime)
 }
 
 HudGaugeVoiceStatus::HudGaugeVoiceStatus():
-HudGauge(HUD_OBJECT_VOICE_STATUS, HUD_MESSAGE_LINES, false, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255) 
+HudGauge(HUD_OBJECT_VOICE_STATUS, HUD_MESSAGE_LINES, true, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255) 
 {
 }
 
@@ -3814,7 +3814,7 @@ void HudGaugePing::render(float frametime)
 }
 
 HudGaugeSupernova::HudGaugeSupernova():
-HudGauge(HUD_OBJECT_SUPERNOVA, HUD_DIRECTIVES_VIEW, false, false, false, 0, 255, 255, 255)
+HudGauge(HUD_OBJECT_SUPERNOVA, HUD_DIRECTIVES_VIEW, true, false, false, 0, 255, 255, 255)
 {
 }
 
