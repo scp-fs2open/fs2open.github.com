@@ -634,6 +634,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2)
 			weaponp->wi_flags2 |= WIF2_TAKES_BLAST_DAMAGE;
 		else if (!stricmp(NOX("takes shockwave damage"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TAKES_SHOCKWAVE_DAMAGE;
+		else if (!stricmp(NOX("hide from radar"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_DONT_SHOW_ON_RADAR;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -4366,7 +4368,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// plot homing missiles on the radar
-	if ((wip->wi_flags & WIF_BOMB) || (wip->wi_flags2 & WIF2_SHOWN_ON_RADAR)) {
+	if (((wip->wi_flags & WIF_BOMB) || (wip->wi_flags2 & WIF2_SHOWN_ON_RADAR)) && !(wip->wi_flags2 & WIF2_DONT_SHOW_ON_RADAR)) {
 		if ( hud_gauge_active(HUD_RADAR) ) {
 			radar_plot_object( obj );
 		}
@@ -4689,7 +4691,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// beam weapons should never come through here!
 	if(wip->wi_flags & WIF_BEAM)
 	{
-		Warning(LOCATION, "An attempt to fire a beam ('%s') through weapon_create() was made.", wip->name);
+		Warning(LOCATION, "An attempt to fire a beam ('%s') through weapon_create() was made.\n", wip->name);
 		return -1;
 	}
 
