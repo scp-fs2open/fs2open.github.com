@@ -2199,7 +2199,7 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	idx = stars_find_sun(sun_ptr->filename);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a sun that does not exist in stars.tbl!");
+		Warning(LOCATION, "Trying to add a sun '%s' that does not exist in stars.tbl!", sun_ptr->filename);
 		return -1;
 	}
 
@@ -2215,7 +2215,7 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 			Sun_bitmaps[idx].bitmap_id = bm_load_animation(Sun_bitmaps[idx].filename, &Sun_bitmaps[idx].n_frames, &Sun_bitmaps[idx].fps, NULL, 1);
 
 			if (Sun_bitmaps[idx].bitmap_id < 0) {
-				Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", Sun_bitmaps[idx].filename);
+				// failed
 				return -1;
 			}
 		}
@@ -2290,8 +2290,8 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	idx = stars_find_bitmap(sle->filename);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a bitmap that does not exist in stars.tbl!");
-		return 0;
+		Warning(LOCATION, "Trying to add a bitmap '%s' that does not exist in stars.tbl!", sle->filename);
+		return -1;
 	}
 
 	sbi.star_bitmap_index = idx;
@@ -2305,7 +2305,7 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 			Starfield_bitmaps[idx].bitmap_id = bm_load_animation(Starfield_bitmaps[idx].filename, &Starfield_bitmaps[idx].n_frames, &Starfield_bitmaps[idx].fps, NULL, 1);
 
 			if (Starfield_bitmaps[idx].bitmap_id < 0) {
-				Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", Starfield_bitmaps[idx].filename);
+				// failed
 				return -1;
 			}
 		}
@@ -2629,17 +2629,29 @@ void stars_load_background(int background_idx)
 	{
 		background_t *background = &Backgrounds[Cur_background];
 
+		int failed_suns = 0;
 		for (j = 0; j < background->suns.size(); j++)
 		{
 			if ((stars_add_sun_entry(&background->suns[j]) < 0) && !Fred_running)
-				Warning(LOCATION, "Failed to add sun '%s' to the mission!", background->suns[j].filename);
+			{
+				nprintf(("General", "Failed to add sun '%s' to the mission!", background->suns[j].filename));
+				failed_suns++;
+			}
 		}
+		if (failed_suns > 0)
+			Warning(LOCATION, "Failed to add %d sun bitmaps to the mission!", failed_suns);
 
+		int failed_stars = 0;
 		for (j = 0; j < background->bitmaps.size(); j++)
 		{
 			if ((stars_add_bitmap_entry(&background->bitmaps[j]) < 0) && !Fred_running)
-				Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", background->bitmaps[j].filename);
+			{
+				nprintf(("General", "Failed to add starfield bitmap '%s' to the mission!", background->bitmaps[j].filename));
+				failed_stars++;
+			}
 		}
+		if (failed_stars > 0)
+			Warning(LOCATION, "Failed to add %d starfield bitmaps to the mission!", failed_stars);
 	}
 }
 
