@@ -129,7 +129,7 @@ sexp_oper Operators[] = {
 	{ "and-in-sequence",				OP_AND_IN_SEQUENCE,			2, INT_MAX, },
 	{ "or",								OP_OR,							2,	INT_MAX,	},
 	{ "not",								OP_NOT,							1, 1,			},
-	{ "xor",								OP_XOR,							2, 2,			},	// Goober5000
+	{ "xor",								OP_XOR,							2, INT_MAX,			},	// Goober5000
 	{ "=",								OP_EQUALS,						2,	INT_MAX,	},
 	{ "!=",								OP_NOT_EQUAL,						2,	INT_MAX,	},	// Goober5000
 	{ ">",								OP_GREATER_THAN,				2,	INT_MAX,	},
@@ -17121,11 +17121,35 @@ int process_special_sexps(int index)
 	return SEXP_FALSE;
 }
 
-// Karajorma
+// Karajorma / Goober5000
 int sexp_string_to_int(int n)
 {
+	bool first_ch = true;
+	char *ch, *buf_ch, buf[TOKEN_LENGTH];
 	Assert (n != -1);
-	return atoi(CTEXT(n));
+
+	// copy all numeric characters to buf
+	// also, copy a sign symbol if we haven't copied numbers yet
+	buf_ch = buf;
+	for (ch = CTEXT(n); *ch != 0; ch++)
+	{
+		if ((first_ch && (*ch == '-' || *ch == '+')) || strchr("0123456789", *ch))
+		{
+			*buf_ch = *ch;
+			buf_ch++;
+
+			first_ch = false;
+		}
+
+		// don't save the fractional parts of decimal numbers
+		if (*ch == '.')
+			break;
+	}
+
+	// terminate string
+	*buf_ch = '\0';
+
+	return atoi(buf);
 }
 
 // Goober5000
@@ -24554,7 +24578,7 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_XOR, "Xor (Boolean operator)\r\n"
 		"\tXor is true if exactly one of its arguments is true.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 boolean arguments." },
+		"Returns a boolean value.  Takes 2 or more boolean arguments." },
 
 	{ OP_EQUALS, "Equals (Boolean operator)\r\n"
 		"\tIs true if all of its arguments are equal.\r\n\r\n"
