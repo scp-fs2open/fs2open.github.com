@@ -565,7 +565,6 @@ sexp_oper Operators[] = {
 	{ "primaries-depleted",		OP_PRIMARIES_DEPLETED,		1, 1,			},
 	{ "secondaries-depleted",	OP_SECONDARIES_DEPLETED,	1, 1,			},
 	{ "special-check",			OP_SPECIAL_CHECK,				1, 1,			},
-	{ "string-to-int",			OP_STRING_TO_INT,				1, 1,			}, // Karajorma
 
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,	2, 2, },
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,		2, 2, },
@@ -603,6 +602,9 @@ sexp_oper Operators[] = {
 	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
 	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
 	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
+	{ "string-to-int",				OP_STRING_TO_INT,						1, 1,			}, // Karajorma
+	{ "int-to-string",				OP_INT_TO_STRING,						2, 2,			}, // Goober5000
+	{ "string-concatenate",			OP_STRING_CONCATENATE,					3, 3,			}, // Goober5000
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
@@ -17120,12 +17122,89 @@ int process_special_sexps(int index)
 }
 
 // Karajorma
-int sexp_string_to_int (int n)
+int sexp_string_to_int(int n)
 {
 	Assert (n != -1);
 	return atoi(CTEXT(n));
 }
 
+// Goober5000
+void sexp_int_to_string(int n)
+{
+	int i, sexp_variable_index;
+	char new_text[TOKEN_LENGTH];
+
+	// Only do single player of multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	i = eval_num(n);
+	n = CDR(n);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	// write string
+	sprintf(new_text, "%d", i);
+
+	// assign to variable
+	sexp_modify_variable(new_text, sexp_variable_index);
+}
+
+// Goober5000
+void sexp_string_concatenate(int n)
+{
+	int sexp_variable_index;
+	char new_text[TOKEN_LENGTH];
+
+	// Only do single player of multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	char *str1 = CTEXT(n);
+	n = CDR(n);
+	char *str2 = CTEXT(n);
+	n = CDR(n);
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	// add first string
+	memset(new_text, 0, TOKEN_LENGTH);
+	strcpy(new_text, str1);
+
+	// check length
+	if (strlen(str1) + strlen(str2) >= TOKEN_LENGTH)
+		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+
+	// add second string
+	strncat(new_text, str2, TOKEN_LENGTH - strlen(str1) - 1);
+
+	// assign to variable
+	sexp_modify_variable(new_text, sexp_variable_index);
+}
 
 // custom sexp operator for handling misc training stuff
 int sexp_special_training_check(int node)
@@ -19573,6 +19652,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_string_to_int(node);
 				break;
 
+			// Goober5000
+			case OP_INT_TO_STRING:
+				sexp_int_to_string(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			// Goober5000
+			case OP_STRING_CONCATENATE:
+				sexp_string_concatenate(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 /*			// debugging operators
 			case OP_INT3:
 				Int3();
@@ -21011,6 +21102,8 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_DIRECTIVE:
 		case OP_HUD_GAUGE_SET_ACTIVE:
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
+		case OP_STRING_CONCATENATE:
+		case OP_INT_TO_STRING:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -21132,6 +21225,20 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_STRING_LESS_THAN:
 		case OP_STRING_TO_INT:		// Karajorma
 			return OPF_STRING;
+
+		case OP_STRING_CONCATENATE:
+			if (argnum == 0 || argnum == 1) {
+				return OPF_STRING;
+			} else if (argnum == 2) {
+				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_INT_TO_STRING:
+			if (argnum == 0) {
+				return OPF_NUMBER;
+			} else if (argnum == 1) {
+				return OPF_VARIABLE_NAME;
+			}
 
 		case OP_HAS_TIME_ELAPSED:
 		case OP_SPEED:
@@ -25614,11 +25721,27 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tMaximum speed of range player is to fly between." },
 
 	// Karajorma
-	{ OP_STRING_TO_INT, "String-to-int \r\n"
+	{ OP_STRING_TO_INT, "string-to-int\r\n"
 		"\tConverts a string into an integer. The string must only contain numeric characters "
 		"or zero is returned \r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\tString to convert." },
+		"\t1:\tString to convert" },
+
+	// Goober5000
+	{ OP_INT_TO_STRING, "int-to-string\r\n"
+		"\tConverts an integer into a string.  The destination must be a string variable.\r\n"
+		"Takes 2 argument...\r\n"
+		"\t1:\tInteger to convert\r\n"
+		"\t2:\tString variable to contain the result\r\n" },
+
+	// Goober5000
+	{ OP_STRING_CONCATENATE, "string-concatenate\r\n"
+		"\tConcatenates two strings, putting the result into a string variable.  If the length of the string will "
+		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: First string\r\n"
+		"\t2: Second string\r\n"
+		"\t3: String variable to hold the result\r\n" },
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
