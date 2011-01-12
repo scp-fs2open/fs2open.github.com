@@ -211,6 +211,10 @@ void radar_plot_object( object *objp )
 				if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
 					return;
 
+			// if explicitly hidden, return
+			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_DONT_SHOW_ON_RADAR)
+				return;
+
 			// if we don't attack the bomb, return
 			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_SHOW_FRIENDLY)) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
 				return;
