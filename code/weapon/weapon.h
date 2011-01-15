@@ -107,6 +107,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_EXTERNAL_WEAPON_LNCH		(1 << 25)	// render external secondary as a launcher
 #define WIF2_TAKES_BLAST_DAMAGE			(1 << 26)	// This weapon can take blast damage
 #define WIF2_TAKES_SHOCKWAVE_DAMAGE		(1 << 27)	// This weapon can take shockwave damage
+#define WIF2_DONT_SHOW_ON_RADAR			(1 << 28)   // Force a weapon to not show on radar
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)

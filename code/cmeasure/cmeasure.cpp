@@ -10,8 +10,6 @@
 
 
 #include "cmeasure/cmeasure.h"
-//#include "freespace2/freespace.h"
-//#include "model/model.h"
 #include "ship/ship.h"
 #include "math/staticrand.h"
 #include "object/object.h"
@@ -21,13 +19,6 @@
 #include "network/multimsgs.h"
 #include "mission/missionparse.h"
 
-
-//cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
-//cmeasure Cmeasures[MAX_CMEASURES];
-
-//int	Num_cmeasure_types = 0;
-//int	Num_cmeasures = 0;
-//int	Cmeasure_inited = 0;
 int	Cmeasures_homing_check = 0;
 int	Countermeasures_enabled = 1;			//	Debug, set to 0 means no one can fire countermeasures.
 
@@ -53,12 +44,6 @@ void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
 	vm_vec_zero(&objp->phys_info.max_vel);
 	vm_vec_zero(&objp->phys_info.max_rotvel);
 	
-	//Idunnit. -WMC
-	//objp->phys_info.flags |= PF_CONST_VEL;
-
-	//WMC - I don't think this stuff is needed with the flag I set
-	//WMC - Or maybe it is.
-	
 	// blow out his reverse thrusters. Or drag, same thing.
 	objp->phys_info.rotdamp = 10000.0f;
 	objp->phys_info.side_slip_time_const = 10000.0f;
@@ -70,7 +55,7 @@ void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
 void cmeasure_select_next(ship *shipp)
 {
 	Assert(shipp != NULL);
-	int i, new_index;
+	size_t i, new_index;
 
 	for (i = 1; i < Num_weapon_types; i++)
 	{
@@ -82,8 +67,6 @@ void cmeasure_select_next(ship *shipp)
 			return;
 		}
 	}
-
-	//snd_play( &Snds[SND_CMEASURE_CYCLE] );
 
 	mprintf(("Countermeasure type set to %i in frame %i\n", shipp->current_cmeasure, Framecount));
 }

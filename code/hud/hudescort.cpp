@@ -991,7 +991,7 @@ int hud_escort_num_ships_on_list()
 int hud_escort_return_objnum(int index)
 {
 	int escort_objnum, escort_sig;
-	if ( index >= Num_escort_ships ) {
+	if ( index >= Num_escort_ships || index >= MAX_COMPLETE_ESCORT_LIST) {
 		return -1;
 	}
 
