@@ -1312,7 +1312,7 @@ int nebl_get_storm_index(char *name)
 	if (name == NULL)
 		return -1;
 
-	for(idx=0; idx<Num_bolt_types; idx++){
+	for(idx=0; idx<Num_storm_types; idx++){
 		if(!strcmp(name, Storm_types[idx].name)){
 			return idx;
 		}
