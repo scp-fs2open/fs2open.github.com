@@ -251,6 +251,7 @@ struct ship;
 #define OP_LESS_OR_EQUAL					(0x000f | OP_CATEGORY_LOGICAL)	// Goober5000
 
 #define OP_XOR								(0x0010 | OP_CATEGORY_LOGICAL)	// Goober5000
+#define OP_PERFORM_ACTIONS					(0x0011 | OP_CATEGORY_LOGICAL)	// Goober5000
 
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -383,6 +384,7 @@ struct ship;
 #define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_FOR_COUNTER						(0x000f | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_IF_THEN_ELSE						(0x0010 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects

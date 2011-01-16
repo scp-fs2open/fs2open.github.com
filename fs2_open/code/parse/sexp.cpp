@@ -139,6 +139,7 @@ sexp_oper Operators[] = {
 	{ "string-equals",						OP_STRING_EQUALS,				2,	INT_MAX,	},
 	{ "string-greater-than",				OP_STRING_GREATER_THAN,			2,	INT_MAX,	},
 	{ "string-less-than",					OP_STRING_LESS_THAN,			2,	INT_MAX,	},
+	{ "perform-actions",			OP_PERFORM_ACTIONS,						2,	INT_MAX,	},	// Goober5000
 	{ "has-time-elapsed",			OP_HAS_TIME_ELAPSED,			1,	1,			},
 
 	{ "is-goal-true-delay",					OP_GOAL_TRUE_DELAY,				2, 2,	},
@@ -274,6 +275,7 @@ sexp_oper Operators[] = {
 	{ "when-argument",				OP_WHEN_ARGUMENT,			3, INT_MAX, },	// Goober5000
 	{ "every-time",					OP_EVERY_TIME,				2, INT_MAX, },	// Goober5000
 	{ "every-time-argument",		OP_EVERY_TIME_ARGUMENT,		3, INT_MAX, },	// Goober5000
+	{ "if-then-else",				OP_IF_THEN_ELSE,			3, INT_MAX,	},	// Goober5000
 	{ "any-of",						OP_ANY_OF,					1, INT_MAX, },	// Goober5000
 	{ "every-of",					OP_EVERY_OF,				1, INT_MAX, },	// Goober5000
 	{ "random-of",					OP_RANDOM_OF,				1, INT_MAX, },	// Goober5000
@@ -7627,10 +7629,8 @@ int special_argument_appears_in_sexp_tree(int node)
 
 	// we don't want to include special arguments if they are nested in a new argument SEXP
 	if (Sexp_nodes[node].type == SEXP_ATOM && Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR) {
-		switch (get_operator_const(CTEXT(node))) {
-			case OP_WHEN_ARGUMENT:
-			case OP_EVERY_TIME_ARGUMENT:
-				return 0; 
+		if (is_blank_argument_op(get_operator_const(CTEXT(node)))) {
+			return 0; 
 		}
 	}
 
@@ -7655,20 +7655,81 @@ int special_argument_appears_in_sexp_list(int node)
 }
 
 // conditional sexpressions follow
+
+// Goober5000
+void eval_when_do_one_exp(int exp)
+{	
+	arg_item *ptr;
+	int do_node;
+
+	switch (get_operator_const(CTEXT(exp)))
+	{
+		// if the op is a conditional then we just evaluate it
+		case OP_WHEN:
+		case OP_EVERY_TIME:
+		case OP_IF_THEN_ELSE:
+			// need to account for the possibility this call uses <arguments>
+			if (special_argument_appears_in_sexp_tree(exp)) { 
+				ptr = Sexp_applicable_argument_list.get_next();
+				if (ptr != NULL) {
+					eval_when_for_each_special_argument(exp);
+				}
+				else {
+					eval_sexp(exp);
+				}
+			}
+			else {
+				eval_sexp(exp);
+			}
+			break;
+
+		case OP_DO_FOR_VALID_ARGUMENTS:
+			if (special_argument_appears_in_sexp_tree(exp)) { 
+				Warning(LOCATION, "<Argument> used within Do-for-valid-arguments SEXP. Skipping entire SEXP"); 
+				break; 
+			}
+
+			do_node = CDR(exp); 
+			while (do_node != -1) {
+				do_action_for_each_special_argument(do_node); 
+				do_node = CDR(do_node); 
+			}
+			break;
+
+		case OP_WHEN_ARGUMENT:
+		case OP_EVERY_TIME_ARGUMENT:
+			eval_sexp(exp);
+			break; 
+
+		// otherwise we need to check if arguments are used
+		default: 
+			// if we're using the special argument in this action
+			if (special_argument_appears_in_sexp_tree(exp))
+			{
+				do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
+			}
+			// if not, just evaluate it once as-is
+			else
+			{
+				// Goober5000 - possible bug? (see when val is used below)
+				/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+			}
+	}
+}
+
 	
 // Goober5000 - added capability for arguments
+// Goober5000 - and also if-then-else and perform-actions
 // eval_when evaluates the when conditional
-int eval_when(int n, int use_arguments)
+int eval_when(int n, int when_op_num)
 {
-	int arg_handler, cond, val, actions, exp, op_num, do_node;
-	arg_item *ptr;
-
+	int cond, val, actions;
 	Assert( n >= 0 );
 
 	// get the parts of the sexp and evaluate the conditional
-	if (use_arguments)
+	if (is_blank_argument_op(when_op_num))
 	{
-		arg_handler = CAR(n);
+		int arg_handler = CAR(n);
 		cond = CADR(n);
 		actions = CDDR(n);
 
@@ -7676,6 +7737,7 @@ int eval_when(int n, int use_arguments)
 		// evaluate for custom arguments
 		val = eval_sexp(arg_handler, cond);
 	}
+	// normal evaluation
 	else
 	{
 		cond = CAR(n);
@@ -7686,77 +7748,65 @@ int eval_when(int n, int use_arguments)
 	}
 
 	// if value is true, perform the actions in the 'then' part
-	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE || when_op_num == OP_PERFORM_ACTIONS)
 	{
 		// loop through every action
 		while (actions != -1)
 		{
 			// get the operator
-			exp = CAR(actions);
+			int exp = CAR(actions);
 			if (exp != -1)
-			{
-				
-				op_num = get_operator_const(CTEXT(exp));
-				switch (op_num) {
-					// if the op is a conditional then we just evaluate it
-					case OP_WHEN:
-					case OP_EVERY_TIME:
-						// need to account for the possibility this call uses <arguments>
-						if (special_argument_appears_in_sexp_tree(exp)) { 
-							ptr = Sexp_applicable_argument_list.get_next();
-							if (ptr != NULL) {
-								eval_when_for_each_special_argument(exp);
-							}
-							else {
-								eval_sexp(exp);
-							}
-						}
-						else {
-							eval_sexp(exp);
-						}
-						break;
+				eval_when_do_one_exp(exp);
 
-					case OP_DO_FOR_VALID_ARGUMENTS:
-						if (special_argument_appears_in_sexp_tree(exp)) { 
-							Warning(LOCATION, "<Argument> used within Do-for-valid-arguments SEXP. Skipping entire SEXP"); 
-							break; 
-						}
-
-						do_node = CDR(exp); 
-						while (do_node != -1) {
-							do_action_for_each_special_argument(do_node); 
-							do_node = CDR(do_node); 
-						}
-						break;
-
-					case OP_WHEN_ARGUMENT:
-					case OP_EVERY_TIME_ARGUMENT:
-						eval_sexp(exp);
-						break; 
-
-					// otherwise we need to check if arguments are used
-					default: 
-						// if we're using the special argument in this action
-						if (special_argument_appears_in_sexp_tree(exp))
-						{
-							do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
-						}
-						// if not, just evaluate it once as-is
-						else
-						{
-							// Goober5000 - possible bug? (see when val is used below)
-							/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
-						}
-				}
-			}
+			// iterate
 			actions = CDR(actions);
+
+			// if-then-else only has one "if" action
+			if (when_op_num == OP_IF_THEN_ELSE)
+				break;
 		}
 	}
+	// if-then-else has actions to perform under "else"
+	else if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && when_op_num == OP_IF_THEN_ELSE)
+	{
+		// skip past the "if" action
+		actions = CDR(actions);
 
-	if (use_arguments) {
+		// loop through every action
+		while (actions != -1)
+		{
+			// get the operator
+			int exp = CAR(actions);
+			if (exp != -1)
+				eval_when_do_one_exp(exp);
+
+			// iterate
+			actions = CDR(actions);
+		}
+
+		// invert val so that we behave like a when with opposite results
+		if (val == SEXP_KNOWN_FALSE)
+			val = SEXP_KNOWN_TRUE;
+		else
+			val = SEXP_TRUE;
+	}
+
+	if (is_blank_argument_op(when_op_num))
+	{
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
+	}
+
+	// perform-actions should return whatever val was, but should not return known-*
+	if (when_op_num == OP_PERFORM_ACTIONS)
+	{
+		if (val == SEXP_KNOWN_TRUE)
+			return SEXP_TRUE;
+		else if (val == SEXP_KNOWN_FALSE)
+			return SEXP_FALSE;
+		else
+			return val;
 	}
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
@@ -18881,7 +18931,9 @@ int eval_sexp(int cur_node, int referenced_node)
 			// conditional sexpressions
 			case OP_WHEN:
 			case OP_WHEN_ARGUMENT:
-				sexp_val = eval_when( node, (op_num == OP_WHEN_ARGUMENT) );
+			case OP_IF_THEN_ELSE:
+			case OP_PERFORM_ACTIONS:
+				sexp_val = eval_when( node, op_num );
 				break;
 
 			case OP_COND:
@@ -18892,7 +18944,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			// and return SEXP_NAN so this will always be re-evaluated
 			case OP_EVERY_TIME:
 			case OP_EVERY_TIME_ARGUMENT:
-				eval_when( node, (op_num == OP_EVERY_TIME_ARGUMENT) );
+				eval_when( node, op_num );
 				flush_sexp_tree(node);
 				sexp_val = SEXP_NAN;
 				break;
@@ -20698,6 +20750,7 @@ int query_operator_return_type(int op)
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
+		case OP_PERFORM_ACTIONS:
 		case OP_IS_DESTROYED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_IS_DISABLED:
@@ -20866,6 +20919,7 @@ int query_operator_return_type(int op)
 		case OP_WHEN_ARGUMENT:
 		case OP_EVERY_TIME:
 		case OP_EVERY_TIME_ARGUMENT:
+		case OP_IF_THEN_ELSE:
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
 		case OP_INVALIDATE_ALL_ARGUMENTS:
@@ -21686,6 +21740,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_COND:
 		case OP_WHEN:
 		case OP_EVERY_TIME:
+		case OP_IF_THEN_ELSE:
+		case OP_PERFORM_ACTIONS:
 			if (!argnum)
 				return OPF_BOOL;
 			else
@@ -24605,6 +24661,14 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a boolean value.  Takes 2 numeric arguments." },
 
 	// Goober5000
+	{ OP_PERFORM_ACTIONS, "perform-actions\r\n"
+		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
+		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to evaluate the other \"and\" arguments.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
+		"\t1:\tA boolean value to return after all successive actions have been performed.\r\n"
+		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
+
+	// Goober5000
 	{ OP_STRING_EQUALS, "String Equals (Boolean operator)\r\n"
 		"\tIs true if all of its arguments are equal.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more string arguments." },
@@ -25021,6 +25085,16 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe arguments to evaluate (see any-of, all-of, random-of, etc.).\r\n"
 		"\t2:\tBoolean expression that must be true for actions to take place.\r\n"
 		"\tRest:\tActions to take when the boolean expression becomes true." },
+
+	// Goober5000
+	{ OP_IF_THEN_ELSE, "If-then-else (Conditional operator)\r\n"
+		"\tPerforms one action if a condition is true (like \"when\"), or another action (or set of actions) if the condition is false.  "
+		"Note that this sexp only completes one of its branches once the condition has been determined; "
+		"it does not come back later and evaluate the other branch if the condition happens to switch truth values.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tBoolean expression to evaluate.\r\n"
+		"\t2:\tActions to take if that expression becomes true.\r\n"
+		"\tRest:\tActions to take if that expression becomes false.\r\n" },
 
 	// Karajorma
 	{ OP_DO_FOR_VALID_ARGUMENTS, "Do-for-valid-arguments (Conditional operator)\r\n"
