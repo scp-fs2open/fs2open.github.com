@@ -219,12 +219,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Assert( i < 65535 );
 	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (i & 0xffff);
 
-	// Don't log or display info about the activation subsytem
-	int display = (psub->type != SUBSYSTEM_ACTIVATION);
-	if (display) 
+	// Don't log, display info, or play sounds about the activation subsytem
+	// FUBAR/Goober5000 - or about vanishing subsystems, per precedent with ship-vanish
+	int notify = (psub->type != SUBSYSTEM_ACTIVATION) && !(subsys->flags & SSF_VANISHED);
+
+	if (notify) 
 	{
 		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name, log_index );
-		if ( ship_obj == Player_obj  && !(subsys->flags & SSF_VANISHED))
+		if ( ship_obj == Player_obj )
 		{
 			snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
 			if (strlen(psub->alt_dmg_sub_name))
@@ -268,7 +270,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		subsys->submodel_info_2.blown_off = 1;
 	}
 
-	if (!(subsys->flags & SSF_VANISHED)) {
+	if (notify) {
 		// play sound effect when subsys gets blown up
 		int sound_index=-1;
 		if ( Ship_info[ship_p->ship_info_index].flags & SIF_HUGE_SHIP ) {

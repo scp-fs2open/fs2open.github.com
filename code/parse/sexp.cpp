@@ -371,7 +371,7 @@ sexp_oper Operators[] = {
 	{ "ship-subsys-targetable",		OP_SHIP_SUBSYS_TARGETABLE,		2, INT_MAX },	// Goober5000
 	{ "ship-subsys-no-replace",		OP_SHIP_SUBSYS_NO_REPLACE,		3, INT_MAX },	// FUBAR
 	{ "ship-subsys-no-live-debris",	OP_SHIP_SUBSYS_NO_LIVE_DEBRIS,	3, INT_MAX },	// FUBAR
-	{ "ship-subsys-vanished",		OP_SHIP_SUBSYS_VANISHED,		3, INT_MAX },	// FUBAR
+	{ "ship-subsys-vanish",			OP_SHIP_SUBSYS_VANISHED,		3, INT_MAX },	// FUBAR
 	{ "ship-subsys-ignore_if_dead",	OP_SHIP_SUBSYS_IGNORE_IF_DEAD,	3, INT_MAX },	// FUBAR
 	{ "ship-subsys-untargetable",	OP_SHIP_SUBSYS_UNTARGETABLE,	2, INT_MAX },	// Goober5000
 	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
@@ -3001,6 +3001,8 @@ int get_sexp(char *token)
 				strcpy(token, "change-ship-class");
 			else if (!stricmp(token, "radar-set-max-range"))
 				strcpy(token, "hud-set-max-targeting-range");
+			else if (!stricmp(token, "ship-subsys-vanished"))
+				strcpy(token, "ship-subsys-vanish");
 
 			op = get_operator_index(token);
 			if (op != -1) {
@@ -26153,8 +26155,9 @@ sexp_help_struct Sexp_help[] = {
 		"\tRest: Name of the ship's subsystem(s)" },
 
 	// FUBAR
-	{ OP_SHIP_SUBSYS_VANISHED, "ship-subsys-vanished\r\n"
-		"\tCauses the subsystem to vanish without a trace it's destroyed.\r\n"
+	{ OP_SHIP_SUBSYS_VANISHED, "ship-subsys-vanish\r\n"
+		"\tCauses the subsystem to vanish without a trace - no fanfare, notification, or special effects.  See also ship-vanish.\r\n"
+		"\tSingle Player Only!  Warning: This will cause subsystem destruction not to be logged, so 'has-departed', etc. will not work\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of a ship\r\n"
 		"\t2:\tTrue = vanish or False = don't vanish\r\n"
