@@ -56,6 +56,7 @@ typedef struct asteroid_info {
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];		// distance to change detail levels at
 	float			max_speed;												// cap on speed for asteroid
 	int				damage_type_idx;								//Damage type of the asteroid
+	int				damage_type_idx_sav;							// stored value from table used to reset damage_type_idx
 	float			inner_rad;												// radius within which maximum area effect damage is applied
 	float			outer_rad;												// radius at which no area effect damage is applied
 	float			damage;													// maximum damage applied from area effect explosion
@@ -65,9 +66,9 @@ typedef struct asteroid_info {
 	int			model_num[NUM_DEBRIS_POFS];
 
 	asteroid_info( ) 
-		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( -1 ),
+		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx_sav( -1 ),
 		  inner_rad( 0 ), outer_rad( 0 ), damage( 0 ), blast( 0 ),
-		  initial_asteroid_strength( 0 )
+		  initial_asteroid_strength( 0 ), damage_type_idx( -1 )
 	{ 
 		name[ 0 ] = NULL;
 		memset( pof_files, 0, sizeof( pof_files ) );

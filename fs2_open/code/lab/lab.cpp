@@ -1552,6 +1552,7 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(wip->subsystem_factor, 0);
 	
 		VAR_SET_VALUE_SAVE(wip->damage_type_idx, 0);
+		VAR_SET_VALUE_SAVE(wip->damage_type_idx_sav, 0);
 	
 		VAR_SET_VALUE_SAVE(wip->shockwave.speed, 0);
 	

@@ -699,7 +699,8 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 	sprintf(buf, "%sShockwave damage type:", pre_char);
 	if(optional_string(buf)) {
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		sci->damage_type_idx = damage_type_add(buf);
+		sci->damage_type_idx_sav = damage_type_add(buf);
+		sci->damage_type_idx = sci->damage_type_idx_sav;
 	}
 
 	sprintf(buf, "%sBlast Force:", pre_char);
@@ -811,6 +812,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
+	wip->damage_type_idx_sav = -1;
 
 	wip->arm_time = 0;
 	wip->arm_dist = 0.0f;
@@ -995,6 +997,7 @@ void init_weapon_entry(int weap_info_index)
 
 	// this can get reset after the constructor, so be sure it's correct
 	wip->shockwave.damage_type_idx = -1;
+	wip->shockwave.damage_type_idx_sav = -1;
 
 	wip->weapon_hitpoints = 0;
 
@@ -1286,7 +1289,8 @@ int parse_weapon(int subtype, bool replace)
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
 		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
-		wip->damage_type_idx = damage_type_add(buf);
+		wip->damage_type_idx_sav = damage_type_add(buf);
+		wip->damage_type_idx = wip->damage_type_idx_sav;
 	}
 
 	if(optional_string("$Arm time:")) {
@@ -3205,6 +3209,11 @@ void weapon_level_init()
 	for (i=0; i<MAX_WEAPONS; i++)	{
 		Weapons[i].objnum = -1;
 		Weapons[i].weapon_info_index = -1;
+	}
+
+	for (i=0; i<MAX_WEAPON_TYPES; i++)	{
+		Weapon_info[i].damage_type_idx = Weapon_info[i].damage_type_idx_sav;
+		Weapon_info[i].shockwave.damage_type_idx = Weapon_info[i].shockwave.damage_type_idx_sav;
 	}
 
 	trail_level_init();		// reset all missile trails

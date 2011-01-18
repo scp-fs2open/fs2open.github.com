@@ -123,6 +123,7 @@ struct ship;
 #define OPF_WEAPON_BANK_NUMBER	76		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
 #define OPF_MESSAGE_OR_STRING	77		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
 #define OPF_HUD_GAUGE			78		// The E
+#define OPF_DAMAGE_TYPES		79		// FUBAR - Damage type or <none>
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -634,7 +635,10 @@ struct ship;
 #define OP_SET_OBJECT_ORIENTATION			(0x00e6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_STRING_CONCATENATE				(0x00e7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_INT_TO_STRING					(0x00e8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
-
+#define OP_WEAPON_SET_DAMAGE_TYPE			(0x00e9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_SHIP_SET_DAMAGE_TYPE				(0x00ea | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE	(0x00eb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
+#define OP_FIELD_SET_DAMAGE_TYPE			(0x00ec | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // FUBAR
 
 /* made obsolete by Goober5000
 // debugging sexpressions

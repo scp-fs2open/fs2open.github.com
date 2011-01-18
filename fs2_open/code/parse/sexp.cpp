@@ -86,6 +86,7 @@
 #include "graphics/2d.h"
 #include "object/objectsnd.h"
 #include "graphics/font.h"
+#include "asteroid/asteroid.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -493,6 +494,10 @@ sexp_oper Operators[] = {
 	{ "ship-rot-maneuver",		OP_SHIP_ROT_MANEUVER,		6, 6 }, // Wanderer
 	{ "ship-lat-maneuver",		OP_SHIP_LAT_MANEUVER,		6, 6 }, // Wanderer
 	{ "force-glide",			OP_FORCE_GLIDE,				2, 2 }, // The E
+	{ "weapon-set-damage-type",		OP_WEAPON_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
+	{ "ship-set-damage-type",		OP_SHIP_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
+	{ "ship-set-shockwave-damage-type",		OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE,		3, INT_MAX }, // FUBAR
+	{ "field-set-damage-type",		OP_FIELD_SET_DAMAGE_TYPE,		2,2 }, // FUBAR
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -2673,6 +2678,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				for (st = 0; st < Armor_types.size(); st++ ) {
 					if ( !stricmp(CTEXT(node), Armor_types[st].GetNamePtr()) )
+						break;
+				}
+
+				if ( st == Armor_types.size() )
+					return SEXP_CHECK_INVALID_INTEL_NAME;
+				
+				break;
+
+			case OPF_DAMAGE_TYPES:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (!stricmp(CTEXT(node), SEXP_NONE_STRING))
+					break;
+
+				for (st = 0; st < Damage_types.size(); st++ ) {
+					if ( !stricmp(CTEXT(node), Damage_types[st].name) )
 						break;
 				}
 
@@ -15237,6 +15259,191 @@ void sexp_set_armor_type(int node)
 	}
 }
 
+void sexp_weapon_set_damage_type(int node)
+{	
+	int windex, damage, swave, rset;
+	size_t t;
+
+	// weapon or shockwave
+	swave = is_sexp_true(node);
+
+	// get damage type
+	node = CDR(node);
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+		damage = -1;
+	else 
+	{
+		for(t = 0; t < Damage_types.size(); t++) 
+		{
+			if ( !stricmp(Damage_types[t].name, CTEXT(node)))  
+				break;
+		}
+		if (t == Damage_types.size()) 
+			return;
+		damage = (int)t;
+	}
+
+	//Set or reset to defualt
+	node = CDR(node);
+	rset = is_sexp_true(node);
+	
+	//Set Damage
+	node = CDR(node);
+	while(node != -1)
+	{
+		// get the weapon
+		windex = weapon_info_lookup(CTEXT(node));
+		if(windex >= 0) 
+		{
+			// set the damage type
+			if (swave)
+				if (!rset)
+					Weapon_info[windex].damage_type_idx = Weapon_info[windex].damage_type_idx_sav;
+				else
+					Weapon_info[windex].damage_type_idx = damage;
+			else
+				if (!rset)
+					Weapon_info[windex].shockwave.damage_type_idx = Weapon_info[windex].shockwave.damage_type_idx_sav;
+				else
+					Weapon_info[windex].shockwave.damage_type_idx = damage;
+		// next
+		}
+		node = CDR(node);
+	}
+}
+
+void sexp_ship_set_damage_type(int node)
+{	
+	int sindex, damage, debris, rset;
+	size_t t;
+	ship *shipp = NULL;
+
+	// collision or debris
+	debris = is_sexp_true(node);
+
+	// get damage type
+	node = CDR(node);
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+		damage = -1;
+	else 
+	{
+		for(t = 0; t < Damage_types.size(); t++) 
+		{
+			if ( !stricmp(Damage_types[t].name, CTEXT(node)))  
+				break;
+		}
+		if (t == Damage_types.size()) 
+			return;
+		damage = (int)t;
+	}
+
+	//Set or reset to defualt
+	node = CDR(node);
+	rset = is_sexp_true(node);
+	
+	//Set Damage
+	node = CDR(node);
+	while(node != -1)
+	{
+		// get the ship
+		sindex = ship_name_lookup(CTEXT(node));
+		if(sindex >= 0) 
+		{
+			shipp = &Ships[sindex];
+			// set the damage type
+			if (debris)
+			{
+				if (!rset)
+					shipp[sindex].collision_damage_type_idx = Ship_info[shipp[sindex].ship_info_index].collision_damage_type_idx;
+				else
+					shipp[sindex].collision_damage_type_idx = damage;
+			}
+			else 
+			{
+				if (!rset)
+					shipp[sindex].debris_damage_type_idx = Ship_info[shipp[sindex].ship_info_index].debris_damage_type_idx;
+				else
+					shipp[sindex].debris_damage_type_idx = damage;
+			}
+			// next
+		}
+		node = CDR(node);
+	}
+}
+void sexp_ship_shockwave_set_damage_type(int node)
+{	
+	int sindex, damage, rset;
+	size_t t;
+
+	// get damage type
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+		damage = -1;
+	else 
+	{
+		for(t = 0; t < Damage_types.size(); t++) 
+		{
+			if ( !stricmp(Damage_types[t].name, CTEXT(node)))  
+				break;
+		}
+		if (t == Damage_types.size()) 
+			return;
+		damage = (int)t;
+	}
+
+	//Set or reset to defualt
+	node = CDR(node);
+	rset = is_sexp_true(node);
+	
+	//Set Damage
+	node = CDR(node);
+	while(node != -1)
+	{
+		// get the ship
+		sindex = ship_info_lookup(CTEXT(node));
+		if(sindex >= 0) 
+		{
+			// set the damage type
+			if (!rset)
+				Ship_info[sindex].shockwave.damage_type_idx = Ship_info[sindex].shockwave.damage_type_idx_sav;
+			else
+				Ship_info[sindex].shockwave.damage_type_idx = damage;
+			// next
+		}
+		node = CDR(node);
+	}
+}
+void sexp_field_set_damage_type(int node)
+{	
+	int damage, rset;
+	size_t t;
+
+	// get damage type
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node)))
+		damage = -1;
+	else 
+	{
+		for(t = 0; t < Damage_types.size(); t++) 
+		{
+			if ( !stricmp(Damage_types[t].name, CTEXT(node)))  
+				break;
+		}
+		if (t == Damage_types.size()) 
+			return;
+		damage = (int)t;
+	}
+
+	//Set or reset to defualt
+	node = CDR(node);
+	rset = is_sexp_true(node);
+	
+	//Set Damage
+	node = CDR(node);
+	for(t = 0; t < Asteroid_info.size(); t++) 
+	if (!rset)
+		Asteroid_info[t].damage_type_idx = Asteroid_info[t].damage_type_idx_sav;
+	else
+		Asteroid_info[t].damage_type_idx = damage;
+}
 void sexp_turret_set_target_order(int node)
 {	
 	int sindex;
@@ -19870,6 +20077,26 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_armor_type(node);
 				break;
 
+			case OP_WEAPON_SET_DAMAGE_TYPE:
+				sexp_val = SEXP_TRUE;
+				sexp_weapon_set_damage_type(node);
+				break;
+
+			case OP_SHIP_SET_DAMAGE_TYPE:
+				sexp_val = SEXP_TRUE;
+				sexp_ship_set_damage_type(node);
+				break;
+
+			case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
+				sexp_val = SEXP_TRUE;
+				sexp_ship_shockwave_set_damage_type(node);
+				break;
+
+			case OP_FIELD_SET_DAMAGE_TYPE:
+				sexp_val = SEXP_TRUE;
+				sexp_field_set_damage_type(node);
+				break;
+
 			case OP_SHIP_TURRET_TARGET_ORDER:
 				sexp_val = SEXP_TRUE;
 				sexp_ship_turret_target_order(node);
@@ -21029,6 +21256,10 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_TARGET_PRIORITIES:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SET_ARMOR_TYPE:
+		case OP_WEAPON_SET_DAMAGE_TYPE:
+		case OP_SHIP_SET_DAMAGE_TYPE:
+		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
+		case OP_FIELD_SET_DAMAGE_TYPE:
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
@@ -22391,6 +22622,44 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_ARMOR_TYPES;
 			} else {
 				return OPF_SUBSYSTEM;
+			}
+
+		case OP_WEAPON_SET_DAMAGE_TYPE:
+			if(argnum == 0) {
+				return OPF_BOOL;
+			} else if(argnum == 1) {
+				return OPF_DAMAGE_TYPES;
+			} else if(argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				return OPF_WEAPON_NAME;
+			}
+
+		case OP_SHIP_SET_DAMAGE_TYPE:
+			if(argnum == 0) {
+				return OPF_BOOL;
+			} else if(argnum == 1) {
+				return OPF_DAMAGE_TYPES;
+			} else if(argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				return OPF_SHIP;
+			}
+
+		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
+			if(argnum == 0) {
+				return OPF_DAMAGE_TYPES;
+			} else if(argnum == 1) {
+				return OPF_BOOL;
+			} else {
+				return OPF_SHIP_CLASS_NAME;
+			}
+
+		case OP_FIELD_SET_DAMAGE_TYPE:
+			if(argnum == 0) {
+				return OPF_DAMAGE_TYPES;
+			} else {
+				return OPF_BOOL;
 			}
 
 		case OP_TURRET_SET_TARGET_ORDER:
@@ -24235,6 +24504,10 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_EFFECT:
 		case OP_SHIP_COPY_DAMAGE:
 		case OP_REMOVE_WEAPONS:
+		case OP_WEAPON_SET_DAMAGE_TYPE:
+		case OP_SHIP_SET_DAMAGE_TYPE:
+		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
+		case OP_FIELD_SET_DAMAGE_TYPE:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -26486,6 +26759,31 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Set = true/Reset to defualt = false\r\n"
 		"\t3: Armor type to set or <none>\r\n"
 		"\trest: Subsystems to set (hull for ship, shield for shields)\r\n"},
+
+	{ OP_WEAPON_SET_DAMAGE_TYPE, "weapon-set-damage-type\r\n"
+		"\tSets the damage type for weapons or their shockwaves\r\n"
+		"\t1: True = set weapon, False = set shockwave\r\n"
+		"\t2: damage type to set or <none>\r\n"
+		"\t3: Set = true/Reset to defualt = false\r\n"
+		"\trest: Weapons to set\r\n"},
+
+	{ OP_SHIP_SET_DAMAGE_TYPE, "ship-set-damage-type\r\n"
+		"\tSets the damage type for ships collision or debris\r\n"
+		"\t1: true = set collision, False = set debris\r\n"
+		"\t2: Damage type to set or <none>\r\n"
+		"\t3: Set = true/Reset to defualt = false\r\n"
+		"\trest: Ships to set\r\n"},
+
+	{ OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE, "ship-set-shockwave-damage-type\r\n"
+		"\tSets the shockwave damage type for a class of ship.  All ships of that class are changed.\r\n"
+		"\t1: Damage type to set or <none>\r\n"
+		"\t2: Set = true/Reset to defualt = false\r\n"
+		"\trest: Ship classes to set\r\n"},
+
+	{ OP_FIELD_SET_DAMAGE_TYPE, "field-set-damage-type\r\n"
+		"\tSets the damage type for asteroid/debris fields\r\n"
+		"\t1: Damage type to set or <none>\r\n"
+		"\t2: Set = true/Reset to defualt = false\r\n"},
 
 	{ OP_TURRET_SET_TARGET_ORDER, "turret-set-target-order\r\n"
 		"\tSets targeting order of a given turret\r\n"
