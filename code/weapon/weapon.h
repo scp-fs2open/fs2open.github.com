@@ -441,6 +441,7 @@ typedef struct weapon_info {
 	float weapon_submodel_rotate_vel;
 	
 	int damage_type_idx;
+	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
 
 	// transparency/alpha info
 	float alpha_max;			// maximum alpha value to use

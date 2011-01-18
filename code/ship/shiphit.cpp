@@ -219,12 +219,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Assert( i < 65535 );
 	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (i & 0xffff);
 
-	// Don't log or display info about the activation subsytem
-	int display = (psub->type != SUBSYSTEM_ACTIVATION);
-	if (display) 
+	// Don't log, display info, or play sounds about the activation subsytem
+	// FUBAR/Goober5000 - or about vanishing subsystems, per precedent with ship-vanish
+	int notify = (psub->type != SUBSYSTEM_ACTIVATION) && !(subsys->flags & SSF_VANISHED);
+
+	if (notify) 
 	{
 		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name, log_index );
-		if ( ship_obj == Player_obj  && !(subsys->flags & SSF_VANISHED))
+		if ( ship_obj == Player_obj )
 		{
 			snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
 			if (strlen(psub->alt_dmg_sub_name))
@@ -268,7 +270,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		subsys->submodel_info_2.blown_off = 1;
 	}
 
-	if (!(subsys->flags & SSF_VANISHED)) {
+	if (notify) {
 		// play sound effect when subsys gets blown up
 		int sound_index=-1;
 		if ( Ship_info[ship_p->ship_info_index].flags & SIF_HUGE_SHIP ) {
@@ -563,9 +565,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		} else if(other_obj->type == OBJ_ASTEROID) {
 			dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
 		} else if(other_obj->type == OBJ_DEBRIS) {
-			dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+			dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
 		} else if(other_obj->type == OBJ_SHIP) {
-			dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
+			dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
 		}
 	}
 
@@ -2005,9 +2007,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				} else if(other_obj_is_asteroid) {
 					dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
 				} else if(other_obj_is_debris) {
-					dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+					dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
 				} else if(other_obj_is_ship) {
-					dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
+					dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
 				}
 				
 				if(shipp->shield_armor_type_idx != -1)
@@ -2086,9 +2088,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			} else if(other_obj_is_asteroid) {
 				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
 			} else if(other_obj_is_debris) {
-				dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+				dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
 			} else if(other_obj_is_ship) {
-				dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
+				dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
 			}
 			
 			if(shipp->armor_type_idx != -1)

@@ -23,6 +23,11 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+
+// aww mumford
+bool is_blank_argument_op(int op_const);
+
+
 CMessageEditorDlg *Message_editor_dlg = NULL;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -293,10 +298,11 @@ int CMessageEditorDlg::find_event()
 	for (i=0; i<Num_mission_events; i++) {
 		node = Mission_events[i].formula;
 		if ( get_operator_const(CTEXT(node)) == OP_WHEN || get_operator_const(CTEXT(node)) == OP_EVERY_TIME
-			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT )
+			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT
+			|| get_operator_const(CTEXT(node)) == OP_IF_THEN_ELSE || get_operator_const(CTEXT(node)) == OP_PERFORM_ACTIONS )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
-			if (get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT)
+			if (is_blank_argument_op(get_operator_const(CTEXT(node))))
 				node = CDR(node);
 
 			node = CDR(node);
