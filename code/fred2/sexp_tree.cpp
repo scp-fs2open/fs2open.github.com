@@ -2671,6 +2671,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPES:
+		case OPF_DAMAGE_TYPES:
 		case OPF_FONT:
 		case OPF_HUD_ELEMENT:
 		case OPF_SOUND_ENVIRONMENT:
@@ -4367,6 +4368,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_armor_types();
 			break;
 
+		case OPF_DAMAGE_TYPES:
+			list = get_listing_opf_damage_types();
+			break;
+
 		case OPF_PERSONA:
 			list = get_listing_opf_persona();
 			break;
@@ -5795,6 +5800,16 @@ sexp_list_item *sexp_tree::get_listing_opf_armor_types()
 	head.add_data(SEXP_NONE_STRING);
 	for (t=0; t<Armor_types.size(); t++)
 		head.add_data(Armor_types[t].GetNamePtr());
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_damage_types()
+{
+	size_t t;
+	sexp_list_item head;
+	head.add_data(SEXP_NONE_STRING);
+	for (t=0; t<Damage_types.size(); t++)
+		head.add_data(Damage_types[t].name);
 
 	return head.next;
 }

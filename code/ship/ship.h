@@ -199,6 +199,16 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
+//**************************************************************
+//WMC - Damage type handling code
+
+typedef struct DamageTypeStruct
+{
+	char name[NAME_LENGTH];
+} DamageTypeStruct;
+
+extern SCP_vector<DamageTypeStruct>	Damage_types;
+
 #define SAF_IGNORE_SS_ARMOR			(1 << 0)		// hull armor is applied regardless of the subsystem armor for hull damage
 
 #define SADTF_PIERCING_NONE			0				// no piercing effects, no beam tooling
@@ -733,6 +743,8 @@ typedef struct ship {
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
 	int shield_armor_type_idx;
+	int collision_damage_type_idx;
+	int debris_damage_type_idx;
 
 	int model_instance_num;
 } ship;

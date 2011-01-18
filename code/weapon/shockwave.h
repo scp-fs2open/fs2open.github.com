@@ -37,6 +37,7 @@ typedef struct shockwave_create_info {
 	angles rot_angles;
 
 	int damage_type_idx;
+	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
 
 	void load();
 
@@ -46,6 +47,7 @@ typedef struct shockwave_create_info {
 		name[ 0 ] = '\0';
 		pof_name[ 0 ] = '\0';
 		damage_type_idx = -1;
+		damage_type_idx_sav = -1;
 		rot_angles.b = 0.;
 		rot_angles.h = 0.;
 		rot_angles.p = 0.;

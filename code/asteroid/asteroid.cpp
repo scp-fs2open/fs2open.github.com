@@ -607,6 +607,8 @@ void asteroid_level_init()
 	Num_asteroids = 0;
 	Next_asteroid_throw = timestamp(1);
 	asteroid_obj_list_init();
+	for (size_t t=0; t<Asteroid_info.size(); t++)
+		Asteroid_info[t].damage_type_idx = Asteroid_info[t].damage_type_idx_sav;
 }
 
 // return !0 if asteroid should be wrapped, 0 otherwise.  Multiplayer clients will always return
@@ -1705,7 +1707,8 @@ void asteroid_parse_section(asteroid_info *asip)
 	if(optional_string("$Damage Type:")) {
 		char buf[NAME_LENGTH];
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		asip->damage_type_idx = damage_type_add(buf);
+		asip->damage_type_idx_sav = damage_type_add(buf);
+		asip->damage_type_idx = asip->damage_type_idx_sav;
 	}
 
 	required_string("$Expl inner rad:");

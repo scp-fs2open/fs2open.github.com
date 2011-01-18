@@ -167,6 +167,7 @@ static char **tspecies_names = NULL;
 SCP_vector<ship_type_info> Ship_types;
 
 SCP_vector<ArmorType> Armor_types;
+SCP_vector<DamageTypeStruct>	Damage_types;
 
 flag_def_list Armor_flags[] = {
 	{ "ignore subsystem armor",		SAF_IGNORE_SS_ARMOR,	0 }
@@ -1840,7 +1841,8 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Shockwave Damage Type:")) {
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		sci->damage_type_idx = damage_type_add(buf);
+		sci->damage_type_idx_sav = damage_type_add(buf);
+		sci->damage_type_idx = sci->damage_type_idx_sav;
 	}
 
 	if(optional_string("$Shockwave Speed:")){
@@ -4796,6 +4798,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 	shipp->armor_type_idx = sip->armor_type_idx;
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
+	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
+	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
+	sip->shockwave.damage_type_idx = sip->shockwave.damage_type_idx_sav;
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -16249,15 +16254,6 @@ int ship_class_compare(int ship_class_1, int ship_class_2)
 		return 0;
 }
 
-//**************************************************************
-//WMC - Damage type handling code
-
-typedef struct DamageTypeStruct
-{
-	char name[NAME_LENGTH];
-} DamageTypeStruct;
-
-SCP_vector<DamageTypeStruct>	Damage_types;
 
 //Gives the index into the Damage_types[] vector of a
 //specified damage type name
