@@ -100,6 +100,11 @@ int bay_emerge_or_depart(object *heavy_objp, object *light_objp)
 
 	ai_info	*aip = &Ai_info[Ships[light_objp->instance].ai_index];
 
+	// the player shouldn't be allowed to fly through the ship just cause the rest of their wing can
+	if ((Player_obj == light_objp) && !Player_use_ai){
+		return 0;
+	}
+
 	if ((aip->mode == AIM_BAY_EMERGE) || (aip->mode == AIM_BAY_DEPART)) {
 		if (aip->goal_objnum == OBJ_INDEX(heavy_objp))
 			return 1;
@@ -1156,9 +1161,9 @@ void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_ob
 	}
 }
 
-// Checks ship-ship collisions.  pair->a and pair->b are ships.
-// Returns 1 if all future collisions between these can be ignored
-// Always returns 0, since two ships can always collide unless one (1) dies or (2) warps out.
+// Checks ship-ship collisions.  
+// Returns 1 if all future collisions between these can be ignored because pair->a or pair->b aren't ships
+// Otherwise always returns 0, since two ships can always collide unless one (1) dies or (2) warps out.
 int collide_ship_ship( obj_pair * pair )
 {
 	int	player_involved;
