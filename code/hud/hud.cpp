@@ -3793,7 +3793,7 @@ void HudGaugePing::render(float frametime)
 	}
 	
 	// if we're in multiplayer mode, display our ping time to the server
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+	if(MULTIPLAYER_CLIENT && (Net_player != NULL)){
 		char ping_str[50];
 		memset(ping_str,0,50);
 
