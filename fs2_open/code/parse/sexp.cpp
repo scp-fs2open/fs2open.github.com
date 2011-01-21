@@ -320,6 +320,8 @@ sexp_oper Operators[] = {
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
+	{ "turret-protect-ship",		OP_TURRET_PROTECT_SHIP,			2, INT_MAX,	},	// Goober5000
+	{ "turret-unprotect-ship",		OP_TURRET_UNPROTECT_SHIP,		2, INT_MAX,	},	// Goober5000
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
 	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
@@ -12408,6 +12410,24 @@ void sexp_beam_protect_ships(int n, bool flag)
 	sexp_deal_with_ship_flag(n, true, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
 }
 
+// protects/unprotects a ship from various turrets.
+void sexp_turret_protect_ships(int n, bool flag)
+{
+	char *turret_type = CTEXT(n);
+	n = CDR(n);
+
+	if (!stricmp(turret_type, "beam"))
+		sexp_deal_with_ship_flag(n, true, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
+	else if (!stricmp(turret_type, "flak"))
+		sexp_deal_with_ship_flag(n, true, OF_FLAK_PROTECTED, 0, 0, 0, P_OF_FLAK_PROTECTED, 0, flag);
+	else if (!stricmp(turret_type, "laser"))
+		sexp_deal_with_ship_flag(n, true, OF_LASER_PROTECTED, 0, 0, 0, P_OF_LASER_PROTECTED, 0, flag);
+	else if (!stricmp(turret_type, "missile"))
+		sexp_deal_with_ship_flag(n, true, OF_MISSILE_PROTECTED, 0, 0, 0, P_OF_MISSILE_PROTECTED, 0, flag);
+	else
+		Warning(LOCATION, "Invalid turret type '%s'!", turret_type);
+}
+
 // Goober5000 - sets the "dont collide invisible" flag on a list of ships
 void sexp_dont_collide_invisible(int n, bool dont_collide)
 {
@@ -19320,6 +19340,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TURRET_PROTECT_SHIP:
+			case OP_TURRET_UNPROTECT_SHIP:
+				sexp_turret_protect_ships(node, (op_num == OP_TURRET_PROTECT_SHIP));
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_STEALTHY:
 			case OP_SHIP_UNSTEALTHY:
 				sexp_ships_stealthy(node, (op_num == OP_SHIP_STEALTHY));
@@ -21235,6 +21261,8 @@ int query_operator_return_type(int op)
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
+		case OP_TURRET_PROTECT_SHIP:
+		case OP_TURRET_UNPROTECT_SHIP:
 /*		case OP_INT3:	*/
 		case OP_NOP:
 		case OP_GOALS_ID:
@@ -21650,6 +21678,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WAYPOINT_PATH;
 			else
 				return OPF_POSITIVE;
+
+		case OP_TURRET_PROTECT_SHIP:
+		case OP_TURRET_UNPROTECT_SHIP:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP;
 
 		case OP_IS_DISABLED:
 		case OP_IS_DISARMED:
@@ -24415,6 +24450,8 @@ int get_subcategory(int sexp_id)
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
+		case OP_TURRET_PROTECT_SHIP:
+		case OP_TURRET_UNPROTECT_SHIP:
 		case OP_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -25607,30 +25644,47 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tValue to be set." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
-		"\tProtects a ship from being attacked by any enemy ship.  Any ship"
+		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
 		"that is protected will not come under enemy fire.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ship(s) to protect." },
 
 	{ OP_UNPROTECT_SHIP, "Unprotect ship (Action operator)\r\n"
-		"\tUnprotects a ship from being attacked by any enemy ship.  Any ship"
-		"that is not protected can come under enemy fire.  This function is the opposite"
+		"\tUnprotects a ship from being attacked by any enemy ship.  Any ship "
+		"that is not protected can come under enemy fire.  This function is the opposite "
 		"of protect-ship.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to protect." },
+		"\tAll:\tName of ship(s) to unprotect." },
 
 	{ OP_BEAM_PROTECT_SHIP, "Beam Protect ship (Action operator)\r\n"
-		"\tProtects a ship from being attacked with beam weapon.  Any ship"
+		"\tProtects a ship from being attacked with beam weapon.  Any ship "
 		"that is beam protected will not come under enemy beam fire.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ship(s) to protect." },
 
 	{ OP_BEAM_UNPROTECT_SHIP, "Beam Unprotect ship (Action operator)\r\n"
-		"\tUnprotects a ship from being attacked with beam weapon.  Any ship"
-		"that is not beam protected can come under enemy beam fire.  This function is the opposite"
+		"\tUnprotects a ship from being attacked with beam weapon.  Any ship "
+		"that is not beam protected can come under enemy beam fire.  This function is the opposite "
 		"of beam-protect-ship.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to protect." },
+		"\tAll:\tName of ship(s) to unprotect." },
+
+	// Goober5000
+	{ OP_TURRET_PROTECT_SHIP, "Turret Protect ship (Action operator)\r\n"
+		"\tProtects a ship from being attacked with a turret weapon of a given type.  Any ship "
+		"that is turret protected will not come under enemy fire from that type of turret, though it may come under fire by other turrets.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tType of turret (currently supported types are \"beam\", \"flak\", \"laser\", and \"missile\")\r\n"
+		"\tRest:\tName of ship(s) to protect." },
+
+	// Goober5000
+	{ OP_TURRET_UNPROTECT_SHIP, "Turret Unprotect ship (Action operator)\r\n"
+		"\tUnprotects a ship from being attacked with a turret weapon of a given type.  Any ship "
+		"that is not turret protected can come under enemy fire from that type of turret.  This function is the opposite "
+		"of turret-protect-ship.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tType of turret (currently supported types are \"beam\", \"flak\", \"laser\", and \"missile\")\r\n"
+		"\tRest:\tName of ship(s) to unprotect." },
 
 	{ OP_SEND_MESSAGE, "Send message (Action operator)\r\n"
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "

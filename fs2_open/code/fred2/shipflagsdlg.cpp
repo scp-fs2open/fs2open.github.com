@@ -43,6 +43,9 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_REINFORCEMENT, m_reinforcement);
 	DDX_Control(pDX, IDC_PROTECT_SHIP, m_protect_ship);
 	DDX_Control(pDX, IDC_BEAM_PROTECT_SHIP, m_beam_protect_ship);
+	DDX_Control(pDX, IDC_FLAK_PROTECT_SHIP, m_flak_protect_ship);
+	DDX_Control(pDX, IDC_LASER_PROTECT_SHIP, m_laser_protect_ship);
+	DDX_Control(pDX, IDC_MISSILE_PROTECT_SHIP, m_missile_protect_ship);
 	DDX_Control(pDX, IDC_NO_DYNAMIC, m_no_dynamic);
 	DDX_Control(pDX, IDC_NO_ARRIVAL_MUSIC, m_no_arrival_music);
 	DDX_Control(pDX, IDC_KAMIKAZE, m_kamikaze);
@@ -111,6 +114,9 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NO_DYNAMIC, OnNoDynamic)
 	ON_BN_CLICKED(IDC_PROTECT_SHIP, OnProtectShip)
 	ON_BN_CLICKED(IDC_BEAM_PROTECT_SHIP, OnBeamProtectShip)
+	ON_BN_CLICKED(IDC_FLAK_PROTECT_SHIP, OnFlakProtectShip)
+	ON_BN_CLICKED(IDC_LASER_PROTECT_SHIP, OnLaserProtectShip)
+	ON_BN_CLICKED(IDC_MISSILE_PROTECT_SHIP, OnMissileProtectShip)
 	ON_BN_CLICKED(IDC_REINFORCEMENT, OnReinforcement)
 	ON_BN_CLICKED(IDC_SCANNABLE, OnScannable)
 	ON_BN_CLICKED(IDC_REDALERTCARRY, OnRedalertcarry)
@@ -140,7 +146,8 @@ void ship_flags_dlg::setup(int n)
 BOOL ship_flags_dlg::OnInitDialog() 
 {
 	int j, first;
-	int protect_ship = 0, beam_protect_ship = 0, ignore_count = 0, reinforcement = 0, cargo_known = 0;
+	int protect_ship = 0, beam_protect_ship = 0, flak_protect_ship = 0, laser_protect_ship = 0, missile_protect_ship = 0;
+	int ignore_count = 0, reinforcement = 0, cargo_known = 0;
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
@@ -166,6 +173,9 @@ BOOL ship_flags_dlg::OnInitDialog()
 					special_warpin = (objp->flags & OF_SPECIAL_WARPIN) ? 1 : 0;
 					protect_ship = (objp->flags & OF_PROTECTED) ? 1 : 0;
 					beam_protect_ship = (objp->flags & OF_BEAM_PROTECTED) ? 1 : 0;
+					flak_protect_ship = (objp->flags & OF_FLAK_PROTECTED) ? 1 : 0;
+					laser_protect_ship = (objp->flags & OF_LASER_PROTECTED) ? 1 : 0;
+					missile_protect_ship = (objp->flags & OF_MISSILE_PROTECTED) ? 1 : 0;
 					invulnerable = (objp->flags & OF_INVULNERABLE) ? 1 : 0;
 					targetable_as_bomb = (objp->flags & OF_TARGETABLE_AS_BOMB) ? 1 : 0;
 					hidden_from_sensors = (shipp->flags & SF_HIDDEN_FROM_SENSORS) ? 1 : 0;
@@ -219,6 +229,9 @@ BOOL ship_flags_dlg::OnInitDialog()
 					special_warpin = tristate_set( objp->flags & OF_SPECIAL_WARPIN, special_warpin );
 					protect_ship = tristate_set(objp->flags & OF_PROTECTED, protect_ship);
 					beam_protect_ship = tristate_set(objp->flags & OF_BEAM_PROTECTED, beam_protect_ship);
+					flak_protect_ship = tristate_set(objp->flags & OF_FLAK_PROTECTED, flak_protect_ship);
+					laser_protect_ship = tristate_set(objp->flags & OF_LASER_PROTECTED, laser_protect_ship);
+					missile_protect_ship = tristate_set(objp->flags & OF_MISSILE_PROTECTED, missile_protect_ship);
 					invulnerable = tristate_set(objp->flags & OF_INVULNERABLE, invulnerable);
 					targetable_as_bomb = tristate_set(objp->flags & OF_TARGETABLE_AS_BOMB, targetable_as_bomb);
 					hidden_from_sensors = tristate_set(shipp->flags & SF_HIDDEN_FROM_SENSORS, hidden_from_sensors);
@@ -279,6 +292,9 @@ BOOL ship_flags_dlg::OnInitDialog()
 	
 	m_protect_ship.SetCheck(protect_ship);
 	m_beam_protect_ship.SetCheck(beam_protect_ship);
+	m_flak_protect_ship.SetCheck(flak_protect_ship);
+	m_laser_protect_ship.SetCheck(laser_protect_ship);
+	m_missile_protect_ship.SetCheck(missile_protect_ship);
 	m_ignore_count.SetCheck(ignore_count);
 	m_reinforcement.SetCheck(reinforcement);
 	m_cargo_known.SetCheck(cargo_known);
@@ -436,6 +452,54 @@ void ship_flags_dlg::update_ship(int shipnum)
 				set_modified();
 
 			objp->flags &= ~OF_BEAM_PROTECTED;
+			break;
+	}
+
+	switch (m_flak_protect_ship.GetCheck()) {
+		case 1:
+			if (!(objp->flags & OF_FLAK_PROTECTED) )
+				set_modified();
+
+			objp->flags |= OF_FLAK_PROTECTED;
+			break;
+
+		case 0:
+			if ( objp->flags & OF_FLAK_PROTECTED )
+				set_modified();
+
+			objp->flags &= ~OF_FLAK_PROTECTED;
+			break;
+	}
+
+	switch (m_laser_protect_ship.GetCheck()) {
+		case 1:
+			if (!(objp->flags & OF_LASER_PROTECTED) )
+				set_modified();
+
+			objp->flags |= OF_LASER_PROTECTED;
+			break;
+
+		case 0:
+			if ( objp->flags & OF_LASER_PROTECTED )
+				set_modified();
+
+			objp->flags &= ~OF_LASER_PROTECTED;
+			break;
+	}
+
+	switch (m_missile_protect_ship.GetCheck()) {
+		case 1:
+			if (!(objp->flags & OF_MISSILE_PROTECTED) )
+				set_modified();
+
+			objp->flags |= OF_MISSILE_PROTECTED;
+			break;
+
+		case 0:
+			if ( objp->flags & OF_MISSILE_PROTECTED )
+				set_modified();
+
+			objp->flags &= ~OF_MISSILE_PROTECTED;
 			break;
 	}
 
@@ -1058,6 +1122,33 @@ void ship_flags_dlg::OnBeamProtectShip()
 		m_beam_protect_ship.SetCheck(0);
 	} else {
 		m_beam_protect_ship.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnFlakProtectShip() 
+{
+	if (m_flak_protect_ship.GetCheck() == 1) {
+		m_flak_protect_ship.SetCheck(0);
+	} else {
+		m_flak_protect_ship.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnLaserProtectShip() 
+{
+	if (m_laser_protect_ship.GetCheck() == 1) {
+		m_laser_protect_ship.SetCheck(0);
+	} else {
+		m_laser_protect_ship.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnMissileProtectShip() 
+{
+	if (m_missile_protect_ship.GetCheck() == 1) {
+		m_missile_protect_ship.SetCheck(0);
+	} else {
+		m_missile_protect_ship.SetCheck(1);
 	}
 }
 
