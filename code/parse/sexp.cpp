@@ -236,6 +236,9 @@ sexp_oper Operators[] = {
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,			2,	3	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,			2,	3	},	// WMC
 	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,			2,	3	},	// WMC
+	{ "get-object-speed-x",				OP_GET_OBJECT_SPEED_X,			1,	2	},
+	{ "get-object-speed-y",				OP_GET_OBJECT_SPEED_Y,			1,	2	},
+	{ "get-object-speed-z",				OP_GET_OBJECT_SPEED_Z,			1,	2	},
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
@@ -6170,6 +6173,62 @@ void sexp_set_object_speed(int n, int axis)
 			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
 			break;
 	}
+}
+
+int sexp_get_object_speed(object *objp, int axis, int subjective)
+{
+	Assertion(((axis >= 0) && (axis <= 2)), "Axis is out of range (%d)", axis);
+	int speed;
+
+	if (subjective)
+	{
+		// return the speed based on the orentation of the object
+		vec3d subjective_vel;
+		vm_vec_rotate(&subjective_vel, &objp->phys_info.vel, &objp->orient);
+		speed = fl2i(subjective_vel.a1d[axis]);
+		vm_vec_unrotate(&objp->phys_info.vel, &subjective_vel, &objp->orient);
+	}
+	else
+	{
+		// retur the speed according to the grid
+		speed = fl2i(objp->phys_info.vel.a1d[axis]);
+	}
+	return speed;
+}
+
+int sexp_get_object_speed(int n, int axis)
+{
+	Assert(n >= 0);
+
+	int speed, subjective = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	if (n >= 0)
+	{
+		subjective = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_EXITED:
+			return SEXP_NAN_FOREVER;
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			speed = sexp_get_object_speed(oswpt.objp, axis, subjective);
+			break;
+
+		default:
+			return SEXP_NAN;
+			break;
+	}
+	return speed;
 }
 
 // Goober5000
@@ -19788,6 +19847,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_GET_OBJECT_SPEED_X:
+			case OP_GET_OBJECT_SPEED_Y:
+			case OP_GET_OBJECT_SPEED_Z:
+				sexp_val = sexp_get_object_speed(node, op_num - OP_GET_OBJECT_SPEED_X);
+				break;
+
 			case OP_GET_OBJECT_X:
 			case OP_GET_OBJECT_Y:
 			case OP_GET_OBJECT_Z:
@@ -21082,6 +21147,9 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_PITCH:
 		case OP_GET_OBJECT_BANK:
 		case OP_GET_OBJECT_HEADING:
+		case OP_GET_OBJECT_SPEED_X:
+		case OP_GET_OBJECT_SPEED_Y:
+		case OP_GET_OBJECT_SPEED_Z:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
@@ -21770,6 +21838,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING_POINT;
 			else if (argnum == 1)
 				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
+
+		case OP_GET_OBJECT_SPEED_X:
+		case OP_GET_OBJECT_SPEED_Y:
+		case OP_GET_OBJECT_SPEED_Z:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_BOOL;
 
@@ -24465,6 +24541,9 @@ int get_subcategory(int sexp_id)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
+		case OP_GET_OBJECT_SPEED_X:
+		case OP_GET_OBJECT_SPEED_Y:
+		case OP_GET_OBJECT_SPEED_Z:
 		case OP_SHIP_MANEUVER:
 		case OP_SHIP_ROT_MANEUVER:
 		case OP_SHIP_LAT_MANEUVER:
@@ -24821,6 +24900,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
+
+	{ OP_GET_OBJECT_SPEED_X, "get-object-speed-x\r\n"
+		"\tReturns the X speed of a ship, wing, or waypoint as an integer."
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
+
+	{ OP_GET_OBJECT_SPEED_Y, "get-object-speed-y\r\n"
+		"\tReturns the Y speed of a ship, wing, or waypoint as an integer."
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
+
+	{ OP_GET_OBJECT_SPEED_Z, "get-object-speed-z\r\n"
+		"\tReturns the Z speed of a ship, wing, or waypoint as an integer."
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_X, "get-object-x\r\n"
