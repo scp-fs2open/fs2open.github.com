@@ -116,11 +116,14 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_SPECIAL_WARPIN			(1<<13)	// Object has special warp-in enabled.
 #define OF_DOCKED_ALREADY_HANDLED	(1<<14)	// Goober5000 - a docked object that we already moved
 #define OF_TARGETABLE_AS_BOMB		(1<<15)
+#define	OF_FLAK_PROTECTED			(1<<16)	// Goober5000 - protected from flak turrets
+#define	OF_LASER_PROTECTED			(1<<17)	// Goober5000 - protected from laser turrets
+#define	OF_MISSILE_PROTECTED		(1<<18)	// Goober5000 - protected from missile turrets
 
 // Flags used by Fred
-#define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
-#define OF_TEMP_MARKED		(1<<18)	// Temporarily marked (Fred).
-#define OF_HIDDEN			(1<<20)	// Object is hidden (not shown) and can't be manipulated
+#define OF_MARKED			(1<<29)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
+#define OF_TEMP_MARKED		(1<<30)	// Temporarily marked (Fred).
+#define OF_HIDDEN			(1<<31)	// Object is hidden (not shown) and can't be manipulated
 
 
 // max # of object sounds per object

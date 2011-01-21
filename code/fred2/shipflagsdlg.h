@@ -34,6 +34,9 @@ public:
 	CButton	m_reinforcement;
 	CButton	m_protect_ship;
 	CButton	m_beam_protect_ship;
+	CButton	m_flak_protect_ship;
+	CButton	m_laser_protect_ship;
+	CButton	m_missile_protect_ship;
 	CButton	m_no_dynamic;
 	CButton	m_no_arrival_music;
 	CButton	m_kamikaze;
@@ -96,6 +99,9 @@ protected:
 	afx_msg void OnNoDynamic();
 	afx_msg void OnProtectShip();
 	afx_msg void OnBeamProtectShip();
+	afx_msg void OnFlakProtectShip();
+	afx_msg void OnLaserProtectShip();
+	afx_msg void OnMissileProtectShip();
 	afx_msg void OnReinforcement();
 	afx_msg void OnScannable();
 	afx_msg void OnRedalertcarry();

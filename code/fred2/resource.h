@@ -1009,9 +1009,12 @@
 #define IDC_SBITMAP_B_SPIN              1527
 #define IDC_BEAM_PROTECT_SHIP           1527
 #define IDC_SBITMAP_P_SPIN              1528
+#define IDC_FLAK_PROTECT_SHIP           1528
 #define IDC_SBITMAP_SCALE_SPIN          1529
 #define IDC_SBITMAP_SCALE_Y             1529
+#define IDC_LASER_PROTECT_SHIP          1529
 #define IDC_POOF0                       1530
+#define IDC_MISSILE_PROTECT_SHIP        1530
 #define IDC_POOF1                       1531
 #define IDC_POOF2                       1532
 #define IDC_POOF3                       1533
