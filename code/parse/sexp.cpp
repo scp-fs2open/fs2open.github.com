@@ -15433,16 +15433,16 @@ void sexp_ship_set_damage_type(int node)
 			if (debris)
 			{
 				if (!rset)
-					shipp[sindex].collision_damage_type_idx = Ship_info[shipp[sindex].ship_info_index].collision_damage_type_idx;
+					shipp->collision_damage_type_idx = Ship_info[shipp->ship_info_index].collision_damage_type_idx;
 				else
-					shipp[sindex].collision_damage_type_idx = damage;
+					shipp->collision_damage_type_idx = damage;
 			}
 			else 
 			{
 				if (!rset)
-					shipp[sindex].debris_damage_type_idx = Ship_info[shipp[sindex].ship_info_index].debris_damage_type_idx;
+					shipp->debris_damage_type_idx = Ship_info[shipp->ship_info_index].debris_damage_type_idx;
 				else
-					shipp[sindex].debris_damage_type_idx = damage;
+					shipp->debris_damage_type_idx = damage;
 			}
 			// next
 		}
