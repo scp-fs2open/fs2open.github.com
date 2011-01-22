@@ -29,90 +29,27 @@ extern int Cmdline_nohtl;
 // NEBULA LIGHTNING DEFINES/VARS
 //
 
-// debug stuff
-#define MAX_BOLT_TYPES_INTERNAL		11
-
-// see lightning.tbl for explanations of these values
-typedef struct bolt_type {
-	char		name[NAME_LENGTH];
-
-	float		b_scale;
-	float		b_shrink;
-	float		b_poly_pct;	
-	float		b_add;
-	float		b_rand;
-
-	float		noise;
-	int		lifetime;
-	int		num_strikes;
-
-	float		emp_intensity;
-	float		emp_time;
-	
-	int		texture;
-	int		glow;	
-
-	float		b_bright;
-} bolt_type;
-
-int Num_bolt_types = 0;
-bolt_type Bolt_types[MAX_BOLT_TYPES_INTERNAL];
-
-// storm types
-int Num_storm_types = 0;
-storm_type Storm_types[MAX_STORM_TYPES];
-
-
-// actual lightning bolt stuff -------
-
-#define MAX_LIGHTNING_NODES					500
-
-// nodes in a lightning bolt
-#define LINK_LEFT		0
-#define LINK_RIGHT	1
-#define LINK_CHILD	2
-typedef struct l_node {
-	vec3d	pos;				// world position
-	l_node	*links[3];		// 3 links for lightning children
-
-	l_node *next, *prev;		// for used and free-lists only
-} l_node;
-
-
-// nodes
-l_node Nebl_nodes[MAX_LIGHTNING_NODES];
+// Lightning nodes
 int Num_lnodes = 0;
+l_node Nebl_nodes[MAX_LIGHTNING_NODES];
 
-// lightning node lists
 l_node Nebl_free_list;
 l_node Nebl_used_list;
 
-// actual lightning bolt themselves
-typedef struct l_bolt {
-	l_node *head;				// head of the lightning bolt
-	int bolt_life;				// remaining life timestamp
-	ubyte used;					// used or not
-	ubyte	first_frame;		// if he hasn't been rendered at least once	
-	char type;
+// nodes in a lightning bolt
+#define LINK_LEFT	0
+#define LINK_RIGHT	1
+#define LINK_CHILD	2
 
-	// bolt info
-	vec3d start, strike, midpoint;
-	int delay;					// delay stamp
-	int strikes_left;			// #of strikes left
-	float width;
-} l_bolt;
-
-#define MAX_LIGHTNING_BOLTS					10
-
-// lightning bolts
+// Lightning bolts
+int Num_lbolts = 0;
 l_bolt Nebl_bolts[MAX_LIGHTNING_BOLTS];
-int Nebl_bolt_count = 0;
 
-// one cross-section of a lightning bolt
-typedef struct l_section {		
-	vertex	vex[3];
-	vertex	glow_vex[2];
-} l_section;
+// Lightning bolt types
+SCP_vector<bolt_type> Bolt_types;
+
+// Lightning storm types
+SCP_vector<storm_type> Storm_types;
 
 // points on the basic cross section
 vec3d Nebl_ring[3] = {	
@@ -135,12 +72,12 @@ float Nebl_flash_y = 0.0f;		// avg y of the points rendered
 float Nebl_bang = 0.0;			// distance to the viewer object
 float Nebl_alpha = 0.0f;		// alpha to use when rendering the bolt itself
 float Nebl_glow_alpha = 0.0f;	// alpha to use when rendering the bolt glow
-int Nebl_stamp = -1;				// random timestamp for making bolts
-float Nebl_bolt_len;				// length of the current bolt being generated
+int Nebl_stamp = -1;			// random timestamp for making bolts
+float Nebl_bolt_len;			// length of the current bolt being generated
 bolt_type *Nebl_type;			// bolt type
 matrix Nebl_bolt_dir;			// orientation matrix of the bolt being generated
 vec3d Nebl_bolt_start;			// start point of the bolt being generated
-vec3d Nebl_bolt_strike;		// strike point of the bolt being generated
+vec3d Nebl_bolt_strike;			// strike point of the bolt being generated
 
 // the type of active storm
 storm_type *Storm = NULL;
@@ -206,25 +143,8 @@ DCF(b_list, "")
 	dc_printf("b_lifetime : %d\n", Bolt_types[DEBUG_BOLT].lifetime);
 }
 
-
 // nebula lightning intensity (0.0 to 1.0)
 float Nebl_intensity = 0.6667f;
-
-// min and max times for random lightning
-int Nebl_random_min = 750;				// min random time
-int Nebl_random_max = 10000;			// max random time
-
-// min and max times for cruiser lightning
-int Nebl_cruiser_min = 5000;			// min cruiser time
-int Nebl_cruiser_max = 25000;			// max cruiser time
-
-// min and max times for cap ships
-int Nebl_cap_min = 4000;				// min cap time
-int Nebl_cap_max = 18000;				// max cap time
-
-// min and max time for super caps
-int Nebl_supercap_min = 3000;			// min supercap time
-int Nebl_supercap_max = 12000;		// max supercap time
 
 DCF(lightning_intensity, "")
 {
@@ -239,46 +159,6 @@ DCF(lightning_intensity, "")
 	Nebl_intensity = 1.0f - val;
 }
 
-// ------------------------------------------------------------------------------------------------------
-// NEBULA LIGHTNING FORWARD DECLARATIONS
-//
-
-// "new" a lightning node
-l_node *nebl_new();
-
-// "delete" a lightning node
-void nebl_delete(l_node *lp);
-
-// free up a the nodes of the passed in bolt
-void nebl_release(l_node *bolt_head);
-
-// generate a lightning bolt, returns l_left (the "head") and l_right (the "tail")
-int nebl_gen(vec3d *left, vec3d *right, float depth, float max_depth, int child, l_node **l_left, l_node **l_right);
-
-// output top and bottom vectors
-// fvec == forward vector (eye viewpoint basically. in world coords)
-// pos == world coordinate of the point we're calculating "around"
-// w == width of the diff between top and bottom around pos
-void nebl_calc_facing_pts_smart( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add );
-
-// render a section of the bolt
-void nebl_render_section(bolt_type *bi, l_section *a, l_section *b);
-
-// generate a section
-void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_section *c, l_section *cap, int pinch_a, int pinch_b);
-
-// render the bolt
-void nebl_render(bolt_type *bi, l_node *whee, float width, l_section *prev = NULL);
-
-// given a valid, complete bolt, jitter him based upon his noise
-void nebl_jitter(l_bolt *b);
-
-// return the index of a given bolt type by name
-int nebl_get_bolt_index(char *name);
-
-// return the index of a given storm type by name
-int nebl_get_storm_index(char *name);
-
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING FUNCTIONS
@@ -287,11 +167,8 @@ int nebl_get_storm_index(char *name);
 // initialize nebula lightning at game startup
 void nebl_init()
 {
-//	char name[NAME_LENGTH+10];
 	char name[MAX_FILENAME_LEN];
-	bolt_type bogus_lightning, *l;
-	storm_type bogus_storm, *s;
-	int temp, rval;
+	int rval;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "lightning.tbl", rval));
@@ -302,149 +179,118 @@ void nebl_init()
 	read_file_text("lightning.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
-	Num_bolt_types = 0;
-	Num_storm_types = 0;
-
-	memset(Bolt_types, 0, sizeof(bolt_type) * MAX_BOLT_TYPES_INTERNAL);
-
 	// parse the individual lightning bolt types
 	required_string("#Bolts begin");
 	while(!optional_string("#Bolts end")){
-		// get a pointer
-		if(Num_bolt_types >= MAX_BOLT_TYPES){
-			l = &bogus_lightning;
-		} else {
-			l = &Bolt_types[Num_bolt_types];
-		}
+		bolt_type new_bolt_type;
 
 		// bolt title
 		required_string("$Bolt:");
-		stuff_string(l->name, F_NAME, NAME_LENGTH);
+		stuff_string(new_bolt_type.name, F_NAME, NAME_LENGTH);
 
 		// b_scale
 		required_string("+b_scale:");
-		stuff_float(&l->b_scale);
+		stuff_float(&new_bolt_type.b_scale);
 
 		// b_shrink
 		required_string("+b_shrink:");
-		stuff_float(&l->b_shrink);
+		stuff_float(&new_bolt_type.b_shrink);
 
 		// b_poly_pct
 		required_string("+b_poly_pct:");
-		stuff_float(&l->b_poly_pct);		
+		stuff_float(&new_bolt_type.b_poly_pct);		
 
 		// child rand
 		required_string("+b_rand:");
-		stuff_float(&l->b_rand);
+		stuff_float(&new_bolt_type.b_rand);
 
 		// z add
 		required_string("+b_add:");
-		stuff_float(&l->b_add);
+		stuff_float(&new_bolt_type.b_add);
 
 		// # strikes
 		required_string("+b_strikes:");
-		stuff_int(&l->num_strikes);
+		stuff_int(&new_bolt_type.num_strikes);
 
 		// lifetime
 		required_string("+b_lifetime:");
-		stuff_int(&l->lifetime);
+		stuff_int(&new_bolt_type.lifetime);
 
 		// noise
 		required_string("+b_noise:");
-		stuff_float(&l->noise);
+		stuff_float(&new_bolt_type.noise);
 
 		// emp effect
 		required_string("+b_emp:");
-		stuff_float(&l->emp_intensity);
-		stuff_float(&l->emp_time);
+		stuff_float(&new_bolt_type.emp_intensity);
+		stuff_float(&new_bolt_type.emp_time);
 
 		// texture
 		required_string("+b_texture:");
 		stuff_string(name, F_NAME, sizeof(name));
-		if((l != &bogus_lightning) && !Fred_running){
-			l->texture = bm_load(name);
+		if(!Fred_running){
+			new_bolt_type.texture = bm_load(name);
 		}
 
 		// glow
 		required_string("+b_glow:");
 		stuff_string(name, F_NAME, sizeof(name));
-		if((l != &bogus_lightning) && !Fred_running){
-			l->glow = bm_load(name);
+		if(!Fred_running){
+			new_bolt_type.glow = bm_load(name);
 		}
 
 		// brightness
 		required_string("+b_bright:");
-		stuff_float(&l->b_bright);
+		stuff_float(&new_bolt_type.b_bright);
 
-		// increment the # of bolt types
-		if(l != &bogus_lightning){
-			Num_bolt_types++;
-		}
+		Bolt_types.push_back(new_bolt_type);
 	}
 
-	// copy the first bolt to the debug bolt
-	memcpy(&Bolt_types[DEBUG_BOLT], &Bolt_types[0], sizeof(bolt_type));
-
-	// parse storm types
+	// parse lightning storm types
 	required_string("#Storms begin");
 	while(!optional_string("#Storms end")){
-		// get a pointer
-		if(Num_storm_types >= MAX_STORM_TYPES){
-			s = &bogus_storm;
-		} else {
-			s = &Storm_types[Num_storm_types];
-		}
+		storm_type new_storm_type;
 
 		// bolt title
 		required_string("$Storm:");
-		stuff_string(s->name, F_NAME, NAME_LENGTH);
+		stuff_string(new_storm_type.name, F_NAME, NAME_LENGTH);
 
 		// bolt types
-		s->num_bolt_types = 0;
 		while(optional_string("+bolt:")){			
-			stuff_string(name, F_NAME, sizeof(name));			
+			if(new_storm_type.num_bolt_types < MAX_BOLT_TYPES_PER_STORM){
+				stuff_string(name, F_NAME, sizeof(name));	
+				
+				new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
+				Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != (size_t)-1);								
 
-			// fill this guy in
-			if(s->num_bolt_types < MAX_BOLT_TYPES){
-				s->bolt_types[s->num_bolt_types] = (char)nebl_get_bolt_index(name);
-				Assert(s->bolt_types[s->num_bolt_types] != -1);								
-
-				s->num_bolt_types++;
-			} 
-			// bogus 
-			else {
-				required_string("+bolt_prec:");
-				stuff_int(&temp);
-			}			
+				new_storm_type.num_bolt_types++;
+			} 			
 		}
 
 		// flavor
 		required_string("+flavor:");
-		stuff_float(&s->flavor.xyz.x);
-		stuff_float(&s->flavor.xyz.y);
-		stuff_float(&s->flavor.xyz.z);
+		stuff_float(&new_storm_type.flavor.xyz.x);
+		stuff_float(&new_storm_type.flavor.xyz.y);
+		stuff_float(&new_storm_type.flavor.xyz.z);
 
 		// frequencies
 		required_string("+random_freq:");
-		stuff_int(&s->min);
-		stuff_int(&s->max);
+		stuff_int(&new_storm_type.min);
+		stuff_int(&new_storm_type.max);
 
 		// counts
 		required_string("+random_count:");
-		stuff_int(&s->min_count);
-		stuff_int(&s->max_count);
+		stuff_int(&new_storm_type.min_count);
+		stuff_int(&new_storm_type.max_count);
 
-		// increment the # of bolt types
-		if(s != &bogus_storm){
-			Num_storm_types++;
-		}
+		Storm_types.push_back(new_storm_type);
 	}
 }
 
 // initialize lightning before entering a level
 void nebl_level_init()
 {
-	int idx;	
+	size_t idx;	
 
 	// zero all lightning bolts
 	for(idx=0; idx<MAX_LIGHTNING_BOLTS; idx++){
@@ -470,10 +316,23 @@ void nebl_level_init()
 	Storm = NULL;
 }
 
+// set the storm (call from mission parse)
+void nebl_set_storm(char *name)
+{
+	// sanity
+	Storm = NULL;
+	
+	size_t index = nebl_get_storm_index(name);
+	
+	if(index == (size_t)-1)
+		return;
+	
+	Storm = &Storm_types[index];
+}
+
 // render all lightning bolts
 void nebl_render_all()
 {
-	int idx;
 	l_bolt *b;
 	bolt_type *bi;
 
@@ -488,7 +347,7 @@ void nebl_render_all()
 	}
 
 	// traverse the list
-	for(idx=0; idx<MAX_LIGHTNING_BOLTS; idx++){
+	for(size_t idx=0; idx<MAX_LIGHTNING_BOLTS; idx++){
 		b = &Nebl_bolts[idx];		
 
 		// if this is being used
@@ -500,12 +359,11 @@ void nebl_render_all()
 				b->used = 0;
 				continue;
 			}
-			if((b->type < 0) || ((b->type >= Num_bolt_types) && (b->type != DEBUG_BOLT)) ){
-				Int3();
+			if( (b->type < 0) || (b->type >= Bolt_types.size()) ){
 				b->used = 0;
 				continue;
 			}
-			bi = &Bolt_types[(int)b->type];
+			bi = &Bolt_types[b->type];
 
 			// if this guy is still on a delay
 			if(b->delay != -1){
@@ -535,7 +393,7 @@ void nebl_render_all()
 						nebl_release(b->head);
 						b->head = NULL;
 
-						Nebl_bolt_count--;
+						Num_lbolts--;
 
 						nprintf(("lightning", "Released bolt. %d used nodes!\n", Num_lnodes));
 					}
@@ -610,7 +468,7 @@ void nebl_render_all()
 // process lightning (randomly generate bolts, etc, etc);
 void nebl_process()
 {		
-	int num_bolts, idx;
+	uint num_bolts, idx;
 
 	// non-nebula mission
 	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
@@ -641,7 +499,7 @@ void nebl_process()
 	// maybe make a bolt
 	if(timestamp_elapsed(Nebl_stamp)){
 		// determine how many bolts to spew
-		num_bolts = (int)frand_range((float)Storm->min_count, (float)Storm->max_count);
+		num_bolts = (uint)frand_range((float)Storm->min_count, (float)Storm->max_count);
 		for(idx=0; idx<num_bolts; idx++){
 			// hmm. for now just pick a random bolt type and run with it
 			int s1, s2, s3;
@@ -699,7 +557,7 @@ void nebl_process()
 				vm_vec_add(&strike, &start, &the_mixture);
 			}
 
-			int type = (int)frand_range(0.0f, (float)(Storm->num_bolt_types-1));
+			size_t type = (size_t)frand_range(0.0f, (float)(Storm->num_bolt_types-1));
 			nebl_bolt(Storm->bolt_types[type], &start, &strike);
 		}
 
@@ -709,13 +567,13 @@ void nebl_process()
 }
 
 // create a lightning bolt
-void nebl_bolt(int type, vec3d *start, vec3d *strike)
+void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 {
 	vec3d dir;
 	l_bolt *bolt;
 	l_node *tail;
-	int idx;
-	int found;		
+	size_t idx;
+	bool found;		
 	bolt_type *bi;
 	float bolt_len;
 
@@ -732,11 +590,10 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 		}
 	}
 	if(!found){
-		// Int3();
 		return;
 	}
 
-	if((type < 0) || ((type >= Num_bolt_types) && (type != DEBUG_BOLT)) ){
+	if( (type < 0) || (type >= Bolt_types.size()) ){
 		return;
 	}
 	bi = &Bolt_types[type];	
@@ -786,7 +643,7 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 		return;
 	}
 
-	Nebl_bolt_count++;	
+	Num_lbolts++;	
 	
 	// setup the rest of the data	
 	bolt->used = 1;	
@@ -801,7 +658,7 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 // get the current # of active lightning bolts
 int nebl_get_active_bolts()
 {
-	return Nebl_bolt_count;
+	return Num_lbolts;
 }
 
 // get the current # of active nodes
@@ -809,22 +666,6 @@ int nebl_get_active_nodes()
 {
 	return Num_lnodes;
 }
-
-// set the storm (call from mission parse)
-void nebl_set_storm(char *name)
-{
-	int index = nebl_get_storm_index(name);
-
-	// sanity
-	Storm = NULL;
-	if((index >= 0) && (index < Num_storm_types)){
-		Storm = &Storm_types[index];
-	}
-}
-
-// ------------------------------------------------------------------------------------------------------
-// NEBULA LIGHTNING FORWARD DEFINITIONS
-//
 
 // "new" a lightning node
 l_node *nebl_new()
@@ -1034,13 +875,12 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 {		
 	vertex v[4];
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
-	int idx;
 
 	// Sets mode.  Returns previous mode.
 	gr_zbuffer_set(GR_ZBUFF_FULL);	
 
 	// draw some stuff
-	for(idx=0; idx<2; idx++){		
+	for(size_t idx=0; idx<2; idx++){		
 		v[0] = a->vex[idx];		
 		v[0].u = 0.0f; v[0].v = 0.0f;
 
@@ -1097,7 +937,7 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 	vec3d dir;
 	vec3d dir_normal;
 	matrix m;
-	int idx;	
+	size_t idx;	
 	vec3d temp, pt;
 	vec3d glow_a, glow_b;
 
@@ -1269,10 +1109,10 @@ void nebl_jitter(l_bolt *b)
 	if(b == NULL){
 		return;
 	}
-	if((b->type < 0) || ((b->type >= Num_bolt_types) && (b->type != DEBUG_BOLT)) ){
+	if( (b->type < 0) || (b->type >= Bolt_types.size()) ){
 		return;		
 	}
-	bi = &Bolt_types[(int)b->type];
+	bi = &Bolt_types[b->type];
 
 	// get the bolt direction
 	vm_vec_sub(&temp, &b->strike, &b->start);
@@ -1291,32 +1131,28 @@ void nebl_jitter(l_bolt *b)
 }
 
 // return the index of a given bolt type by name
-int nebl_get_bolt_index(char *name)
+size_t nebl_get_bolt_index(char *name)
 {
-	int idx;
-
-	for(idx=0; idx<Num_bolt_types; idx++){
+	for(size_t idx=0; idx<Bolt_types.size(); idx++){
 		if(!strcmp(name, Bolt_types[idx].name)){
 			return idx;
 		}
 	}
 
-	return -1;
+	return (size_t)-1;
 }
 
 // return the index of a given storm type by name
-int nebl_get_storm_index(char *name)
+size_t nebl_get_storm_index(char *name)
 {
-	int idx;
-
 	if (name == NULL)
-		return -1;
+		return (size_t)-1;
 
-	for(idx=0; idx<Num_storm_types; idx++){
+	for(size_t idx=0; idx<Storm_types.size(); idx++){
 		if(!strcmp(name, Storm_types[idx].name)){
 			return idx;
 		}
 	}
 
-	return -1;
+	return (size_t)-1;
 }

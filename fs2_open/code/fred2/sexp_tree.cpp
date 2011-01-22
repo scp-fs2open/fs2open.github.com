@@ -5730,11 +5730,10 @@ sexp_list_item *sexp_tree::get_listing_opf_sun_bitmap()
 sexp_list_item *sexp_tree::get_listing_opf_nebula_storm_type()
 {
 	sexp_list_item head;
-	int i;
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (i=0; i < Num_storm_types; i++)
+	for (size_t i=0; i < Storm_types.size(); i++)
 	{
 		head.add_data(Storm_types[i].name);
 	}
