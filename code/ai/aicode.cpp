@@ -5881,17 +5881,12 @@ float compute_incoming_payload(object *target_objp)
 int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 {
 	int	num_homers = 0;
-	object	*tobjp = &Objects[target_objnum];
 
-	if (target_objnum > -1) {
+	if (target_objnum >= 0) {
+		object	*tobjp = &Objects[target_objnum];
+
 		// AL 3-4-98: Ensure objp target is a ship first 
 		if ( tobjp->type == OBJ_SHIP ) {
-
-			// should not get this far. check if ship is protected from beam and weapon is type beam
-			if ( (wip->wi_flags & WIF_BEAM) && (tobjp->flags & OF_BEAM_PROTECTED) ) {
-				Int3();
-				return 0;
-			}
 			if (Ship_info[Ships[tobjp->instance].ship_info_index].flags & SIF_SMALL_SHIP) {
 				num_homers = compute_num_homing_objects(&Objects[target_objnum]);
 			}

@@ -246,6 +246,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "ignore if dead",			MSS_FLAG_IGNORE_IF_DEAD,	0 },
 	{ "allow vanishing",		MSS_FLAG_ALLOW_VANISHING,	0 },
 	{ "damage as hull",			MSS_FLAG_DAMAGE_AS_HULL,	0 },
+	{ "starts locked",          MSS_FLAG_TURRET_LOCKED,     0 },
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);

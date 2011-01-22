@@ -236,6 +236,9 @@ sexp_oper Operators[] = {
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,			2,	3	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,			2,	3	},	// WMC
 	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,			2,	3	},	// WMC
+	{ "get-object-speed-x",				OP_GET_OBJECT_SPEED_X,			1,	2	},
+	{ "get-object-speed-y",				OP_GET_OBJECT_SPEED_Y,			1,	2	},
+	{ "get-object-speed-z",				OP_GET_OBJECT_SPEED_Z,			1,	2	},
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
@@ -317,6 +320,8 @@ sexp_oper Operators[] = {
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
+	{ "turret-protect-ship",		OP_TURRET_PROTECT_SHIP,			2, INT_MAX,	},	// Goober5000
+	{ "turret-unprotect-ship",		OP_TURRET_UNPROTECT_SHIP,		2, INT_MAX,	},	// Goober5000
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
 	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
@@ -6170,6 +6175,62 @@ void sexp_set_object_speed(int n, int axis)
 			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
 			break;
 	}
+}
+
+int sexp_get_object_speed(object *objp, int axis, int subjective)
+{
+	Assertion(((axis >= 0) && (axis <= 2)), "Axis is out of range (%d)", axis);
+	int speed;
+
+	if (subjective)
+	{
+		// return the speed based on the orentation of the object
+		vec3d subjective_vel;
+		vm_vec_rotate(&subjective_vel, &objp->phys_info.vel, &objp->orient);
+		speed = fl2i(subjective_vel.a1d[axis]);
+		vm_vec_unrotate(&objp->phys_info.vel, &subjective_vel, &objp->orient);
+	}
+	else
+	{
+		// retur the speed according to the grid
+		speed = fl2i(objp->phys_info.vel.a1d[axis]);
+	}
+	return speed;
+}
+
+int sexp_get_object_speed(int n, int axis)
+{
+	Assert(n >= 0);
+
+	int speed, subjective = 0;
+	object_ship_wing_point_team oswpt;
+
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	n = CDR(n);
+
+	if (n >= 0)
+	{
+		subjective = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	switch (oswpt.type)
+	{
+		case OSWPT_TYPE_EXITED:
+			return SEXP_NAN_FOREVER;
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			speed = sexp_get_object_speed(oswpt.objp, axis, subjective);
+			break;
+
+		default:
+			return SEXP_NAN;
+			break;
+	}
+	return speed;
 }
 
 // Goober5000
@@ -12349,6 +12410,24 @@ void sexp_beam_protect_ships(int n, bool flag)
 	sexp_deal_with_ship_flag(n, true, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
 }
 
+// protects/unprotects a ship from various turrets.
+void sexp_turret_protect_ships(int n, bool flag)
+{
+	char *turret_type = CTEXT(n);
+	n = CDR(n);
+
+	if (!stricmp(turret_type, "beam"))
+		sexp_deal_with_ship_flag(n, true, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
+	else if (!stricmp(turret_type, "flak"))
+		sexp_deal_with_ship_flag(n, true, OF_FLAK_PROTECTED, 0, 0, 0, P_OF_FLAK_PROTECTED, 0, flag);
+	else if (!stricmp(turret_type, "laser"))
+		sexp_deal_with_ship_flag(n, true, OF_LASER_PROTECTED, 0, 0, 0, P_OF_LASER_PROTECTED, 0, flag);
+	else if (!stricmp(turret_type, "missile"))
+		sexp_deal_with_ship_flag(n, true, OF_MISSILE_PROTECTED, 0, 0, 0, P_OF_MISSILE_PROTECTED, 0, flag);
+	else
+		Warning(LOCATION, "Invalid turret type '%s'!", turret_type);
+}
+
 // Goober5000 - sets the "dont collide invisible" flag on a list of ships
 void sexp_dont_collide_invisible(int n, bool dont_collide)
 {
@@ -15354,16 +15433,16 @@ void sexp_ship_set_damage_type(int node)
 			if (debris)
 			{
 				if (!rset)
-					shipp[sindex].collision_damage_type_idx = Ship_info[shipp[sindex].ship_info_index].collision_damage_type_idx;
+					shipp->collision_damage_type_idx = Ship_info[shipp->ship_info_index].collision_damage_type_idx;
 				else
-					shipp[sindex].collision_damage_type_idx = damage;
+					shipp->collision_damage_type_idx = damage;
 			}
 			else 
 			{
 				if (!rset)
-					shipp[sindex].debris_damage_type_idx = Ship_info[shipp[sindex].ship_info_index].debris_damage_type_idx;
+					shipp->debris_damage_type_idx = Ship_info[shipp->ship_info_index].debris_damage_type_idx;
 				else
-					shipp[sindex].debris_damage_type_idx = damage;
+					shipp->debris_damage_type_idx = damage;
 			}
 			// next
 		}
@@ -19261,6 +19340,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TURRET_PROTECT_SHIP:
+			case OP_TURRET_UNPROTECT_SHIP:
+				sexp_turret_protect_ships(node, (op_num == OP_TURRET_PROTECT_SHIP));
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_STEALTHY:
 			case OP_SHIP_UNSTEALTHY:
 				sexp_ships_stealthy(node, (op_num == OP_SHIP_STEALTHY));
@@ -19786,6 +19871,12 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_SET_OBJECT_SPEED_Z:
 				sexp_set_object_speed(node, op_num - OP_SET_OBJECT_SPEED_X);
 				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_GET_OBJECT_SPEED_X:
+			case OP_GET_OBJECT_SPEED_Y:
+			case OP_GET_OBJECT_SPEED_Z:
+				sexp_val = sexp_get_object_speed(node, op_num - OP_GET_OBJECT_SPEED_X);
 				break;
 
 			case OP_GET_OBJECT_X:
@@ -21082,6 +21173,9 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_PITCH:
 		case OP_GET_OBJECT_BANK:
 		case OP_GET_OBJECT_HEADING:
+		case OP_GET_OBJECT_SPEED_X:
+		case OP_GET_OBJECT_SPEED_Y:
+		case OP_GET_OBJECT_SPEED_Z:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_STRING_TO_INT:
@@ -21167,6 +21261,8 @@ int query_operator_return_type(int op)
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
+		case OP_TURRET_PROTECT_SHIP:
+		case OP_TURRET_UNPROTECT_SHIP:
 /*		case OP_INT3:	*/
 		case OP_NOP:
 		case OP_GOALS_ID:
@@ -21583,6 +21679,13 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
+		case OP_TURRET_PROTECT_SHIP:
+		case OP_TURRET_UNPROTECT_SHIP:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP;
+
 		case OP_IS_DISABLED:
 		case OP_IS_DISARMED:
 		case OP_TIME_SHIP_DESTROYED:
@@ -21770,6 +21873,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING_POINT;
 			else if (argnum == 1)
 				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
+
+		case OP_GET_OBJECT_SPEED_X:
+		case OP_GET_OBJECT_SPEED_Y:
+		case OP_GET_OBJECT_SPEED_Z:
+			if (argnum == 0)
+				return OPF_SHIP_WING_POINT;
 			else
 				return OPF_BOOL;
 
@@ -24339,6 +24450,8 @@ int get_subcategory(int sexp_id)
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
+		case OP_TURRET_PROTECT_SHIP:
+		case OP_TURRET_UNPROTECT_SHIP:
 		case OP_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -24634,6 +24747,9 @@ int get_subcategory(int sexp_id)
 		case OP_GET_OBJECT_PITCH:
 		case OP_GET_OBJECT_BANK:
 		case OP_GET_OBJECT_HEADING:
+		case OP_GET_OBJECT_SPEED_X:
+		case OP_GET_OBJECT_SPEED_Y:
+		case OP_GET_OBJECT_SPEED_Z:
 		case OP_NUM_WITHIN_BOX:
 		case OP_SPECIAL_WARP_DISTANCE:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
@@ -24821,6 +24937,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
+
+	{ OP_GET_OBJECT_SPEED_X, "get-object-speed-x\r\n"
+		"\tReturns the X speed of a ship, wing, or waypoint as an integer."
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
+
+	{ OP_GET_OBJECT_SPEED_Y, "get-object-speed-y\r\n"
+		"\tReturns the Y speed of a ship, wing, or waypoint as an integer."
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
+
+	{ OP_GET_OBJECT_SPEED_Z, "get-object-speed-z\r\n"
+		"\tReturns the Z speed of a ship, wing, or waypoint as an integer."
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_X, "get-object-x\r\n"
@@ -25510,30 +25644,47 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tValue to be set." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
-		"\tProtects a ship from being attacked by any enemy ship.  Any ship"
+		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
 		"that is protected will not come under enemy fire.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ship(s) to protect." },
 
 	{ OP_UNPROTECT_SHIP, "Unprotect ship (Action operator)\r\n"
-		"\tUnprotects a ship from being attacked by any enemy ship.  Any ship"
-		"that is not protected can come under enemy fire.  This function is the opposite"
+		"\tUnprotects a ship from being attacked by any enemy ship.  Any ship "
+		"that is not protected can come under enemy fire.  This function is the opposite "
 		"of protect-ship.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to protect." },
+		"\tAll:\tName of ship(s) to unprotect." },
 
 	{ OP_BEAM_PROTECT_SHIP, "Beam Protect ship (Action operator)\r\n"
-		"\tProtects a ship from being attacked with beam weapon.  Any ship"
+		"\tProtects a ship from being attacked with beam weapon.  Any ship "
 		"that is beam protected will not come under enemy beam fire.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ship(s) to protect." },
 
 	{ OP_BEAM_UNPROTECT_SHIP, "Beam Unprotect ship (Action operator)\r\n"
-		"\tUnprotects a ship from being attacked with beam weapon.  Any ship"
-		"that is not beam protected can come under enemy beam fire.  This function is the opposite"
+		"\tUnprotects a ship from being attacked with beam weapon.  Any ship "
+		"that is not beam protected can come under enemy beam fire.  This function is the opposite "
 		"of beam-protect-ship.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\tName of ship(s) to protect." },
+		"\tAll:\tName of ship(s) to unprotect." },
+
+	// Goober5000
+	{ OP_TURRET_PROTECT_SHIP, "Turret Protect ship (Action operator)\r\n"
+		"\tProtects a ship from being attacked with a turret weapon of a given type.  Any ship "
+		"that is turret protected will not come under enemy fire from that type of turret, though it may come under fire by other turrets.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tType of turret (currently supported types are \"beam\", \"flak\", \"laser\", and \"missile\")\r\n"
+		"\tRest:\tName of ship(s) to protect." },
+
+	// Goober5000
+	{ OP_TURRET_UNPROTECT_SHIP, "Turret Unprotect ship (Action operator)\r\n"
+		"\tUnprotects a ship from being attacked with a turret weapon of a given type.  Any ship "
+		"that is not turret protected can come under enemy fire from that type of turret.  This function is the opposite "
+		"of turret-protect-ship.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tType of turret (currently supported types are \"beam\", \"flak\", \"laser\", and \"missile\")\r\n"
+		"\tRest:\tName of ship(s) to unprotect." },
 
 	{ OP_SEND_MESSAGE, "Send message (Action operator)\r\n"
 		"\tSends a message to the player.  Can be send by a ship, wing, or special "

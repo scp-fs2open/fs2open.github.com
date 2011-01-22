@@ -1589,6 +1589,12 @@ int CFred_mission_save::save_objects()
 			fout(" \"red-alert-carry\"");
 		if (objp->flags & OF_BEAM_PROTECTED)
 			fout(" \"beam-protect-ship\"");
+		if (objp->flags & OF_FLAK_PROTECTED)
+			fout(" \"flak-protect-ship\"");
+		if (objp->flags & OF_LASER_PROTECTED)
+			fout(" \"laser-protect-ship\"");
+		if (objp->flags & OF_MISSILE_PROTECTED)
+			fout(" \"missile-protect-ship\"");
 		if (Ships[i].ship_guardian_threshold != 0)
 			fout(" \"guardian\"");
 		if (objp->flags & OF_SPECIAL_WARPIN)

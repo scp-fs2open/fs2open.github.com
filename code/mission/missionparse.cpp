@@ -277,6 +277,9 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"no-dynamic",
 	"red-alert-carry",
 	"beam-protect-ship",
+	"flak-protect-ship",
+	"laser-protect-ship",
+	"missile-protect-ship",
 	"guardian",
 	"special-warp",
 	"vaporize",
@@ -2135,7 +2138,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY || ptr->system_info->flags & MSS_FLAG_TURRET_LOCKED)
 			{
 				// mark all turrets as locked
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -2365,6 +2368,15 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags & P_OF_BEAM_PROTECTED)
 		objp->flags |= OF_BEAM_PROTECTED;
+
+	if (parse_flags & P_OF_FLAK_PROTECTED)
+		objp->flags |= OF_FLAK_PROTECTED;
+
+	if (parse_flags & P_OF_LASER_PROTECTED)
+		objp->flags |= OF_LASER_PROTECTED;
+
+	if (parse_flags & P_OF_MISSILE_PROTECTED)
+		objp->flags |= OF_MISSILE_PROTECTED;
 
 	if (parse_flags & P_SF_GUARDIAN)
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
@@ -3081,7 +3093,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (!stricmp(p_objp->name, Player_start_shipname))
 	{
 		Player_start_pobject = *p_objp;
-		Player_start_pobject.flags |= P_SF_PLAYER_START_VALID;
 	}
 	
 
@@ -5343,7 +5354,7 @@ void post_process_mission()
 	// the player_start_shipname had better exist at this point!
 	Player_start_shipnum = ship_name_lookup( Player_start_shipname );
 	Assert ( Player_start_shipnum != -1 );
-	Assert ( Player_start_pobject.flags & P_SF_PLAYER_START_VALID );
+	Assert ( !stricmp(Player_start_pobject.name, Player_start_shipname) );
 
 	// Assign objnum, shipnum, etc. to the player structure
 	objnum = Ships[Player_start_shipnum].objnum;

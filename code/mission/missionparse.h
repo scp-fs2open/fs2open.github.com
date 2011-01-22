@@ -538,7 +538,7 @@ typedef struct p_object {
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	24
+#define MAX_PARSE_OBJECT_FLAGS	27
 
 #define P_SF_CARGO_KNOWN				(1<<0)
 #define P_SF_IGNORE_COUNT				(1<<1)
@@ -558,22 +558,22 @@ typedef struct p_object {
 #define P_AIF_NO_DYNAMIC				(1<<15)
 #define P_SF_RED_ALERT_STORE_STATUS		(1<<16)
 #define P_OF_BEAM_PROTECTED				(1<<17)
-#define P_SF_GUARDIAN					(1<<18)
-#define P_KNOSSOS_WARP_IN				(1<<19)
-#define P_SF_VAPORIZE					(1<<20)
-#define P_SF2_STEALTH					(1<<21)
-#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<22)
-#define P_SF2_DONT_COLLIDE_INVIS		(1<<23)
-
-// 24 and 25 are currently unused
+#define P_OF_FLAK_PROTECTED				(1<<18)
+#define P_OF_LASER_PROTECTED			(1<<19)
+#define P_OF_MISSILE_PROTECTED			(1<<20)
+#define P_SF_GUARDIAN					(1<<21)
+#define P_KNOSSOS_WARP_IN				(1<<22)
+#define P_SF_VAPORIZE					(1<<23)
+#define P_SF2_STEALTH					(1<<24)
+#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<25)
+#define P_SF2_DONT_COLLIDE_INVIS		(1<<26)
 
 // the following parse object flags are used internally by FreeSpace
-#define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
-#define P_SF_DOCK_LEADER			(1<<27)	// Goober5000 - a docked parse object that is the leader of its group
-#define P_SF_CANNOT_ARRIVE			(1<<28)	// used to indicate that this ship's arrival cue will never be true
-#define P_SF_WARP_BROKEN			(1<<29)	// warp engine should be broken for this ship
-#define P_SF_WARP_NEVER				(1<<30)	// warp drive is destroyed
-#define P_SF_PLAYER_START_VALID		(1<<31)	// this is a valid player start object
+#define P_SF_USE_UNIQUE_ORDERS		(1<<27)	// tells a newly created ship to use the default orders for that ship
+#define P_SF_DOCK_LEADER			(1<<28)	// Goober5000 - a docked parse object that is the leader of its group
+#define P_SF_CANNOT_ARRIVE			(1<<29)	// used to indicate that this ship's arrival cue will never be true
+#define P_SF_WARP_BROKEN			(1<<30)	// warp engine should be broken for this ship
+#define P_SF_WARP_NEVER				(1<<31)	// warp drive is destroyed
 
 // more parse flags! -- Goober5000
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
