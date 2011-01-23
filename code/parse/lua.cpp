@@ -6299,7 +6299,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(aip->target_signature != newh->sig)
+		if(aip->target_signature == newh->sig)
 		{
 			if(newh->IsValid())
 			{
