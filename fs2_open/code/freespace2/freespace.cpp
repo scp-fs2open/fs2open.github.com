@@ -3748,6 +3748,7 @@ camid game_render_frame_setup()
 					observer_get_eye( &eye_pos, &eye_orient, Viewer_obj );					
 					break;
 				default :
+					mprintf(("Invalid Value for Viewer_obj->type. Expected values are OBJ_SHIP (1) and OBJ_OBSERVER (12), we encountered %d. Please tell a coder.\n", Viewer_obj->type));
 					Int3();
 				}
 
