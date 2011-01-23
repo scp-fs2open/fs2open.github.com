@@ -385,7 +385,7 @@ char *ss_tooltip_handler(char *str)
 
 		gr_set_color_fast(&Color_bright_white);
 		gr_string(x, y, str2);
-		return NULL;
+		return str2;
 	}
 
 	return NULL;
@@ -1215,15 +1215,68 @@ void ship_select_blit_ship_info()
 	}
 	y_start += 10;
 
-	// blit the _short_ text description
-	/*
-	Assert(Multi_ts_ship_info_line_count < 3);
-	gr_set_color_fast(&Color_normal);
-	for(idx=0;idx<SHIP_SELECT_ship_info_line_count;idx++){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, SHIP_SELECT_ship_info_lines[idx]);
+	// blit the _short_ text description, if it exists
+	// split the text info up	
+	
+	if (sip->desc == NULL)
+		return;
+
+	gr_set_color_fast(header);
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Description",1571));
+	y_start += 10;
+
+	Assert(strlen(sip->desc));
+
+	int n_lines;
+	int n_chars[MAX_BRIEF_LINES];
+	char ship_desc[1000];
+	char *p_str[MAX_BRIEF_LINES];
+	char *token;
+	char Ship_select_ship_info_text[1500];
+	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
+	int Ship_select_ship_info_line_count;
+
+	// strip out newlines
+	memset(ship_desc,0,1000);
+	strcpy_s(ship_desc, sip->desc);
+	token = strtok(ship_desc,"\n");
+	if(token != NULL){
+		strcpy_s(Ship_select_ship_info_text, token);
+		while(token != NULL){
+			token = strtok(NULL,"\n");
+			if(token != NULL){
+				strcat_s(Ship_select_ship_info_text," ");
+				strcat_s(Ship_select_ship_info_text,token);
+			}
+		}
+	}
+	
+	if(strlen(Ship_select_ship_info_text) > 0){
+		// split the string into multiple lines
+		n_lines = split_str(Ship_select_ship_info_text, Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);	
+
+		// copy the split up lines into the text lines array
+		for (int idx = 0;idx<n_lines;idx++ ) {
+			Assert(n_chars[idx] < SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN);
+			strncpy(Ship_select_ship_info_lines[idx], p_str[idx], n_chars[idx]);
+			Ship_select_ship_info_lines[idx][n_chars[idx]] = 0;
+			drop_leading_white_space(Ship_select_ship_info_lines[idx]);		
+		}
+
+		// get the line count
+		Ship_select_ship_info_line_count = n_lines;
+	} else {
+		// set the line count to 
+		Ship_select_ship_info_line_count = 0;
+	}	
+	
+	Assert(Ship_select_ship_info_line_count < MAX_NUM_SHIP_DESC_LINES);
+	gr_set_color_fast(text);
+	for(int idx=0;idx<Ship_select_ship_info_line_count;idx++){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, Ship_select_ship_info_lines[idx]);
 		y_start += 10;
 	}
-	*/
+	
 }
 
 

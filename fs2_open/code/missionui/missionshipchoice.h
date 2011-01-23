@@ -42,6 +42,9 @@ struct p_object;
 
 #define NUM_SHIP_SELECT_REGIONS					(NUM_COMMON_REGIONS + 19)
 
+#define MAX_NUM_SHIP_DESC_LINES						10
+#define SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN			150
+
 extern int Ship_select_open;	// This game-wide global flag is set to 1 to indicate that the ship
 										// select screen has been opened and memory allocated.  This flag
 										// is needed so we can know if ship_select_close() needs to called if
