@@ -395,7 +395,6 @@ void VoiceActingManager::OnGenerateFileNames()
 
 void VoiceActingManager::OnGenerateScript()
 {
-	int i;
 	char pathname[256];
 
 	// stuff data to variables
@@ -422,7 +421,7 @@ void VoiceActingManager::OnGenerateScript()
 	{
 		fout("\n\nCommand Briefings\n-----------------\n\n");
 
-		for (i = 0; i < Cmd_briefs[0].num_stages; i++)
+		for (int i = 0; i < Cmd_briefs[0].num_stages; i++)
 		{
 			CString entry = m_script_entry_format;
 			entry.Replace("\r\n", "\n");
@@ -441,7 +440,7 @@ void VoiceActingManager::OnGenerateScript()
 	{
 		fout("\n\nBriefings\n---------\n\n");
 
-		for (i = 0; i < Briefings[0].num_stages; i++)
+		for (int i = 0; i < Briefings[0].num_stages; i++)
 		{
 			CString entry = m_script_entry_format;
 			entry.Replace("\r\n", "\n");
@@ -460,7 +459,7 @@ void VoiceActingManager::OnGenerateScript()
 	{
 		fout("\n\nDebriefings\n-----------\n\n");
 
-		for (i = 0; i < Debriefings[0].num_stages; i++)
+		for (int i = 0; i < Debriefings[0].num_stages; i++)
 		{
 			CString entry = m_script_entry_format;
 			entry.Replace("\r\n", "\n");
@@ -482,12 +481,12 @@ void VoiceActingManager::OnGenerateScript()
 		if (m_group_messages)
 		{
 			SCP_vector<int> message_indexes;
-			for (i = 0; i < Num_messages - Num_builtin_messages; i++)
+			for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
 				message_indexes.push_back(i + Num_builtin_messages);
 
 			group_message_indexes(message_indexes);
 
-			for (i = 0; i < message_indexes.size(); i++)
+			for (size_t i = 0; i < message_indexes.size(); i++)
 			{
 				MMessage *message = &Messages[message_indexes[i]];
 				export_one_message(message);
@@ -495,7 +494,7 @@ void VoiceActingManager::OnGenerateScript()
 		}
 		else
 		{
-			for (i = 0; i < Num_messages - Num_builtin_messages; i++)
+			for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
 			{
 				MMessage *message = &Messages[i + Num_builtin_messages];
 				export_one_message(message);
@@ -788,23 +787,22 @@ char *VoiceActingManager::get_message_sender(char *message)
 
 void VoiceActingManager::group_message_indexes(SCP_vector<int> &message_indexes)
 {
-	int i;
 #ifndef NDEBUG
-	int initial_size = message_indexes.size();
+	size_t initial_size = message_indexes.size();
 #endif
 
 	SCP_vector<int> temp_message_indexes = message_indexes;
 	message_indexes.clear();
 
 	// add all messages found in send-message-list or send-random-message node trees
-	for (i = 0; i < Num_mission_events; i++)
+	for (int i = 0; i < Num_mission_events; i++)
 	{
 		mission_event *event = &Mission_events[i];
 		group_message_indexes_in_tree(event->formula, temp_message_indexes, message_indexes);
 	}
 
 	// add remaining messages
-	for (i = 0; i < temp_message_indexes.size(); i++)
+	for (size_t i = 0; i < temp_message_indexes.size(); i++)
 		message_indexes.push_back(temp_message_indexes[i]);
 
 #ifndef NDEBUG
@@ -821,7 +819,7 @@ void VoiceActingManager::group_message_indexes(SCP_vector<int> &message_indexes)
 
 void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int> &source_list, SCP_vector<int> &destination_list)
 {
-	int i, op, n;
+	int op, n;
 
 	if (node < 0)
 		return;
@@ -841,7 +839,7 @@ void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int>
 			char *message_name = Sexp_nodes[CDDR(n)].text;
 
 			// check source messages
-			for (i = 0; i < source_list.size(); i++)
+			for (size_t i = 0; i < source_list.size(); i++)
 			{
 				if (!strcmp(message_name, Messages[source_list[i]].name))
 				{
@@ -866,7 +864,7 @@ void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int>
 			char *message_name = Sexp_nodes[n].text;
 
 			// check source messages
-			for (i = 0; i < source_list.size(); i++)
+			for (size_t i = 0; i < source_list.size(); i++)
 			{
 				if (!strcmp(message_name, Messages[source_list[i]].name))
 				{
