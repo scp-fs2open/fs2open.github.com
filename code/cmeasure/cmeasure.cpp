@@ -55,7 +55,7 @@ void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
 void cmeasure_select_next(ship *shipp)
 {
 	Assert(shipp != NULL);
-	size_t i, new_index;
+	int i, new_index;
 
 	for (i = 1; i < Num_weapon_types; i++)
 	{
