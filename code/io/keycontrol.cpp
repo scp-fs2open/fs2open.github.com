@@ -2646,43 +2646,57 @@ int button_function(int n)
 
 		// increase weapon recharge rate
 		case INCREASE_WEAPON:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(INCREASE_WEAPON);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(INCREASE_WEAPON);
+			}
 			break;
 
 		// decrease weapon recharge rate
 		case DECREASE_WEAPON:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(DECREASE_WEAPON);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(DECREASE_WEAPON);
+			}
 			break;
 
 		// increase shield recharge rate
 		case INCREASE_SHIELD:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(INCREASE_SHIELD);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(INCREASE_SHIELD);
+			}
 			break;
 
 		// decrease shield recharge rate
 		case DECREASE_SHIELD:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(DECREASE_SHIELD);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(DECREASE_SHIELD);
+			}
 			break;
 
 		// increase energy to engines
 		case INCREASE_ENGINE:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(INCREASE_ENGINE);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(INCREASE_ENGINE);
+			}
 			break;
 
 		// decrease energy to engines
 		case DECREASE_ENGINE:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(DECREASE_ENGINE);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(DECREASE_ENGINE);
+			}
 			break;
 
 		case ETS_EQUALIZE:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(ETS_EQUALIZE);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(ETS_EQUALIZE);
+			}
 			break;
 
 		// equalize shield energy to all quadrants

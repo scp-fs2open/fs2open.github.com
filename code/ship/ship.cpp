@@ -295,6 +295,7 @@ flag_def_list Ship_flags[] = {
 	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
 	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
 	{ "no pain flash",				SIF2_NO_PAIN_FLASH,			1 },
+	{ "no ets",						SIF2_NO_ETS,				1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -4452,6 +4453,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->flags2 |= SF2_STEALTH;
 	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
 		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+
+	if (sip->flags2 & SIF2_NO_ETS)
+		shipp->flags2 |= SF2_NO_ETS;
 
 	shipp->wash_killed = 0;
 	shipp->time_cargo_revealed = 0;
@@ -8930,6 +8934,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->flags2 |= SF2_DONT_COLLIDE_INVIS;
 	else if (sip_orig->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)	// changing FROM a don't-collide-invisible ship class
 		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
+
+	if (sip->flags2 & SIF2_NO_ETS)
+		sp->flags2 |= SF2_NO_ETS;
+	else if (sip_orig->flags2 & SIF2_NO_ETS)
+		sp->flags2 &= ~SF2_NO_ETS;
 
 
 	// Chief1983: Make sure that when changing to a new ship with secondaries, you switch to bank 0.  They still won't 

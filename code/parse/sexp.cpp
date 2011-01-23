@@ -503,6 +503,7 @@ sexp_oper Operators[] = {
 	{ "ship-set-damage-type",		OP_SHIP_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
 	{ "ship-set-shockwave-damage-type",		OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE,		3, INT_MAX }, // FUBAR
 	{ "field-set-damage-type",		OP_FIELD_SET_DAMAGE_TYPE,		2,2 }, // FUBAR
+	{ "allow-ets",				OP_ALLOW_ETS,				2, INT_MAX}, // The E
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -14677,6 +14678,30 @@ void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 	}
 }
 
+void sexp_allow_ets(int n) 
+{
+	bool activate = (is_sexp_true(n) != 0);
+
+	CDR(n);
+
+	for ( ; n != -1; n = CDR(n)) 
+	{
+		int sindex = ship_name_lookup(CTEXT(n), 1);
+
+		if (sindex >= 0)
+		{
+			ship* shipp = &Ships[sindex];
+
+			if (activate) {
+				shipp->flags2 &= ~SF2_NO_ETS;
+			} else {
+				shipp->flags2 |= SF2_NO_ETS;
+			}
+		}
+	}
+
+}
+
 //-Bobboau
 void sexp_activate_deactivate_glow_maps(int n, int activate)
 {
@@ -20658,6 +20683,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_ALLOW_ETS:
+				sexp_allow_ets(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_FORCE_GLIDE:
 				sexp_val = SEXP_TRUE;
 				sexp_force_glide(node);
@@ -21511,6 +21541,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 		case OP_STRING_CONCATENATE:
 		case OP_INT_TO_STRING:
+		case OP_ALLOW_ETS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -23247,6 +23278,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_HUD_ELEMENT;
 			}
 
+		case OP_ALLOW_ETS:
+			if ( argnum == 0) {
+				return OPF_BOOL;
+			} else {
+				return OPF_SHIP;
+			}
 		case OP_IS_FACING:
 			if (argnum < 2)
 				return OPF_SHIP;
@@ -24517,6 +24554,7 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_ALLOWED:
 		case OP_SET_ARMOR_TYPE:
 		case OP_FORCE_GLIDE:
+		case OP_ALLOW_ETS:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -27861,6 +27899,13 @@ sexp_help_struct Sexp_help[] = {
 		"\tEvaluates script to return a number"
 		"Takes 1 argument...\r\n"
 		"\t1:\tScript\r\n"
+	},
+
+	{OP_ALLOW_ETS, "allow-ets\r\n"
+		"\tSwitches a ships' ETS system on or off\r\n\r\n"
+		"Takes at least 2 Arguments...\r\n"
+		"\t1:\tTrue to switch ETS on, false to disable it\r\n"
+		"\t2+:\tList of ships this sexp applies to\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
