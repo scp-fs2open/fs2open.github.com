@@ -228,7 +228,7 @@ void bg_bitmap_dlg::create()
 	// setup lightning storm names
 	((CComboBox*)GetDlgItem(IDC_NEB2_LIGHTNING))->ResetContent();
 	((CComboBox*)GetDlgItem(IDC_NEB2_LIGHTNING))->AddString(CString("none"));
-	for(size_t j=0; j<Num_storm_types; j++){
+	for(size_t j=0; j<Storm_types.size(); j++){
 		((CComboBox*)GetDlgItem(IDC_NEB2_LIGHTNING))->AddString(CString(Storm_types[j].name));
 	}
 	((CComboBox*)GetDlgItem(IDC_NEB2_LIGHTNING))->SelectString(-1, Mission_parse_storm_name);
