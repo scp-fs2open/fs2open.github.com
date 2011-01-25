@@ -202,7 +202,7 @@ void parse_hud_gauges_tbl(char *filename)
 		stuff_float(&Hud_speed_multiplier);
 
 		if (Hud_speed_multiplier <= 0.0f) {
-			Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
+			Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_speed_multiplier);
 			Hud_speed_multiplier = 1.0f;
 		}
 	} else {
