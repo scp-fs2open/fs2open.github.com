@@ -2250,8 +2250,7 @@ void shipfx_large_blowup_level_init()
 	}
 }
 
-// Returns 0 if couldn't init
-int shipfx_large_blowup_init(ship *shipp)
+void shipfx_large_blowup_init(ship *shipp)
 {
 	int i;
 
@@ -2261,8 +2260,6 @@ int shipfx_large_blowup_init(ship *shipp)
 	shipp->large_ship_blowup_index = i;
 
 	split_ship_init(shipp, &Split_ships[i] );
-	
-	return 1;
 }
 
 void shipfx_debris_limit_speed(debris *db, ship *shipp)

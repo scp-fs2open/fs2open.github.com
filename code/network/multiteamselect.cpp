@@ -1591,14 +1591,14 @@ void multi_ts_blit_ship_info()
 	y_start += 10;
 
 	// blit the _short_ text description
-	/*
+	
 	Assert(Multi_ts_ship_info_line_count < 3);
 	gr_set_color_fast(&Color_normal);
-	for(idx=0;idx<Multi_ts_ship_info_line_count;idx++){
+	for(int idx=0;idx<Multi_ts_ship_info_line_count;idx++){
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, Multi_ts_ship_info_lines[idx]);
 		y_start += 10;
 	}
-	*/
+	
 }
 
 
@@ -2591,13 +2591,12 @@ int multi_ts_slot_bmap_num(int slot_index)
 // select the given slot and setup any information, etc
 void multi_ts_select_ship()
 {
-	/*
-	int n_lines, idx;
+	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
 	char ship_desc[1000];
 	char *p_str[MAX_BRIEF_LINES];
 	char *token;
-	*/
+	
 	
 	// blast all current text
 	memset(Multi_ts_ship_info_lines,0,MULTI_TS_SHIP_INFO_MAX_TEXT);
@@ -2624,7 +2623,7 @@ void multi_ts_select_ship()
 	}
 	
 	// split the text info up	
-	/*
+	
 	Assert(Multi_ts_select_ship_class >= 0);
 	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
 
@@ -2648,7 +2647,7 @@ void multi_ts_select_ship()
 		n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
 
 		// copy the split up lines into the text lines array
-		for (idx=0;idx<n_lines;idx++ ) {
+		for (int idx = 0;idx<n_lines;idx++ ) {
 			Assert(n_chars[idx] < MULTI_TS_SHIP_INFO_MAX_LINE_LEN);
 			strncpy(Multi_ts_ship_info_lines[idx], p_str[idx], n_chars[idx]);
 			Multi_ts_ship_info_lines[idx][n_chars[idx]] = 0;
@@ -2661,7 +2660,6 @@ void multi_ts_select_ship()
 		// set the line count to 
 		Multi_ts_ship_info_line_count = 0;
 	}	
-	*/
 }
 
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)
