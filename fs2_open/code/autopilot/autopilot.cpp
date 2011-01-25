@@ -127,7 +127,7 @@ vec3d *NavPoint::GetPosition()
 	}
 }
 
-char* NavPoint::GetInteralName()
+char* NavPoint::GetInternalName()
 {
 	char *NavName;
 	char strtmp[33];
