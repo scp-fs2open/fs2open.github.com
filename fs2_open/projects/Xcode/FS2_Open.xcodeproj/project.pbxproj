@@ -653,7 +653,6 @@
 		606034471134822A0032BB9A /* dscap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954F908C3D6A0003B1351 /* dscap.cpp */; };
 		606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 606CBAE1126A1BFF007BE418 /* fsmemory.cpp */; };
 		60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */ = {isa = PBXBuildFile; fileRef = 60B56A32124BBFD5005AF5A9 /* fsmemory.h */; };
-		60C1FF00126E63B5005D5132 /* radardradis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60C1FEFE126E63B5005D5132 /* radardradis.cpp */; };
 		60C1FF01126E63B5005D5132 /* radardradis.h in Headers */ = {isa = PBXBuildFile; fileRef = 60C1FEFF126E63B5005D5132 /* radardradis.h */; };
 		60FAF4E2113431A100CE910F /* acm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4DF113431A100CE910F /* acm.cpp */; };
 		60FAF4E3113431A100CE910F /* openal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E0113431A100CE910F /* openal.cpp */; };
@@ -726,6 +725,7 @@
 		F0B73A9410FA065F005E1A69 /* pngutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0B73A9010FA065F005E1A69 /* pngutils.cpp */; };
 		F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */ = {isa = PBXBuildFile; fileRef = F0B73A9110FA065F005E1A69 /* pngutils.h */; };
 		F0E986A311C66F5700CF5169 /* bitarray.h in Headers */ = {isa = PBXBuildFile; fileRef = F0E986A211C66F5700CF5169 /* bitarray.h */; };
+		F0FE06C912EF01C200201F34 /* radardradis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60C1FEFE126E63B5005D5132 /* radardradis.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -3926,7 +3926,6 @@
 				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				3459596B08C3D8CB003B1351 /* freespace.cpp in Sources */,
 				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
-				60C1FF00126E63B5005D5132 /* radardradis.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3934,6 +3933,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F0FE06C912EF01C200201F34 /* radardradis.cpp in Sources */,
 				F093F87F10FDC3010042E30F /* trackirglobal.cpp in Sources */,
 				F093F87D10FDC2EF0042E30F /* levelpaging.cpp in Sources */,
 				F093F87E10FDC2EF0042E30F /* multi_sexp.cpp in Sources */,
