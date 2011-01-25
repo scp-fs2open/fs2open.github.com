@@ -83,7 +83,6 @@
 		3468A8DF0991BDE200123C87 /* lua.h in Headers */ = {isa = PBXBuildFile; fileRef = 3468A8DB0991BDE200123C87 /* lua.h */; };
 		3468A8E00991BDE200123C87 /* scripting.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3468A8DC0991BDE200123C87 /* scripting.cpp */; };
 		3468A8E10991BDE200123C87 /* scripting.h in Headers */ = {isa = PBXBuildFile; fileRef = 3468A8DD0991BDE200123C87 /* scripting.h */; };
-		3468A9120991CA0800123C87 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 34595A7408C3D8CB003B1351 /* Info.plist */; };
 		346C32FD09BD4BBC0022D46E /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 346C32FB09BD4BBC0022D46E /* Ogg.framework */; };
 		346C32FE09BD4BBC0022D46E /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 346C32FC09BD4BBC0022D46E /* Vorbis.framework */; };
 		346C330309BD4C150022D46E /* Ogg.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 346C32FB09BD4BBC0022D46E /* Ogg.framework */; };
@@ -3876,7 +3875,6 @@
 			files = (
 				3459594908C3D8CB003B1351 /* InfoPlist.strings in Resources */,
 				34AE377908DE33320071A09C /* FS2_Open.icns in Resources */,
-				3468A9120991CA0800123C87 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
