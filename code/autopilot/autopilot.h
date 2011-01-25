@@ -34,7 +34,7 @@ struct NavPoint
 	int waypoint_num; //only used when flags & NP_WAYPOINT
 
 	vec3d *GetPosition();
-	char* GetInteralName();
+	char* GetInternalName();
 };
 
 
