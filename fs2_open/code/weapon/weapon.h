@@ -467,6 +467,10 @@ typedef struct weapon_info {
 	int				targeting_priorities[32];
 	int				num_targeting_priorities;
 
+	// the optional pattern of weapons that this weapon will fire
+	SCP_vector<int> weapon_substitution_pattern; //weapon_indexs
+	SCP_vector<SCP_string> weapon_substitution_pattern_names; // weapon names so that we can generate the indexs after sort
+
 } weapon_info;
 
 // Data structure to track the active missiles
