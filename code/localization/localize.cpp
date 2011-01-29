@@ -534,6 +534,9 @@ void lcl_ext_close()
 
 void lcl_replace_stuff(char *text, unsigned int max_len)
 {
+	if (Fred_running)
+		return;
+
 	Assert(text);	// Goober5000
 
 	// delegate to SCP_string for the replacements
@@ -541,7 +544,8 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 	lcl_replace_stuff(temp_text);
 
 	// fill up the original string
-	strcpy(text, temp_text.substr(0, max_len).c_str());
+	int len = temp_text.copy(text, max_len);
+	text[len] = 0;
 }
 
 // Goober5000 - replace stuff in the string, e.g. $callsign with player's callsign
@@ -564,6 +568,9 @@ void lcl_replace_stuff(SCP_string &text)
 
 void lcl_fred_replace_stuff(char *text, unsigned int max_len)
 {
+	if (!Fred_running)
+		return;
+
 	Assert(text);	// Goober5000
 
 	// delegate to SCP_string for the replacements
@@ -571,7 +578,8 @@ void lcl_fred_replace_stuff(char *text, unsigned int max_len)
 	lcl_fred_replace_stuff(temp_text);
 
 	// fill up the original string
-	strcpy(text, temp_text.substr(0, max_len).c_str());
+	int len = temp_text.copy(text, max_len);
+	text[len] = 0;
 }
 
 void lcl_fred_replace_stuff(SCP_string &text)
