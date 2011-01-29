@@ -23971,7 +23971,10 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 		// we want to use the same variable substitution that's in messages etc.
 		SCP_string temp_text = text;
 		sexp_replace_variable_names_with_values(temp_text);
-		strcpy_s(Sexp_variables[index].text, temp_text.substr(0, TOKEN_LENGTH).c_str());
+
+		// copy to original buffer
+		int len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH);
+		text[len] = 0;
 	}
 	else
 	{
