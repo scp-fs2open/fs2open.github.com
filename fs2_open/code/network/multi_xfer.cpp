@@ -13,7 +13,7 @@
 #include "network/multi_xfer.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "network/psnet.h"
+#include "network/psnet2.h"
 #include "io/timer.h"
 #include "cfile/cfile.h"
 

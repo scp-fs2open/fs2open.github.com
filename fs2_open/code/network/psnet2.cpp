@@ -34,7 +34,7 @@
 #include <limits.h>
 
 #include "globalincs/pstypes.h"
-#include "network/psnet.h"
+#include "network/psnet2.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multilag.h"
@@ -43,11 +43,6 @@
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
 #include "cmdline/cmdline.h"
-
-#ifdef PSNET2
-
-#include "network/psnet2.h"
-
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 DEFINES/VARS
@@ -500,10 +495,6 @@ void psnet_init( int protocol, int port_num )
 	char *internet_connection;
 	WSADATA wsa_data; 		
 	Ipx_active = 0;
-#endif
-
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	return;
 #endif
 
 	// GAME PORT INITIALIZATION STUFF
@@ -2019,47 +2010,8 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 				} else ml_string("Received something that isn't an ACK in nw_ConnectToServer().");
 			} else ml_string("Received 0 bytes from recvfrom() in nw_ConnectToServer().");
 		}
-		/*
-		if((psnet_get_time()-time_sent_req)>2)
-		{
-			ml_string("Resending connect request.");
-			int ret = SENDTO(typeless_sock,(char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-			if(ret != SOCKET_ERROR){
-				time_sent_req = psnet_get_time();
-			} else {
-				ml_printf("Error sending connection request! -- %d",WSAGetLastError() );
-			}
-		}
-		*/
-
 	} while(fl_abs((psnet_get_time() - first_sent_req)) < RELIABLE_CONNECT_TIME);	
 }
-
-// returns the ip address of this computer
-/*
-int psnet_rel_get_ip()
-{
-	char local[255];
-	LPHOSTENT hostent;
-	SOCKADDR_IN local_address;	
-	int ret;
-	
-	// Get the local host name
-	memset(&local_address, 0, sizeof(local_address));
-	ret = gethostname(local, 255 );
-	if (ret != SOCKET_ERROR ){
-		// Resolve host name for local address
-		hostent = gethostbyname((LPSTR)local);
-		if ( hostent ){
-			local_address.sin_addr.s_addr = *((u_long FAR *)(hostent->h_addr));
-		}
-	} else {
-		ml_string("SOCKET_ERROR in psnet_rel_get_ip()!");
-	}
-	ml_printf(%s:%d", inet_ntoa(rcvaddr->sin_addr), htons(rcvaddr->sin_port)
-	return local_address.sin_addr.s_addr;
-}
-*/
 
 // returns the ip address of this computer
 int psnet_get_ip()
@@ -2088,42 +2040,6 @@ int psnet_get_ip()
 // initialize reliable sockets
 int psnet_init_rel_tcp(int port, int should_listen)
 {
-	/*
-	SOCKADDR_IN sockaddr;		
-
-	sockaddr.sin_port = htons((ushort)port);
-	sockaddr.sin_family = AF_INET; 
-	unsigned int my_ip;
-	ml_string("Setting up reliable sockets.");
-
-	my_ip = psnet_get_ip();
-
-	memcpy(&sockaddr.sin_addr.s_addr, &my_ip, sizeof(uint));	
-			
-	Reliable_UDP_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP );
-	if(INVALID_SOCKET == Reliable_UDP_socket){
-		ml_printf("Unable to create reliable UDP socket -- %d", WSAGetLastError() );
-		
-		return 0;
-	} else if(bind(Reliable_UDP_socket,(SOCKADDR *)&sockaddr,sizeof(SOCKADDR))!=0){
-		ml_printf("Unable to bind reliable socket -- %d", WSAGetLastError() );
-		
-		return 0;
-	}	
-	
-	// make any reliable sockets which we create that aren't listening non-blocking sockets
-	int error;
-	unsigned long arg;
-
-	arg = TRUE;
-	error = ioctlsocket( Reliable_UDP_socket, FIONBIO, &arg );
-	if ( error == SOCKET_ERROR ) {
-		ml_printf("Unable to make reliable UDP socket non-blocking -- %d", WSAGetLastError() );
-		
-		return 0;
-	}
-	*/	
-
 	// success
 	return 1;
 }
@@ -2131,37 +2047,6 @@ int psnet_init_rel_tcp(int port, int should_listen)
 // initialize reliable sockets
 int psnet_init_rel_ipx(int port, int should_listen)
 {	
-	/*
-	SOCKADDR_IPX ipx_addr;		
-
-	memset(&ipx_addr, 0, sizeof(SOCKADDR_IPX));
-	ipx_addr.sa_family = AF_IPX;
-	ipx_addr.sa_socket = htons((ushort)port);
-				
-	Reliable_IPX_socket = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
-	if(INVALID_SOCKET == Reliable_IPX_socket){
-		ml_printf("Unable to create reliable IPX socket -- %d", WSAGetLastError() );
-		
-		return 0;
-	} else if(bind(Reliable_IPX_socket,(SOCKADDR *)&ipx_addr,sizeof(SOCKADDR))!=0){
-		ml_printf("Unable to bind reliable IPX socket -- %d", WSAGetLastError() );
-		
-		return 0;
-	}	
-	
-	// make any reliable sockets which we create that aren't listening non-blocking sockets
-	int error;
-	unsigned long arg;
-
-	arg = TRUE;
-	error = ioctlsocket( Reliable_IPX_socket, FIONBIO, &arg );
-	if ( error == SOCKET_ERROR ) {
-		ml_printf("Unable to make reliable IPX socket non-blocking -- %d", WSAGetLastError() );
-		
-		return 0;
-	}
-	*/	
-
 	// success
 	return 1;
 }
@@ -2343,8 +2228,7 @@ int psnet_is_valid_numeric_ip(char *ip)
 	return 1;
 }
 
-
-#ifdef _WIN32
+#ifdef _WIN32 // Dial-Up Networking
 // function called from high level FreeSpace code to determine the status of the networking
 // code returns one of a handful of macros
 
@@ -2458,98 +2342,7 @@ unsigned int psnet_ras_status()
 	//The ip of the RAS connection
 	return rasip;
 }
- 
-// functions to get the status of a RAS connection
-/*
-void psnet_ras_status()
-{
-	int rval;
-	unsigned long size, num_connections, i;
-	RASCONN rasbuffer[25];
-	HINSTANCE ras_handle;
-
-	Ras_connected = 0;
-
-	// first, call a LoadLibrary to load the RAS api
-	ras_handle = LoadLibrary( NOX("rasapi32.dll") );
-	if ( ras_handle == NULL ) {
-		return;
-	}
-
-	pRasEnumConnections = (DWORD (__stdcall *)(LPRASCONN, LPDWORD, LPDWORD))GetProcAddress(ras_handle, NOX("RasEnumConnectionsA"));
-	if (!pRasEnumConnections)	{
-		FreeLibrary( ras_handle );
-		return;
-	}
-	pRasGetConnectStatus = (DWORD (__stdcall *)(HRASCONN, LPRASCONNSTATUS))GetProcAddress(ras_handle, NOX("RasGetConnectStatusA"));
-	if (!pRasGetConnectStatus)	{
-		FreeLibrary( ras_handle );
-		return;
-	}
-	pRasGetProjectionInfo = (DWORD (__stdcall *)(HRASCONN, RASPROJECTION, LPVOID, LPDWORD))GetProcAddress(ras_handle, NOX("RasGetProjectionInfoA"));
-	if (!pRasGetProjectionInfo)	{
-		FreeLibrary( ras_handle );
-		return;
-	}
-
-	size = sizeof(rasbuffer);
-	rasbuffer[0].dwSize = sizeof(RASCONN);
-
-	rval = pRasEnumConnections( rasbuffer, &size, &num_connections );
-	if ( rval ) {
-		FreeLibrary( ras_handle );
-		return;
-	}
-
-	// JAS: My computer gets to this point, but I have no RAS connections,
-	// so just exit
-	if ( num_connections < 1 )	{
-		ml_string("Found no connections" ); 
-		FreeLibrary( ras_handle );
-		return;
-	}
-
-	ml_printf("Found %d connections", num_connections);
-
-	for (i = 0; i < num_connections; i++ ) {
-		RASCONNSTATUS status;
-		RASPPPIP projection;
-		unsigned long size;
-
-		ml_printf("Connection %d:", i);
-		ml_printf("Entry Name: %s", rasbuffer[i].szEntryName);
-		ml_printf("Device Type: %s", rasbuffer[i].szDeviceType);
-		ml_printf("Device Name: %s", rasbuffer[i].szDeviceName);
-
-		// get the connection status
-		status.dwSize = sizeof(RASCONNSTATUS);
-		rval = pRasGetConnectStatus(rasbuffer[i].hrasconn, &status);
-		if ( rval != 0 ) {
-			FreeLibrary( ras_handle );
-			return;
-		}
-
-		ml_printf("\tStatus: %s", (status.rasconnstate==RASCS_Connected)?"Connected":"Not Connected");
-
-		// get the projection informatiom
-		size = sizeof(projection);
-		projection.dwSize = size;
-		rval = pRasGetProjectionInfo(rasbuffer[i].hrasconn, RASP_PppIp, &projection, &size );
-		if ( rval != 0 ) {
-			FreeLibrary( ras_handle );
-			return;
-		}
-
-		ml_printf("IP Address: %s", projection.szIpAddress));
-	}
-
-	Ras_connected = 1;
-
-	FreeLibrary( ras_handle );
-}
-*/
-#endif  // ifdef _WIN32
-
+#endif // Dial-Up Networking
 
 // set some options on a socket
 void psnet_socket_options( SOCKET sock )
@@ -2577,7 +2370,7 @@ void psnet_socket_options( SOCKET sock )
 	// set the current size of the receive buffer
 	cursizesize = sizeof(int);
 	getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&cursize, &cursizesize);
-   setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&bufsize, sizeof(bufsize));
+	setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&bufsize, sizeof(bufsize));
 	getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (LPSTR)&cursize, &cursizesize);
 	ml_printf("Receive buffer set to %d", cursize);
 
@@ -2679,5 +2472,3 @@ void psnet_mark_received(PSNET_SOCKET_RELIABLE socket)
 	// mark it
 	Reliable_sockets[socket].last_packet_received = psnet_get_time();
 }
-
-#endif	// #ifdef PSNET2

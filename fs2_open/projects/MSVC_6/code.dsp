@@ -1677,14 +1677,6 @@ SOURCE=..\..\code\Network\multi_observer.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Network\multi_oo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_oo.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Network\multi_options.cpp
 # End Source File
 # Begin Source File
@@ -1826,14 +1818,6 @@ SOURCE=..\..\code\Network\MultiUtil.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Network\MultiUtil.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\PsNet.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\PsNet.h
 # End Source File
 # Begin Source File
 

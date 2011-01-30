@@ -14,7 +14,7 @@
 #include "osapi/osregistry.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "freespace2/freespace.h"
 #include "network/stand_gui.h"
 #include "network/multiutil.h"

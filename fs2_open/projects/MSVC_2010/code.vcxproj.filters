@@ -945,9 +945,6 @@
     <ClCompile Include="..\..\code\network\multi_observer.cpp">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\network\multi_oo.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\network\multi_options.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -1000,9 +997,6 @@
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\network\multiutil.cpp">
-      <Filter>Network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\network\psnet.cpp">
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\network\psnet2.cpp">
@@ -1742,9 +1736,6 @@
     <ClInclude Include="..\..\code\network\multi_observer.h">
       <Filter>Network</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\network\multi_oo.h">
-      <Filter>Network</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\code\network\multi_options.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -1797,9 +1788,6 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\network\multiutil.h">
-      <Filter>Network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\network\psnet.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\network\psnet2.h">

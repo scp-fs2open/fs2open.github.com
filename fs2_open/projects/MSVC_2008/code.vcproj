@@ -3317,14 +3317,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\network\multi_oo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\network\multi_oo.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\network\multi_options.cpp"
 				>
 			</File>
@@ -3466,14 +3458,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\network\multiutil.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\network\psnet.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\network\psnet.h"
 				>
 			</File>
 			<File

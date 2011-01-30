@@ -8,13 +8,15 @@
 */
 
 
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "globalincs/globals.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
+#include "io/key.h"
 #include "globalincs/linklist.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "network/multi_options.h"
 #include "network/multi_rate.h"
 #include "network/multi.h"
 #include "object/object.h"
