@@ -405,8 +405,6 @@
 		34C71BF508C41B9700459F5B /* multi_obj.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459546508C3D6A0003B1351 /* multi_obj.h */; };
 		34C71BF608C41B9700459F5B /* multi_observer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459546608C3D6A0003B1351 /* multi_observer.cpp */; };
 		34C71BF708C41B9800459F5B /* multi_observer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459546708C3D6A0003B1351 /* multi_observer.h */; };
-		34C71BF808C41B9800459F5B /* multi_oo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459546808C3D6A0003B1351 /* multi_oo.cpp */; };
-		34C71BF908C41B9A00459F5B /* multi_oo.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459546908C3D6A0003B1351 /* multi_oo.h */; };
 		34C71BFA08C41B9A00459F5B /* multi_options.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459546A08C3D6A0003B1351 /* multi_options.cpp */; };
 		34C71BFB08C41B9B00459F5B /* multi_options.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459546B08C3D6A0003B1351 /* multi_options.h */; };
 		34C71BFC08C41B9B00459F5B /* multi_pause.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459546C08C3D6A0003B1351 /* multi_pause.cpp */; };
@@ -436,8 +434,6 @@
 		34C71C1508C41BB500459F5B /* multiui.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459548708C3D6A0003B1351 /* multiui.h */; };
 		34C71C1608C41BB600459F5B /* multiutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459548808C3D6A0003B1351 /* multiutil.cpp */; };
 		34C71C1708C41BB600459F5B /* multiutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459548908C3D6A0003B1351 /* multiutil.h */; };
-		34C71C1808C41BB700459F5B /* psnet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459548A08C3D6A0003B1351 /* psnet.cpp */; };
-		34C71C1908C41BBB00459F5B /* psnet.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459548B08C3D6A0003B1351 /* psnet.h */; };
 		34C71C1A08C41BBB00459F5B /* psnet2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459548C08C3D6A0003B1351 /* psnet2.cpp */; };
 		34C71C1B08C41BBC00459F5B /* psnet2.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459548D08C3D6A0003B1351 /* psnet2.h */; };
 		34C71C1C08C41BBD00459F5B /* stand_gui-unix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459548E08C3D6A0003B1351 /* stand_gui-unix.cpp */; };
@@ -1242,8 +1238,6 @@
 		3459546508C3D6A0003B1351 /* multi_obj.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = multi_obj.h; sourceTree = "<group>"; };
 		3459546608C3D6A0003B1351 /* multi_observer.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = multi_observer.cpp; sourceTree = "<group>"; };
 		3459546708C3D6A0003B1351 /* multi_observer.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = multi_observer.h; sourceTree = "<group>"; };
-		3459546808C3D6A0003B1351 /* multi_oo.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = multi_oo.cpp; sourceTree = "<group>"; };
-		3459546908C3D6A0003B1351 /* multi_oo.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = multi_oo.h; sourceTree = "<group>"; };
 		3459546A08C3D6A0003B1351 /* multi_options.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = multi_options.cpp; sourceTree = "<group>"; };
 		3459546B08C3D6A0003B1351 /* multi_options.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = multi_options.h; sourceTree = "<group>"; };
 		3459546C08C3D6A0003B1351 /* multi_pause.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = multi_pause.cpp; sourceTree = "<group>"; };
@@ -1276,8 +1270,6 @@
 		3459548708C3D6A0003B1351 /* multiui.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = multiui.h; sourceTree = "<group>"; };
 		3459548808C3D6A0003B1351 /* multiutil.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = multiutil.cpp; sourceTree = "<group>"; };
 		3459548908C3D6A0003B1351 /* multiutil.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = multiutil.h; sourceTree = "<group>"; };
-		3459548A08C3D6A0003B1351 /* psnet.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = psnet.cpp; sourceTree = "<group>"; };
-		3459548B08C3D6A0003B1351 /* psnet.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = psnet.h; sourceTree = "<group>"; };
 		3459548C08C3D6A0003B1351 /* psnet2.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = psnet2.cpp; sourceTree = "<group>"; };
 		3459548D08C3D6A0003B1351 /* psnet2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = psnet2.h; sourceTree = "<group>"; };
 		3459548E08C3D6A0003B1351 /* stand_gui-unix.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "stand_gui-unix.cpp"; sourceTree = "<group>"; };
@@ -2587,8 +2579,6 @@
 				3459546508C3D6A0003B1351 /* multi_obj.h */,
 				3459546608C3D6A0003B1351 /* multi_observer.cpp */,
 				3459546708C3D6A0003B1351 /* multi_observer.h */,
-				3459546808C3D6A0003B1351 /* multi_oo.cpp */,
-				3459546908C3D6A0003B1351 /* multi_oo.h */,
 				3459546A08C3D6A0003B1351 /* multi_options.cpp */,
 				3459546B08C3D6A0003B1351 /* multi_options.h */,
 				3459546C08C3D6A0003B1351 /* multi_pause.cpp */,
@@ -2623,8 +2613,6 @@
 				3459548708C3D6A0003B1351 /* multiui.h */,
 				3459548808C3D6A0003B1351 /* multiutil.cpp */,
 				3459548908C3D6A0003B1351 /* multiutil.h */,
-				3459548A08C3D6A0003B1351 /* psnet.cpp */,
-				3459548B08C3D6A0003B1351 /* psnet.h */,
 				3459548C08C3D6A0003B1351 /* psnet2.cpp */,
 				3459548D08C3D6A0003B1351 /* psnet2.h */,
 				3459548E08C3D6A0003B1351 /* stand_gui-unix.cpp */,
@@ -3429,7 +3417,6 @@
 				34C71BF308C41B9500459F5B /* multi_log.h in Headers */,
 				34C71BF508C41B9700459F5B /* multi_obj.h in Headers */,
 				34C71BF708C41B9800459F5B /* multi_observer.h in Headers */,
-				34C71BF908C41B9A00459F5B /* multi_oo.h in Headers */,
 				34C71BFB08C41B9B00459F5B /* multi_options.h in Headers */,
 				34C71BFD08C41B9C00459F5B /* multi_pause.h in Headers */,
 				34C71BFF08C41B9D00459F5B /* multi_pinfo.h in Headers */,
@@ -3445,7 +3432,6 @@
 				34C71C1308C41BB400459F5B /* multiteamselect.h in Headers */,
 				34C71C1508C41BB500459F5B /* multiui.h in Headers */,
 				34C71C1708C41BB600459F5B /* multiutil.h in Headers */,
-				34C71C1908C41BBB00459F5B /* psnet.h in Headers */,
 				34C71C1B08C41BBC00459F5B /* psnet2.h in Headers */,
 				34C71C1D08C41BBE00459F5B /* stand_gui.h in Headers */,
 				34C71C1F08C41BC200459F5B /* objectsnd.h in Headers */,
@@ -4008,7 +3994,6 @@
 				34C71BF208C41B9400459F5B /* multi_log.cpp in Sources */,
 				34C71BF408C41B9500459F5B /* multi_obj.cpp in Sources */,
 				34C71BF608C41B9700459F5B /* multi_observer.cpp in Sources */,
-				34C71BF808C41B9800459F5B /* multi_oo.cpp in Sources */,
 				34C71BFA08C41B9A00459F5B /* multi_options.cpp in Sources */,
 				34C71BFC08C41B9B00459F5B /* multi_pause.cpp in Sources */,
 				34C71BFE08C41B9D00459F5B /* multi_pinfo.cpp in Sources */,
@@ -4023,7 +4008,6 @@
 				34C71C1108C41BB300459F5B /* multiteamselect.cpp in Sources */,
 				34C71C1408C41BB500459F5B /* multiui.cpp in Sources */,
 				34C71C1608C41BB600459F5B /* multiutil.cpp in Sources */,
-				34C71C1808C41BB700459F5B /* psnet.cpp in Sources */,
 				34C71C1A08C41BBB00459F5B /* psnet2.cpp in Sources */,
 				34C71C1C08C41BBD00459F5B /* stand_gui-unix.cpp in Sources */,
 				34C71C1E08C41BC200459F5B /* objectsort.cpp in Sources */,

@@ -977,7 +977,6 @@
     <ClCompile Include="..\..\code\network\multi_log.cpp" />
     <ClCompile Include="..\..\code\network\multi_obj.cpp" />
     <ClCompile Include="..\..\code\network\multi_observer.cpp" />
-    <ClCompile Include="..\..\code\network\multi_oo.cpp" />
     <ClCompile Include="..\..\code\network\multi_options.cpp" />
     <ClCompile Include="..\..\code\network\multi_pause.cpp" />
     <ClCompile Include="..\..\code\network\multi_pinfo.cpp" />
@@ -996,7 +995,6 @@
     <ClCompile Include="..\..\code\network\multiteamselect.cpp" />
     <ClCompile Include="..\..\code\network\multiui.cpp" />
     <ClCompile Include="..\..\code\network\multiutil.cpp" />
-    <ClCompile Include="..\..\code\network\psnet.cpp" />
     <ClCompile Include="..\..\code\network\psnet2.cpp" />
     <ClCompile Include="..\..\code\network\stand_gui.cpp" />
     <ClCompile Include="..\..\code\ddsutils\ddsutils.cpp" />
@@ -1246,7 +1244,6 @@
     <ClInclude Include="..\..\code\network\multi_log.h" />
     <ClInclude Include="..\..\code\network\multi_obj.h" />
     <ClInclude Include="..\..\code\network\multi_observer.h" />
-    <ClInclude Include="..\..\code\network\multi_oo.h" />
     <ClInclude Include="..\..\code\network\multi_options.h" />
     <ClInclude Include="..\..\code\network\multi_pause.h" />
     <ClInclude Include="..\..\code\network\multi_pinfo.h" />
@@ -1265,7 +1262,6 @@
     <ClInclude Include="..\..\code\network\multiteamselect.h" />
     <ClInclude Include="..\..\code\network\multiui.h" />
     <ClInclude Include="..\..\code\network\multiutil.h" />
-    <ClInclude Include="..\..\code\network\psnet.h" />
     <ClInclude Include="..\..\code\network\psnet2.h" />
     <ClInclude Include="..\..\code\network\stand_gui.h" />
     <ClInclude Include="..\..\code\ddsutils\ddsutils.h" />
