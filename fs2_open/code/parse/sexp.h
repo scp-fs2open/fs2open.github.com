@@ -646,6 +646,9 @@ struct ship;
 #define OP_TURRET_UNPROTECT_SHIP			(0x00ee | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ALLOW_ETS						(0x00ef | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // The E
 
+#define OP_SET_IMMOBILE					(0x00f0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_MOBILE					(0x00f1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 /* made obsolete by Goober5000
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)

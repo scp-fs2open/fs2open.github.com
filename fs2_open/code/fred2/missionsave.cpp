@@ -1652,6 +1652,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"afterburners-locked\"");
 			if (Ships[i].flags2 & SF2_FORCE_SHIELDS_ON)
 				fout(" \"force-shields-on\"");
+			if (objp->flags & OF_IMMOBILE)
+				fout(" \"immobile\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
