@@ -133,8 +133,8 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NAV_NEEDSLINK, OnNavNeedslink)
 	ON_BN_CLICKED(IDC_HIDE_SHIP_NAME, OnHideShipName)
 	ON_BN_CLICKED(IDC_SET_CLASS_DYNAMICALLY, OnSetClassDynamically)
+	ON_BN_CLICKED(IDC_ALLOW_ETS, OnDisableETS)
 	//}}AFX_MSG_MAP
-	ON_BN_CLICKED(IDC_ALLOW_ETS, &ship_flags_dlg::OnDisableETS)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////

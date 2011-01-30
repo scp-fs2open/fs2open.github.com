@@ -486,9 +486,9 @@ void VoiceActingManager::OnGenerateScript()
 
 			group_message_indexes(message_indexes);
 
-			for (size_t i = 0; i < message_indexes.size(); i++)
+			for (size_t index = 0; index < message_indexes.size(); index++)
 			{
-				MMessage *message = &Messages[message_indexes[i]];
+				MMessage *message = &Messages[message_indexes[index]];
 				export_one_message(message);
 			}
 		}
@@ -802,8 +802,8 @@ void VoiceActingManager::group_message_indexes(SCP_vector<int> &message_indexes)
 	}
 
 	// add remaining messages
-	for (size_t i = 0; i < temp_message_indexes.size(); i++)
-		message_indexes.push_back(temp_message_indexes[i]);
+	for (size_t index = 0; index < temp_message_indexes.size(); index++)
+		message_indexes.push_back(temp_message_indexes[index]);
 
 #ifndef NDEBUG
 	if (initial_size > message_indexes.size())
