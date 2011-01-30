@@ -17,13 +17,7 @@
 
 /* Include auto-config file to find out which system include files we need. */
 
-#if defined(_WIN32)
-#include "jconfig_vc.h"
-#elif defined(SCP_UNIX)
-#include "jconfig_lnx.h"		/* auto configuration options */
-#else
-#error "Unknown config in jinclude.h!"
-#endif
+#include "jconfig.h"		/* auto configuration options */
 #define JCONFIG_INCLUDED	/* so that jpeglib.h doesn't do it again */
 
 /*
