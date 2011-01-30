@@ -51,6 +51,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_KAMIKAZE, m_kamikaze);
 	DDX_Control(pDX, IDC_INVULNERABLE, m_invulnerable);
 	DDX_Control(pDX, IDC_TARGETABLE_AS_BOMB, m_targetable_as_bomb);
+	DDX_Control(pDX, IDC_IMMOBILE, m_immobile);
 	DDX_Control(pDX, IDC_IGNORE_COUNT, m_ignore_count);
 	DDX_Control(pDX, IDC_HIDDEN_FROM_SENSORS, m_hidden);
 	DDX_Control(pDX, IDC_PRIMITIVE_SENSORS, m_primitive_sensors);
@@ -110,6 +111,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_IGNORE_COUNT, OnIgnoreCount)
 	ON_BN_CLICKED(IDC_INVULNERABLE, OnInvulnerable)
 	ON_BN_CLICKED(IDC_TARGETABLE_AS_BOMB, OnTargetableAsBomb)
+	ON_BN_CLICKED(IDC_IMMOBILE, OnImmobile)
 	ON_BN_CLICKED(IDC_KAMIKAZE, OnKamikaze)
 	ON_BN_CLICKED(IDC_NO_ARRIVAL_MUSIC, OnNoArrivalMusic)
 	ON_BN_CLICKED(IDC_NO_DYNAMIC, OnNoDynamic)
@@ -149,7 +151,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 {
 	int j, first;
 	int protect_ship = 0, beam_protect_ship = 0, flak_protect_ship = 0, laser_protect_ship = 0, missile_protect_ship = 0;
-	int ignore_count = 0, reinforcement = 0, cargo_known = 0;
+	int ignore_count = 0, reinforcement = 0, cargo_known = 0, immobile = 0;
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
@@ -180,6 +182,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					missile_protect_ship = (objp->flags & OF_MISSILE_PROTECTED) ? 1 : 0;
 					invulnerable = (objp->flags & OF_INVULNERABLE) ? 1 : 0;
 					targetable_as_bomb = (objp->flags & OF_TARGETABLE_AS_BOMB) ? 1 : 0;
+					immobile = (objp->flags & OF_IMMOBILE) ? 1 : 0;
 					hidden_from_sensors = (shipp->flags & SF_HIDDEN_FROM_SENSORS) ? 1 : 0;
 					primitive_sensors = (shipp->flags2 & SF2_PRIMITIVE_SENSORS) ? 1 : 0;
 					no_subspace_drive = (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) ? 1 : 0;
@@ -237,6 +240,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					missile_protect_ship = tristate_set(objp->flags & OF_MISSILE_PROTECTED, missile_protect_ship);
 					invulnerable = tristate_set(objp->flags & OF_INVULNERABLE, invulnerable);
 					targetable_as_bomb = tristate_set(objp->flags & OF_TARGETABLE_AS_BOMB, targetable_as_bomb);
+					immobile = tristate_set(objp->flags & OF_IMMOBILE, immobile);
 					hidden_from_sensors = tristate_set(shipp->flags & SF_HIDDEN_FROM_SENSORS, hidden_from_sensors);
 					primitive_sensors = tristate_set(shipp->flags2 & SF2_PRIMITIVE_SENSORS, primitive_sensors);
 					no_subspace_drive = tristate_set(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE, no_subspace_drive);
@@ -307,6 +311,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_escort.SetCheck(escort);
 	m_invulnerable.SetCheck(invulnerable);
 	m_targetable_as_bomb.SetCheck(targetable_as_bomb);
+	m_immobile.SetCheck(immobile);
 	m_hidden.SetCheck(hidden_from_sensors);
 	m_primitive_sensors.SetCheck(primitive_sensors);
 	m_no_subspace_drive.SetCheck(no_subspace_drive);
@@ -537,6 +542,22 @@ void ship_flags_dlg::update_ship(int shipnum)
 				set_modified();
 
 			objp->flags &= ~OF_TARGETABLE_AS_BOMB;
+			break;
+	}
+
+	switch (m_immobile.GetCheck()) {
+		case 1:
+			if ( !(objp->flags & OF_IMMOBILE) )
+				set_modified();
+
+			objp->flags |= OF_IMMOBILE;
+			break;
+
+		case 0:
+			if ( objp->flags & OF_IMMOBILE )
+				set_modified();
+
+			objp->flags &= ~OF_IMMOBILE;
 			break;
 	}
 
@@ -1088,6 +1109,15 @@ void ship_flags_dlg::OnTargetableAsBomb()
 		m_targetable_as_bomb.SetCheck(0);
 	} else {
 		m_targetable_as_bomb.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnImmobile() 
+{
+	if (m_immobile.GetCheck() == 1) {
+		m_immobile.SetCheck(0);
+	} else {
+		m_immobile.SetCheck(1);
 	}
 }
 

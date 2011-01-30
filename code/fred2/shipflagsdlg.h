@@ -42,6 +42,7 @@ public:
 	CButton	m_kamikaze;
 	CButton	m_invulnerable;
 	CButton	m_targetable_as_bomb;
+	CButton m_immobile;
 	CButton	m_ignore_count;
 	CButton	m_hidden;
 	CButton	m_primitive_sensors;
@@ -95,6 +96,7 @@ protected:
 	afx_msg void OnIgnoreCount();
 	afx_msg void OnInvulnerable();
 	afx_msg void OnTargetableAsBomb();
+	afx_msg void OnImmobile();
 	afx_msg void OnKamikaze();
 	afx_msg void OnNoArrivalMusic();
 	afx_msg void OnNoDynamic();
