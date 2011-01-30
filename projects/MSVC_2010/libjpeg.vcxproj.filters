@@ -11,49 +11,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\libjpeg\jaricom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\libjpeg\jcapimin.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libjpeg\jcapistd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jccoefct.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jccolor.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcdctmgr.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jchuff.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcinit.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcmainct.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcmarker.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcmaster.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libjpeg\jcomapi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libjpeg\jcparam.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcphuff.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcprepct.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jcsample.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libjpeg\jctrans.c">
@@ -65,7 +35,7 @@
     <ClCompile Include="..\..\libjpeg\jdapistd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jdatadst.c">
+    <ClCompile Include="..\..\libjpeg\jdarith.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libjpeg\jdatasrc.c">
@@ -98,9 +68,6 @@
     <ClCompile Include="..\..\libjpeg\jdmerge.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jdphuff.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libjpeg\jdpostct.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -113,15 +80,6 @@
     <ClCompile Include="..\..\libjpeg\jerror.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jfdctflt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jfdctfst.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jfdctint.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libjpeg\jidctflt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -131,13 +89,10 @@
     <ClCompile Include="..\..\libjpeg\jidctint.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jidctred.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libjpeg\jmemansi.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libjpeg\jmemmgr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libjpeg\jmemnobs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libjpeg\jquant1.c">
@@ -151,22 +106,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libjpeg\cderror.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libjpeg\cdjpeg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libjpeg\jchuff.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libjpeg\jconfig_vc.h">
+    <ClInclude Include="..\..\libjpeg\jconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libjpeg\jdct.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libjpeg\jdhuff.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libjpeg\jerror.h">
@@ -188,9 +131,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libjpeg\jversion.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libjpeg\transupp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

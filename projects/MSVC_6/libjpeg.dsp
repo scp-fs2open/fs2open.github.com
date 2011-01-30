@@ -135,6 +135,10 @@ LIB32=link.exe -lib
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\..\libjpeg\jaricom.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\libjpeg\jcapimin.c
 # End Source File
 # Begin Source File
@@ -143,55 +147,11 @@ SOURCE=..\..\libjpeg\jcapistd.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libjpeg\jccoefct.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jccolor.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcdctmgr.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jchuff.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcinit.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcmainct.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcmarker.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcmaster.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\libjpeg\jcomapi.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\libjpeg\jcparam.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcphuff.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcprepct.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jcsample.c
 # End Source File
 # Begin Source File
 
@@ -207,7 +167,7 @@ SOURCE=..\..\libjpeg\jdapistd.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libjpeg\jdatadst.c
+SOURCE=..\..\libjpeg\jdarith.c
 # End Source File
 # Begin Source File
 
@@ -251,10 +211,6 @@ SOURCE=..\..\libjpeg\jdmerge.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libjpeg\jdphuff.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\libjpeg\jdpostct.c
 # End Source File
 # Begin Source File
@@ -271,18 +227,6 @@ SOURCE=..\..\libjpeg\jerror.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libjpeg\jfdctflt.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jfdctfst.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jfdctint.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\libjpeg\jidctflt.c
 # End Source File
 # Begin Source File
@@ -295,15 +239,11 @@ SOURCE=..\..\libjpeg\jidctint.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libjpeg\jidctred.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jmemansi.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\libjpeg\jmemmgr.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\libjpeg\jmemnobs.c
 # End Source File
 # Begin Source File
 
@@ -323,27 +263,11 @@ SOURCE=..\..\libjpeg\jutils.c
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=..\..\libjpeg\cderror.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\cdjpeg.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jchuff.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jconfig_vc.h
+SOURCE=..\..\libjpeg\jconfig.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\libjpeg\jdct.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\jdhuff.h
 # End Source File
 # Begin Source File
 
@@ -372,10 +296,6 @@ SOURCE=..\..\libjpeg\jpeglib.h
 # Begin Source File
 
 SOURCE=..\..\libjpeg\jversion.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\libjpeg\transupp.h
 # End Source File
 # End Group
 # End Target
