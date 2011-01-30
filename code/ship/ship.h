@@ -150,6 +150,9 @@ typedef struct ship_weapon {
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
+
+	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
+	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
 //**************************************************************

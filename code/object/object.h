@@ -119,6 +119,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define	OF_FLAK_PROTECTED			(1<<16)	// Goober5000 - protected from flak turrets
 #define	OF_LASER_PROTECTED			(1<<17)	// Goober5000 - protected from laser turrets
 #define	OF_MISSILE_PROTECTED		(1<<18)	// Goober5000 - protected from missile turrets
+#define OF_IMMOBILE					(1<<19)	// Goober5000 - doesn't move, no matter what
 
 // Flags used by Fred
 #define OF_MARKED			(1<<29)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.

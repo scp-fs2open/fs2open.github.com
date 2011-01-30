@@ -579,12 +579,31 @@ int get_sexp_id(char *sexp_name)
 }
 
 // Goober5000
-int category_of_subcategory(int subcategory_id)
+int get_category(int sexp_id)
 {
-	return (subcategory_id & OP_CATEGORY_MASK);
+	int category = (sexp_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
 }
 
 // Goober5000
+int category_of_subcategory(int subcategory_id)
+{
+	int category = (subcategory_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
+// Goober5000
+// this seems not to be used anywhere?
 int get_category_id(char *category_name)
 {
 	for (int i = 0; i < Num_op_menus; i++)
@@ -598,6 +617,7 @@ int get_category_id(char *category_name)
 }
 
 // Goober5000
+// this seems not to be used anywhere?
 int has_submenu(char *category_name)
 {
 	int category_id = get_category_id(category_name);
@@ -853,7 +873,7 @@ void sexp_tree::right_clicked(int mode)
 				// put it in the appropriate menu
 				for (j=0; j<Num_op_menus; j++)
 				{
-					if (op_menu[j].id == (Operators[i].value & OP_CATEGORY_MASK))
+					if (op_menu[j].id == get_category(Operators[i].value))
 					{
 						switch (Operators[i].value) {
 // Commented out by Goober5000 to allow these operators to be selectable
@@ -3890,14 +3910,16 @@ void sexp_tree::update_help(HTREEITEM h)
 	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
-/* Goober5000 - this is just annoying
-	for (i=0; i<Num_operators; i++)
-		for (j=0; j<Num_op_menus; j++)
-			if ((Operators[i].value & OP_CATEGORY_MASK) == op_menu[j].id) {
-				if (!help(Operators[i].value))
-					Int3();  // Allender!  If you add new sexp operators, add help for them too! :)
+	for (i=0; i<Num_operators; i++) {
+		for (j=0; j<Num_op_menus; j++) {
+			if (get_category(Operators[i].value) == op_menu[j].id) {
+				if (!help(Operators[i].value)) {
+					mprintf(("Allender!  If you add new sexp operators, add help for them too! :)\n"));
+				}
 			}
-*/
+		}
+	}
+
 	help_box = (CEdit *) GetParent()->GetDlgItem(IDC_HELP_BOX);
 	if (!help_box || !::IsWindow(help_box->m_hWnd))
 		return;

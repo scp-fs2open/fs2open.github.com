@@ -171,6 +171,10 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath="..\..\libjpeg\jaricom.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\libjpeg\jcapimin.c"
 				>
 			</File>
@@ -179,55 +183,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jccoefct.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jccolor.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcdctmgr.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jchuff.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcinit.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcmainct.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcmarker.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcmaster.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\libjpeg\jcomapi.c"
 				>
 			</File>
 			<File
 				RelativePath="..\..\libjpeg\jcparam.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcphuff.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcprepct.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jcsample.c"
 				>
 			</File>
 			<File
@@ -243,7 +203,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdatadst.c"
+				RelativePath="..\..\libjpeg\jdarith.c"
 				>
 			</File>
 			<File
@@ -287,10 +247,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdphuff.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\libjpeg\jdpostct.c"
 				>
 			</File>
@@ -307,18 +263,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jfdctflt.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jfdctfst.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jfdctint.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\libjpeg\jidctflt.c"
 				>
 			</File>
@@ -331,15 +275,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jidctred.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jmemansi.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\libjpeg\jmemmgr.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\libjpeg\jmemnobs.c"
 				>
 			</File>
 			<File
@@ -360,27 +300,11 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="..\..\libjpeg\cderror.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\cdjpeg.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jchuff.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jconfig_vc.h"
+				RelativePath="..\..\libjpeg\jconfig.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\libjpeg\jdct.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jdhuff.h"
 				>
 			</File>
 			<File
@@ -409,10 +333,6 @@
 			</File>
 			<File
 				RelativePath="..\..\libjpeg\jversion.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\transupp.h"
 				>
 			</File>
 		</Filter>

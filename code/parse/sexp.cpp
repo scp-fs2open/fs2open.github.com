@@ -176,6 +176,7 @@ sexp_oper Operators[] = {
 	{ "has-departed-delay",					OP_HAS_DEPARTED_DELAY,				2, INT_MAX,	},
 	{ "are-waypoints-done",					OP_WAYPOINTS_DONE,					2, 2,			},
 	{ "are-waypoints-done-delay",			OP_WAYPOINTS_DONE_DELAY,			3, 3,			},
+	{ "is-nav-visited",					OP_NAV_IS_VISITED,				1, 1 }, // Kazan
 	{ "ship-type-destroyed",				OP_SHIP_TYPE_DESTROYED,				2, 2,			},
 	{ "percent-ships-destroyed",			OP_PERCENT_SHIPS_DESTROYED,		2, INT_MAX,	},
 	{ "percent-ships-disabled",			OP_PERCENT_SHIPS_DISABLED,			2, INT_MAX,	},
@@ -420,7 +421,6 @@ sexp_oper Operators[] = {
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0 },
 
-	{ "is-nav-visited",					OP_NAV_IS_VISITED,				1, 1 }, // Kazan
 	{ "distance-to-nav",				OP_NAV_DISTANCE,				1, 1 }, // Kazan
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 4 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
@@ -504,6 +504,8 @@ sexp_oper Operators[] = {
 	{ "ship-set-shockwave-damage-type",		OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE,		3, INT_MAX }, // FUBAR
 	{ "field-set-damage-type",		OP_FIELD_SET_DAMAGE_TYPE,		2,2 }, // FUBAR
 	{ "allow-ets",				OP_ALLOW_ETS,				2, INT_MAX}, // The E
+	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
+	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -12435,6 +12437,12 @@ void sexp_dont_collide_invisible(int n, bool dont_collide)
 	sexp_deal_with_ship_flag(n, true, 0, 0, 0, SF2_DONT_COLLIDE_INVIS, 0, P_SF2_DONT_COLLIDE_INVIS, dont_collide);
 }
 
+// Goober5000 - sets the "immobile" flag on a list of ships
+void sexp_set_immobile(int n, bool immobile)
+{
+	sexp_deal_with_ship_flag(n, true, OF_IMMOBILE, 0, 0, 0, 0, P2_OF_IMMOBILE, immobile);
+}
+
 // Goober5000 - sets the vaporize flag on a list of ships
 void sexp_ships_vaporize(int n, bool vaporize)
 {
@@ -19828,6 +19836,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_MOBILE:
+			case OP_SET_IMMOBILE:
+				sexp_set_immobile(node, (op_num == OP_SET_IMMOBILE));
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000 - sigh, was this messed up all along?
 			case OP_WARP_BROKEN:
 			case OP_WARP_NOT_BROKEN:
@@ -21406,6 +21420,8 @@ int query_operator_return_type(int op)
 		case OP_SET_EXPLOSION_OPTION:
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
+		case OP_SET_MOBILE:
+		case OP_SET_IMMOBILE:
 		case OP_CHANGE_SHIP_CLASS:
 		case OP_SHIP_COPY_DAMAGE:
 		case OP_DEACTIVATE_GLOW_POINTS:
@@ -22565,6 +22581,10 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
+			return OPF_SHIP;
+
+		case OP_SET_MOBILE:
+		case OP_SET_IMMOBILE:
 			return OPF_SHIP;
 
 		case OP_WARP_BROKEN:
@@ -23971,7 +23991,10 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 		// we want to use the same variable substitution that's in messages etc.
 		SCP_string temp_text = text;
 		sexp_replace_variable_names_with_values(temp_text);
-		strcpy_s(Sexp_variables[index].text, temp_text.substr(0, TOKEN_LENGTH).c_str());
+
+		// copy to original buffer
+		int len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH);
+		text[len] = 0;
 	}
 	else
 	{
@@ -24659,6 +24682,8 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_SET_DAMAGE_TYPE:
 		case OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE:
 		case OP_FIELD_SET_DAMAGE_TYPE:
+		case OP_SET_MOBILE:
+		case OP_SET_IMMOBILE:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -24720,6 +24745,23 @@ int get_subcategory(int sexp_id)
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 			return CHANGE_SUBCATEGORY_JUMP_NODES;
+
+		case OP_NAV_ADD_WAYPOINT:
+		case OP_NAV_ADD_SHIP:
+		case OP_NAV_DEL:
+		case OP_NAV_HIDE:
+		case OP_NAV_RESTRICT:
+		case OP_NAV_UNHIDE:
+		case OP_NAV_UNRESTRICT:
+		case OP_NAV_SET_VISITED:
+		case OP_NAV_SET_CARRY:
+		case OP_NAV_UNSET_CARRY:
+		case OP_NAV_UNSET_VISITED:
+		case OP_NAV_SET_NEEDSLINK:
+		case OP_NAV_UNSET_NEEDSLINK:
+		case OP_NAV_USECINEMATICS:
+		case OP_NAV_USEAP:
+			return CHANGE_SUBCATEGORY_NAV;
 
 		case OP_NUM_PLAYERS:
 		case OP_TEAM_SCORE:
@@ -26780,12 +26822,24 @@ sexp_help_struct Sexp_help[] = {
 		"\tAll:\tList of ships on which to unset the vaporize flag" },
 
 	{ OP_DONT_COLLIDE_INVISIBLE, "don't-collide-invisible\r\n"
-		"\tSets the \"dont collide invisible\" flag on a list of ships.  Takes 1 or more arguments..."
+		"\tSets the \"dont collide invisible\" flag on a list of ships.\r\n"
+		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tList of ships on which to set the \"dont collide invisible\" flag" },
 
 	{ OP_COLLIDE_INVISIBLE, "collide-invisible\r\n"
-		"\tUnsets the \"dont collide invisible\" flag on a list of ships.  Takes 1 or more arguments..."
+		"\tUnsets the \"dont collide invisible\" flag on a list of ships.\r\n"
+		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tList of ships on which to unset the \"dont collide invisible\" flag" },
+
+	{ OP_SET_MOBILE, "set-mobile\r\n"
+		"\tAllows the specified ship(s) to move.  Opposite of set-immobile.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships on which to unset the \"immobile\" flag" },
+
+	{ OP_SET_IMMOBILE, "set-immobile\r\n"
+		"\tPrevents the specified ship(s) from moving in any way.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships on which to set the \"immobile\" flag" },
 
 	{ OP_WARP_BROKEN, "break-warp\r\n"
 		"\tBreak the warp drive on the specified ship.  A broken warp drive can be repaired by "
@@ -27958,11 +28012,11 @@ op_menu_struct op_menu[] =
 	{ "Arithmetic",		OP_CATEGORY_ARITHMETIC },
 	{ "Status",			OP_CATEGORY_STATUS },
 	{ "Change",			OP_CATEGORY_CHANGE },
+/*	{ "Change2",		OP_CATEGORY_CHANGE2 },	merged with "Change" by Goober5000 */
 	{ "Conditionals",	OP_CATEGORY_CONDITIONAL },
 /*	{ "Debugging",		OP_CATEGORY_DEBUG },	discontinued by Goober5000 */
 	{ "Ai goals",		OP_CATEGORY_AI },
 	{ "Event/Goals",	OP_CATEGORY_GOAL_EVENT },
-	{ "Autopilot/NavPoints", OP_CATEGORY_NAVPOINTS},
 	{ "Training",		OP_CATEGORY_TRAINING },
 };
 
@@ -27980,6 +28034,7 @@ op_menu_struct op_submenu[] =
 	{	"Coordinate Manipulation",		CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			},
 	{	"Music and Sound",				CHANGE_SUBCATEGORY_MUSIC_AND_SOUND					},
 	{	"Hud",							CHANGE_SUBCATEGORY_HUD								},
+	{	"Nav",							CHANGE_SUBCATEGORY_NAV								},
 	{	"Cutscenes",					CHANGE_SUBCATEGORY_CUTSCENES						},
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
 	{	"Backgrounds and Nebula",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},

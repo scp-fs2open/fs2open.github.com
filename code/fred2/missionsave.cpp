@@ -1628,7 +1628,7 @@ int CFred_mission_save::save_objects()
 				fout(" \"affected-by-gravity\"");
 			if (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
 				fout(" \"toggle-subsystem-scanning\"");
-			if (Objects[i].flags & OF_TARGETABLE_AS_BOMB)
+			if (objp->flags & OF_TARGETABLE_AS_BOMB)
 				fout(" \"targetable-as-bomb\"");
 			if (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES)
 				fout(" \"no-builtin-messages\"");
@@ -1652,6 +1652,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"afterburners-locked\"");
 			if (Ships[i].flags2 & SF2_FORCE_SHIELDS_ON)
 				fout(" \"force-shields-on\"");
+			if (objp->flags & OF_IMMOBILE)
+				fout(" \"immobile\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
