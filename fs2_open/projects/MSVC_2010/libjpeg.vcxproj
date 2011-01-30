@@ -659,25 +659,15 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\libjpeg\jaricom.c" />
     <ClCompile Include="..\..\libjpeg\jcapimin.c" />
     <ClCompile Include="..\..\libjpeg\jcapistd.c" />
-    <ClCompile Include="..\..\libjpeg\jccoefct.c" />
-    <ClCompile Include="..\..\libjpeg\jccolor.c" />
-    <ClCompile Include="..\..\libjpeg\jcdctmgr.c" />
-    <ClCompile Include="..\..\libjpeg\jchuff.c" />
-    <ClCompile Include="..\..\libjpeg\jcinit.c" />
-    <ClCompile Include="..\..\libjpeg\jcmainct.c" />
-    <ClCompile Include="..\..\libjpeg\jcmarker.c" />
-    <ClCompile Include="..\..\libjpeg\jcmaster.c" />
     <ClCompile Include="..\..\libjpeg\jcomapi.c" />
     <ClCompile Include="..\..\libjpeg\jcparam.c" />
-    <ClCompile Include="..\..\libjpeg\jcphuff.c" />
-    <ClCompile Include="..\..\libjpeg\jcprepct.c" />
-    <ClCompile Include="..\..\libjpeg\jcsample.c" />
     <ClCompile Include="..\..\libjpeg\jctrans.c" />
     <ClCompile Include="..\..\libjpeg\jdapimin.c" />
     <ClCompile Include="..\..\libjpeg\jdapistd.c" />
-    <ClCompile Include="..\..\libjpeg\jdatadst.c" />
+    <ClCompile Include="..\..\libjpeg\jdarith.c" />
     <ClCompile Include="..\..\libjpeg\jdatasrc.c" />
     <ClCompile Include="..\..\libjpeg\jdcoefct.c" />
     <ClCompile Include="..\..\libjpeg\jdcolor.c" />
@@ -688,31 +678,22 @@
     <ClCompile Include="..\..\libjpeg\jdmarker.c" />
     <ClCompile Include="..\..\libjpeg\jdmaster.c" />
     <ClCompile Include="..\..\libjpeg\jdmerge.c" />
-    <ClCompile Include="..\..\libjpeg\jdphuff.c" />
     <ClCompile Include="..\..\libjpeg\jdpostct.c" />
     <ClCompile Include="..\..\libjpeg\jdsample.c" />
     <ClCompile Include="..\..\libjpeg\jdtrans.c" />
     <ClCompile Include="..\..\libjpeg\jerror.c" />
-    <ClCompile Include="..\..\libjpeg\jfdctflt.c" />
-    <ClCompile Include="..\..\libjpeg\jfdctfst.c" />
-    <ClCompile Include="..\..\libjpeg\jfdctint.c" />
     <ClCompile Include="..\..\libjpeg\jidctflt.c" />
     <ClCompile Include="..\..\libjpeg\jidctfst.c" />
     <ClCompile Include="..\..\libjpeg\jidctint.c" />
-    <ClCompile Include="..\..\libjpeg\jidctred.c" />
-    <ClCompile Include="..\..\libjpeg\jmemansi.c" />
     <ClCompile Include="..\..\libjpeg\jmemmgr.c" />
+    <ClCompile Include="..\..\libjpeg\jmemnobs.c" />
     <ClCompile Include="..\..\libjpeg\jquant1.c" />
     <ClCompile Include="..\..\libjpeg\jquant2.c" />
     <ClCompile Include="..\..\libjpeg\jutils.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libjpeg\cderror.h" />
-    <ClInclude Include="..\..\libjpeg\cdjpeg.h" />
-    <ClInclude Include="..\..\libjpeg\jchuff.h" />
-    <ClInclude Include="..\..\libjpeg\jconfig_vc.h" />
+    <ClInclude Include="..\..\libjpeg\jconfig.h" />
     <ClInclude Include="..\..\libjpeg\jdct.h" />
-    <ClInclude Include="..\..\libjpeg\jdhuff.h" />
     <ClInclude Include="..\..\libjpeg\jerror.h" />
     <ClInclude Include="..\..\libjpeg\jinclude.h" />
     <ClInclude Include="..\..\libjpeg\jmemsys.h" />
@@ -720,7 +701,6 @@
     <ClInclude Include="..\..\libjpeg\jpegint.h" />
     <ClInclude Include="..\..\libjpeg\jpeglib.h" />
     <ClInclude Include="..\..\libjpeg\jversion.h" />
-    <ClInclude Include="..\..\libjpeg\transupp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
