@@ -1494,14 +1494,15 @@ int player_inspect_cargo(float frametime, char *outstr)
 	if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
 		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
 			char *cargo_name;
-			cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			Assert ( cargo_name );
-			Assert ( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
+			cargo_name 5= Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
+			Assert( cargo_name );
+			Assert( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
 
-			if ( cargo_name[0] == '#' )
-				sprintf(outstr, XSTR( "passengers: %s", 83), cargo_name+1 );
-			else
-				sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
+			if ( cargo_name[0] == '#' ) {
+				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			} else {
+				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+			}
 		} else {
 			sprintf(outstr, XSTR( "Scanned", 85) );
 		}
@@ -1591,15 +1592,23 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 	// if cargo is already revealed
 	if (subsys->flags & SSF_CARGO_REVEALED) {
-		char *cargo_name;
-		if (subsys->subsys_cargo_name == -1) {
-			cargo_name = XSTR("Nothing", 1493);
-		} else {
-			cargo_name = Cargo_names[subsys->subsys_cargo_name];
-		}
-		Assert ( cargo_name );
+		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+			char *cargo_name;
+			if (subsys->subsys_cargo_name == -1) {
+				cargo_name = XSTR("Nothing", 1493);
+			} else {
+				cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
+			}
+			Assert( cargo_name );
 
-		sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
+			if ( cargo_name[0] == '#' ) {
+				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			} else {
+				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+			}
+		} else {
+			sprintf(outstr, XSTR( "Scanned", 85) );
+		}
 	
 		// always bash cargo_inspect_time to 0 since AI ships can reveal cargo that we
 		// are in the process of scanning

@@ -10839,7 +10839,7 @@ void sexp_transfer_cargo(int n)
 		}
 	}
 #endif
-	Ships[shipnum2].cargo1 = char(Ships[shipnum1].cargo1 & CARGO_INDEX_MASK);
+	Ships[shipnum2].cargo1 = char((Ships[shipnum1].cargo1 & CARGO_INDEX_MASK) | (Ships[shipnum2].cargo1 & CARGO_NO_DEPLETE));
 
 	if ( !(Ships[shipnum1].cargo1 & CARGO_NO_DEPLETE) ) {
 		// need to set ship1's cargo to nothing.  scan the cargo_names array looking for the string nothing.
