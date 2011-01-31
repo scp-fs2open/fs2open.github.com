@@ -583,7 +583,7 @@ void initial_status::change_subsys()
 				ptr->subsys_cargo_name = cargo_index;
 			}
 		} else {
-			ptr->subsys_cargo_name = -1;
+			ptr->subsys_cargo_name = 0;
 		}
 		set_modified();
 	}
@@ -602,7 +602,7 @@ void initial_status::change_subsys()
 		m_damage = 100 - (int) ptr -> current_hits;
 		if ( ship_has_scannable_subsystems && valid_cap_subsys_cargo_list(ptr->system_info->subobj_name) ) {
 			enable_cargo_name = TRUE;
-			if (ptr->subsys_cargo_name != -1) {
+			if (ptr->subsys_cargo_name > 0) {
 				m_cargo_name = Cargo_names[ptr->subsys_cargo_name];
 			} else {
 				m_cargo_name = _T("");
