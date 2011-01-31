@@ -1493,9 +1493,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
 		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
-			char *cargo_name;
-			cargo_name 5= Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			Assert( cargo_name );
+			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
 			Assert( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
 
 			if ( cargo_name[0] == '#' ) {
@@ -1578,10 +1576,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	cargo_sp = &Ships[cargo_objp->instance];
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
-	// commented by Goober5000
-	//Assert(cargo_sip->flags & SIF_HUGE_SHIP);
-
-	if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+	// don't do any sort of scanning thing unless capship has a non-"nothing" cargo
+	// this compensates for changing the "no display" index from -1 to 0
+	if (subsys->subsys_cargo_name == 0) {
 		return 0;
 	}
 
@@ -1593,13 +1590,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if (subsys->flags & SSF_CARGO_REVEALED) {
 		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
-			char *cargo_name;
-			if (subsys->subsys_cargo_name == -1) {
-				cargo_name = XSTR("Nothing", 1493);
-			} else {
-				cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
-			}
-			Assert( cargo_name );
+			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 
 			if ( cargo_name[0] == '#' ) {
 				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
@@ -1642,7 +1633,10 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
-			sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+			if ( !(cargo_sp->flags & SF_SCANNABLE) )
+				sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+			else
+				sprintf(outstr,XSTR( "not scanned", 87));
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
 			Player->cargo_inspect_time = 0;
 			return 1;
@@ -1653,7 +1647,10 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
 
-		sprintf(outstr,XSTR( "cargo: inspecting", 88));
+		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			sprintf(outstr,XSTR( "cargo: inspecting", 88));
+		else
+			sprintf(outstr,XSTR( "scanning", 89));
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
@@ -1661,7 +1658,10 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+		else
+			sprintf(outstr,XSTR( "not scanned", 87));
 	}
 
 	return 1;

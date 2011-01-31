@@ -2093,7 +2093,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 
 	while (ptr != END_OF_LIST(&shipp->subsys_list) && ptr) {
 		// Crashing here!
-		if ( (ptr->current_hits) || (ptr->system_info && ptr->system_info->type == SUBSYSTEM_TURRET) || (ptr->subsys_cargo_name != -1)) {
+		if ( (ptr->current_hits) || (ptr->system_info && ptr->system_info->type == SUBSYSTEM_TURRET) || (ptr->subsys_cargo_name > 0)) {
 			if (optional_string_fred("+Subsystem:", "$Name:"))
 				parse_comments();
 			else
@@ -2111,7 +2111,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 			fout(" %d", (int) ptr->current_hits);
 		}
 
-		if (ptr->subsys_cargo_name != -1) {
+		if (ptr->subsys_cargo_name > 0) {
 			if (optional_string_fred("+Cargo Name:", "$Name:", "+Subsystem:"))
 				parse_comments();
 			else
