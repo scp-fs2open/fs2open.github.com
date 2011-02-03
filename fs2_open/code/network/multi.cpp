@@ -1542,14 +1542,6 @@ void standalone_main_init()
 
 	// setup debug flags
 	Netgame.debug_flags = 0;
-	/*
-	if(!Cmdline_server_firing){
-		Netgame.debug_flags |= NETD_FLAG_CLIENT_FIRING;
-	}
-	if(!Cmdline_client_dodamage){
-		Netgame.debug_flags |= NETD_FLAG_CLIENT_NODAMAGE;
-	}
-	*/
 
 	// setup the default game name for the standalone
 	std_connect_set_gamename(NULL);
@@ -1812,8 +1804,6 @@ DCF(netd, "change/list netgame debug flags")
 
 	// display network flags
 	dc_printf("BITS\n");
-	// dc_printf("1 - Client side firing (%d)\n", Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING ? 1 : 0);
-	// dc_printf("2 - Client nodamage (%d)\n", Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE ? 1 : 0);
 }
 
 // display any multiplayer/networking information here

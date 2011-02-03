@@ -9086,7 +9086,6 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 send_countermeasure_fired:
 		// the new way of doing things
-		// if(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING){
 		if(Game_mode & GM_MULTIPLAYER){
 			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, /*arand*/Objects[cobjnum].net_signature );
 		}
@@ -10052,7 +10051,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	}	// end for (go to next primary bank)
 	
 	// if multiplayer and we're client-side firing, send the packet
-	// if((Game_mode & GM_MULTIPLAYER) && (Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
 	if(Game_mode & GM_MULTIPLAYER){
 		// if i'm a client, and this is not me, don't send
 		if(!(MULTIPLAYER_CLIENT && (shipp != Player_ship))){
@@ -14047,6 +14045,9 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 	return outbuf;
 }
 
+/* Karajorma - V decided not to use this function so I've commented it out so it isn't confused with code
++that is actually in use. Someone might want to get it working using AI_Profiles at some point so I didn't
++simply delete it.
 
 // Called to check if any AI ships might reveal the cargo of any cargo containers.
 //
@@ -14118,6 +14119,7 @@ next_cargo:
 		cargo_so = GET_NEXT(cargo_so);
 	} // end while
 }
+*/
 
 
 // Maybe warn player about this attacking ship.  This is called once per frame, and the

@@ -1044,11 +1044,7 @@ void mission_eval_goals()
 				goal_changed = 1;
 				mission_goal_status_change(i, GOAL_COMPLETE );
 			} // end if result
-			
-			// tell the player how to end the mission
-			//if ( goal_changed && mission_evaluate_primary_goals() != PRIMARY_GOALS_INCOMPLETE ) {
-			//	HUD_sourced_printf(HUD_SOURCE_IMPORTANT, "Press %s to end mission and return to base", textify_scancode(Control_config[END_MISSION].key_id) );
-			//}
+
 		}	// end if goals[i].satsified != GOAL_COMPLETE
 	} // end for
 

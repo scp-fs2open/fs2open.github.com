@@ -2762,14 +2762,6 @@ void multi_sg_init_gamenet()
 
 		// setup debug flags
 		Netgame.debug_flags = 0;
-		/*
-		if(!Cmdline_server_firing){
-			Netgame.debug_flags |= NETD_FLAG_CLIENT_FIRING;
-		}
-		if(!Cmdline_client_dodamage){
-			Netgame.debug_flags |= NETD_FLAG_CLIENT_NODAMAGE;
-		}
-		*/
 	} else {
 		memcpy(&Netgame.server_addr,&save,sizeof(net_addr));
 		Netgame.server = server_save;
