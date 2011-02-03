@@ -740,12 +740,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		//keyboard: fire the current primary weapon
 		if (check_control(FIRE_PRIMARY)) {
 			ci->fire_primary_count++;
-
-			// if we're a multiplayer client, set our accum bits now
-			// if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-			// if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-				// Net_player->s_info.accum_buttons |= OOC_FIRE_PRIMARY;
-			// }
 		}
 
 		// mouse: fire the current primary weapon
@@ -775,11 +769,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(LAUNCH_COUNTERMEASURE);
 			ci->fire_countermeasure_count++;
 			hud_gauge_popup_start(HUD_CMEASURE_GAUGE);
-
-			// if we're a multiplayer client, set our accum bits now
-			// if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-				// Net_player->s_info.accum_buttons |= OOC_FIRE_COUNTERMEASURE;
-			// }
 		}
 
 		// see if the afterburner has been started (keyboard + joystick)
