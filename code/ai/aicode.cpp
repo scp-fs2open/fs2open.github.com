@@ -12550,11 +12550,15 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	polymodel *pm = model_get( Ship_info[parent_shipp->ship_info_index].model_num );
 	ship_bay *bay = pm->ship_bay;
 
-	if ( bay == NULL ) 
+	if ( bay == NULL ) {
+		WarningEx(LOCATION, "Ship %s was set to arrive from fighter bay on object %s, but no fighter bay exists on that ships' model (%s).\n", shipp->ship_name, parent_shipp->ship_name, pm->filename);
 		return -1;
+	}
 
-	if ( bay->num_paths <= 0 ) 
+	if ( bay->num_paths <= 0 ) {
+		WarningEx(LOCATION, "Ship %s was set to arrive from fighter bay on object %s, but no fighter bay paths exist on that ships' model (%s).\n", shipp->ship_name, parent_shipp->ship_name, pm->filename);
 		return -1;
+	}
 
 	// try to find a bay path that is not taken
 	path_index = -1;
