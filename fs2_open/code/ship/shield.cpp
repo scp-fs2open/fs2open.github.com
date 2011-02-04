@@ -816,6 +816,8 @@ void add_shield_point(int objnum, int tri_num, vec3d *hit_pos)
 	if (Num_shield_points >= MAX_SHIELD_POINTS)
 		return;
 
+	Verify(objnum < MAX_OBJECTS);
+
 	MONITOR_INC(NumShieldHits,1);
 
 	Shield_points[Num_shield_points].objnum = objnum;
