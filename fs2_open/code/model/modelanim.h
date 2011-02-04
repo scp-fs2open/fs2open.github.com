@@ -66,6 +66,8 @@ struct queued_animation {
 	int loop_sound;
 	int end_sound;
 	float snd_rad;
+
+	char sub_name[NAME_LENGTH];
 };
 
 /*
