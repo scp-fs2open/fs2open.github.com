@@ -280,16 +280,6 @@ static int Current_list_size = 0;
 // slider stuff
 static UI_SLIDER2 Tech_slider;
 
-//XSTR:OFF
-/*
-static char *Intel_anim_filenames[MAX_INTEL_ENTRIES] = {
-	"tech_tpilot.ani",
-	"tech_vasudan.ani",
-	"tech_shivan.ani",
-};
-*/
-//XSTR:ON
-
 // Intelligence master data structs (these get inited @ game startup from species.tbl)
 intel_data Intel_info[MAX_INTEL_ENTRIES];
 int Intel_info_size = 0;
