@@ -131,6 +131,16 @@ extern int Num_weapon_subtypes;
 #define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
 #define WBF_RANDOM_LENGTH			(1<<1)		// burst is to fire random length bursts
 
+//particle names go here -nuke
+#define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
+#define PSPEW_DEFAULT	0			//std fs2 pspew
+#define PSPEW_HELIX		1			//q2 style railgun trail
+#define PSPEW_SPARKLER	2			//random particles in every direction, can be sperical or ovoid
+#define PSPEW_RING		3			//outward expanding ring
+#define PSPEW_PLUME		4			//spewers arrayed within a radius for thruster style effects, may converge or scatter
+
+#define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
+
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
@@ -175,7 +185,8 @@ typedef struct weapon {
 	short	cscrew_index;						// corkscrew info index
 
 	// particle spew info
-	int		particle_spew_time;			// time to spew next bunch of particles	
+	int		particle_spew_time[MAX_PARTICLE_SPEWERS];			// time to spew next bunch of particles	
+	float	particle_spew_rand;				// per weapon randomness value used by some particle spew types -nuke
 
 	// flak info
 	short flak_index;							// flak info index
@@ -235,6 +246,22 @@ typedef struct beam_weapon_info {
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
 } beam_weapon_info;
+
+typedef struct particle_spew_info {	//this will be used for multi spews
+	// particle spew stuff
+	int particle_spew_type;			//added pspew type field -nuke
+	int particle_spew_count;
+	int particle_spew_time;
+	float particle_spew_vel;
+	float particle_spew_radius;
+	float particle_spew_lifetime;
+	float particle_spew_scale;
+	float particle_spew_z_scale;	//length value for some effects -nuke
+	float particle_spew_rotation_rate;	//rotation rate for some particle effects -nuke
+	vec3d particle_spew_offset;			//offsets and normals, yay!
+	vec3d particle_spew_velocity;
+	generic_anim particle_spew_anim;
+} particle_spew_info;
 
 typedef struct spawn_weapon_info 
 {
@@ -388,14 +415,8 @@ typedef struct weapon_info {
 	// SSM
 	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
 
-	// particle spew stuff
-	int particle_spew_count;
-	int particle_spew_time;
-	float particle_spew_vel;
-	float particle_spew_radius;
-	float particle_spew_lifetime;
-	float particle_spew_scale;
-	generic_anim particle_spew_anim;
+	// now using new particle spew struct -nuke
+	particle_spew_info particle_spewers[MAX_PARTICLE_SPEWERS];
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;
