@@ -1673,7 +1673,6 @@ int ship_lock_threat(ship *sp);
 int	bitmask_2_bitnum(int num);
 char	*ship_return_orders(char *outbuf, ship *sp);
 char	*ship_return_time_to_goal(char *outbuf, ship *sp);
-void	ship_check_cargo_all();	// called from game_simulation_frame
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);

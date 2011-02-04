@@ -565,6 +565,7 @@ sexp_oper Operators[] = {
 	{ "key-reset",					OP_KEY_RESET,					1, INT_MAX,	},
 	{ "key-reset-multiple",			OP_KEY_RESET_MULTIPLE,			1, INT_MAX,	},
 	{ "targeted",					OP_TARGETED,					1, 3,			},
+	{ "node-targeted",				OP_NODE_TARGETED,					1, 2,		}, // FUBAR
 	{ "missile-locked",				OP_MISSILE_LOCKED,			1,	3	},	// Sesquipedalian
 	{ "speed",						OP_SPEED,						1, 1,			},
 	{ "facing",						OP_FACING,						2, 2,			},
@@ -10839,7 +10840,7 @@ void sexp_transfer_cargo(int n)
 		}
 	}
 #endif
-	Ships[shipnum2].cargo1 = char(Ships[shipnum1].cargo1 & CARGO_INDEX_MASK);
+	Ships[shipnum2].cargo1 = char((Ships[shipnum1].cargo1 & CARGO_INDEX_MASK) | (Ships[shipnum2].cargo1 & CARGO_NO_DEPLETE));
 
 	if ( !(Ships[shipnum1].cargo1 & CARGO_NO_DEPLETE) ) {
 		// need to set ship1's cargo to nothing.  scan the cargo_names array looking for the string nothing.
@@ -13372,6 +13373,26 @@ int sexp_targeted(int node)
 			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
 				return SEXP_FALSE;
 			}
+		}
+	}
+
+	return SEXP_TRUE;
+}
+
+int sexp_node_targeted(int node)
+{
+	int z;
+
+	jump_node *jnp = jumpnode_get_by_name(CTEXT(node));
+
+	if (jnp==NULL || !Player_ai || (jnp->get_objnum() != Player_ai->target_objnum)){
+		return SEXP_FALSE;
+	}
+
+	if (CDR(node) >= 0) {
+		z = eval_num(CDR(node)) * 1000;
+		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
+			return SEXP_FALSE;
 		}
 	}
 
@@ -19988,6 +20009,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_targeted(node);
 				break;
 
+			case OP_NODE_TARGETED:
+				sexp_val = sexp_node_targeted(node);
+				break;
+
 			case OP_SPEED:
 				sexp_val = sexp_speed(node);
 				break;
@@ -21154,6 +21179,7 @@ int query_operator_return_type(int op)
 		case OP_LAST_ORDER_TIME:
 		case OP_KEY_PRESSED:
 		case OP_TARGETED:
+		case OP_NODE_TARGETED:
 		case OP_SPEED:
 		case OP_FACING:
 		case OP_FACING2:
@@ -22093,6 +22119,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_SUBSYSTEM;
+
+		case OP_NODE_TARGETED:
+			if (!argnum)
+				return OPF_JUMP_NODE_NAME;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
 
 		case OP_IS_SUBSYSTEM_DESTROYED_DELAY:
 			if ( argnum == 0 )
@@ -26208,6 +26240,13 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship to check if targeted by player.\r\n"
 		"\t2:\tLength of time target should have been kept for (optional).\r\n"
 		"\t3:\tName of subsystem on ship to check if targeted (optional)." },
+
+	{ OP_NODE_TARGETED, "Node-Targeted (Boolean training operator)\r\n"
+		"\tIs true as long as the player has the specified jump node targeted, "
+		"or has been targeted for the specified amount of time.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 to 2 arguments (first required, rest optional):\r\n"
+		"\t1:\tName of Jump Node to check if targeted by player.\r\n"
+		"\t2:\tLength of time target should have been kept for (optional)."},
 
 	// Sesquipedalian
 	{ OP_MISSILE_LOCKED, "Missile-locked (Boolean training operator)\r\n"

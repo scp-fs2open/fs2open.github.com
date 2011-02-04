@@ -3269,7 +3269,7 @@ void parse_common_object_data(p_object	*objp)
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
-		Subsys_status[i].subsys_cargo_name = -1;
+		Subsys_status[i].subsys_cargo_name = 0;
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);

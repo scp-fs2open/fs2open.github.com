@@ -58,10 +58,4 @@ void multi_ping_send(net_addr *addr,ping_struct *ps);
 // send a ping to all players
 void multi_ping_send_all();
 
-// get the lowest existing ping in the ping struct, returning -1 if no pings
-int multi_ping_get_lowest(ping_struct *ps);
-
-// (average ping + lowest ping)/2
-int multi_ping_lowest_avg(ping_struct *ps);
-
 #endif

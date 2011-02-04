@@ -727,6 +727,7 @@ struct ship;
 #define OP_KEY_RESET_MULTIPLE				(0x0012 | OP_CATEGORY_TRAINING)	// Goober5000
 #define OP_RESET_ORDERS						(0x0013 | OP_CATEGORY_TRAINING) // Karajorma
 #define OP_QUERY_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
+#define OP_NODE_TARGETED					(0x0015 | OP_CATEGORY_TRAINING) // FUBAR
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"

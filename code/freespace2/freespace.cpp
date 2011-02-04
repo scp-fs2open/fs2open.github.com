@@ -4097,9 +4097,6 @@ void game_simulation_frame()
 		// move all the objects now
 		obj_move_all(flFrametime);
 
-		// check for cargo reveal (this has an internal timestamp, so only runs every N ms)
-		// AL: 3-15-98: It was decided to not let AI ships inspect cargo
-		//	ship_check_cargo_all();
 		if(!(Game_mode & GM_DEMO_PLAYBACK)){
 			mission_eval_goals();
 		}
