@@ -2625,40 +2625,43 @@ void multi_ts_select_ship()
 	// split the text info up	
 	
 	Assert(Multi_ts_select_ship_class >= 0);
-	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
+//	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
+	if (Ship_info[Multi_ts_select_ship_class].desc != NULL)
+	{
 
-	// strip out newlines
-	memset(ship_desc,0,1000);
-	strcpy_s(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
-	token = strtok(ship_desc,"\n");
-	if(token != NULL){
-		strcpy_s(Multi_ts_ship_info_text,token);
-		while(token != NULL){
-			token = strtok(NULL,"\n");
-			if(token != NULL){
-				strcat_s(Multi_ts_ship_info_text," ");
-				strcat_s(Multi_ts_ship_info_text,token);
+		// strip out newlines
+		memset(ship_desc,0,1000);
+		strcpy_s(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
+		token = strtok(ship_desc,"\n");
+		if(token != NULL){
+			strcpy_s(Multi_ts_ship_info_text,token);
+			while(token != NULL){
+				token = strtok(NULL,"\n");
+				if(token != NULL){
+					strcat_s(Multi_ts_ship_info_text," ");
+					strcat_s(Multi_ts_ship_info_text,token);
+				}
 			}
 		}
-	}
 	
-	if(strlen(Multi_ts_ship_info_text) > 0){
-		// split the string into multiple lines
-		n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
+		if(strlen(Multi_ts_ship_info_text) > 0){
+			// split the string into multiple lines
+			n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
 
-		// copy the split up lines into the text lines array
-		for (int idx = 0;idx<n_lines;idx++ ) {
-			Assert(n_chars[idx] < MULTI_TS_SHIP_INFO_MAX_LINE_LEN);
-			strncpy(Multi_ts_ship_info_lines[idx], p_str[idx], n_chars[idx]);
-			Multi_ts_ship_info_lines[idx][n_chars[idx]] = 0;
-			drop_leading_white_space(Multi_ts_ship_info_lines[idx]);		
+			// copy the split up lines into the text lines array
+			for (int idx = 0;idx<n_lines;idx++ ) {
+				Assert(n_chars[idx] < MULTI_TS_SHIP_INFO_MAX_LINE_LEN);
+				strncpy(Multi_ts_ship_info_lines[idx], p_str[idx], n_chars[idx]);
+				Multi_ts_ship_info_lines[idx][n_chars[idx]] = 0;
+				drop_leading_white_space(Multi_ts_ship_info_lines[idx]);		
+			}
+
+			// get the line count
+			Multi_ts_ship_info_line_count = n_lines;
+		} else {
+			// set the line count to 
+			Multi_ts_ship_info_line_count = 0;
 		}
-
-		// get the line count
-		Multi_ts_ship_info_line_count = n_lines;
-	} else {
-		// set the line count to 
-		Multi_ts_ship_info_line_count = 0;
 	}	
 }
 
