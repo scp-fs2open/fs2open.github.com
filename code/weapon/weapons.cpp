@@ -768,7 +768,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->render_type = WRT_NONE;
 	
 	wip->title[0] = 0;
-	strcpy_s(wip->alt_name, "<none>");
 	wip->desc = NULL;
 	wip->tech_title[0] = 0;
 	wip->tech_anim_filename[0] = 0;
