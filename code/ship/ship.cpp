@@ -376,6 +376,8 @@ static int Thrust_anim_inited = 0;
 
 bool warning_too_many_ship_classes = false;
 
+int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
+
 // set the ship_obj struct fields to default values
 void ship_obj_list_reset_slot(int index)
 {
@@ -3178,6 +3180,12 @@ strcpy_s(parse_error_text, temp_error);
 						current_trigger->subtype = ANIMATION_SUBTYPE_ALL;
 					}
 
+					if(optional_string("+sub_name:")) {
+						stuff_string(current_trigger->sub_name, F_NAME, NAME_LENGTH);
+					} else {
+						strcpy_s(current_trigger->sub_name, "<none>");
+					}
+
 
 					if(current_trigger->type == TRIGGER_TYPE_INITIAL){
 						//the only thing initial animation type needs is the angle, 
@@ -3340,7 +3348,6 @@ strcpy_s(parse_error_text, temp_error);
 	model_anim_fix_reverse_times(sip);
 
 	strcpy_s(parse_error_text, "");
-
 
 	return rtn;	//0 for success
 }
@@ -5213,6 +5220,20 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 	if ( !ignore_subsys_info ) {
 		ship_recalc_subsys_strength( shipp );
+	}
+
+	// Fix up animation code references
+	for (int i = 0; i < sinfo->n_subsystems; i++) {
+		for (int j = 0; j < sinfo->subsystems[i].n_triggers; j++) {
+			if (stricmp(sinfo->subsystems[i].triggers[j].sub_name, "<none>")) {
+				int idx = ship_get_subobj_model_num(sinfo, sinfo->subsystems[i].triggers[j].sub_name);
+				if (idx != -1) {
+					sinfo->subsystems[i].triggers[j].subtype = idx;
+				} else {
+					WarningEx(LOCATION, "Could not find subobject %s in ship class %s. Animation triggers will not work correctly.\n", sinfo->subsystems[i].triggers[j].sub_name, sinfo->name);
+				}
+			}
+		}
 	}
 
 	return 1;
@@ -16927,4 +16948,14 @@ void parse_weapon_targeting_priorities()
 		if(k == MAX_WEAPON_TYPES)
 			Warning(LOCATION, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
 	}
+}
+
+int ship_get_subobj_model_num(ship_info* sip, char* subobj_name) 
+{
+	for (int i = 0; i < sip->n_subsystems; i++) {
+		if (!stricmp(sip->subsystems[i].subobj_name, subobj_name))
+			return sip->subsystems[i].subobj_num;
+	}
+
+	return -1;
 }
