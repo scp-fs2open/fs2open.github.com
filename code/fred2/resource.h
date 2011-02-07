@@ -1144,8 +1144,8 @@
 #define IDC_SOUND_ENVIRONMENT_TEST      1627
 #define IDC_GROUP_MESSAGES              1628
 #define IDC_INCLUDE_SENDER              1629
-#define IDC_ALLOW_ETS                   1629
-#define IDC_IMMOBILE                    1630
+#define IDC_DISABLE_ETS                 1630
+#define IDC_IMMOBILE                    1631
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1439,7 +1439,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1630
+#define _APS_NEXT_CONTROL_VALUE         1632
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

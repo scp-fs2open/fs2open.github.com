@@ -1788,7 +1788,7 @@ BEGIN
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",BS_3STATE | WS_TABSTOP,165,124,97,10
     CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | WS_TABSTOP,165,135,99,10
     CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",BS_3STATE | WS_TABSTOP,165,145,104,10
-    CONTROL         "Disable ETS",IDC_ALLOW_ETS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,156,55,10
+    CONTROL         "Disable ETS",IDC_DISABLE_ETS,"Button",BS_3STATE | WS_TABSTOP,165,156,55,10
     CONTROL         "Flak Protect Ship",IDC_FLAK_PROTECT_SHIP,"Button",
                     BS_3STATE | WS_TABSTOP,12,102,80,8
     CONTROL         "Laser Protect Ship",IDC_LASER_PROTECT_SHIP,"Button",
@@ -1796,7 +1796,7 @@ BEGIN
     CONTROL         "Missile Protect Ship",IDC_MISSILE_PROTECT_SHIP,"Button",
                     BS_3STATE | WS_TABSTOP,12,118,80,8
     GROUPBOX        "Turret Threats",IDC_STATIC,7,83,102,48
-    CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,274,66,10
+    CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_3STATE | WS_TABSTOP,7,274,66,10
 END
 
 IDD_ADD_VARIABLE DIALOG 0, 0, 422, 102

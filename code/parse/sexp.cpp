@@ -503,7 +503,8 @@ sexp_oper Operators[] = {
 	{ "ship-set-damage-type",		OP_SHIP_SET_DAMAGE_TYPE,		4, INT_MAX }, // FUBAR
 	{ "ship-set-shockwave-damage-type",		OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE,		3, INT_MAX }, // FUBAR
 	{ "field-set-damage-type",		OP_FIELD_SET_DAMAGE_TYPE,		2,2 }, // FUBAR
-	{ "allow-ets",				OP_ALLOW_ETS,				2, INT_MAX}, // The E
+	{ "disable-ets",				OP_DISABLE_ETS,			1, INT_MAX}, // The E
+	{ "enable-ets",					OP_ENABLE_ETS,			1, INT_MAX}, // The E
 	{ "set-immobile",		OP_SET_IMMOBILE,			1, INT_MAX	},	// Goober5000
 	{ "set-mobile",			OP_SET_MOBILE,			1, INT_MAX	},	// Goober5000
 	
@@ -12444,6 +12445,12 @@ void sexp_set_immobile(int n, bool immobile)
 	sexp_deal_with_ship_flag(n, true, OF_IMMOBILE, 0, 0, 0, 0, P2_OF_IMMOBILE, immobile);
 }
 
+// Goober5000 - sets the "no-ets" flag on a list of ships
+void sexp_disable_ets(int n, bool disable)
+{
+	sexp_deal_with_ship_flag(n, true, 0, 0, 0, SF2_NO_ETS, 0, P2_SF2_NO_ETS, disable);
+}
+
 // Goober5000 - sets the vaporize flag on a list of ships
 void sexp_ships_vaporize(int n, bool vaporize)
 {
@@ -14705,30 +14712,6 @@ void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 			}
 		}
 	}
-}
-
-void sexp_allow_ets(int n) 
-{
-	bool activate = (is_sexp_true(n) != 0);
-
-	CDR(n);
-
-	for ( ; n != -1; n = CDR(n)) 
-	{
-		int sindex = ship_name_lookup(CTEXT(n), 1);
-
-		if (sindex >= 0)
-		{
-			ship* shipp = &Ships[sindex];
-
-			if (activate) {
-				shipp->flags2 &= ~SF2_NO_ETS;
-			} else {
-				shipp->flags2 |= SF2_NO_ETS;
-			}
-		}
-	}
-
 }
 
 //-Bobboau
@@ -20722,8 +20705,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_ALLOW_ETS:
-				sexp_allow_ets(node);
+			case OP_DISABLE_ETS:
+			case OP_ENABLE_ETS:
+				sexp_disable_ets(node, (op_num == OP_DISABLE_ETS));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -21583,7 +21567,8 @@ int query_operator_return_type(int op)
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 		case OP_STRING_CONCATENATE:
 		case OP_INT_TO_STRING:
-		case OP_ALLOW_ETS:
+		case OP_DISABLE_ETS:
+		case OP_ENABLE_ETS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -23330,12 +23315,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_HUD_ELEMENT;
 			}
 
-		case OP_ALLOW_ETS:
-			if ( argnum == 0) {
-				return OPF_BOOL;
-			} else {
+		case OP_DISABLE_ETS:
+		case OP_ENABLE_ETS:
 				return OPF_SHIP;
-			}
+
 		case OP_IS_FACING:
 			if (argnum < 2)
 				return OPF_SHIP;
@@ -24609,7 +24592,8 @@ int get_subcategory(int sexp_id)
 		case OP_WARP_ALLOWED:
 		case OP_SET_ARMOR_TYPE:
 		case OP_FORCE_GLIDE:
-		case OP_ALLOW_ETS:
+		case OP_DISABLE_ETS:
+		case OP_ENABLE_ETS:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 			
 		case OP_BEAM_FIRE:
@@ -27994,11 +27978,16 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tScript\r\n"
 	},
 
-	{OP_ALLOW_ETS, "allow-ets\r\n"
-		"\tSwitches a ships' ETS system on or off\r\n\r\n"
-		"Takes at least 2 Arguments...\r\n"
-		"\t1:\tTrue to switch ETS on, false to disable it\r\n"
-		"\t2+:\tList of ships this sexp applies to\r\n"
+	{ OP_DISABLE_ETS, "disable-ets\r\n"
+		"\tSwitches a ships' ETS system off\r\n\r\n"
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tList of ships this sexp applies to\r\n"
+	},
+
+	{ OP_ENABLE_ETS, "enable-ets\r\n"
+		"\tSwitches a ships' ETS system on\r\n\r\n"
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tList of ships this sexp applies to\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
