@@ -307,6 +307,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"afterburners-locked",
 	"force-shields-on",
 	"immobile",
+	"no-ets",
 };
 
 
@@ -2447,6 +2448,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_OF_IMMOBILE)
 		objp->flags |= OF_IMMOBILE;
+
+	if (parse_flags2 & P2_SF2_NO_ETS)
+		shipp->flags2 |= SF2_NO_ETS;
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

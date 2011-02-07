@@ -2296,7 +2296,7 @@ BEGIN
                     WS_TABSTOP,165,135,99,10
     CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",
                     BS_3STATE | WS_TABSTOP,165,145,104,10
-    CONTROL         "Disable ETS",IDC_ALLOW_ETS,"Button",BS_AUTOCHECKBOX | 
+    CONTROL         "Disable ETS",IDC_DISABLE_ETS,"Button",BS_3STATE | 
                     WS_TABSTOP,165,156,55,10
     CONTROL         "Flak Protect Ship",IDC_FLAK_PROTECT_SHIP,"Button",
                     BS_3STATE | WS_TABSTOP,12,102,80,8
@@ -2305,7 +2305,7 @@ BEGIN
     CONTROL         "Missile Protect Ship",IDC_MISSILE_PROTECT_SHIP,"Button",
                     BS_3STATE | WS_TABSTOP,12,118,80,8
     GROUPBOX        "Turret Threats",IDC_STATIC,7,83,102,48
-    CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_AUTOCHECKBOX | 
+    CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_3STATE | 
                     WS_TABSTOP,7,274,66,10
 END
 

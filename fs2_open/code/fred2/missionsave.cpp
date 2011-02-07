@@ -1301,6 +1301,7 @@ int CFred_mission_save::save_objects()
 	int i, j, k, z;
 	ai_info *aip;
 	object *objp;
+	ship *shipp;
 	ship_info *sip;
 	
 	required_string_fred("#Objects");
@@ -1317,31 +1318,32 @@ int CFred_mission_save::save_objects()
 			continue;
 		}
 
-		objp = &Objects[Ships[i].objnum];
-		sip = &Ship_info[Ships[i].ship_info_index];
+		shipp = &Ships[i];
+		objp = &Objects[shipp->objnum];
+		sip = &Ship_info[shipp->ship_info_index];
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
-		fout(" %s\t\t;! Object #%d\n", Ships[i].ship_name, i);
+		fout(" %s\t\t;! Object #%d\n", shipp->ship_name, i);
 
 		required_string_fred("$Class:");
 		parse_comments(0);
-		fout(" %s", Ship_info[Ships[i].ship_info_index].name);
+		fout(" %s", Ship_info[shipp->ship_info_index].name);
 
 		//alt classes stuff
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
-			if ((int)Ships[i].s_alt_classes.size()) {
-				for (k = 0; k < (int)Ships[i].s_alt_classes.size() ; k++) {
+			if ((int)shipp->s_alt_classes.size()) {
+				for (k = 0; k < (int)shipp->s_alt_classes.size() ; k++) {
 					// is this a variable?
-					if (Ships[i].s_alt_classes[k].variable_index != -1) {
-						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: @%s", Sexp_variables[Ships[i].s_alt_classes[k].variable_index].variable_name);  
+					if (shipp->s_alt_classes[k].variable_index != -1) {
+						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: @%s", Sexp_variables[shipp->s_alt_classes[k].variable_index].variable_name);  
 					}
 					else {
-						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: \"%s\"", Ship_info[Ships[i].s_alt_classes[k].ship_class].name);
+						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: \"%s\"", Ship_info[shipp->s_alt_classes[k].ship_class].name);
 					}
 
 					// default class?					
-					if (Ships[i].s_alt_classes[k].default_to_this_class) {
+					if (shipp->s_alt_classes[k].default_to_this_class) {
 						fout_version("\n;;FSO 3.6.10;; +Default Class:");
 					}
 				}
@@ -1361,15 +1363,15 @@ int CFred_mission_save::save_objects()
 
 		required_string_fred("$Team:");
 		parse_comments();
-		fout(" %s", Iff_info[Ships[i].team].iff_name);
+		fout(" %s", Iff_info[shipp->team].iff_name);
 
 		required_string_fred("$Location:");
 		parse_comments();
-		save_vector(Objects[Ships[i].objnum].pos);
+		save_vector(Objects[shipp->objnum].pos);
 
 		required_string_fred("$Orientation:");
 		parse_comments();
-		save_matrix(Objects[Ships[i].objnum].orient);
+		save_matrix(Objects[shipp->objnum].orient);
 
 		if (Format_fs2_retail)
 		{
@@ -1378,40 +1380,40 @@ int CFred_mission_save::save_objects()
 			fout(" %s", "IFF 1");
 		}
 
-		Assert(Ships[i].ai_index >= 0);
-		aip = &Ai_info[Ships[i].ai_index];
+		Assert(shipp->ai_index >= 0);
+		aip = &Ai_info[shipp->ai_index];
 
 		required_string_fred("$AI Behavior:");
 		parse_comments();
 		fout(" %s", Ai_behavior_names[aip->behavior]);
 
-		if (Ships[i].weapons.ai_class != Ship_info[Ships[i].ship_info_index].ai_class) {
+		if (shipp->weapons.ai_class != Ship_info[shipp->ship_info_index].ai_class) {
 			if (optional_string_fred("+AI Class:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+AI Class:");
 
-			fout(" %s", Ai_class_names[Ships[i].weapons.ai_class]);
+			fout(" %s", Ai_class_names[shipp->weapons.ai_class]);
 		}
 
-		save_ai_goals(Ai_info[Ships[i].ai_index].goals, i);
+		save_ai_goals(Ai_info[shipp->ai_index].goals, i);
 
 		// XSTR
 		required_string_fred("$Cargo 1:");
 		parse_comments();
-		fout_ext(" ", "%s", Cargo_names[Ships[i].cargo1]);
+		fout_ext(" ", "%s", Cargo_names[shipp->cargo1]);
 
-		save_common_object_data(&Objects[Ships[i].objnum], &Ships[i]);
+		save_common_object_data(&Objects[shipp->objnum], &Ships[i]);
 
-		if (Ships[i].wingnum >= 0){
-			Ships[i].arrival_location = ARRIVE_AT_LOCATION;
+		if (shipp->wingnum >= 0){
+			shipp->arrival_location = ARRIVE_AT_LOCATION;
 		}
 
 		required_string_fred("$Arrival Location:");
 		parse_comments();
-		fout(" %s", Arrival_location_names[Ships[i].arrival_location]);
+		fout(" %s", Arrival_location_names[shipp->arrival_location]);
 
-		if (Ships[i].arrival_location != ARRIVE_AT_LOCATION)
+		if (shipp->arrival_location != ARRIVE_AT_LOCATION)
 		{
 			if (optional_string_fred("+Arrival Distance:", "$Name:")){
 				parse_comments();
@@ -1419,14 +1421,14 @@ int CFred_mission_save::save_objects()
 				fout("\n+Arrival Distance:");
 			}
 
-			fout(" %d", Ships[i].arrival_distance);
+			fout(" %d", shipp->arrival_distance);
 			if (optional_string_fred("$Arrival Anchor:", "$Name:")){
 				parse_comments();
 			} else {
 				fout("\n$Arrival Anchor:");
 			}
 
-			z = Ships[i].arrival_anchor;
+			z = shipp->arrival_anchor;
 			if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG)
 			{
 				// get name
@@ -1449,12 +1451,12 @@ int CFred_mission_save::save_objects()
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			if ((Ships[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Ships[i].arrival_path_mask > 0))
+			if ((shipp->arrival_location == ARRIVE_FROM_DOCK_BAY) && (shipp->arrival_path_mask > 0))
 			{
 				int j, anchor_shipnum;
 				polymodel *pm;
 
-				anchor_shipnum = Ships[i].arrival_anchor;
+				anchor_shipnum = shipp->arrival_anchor;
 				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
 
 				fout("\n+Arrival Paths: ( ");
@@ -1462,7 +1464,7 @@ int CFred_mission_save::save_objects()
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (j = 0; j < pm->ship_bay->num_paths; j++)
 				{
-					if (Ships[i].arrival_path_mask & (1 << j))
+					if (shipp->arrival_path_mask & (1 << j))
 					{
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
 					}
@@ -1472,32 +1474,32 @@ int CFred_mission_save::save_objects()
 			}
 		}
 
-		if (Ships[i].arrival_delay)
+		if (shipp->arrival_delay)
 		{
 			if (optional_string_fred("+Arrival Delay:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Arrival Delay:");
 
-			fout(" %d", Ships[i].arrival_delay);
+			fout(" %d", shipp->arrival_delay);
 		}
 
 		required_string_fred("$Arrival Cue:");
 		parse_comments();
-		convert_sexp_to_string(Ships[i].arrival_cue, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(shipp->arrival_cue, out, SEXP_SAVE_MODE, 4096);
 		fout(" %s", out);
 
 		required_string_fred("$Departure Location:");
 		parse_comments();
-		fout(" %s", Departure_location_names[Ships[i].departure_location]);
+		fout(" %s", Departure_location_names[shipp->departure_location]);
 
-		if ( Ships[i].departure_location != DEPART_AT_LOCATION )
+		if ( shipp->departure_location != DEPART_AT_LOCATION )
 		{
 			required_string_fred("$Departure Anchor:");
 			parse_comments();
 			
-			if ( Ships[i].departure_anchor >= 0 )
-				fout(" %s", Ships[Ships[i].departure_anchor].ship_name );
+			if ( shipp->departure_anchor >= 0 )
+				fout(" %s", Ships[shipp->departure_anchor].ship_name );
 			else
 				fout(" <error>");
 		}
@@ -1505,12 +1507,12 @@ int CFred_mission_save::save_objects()
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			if ((Ships[i].departure_location == DEPART_AT_DOCK_BAY) && (Ships[i].departure_path_mask > 0))
+			if ((shipp->departure_location == DEPART_AT_DOCK_BAY) && (shipp->departure_path_mask > 0))
 			{
 				int j, anchor_shipnum;
 				polymodel *pm;
 
-				anchor_shipnum = Ships[i].departure_anchor;
+				anchor_shipnum = shipp->departure_anchor;
 				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
 
 				fout("\n+Departure Paths: ( ");
@@ -1518,7 +1520,7 @@ int CFred_mission_save::save_objects()
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (j = 0; j < pm->ship_bay->num_paths; j++)
 				{
-					if (Ships[i].departure_path_mask & (1 << j))
+					if (shipp->departure_path_mask & (1 << j))
 					{
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
 					}
@@ -1528,19 +1530,19 @@ int CFred_mission_save::save_objects()
 			}
 		}
 
-		if (Ships[i].departure_delay)
+		if (shipp->departure_delay)
 		{
 			if (optional_string_fred("+Departure delay:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Departure delay:");
 
-			fout(" %d", Ships[i].departure_delay);
+			fout(" %d", shipp->departure_delay);
 		}
 
 		required_string_fred("$Departure Cue:");
 		parse_comments();
-		convert_sexp_to_string(Ships[i].departure_cue, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(shipp->departure_cue, out, SEXP_SAVE_MODE, 4096);
 		fout(" %s", out);
 
 		required_string_fred("$Determination:");
@@ -1553,39 +1555,39 @@ int CFred_mission_save::save_objects()
 		} else
 			fout("\n+Flags: (");
 
-		if (Ships[i].flags & SF_CARGO_REVEALED)
+		if (shipp->flags & SF_CARGO_REVEALED)
 			fout(" \"cargo-known\"");
-		if (Ships[i].flags & SF_IGNORE_COUNT)
+		if (shipp->flags & SF_IGNORE_COUNT)
 			fout(" \"ignore-count\"");
 		if (objp->flags & OF_PROTECTED)
 			fout(" \"protect-ship\"");
-		if (Ships[i].flags & SF_REINFORCEMENT)
+		if (shipp->flags & SF_REINFORCEMENT)
 			fout(" \"reinforcement\"");
 		if (objp->flags & OF_NO_SHIELDS)
 			fout(" \"no-shields\"");
-		if (Ships[i].flags & SF_ESCORT)
+		if (shipp->flags & SF_ESCORT)
 			fout(" \"escort\"");
 		if (objp->type == OBJ_START)
 			fout(" \"player-start\"");
-		if (Ships[i].flags & SF_NO_ARRIVAL_MUSIC)
+		if (shipp->flags & SF_NO_ARRIVAL_MUSIC)
 			fout(" \"no-arrival-music\"");
-		if (Ships[i].flags & SF_NO_ARRIVAL_WARP)
+		if (shipp->flags & SF_NO_ARRIVAL_WARP)
 			fout(" \"no-arrival-warp\"");
-		if (Ships[i].flags & SF_NO_DEPARTURE_WARP)
+		if (shipp->flags & SF_NO_DEPARTURE_WARP)
 			fout(" \"no-departure-warp\"");
-		if (Ships[i].flags & SF_LOCKED)
+		if (shipp->flags & SF_LOCKED)
 			fout(" \"locked\"");
-		if (Objects[Ships[i].objnum].flags & OF_INVULNERABLE)
+		if (Objects[shipp->objnum].flags & OF_INVULNERABLE)
 			fout(" \"invulnerable\"");
-		if (Ships[i].flags & SF_HIDDEN_FROM_SENSORS)
+		if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
 			fout(" \"hidden-from-sensors\"");
-		if (Ships[i].flags & SF_SCANNABLE)
+		if (shipp->flags & SF_SCANNABLE)
 			fout(" \"scannable\"");
-		if (Ai_info[Ships[i].ai_index].ai_flags & AIF_KAMIKAZE)
+		if (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE)
 			fout(" \"kamikaze\"");
-		if (Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC)
+		if (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC)
 			fout(" \"no-dynamic\"");
-		if (Ships[i].flags & SF_RED_ALERT_STORE_STATUS)
+		if (shipp->flags & SF_RED_ALERT_STORE_STATUS)
 			fout(" \"red-alert-carry\"");
 		if (objp->flags & OF_BEAM_PROTECTED)
 			fout(" \"beam-protect-ship\"");
@@ -1595,17 +1597,17 @@ int CFred_mission_save::save_objects()
 			fout(" \"laser-protect-ship\"");
 		if (objp->flags & OF_MISSILE_PROTECTED)
 			fout(" \"missile-protect-ship\"");
-		if (Ships[i].ship_guardian_threshold != 0)
+		if (shipp->ship_guardian_threshold != 0)
 			fout(" \"guardian\"");
 		if (objp->flags & OF_SPECIAL_WARPIN)
 			fout(" \"special-warp\"");
-		if (Ships[i].flags & SF_VAPORIZE)
+		if (shipp->flags & SF_VAPORIZE)
 			fout(" \"vaporize\"");
-		if (Ships[i].flags2 & SF2_STEALTH)
+		if (shipp->flags2 & SF2_STEALTH)
 			fout(" \"stealth\"");
-		if (Ships[i].flags2 & SF2_FRIENDLY_STEALTH_INVIS)
+		if (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS)
 			fout(" \"friendly-stealth-invisible\"");
-		if (Ships[i].flags2 & SF2_DONT_COLLIDE_INVIS)
+		if (shipp->flags2 & SF2_DONT_COLLIDE_INVIS)
 			fout(" \"don't-collide-invisible\"");
 		fout(" )");
 
@@ -1618,84 +1620,86 @@ int CFred_mission_save::save_objects()
 			} else
 				fout("\n+Flags2: (");
 
-			if (Ships[i].flags2 & SF2_PRIMITIVE_SENSORS)
+			if (shipp->flags2 & SF2_PRIMITIVE_SENSORS)
 				fout(" \"primitive-sensors\"");
-			if (Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE)
+			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
 				fout(" \"no-subspace-drive\"");
-			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY)
+			if (shipp->flags2 & SF2_NAVPOINT_CARRY)
 				fout(" \"nav-carry-status\"");
-			if (Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY)
+			if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
 				fout(" \"affected-by-gravity\"");
-			if (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
+			if (shipp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
 				fout(" \"toggle-subsystem-scanning\"");
 			if (objp->flags & OF_TARGETABLE_AS_BOMB)
 				fout(" \"targetable-as-bomb\"");
-			if (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES)
+			if (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES)
 				fout(" \"no-builtin-messages\"");
-			if (Ships[i].flags2 & SF2_PRIMARIES_LOCKED)
+			if (shipp->flags2 & SF2_PRIMARIES_LOCKED)
 				fout(" \"primaries-locked\"");
-			if (Ships[i].flags2 & SF2_SECONDARIES_LOCKED)
+			if (shipp->flags2 & SF2_SECONDARIES_LOCKED)
 				fout(" \"secondaries-locked\"");
-			if (Ships[i].flags2 & SF2_NO_DEATH_SCREAM)
+			if (shipp->flags2 & SF2_NO_DEATH_SCREAM)
 				fout(" \"no-death-scream\"");
-			if (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM)
+			if (shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM)
 				fout(" \"always-death-scream\"");
-			if (Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
+			if (shipp->flags2 & SF2_NAVPOINT_NEEDSLINK)
 				fout(" \"nav-needslink\"");
-			if (Ships[i].flags2 & SF2_HIDE_SHIP_NAME)
+			if (shipp->flags2 & SF2_HIDE_SHIP_NAME)
 				fout(" \"hide-ship-name\"");
-			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
+			if (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY)
 				fout(" \"set-class-dynamically\"");
-			if (Ships[i].flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
 				fout(" \"lock-all-turrets\"");
-			if (Ships[i].flags2 & SF2_AFTERBURNER_LOCKED)
+			if (shipp->flags2 & SF2_AFTERBURNER_LOCKED)
 				fout(" \"afterburners-locked\"");
-			if (Ships[i].flags2 & SF2_FORCE_SHIELDS_ON)
+			if (shipp->flags2 & SF2_FORCE_SHIELDS_ON)
 				fout(" \"force-shields-on\"");
 			if (objp->flags & OF_IMMOBILE)
 				fout(" \"immobile\"");
+			if (shipp->flags2 & SF2_NO_ETS)
+				fout(" \"no-ets\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
 
-		fout("\n+Respawn priority: %d", Ships[i].respawn_priority);	// HA!  Newline added by Goober5000
+		fout("\n+Respawn priority: %d", shipp->respawn_priority);	// HA!  Newline added by Goober5000
 
-		if (Ships[i].flags & SF_ESCORT) {
+		if (shipp->flags & SF_ESCORT) {
 			if (optional_string_fred("+Escort priority:", "$Name:")) {
 				parse_comments();
 			} else {
 				fout("\n+Escort priority:");
 			}
 
-			fout(" %d", Ships[i].escort_priority);
+			fout(" %d", shipp->escort_priority);
 		}
 
 		// special explosions
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
-			if (Ships[i].use_special_explosion) {
+			if (shipp->use_special_explosion) {
 				if (optional_string_fred("$Special Explosion:", "$Name:")) {
 					parse_comments();
 
 					required_string_fred("+Special Exp Damage:"); 
 					parse_comments();
-					fout(" %f", Ships[i].special_exp_damage);
+					fout(" %f", shipp->special_exp_damage);
 
 					required_string_fred("+Special Exp Blast:"); 
 					parse_comments();
-					fout(" %f", Ships[i].special_exp_blast);
+					fout(" %f", shipp->special_exp_blast);
 
 					required_string_fred("+Special Exp Inner Radius:"); 
 					parse_comments();
-					fout(" %f", Ships[i].special_exp_inner);
+					fout(" %f", shipp->special_exp_inner);
 
 					required_string_fred("+Special Exp Outer Radius:"); 
 					parse_comments();
-					fout(" %f", Ships[i].special_exp_outer);
+					fout(" %f", shipp->special_exp_outer);
 
-					if (Ships[i].use_shockwave && (Ships[i].special_exp_shockwave_speed > 0)) {
+					if (shipp->use_shockwave && (shipp->special_exp_shockwave_speed > 0)) {
 						optional_string_fred("+Special Exp Shockwave Speed:"); 
 						parse_comments();
-						fout(" %f", Ships[i].special_exp_shockwave_speed);
+						fout(" %f", shipp->special_exp_shockwave_speed);
 					}
 					else {
 						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
@@ -1706,20 +1710,20 @@ int CFred_mission_save::save_objects()
 					fout_version("\n$Special Explosion:");
 
 					fout_version("\n+Special Exp Damage:"); 
-					fout(" %f", Ships[i].special_exp_damage);
+					fout(" %f", shipp->special_exp_damage);
 
 					fout_version("\n+Special Exp Blast:"); 
-					fout(" %f", Ships[i].special_exp_blast);
+					fout(" %f", shipp->special_exp_blast);
 
 					fout_version("\n+Special Exp Inner Radius:"); 
-					fout(" %f", Ships[i].special_exp_inner);
+					fout(" %f", shipp->special_exp_inner);
 
 					fout_version("\n+Special Exp Outer Radius:"); 
-					fout(" %f", Ships[i].special_exp_outer);
+					fout(" %f", shipp->special_exp_outer);
 
-					if (Ships[i].use_shockwave && (Ships[i].special_exp_shockwave_speed > 0)) {
+					if (shipp->use_shockwave && (shipp->special_exp_shockwave_speed > 0)) {
 						fout_version("\n+Special Exp Shockwave Speed:"); 
-						fout(" %f", Ships[i].special_exp_shockwave_speed);
+						fout(" %f", shipp->special_exp_shockwave_speed);
 					}
 
 					fso_comment_pop();
@@ -1731,7 +1735,7 @@ int CFred_mission_save::save_objects()
 		}
 			// retail format special explosions
 		else {
-			if (Ships[i].use_special_explosion) {
+			if (shipp->use_special_explosion) {
 				int special_exp_index;
 
 				if (has_special_explosion_block_index(&Ships[i], &special_exp_index)) {
@@ -1741,7 +1745,7 @@ int CFred_mission_save::save_objects()
 				else {
 					CString text = "You are saving in the retail mission format, but ";
 					text += "the mission has too many special explosions defined. \"";
-					text += Ships[i].ship_name;
+					text += shipp->ship_name;
 					text += "\" has therefore lost any special explosion data that was defined for it. ";
 					text += "\" Either remove special explosions or SEXP variables if you need it to have one ";
 					MessageBox(NULL, text, "Too many variables!", MB_OK);
@@ -1753,7 +1757,7 @@ int CFred_mission_save::save_objects()
 		// Goober5000 ------------------------------------------------
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
-			if (Ships[i].special_hitpoints) {
+			if (shipp->special_hitpoints) {
 				if (optional_string_fred("+Special Hitpoints:", "$Name:")) {
 					parse_comments();
 				} else {
@@ -1762,13 +1766,13 @@ int CFred_mission_save::save_objects()
 					fso_comment_pop();
 				}
 
-				fout(" %d", Ships[i].special_hitpoints);
+				fout(" %d", shipp->special_hitpoints);
 			}
 			else {
 				bypass_comment(";;FSO 3.6.13;; +Special Hitpoints:");
 			}
 
-			if (Ships[i].special_shield >= 0) {
+			if (shipp->special_shield >= 0) {
 				if (optional_string_fred("+Special Shield Points:", "$Name:")) {
 					parse_comments();
 				} else {
@@ -1777,7 +1781,7 @@ int CFred_mission_save::save_objects()
 					fso_comment_pop();
 				}
 
-				fout(" %d", Ships[i].special_shield);
+				fout(" %d", shipp->special_shield);
 			}
 			else {
 				bypass_comment(";;FSO 3.6.13;; +Special Shield Points:");
@@ -1785,38 +1789,38 @@ int CFred_mission_save::save_objects()
 		}
 		// -----------------------------------------------------------
 
-		if ( Ai_info[Ships[i].ai_index].ai_flags & AIF_KAMIKAZE ) {
+		if ( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE ) {
 			if ( optional_string_fred("+Kamikaze Damage:", "$Name:")){
 				parse_comments();
 			} else {
 				fout("\n+Kamikaze Damage:");
 			}
 
-			fout(" %d", (int)(Ai_info[Ships[i].ai_index].kamikaze_damage) );
+			fout(" %d", (int)(Ai_info[shipp->ai_index].kamikaze_damage) );
 		}
 
-		if (Ships[i].hotkey != -1) {
+		if (shipp->hotkey != -1) {
 			if (optional_string_fred("+Hotkey:", "$Name:")){
 				parse_comments();
 			} else {
 				fout("\n+Hotkey:");
 			}
 
-			fout(" %d", Ships[i].hotkey);
+			fout(" %d", shipp->hotkey);
 		}
 
 		// mwa -- new code to save off information about initially docked ships.
 		// Goober5000 - newer code to save off information about initially docked ships. ;)
-		if (object_is_docked(&Objects[Ships[i].objnum]))
+		if (object_is_docked(&Objects[shipp->objnum]))
 		{
 			// possible incompatibility
-			if ( Format_fs2_open == FSO_FORMAT_RETAIL && !dock_check_docked_one_on_one(&Objects[Ships[i].objnum]))
+			if ( Format_fs2_open == FSO_FORMAT_RETAIL && !dock_check_docked_one_on_one(&Objects[shipp->objnum]))
 			{
 				static bool warned = false;
 				if (!warned)
 				{
 					CString text = "You are saving in the retail mission format, but \"";
-					text += Ships[i].ship_name;
+					text += shipp->ship_name;
 					text += "\" is docked to more than one ship.  If you wish to run this mission in retail, ";
 					text += "you should remove the additional ships and save the mission again.";
 					MessageBox(NULL, text, "Incompatibility with retail mission format", MB_OK);
@@ -1826,19 +1830,19 @@ int CFred_mission_save::save_objects()
 			}
 
 			// save one-on-one groups as if they were retail
-			if (dock_check_docked_one_on_one(&Objects[Ships[i].objnum]))
+			if (dock_check_docked_one_on_one(&Objects[shipp->objnum]))
 			{
 				// retail format only saved information for non-leaders
-				if (!(Ships[i].flags & SF_DOCK_LEADER))
+				if (!(shipp->flags & SF_DOCK_LEADER))
 				{
-					save_single_dock_instance(&Ships[i], Objects[Ships[i].objnum].dock_list);
+					save_single_dock_instance(&Ships[i], Objects[shipp->objnum].dock_list);
 				}
 			}
 			// multiply docked
 			else
 			{
 				// save all instances for all ships
-				for (dock_instance *dock_ptr = Objects[Ships[i].objnum].dock_list; dock_ptr != NULL; dock_ptr = dock_ptr->next)
+				for (dock_instance *dock_ptr = Objects[shipp->objnum].dock_list; dock_ptr != NULL; dock_ptr = dock_ptr->next)
 				{
 					save_single_dock_instance(&Ships[i], dock_ptr);
 				}
@@ -1847,38 +1851,38 @@ int CFred_mission_save::save_objects()
 
 		// check the ship flag about killing off the ship before a missino starts.  Write out the appropriate
 		// variable if necessary
-		if ( Ships[i].flags & SF_KILL_BEFORE_MISSION ) {
+		if ( shipp->flags & SF_KILL_BEFORE_MISSION ) {
 			if ( optional_string_fred("+Destroy At:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Destroy At: ");
 
-			fout(" %d", Ships[i].final_death_time );
+			fout(" %d", shipp->final_death_time );
 		}
 
 		// possibly write out the orders that this ship will accept.  We'll only do it if the orders
 		// are not the default set of orders
-		if ( Ships[i].orders_accepted != ship_get_default_orders_accepted( &Ship_info[Ships[i].ship_info_index]) ) {
+		if ( shipp->orders_accepted != ship_get_default_orders_accepted( &Ship_info[shipp->ship_info_index]) ) {
 			if ( optional_string_fred("+Orders Accepted:", "$Name:") )
 				parse_comments();
 			else
 				fout("\n+Orders Accepted:");
 
-			fout(" %d\t\t;! note that this is a bitfield!!!", Ships[i].orders_accepted);
+			fout(" %d\t\t;! note that this is a bitfield!!!", shipp->orders_accepted);
 		}
 
-		if (Ships[i].group >= 0) {
+		if (shipp->group >= 0) {
 			if (optional_string_fred("+Group:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Group:");
 
-			fout(" %d", Ships[i].group);
+			fout(" %d", shipp->group);
 		}
 
 		// always write out the score to ensure backwards compatibility. If the score is the same as the value 
 		// in the table write out a flag to tell the game to simply use whatever is in the table instead
-		if (Ship_info[Ships[i].ship_info_index].score == Ships[i].score ) {
+		if (Ship_info[shipp->ship_info_index].score == shipp->score ) {
 			if ( optional_string_fred("+Use Table Score:", "$Name:") ) {
 				parse_comments();
 			} else {
@@ -1896,10 +1900,10 @@ int CFred_mission_save::save_objects()
 		else
 			fout("\n+Score:");
 
-		fout(" %d", Ships[i].score);
+		fout(" %d", shipp->score);
 	
 		
-		if (Format_fs2_open != FSO_FORMAT_RETAIL && Ships[i].assist_score_pct != 0) {
+		if (Format_fs2_open != FSO_FORMAT_RETAIL && shipp->assist_score_pct != 0) {
 			if ( optional_string_fred("+Assist Score Percentage:") ) {
 				parse_comments();
 			} else {
@@ -1908,20 +1912,20 @@ int CFred_mission_save::save_objects()
 				fso_comment_pop();
 			}
 			
-			fout(" %f", Ships[i].assist_score_pct);
+			fout(" %f", shipp->assist_score_pct);
 		}
 		else {
 			bypass_comment(";;FSO 3.6.10;; +Assist Score Percentage:");
 		}
 
 		// deal with the persona for this ship as well.
-		if ( Ships[i].persona_index != -1 ) {
+		if ( shipp->persona_index != -1 ) {
 			if (optional_string_fred("+Persona Index:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Persona Index:");
 
-			fout(" %d", Ships[i].persona_index);
+			fout(" %d", shipp->persona_index);
 		}
 
 		// Goober5000 - deal with texture replacement ----------------
@@ -1930,7 +1934,7 @@ int CFred_mission_save::save_objects()
 			bool needs_header = true;
 
 			while (k < Fred_num_texture_replacements) {
-				if ( !stricmp(Ships[i].ship_name, Fred_texture_replacements[k].ship_name) ) {
+				if ( !stricmp(shipp->ship_name, Fred_texture_replacements[k].ship_name) ) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);
