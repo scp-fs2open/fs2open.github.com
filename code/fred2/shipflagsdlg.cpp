@@ -72,7 +72,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_NAV_CARRY, m_nav_carry);
 	DDX_Control(pDX, IDC_NAV_NEEDSLINK, m_nav_needslink);
 	DDX_Control(pDX, IDC_HIDE_SHIP_NAME, m_hide_ship_name);
-	DDX_Control(pDX, IDC_ALLOW_ETS, m_allow_ets);
+	DDX_Control(pDX, IDC_DISABLE_ETS, m_disable_ets);
 	DDX_Control(pDX, IDC_SET_CLASS_DYNAMICALLY, m_set_class_dynamically);
 	//}}AFX_DATA_MAP
 
@@ -135,7 +135,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NAV_NEEDSLINK, OnNavNeedslink)
 	ON_BN_CLICKED(IDC_HIDE_SHIP_NAME, OnHideShipName)
 	ON_BN_CLICKED(IDC_SET_CLASS_DYNAMICALLY, OnSetClassDynamically)
-	ON_BN_CLICKED(IDC_ALLOW_ETS, OnDisableETS)
+	ON_BN_CLICKED(IDC_DISABLE_ETS, OnDisableETS)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -333,7 +333,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_nav_carry.SetCheck(nav_carry);
 	m_nav_needslink.SetCheck(nav_needslink);
 	m_hide_ship_name.SetCheck(hide_ship_name);
-	m_allow_ets.SetCheck(no_ets);
+	m_disable_ets.SetCheck(no_ets);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -906,11 +906,18 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
-	switch (m_allow_ets.GetCheck()) {
+	switch (m_disable_ets.GetCheck()) {
 		case 1:
+			if ( !(shipp->flags2 & SF2_NO_ETS) )
+				set_modified();
+
 			shipp->flags2 |= SF2_NO_ETS;
 			break;
+
 		case 0:
+			if ( shipp->flags2 & SF2_NO_ETS )
+				set_modified();
+
 			shipp->flags2 &= ~SF2_NO_ETS;
 			break;
 	}
@@ -1325,9 +1332,9 @@ void ship_flags_dlg::OnHideShipName()
 
 void ship_flags_dlg::OnDisableETS()
 {
-	if (m_allow_ets.GetCheck() == 1) {
-		m_allow_ets.SetCheck(0);
+	if (m_disable_ets.GetCheck() == 1) {
+		m_disable_ets.SetCheck(0);
 	} else {
-		m_allow_ets.SetCheck(1);
+		m_disable_ets.SetCheck(1);
 	}
 }
