@@ -20,7 +20,7 @@
 #include "io/key.h"
 #include "osapi/osapi.h"
 #include "sound/sound.h"
-#include "sound/ds.h"
+#include "sound/openal.h"
 #include "bmpman/bmpman.h"
 #include "cutscene/oggplayer.h"
 #include "io/timer.h"
@@ -360,8 +360,10 @@ static void OGG_video_init(theora_info *tinfo)
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
-		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
@@ -724,12 +726,14 @@ THEORAFILE *theora_open(char *filename)
 		movie->vorbis_p = 0;
 	}
 
+	int ret;
+
 	// we're expecting more header packets.
 	while ( (movie->theora_p < 3) || (movie->vorbis_p && (movie->vorbis_p < 3)) ) {
-		int ret;
 
+		ret = ogg_stream_packetout(&movie->t_osstate, &movie->opacket);
 		// look for further theora headers
-		while ( (movie->theora_p < 3) && (ret = ogg_stream_packetout(&movie->t_osstate, &movie->opacket)) ){ 
+		while ( (movie->theora_p < 3) && (ret) ){
 			if ( (ret < 0) || theora_decode_header(&movie->tinfo, &movie->tcomment, &movie->opacket) ) {
 				mprintf(("Theora ERROR:  Error parsing Theora stream headers on '%s'!  Corrupt stream?\n", lower_name));
 				goto Error;
@@ -737,10 +741,14 @@ THEORAFILE *theora_open(char *filename)
 
 			if (++movie->theora_p == 3)
 				break;
+
+			ret = ogg_stream_packetout(&movie->t_osstate, &movie->opacket);
 		}
 
+		ret = ogg_stream_packetout(&movie->v_osstate, &movie->opacket);
+
 		// look for more vorbis header packets
-		while ( movie->vorbis_p && (movie->vorbis_p < 3) && (ret = ogg_stream_packetout(&movie->v_osstate, &movie->opacket)) ) {
+		while ( movie->vorbis_p && (movie->vorbis_p < 3) && (ret) ) {
 			if ( (ret < 0) || vorbis_synthesis_headerin(&movie->vinfo, &movie->vcomment, &movie->opacket) ) {
 				mprintf(("Theora ERROR:  Error parsing Vorbis stream headers on '%s'!  Corrupt stream?\n", lower_name));
 				goto Error;
@@ -748,6 +756,8 @@ THEORAFILE *theora_open(char *filename)
 
 			if (++movie->vorbis_p == 3)
 				break;
+
+			ret = ogg_stream_packetout(&movie->v_osstate, &movie->opacket);
 		}
 
 		// The header pages/packets will arrive before anything else we care about, or the stream is not obeying spec
@@ -837,15 +847,15 @@ void theora_play(THEORAFILE *movie)
 
 				for (i = 0; (i < ret) && (i < maxsamples); i++) {
 					for (j = 0; j < movie->vinfo.channels; j++) {
-						int val = fl2i(pcm[j][i] * 32767.0f + 0.5f);
+						float val = pcm[j][i] * 32767.0f + 0.5f;
 
-						if (val > 32767)
-							val = 32767;
+						if (val > 32767.0f)
+							val = 32767.0f;
 
-						if (val < -32768)
-							val = -32768;
+						if (val < -32768.0f)
+							val = -32768.0f;
 
-						audiobuf[count++] = val;
+						audiobuf[count++] = (short)val;
 					}
 				}
 

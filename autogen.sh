@@ -49,7 +49,7 @@ DIE=0
   DIE=1
 }
 
-for AM in automake-1.9 automake-1.8 automake-1.7 automake-1.6 automake; do
+for AM in automake-1.11 automake-1.10 automake-1.9 automake-1.8 automake-1.7 automake-1.6 automake; do
   (check_version "$AM" 1 6 1) && {
     AUTOMAKE="$AM"
     break
@@ -67,7 +67,7 @@ fi
 
 # if no automake, don't bother testing for aclocal
 test -z "$AUTOMAKE" || {
-  for ACL in aclocal-1.9 aclocal-1.8 aclocal-1.7 aclocal-1.6 aclocal; do
+  for ACL in aclocal-1.11 aclocal-1.10 aclocal-1.9 aclocal-1.8 aclocal-1.7 aclocal-1.6 aclocal; do
     (check_version "$ACL" 1 6 1) && {
       ACLOCAL="$ACL"
       break
@@ -128,6 +128,8 @@ done
 
 #conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
+# to not run configure, call autogen.sh as,
+# NOCONFIGURE=1 ./autogen.sh
 if test x$NOCONFIGURE = x; then
   echo Running $srcdir/configure $conf_flags "$@" ...
   $srcdir/configure $conf_flags "$@" \

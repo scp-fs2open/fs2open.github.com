@@ -407,7 +407,7 @@ void event_music_force_switch()
 		return;	// invalid pattern
 
 	Assert(new_pattern >= 0 && new_pattern < MAX_PATTERNS);
-	audiostream_play(Patterns[new_pattern].handle, Master_event_music_volume, 0);	// no looping
+	audiostream_play(Patterns[new_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 	audiostream_set_sample_cutoff(Patterns[new_pattern].handle, fl2i(Patterns[new_pattern].num_measures * Patterns[new_pattern].samples_per_measure) );
 	Patterns[Current_pattern].next_pattern = Patterns[Current_pattern].default_next_pattern;
 	Patterns[Current_pattern].force_pattern = FALSE;
@@ -440,7 +440,7 @@ void event_music_do_frame()
 		if ( Current_pattern != -1  && Patterns[Current_pattern].handle >= 0) {
 			//WMC - removed in favor of if
 			//Assert(Patterns[Current_pattern].handle >= 0 );
-			audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
+			audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 		}
 	}
@@ -462,7 +462,7 @@ void event_music_do_frame()
 			audiostream_stop(pat->handle);	// stop current and rewind
 			pat->loop_for--;
 			if ( pat->loop_for > 0 ) {
-				audiostream_play(pat->handle, Master_event_music_volume, 0);	// no looping
+				audiostream_play(pat->handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 				audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 			}
 			else {
@@ -480,29 +480,6 @@ void event_music_do_frame()
 			}
 		}
 
-		// We want to go back to NRML track music if all the hostiles have been 
-		// destroyed, and we are still playing the battle music
-		if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3)
-		{
-			if (timestamp_elapsed(Battle_over_timestamp) && Event_Music_battle_started == 1)
-			{
-				if (hostile_ships_present() == FALSE)
-				{
-					if (Patterns[Current_pattern].next_pattern != SONG_VICT_2)
-					{
-						// Goober5000
-						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
-							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
-						else
-							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
-
-						Patterns[Current_pattern].force_pattern = TRUE;
-						Event_Music_battle_started = 0;
-					}
-				}
-			}
-		}
-
 		if (Event_Music_battle_started == 0) {
 			if (Current_pattern == SONG_NRML_1 || Current_pattern == SONG_NRML_2 || Current_pattern == SONG_NRML_3 ) {
 				if (timestamp_elapsed(Check_for_battle_music)) {
@@ -510,6 +487,39 @@ void event_music_do_frame()
 					if (hostile_ships_present() == TRUE) {
 						Patterns[Current_pattern].next_pattern = SONG_BTTL_1;
 						Patterns[Current_pattern].force_pattern = TRUE;
+					}
+				}
+			} else if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
+				if (timestamp_elapsed(Battle_over_timestamp)) {
+					Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+					if (hostile_ships_present() == FALSE) {
+						Patterns[Current_pattern].force_pattern = TRUE;
+
+						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1) {
+							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+						} else {
+							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+						}
+					}
+				}
+			}
+		} else {
+			// We want to go back to NRML track music if all the hostiles have been 
+			// destroyed, and we are still playing the battle music
+			if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
+				if (timestamp_elapsed(Battle_over_timestamp)) {
+					if (hostile_ships_present() == FALSE) {
+						if (Patterns[Current_pattern].next_pattern != SONG_VICT_2) {
+							// Goober5000
+							if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1) {
+								Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+							} else {
+								Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+							}
+
+							Patterns[Current_pattern].force_pattern = TRUE;
+							Event_Music_battle_started = 0;
+						}
 					}
 				}
 			}
@@ -914,7 +924,7 @@ int event_music_friendly_arrival()
 			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
 			// arrival music pattern, and this is it
 			Assert(Patterns[SONG_AARV_1].handle >= 0 );
-			audiostream_play(Patterns[SONG_AARV_1].handle, Master_event_music_volume, 0);	// no looping
+			audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
 		}
 		// don't overlay
@@ -993,6 +1003,7 @@ int event_music_primary_goal_failed()
 	}
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = next_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1066,6 +1077,7 @@ int event_music_player_death()
 		return 0;	// already playing
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = SONG_DEAD_1;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1188,9 +1200,7 @@ void parse_soundtrack()
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string("#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1326,9 +1336,7 @@ void parse_menumusic()
 			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
-		if(!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("$Name:", "#Menu Music End"), "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1361,7 +1369,8 @@ void parse_menumusic()
 	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_EXT, exts) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
-	Num_music_files++;	
+	if (!nocreate)
+		Num_music_files++;	
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1426,6 +1435,7 @@ void event_music_change_pattern(int new_pattern)
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = new_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1580,7 +1590,7 @@ void event_music_unpause()
 
 	Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 	if ( audiostream_is_paused(Patterns[Current_pattern].handle) == TRUE ) {
-		audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
+		audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 		audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 	}
 }

@@ -34,7 +34,8 @@
 #include "object/objectdock.h"
 #include "camera/camera.h"
 #include "network/multiutil.h"
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
+#include "parse/parselo.h"
 
 #ifndef NDEBUG
 #include "io/key.h"
@@ -87,7 +88,9 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 	if ((ap->p == bp->p) && (ap->h == bp->h))
 		return;
 
-	sk = 1.0f - scale*flFrametime;
+	sk = 1.0f - scale*flRealframetime;
+
+	CLAMP(sk, 0.0f, 1.0f);
 
 	delta.p = ap->p - bp->p;
 	delta.h = ap->h - bp->h;
@@ -593,6 +596,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward = 1.0f;
 		}
 
+		if ( check_control(REVERSE_THRUST) && check_control(AFTERBURNER) ) {
+			ci->forward = -pi->max_rear_vel * 1.0f;
+		}
+
 		/*if (Player_ship->boost_pod_engaged)
 			ci->forward = 1.0f;*/
 
@@ -622,10 +629,14 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				}
 
 				//SUSHI: If gliding, don't do anything for speed matching
-				if (!(Objects[Player->objnum].phys_info.flags & PF_GLIDING)) {
+				if (!( (Objects[Player->objnum].phys_info.flags & PF_GLIDING) || (Objects[Player->objnum].phys_info.flags & PF_FORCE_GLIDE) )) {
 					//pmax_speed = Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 					pmax_speed = Ships[Player_obj->instance].current_max_speed;
-					ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					if (pmax_speed > 0.0f) {
+						ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
+					} else {
+						ci->forward_cruise_percent = 0.0f;
+					}
 					override_analog_throttle = 1;
 					//if ( ci->forward_cruise_percent > 100.0f )
 						//HUD_printf ("Cannot travel that fast.  Setting throttle to full.");
@@ -729,12 +740,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		//keyboard: fire the current primary weapon
 		if (check_control(FIRE_PRIMARY)) {
 			ci->fire_primary_count++;
-
-			// if we're a multiplayer client, set our accum bits now
-			// if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-			// if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-				// Net_player->s_info.accum_buttons |= OOC_FIRE_PRIMARY;
-			// }
 		}
 
 		// mouse: fire the current primary weapon
@@ -753,7 +758,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->fire_secondary_count++;
 
 			// if we're a multiplayer client, set our accum bits now
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
 				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
 			}
 		}
@@ -764,11 +769,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(LAUNCH_COUNTERMEASURE);
 			ci->fire_countermeasure_count++;
 			hud_gauge_popup_start(HUD_CMEASURE_GAUGE);
-
-			// if we're a multiplayer client, set our accum bits now
-			// if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-				// Net_player->s_info.accum_buttons |= OOC_FIRE_COUNTERMEASURE;
-			// }
 		}
 
 		// see if the afterburner has been started (keyboard + joystick)
@@ -828,7 +828,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				// Only bother doing this if we need to.
 				if ( toggle_glide && press_glide ) {
 					// Overkill -- if gliding is toggled on and glide_when_pressed is pressed, turn glide off
-					if ( object_get_gliding(Player_obj) ) {
+					if ( object_get_gliding(Player_obj) && !object_glide_forced(Player_obj) ) {
 						object_set_gliding(Player_obj, false);
 						ci->forward_cruise_percent = savedspeed;
 						press_glide = !press_glide;
@@ -846,7 +846,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			// Probably don't need to do the second half of this check, but just in case...
 			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
 				// Only bother doing this if we need to.
-				if ( object_get_gliding(Player_obj) ) {
+				if ( object_get_gliding(Player_obj) && !object_glide_forced(Player_obj) ) {
 					object_set_gliding(Player_obj, false);
 					ci->forward_cruise_percent = savedspeed;
 					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
@@ -888,10 +888,10 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 		dest_ci->sideways = src_ci->sideways;
 		dest_ci->bank = src_ci->bank;
 		dest_ci->forward = src_ci->forward;
-		dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+		/*dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
 		dest_ci->fire_countermeasure_count = src_ci->fire_countermeasure_count;
 		dest_ci->fire_secondary_count = src_ci->fire_countermeasure_count;
-		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;
+		dest_ci->fire_primary_count = src_ci->fire_countermeasure_count;*/
 	}
 }
 
@@ -1317,7 +1317,7 @@ void player_level_init()
 	Player_all_alone_msg_inited=0;
 	Player->flags &= ~PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 
-	Player->death_message[0] = '\0';
+	Player->death_message = "";
 
 	// Player->insignia_bitmap = -1;
 }
@@ -1482,15 +1482,14 @@ int player_inspect_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
 		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
-			char *cargo_name;
-			cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			Assert ( cargo_name );
-			Assert ( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
+			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
+			Assert( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
 
-			if ( cargo_name[0] == '#' )
-				sprintf(outstr, XSTR( "passengers:\n   %s", 83), cargo_name+1 );
-			else
-				sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
+			if ( cargo_name[0] == '#' ) {
+				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			} else {
+				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+			}
 		} else {
 			sprintf(outstr, XSTR( "Scanned", 85) );
 		}
@@ -1566,10 +1565,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	cargo_sp = &Ships[cargo_objp->instance];
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
-	// commented by Goober5000
-	//Assert(cargo_sip->flags & SIF_HUGE_SHIP);
-
-	if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+	// don't do any sort of scanning thing unless capship has a non-"nothing" cargo
+	// this compensates for changing the "no display" index from -1 to 0
+	if (subsys->subsys_cargo_name == 0) {
 		return 0;
 	}
 
@@ -1580,15 +1578,17 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 	// if cargo is already revealed
 	if (subsys->flags & SSF_CARGO_REVEALED) {
-		char *cargo_name;
-		if (subsys->subsys_cargo_name == -1) {
-			cargo_name = XSTR("Nothing", 1493);
-		} else {
-			cargo_name = Cargo_names[subsys->subsys_cargo_name];
-		}
-		Assert ( cargo_name );
+		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 
-		sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
+			if ( cargo_name[0] == '#' ) {
+				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
+			} else {
+				sprintf(outstr,XSTR("cargo: %s", 84), cargo_name );
+			}
+		} else {
+			sprintf(outstr, XSTR( "Scanned", 85) );
+		}
 	
 		// always bash cargo_inspect_time to 0 since AI ships can reveal cargo that we
 		// are in the process of scanning
@@ -1622,7 +1622,10 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
-			sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+			if ( !(cargo_sp->flags & SF_SCANNABLE) )
+				sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+			else
+				sprintf(outstr,XSTR( "not scanned", 87));
 			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
 			Player->cargo_inspect_time = 0;
 			return 1;
@@ -1633,7 +1636,10 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
 
-		sprintf(outstr,XSTR( "cargo: inspecting", 88));
+		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			sprintf(outstr,XSTR( "cargo: inspecting", 88));
+		else
+			sprintf(outstr,XSTR( "scanning", 89));
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
@@ -1641,7 +1647,10 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			sprintf(outstr,XSTR( "cargo: <unknown>", 86));
+		else
+			sprintf(outstr,XSTR( "not scanned", 87));
 	}
 
 	return 1;
@@ -1688,8 +1697,8 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 void player_generate_death_message(player *player_p)
 {
 	char weapon_name[NAME_LENGTH];
-	char *msg = player_p->death_message;
-	weapon_name[0] = 0;	
+	weapon_name[0] = 0;
+	SCP_string &msg = player_p->death_message;
 	int ship_index;
 
 	player_generate_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species, weapon_name);
@@ -1749,7 +1758,7 @@ void player_generate_death_message(player *player_p)
 		case OBJ_BEAM:
 			if (strlen(player_p->killer_parent_name) <= 0)
 			{
-				Int3();
+				Warning(LOCATION, "Killer_parent_name not specified for beam!");
 				sprintf(msg, XSTR( "%s was killed by a beam from an unknown source", 1081), player_p->callsign);
 			}
 			else
@@ -1768,7 +1777,7 @@ void player_generate_death_message(player *player_p)
 			break;
 
 		default:
-			sprintf(msg, XSTR( "%s was killed", 99), player_p->callsign);
+			sprintf(msg, XSTR( "%s was killed by unknown causes", 99), player_p->callsign);
 			break;
 	}
 }
@@ -1776,10 +1785,10 @@ void player_generate_death_message(player *player_p)
 // display what/who killed the player
 void player_show_death_message()
 {
-	char *msg = Player->death_message;
+	SCP_string &msg = Player->death_message;
 
 	// make sure we don't already have a death message
-	if (!strlen(msg))
+	if (msg.empty())
 	{
 		// check if player killed self
 		if (Player->flags & PLAYER_KILLED_SELF)
@@ -1787,15 +1796,15 @@ void player_show_death_message()
 			// reasons he killed himself
 			if (Player->flags & PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE)
 			{
-				sprintf(msg, XSTR("You have killed yourself with a shockwave from your own weapon", 1421));			
+				msg = XSTR("You have killed yourself with a shockwave from your own weapon", 1421);
 			}
 			else if (Player->flags & PLAYER_FLAGS_KILLED_SELF_MISSILES)
 			{
-				sprintf(msg, XSTR("You have killed yourself with your own missiles", 1422));			
+				msg = XSTR("You have killed yourself with your own missiles", 1422);
 			}
 			else
 			{
-				sprintf(msg, XSTR("You have killed yourself", 100));
+				msg = XSTR("You have killed yourself", 100);
 			}
 	
 			Player->flags &= ~PLAYER_KILLED_SELF;
@@ -1807,7 +1816,7 @@ void player_show_death_message()
 	}
 
 	// display the message
-	HUD_fixed_printf(30.0f, msg);
+	HUD_fixed_printf(30.0f, const_cast<char *>(msg.c_str()));
 }
 
 /*

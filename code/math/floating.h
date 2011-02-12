@@ -36,7 +36,7 @@ float frand_range(float min, float max);
 #define fl_tan(fl) tanf(fl)
 
 // convert a measurement in degrees to radians
-#define fl_radian(fl)	((float)((fl * 3.14159f)/180.0f))
+#define fl_radians(fl)	((float)((fl * 3.14159f)/180.0f))
 
 // convert a measurement in radians to degrees
 #define fl_degrees(fl)	((float)((fl * 180.0f)/3.14159))

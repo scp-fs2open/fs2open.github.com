@@ -28,6 +28,7 @@ END_EVENT_TABLE()
 dlgAboutBox::dlgAboutBox(wxWindow *parent)
 	: wxDialog()
 {
+	wxInitAllImageHandlers();
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgAboutBox");
 }
 

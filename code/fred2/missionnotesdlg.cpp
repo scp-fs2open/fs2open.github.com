@@ -14,6 +14,7 @@
 #include "FREDDoc.h"
 #include "MissionNotesDlg.h"
 #include "CustomWingNames.h"
+#include "soundenvironmentdlg.h"
 #include "Management.h"
 #include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
@@ -21,7 +22,6 @@
 #include "mission/missionmessage.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -143,6 +143,7 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_LOADING_SCREEN_BUTTON1024, OnLoad1024)
 	ON_BN_CLICKED(IDC_CONTRAIL_THRESHOLD_CHECK, OnToggleContrailThreshold)
 	ON_BN_CLICKED(IDC_CUSTOM_WING_NAMES, OnCustomWingNames)
+	ON_BN_CLICKED(IDC_SOUND_ENVIRONMENT_BUTTON, OnSoundEnvironment)
 	//}}AFX_MSG_MAP
 	END_MESSAGE_MAP()
 
@@ -724,4 +725,14 @@ void CMissionNotesDlg::OnCustomWingNames()
 	dlg.DoModal();
 
 	UpdateData(FALSE);	
+}
+
+void CMissionNotesDlg::OnSoundEnvironment()
+{
+	UpdateData(TRUE);
+
+	SoundEnvironment dlg;
+	dlg.DoModal();
+
+	UpdateData(FALSE);
 }

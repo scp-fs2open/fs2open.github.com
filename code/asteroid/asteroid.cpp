@@ -607,6 +607,8 @@ void asteroid_level_init()
 	Num_asteroids = 0;
 	Next_asteroid_throw = timestamp(1);
 	asteroid_obj_list_init();
+	for (size_t t=0; t<Asteroid_info.size(); t++)
+		Asteroid_info[t].damage_type_idx = Asteroid_info[t].damage_type_idx_sav;
 }
 
 // return !0 if asteroid should be wrapped, 0 otherwise.  Multiplayer clients will always return
@@ -901,6 +903,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	if ( asteroid_hit_info == NULL ) {
 		// asteroid weapon collision
 		Assert( other_obj->type == OBJ_WEAPON );
+		mc.model_instance_num = -1;
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];	// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;					// The object's orient
@@ -960,6 +963,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	int mc_ret_val = 0;
 
 	if ( asteroid_hit_info->heavy == ship_obj ) {	// ship is heavier, so asteroid is sphere. Check sphere collision against ship poly model
+		mc.model_instance_num = Ships[ship_obj->instance].model_instance_num;
 		mc.model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;		// Fill in the model to check
 		mc.orient = &ship_obj->orient;								// The object's orient
 		mc.radius = pasteroid->radius;
@@ -974,11 +978,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		// first test against the sphere - if this fails then don't do any submodel tests
 		mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
 
-		int submodel_list[MAX_ROTATING_SUBMODELS];
-		int num_rotating_submodels = 0;
+		SCP_vector<int> submodel_vector;
 		polymodel *pm;
-
-		ship_model_start(ship_obj);
+		polymodel_instance *pmi;
 
 		if (model_collide(&mc)) {
 
@@ -988,15 +990,15 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 			// Do collision the cool new way
 			if ( asteroid_hit_info->collide_rotate ) {
 				// We collide with the sphere, find the list of rotating submodels and test one at a time
-				model_get_rotating_submodel_list(submodel_list, &num_rotating_submodels, heavy_obj);
+				model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
 				pm = model_get(Ship_info[Ships[heavy_obj->instance].ship_info_index].model_num);
+				pmi = model_get_instance(Ships[ship_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision
-				int i;
-				for (i=0; i<num_rotating_submodels; i++) {
-					pm->submodel[submodel_list[i]].blown_off = 1;
+				for (size_t j=0; j<submodel_vector.size(); j++) {
+					pmi->submodel[submodel_vector[j]].collision_checked = true;
 				}
 
 				// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
@@ -1004,26 +1006,26 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 
 				// check each submodel in turn
-				for (i=0; i<num_rotating_submodels; i++) {
+				for (size_t i=0; i<submodel_vector.size(); i++) {
 					// turn on submodel for collision test
-					pm->submodel[submodel_list[i]].blown_off = 0;
+					pmi->submodel[submodel_vector[i]].collision_checked = false;
 
 					// set angles for last frame (need to set to prev to get p0)
-					angles copy_angles = pm->submodel[submodel_list[i]].angs;
+					angles copy_angles = pmi->submodel[submodel_vector[i]].angs;
 
 					// find the start and end positions of the sphere in submodel RF
-					pm->submodel[submodel_list[i]].angs = pm->submodel[submodel_list[i]].sii->prev_angs;
-					world_find_model_point(&p0, &light_obj->last_pos, pm, submodel_list[i], &heavy_obj->last_orient, &heavy_obj->last_pos);
+					pmi->submodel[submodel_vector[i]].angs = pmi->submodel[submodel_vector[i]].prev_angs;
+					world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel_vector[i], &heavy_obj->last_orient, &heavy_obj->last_pos);
 
-					pm->submodel[submodel_list[i]].angs = copy_angles;
-					world_find_model_point(&p1, &light_obj->pos, pm, submodel_list[i], &heavy_obj->orient, &heavy_obj->pos);
+					pmi->submodel[submodel_vector[i]].angs = copy_angles;
+					world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel_vector[i], &heavy_obj->orient, &heavy_obj->pos);
 
 					mc.p0 = &p0;
 					mc.p1 = &p1;
 					// mc.pos = zero	// in submodel RF
 
 					mc.orient = &vmd_identity_matrix;
-					mc.submodel_num = submodel_list[i];
+					mc.submodel_num = submodel_vector[i];
 
 					if ( model_collide(&mc) ) {
 						if ( mc.hit_dist < asteroid_hit_info->hit_time ) {
@@ -1034,18 +1036,18 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 							// set up asteroid_hit_info for rotating submodel
 							if (asteroid_hit_info->edge_hit == 0) {
-								model_find_obj_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, heavy_obj, mc.hit_submodel);
+								model_instance_find_obj_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, heavy_obj, mc.hit_submodel);
 							}
 
 							// find position in submodel RF of light object at collison
 							vec3d int_light_pos, diff;
 							vm_vec_sub(&diff, mc.p1, mc.p0);
 							vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
-							model_find_world_point(&asteroid_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+							model_instance_find_world_point(&asteroid_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
 						}
 					}
 					// Don't look at this submodel again
-					pm->submodel[submodel_list[i]].blown_off = 1;
+					pmi->submodel[submodel_vector[i]].collision_checked = true;
 				}
 
 			}
@@ -1066,7 +1068,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 					// get collision normal if not edge hit
 					if (asteroid_hit_info->edge_hit == 0) {
-						model_find_obj_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, heavy_obj, mc.hit_submodel);
+						model_instance_find_obj_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, heavy_obj, mc.hit_submodel);
 					}
 
 					// find position in submodel RF of light object at collison
@@ -1076,12 +1078,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 				}
 			}
-
-			ship_model_stop( ship_obj );
 		}
 
 	} else {
 		// Asteroid is heavier obj
+		mc.model_instance_num = -1;
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;				// The object's orient
@@ -1518,8 +1519,7 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 
 	Assert(ship_obj->type == OBJ_SHIP);
 
-	ship_model_start(ship_obj);
-
+	mc->model_instance_num = Ships[ship_obj->instance].model_instance_num;
 	mc->model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc->orient = &ship_obj->orient;										// The object's orientation
 	mc->pos = &ship_obj->pos;												// The object's position
@@ -1533,8 +1533,6 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 	mc->radius = asteroid_obj->radius;
 
 	model_collide(mc);
-
-	ship_model_stop(ship_obj);
 }
 
 // Return !0 is the asteroid will collide with the escort ship within ASTEROID_MIN_COLLIDE_TIME
@@ -1584,7 +1582,7 @@ void asteroid_update_collide_flag(object *asteroid_objp)
 	asp->collide_objsig = -1;
 
 	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return;
 	}
 
@@ -1709,7 +1707,8 @@ void asteroid_parse_section(asteroid_info *asip)
 	if(optional_string("$Damage Type:")) {
 		char buf[NAME_LENGTH];
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		asip->damage_type_idx = damage_type_add(buf);
+		asip->damage_type_idx_sav = damage_type_add(buf);
+		asip->damage_type_idx = asip->damage_type_idx_sav;
 	}
 
 	required_string("$Expl inner rad:");
@@ -1935,23 +1934,10 @@ void asteroid_show_brackets()
 		g3_rotate_vertex(&asteroid_vertex,&asteroid_objp->pos);
 		g3_project_vertex(&asteroid_vertex);
 
-		if (!(asteroid_vertex.flags & PF_OVERFLOW)) {
-			gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
-			hud_show_brackets(asteroid_objp, &asteroid_vertex);
-			if ( Cmdline_targetinfo ) {
-				hud_show_lead_indicator_quick(&asteroid_objp->pos, asteroid_objp);
-			}
-		}
-
-		// if asteroid is not on screen, draw an offscreen indicator
-		if ( hud_gauge_active(HUD_OFFSCREEN_INDICATOR) ) {
-			if (asteroid_vertex.codes != 0) {
-				float dist;
-//				dist = vm_vec_dist_quick(&Player_obj->pos, &asteroid_objp->pos);
-				dist = hud_find_target_distance( asteroid_objp, Player_obj );
-				gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
-				hud_draw_offscreen_indicator(&asteroid_vertex, &asteroid_objp->pos, dist);
-			}
+		if ( Cmdline_targetinfo ) {
+			hud_target_add_display_list(asteroid_objp, &asteroid_vertex, &asteroid_objp->pos, 0, NULL, NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
+		} else {
+			hud_target_add_display_list(asteroid_objp, &asteroid_vertex, &asteroid_objp->pos, 0, NULL, NULL, TARGET_DISPLAY_DIST);
 		}
 	}
 }

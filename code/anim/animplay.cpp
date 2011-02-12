@@ -112,11 +112,13 @@ MONITOR(NumANIPlayed)
 // Setup an anim_play_struct for passing into anim_play().  Will fill in default values, which you
 // can then change before calling anim_play().
 //
-void anim_play_init(anim_play_struct *aps, anim *a_info, int x, int y)
+void anim_play_init(anim_play_struct *aps, anim *a_info, int x, int y, int base_w, int base_h)
 {
 	aps->anim_info = a_info;
 	aps->x = x;
 	aps->y = y;
+	aps->base_w = base_w;
+	aps->base_h = base_h;
 	aps->start_at = 0;
 	aps->stop_at = a_info->total_frames - 1;
 	aps->screen_id = 0;
@@ -217,6 +219,14 @@ anim_instance *anim_play(anim_play_struct *aps)
 		instance->xlate_pal = 1;
 	} else {
 		instance->xlate_pal = 0;
+	}
+
+	if(aps->base_w < 0 || aps->base_h < 0) {
+		instance->base_w = gr_screen.max_w_unscaled;
+		instance->base_h = gr_screen.max_h_unscaled;
+	} else {
+		instance->base_w = aps->base_w;
+		instance->base_h = aps->base_h;
 	}
 
 	// determining the start_at frame is more complicated, since it must be a key-frame.
@@ -521,6 +531,8 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		
 		// determine x,y to display the bitmap at
 		if ( instance->world_pos == NULL ) {
+			gr_set_screen_scale(instance->base_w, instance->base_h);
+			gr_set_clip(0, 0, instance->base_w, instance->base_h, false);
 			if ( instance->aa_color == NULL ) {
 				gr_bitmap(instance->x, instance->y);
 			}
@@ -528,6 +540,8 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 				gr_set_color_fast( (color*)instance->aa_color );
 				gr_aabitmap(instance->x, instance->y);
 			}
+			gr_reset_screen_scale();
+			gr_reset_clip();
 		}
 		else {
 			g3_rotate_vertex(&image_vertex,instance->world_pos);
@@ -1085,11 +1099,9 @@ void anim_reverse_direction(anim_instance *ai)
 {
 	int temp;
 
-	if(!(ai->parent->flags & ANF_ALL_KEYFRAMES)){
-		 // you're not allowed to call anim_reverse_direction(...) unless every frame is a keyframe!!!!
-		 // The God of Delta-RLE demands it be thus.
-		Int3();
-	}
+	// you're not allowed to call anim_reverse_direction(...) unless every frame is a keyframe!!!!
+	// The God of Delta-RLE demands it be thus.
+	Assertion( ai->parent->flags & ANF_ALL_KEYFRAMES, "Ani was set to play backwards. In order to enable this, all frames of the animation MUST be keyframes.");
 		
 	// flip the animation direction
 	if(ai->direction == ANIM_DIRECT_FORWARD){

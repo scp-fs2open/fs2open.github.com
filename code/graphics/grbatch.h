@@ -16,7 +16,6 @@ private:
 	int n_to_render;		// the number of primitives to render
 	int n_allocated;		// the number of verts allocated
 	vertex *vert;
-	vertex **vert_list;		// V's stupid rendering functions need this
 
 	// makes sure we have enough space in the memory buffer for the geometry we are about to put into it
 	// you need to figure out how many verts are going to be required
@@ -25,7 +24,7 @@ private:
 	void clone(const geometry_batcher &geo);
 
 public:
-	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), vert_list(NULL) {};
+	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL) {};
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }

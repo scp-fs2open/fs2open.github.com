@@ -3347,7 +3347,7 @@ void send_mission_log_packet( int num )
 	int sindex;
 	log_entry *entry;
 
-	Assert ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) );
+	Assert ( MULTIPLAYER_MASTER );
 
 	// get the data from the log
 	entry = &log_entries[num];
@@ -3375,7 +3375,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 	char pname[NAME_LENGTH], sname[NAME_LENGTH];
 	fix timestamp;
 
-	Assert ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
+	Assert ( MULTIPLAYER_CLIENT );
 
 	offset = HEADER_LENGTH;
 	GET_DATA(type);
@@ -3391,7 +3391,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 }
 
 // send a mission message packet
-void send_mission_message_packet( int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter)
+void send_mission_message_packet( int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay)
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], up, us, utime;
@@ -3412,6 +3412,7 @@ void send_mission_message_packet( int id, char *who_from, int priority, int timi
 	ADD_DATA(us);
 	ADD_INT(builtin_type);
 	ADD_INT(multi_team_filter);
+	ADD_INT(delay);
 
 	if (multi_target == -1){		
 		multi_io_send_to_all_reliable(data, packet_size);
@@ -3423,7 +3424,7 @@ void send_mission_message_packet( int id, char *who_from, int priority, int timi
 // process a mission message packet
 void process_mission_message_packet( ubyte *data, header *hinfo )
 {
-	int offset, id, builtin_type;
+	int offset, id, builtin_type, delay;
 	ubyte priority, source, utiming;
 	char who_from[NAME_LENGTH];
 	int multi_team_filter;
@@ -3438,6 +3439,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	GET_DATA(source);
 	GET_INT(builtin_type);
 	GET_INT(multi_team_filter);
+	GET_INT(delay);
 
 	PACKET_SET_SIZE();
 
@@ -3450,7 +3452,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	// maybe filter this out
 	if(!message_filter_multi(id)){
 		// send the message as if it came from an sexpression
-		message_queue_message( id, priority, utiming, who_from, source, 0, 0, builtin_type );
+		message_queue_message( id, priority, utiming, who_from, source, 0, delay, builtin_type );
 	}
 }
 
@@ -7662,8 +7664,6 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 		// ubanks_fired |= (1<<7);
 	// }	
 
-	// determine if its a player ship and don't send to him if we're in "client firing" mode
-	// if((Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING) && MULTIPLAYER_MASTER){
 	if(MULTIPLAYER_MASTER){
 		np_index = multi_find_player_by_net_signature(objp->net_signature);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
@@ -7785,8 +7785,7 @@ void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int 
 
 	nprintf(("Network","Sending NEW countermeasure packet!\n"));
 
-	// determine if its a player ship and don't send to him if we're in "client firing" mode
-	// if((Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING) && MULTIPLAYER_MASTER){
+	// determine if its a player
 	if(MULTIPLAYER_MASTER){
 		np_index = multi_find_player_by_net_signature(objp->net_signature);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
@@ -7825,8 +7824,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}	
 
-	// if we're in client firing mode, ignore ones for myself
-	// if((Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING) && (Player_obj != NULL) && (Player_obj == objp)){		
+	// if we're in client firing mode, ignore ones for myself	
 	if((Player_obj != NULL) && (Player_obj == objp)){		
 		return;
 	}
@@ -8725,10 +8723,9 @@ void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
 	ADD_USHORT(val);
 
 	for (i =0; i < num_ubytes; i++) {
+		Assert (packet_size < MAX_PACKET_SIZE); 
 		data[packet_size] = sexp_packet[i]; 
 		packet_size++; 
-
-		Assert (packet_size <= MAX_PACKET_SIZE); 
 	}
 
 	// send to all

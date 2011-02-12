@@ -19,10 +19,14 @@
 #include "mission/missionmessage.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+
+// aww mumford
+bool is_blank_argument_op(int op_const);
+
 
 CMessageEditorDlg *Message_editor_dlg = NULL;
 
@@ -294,10 +298,11 @@ int CMessageEditorDlg::find_event()
 	for (i=0; i<Num_mission_events; i++) {
 		node = Mission_events[i].formula;
 		if ( get_operator_const(CTEXT(node)) == OP_WHEN || get_operator_const(CTEXT(node)) == OP_EVERY_TIME
-			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT )
+			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT
+			|| get_operator_const(CTEXT(node)) == OP_IF_THEN_ELSE || get_operator_const(CTEXT(node)) == OP_PERFORM_ACTIONS )
 		{
 			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
-			if (get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT)
+			if (is_blank_argument_op(get_operator_const(CTEXT(node))))
 				node = CDR(node);
 
 			node = CDR(node);
@@ -366,6 +371,7 @@ int CMessageEditorDlg::update(int num)
 
 		if (i == Num_messages) {  // update name if no conflicts, otherwise keep old name
 			update_sexp_references(Messages[num].name, ptr, OPF_MESSAGE);
+			update_sexp_references(Messages[num].name, ptr, OPF_MESSAGE_OR_STRING);
 			string_copy(Messages[num].name, m_message_name, NAME_LENGTH - 1);
 
 			list = (CListBox *) GetDlgItem(IDC_MESSAGE_LIST);
@@ -470,6 +476,7 @@ void CMessageEditorDlg::OnDelete()
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->DeleteString(m_cur_msg);
 	sprintf(buf, "<%s>", Messages[m_cur_msg].name);
 	update_sexp_references(Messages[m_cur_msg].name, buf, OPF_MESSAGE);
+	update_sexp_references(Messages[m_cur_msg].name, buf, OPF_MESSAGE_OR_STRING);
 
 	for (i=m_cur_msg; i<Num_messages-1; i++)
 		Messages[i] = Messages[i + 1];

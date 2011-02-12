@@ -58,7 +58,6 @@ extern float flFrametime;
 extern subsys_to_render Render_subsys;
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -1876,6 +1875,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos)
 	} else
 		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);
 
+	mc.model_instance_num = -1;
 	mc.orient = &objp->orient;	// The object's orient
 	mc.pos = &objp->pos;			// The object's position
 	mc.p0 = p0;					// Point 1 of ray to check

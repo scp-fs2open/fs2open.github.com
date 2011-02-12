@@ -26,13 +26,13 @@ opengl_texture_state::~opengl_texture_state()
 	}
 }
 
-void opengl_texture_state::init(GLint n_units)
+void opengl_texture_state::init(GLuint n_units)
 {
 	Assert( n_units > 0 );
 	units = (opengl_texture_unit*) vm_malloc(n_units * sizeof(opengl_texture_unit));
 	num_texture_units = n_units;
 
-	for (int i = 0; i < num_texture_units; i++) {
+	for (unsigned int i = 0; i < num_texture_units; i++) {
 		units[i].active = GL_FALSE;
 		units[i].enabled = GL_FALSE;
 
@@ -50,12 +50,10 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 		if (unit < GL_supported_texture_units) {
 			glDisable(GL_TEXTURE_2D);
 			glDisable(GL_TEXTURE_CUBE_MAP);
-			glDisable(GL_TEXTURE_RECTANGLE_ARB);
 		}
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 
 		units[unit].texture_target = GL_TEXTURE_2D;
 		units[unit].texture_id = 0;
@@ -85,22 +83,6 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 	units[unit].texgen_mode_R = GL_EYE_LINEAR;
 	units[unit].texgen_mode_Q = GL_EYE_LINEAR;
 
-	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_WRAP_R, GL_REPEAT);
-
-	units[unit].wrap_S = GL_REPEAT;
-	units[unit].wrap_T = GL_REPEAT;
-	units[unit].wrap_R = GL_REPEAT;
-
-	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-	glTexParameteri((target == GL_INVALID_ENUM) ? GL_TEXTURE_2D : target, GL_TEXTURE_MAX_LEVEL, 1000);
-
-	units[unit].mag_filter = GL_LINEAR;
-	units[unit].min_filter = GL_NEAREST_MIPMAP_LINEAR;
-	units[unit].max_level = 1000;
-
 	if (unit < GL_supported_texture_units) {
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
@@ -118,8 +100,6 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 
 	units[unit].rgb_scale = 1.0f;
 	units[unit].alpha_scale = 1.0f;
-
-	units[unit].aniso_filter = 1.0f;
 }
 
 GLboolean opengl_texture_state::TexgenS(GLint state)
@@ -212,7 +192,7 @@ void opengl_texture_state::SetTarget(GLenum tex_target)
 
 void opengl_texture_state::SetActiveUnit(GLuint id)
 {
-	if (id >= (uint)num_texture_units) {
+	if (id >= num_texture_units) {
 		Int3();
 		id = 0;
 	}
@@ -257,7 +237,7 @@ void opengl_texture_state::Disable(bool force)
 
 void opengl_texture_state::DisableAll()
 {
-	for (int i = 0; i < num_texture_units; i++) {
+	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (units[i].active) {
 			SetActiveUnit(i);
 			Disable(true);
@@ -278,7 +258,7 @@ void opengl_texture_state::Delete(GLuint tex_id)
 
 	GLuint atu_save = active_texture_unit;
 
-	for (int i = 0; i < num_texture_units; i++) {
+	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (units[i].texture_id == tex_id) {
 			SetActiveUnit(i);
 			Disable();
@@ -299,6 +279,7 @@ void opengl_texture_state::Delete(GLuint tex_id)
 
 GLfloat opengl_texture_state::AnisoFilter(GLfloat aniso)
 {
+#if 0
 	GLfloat rval = units[active_texture_unit].aniso_filter;
 
 	if ( (aniso > 0.0f) /*&& (aniso != rval)*/ ) {
@@ -319,6 +300,9 @@ GLfloat opengl_texture_state::AnisoFilter(GLfloat aniso)
 	}
 
 	return rval;
+#endif
+
+	return GL_anisotropy;
 }
 
 opengl_state::~opengl_state()
@@ -625,15 +609,11 @@ void opengl_state::SetTextureSource(gr_texture_source ts)
 	switch (ts) {
 		case TEXTURE_SOURCE_DECAL:
 			GL_state.Texture.SetActiveUnit();
-			GL_state.Texture.SetMinFilter(GL_LINEAR);
-			GL_state.Texture.SetMagFilter(GL_LINEAR);
 			GL_state.Texture.SetEnvMode(GL_MODULATE);
 			break;
 
 		case TEXTURE_SOURCE_NO_FILTERING:
 			GL_state.Texture.SetActiveUnit();
-			GL_state.Texture.SetMinFilter(GL_NEAREST);
-			GL_state.Texture.SetMagFilter(GL_LINEAR);
 			GL_state.Texture.SetEnvMode(GL_MODULATE);
 			break;
 

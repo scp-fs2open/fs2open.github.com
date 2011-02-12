@@ -50,26 +50,14 @@
 // MAIN HALL DATA DEFINES
 //
 #define MAX_RANDOM_INTERCOM_SOUNDS				10
-#define NUM_RANDOM_INTERCOM_SOUNDS_0			3
-#define NUM_RANDOM_INTERCOM_SOUNDS_1			3
-
-#define MAX_MISC_ANIMATIONS						10
-#define NUM_MISC_ANIMATIONS_0						2
-#define NUM_MISC_ANIMATIONS_1						4
-
+#define MAX_MISC_ANIMATIONS						32
 #define MAX_DOOR_ANIMATIONS						10
-#define NUM_DOOR_ANIMATIONS_0						6
-#define NUM_DOOR_ANIMATIONS_1						6
-
-#define MAX_DOOR_SOUNDS								10
-#define NUM_DOOR_SOUNDS_0							6
-#define NUM_DOOR_SOUNDS_1							6
 
 #define MISC_ANIM_MODE_LOOP						0				// loop the animation
 #define MISC_ANIM_MODE_HOLD						1				// play to the end and hold the animation
-#define MISC_ANIM_MODE_TIMED						2				// uses timestamps to determine when a finished anim should be checked again
+#define MISC_ANIM_MODE_TIMED					2				// uses timestamps to determine when a finished anim should be checked again
 
-#define NUM_REGIONS									7				// (6 + 1 for multiplayer equivalent of campaign room)
+#define NUM_REGIONS								7				// (6 + 1 for multiplayer equivalent of campaign room)
 typedef struct main_hall_defines {
 	// bitmap and mask
 	char bitmap[MAX_FILENAME_LEN];
@@ -105,6 +93,12 @@ typedef struct main_hall_defines {
 	// Time until we will next play a given misc animation, min delay, and max delay
 	int misc_anim_delay[MAX_MISC_ANIMATIONS][3];
 
+	// Goober5000, used in preference to the flag in generic_anim
+	int misc_anim_paused[MAX_MISC_ANIMATIONS];
+
+	// Goober5000, used when we want to play one of several anims
+	int misc_anim_group[MAX_MISC_ANIMATIONS];
+
 	//	coords of where to play the misc anim
 	int misc_anim_coords[MAX_MISC_ANIMATIONS][2];
 	
@@ -138,18 +132,12 @@ typedef struct main_hall_defines {
 	// first pair : coords of where to play a given door anim
 	// second pair : center of a given door anim in windowed mode
 	int door_anim_coords[MAX_DOOR_ANIMATIONS][4];
-	
-
-	// door sounds ------------------------
-
-	// # of door sounds
-	int num_door_sounds;
 
 	// sounds for each region (open/close)
-	int door_sounds[MAX_DOOR_SOUNDS][2];
+	int door_sounds[MAX_DOOR_ANIMATIONS][2];
 
 	// pan values for the door sounds
-	float door_sound_pan[MAX_DOOR_SOUNDS];
+	float door_sound_pan[MAX_DOOR_ANIMATIONS];
 
 	
 	// region descriptions ----------------
@@ -237,11 +225,7 @@ void main_hall_handle_random_intercom_sounds();
 //
 
 // the misc animations themselves
-//anim *Main_hall_misc_anim[MAX_MISC_ANIMATIONS];
 generic_anim Main_hall_misc_anim[MAX_MISC_ANIMATIONS];
-
-// the instance of a given misc animation
-//anim_instance *Main_hall_misc_anim_instance[MAX_MISC_ANIMATIONS];
 
 // handle starting, stopping and randomizing misc animations
 void main_hall_handle_misc_anims();									
@@ -323,7 +307,7 @@ void main_hall_mouse_grab_region(int region);
 #define ALLENDER_REGION		4
 
 // handles to the sound instances of the doors opening/closing
-int Main_hall_door_sound_handles[MAX_DOOR_SOUNDS] = {		
+int Main_hall_door_sound_handles[MAX_DOOR_ANIMATIONS] = {		
 	-1,-1,-1,-1,-1,-1
 };
 
@@ -566,10 +550,10 @@ void main_hall_init(int main_hall_num)
 
 	// load the background bitmap
 	Main_hall_bitmap = bm_load(Main_hall->bitmap);
-	bg_type = bm_get_type(Main_hall_bitmap);
 	if(Main_hall_bitmap < 0){
 		nprintf(("General","WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap));
 	}
+	bg_type = bm_get_type(Main_hall_bitmap);
 
 	// set the interface palette 
 #ifndef HARDWARE_ONLY
@@ -600,17 +584,19 @@ void main_hall_init(int main_hall_num)
 		generic_anim_init(&Main_hall_misc_anim[idx], Main_hall->misc_anim_name[idx]);
 		Main_hall_misc_anim[idx].ani.bg_type = bg_type;
 		if(generic_anim_stream(&Main_hall_misc_anim[idx]) == -1) {
-			nprintf(("General","WARNING!, Could not load misc %s anim in main hall\n",Main_hall->misc_anim_name));
+			nprintf(("General","WARNING!, Could not load misc %s anim in main hall\n",Main_hall->misc_anim_name[idx]));
 		}
 		else {
 			//start paused
-			Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_PAUSED;
 			if(Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_HOLD)
 				Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 		}
 		
 		// null out the delay timestamps
 		Main_hall->misc_anim_delay[idx][0] = -1;
+
+		// start paused
+		Main_hall->misc_anim_paused[idx] = true;
 	}	
 
 	// load up the door animations
@@ -658,7 +644,7 @@ void main_hall_init(int main_hall_num)
 	strcpy_s(Main_hall_campaign_cheat, "");
 
 	// zero out the door sounds
-	for(idx=0;idx<Main_hall->num_door_sounds;idx++){
+	for(idx=0;idx<Main_hall->num_door_animations;idx++){
 		Main_hall_door_sound_handles[idx] = -1;
 	}
 
@@ -1088,7 +1074,7 @@ void main_hall_close()
 	}	
 
 	// stop any playing door sounds
-	for(idx=0;idx<Main_hall->num_door_sounds-2;idx++){	// don't cut off the glow sounds (requested by Dan)
+	for(idx=0;idx<Main_hall->num_door_animations-2;idx++){	// don't cut off the glow sounds (requested by Dan)
 		if((Main_hall_door_sound_handles[idx] != -1) && snd_is_playing(Main_hall_door_sound_handles[idx])){
 			snd_stop(Main_hall_door_sound_handles[idx]);
 			Main_hall_door_sound_handles[idx] = -1;
@@ -1198,85 +1184,119 @@ void main_hall_stop_music()
 // render all playing misc animations
 void main_hall_render_misc_anims(float frametime)
 {
-	int idx,s_idx;
-/*
-	// HACKETY HACK HACK - always render misc anim 3 first, if it is playing
-	if(Main_hall_misc_anim_instance[2] != NULL){
-		anim_render_one(GS_STATE_MAIN_MENU,Main_hall_misc_anim_instance[2],frametime);
-	}
-*/
-	// render all other animations
-	for(idx=0;idx<MAX_MISC_ANIMATIONS;idx++){
-/*
-		// skip anim 3, which was previously rendered, if at all
-		if(idx == 2){
-			continue;
-		}
-*/
-		// render it
-		if(Main_hall_misc_anim[idx].num_frames > 0){
-			//animation is paused
-			if(Main_hall_misc_anim[idx].direction & GENERIC_ANIM_DIRECTION_PAUSED) {
-			// if the timestamp is -1, then reset it to some random value (based on MIN and MAX) and continue
-			if(Main_hall->misc_anim_delay[idx][0] == -1){
-				Main_hall->misc_anim_delay[idx][0] = timestamp(Main_hall->misc_anim_delay[idx][1] + 
-					 									      (int)(((float)rand()/(float)RAND_MAX) * (float)(Main_hall->misc_anim_delay[idx][2] - Main_hall->misc_anim_delay[idx][1])));
+	int idx, s_idx;
+	Assert(MAX_MISC_ANIMATIONS <= 32); // otherwise the bitfield trick won't work and we'll need to use an array of booleans
+	int jdx, group_anims_weve_checked = 0;
 
-			// if the timestamp is not -1 and has popped, play the anim and make the timestap -1
+	// render all misc animations
+	for (idx = 0; idx < Main_hall->num_misc_animations; idx++) {
+		// render it
+		if (Main_hall_misc_anim[idx].num_frames > 0) {
+			// animation is paused
+			if (Main_hall->misc_anim_paused[idx]) {
+				// if the timestamp is -1, then regenerate it
+				if (Main_hall->misc_anim_delay[idx][0] == -1) {
+					int regen_idx = -1;
+
+					// if this is part of a group, we should do additional checking
+					if (Main_hall->misc_anim_group[idx] >= 0) {
+						// make sure we haven't already checked it
+						if (!(group_anims_weve_checked & (1<<idx))) {
+							int group_indexes[MAX_MISC_ANIMATIONS];
+							int num_group_indexes = 0;
+							bool all_neg1 = true;
+
+							// okay... now we need to make sure all anims in this group are paused and -1
+							for (jdx = 0; jdx < Main_hall->num_misc_animations; jdx++) {
+								if (Main_hall->misc_anim_group[jdx] == Main_hall->misc_anim_group[idx]) {
+									group_anims_weve_checked |= (1<<jdx);
+									group_indexes[num_group_indexes] = jdx;
+									num_group_indexes++;
+
+									if (!Main_hall->misc_anim_paused[jdx] || Main_hall->misc_anim_delay[jdx][0] != -1) {
+										all_neg1 = false;
+									}
+								}
+							}
+
+							// if the entire group is paused and off, pick a random one to regenerate
+							if (all_neg1) {
+								regen_idx = group_indexes[rand() % num_group_indexes];
+							}
+						}
+					}
+					// not part of a group, so just handle this index
+					else {
+						regen_idx = idx;
+					}
+
+					// reset it to some random value (based on MIN and MAX) and continue
+					if (regen_idx >= 0) {
+						int min = Main_hall->misc_anim_delay[regen_idx][1];
+						int max = Main_hall->misc_anim_delay[regen_idx][2];
+						Main_hall->misc_anim_delay[regen_idx][0] = timestamp(min + (int) (frand() * (max - min)));
+					}
+
+				// if the timestamp is not -1 and has popped, play the anim and make the timestamp -1
 				} else if (timestamp_elapsed(Main_hall->misc_anim_delay[idx][0])) {
-					Main_hall_misc_anim[idx].direction &= ~GENERIC_ANIM_DIRECTION_PAUSED;
+					Main_hall->misc_anim_paused[idx] = false;
 					Main_hall_misc_anim[idx].current_frame = 0;
 					Main_hall_misc_anim[idx].anim_time = 0.0;
 				
-				// kill the timestamp	
-				Main_hall->misc_anim_delay[idx][0] = -1;				
+					// kill the timestamp	
+					Main_hall->misc_anim_delay[idx][0] = -1;				
 
-				// reset the "should be playing" flags
-				for(s_idx=1;s_idx<10;s_idx++){
-					Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
-				}
-			}
-		} 		
-		else {
-			for(s_idx=Main_hall->misc_anim_special_sounds[idx][0]; s_idx > 0; s_idx--){
-				// if we've passed the trigger point, then play the sound and break out of the loop
-					if((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]){
-					Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
-
-					// if the sound is already playing, then kill it. This is a pretty safe thing to do since we can assume that
-					// by the time we get to this point again, the sound will have been long finished
-					if(snd_is_playing(Main_hall->misc_anim_sound_handles[idx][s_idx])){
-						snd_stop(Main_hall->misc_anim_sound_handles[idx][s_idx]);
-						Main_hall->misc_anim_sound_handles[idx][s_idx] = -1;
+					// reset the "should be playing" flags
+					for (s_idx=1;s_idx<10;s_idx++) {
+						Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
 					}
-					// play the sound
-					Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds[idx][s_idx]],Main_hall->misc_anim_sound_pan[idx]);					
-					break;
 				}
 			}
-				if(Main_hall_misc_anim[idx].current_frame == Main_hall_misc_anim[idx].num_frames - 1) {
-				Main_hall->misc_anim_delay[idx][0] = -1;				
+			// animation is not paused
+			else {
+				for (s_idx = Main_hall->misc_anim_special_sounds[idx][0]; s_idx > 0; s_idx--) {
+					// if we've passed the trigger point, then play the sound and break out of the loop
+					if ((Main_hall_misc_anim[idx].current_frame >= Main_hall->misc_anim_special_trigger[idx][s_idx]) && !Main_hall->misc_anim_sound_flag[idx][s_idx]) {
+						Main_hall->misc_anim_sound_flag[idx][s_idx] = 1;
+
+						// if the sound is already playing, then kill it. This is a pretty safe thing to do since we can assume that
+						// by the time we get to this point again, the sound will have been long finished
+						if (snd_is_playing(Main_hall->misc_anim_sound_handles[idx][s_idx])) {
+							snd_stop(Main_hall->misc_anim_sound_handles[idx][s_idx]);
+							Main_hall->misc_anim_sound_handles[idx][s_idx] = -1;
+						}
+
+						// play the sound
+						Main_hall->misc_anim_sound_handles[idx][s_idx] = snd_play(&Snds_iface[Main_hall->misc_anim_special_sounds[idx][s_idx]],Main_hall->misc_anim_sound_pan[idx]);					
+						break;
+					}
+				}
+
+				// animation has reached the last frame
+				if (Main_hall_misc_anim[idx].current_frame == Main_hall_misc_anim[idx].num_frames - 1) {
+					Main_hall->misc_anim_delay[idx][0] = -1;				
 
 					//this helps the above code reset the timers
 					//MISC_ANIM_MODE_HOLD simply stops on the last frame, so we don't care
 					//MISC_ANIM_MODE_LOOPED just loops so we don't care either
-					if(Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_TIMED) {
-						Main_hall_misc_anim[idx].direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+					if (Main_hall->misc_anim_modes[idx] == MISC_ANIM_MODE_TIMED) {
+						Main_hall->misc_anim_paused[idx] = true;
 					}
 					//don't reset sound for MISC_ANIM_MODE_HOLD
-					if(Main_hall->misc_anim_modes[idx] != MISC_ANIM_MODE_HOLD) {
-				// reset the "should be playing" flags
-				for(s_idx=1;s_idx<10;s_idx++){
-					Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
+					if (Main_hall->misc_anim_modes[idx] != MISC_ANIM_MODE_HOLD) {
+						// reset the "should be playing" flags
+						for (s_idx=1;s_idx<10;s_idx++) {
+							Main_hall->misc_anim_sound_flag[idx][s_idx] = 0;
+						}
+					}
 				}
-			}			
 
+				// actually render it
+				if (Main_hall_frame_skip || Main_hall_paused) {
+					frametime = 0;
+				}
+				generic_anim_render(&Main_hall_misc_anim[idx], frametime, Main_hall->misc_anim_coords[idx][0], Main_hall->misc_anim_coords[idx][1]);
 			}
-		}			
-
-			if(Main_hall_frame_skip || Main_hall_paused)
-				frametime = 0;
-			generic_anim_render(&Main_hall_misc_anim[idx], frametime, Main_hall->misc_anim_coords[idx][0], Main_hall->misc_anim_coords[idx][1]);
 		}
 	}
 }
@@ -1436,7 +1456,7 @@ void main_hall_cull_door_sounds()
 {
 	int idx;
 	// basically just set the handle of any finished sound to be -1, so that we know its free any where else in the code we may need it
-	for(idx=0;idx<Main_hall->num_door_sounds;idx++){
+	for(idx=0;idx<Main_hall->num_door_animations;idx++){
 		if((Main_hall_door_sound_handles[idx] != -1) && !snd_is_playing(Main_hall_door_sound_handles[idx])){			
 			Main_hall_door_sound_handles[idx] = -1;
 		}
@@ -1702,19 +1722,23 @@ void main_hall_read_table()
 
 			// intercom sounds
 			required_string("+Num Intercom Sounds:");
-			stuff_int(&m->num_random_intercom_sounds);		
-			for(idx=0; idx<m->num_random_intercom_sounds; idx++){			
+			stuff_int(&m->num_random_intercom_sounds);
+			if (m->num_random_intercom_sounds > MAX_RANDOM_INTERCOM_SOUNDS) {
+				Warning(LOCATION, "Num Intercom Sounds exceeds maximum!");
+				m->num_random_intercom_sounds = MAX_RANDOM_INTERCOM_SOUNDS;
+			}
+			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom delay
 				required_string("+Intercom delay:");
 				stuff_int(&m->intercom_delay[idx][0]);
 				stuff_int(&m->intercom_delay[idx][1]);
 			}
-			for(idx=0; idx<m->num_random_intercom_sounds; idx++){			
+			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom sound id
 				required_string("+Intercom sound:");
 				stuff_int(&m->intercom_sounds[idx]);			
 			}			
-			for(idx=0; idx<m->num_random_intercom_sounds; idx++){			
+			for(idx=0; idx<m->num_random_intercom_sounds; idx++){
 				// intercom pan
 				required_string("+Intercom pan:");
 				stuff_float(&m->intercom_sound_pan[idx]);			
@@ -1723,10 +1747,22 @@ void main_hall_read_table()
 			// misc animations
 			required_string("+Num Misc Animations:");
 			stuff_int(&m->num_misc_animations);
+			if (m->num_misc_animations > MAX_MISC_ANIMATIONS) {
+				Warning(LOCATION, "Num Misc Animations exceeds maximum!");
+				m->num_misc_animations = MAX_MISC_ANIMATIONS;
+			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim names
 				required_string("+Misc anim:");
 				stuff_string(m->misc_anim_name[idx], F_NAME, MAX_FILENAME_LEN);
+			}
+			for(idx=0; idx<m->num_misc_animations; idx++){
+				// anim groups, optionally
+				if (optional_string("+Misc anim group:")){
+					stuff_int(&m->misc_anim_group[idx]);
+				} else {
+					m->misc_anim_group[idx] = -1;
+				}
 			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim delay
@@ -1781,6 +1817,10 @@ void main_hall_read_table()
 			// door animations
 			required_string("+Num Door Animations:");
 			stuff_int(&m->num_door_animations);
+			if (m->num_door_animations > MAX_DOOR_ANIMATIONS) {
+				Warning(LOCATION, "Num Door Animations exceeds maximum!");
+				m->num_door_animations = MAX_DOOR_ANIMATIONS;
+			}
 			for(idx=0; idx<m->num_door_animations; idx++){
 				// door name
 				required_string("+Door anim:");

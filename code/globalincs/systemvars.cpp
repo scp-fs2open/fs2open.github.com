@@ -72,6 +72,7 @@ bool Normalmap_override = false;
 bool Heightmap_override = false;
 bool Glowpoint_override = false;
 bool GLSL_override = false;
+bool PostProcessing_override = false;
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 

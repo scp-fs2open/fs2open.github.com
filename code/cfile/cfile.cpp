@@ -50,10 +50,10 @@ char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// What type this is          Path																			Extensions        					Parent type
 	{ CF_TYPE_INVALID,				NULL,																		NULL,								CF_TYPE_INVALID },
-	// Root must be index 1!!	
+	// Root must be index 1!!
 	{ CF_TYPE_ROOT,					"",																			".mve .ogg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																		".cfg .log .txt",					CF_TYPE_ROOT	},
-	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",											".txt .net",						CF_TYPE_DATA	},
 	{ CF_TYPE_MODELS,				"data" DIR_SEPARATOR_STR "models",											".pof",								CF_TYPE_DATA	},
 	{ CF_TYPE_TABLES,				"data" DIR_SEPARATOR_STR "tables",											".tbl .tbm",						CF_TYPE_DATA	},
@@ -69,22 +69,22 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,				"data" DIR_SEPARATOR_STR "music",											".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg",					CF_TYPE_DATA	},
-	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .jpg",	CF_TYPE_DATA	},
+	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf",							CF_TYPE_DATA	},
-	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .dds .sdr",	CF_TYPE_DATA	},
-	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
+	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf",								CF_TYPE_DATA	},
-	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .dds",						CF_TYPE_PLAYERS	},
-	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .dds",						CF_TYPE_PLAYERS	},
+	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
+	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",				".pl2 .cs2 .plr .csg .css",			CF_TYPE_PLAYERS	},
- 	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr",								CF_TYPE_PLAYERS	},
-	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .ibx .tsb",					CF_TYPE_DATA	}, 	//clr=cached color
-	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .dds .fs2 .txt",				CF_TYPE_DATA	},
+	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr",								CF_TYPE_PLAYERS	},
+	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .bx",					CF_TYPE_DATA	}, 	//clr=cached color
+	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .dds .fs2 .txt",				CF_TYPE_DATA	},
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",										".fs2 .fc2 .ntl .ssv",				CF_TYPE_DATA	},
 	{ CF_TYPE_CONFIG,				"data" DIR_SEPARATOR_STR "config",											".cfg",								CF_TYPE_DATA	},
 	{ CF_TYPE_DEMOS,				"data" DIR_SEPARATOR_STR "demos",											".fsd",								CF_TYPE_DATA	},
-	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".pcx .ani .eff .tga .jpg .dds",	CF_TYPE_DATA	},
-	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	},
 };
@@ -147,9 +147,14 @@ int cfile_in_root_dir(char *exe_path)
 		token_count++;
 		tok = strtok(NULL, DIR_SEPARATOR_STR);
 	} while(tok != NULL);
-		
-	// root directory if we have <= 1 slash
+	
+#ifdef SCP_UNIX
+	// /freespace works, / does not
+	if(token_count <= 1) {
+#else
+	// C:/freespace works, C:/ does not
 	if(token_count <= 2){
+#endif
 		return 1;
 	}
 
@@ -813,53 +818,6 @@ CFILE *cfopen_special(char *file_path, char *mode, const int size, const int off
 		// it's a normal file
 		return cf_open_fill_cfblock(fp, dir_type);
 	}
-
-/*	char longname[_MAX_PATH];
-
-	if ( !cfile_inited ) {
-		Int3();
-		return NULL;
-	}
-
-	//================================================
-	// Check that all the parameters make sense
-	Assert( file_path && strlen(file_path) );
-	Assert( mode != NULL );
-
-	if ( (ext_num <= 0) || (!ext_list) ) {
-		Int3();
-		return NULL;
-	}
-
-	// cfopen_ext() only supports reading files, not creating them
-	if ( strchr(mode, 'w') ) {
-		Int3();
-		return NULL;
-	}
-
-	//================================================
-	// Search for file on disk, on cdrom, or in a packfile
-
-	int offset, size;
-	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy_s(copy_file_path, file_path);
-
-	if ( cf_find_file_location_ext(copy_file_path, ext_num, ext_list, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize) ) {
-		// Fount it, now create a cfile out of it
-		FILE *fp = fopen( longname, "rb" );
-
-		if ( fp ) {
-			if ( offset ) {
-				// Found it in a pack file
-				return cf_open_packed_cfblock(fp, dir_type, offset, size );
-			} else {
-				// Found it in a normal file
-				return cf_open_fill_cfblock(fp, dir_type);
-			} 
-		}
-	}
-
-	return NULL;*/
 }
 
 

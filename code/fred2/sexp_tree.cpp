@@ -43,6 +43,8 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
 #include "graphics/gropenglshader.h"
+#include "graphics/gropenglpostprocessing.h"
+#include "sound/ds.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -55,7 +57,6 @@
 // note: stay below 0xe000 so we don't collide with MFC defines..
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -578,12 +579,31 @@ int get_sexp_id(char *sexp_name)
 }
 
 // Goober5000
-int category_of_subcategory(int subcategory_id)
+int get_category(int sexp_id)
 {
-	return (subcategory_id & OP_CATEGORY_MASK);
+	int category = (sexp_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
 }
 
 // Goober5000
+int category_of_subcategory(int subcategory_id)
+{
+	int category = (subcategory_id & OP_CATEGORY_MASK);
+
+	// hack so that CHANGE and CHANGE2 show up in the same menu
+	if (category == OP_CATEGORY_CHANGE2)
+		category = OP_CATEGORY_CHANGE;
+
+	return category;
+}
+
+// Goober5000
+// this seems not to be used anywhere?
 int get_category_id(char *category_name)
 {
 	for (int i = 0; i < Num_op_menus; i++)
@@ -597,6 +617,7 @@ int get_category_id(char *category_name)
 }
 
 // Goober5000
+// this seems not to be used anywhere?
 int has_submenu(char *category_name)
 {
 	int category_id = get_category_id(category_name);
@@ -852,7 +873,7 @@ void sexp_tree::right_clicked(int mode)
 				// put it in the appropriate menu
 				for (j=0; j<Num_op_menus; j++)
 				{
-					if (op_menu[j].id == (Operators[i].value & OP_CATEGORY_MASK))
+					if (op_menu[j].id == get_category(Operators[i].value))
 					{
 						switch (Operators[i].value) {
 // Commented out by Goober5000 to allow these operators to be selectable
@@ -867,8 +888,9 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_INTEL:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, this one is deprecated 
+							// unlike the above operators, these are deprecated 
 							case OP_HITS_LEFT_SUBSYSTEM:
+							case OP_CUTSCENES_SHOW_SUBTITLE:
 								j = Num_op_menus;	// don't allow these operators to be visible
 								break;
 						}
@@ -904,8 +926,9 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_INTEL:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, this one is deprecated 
+							// unlike the above operators, these are deprecated 
 							case OP_HITS_LEFT_SUBSYSTEM:
+							case OP_CUTSCENES_SHOW_SUBTITLE:
 								j = Num_submenus;	// don't allow these operators to be visible
 								break;
 						}
@@ -1145,7 +1168,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			// modify string or number if (modify_variable)
-			if ( Operators[op].value == OP_MODIFY_VARIABLE || Operators[op].value == OP_SET_VARIABLE_BY_INDEX ) {
+			if ( Operators[op].value == OP_MODIFY_VARIABLE ) {
 				int modify_type = get_modify_variable_type(parent);
 
 				if (modify_type == OPF_NUMBER) {
@@ -1153,6 +1176,24 @@ void sexp_tree::right_clicked(int mode)
 					menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
 				}
 				// no change for string type
+			}
+			else if ( Operators[op].value == OP_SET_VARIABLE_BY_INDEX ) {
+				// it depends on which argument we are modifying
+				// first argument is always a number
+				if (Replace_count == 0) {
+					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+					menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
+				}
+				// second argument could be anything
+				else {
+					int modify_type = get_modify_variable_type(parent);
+
+					if (modify_type == OPF_NUMBER) {
+						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
+					}
+					// no change for string type
+				}
 			}
 
 			list->destroy();
@@ -2209,7 +2250,9 @@ int sexp_tree::add_default_operator(int op, int argnum)
 		{
 			if ((argnum == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
 				(argnum == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
-				(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
+				(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
+				(argnum == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
+				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING))
 			{
 
 				int sexp_var_index = get_index_sexp_variable_name(item.text);
@@ -2553,6 +2596,22 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			str = "<persona name>";
 			break;
 
+		case OPF_FONT:
+			str = Fonts[0].filename;
+			break;
+
+		case OPF_AUDIO_VOLUME_OPTION:
+			str = "Music";
+			break;
+
+		case OPF_POST_EFFECT:
+			str = "<Effect Name>";
+			break;
+
+		case OPF_HUD_GAUGE:
+			str = "Messages";
+			break;
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -2632,6 +2691,16 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPES:
+		case OPF_DAMAGE_TYPES:
+		case OPF_FONT:
+		case OPF_HUD_ELEMENT:
+		case OPF_SOUND_ENVIRONMENT:
+		case OPF_SOUND_ENVIRONMENT_OPTION:
+		case OPF_EXPLOSION_OPTION:
+		case OPF_AUDIO_VOLUME_OPTION:
+		case OPF_WEAPON_BANK_NUMBER:
+		case OPF_MESSAGE_OR_STRING:
+		case OPF_HUD_GAUGE:
 			return 1;
 
 		case OPF_SHIP:
@@ -3136,19 +3205,26 @@ void get_variable_name_from_sexp_tree_node_text(const char *text, char *var_name
 
 int sexp_tree::get_modify_variable_type(int parent)
 {
-	Assert(parent >= 0);
 	int sexp_var_index = -1;
+
+	Assert(parent >= 0);
 	int op_const = get_operator_const(tree_nodes[parent].text);
 
+	Assert(tree_nodes[parent].child >= 0);
+	char *node_text = tree_nodes[tree_nodes[parent].child].text;
+
 	if ( op_const == OP_MODIFY_VARIABLE ) {
-		Assert(tree_nodes[parent].child >= 0);
-		sexp_var_index = get_tree_name_to_sexp_variable_index(tree_nodes[tree_nodes[parent].child].text);
+		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);
 		Assert(sexp_var_index >= 0);
-	} else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
-		Assert(tree_nodes[parent].child != -1);
-		if (can_construe_as_integer(tree_nodes[tree_nodes[parent].child].text)) {
-			sexp_var_index = atoi(tree_nodes[tree_nodes[parent].child].text);
+	}
+	else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
+		if (can_construe_as_integer(node_text)) {
+			sexp_var_index = atoi(node_text);
 			Assert(sexp_var_index >= 0);
+		}
+		else if (strchr(node_text, '(') && strchr(node_text, ')')) {
+			// the variable index is itself a variable!
+			return OPF_AMBIGUOUS;
 		}
 	} else {
 		Int3();  // should not be called otherwise
@@ -3214,7 +3290,9 @@ void sexp_tree::verify_and_fix_arguments(int node)
 					// special case for SEXPs which can modify a variable 
 					if ((arg_num == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
 						(arg_num == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
-						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
+						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
+						(arg_num == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
+						(arg_num == 1 && Operators[op].value == OP_INT_TO_STRING))
 					{
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
@@ -3832,14 +3910,16 @@ void sexp_tree::update_help(HTREEITEM h)
 	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
-/* Goober5000 - this is just annoying
-	for (i=0; i<Num_operators; i++)
-		for (j=0; j<Num_op_menus; j++)
-			if ((Operators[i].value & OP_CATEGORY_MASK) == op_menu[j].id) {
-				if (!help(Operators[i].value))
-					Int3();  // Allender!  If you add new sexp operators, add help for them too! :)
+	for (i=0; i<Num_operators; i++) {
+		for (j=0; j<Num_op_menus; j++) {
+			if (get_category(Operators[i].value) == op_menu[j].id) {
+				if (!help(Operators[i].value)) {
+					mprintf(("Allender!  If you add new sexp operators, add help for them too! :)\n"));
+				}
 			}
-*/
+		}
+	}
+
 	help_box = (CEdit *) GetParent()->GetDlgItem(IDC_HELP_BOX);
 	if (!help_box || !::IsWindow(help_box->m_hWnd))
 		return;
@@ -4310,12 +4390,52 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_armor_types();
 			break;
 
+		case OPF_DAMAGE_TYPES:
+			list = get_listing_opf_damage_types();
+			break;
+
 		case OPF_PERSONA:
 			list = get_listing_opf_persona();
 			break;
 
 		case OPF_POST_EFFECT:
 			list = get_listing_opf_post_effect();
+			break;
+
+		case OPF_FONT:
+			list = get_listing_opf_font();
+			break;
+
+		case OPF_HUD_ELEMENT:
+			list = get_listing_opf_hud_elements();
+			break;
+
+		case OPF_SOUND_ENVIRONMENT:
+			list = get_listing_opf_sound_environment();
+			break;
+
+		case OPF_SOUND_ENVIRONMENT_OPTION:
+			list = get_listing_opf_sound_environment_option();
+			break;
+
+		case OPF_AUDIO_VOLUME_OPTION:
+			list = get_listing_opf_adjust_audio_volume();
+			break; 
+
+		case OPF_EXPLOSION_OPTION:
+			list = get_listing_opf_explosion_option();
+			break;
+
+		case OPF_WEAPON_BANK_NUMBER:
+			list = get_listing_opf_weapon_banks();
+			break;
+
+		case OPF_MESSAGE_OR_STRING:
+			list = get_listing_opf_message();
+			break;
+
+		case OPF_HUD_GAUGE:
+			list = get_listing_hud_gauge();
 			break;
 
 		default:
@@ -4881,7 +5001,7 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 	int i;
 	sexp_list_item head;
 
-	head.add_data("<any support ship class>");
+	head.add_data("<species support ship class>");
 
 	for (i=0; i<Num_ship_classes; i++)
 	{
@@ -4912,6 +5032,8 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_with_bay()
 	object *objp;
 	sexp_list_item head;
 
+	head.add_data("<no anchor>");
+
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
 		if ( (objp->type == OBJ_SHIP) || (objp->type == OBJ_START) )
@@ -4923,8 +5045,6 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_with_bay()
 			}
 		}
 	}
-
-	head.add_data("<no anchor>");
 
 	return head.next;
 }
@@ -4979,7 +5099,7 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
-			head.add_data(tmp);
+			head.add_data_dup(tmp);
 		}
 	}
 
@@ -5116,6 +5236,18 @@ sexp_list_item *sexp_tree::get_listing_opf_persona()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_font()
+{
+	int i;
+	sexp_list_item head;
+
+	for (i = 0; i < Num_fonts; i++) {
+		head.add_data(Fonts[i].filename);
+	}
+
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_listing_opf_who_from()
 {
 	object *ptr;
@@ -5124,6 +5256,7 @@ sexp_list_item *sexp_tree::get_listing_opf_who_from()
 	//head.add_data("<any allied>");
 	head.add_data("#Command");
 	head.add_data("<any wingman>");
+	head.add_data("<none>");
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -5144,6 +5277,60 @@ sexp_list_item *sexp_tree::get_listing_opf_priority()
 	head.add_data("High");
 	head.add_data("Normal");
 	head.add_data("Low");
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_sound_environment()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+	for (int i = 0; i  < (int)EFX_presets.size(); i++) {
+		// ugh
+		char *text = const_cast<char*>(EFX_presets[i].name.c_str());
+		head.add_data_dup(text);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_sound_environment_option()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_sound_environment_options; i++)
+		head.add_data(Sound_environment_option[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_adjust_audio_options; i++)
+		head.add_data(Adjust_audio_options[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_hud_gauge() 
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_hud_gauge_types; i++)
+		head.add_data(Hud_gauge_types[i].name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_explosion_option()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_explosion_options; i++)
+		head.add_data(Explosion_option[i]);
+
 	return head.next;
 }
 
@@ -5377,7 +5564,7 @@ sexp_list_item *sexp_tree::get_listing_opf_string()
 {
 	sexp_list_item head;
 
-	head.add_data("<any string>");
+	head.add_data(SEXP_ANY_STRING);
 
 	return head.next;
 }
@@ -5565,11 +5752,10 @@ sexp_list_item *sexp_tree::get_listing_opf_sun_bitmap()
 sexp_list_item *sexp_tree::get_listing_opf_nebula_storm_type()
 {
 	sexp_list_item head;
-	int i;
 
-	head.add_data("none");
+	head.add_data(SEXP_NONE_STRING);
 
-	for (i=0; i < Num_storm_types; i++)
+	for (size_t i=0; i < Storm_types.size(); i++)
 	{
 		head.add_data(Storm_types[i].name);
 	}
@@ -5605,9 +5791,12 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 {
 	unsigned int i;
 	sexp_list_item head;
-	SCP_vector<opengl::post_effect> &ppe_names = opengl::post_shader::get_effects();
-	for (i=0; i < ppe_names.size(); i++)
-		head.add_data(const_cast<char*>(ppe_names[i].name.c_str()));
+
+	SCP_vector<SCP_string> ppe_names;
+	get_post_process_effect_names(ppe_names);
+	for (i=0; i < ppe_names.size(); i++) {
+		head.add_data_dup(const_cast<char*>(ppe_names[i].c_str()));
+	}
 
 	return head.next;
 }
@@ -5632,6 +5821,32 @@ sexp_list_item *sexp_tree::get_listing_opf_armor_types()
 	head.add_data(SEXP_NONE_STRING);
 	for (t=0; t<Armor_types.size(); t++)
 		head.add_data(Armor_types[t].GetNamePtr());
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_damage_types()
+{
+	size_t t;
+	sexp_list_item head;
+	head.add_data(SEXP_NONE_STRING);
+	for (t=0; t<Damage_types.size(); t++)
+		head.add_data(Damage_types[t].name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_hud_elements()
+{
+	sexp_list_item head;
+	head.add_data("warpout");
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_weapon_banks()
+{
+	sexp_list_item head;
+	head.add_data(SEXP_ALL_BANKS_STRING);
 
 	return head.next;
 }
@@ -5776,20 +5991,20 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 
 	for (int i=0; i < MAX_TVT_TEAMS; i++) {
 		for(idx=0; idx<Team_data[i].num_ship_choices; idx++) {
-			if (var_index == Team_data[i].ship_list_variables[idx]) {
+			if (!strcmp(Team_data[i].ship_list_variables[idx], Sexp_variables[var_index].variable_name)) {
 				count++; 
 			}
 
-			if (var_index == Team_data[i].ship_count_variables[idx]) {
-				count++; 
+			if (!strcmp(Team_data[i].ship_count_variables[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
 			}
 		}
 
 		for (idx=0; idx<Team_data[i].num_weapon_choices; idx++) {
-			if (var_index == Team_data[i].weaponry_pool_variable[idx]) {
+			if (!strcmp(Team_data[i].weaponry_pool_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
-			if (var_index == Team_data[i].weaponry_amount_variable[idx]) {
+			if (!strcmp(Team_data[i].weaponry_amount_variable[idx], Sexp_variables[var_index].variable_name)) {
 				count++;
 			}
 		}

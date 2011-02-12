@@ -623,7 +623,7 @@ int fireball_is_warp(object * obj)
 	return 0;
 }
 
-// mabye play sound effect for warp hole closing
+// maybe play sound effect for warp hole closing
 void fireball_maybe_play_warp_close_sound(fireball *fb)
 {
 	float life_left;
@@ -922,7 +922,9 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		Assert( warp_lifetime > 4.0f );		// Warp lifetime must be at least 4 seconds!
+		Assert( warp_lifetime >= 4.0f );		// Warp lifetime must be at least 4 seconds!
+		if ( warp_lifetime < 4.0f )
+			warp_lifetime = 4.0f;
 		fb->total_time = warp_lifetime;	// in seconds
 	} else {
 		fb->total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds

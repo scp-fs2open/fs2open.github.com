@@ -47,7 +47,6 @@
 #define NO_PERSONA_INDEX	999
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -1053,7 +1052,7 @@ int CShipEditorDlg::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<MAX_WINGS; i++)
+		for (i=0; i<MAX_WINGS; i++) {
 			if (Wings[i].wave_count && !stricmp(Wings[i].name, m_ship_name)) {
 				if (bypass_errors)
 					return 1;
@@ -1068,6 +1067,42 @@ int CShipEditorDlg::update_data(int redraw)
 				m_ship_name = _T(Ships[single_ship].ship_name);
 				UpdateData(FALSE);
 			}
+		}
+
+		for (i=0; i<Num_iffs; i++) {
+			if (!stricmp(m_ship_name, Iff_info[i].iff_name)) {
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This ship name is already being used by a team.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_ship_name = _T(Ships[single_ship].ship_name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(m_ship_name, Ai_tp_list[i].name)) 
+			{
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This ship name is already being used by a target priority group.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_ship_name = _T(Ships[single_ship].ship_name);
+				UpdateData(FALSE);
+			}
+		}
 
 		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
 			if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_ship_name)) {
@@ -1085,7 +1120,7 @@ int CShipEditorDlg::update_data(int redraw)
 				UpdateData(FALSE);
 			}
 
-			if(jumpnode_get_by_name(m_ship_name) != NULL)
+		if(jumpnode_get_by_name(m_ship_name) != NULL)
 		{
 			if (bypass_errors)
 				return 1;
@@ -1097,6 +1132,21 @@ int CShipEditorDlg::update_data(int redraw)
 
 			if (z == IDCANCEL)
 			return -1;
+
+			m_ship_name = _T(Ships[single_ship].ship_name);
+			UpdateData(FALSE);
+		}
+		
+		if (!stricmp(m_ship_name.Left(1), "<")) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("Ship names not allowed to begin with <\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
 
 			m_ship_name = _T(Ships[single_ship].ship_name);
 			UpdateData(FALSE);
@@ -1202,9 +1252,16 @@ int CShipEditorDlg::update_ship(int ship)
 	if (strlen(m_cargo1)) {
 		z = string_lookup(m_cargo1, Cargo_names, Num_cargo);
 		if (z == -1) {
-			Assert(Num_cargo < MAX_CARGO);
-			z = Num_cargo++;
-			strcpy(Cargo_names[z], m_cargo1);
+			if (Num_cargo < MAX_CARGO) {
+				z = Num_cargo++;
+				strcpy(Cargo_names[z], m_cargo1);
+			}
+			else {
+				str.Format("Maximum number of cargo names (%d) reached.\nIgnoring new name.\n", MAX_CARGO);
+				MessageBox(str, "Error", MB_ICONEXCLAMATION);
+				z = 0;
+				m_cargo1 = Cargo_names[z];
+			}
 		}
 
 		MODIFY(Ships[ship].cargo1, (char)z);
@@ -1263,7 +1320,7 @@ int CShipEditorDlg::update_ship(int ship)
 		m_arrival_delay.save(&Ships[ship].arrival_delay);
 		m_departure_delay.save(&Ships[ship].departure_delay);
 		if (m_arrival_target >= 0) {
-			z = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET)) -> GetItemData(m_arrival_target);
+			z = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, z);
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
@@ -1273,7 +1330,7 @@ int CShipEditorDlg::update_ship(int ship)
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					str.Format("Ship must arrive at least %d meters away from target.\n"
 						"Value has been reset to this.  Use with caution!\r\n"
-						"Reccomended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[ship].objnum].radius) );
+						"Recommended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[ship].objnum].radius) );
 
 					MessageBox(str);
 					if (Ships[ship].arrival_distance < 0)
@@ -1285,8 +1342,10 @@ int CShipEditorDlg::update_ship(int ship)
 				}
 			}
 		}
-		z = ((CComboBox *)GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
-		MODIFY(Ships[ship].departure_anchor, z );
+		if (m_departure_target >= 0) {
+			z = ((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
+			MODIFY(Ships[ship].departure_anchor, z );
+		}
 	}
 
 	if (m_hotkey != -1)

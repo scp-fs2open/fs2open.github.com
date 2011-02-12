@@ -34,11 +34,8 @@
 //#define MAX_PACKET_SIZE 4096
 #define MAX_PACKET_SIZE		512
 
-#ifdef FS2_DEMO
-	#define DEFAULT_GAME_PORT 7802
-#else
-	#define DEFAULT_GAME_PORT 7808
-#endif
+#define DEFAULT_GAME_PORT 7808
+
 
 typedef struct net_addr	{
 	uint	type;			// See NET_ defines above

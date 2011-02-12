@@ -171,8 +171,10 @@ void nebula_render()
 	int i;
 	// int r, g, b;
 
+	if (Fred_running) {
 	// no nebula for you!
 	return;
+	}
 
 	if ( !Nebula_loaded ) {
 		return;
@@ -190,7 +192,7 @@ void nebula_render()
 		g3_project_vertex( &nebula_verts[i] );
 	}
 
-	int saved_gr_zbuffering = 	gr_zbuffer_get();
+	int saved_gr_zbuffering = gr_zbuffer_get();
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 

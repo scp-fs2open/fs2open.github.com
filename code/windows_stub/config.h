@@ -11,9 +11,11 @@
 // Goober5000 - now these warnings will only be disabled when compiling with MSVC :)
 #if defined _MSC_VER
 
+// 4002 is too many actual parameters for macro 'Assertion'
 // 4100 is unreferenced formal parameters,
 // 4127 is constant conditional (assert)
 // 4201 nonstandard extension used: nameless struct/union (happens a lot in Windows include headers)
+// 4290 C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 // 4390 empty control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
 // 4410 illegal size for operand... ie... 	fxch st(1)
 // 4511 copy constructor could not be generated (happens a lot in Windows include headers)
@@ -28,7 +30,13 @@
 //      So to disable this, I add in a stub function at the top of each module that does nothing.
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 // 4996 deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
-#pragma warning(disable: 4100 4127 4201 4390 4410 4511 4512 4514 4611 4663 4710 4711 4725 4786 4996)
+#pragma warning(disable: 4002 4100 4127 4201 4290 4390 4410 4511 4512 4514 4611 4663 4710 4711 4725 4786 4996)
+
+#ifdef NDEBUG
+// Try/Catch in MSVC is not handling these right, so for Release Builds
+// we are disabling unreferenced local variable warnings from showing. Zacam.
+#pragma warning(disable: 4101)
+#endif
 
 #endif
 
@@ -136,7 +144,8 @@ typedef struct _LARGE_INTEGER {
 
 // sound defines/structs
 #define WAVE_FORMAT_PCM		1
-#define WAVE_FORMAT_ADPCM	2
+#define WAVE_FORMAT_ADPCM		2
+#define WAVE_FORMAT_IEEE_FLOAT	3
 
 #pragma pack(1) // required to get proper values in ds_parse_wave()
 typedef struct {

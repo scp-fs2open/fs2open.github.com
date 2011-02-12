@@ -9,12 +9,12 @@
 #ifndef _CAMPAIGN_EDITOR_H
 #define _CAMPAIGN_EDITOR_H
 
-class dlgCampaignEditor : public wxDialog
+class frmCampaignEditor : public wxFrame
 {
 	public:
 		// constructor/destructors
-		dlgCampaignEditor(wxWindow *parent);
-		~dlgCampaignEditor();
+		frmCampaignEditor(wxWindow *parent);
+		~frmCampaignEditor();
 
 		// event handlers
 		// event functions go here

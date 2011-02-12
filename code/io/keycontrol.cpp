@@ -1372,6 +1372,17 @@ void process_player_ship_keys(int k)
 		} else	{
 			process_set_of_keys(masked_k, Dead_key_set_size, Dead_key_set);
 		}
+		if (lua_game_control & LGC_B_POLL_ALL) {
+			// first clear all
+			button_info_clear(&Player->lua_bi_full);
+
+			// then check the keys.
+			int i;
+			for(i = 0; i < CCFG_MAX; i++) {
+				if (check_control(i, masked_k))
+					button_info_set(&Player->lua_bi_full, i);
+			}
+		}
 	} else {
 
 	}
@@ -1444,7 +1455,6 @@ void game_process_pause_key()
 // process cheat codes
 void game_process_cheats(int k)
 {
-	int i;
 	char *cryptstring;
 
 	if ( k == 0 ){
@@ -1459,7 +1469,7 @@ void game_process_cheats(int k)
 
 	k = key_to_ascii(k);
 
-	for (i = 0; i < CHEAT_BUFFER_LEN; i++){
+	for (size_t i = 0; i < CHEAT_BUFFER_LEN; i++){
 		CheatBuffer[i]=CheatBuffer[i+1];
 	}
 
@@ -1512,7 +1522,7 @@ void game_process_cheats(int k)
 		extern void prevent_spawning_collision(object *new_obj);
 		ship_subsys *ptr;
 		char name[NAME_LENGTH];
-		int i, ship_idx, ship_class, num_ships = 1;
+		int ship_idx, ship_class; 
 
 		// if not found, then don't create it :(
 		ship_class = ship_info_lookup("Volition Bravos");
@@ -1521,93 +1531,55 @@ void game_process_cheats(int k)
 
 		HUD_printf(NOX("Walk the plank"));
 
-		for (i = 0; i < num_ships; i++)
-		{
-			vec3d pos = Player_obj->pos;
-			matrix orient = Player_obj->orient;
-			pos.xyz.x += frand_range(-700.0f, 700.0f);
-			pos.xyz.y += frand_range(-700.0f, 700.0f);
-			pos.xyz.z += frand_range(-700.0f, 700.0f);
+		vec3d pos = Player_obj->pos;
+		matrix orient = Player_obj->orient;
+		pos.xyz.x += frand_range(-700.0f, 700.0f);
+		pos.xyz.y += frand_range(-700.0f, 700.0f);
+		pos.xyz.z += frand_range(-700.0f, 700.0f);
 
-			int objnum = ship_create(&orient, &pos, ship_class);
-			if (objnum < 0)
-				return;
+		int objnum = ship_create(&orient, &pos, ship_class);
+		if (objnum < 0)
+			return;
 
-			ship *shipp = &Ships[Objects[objnum].instance];
-			shipp->ship_name[0] = '\0';
-			shipp->orders_accepted = (1<<NUM_COMM_ORDER_ITEMS)-1;
+		ship *shipp = &Ships[Objects[objnum].instance];
+		shipp->ship_name[0] = '\0';
+		shipp->orders_accepted = (1<<NUM_COMM_ORDER_ITEMS)-1;
 
-			// Goober5000 - stolen from support ship creation
-			// create a name for the ship.  use "Volition Bravos #".  look for collisions until one isn't found anymore
-			ship_idx = 1;
-			do {
-				sprintf(name, NOX("Volition Bravos %d"), ship_idx);
-				if ( (ship_name_lookup(name) == -1) && (ship_find_exited_ship_by_name(name) == -1) )
-				{
-					strcpy_s(shipp->ship_name, name);
-					break;
-				}
-
-				ship_idx++;
-			} while(1);
-
-			shipp->flags |= SF_ESCORT;
-			shipp->escort_priority = 1000 - ship_idx;
-
-			// now make sure we're not colliding with anyone
-			prevent_spawning_collision(&Objects[objnum]);
-				
-			// Goober5000 - beam free
-			for (ptr = GET_FIRST(&shipp->subsys_list); ptr != END_OF_LIST(&shipp->subsys_list); ptr = GET_NEXT(ptr))
+		// Goober5000 - stolen from support ship creation
+		// create a name for the ship.  use "Volition Bravos #".  look for collisions until one isn't found anymore
+		ship_idx = 1;
+		do {
+			sprintf(name, NOX("Volition Bravos %d"), ship_idx);
+			if ( (ship_name_lookup(name) == -1) && (ship_find_exited_ship_by_name(name) == -1) )
 			{
-				// mark all turrets as beam free
-				if (ptr->system_info->type == SUBSYSTEM_TURRET)
-				{
-					ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
-					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-				}
+				strcpy_s(shipp->ship_name, name);
+				break;
 			}
+
+			ship_idx++;
+		} while(1);
+
+		shipp->flags |= SF_ESCORT;
+		shipp->escort_priority = 1000 - ship_idx;
+
+		// now make sure we're not colliding with anyone
+		prevent_spawning_collision(&Objects[objnum]);
+			
+		// Goober5000 - beam free
+		for (ptr = GET_FIRST(&shipp->subsys_list); ptr != END_OF_LIST(&shipp->subsys_list); ptr = GET_NEXT(ptr))
+		{
+			// mark all turrets as beam free
+			if (ptr->system_info->type == SUBSYSTEM_TURRET)
+			{
+				ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
+				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			}
+		}
 				
-			// warpin
-			shipfx_warpin_start(&Objects[objnum]);
-
-			// tell him to attack				
-			// ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_CHASE_ANY, SM_ATTACK, NULL, &Ai_info[shipp->ai_index] );
-		}
+		// warpin
+		shipfx_warpin_start(&Objects[objnum]);
 	}
 #endif
-	/*
-//#ifdef INTERPLAYQA
-	if ( !strcmp(Cheat_code_in_game, cryptstring) ) {
-		HUD_printf(XSTR( "Cheats enabled.", 31));
-		Cheats_enabled = 1;
-		if (Player->flags & PLAYER_FLAGS_MSG_MODE){
-			hud_squadmsg_toggle();
-		}
-	} else if ( !strcmp(Cheat_code_movies, cryptstring) ) {
-		HUD_printf(XSTR( "All movies available in Tech Room", 32));
-		All_movies_enabled = 1;
-		if (Player->flags & PLAYER_FLAGS_MSG_MODE){
-			hud_squadmsg_toggle();
-		}
-	} else if( !strcmp(Cheat_code_pirate, cryptstring) ){
-		HUD_printf(NOX("Walk the plank"));
-		
-		for(int idx=0; idx<1; idx++){
-			vec3d add;
-			add.xyz.x = frand_range(-1000.0f, 1000.0f);
-			add.xyz.y = frand_range(-1000.0f, 1000.0f);
-			add.xyz.z = frand_range(-1000.0f, 1000.0f);
-
-			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_classes - 1);			
-
-			if(objnum >= 0){
-				shipfx_warpin_start(&Objects[objnum]);
-			}
-		}
-	}
-#endif
-	*/
 }
 
 void game_process_keys()
@@ -1660,13 +1632,13 @@ void game_process_keys()
 					}
 
 					//If topdown view in non-2D mission, go back to cockpit view.
-					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION)) {
+					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION) && !(Perspective_locked) ) {
 						Viewer_mode &= ~VM_TOPDOWN;
 						break;
 					}
 
 					// if in external view or chase view, go back to cockpit view
-					if ( Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP) ) {
+					if ( (Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP)) && !(Perspective_locked) ) {
 						Viewer_mode &= ~(VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP);
 						break;
 					}
@@ -1747,7 +1719,7 @@ int button_function_critical(int n, net_player *p = NULL)
 	Assert(n >= 0);
    
 	// multiplayer clients should leave critical button bits alone and pass them to the server instead
-	if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
+	if (MULTIPLAYER_CLIENT) {
 		// if this flag is set, we should apply the button itself (came from the server)
 		if (!Multi_button_info_ok){
 			return 0;
@@ -1796,7 +1768,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 
 				// multiplayer server should maintain bank/link status here
-				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+				if ( MULTIPLAYER_MASTER ) {
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}
@@ -1817,7 +1789,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 
 				// multiplayer server should maintain bank/link status here
-				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+				if ( MULTIPLAYER_MASTER ) {
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}
@@ -1837,7 +1809,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 
 				// multiplayer server should maintain bank/link status here
-				if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+				if( MULTIPLAYER_MASTER ){
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}					
@@ -1874,7 +1846,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1887,7 +1859,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			increase_recharge_rate(objp, WEAPONS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1900,7 +1872,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			decrease_recharge_rate(objp, WEAPONS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1913,7 +1885,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			increase_recharge_rate(objp, SHIELDS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1926,7 +1898,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			decrease_recharge_rate(objp, SHIELDS);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1939,7 +1911,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			increase_recharge_rate(objp, ENGINES);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1952,7 +1924,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			decrease_recharge_rate(objp, ENGINES);
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -1968,7 +1940,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			snd_play( &Snds[SND_ENERGY_TRANS] );
 
 			// multiplayer server should maintain bank/link status here
-			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			if( MULTIPLAYER_MASTER ){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
 			}
@@ -2674,43 +2646,57 @@ int button_function(int n)
 
 		// increase weapon recharge rate
 		case INCREASE_WEAPON:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(INCREASE_WEAPON);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(INCREASE_WEAPON);
+			}
 			break;
 
 		// decrease weapon recharge rate
 		case DECREASE_WEAPON:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(DECREASE_WEAPON);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(DECREASE_WEAPON);
+			}
 			break;
 
 		// increase shield recharge rate
 		case INCREASE_SHIELD:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(INCREASE_SHIELD);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(INCREASE_SHIELD);
+			}
 			break;
 
 		// decrease shield recharge rate
 		case DECREASE_SHIELD:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(DECREASE_SHIELD);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(DECREASE_SHIELD);
+			}
 			break;
 
 		// increase energy to engines
 		case INCREASE_ENGINE:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(INCREASE_ENGINE);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(INCREASE_ENGINE);
+			}
 			break;
 
 		// decrease energy to engines
 		case DECREASE_ENGINE:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(DECREASE_ENGINE);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(DECREASE_ENGINE);
+			}
 			break;
 
 		case ETS_EQUALIZE:
-			hud_gauge_popup_start(HUD_ETS_GAUGE);
-			return button_function_critical(ETS_EQUALIZE);
+			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+				hud_gauge_popup_start(HUD_ETS_GAUGE);
+				return button_function_critical(ETS_EQUALIZE);
+			}
 			break;
 
 		// equalize shield energy to all quadrants
@@ -2835,11 +2821,7 @@ int button_function(int n)
 				}
 				else
 				{
-					if (CanAutopilot(true))
-					{
-						StartAutopilot();
-					}
-					else
+					if (!StartAutopilot())
 						gamesnd_play_iface(SND_GENERAL_FAIL);
 				}
 			}

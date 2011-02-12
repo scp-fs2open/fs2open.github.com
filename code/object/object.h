@@ -113,15 +113,18 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_WAS_RENDERED				(1<<10)	// Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
 #define OF_NOT_IN_COLL				(1<<11)	// object has not been added to collision list
 #define OF_BEAM_PROTECTED			(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
-#define OF_SPECIAL_WARP				(1<<13)	// Object has special warp-in enabled.
+#define OF_SPECIAL_WARPIN			(1<<13)	// Object has special warp-in enabled.
 #define OF_DOCKED_ALREADY_HANDLED	(1<<14)	// Goober5000 - a docked object that we already moved
 #define OF_TARGETABLE_AS_BOMB		(1<<15)
+#define	OF_FLAK_PROTECTED			(1<<16)	// Goober5000 - protected from flak turrets
+#define	OF_LASER_PROTECTED			(1<<17)	// Goober5000 - protected from laser turrets
+#define	OF_MISSILE_PROTECTED		(1<<18)	// Goober5000 - protected from missile turrets
+#define OF_IMMOBILE					(1<<19)	// Goober5000 - doesn't move, no matter what
 
 // Flags used by Fred
-#define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
-#define OF_TEMP_MARKED		(1<<18)	// Temporarily marked (Fred).
-#define OF_REFERENCED		(1<<19)	// (Fred) Object is referenced by something somewhere
-#define OF_HIDDEN			(1<<20)	// Object is hidden (not shown) and can't be manipulated
+#define OF_MARKED			(1<<29)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
+#define OF_TEMP_MARKED		(1<<30)	// Temporarily marked (Fred).
+#define OF_HIDDEN			(1<<31)	// Object is hidden (not shown) and can't be manipulated
 
 
 // max # of object sounds per object
@@ -207,7 +210,7 @@ extern object *Viewer_obj;	// Which object is the viewer. Can be NULL.
 extern object *Player_obj;	// Which object is the player. Has to be valid.
 
 // Use this instead of "objp - Objects" to get an object number
-// given it's pointer.  This way, we can replace it will a macro
+// given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 #define OBJ_INDEX(objp) (objp-Objects)
 
@@ -314,8 +317,9 @@ int object_is_dead_docked(object *objp);
 void obj_move_one_docked_object(object *objp, object *parent_objp);
 
 //WMC
-void object_set_gliding(object *objp, bool enable=true);
+void object_set_gliding(object *objp, bool enable=true, bool force = false);
 bool object_get_gliding(object *objp);
+bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
 int object_get_model(object *objp);
 

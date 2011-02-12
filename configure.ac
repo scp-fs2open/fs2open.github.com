@@ -2,7 +2,7 @@ dnl configure.ac for fs2_open
 dnl
 dnl $Id: configure.ac,v 1.31.2.4 2007-05-28 19:36:12 taylor Exp $
 
-AC_INIT(fs2_open, 3.6.11)
+AC_INIT(fs2_open, 3.6.13)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
 
 dnl we need at least version 2.54 of autoconf
@@ -35,16 +35,11 @@ AC_SUBST(CXXFLAGS)
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 
+PKG_PROG_PKG_CONFIG()
+
 
 dnl The configuration options
 dnl -------------------------
-
-AC_ARG_ENABLE(sound,
-	AC_HELP_STRING([--disable-sound],
-		[TEST: disable sound]),
-		[fs2_sound=$enableval],
-		[fs2_sound=yes],
-)
 
 AC_ARG_ENABLE(debug,
 	AC_HELP_STRING([--enable-debug],
@@ -72,19 +67,6 @@ AC_ARG_ENABLE(speech,
 		[Enable text-to-speech]),
 		[fs2_speech=$enableval],
 		[fs2_speech=no],
-)
-
-AC_ARG_WITH(ogl-libs,
-	AC_HELP_STRING([--with-ogl-libs=DIR],
-		[Use OpenGL libraries from this directory]),
-		[fs2_ogl_libs="$withval"],
-		[fs2_ogl_libs=""],
-)
-AC_ARG_WITH(ogl-incs,
-	AC_HELP_STRING([--with-ogl-incs=DIR],
-		[Use OpenGL Includes from this directory]),
-		[fs2_ogl_incs="$withval"],
-		[fs2_ogl_incs=""],
 )
 
 AC_ARG_ENABLE(inferno,
@@ -124,6 +106,7 @@ dnl environments are supported
 fs2_os_win32="no"
 fs2_os_unix="no"
 fs2_os_osx="no"
+fs2_os_solaris="no"
 
 dnl case $host_os in
 case "$target" in
@@ -139,7 +122,7 @@ case "$target" in
         # linux
         echo "Using 64-bit Unix defines (for $host_os)"
         fs2_os_unix="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi -pedantic"
+		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
         ;;
 	*-*-linux*)
@@ -154,6 +137,11 @@ case "$target" in
 		fs2_os_osx="yes"
 		D_LDFLAGS="$D_LDFLAGS -lobjc -fPIC -Wl,-noprebind"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_MACOSX"
+		;;
+	*-*-solaris*)
+		# Solaris
+		echo "Using Solaris 10 defines (for $host_os)"
+		fs2_os_solaris="yes"
 		;;
 	*)
 		# Unknown
@@ -175,10 +163,6 @@ fi
 
 if test "fs2_demo" = "yes" ; then
 	AC_DEFINE([FS2_DEMO])
-fi
-
-if ! test "$fs2_sound" = "yes" ; then
-	AC_DEFINE([NO_SOUND])
 fi
 
 if test "$fs2_speech" = "yes" ; then
@@ -207,7 +191,7 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops -DLUA_USE_APICHECK"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
@@ -254,10 +238,10 @@ fi
 
 dnl generate appropriate conditionals for Makefile.am
 AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
-AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx" = "yes")
+AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_solaris" = "yes")
 AM_CONDITIONAL(FS2_OS_OSX,     test "$fs2_os_osx"   = "yes")
+AM_CONDITIONAL(FS2_OS_SOLARIS, test "$fs2_os_solaris"   = "yes")
 
-AM_CONDITIONAL(FS2_SOUND,      test "$fs2_sound"      = "yes")
 AM_CONDITIONAL(FS2_DEVIL,      test "$fs2_devil"      = "yes")
 AM_CONDITIONAL(FS2_SPEECH,     test "$fs2_speech"     = "yes")
 AM_CONDITIONAL(FS2_DEBUG,      test "$fs2_debug"      = "yes")
@@ -332,6 +316,13 @@ elif test "$fs2_os_osx" = "yes" ; then
 		[AC_CHECK_HEADER(/System/Library/Frameworks/SDL.framework/Headers/SDL.h,
 			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
 			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])])
+elif test "$fs2_os_solaris" = "yes" ; then
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/usr/include/SDL"
+	FS2_LDFLAGS="$FS2_LDFLAGS -lpng -lpng12 -ljpeg -lpthread -logg -lSDL -ltheora -lopenal -lsocket -lvorbisfile -lvorbis -lnsl -lGL -lGLU"
+	AC_DEFINE([SCP_UNIX])
+	AC_DEFINE([SCP_SOLARIS])
+	AC_DEFINE([NO_DIRECT3D])
+	## don't need the CFLAGS here if recent SDL is used
 fi
 
 dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
@@ -354,44 +345,12 @@ FS2_LDFLAGS=$FS2_LDFLAGS" $THEORA_LIBS"
 D_CFLAGS=$D_CFLAGS" $OGG_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $OGG_LIBS"
 
-dnl DirectX - Win32 only
-if test "$fs2_os_win32" = "yes" ; then
-	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
-	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
-fi
-
-dnl OpenGL libs and CFLAGS
-if test "$fs2_os_win32" = "yes" ; then
-	if test "x$fs2_ogl_libs" != "x" ; then
-		FS2_LDFLAGS="$FS2_LDFLAGS -L$fs2_ogl_libs -lopengl32 -lglu32"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -lopengl32 -lglu32"
-	fi
-elif test "$fs2_os_unix" = "yes" ; then
-	if test "x$fs2_ogl_libs" != "x" ; then
-		FS2_LDFLAGS="$FS2_LDFLAGS -L$fs2_ogl_libs -lGL -lGLU"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -lGL -lGLU"
-	fi
-	if test "x$fs2_ogl_incs" != "x" ; then
-		FS2_CXXFLAGS="$FS2_CXXFLAGS -I$fs2_ogl_incs"
-	fi
-	AC_DEFINE([SCP_UNIX])
-	AC_DEFINE([NO_DIRECT3D])
-elif test "$fs2_os_osx" = "yes" ; then
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenGL.framework/Headers"
-	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
-	AC_DEFINE([SCP_UNIX])
-	AC_DEFINE([NO_DIRECT3D])
-	## don't need the CFLAGS here if recent SDL is used
-fi
-
 dnl OpenAL
 if test "$fs2_os_unix" = "yes" ; then
-	AC_DEFINE([USE_OPENAL])
-	FS2_LDFLAGS="$FS2_LDFLAGS -lopenal"
+	AM_PATH_OPENAL(:,AC_MSG_ERROR([*** OpenAL installation not found!]))
+	D_CFLAGS=$D_CFLAGS" $OPENAL_CFLAGS"
+	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENAL_LIBS"
 elif test "$fs2_os_osx" = "yes" ; then
-	AC_DEFINE([USE_OPENAL])
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenAL"
 	AC_CHECK_HEADER(/Library/Frameworks/OpenAL.framework/Headers/al.h,
 		FS2_CXXFLAGS="$FS2_CXXFLAGS -I/Library/Frameworks/OpenAL.framework/Headers",
@@ -402,7 +361,63 @@ elif test "$fs2_os_osx" = "yes" ; then
 			AC_MSG_ERROR([*** Cannot find OpenAL which is required! ***]))])])
 fi
 
-dnl OGG Vorbis
+dnl DirectX - Win32 only
+if test "$fs2_os_win32" = "yes" ; then
+	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
+	FS2_LDFLAGS=$FS2_LDFLAGS" -L/c:/dxsdk/lib"
+fi
+
+dnl libpng
+FS2_LDFLAGS="$FS2_LDFLAGS -lpng"
+
+dnl OpenGL libs and CFLAGS
+if test "$fs2_os_win32" = "yes" ; then
+	if test "x$GL_LIBS" != "x" ; then
+		FS2_LDFLAGS="$FS2_LDFLAGS -L$GL_LIBS -lopengl32 -lglu32"
+	else
+		FS2_LDFLAGS="$FS2_LDFLAGS -lopengl32 -lglu32"
+	fi
+elif test "$fs2_os_unix" = "yes" ; then
+	AM_PATH_OPENGL(:,AC_MSG_ERROR([*** OpenGL installation not found!]))
+	D_CFLAGS=$D_CFLAGS" $OPENGL_CFLAGS"
+	FS2_LDFLAGS=$FS2_LDFLAGS" $OPENGL_LIBS"
+	AC_DEFINE([SCP_UNIX])
+	AC_DEFINE([NO_DIRECT3D])
+elif test "$fs2_os_osx" = "yes" ; then
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenGL.framework/Headers"
+	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
+	AC_DEFINE([SCP_UNIX])
+	AC_DEFINE([NO_DIRECT3D])
+	## don't need the CFLAGS here if recent SDL is used
+fi
+
+dnl PNG libs
+PKG_CHECK_MODULES([PNG], [libpng >= 1.2.20])
+D_CFLAGS=$D_CFLAGS" $PNG_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $PNG_LIBS"
+
+dnl LUA
+## Checking for lua.pc and if that fails lua5.1.pc
+PKG_CHECK_MODULES(
+	[LUA],
+	[lua >= 5.1.3],
+	[], ## do nothing special
+	[PKG_CHECK_MODULES([LUA], [lua5.1 >= 5.1.3], [])])
+D_CFLAGS=$D_CFLAGS" $LUA_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $LUA_LIBS"
+
+dnl JPEG
+AC_CHECK_LIB(jpeg, jpeg_start_decompress,
+	[AC_CHECK_HEADER(jpeglib.h, ,
+		dnl NOTE: this is failure
+		AC_MSG_ERROR([*** JPEG installation missing or broken!])
+	)],
+	AC_MSG_ERROR([*** JPEG installation missing or broken!])
+)
+FS2_LDFLAGS=$FS2_LDFLAGS" -ljpeg"
+
+
+dnl OGG Vorbis/Theora (static libs)
 if test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_static_ogg" != "x" ; then
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libtheora.a"
@@ -448,18 +463,15 @@ LIBS="$FS2_LIBS"
 
 
 dnl The makefiles we create
-AC_OUTPUT([Makefile libjpeg/Makefile lua/Makefile code/Makefile])
+AC_OUTPUT([Makefile code/Makefile])
 
 
 echo
 echo
 echo Configure options:
 echo
-if test "x$fs2_ogl_libs" != "x" ; then
-	echo Using OpenGL libs from . : $fs2_ogl_libs
-fi
-if test "x$fs2_ogl_incs" != "x" ; then
-	echo Using OpenGL includes from . : $fs2_ogl_incs
+if test "x$GL_LIBS" != "x" ; then
+	echo Using OpenGL libs from . : $GL_LIBS
 fi
 if test "x$fs2_static_jpeg" != "x" ; then
 	echo Using libjpeg.a from ... : $fs2_static_jpeg
@@ -468,7 +480,6 @@ if test "x$fs2_static_ogg" != "x" ; then
 	echo Static OGG libs from ... : $fs2_static_ogg
 fi
 echo
-echo Sound enabled .......... : $fs2_sound
 echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug

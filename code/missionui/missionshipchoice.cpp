@@ -385,7 +385,7 @@ char *ss_tooltip_handler(char *str)
 
 		gr_set_color_fast(&Color_bright_white);
 		gr_string(x, y, str2);
-		return NULL;
+		return str2;
 	}
 
 	return NULL;
@@ -954,12 +954,12 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Class",739));
 	y_start += 10;
-	if(strlen(sip->name)){
+	if(strlen((sip->alt_name[0]) ? sip->alt_name : sip->name)){
 		gr_set_color_fast(text);
 
 		// Goober5000
 		char temp[NAME_LENGTH];
-		strcpy_s(temp, sip->name);
+		strcpy_s(temp, (sip->alt_name[0]) ? sip->alt_name : sip->name);
 		end_string_at_first_hash_symbol(temp);
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, temp);
@@ -1013,7 +1013,7 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Max Velocity",742));	
 	y_start += 10;
-	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
+	sprintf(str, XSTR("%d m/s",743),fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
 	gr_set_color_fast(text);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str);	
 	y_start += 10;
@@ -1215,15 +1215,68 @@ void ship_select_blit_ship_info()
 	}
 	y_start += 10;
 
-	// blit the _short_ text description
-	/*
-	Assert(Multi_ts_ship_info_line_count < 3);
-	gr_set_color_fast(&Color_normal);
-	for(idx=0;idx<SHIP_SELECT_ship_info_line_count;idx++){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, SHIP_SELECT_ship_info_lines[idx]);
+	// blit the _short_ text description, if it exists
+	// split the text info up	
+	
+	if (sip->desc == NULL)
+		return;
+
+	gr_set_color_fast(header);
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Description",1571));
+	y_start += 10;
+
+	Assert(strlen(sip->desc));
+
+	int n_lines;
+	int n_chars[MAX_BRIEF_LINES];
+	char ship_desc[1000];
+	char *p_str[MAX_BRIEF_LINES];
+	char *token;
+	char Ship_select_ship_info_text[1500];
+	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
+	int Ship_select_ship_info_line_count;
+
+	// strip out newlines
+	memset(ship_desc,0,1000);
+	strcpy_s(ship_desc, sip->desc);
+	token = strtok(ship_desc,"\n");
+	if(token != NULL){
+		strcpy_s(Ship_select_ship_info_text, token);
+		while(token != NULL){
+			token = strtok(NULL,"\n");
+			if(token != NULL){
+				strcat_s(Ship_select_ship_info_text," ");
+				strcat_s(Ship_select_ship_info_text,token);
+			}
+		}
+	}
+	
+	if(strlen(Ship_select_ship_info_text) > 0){
+		// split the string into multiple lines
+		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 128 : 350, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
+
+		// copy the split up lines into the text lines array
+		for (int idx = 0;idx<n_lines;idx++ ) {
+			Assert(n_chars[idx] < SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN);
+			strncpy(Ship_select_ship_info_lines[idx], p_str[idx], n_chars[idx]);
+			Ship_select_ship_info_lines[idx][n_chars[idx]] = 0;
+			drop_leading_white_space(Ship_select_ship_info_lines[idx]);		
+		}
+
+		// get the line count
+		Ship_select_ship_info_line_count = n_lines;
+	} else {
+		// set the line count to 
+		Ship_select_ship_info_line_count = 0;
+	}	
+	
+	Assert(Ship_select_ship_info_line_count < MAX_NUM_SHIP_DESC_LINES);
+	gr_set_color_fast(text);
+	for(int idx=0;idx<Ship_select_ship_info_line_count;idx++){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, Ship_select_ship_info_lines[idx]);
 		y_start += 10;
 	}
-	*/
+	
 }
 
 
@@ -1481,7 +1534,7 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-	if( Cmdline_ship_choice_3d || ((Ss_icons != NULL) && (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)) )
+	if( Cmdline_ship_choice_3d || ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames == 0)) )
 	{
 		// check we have a valid ship class selected
 		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
@@ -1713,6 +1766,12 @@ void start_ship_animation(int ship_class, int play_sound)
 			return;
 		}
 
+		//Unload Anim if one was playing
+		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0) {
+			generic_anim_unload(&Ss_icons[Ship_anim_class].ss_anim);
+			Ship_anim_class = -1;
+		}
+
 		// Load the necessary model file
 		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 		
@@ -1732,6 +1791,12 @@ void start_ship_animation(int ship_class, int play_sound)
 		}
 
 		ss_icon = &Ss_icons[ship_class];
+
+		//If there was a model loaded for the previous ship, unload it
+		if (ShipSelectModelNum >= 0 ) {
+			model_unload(ShipSelectModelNum);
+			ShipSelectModelNum = -1;
+		}
 
 		//unload the previous anim
 		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0)
@@ -1764,7 +1829,6 @@ void start_ship_animation(int ship_class, int play_sound)
 //	if ( play_sound ) {
 		gamesnd_play_iface(SND_SHIP_ICON_CHANGE);
 //	}
-
 }
 
 void ss_unload_all_anims()
@@ -2717,11 +2781,11 @@ void ss_load_icons(int ship_class)
 	{
 		int				first_frame, num_frames, i;
 		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
-		if ( first_frame == -1 ) {
-			Int3();	// Could not load in icon frames.. get Alan
+		
+		Assertion(first_frame != -1, "Failed to load icon %s\n", sip->icon_filename);	// Could not load in icon frames.. get Alan
+		if (first_frame == -1)
 			return;
-		}
-
+	
 		for ( i = 0; i < num_frames; i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;
 		}
@@ -3008,7 +3072,7 @@ void ship_select_init_team_data(int team_num)
 	// determine how many wings we should be checking for
 	Wss_num_wings = 0;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		// now setup wings for easy reference		
 		ss_init_wing_info(0,team_num);			
 	} else {			
@@ -3034,7 +3098,7 @@ void ship_select_common_init()
 	// initialize team critical data for all teams
 	int idx;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
+	if(MULTI_TEAM){		
 		// initialize for all teams in the game
 		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){	
 			ship_select_init_team_data(idx);

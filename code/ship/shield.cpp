@@ -112,7 +112,7 @@ void load_shield_hit_bitmap()
 		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
         */
-		Assert(Species_info[i].shield_anim.first_frame >= 0);
+		Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
 	}
 
 	#endif
@@ -815,6 +815,8 @@ void add_shield_point(int objnum, int tri_num, vec3d *hit_pos)
 	//Assert(Num_shield_points < MAX_SHIELD_POINTS);
 	if (Num_shield_points >= MAX_SHIELD_POINTS)
 		return;
+
+	Verify(objnum < MAX_OBJECTS);
 
 	MONITOR_INC(NumShieldHits,1);
 

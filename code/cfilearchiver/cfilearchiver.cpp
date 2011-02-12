@@ -140,7 +140,7 @@ void pack_file( char *filespec, char *filename, int filesize, _fs_time_t time_wr
 	}
 
 	memset( path, 0, sizeof(path) );
-	strcpy( path, filename );
+	strcpy_s( path, filename );
 
 	fswrite_int( (int*)&Total_size, fp_out_hdr );
 	fswrite_int( &filesize, fp_out_hdr );
@@ -186,7 +186,7 @@ void add_directory( char * dirname)
 	char *tmpptr;
 	int i = 0;
 
-	strcpy(path, dirname);
+	strcpy_s(path, dirname);
 
 	fswrite_int( (int*)&Total_size, fp_out_hdr);
 	fswrite_int( &i, fp_out_hdr);
@@ -217,7 +217,7 @@ void pack_directory( char * filespec)
 	while ( (*ts == DIR_SEPARATOR_CHAR) && (ts > filespec) )
 		*ts = '\0';
 
-	strcpy( tmp1, filespec );
+	strcpy_s( tmp1, filespec );
 
 	add_directory(filespec);
 	strcat( tmp1, DIR_SEPARATOR_STR"*.*" );
@@ -229,7 +229,7 @@ void pack_directory( char * filespec)
 	if( find_handle != -1 )	{
 		if ( find.attrib & _A_SUBDIR )	{
 			if (strcmp( "..", find.name) && strcmp( ".", find.name) && strcmp( ".svn", find.name))	{
-				strcpy( tmp, filespec );
+				strcpy_s( tmp, filespec );
 				strcat( tmp, "\\" );
 				strcat( tmp, find.name );
 				pack_directory(tmp);
@@ -241,7 +241,7 @@ void pack_directory( char * filespec)
 		while( !_findnext( find_handle, &find ) )	{
 			if ( find.attrib & _A_SUBDIR )	{
 				if (strcmp( "..", find.name) && strcmp( ".", find.name) && strcmp( ".svn", find.name))	{
-					strcpy( tmp, filespec );
+					strcpy_s( tmp, filespec );
 					strcat( tmp, "\\" );
 					strcat( tmp, find.name );
 					pack_directory(tmp);
@@ -278,7 +278,7 @@ void pack_directory( char * filespec)
 			}
 
 			if (S_ISDIR(buf.st_mode)) {
-				strcpy( tmp, filespec );
+				strcpy_s( tmp, filespec );
 				strcat( tmp, "/" );
 				strcat( tmp, dir->d_name );
 				pack_directory(tmp);
@@ -340,7 +340,7 @@ void print_instructions()
 	exit(0);
 }
 
-// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// we end up #include'ing SDL.h which on Windows and Mac will redefine main() which is something
 // that we don't want since we don't actually link against SDL, this solves the problem...
 #ifdef main
 #undef main
@@ -364,14 +364,14 @@ int main(int argc, char *argv[] )
 #endif
 	}
 
-	strcpy( archive, argv[1] );
+	strcpy_s( archive, argv[1] );
 	p = strchr( archive, '.' );
 	if (p) *p = 0;		// remove extension	
 
-	strcpy( archive_dat, archive );
+	strcpy_s( archive_dat, archive );
 	strcat( archive_dat, ".vp" );
 
-	strcpy( archive_hdr, archive );
+	strcpy_s( archive_hdr, archive );
 	strcat( archive_hdr, ".hdr" );
 
 	fp_out = fopen( archive_dat, "wb" );

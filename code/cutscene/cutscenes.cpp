@@ -35,7 +35,6 @@ char *Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 	"2_ViewFootage-m"
 };
 
-size_t Num_cutscenes;
 int Cutscenes_viewable;
 int Description_index;
 SCP_vector<cutscene_info> Cutscenes;
@@ -43,7 +42,7 @@ SCP_vector<cutscene_info> Cutscenes;
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close()
 {
-	for(size_t i = 0; i < Num_cutscenes; i++)
+	for(size_t i = 0; i < Cutscenes.size(); i++)
     {
 	    if(Cutscenes[i].description)
         {
@@ -73,7 +72,7 @@ void cutscene_init()
 	reset_parse();
 
 	// parse in all the cutscenes
-	Num_cutscenes = 0;
+	Cutscenes.clear();
 	skip_to_string("#Cutscenes");
 	ignore_white_space();
 
@@ -97,7 +96,6 @@ void cutscene_init()
 		stuff_int( &cutinfo.cd );
 
         Cutscenes.push_back(cutinfo);
-        Num_cutscenes++;
 	}
 
 	required_string("#End");
@@ -115,9 +113,8 @@ int cutscenes_get_cd_num( char *filename )
 #if defined(OEM_BUILD)
 	return 0;				// only 1 cd for OEM
 #else
-	size_t i;
 
-	for (i = 0; i < Num_cutscenes; i++ ) {
+	for (size_t i = 0; i < Cutscenes.size(); i++ ) {
 		if ( !stricmp(Cutscenes[i].filename, filename) ) {
 			return (Cutscenes[i].cd - 1);
 		}
@@ -130,7 +127,6 @@ int cutscenes_get_cd_num( char *filename )
 // marks a cutscene as viewable
 void cutscene_mark_viewable(char *filename)
 {
-	size_t i;
 	char cut_file[MAX_FILENAME_LEN];
 	char file[MAX_FILENAME_LEN];
 
@@ -146,7 +142,7 @@ void cutscene_mark_viewable(char *filename)
 	// change to lower case
 	strlwr(file);
 
-	for (i = 0; i < Num_cutscenes; i++ ) {
+	for (size_t i = 0; i < Cutscenes.size(); i++ ) {
 		// change the cutscene file name to lower case
 		strcpy_s(cut_file, Cutscenes[i].filename);
 		strlwr(cut_file);
@@ -171,7 +167,6 @@ void cutscene_mark_viewable(char *filename)
 #define PLAY_BUTTON				6
 #define EXIT_BUTTON				7
 
-static int Num_files;
 static SCP_vector<int> Cutscene_list;
 //static int Stats_scroll_offset;  // not used - taylor
 static int Selected_line = 0;  // line that is currently selected for binding
@@ -335,7 +330,7 @@ void cutscenes_screen_play()
 	char name[MAX_FILENAME_LEN]; // *full_name 
 	int which_cutscene;
 
-	Assert( (Selected_line >= 0) && (Selected_line < Num_files) );
+	Assert( (Selected_line >= 0) && (Selected_line < (int)Cutscene_list.size()) );
 	which_cutscene = Cutscene_list[Selected_line];
 
 	strcpy_s(name, Cutscenes[which_cutscene].filename );
@@ -376,7 +371,7 @@ void cutscenes_screen_scroll_line_down()
 {
 	int h;
 
-	if (Selected_line < Num_files - 1) {
+	if (Selected_line < (int)Cutscene_list.size() - 1) {
 		Selected_line++;
 		gamesnd_play_iface(SND_SCROLL);
 
@@ -413,7 +408,7 @@ void cutscenes_screen_scroll_screen_down()
 	int h;
 
 	h = Cutscene_list_coords[gr_screen.res][3] / gr_get_font_height();
-	if (Scroll_offset + h < Num_files) {
+	if (Scroll_offset + h < (int)Cutscene_list.size()) {
 		Scroll_offset++;
 		if (Selected_line < Scroll_offset){
 			Selected_line = Scroll_offset;
@@ -468,7 +463,6 @@ int cutscenes_screen_button_pressed(int n)
 void cutscenes_screen_init()
 {
 	int i;
-    size_t j;
 	ui_button_info *b;
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
@@ -512,12 +506,10 @@ void cutscenes_screen_init()
 //  	if (All_movies_enabled)
 //  		Cutscenes_viewable = 0xffffffff;		//	Cheat code enables all movies.
 
-	Num_files = 0;
     Cutscene_list.clear();
-	for ( j = 0; j < Num_cutscenes; j++ ) {
+	for (size_t j = 0; j < Cutscenes.size(); j++ ) {
 		if ( Cutscenes_viewable & (1<<j) ) {
             Cutscene_list.push_back((int)j);
-			Num_files++;
 		}
 	}
 }
@@ -533,7 +525,6 @@ void cutscenes_screen_close()
 void cutscenes_screen_do_frame()
 {
 	int i, k, y, z;
-    size_t t;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;
 
@@ -576,11 +567,9 @@ void cutscenes_screen_do_frame()
 		// the "show-all" hotkey
 		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
 		{
-			Num_files = 0;
             Cutscene_list.clear();
-			for (t = 0; t < Num_cutscenes; t++) {
+			for (size_t t = 0; t < Cutscenes.size(); t++) {
                 Cutscene_list.push_back((int)t);
-				Num_files++;
 			}
 
 			break;
@@ -598,14 +587,14 @@ void cutscenes_screen_do_frame()
 	if (List_region.button_down()) {
 		List_region.get_mouse_pos(NULL, &y);
 		z = Scroll_offset + y / font_height;
-		if ((z >= 0) && (z < Num_files))
+		if ((z >= 0) && (z < (int)Cutscene_list.size()))
 			select_tease_line = z;
 	}
 	
 	if (List_region.pressed()) {
 		List_region.get_mouse_pos(NULL, &y);
 		z = Scroll_offset + y / font_height;
-		if ((z >= 0) && (z < Num_files))
+		if ((z >= 0) && (z < (int)Cutscene_list.size()))
 			Selected_line = z;
 	}
 
@@ -630,7 +619,7 @@ void cutscenes_screen_do_frame()
 	y = 0;
 	z = Scroll_offset;
 	while (y + font_height <= Cutscene_list_coords[gr_screen.res][3]) {
-		if (z >= Num_files){
+		if (z >= (int)Cutscene_list.size()){
 			break;
 		}
 
@@ -653,8 +642,8 @@ void cutscenes_screen_do_frame()
 
 		Description_index = Selected_line;
 		Text_size = 0;
-		if ( Description_index < Cutscene_list.size( ) &&
-			 Cutscene_list[ Description_index ] < Cutscenes.size( ) ) {
+		if ( Description_index < (int)Cutscene_list.size( ) &&
+			 (int)Cutscene_list[ Description_index ] < (int)Cutscenes.size( ) ) {
 			src = Cutscenes[Cutscene_list[Description_index]].description;
 			if (src) {
 				Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines, Cutscene_max_text_lines[gr_screen.res]);
@@ -672,7 +661,7 @@ void cutscenes_screen_do_frame()
 		y = 0;
 		z = Text_offset;
 		while (y + font_height <= Cutscene_desc_coords[gr_screen.res][3]) {
-			if (z >= Text_size)
+			if (z >= Text_size || z >= MAX_TEXT_LINES-1)
 				break;
 
 			len = Text_line_size[z];

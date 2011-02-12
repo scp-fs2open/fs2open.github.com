@@ -30,6 +30,7 @@
 #define	PF_SPECIAL_WARP_OUT	(1 << 13)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
 #define PF_BOOSTER_ON		(1 << 14)
 #define PF_GLIDING			(1 << 15)
+#define PF_FORCE_GLIDE		(1 << 16)
 
 //information for physics sim for an object
 typedef struct physics_info {
@@ -85,10 +86,12 @@ typedef struct physics_info {
 	int		shockwave_decay;		// timestamp used to control how long ship affected after hit by shockwave
 	int		reduced_damp_decay;	// timestamp used to control how long ship ship has reduced damp physics	
 	
-	vec3d glide_saved_vel;	//WMC - the key variable for gliding. Saves the orientation that velocity will be applied on.
 	float	glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity (so that something can't accelerate to ridiculous speeds... unless allowed to)
+	float	cur_glide_cap;	//SUSHI: Used for dynamic glide cap, so we can use the ramping function on the glide cap
 	float	glide_accel_mult;	//SUSHI: The acceleration multiplier for glide mode. A value < 0 means use glide ramping instead
 	bool use_newtonian_damp;	//SUSHI: Whether or not to use newtonian dampening
+	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
+	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating
@@ -130,7 +133,7 @@ extern void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time,
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
 extern void physics_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, float mass);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
-extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient);
+extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing);
 int check_rotvel_limit( physics_info *pi );
 
 

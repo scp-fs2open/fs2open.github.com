@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "graphics/2d.h"
-#include "decals/decals.h"
+#include "object/object.h"
 
 struct object;
 
@@ -40,8 +40,6 @@ extern int model_render_flags_size;
 #define MOVEMENT_AXIS_X		0
 #define MOVEMENT_AXIS_Y		2
 #define MOVEMENT_AXIS_Z		1
-
-#define MAX_ROTATING_SUBMODELS 50
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -83,6 +81,22 @@ typedef struct submodel_instance_info {
 	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
 } submodel_instance_info;
 
+typedef struct submodel_instance {
+	bool blown_off;
+	angles angs;
+	angles prev_angs;
+	//int num_arcs;
+	bool collision_checked;
+	//submodel_instance_info *sii;
+} submodel_instance;
+
+typedef struct polymodel_instance {
+	int model_num;
+	int root_submodel_num;
+	submodel_instance *submodel;
+	//float gun_submodel_rotation;
+} polymodel_instance;
+
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
@@ -107,6 +121,15 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
 #define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
 #define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
+#define MSS_FLAG_ALLOW_LANDING		(1 << 21)		// This subsystem can be landed on
+#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 22)		// Tells the game to use better FOV edge checking with this turret
+#define MSS_FLAG_FOV_REQUIRED		(1 << 23)		// Tells game not to allow this turret to attempt targeting objects out of FOV
+#define MSS_FLAG_NO_REPLACE			(1 << 24)		// set the subsys not to draw replacement ('destroyed') model
+#define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 25)		// sets the subsys not to release live debris
+#define MSS_FLAG_IGNORE_IF_DEAD		(1 << 26)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
+#define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
+#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
+#define MSS_FLAG_TURRET_LOCKED      (1 << 29)       // Turret starts locked by default - Sushi
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -186,8 +209,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
-	decal_system model_decal_system;
-
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
@@ -199,6 +220,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	float	optimum_range;
 	float	favor_current_facing;
+
+	float	turret_rof_scaler;
 } model_subsystem;
 
 typedef struct model_special {
@@ -215,26 +238,6 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
-struct index_list {
-	uint *ibuffer;
-	ushort *sbuffer;
-
-	index_list(): ibuffer(NULL), sbuffer(NULL) { }
-	// the destuctor body is commented out so that we can use this dynamically without a clone()
-	// we kill it off with release() instead
-	~index_list() { }
-
-	void allocate(int size, bool large_buf);
-	void release();
-};
-
-struct buffer_data {
-	int texture;		// this is the texture the vertex buffer will use
-	int n_prim;
-	index_list index_buffer;
-
-	buffer_data(): texture(-1), n_prim(0) {}
-};
 
 // IBX stuff
 typedef struct IBX {
@@ -243,12 +246,6 @@ typedef struct IBX {
 	int size;			// file size used to make sure an IBX contains enough data for the whole model
 	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
-
-	// tangent space data
-	CFILE *tsb_read;	// reads tangent space data (TSB), if it already exists
-	CFILE *tsb_write;	// writes tangent space data, for new file
-	int tsb_size;
-	char tsb_name[MAX_FILENAME_LEN];	// filename of the tsb (tangent space model data)
 } IBX;
 
 
@@ -302,8 +299,8 @@ typedef struct bsp_info {
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 	
 	// buffers used by HT&L
-	int indexed_vertex_buffer;
-	SCP_vector<buffer_data> buffer;
+	vertex_buffer buffer;
+	
 //	int flat_buffer;
 //	int flat_line_buffer;
 
@@ -315,6 +312,7 @@ typedef struct bsp_info {
 	bool	nocollide_this_only; //SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 	bool	collide_invisible; //SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 	bool	force_turret_normal; //Wanderer: Sets the turret uvec to override any input of for turret normal.
+	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 
 	float		dumb_turn_rate;
 
@@ -340,7 +338,6 @@ typedef struct bsp_info {
 		next_sibling = 0;
 		num_details = 0;
 		num_arcs = 0;
-		indexed_vertex_buffer = 0;
 		use_render_box = 0;
 		gun_rotation = false;
 		no_collisions = false;
@@ -350,6 +347,7 @@ typedef struct bsp_info {
 		dumb_turn_rate = 0.f;
 		bsp_data = NULL;
 		rad = 0.f;
+		lod_name[ 0 ] = '\0';  
 
 		/* Compound types */
 		memset( live_debris, 0, sizeof( live_debris ) );
@@ -396,8 +394,8 @@ typedef struct model_path {
 } model_path;
 
 typedef struct model_tmap_vert {
-	short vertnum;
-	short normnum;
+	ushort vertnum;
+	ushort normnum;
 	float u,v;
 } model_tmap_vert;
 
@@ -470,7 +468,8 @@ typedef struct dock_bay {
 // struct that holds the indicies into path information associated with a fighter bay on a capital ship
 // NOTE: Fighter bay paths are identified by the path_name $bayN (where N is numbered from 1).
 //			Capital ships only have ONE fighter bay on the entire ship
-#define MAX_SHIP_BAY_PATHS		10
+// NOTE: MAX_SHIP_BAY_PATHS cannot be bumped higher than 31 without rewriting the arrival/departure flag logic.
+#define MAX_SHIP_BAY_PATHS		31
 typedef struct ship_bay {
 	int	num_paths;							// how many paths are associated with the model's fighter bay
 	int	path_indexes[MAX_SHIP_BAY_PATHS];	// index into polymodel->paths[] array
@@ -696,6 +695,7 @@ typedef struct polymodel {
 
 	float gun_submodel_rotation;
 
+	int vertex_buffer_id;			// HTL vertex buffer id
 } polymodel;
 
 // Call once to initialize the model system
@@ -713,6 +713,8 @@ void model_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
+int model_create_instance(int model_num, int submodel_num = -1);
+
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
 
@@ -721,6 +723,8 @@ void model_notify_dead_ship(int objnum);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
+
+polymodel_instance* model_get_instance(int model_instance_num);
 
 // routine to copy susbsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
@@ -849,14 +853,17 @@ extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_mod
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
 extern void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
+void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos );
 
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
 void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
 
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos);
+
 // Given a polygon model index, find a list of rotating submodels to be used for collision
-void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_submodesl, object *objp);
+void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
 
 // For a rotating submodel, find a point on the axis
 void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num);
@@ -869,6 +876,9 @@ extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, i
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
 
+void model_clear_submodel_instance( submodel_instance *sm_instance );
+void model_clear_submodel_instances( int model_instance_num );
+
 // Sets rotating submodel turn info to that stored in model
 void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel);
 
@@ -876,7 +886,10 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii);
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
+void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -918,6 +931,7 @@ int submodel_get_num_polys(int model_num, int submodel_num);
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
 void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num);
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num);
 
 
 // This is the interface to model_check_collision.  Rather than passing all these
@@ -925,6 +939,7 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 // the input values and call model_check_collision
 typedef struct mc_info {
 	// Input values
+	int		model_instance_num;
 	int		model_num;			// What model to check
 	int		submodel_num;		// What submodel to check if MC_SUBMODEL is set
 	matrix	*orient;				// The orient of the model
@@ -1152,8 +1167,6 @@ void model_page_out_textures(int model_num, bool release = false);
 void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = -1.0f);
 
 void model_set_replacement_textures(int *replacement_textures);
-
-int decal_make_model(polymodel * pm);
 
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);

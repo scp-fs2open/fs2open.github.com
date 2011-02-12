@@ -13,6 +13,7 @@
 #include "weapon/weapon.h"
 #include "io/key.h"
 #include "controlconfig/controlsconfig.h"
+#include "freespace2/freespace.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -37,7 +38,7 @@ flag_def_list Script_conditions[] =
 	{"Weapon class",CHC_WEAPONCLASS,	0},
 	{"KeyPress",	CHC_KEYPRESS,		0},
 	{"Version",		CHC_VERSION,		0},
-	{"Application",	CHC_APPLICATION,	0},
+	{"Application",	CHC_APPLICATION,	0}
 };
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
@@ -65,9 +66,15 @@ flag_def_list Script_actions[] =
 	{"On Warp Out",				CHA_WARPOUT,		0},
 	{"On Death",				CHA_DEATH,			0},
 	{"On Mission End",			CHA_MISSIONEND,		0},
+	{"On Weapon Delete",		CHA_ONWEAPONDELETE,	0},
+	{"On Weapon Equipped",		CHA_ONWPEQUIPPED,	0},
+	{"On Weapon Fired",			CHA_ONWPFIRED,		0},
+	{"On Weapon Selected",		CHA_ONWPSELECTED,	0},
+	{"On Weapon Deselected",	CHA_ONWPDESELECTED,	0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
+int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
@@ -269,12 +276,63 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 						return false;
 					break;
 				}
-			case CHC_WEAPONCLASS:
-				if(objp == NULL || objp->type != OBJ_WEAPON)
-					return false;
-				if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name))
-					return false;
-				break;
+			case CHC_WEAPONCLASS: 
+				{
+					if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED)) {
+						if(objp == NULL || objp->type != OBJ_WEAPON)
+							return false;
+						else if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0) 
+							return false;
+					} else if(objp == NULL || objp->type != OBJ_SHIP) {
+						return false;
+					} else {
+
+						// Okay, if we're still here, then objp is both valid and a ship
+						ship* shipp = &Ships[objp->instance];
+						switch (action) {
+							case CHA_ONWPSELECTED:
+								if( !((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name == scp->data.name) || (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name == scp->data.name)) )
+									return false;
+								break;
+							case CHA_ONWPDESELECTED:
+								if ( !( ((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name == scp->data.name) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name != scp->data.name)) || ((Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name == scp->data.name) && (Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name != scp->data.name)) ))
+									return false;
+								break;
+							case CHA_ONWPEQUIPPED: {
+								bool equipped = false;
+								for(int j = 0; j < 3; j++) {
+									if (!equipped) {
+										if ( !stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name, scp->data.name) )
+											equipped = false;
+										else {
+											equipped = true;
+											break;
+										}
+									}
+								}
+							
+								if (!equipped) {
+									for(int j = 0; j < 4; j++) {
+										if (!equipped) {
+											if ( !stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name, scp->data.name) )
+												equipped = false;
+											else {
+												equipped = true;
+												break;
+											}
+										}
+									}
+								}
+
+								if (!equipped)
+									return false;
+							
+								break;
+							}
+						}
+					} // case CHC_WEAPONCLASS
+					break;
+				}
 			case CHC_OBJECTTYPE:
 				if(objp == NULL)
 					return false;
@@ -1253,4 +1311,46 @@ bool script_state::IsOverride(script_hook &hd)
 	RunBytecodeSub(hd.o_language, hd.o_index, 'b', &b);
 
 	return b;
+}
+
+void scripting_state_init()
+{
+	// nothing to do here
+	if (scripting_state_inited)
+		return;
+
+	gr_set_clear_color(0, 0, 0);
+
+	scripting_state_inited = 1;
+}
+
+void scripting_state_close()
+{
+	if (!scripting_state_inited)
+		return;
+
+	game_flush();
+
+	scripting_state_inited = 0;
+}
+
+void scripting_state_do_frame(float frametime)
+{
+	// just incase something is wrong
+	if (!scripting_state_inited)
+		return;
+
+	gr_reset_clip();
+	gr_clear();
+	gr_flip();
+
+	// process keys
+	int k = game_check_key() & ~KEY_DEBUGGED;	
+
+	switch (k)
+	{
+		case KEY_ESC:
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			return;
+	}
 }

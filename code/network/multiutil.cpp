@@ -78,13 +78,8 @@
 #include "fs2netd/fs2netd_client.h"
 #include "parse/parselo.h"
 
-extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
-extern int MSG_WINDOW_Y_START;
-extern int MSG_WINDOW_HEIGHT;
-
 extern int ascii_table[];
 extern int shifted_ascii_table[];
-
 
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
@@ -3307,7 +3302,7 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 	char *p = NULL;
 
 	// allocate filename space	
-	file_names = (char**)malloc(sizeof(char*) * max_files);
+	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
 
 	if (file_names != NULL) {
 		memset(wild_card, 0, 10);

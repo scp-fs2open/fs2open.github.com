@@ -790,8 +790,8 @@ void obj_move_call_physics(object *objp, float frametime)
 
 			if (shipp->weapons.num_secondary_banks > 0) {
 				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-				Assert( pm != NULL );
-				Assert( pm->missile_banks != NULL );
+				Assertion( pm != NULL, "No polymodel found for ship %s", Ship_info[shipp->ship_info_index].name );
+				Assertion( pm->missile_banks != NULL, "Ship %s has %d secondary banks, but no missile banks could be found.\n", Ship_info[shipp->ship_info_index].name, shipp->weapons.num_secondary_banks );
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
@@ -801,6 +801,8 @@ void obj_move_call_physics(object *objp, float frametime)
 					int points = pm->missile_banks[i].num_slots;
 					int missles_left = shipp->weapons.secondary_bank_ammo[i];
 					int next_point = shipp->weapons.secondary_next_slot[i];
+					float fire_wait = Weapon_info[shipp->weapons.secondary_bank_weapons[i]].fire_wait;
+					float reload_time = (fire_wait == 0.0f) ? 1.0f : 1.0f / fire_wait;
 
 					//ok so...we want to move up missles but only if there is a missle there to be moved up
 					//there is a missle behind next_point, and how ever many missles there are left after that
@@ -810,7 +812,7 @@ void obj_move_call_physics(object *objp, float frametime)
 						for (int k = next_point; k < next_point+missles_left; k ++) {
 							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
 							if (s_pct < 1.0)
-								s_pct += shipp->reload_time[i] * frametime;
+								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
 								s_pct = 1.0f;
 						}
@@ -819,7 +821,7 @@ void obj_move_call_physics(object *objp, float frametime)
 						for (int k = 0; k < points; k++) {
 							float &s_pct = shipp->secondary_point_reload_pct[i][k];
 							if (s_pct < 1.0)
-								s_pct += shipp->reload_time[i] * frametime;
+								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
 								s_pct = 1.0f;
 						}
@@ -1214,8 +1216,10 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_SHIP:
 		{
-			if ( !physics_paused || (objp==Player_obj) )
+			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
+				ship_model_update_instance(objp);
+			}
 
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
@@ -1376,90 +1380,91 @@ void obj_move_all(float frametime)
 
 	MONITOR_INC( NumObjects, Num_objects );	
 
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		// skip objects which should be dead
-		if ( !(objp->flags&OF_SHOULD_BE_DEAD) )	{		
-			vec3d	cur_pos = objp->pos;			// Save the current position
+		if (objp->flags & OF_SHOULD_BE_DEAD) {
+			continue;
+		}
 
-			// if this is an observer object, skip it
-			if(objp->type == OBJ_OBSERVER){
-				objp = GET_NEXT(objp);
-				continue;
-			}
+		// if this is an observer object, skip it
+		if (objp->type == OBJ_OBSERVER) {
+			continue;
+		}
 
-			// if we're playing a demo back, only sim stuff that we're supposed to
-			if((Game_mode & GM_DEMO_PLAYBACK) && !demo_should_sim(objp)){
-				objp = GET_NEXT(objp);
-				continue;
-			}
+		// if we're playing a demo back, only sim stuff that we're supposed to
+		if ((Game_mode & GM_DEMO_PLAYBACK) && !demo_should_sim(objp)) {
+			continue;
+		}
+
+		vec3d cur_pos = objp->pos;			// Save the current position
 
 #ifdef OBJECT_CHECK 
-			// if(! ((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) ){
-				obj_check_object( objp );
-			// }
+		// if(! ((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) ){
+			obj_check_object( objp );
+		// }
 #endif
 
-			// pre-move
-			obj_move_all_pre(objp, frametime);
+		// pre-move
+		obj_move_all_pre(objp, frametime);
 
-			// store last pos and orient
-			objp->last_pos = cur_pos;
-			objp->last_orient = objp->orient;
+		// store last pos and orient
+		objp->last_pos = cur_pos;
+		objp->last_orient = objp->orient;
 
+		// Goober5000 - skip objects which don't move, but only until they're destroyed
+		if (!(objp->flags & OF_IMMOBILE && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if(multi_oo_is_interp_object(objp)){
+			if (multi_oo_is_interp_object(objp)) {
 				multi_oo_interp(objp);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
-
-			// move post
-			obj_move_all_post(objp, frametime);
 		}
-		objp = GET_NEXT(objp);
+
+		// move post
+		obj_move_all_post(objp, frametime);
+
+		// Equipment script processing
+		if (objp->type == OBJ_SHIP) {
+			ship* shipp = &Ships[objp->instance];
+			object* target;
+
+			if (Ai_info[shipp->ai_index].target_objnum != -1)
+				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+			else
+				target = NULL;
+			if (objp == Player_obj && Player_ai->target_objnum != -1)
+				target = &Objects[Player_ai->target_objnum];
+
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
+		}
 	}
 
 	//	After all objects have been moved, move all docked objects.
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		objp = GET_FIRST(&obj_used_list);
-		while( objp !=END_OF_LIST(&obj_used_list) )	{
+	if (!(Game_mode & GM_DEMO_PLAYBACK)) {
+		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 			dock_move_docked_objects(objp);
 
 			// unflag all objects as being updates
 			objp->flags &= ~OF_JUST_UPDATED;
-
-			objp = GET_NEXT(objp);
 		}
 	}
 
-	// Now that all objects have moved, we should calculate the
-	// velocities from how far they moved.
-	// DA: Commented out 2/23, unnecessary since colliding objects calculate their post collision velocities through physics.
-	/*
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( !(objp->flags&OF_SHOULD_BE_DEAD) && (objp->type != OBJ_OBSERVER) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_DEBRIS))	{
-			objp->phys_info.vel.x = (objp->pos.x - objp->last_pos.x) / frametime;
-			objp->phys_info.vel.y = (objp->pos.y - objp->last_pos.y) / frametime;
-			objp->phys_info.vel.z = (objp->pos.z - objp->last_pos.z) / frametime;
-		}
-		objp = GET_NEXT(objp);
-	} */
-
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		find_homing_object_cmeasures();	//	If any cmeasures fired, maybe steer away homing missiles	
+	// If any cmeasures fired, maybe steer away homing missiles
+	if (!(Game_mode & GM_DEMO_PLAYBACK)) {
+		find_homing_object_cmeasures();
 	}
 
 	// do pre-collision stuff for beam weapons
 	beam_move_all_pre();
 
-	if ( Collisions_enabled )	{
+	if ( Collisions_enabled ) {
 		obj_check_all_collisions();		
 	}
 
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
+	if (!(Game_mode & GM_DEMO_PLAYBACK)) {
 		turret_swarm_check_validity();
 	}
 
@@ -1932,15 +1937,22 @@ int object_is_dead_docked(object *objp)
 //Makes an object start 'gliding'
 //that is, it will continue on the same velocity that it was going,
 //regardless of orientation -WMC
-void object_set_gliding(object *objp, bool enable)
+void object_set_gliding(object *objp, bool enable, bool force)
 {
 	Assert(objp != NULL);
 
 	if(enable) {
-		objp->phys_info.flags |= PF_GLIDING;
-		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
+		if (!force) {
+			objp->phys_info.flags |= PF_GLIDING;
+		} else {
+			objp->phys_info.flags |= PF_FORCE_GLIDE;
+		}
 	} else {
-		objp->phys_info.flags &= ~PF_GLIDING;
+		if (!force) {
+			objp->phys_info.flags &= ~PF_GLIDING;
+		} else {
+			objp->phys_info.flags &= ~PF_FORCE_GLIDE;
+		}
 		vm_vec_rotate(&objp->phys_info.prev_ramp_vel, &objp->phys_info.vel, &objp->orient);	//Backslash
 	}
 }
@@ -1950,7 +1962,12 @@ bool object_get_gliding(object *objp)
 {
 	Assert(objp != NULL);
 
-	return ((objp->phys_info.flags & PF_GLIDING) != 0);
+	return ( ((objp->phys_info.flags & PF_GLIDING) != 0) || ((objp->phys_info.flags & PF_FORCE_GLIDE) != 0));
+}
+
+bool object_glide_forced(object *objp)
+{
+	return (objp->phys_info.flags & PF_FORCE_GLIDE) != 0;
 }
 
 //Quickly finds an object by its signature

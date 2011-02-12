@@ -22,27 +22,13 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 
-#ifdef WIN32
-#define USE_DIRECTINPUT
-#endif
-
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
 
-#ifdef USE_DIRECTINPUT
-#ifdef NDEBUG
-LOCAL int Mouse_mode = MOUSE_MODE_DI;
-#else
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
-#endif
-#else // !USE_DIRECTINPUT
-LOCAL int Mouse_mode = MOUSE_MODE_WIN;
-#endif // ifdef USE_DIRECTINPUT
 
 int mouse_inited = 0;
-#ifdef USE_DIRECTINPUT
 LOCAL int Di_mouse_inited = 0;
-#endif
 LOCAL int Mouse_x;
 LOCAL int Mouse_y;
 
@@ -64,7 +50,7 @@ int Use_mouse_to_fly = 0;
 int Mouse_hidden = 0;
 int Keep_mouse_centered = 0;
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 int di_init();
 void di_cleanup();
 void mouse_eval_deltas_di();
@@ -102,9 +88,11 @@ void mouse_close()
 	if (!mouse_inited)
 		return;
 
-#ifdef USE_DIRECTINPUT
-	di_cleanup();
+#ifdef WIN32
+	if (Mouse_mode == MOUSE_MODE_DI)
+		di_cleanup();
 #endif
+
 	mouse_inited = 0;
 
 	DELETE_CRITICAL_SECTION( mouse_lock );
@@ -124,12 +112,19 @@ void mouse_init()
 	Mouse_x = gr_screen.max_w / 2;
 	Mouse_y = gr_screen.max_h / 2;
 
-#ifdef USE_DIRECTINPUT
-	if (!di_init() || Cmdline_window || Cmdline_fullscreen_window)
+	#ifdef WIN32
+		if (Cmdline_no_di_mouse) {
+			Mouse_mode = MOUSE_MODE_WIN;
+		} else {
+			if (!di_init() || Cmdline_window || Cmdline_fullscreen_window)
+				Mouse_mode = MOUSE_MODE_WIN;
+			else
+				Mouse_mode = MOUSE_MODE_DI;
+		} 
+	#else
 		Mouse_mode = MOUSE_MODE_WIN;
-#else
-	Mouse_mode = MOUSE_MODE_WIN;
-#endif
+	#endif
+
 
 #ifdef SCP_UNIX
 	// we poll for mouse motion events so be sure to skip those in normal event polling
@@ -405,7 +400,7 @@ void mouse_eval_deltas()
 	if (!mouse_inited)
 		return;
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 	if (Mouse_mode == MOUSE_MODE_DI) {
 		mouse_eval_deltas_di();
 		return;
@@ -453,7 +448,7 @@ void mouse_eval_deltas()
 	}
 }
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 #include "directx/vdinput.h"
 
 static LPDIRECTINPUT			Di_mouse_obj = NULL;
@@ -522,8 +517,7 @@ void mouse_eval_deltas_di()
 	// JH: Dang!  This makes the mouse readings in DirectInput act screwy!
 //	mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
 }
-#endif  // ifdef USE_DIRECTINPUT
-
+#endif //#ifdef WIN32
 
 int mouse_get_pos(int *xpos, int *ypos)
 {
@@ -630,7 +624,7 @@ void mouse_set_pos(int xpos, int ypos)
 	}
 }
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 int di_init()
 {
 	HRESULT hr;
@@ -718,8 +712,7 @@ void di_cleanup()
 
 	Di_mouse_inited = 0;
 }
-#endif  // ifdef USE_DIRECTINPUT
-
+#endif //ifdef WIN32
 
 // portable routine to get the mouse position, relative
 // to current window

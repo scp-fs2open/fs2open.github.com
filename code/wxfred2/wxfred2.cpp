@@ -20,6 +20,7 @@
 #include <wx/xrc/xmlres.h>
 #include "fredframe.h"
 #include "wxfred_xrc.h"
+#include "mission.h"
 
 IMPLEMENT_APP(wxFRED2)
 
@@ -27,8 +28,8 @@ bool wxFRED2::OnInit()
 {
 	wxXmlResource::Get()->InitAllHandlers();
 	InitXmlResource();
-
-	FREDFrame *frame = new FREDFrame(_T("Untitled - FRED2_OPEN 3.6.5 - FreeSpace 2 Mission Editor"), 50, 50, 800, 600);
+	wxFREDMission* the_Mission = new wxFREDMission();
+	FREDFrame *frame = new FREDFrame(_T("Untitled - FRED2_OPEN 3.6.5 - FreeSpace 2 Mission Editor"), 50, 50, 800, 600, the_Mission);
 	SetTopWindow(frame);
 	frame->Show(TRUE);
 

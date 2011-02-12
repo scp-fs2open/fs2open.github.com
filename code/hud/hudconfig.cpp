@@ -47,6 +47,48 @@ int HC_fname_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 HUD_CONFIG_TYPE HUD_config;	// Player HUD configuration
+ 
+char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH] = {
+	"lead indicator",
+	"target orientation",
+	"closest attacking hostile",
+	"current target direction",
+	"mission time",
+	"reticle",
+	"throttle",
+	"radar",
+	"target monitor",
+	"center of reticle",
+	"extra target info",
+	"target shield",
+	"player shield",
+	"power management",
+	"auto-target icon",
+	"auto-speed-match icon",
+	"weapons display",
+	"monitoring view",
+	"directives view",
+	"threat gauge",
+	"afterburner energy",
+	"weapons energy",
+	"weapon linking",
+	"target hull/shield icon",
+	"offscreen indicator",
+	"comm video",
+	"damage display",
+	"message output",
+	"locked missile direction",
+	"countermeasures",
+	"objective notify",
+	"wingmen status",
+	"offscreen range",
+	"kills gauge",
+	"attacking target count",
+	"warning flash",
+	"comm menu",
+	"support gauge",
+	"lag gauge"
+};
 
 // specify the max distance that the radar should detect objects
 // See RR_ #defines in HUDconfig.h.
@@ -645,7 +687,6 @@ void hud_config_synch_sliders(int i)
 // reset some ui components based on HUD config data
 void hud_config_synch_ui()
 {
-	// game_load_palette();
 	HUD_init_hud_color_array();
 	// HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha-3;		// convert to value from 0-10	
 
@@ -971,8 +1012,6 @@ void hud_config_set_color(int color)
 	int idx;	
 
 	hud_config_record_color(color);
-
-	// game_load_palette();
 
 	HUD_init_hud_color_array();
 
@@ -1502,7 +1541,6 @@ void hud_config_close()
 {
 //	common_free_interface_palette();		// restore game palette
 	hud_config_unload_gauges();
-	hud_init_popup_timers();				// ensure no popup gauges are active
 
 	hud_config_color_close();
 

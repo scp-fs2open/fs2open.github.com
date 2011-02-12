@@ -22,11 +22,11 @@
 #include "jumpnode/jumpnode.h"
 #include "cfile/cfile.h"
 #include "restrictpaths.h"
+#include "iff_defs/iff_defs.h"
 
 #define ID_WING_MENU 9000
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -569,7 +569,7 @@ int wing_editor::update_data(int redraw)
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->type == OBJ_SHIP) {
+			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 				if (!stricmp(m_wing_name, Ships[ptr->instance].ship_name)) {
 					if (bypass_errors)
 						return 1;
@@ -589,7 +589,43 @@ int wing_editor::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
+		for (i=0; i<Num_iffs; i++) {
+			if (!stricmp(m_wing_name, Iff_info[i].iff_name)) 
+			{
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This wing name is already being used by a team.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_wing_name = _T(Wings[cur_wing].name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(m_wing_name, Ai_tp_list[i].name)) 
+			{
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This wing name is already being used by a target priority group.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_wing_name = _T(Wings[cur_wing].name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for (i=0; i<MAX_WAYPOINT_LISTS; i++) {
 			if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_wing_name)) {
 				if (bypass_errors)
 					return 1;
@@ -604,22 +640,38 @@ int wing_editor::update_data(int redraw)
 				m_wing_name = _T(Wings[cur_wing].name);
 				UpdateData(FALSE);
 			}
+		}
 
-			if(jumpnode_get_by_name(m_wing_name) != NULL)
-			{
-				if (bypass_errors)
-					return 1;
+		if(jumpnode_get_by_name(m_wing_name) != NULL)
+		{
+			if (bypass_errors)
+				return 1;
 
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by a jump node\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			bypass_errors = 1;
+			z = MessageBox("This wing name is already being used by a jump node\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
-				if (z == IDCANCEL)
-					return -1;
+			if (z == IDCANCEL)
+				return -1;
 
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
+			m_wing_name = _T(Wings[cur_wing].name);
+			UpdateData(FALSE);
+		}
+
+		if (!stricmp(m_wing_name.Left(1), "<")) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("Wing names not allowed to begin with <\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_wing_name = _T(Wings[cur_wing].name);
+			UpdateData(FALSE);
+		}
 
 		strcpy_s(old_name, Wings[cur_wing].name);
 		string_copy(Wings[cur_wing].name, m_wing_name, NAME_LENGTH, 1);
@@ -725,7 +777,7 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].wave_delay_max, m_arrival_delay_max);
 	MODIFY(Wings[cur_wing].arrival_distance, m_arrival_dist);
 	if (m_arrival_target >= 0) {
-		i = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET)) -> GetItemData(m_arrival_target);
+		i = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 		MODIFY(Wings[cur_wing].arrival_anchor, i);
 
 		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
@@ -735,7 +787,7 @@ void wing_editor::update_data_safe()
 				if (!bypass_errors) {
 					sprintf(buf, "Ship must arrive at least %d meters away from target.\n"
 						"Value has been reset to this.  Use with caution!\r\n"
-						"Reccomended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[i].objnum].radius) );
+						"Recommended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[i].objnum].radius) );
 
 					MessageBox(buf);
 				}
@@ -749,9 +801,10 @@ void wing_editor::update_data_safe()
 			}
 		}
 	}
-
-	i = ((CComboBox*)GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
-	MODIFY(Wings[cur_wing].departure_anchor,  i);
+	if (m_departure_target >= 0) {
+		i = ((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
+		MODIFY(Wings[cur_wing].departure_anchor,  i);
+	}
 
 	MODIFY(Wings[cur_wing].departure_delay, m_departure_delay);
 	hotkey = m_hotkey - 1;

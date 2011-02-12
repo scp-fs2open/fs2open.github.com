@@ -69,6 +69,8 @@ struct campaign_info;
 #define LGC_B_OVERRIDE			(1<<4)	// allow lua to override current button commands
 #define LGC_B_ADDITIVE			(1<<5)	// allow lua add current lua button commands to current commands
 
+#define LGC_B_POLL_ALL			(1<<6)	// tell game code to pass all button commands to lua.
+
 // number of times dude can fail a mission in a session before 
 // having the opportunity to skip it
 #ifdef RELEASE_REAL
@@ -199,10 +201,11 @@ typedef struct player {
 	int				num_variables;
 	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
 
-	char death_message[256];								// Goober5000
+	SCP_string		death_message;								// Goober5000
 
 	control_info	lua_ci;				// copy of control info for scripting purposes (not to disturb real controls).
 	button_info		lua_bi;				// copy of button info for scripting purposes (not to disturb real controls).
+	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
 } player;
 
 extern player Players[MAX_PLAYERS];

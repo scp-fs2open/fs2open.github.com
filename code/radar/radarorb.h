@@ -12,6 +12,8 @@
 #ifndef _RADARORB_H
 #define _RADARORB_H
 
+#include "radar/radarsetup.h"
+
 extern int Radar_static_looping;
 
 struct object;
@@ -19,23 +21,51 @@ struct blip;
 struct color;
 struct vec3d;
 
-extern void radar_init_orb();
-extern void radar_plot_object_orb( object *objp );
-extern void radar_frame_init_orb();
-extern void radar_mission_init_orb();
-extern void radar_frame_render_orb(float frametime);
+#define NUM_ORB_RING_SLICES 16
 
-// observer hud rendering code uses this function
-void radar_draw_blips_sorted_orb(int distort);
-void radar_draw_range_orb();
-void radar_blit_gauge_orb();
-void radar_stuff_blip_info_orb(object *objp, int is_bright, color **blip_color, int *blip_type);
-void radar_null_nblips_orb();
-void radar_draw_circle_orb( int x, int y, int rad );
-void radar_blip_draw_distorted_orb(blip *b);
-void radar_blip_draw_flicker_orb(blip *b);
-void radar_page_in_orb();
-void radar_orb_draw_image(vec3d *out, int rad, int idx, float mult);
+class HudGaugeRadarOrb: public HudGaugeRadar
+{
+	char Radar_fname[MAX_FILENAME_LEN];
+	hud_frames Radar_gauge;
+
+	vec3d target_position;
+
+	vec3d orb_ring_yz[NUM_ORB_RING_SLICES];
+	vec3d orb_ring_xy[NUM_ORB_RING_SLICES];
+	vec3d orb_ring_xz[NUM_ORB_RING_SLICES];
+
+	color Orb_color_orange;
+	color Orb_color_teal;
+	color Orb_color_purple;
+	color Orb_crosshairs;
+
+	float Radar_center_offsets[2];
+public:
+	HudGaugeRadarOrb();
+	void initBitmaps(char *fname);
+	void initCenterOffsets(float x, float y);
+
+	void loadDefaultPositions();
+	void blipDrawDistorted(blip *b, vec3d *pos);
+	void blipDrawFlicker(blip *b, vec3d *pos);
+	void blitGauge();
+	void drawBlips(int blip_type, int bright, int distort);
+	void drawBlipsSorted(int distort);
+	void drawContact(vec3d *pnt, int rad);
+	void drawContactHtl(vec3d *pnt, int rad);
+	void drawContactImage(vec3d *pnt, int rad, int idx, float mult);
+	void drawCrosshairs( vec3d pnt );
+	void doneDrawing();
+	void doneDrawingHtl();
+	void drawOutlines();
+	void drawOutlinesHtl();
+	void setupView();
+	void setupViewHtl();
+	int calcAlpha(vec3d* pt);
+	void render(float frametime);
+	void pageIn();
+	void plotBlip(blip *b, vec3d *scaled_pos);
+};
 
 #endif
 

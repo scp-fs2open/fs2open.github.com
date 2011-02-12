@@ -32,6 +32,8 @@
 #include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
+#include "globalincs/globals.h"
 
 
 
@@ -52,86 +54,6 @@ extern int Cmdline_nohtl;
 #define SHOT_POINT_TIME				200			// 5 arcs a second
 
 #define TOOLTIME						1500.0f
-
-// max # of collisions we'll allow per frame
-#define MAX_FRAME_COLLISIONS		10
-
-// collision info
-typedef struct beam_collision {
-	mc_info			cinfo;							// collision info
-	int				c_objnum;						// objnum of the guy we recently collided with
-	int				c_sig;							// object sig
-	int				c_stamp;							// when we should next apply damage	
-	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
-	int			is_exit_collision;					//does this occur when the beam is exiting the ship
-} beam_collision;
-
-// beam flag defines
-#define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
-#define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
-
-// beam struct (the actual weapon/object)
-typedef struct beam {
-	// low-level data
-	int		objnum;					// our own objnum
-	int		weapon_info_index;
-	int		sig;						// signature for the shooting object
-	object	*objp;					// the shooting object (who owns the turret that I am being fired from)
-	object	*target;					// target object
-	ship_subsys *target_subsys;	// targeted subsys
-	int		target_sig;				// target sig
-	ship_subsys *subsys;				// subsys its being fired from
-	beam		*next, *prev;			// link list stuff
-	vec3d	targeting_laser_offset;
-	int		framecount;				// how many frames the beam has been active
-	int		flags;					// see BF_* defines 	
-	float		shrink;					// shrink factor	
-
-	// beam info	
-	int		warmup_stamp;			// timestamp for "warming up"
-	int		warmdown_stamp;		// timestamp for "warming down"
-	int		type;						// see BEAM_TYPE_* defines in beam.h
-	float		life_left;				// in seconds
-	float		life_total;				// total life	
-	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
-	// the vector between it and last_start is where the beam will be aiming. AFTER performing collision checks, it is the
-	// literal world collision point on the object (or meaningless, if we hit nothing). The function beam_move_all_pre() is
-	// responsible for then setting it up pre-collision time
-	vec3d	last_shot;				
-	vec3d	last_start;				
-	int		shot_index;				// for type D beam weapons
-	float	beam_glow_frame;		// what frame a beam glow animation is on
-	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
-
-	// recent collisions
-	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions
-	int r_collision_count;														// # of recent collisions
-
-	// collision info for this frame
-	beam_collision f_collisions[MAX_FRAME_COLLISIONS];					// collisions for the current frame
-	int f_collision_count;														// # of collisions we recorded this frame
-
-	// looping sound info, HANDLE
-	int		beam_sound_loop;		// -1 if none
-
-	// team 
-	char		team;
-
-	float range;
-	float damage_threshold;
-
-	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
-	// everything looks the same
-	beam_info binfo;
-	bool fighter_beam;
-	int bank;
-
-	int Beam_muzzle_stamp;
-	vec3d local_pnt;
-	int firingpoint;
-
-	float		beam_width;
-} beam;
 
 beam Beams[MAX_BEAMS];				// all beams
 beam Beam_free_list;					// free beams
@@ -196,9 +118,10 @@ typedef struct beam_light_info {
 beam_light_info Beam_lights[MAX_BEAM_LIGHT_INFO];
 int Beam_light_count = 0;
 
-float b_whack_small = 500.0f;
-float b_whack_big = 1500.0f;
+float b_whack_small = 2000.0f;	// used to be 500.0f with the retail whack bug
+float b_whack_big = 10000.0f;	// used to be 1500.0f with the retail whack bug
 float b_whack_damage = 150.0f;
+
 DCF(b_whack_small, "")
 {
 	dc_get_arg(ARG_FLOAT);
@@ -452,6 +375,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
 	new_item->firingpoint = fire_info->turret->turret_next_fire_pos;
+	new_item->beam_width = wip->b_info.beam_width;
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
 		new_item->beam_secion_frame[i] = 0.0f;
@@ -489,7 +413,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}	
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, -1, new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
@@ -928,8 +852,9 @@ void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait)
 
 	// determine what "shot" we're on	
 	*shot_index = (int)(beam_time / shot_time);
-	Assert(*shot_index < b->binfo.shot_count);
+	
 	if(*shot_index >= b->binfo.shot_count){
+		nprintf(("Beam","Shot of type D beam had bad shot_index value\n"));
 		*shot_index = b->binfo.shot_count - 1;
 	}	
 
@@ -2002,11 +1927,11 @@ void beam_recalc_sounds(beam *b)
 void beam_get_binfo(beam *b, float accuracy, int num_shots)
 {
 	vec3d p2;
-	int model_num, idx;	
+	int model_num, idx;
 	vec3d oct1, oct2;
 	vec3d turret_point, turret_norm;
 	beam_weapon_info *bwi;
-	int skill_level;
+	float miss_factor;
 
 	int temp = b->subsys->turret_next_fire_pos;
 
@@ -2019,10 +1944,10 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	b->subsys->turret_next_fire_pos = temp;
 
 	// get a model # to work with
-	model_num = beam_get_model(b->target);	
+	model_num = beam_get_model(b->target);
 	if(model_num < 0){
 		return;
-	}	
+	}
 
 	// get beam weapon info
 	Assert(b->weapon_info_index >= 0);
@@ -2031,36 +1956,32 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	}
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
-	// skill level
-	skill_level = Game_skill_level;
-	if(Game_skill_level >= NUM_SKILL_LEVELS){
-		skill_level = NUM_SKILL_LEVELS - 1;
-	}
-	if(Game_skill_level < 0){
-		skill_level = 0;
-	}
-
 	// stuff num shots even though its only used for type D weapons
 	b->binfo.shot_count = (ubyte)num_shots;
 	if(b->binfo.shot_count > MAX_BEAM_SHOTS){
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
 	}
 
-	// generate the proper amount of directional vectors	
-	switch(b->type){	
+	// generate the proper amount of directional vectors
+	switch(b->type){
 	// pick an accuracy. beam will be properly aimed at actual fire time
-	case BEAM_TYPE_A:		
+	case BEAM_TYPE_A:
+		// determine the miss factor
+		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
+		Assert(b->team >= 0 && b->team < Num_iffs);
+		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
+
 		// all we will do is decide whether or not we will hit - type A beam weapons are re-aimed immediately before firing
-		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + bwi->beam_miss_factor[skill_level] * accuracy);
+		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + miss_factor * accuracy);
 		b->binfo.shot_count = 1;
 
-		// get random model points, this is useful for big ships, because we never miss when shooting at them			
+		// get random model points, this is useful for big ships, because we never miss when shooting at them
 		submodel_get_two_random_points(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b);
-		break;	
+		break;
 
 	// just 2 points in the "slash"
-	case BEAM_TYPE_B:							
-		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);		
+	case BEAM_TYPE_B:
+		beam_get_octant_points(model_num, b->target, (int)frand_range(0.0f, BEAM_NUM_GOOD_OCTANTS), Beam_good_slash_octants, &oct1, &oct2);
 
 		// point 1
 		vm_vec_sub(&b->binfo.dir_a, &oct1, &turret_point);
@@ -2068,7 +1989,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 
 		// point 2
 		vm_vec_sub(&b->binfo.dir_b, &oct2, &turret_point);
-		vm_vec_normalize(&b->binfo.dir_b);	
+		vm_vec_normalize(&b->binfo.dir_b);
 		
 		// delta angle
 		b->binfo.delta_ang = fl_abs(vm_vec_delta_ang_norm(&b->binfo.dir_a, &b->binfo.dir_b, NULL));
@@ -2080,10 +2001,15 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 
 	// type D beams fire at small ship multiple times
 	case BEAM_TYPE_D:
+		// determine the miss factor
+		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
+		Assert(b->team >= 0 && b->team < Num_iffs);
+		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
+
 		// get a bunch of shot aims
 		for(idx=0; idx<b->binfo.shot_count; idx++){
 			//	MK, 9/3/99: Added pow() function to make increasingly likely to miss with subsequent shots.  30% more likely with each shot.
-			float r = ((float) pow(1.3f, idx)) * bwi->beam_miss_factor[skill_level] * accuracy;
+			float r = ((float) pow(1.3f, idx)) * miss_factor * accuracy;
 			b->binfo.shot_aim[idx] = frand_range(0.0f, 1.0f + r);
 		}
 		break;
@@ -2340,7 +2266,9 @@ int beam_collide_ship(obj_pair *pair)
 	int	valid_hit_occurred = 0;
 	sip = &Ship_info[shipp->ship_info_index];
 	bwi = &Weapon_info[b->weapon_info_index];
+
 	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 	// get the widest portion of the beam
 	widest = beam_get_widest(b);
@@ -2349,6 +2277,7 @@ int beam_collide_ship(obj_pair *pair)
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
 	// set up collision structs, part 1
+	mc.model_instance_num = shipp->model_instance_num;
 	mc.model_num = model_num;
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
@@ -2429,7 +2358,6 @@ int beam_collide_ship(obj_pair *pair)
 		valid_hit_occurred = 1;
 	}
 
-
 	// if we got a hit
 	if (valid_hit_occurred) {
 		// add to the collision_list
@@ -2496,6 +2424,7 @@ int beam_collide_asteroid(obj_pair *pair)
 #endif
 
 	// do the collision		
+	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
@@ -2565,6 +2494,7 @@ int beam_collide_missile(obj_pair *pair)
 #endif
 
 	// do the collision		
+	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
@@ -2630,7 +2560,8 @@ int beam_collide_debris(obj_pair *pair)
 	Beam_test_ints++;
 #endif
 
-	// do the collision		
+	// do the collision	
+	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
 	test_collide.orient = &pair->b->orient;
@@ -2821,6 +2752,7 @@ void beam_handle_collisions(beam *b)
 	for(idx=0; idx<b->f_collision_count; idx++){	
 		int model_num = -1;
 		int do_damage = 0;
+		int draw_effects = 1;
 		int first_hit = 1;
 		int target = b->f_collisions[idx].c_objnum;
 
@@ -2833,6 +2765,15 @@ void beam_handle_collisions(beam *b)
 		model_num = beam_get_model(&Objects[target]);
 		if(model_num < 0){
 			continue;
+		}
+
+		if (wi->wi_flags & WIF_HUGE) {
+			if (Objects[target].type == OBJ_SHIP) {
+				ship_type_info *sti;
+				sti = ship_get_type_info(&Objects[target]);
+				if (sti->weapon_bools & STI_WEAP_NO_HUGE_IMPACT_EFF)
+					draw_effects = 0;
+			}
 		}
 
 		// add lighting
@@ -2874,16 +2815,14 @@ void beam_handle_collisions(beam *b)
 		r_coll_count++;		
 
 		// play the impact sound
-		if(first_hit){
+		if ( first_hit && (wi->impact_snd >= 0) ) {
 			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		beam_weapon_info bwi = wi->b_info;
-
-		if ((bwi.beam_tooling_flame_radius > 0) || (bwi.beam_flash_radius > 0)) {
+		if (draw_effects && ((wi->piercing_impact_explosion_radius > 0) || (wi->flash_impact_explosion_radius > 0))) {
 			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
 			float rnd = frand();
 			int do_expl = 0;
@@ -2896,10 +2835,10 @@ void beam_handle_collisions(beam *b)
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
 						
-			if (bwi.beam_flash_radius > 0) {
-				ani_radius = bwi.beam_flash_radius * flash_rad;	
-				if (bwi.beam_flash_idx > -1) {
-					int ani_handle = Weapon_explosions.GetAnim(bwi.beam_flash_idx, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
+			if (wi->flash_impact_explosion_radius > 0) {
+				ani_radius = wi->flash_impact_explosion_radius * flash_rad;	
+				if (wi->flash_impact_weapon_expl_index > -1) {
+					int ani_handle = Weapon_explosions.GetAnim(wi->flash_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 				} else {
 					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_SMOKE, 0, -1, &Objects[target] );
@@ -2911,32 +2850,90 @@ void beam_handle_collisions(beam *b)
 				particle_create( &temp_local_pos, &vmd_zero_vector, 0.0f, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
 			}
 			
-			if (bwi.beam_tooling_flame_radius > 0) {
-				vec3d fvec, inv_fvec;
-				vm_vec_sub(&fvec, &b->last_start, &b->last_shot);
+			if (wi->piercing_impact_explosion_radius > 0) {
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
 				if(!IS_VEC_NULL(&fvec)){
 					// get beam direction
-					if (beam_will_tool_target(b, &Objects[target])){
+
+					int ok_to_draw = 0;
+					
+					if (beam_will_tool_target(b, &Objects[target])) {
+						ok_to_draw = 1;
+
+						if (Objects[target].type == OBJ_SHIP) {
+							ship *shipp = &Ships[Objects[target].instance];
+														
+							if (shipp->armor_type_idx != -1) {
+								if (Armor_types[shipp->armor_type_idx].GetPiercingType(wi->damage_type_idx) == SADTF_PIERCING_RETAIL) {
+									ok_to_draw = 0;
+								}
+							}
+						}
+					} else {
+						ok_to_draw = 0;
+
+						if (Objects[target].type == OBJ_SHIP) {
+							float draw_limit, hull_pct;
+							int dmg_type_idx, piercing_type;
+
+							ship *shipp = &Ships[Objects[target].instance];
+
+							hull_pct = Objects[target].hull_strength / shipp->ship_max_hull_strength;
+							dmg_type_idx = wi->damage_type_idx;
+							draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
+							
+							if (shipp->armor_type_idx != -1) {
+								piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
+								if (piercing_type == SADTF_PIERCING_DEFAULT) {
+									draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+								} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
+									draw_limit = -1.0f;
+								}
+							}
+
+							if ((draw_limit != -1.0f) && (hull_pct <= draw_limit))
+								ok_to_draw = 1;
+						}
+					}
+
+					if (ok_to_draw){
 						vm_vec_normalize_quick(&fvec);
-						vm_vec_copy_scale( &inv_fvec, &fvec, -1.0f);
 						
 						// stream of fire for big ships
 						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {
 
-							vec3d expl_vel;
+							vec3d expl_vel, expl_splash_vel;
 
-							float flame_size = bwi.beam_tooling_flame_radius * frand_range(0.5f,2.0f);
-							vm_vec_copy_scale( &expl_vel, &fvec, bwi.beam_tooling_flame_radius * frand_range(1.0f, 2.0f));
-							if (bwi.beam_tooling_flame_idx > -1) {
-								int ani_handle = Weapon_explosions.GetAnim(bwi.beam_tooling_flame_idx, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
+							float flame_size = wi->piercing_impact_explosion_radius * frand_range(0.5f,2.0f);
+							float base_v, back_v;
+							vec3d rnd_vec;
+
+							vm_vec_rand_vec_quick(&rnd_vec);
+
+							if (wi->piercing_impact_particle_velocity != 0.0f)
+								base_v = wi->piercing_impact_particle_velocity;
+							else
+								base_v = wi->piercing_impact_explosion_radius;
+
+							if (wi->piercing_impact_particle_back_velocity != 0.0f)
+								back_v = wi->piercing_impact_particle_back_velocity;
+							else
+								back_v = base_v * (-0.2f);
+
+							vm_vec_copy_scale( &expl_vel, &fvec, base_v * frand_range(1.0f, 2.0f));
+							vm_vec_copy_scale( &expl_splash_vel, &fvec, back_v * frand_range(1.0f, 2.0f));
+							vm_vec_scale_add2( &expl_vel, &rnd_vec, base_v * wi->piercing_impact_particle_variance);
+							vm_vec_scale_add2( &expl_splash_vel, &rnd_vec, back_v * wi->piercing_impact_particle_variance);
+
+							if (wi->piercing_impact_weapon_expl_index > -1) {
+								int ani_handle = Weapon_explosions.GetAnim(wi->piercing_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
 								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
-								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
 							} else {
 								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.3f, flame_size, PARTICLE_SMOKE );
-								vm_vec_copy_scale( &expl_vel, &inv_fvec, bwi.beam_tooling_flame_radius * frand_range(7.5f, 15.0f));
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.6f, flame_size, PARTICLE_SMOKE );
+								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.6f, flame_size, PARTICLE_SMOKE );
 							}
 						}
 					}
@@ -2944,7 +2941,7 @@ void beam_handle_collisions(beam *b)
 			}
 			// <-- KOMET_EXT
 		} else {
-			if(do_damage && !physics_paused){
+			if(draw_effects && do_damage && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
 					int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
@@ -3072,7 +3069,7 @@ float beam_get_cone_dot(beam *b)
 	case BEAM_TYPE_D:
 	case BEAM_TYPE_E:
 		// even though these beams don't move, return a _very_ small value
-		return (float)cos(fl_radian(50.5f));	
+		return (float)cos(fl_radians(50.5f));
 		
 	case BEAM_TYPE_B:
 		return vm_vec_dotprod(&b->binfo.dir_a, &b->binfo.dir_b);
@@ -3292,8 +3289,8 @@ float beam_get_ship_damage(beam *b, object *objp)
 int beam_will_tool_target(beam *b, object *objp)
 {
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
-	float total_strength, damage_in_a_few_seconds;
-
+	float total_strength, damage_in_a_few_seconds, hp_limit, hp_pct;
+	
 	// sanity
 	if(objp == NULL){
 		return 0;
@@ -3306,9 +3303,23 @@ int beam_will_tool_target(beam *b, object *objp)
 	if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
 		return 0;
 	}
+	
+	ship *shipp = &Ships[objp->instance];
+	total_strength = objp->hull_strength;
+
+	if (shipp->armor_type_idx != -1) {
+		if (Armor_types[shipp->armor_type_idx].GetPiercingType(wip->damage_type_idx) == SADTF_PIERCING_NONE) {
+			return 0;
+		}
+		hp_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(wip->damage_type_idx);
+		if (hp_limit > 0.0f) {
+			hp_pct = total_strength / shipp->ship_max_hull_strength;
+			if (hp_limit >= hp_pct)
+				return 1;
+		}
+	}
 
 	// calculate total strength, factoring in shield
-	total_strength = objp->hull_strength;
 	if (!(wip->wi_flags2 & WIF2_PIERCE_SHIELDS))
 		total_strength += shield_get_strength(objp);
 

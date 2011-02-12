@@ -4,7 +4,7 @@
 	<Project>
 		<Option title="code" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;decals/;demo/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;vcodec/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
+		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;demo/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;vcodec/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
 		<Build>
 			<Target title="Debug">
 				<Option output="../Debug/code/lib/libcode" prefix_auto="1" extension_auto="1" />
@@ -221,12 +221,6 @@
 		<Unit filename="../../../code/debugconsole/timerbar.h">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
-		<Unit filename="../../../code/decals/decals.cpp">
-			<Option virtualFolder="decals/" />
-		</Unit>
-		<Unit filename="../../../code/decals/decals.h">
-			<Option virtualFolder="decals/" />
-		</Unit>
 		<Unit filename="../../../code/demo/demo.cpp">
 			<Option virtualFolder="demo/" />
 		</Unit>
@@ -315,6 +309,12 @@
 			<Option virtualFolder="globalincs/" />
 		</Unit>
 		<Unit filename="../../../code/globalincs/def_files.h">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/fsmemory.cpp">
+			<Option virtualFolder="globalincs/" />
+		</Unit>
+		<Unit filename="../../../code/globalincs/fsmemory.h">
 			<Option virtualFolder="globalincs/" />
 		</Unit>
 		<Unit filename="../../../code/globalincs/globals.h">
@@ -1001,12 +1001,6 @@
 		<Unit filename="../../../code/network/multi_observer.h">
 			<Option virtualFolder="network/" />
 		</Unit>
-		<Unit filename="../../../code/network/multi_oo.cpp">
-			<Option virtualFolder="network/" />
-		</Unit>
-		<Unit filename="../../../code/network/multi_oo.h">
-			<Option virtualFolder="network/" />
-		</Unit>
 		<Unit filename="../../../code/network/multi_options.cpp">
 			<Option virtualFolder="network/" />
 		</Unit>
@@ -1107,12 +1101,6 @@
 			<Option virtualFolder="network/" />
 		</Unit>
 		<Unit filename="../../../code/network/multiutil.h">
-			<Option virtualFolder="network/" />
-		</Unit>
-		<Unit filename="../../../code/network/psnet.cpp">
-			<Option virtualFolder="network/" />
-		</Unit>
-		<Unit filename="../../../code/network/psnet.h">
 			<Option virtualFolder="network/" />
 		</Unit>
 		<Unit filename="../../../code/network/psnet2.cpp">
@@ -1308,6 +1296,12 @@
 			<Option virtualFolder="radar/" />
 		</Unit>
 		<Unit filename="../../../code/radar/radar.h">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radardradis.cpp">
+			<Option virtualFolder="radar/" />
+		</Unit>
+		<Unit filename="../../../code/radar/radardradis.h">
 			<Option virtualFolder="radar/" />
 		</Unit>
 		<Unit filename="../../../code/radar/radarorb.cpp">

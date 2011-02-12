@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by fred.rc
+// Microsoft Developer Studio generated include file.
+// Used by FRED.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -122,6 +122,8 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
+#define IDD_FICTION_VIEWER              318
+#define IDD_SOUND_ENVIRONMENT           319
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -530,6 +532,7 @@
 #define IDC_ASCT1_CLASS_COMBO1          1188
 #define IDC_SHIP_VARIABLES_COMBO        1188
 #define IDC_SUFFIX                      1188
+#define IDC_SOUND_ENVIRONMENT           1188
 #define IDC_CREATED                     1189
 #define IDC_DEPARTURE_TARGET            1189
 #define IDC_SBITMAP                     1189
@@ -776,6 +779,7 @@
 #define IDC_SPECIAL_INNER_RAD           1343
 #define IDC_SQUAD_LOGO                  1343
 #define IDC_SQUADRON_WING_NAME_1        1343
+#define IDC_SOUND_ENVIRONMENT_DAMPING   1343
 #define IDC_EDIT3                       1344
 #define IDC_AMMO3                       1344
 #define IDC_TIME                        1344
@@ -789,6 +793,7 @@
 #define IDC_ABBREV_CAMPAIGN             1344
 #define IDC_TVT_WING_NAME_1             1344
 #define IDC_ASSIST_SCORE                1344
+#define IDC_SOUND_ENVIRONMENT_VOLUME    1344
 #define IDC_EDIT4                       1345
 #define IDC_AMMO4                       1345
 #define IDC_VOICE                       1345
@@ -1004,9 +1009,12 @@
 #define IDC_SBITMAP_B_SPIN              1527
 #define IDC_BEAM_PROTECT_SHIP           1527
 #define IDC_SBITMAP_P_SPIN              1528
+#define IDC_FLAK_PROTECT_SHIP           1528
 #define IDC_SBITMAP_SCALE_SPIN          1529
 #define IDC_SBITMAP_SCALE_Y             1529
+#define IDC_LASER_PROTECT_SHIP          1529
 #define IDC_POOF0                       1530
+#define IDC_MISSILE_PROTECT_SHIP        1530
 #define IDC_POOF1                       1531
 #define IDC_POOF2                       1532
 #define IDC_POOF3                       1533
@@ -1017,7 +1025,7 @@
 #define IDC_STATS_TEXT                  1537
 #define IDC_SUBTYPE1                    1538
 #define IDC_SUBTYPE2                    1539
-#define IDC_SPECIAL_WARP                1539
+#define IDC_SPECIAL_WARPIN              1539
 #define IDC_SUBTYPE3                    1540
 #define IDC_LOOP_BRIEF_ANIM             1540
 #define IDC_LOOP_BRIEF_SOUND            1541
@@ -1047,6 +1055,7 @@
 #define IDC_SPECIAL_SHIELDS             1555
 #define IDC_SPECIAL_HULL                1556
 #define IDC_LOADING_SCREEN_BUTTON1024   1557
+#define IDC_ENABLE_SPECIAL_SHIELD       1557
 #define IDC_LOADING_SCREEN640           1558
 #define IDC_TYPE_CAMPAIGN_PERSISTENT    1559
 #define IDC_MAX_HULL_REPAIR_VAL         1559
@@ -1119,10 +1128,24 @@
 #define IDC_SKY_FLAG_NO_ZBUFF           1611
 #define IDC_SKY_FLAG_NO_CULL            1612
 #define IDC_SKY_FLAG_NO_GLOW            1613
-#define IDC_SKY_FLAG_CLAMP				1614
+#define IDC_SKY_FLAG_CLAMP              1614
 #define IDC_TURRETS_LOCKED              1615
 #define IDC_AFTERBURNER_LOCKED          1616
 #define IDC_FORCE_SHIELDS               1617
+#define IDC_STORY_FILE                  1618
+#define IDC_FONT_FILE                   1619
+#define IDC_FICTION_MUSIC               1620
+#define IDC_SOUND_ENVIRONMENT_LABEL     1621
+#define IDC_SOUND_ENVIRONMENT_VOLUME_LABEL 1622
+#define IDC_SOUND_ENVIRONENT_DAMPING_LABEL 1623
+#define IDC_SOUND_ENVIRONMENT_DECAY_LABEL 1624
+#define IDC_SOUND_ENVIRONMENT_DECAY     1625
+#define IDC_SOUND_ENVIRONMENT_BUTTON    1626
+#define IDC_SOUND_ENVIRONMENT_TEST      1627
+#define IDC_GROUP_MESSAGES              1628
+#define IDC_INCLUDE_SENDER              1629
+#define IDC_DISABLE_ETS                 1630
+#define IDC_IMMOBILE                    1631
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1403,6 +1426,7 @@
 #define ID_SAVEFORMAT_FS2OPEN           33091
 #define ID_FORMAT_FS2_OPEN_COMP         33092
 #define ID_AUTOBALANCE                  33093
+#define ID_EDITORS_FICTION              33094
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1413,9 +1437,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        318
+#define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1618
+#define _APS_NEXT_CONTROL_VALUE         1632
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

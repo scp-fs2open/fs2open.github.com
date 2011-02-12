@@ -55,6 +55,7 @@ int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 // info for special polygon lists
 
 polymodel *Polygon_models[MAX_POLYGON_MODELS];
+SCP_vector<polymodel_instance*> Polygon_model_instances;
 
 static int model_initted = 0;
 extern int Cmdline_nohtl;
@@ -68,6 +69,8 @@ char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
 
+static uint Global_checksum = 0;
+
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
 
@@ -78,7 +81,9 @@ int Model_ram = 0;			// How much RAM the models use total
 
 static int Model_signature = 0;
 
-void generate_vertex_buffers(bsp_info*, polymodel*);
+void interp_configure_vertex_buffers(polymodel*, int);
+void interp_pack_vertex_buffers(polymodel*, int);
+
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
 void model_set_bay_path_nums(polymodel *pm);
 
@@ -220,20 +225,19 @@ void model_unload(int modelnum, int force)
 	if (pm->submodel) {
 		for (i = 0; i < pm->n_models; i++) {
 			if ( !Cmdline_nohtl ) {
-				for (j = 0; j < (int)pm->submodel[i].buffer.size(); j++) {
-					pm->submodel[i].buffer[j].index_buffer.release();
-				}
-
 				pm->submodel[i].buffer.clear();
-				gr_destroy_buffer(pm->submodel[i].indexed_vertex_buffer);
 			}
-			
+
 			if ( pm->submodel[i].bsp_data )	{
 				vm_free(pm->submodel[i].bsp_data);
 			}
 		}
 
 		vm_free(pm->submodel);
+	}
+
+	if ( !Cmdline_nohtl ) {
+		gr_destroy_buffer(pm->vertex_buffer_id);
 	}
 
 	if ( pm->xc ) {
@@ -707,6 +711,135 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
+IBX ibuffer_info;
+
+void create_vertex_buffer(polymodel *pm)
+{
+	if (Cmdline_nohtl || Is_standalone) {
+		return;
+	}
+
+	int i;
+
+	// initialize empty buffer
+	pm->vertex_buffer_id = gr_create_buffer();
+
+	if (pm->vertex_buffer_id < 0) {
+		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);
+	}
+
+	// clear struct and prepare for IBX usage
+	memset( &ibuffer_info, 0, sizeof(IBX) );
+
+	// Begin IBX code
+	if ( !Cmdline_noibx ) {
+		// use the same filename as the POF but with an .bx extension
+		strcpy_s( ibuffer_info.name, pm->filename );
+		char *pb = strchr( ibuffer_info.name, '.' );
+		if ( pb ) *pb = 0;
+		strcat_s( ibuffer_info.name, NOX(".bx") );
+
+		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+		// check if it's a zero size file and if so bail out to create a new one
+		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
+			cfclose( ibuffer_info.read );
+			ibuffer_info.read = NULL;
+		}
+
+		if (ibuffer_info.read != NULL) {
+			bool ibx_valid = false;
+
+			// grab a checksum of the IBX, for debugging purposes
+			uint ibx_checksum = 0;
+			cfseek(ibuffer_info.read, 0, SEEK_SET);
+			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
+			cfseek(ibuffer_info.read, 0, SEEK_SET);
+
+			// get the file size that we use to safety check with.
+			// be sure to subtract from this when we read something out
+			ibuffer_info.size = cfilelength( ibuffer_info.read );
+
+			// file id
+			int ibx = cfread_int( ibuffer_info.read );
+			ibuffer_info.size -= sizeof(int); // subtract
+
+			// make sure the file is valid
+			switch (ibx) {
+				// "XB  " - ("  BX" in file)
+				case 0x58422020:
+					ibx_valid = true;
+					break;
+			}
+
+			if (ibx_valid) {
+				// file is valid so grab the checksum out of the .bx and verify it matches the POF
+				uint ibx_sum = cfread_uint( ibuffer_info.read );
+				ibuffer_info.size -= sizeof(uint); // subtract
+
+				if (ibx_sum != Global_checksum) {
+					// bah, it's invalid for this POF
+					ibx_valid = false;
+
+					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
+				}
+			}
+
+
+			if ( !ibx_valid ) {
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+				ibuffer_info.size = 0;
+			} else {
+				mprintf(("IBX: Found a good IBX to read for '%s'.\n", pm->filename));
+				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", Global_checksum, ibx_checksum, pm->filename));
+			}
+		}
+
+		// if the read file is absent or invalid then write out the new info
+		if (ibuffer_info.read == NULL) {
+			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+			if (ibuffer_info.write != NULL) {
+				mprintf(("IBX: Starting a new IBX for '%s'.\n", pm->filename));
+
+				// file id, default to version 1
+				cfwrite_int( 0x58422020, ibuffer_info.write ); // "XB  " - ("  BX" in file)
+
+				// POF checksum
+				cfwrite_uint( Global_checksum, ibuffer_info.write );
+			}
+		}
+	} // End IBX code
+
+	// determine the size and configuration of each buffer segment
+	for (i = 0; i < pm->n_models; i++) {
+		interp_configure_vertex_buffers(pm, i);
+	}
+
+	// these must be reset to NULL for the tests to work correctly later
+	if (ibuffer_info.read != NULL) {
+		cfclose( ibuffer_info.read );
+	}
+
+	if (ibuffer_info.write != NULL) {
+		cfclose( ibuffer_info.write );
+	}
+
+	memset( &ibuffer_info, 0, sizeof(IBX) );
+
+	// now actually fill the buffer with our info ...
+	for (i = 0; i < pm->n_models; i++) {
+		interp_pack_vertex_buffers(pm, i);
+
+		// release temporary memory
+		pm->submodel[i].buffer.release();
+	}
+
+	// ... and then finalize buffer
+	gr_pack_buffer(pm->vertex_buffer_id, NULL);
+}
+
 // Goober5000
 bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
 {
@@ -799,14 +932,8 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 }
 
 
-//	Debug thing so we don't repeatedly show warning messages.
-#ifndef NDEBUG
-int Bogus_warning_flag_1903 = 0;
-#endif
 void parse_triggers(int &n_trig, queued_animation **triggers, char *props);
 
-
-IBX ibuffer_info;
 
 //reads a binary file containing a 3d model
 int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
@@ -837,167 +964,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		return -1;
 	}		
 
-	// Begin IBX code - taylor
-	if ( !Cmdline_nohtl && !Cmdline_noibx ) {
-		// generate checksum for the POF
-		uint pof_checksum = 0;
-		cfseek(fp, 0, SEEK_SET);	
-		cf_chksum_long(fp, &pof_checksum);
-		cfseek(fp, 0, SEEK_SET);
+	// generate checksum for the POF
+	cfseek(fp, 0, SEEK_SET);	
+	cf_chksum_long(fp, &Global_checksum);
+	cfseek(fp, 0, SEEK_SET);
 
-		// clear struct and prepare for IBX usage
-		memset( &ibuffer_info, 0, sizeof(IBX) );
-
-		// get name for tangent space file
-		strcpy_s( ibuffer_info.tsb_name, filename );
-		char *pb = strchr( ibuffer_info.tsb_name, '.' );
-		if ( pb ) *pb = 0;
-		strcat_s( ibuffer_info.tsb_name, NOX(".tsb") );
-
-		// use the same filename as the POF but with an .ibx extension
-		strcpy_s( ibuffer_info.name, filename );
-		pb = strchr( ibuffer_info.name, '.' );
-		if ( pb ) *pb = 0;
-		strcat_s( ibuffer_info.name, NOX(".ibx") );
-
-		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-		// check if it's a zero size file and if so bail out to create a new one
-		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
-			cfclose( ibuffer_info.read );
-			ibuffer_info.read = NULL;
-		}
-
-		if ( Cmdline_normal && (ibuffer_info.read != NULL) ) {
-			ibuffer_info.tsb_read = cfopen( ibuffer_info.tsb_name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-			if ( (ibuffer_info.tsb_read == NULL) || !cfilelength(ibuffer_info.tsb_read) ) {
-				if (ibuffer_info.tsb_read != NULL)
-					cfclose( ibuffer_info.tsb_read);
-
-				ibuffer_info.tsb_read = NULL;
-
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-			}
-		}
-
-		if (ibuffer_info.read != NULL) {
-			bool ibx_valid = false;
-			bool tsb_valid = true;	// the TSB is assumed valid by default
-
-			// grab a checksum of the IBX, for debugging purposes
-			uint ibx_checksum = 0;
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-
-			// get the file size that we use to safety check with.
-			// be sure to subtract from this when we read something out
-			ibuffer_info.size = cfilelength( ibuffer_info.read );
-
-			// file id
-			int ibx = cfread_int( ibuffer_info.read );
-			ibuffer_info.size -= sizeof(int); // subtract
-
-			// make sure the file is valid
-			switch (ibx)
-			{
-				// "XBI " - (" IBX" in file)
-				case 0x58424920:
-				// "XBI2" - ("2IBX" in file)
-				case 0x58424932:
-					ibx_valid = true;
-					break;
-			}
-
-			if (ibx_valid) {
-				// file is valid so grab the checksum out of the .ibx and verify it matches the POF
-				uint ibx_sum = cfread_uint( ibuffer_info.read );
-				ibuffer_info.size -= sizeof(uint); // subtract
-
-				if (ibx_sum != pof_checksum) {
-					// bah, it's invalid for this POF
-					ibx_valid = false;
-
-					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
-				}
-
-				if (ibuffer_info.tsb_read != NULL) {
-					// get the file size that we use to safety check with.
-					// be sure to subtract from this when we read something out
-					ibuffer_info.tsb_size = cfilelength( ibuffer_info.tsb_read );
-
-					// check file id
-					int tsb = cfread_int( ibuffer_info.tsb_read );
-					ibuffer_info.tsb_size -= sizeof(int);
-
-					// "BST2" - ("2TSB" in file)
-					if (tsb != 0x42535432)
-						tsb_valid = false;
-
-					// if it's valid then check for the correct IBX checksum
-					if (tsb_valid) {
-						uint tsb_sum = cfread_uint( ibuffer_info.tsb_read );
-						ibuffer_info.tsb_size -= sizeof(uint);
-
-						if (tsb_sum != ibx_checksum)
-							tsb_valid = false;
-					}
-
-					if ( !tsb_valid )
-						mprintf(("IBX:  Warning!  Found invalid TSB file: '%s'\n", ibuffer_info.tsb_name));
-				}
-			}
-
-
-			if ( !ibx_valid || !tsb_valid ) {
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-				ibuffer_info.size = 0;
-
-				if (ibuffer_info.tsb_read != NULL) {
-					cfclose( ibuffer_info.tsb_read);
-					ibuffer_info.tsb_read = NULL;
-					ibuffer_info.tsb_size = 0;
-				}
-			} else {
-				mprintf(("IBX: Found a good %s to read for '%s'.\n", (ibuffer_info.tsb_read != NULL) ? "IBX/TSB" : "IBX", filename));
-				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
-			}
-		}
-
-		// if the read file is absent or invalid then write out the new info
-		if (ibuffer_info.read == NULL) {
-			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-			if (ibuffer_info.write != NULL) {
-				mprintf(("IBX: Starting a new IBX for '%s'.\n", filename));
-
-				// file id, default to version 1
-				cfwrite_int( 0x58424920, ibuffer_info.write ); // "XBI " - (" IBX" in file)
-
-				// POF checksum
-				cfwrite_uint( pof_checksum, ibuffer_info.write );
-
-
-				// tangent space data
-				if (Cmdline_normal) {
-					ibuffer_info.tsb_write = cfopen( ibuffer_info.tsb_name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-					if (ibuffer_info.tsb_write != NULL) {
-						mprintf(("IBX: Starting a new TSB for '%s'.\n", filename));
-
-						// file id
-						cfwrite_int( 0x42535432, ibuffer_info.tsb_write );	// "BST2" - ("2TSB" in file)
-
-						// POF checksum (NOTE: This gets replaced by the IBX checksum after it's been created!)
-						cfwrite_uint( pof_checksum, ibuffer_info.tsb_write );
-					}
-				}
-			}
-		}
-	} // End IBX code
 
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
@@ -1084,7 +1055,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				for ( i = 0; i < pm->n_models; i++ )
 				{
 					/* HACK: This is an almighty hack because it is late at night and I don't want to screw up a vm_free */
-					new ( &( pm->submodel[ i ].buffer ) ) SCP_vector<buffer_data>( );
+					new ( &( pm->submodel[ i ].buffer ) ) vertex_buffer( );
 					pm->submodel[ i ].Reset( );
 				}
 
@@ -1124,6 +1095,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						cfread_vector( &pm->moment_of_inertia.vec.rvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
+
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
+							Int3();
+						}
 					} else {
 						// old code where mass wasn't based on area, so do the calculation manually
 
@@ -1140,6 +1116,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						cfread_vector( &pm->moment_of_inertia.vec.uvec, fp );
 						cfread_vector( &pm->moment_of_inertia.vec.fvec, fp );
 
+						if(!is_valid_vec(&pm->moment_of_inertia.vec.rvec) || !is_valid_vec(&pm->moment_of_inertia.vec.uvec) || !is_valid_vec(&pm->moment_of_inertia.vec.fvec)) {
+							Warning(LOCATION, "Moment of inertia values for model %s are invalid. This has to be fixed.\n", pm->filename);
+							Int3();
+						}
+
 						// John remove this with change to bspgen
 						vm_vec_scale( &pm->moment_of_inertia.vec.rvec, mass_ratio );
 						vm_vec_scale( &pm->moment_of_inertia.vec.uvec, mass_ratio );
@@ -1155,14 +1136,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 
 				} else {
-#ifndef NDEBUG
-					if (stricmp("fighter04.pof", filename)) {
-						if (Bogus_warning_flag_1903 == 0) {
-							Warning(LOCATION, "Ship %s is old.  Cannot compute mass.\nSetting to 50.0f.  Talk to John.", filename);
-							Bogus_warning_flag_1903 = 1;
-						}
-					}
-#endif
 					pm->mass = 50.0f;
 					vm_vec_zero( &pm->center_of_mass );
 					vm_set_identity( &pm->moment_of_inertia );
@@ -1335,6 +1308,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].gun_rotation = false;
 
+				if ( (p = strstr(props, "$lod0_name")) != NULL)
+					get_user_prop_value(p+10, pm->submodel[n].lod_name);
+
 				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
 					p += 12;
 					while (*p == ' ') p++;
@@ -1381,7 +1357,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					// Find end of number
 					parsed_string = strchr(parsed_string, ',');
-					Assert(parsed_string != NULL);
+					if (parsed_string == NULL) {
+						Warning( LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
+							"\n\n$uvec: should be followed by 3 numbers separated with commas."
+							"\n\nCouldn't find first comma (,)!",
+							 pm->submodel[n].name, filename);
+					}
 					parsed_string++;
 
 					while (*parsed_string == ' ') {
@@ -1392,7 +1374,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					// Find end of number
 					parsed_string = strchr(parsed_string, ',');
-					Assert(parsed_string != NULL);
+					if (parsed_string == NULL) {
+						Warning( LOCATION,
+							"Submodel '%s' of model '%s' has an improperly formatted $uvec: declaration in its properties."
+							"\n\n$uvec: should be followed by 3 numbers separated with commas."
+							"\n\nCouldn't find second comma (,)!",
+							 pm->submodel[n].name, filename);
+					}
 					parsed_string++;
 
 					while (*parsed_string == ' ') {
@@ -1412,7 +1400,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						// Find end of number
 						parsed_string = strchr(parsed_string, ',');
-						Assert(parsed_string != NULL);
+						if (parsed_string == NULL) {
+							Warning( LOCATION,
+								"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
+								"\n\n$fvec: should be followed by 3 numbers separated with commas."
+								"\n\nCouldn't find first comma (,)!",
+								 pm->submodel[n].name, filename);
+						}
 						parsed_string++;
 
 						while (*parsed_string == ' ') {
@@ -1423,7 +1417,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						// Find end of number
 						parsed_string = strchr(parsed_string, ',');
-						Assert(parsed_string != NULL);
+						if (parsed_string == NULL) {
+							Warning( LOCATION,
+								"Submodel '%s' of model '%s' has an improperly formatted $fvec: declaration in its properties."
+								"\n\n$fvec: should be followed by 3 numbers separated with commas."
+								"\n\nCouldn't find second comma (,)!",
+								 pm->submodel[n].name, filename);
+						}
 						parsed_string++;
 
 						while (*parsed_string == ' ') {
@@ -1502,6 +1502,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				else
 					pm->submodel[n].is_thruster=0;
 
+				// Genghis: if we have a thruster and none of the collision 
+				// properties were provided, then set "nocollide_this_only".
+				if (pm->submodel[n].is_thruster && !(pm->submodel[n].no_collisions) && !(pm->submodel[n].nocollide_this_only) && !(pm->submodel[n].collide_invisible) )
+				{
+					pm->submodel[n].nocollide_this_only = true;
+				}
+
 				if ( strstr( pm->submodel[n].name, "-destroyed") )	
 					pm->submodel[n].is_damaged=1;
 				else
@@ -1514,9 +1521,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
 		//key_getch();
 
-				if(!Cmdline_nohtl) {
-					generate_vertex_buffers(&pm->submodel[n], pm);
-				}
 				break;
 
 			}
@@ -1883,7 +1887,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 										cfread_vector(&bogus, fp);
 									}
 								}
-								Assert( n_slots > 0 );
+								Assertion( n_slots > 0, "Turret %s has no firing points.\n", subsystemp->name );
 
 								subsystemp->turret_num_firing_points = n_slots;
 
@@ -1955,7 +1959,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				n = cfread_int(fp);
 				pm->n_textures = n;
 				// Don't overwrite memory!!
-				Assert(n <= MAX_MODEL_TEXTURES);
+				Verify(pm->n_textures <= MAX_MODEL_TEXTURES);
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )
 				{
@@ -2169,43 +2173,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #endif
 
 	cfclose(fp);
-
-	// these must be reset to NULL for the tests to work correctly later
-	if (ibuffer_info.read != NULL)
-		cfclose( ibuffer_info.read );
-
-	if (ibuffer_info.tsb_read != NULL)
-		cfclose( ibuffer_info.tsb_read );
-
-	if (ibuffer_info.write != NULL) {
-		// if we switched to v2 at any point during IBX creation, make sure to update the header
-		if (ibuffer_info.version == 2) {
-			cfseek( ibuffer_info.write, 0, CF_SEEK_SET );
-			cfwrite_int( 0x58424932, ibuffer_info.write ); // "XBI2" - ("2IBX" in file)
-		}
-
-		cfclose( ibuffer_info.write );
-	}
-
-	if (ibuffer_info.tsb_write != NULL) {
-		// update TSB with IBX checksum, for data sanity reasons
-		CFILE *cfp = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-		Assert( cfp );
-
-		uint ibx_checksum = 0;
-		cfseek(cfp, 0, SEEK_SET);
-		cf_chksum_long(cfp, &ibx_checksum);
-		cfseek(cfp, 0, SEEK_SET);
-
-		cfseek( ibuffer_info.tsb_write, sizeof(int), CF_SEEK_SET );
-		// write new checksum
-		cfwrite_int( ibx_checksum, ibuffer_info.tsb_write );
-
-		cfclose( cfp );
-		cfclose( ibuffer_info.tsb_write );
-	}
-
-	memset( &ibuffer_info, 0, sizeof(IBX) );
 
 	// mprintf(("Done processing chunks\n"));
 	return 1;
@@ -2471,6 +2438,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	create_family_tree(pm);
 //	dump_object_tree(pm);
 
+	// maybe generate vertex buffers
+	create_vertex_buffer(pm);
+
 //==============================
 // Find all the lower detail versions of the hires model
 	for (i=0; i<pm->n_models; i++ )	{
@@ -2483,7 +2453,14 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		}
 
 		sm1->num_details = 0;
-		l1 = strlen(sm1->name);
+		// If a backward compatibility LOD name is declared use it
+		if (strlen(sm1->lod_name) != 0) {
+			l1=strlen(sm1->lod_name);
+		}
+		// otherwise use the name for LOD comparision
+		else {
+			l1 = strlen(sm1->name);
+		}
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
@@ -2508,19 +2485,36 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			}
 
 			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
-			if ((int)strlen(sm2->name)!=l1) continue;
+			if ((int)strlen(sm2->name)!=l1) continue; 
 	
 			int ndiff = 0;
 			int first_diff = 0;
 			for ( k=0; k<l1; k++)	{
-				if (sm1->name[k] != sm2->name[k] )	{
-					if (ndiff==0) first_diff = k;
-					ndiff++;
+				// If a backward compatibility LOD name is declared use it
+				if (strlen(sm1->lod_name) != 0) {
+					if (sm1->lod_name[k] != sm2->name[k] )	{
+						if (ndiff==0) first_diff = k;
+						ndiff++;
+					}
+				}
+				// otherwise do the standard LOD comparision
+				else {
+					if (sm1->name[k] != sm2->name[k] )	{
+						if (ndiff==0) first_diff = k;
+						ndiff++;
+					}
 				}
 			}
 			if (ndiff==1)	{		// They only differ by one character!
 				int dl1, dl2;
-				dl1 = tolower(sm1->name[first_diff]) - 'a';
+				// If a backward compatibility LOD name is declared use it
+				if (strlen(sm1->lod_name) != 0) {
+					dl1 = tolower(sm1->lod_name[first_diff]) - 'a';
+				}
+				// otherwise do the standard LOD comparision
+				else {
+					dl1 = tolower(sm1->name[first_diff]) - 'a';
+				}
 				dl2 = tolower(sm2->name[first_diff]) - 'a';
 
 				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
@@ -2529,7 +2523,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 					dl2--;	// Start from 1 up...
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
-					//mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2, sm1->name ));
+  				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
 				}
 			}
 		}
@@ -2580,6 +2574,48 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	model_set_bay_path_nums(pm);
 
 	return pm->id;
+}
+
+int model_create_instance(int model_num, int submodel_num)
+{
+	int i = 0;
+	int open_slot = -1;
+
+	// go through model instances and find an empty slot
+	for ( i = 0; i < (int)Polygon_model_instances.size(); i++) {
+		if ( !Polygon_model_instances[i] ) {
+			open_slot = i;
+		}
+	}
+
+	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
+
+	// if not found, create a slot
+	if ( open_slot < 0 ) {
+		Polygon_model_instances.push_back( pmi );
+		open_slot = Polygon_model_instances.size() - 1;
+	} else {
+		Polygon_model_instances[open_slot] = pmi;
+	}
+
+	polymodel *pm = model_get(model_num);
+
+	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
+
+	for ( i = 0; i < pm->n_models; i++ ) {
+		model_clear_submodel_instance( &pmi->submodel[i] );
+	}
+
+	pmi->model_num = model_num;
+
+	if ( submodel_num < 0 ) {
+		// if using default arguments, use detail0 as the root submodel
+		pmi->root_submodel_num = pm->detail[0];
+	} else {
+		pmi->root_submodel_num = submodel_num;
+	}
+
+	return open_slot;
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
@@ -2784,11 +2820,13 @@ float submodel_get_radius( int modelnum, int submodelnum )
 
 polymodel * model_get(int model_num)
 {
-	Assert( model_num > -1 );
+	Assert( model_num >= 0 );
+	if ( model_num < 0 )
+		return NULL;
 
 	int num = model_num % MAX_POLYGON_MODELS;
 	
-	Assert( num > -1 );
+	Assert( num >= 0 );
 	Assert( num < MAX_POLYGON_MODELS );
 	Assert( Polygon_models[num] );
 	Assert( Polygon_models[num]->id == model_num );
@@ -2796,6 +2834,16 @@ polymodel * model_get(int model_num)
 	return Polygon_models[num];
 }
 
+polymodel_instance* model_get_instance(int model_instance_num)
+{
+	Assert( model_instance_num >= 0 );
+	Assert( model_instance_num < (int)Polygon_model_instances.size() );
+	if ( model_instance_num < 0 || model_instance_num >= (int)Polygon_model_instances.size() ) {
+		return NULL;
+	} 
+
+	return Polygon_model_instances[model_instance_num];
+}
 
 /*
 // Finds the 3d bounding box of a model.  If submodel_num is -1,
@@ -3064,6 +3112,42 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 		// to the parent - KeldorKatarn
 		matrix rotation_matrix = pm->submodel[mn].orientation;
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tvec, &vec, &m);
+		vec = tvec;
+
+		mn = pm->submodel[mn].parent;
+	}
+
+	// now instance for the entire object
+	vm_vec_unrotate(w_vec, &vec, &ship_obj->orient);
+}
+
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num)
+{
+	vec3d tvec, vec;
+	matrix m;
+	int mn;
+
+	Assert(ship_obj->type == OBJ_SHIP);
+
+	polymodel_instance *pmi = model_get_instance(Ships[ship_obj->instance].model_instance_num);
+	polymodel *pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+	vec = *m_vec;
+	mn = sub_model_num;
+
+	// instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
 
 		matrix inv_orientation;
 		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
@@ -3648,6 +3732,43 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	vm_vec_add2(outpnt,objpos);
 }
 
+void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+{
+	vec3d pnt;
+	vec3d tpnt;
+	matrix m;
+	int mn;
+	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+
+	pnt = *mpnt;
+	mn = sub_model_num;
+
+	//instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tpnt, &pnt, &m);
+
+		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+
+		mn = pm->submodel[mn].parent;
+	}
+
+	//now instance for the entire object
+	vm_vec_unrotate(outpnt,&pnt,objorient);
+	vm_vec_add2(outpnt,objpos);
+}
+
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
@@ -3691,6 +3812,39 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 	vm_vec_rotate(out, &tempv2, &m);
 }
 
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos)
+{
+	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
+
+	vec3d tempv1, tempv2;
+	matrix m;
+
+	// get into ship RF
+	vm_vec_sub(&tempv1, world_pt, pos);
+	vm_vec_rotate(&tempv2, &tempv1, orient);
+
+	if (pm->submodel[submodel_num].parent == -1) {
+		*out  = tempv2;
+		return;
+	}
+
+	// put into submodel RF
+	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
+
+	// By using this kind of computation, the rotational angles can always
+	// be computed relative to the submodel itself, instead of relative
+	// to the parent - KeldorKatarn
+	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
+	vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
+
+	matrix inv_orientation;
+	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+
+	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+	vm_vec_rotate(out, &tempv2, &m);
+}
+
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
 int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
 {
@@ -3712,16 +3866,15 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
 	return found;
 }
 
-void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_submodels, object *objp)
+void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp)
 {
 	Assert(objp->type == OBJ_SHIP);
-
+	
 	// Check if not currently rotating - then treat as part of superstructure.
 	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	polymodel *pm = model_get(modelnum);
 	bsp_info *child_submodel;
-
-	*num_rotating_submodels = 0;
+	
 	child_submodel = &pm->submodel[pm->detail[0]];
 
 	int i = child_submodel->first_child;
@@ -3744,8 +3897,7 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 						// found the correct subsystem - now check delta rotation angle not too large
 						float delta_angle = get_submodel_delta_angle(&subsys->submodel_info_1);
 						if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-							Assert(*num_rotating_submodels < MAX_ROTATING_SUBMODELS-1);
-							submodel_list[(*num_rotating_submodels)++] = i;
+							submodel_vector->push_back(i);
 						}
 						break;
 					}
@@ -3759,14 +3911,14 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 //#define MODEL_CHECK
 #ifdef MODEL_CHECK
 	ship *pship = &Ships[objp->instance];
-	for (int idx=0; idx<*num_rotating_submodels; idx++) {
-		int valid = rotating_submodel_has_ship_subsys(submodel_list[idx], pship);
+	for (size_t idx=0; idx<submodel_vector->size(); idx++) {
+		int valid = rotating_submodel_has_ship_subsys(submodel_vector[idx], pship);
 //		Assert( valid );
 		if ( !valid ) {
 
-			Warning( LOCATION, "Ship %s has rotating submodel [%s] without ship subsystem\n", pship->ship_name, pm->submodel[submodel_list[idx]].name );
-			pm->submodel[submodel_list[idx]].movement_type &= ~MOVEMENT_TYPE_ROT;
-			*num_rotating_submodels = 0;
+			Warning( LOCATION, "Ship %s has rotating submodel [%s] without ship subsystem\n", pship->ship_name, pm->submodel[submodel_vector[idx]].name );
+			pm->submodel[submodel_vector[idx]].movement_type &= ~MOVEMENT_TYPE_ROT;
+			submodel_vector->erase(submodel_vector->begin()+i);
 		}
 	}
 #endif
@@ -3876,6 +4028,26 @@ void model_clear_instance_info( submodel_instance_info * sii )
 	sii->turn_accel = 0.0f;
 }
 
+void model_clear_submodel_instance( submodel_instance *sm_instance )
+{
+	sm_instance->angs.p = 0.0f;
+	sm_instance->angs.b = 0.0f;
+	sm_instance->angs.h = 0.0f;
+	sm_instance->blown_off = false;
+	sm_instance->collision_checked = false;
+}
+
+void model_clear_submodel_instances( int model_instance_num )
+{
+	int i;
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
+
+	for ( i = 0; i < pm->n_models; i++ ) {
+		model_clear_submodel_instance(&pmi->submodel[i]);
+	}
+}
+
 // initialization during ship set
 void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel)
 {
@@ -3897,7 +4069,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 
 
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags)
 {
 	int i;
 	polymodel * pm;
@@ -3914,7 +4086,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	// Set the "blown out" flags	
 	sm->blown_off = sii->blown_off;
 
-	if ( sm->blown_off )	{
+	if ( (sm->blown_off) && (!(flags & SSF_NO_REPLACE)) )	{
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
@@ -3932,11 +4104,98 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
-		model_set_instance(model_num, sm->details[i], sii );
+		model_set_instance(model_num, sm->details[i], sii, flags );
 	}
 }
 
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii)
+{
+	int i;
+	polymodel *pm;
+	polymodel_instance *pmi;
 
+	pmi = model_get_instance(model_instance_num);
+	pm = model_get(pmi->model_num);
+
+	Assert( sub_model_num >= 0 );
+	Assert( sub_model_num < pm->n_models );
+
+	if ( sub_model_num < 0 ) return;
+	if ( sub_model_num >= pm->n_models ) return;
+
+	submodel_instance *smi = &pmi->submodel[sub_model_num];
+	bsp_info *sm = &pm->submodel[sub_model_num];
+
+	// Set the "blown out" flags	
+	smi->blown_off = sii->blown_off ? true : false;
+
+	if ( smi->blown_off )	{
+		if ( sm->my_replacement > -1 )	{
+			pmi->submodel[sm->my_replacement].blown_off = false;
+			pmi->submodel[sm->my_replacement].angs = sii->angs;
+			pmi->submodel[sm->my_replacement].prev_angs = sii->prev_angs;
+		}
+	} else {
+		if ( sm->my_replacement > -1 )	{
+			pmi->submodel[sm->my_replacement].blown_off = true;
+		}
+	}
+
+	// Set the angles
+	smi->angs = sii->angs;
+	smi->prev_angs = sii->prev_angs;
+
+	// For all the detail levels of this submodel, set them also.
+	for (i=0; i<sm->num_details; i++ )	{
+		model_update_instance(model_instance_num, sm->details[i], sii );
+	}
+}
+
+void model_instance_dumb_rotation_sub(polymodel_instance * pmi, polymodel *pm, int mn)
+{
+	while ( mn >= 0 )	{
+
+		bsp_info * sm = &pm->submodel[mn];
+		submodel_instance *smi = &pmi->submodel[mn];
+
+		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
+			float *ang;
+			int axis = sm->movement_axis;
+			switch ( axis ) {
+			case MOVEMENT_AXIS_X:
+				ang = &smi->angs.p;
+					break;
+			case MOVEMENT_AXIS_Z:
+				ang = &smi->angs.b;
+					break;
+			default:
+			case MOVEMENT_AXIS_Y:
+				ang = &smi->angs.h;
+					break;
+			}
+			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
+			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
+			//this keeps ang from getting bigger than 2PI
+		}
+
+		if ( pm->submodel[mn].first_child > -1 )
+			model_instance_dumb_rotation_sub(pmi, pm, pm->submodel[mn].first_child);
+
+		mn = pm->submodel[mn].next_sibling;
+	}
+}
+
+void model_instance_dumb_rotation(int model_instance_num)
+{
+	polymodel *pm;
+	polymodel_instance *pmi;
+
+	pmi = model_get_instance(model_instance_num);
+	pm = model_get(pmi->model_num);
+	int mn = pm->detail[0];
+
+	model_instance_dumb_rotation_sub(pmi, pm, mn);
+}
 
 void model_do_childeren_dumb_rotation(polymodel * pm, int mn){
 	while ( mn >= 0 )	{

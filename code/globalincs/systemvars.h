@@ -85,6 +85,8 @@ extern int Framecount;
 
 extern int Game_mode;
 
+#define SINGLEPLAYER !(Game_mode & GM_MULTIPLAYER)
+
 extern int Viewer_mode;
 extern int Rand_count;
 
@@ -138,6 +140,7 @@ extern bool Normalmap_override;
 extern bool Heightmap_override;
 extern bool Glowpoint_override;
 extern bool GLSL_override;
+extern bool PostProcessing_override;
 
 // game skill levels 
 #define	NUM_SKILL_LEVELS	5

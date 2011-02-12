@@ -26,35 +26,35 @@ struct ai_goal;
 // Fred.  If the goal you add doesn't have a target (such as chase_any), then you don't have
 // to worry about doing this.  Also add it to list in Fred\Management.cpp, and let Hoffoss know!
 // WMC - Oh and add them to Ai_goal_names plz. TY! :)
-#define AI_GOAL_CHASE					(1<<1)
-#define AI_GOAL_DOCK						(1<<2)		// used for undocking as well
-#define AI_GOAL_WAYPOINTS				(1<<3)
-#define AI_GOAL_WAYPOINTS_ONCE		(1<<4)
-#define AI_GOAL_WARP						(1<<5)
-#define AI_GOAL_DESTROY_SUBSYSTEM	(1<<6)
-#define AI_GOAL_FORM_ON_WING			(1<<7)
-#define AI_GOAL_UNDOCK					(1<<8)
-#define AI_GOAL_CHASE_WING				(1<<9)
-#define AI_GOAL_GUARD					(1<<10)
-#define AI_GOAL_DISABLE_SHIP			(1<<11)
-#define AI_GOAL_DISARM_SHIP			(1<<12)
-#define AI_GOAL_CHASE_ANY				(1<<13)
-#define AI_GOAL_IGNORE					(1<<14)
-#define AI_GOAL_GUARD_WING				(1<<15)
-#define AI_GOAL_EVADE_SHIP				(1<<16)
+#define AI_GOAL_CHASE					(1<<1)	// 0x00000002
+#define AI_GOAL_DOCK					(1<<2)	// 0x00000004	// used for undocking as well
+#define AI_GOAL_WAYPOINTS				(1<<3)	// 0x00000008
+#define AI_GOAL_WAYPOINTS_ONCE			(1<<4)	// 0x00000010
+#define AI_GOAL_WARP					(1<<5)	// 0x00000020
+#define AI_GOAL_DESTROY_SUBSYSTEM		(1<<6)	// 0x00000040
+#define AI_GOAL_FORM_ON_WING			(1<<7)	// 0x00000080
+#define AI_GOAL_UNDOCK					(1<<8)	// 0x00000100
+#define AI_GOAL_CHASE_WING				(1<<9)	// 0x00000200
+#define AI_GOAL_GUARD					(1<<10)	// 0x00000400
+#define AI_GOAL_DISABLE_SHIP			(1<<11)	// 0x00000800
+#define AI_GOAL_DISARM_SHIP				(1<<12)	// 0x00001000
+#define AI_GOAL_CHASE_ANY				(1<<13)	// 0x00002000
+#define AI_GOAL_IGNORE					(1<<14)	// 0x00004000
+#define AI_GOAL_GUARD_WING				(1<<15)	// 0x00008000
+#define AI_GOAL_EVADE_SHIP				(1<<16)	// 0x00010000
 
 // the next goals are for support ships only
-#define AI_GOAL_STAY_NEAR_SHIP		(1<<17)
-#define AI_GOAL_KEEP_SAFE_DISTANCE	(1<<18)
-#define AI_GOAL_REARM_REPAIR			(1<<19)
+#define AI_GOAL_STAY_NEAR_SHIP			(1<<17)	// 0x00020000
+#define AI_GOAL_KEEP_SAFE_DISTANCE		(1<<18)	// 0x00040000
+#define AI_GOAL_REARM_REPAIR			(1<<19)	// 0x00080000
 
 // resume regular goals
-#define AI_GOAL_STAY_STILL				(1<<20)
-#define AI_GOAL_PLAY_DEAD				(1<<21)
-#define AI_GOAL_CHASE_WEAPON			(1<<22)
+#define AI_GOAL_STAY_STILL				(1<<20)	// 0x00100000
+#define AI_GOAL_PLAY_DEAD				(1<<21)	// 0x00200000
+#define AI_GOAL_CHASE_WEAPON			(1<<22)	// 0x00400000
 
-#define AI_GOAL_FLY_TO_SHIP				(1<<23) // kazan
-#define AI_GOAL_IGNORE_NEW				(1<<24)	// Goober5000
+#define AI_GOAL_FLY_TO_SHIP				(1<<23) // 0x00800000
+#define AI_GOAL_IGNORE_NEW				(1<<24)	// 0x01000000
 
 // now the masks for ship types
 

@@ -140,13 +140,8 @@ struct config_item_undo {
 
 config_item Control_config_backup[CCFG_MAX];
 
-#ifdef GRAVIS_OEM
-int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
-int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
-#else
 int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
 int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
-#endif
 
 // all this stuff is localized/externalized
 #define NUM_AXIS_TEXT			6
@@ -347,31 +342,6 @@ int Config_allowed[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-
-/*
-// old invalid demo keys
-#define INVALID_DEMO_KEYS_MAX	14
-int Invalid_demo_keys[] = {
-	INCREASE_SHIELD,
-	DECREASE_SHIELD,
-	SHIELD_EQUALIZE,
-	SHIELD_XFER_TOP,
-	SHIELD_XFER_BOTTOM,
-	SHIELD_XFER_LEFT,
-	SHIELD_XFER_RIGHT,
-	XFER_SHIELD,
-	XFER_LASER,
-	MULTI_MESSAGE_ALL,
-	MULTI_MESSAGE_FRIENDLY,
-	MULTI_MESSAGE_HOSTILE,
-	MULTI_MESSAGE_TARGET,
-	MULTI_OBSERVER_ZOOM_TO
-};
-*/
-#define INVALID_DEMO_KEYS_MAX	0
-int Invalid_demo_keys[INVALID_DEMO_KEYS_MAX+1];		// +1 is only to prevent a 0-size array;
-
-
 #ifndef NDEBUG
 int Show_controls_info = 0;
 
@@ -415,21 +385,6 @@ int control_config_detect_axis()
 	return axis;
 }
 
-int control_config_valid_action(int n)
-{
-//WMC - Invalid_demo_keys is never even filled!!
-/*
-#ifdef FS2_DEMO
-	int i;
-
-	for (i=0; i<INVALID_DEMO_KEYS_MAX; i++)
-		if (n == Invalid_demo_keys[i])
-			return 0;
-#endif
-*/
-	return 1;
-}
-
 void control_config_conflict_check()
 {
 	int i, j, a, b, c, shift = -1, alt = -1;
@@ -453,56 +408,24 @@ void control_config_conflict_check()
 		Conflicts_tabs[i] = 0;
 
 	for (i=0; i<CCFG_MAX-1; i++) {
-		if (control_config_valid_action(i)) {
-			for (j=i+1; j<CCFG_MAX; j++) {
-				if (control_config_valid_action(j)) {
-					if (Control_config[i].key_id >= 0) {
-						c = 0;
-						a = Control_config[i].key_id;
-						b = Control_config[j].key_id;
-						if (a == b) {
-							Conflicts[i].key = j;
-							Conflicts[j].key = i;
-							Conflicts_tabs[ Control_config[i].tab ] = 1;
-							Conflicts_tabs[ Control_config[j].tab ] = 1;
-						}
-
-		/*				if ((a >= 0) && (a & KEY_SHIFTED) && (shift >= 0)) {
-							Conflicts[i].key = shift;
-							Conflicts[shift].key = i;
-							Conflicts_tabs[ Control_config[i].tab ] = 1;
-							Conflicts_tabs[ Control_config[shift].tab ] = 1;
-						}
-
-						if ((b >= 0) && (b & KEY_SHIFTED) && (shift >= 0)) {
-							Conflicts[j].key = shift;
-							Conflicts[shift].key = j;
-							Conflicts_tabs[ Control_config[j].tab ] = 1;
-							Conflicts_tabs[ Control_config[shift].tab ] = 1;
-						}
-
-						if ((a >= 0) && (a & KEY_ALTED) && (alt >= 0)) {
-							Conflicts[i].key = alt;
-							Conflicts[alt].key = i;
-							Conflicts_tabs[ Control_config[i].tab ] = 1;
-							Conflicts_tabs[ Control_config[alt].tab ] = 1;
-						}
-
-						if ((b >= 0) && (b & KEY_ALTED) && (alt >= 0)) {
-							Conflicts[j].key = alt;
-							Conflicts[alt].key = j;
-							Conflicts_tabs[ Control_config[j].tab ] = 1;
-							Conflicts_tabs[ Control_config[alt].tab ] = 1;
-						}*/
-					}
-
-					if ((Control_config[i].joy_id >= 0) && (Control_config[i].joy_id == Control_config[j].joy_id)) {
-						Conflicts[i].joy = j;
-						Conflicts[j].joy = i;
-						Conflicts_tabs[ Control_config[i].tab ] = 1;
-						Conflicts_tabs[ Control_config[j].tab ] = 1;
-					}
+		for (j=i+1; j<CCFG_MAX; j++) {
+			if (Control_config[i].key_id >= 0) {
+				c = 0;
+				a = Control_config[i].key_id;
+				b = Control_config[j].key_id;
+				if (a == b) {
+					Conflicts[i].key = j;
+					Conflicts[j].key = i;
+					Conflicts_tabs[ Control_config[i].tab ] = 1;
+					Conflicts_tabs[ Control_config[j].tab ] = 1;
 				}
+			}
+
+			if ((Control_config[i].joy_id >= 0) && (Control_config[i].joy_id == Control_config[j].joy_id)) {
+				Conflicts[i].joy = j;
+				Conflicts[j].joy = i;
+				Conflicts_tabs[ Control_config[i].tab ] = 1;
+				Conflicts_tabs[ Control_config[j].tab ] = 1;
 			}
 		}
 	}
@@ -529,7 +452,7 @@ void control_config_list_prepare()
 
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
-		if ((Control_config[z].tab == Tab) && control_config_valid_action(z)) {
+		if (Control_config[z].tab == Tab) {
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
 

@@ -69,6 +69,8 @@
 #include "cmdline/cmdline.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "sound/sound.h"
+#include "sound/ds.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -275,6 +277,9 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"no-dynamic",
 	"red-alert-carry",
 	"beam-protect-ship",
+	"flak-protect-ship",
+	"laser-protect-ship",
+	"missile-protect-ship",
 	"guardian",
 	"special-warp",
 	"vaporize",
@@ -301,6 +306,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"lock-all-turrets",
 	"afterburners-locked",
 	"force-shields-on",
+	"immobile",
+	"no-ets",
 };
 
 
@@ -533,6 +540,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.max_hull_repair_val = 0.0f;
 	pm->support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_support_ships = -1;	// infinite
+	pm->support_ships.max_concurrent_ships = 1;
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
 	pm->support_ships.support_available_for_species = 0;
@@ -711,6 +719,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 		if (index >= 0)
 			The_mission.ai_profile = &Ai_profiles[index];
+		else
+			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
 
 	Assert( The_mission.ai_profile != NULL );
@@ -718,6 +728,32 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// Kazan - player use AI at start?
 	if (pm->flags & MISSION_FLAG_PLAYER_START_AI)
 		Player_use_ai = 1;
+
+	pm->sound_environment.id = -1;
+	if (optional_string("$Sound Environment:")) {
+		char preset[65] = { '\0' };
+		stuff_string(preset, F_NAME, sizeof(preset)-1);
+
+		int preset_id = ds_eax_get_preset_id(preset);
+
+		if (preset_id >= 0) {
+			sound_env_get(&pm->sound_environment, preset_id);
+		}
+
+		// NOTE: values will be clamped properly when the effect is actually set
+
+		if (optional_string("+Volume:")) {
+			stuff_float(&pm->sound_environment.volume);
+		}
+
+		if (optional_string("+Damping:")) {
+			stuff_float(&pm->sound_environment.damping);
+		}
+
+		if (optional_string("+Decay Time:")) {
+			stuff_float(&pm->sound_environment.decay);
+		}
+	}
 }
 
 void parse_player_info(mission *pm)
@@ -787,17 +823,29 @@ void parse_player_info2(mission *pm)
 		for (i=0; i<total; i += 4) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !Campaign.ships_allowed[list[i]] )
 					continue;
 			}
 
 			ptr->ship_list[num_choices] = list[i];
-			ptr->ship_list_variables[num_choices] = list[i+1];
+			// if the list isn't set by a variable leave the variable name empty
+			if (list[i+1] == -1) {
+				strcpy_s(ptr->ship_list_variables[num_choices], "") ;
+			}
+			else {
+				strcpy_s(ptr->ship_list_variables[num_choices],Sexp_variables[list[i+1]].variable_name);
+			}
 			ptr->ship_count[num_choices] = list[i+2];
 			ptr->loadout_total += list[i+2];
-			ptr->ship_count_variables[num_choices] =list[i+3];
 
+			// if the list isn't set by a variable leave the variable name empty
+			if (list[i+3] == -1) {
+				strcpy_s(ptr->ship_count_variables[num_choices], "");
+			}
+			else {
+				strcpy_s(ptr->ship_count_variables[num_choices], Sexp_variables[list[i+3]].variable_name);
+			}
 			num_choices++;
 		}
 		ptr->num_ship_choices = num_choices;
@@ -806,9 +854,12 @@ void parse_player_info2(mission *pm)
 		if (optional_string("+Default_ship:")) {
 			stuff_string(str, F_NAME, NAME_LENGTH);
 			ptr->default_ship = ship_info_lookup(str);
+			if (-1 == ptr->default_ship) {
+				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 						if ( Campaign.ships_allowed[ptr->default_ship] ) {
@@ -834,7 +885,7 @@ void parse_player_info2(mission *pm)
 		for (i = 0; i < total; i += 4) {
 			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
 			// pool if they are not allowed
-			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !Campaign.weapons_allowed[list2[i]] ) {
 					continue;
 				}
@@ -846,8 +897,22 @@ void parse_player_info2(mission *pm)
 				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running ) {
 					ptr->weaponry_pool[num_choices] = list2[i]; 
 					ptr->weaponry_count[num_choices] = list2[i+2];
-					ptr->weaponry_pool_variable[num_choices] = list2[i+1];
-					ptr->weaponry_amount_variable[num_choices] = list2[i+3];
+
+					// if the list isn't set by a variable leave the variable name empty
+					if (list2[i+1] == -1) {
+						strcpy_s(ptr->weaponry_pool_variable[num_choices], "");
+					}
+					else {
+						strcpy_s(ptr->weaponry_pool_variable[num_choices], Sexp_variables[list2[i+1]].variable_name);
+					}
+
+					// if the list isn't set by a variable leave the variable name empty
+					if (list2[i+3] == -1) {
+						strcpy_s(ptr->weaponry_amount_variable[num_choices], "");
+					}
+					else {
+						strcpy_s(ptr->weaponry_amount_variable[num_choices], Sexp_variables[list2[i+3]].variable_name);
+					}
 					num_choices++; 
 				}
 				else {
@@ -901,6 +966,9 @@ void parse_cutscenes(mission *pm)
 			
 			if (optional_string("$Debriefing Cutscene:")) {
 				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
+			}
+			if (optional_string("$Campaign End Cutscene:")) {
+				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
 			}
 		}
 	}
@@ -1520,7 +1588,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	object *knossos_objp = NULL;
 
 	// Assume no valid knossos device
-	shipp->special_warp_objnum = -1;
+	shipp->special_warpin_objnum = -1;
 
 	// find knossos device
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
@@ -1541,8 +1609,8 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	if (knossos_objp == NULL)
 		return;
 
-	// set ship special_warp_objnum
-	shipp->special_warp_objnum = OBJ_INDEX(knossos_objp);
+	// set ship special_warpin_objnum
+	shipp->special_warpin_objnum = OBJ_INDEX(knossos_objp);
 
 	// position self for warp on plane of device
 	vec3d new_point;
@@ -1728,7 +1796,18 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->team = p_objp->team;
 	strcpy_s(shipp->ship_name, p_objp->name);
 	shipp->escort_priority = p_objp->escort_priority;
-	shipp->special_exp_index = p_objp->special_exp_index;
+
+	
+	
+	shipp->use_special_explosion = p_objp->use_special_explosion;
+	shipp->special_exp_damage = p_objp->special_exp_damage;
+	shipp->special_exp_blast = p_objp->special_exp_blast ;
+	shipp->special_exp_inner = p_objp->special_exp_inner ;
+	shipp->special_exp_outer = p_objp->special_exp_outer ;
+	shipp->use_shockwave = p_objp->use_shockwave ;
+	shipp->special_exp_shockwave_speed = p_objp->special_exp_shockwave_speed ;
+	shipp->special_hitpoints = p_objp->special_hitpoints ;
+	shipp->special_shield = p_objp->special_shield ;
 
 	for (i=0;i<MAX_IFFS;i++)
 	{
@@ -1739,7 +1818,6 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// Goober5000
-	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
 	shipp->max_shield_recharge_pct = p_objp->max_shield_recharge_percent;
@@ -1749,7 +1827,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
-	if (shipp->special_hitpoint_index >= 0)
+	if (shipp->special_hitpoints > 0)
 	{
 		float hull_factor = shipp->ship_max_hull_strength / sip->max_hull_strength;
 		ship_subsys *ss;
@@ -1773,7 +1851,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (p_objp->wingnum >= 0))
+	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0))
 	{
 		for (i = 0; i < MAX_STARTING_WINGS; i++)
 		{
@@ -1906,7 +1984,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	if (p_objp->flags & P_KNOSSOS_WARP_IN)
 	{
-		Objects[objnum].flags |= OF_SPECIAL_WARP;
+		Objects[objnum].flags |= OF_SPECIAL_WARPIN;
 		Knossos_warp_ani_used = 1;
 	}
 
@@ -2066,7 +2144,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY || ptr->system_info->flags & MSS_FLAG_TURRET_LOCKED)
 			{
 				// mark all turrets as locked
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -2297,6 +2375,15 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags & P_OF_BEAM_PROTECTED)
 		objp->flags |= OF_BEAM_PROTECTED;
 
+	if (parse_flags & P_OF_FLAK_PROTECTED)
+		objp->flags |= OF_FLAK_PROTECTED;
+
+	if (parse_flags & P_OF_LASER_PROTECTED)
+		objp->flags |= OF_LASER_PROTECTED;
+
+	if (parse_flags & P_OF_MISSILE_PROTECTED)
+		objp->flags |= OF_MISSILE_PROTECTED;
+
 	if (parse_flags & P_SF_GUARDIAN)
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 
@@ -2362,6 +2449,54 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_OF_FORCE_SHIELDS_ON) 
 		shipp->flags2 |= SF2_FORCE_SHIELDS_ON;
+
+	if (parse_flags2 & P2_OF_IMMOBILE)
+		objp->flags |= OF_IMMOBILE;
+
+	if (parse_flags2 & P2_SF2_NO_ETS)
+		shipp->flags2 |= SF2_NO_ETS;
+}
+
+void fix_old_special_explosions(p_object *p_objp, int variable_index) 
+{
+	int i;
+
+	Assertion(!(p_objp->use_special_explosion), "Mission appears to be using both the new and old method of special explosions for %s. Old method values used", p_objp->name); 
+	
+	// check all the variables are valid
+	for ( i = variable_index; i < (variable_index + BLOCK_EXP_SIZE); i++ ) {
+		if (!( Block_variables[i].type & SEXP_VARIABLE_BLOCK )) {
+			Warning (LOCATION, "%s is using the old special explosions method but does not appear to have variables for all the values", p_objp->name);
+			return;
+		}
+	}
+
+	p_objp->use_special_explosion = true;
+
+	p_objp->special_exp_damage = (float)atoi(Block_variables[variable_index+DAMAGE].text);
+	p_objp->special_exp_blast = (float)atoi(Block_variables[variable_index+BLAST].text);
+	p_objp->special_exp_inner = (float)atoi(Block_variables[variable_index+INNER_RAD].text);
+	p_objp->special_exp_outer = (float)atoi(Block_variables[variable_index+OUTER_RAD].text);
+	p_objp->use_shockwave = (atoi(Block_variables[variable_index+PROPAGATE].text) ? 1:0);
+	p_objp->special_exp_shockwave_speed = (float)atoi(Block_variables[variable_index+SHOCK_SPEED].text);
+}
+
+void fix_old_special_hits(p_object *p_objp, int variable_index)
+{
+	int i; 
+
+	Assertion( ((p_objp->special_hitpoints == 0) && (p_objp->special_shield == -1)),"Mission appears to be using both the new and old method of special hitpoints for %s", p_objp->name);  
+	
+	// check all the variables are valid
+	for ( i = variable_index; i < (variable_index + BLOCK_HIT_SIZE); i++ ) {
+		if (!( Block_variables[i].type & SEXP_VARIABLE_BLOCK )) {
+			Warning (LOCATION, "%s is using the old special hitpoints method but does not appear to have variables for all the values", p_objp->name);
+			return;
+		}
+	}
+
+	p_objp->special_hitpoints = atoi(Block_variables[variable_index+HULL_STRENGTH].text);
+	p_objp->special_shield = atoi(Block_variables[variable_index+SHIELD_STRENGTH].text);
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
@@ -2446,7 +2581,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
+	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
 		return 0;
 
 	// optional alternate name type
@@ -2457,10 +2592,9 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the alternate name
-		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
-		Assert(p_objp->alt_type_index >= 0);
+		p_objp->alt_type_index = mission_parse_lookup_alt(name);
 		if(p_objp->alt_type_index < 0)
-			mprintf(("Error looking up alternate ship type name!\n"));
+			WarningEx(LOCATION, "Mission %s\nError looking up alternate ship type name %s!\n", pm->name, name);
 		else
 			mprintf(("Using alternate ship type name: %s\n", name));
 	}
@@ -2473,10 +2607,9 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the callsign
-		p_objp->callsign_index = (char)mission_parse_lookup_callsign(name);
-		Assert(p_objp->callsign_index >= 0);
+		p_objp->callsign_index = mission_parse_lookup_callsign(name);
 		if(p_objp->callsign_index < 0)
-			mprintf(("Error looking up callsign!\n"));
+			WarningEx(LOCATION, "Mission %s\nError looking up callsign %s!\n", pm->name, name);
 		else
 			mprintf(("Using callsign: %s\n", name));
 	}
@@ -2688,12 +2821,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		}
 	}
 
-	// set certain flags that used to be in ship_info - Goober5000
-	if (Ship_info[p_objp->ship_class].flags & SIF_STEALTH)
-		p_objp->flags |= P_SF2_STEALTH;
-	if (Ship_info[p_objp->ship_class].flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
-		p_objp->flags |= P_SF2_DONT_COLLIDE_INVIS;
-
 
 	// always store respawn priority, just for ease of implementation
 	p_objp->respawn_priority = 0;
@@ -2713,46 +2840,77 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		Player_starts++;
 	}
 
-	p_objp->special_exp_index = -1;
-	if (optional_string("+Special Exp index:"))
-		stuff_int(&p_objp->special_exp_index);
+	p_objp->use_special_explosion = false;
+	p_objp->special_exp_damage = -1;
+	p_objp->special_exp_blast = -1;
+	p_objp->special_exp_inner = -1;
+	p_objp->special_exp_outer = -1;
+	p_objp->use_shockwave = false;
+	p_objp->special_exp_shockwave_speed = 0;
+	p_objp->special_hitpoints = 0;
+	p_objp->special_shield = -1;
 
-	p_objp->special_hitpoint_index = -1;
-	if (optional_string("+Special Hitpoint index:"))
-		stuff_int(&p_objp->special_hitpoint_index);
+	if (optional_string("$Special Explosion:")) {
+		p_objp->use_special_explosion = true;
 
-	// set max hitpoint values	
-	p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
-	p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
-	p_objp->max_shield_recharge_percent = Ship_info[p_objp->ship_class].max_shield_recharge;
-
-	// swap to the special hitpoint ones if they were set
-	if (p_objp->special_hitpoint_index != -1)
-	{
-		bool reset_index = false; 
-
-		if ((Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].type & SEXP_VARIABLE_SET)  && 
-			(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].type & SEXP_VARIABLE_BLOCK) ) {
-			p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		}
-		else {
-			Warning(LOCATION, "Special shield hitpoints used for variable number %d. But no variable with this number exists!", p_objp->special_hitpoint_index+SHIELD_STRENGTH); 
-			reset_index = true;
+		if (required_string("+Special Exp Damage:")) {
+			stuff_float(&p_objp->special_exp_damage);
 		}
 
-		if ((Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].type & SEXP_VARIABLE_SET)  && 
-			(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].type & SEXP_VARIABLE_BLOCK) ) {
-			p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
-		}
-		else {
-			Warning(LOCATION, "Special hitpoints used for variable number %d. But no variable with this number exists!", p_objp->special_hitpoint_index+HULL_STRENGTH); 
-			reset_index = true;
+		if (required_string("+Special Exp Blast:")) {
+			stuff_float(&p_objp->special_exp_blast);
 		}
 
-		if (reset_index) {
-			p_objp->special_hitpoint_index = -1;
+		if (required_string("+Special Exp Inner Radius:")) {
+			stuff_float(&p_objp->special_exp_inner);
+		}
+
+		if (required_string("+Special Exp Outer Radius:")) {
+			stuff_float(&p_objp->special_exp_outer);
+		}
+
+		if (optional_string("+Special Exp Shockwave Speed:")) {
+			stuff_float(&p_objp->special_exp_shockwave_speed);
+			p_objp->use_shockwave = true;
 		}
 	}
+
+	if (optional_string("+Special Hitpoints:")) {
+		stuff_int(&p_objp->special_hitpoints);
+	}
+
+	if (optional_string("+Special Shield Points:")) {
+		stuff_int(&p_objp->special_shield);
+	}
+
+	if (optional_string("+Special Exp index:")) {
+		int variable_index; 
+		stuff_int(&variable_index);
+		fix_old_special_explosions(p_objp, variable_index);
+	}
+
+	if (optional_string("+Special Hitpoint index:")) {
+		int variable_index; 
+		stuff_int(&variable_index);
+		fix_old_special_hits(p_objp, variable_index);
+	}
+
+	// set max hitpoint and shield values		
+	if (p_objp->special_shield != -1) {
+		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
+	}
+	else {
+		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+	}
+		
+	if (p_objp->special_hitpoints > 0) {
+		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
+	}
+	else {
+		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
+	}
+
+	p_objp->max_shield_recharge_percent = Ship_info[p_objp->ship_class].max_shield_recharge;
 
 	if (Ship_info[p_objp->ship_class].max_shield_strength > 0.0f) {
 		float shield_mult = p_objp->ship_max_shield_strength / Ship_info[p_objp->ship_class].max_shield_strength;
@@ -2955,7 +3113,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (!stricmp(p_objp->name, Player_start_shipname))
 	{
 		Player_start_pobject = *p_objp;
-		Player_start_pobject.flags |= P_SF_PLAYER_START_VALID;
 	}
 	
 
@@ -3088,6 +3245,9 @@ void parse_common_object_data(p_object	*objp)
 {
 	int i;
 
+	// Genghis: used later for subsystem checking
+	ship_info* sip = &Ship_info[objp->ship_class];
+
 	// set some defaults..
 	objp->initial_velocity = 0;
 	objp->initial_hull = 100;
@@ -3111,17 +3271,34 @@ void parse_common_object_data(p_object	*objp)
 		objp->subsys_count++;
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
+		// Genghis: check that the subsystem name makes sense for this ship type
+		if (stricmp("Pilot", Subsys_status[i].name))
+		{
+			int j;
+			for (j=0; j < sip->n_subsystems; ++j)
+				if (!stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
+					break;
+			if (j == sip->n_subsystems)
+				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
+		}
+
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
-		Subsys_status[i].subsys_cargo_name = -1;
+		Subsys_status[i].subsys_cargo_name = 0;
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
 			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", 0);
-			if (index == -1 && (Num_cargo < MAX_CARGO)) {
-				index = Num_cargo;
-				strcpy(Cargo_names[Num_cargo++], cargo_name);
+			if (index == -1) {
+				if (Num_cargo < MAX_CARGO) {
+					index = Num_cargo;
+					strcpy(Cargo_names[Num_cargo++], cargo_name);
+				}
+				else {
+					WarningEx(LOCATION, "Maximum number of cargo names (%d) exceeded, defaulting to Nothing!", MAX_CARGO);
+					index = 0;
+				}
 			}
 			Subsys_status[i].subsys_cargo_name = index;
 		}
@@ -3731,7 +3908,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
-		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		if (MULTI_TEAM)
 		{
 			// different for tvt -- Goober5000
 			for (j = 0; j < MAX_TVT_WINGS; j++)
@@ -4388,6 +4565,15 @@ void parse_event(mission *pm)
 	event->team = -1;
 	if( optional_string("+Team:") ) {
 		stuff_int(&event->team);
+
+		// sanity check
+		if (event->team < -1 || event->team >= MAX_TVT_TEAMS) {
+			if (Fred_running)
+				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			else
+				nprintf(("Warning", "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.\n"));
+			event->team = -1;
+		}
 	}
 
 	event->timestamp = timestamp(-1);
@@ -4457,6 +4643,12 @@ void parse_goal(mission *pm)
 	goalp->team = 0;
 	if ( optional_string("+Team:") ){
 		stuff_int( &goalp->team );
+
+		// sanity check
+		if (goalp->team < -1 || goalp->team >= Num_iffs) {
+			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			goalp->team = -1;
+		}
 	}
 }
 
@@ -4817,6 +5009,9 @@ void parse_bitmaps(mission *pm)
 				}
 			}
 
+			if (z == NUM_NEBULAS)
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula %s!", pm->name, str);
+
 			if (optional_string("+Color:")) {
 				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
 				for (z=0; z<NUM_NEBULA_COLORS; z++){
@@ -4826,6 +5021,9 @@ void parse_bitmaps(mission *pm)
 					}
 				}
 			}
+
+			if (z == NUM_NEBULA_COLORS)
+				WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name, str);
 
 			if (optional_string("+Pitch:")){
 				stuff_int(&Nebula_pitch);
@@ -5013,9 +5211,7 @@ void parse_variables()
 					// if the active mission has a variable with the same name as a campaign
 					// variable AND it is not a block variable, override its initial value
 					// with the previous mission's value
-					if (!(stricmp(Sexp_variables[k].variable_name, Campaign.missions[i].saved_variables[j].variable_name))
-						&& !(Campaign.missions[i].saved_variables[j].type & SEXP_VARIABLE_BLOCK))
-					{
+					if (!(stricmp(Sexp_variables[k].variable_name, Campaign.missions[i].saved_variables[j].variable_name)) ) {
 						Sexp_variables[k].type = Campaign.missions[i].saved_variables[j].type;
 						strcpy_s(Sexp_variables[k].text, Campaign.missions[i].saved_variables[j].text);
 					}
@@ -5032,9 +5228,7 @@ void parse_variables()
 				// if the active mission has a variable with the same name as a player
 				// variable AND it is not a block variable, override its initial value
 				// with the previous mission's value
-				if (!(stricmp(Sexp_variables[j].variable_name, Player->player_variables[i].variable_name))
-					&& !(Player->player_variables[i].type & SEXP_VARIABLE_BLOCK))
-				{
+				if (!(stricmp(Sexp_variables[j].variable_name, Player->player_variables[i].variable_name)) ) {
 					Sexp_variables[j].type = Player->player_variables[i].type;
 					strcpy_s(Sexp_variables[j].text, Player->player_variables[i].text);
 				}
@@ -5182,7 +5376,7 @@ void post_process_mission()
 	// the player_start_shipname had better exist at this point!
 	Player_start_shipnum = ship_name_lookup( Player_start_shipname );
 	Assert ( Player_start_shipnum != -1 );
-	Assert ( Player_start_pobject.flags & P_SF_PLAYER_START_VALID );
+	Assert ( !stricmp(Player_start_pobject.name, Player_start_shipname) );
 
 	// Assign objnum, shipnum, etc. to the player structure
 	objnum = Ships[Player_start_shipnum].objnum;
@@ -5217,7 +5411,7 @@ void post_process_mission()
 	}
 
 	// when TVT, hack starting wings to be team wings
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
 		for (i=0; i<MAX_STARTING_WINGS; i++)
 		{
@@ -6288,9 +6482,9 @@ void mission_eval_arrivals()
 	// before checking arrivals, check to see if we should play a message concerning arrivals
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
-	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)))
+	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM)
 	{
-		int rship, use_terran_cmd;
+		int use_terran_cmd;
 
 		// use terran command 25% of time
 		use_terran_cmd = ((frand() - 0.75) > 0.0f)?1:0;
@@ -6396,7 +6590,7 @@ void mission_eval_arrivals()
 				continue;
 
 			// multiplayer team vs. team
-			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+			if(MULTI_TEAM)
 			{
 				// send a hostile wing arrived message
 				rship = wingp->ship_index[wingp->special_ship];

@@ -71,6 +71,7 @@ typedef struct anim {
 typedef struct anim_instance {
 	anim_instance *next, *prev;
 	int		x,y;				// coordinates anim is played at (top left corner of anim)
+	int		base_w, base_h;		// coordinate scale this anim is played in. 
 	vec3d	*world_pos;		// world (x,y,z) position of explosion
 	float		radius;			// radius of image, needed for scaling
 	int		frame_num;		// current frame, or last frame if between frames (first frame is 0)
@@ -106,7 +107,6 @@ void	anim_init();
 anim_instance *init_anim_instance(anim *ptr, int bpp);
 void	free_anim_instance(anim_instance *inst);
 int	anim_get_next_frame(anim_instance *inst);
-int	anim_get_frame(anim_instance *inst, int frame_num, int xlate_pal=1);
 ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap, int bpp);
 void	anim_set_palette(anim *a);
 void	anim_check_for_palette_change(anim_instance *inst);

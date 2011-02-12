@@ -877,7 +877,7 @@ void brief_init()
 	}
 
 	// get a pointer to the appropriate briefing structure
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Briefing = &Briefings[Net_player->p_info.team];
 	} else {
 		Briefing = &Briefings[0];			
@@ -1094,15 +1094,15 @@ void brief_render_closeup(int ship_class, float frametime)
 		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 	}
 
-	int model_render_flags;
+	int model_render_flags_local;
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);		
-		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
+		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
 	} else {
-		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
+		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
 	}
 
-	model_render( Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos, model_render_flags );
+	model_render( Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos, model_render_flags_local );
 
 	if (is_neb) {
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
@@ -1296,14 +1296,13 @@ int brief_setup_closeup(brief_icon *bi)
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy_s(Closeup_icon->closeup_label,sip->name);
+		strcpy_s(Closeup_icon->closeup_label,(sip->alt_name[0]) ? sip->alt_name : sip->name);
 
 		// cut any text off after (and including) '#' char
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
 		// Goober5000 - wcsaga doesn't want this
-		if (!Cmdline_wcsaga && sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN))
-		{
+		if (Ship_types[sip->class_type].hud_bools & STI_HUD_NO_CLASS_DISPLAY ) {
 			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
 

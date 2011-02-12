@@ -31,7 +31,6 @@ extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
 int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair );
 float estimate_ship_speed_upper_limit( object *ship, float time );
 extern float flFrametime;
-extern int Cmdline_decals;
 
 
 //	If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
@@ -71,7 +70,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	vec3d force;		
 
 	// Apply hit & damage & stuff to weapon
-	weapon_hit(weapon_obj, ship_obj,  world_hitpos);
+	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
 
 	damage = wip->damage;
 
@@ -106,24 +105,6 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 		// apply a whack		
 		ship_apply_whack( &force, hitpos, ship_obj );
 	}
-
-	if( (quadrant_num == -1) && Cmdline_decals ){
-		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
-		decal_point dec;
-		dec.orient = weapon_obj->orient;
-		vec3d hit_fvec;
-		vm_vec_negate(&hit_dir);
-		vm_vec_avg(&hit_fvec, &hit_dir, &weapon_obj->orient.vec.fvec);
-		vm_vec_normalize(&hit_fvec);
-		dec.orient.vec.fvec = hit_fvec;
-		vm_fix_matrix(&dec.orient);
-		dec.pnt.xyz = hitpos->xyz;
-		dec.radius = wip->decal_rad;
-
-		if ( (dec.radius > 0) && (wip->decal_texture.bitmap_id > -1) )
-			decal_create(ship_obj, &dec, submodel_num, wip->decal_texture.bitmap_id, wip->decal_backface_texture.bitmap_id, wip->decal_glow_texture_id, wip->decal_burn_texture_id, wip->decal_burn_time);
-	}
-	
 
 }
 
@@ -172,12 +153,11 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	if (dist < weapon_objp->phys_info.speed) {
 		update_danger_weapon(ship_objp, weapon_objp);
 	}
-	
-	ship_model_start(ship_objp);
 
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
 	int	quadrant_num = -1;
 	polymodel *pm = model_get(sip->model_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
 	vec3d weapon_end_pos;
@@ -187,6 +167,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
 
 	// set up collision structs
+	mc.model_instance_num = shipp->model_instance_num;
 	mc.model_num = sip->model_num;
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
@@ -277,7 +258,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 
 	//nprintf(("AI", "Frame %i, Hit tri = %i\n", Framecount, mc.shield_hit_tri));
-	ship_model_stop(ship_objp);
 
     // check if the hit point is beyond the clip plane when warping out.
     if ((shipp->flags & SF_DEPART_WARP) &&

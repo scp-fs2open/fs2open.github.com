@@ -1008,9 +1008,8 @@ void multi_process_reliable_details()
 	int sock_status;
 
 	// run reliable sockets
-#ifdef PSNET2
 	psnet_rel_work();
-#endif
+
 	
 	// server operations
 	if ( MULTIPLAYER_MASTER ){
@@ -1543,14 +1542,6 @@ void standalone_main_init()
 
 	// setup debug flags
 	Netgame.debug_flags = 0;
-	/*
-	if(!Cmdline_server_firing){
-		Netgame.debug_flags |= NETD_FLAG_CLIENT_FIRING;
-	}
-	if(!Cmdline_client_dodamage){
-		Netgame.debug_flags |= NETD_FLAG_CLIENT_NODAMAGE;
-	}
-	*/
 
 	// setup the default game name for the standalone
 	std_connect_set_gamename(NULL);
@@ -1593,6 +1584,9 @@ void standalone_main_init()
 
 	// if this is a tracker game then we have some extra tasks to perform
 	if (MULTI_IS_TRACKER_GAME) {
+		// disconnect and prepare for reset if we are already connected
+		fs2netd_disconnect();
+
 		// login (duh!)
 		if ( fs2netd_login() ) {
 			// validate missions
@@ -1659,7 +1653,7 @@ void multi_standalone_reset_all()
 			delete_player( idx );
 		}		
 	}
-		
+
 	// make sure we go to the proper state.	
 	if(gameseq_get_state() == GS_STATE_STANDALONE_MAIN){
 		standalone_main_init();
@@ -1810,8 +1804,6 @@ DCF(netd, "change/list netgame debug flags")
 
 	// display network flags
 	dc_printf("BITS\n");
-	// dc_printf("1 - Client side firing (%d)\n", Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING ? 1 : 0);
-	// dc_printf("2 - Client nodamage (%d)\n", Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE ? 1 : 0);
 }
 
 // display any multiplayer/networking information here

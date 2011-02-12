@@ -224,7 +224,7 @@ void read_index(int lc = 0)
 			if (lc == 1)
 				lowercase( vpinfo.file_name );
 
-			strcpy( vpinfo.file_path, path );
+			strcpy_s( vpinfo.file_path, path );
 			VP_FileInfo.push_back(vpinfo);
 		}
 	}
@@ -311,7 +311,7 @@ void extract_all_files(char *file)
 
 			sprintf(path2, "%s%s%s", out_dir, DIR_SEPARATOR_STR, path);
 		} else {
-			strcpy(path2, path);
+			strcpy_s(path2, path);
 		}
 
 		fp_out = fopen(path2, "wb");
@@ -422,7 +422,7 @@ void help()
 	printf("\n");
 }
 
-// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// we end up #include'ing SDL.h which on Windows and Mac will redefine main() which is something
 // that we don't want since we don't actually link against SDL, this solves the problem...
 #ifdef main
 #undef main

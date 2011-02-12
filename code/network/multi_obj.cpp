@@ -8,13 +8,15 @@
 */
 
 
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "globalincs/globals.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
+#include "io/key.h"
 #include "globalincs/linklist.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "network/multi_options.h"
 #include "network/multi_rate.h"
 #include "network/multi.h"
 #include "object/object.h"
@@ -1519,7 +1521,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #ifndef NDEBUG
 	nprintf(("Network","Attempting to affect player object.\n"));
 #endif
-	for (; idx < 12; idx++)
+	for (; idx < MAX_PLAYERS; idx++)
 	{
 		if( changedobj == &(Objects[Net_players[idx].m_player->objnum]) ) {
 			break;
@@ -1528,7 +1530,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #ifndef NDEBUG
 	nprintf(("Network","Index for changed object found: [%d].\n",idx));
 #endif
-	if( idx >= 12 ) {
+	if( idx >= MAX_PLAYERS ) {
 		return;
 	}
 	// build the header

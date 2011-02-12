@@ -104,7 +104,7 @@ void shipfx_flash_do_frame(float frametime);
 void shipfx_large_blowup_level_init();
 
 // Returns 0 if couldn't init
-int shipfx_large_blowup_init(ship *shipp);
+void shipfx_large_blowup_init(ship *shipp);
 
 // Returns 1 when explosion is done
 int shipfx_large_blowup_do_frame(ship *shipp, float frametime);

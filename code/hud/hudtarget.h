@@ -13,6 +13,7 @@
 #define _HUDTARGET_H
 
 #include "graphics/2d.h"
+#include "hud/hud.h"
 
 struct ship;
 struct ship_subsys;
@@ -43,6 +44,9 @@ struct weapon_info;
 #define HOTKEY_USER_ADDED				1
 #define HOTKEY_MISSION_FILE_ADDED	2
 
+// regular and ballistic weapon gauges
+#define NUM_HUD_SETTINGS	2
+
 typedef struct htarget_list {
 	struct htarget_list	*next, *prev;		// for linked lists
 	int						how_added;			// determines how this hotkey was added (mission default or player)
@@ -72,7 +76,7 @@ int	hud_target_closest(int team_mask = -1, int attacked_objnum = -1, int play_fa
 void	hud_target_in_reticle_old();
 void	hud_target_in_reticle_new();
 void	hud_target_subsystem_in_reticle();
-void	hud_show_targeting_gauges(float frametime, int in_cockpit=1);
+void	hud_show_targeting_gauges(float frametime);
 void	hud_target_targets_target();
 void	hud_check_reticle_list();
 void	hud_target_closest_locked_missile(object *A);
@@ -80,7 +84,7 @@ void	hud_target_missile(object *source_obj, int next_flag);
 void	hud_target_next_list(int hostile=1, int next_flag=1);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
 void	hud_target_auto_target_next();
-void	hud_show_remote_detonate_missile();
+void	hud_process_remote_detonate_missile();
 
 void	hud_target_uninspected_object(int next_flag);
 void	hud_target_newest_ship();
@@ -102,27 +106,21 @@ vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* w
 void	hud_target_change_check();
 
 void hud_show_target_triangle_indicator(vertex *projected_v);
-void hud_show_lead_indicator(vec3d *target_world_pos);
-void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp);
 void hud_show_orientation_tee();
 void hud_show_hostile_triangle();
 void hud_show_target_data();
-void hud_show_afterburner_gauge();
-void hud_show_weapons();
 void hud_start_flash_weapon(int index);
-void hud_show_auto_icons();
-void hud_show_weapon_energy_gauge();
+void hud_update_weapon_flash();
 void hud_show_cmeasure_gauge();
 void hud_show_brackets(object *targetp, vertex *projected_v);
-void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance=0.0f, int draw_solid=1);
-void hud_show_homing_missiles(void);
+void hud_draw_offscreen_indicator(color* clr, vertex* target_point, vec3d *tpos, float distance=0.0f, int draw_solid=1);
+void hud_process_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
 int hud_communications_state(ship *sp, int show_msg = 0);
 
 int hud_get_best_primary_bank(float *range);
 void hud_target_toggle_hidden_from_sensors();
-void hud_maybe_flash_docking_text(object *objp);
 int hud_target_invalid_awacs(object *objp);
 
 // functions for hotkey selection sets
@@ -144,9 +142,270 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 float hud_find_target_distance( object *targetee, object *targeter );
 
 extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
+void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
 
 void hud_stuff_ship_name(char *ship_name_text, ship *shipp);
 void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp);
 void hud_stuff_ship_class(char *ship_class_text, ship *shipp);
+
+#define TARGET_DISPLAY_DIST		(1<<0)
+#define TARGET_DISPLAY_DOTS		(1<<1)
+#define TARGET_DISPLAY_LEAD		(1<<2)
+#define TARGET_DISPLAY_SUBSYS	(1<<3)
+#define TARGET_DISPLAY_NAME		(1<<4)
+#define TARGET_DISPLAY_CLASS	(1<<5)
+
+typedef struct target_display_info {
+	object* objp;
+	vertex target_point;
+	vec3d target_pos;
+	color bracket_clr;
+	int correction;
+	int flags;
+	char name[32];
+} target_display_info;
+
+extern SCP_vector<target_display_info> target_display_list;
+
+void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char *name, int flags);
+void hud_target_clear_display_list();
+
+class HudGaugeAutoTarget: public HudGauge
+{
+protected:
+	hud_frames Toggle_frame;
+
+	int Auto_text_offsets[2];
+	int Target_text_offsets[2];
+public:
+	HudGaugeAutoTarget();
+	void initAutoTextOffsets(int x, int y);
+	void initTargetTextOffsets(int x, int y);
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeAutoSpeed: public HudGauge
+{
+protected:
+	hud_frames Toggle_frame;
+
+	int Auto_text_offsets[2];
+	int Speed_text_offsets[2];
+public:
+	HudGaugeAutoSpeed();
+	void initAutoTextOffsets(int x, int y);
+	void initSpeedTextOffsets(int x, int y);
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeCmeasures: public HudGauge
+{
+protected:
+	hud_frames Cmeasure_gauge;
+	
+	int Cm_text_offsets[2];
+	int Cm_text_val_offsets[2];
+public:
+	HudGaugeCmeasures();
+	void initBitmaps(char *fname);
+	void initCountTextOffsets(int x, int y);
+	void initCountValueOffsets(int x, int y);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeAfterburner: public HudGauge
+{
+protected:
+	hud_frames Energy_bar;
+
+	int Energy_h;
+public:
+	HudGaugeAfterburner();
+	void initEnergyHeight(int h);
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeWeaponEnergy: public HudGauge
+{
+protected:
+	hud_frames Energy_bar;
+
+	int Wenergy_text_offsets[2];
+	int Wenergy_h;
+public:
+	HudGaugeWeaponEnergy();
+	void initBitmaps(char *fname);
+	void initTextOffsets(int x, int y);
+	void initEnergyHeight(int h);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeWeapons: public HudGauge
+{
+protected:
+	hud_frames primary_top[NUM_HUD_SETTINGS]; // Weapon_gauges[ballistic_hud_index][0]
+	int top_offset_x[NUM_HUD_SETTINGS]; // Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][0]
+
+	int Weapon_header_offsets[NUM_HUD_SETTINGS][2];
+
+	hud_frames primary_middle[NUM_HUD_SETTINGS]; // Weapon_gauges[ballistic_hud_index][1]
+	hud_frames primary_last[NUM_HUD_SETTINGS]; // New_weapon
+	
+	// for the rest of the gauge
+	int frame_offset_x[NUM_HUD_SETTINGS]; // Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0]
+
+	hud_frames secondary_top[NUM_HUD_SETTINGS];
+	hud_frames secondary_middle[NUM_HUD_SETTINGS];
+	hud_frames secondary_bottom[NUM_HUD_SETTINGS];
+	
+	int Weapon_plink_offset_x; // Weapon_plink_coords[gr_screen.res][0][0]
+	int Weapon_pname_offset_x; // Weapon_pname_coords[gr_screen.res][0][0]
+	int Weapon_pammo_offset_x; 
+
+	int Weapon_sammo_offset_x;
+	int Weapon_sname_offset_x;
+	int Weapon_sreload_offset_x;
+	int Weapon_slinked_offset_x;
+	int Weapon_sunlinked_offset_x;
+
+	int top_primary_h;
+	int pname_start_offset_y;
+
+	int top_secondary_h;
+	int sname_start_offset_y;
+
+	int primary_text_h;
+
+	int secondary_text_h;
+public:
+	HudGaugeWeapons();
+	void initBitmapsPrimaryTop(char *fname, char *fname_ballistic);
+	void initBitmapsPrimaryMiddle(char *fname, char *fname_ballistic);
+	void initBitmapsPrimaryLast(char *fname, char *fname_ballistic);
+	void initBitmapsSecondaryTop(char *fname, char *fname_ballistic);
+	void initBitmapsSecondaryMiddle(char *fname, char *fname_ballistic);
+	void initBitmapsSecondaryBottom(char *fname, char *fname_ballistic);
+	void initTopOffsetX(int x, int x_b);
+	void initHeaderOffsets(int x, int y, int x_b, int y_b);
+	void initFrameOffsetX(int x, int x_b);
+	void initPrimaryWeaponOffsets(int link_x, int name_x, int ammo_x);
+	void initSecondaryWeaponOffsets(int ammo_x, int name_x, int reload_x, int linked_x, int unlinked_x);
+	void initStartNameOffsetsY(int p_y, int s_y);
+	void initPrimaryHeights(int top_h, int text_h);
+	void initSecondaryHeights(int top_h, int text_h);
+
+	void render(float frametime);
+	void pageIn();
+	void maybeFlashWeapon(int index);
+};
+
+class HudGaugeOrientationTee: public HudGauge
+{
+protected:
+	int Radius;
+public:
+	HudGaugeOrientationTee();
+	void initRadius(int length);
+	void render(float frametime);
+	void renderOrientation(object *from_objp, object *to_objp, matrix *from_orientp);
+	void pageIn();
+};
+
+class HudGaugeReticleTriangle: public HudGauge
+{
+protected:
+	int Radius; 
+	float Target_triangle_base;
+	float Target_triangle_height;
+public:
+	HudGaugeReticleTriangle();
+	HudGaugeReticleTriangle(int _gauge_object, int _gauge_config);
+	void initRadius(int length);
+	void initTriBase(float length);
+	void initTriHeight(float h);
+	virtual void render(float frametime);
+	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri);
+	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
+};
+
+class HudGaugeHostileTriangle: public HudGaugeReticleTriangle
+{
+protected:
+public:
+	HudGaugeHostileTriangle();
+	void render(float frametime);
+};
+
+class HudGaugeTargetTriangle: public HudGaugeReticleTriangle
+{
+protected:
+public:
+	HudGaugeTargetTriangle();
+	void render(float frametime);
+};
+
+class HudGaugeMissileTriangles: public HudGaugeReticleTriangle
+{
+protected:
+public:
+	HudGaugeMissileTriangles();
+	void render(float frametime);
+};
+
+class HudGaugeOffscreen: public HudGauge
+{
+protected:
+	float Max_offscreen_tri_seperation;
+	float Max_front_seperation;
+	float Offscreen_tri_base;
+	float Offscreen_tri_height;
+public:
+	HudGaugeOffscreen();
+	void initMaxTriSeperation(float length);
+	void initMaxFrontSeperation(float length);
+	void initTriBase(float length);
+	void initTriHeight(float length);
+	void render(float frametime);
+	void renderOffscreenIndicator(vertex* target_point, vec3d *tpos, float distance, int draw_solid = 1);
+	void pageIn();
+};
+
+class HudGaugeLeadIndicator: public HudGauge
+{
+protected:
+	hud_frames Lead_indicator_gauge;
+	float Lead_indicator_half[2];
+public:
+	HudGaugeLeadIndicator();
+	void initHalfSize(float w, float h);
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void renderIndicator(int frame_offset, object *targetp, vec3d *lead_target_pos);
+	void renderLeadCurrentTarget();
+	void renderLeadQuick(vec3d *target_pos, object *targetp);
+	int pickFrame(float prange, float srange, float dist_to_target);
+	void pageIn();
+};
+
+class HudGaugeLeadSight: public HudGauge
+{
+protected:
+	hud_frames Lead_sight;
+	int Lead_sight_half[2];
+public:
+	HudGaugeLeadSight();
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void renderSight(int indicator_frame, vec3d *target_pos, vec3d *lead_target_pos);
+	void pageIn();
+};
 
 #endif

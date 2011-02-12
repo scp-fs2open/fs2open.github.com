@@ -37,7 +37,7 @@
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
 #include "network/multi_pmsg.h"
-
+#include "parse/parselo.h"
 
 
 
@@ -774,7 +774,7 @@ void wl_render_overhead_view(float frametime)
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
 	if (ship_class < 0 || ship_class > Num_ship_classes)
 	{
-		Warning(LOCATION, "ivalid ship class (%d) passed for render_overhead_view", ship_class);
+		Warning(LOCATION, "Invalid ship class (%d) passed for render_overhead_view", ship_class);
 		return;
 	}
 	ship_info * sip = &Ship_info[ship_class];
@@ -968,9 +968,45 @@ void wl_render_overhead_view(float frametime)
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
 
-						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, xc - 4, Wl_bank_coords[gr_screen.res][x][1] + 12);
-						gr_curve(xc - 5, Wl_bank_coords[gr_screen.res][x][1] + 12, 5, 1);
-						gr_line(xc, Wl_bank_coords[gr_screen.res][x][1] + 17, xc, yc);
+						//get the curve right.
+						int curve;
+						if ((xc > Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 < yc))
+							curve = 1;
+						else if ((xc < Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 < yc))
+							curve = 0;
+						else if ((xc > Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 > yc))
+							curve = 3;
+						else
+							curve = 2;
+
+						int lineendx;
+						int lineendy;
+						if (curve == 0) {
+							lineendx = xc + 4;
+						} else {
+							lineendx = xc - 4;
+						}
+
+						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, lineendx, Wl_bank_coords[gr_screen.res][x][1] + 12);
+						
+						if (curve == 0 || curve == 2)
+							lineendx = xc;
+
+						if (curve == 0 || curve == 1) {
+							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 12;
+						} else {
+							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 7;
+						}
+						
+						gr_curve(lineendx, lineendy, 5, curve);
+						
+						if (curve == 0 || curve == 1) {
+							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 17;
+						} else {
+							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 7;
+						}
+
+						gr_line(xc, lineendy, xc, yc);
 						gr_circle(xc, yc, 5);
 
 						//test - couldn't get it to work, probably because
@@ -1027,9 +1063,40 @@ void wl_render_overhead_view(float frametime)
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
 
-						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, xc + 4, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12);
-						gr_curve(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, 5, 0);
-						gr_line(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 17, xc, yc);
+						//get the curve right.
+						int curve;
+						if ((xc > Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 < yc))
+							curve = 1;
+						else if ((xc < Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 < yc))
+							curve = 0;
+						else if ((xc > Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 > yc))
+							curve = 3;
+						else
+							curve = 2;
+
+						int lineendx;
+						int lineendy;
+						if (curve == 1 || curve == 3)
+							lineendx = xc - 4;
+						else
+							lineendx = xc + 4;
+
+						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, lineendx, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12);
+						
+						if (curve == 1 || curve == 2) {
+							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 7;
+						} else {
+							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12;
+						}
+						gr_curve(xc, lineendy, 5, curve);
+						
+						if (curve == 1 || curve == 2) {
+							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 7;
+						} else {
+							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 17;
+						}
+						
+						gr_line(xc, lineendy, xc, yc);
 						gr_circle(xc, yc, 5);
 					}
 
@@ -1076,7 +1143,7 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 	int	rval = 0;
 
 #if !defined FS2_DEMO
-	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
+	if (MULTI_DOGFIGHT) {
 		if (weapon_flags & DOGFIGHT_WEAPON)
 			rval = 1;
 	}
@@ -1946,7 +2013,7 @@ void weapon_select_common_init()
 {
 	int idx;
 
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		// initialize for all teams
 		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 			weapon_select_init_team(idx);
@@ -2792,10 +2859,16 @@ void weapon_select_do(float frametime)
 				{
 					//Draw the weapon name, crappy last-ditch effort to not crash.
 					int half_x, half_y;
-					gr_get_string_size(&half_x, &half_y, Weapon_info[Carried_wl_icon.weapon_class].name);
+					char *print_name = (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0]) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name;
+
+					// Truncate the # and everything to the right. Zacam
+					end_string_at_first_hash_symbol(print_name);
+					
+					// Center-align and fit the text for display
+					gr_get_string_size(&half_x, &half_y, print_name);
 					half_x = sx +((56 - half_x) / 2);
-					half_y = sy +((24 - half_y) / 2);
-					gr_string(half_x, half_y, Weapon_info[Carried_wl_icon.weapon_class].name);
+					half_y = sy +((28 - half_y) / 2); // Was ((24 - half_y) / 2) Zacam
+					gr_string(half_x, half_y, print_name);
 				}
 			}
 		}
@@ -2829,13 +2902,13 @@ void weapon_select_do(float frametime)
 				if (Lcl_gr)
 				{
 					char display_name[NAME_LENGTH];
-					strncpy(display_name, Weapon_info[Carried_wl_icon.weapon_class].name, NAME_LENGTH);
+					strncpy(display_name, (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0]) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name, NAME_LENGTH);
 					lcl_translate_wep_name(display_name);
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), Ship_info[ship_class].name, display_name);
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].name[0]) ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, display_name);
 				}
 				else
 				{
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name);
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].name[0]) ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name);
 				}
 
 				//wl_unpause_anim();
@@ -3042,10 +3115,16 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		{
 			//Draw the weapon name, crappy last-ditch effort to not crash.
 			int half_x, half_y;
-			gr_get_string_size(&half_x, &half_y, Weapon_info[index].name);
+			char *print_name = (Weapon_info[index].alt_name[0]) ? Weapon_info[index].alt_name : Weapon_info[index].name;
+
+			// Truncate the # and everything to the right. Zacam
+			end_string_at_first_hash_symbol(print_name);
+
+			// Center-align and fit the text for display
+			gr_get_string_size(&half_x, &half_y, print_name);
 			half_x = x +((56 - half_x) / 2);
-			half_y = y +((24 - half_y) / 2);
-			gr_string(half_x, half_y, Weapon_info[index].name);
+			half_y = y +((28 - half_y) / 2); // Was ((24 - half_y) / 2) Zacam
+			gr_string(half_x, half_y, print_name);
 		}
 	}
 
@@ -3584,7 +3663,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 				char display_name[NAME_LENGTH];
 				char txt[100];
 
-				strncpy(display_name, Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
+				strncpy(display_name, (Weapon_info[slot->wep[from_bank]].alt_name[0]) ? Weapon_info[slot->wep[from_bank]].alt_name : Weapon_info[slot->wep[from_bank]].name, NAME_LENGTH);
 
 				// might have to get weapon name translation
 				if (Lcl_gr) {
@@ -3834,7 +3913,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 			char display_name[NAME_LENGTH];
 			char txt[100];
 
-			strncpy(display_name, Weapon_info[from_list].name, NAME_LENGTH);
+			strncpy(display_name, (Weapon_info[from_list].alt_name[0]) ? Weapon_info[from_list].alt_name : Weapon_info[from_list].name, NAME_LENGTH);
 
 			// might have to get weapon name translation
 			if (Lcl_gr) {
@@ -3967,7 +4046,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 
 	common_flash_button_init();
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_HOST ) {
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+		if(MULTI_TEAM){
 			// set the global pointers to the right pools
 			common_set_team_pointers(pl->p_info.team);
 		}
@@ -3977,7 +4056,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 			update = wl_apply(mode, from_bank, from_list, to_bank, to_list, ship_slot, player_index, dont_play_sound);
 		}		
 
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+		if(MULTI_TEAM){
 			// set the global pointers to the right pools
 			common_set_team_pointers(Net_player->p_info.team);
 		}
@@ -4073,13 +4152,13 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// maybe localize
 			if (Lcl_gr)
 			{
-				strncpy(buf, Weapon_info[weapon_type_to_add].name, NAME_LENGTH);
+				strncpy(buf, (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, NAME_LENGTH);
 				lcl_translate_wep_name(buf);
 				wep_display_name = buf;
 			}
 			else
 			{
-				wep_display_name = Weapon_info[weapon_type_to_add].name;
+				wep_display_name = (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name;
 			}
 
 			// make sure this ship can accept this weapon
@@ -4112,7 +4191,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			// bank left unfilled or partially filled
 			if ((result == 0) || (result == 2))
 			{
-				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), Weapon_info[weapon_type_to_add].name, ship_name);
+				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), (Weapon_info[weapon_type_to_add].alt_name[0]) ? Weapon_info[weapon_type_to_add].alt_name : Weapon_info[weapon_type_to_add].name, ship_name);
 				error_flag = true;
 				continue;
 			}

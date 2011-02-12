@@ -193,15 +193,10 @@ static int Voice_ended_time;
 //static anim_instance *Cur_anim_instance = NULL;
 static generic_anim Cur_Anim;
 static char *Cur_anim_filename = "~~~~";
-static int anim_done = 0;
-
-static int Last_anim_frame_num;
 
 static int Cmd_brief_last_voice;
 static int Cmd_brief_paused = 0;
 //static int Palette_bmp = -1;
-static ubyte Palette[768];
-//static char Palette_name[128];
 
 static int Uses_scroll_buttons = 0;
 
@@ -324,9 +319,6 @@ void cmd_brief_stop_anim(int id)
 
 void cmd_brief_new_stage(int stage)
 {
-	char *p;
-	char filename[NAME_LENGTH];
-
 	if (stage < 0) {
 		cmd_brief_stop_anim(-1);
 		Cur_stage = -1;
@@ -342,11 +334,6 @@ void cmd_brief_new_stage(int stage)
 
 	// load a new animation if it's different to what's already playing
 	if (strcmp(Cur_anim_filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
-		// set stuff up
-		int stream_result = -1;
-		ubyte bg_type = bm_get_type(Cmd_brief_background_bitmap);
-		anim_done = 0;
-
 		// unload the previous anim
 		if(Cur_Anim.num_frames > 0) {
 			generic_anim_unload(&Cur_Anim);
@@ -355,40 +342,8 @@ void cmd_brief_new_stage(int stage)
 		// save new filename
 		Cur_anim_filename = Cur_cmd_brief->stage[stage].ani_filename;
 
-		// hi-res support
-		if (gr_screen.res == GR_1024) {
-			// attempt to load a hi-res animation
-			memset(filename, 0, NAME_LENGTH);
-			strcpy_s(filename, "2_");
-			strncat(filename, Cur_anim_filename, NAME_LENGTH - 3);
-
-			// remove extension
-			p = strchr(filename, '.');
-			if(p) {
-				*p = '\0';
-			}
-
-			// attempt to stream the hi-res ani
-			generic_anim_init(&Cur_Anim, filename);
-			Cur_Anim.ani.bg_type = bg_type;
-			stream_result = generic_anim_stream(&Cur_Anim);
-		}
-
-		// we failed to stream hi-res, or we aren't running in hi-res, so try low-res
-		if (stream_result < 0) {
-			strcpy_s(filename, Cur_anim_filename);
-
-			// remove extension
-			p = strchr(filename, '.');
-			if(p) {
-				*p = '\0';
-			}
-
-			// attempt to stream the low-res ani
-			generic_anim_init(&Cur_Anim, filename);
-			Cur_Anim.ani.bg_type = bg_type;
-			stream_result = generic_anim_stream(&Cur_Anim);
-		}
+		// try to load the new anim in either high or low res
+		int stream_result = generic_anim_init_and_stream(&Cur_Anim, Cur_anim_filename, bm_get_type(Cmd_brief_background_bitmap), true);
 
 		// we've failed to load any animation
 		if (stream_result < 0) {

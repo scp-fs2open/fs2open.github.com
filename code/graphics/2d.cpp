@@ -85,6 +85,26 @@ float Max_draw_distance = Default_max_draw_distance;
 static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
 static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
 
+float Gr_save_resize_X = 1.0f, Gr_save_resize_Y = 1.0f;
+float Gr_save_unsize_X = 1.0f, Gr_save_unsize_Y = 1.0f;
+
+void gr_set_screen_scale(int w, int h)
+{
+	Gr_resize_X = (float)gr_screen.max_w / (float)w;
+	Gr_resize_Y = (float)gr_screen.max_h / (float)h;
+
+	Gr_unsize_X = (float)w / (float)gr_screen.max_w;
+	Gr_unsize_Y = (float)h / (float)gr_screen.max_h;
+}
+
+void gr_reset_screen_scale()
+{
+	Gr_resize_X = Gr_save_resize_X;
+	Gr_resize_Y = Gr_save_resize_Y;
+
+	Gr_unsize_X = Gr_save_unsize_X;
+	Gr_unsize_Y = Gr_save_unsize_Y;
+}
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
@@ -216,10 +236,10 @@ DCF(gr,"Changes graphics mode")
 {
 	int mode = gr_screen.mode;
 
-	if ( Dc_command )	{
+	if ( Dc_command ) {
 		dc_get_arg(ARG_STRING);
 		
-		if ( !strcmp( Dc_arg, "o"))	{
+		if ( !strcmp( Dc_arg, "o")) {
 			mode = GR_OPENGL;
 		} else {
 			// print usage, not stats
@@ -227,17 +247,17 @@ DCF(gr,"Changes graphics mode")
 		}
 
 		/*
-		if ( mode != gr_screen.mode )	{
+		if ( mode != gr_screen.mode ) {
 			dc_printf( "Setting new video mode...\n" );
 			int errcode = gr_init( gr_screen.max_w, gr_screen.max_h, mode );
-			if (errcode)	{
+			if (errcode) {
 				dc_printf( "Error %d.  Graphics unchanged.\n", errcode );
 			}
 		}
 		*/
 	}
 
-	if ( Dc_help )	{
+	if ( Dc_help ) {
 		dc_printf( "Usage: gr mode\n" );
 		dc_printf( "The options can be:\n" );
 		dc_printf( "Macros:  A=software win32 window (obsolete)\n" );
@@ -247,8 +267,8 @@ DCF(gr,"Changes graphics mode")
 		Dc_status = 0;	// don't print status if help is printed.  Too messy.
 	}
 
-	if ( Dc_status )	{
-		switch( gr_screen.mode )	{
+	if ( Dc_status ) {
+		switch( gr_screen.mode ) {
 		case GR_OPENGL:
 			dc_printf( "OpenGl\n" );
 			break;
@@ -262,14 +282,14 @@ DCF(gr,"Changes graphics mode")
 // set screen clear color
 DCF(clear_color, "set clear color r, g, b")
 {
-	int r, g, b;
+	ubyte r, g, b;
 
-	dc_get_arg(ARG_INT);
-	r = Dc_arg_int;
-	dc_get_arg(ARG_INT);
-	g = Dc_arg_int;
-	dc_get_arg(ARG_INT);
-	b = Dc_arg_int;
+	dc_get_arg(ARG_UBYTE);
+	r = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	g = Dc_arg_ubyte;
+	dc_get_arg(ARG_UBYTE);
+	b = Dc_arg_ubyte;
 
 	// set the color
 	gr_set_clear_color(r, g, b);
@@ -277,20 +297,20 @@ DCF(clear_color, "set clear color r, g, b")
 
 void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_128 )
 {
-	if ( palette == NULL )	{
+	if ( palette == NULL ) {
 		// Create a default palette
 		int r,g,b,i;
 		i = 0;
-				
-		for (r=0; r<6; r++ )	
-			for (g=0; g<6; g++ )	
-				for (b=0; b<6; b++ )		{
+
+		for (r=0; r<6; r++ )
+			for (g=0; g<6; g++ )
+				for (b=0; b<6; b++ ) {
 					Gr_current_palette[i*3+0] = (unsigned char)(r*51);
 					Gr_current_palette[i*3+1] = (unsigned char)(g*51);
 					Gr_current_palette[i*3+2] = (unsigned char)(b*51);
 					i++;
 				}
-		for ( i=216;i<256; i++ )	{
+		for ( i=216;i<256; i++ ) {
 			Gr_current_palette[i*3+0] = (unsigned char)((i-216)*6);
 			Gr_current_palette[i*3+1] = (unsigned char)((i-216)*6);
 			Gr_current_palette[i*3+2] = (unsigned char)((i-216)*6);
@@ -303,14 +323,15 @@ void gr_set_palette_internal( char *name, ubyte * palette, int restrict_font_to_
 
 //	mprintf(("Setting new palette\n" ));
 
-	if ( Gr_inited )	{
-		if (gr_screen.gf_set_palette)	{
+	if ( Gr_inited ) {
+		if (gr_screen.gf_set_palette) {
 			(*gr_screen.gf_set_palette)(Gr_current_palette, restrict_font_to_128 );
 
 			// Since the palette set code might shuffle the palette,
 			// reload it into the source palette
-			if ( palette )
+			if ( palette ) {
 				memmove( palette, Gr_current_palette, 768 );
+			}
 		}
 
 		// Update Palette Manager tables
@@ -390,11 +411,11 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		mode = GR_OPENGL;
 	}
 
-	Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
-	Gr_resize_Y = (float)height	/ ((res == GR_1024) ?  768.0f : 480.0f);
+	Gr_save_resize_X = Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
+	Gr_save_resize_Y = Gr_resize_Y = (float)height / ((res == GR_1024) ?  768.0f : 480.0f);
 
-	Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
-	Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
+	Gr_save_unsize_X = Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
+	Gr_save_unsize_Y = Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
 
 
 	gr_screen.signature = Gr_signature++;
@@ -484,7 +505,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	}
 
 	// We cannot continue without this, quit, but try to help the user out first
-	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
+	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
 
 	// if we don't have a config string then construct one, using OpenGL 1024x768 16-bit as the default
 	if (ptr == NULL) {
@@ -555,20 +576,20 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 // warning message.
 #ifdef _DEBUG
 #ifdef _FORCE_DEBUG_WIDESCREEN
-    width = 1280;
-    height = 800;
-    depth = 32;
-    Cmdline_window = 1;
+	width = 1280;
+	height = 800;
+	depth = 32;
+	Cmdline_window = 1;
 #elif defined(_FORCE_DEBUG_1024)
-    width = 1024;
-    height = 768;
-    depth = 32;
-    Cmdline_window = 1;
+	width = 1024;
+	height = 768;
+	depth = 32;
+	Cmdline_window = 1;
 #elif defined(_FORCE_DEBUG_640)
-    width = 640;
-    height = 480;
-    depth = 32;
-    Cmdline_window = 1;
+	width = 640;
+	height = 480;
+	depth = 32;
+	Cmdline_window = 1;
 #endif
 #endif
 
@@ -577,7 +598,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		return false;
 	}
 
-	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
+	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
 
@@ -601,7 +622,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// load the web pointer cursor bitmap
 	if (Web_cursor_bitmap < 0) {
-		//int nframes;						// used to pass, not really needed (should be 1)
+		//int nframes;			// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
 		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb")) < 0 ) {
@@ -610,7 +631,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 				"\t2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
 				"\t3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
 				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
-		}	
+		}
 	}
 
 	mprintf(("GRAPHICS: Initializing default colors...\n"));
@@ -629,12 +650,12 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 void gr_force_windowed()
 {
-	if ( !Gr_inited )	return;
+	if ( !Gr_inited ) {
+		return;
+	}
 
-	switch( gr_screen.mode )	{
+	switch( gr_screen.mode ) {
 		case GR_OPENGL:
-		//	extern void opengl_minimize();
-			//opengl_minimize();
 			break;
 
 		case GR_STUB: break;
@@ -643,21 +664,25 @@ void gr_force_windowed()
 			Int3();		// Invalid graphics mode
 	}
 
-	if ( Os_debugger_running )
-		Sleep(1000);		
-
+	if ( Os_debugger_running ) {
+		Sleep(1000);
+	}
 }
 
 int gr_activated = 0;
 void gr_activate(int active)
 {
 
-	if(gr_activated == active)return;
+	if (gr_activated == active) {
+		return;
+	}
 	gr_activated = active;
 
-	if ( !Gr_inited ) return;
+	if ( !Gr_inited ) { 
+		return;
+	}
 
-	switch( gr_screen.mode )	{
+	switch( gr_screen.mode ) {
 		case GR_OPENGL:
 			extern void gr_opengl_activate(int active);
 			gr_opengl_activate(active);
@@ -723,10 +748,11 @@ void gr_set_color( int r, int g, int b )
 void gr_set_color_fast(color *dst)
 {
 	if ( dst->screen_sig != gr_screen.signature ) {
-		if (dst->is_alphacolor)
+		if (dst->is_alphacolor) {
 			gr_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
-		else
+		} else {
 			gr_init_color( dst, dst->red, dst->green, dst->blue );
+		}
 	}
 
 	gr_screen.current_color = *dst;
@@ -739,15 +765,15 @@ void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 	shade->r = r;
 	shade->g = g;
 	shade->b = b;
-	shade->c = c;	
+	shade->c = c;
 }
 
 void gr_set_shader(shader *shade)
-{	
+{
 	if (shade) {
-		if (shade->screen_sig != gr_screen.signature)
+		if (shade->screen_sig != gr_screen.signature) {
 			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
-
+		}
 		gr_screen.current_shader = *shade;
 	} else {
 		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );
@@ -829,6 +855,7 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 {
 	int _w, _h;
 	float x, y, w, h;
+	vertex verts[4];
 
 	if (gr_screen.mode == GR_STUB) {
 		return;
@@ -847,8 +874,86 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 		gr_resize_screen_posf(&w, &h);
 	}
 
-	// RT draws all hall interface stuff
-	g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
+	memset(verts, 0, sizeof(verts));
+
+	verts[0].sx = x;
+	verts[0].sy = y;
+	verts[0].u = 0.0f;
+	verts[0].v = 0.0f;
+
+	verts[1].sx = x + w;
+	verts[1].sy = y;
+	verts[1].u = 1.0f;
+	verts[1].v = 0.0f;
+
+	verts[2].sx = x + w;
+	verts[2].sy = y + h;
+	verts[2].u = 1.0f;
+	verts[2].v = 1.0f;
+
+	verts[3].sx = x;
+	verts[3].sy = y + h;
+	verts[3].u = 0.0f;
+	verts[3].v = 1.0f;
+
+	// turn off zbuffering
+	int saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+
+	gr_render(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_INTERFACE);
+
+	gr_zbuffer_set(saved_zbuffer_mode);
+}
+
+void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool allow_scaling)
+{
+	float x, y, w, h;
+	vertex verts[4];
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	x = i2fl(_x);
+	y = i2fl(_y);
+	w = i2fl(_w);
+	h = i2fl(_h);
+
+	// I will tidy this up later - RT
+	if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		gr_resize_screen_posf(&x, &y);
+		gr_resize_screen_posf(&w, &h);
+	}
+
+	memset(verts, 0, sizeof(verts));
+
+	verts[0].sx = x;
+	verts[0].sy = y;
+	verts[0].u = _u0;
+	verts[0].v = _v0;
+
+	verts[1].sx = x + w;
+	verts[1].sy = y;
+	verts[1].u = _u1;
+	verts[1].v = _v0;
+
+	verts[2].sx = x + w;
+	verts[2].sy = y + h;
+	verts[2].u = _u1;
+	verts[2].v = _v1;
+
+	verts[3].sx = x;
+	verts[3].sy = y + h;
+	verts[3].u = _u0;
+	verts[3].v = _v1;
+
+	// turn off zbuffering
+	int saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+
+	gr_render(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_INTERFACE);
+
+	gr_zbuffer_set(saved_zbuffer_mode);
 }
 
 // NEW new bitmap functions -Bobboau
@@ -893,10 +998,10 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 // given endpoints, and thickness, calculate coords of the endpoint
 void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 {
-	vec3d slope;	
+	vec3d slope;
 
-	// slope of the line	
-	if(vm_vec_same(in1, in2)){
+	// slope of the line
+	if(vm_vec_same(in1, in2)) {
 		slope = vmd_zero_vector;
 	} else {
 		vm_vec_sub(&slope, in2, in1);
@@ -905,8 +1010,7 @@ void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 		slope.xyz.y = temp;
 		vm_vec_normalize(&slope);
 	}
-
-	// get the points		
+	// get the points
 	vm_vec_scale_add(out, in1, &slope, (float)thickness);
 }
 
@@ -914,30 +1018,28 @@ void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
 void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
-{				
+{
 	vec3d s1, s2, e1, e2, dir;
 	vec3d last_e1, last_e2;
 	vertex v[4];
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
-	int saved_zbuffer_mode, idx;		
+	int saved_zbuffer_mode, idx;
 	int started_frame = 0;
 
-	// Assert(0);
-
 	// if we have less than 2 pts, bail
-	if(num_pts < 2){
+	if(num_pts < 2) {
 		return;
-	}	
+	}
 
 	extern int G3_count;
-	if(G3_count == 0){
-		g3_start_frame(1);		
+	if(G3_count == 0) {
+		g3_start_frame(1);
 		started_frame = 1;
 	}
 
-	// turn off zbuffering	
+	// turn off zbuffering
 	saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);	
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	// turn off culling
 	int cull = gr_set_cull(0);
@@ -946,17 +1048,17 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	last_e1 = vmd_zero_vector;
 	last_e2 = vmd_zero_vector;
 	int j;
-	for(idx=0; idx<num_pts-1; idx++){		
-		// get the start and endpoints		
-		s1 = *pts[idx];														// start 1 (on the line)
+	for(idx=0; idx<num_pts-1; idx++) {
+		// get the start and endpoints
+		s1 = *pts[idx];											// start 1 (on the line)
 		gr_pline_helper(&s2, pts[idx], pts[idx+1], thickness);	// start 2
-		e1 = *pts[idx+1];														// end 1 (on the line)
-		vm_vec_sub(&dir, pts[idx+1], pts[idx]);		
-		vm_vec_add(&e2, &s2, &dir);										// end 2
+		e1 = *pts[idx+1];										// end 1 (on the line)
+		vm_vec_sub(&dir, pts[idx+1], pts[idx]);
+		vm_vec_add(&e2, &s2, &dir);								// end 2
 		
-		// stuff coords		
+		// stuff coords
 		v[0].sx = (float)ceil(s1.xyz.x);
-		v[0].sy = (float)ceil(s1.xyz.y);	
+		v[0].sy = (float)ceil(s1.xyz.y);
 		v[0].sw = 0.0f;
 		v[0].u = 0.5f;
 		v[0].v = 0.5f;
@@ -967,7 +1069,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		v[0].b = gr_screen.current_color.blue;
 
 		v[1].sx = (float)ceil(s2.xyz.x);
-		v[1].sy = (float)ceil(s2.xyz.y);	
+		v[1].sy = (float)ceil(s2.xyz.y);
 		v[1].sw = 0.0f;
 		v[1].u = 0.5f;
 		v[1].v = 0.5f;
@@ -994,28 +1096,26 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		v[3].u = 0.5f;
 		v[3].v = 0.5f;
 		v[3].flags = PF_PROJECTED;
-		v[3].codes = 0;				
+		v[3].codes = 0;
 		v[3].r = gr_screen.current_color.red;
 		v[3].g = gr_screen.current_color.green;
-		v[3].b = gr_screen.current_color.blue;		
+		v[3].b = gr_screen.current_color.blue;
 
 		//We could really do this better...but oh well. _WMC
-		if(resize)
-		{
-			for(j=0;j<4;j++)
-			{
+		if(resize) {
+			for(j=0;j<4;j++) {
 				gr_resize_screen_posf(&v[j].sx,&v[j].sy);
 			}
 		}
 
 		// draw the polys
-		g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);		
+		g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);
 
 		// if we're past the first section, draw a "patch" triangle to fill any gaps
-		if(idx > 0){
-			// stuff coords		
+		if(idx > 0) {
+			// stuff coords
 			v[0].sx = (float)ceil(s1.xyz.x);
-			v[0].sy = (float)ceil(s1.xyz.y);	
+			v[0].sy = (float)ceil(s1.xyz.y);
 			v[0].sw = 0.0f;
 			v[0].u = 0.5f;
 			v[0].v = 0.5f;
@@ -1026,7 +1126,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 			v[0].b = gr_screen.current_color.blue;
 
 			v[1].sx = (float)ceil(s2.xyz.x);
-			v[1].sy = (float)ceil(s2.xyz.y);	
+			v[1].sy = (float)ceil(s2.xyz.y);
 			v[1].sw = 0.0f;
 			v[1].u = 0.5f;
 			v[1].v = 0.5f;
@@ -1049,15 +1149,13 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 			v[2].b = gr_screen.current_color.blue;
 
 			//Inefficiency or flexibility? you be the judge -WMC
-			if(resize)
-			{
-				for(j=0;j<3;j++)
-				{
+			if(resize) {
+				for(j=0;j<3;j++) {
 					gr_resize_screen_posf(&v[j].sx,&v[j].sy);
 				}
 			}
 
-			g3_draw_poly_constant_sw(3, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);		
+			g3_draw_poly_constant_sw(3, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);
 		}
 
 		// store our endpoints
@@ -1065,7 +1163,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		last_e2 = e2;
 	}
 
-	if(started_frame){
+	if(started_frame) {
 		g3_end_frame();
 	}
 
@@ -1073,67 +1171,48 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	gr_zbuffer_set(saved_zbuffer_mode);
 
 	// restore culling
-	gr_set_cull(cull);		
+	gr_set_cull(cull);
 }
 
-
-inline bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2)
+int poly_list::find_first_vertex(int idx)
 {
-	return (
-		(v1->x == v2->x) &&
-		(v1->y == v2->y) &&
-		(v1->z == v2->z) &&
-		(v1->u == v2->u) &&
-		(v1->v == v2->v) &&
-		(n1->xyz.x == n2->xyz.x) &&
-		(n1->xyz.y == n2->xyz.y) &&
-		(n1->xyz.z == n2->xyz.z)
-	);
-}
-
-//finds the first occorence of a vertex within a poly list
-int find_first_index(poly_list *plist, int idx)
-{
-	vec3d *p_norm = &plist->norm[0];
-	vertex *p_vert = &plist->vert[0];
-	vec3d *norm = &plist->norm[idx];
-	vertex *vert = &plist->vert[idx];
-	int i;
+	vec3d *o_norm = &norm[idx];
+	vertex *o_vert = &vert[idx];
+	vec3d *p_norm = &norm[0];
+	vertex *p_vert = &vert[0];
 
 	// we should always equal ourselves, so just use that as the stopping point
-	for (i = 0; i < idx; i++) {
-		if ( same_vert(p_vert, vert, p_norm, norm) ) {
+	for (int i = 0; i < idx; i++) {
+		if ( (*p_norm == *o_norm) && (*p_vert == *o_vert) ) {
 			return i;
 		}
 
-		p_norm++;
-		p_vert++;
+		++p_norm;
+		++p_vert;
 	}
 
 	return idx;
 }
 
-//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-int find_first_index_vb(poly_list *plist, int idx, poly_list *v)
+//given a list (plist) find the index within the indexed list that the vert at position idx within list is at 
+int poly_list::find_index(poly_list *plist, int idx)
 {
-	vec3d *p_norm = &plist->norm[idx];
-	vertex *p_vert = &plist->vert[idx];
-	vec3d *norm = &v->norm[0];
-	vertex *vert = &v->vert[0];
-	int i;
+	vec3d *o_norm = &plist->norm[idx];
+	vertex *o_vert = &plist->vert[idx];
+	vec3d *p_norm = &norm[0];
+	vertex *p_vert = &vert[0];
 
-	for (i = 0; i < v->n_verts; i++) {
-		if ( same_vert(vert, p_vert, norm, p_norm) ) {
+	for (int i = 0; i < n_verts; i++) {
+		if ( (*p_norm == *o_norm) && (*p_vert == *o_vert) ) {
 			return i;
 		}
 
-		vert++;
-		norm++;
+		++p_vert;
+		++p_norm;
 	}
 
 	return -1;
 }
-
 
 
 void poly_list::allocate(int _verts)
@@ -1163,11 +1242,9 @@ void poly_list::allocate(int _verts)
 		if (Cmdline_normal) {
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
-
 	}
 
 	n_verts = 0;
-	n_prim = 0;
 	currently_allocated = _verts;
 }
 
@@ -1199,6 +1276,9 @@ void poly_list::calculate_tangent()
 	vec3d tangent, binormal, cross;
 	float magg, scale;
 
+	if ( !Cmdline_normal ) {
+		return;
+	}
 
 	Assert( !(n_verts % 3) );
 
@@ -1278,17 +1358,16 @@ void poly_list::calculate_tangent()
 	}
 }
 
-poly_list poly_list_index_buffer_internal_list;
+static poly_list buffer_list_internal;
 
-void poly_list::make_index_buffer()
+void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 {
 	int nverts = 0;
 	int j, z = 0;
 	ubyte *nverts_good = NULL;
 
-	if (Cmdline_normal) {
-		calculate_tangent();
-	}
+	// calculate tangent space data (must be done early)
+	calculate_tangent();
 
 	// using vm_malloc() here rather than 'new' so we get the extra out-of-memory check
 	nverts_good = (ubyte *) vm_malloc(n_verts);
@@ -1296,41 +1375,53 @@ void poly_list::make_index_buffer()
 	Assert( nverts_good != NULL );
 	memset( nverts_good, 0, n_verts );
 
+	vertex_list.reserve(n_verts);
+
 	for (j = 0; j < n_verts; j++) {
-		if ( (find_first_index(this, j)) == j ) {
+		if (find_first_vertex(j) == j) {
 			nverts++;
 			nverts_good[j] = 1;
+			vertex_list.push_back(j);
 		}
 	}
 
-	poly_list_index_buffer_internal_list.n_verts = 0;
-	poly_list_index_buffer_internal_list.allocate(nverts);
+	// if there is nothig to change then bail
+	if (n_verts == nverts) {
+		if (nverts_good != NULL) {
+			vm_free(nverts_good);
+		}
+
+		return;
+	}
+
+	buffer_list_internal.n_verts = 0;
+	buffer_list_internal.allocate(nverts);
 
 	for (j = 0; j < n_verts; j++) {
 		if ( !nverts_good[j] ) {
 			continue;
 		}
 
-		poly_list_index_buffer_internal_list.vert[z] = vert[j];
-		poly_list_index_buffer_internal_list.norm[z] = norm[j];
+		buffer_list_internal.vert[z] = vert[j];
+		buffer_list_internal.norm[z] = norm[j];
 
 		if (Cmdline_normal) {
-			poly_list_index_buffer_internal_list.tsb[z] = tsb[j];
+			buffer_list_internal.tsb[z] = tsb[j];
 		}
 
-		poly_list_index_buffer_internal_list.n_verts++;
+		buffer_list_internal.n_verts++;
 
-	//	Assert( find_first_index(&poly_list_index_buffer_internal_list, z) == z );
+	//	Assert( find_first_index(&buffer_list_internal, z) == z );
 		z++;
 	}
 
-	Assert(nverts == poly_list_index_buffer_internal_list.n_verts);
+	Assert(nverts == buffer_list_internal.n_verts);
 
 	if (nverts_good != NULL) {
 		vm_free(nverts_good);
 	}
 
-	(*this) = poly_list_index_buffer_internal_list;
+	(*this) = buffer_list_internal;
 }
 
 poly_list& poly_list::operator = (poly_list &other_list)
@@ -1345,7 +1436,6 @@ poly_list& poly_list::operator = (poly_list &other_list)
 	}
 
 	n_verts = other_list.n_verts;
-	n_prim = other_list.n_prim;
 
 	return *this;
 }

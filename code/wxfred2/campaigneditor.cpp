@@ -21,16 +21,16 @@
 #include <wx/xrc/xmlres.h>
 
 
-BEGIN_EVENT_TABLE(dlgCampaignEditor, wxDialog)
+BEGIN_EVENT_TABLE(frmCampaignEditor, wxFrame)
 END_EVENT_TABLE()
 
 
-dlgCampaignEditor::dlgCampaignEditor(wxWindow *parent)
-	: wxDialog()
+frmCampaignEditor::frmCampaignEditor(wxWindow *parent)
+	: wxFrame()
 {
-	wxXmlResource::Get()->LoadDialog(this, parent, "dlgCampaignEditor");
+	wxXmlResource::Get()->LoadFrame(this, parent, "frmCampaignEditor");
 }
 
-dlgCampaignEditor::~dlgCampaignEditor()
+frmCampaignEditor::~frmCampaignEditor()
 {}
 

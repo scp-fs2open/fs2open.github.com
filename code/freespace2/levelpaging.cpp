@@ -19,7 +19,6 @@ extern void debris_page_in();
 extern void particle_page_in();
 extern void stars_page_in();
 extern void hud_page_in();
-extern void (*radar_page_in)();
 extern void weapons_page_in();
 extern void fireballs_page_in();
 extern void shockwave_page_in();
@@ -54,7 +53,6 @@ void level_page_in()
 	particle_page_in();
 	debris_page_in();
 	hud_page_in();
-	radar_page_in();
 	training_mission_page_in();
 	stars_page_in();
 	shockwave_page_in();

@@ -34,11 +34,15 @@ public:
 	CButton	m_reinforcement;
 	CButton	m_protect_ship;
 	CButton	m_beam_protect_ship;
+	CButton	m_flak_protect_ship;
+	CButton	m_laser_protect_ship;
+	CButton	m_missile_protect_ship;
 	CButton	m_no_dynamic;
 	CButton	m_no_arrival_music;
 	CButton	m_kamikaze;
 	CButton	m_invulnerable;
 	CButton	m_targetable_as_bomb;
+	CButton m_immobile;
 	CButton	m_ignore_count;
 	CButton	m_hidden;
 	CButton	m_primitive_sensors;
@@ -48,7 +52,7 @@ public:
 	CButton	m_escort;
 	CButton	m_destroy;
 	CButton	m_cargo_known;
-	CButton	m_special_warp;
+	CButton	m_special_warpin;
 	CButton	m_disable_messages;
 	CButton m_no_death_scream;
 	CButton m_always_death_scream;
@@ -59,6 +63,7 @@ public:
 	CButton m_nav_carry;
 	CButton m_nav_needslink;
 	CButton m_hide_ship_name;
+	CButton m_disable_ets;
 	CButton	m_set_class_dynamically;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
@@ -91,11 +96,15 @@ protected:
 	afx_msg void OnIgnoreCount();
 	afx_msg void OnInvulnerable();
 	afx_msg void OnTargetableAsBomb();
+	afx_msg void OnImmobile();
 	afx_msg void OnKamikaze();
 	afx_msg void OnNoArrivalMusic();
 	afx_msg void OnNoDynamic();
 	afx_msg void OnProtectShip();
 	afx_msg void OnBeamProtectShip();
+	afx_msg void OnFlakProtectShip();
+	afx_msg void OnLaserProtectShip();
+	afx_msg void OnMissileProtectShip();
 	afx_msg void OnReinforcement();
 	afx_msg void OnScannable();
 	afx_msg void OnRedalertcarry();
@@ -109,11 +118,9 @@ protected:
 	afx_msg void OnFriendlyStealthInvisible();
 	afx_msg void OnNavCarry();
 	afx_msg void OnNavNeedslink();
-	afx_msg void OnAltAsCallsign();
 	afx_msg void OnHideShipName();
 	afx_msg void OnSetClassDynamically();
+	afx_msg void OnDisableETS();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
-public:
-	afx_msg void OnBnClickedNavCarry2();
 };

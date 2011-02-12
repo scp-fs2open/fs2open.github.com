@@ -13,6 +13,9 @@
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 
+// flag int defines
+#define AIP_FLAG		1
+#define AIP_FLAG2		2
 
 // flags
 #define AIPF_SMART_SHIELD_MANAGEMENT								(1 << 0)
@@ -44,9 +47,19 @@
 #define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
 #define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
 #define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
-#define AIPF_GLOBAL_DISARM_DISABLE_EFFECTS						    (1 << 29)
-#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 30)
-#define AIPF_FIX_AI_CLASS_BUG										(1 << 31)
+#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 29)
+#define AIPF_FIX_AI_CLASS_BUG										(1 << 30)
+
+// flags2
+#define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
+#define AIPF2_NO_SPECIAL_PLAYER_AVOID								(1 << 1)
+#define AIPF2_PERFORM_LESS_SCREAM_CHECKS							(1 << 2)
+#define AIPF2_ALL_SHIPS_MANAGE_SHIELDS								(1 << 3)
+#define AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS						(1 << 4)
+#define AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV					(1 << 5)
+#define AIPF2_AI_AIMS_FROM_SHIP_CENTER								(1 << 6)
+#define AIPF2_ALLOW_PRIMARY_LINK_DELAY								(1 << 7)
+
 
 #define MAX_AI_PROFILES	5
 
@@ -55,6 +68,7 @@ typedef struct ai_profile_t {
 	char profile_name[NAME_LENGTH];
 
 	int flags;
+	int flags2;
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
@@ -87,9 +101,11 @@ typedef struct ai_profile_t {
 	float glide_attack_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "glide attack" move
 	float circle_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "circle strafe" move
 	float glide_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use glide when strafing capships
+	float random_sidethrust_percent[NUM_SKILL_LEVELS];		// SUSHI: The likelihood (0.0-1.0) of the AI to randomly use sidethrust while dogfihthing
 	float stalemate_time_thresh[NUM_SKILL_LEVELS];			// SUSHI: The amount of time required for the AI to detect (and try to break) dogfight stalemate
 	float stalemate_dist_thresh[NUM_SKILL_LEVELS];			// SUSHI: The maximum distance the AI and target must be within for a stalemate
 	float max_aim_update_delay[NUM_SKILL_LEVELS];			// SUSHI: The maximum delay before the AI updates their aim against small ships
+	float turret_max_aim_update_delay[NUM_SKILL_LEVELS];	// SUSHI: As above, but for turrets updating their aim
 
 	//	Multiplicative delay factors for increasing skill levels.
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
@@ -117,6 +133,7 @@ typedef struct ai_profile_t {
 
 	// the chance (x/7) that ship is allowed to fire missiles at player ship.
 	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+
 
 } ai_profile_t;
 

@@ -19,6 +19,8 @@ CFG=code - Win32 Debug
 !MESSAGE 
 !MESSAGE "code - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "code - Win32 Debug" (based on "Win32 (x86) Static Library")
+!MESSAGE "code - Win32 Release Inferno" (based on "Win32 (x86) Static Library")
+!MESSAGE "code - Win32 Debug Inferno" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -41,7 +43,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# SUBTRACT CPP /Z<none>
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,12 +67,59 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile\code"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo /o"Debug\Profile\code.bsc" "Debug\Profile\*.sbr"
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo
+
+!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "code___Win32_Release_Inferno"
+# PROP BASE Intermediate_Dir "code___Win32_Release_Inferno"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "Release_Inferno"
+# PROP Intermediate_Dir "Release_Inferno"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "NDEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
+# SUBTRACT CPP /Z<none>
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo /o"Release\Profile\code.bsc" "Release\Profile\*.sbr"
+# ADD BSC32 /nologo /o"Release_Inferno\Profile\code.bsc" "Release\Profile\*.sbr"
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 1
+# PROP BASE Output_Dir "code___Win32_Debug_Inferno"
+# PROP BASE Intermediate_Dir "code___Win32_Debug_Inferno"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 1
+# PROP Output_Dir "Debug_Inferno"
+# PROP Intermediate_Dir "Debug_Inferno"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICEREC" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../lua" /I "../../openal/include" /I "../../speech/include" /I "../../libpng" /I "../../zlib" /D "_DEBUG" /D "INF_BUILD" /D "_WINDOWS" /D "WIN32" /D "NO_DIRECT3D" /D "FS2_SPEECH" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD BASE RSC /l 0x409 /d "_DEBUG"
+# ADD RSC /l 0x409 /d "_DEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo /o"Debug\Profile\code.bsc" "Debug\Profile\*.sbr"
+# ADD BSC32 /nologo /o"Debug_Inferno\Profile\code.bsc" "Debug\Profile\*.sbr"
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
@@ -80,6 +130,8 @@ LIB32=link.exe -lib
 
 # Name "code - Win32 Release"
 # Name "code - Win32 Debug"
+# Name "code - Win32 Release Inferno"
+# Name "code - Win32 Debug Inferno"
 # Begin Group "AI"
 
 # PROP Default_Filter ""
@@ -376,18 +428,6 @@ SOURCE=..\..\code\debugconsole\timerbar.cpp
 SOURCE=..\..\code\debugconsole\timerbar.h
 # End Source File
 # End Group
-# Begin Group "Decals"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\decals\decals.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\decals\decals.h
-# End Source File
-# End Group
 # Begin Group "Demo"
 
 # PROP Default_Filter ""
@@ -425,19 +465,11 @@ SOURCE=..\..\code\DirectX\vdsetup.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\DirectX\vDsound.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\DirectX\vdvp.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vDinput.lib
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\DirectX\vDsound.lib
 # End Source File
 # Begin Source File
 
@@ -602,6 +634,14 @@ SOURCE=..\..\code\globalincs\def_files.cpp
 # Begin Source File
 
 SOURCE=..\..\code\globalincs\def_files.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\fsmemory.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\fsmemory.h
 # End Source File
 # Begin Source File
 
@@ -1145,6 +1185,10 @@ SOURCE=..\..\code\Localization\localize.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\..\code\math\bitarray.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Math\Fix.cpp
 # End Source File
 # Begin Source File
@@ -1633,14 +1677,6 @@ SOURCE=..\..\code\Network\multi_observer.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Network\multi_oo.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\multi_oo.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Network\multi_options.cpp
 # End Source File
 # Begin Source File
@@ -1782,14 +1818,6 @@ SOURCE=..\..\code\Network\MultiUtil.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Network\MultiUtil.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\PsNet.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Network\PsNet.h
 # End Source File
 # Begin Source File
 
@@ -2060,6 +2088,18 @@ SOURCE=..\..\code\Playerman\Player.h
 SOURCE=..\..\code\Playerman\PlayerControl.cpp
 # End Source File
 # End Group
+# Begin Group "pngutils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\pngutils\pngutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\pngutils\pngutils.h
+# End Source File
+# End Group
 # Begin Group "Popup"
 
 # PROP Default_Filter ""
@@ -2090,6 +2130,14 @@ SOURCE=..\..\code\Radar\Radar.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Radar\Radar.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\radar\radardradis.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\radar\radardradis.h
 # End Source File
 # Begin Source File
 
@@ -2217,15 +2265,11 @@ SOURCE=..\..\code\sound\ogg\ogg.h
 # End Group
 # Begin Source File
 
-SOURCE="..\..\code\sound\acm-openal.cpp"
+SOURCE=..\..\code\sound\acm.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\Sound\acm.h
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\code\sound\audiostr-openal.cpp"
 # End Source File
 # Begin Source File
 
@@ -2277,14 +2321,77 @@ SOURCE=..\..\code\Sound\midiseq.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\sound\openal.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\openal.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\sound\phrases.xml
 
 !IF  "$(CFG)" == "code - Win32 Release"
 
+# Begin Custom Build
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\My Documents\Visual Studio Projects\Visual C++\fs2_open-stable\code\sound
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Release Inferno"
+
+# Begin Custom Build
+InputDir=..\..\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug Inferno"
+
+# Begin Custom Build
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2302,14 +2409,6 @@ BuildCmds= \
 
 !ENDIF 
 
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\RBAudio.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Sound\RBAudio.h
 # End Source File
 # Begin Source File
 
@@ -2490,18 +2589,6 @@ SOURCE=..\..\code\UI\UIMOUSE.cpp
 # Begin Source File
 
 SOURCE=..\..\code\UI\WINDOW.cpp
-# End Source File
-# End Group
-# Begin Group "VCodec"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\VCodec\CODEC1.CPP
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\VCodec\CODEC1.H
 # End Source File
 # End Group
 # Begin Group "Weapon"

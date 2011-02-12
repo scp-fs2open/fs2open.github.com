@@ -21,12 +21,12 @@
 #include "ai/aigoals.h"
 #include "starfield/starfield.h"
 #include "jumpnode/jumpnode.h"
+#include "iff_defs/iff_defs.h"
 
 #define ID_JUMP_NODE_MENU	8000
 #define ID_WAYPOINT_MENU	9000
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
@@ -178,7 +178,7 @@ int waypoint_path_dlg::update_data(int redraw)
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->type == OBJ_SHIP) {
+			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 				if (!stricmp(m_name, Ships[ptr->instance].ship_name)) {
 					if (bypass_errors)
 						return 1;
@@ -198,8 +198,41 @@ int waypoint_path_dlg::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
-		{
+		for (i=0; i<Num_iffs; i++) {
+			if (!stricmp(m_name, Iff_info[i].iff_name)) {
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This waypoint path name is already being used by a team.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_name = _T(Waypoint_lists[cur_waypoint_list].name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(m_name, Ai_tp_list[i].name)) {
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This waypoint path name is already being used by a target priority group.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_name = _T(Waypoint_lists[cur_waypoint_list].name);
+				UpdateData(FALSE);
+			}
+		}
+
+		for (i=0; i<MAX_WAYPOINT_LISTS; i++) {
 			if (Waypoint_lists[i].count && !stricmp(Waypoint_lists[i].name, m_name) && (i != cur_waypoint_list)) {
 				if (bypass_errors)
 					return 1;
@@ -231,6 +264,22 @@ int waypoint_path_dlg::update_data(int redraw)
 			m_name = _T(Waypoint_lists[cur_waypoint_list].name);
 			UpdateData(FALSE);
 		}
+
+		if (!stricmp(m_name.Left(1), "<")) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("Waypoint names not allowed to begin with <\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_name = _T(Waypoint_lists[cur_waypoint_list].name);
+			UpdateData(FALSE);
+		}
+
 
 		strcpy_s(old_name, Waypoint_lists[cur_waypoint_list].name);
 		string_copy(Waypoint_lists[cur_waypoint_list].name, m_name, NAME_LENGTH, 1);
@@ -265,7 +314,7 @@ int waypoint_path_dlg::update_data(int redraw)
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->type == OBJ_SHIP) {
+			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
 				if (!stricmp(m_name, Ships[ptr->instance].ship_name)) {
 					if (bypass_errors)
 						return 1;
@@ -283,6 +332,40 @@ int waypoint_path_dlg::update_data(int redraw)
 			}
 
 			ptr = GET_NEXT(ptr);
+		}
+
+		for (i=0; i<Num_iffs; i++) {
+			if (!stricmp(m_name, Iff_info[i].iff_name)) {
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This jump node name is already being used by a team.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_name = _T(jnp->get_name_ptr());
+				UpdateData(FALSE);
+			}
+		}
+
+		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
+			if (!stricmp(m_name, Ai_tp_list[i].name)) {
+				if (bypass_errors)
+					return 1;
+
+				bypass_errors = 1;
+				z = MessageBox("This jump node name is already being used by a target priority group.\n"
+					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+				if (z == IDCANCEL)
+					return -1;
+
+				m_name = _T(jnp->get_name_ptr());
+				UpdateData(FALSE);
+			}
 		}
 
 		for (i=0; i<MAX_WAYPOINT_LISTS; i++)
@@ -303,6 +386,20 @@ int waypoint_path_dlg::update_data(int redraw)
 			}
 		}
 
+		if (!stricmp(m_name.Left(1), "<")) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("Jump node names not allowed to begin with <\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_name = _T(jnp->get_name_ptr());
+			UpdateData(FALSE);
+		}
 
 		strcpy_s(old_name, jnp->get_name_ptr());
 		string_copy(jnp->get_name_ptr(), m_name, NAME_LENGTH, 1);

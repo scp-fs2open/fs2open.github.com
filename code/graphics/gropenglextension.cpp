@@ -98,9 +98,6 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
 		"glBufferSubDataARB", "glMapBufferARB", "glUnmapBufferARB" } },
 
-	// Mac-only extension that allows use of system copy of texture to avoid an additional API copy
-//	{ false, 0, 1, { "GL_APPLE_client_storage" }, 0, { NULL } },
-
 	// make me some mipmaps!
 	{ false, false, 1, { "GL_SGIS_generate_mipmap" }, 0, { NULL } },
 
@@ -365,14 +362,35 @@ void opengl_extensions_init()
 		Use_VBOs = 1;
 	}
 
-//	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
-//		Use_PBOs = 1;
-//	}
+	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
+		Use_PBOs = 1;
+	}
 
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
-			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) && Is_Extension_Enabled(OGL_SM30) )
+			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) )
 	{
-		Use_GLSL = 1;
+		int ver = 0, major = 0, minor = 0;
+		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
+
+		sscanf(glsl_ver, "%d.%d", &major, &minor);
+		ver = (major * 100) + minor;
+
+		// SM 4.0 compatible or better
+		if (ver >= 400) {
+			Use_GLSL = 4;
+		}
+		// SM 3.0 compatible
+		else if ( ver >= 130 ) {
+			Use_GLSL = 3;
+		}
+		// SM 2.0 compatible
+		else if (ver >= 110) {
+			Use_GLSL = 2;
+		}
+		// we require GLSL 1.10 or higher
+		else if (ver < 110) {
+			Use_GLSL = 0;
+		}
 	}
 
 	// setup the best fog function found
@@ -393,6 +411,7 @@ void opengl_extensions_init()
 	if ( !Use_GLSL ) {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
+		Cmdline_postprocess = 0;
 	}
 
 	if (Use_GLSL) {
@@ -400,19 +419,17 @@ void opengl_extensions_init()
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
 
 		// we need enough texture slots for this stuff to work
-
-		if (max_texture_units < 4) {
-			Int3();
-			Use_GLSL = 0;
-		}
-
-		if (max_texture_units < 5) {
+		
+		if (max_texture_units < 6) {
+			mprintf(( "Not enough texture units for height map support. We need at least 6, we found %d.\n", max_texture_units ));
+			Cmdline_height = 0;
+		} else if (max_texture_units < 5) {
+			mprintf(( "Not enough texture units for height and normal map support. We need at least 5, we found %d.\n", max_texture_units ));
 			Cmdline_normal = 0;
 			Cmdline_height = 0;
-		}
-
-		if (max_texture_units < 6) {
-			Cmdline_height = 0;
+		} else if (max_texture_units < 4) {
+			mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
+			Use_GLSL = 0;
 		}
 	}
 }

@@ -265,8 +265,8 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 
 		PXO_GET_DATA( reply_type );
 
-		// if we weren't retrieved or created then bail out now
-		if (reply_type > 1) {
+		// if we weren't retrieved then bail out now
+		if (reply_type != 0) {
 			return (int)reply_type;
 		}
 
@@ -549,7 +549,7 @@ void FS2NetD_SendServerStart()
 	PXO_ADD_INT( Netgame.type_flags );
 
 	PXO_ADD_SHORT( (short)multi_num_players() );
-	PXO_ADD_SHORT( Netgame.max_players );
+	PXO_ADD_SHORT( (short)Netgame.max_players );
 
 	tvar = (ubyte)Netgame.mode;
 	PXO_ADD_DATA( tvar );

@@ -122,16 +122,19 @@ SCP_vector<message_extra> Message_waves;
 // variables to keep track of messages that are currently playing
 int Num_messages_playing;						// number of is a message currently playing?
 
-typedef struct pmessage {
-	anim_instance *anim;		// handle of anim currently playing
+/*typedef struct pmessage {
+	//anim_instance *anim;		// handle of anim currently playing
+	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
+	int start_frame;			// the start frame needed to play the animation
+	bool play_anim;			// used to tell HUD gauges if they should be playing or not
 	int wave;					// handle of wave currently playing
 	int id;						// id of message currently playing
 	int priority;				// priority of message currently playing
 	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
 	int builtin_type;			// if a builtin message, type of the message
-} pmessage;
+} pmessage;*/
 
-LOCAL pmessage Playing_messages[MAX_PLAYING_MESSAGES];
+pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
 
@@ -180,6 +183,11 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 };
 
 int Default_command_persona;
+
+
+// Goober5000
+// NOTE - these are truncated filenames, i.e. without extensions
+SCP_vector<SCP_string> generic_message_filenames;
 
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
@@ -264,12 +272,16 @@ void persona_parse()
 		}
 	}
 
+	if ( i == MAX_PERSONA_TYPES )
+		WarningEx(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
+
 	char cstrtemp[NAME_LENGTH];
 	if ( optional_string("+") )
 	{
+		int j;
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
 
-		for (int j = 0; j < (int)Species_info.size(); j++)
+		for (j = 0; j < (int)Species_info.size(); j++)
 		{
 			if (!strcmp(cstrtemp, Species_info[j].species_name))
 			{
@@ -277,11 +289,10 @@ void persona_parse()
 				break;
 			}
 		}
+
+		if ( j == (int)Species_info.size() )
+			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
-
-	if ( i == MAX_PERSONA_TYPES )
-		Error(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
-
 
 	Num_personas++;
 }
@@ -349,8 +360,8 @@ void message_parse(bool importing_from_fsm)
 			mt = -1;
 		}
 
-		// only bother with filters if multiplayer and TvT
-		if(Fred_running || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
+		// only bother with filters in-game if multiplayer and TvT
+		if(Fred_running || (MULTI_TEAM) ){
 			msg.multi_team = mt;
 		}
 	}
@@ -367,6 +378,9 @@ void message_parse(bool importing_from_fsm)
 	if ( optional_string("+Persona:") ) {
 		stuff_string(persona_name, F_NAME, NAME_LENGTH);
 		msg.persona_index = message_persona_name_lookup( persona_name );
+
+		if ( msg.persona_index == -1 )
+			WarningEx(LOCATION, "Unknown persona in message %s in messages.tbl -- %s\n", msg.name, persona_name );
 	}
 
 	if ( !Fred_running)
@@ -413,7 +427,6 @@ void message_parse(bool importing_from_fsm)
 
 void parse_msgtbl()
 {
-	char *p1, *p2, *p3;
 	int i, j;
 
 	// open localization
@@ -429,27 +442,19 @@ void parse_msgtbl()
 	Num_messages = 0;
 	Num_personas = 0;
 
-	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
-	p1 = strstr(Mp, "#End");
-	*(p1+4)=0;
-	p1 = strstr(Mp, "2926");
-	if (p1)
+	// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
+	char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
+	if (pVawacs25)
 	{
-		p2 = strstr(p1, "Vawacs25.wav");
-		p3 = strstr(p1, "$Name");
-		if (p2 && p3 && (p2 < p3))
+		char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
+		if (pAwacs75)
 		{
-			replace_one(p2, "Vawacs25.wav", "Awacs25.wav", 500);
-		}
-	}
-	p1 = strstr(Mp, "2927");
-	if (p1)
-	{
-		p2 = strstr(p1, "Awacs75.wav");
-		p3 = strstr(p1, "$Name");
-		if (p2 && p3 && (p2 < p3))
-		{
-			replace_one(p2, "Awacs75.wav", "Vawacs75.wav", 500);
+			// move the 'V' from the first filename to the second, and adjust the 'A' case
+			*pVawacs25 = 'A';
+			for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
+				pVawacs25[i] = pVawacs25[i+1];
+			pAwacs75[-1] = 'V';
+			pAwacs75[0] = 'a';
 		}
 	}
 
@@ -483,6 +488,50 @@ void parse_msgtbl()
 		}
 	}
 
+
+	// additional table part!
+	generic_message_filenames.clear();
+	generic_message_filenames.push_back("none");
+	generic_message_filenames.push_back("cuevoice");
+	generic_message_filenames.push_back("emptymsg");
+	generic_message_filenames.push_back("generic");
+	generic_message_filenames.push_back("msgstart");
+
+	if (optional_string("#Simulated Speech Overrides"))
+	{
+		char filename[MAX_FILENAME_LEN];
+
+		while (required_string_either("#End", "$File Name:"))
+		{
+			required_string("$File Name:");
+			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+
+			// get extension
+			char *ptr = strchr(filename, '.');
+			if (ptr == NULL)
+			{
+				Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
+				continue;
+			}
+
+			// test extension
+			if (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav"))
+			{
+				Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
+				continue;
+			}
+
+			// truncate extension
+			*ptr = '\0';
+
+			// add truncated file name
+			generic_message_filenames.push_back(filename);
+		}
+
+		required_string("#End");
+	}
+
+	
 	// close localization
 	lcl_ext_close();
 }
@@ -538,7 +587,10 @@ void messages_init()
 	Message_shipnum = -1;
 	Num_messages_playing = 0;
 	for ( i = 0; i < MAX_PLAYING_MESSAGES; i++ ) {
-		Playing_messages[i].anim = NULL;
+		//Playing_messages[i].anim = NULL;
+		Playing_messages[i].anim_data = NULL;
+		Playing_messages[i].start_frame = -1;
+		Playing_messages[i].play_anim = false;
 		Playing_messages[i].wave = -1;
 		Playing_messages[i].id = -1;
 		Playing_messages[i].priority = -1;
@@ -675,9 +727,12 @@ void message_kill_all( int kill_all )
 
 	// kill sounds for all voices currently playing
 	for ( i = 0; i < Num_messages_playing; i++ ) {
-		if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
+		/*if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
 			anim_stop_playing( Playing_messages[i].anim );
 			Playing_messages[i].anim=NULL;
+		}*/
+		if ( Playing_messages[i].play_anim) {
+			Playing_messages[i].play_anim = false;
 		}
 
 		if ( kill_all ) {
@@ -701,10 +756,14 @@ void message_kill_playing( int message_num )
 {
 	Assert( message_num < Num_messages_playing );
 
-	if ( (Playing_messages[message_num].anim != NULL) && anim_playing(Playing_messages[message_num].anim) ) {
+	/*if ( (Playing_messages[message_num].anim != NULL) && anim_playing(Playing_messages[message_num].anim) ) {
 		anim_stop_playing( Playing_messages[message_num].anim );
 		Playing_messages[message_num].anim=NULL;
+	}*/
+	if ( Playing_messages[message_num].play_anim) {
+		Playing_messages[message_num].play_anim = false;
 	}
+
 	if ( (Playing_messages[message_num].wave != -1 ) && snd_is_playing(Playing_messages[message_num].wave) )
 		snd_stop( Playing_messages[message_num].wave );
 
@@ -853,10 +912,25 @@ void message_load_wave(int index, const char *filename)
 // Goober5000
 bool message_filename_is_generic(char *filename)
 {
-	if (!strnicmp(filename, "cuevoice.wav", 8)) return true;
-	if (!strnicmp(filename, "emptymsg.wav", 8)) return true;
-	if (!strnicmp(filename, "generic.wav", 7)) return true;
-	if (!strnicmp(filename, "msgstart.wav", 8)) return true;
+	char truncated_filename[MAX_FILENAME_LEN];
+
+	// truncate any file extension
+	strcpy_s(truncated_filename, filename);
+	char *ptr = strchr(truncated_filename, '.');
+
+	// extension must be a recognized sound file
+	if ((ptr == NULL) || (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav")))
+		return false;
+
+	// truncate it
+	*ptr = '\0';
+
+	// test against the list
+	for (unsigned int i = 0; i < generic_message_filenames.size(); i++)
+	{
+		if (!stricmp(generic_message_filenames[i].c_str(), truncated_filename))
+			return true;
+	}
 
 	return false;
 }
@@ -1082,18 +1156,9 @@ void message_play_anim( message_q *q )
 			return;
 		}
 
-		int anim_start_frame;
-		anim_play_struct aps;
-
-		// figure out anim start frame
-		anim_start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
-		anim_play_init(&aps, anim_info->anim_data, Head_coords[gr_screen.res][0], Head_coords[gr_screen.res][1]);
-		aps.start_at = anim_start_frame;
-
-		// aps.color = &HUD_color_defaults[HUD_color_alpha];
-		aps.color = &HUD_config.clr[HUD_TALKING_HEAD];
-
-		Playing_messages[Num_messages_playing].anim = anim_play(&aps);
+		Playing_messages[Num_messages_playing].anim_data = anim_info->anim_data;
+		Playing_messages[Num_messages_playing].start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
+		Playing_messages[Num_messages_playing].play_anim = true;
 	}
 }
 
@@ -1121,8 +1186,8 @@ void message_queue_process()
 			int ani_done, wave_done, j;
 
 			ani_done = 1;
-			if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
-				ani_done = 0;
+			//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+			//	ani_done = 0;
 
 			wave_done = 1;
 
@@ -1136,15 +1201,17 @@ void message_queue_process()
 
 			// AL 1-20-98: If voice message is done, kill the animation early
 			if ( (Playing_messages[i].wave != -1) && wave_done ) {
-				if ( !ani_done ) {
+				/*if ( !ani_done ) {
 					anim_stop_playing( Playing_messages[i].anim );
-				}
+				}*/
+				Playing_messages[i].play_anim = false;
 			}
 
 			//if player is a traitor remove all messages that aren't traitor related
 			if ((Playing_messages[i].builtin_type != MESSAGE_OOPS) && (Playing_messages[i].builtin_type != MESSAGE_HAMMER_SWINE)) {
 				if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
 					message_kill_playing(i);
+					Message_shipnum = -1;
 					i++;
 					continue;
 				}
@@ -1333,7 +1400,7 @@ void message_queue_process()
 
 	// set up module globals for this message
 	m = &Messages[q->message_num];
-	Playing_messages[Num_messages_playing].anim = NULL;
+	Playing_messages[Num_messages_playing].anim_data = NULL;
 	Playing_messages[Num_messages_playing].wave  = -1;
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
@@ -1399,7 +1466,9 @@ void message_queue_process()
 		}
 	}
 
-	HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
+	if ( !stricmp(who_from, "<none>") ) {
+		HUD_sourced_printf( q->source, NOX("%s"), buf );
+	} else HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
 
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
@@ -1683,6 +1752,8 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 				// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
 				Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
+			} else if ( m_source == MESSAGE_SOURCE_NONE ) {
+				who_from = "<none>";
 			}
 
 			// not multiplayer or this message is for me, then queue it
@@ -1700,7 +1771,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){
-				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1);
+				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay);
 			}			
 
 			return;		// all done with displaying		
@@ -1964,7 +2035,7 @@ void message_maybe_distort()
 					snd_set_volume(Playing_messages[i].wave, 0.0f);
 			} else {
 				if ( was_muted )
-					snd_set_volume(Playing_messages[i].wave, Master_sound_volume);
+					snd_set_volume(Playing_messages[i].wave, (Master_sound_volume * aav_voice_volume));
 			}
 		}
 	}
@@ -2042,7 +2113,8 @@ int message_anim_is_playing()
 	int i;
 
 	for (i = 0; i < Num_messages_playing; i++ ) {
-		if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+		//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+		if(Playing_messages[i].play_anim)
 			return 1;
 	}
 

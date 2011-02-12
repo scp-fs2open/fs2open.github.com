@@ -11,18 +11,13 @@
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 #include "render/3d.h"
-
+#include "bmpman/bmpman.h"
 
 geometry_batcher::~geometry_batcher()
 {
 	if (vert != NULL) {
 		vm_free(vert);
 		vert = NULL;
-	}
-
-	if (vert_list != NULL) {
-		vm_free(vert_list);
-		vert_list = NULL;
 	}
 }
 
@@ -37,18 +32,9 @@ void geometry_batcher::allocate_internal(int n_verts)
 			vert = NULL;
 		}
 
-		if (vert_list != NULL) {
-			vm_free(vert_list);
-			vert_list = NULL;
-		}
-
 		vert = (vertex *) vm_malloc( sizeof(vertex) * n_verts );
-		vert_list = (vertex **) vm_malloc( sizeof(vertex*) * n_verts );
 
-		Verify( (vert != NULL) && (vert_list != NULL) );
-
-		for (int i = 0; i < n_verts; i++)
-			vert_list[i] = &vert[i];
+		Verify( (vert != NULL) );
 
 		memset( vert, 0, sizeof(vertex) * n_verts );
 		n_allocated = n_verts;
@@ -91,18 +77,9 @@ void geometry_batcher::add_allocate(int quad, int n_tri)
 	vertex *old_vert = vert;
 
 	if (to_alloc > n_allocated) {
-		if (vert_list != NULL) {
-			vm_free(vert_list);
-			vert_list = NULL;
-		}
-
 		vert = (vertex *) vm_malloc( sizeof(vertex) * to_alloc );
-		vert_list = (vertex **) vm_malloc( sizeof(vertex*) * to_alloc );
 
-		Verify( (vert != NULL) && (vert_list != NULL) );
-
-		for (int i = 0; i < to_alloc; i++)
-			vert_list[i] = &vert[i];
+		Verify( (vert != NULL) );
 
 		memset( vert, 0, sizeof(vertex) * to_alloc );
 
@@ -122,16 +99,10 @@ void geometry_batcher::clone(const geometry_batcher &geo)
 
 	if (n_allocated > 0) {
 		vert = (vertex *) vm_malloc( sizeof(vertex) * n_allocated );
-		vert_list = (vertex **) vm_malloc( sizeof(vertex*) * n_allocated );
 
 		memcpy( vert, geo.vert, sizeof(vertex) * n_allocated );
-
-		for (int i = 0; i < n_allocated; i++) {
-			vert_list[i] = &vert[i];
-		}
 	} else {
 		vert = NULL;
-		vert_list = NULL;
 	}
 }
 
@@ -546,7 +517,7 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 void geometry_batcher::render(int flags)
 {
 	if (n_to_render) {
-		g3_draw_poly( n_to_render * 3, vert_list, flags | TMAP_FLAG_TRILIST);
+		gr_render(n_to_render * 3, vert, flags | TMAP_FLAG_TRILIST);
 		n_to_render = 0;
 	}
 }
@@ -618,7 +589,7 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	int index = find_good_batch_item(texture);
 	Assert( index >= 0 );
 
-	Assert( geometry_map[index].laser == false );
+	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
 	geometry_map[index].tmap_flags = tmap_flags;
 	geometry_map[index].alpha = alpha;

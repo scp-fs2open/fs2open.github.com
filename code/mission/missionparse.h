@@ -16,6 +16,8 @@
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
+#include "sound/sound.h"
+#include "parse/sexp.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -97,7 +99,8 @@ typedef struct support_ship_info {
 	int		departure_anchor;				// departure anchor
 	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 	float	max_subsys_repair_val;			// same thing, except for subsystems -C
-	int		max_support_ships;				// max number of support ships
+	int		max_support_ships;				// max number of consecutive support ships
+	int		max_concurrent_ships;			// max number of concurrent support ships in mission per team
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
 	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
@@ -109,6 +112,7 @@ typedef struct support_ship_info {
 #define	MOVIE_PRE_BRIEF			2
 #define	MOVIE_PRE_GAME			3
 #define	MOVIE_PRE_DEBRIEF		4
+#define MOVIE_END_CAMPAIGN		5
 
 // defines a mission cutscene.
 typedef struct mission_cutscene {
@@ -145,6 +149,7 @@ typedef struct mission {
 	int		skybox_flags;
 	int		contrail_threshold;
 	int		ambient_light_level;
+	sound_env	sound_environment;
 
 	// Goober5000
 	int	command_persona;
@@ -186,6 +191,7 @@ typedef struct mission {
 		skybox_flags = 0;
 		contrail_threshold = 0;
 		ambient_light_level = 0;
+		sound_environment.id = -1;
 		command_persona = 0;
 		command_sender[ 0 ] = '\0';
 		event_music_name[ 0 ] = '\0';
@@ -399,8 +405,17 @@ typedef struct p_object {
 	int	group;								// group object is within or -1 if none.
 	int	persona_index;
 	float	kamikaze_damage;					// base damage for a kamikaze attack
-	int	special_exp_index;
-	int special_hitpoint_index;
+
+	bool use_special_explosion;				// new special explosion/hitpoints system 
+	float special_exp_damage;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_blast;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_inner;					// Changed from 'int' to 'float' by Zacam 10/2010
+	float special_exp_outer;					// Changed from 'int' to 'float' by Zacam 10/2010
+	bool use_shockwave;
+	float special_exp_shockwave_speed;		// Changed from 'int' to 'float' by Zacam 10/2010
+	int	special_hitpoints;
+	int	special_shield;
+
 	ushort net_signature;					// network signature this object can have
 	int destroy_before_mission_time;
 
@@ -410,8 +425,8 @@ typedef struct p_object {
 	uint	respawn_count;						// number of respawns for this object.  Applies only to player wing ships in multiplayer
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
-	char	alt_type_index;					// optional alt type index
-	char	callsign_index;					// optional callsign index
+	int		alt_type_index;					// optional alt type index
+	int		callsign_index;					// optional callsign index
 
 	float ship_max_hull_strength;
 	float ship_max_shield_strength;
@@ -487,8 +502,15 @@ typedef struct p_object {
 		group = 0;
 		persona_index = 0;
 		kamikaze_damage = 0.;
-		special_exp_index = 0;
-		special_hitpoint_index = 0;
+		use_special_explosion = false;
+		special_exp_damage = -1;
+		special_exp_blast = -1;
+		special_exp_inner = -1;
+		special_exp_outer = -1;
+		use_shockwave = false;
+		special_exp_shockwave_speed = -1;
+		special_hitpoints = 0;
+		special_shield = -1;
 		net_signature = 0;
 		destroy_before_mission_time = 0;
 
@@ -519,7 +541,7 @@ typedef struct p_object {
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	24
+#define MAX_PARSE_OBJECT_FLAGS	27
 
 #define P_SF_CARGO_KNOWN				(1<<0)
 #define P_SF_IGNORE_COUNT				(1<<1)
@@ -539,28 +561,28 @@ typedef struct p_object {
 #define P_AIF_NO_DYNAMIC				(1<<15)
 #define P_SF_RED_ALERT_STORE_STATUS		(1<<16)
 #define P_OF_BEAM_PROTECTED				(1<<17)
-#define P_SF_GUARDIAN					(1<<18)
-#define P_KNOSSOS_WARP_IN				(1<<19)
-#define P_SF_VAPORIZE					(1<<20)
-#define P_SF2_STEALTH					(1<<21)
-#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<22)
-#define P_SF2_DONT_COLLIDE_INVIS		(1<<23)
-
-// 24 and 25 are currently unused
+#define P_OF_FLAK_PROTECTED				(1<<18)
+#define P_OF_LASER_PROTECTED			(1<<19)
+#define P_OF_MISSILE_PROTECTED			(1<<20)
+#define P_SF_GUARDIAN					(1<<21)
+#define P_KNOSSOS_WARP_IN				(1<<22)
+#define P_SF_VAPORIZE					(1<<23)
+#define P_SF2_STEALTH					(1<<24)
+#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<25)
+#define P_SF2_DONT_COLLIDE_INVIS		(1<<26)
 
 // the following parse object flags are used internally by FreeSpace
-#define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
-#define P_SF_DOCK_LEADER			(1<<27)	// Goober5000 - a docked parse object that is the leader of its group
-#define P_SF_CANNOT_ARRIVE			(1<<28)	// used to indicate that this ship's arrival cue will never be true
-#define P_SF_WARP_BROKEN			(1<<29)	// warp engine should be broken for this ship
-#define P_SF_WARP_NEVER				(1<<30)	// warp drive is destroyed
-#define P_SF_PLAYER_START_VALID		(1<<31)	// this is a valid player start object
+#define P_SF_USE_UNIQUE_ORDERS		(1<<27)	// tells a newly created ship to use the default orders for that ship
+#define P_SF_DOCK_LEADER			(1<<28)	// Goober5000 - a docked parse object that is the leader of its group
+#define P_SF_CANNOT_ARRIVE			(1<<29)	// used to indicate that this ship's arrival cue will never be true
+#define P_SF_WARP_BROKEN			(1<<30)	// warp engine should be broken for this ship
+#define P_SF_WARP_NEVER				(1<<31)	// warp drive is destroyed
 
 // more parse flags! -- Goober5000
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	17
+#define MAX_PARSE_OBJECT_FLAGS_2	19
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -579,6 +601,8 @@ typedef struct p_object {
 #define P2_SF2_LOCK_ALL_TURRETS_INITIALLY	(1<<14)		
 #define P2_SF2_AFTERBURNER_LOCKED			(1<<15)	
 #define P2_OF_FORCE_SHIELDS_ON				(1<<16)
+#define P2_OF_IMMOBILE						(1<<17)
+#define P2_SF2_NO_ETS						(1<<18)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
@@ -599,16 +623,16 @@ typedef struct {
 	int		num_ship_choices; // number of ship choices inside ship_list 
 	int		loadout_total;	// Total number of ships available of all classes 
 	int		ship_list[MAX_SHIP_CLASSES];
-	int		ship_list_variables[MAX_SHIP_CLASSES];
+	char	ship_list_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
 	int		ship_count[MAX_SHIP_CLASSES];
-	int		ship_count_variables[MAX_SHIP_CLASSES];
+	char	ship_count_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
 
 	// weapons
 	int		num_weapon_choices;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
 	int		weaponry_count[MAX_WEAPON_TYPES];
-	int		weaponry_pool_variable[MAX_WEAPON_TYPES];
-	int		weaponry_amount_variable[MAX_WEAPON_TYPES];
+	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
+	char	weaponry_amount_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
 } team_data;
 
 #define MAX_P_WINGS		16

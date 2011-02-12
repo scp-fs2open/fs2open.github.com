@@ -10,18 +10,14 @@ extern void *g_vBackBuf1, *g_vBackBuf2;
 static ushort *backBuf1, *backBuf2;
 static int lookup_initialized;
 
-static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned char **pData, unsigned char **pOffData, int *pDataRemain, int *curXb, int *curYb);
+static void dispatchDecoder16(ushort **pFrame, ubyte codeType, ubyte **pData, ubyte **pOffData, int *pDataRemain, int *curXb, int *curYb);
 static void genLoopkupTable();
 
-void decodeFrame16(unsigned char *pFrame, unsigned char *pMap, int mapRemain, unsigned char *pData, int dataRemain)
+void decodeFrame16(ubyte *pFrame, ubyte *pMap, int mapRemain, unsigned char *pData, int dataRemain)
 {
-	unsigned char *pOrig;
-	unsigned char *pOffData, *pEnd;
+	ubyte *pOrig, *pOffData, *pEnd, op;
 	ushort offset;
-	int length;
-	int op;
-	int i, j;
-	int xb, yb;
+	int length = 0, i, j, xb, yb;
 
 	if (!lookup_initialized) {
 		genLoopkupTable();
@@ -156,21 +152,7 @@ static void patternRow4Pixels2(ushort *pFrame, unsigned char pat0, ushort *p)
 	unsigned char mask=0x03;
 	unsigned char shift=0;
 	ushort pel;
-/* ORIGINAL VERSION IS BUGGY
-	int skip=1;
 
-	while (mask != 0) {
-		pel = p[(mask & pat0) >> shift];
-		pFrame[0] = pel;
-		pFrame[2] = pel;
-		pFrame[g_width + 0] = pel;
-		pFrame[g_width + 2] = pel;
-		pFrame += skip;
-		skip = 4 - skip;
-		mask <<= 2;
-		shift += 2;
-	}
-*/
 	while (mask != 0) {
 		pel = p[(mask & pat0) >> shift];
 		pFrame[0] = pel;
@@ -208,10 +190,9 @@ static void patternQuadrant4Pixels(ushort *pFrame, unsigned char pat0, unsigned 
 
 	for (i=0; i<16; i++) {
 		pFrame[i&3] = p[(pat & mask) >> shift];
-
-		if ((i&3) == 3)
+		if ((i&3) == 3) {
 			pFrame += g_width;
-
+		}
 		mask <<= 2;
 		shift += 2;
 	}
@@ -232,19 +213,6 @@ static void patternRow2Pixels2(ushort *pFrame, unsigned char pat, ushort *p)
 	ushort pel;
 	unsigned char mask=0x1;
 
-/* ORIGINAL VERSION IS BUGGY
-	int skip=1;
-	while (mask != 0x10) {
-		pel = p[(mask & pat) ? 1 : 0];
-		pFrame[0] = pel;
-		pFrame[2] = pel;
-		pFrame[g_width + 0] = pel;
-		pFrame[g_width + 2] = pel;
-		pFrame += skip;
-		skip = 4 - skip;
-		mask <<= 1;
-	}
-*/
 	while (mask != 0x10) {
 		pel = p[(mask & pat) ? 1 : 0];
 
@@ -266,10 +234,9 @@ static void patternQuadrant2Pixels(ushort *pFrame, unsigned char pat0, unsigned 
 
 	for (i=0; i<16; i++) {
 		pFrame[i&3] = p[(pat & mask) ? 1 : 0];
-
-		if ((i&3) == 3)
+		if ((i&3) == 3) {
 			pFrame += g_width;
-
+		}
 		mask <<= 1;
 	}
 
@@ -288,76 +255,63 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 	switch(codeType) {
 		case 0x0:
 			copyFrame(*pFrame, *pFrame + (backBuf2 - backBuf1));
-			break; // ADDED
+		break; // ADDED
 
 		case 0x1:
-			break;
+		break;
 
 		case 0x2:
-			/* relFar(*(*pOffData)++, 1, &x, &y); */
-
 			k = *(*pOffData)++;
 			x = far_p_table[k*2+0];
 			y = far_p_table[k*2+1];
-
 			copyFrame(*pFrame, *pFrame + x + y*g_width);
 			(*pDataRemain)--;
-			break;
+		break;
 
 		case 0x3:
-			/* relFar(*(*pOffData)++, -1, &x, &y); */
-
 			k = *(*pOffData)++;
 			x = far_n_table[k*2+0];
 			y = far_n_table[k*2+1];
-
 			copyFrame(*pFrame, *pFrame + x + y*g_width);
-			(*pDataRemain)--;				  
-			break;
+			(*pDataRemain)--;
+		break;
 
 		case 0x4:
-			/* relClose(*(*pOffData)++, &x, &y); */
-
 			k = *(*pOffData)++;
 			x = close_table[k*2+0];
 			y = close_table[k*2+1];
-
 			copyFrame(*pFrame, *pFrame + (backBuf2 - backBuf1) + x + y*g_width);
 			(*pDataRemain)--;
-			break;
+		break;
 
 		case 0x5:
 			x = (char)*(*pData)++;
 			y = (char)*(*pData)++;
 			copyFrame(*pFrame, *pFrame + (backBuf2 - backBuf1) + x + y*g_width);
 			*pDataRemain -= 2;
-			break;
+		break;
 
 		case 0x6:
 			nprintf(("MVE", "STUB: encoding 6 not tested\n"));
-
 			for (i=0; i<2; i++) {
 				*pFrame += 16;
-
 				if (++*curXb == (g_width >> 3)) {
 					*pFrame += 7*g_width;
 					*curXb = 0;
-
-					if (++*curYb == (g_height >> 3))
+					if (++*curYb == (g_height >> 3)) {
 						return;
+					}
 				}
 			}
-			break;
+		break;
 
 		case 0x7:
 			p[0] = GETPIXELI(pData, 0);
 			p[1] = GETPIXELI(pData, 0);
-
 			if (!((p[0]/*|p[1]*/)&0x8000)) {
 				for (i=0; i<8; i++) {
 					patternRow2Pixels(*pFrame, *(*pData), p);
 					(*pData)++;
-
 					*pFrame += g_width;
 				}
 			} else {
@@ -366,26 +320,21 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 					*pFrame += 2*g_width;
 					patternRow2Pixels2(*pFrame, *(*pData) >> 4, p);
 					(*pData)++;
-
 					*pFrame += 2*g_width;
 				}
 			}
-			break;
+		break;
 
 		case 0x8:
 			p[0] = GETPIXEL(pData, 0);
-
 			if (!(p[0] & 0x8000)) {
 				for (i=0; i<4; i++) {
 					p[0] = GETPIXELI(pData, 0);
 					p[1] = GETPIXELI(pData, 0);
-
 					pat[0] = (*pData)[0];
 					pat[1] = (*pData)[1];
 					(*pData) += 2;
-
 					patternQuadrant2Pixels(*pFrame, pat[0], pat[1], p);
-
 					if (i & 1) {
 						*pFrame -= (4*g_width - 4);
 					} else {
@@ -394,7 +343,6 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 				}
 			} else {
 				p[2] = GETPIXEL(pData, 8);
-
 				if (!(p[2]&0x8000)) {
 					for (i=0; i<4; i++) {
 						if ((i & 1) == 0) {
@@ -404,7 +352,6 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 						pat[0] = *(*pData)++;
 						pat[1] = *(*pData)++;
 						patternQuadrant2Pixels(*pFrame, pat[0], pat[1], p);
-
 						if (i & 1) {
 							*pFrame -= (4*g_width - 4);
 						} else {
@@ -419,21 +366,18 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 						}
 						patternRow2Pixels(*pFrame, *(*pData), p);
 						(*pData)++;
-
 						*pFrame += g_width;
 					}
 				}
 			}
-			break;
+		break;
 
 		case 0x9:
 			p[0] = GETPIXELI(pData, 0);
 			p[1] = GETPIXELI(pData, 0);
 			p[2] = GETPIXELI(pData, 0);
 			p[3] = GETPIXELI(pData, 0);
-
 			*pDataRemain -= 8;
-
 			if (!(p[0] & 0x8000)) {
 				if (!(p[2] & 0x8000)) {
 					for (i=0; i<8; i++) {
@@ -452,7 +396,6 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 					patternRow4Pixels2(*pFrame, (*pData)[2], p);
 					*pFrame += 2*g_width;
 					patternRow4Pixels2(*pFrame, (*pData)[3], p);
-
 					(*pData) += 4;
 					*pDataRemain -= 4;
 				}
@@ -469,9 +412,7 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 					for (i=0; i<4; i++) {
 						pat[0] = (*pData)[0];
 						pat[1] = (*pData)[1];
-
 						(*pData) += 2;
-
 						patternRow4Pixels(*pFrame, pat[0], pat[1], p);
 						*pFrame += g_width;
 						patternRow4Pixels(*pFrame, pat[0], pat[1], p);
@@ -480,11 +421,10 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 					*pDataRemain -= 8;
 				}
 			}
-			break;
+		break;
 
 		case 0xa:
 			p[0] = GETPIXEL(pData, 0);
-
 			if (!(p[0] & 0x8000)) {
 				for (i=0; i<4; i++) {
 					p[0] = GETPIXELI(pData, 0);
@@ -495,11 +435,8 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 					pat[1] = (*pData)[1];
 					pat[2] = (*pData)[2];
 					pat[3] = (*pData)[3];
-
 					(*pData) += 4;
-
 					patternQuadrant4Pixels(*pFrame, pat[0], pat[1], pat[2], pat[3], p);
-
 					if (i & 1) {
 						*pFrame -= (4*g_width - 4);
 					} else {
@@ -508,7 +445,6 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 				}
 			} else {
 				p[0] = GETPIXEL(pData, 16);
-
 				if (!(p[0] & 0x8000)) {
 					for (i=0; i<4; i++) {
 						if ((i&1) == 0) {
@@ -517,16 +453,12 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 							p[2] = GETPIXELI(pData, 0);
 							p[3] = GETPIXELI(pData, 0);
 						}
-
 						pat[0] = (*pData)[0];
 						pat[1] = (*pData)[1];
 						pat[2] = (*pData)[2];
 						pat[3] = (*pData)[3];
-
 						(*pData) += 4;
-
 						patternQuadrant4Pixels(*pFrame, pat[0], pat[1], pat[2], pat[3], p);
-
 						if (i & 1) {
 							*pFrame -= (4*g_width - 4);
 						} else {
@@ -541,24 +473,21 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 							p[2] = GETPIXELI(pData, 0);
 							p[3] = GETPIXELI(pData, 0);
 						}
-
 						pat[0] = (*pData)[0];
 						pat[1] = (*pData)[1];
 						patternRow4Pixels(*pFrame, pat[0], pat[1], p);
 						*pFrame += g_width;
-
 						(*pData) += 2;
 					}
 				}
 			}
-			break;
+		break;
 
 		case 0xb:
 			for (i=0; i<8; i++) {
 #if BYTE_ORDER == BIG_ENDIAN
 				ubyte frame_tmp[16];
 				memcpy(&frame_tmp, *pData, 16);
-
 				ushort *swap_tmp;
 				for (j = 0; j < 16; j += 2) {
 					swap_tmp = (ushort*)(frame_tmp + j);
@@ -572,7 +501,7 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 				*pData += 16;
 				*pDataRemain -= 16;
 			}
-			break;
+		break;
 
 		case 0xc:
 			for (i=0; i<4; i++) {
@@ -580,74 +509,61 @@ static void dispatchDecoder16(ushort **pFrame, unsigned char codeType, unsigned 
 				p[1] = GETPIXEL(pData, 2);
 				p[2] = GETPIXEL(pData, 4);
 				p[3] = GETPIXEL(pData, 6);
-
 				for (j=0; j<2; j++) {
 					for (k=0; k<4; k++) {
 						(*pFrame)[2*k] = p[k];
 						(*pFrame)[2*k+1] = p[k];
-					//	(*pFrame)[j+2*k] = p[k];
-					//	(*pFrame)[g_width+j+2*k] = p[k];
 					}
 					*pFrame += g_width;
 				}
-
 				*pData += 8;
 				*pDataRemain -= 8;
 			}
-			break;
+		break;
 
 		case 0xd:
 			for (i=0; i<2; i++) {
 				p[0] = GETPIXEL(pData, 0);
 				p[1] = GETPIXEL(pData, 2);
-
 				for (j=0; j<4; j++) {
 					for (k=0; k<4; k++) {
 						(*pFrame)[k*g_width+j] = p[0];
 						(*pFrame)[k*g_width+j+4] = p[1];
 					}
 				}
-
 				*pFrame += 4*g_width;
-
 				*pData += 4;
 				*pDataRemain -= 4;
 			}
-			break;
+		break;
 
 		case 0xe:
 			p[0] = GETPIXEL(pData, 0);
-
 			for (i = 0; i < 8; i++) {
 				for (j = 0; j < 8; j++) {
 					(*pFrame)[j] = p[0];
 				}
-
 				*pFrame += g_width;
 			}
-
 			*pData += 2;
 			*pDataRemain -= 2;
-
-			break;
+		break;
 
 		case 0xf:
 			p[0] = GETPIXEL(pData, 0);
 			p[1] = GETPIXEL(pData, 1);
-
 			for (i=0; i<8; i++) {
 				for (j=0; j<8; j++) {
 					(*pFrame)[j] = p[(i+j)&1];
 				}
 				*pFrame += g_width;
 			}
-
 			*pData += 4;
 			*pDataRemain -= 4;
-			break;
+		break;
 
 		default:
-			break;
+	break;
 	}
 
 	*pFrame = pDstBak+8;

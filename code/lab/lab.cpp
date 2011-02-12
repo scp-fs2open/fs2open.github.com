@@ -25,6 +25,7 @@
 #include "mission/missionparse.h"
 #include "species_defs/species_defs.h"
 #include "playerman/managepilot.h"
+#include "object/objectsnd.h"
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -33,6 +34,7 @@
 #define LAB_FLAG_SHOW_DEBRIS		(1<<2)	// render debris instead of normal LOD
 #define LAB_FLAG_SUBMODEL_ROTATE	(1<<3)	// do rotation for any rotating ship subobjects
 #define LAB_FLAG_LIGHTNING_ARCS		(1<<4)	// show damage lightning
+#define LAB_FLAG_FULLY_LOAD			(1<<5)	// use create_ship() to test the ships
 
 // modes
 #define LAB_MODE_NONE		0	// not showing anything
@@ -724,6 +726,24 @@ void labviewer_render_model(float frametime)
 	vec3d light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;
 	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+/*
+	light_add_directional(&light_dir, 0.05f, 0.0f, 0.0f, 1.0f);
+
+	light_add_directional(&light_dir, 0.05f, 0.0f, 0.0f, 1.0f);
+	light_dir = vmd_zero_vector;
+	light_dir.xyz.y = -1.0f;
+	light_add_directional(&light_dir, 0.65f, 1.0f, 0.0f, 0.0f);
+
+	light_add_directional(&light_dir, 0.05f, 1.0f, 0.0f, 0.0f);
+
+	light_add_directional(&light_dir, 0.05f, 1.0f, 0.0f, 0.0f);
+	light_dir = vmd_zero_vector;
+	light_dir.xyz.x = -1.0f;
+	light_dir.xyz.y = 1.0f;
+	light_add_directional(&light_dir, 0.65f, 0.0f, 1.0f, 0.0f);
+
+	light_add_directional(&light_dir, 0.05f, 0.0f, 1.0f, 0.0f);
+*/
 	// light_filter_reset();
 	light_rotate_all();
 	// lighting for techroom
@@ -986,7 +1006,11 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
+		gr_post_process_begin();
+
 		labviewer_render_model(frametime);
+
+		gr_post_process_end();
 
 		// print out the current pof filename, to help with... something
 		if ( strlen(Lab_model_filename) ) {
@@ -995,7 +1019,11 @@ void labviewer_do_render(float frametime)
 			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_model_filename, false);
 		}
 	} else if (Lab_bitmap_id >= 0) {
+		gr_post_process_begin();
+
 		labviewer_render_bitmap(frametime);
+
+		gr_post_process_end();
 
 		// print out the current bitmap filename, to help with... something
 		if ( strlen(Lab_bitmap_filename) ) {
@@ -1524,6 +1552,7 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(wip->subsystem_factor, 0);
 	
 		VAR_SET_VALUE_SAVE(wip->damage_type_idx, 0);
+		VAR_SET_VALUE_SAVE(wip->damage_type_idx_sav, 0);
 	
 		VAR_SET_VALUE_SAVE(wip->shockwave.speed, 0);
 	
@@ -1607,12 +1636,14 @@ void labviewer_make_render_options_window(Button *caller)
 	// add all of the flags that we want/need...
 
 	// viewer flags
+	ADD_RENDER_FLAG("Test Load Ships", Lab_viewer_flags, LAB_FLAG_FULLY_LOAD);
 	ADD_RENDER_FLAG("Disable Model Rotation", Lab_viewer_flags, LAB_FLAG_NO_ROTATION);
 	ADD_RENDER_FLAG("Show Insignia", Lab_viewer_flags, LAB_FLAG_SHOW_INSIGNIA);
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
 	if (Use_GLSL) {
 		ADD_RENDER_BOOL("Fixed Render Pipeline", GLSL_override);
+		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
 	}
 	// map related flags
 	ADD_RENDER_BOOL("No Diffuse Map", Basemap_override);
@@ -1837,6 +1868,17 @@ void labviewer_change_ship_lod(Tree* caller)
 {
 	int ship_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
 	Assert( ship_index >= 0 );
+
+	// Genghis - Attempt to create and then immediately delete the selected ship type.
+	// This causes the full error-handling to kick-in, making the Lab viewer a more
+	// useful tool for checking model errors.
+	if (Lab_viewer_flags & LAB_FLAG_FULLY_LOAD)
+	{
+		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+		int test_idx = ship_create(&vmd_identity_matrix, &vmd_zero_vector, ship_index);
+		obj_delete(test_idx);
+		obj_snd_level_close();
+	}
 
 	Lab_last_selected_ship = Lab_selected_index;
 
@@ -2072,6 +2114,9 @@ void lab_init()
 
 		Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
 	}
+
+	// disable post-processing by default in the lab
+	PostProcessing_override = true;
 }
 
 #include "controlconfig/controlsconfig.h"
@@ -2223,6 +2268,7 @@ void lab_close()
 	Normalmap_override = false;
 	Heightmap_override = false;
 	Glowpoint_override = false;
+	PostProcessing_override = false;
 
 	// reset detail levels to default
 	Detail.hardware_textures = Lab_detail_texture_save;
