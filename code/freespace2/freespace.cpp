@@ -4085,7 +4085,7 @@ void game_simulation_frame()
 
 		// we don't want to evaluate mission stuff when any ingame joiner in multiplayer is receiving
 		// ships/wing packets.
-		if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.flags & NG_FLAG_INGAME_JOINING_CRITICAL)) && !(Game_mode & GM_DEMO_PLAYBACK)){
+		if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.flags & NG_FLAG_INGAME_JOINING_CRITICAL))){
 			mission_parse_eval_stuff();
 		}
 
@@ -4097,15 +4097,11 @@ void game_simulation_frame()
 		// move all the objects now
 		obj_move_all(flFrametime);
 
-		if(!(Game_mode & GM_DEMO_PLAYBACK)){
-			mission_eval_goals();
-		}
+		mission_eval_goals();
 	}
 
 	// always check training objectives, even in multiplayer missions. we need to do this so that the directives gauge works properly on clients
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		training_check_objectives();
-	}
+	training_check_objectives();
 	
 	// do all interpolation now
 	if ( MULTIPLAYER_CLIENT && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
@@ -4128,12 +4124,10 @@ void game_simulation_frame()
 		message_queue_process();				// process any messages send to the player
 	}
 
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		message_maybe_distort();				// maybe distort incoming message if comms damaged
-		player_repair_frame(flFrametime);	//	AI objects get repaired in ai_process, called from move code...deal with player.
-		player_process_pending_praise();		// maybe send off a delayed praise message to the player
-		player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
-	}
+	message_maybe_distort();				// maybe distort incoming message if comms damaged
+	player_repair_frame(flFrametime);	//	AI objects get repaired in ai_process, called from move code...deal with player.
+	player_process_pending_praise();		// maybe send off a delayed praise message to the player
+	player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
 		// process some stuff every frame (before frame is rendered)
@@ -4485,11 +4479,7 @@ void game_frame(int paused)
 	
 				if( (!popup_running_state()) && (!popupdead_is_active()) ){
 					game_process_keys();
-	
-					// don't read flying controls if we're playing a demo back
-					if(!(Game_mode & GM_DEMO_PLAYBACK)){
-						read_player_controls( Player_obj, flFrametime);
-					}
+					read_player_controls( Player_obj, flFrametime);
 				}
 				
 				// if we're not the master, we may have to send the server-critical ship status button_info bits

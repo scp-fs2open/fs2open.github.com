@@ -26,7 +26,6 @@
 #include "globalincs/linklist.h"
 #include "particle/particle.h"
 #include "weapon/muzzleflash.h"
-#include "demo/demo.h"
 #include "ship/shiphit.h"
 #include "object/objectsnd.h"
 #include "playerman/player.h"
@@ -576,12 +575,6 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
-	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD)
-	{
-		demo_POST_warpin(objp->signature, shipp->flags);
-	}
-
 	// docked ships who are not dock leaders don't use the warp effect code
 	// (the dock leader takes care of the whole group)
 	if (object_is_docked(objp) && !(shipp->flags & SF_DOCK_LEADER))
@@ -1055,11 +1048,6 @@ void shipfx_warpout_start( object *objp )
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-	}
-
-	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_warpout(objp->signature, shipp->flags);
 	}
 
 	// don't send ship depart packets for player ships

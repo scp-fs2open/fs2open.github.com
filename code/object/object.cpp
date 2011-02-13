@@ -36,7 +36,6 @@
 #include "jumpnode/jumpnode.h"
 #include "weapon/beam.h"
 #include "weapon/swarm.h"
-#include "demo/demo.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
 #include "mission/missionparse.h" //For 2D Mode
@@ -1381,12 +1380,6 @@ void obj_move_all(float frametime)
 				continue;
 			}
 
-			// if we're playing a demo back, only sim stuff that we're supposed to
-			if((Game_mode & GM_DEMO_PLAYBACK) && !demo_should_sim(objp)){
-				objp = GET_NEXT(objp);
-				continue;
-			}
-
 #ifdef OBJECT_CHECK 
 			// if(! ((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) ){
 				obj_check_object( objp );
@@ -1429,16 +1422,14 @@ void obj_move_all(float frametime)
 	}
 
 	//	After all objects have been moved, move all docked objects.
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		objp = GET_FIRST(&obj_used_list);
-		while( objp !=END_OF_LIST(&obj_used_list) )	{
-			dock_move_docked_objects(objp);
+	objp = GET_FIRST(&obj_used_list);
+	while( objp !=END_OF_LIST(&obj_used_list) )	{
+		dock_move_docked_objects(objp);
 
-			// unflag all objects as being updates
-			objp->flags &= ~OF_JUST_UPDATED;
+		// unflag all objects as being updates
+		objp->flags &= ~OF_JUST_UPDATED;
 
-			objp = GET_NEXT(objp);
-		}
+		objp = GET_NEXT(objp);
 	}
 
 	// Now that all objects have moved, we should calculate the
@@ -1455,9 +1446,7 @@ void obj_move_all(float frametime)
 		objp = GET_NEXT(objp);
 	} */
 
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		find_homing_object_cmeasures();	//	If any cmeasures fired, maybe steer away homing missiles	
-	}
+	find_homing_object_cmeasures();	//	If any cmeasures fired, maybe steer away homing missiles	
 
 	// do pre-collision stuff for beam weapons
 	beam_move_all_pre();
@@ -1466,9 +1455,7 @@ void obj_move_all(float frametime)
 		obj_check_all_collisions();		
 	}
 
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		turret_swarm_check_validity();
-	}
+	turret_swarm_check_validity();
 
 	// do post-collision stuff for beam weapons
 	beam_move_all_post();

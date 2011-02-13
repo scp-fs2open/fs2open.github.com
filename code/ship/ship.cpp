@@ -58,7 +58,6 @@
 #include "localization/localize.h"
 #include "nebula/neb.h"
 #include "ship/shipcontrails.h"
-#include "demo/demo.h"
 #include "weapon/beam.h"
 #include "math/staticrand.h"
 #include "missionui/missionshipchoice.h"
@@ -10080,11 +10079,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if(!(MULTIPLAYER_CLIENT && (shipp != Player_ship))){
 			send_NEW_primary_fired_packet( shipp, banks_fired );
 		}
-	}
-
-	// post a primary fired event
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_primary_fired(obj, swp->current_primary_bank, shipp->flags & SF_PRIMARY_LINKED);
 	}
 
    // STATS

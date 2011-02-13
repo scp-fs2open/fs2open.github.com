@@ -2965,12 +2965,7 @@ void button_info_do(button_info *bi)
 				}
 				// other buttons
 				else {
-					// if we're in demo playback, always clear the bits
-					if(Game_mode & GM_DEMO_PLAYBACK){
-						bi->status[i] &= ~(1 << j);
-					}
-					// otherwise check as normal
-					else if (button_function(32 * i + j)) {
+					if (button_function(32 * i + j)) {
 						bi->status[i] &= ~(1 << j);					
 					}
 				}

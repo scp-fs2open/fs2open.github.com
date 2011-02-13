@@ -28,10 +28,6 @@
 #define	GM_STATS_TRANSFER				(1 << 9)				// in the process of stats transfer
 #define	GM_CAMPAIGN_MODE				(1 << 10)			// are we currently in a campaign.
 
-#define	GM_DEMO_RECORD					(1 << 11)			// recording a demo
-#define	GM_DEMO_PLAYBACK				(1 << 12)			// playing a demo back
-#define	GM_DEMO							(GM_DEMO_RECORD | GM_DEMO_PLAYBACK)			// true whenever a demo is being recorded or played back
-
 #define	VM_EXTERNAL						(1 << 0)				//	Set if not viewing from player position.
 #define	VM_TRACK						(1 << 1)				//	Set if viewer is tracking target.
 #define	VM_DEAD_VIEW					(1 << 2)				//	Set if viewer is watching from dead view.

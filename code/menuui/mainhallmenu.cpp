@@ -40,7 +40,6 @@
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
-#include "demo/demo.h"
 #include "mission/missionload.h"
 #endif
 
@@ -744,9 +743,6 @@ void main_hall_do(float frametime)
 	case KEY_3:		
 		main_hall_campaign_cheat();	
 		break;	
-	case KEY_DEBUGGED + KEY_D:
-		demo_start_playback("test.fsd");
-		break;
 	}
 #else 
 	}
