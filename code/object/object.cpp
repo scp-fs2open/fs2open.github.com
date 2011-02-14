@@ -1368,57 +1368,61 @@ void obj_move_all(float frametime)
 
 	MONITOR_INC( NumObjects, Num_objects );	
 
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		// skip objects which should be dead
-		if ( !(objp->flags&OF_SHOULD_BE_DEAD) )	{		
-			vec3d	cur_pos = objp->pos;			// Save the current position
+		if (objp->flags & OF_SHOULD_BE_DEAD) {
+			continue;
+		}
 
-			// if this is an observer object, skip it
-			if(objp->type == OBJ_OBSERVER){
-				objp = GET_NEXT(objp);
-				continue;
-			}
+		// if this is an observer object, skip it
+		if (objp->type == OBJ_OBSERVER) {
+			continue;
+		}
+
+		vec3d cur_pos = objp->pos;			// Save the current position
 
 #ifdef OBJECT_CHECK 
-			// if(! ((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) ){
-				obj_check_object( objp );
-			// }
+		// if(! ((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) ){
+			obj_check_object( objp );
+		// }
 #endif
 
-			// pre-move
-			obj_move_all_pre(objp, frametime);
+		// pre-move
+		obj_move_all_pre(objp, frametime);
 
-			// store last pos and orient
-			objp->last_pos = cur_pos;
-			objp->last_orient = objp->orient;
+		// store last pos and orient
+		objp->last_pos = cur_pos;
+		objp->last_orient = objp->orient;
 
+		// Goober5000 - skip objects which don't move, but only until they're destroyed
+		if (!(objp->flags & OF_IMMOBILE && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if(multi_oo_is_interp_object(objp)){
+			if (multi_oo_is_interp_object(objp)) {
 				multi_oo_interp(objp);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
-
-			// move post
-			obj_move_all_post(objp, frametime);
-
-			//Equipment script processing
-			if (objp->type == OBJ_SHIP) {
-				ship* shipp = &Ships[objp->instance];
-				object* target;
-				if (Ai_info[shipp->ai_index].target_objnum != -1)
-					target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-				else
-					target = NULL;
-				if (objp == Player_obj && Player_ai->target_objnum != -1)
-					target = &Objects[Player_ai->target_objnum]; 
-				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
-			}
 		}
-		objp = GET_NEXT(objp);
+
+		// move post
+		obj_move_all_post(objp, frametime);
+
+		// Equipment script processing
+		if (objp->type == OBJ_SHIP) {
+			ship* shipp = &Ships[objp->instance];
+			object* target;
+
+			if (Ai_info[shipp->ai_index].target_objnum != -1)
+				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+			else
+				target = NULL;
+			if (objp == Player_obj && Player_ai->target_objnum != -1)
+				target = &Objects[Player_ai->target_objnum];
+
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
+		}
 	}
 
 	//	After all objects have been moved, move all docked objects.
@@ -1451,7 +1455,7 @@ void obj_move_all(float frametime)
 	// do pre-collision stuff for beam weapons
 	beam_move_all_pre();
 
-	if ( Collisions_enabled )	{
+	if ( Collisions_enabled ) {
 		obj_check_all_collisions();		
 	}
 

@@ -246,6 +246,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "allow vanishing",		MSS_FLAG_ALLOW_VANISHING,	0 },
 	{ "damage as hull",			MSS_FLAG_DAMAGE_AS_HULL,	0 },
 	{ "starts locked",          MSS_FLAG_TURRET_LOCKED,     0 },
+	{ "no aggregate",			MSS_FLAG_NO_AGGREGATE,		0 },
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -4827,21 +4828,23 @@ void ship_recalc_subsys_strength( ship *shipp )
 	// make the current strength be 1.0.  If there are initial conditions on the ship, then
 	// the mission parse code should take care of setting that.
 	for (i = 0; i < SUBSYSTEM_MAX; i++) {
-		shipp->subsys_info[i].num = 0;
-		shipp->subsys_info[i].total_hits = 0.0f;
-		shipp->subsys_info[i].current_hits = 0.0f;
+		shipp->subsys_info[i].type_count = 0;
+		shipp->subsys_info[i].aggregate_max_hits = 0.0f;
+		shipp->subsys_info[i].aggregate_current_hits = 0.0f;
 	}
 
 	// count all of the subsystems of a particular type.  For each generic type of subsystem, we store the
 	// total count of hits.  (i.e. for 3 engines, we store the sum of the max_hits for each engine)
 	for ( ship_system = GET_FIRST(&shipp->subsys_list); ship_system != END_OF_LIST(&shipp->subsys_list); ship_system = GET_NEXT(ship_system) ) {
-		int type;
 
-		type = ship_system->system_info->type;
-		Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
-		shipp->subsys_info[type].num++;
-		shipp->subsys_info[type].total_hits += ship_system->max_hits;
-		shipp->subsys_info[type].current_hits += ship_system->current_hits;
+		if (!(ship_system->flags & SSF_NO_AGGREGATE)) {
+			int type = ship_system->system_info->type;
+			Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
+
+			shipp->subsys_info[type].type_count++;
+			shipp->subsys_info[type].aggregate_max_hits += ship_system->max_hits;
+			shipp->subsys_info[type].aggregate_current_hits += ship_system->current_hits;
+		}
 
 		//Get rid of any persistent sounds on the subsystem
 		//This is inefficient + sloppy but there's not really an easy way to handle things
@@ -4905,7 +4908,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
 	// through sexpressions.
-	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].num > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].current_hits == 0.0f) ){
+	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].type_count > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f) ) {
 		shipp->flags |= SF_DISABLED;
 	} else {
 		shipp->flags &= ~SF_DISABLED;
@@ -4913,7 +4916,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 	}
 
 	/*
-	if ( (shipp->subsys_info[SUBSYSTEM_TURRET].num > 0) && (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f) ){
+	if ( (shipp->subsys_info[SUBSYSTEM_TURRET].type_count > 0) && (shipp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f) ) {
 		shipp->flags |= SF_DISARMED;
 	} else {
 		shipp->flags &= ~SF_DISARMED;
@@ -5056,6 +5059,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_VANISHED;
 		if (model_system->flags & MSS_FLAG_DAMAGE_AS_HULL)
 			ship_system->flags |= SSF_DAMAGE_AS_HULL;
+		if (model_system->flags & MSS_FLAG_NO_AGGREGATE)
+			ship_system->flags |= SSF_NO_AGGREGATE;
 		if (model_system->flags & MSS_FLAG_ROTATES)
 			ship_system->flags |= SSF_ROTATES;
 
@@ -7550,24 +7555,26 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 		Assert(ssp->system_info->type >= 0 && ssp->system_info->type < SUBSYSTEM_MAX);
 		ssip = &sp->subsys_info[ssp->system_info->type];
 
-		if ( ssp->current_hits != ssp->max_hits ) {		
+		if ( ssp->current_hits < ssp->max_hits ) {
 
 			// only repair those subsystems which are not destroyed
 			if ( ssp->max_hits <= 0 || ssp->current_hits <= 0 )
 				continue;
 
 			// do incremental repair on the subsystem
-			ssp->current_hits += ssp->max_hits * real_repair_rate * frametime;
-			ssip->current_hits += ssip->total_hits * real_repair_rate * frametime;
-		
 			// check for overflow of current_hits
-			if ( ssp->current_hits >= ssp->max_hits ) {
-				// TODO: here is hook for when a subsystem is fully repaired (eg add voice)
+			ssp->current_hits += ssp->max_hits * real_repair_rate * frametime;
+			if ( ssp->current_hits > ssp->max_hits ) {
 				ssp->current_hits = ssp->max_hits;
 			}
-			if ( ssip->current_hits >= ssip->total_hits ) {
-				ssip->current_hits = ssip->total_hits;
-			}
+
+			// aggregate repair
+			if (!(ssp->flags & SSF_NO_AGGREGATE)) {
+				ssip->aggregate_current_hits += ssip->aggregate_max_hits * real_repair_rate * frametime;
+				if ( ssip->aggregate_current_hits > ssip->aggregate_max_hits ) {
+					ssip->aggregate_current_hits = ssip->aggregate_max_hits;
+				}
+			}		
 		}
 	}	// end for
 }
@@ -11869,7 +11876,7 @@ ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
 		int subsys_type;
 		
 		subsys_type = -index;
-		if ( sp->subsys_info[subsys_type].current_hits == 0.0f )		// if there are no hits, no subsystem to attack.
+		if ( sp->subsys_info[subsys_type].aggregate_current_hits <= 0.0f )		// if there are no hits, no subsystem to attack.
 			return NULL;
 
 		if ( attacker_pos != NULL ) {
@@ -11962,18 +11969,20 @@ float ship_get_subsystem_strength( ship *shipp, int type )
 	ship_subsys *ssp;
 
 	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
-	if ( shipp->subsys_info[type].total_hits == 0.0f )
-		return 1.0f;
 
 	//	For a dying ship, all subsystem strengths are zero.
 	if (Objects[shipp->objnum].hull_strength <= 0.0f)
 		return 0.0f;
 
+	// short circuit 1
+	if (shipp->subsys_info[type].aggregate_max_hits <= 0.0f)
+		return 1.0f;
+
 	// short circuit 0
-	if (shipp->subsys_info[type].current_hits <= 0.0f)
+	if (shipp->subsys_info[type].aggregate_current_hits <= 0.0f)
 		return 0.0f;
 
-	strength = shipp->subsys_info[type].current_hits / shipp->subsys_info[type].total_hits;
+	strength = shipp->subsys_info[type].aggregate_current_hits / shipp->subsys_info[type].aggregate_max_hits;
 	Assert( strength != 0.0f );
 
 	if ( (type == SUBSYSTEM_ENGINE) && (strength < 1.0f) ) {
@@ -11994,7 +12003,7 @@ float ship_get_subsystem_strength( ship *shipp, int type )
 			}
 			ssp = GET_NEXT( ssp );
 		}
-		strength = percent / (float)shipp->subsys_info[type].num;
+		strength = percent / (float)shipp->subsys_info[type].type_count;
 	}
 
 	return strength;
@@ -12011,14 +12020,14 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	ship_subsys *ssp;
 
 	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
-	if ( shipp->subsys_info[type].total_hits == 0.0f )
+	if ( shipp->subsys_info[type].aggregate_max_hits <= 0.0f )
 		return;
 
 	total_current_hits = 0.0f;
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
-		if ( ssp->system_info->type == type ) {
+		if ( (ssp->system_info->type == type) && !(ssp->flags & SSF_NO_AGGREGATE) ) {
 			ssp->current_hits = strength * ssp->max_hits;
 			total_current_hits += ssp->current_hits;
 		}
@@ -12026,10 +12035,10 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	}
 
 	// update the objects integrity, needed since we've bashed the strength of a subsysem
-	diff = total_current_hits - shipp->subsys_info[type].current_hits;
+	diff = total_current_hits - shipp->subsys_info[type].aggregate_current_hits;
 	Objects[shipp->objnum].hull_strength += diff;
-	// fix up the shipp->subsys_info[type] current_hits value
-	shipp->subsys_info[type].current_hits = total_current_hits;
+	// fix up the shipp->subsys_info[type] aggregate_current_hits value
+	shipp->subsys_info[type].aggregate_current_hits = total_current_hits;
 }
 
 #define		SHIELD_REPAIR_RATE	0.20f			//	Percent of shield repaired per second.
@@ -12290,9 +12299,11 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			}
 
 			// add repair to aggregate strength of subsystems of that type
-			shipp->subsys_info[subsys_type].current_hits += repair_delta;
-			if ( shipp->subsys_info[subsys_type].current_hits > shipp->subsys_info[subsys_type].total_hits )
-				shipp->subsys_info[subsys_type].current_hits = shipp->subsys_info[subsys_type].total_hits;
+			if (!(ssp->flags & SSF_NO_AGGREGATE)) {
+				shipp->subsys_info[subsys_type].aggregate_current_hits += repair_delta;
+				if ( shipp->subsys_info[subsys_type].aggregate_current_hits > shipp->subsys_info[subsys_type].aggregate_max_hits )
+					shipp->subsys_info[subsys_type].aggregate_current_hits = shipp->subsys_info[subsys_type].aggregate_max_hits;
+			}
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
@@ -13645,7 +13656,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 	Assert ( type >= 0 && type < SUBSYSTEM_MAX );
 
 	// If aggregate total is 0, that means no subsystem is alive of that type
-	if ( shipp->subsys_info[type].total_hits <= 0.0f )
+	if ( shipp->subsys_info[type].aggregate_max_hits <= 0.0f )
 		return NULL;
 
 	// loop through all the subsystems, if we find a match that has some strength, return it
@@ -13661,7 +13672,7 @@ ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *
 	Assert ( subsys_type >= 0 && subsys_type < SUBSYSTEM_MAX );
 
 	// If aggregate total is 0, that means no subsystem is alive of that type
-	if ( sp->subsys_info[subsys_type].total_hits <= 0.0f )
+	if ( sp->subsys_info[subsys_type].aggregate_max_hits <= 0.0f )
 		return NULL;
 
 	ship_subsys	*closest_in_sight_subsys;

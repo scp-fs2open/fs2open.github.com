@@ -548,7 +548,7 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 	list_size = (int)ras->subsys_aggregate_current_hits.size();
 	CLAMP(list_size, 0, SUBSYSTEM_MAX);
 	for (i = 0; i < list_size; i++) {
-		shipp->subsys_info[i].current_hits = ras->subsys_aggregate_current_hits[i];
+		shipp->subsys_info[i].aggregate_current_hits = ras->subsys_aggregate_current_hits[i];
 	}
 }
 
@@ -570,7 +570,7 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 	}
 
 	for (i = 0; i < SUBSYSTEM_MAX; i++)
-		ras->subsys_aggregate_current_hits.push_back( shipp->subsys_info[i].current_hits );
+		ras->subsys_aggregate_current_hits[i] = shipp->subsys_info[i].aggregate_current_hits;
 }
 
 

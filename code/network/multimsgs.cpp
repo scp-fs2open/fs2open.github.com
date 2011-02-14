@@ -7145,7 +7145,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 					// add the value just generated (it was zero'ed above) into the array of generic system types
 					subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 					Assert ( subsys_type < SUBSYSTEM_MAX );
-					shipp->subsys_info[subsys_type].current_hits += fl_val;
+					if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+						shipp->subsys_info[subsys_type].aggregate_current_hits += fl_val;
+					}
 					n_subsystems++;
 				}
 			}

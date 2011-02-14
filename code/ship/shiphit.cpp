@@ -183,18 +183,20 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	// next do a quick sanity check on the current hits that we are keeping for the generic subsystems
 	// I think that there might be rounding problems with the floats.  This code keeps us safe.
-	if ( ship_p->subsys_info[type].num == 1 ) {
-		ship_p->subsys_info[type].current_hits = 0.0f;
+	if ( ship_p->subsys_info[type].type_count == 1 ) {
+		ship_p->subsys_info[type].aggregate_current_hits = 0.0f;
 	} else {
 		float hits;
 		ship_subsys *ssp;
 
 		hits = 0.0f;
 		for ( ssp=GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp) ) {
-			if ( ssp->system_info->type == type )
+			// type matches?
+			if ( (ssp->system_info->type == type) && !(ssp->flags & SSF_NO_AGGREGATE) ) {
 				hits += ssp->current_hits;
+			}
 		}
-		ship_p->subsys_info[type].current_hits = hits;
+		ship_p->subsys_info[type].aggregate_current_hits = hits;
 	}
 
 	// store an event in the event log.  Also, determine if all turrets or all
@@ -243,7 +245,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	if ( psub->type == SUBSYSTEM_TURRET ) {
-		if ( ship_p->subsys_info[type].current_hits == 0.0f ) {
+		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			//	Don't create "disarmed" event for small ships.
 			if (!(Ship_info[ship_p->ship_info_index].flags & SIF_SMALL_SHIP)) {
 				mission_log_add_entry(LOG_SHIP_DISARMED, ship_p->ship_name, NULL );
@@ -254,7 +256,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		// when an engine is destroyed, we must change the max velocity of the ship
 		// to be some fraction of its normal maximum value
 
-		if ( ship_p->subsys_info[type].current_hits == 0.0f ) {
+		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			mission_log_add_entry(LOG_SHIP_DISABLED, ship_p->ship_name, NULL );
 			ship_p->flags |= SF_DISABLED;				// add the disabled flag
 		}
@@ -513,9 +515,11 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			Assert(Player_ai->targeted_subsys != NULL);
 			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
 				Assert(subsys->system_info->type == (int) -damage);
-				ship_p->subsys_info[subsys->system_info->type].current_hits -= subsys->current_hits;
-				if (ship_p->subsys_info[subsys->system_info->type].current_hits < 0) {
-					ship_p->subsys_info[subsys->system_info->type].current_hits = 0.0f;
+				if (!(subsys->flags & SSF_NO_AGGREGATE)) {
+					ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits -= subsys->current_hits;
+					if (ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits < 0.0f) {
+						ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits = 0.0f;
+					}
 				}
 				subsys->current_hits = 0.0f;
 				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
@@ -681,16 +685,20 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			}
 
 			subsys->current_hits -= damage_to_apply;
-			ship_p->subsys_info[subsys->system_info->type].current_hits -= damage_to_apply;
+			if (!(subsys->flags & SSF_NO_AGGREGATE)) {
+				ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits -= damage_to_apply;
+			}
 
 			if (subsys->current_hits < 0.0f) {
 				damage_left -= subsys->current_hits;
-				ship_p->subsys_info[subsys->system_info->type].current_hits -= subsys->current_hits;
+				if (!(subsys->flags & SSF_NO_AGGREGATE)) {
+					ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits -= subsys->current_hits;
+				}
 				subsys->current_hits = 0.0f;					// set to 0 so repair on subsystem takes immediate effect
 			}
 
-			if ( ship_p->subsys_info[subsys->system_info->type].current_hits < 0.0f ){
-				ship_p->subsys_info[subsys->system_info->type].current_hits = 0.0f;
+			if ( ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits < 0.0f ){
+				ship_p->subsys_info[subsys->system_info->type].aggregate_current_hits = 0.0f;
 			}
 
 			// multiplayer clients never blow up subobj stuff on their own
