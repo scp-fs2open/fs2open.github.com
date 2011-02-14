@@ -261,6 +261,9 @@ typedef struct cockpit_display_info {
 #define SSF_MISSILES_IGNORE_IF_DEAD	(1 << 9)	// forces homing missiles to target hull if subsystem is dead before missile hits it.
 #define SSF_ROTATES				(1 << 10)
 #define SSF_DAMAGE_AS_HULL		(1 << 11)		// Applies armor damage instead of subsystem damge. - FUBAR
+#define SSF_NO_AGGREGATE		(1 << 12)		// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
+
+
 // Wanderer 
 #define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
 #define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
@@ -365,9 +368,9 @@ typedef	struct ship_subsys {
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h
 // for SUBSYSTEM_xxx will be used as indices into this array.
 typedef struct ship_subsys_info {
-	int	num;				// number of subsystems of type on this ship;
-	float total_hits;		// total number of hits between all subsystems of this type.
-	float current_hits;		// current count of hits for all subsystems of this type.	
+	int	type_count;					// number of subsystems of type on this ship;
+	float aggregate_max_hits;		// maximum number of hits for all subsystems of this type.
+	float aggregate_current_hits;	// current count of hits for all subsystems of this type.	
 } ship_subsys_info;
 
 

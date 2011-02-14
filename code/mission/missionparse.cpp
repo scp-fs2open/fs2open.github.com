@@ -2160,9 +2160,11 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
-					float new_hits;
-					new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-					shipp->subsys_info[ptr->system_info->type].current_hits -= (ptr->max_hits - new_hits);
+					float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+					if (!(ptr->flags & SSF_NO_AGGREGATE)) {
+						shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
+					}
+
 					if ((100.0f - sssp->percent) < 0.5)
 					{
 						ptr->current_hits = 0.0f;

@@ -871,8 +871,8 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 		return 0;
 	}
 
-	// same as above except for disabled.
-	if ( (Comm_orders[order].item == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].num == 0) || (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f)) ){
+	// same as above except for disarmed.
+	if ( (Comm_orders[order].item == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].type_count == 0) || (shipp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f)) ){
 		return 0;
 	}
 

@@ -130,6 +130,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
 #define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
 #define MSS_FLAG_TURRET_LOCKED      (1 << 29)       // Turret starts locked by default - Sushi
+#define MSS_FLAG_NO_AGGREGATE		(1 << 30)		// Don't include with aggregate subsystem types - Goober5000
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
