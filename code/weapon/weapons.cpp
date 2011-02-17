@@ -6779,9 +6779,6 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 }
 
 void surface_shield_impact(vec3d *hitpos, object *objp, float radius, int idx) {
-	vec3d hitpos_local, hitpos_local_rotated;
-	vm_vec_sub(&hitpos_local, hitpos, &objp->pos);
-	vm_vec_rotate(&hitpos_local_rotated, &hitpos_local, &objp->orient);
 	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
-	particle_create( &hitpos_local_rotated, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
+	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
 }
