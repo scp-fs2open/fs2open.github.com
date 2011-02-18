@@ -246,7 +246,7 @@ void player_set_squad_bitmap(player *p, char *fname)
 	}
 
 	// if he has another bitmap already - unload it
-	if (p->insignia_texture >= 0) {
+	if (p->insignia_texture > 0) {
 		bm_release(p->insignia_texture);
 	}
 

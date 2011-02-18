@@ -60,7 +60,7 @@ int Bm_paging = 0;
 
 // locals
 static unsigned int Bm_next_signature = 0x1234;
-static int bm_next_handle = 0;
+static int bm_next_handle = 1;
 int Bm_low_mem = 0;
 // Bm_max_ram - How much RAM bmpman can use for textures.
 // Set to <1 to make it use all it wants.
@@ -90,6 +90,10 @@ int bm_get_next_handle()
 	if ( bm_next_handle > 30000 )	{
 		bm_next_handle = 1;
 	}
+
+	if (bm_next_handle == 4750)
+		bm_next_handle++;
+
 	return n;
 }
 
