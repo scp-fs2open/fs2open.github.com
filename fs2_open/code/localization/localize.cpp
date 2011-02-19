@@ -552,6 +552,7 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 // now will also replace $rank with rank, e.g. "Lieutenant"
 // now will also replace $quote with double quotation marks
 // now will also replace $semicolon with semicolon mark
+// now will also replace $slash and $backslash
 void lcl_replace_stuff(SCP_string &text)
 {
 	if (Fred_running)
@@ -564,6 +565,8 @@ void lcl_replace_stuff(SCP_string &text)
 	}
 	replace_all(text, "$quote", "\"");
 	replace_all(text, "$semicolon", ";");
+	replace_all(text, "$slash", "/");
+	replace_all(text, "$backslash", "\\");
 }
 
 void lcl_fred_replace_stuff(char *text, unsigned int max_len)
@@ -589,6 +592,8 @@ void lcl_fred_replace_stuff(SCP_string &text)
 
 	replace_all(text, "\"", "$quote");
 	replace_all(text, ";", "$semicolon");
+	replace_all(text, "/", "$slash");
+	replace_all(text, "\\", "$backslash");
 }
 
 // get the localized version of the string. if none exists, return the original string
