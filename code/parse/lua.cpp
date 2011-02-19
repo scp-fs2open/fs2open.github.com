@@ -1796,6 +1796,79 @@ ade_obj<model_h> l_Model("model", "3D Model (POF) handle");
 
 ade_obj<modeltextures_h> l_ModelTextures("modeltextures_h", "Array of materials");
 
+// Thrusters:
+class thrusters_h : public model_h 
+{
+	public:
+	thrusters_h(polymodel *pm) : model_h(pm){}
+	thrusters_h() : model_h(){}
+};
+
+ade_obj<thrusters_h> l_Thrusters("thrusters", "The thrusters of a model");
+
+// Thrusterbank:
+struct thrusterbank_h
+{
+	thruster_bank *bank;
+
+	thrusterbank_h()
+	{
+		bank = NULL;
+	}
+
+	thrusterbank_h(thruster_bank* ba)
+	{
+		bank = ba;
+	}
+
+	thruster_bank *Get()
+	{
+		if (!isValid())
+			return NULL;
+
+		return bank;	
+	}
+
+	bool isValid()
+	{
+		return this != NULL && bank != NULL;
+	}
+};
+
+ade_obj<thrusterbank_h> l_Thrusterbank("thrusterbank", "A model thrusterbank");
+
+// Glowpoint:
+struct glowpoint_h 
+{
+	glow_point *point;
+
+	glowpoint_h() 
+	{
+	}
+
+	glowpoint_h(glow_point* np)
+	{
+		point = np;
+	}
+
+	glow_point* Get()
+	{
+		if (!isValid())
+			return NULL;
+
+		return point;
+	}
+
+	bool isValid()
+	{
+		return (this != NULL && point != NULL);
+	}
+
+};
+
+ade_obj<glowpoint_h> l_Glowpoint("glowpoint", "A model glowpoint");
+
+
 ADE_VIRTVAR(Textures, l_Model, "modeltextures", "Model textures", "modeltextures", "Model textures, or an invalid modeltextures handle if the model handle is invalid")
 {
 	model_h *mdl = NULL;
@@ -1813,6 +1886,24 @@ ADE_VIRTVAR(Textures, l_Model, "modeltextures", "Model textures", "modeltextures
 	}
 
 	return ade_set_args(L, "o", l_ModelTextures.Set(modeltextures_h(pm)));
+}
+
+ADE_VIRTVAR(Thrusters, l_Model, "thrusters", "Model thrusters", "thrusters", "Thrusters of the model or invalid handle")
+{
+	model_h *mdl = NULL;
+	thrusters_h *oth = NULL;
+	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_Thrusters.GetPtr(&oth)))
+		return ade_set_error(L, "o", l_Thrusters.Set(thrusters_h()));
+
+	polymodel *pm = mdl->Get();
+	if(pm == NULL)
+		return ade_set_error(L, "o", l_Thrusters.Set(thrusters_h()));
+
+	if(ADE_SETTING_VAR && oth->IsValid()) {
+		LuaError(L, "Attempt to use Incomplete Feature: Thrusters copy");
+	}
+
+	return ade_set_args(L, "o", l_Thrusters.Set(thrusters_h(pm)));
 }
 
 extern void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
@@ -1945,6 +2036,179 @@ ADE_FUNC(isValid, l_Model, NULL, "True if valid, false or nil if not", "boolean"
 		return ADE_RETURN_NIL;
 
 	return mdl->IsValid();
+}
+
+//**********HANDLE: thrusters
+ADE_FUNC(__len, l_Thrusters, NULL, "Number of thruster banks on the model", "number", "Number of thrusterbanks")
+{
+	thrusters_h *trh;
+	if(!ade_get_args(L, "o", l_Thrusters.GetPtr(&trh)))
+		return ade_set_error(L, "i", -1);
+
+	if(!trh->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	polymodel *pm = trh->Get();
+
+	if(pm == NULL)
+		return ade_set_error(L, "i", -1);
+
+	return ade_set_args(L, "i", pm->n_thrusters);
+}
+
+ADE_INDEXER(l_Thrusters, "number Index", "Array of all thrusterbanks on this thruster", "thrusterbank", "Handle to the thrusterbank or invalid handle if index is invalid")
+{
+	thrusters_h *trh = NULL;
+	char *s = NULL;
+	thrusterbank_h newThr = NULL;
+
+	if (!ade_get_args(L, "os|o", l_Thrusters.GetPtr(&trh), &s, l_Thrusterbank.Get(&newThr)))
+		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
+
+	polymodel *pm = trh->Get();
+
+	if (!trh->IsValid() || s == NULL || pm == NULL)
+		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
+	
+	//Determine index
+	int idx = atoi(s) - 1;	//Lua->FS2
+
+	if (idx < 0 || idx >= pm->n_thrusters)
+		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
+	
+	thruster_bank* bank = &pm->thrusters[idx];
+	
+	if (ADE_SETTING_VAR && trh != NULL)
+	{
+		if (newThr.isValid())
+		{
+			pm->thrusters[idx] = *(newThr.Get());
+		}
+	}
+
+	return ade_set_args(L, "o", l_Thrusterbank.Set(bank));
+}
+
+ADE_FUNC(isValid, l_Thrusters, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	thrusters_h *trh;
+	if(!ade_get_args(L, "o", l_Thrusters.GetPtr(&trh)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", trh->IsValid());
+}
+
+//**********HANDLE: thrusterbank
+ADE_FUNC(__len, l_Thrusterbank, NULL, "Number of thrusters on this thrusterbank", "number", "Number of thrusters on this bank or 0 if handle is invalid")
+{
+	thrusterbank_h *tbh = NULL;
+	if(!ade_get_args(L, "o", l_Thrusterbank.GetPtr(&tbh)))
+		return ade_set_error(L, "i", -1);
+
+	if(!tbh->isValid())
+		return ade_set_error(L, "i", -1);
+	
+	thruster_bank* bank = tbh->Get();
+
+	return ade_set_args(L, "i", bank->num_points);
+}
+
+ADE_INDEXER(l_Thrusterbank, "number Index", "Array of glowpoint", "glowpoint", "Glowpoint, or invalid glowpoint handle on failure")
+{
+	thrusterbank_h *tbh = NULL;
+	char *s = NULL;
+	glowpoint_h *glh = NULL;
+
+	if (!ade_get_args(L, "os|o", l_Thrusterbank.GetPtr(&tbh), &s, l_Glowpoint.GetPtr(&glh)))
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
+
+	if (!tbh->isValid() || s==NULL)
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
+	
+	thruster_bank* bank = tbh->Get();
+
+	//Determine index
+	int idx = atoi(s) - 1;	//Lua->FS2
+
+	if (idx < 0 || idx >= bank->num_points)
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
+	
+	glow_point* glp = &bank->points[idx];
+	
+	if (ADE_SETTING_VAR && glh != NULL)
+	{
+		if (glh->isValid())
+		{
+			bank->points[idx] = *(glh->Get());
+		}
+	}
+
+	return ade_set_args(L, "o", l_Glowpoint.Set(glp));
+}
+
+ADE_FUNC(isValid, l_Thrusterbank, NULL, "Detectes if this handle is valid", "boolean", "true if this handle is valid, false otherwise")
+{
+	thrusterbank_h* trh;
+	if(!ade_get_args(L, "o", l_Thrusterbank.GetPtr(&trh)))
+		return ADE_RETURN_FALSE;
+
+	if (!trh->isValid())
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", trh->isValid());
+}
+
+//**********HANDLE: glowpoint
+ADE_VIRTVAR(Position, l_Glowpoint, NULL, "The (local) vector to the position of the glowpoint", "vector", "The local vector to the glowpoint or nil invalid")
+{
+	glowpoint_h *glh = NULL;
+	vec3d newVec;
+
+	if(!ade_get_args(L, "o|o", l_Glowpoint.GetPtr(&glh), l_Vector.Get(&newVec)))
+		return ADE_RETURN_NIL;
+
+	if (!glh->isValid())
+		return ADE_RETURN_NIL;
+	
+	vec3d vec = glh->point->pnt;
+
+	if (ADE_SETTING_VAR)
+	{
+		glh->point->pnt = newVec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(vec));
+}
+
+ADE_VIRTVAR(Radius, l_Glowpoint, NULL, "The radius of the glowpoint", "number", "The radius of the glowpoint or -1 of invalid")
+{
+	glowpoint_h* glh = NULL;
+	float newVal;
+
+	if(!ade_get_args(L, "o|f", l_Glowpoint.GetPtr(&glh), &newVal))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (!glh->isValid())
+		return ade_set_error(L, "f", -1.0f);
+
+	float radius = glh->point->radius;
+
+	if (ADE_SETTING_VAR)
+	{
+		glh->point->radius = newVal;
+	}
+
+	return ade_set_args(L, "f", radius);
+}
+
+ADE_FUNC(isValid, l_Glowpoint, NULL, "Returns wether this handle is valid or not", "boolean", "True if handle is valid, false otherwise")
+{
+	glowpoint_h glh = NULL;
+
+	if(!ade_get_args(L, "o", l_Glowpoint.Get(&glh)))
+		return ADE_RETURN_FALSE;
+	
+	return ade_set_args(L, "b", glh.isValid());
 }
 
 //**********HANDLE: order
@@ -3609,6 +3873,27 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 		return ade_set_args(L, "s", "");
 }
 
+ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model, or invalid model handle if weaponclass handle is invalid")
+{
+	int weapon_info_idx=-1;
+	model_h *mdl = NULL;
+	if(!ade_get_args(L, "o|o", l_Weaponclass.Get(&weapon_info_idx), l_Model.GetPtr(&mdl)))
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	if(weapon_info_idx < 0 || weapon_info_idx > Num_weapon_types)
+		return ade_set_error(L, "o", l_Model.Set(-1));
+
+	weapon_info *wip = &Weapon_info[weapon_info_idx];
+
+	int mid = mdl->GetID();
+
+	if(ADE_SETTING_VAR && mid > -1) {
+		wip->model_num = mid;
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(model_h(wip->model_num)));
+}
+
 ADE_VIRTVAR(ArmorFactor, l_Weaponclass, "number", "Amount of weapon damage applied to ship hull (0-1.0)", "number", "Armor factor, or empty string if handle is invalid")
 {
 	int idx;
@@ -3658,6 +3943,23 @@ ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time)
 	}
 
 	return ade_set_args(L, "f", Weapon_info[idx].fire_wait);
+}
+
+ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will fly before turing onto its target", "number", "Free flight time or emty string if invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].free_flight_time = f;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
 }
 
 ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")
@@ -3779,6 +4081,37 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 	return ade_set_args(L, "f", Weapon_info[idx].max_speed);
 }
 
+ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon clas flagged as bomb", "boolean", "New flag")
+{
+	int idx;
+	bool newVal = false;
+	if(!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &newVal))
+		return ADE_RETURN_FALSE;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return ADE_RETURN_FALSE;
+	
+	weapon_info *info = &Weapon_info[idx];
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newVal)
+		{
+			info->wi_flags |= WIF_BOMB;
+		}
+		else
+		{
+			info->wi_flags &= ~WIF_BOMB;
+		}
+	}
+		
+
+	if (info->wi_flags & WIF_BOMB)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;
@@ -3801,6 +4134,51 @@ ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index valus of the 
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx);
+}
+
+ADE_FUNC(isLaser, l_Weaponclass, NULL, "Return true if the weapon is a laser (this includes balistic primaries)", "boolean", "true if the weapon is a laser, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].subtype == WP_LASER)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isMissile, l_Weaponclass, NULL, "Return true if the weapon is a missile", "boolean", "true if the weapon is a missile, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].subtype == WP_MISSILE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "boolean", "true if the weapon is a beam, false otherwise")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return ADE_RETURN_FALSE;
+
+	if (Weapon_info[idx].subtype == WP_BEAM)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 //**********HANDLE: Eyepoint
@@ -5688,6 +6066,74 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targetted by this subsystem. 
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
 }
 
+ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets resets after a certain time of inactivity", "boolean", "true if turret resets, false otherwise")
+{
+	ship_subsys_h *sso;
+	bool newVal = false;
+	if (!ade_get_args(L, "o|b", l_Subsystem.GetPtr(&sso), &newVal))
+		return ADE_RETURN_FALSE;
+
+	if (!sso->IsValid())
+		return ADE_RETURN_FALSE;
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newVal)
+		{
+			sso->ss->system_info->flags |= MSS_FLAG_TURRET_RESET_IDLE;
+		}
+		else
+		{
+			sso->ss->system_info->flags &= ~MSS_FLAG_TURRET_RESET_IDLE;
+		}
+	}
+
+	if (sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds) after that the turret resets itself", "number", "Reset delay")
+{
+	ship_subsys_h *sso;
+	int newVal = -1;
+	if (!ade_get_args(L, "o|i", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "i", -1);
+
+	if (!sso->IsValid())
+		return ade_set_error(L, "i", -1);
+
+	if (!(sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+		return ade_set_error(L, "i", -1);
+
+	if(ADE_SETTING_VAR)
+	{
+		if ((sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+			sso->ss->system_info->turret_reset_delay = newVal;
+	}
+
+	return ade_set_args(L, "i", sso->ss->system_info->turret_reset_delay);
+}
+
+ADE_VIRTVAR(TurnRate, l_Subsystem, "number", "The turn rate", "number", "Turnrate or -1 on error")
+{
+	ship_subsys_h *sso;
+	float newVal = -1.0f;
+	if (!ade_get_args(L, "o|i", l_Subsystem.GetPtr(&sso), &newVal))
+		return ade_set_error(L, "i", -1.0f);
+
+	if (!sso->IsValid())
+		return ade_set_error(L, "i", -1.0f);
+
+	if(ADE_SETTING_VAR)
+	{
+		sso->ss->system_info->turret_turning_rate = newVal;
+	}
+
+	return ade_set_args(L, "i", sso->ss->system_info->turret_turning_rate);
+}
+
 ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targeting for this turret is switched off. If set to false, the AI will take over again.", "boolean", "Returns true if successful, false otherwise")
 {
 	bool targetOverride = false;
@@ -5767,6 +6213,65 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 
 	return ade_set_args(L, "b", rtn);
+}
+
+ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates the turret to face Pos or resets the turret to its original state", "number", "Something")
+{
+	ship_subsys_h *sso;
+	vec3d pos = vmd_zero_vector;
+	bool reset = false;
+	if (!ade_get_args(L, "oo|o", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
+		return ADE_RETURN_NIL;
+
+	//Get default turret info
+	vec3d gpos, gvec;
+	model_subsystem *tp = sso->ss->system_info;
+	//ship_get_global_turret_info(sso->objp, sso->ss->system_info, &gpos, &gvec);
+
+	//Rotate turret position with ship
+	vm_vec_unrotate(&gpos, &tp->pnt, &sso->objp->orient);
+	//Add turret position to appropriate world space
+	vm_vec_add2(&gpos, &sso->objp->pos);
+
+	//Rotate turret heading with turret base and gun
+	//Now rotate a matrix by angles
+	vec3d turret_heading = vmd_zero_vector;
+	matrix m = IDENTITY_MATRIX;
+	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_1.angs);
+	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_2.angs);
+	vm_vec_unrotate(&turret_heading, &tp->turret_norm, &m);
+
+	//Rotate into world space
+	vm_vec_unrotate(&gvec, &turret_heading, &sso->objp->orient);	
+	
+	int ret_val = model_rotate_gun(Ship_info[(&Ships[sso->objp->instance])->ship_info_index].model_num, sso->ss->system_info, &Objects[sso->objp->instance].orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &Objects[sso->objp->instance].pos, &pos, (&Ships[sso->objp->instance])->objnum, reset);
+
+	return ade_set_args(L, "i", ret_val);
+}
+
+ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector or null vector on error")
+{
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!sso->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	
+	//Get default turret info
+	model_subsystem *tp = sso->ss->system_info;
+	
+	//Rotate turret heading with turret base and gun
+	//Now rotate a matrix by angles
+	vec3d turret_heading = vmd_zero_vector;
+	matrix m = IDENTITY_MATRIX;
+	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_1.angs);
+	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_2.angs);
+	vm_vec_unrotate(&turret_heading, &tp->turret_norm, &m);
+
+	vm_vec_normalize(&turret_heading);
+		
+	return ade_set_args(L, "o", l_Vector.Set(turret_heading));
 }
 
 ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
@@ -7474,6 +7979,40 @@ ADE_FUNC(isExitCollision, l_Beam, "number", "Checks if the defined collision was
 	return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(getStartDirectionInfo, l_Beam, NULL, "Gets the start information about the direction. The vector is a normalized vector from LastStart showing the start direction of a slashing beam", "vector", "The start direction or null vector if invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	beam_info inf = bp->binfo;
+		
+	return ade_set_args(L, "o", l_Vector.Set(inf.dir_a));
+}
+
+ADE_FUNC(getEndDirectionInfo, l_Beam, NULL, "Gets the end information about the direction. The vector is a normalized vector from LastStart showing the end direction of a slashing beam", "vector", "The start direction or null vector if invalid")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Beam.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	
+	beam *bp = NULL;
+	if(objh->objp->instance > -1)
+		bp = &Beams[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	beam_info inf = bp->binfo;
+		
+	return ade_set_args(L, "o", l_Vector.Set(inf.dir_b));
+}
+
 //**********HANDLE: Wing
 ade_obj<int> l_Wing("wing", "Wing handle");
 
@@ -9089,21 +9628,26 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
 
-	bool mouse_io;
-	bool mouse_status = false;
-	if(!(ade_get_args(L, "*|b", &mouse_io)))
+	bool newVal = false;
+	if (!ade_get_args(L, "*|b", &newVal))
 		return ADE_RETURN_NIL;
 
-	if(mouse_io) {
-		Use_mouse_to_fly = 1;
-	} else {
-		Use_mouse_to_fly = 0;
+	if (ADE_SETTING_VAR)
+	{
+		if (newVal)
+		{
+			Use_mouse_to_fly = true;
+		}
+		else
+		{
+			Use_mouse_to_fly = false;
+		}
 	}
 
 	if (Use_mouse_to_fly)
-		mouse_status = true;
-
-	return ade_set_args(L, "b", mouse_status);
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 //trackir funcs

@@ -1605,7 +1605,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP))
 	{
 		// if the ship has no turrets, we can't disarm it!
-		if (Ships[ship_name_lookup(aigp->ship_name)].subsys_info[SUBSYSTEM_TURRET].num == 0)
+		if (Ships[ship_name_lookup(aigp->ship_name)].subsys_info[SUBSYSTEM_TURRET].type_count == 0)
 			return AI_GOAL_NOT_ACHIEVABLE;
 	}
 

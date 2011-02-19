@@ -2812,7 +2812,7 @@ void HudGaugeSupport::render(float frametime)
 			bool repairing = false;
 			for (i = 0; i < SUBSYSTEM_MAX; i++)
 			{
-				if (Player_ship->subsys_info[i].num > 0) 
+				if (Player_ship->subsys_info[i].type_count > 0) 
 				{
 					if (ship_get_subsystem_strength(Player_ship, i) < 1.0f)
 					{
