@@ -28,8 +28,8 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 
 // Alternate random number generator that doesn't affect rand() sequence
 
-void	srand_alt(int seed);	// Seed the random number generator
-int	rand_alt();				// Get a random integer between 1 and RND_MAX
-float	frand_alt();				// Get a random float between 0 and 1.0
+void	init_static_rand_alt(int seed);	// Seed the random number generator
+int		static_rand_alt();				// Get a random integer between 1 and RND_MAX
+float	static_randf_alt();				// Get a random float between 0 and 1.0
 
 #endif
