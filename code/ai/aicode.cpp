@@ -14438,7 +14438,7 @@ void init_ai_object(int objnum)
 	aip->secondary_select_timestamp = timestamp(1);
 	aip->scan_for_enemy_timestamp = timestamp(1);
 
-	aip->choose_enemy_timestamp = timestamp(3*(NUM_SKILL_LEVELS-Game_skill_level) * ((rand_alt() % 500) + 500));
+	aip->choose_enemy_timestamp = timestamp(3*(NUM_SKILL_LEVELS-Game_skill_level) * ((static_rand_alt() % 500) + 500));
 
 	aip->shockwave_object = -1;
 	aip->shield_manage_timestamp = timestamp(1);
