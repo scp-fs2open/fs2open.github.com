@@ -85,7 +85,7 @@ int static_rand_range(int num, int min, int max)
 }
 
 /**
- * Return a randum float within a range
+ * Return a randum float within a range.
  * Note: min and max are inclusive
  *
  * @param num Seed input number
@@ -150,7 +150,7 @@ int Rnd_seed = 1;
 /** 
  * Seed the alternative random number generator.  Doesn't have to be called.
  */
-void srand_alt(int seed)
+void init_static_rand_alt(int seed)
 {
 	Rnd_seed = seed;
 }
@@ -159,7 +159,7 @@ void srand_alt(int seed)
  * Get a random integer between 1 and RND_MAX.
  * @return Random integer between 1 and RND_MAX
  */
-int rand_alt()
+int static_rand_alt()
 {
 	static int x=Rnd_seed;
 	int old_x;
@@ -175,8 +175,8 @@ int rand_alt()
  * Get a random integer between 0 and 1.0.
  * @return Random float between 0 and 1.0
  */
-float frand_alt()
+float static_randf_alt()
 {
-	int r = rand_alt();
+	int r = static_rand_alt();
 	return i2fl(r)/RND_MAX;
 }
