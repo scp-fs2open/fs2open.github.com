@@ -19,7 +19,7 @@ int Semirand_inited = 0;
 int Semirand[SEMIRAND_MAX];
 
 /**
- * Initialize Semirand array.
+ * Initialize Semirand array. Doesn't have to be called.
  */
 void init_semirand()
 {
@@ -148,7 +148,7 @@ void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *o
 int Rnd_seed = 1;
 
 /** 
- * Seed the alternative random number generator.  Doesn't have to be called.
+ * Seed the alternative random number generator. Doesn't have to be called.
  */
 void init_static_rand_alt(int seed)
 {
