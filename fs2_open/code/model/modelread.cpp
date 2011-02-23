@@ -605,10 +605,8 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		// Goober5000 - notify if there's a mismatch
 		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
-			Warning(LOCATION, "Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  "
-				"Although FS2_OPEN 3.6 and later will catch and correct this error, earlier "
-				"versions (as well as retail FS2) will not.  You are advised to fix this if "
-				"you plan to support earlier versions of FreeSpace.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name);
+			nprintf(("Model", "NOTE: Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  This works fine in FSO v3.6 and up, "
+				"but is not compatible with FS2 retail.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name));
 
 		}
 #endif
