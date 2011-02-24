@@ -4,7 +4,7 @@
 	<Project>
 		<Option title="code" />
 		<Option compiler="gcc" />
-		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;demo/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;vcodec/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
+		<Option virtualFolders="ai/;anim/;autopilot/;asteroid/;bmpman/;camera/;cfile/;cmdline/;cmeasure/;controlconfig/;cutscene/;ddsutils/;debris/;debugconsole/;exceptionhandler/;fireball/;fs2netd/;gamehelp/;gamesequence/;gamesnd/;globalincs/;graphics/;hud/;iff_defs/;inetfile/;io/;jpegutils/;jumpnode/;lab/;lighting/;localization/;math/;menuui/;mission/;missionui/;model/;nebula/;network/;object/;observer/;osapi/;palman/;parse/;particle/;pcxutils/;physics/;playerman/;popup/;radar/;render/;ship/;sound/;species_defs/;starfield/;stats/;tgautils/;ui/;vcodec/;weapon/;windows_stub/;sound/ogg/;graphics/OpenGL Headers/;graphics/OpenGL Sources/;" />
 		<Build>
 			<Target title="Debug">
 				<Option output="../Debug/code/lib/libcode" prefix_auto="1" extension_auto="1" />
@@ -220,12 +220,6 @@
 		</Unit>
 		<Unit filename="../../../code/debugconsole/timerbar.h">
 			<Option virtualFolder="debugconsole/" />
-		</Unit>
-		<Unit filename="../../../code/demo/demo.cpp">
-			<Option virtualFolder="demo/" />
-		</Unit>
-		<Unit filename="../../../code/demo/demo.h">
-			<Option virtualFolder="demo/" />
 		</Unit>
 		<Unit filename="../../../code/exceptionhandler/exceptionhandler.cpp">
 			<Option virtualFolder="exceptionhandler/" />
