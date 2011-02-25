@@ -293,6 +293,7 @@ sexp_oper Operators[] = {
 	{ "validate-argument",			OP_VALIDATE_ARGUMENT,		1, INT_MAX, },	// Karajorma
 	{ "validate-all-arguments",		OP_VALIDATE_ALL_ARGUMENTS,		0, 0, },	// Karajorma
 	{ "do-for-valid-arguments",		OP_DO_FOR_VALID_ARGUMENTS,	1, INT_MAX, },	// Karajorma
+	{ "num-valid-arguments",		OP_NUM_VALID_ARGUMENTS,		0, 0, },		// Karajorma
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
 	{ "send-message",				OP_SEND_MESSAGE,			3,	3,		},
@@ -8407,6 +8408,28 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 		// iterate
 		n = CDR(n);
 	}
+}
+
+int sexp_num_valid_arguments( int n )
+{
+	int arg_handler, arg_n;
+	int matches = 0;
+
+	arg_handler = get_handler_for_x_of_operator(n);
+
+	// loop through arguments
+	arg_n = CDR(arg_handler);
+	while (arg_n != -1) {
+		if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_VALID) {
+			matches++;
+		}
+
+		
+		// iterate
+		arg_n = CDR(arg_n);
+	}
+
+	return matches;
 }
 
 // Goober5000
@@ -19324,6 +19347,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				Int3();
 				break;
 
+			case OP_NUM_VALID_ARGUMENTS:
+				sexp_val = sexp_num_valid_arguments( cur_node );
+				break;
+
 			// sexpressions with side effects
 			case OP_CHANGE_IFF:
 				sexp_change_iff(node);
@@ -21289,6 +21316,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_DISTANCE:
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_CUTSCENES_GET_FOV:
+		case OP_NUM_VALID_ARGUMENTS:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -21651,6 +21679,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RESET_ORDERS:
 		case OP_INVALIDATE_ALL_ARGUMENTS:
 		case OP_VALIDATE_ALL_ARGUMENTS:
+		case OP_NUM_VALID_ARGUMENTS:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -25609,6 +25638,11 @@ sexp_help_struct Sexp_help[] = {
 		"\tprevent execution of the entire SEXP unless it is nested inside another when(or every-time)-argument SEXP.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tActions to take." },
+
+	// Karajorma
+	{ OP_NUM_VALID_ARGUMENTS, "num-valid-arguments (Conditional operator)\r\n"
+		"\tReturns the number of valid arguments in the argument list.\r\n\r\n"
+		"Takes no arguments...\r\n"},
 
 	// Goober5000
 	{ OP_ANY_OF, "Any-of (Conditional operator)\r\n"
