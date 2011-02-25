@@ -2539,7 +2539,7 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		// we are going to use weapon subistution so, make sure that the pattern array has at least one element
-		if ( wip->weapon_substitution_pattern_names.size() == 0 ) {
+		if ( wip->weapon_substitution_pattern_names.empty() ) {
 			// pattern is empty, initialize pattern with the weapon being currently parsed.
 			wip->weapon_substitution_pattern_names.push_back(wip->name);
 		}
