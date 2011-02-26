@@ -5460,9 +5460,9 @@ void post_process_mission()
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
 			if ( result ) {
-				char sexp_str[4096], text[4500];
+				char sexp_str[MAX_EVENT_SIZE], text[4500];
 
-				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, 4096);
+				convert_sexp_to_string( i, sexp_str, SEXP_ERROR_CHECK_MODE, MAX_EVENT_SIZE);
 				sprintf(text, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)",
 					sexp_error_message(result), sexp_str, Sexp_nodes[bad_node].text);
 

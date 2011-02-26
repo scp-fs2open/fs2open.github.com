@@ -722,7 +722,7 @@ int CFred_mission_save::save_cutscenes()
 
 					required_string_fred("+formula:");
 					parse_comments(); 
-					convert_sexp_to_string(The_mission.cutscenes[i].formula, out, SEXP_SAVE_MODE, 4096);
+					convert_sexp_to_string(The_mission.cutscenes[i].formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 					fout(" %s", out);
 				}
 			}
@@ -831,7 +831,7 @@ int CFred_mission_save::save_cmd_briefs()
 int CFred_mission_save::save_briefing()
 {
 	int			i,j,k, nb;
-	char			out[4096];
+	char			out[MAX_EVENT_SIZE];
 	brief_stage	*bs;
 	brief_icon	*bi;
 
@@ -911,7 +911,7 @@ int CFred_mission_save::save_briefing()
 
 			required_string_fred("$Formula:");
 			parse_comments();
-			convert_sexp_to_string(bs->formula, out, SEXP_SAVE_MODE, 4096);
+			convert_sexp_to_string(bs->formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 			fout(" %s", out);
 
 			for ( j = 0; j < bs->num_icons; j++ ) {
@@ -1000,7 +1000,7 @@ int CFred_mission_save::save_briefing()
 int CFred_mission_save::save_debriefing()
 {
 	int j, i;
-	char out[4096];
+	char out[MAX_EVENT_SIZE];
 
 	for ( j = 0; j < Num_teams; j++ ) {
 
@@ -1016,7 +1016,7 @@ int CFred_mission_save::save_debriefing()
 		for (i=0; i<Debriefing->num_stages; i++) {
 			required_string_fred("$Formula:");
 			parse_comments(2);
-			convert_sexp_to_string(Debriefing->stages[i].formula, out, SEXP_SAVE_MODE, 4096);
+			convert_sexp_to_string(Debriefing->stages[i].formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 			fout(" %s", out);
 
 			// XSTR
@@ -1297,7 +1297,7 @@ void CFred_mission_save::save_single_dock_instance(ship *shipp, dock_instance *d
 
 int CFred_mission_save::save_objects()
 {
-	char out[4096];
+	char out[MAX_EVENT_SIZE];
 	int i, j, k, z;
 	ai_info *aip;
 	object *objp;
@@ -1486,7 +1486,7 @@ int CFred_mission_save::save_objects()
 
 		required_string_fred("$Arrival Cue:");
 		parse_comments();
-		convert_sexp_to_string(shipp->arrival_cue, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(shipp->arrival_cue, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 		fout(" %s", out);
 
 		required_string_fred("$Departure Location:");
@@ -1542,7 +1542,7 @@ int CFred_mission_save::save_objects()
 
 		required_string_fred("$Departure Cue:");
 		parse_comments();
-		convert_sexp_to_string(shipp->departure_cue, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(shipp->departure_cue, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 		fout(" %s", out);
 
 		required_string_fred("$Determination:");
@@ -2153,7 +2153,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 
 int CFred_mission_save::save_wings()
 {
-	char out[4096];
+	char out[MAX_EVENT_SIZE];
 	int i, j, z, ship, count = 0;
 
 	fred_parse_flag = 0;
@@ -2273,7 +2273,7 @@ int CFred_mission_save::save_wings()
 
 		required_string_fred("$Arrival Cue:");
 		parse_comments();
-		convert_sexp_to_string(Wings[i].arrival_cue, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(Wings[i].arrival_cue, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 		fout(" %s", out);
 
 		required_string_fred("$Departure Location:");
@@ -2329,7 +2329,7 @@ int CFred_mission_save::save_wings()
 
 		required_string_fred("$Departure Cue:");
 		parse_comments();
-		convert_sexp_to_string(Wings[i].departure_cue, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(Wings[i].departure_cue, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 		fout(" %s", out);
 
 		required_string_fred("$Ships:");
@@ -2409,7 +2409,7 @@ int CFred_mission_save::save_wings()
 
 int CFred_mission_save::save_goals()
 {
-	char out[4096];
+	char out[MAX_EVENT_SIZE];
 	int i;
 
 	fred_parse_flag = 0;
@@ -2446,7 +2446,7 @@ int CFred_mission_save::save_goals()
 
 		required_string_fred("$Formula:");
 		parse_comments();
-		convert_sexp_to_string(Mission_goals[i].formula, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(Mission_goals[i].formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 		fout(" %s", out);
 
 		if ( Mission_goals[i].type & INVALID_GOAL ) {
@@ -3191,7 +3191,7 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 
 int CFred_mission_save::save_events()
 {
-	char out[4096];
+	char out[MAX_EVENT_SIZE];
 	int i;
 
 	fred_parse_flag = 0;
@@ -3203,7 +3203,7 @@ int CFred_mission_save::save_events()
 		required_string_either_fred("$Formula:", "#Goals");
 		required_string_fred("$Formula:");
 		parse_comments(i ? 2 : 1);
-		convert_sexp_to_string(Mission_events[i].formula, out, SEXP_SAVE_MODE, 4096);
+		convert_sexp_to_string(Mission_events[i].formula, out, SEXP_SAVE_MODE, MAX_EVENT_SIZE);
 		fout(" %s", out);
 
 		if (*Mission_events[i].name) {
@@ -4018,7 +4018,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 
 void CFred_mission_save::save_campaign_sexp(int node, int link_num)
 {
-	char out[4096];
+	char out[MAX_EVENT_SIZE];
 
 	Sexp_string = out;
 	*out = 0;
@@ -4026,13 +4026,13 @@ void CFred_mission_save::save_campaign_sexp(int node, int link_num)
 
 	// if the link num is -1, then this is a end-of-campaign location
 	if ( link_num != -1 ) {
-		if (build_sexp_string(node, 2, SEXP_SAVE_MODE, 4096)) {
+		if (build_sexp_string(node, 2, SEXP_SAVE_MODE, MAX_EVENT_SIZE)) {
 			fout("   (\n      %s\n      ( next-mission \"%s\" )\n   )\n", out, Campaign.missions[link_num].name);
 		} else {
 			fout("   ( %s( next-mission \"%s\" ) )\n", out, Campaign.missions[link_num].name);
 		}
 	} else {
-		if (build_sexp_string(node, 2, SEXP_SAVE_MODE, 4096)) {
+		if (build_sexp_string(node, 2, SEXP_SAVE_MODE, MAX_EVENT_SIZE)) {
 			fout("   (\n      %s\n      ( end-of-campaign )\n   )\n", out);
 		} else {
 			fout("   ( %s( end-of-campaign ) )\n", out );
