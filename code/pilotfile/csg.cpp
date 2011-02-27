@@ -521,8 +521,9 @@ void pilotfile::csg_write_techroom()
 
 void pilotfile::csg_read_loadout()
 {
-	int idx, i, j, list_size = 0;
+	int j;
 	int count;
+	uint idx, list_size = 0;
 
 	if ( !m_have_info ) {
 		throw "Loadout before Info!";
@@ -533,7 +534,7 @@ void pilotfile::csg_read_loadout()
 	cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, cfp);
 
 	// ship pool
-	list_size = (int)ship_list.size();
+	list_size = ship_list.size();
 	for (idx = 0; idx < list_size; idx++) {
 		count = cfread_int(cfp);
 
@@ -543,7 +544,7 @@ void pilotfile::csg_read_loadout()
 	}
 
 	// weapon pool
-	list_size = (int)weapon_list.size();
+	list_size = weapon_list.size();
 	for (idx = 0; idx < list_size; idx++) {
 		count = cfread_int(cfp);
 
@@ -553,8 +554,8 @@ void pilotfile::csg_read_loadout()
 	}
 
 	// player ship loadout
-	list_size = (int)cfread_ushort(cfp);
-	for (i = 0; i < list_size; i++) {
+	list_size = (uint)cfread_ushort(cfp);
+	for (uint i = 0; i < list_size; i++) {
 		wss_unit *slot = NULL;
 
 		if (i < MAX_WSS_SLOTS) {
@@ -563,6 +564,11 @@ void pilotfile::csg_read_loadout()
 
 		// ship
 		idx = cfread_int(cfp);
+
+		if (idx > ship_list.size() || idx < 0) {
+			CLAMP(idx, 0, (int)ship_list.size());
+			mprintf(("CSG => Parse Error: ship_list index invalid, please report this!\n"));				
+		}
 
 		if (slot) {
 			slot->ship_class = ship_list[idx].index;
@@ -573,6 +579,12 @@ void pilotfile::csg_read_loadout()
 
 		for (j = 0; j < count; j++) {
 			idx = cfread_int(cfp);
+
+			if (idx > weapon_list.size() || idx < 0) {
+				CLAMP(idx, 0, (int)weapon_list.size());
+				mprintf(("CSG => Parse Error: weapon_list index invalid, please report this!\n"));				
+			}
+
 
 			if ( slot && (j < MAX_SHIP_PRIMARY_BANKS) ) {
 				slot->wep[j] = weapon_list[idx].index;
@@ -590,6 +602,11 @@ void pilotfile::csg_read_loadout()
 
 		for (j = 0; j < count; j++) {
 			idx = cfread_int(cfp);
+
+			if (idx > weapon_list.size() || idx < 0) {
+				CLAMP(idx, 0, (int)weapon_list.size());
+				mprintf(("CSG => Parse Error: weapon_list index invalid, please report this!\n"));				
+			}
 
 			if ( slot && (j < MAX_SHIP_SECONDARY_BANKS) ) {
 				slot->wep[j+MAX_SHIP_PRIMARY_BANKS] = weapon_list[idx].index;
