@@ -6437,6 +6437,7 @@ void ship_delete( object * obj )
 //	ship_page_out_textures(shipp->ship_info_index);
 	
 	ship_clear_cockpit_displays(shipp);
+	model_delete_instance(shipp->model_instance_num);
 }
 
 // function used by ship_cleanup which is called if the ship is in a wing.

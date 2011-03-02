@@ -991,6 +991,7 @@ void game_level_close()
 		subtitles_close();
 		trail_level_close();
 		hud_level_close();
+		model_instance_free_all();
 
 		// be sure to not only reset the time but the lock as well
 		set_time_compression(1.0f, 0.0f);
