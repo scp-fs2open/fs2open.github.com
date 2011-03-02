@@ -284,12 +284,26 @@ void model_free_all()
 	}
 
 	mprintf(( "Freeing all existing models...\n" ));
+	model_instance_free_all();
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
 		// forcefully unload all loaded models (be careful with this)
 		model_unload(i, 1);		
 	}
+}
 
+void model_instance_free_all()
+{
+	size_t i;
+
+	// free any outstanding model instances
+	for ( i = 0; i < Polygon_model_instances.size(); ++i ) {
+		if ( Polygon_model_instances[i] ) {
+			model_delete_instance(i);
+		}
+	}
+
+	Polygon_model_instances.clear();
 }
 
 void model_page_in_start()
@@ -2614,6 +2628,23 @@ int model_create_instance(int model_num, int submodel_num)
 	}
 
 	return open_slot;
+}
+
+void model_delete_instance(int model_instance_num)
+{
+	Assert(model_instance_num >= 0);
+	Assert(model_instance_num < (int)Polygon_model_instances.size());
+	Assert(Polygon_model_instances[model_instance_num] != NULL);
+
+	polymodel_instance *pmi = Polygon_model_instances[model_instance_num];
+
+	if ( pmi->submodel ) {
+		vm_free(pmi->submodel);
+	}
+
+	vm_free(pmi);
+
+	Polygon_model_instances[model_instance_num] = NULL;
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
